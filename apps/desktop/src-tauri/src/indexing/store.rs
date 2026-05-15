@@ -7,7 +7,7 @@
 //! ## Schema v2: integer-keyed parent-child tree
 //!
 //! Entries use an integer primary key (`id`) with a `parent_id` foreign key.
-//! The `name` column uses `COLLATE platform_case` — a custom collation registered
+//! The `name` column uses `COLLATE platform_case`, a custom collation registered
 //! at connection init that matches the filesystem's case/normalization rules:
 //! - **macOS**: case-insensitive + NFD normalization (matching APFS)
 //! - **Linux**: binary comparison (matching ext4/btrfs)
@@ -89,20 +89,20 @@ pub struct ScanContext {
 impl ScanContext {
     /// Create a new scan context, seeding the map with the root's entry ID.
     ///
-    /// `next_id` is the shared atomic counter from `IndexWriter` — the single
+    /// `next_id` is the shared atomic counter from `IndexWriter`, the single
     /// source of truth for ID allocation.
     ///
     /// `is_volume_root`: true for full volume scans (always maps root → ROOT_ID).
     /// When false (subtree scans), resolves the root's actual entry ID from the DB.
     /// Returns an error if the root isn't indexed yet (for example, a subtree scan
-    /// racing with an ongoing full scan — the full scan will cover it).
+    /// racing with an ongoing full scan; the full scan will cover it).
     pub fn new(
         conn: &Connection,
         root: &Path,
         is_volume_root: bool,
         next_id: Arc<AtomicI64>,
     ) -> Result<Self, IndexStoreError> {
-        // Only volume-root scans need to create the sentinel — subtree scans
+        // Only volume-root scans need to create the sentinel; subtree scans
         // run after the full scan has already inserted it, and their connection
         // may be read-only or contending with the writer thread's write lock.
         if is_volume_root {
@@ -410,7 +410,7 @@ where
             Ok(val)
         }
         Err(e) => {
-            // Rollback failure is intentionally silenced — the savepoint may already
+            // Rollback failure is intentionally silenced; the savepoint may already
             // be released or the connection may be in an error state.
             let _ = conn.execute_batch(&format!("ROLLBACK TO {name}"));
             Err(e)
@@ -1926,7 +1926,7 @@ mod tests {
         let result = IndexStore::insert_entry_v2(&conn, ROOT_ID, "users", true, false, None, None, None, None);
         assert!(
             result.is_ok(),
-            "No unique constraint on (parent_id, name) — dedup is done in application code"
+            "No unique constraint on (parent_id, name); dedup is done in application code"
         );
     }
 
@@ -2177,7 +2177,7 @@ mod tests {
     #[test]
     fn platform_case_compare_distinguishes_distinct_names() {
         // Kills: replace platform_case_compare -> Default::default() (which is
-        // Ordering::Equal, so every comparison would say "equal" — sort order
+        // Ordering::Equal, so every comparison would say "equal"; sort order
         // and SQLite's collation-driven uniqueness would collapse).
         assert_eq!(platform_case_compare("a", "a"), std::cmp::Ordering::Equal);
         assert_eq!(platform_case_compare("a", "b"), std::cmp::Ordering::Less);

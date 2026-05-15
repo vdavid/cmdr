@@ -253,7 +253,7 @@ fn check_macos_flags(path: &Path) -> Result<(), String> {
     // SAFETY: c_path is valid, stat is a valid pointer
     let result = unsafe { libc::lstat(c_path.as_ptr(), stat.as_mut_ptr()) };
     if result != 0 {
-        // Can't stat — file may have been deleted, let the rename itself fail with a clear error
+        // Can't stat; file may have been deleted, let the rename itself fail with a clear error
         return Ok(());
     }
 
@@ -409,7 +409,7 @@ async fn check_sibling_conflict_via_volume(volume_id: &str, new_path: &Path) -> 
 
     let entry = match volume.get_metadata(new_path).await {
         Ok(e) => e,
-        Err(_) => return (false, None), // No conflict — file doesn't exist
+        Err(_) => return (false, None), // No conflict: file doesn't exist
     };
 
     let conflict = ConflictFileInfo {
@@ -456,7 +456,7 @@ mod tests {
     async fn test_check_rename_permission_nonexistent() {
         let result = check_rename_permission("/nonexistent_12345/file.txt".to_string()).await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is the only signal
         assert!(result.unwrap_err().message.contains("doesn't exist"));
     }
 
@@ -580,7 +580,7 @@ mod tests {
         )
         .await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is the only signal
         assert!(result.unwrap_err().message.contains("already exists"));
         // Both files still intact
         assert!(old.exists());
@@ -629,7 +629,7 @@ mod tests {
     async fn test_move_to_trash_nonexistent() {
         let result = move_to_trash("/nonexistent_12345/trash_me.txt".to_string()).await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is the only signal
         assert!(result.unwrap_err().message.contains("doesn't exist"));
     }
 }

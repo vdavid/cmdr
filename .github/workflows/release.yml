@@ -77,7 +77,7 @@ jobs:
 
       - name: Detach stale Cmdr* DMG mounts
         # tauri-action's bundle_dmg.sh fails fast (~3 s) when the "Cmdr" volume name is already
-        # taken in /Volumes (typically from a previous Finder double-click on an old DMG —
+        # taken in /Volumes (typically from a previous Finder double-click on an old DMG;
         # the self-hosted runner shares /Volumes with the dev's interactive session). Detach any
         # leftovers so the new bundle gets the canonical volume name. scripts/release.sh has the
         # same guard pre-tag-push, but this catches mounts that appear AFTER the tag push.

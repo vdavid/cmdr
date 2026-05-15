@@ -262,7 +262,7 @@ SMB_E2E_SERVICES=(smb-consumer-guest smb-consumer-auth smb-consumer-50shares smb
 
 # probe_smb_ports returns 0 if every required service's published port 445
 # accepts TCP within $1 seconds, otherwise 1. NEVER replace this with a
-# blanket `sleep N` — see apps/desktop/test/CLAUDE.md "Testing principles".
+# blanket `sleep N`; see apps/desktop/test/CLAUDE.md "Testing principles".
 probe_smb_ports() {
     local timeout="${1:-10}"
     local deadline=$((SECONDS + timeout))
@@ -292,7 +292,7 @@ start_smb_containers() {
     # the other two fail with "Cannot reach smb-consumer-50shares".
     #
     # ALSO: "running" per `docker compose ps` only means the container is
-    # alive — smbd inside may be hung, OOM-killed, or still loading. We always
+    # alive; smbd inside may be hung, OOM-killed, or still loading. We always
     # follow the running-check with an active TCP probe; if it fails, we
     # restart the SMB stack rather than letting the E2E run hit "Cannot reach"
     # errors mid-test. See the case study in
@@ -308,11 +308,11 @@ start_smb_containers() {
     done
 
     if $all_running; then
-        log_info "SMB containers already running — verifying smbd reachability..."
+        log_info "SMB containers already running; verifying smbd reachability..."
         if probe_smb_ports 10; then
             log_info "SMB containers healthy"
         else
-            log_warn "SMB containers running but not serving — restarting"
+            log_warn "SMB containers running but not serving; restarting"
             docker compose -p smb-consumer down > /dev/null 2>&1 || true
             "$SMB_SERVERS_DIR/start.sh" e2e
         fi
@@ -337,7 +337,7 @@ start_smb_containers() {
     if probe_smb_ports 30; then
         log_info "SMB e2e stack ready: all 4 containers accepting TCP on :445"
     else
-        log_error "SMB e2e stack NOT ready after restart — aborting before tests"
+        log_error "SMB e2e stack NOT ready after restart; aborting before tests"
         docker compose -p smb-consumer ps
         for service in "${SMB_E2E_SERVICES[@]}"; do
             log_warn "--- last 30 lines of $service log ---"
@@ -475,7 +475,7 @@ else
     if probe_smb_ports 5; then
         log_info "SMB post-flight: all 4 containers still accepting TCP on :445"
     else
-        log_warn "SMB post-flight: at least one container is no longer accepting TCP — likely died mid-run"
+        log_warn "SMB post-flight: at least one container is no longer accepting TCP, likely died mid-run"
         for service in "${SMB_E2E_SERVICES[@]}"; do
             state=$(docker compose -p smb-consumer ps --format '{{.State}} {{.Status}}' "$service" 2>/dev/null | head -1)
             log_warn "  $service: ${state:-unknown}"

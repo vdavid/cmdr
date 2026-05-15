@@ -73,7 +73,7 @@ test.describe('File watching', () => {
 
     expect(await fileExistsInFocusedPane(tauriPage, fileName)).toBe(false)
 
-    fs.writeFileSync(filePath, 'hello world — watch test')
+    fs.writeFileSync(filePath, 'hello world (watch test)')
     await flushFileWatcher(tauriPage)
 
     await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, fileName), 2000)

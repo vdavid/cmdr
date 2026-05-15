@@ -77,7 +77,7 @@
             return
         }
 
-        // Sync checks passed — clear any previous error, then run async conflict check
+        // Sync checks passed: clear any previous error, then run async conflict check
         errorMessage = ''
 
         isChecking = true
@@ -168,7 +168,7 @@
             )
             await suggestionsStream.promise
         } catch {
-            // Graceful degradation — hide suggestions on error
+            // Graceful degradation: hide suggestions on error
             aiSuggestions = []
             aiStreaming = false
         }

@@ -45,7 +45,7 @@
             <p>
                 Cmdr needs Local Network access to find SMB servers, list available shares, and connect directly for
                 faster file transfers. The first time you open Network or use <strong>Connect to server…</strong>, macOS
-                will ask — say yes.
+                will ask. Say yes.
             </p>
             <p>
                 Manage this anytime in <button type="button" class="link-button" onclick={handlePrivacyLinkClick}
@@ -53,7 +53,7 @@
                 >.
             </p>
             <p class="muted">
-                Without it, Cmdr can still read and write files on shares that are already mounted — you just can't
+                Without it, Cmdr can still read and write files on shares that are already mounted, but you can't
                 discover new servers or use our faster direct connection.
             </p>
         </div>

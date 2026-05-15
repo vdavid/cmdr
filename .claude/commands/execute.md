@@ -18,7 +18,7 @@ Agents:
   whole plan. This usually results in a disaster in quality because they run out of context, they auto-compress, then
   the compressed agent lacks proper understanding of our values and what we're doing. So again, give them a clear scope.
 - Ask every agent to reflect whether they are satisfied with what they'd done. Make them ask: "Is what I've done solid
-  AND elegant? You proud and confident about it?" — If the answer is "no" to either, they should adjust, then rinse and
+  AND elegant? You proud and confident about it?" If the answer is "no" to either, they should adjust, then rinse and
   repeat.
 - They should also see if there is something else to fix, like any latent bugs that only need 10–15 LoC changes around
   their part of the development. They're encouraged to fix these. Correctness and bug-free code over crystal-clean

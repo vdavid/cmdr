@@ -3,15 +3,15 @@ Prepare a release based on docs/guides/releasing.md.
 1. Prerequisite: Run `gh secret list` and verify that `TAURI_SIGNING_PRIVATE_KEY` and
    `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` both exist. If either is missing, warn the user and stop.
 2. Update @CHANGELOG.md based on git commits since last release.
-   - Commits have title + body — read all!
+   - Commits have title + body. Read all!
    - You can link multiple commits for changelog items if needed.
    - List major but non-app changes in a "Non-app" section.
-   - **Get commit SHAs via `git log --format='%h' --abbrev=8`** — never extend a 7-char prefix from `git log --oneline`
+   - **Get commit SHAs via `git log --format='%h' --abbrev=8`**. Never extend a 7-char prefix from `git log --oneline`
      by guessing the next character. The committed changelog convention is 8 chars; let git produce them. The
      `changelog-links` check will reject fabricated SHAs and abort the release.
    - **Add a `## [Unreleased]` heading** right after the format preamble (before the first versioned section), then put
      entries under it. The release script replaces this heading with the versioned one. The committed changelog has no
-     `[Unreleased]` section between releases — you're creating it fresh each time.
+     `[Unreleased]` section between releases. You're creating it fresh each time.
 
    ### Style: plain-sentence, dense, impact-focused
    - **Each entry is one sentence.** No `**Bold title:** Body.`; the headline IS the entry. Most entries land under 20
@@ -59,7 +59,7 @@ Prepare a release based on docs/guides/releasing.md.
 
    > - Add friendly errors for git browser ([19d5b075](...), [af64689f](...)).
 
-   **Keep long when warranted** (true tentpole launches like Linux alpha — many real commits, big story):
+   **Keep long when warranted** (true tentpole launches like Linux alpha, with many real commits and a big story):
 
    > - Add Linux support (alpha): volumes via /proc/mounts, file ops with reflink support, trash via FreeDesktop spec,
    >   inotify file watching, MTP ungated, SMB via mDNS + smbclient fallback, GVFS-mounted shares as volumes, native
@@ -76,18 +76,18 @@ Prepare a release based on docs/guides/releasing.md.
 7. **After pushing**, confirm the self-hosted runner picked up the build:
    - Wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the `Build (...)` jobs.
    - At least one `Build (...)` job should be `in_progress` (the self-hosted runner serializes the three matrix jobs, so
-     the others stay `queued` — that's normal).
+     the others stay `queued`, which is normal).
    - **If all three are still `queued` after ~30s, the self-hosted runner is down.** Confirm with
      `launchctl list | grep cmdr` and look for `actions.runner.vdavid-cmdr.*`. Restart with
      `cd ~/actions-runner-cmdr && ./svc.sh start` (fall back to `launchctl bootout` + `bootstrap` if `svc.sh` errors
      with "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically once
-     the runner reports in — no need to re-trigger or re-tag.
+     the runner reports in. No need to re-trigger or re-tag.
 8. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build. The self-hosted runner lives on this
-   Mac; any sleep — display or system — drops the runner connection and fails every in-flight matrix job with
+   Mac; any sleep (display or system) drops the runner connection and fails every in-flight matrix job with
    `The self-hosted runner lost communication with the server`. See `docs/guides/releasing.md` § "Keep the Mac awake
    during the build".
    - Run `caffeinate -dimsu` as a Bash `run_in_background` call. Capture the background task id so you can stop it.
-   - Disarm it once the release workflow reports `completed` (success or failure — not just when the matrix is done).
+   - Disarm it once the release workflow reports `completed` (success or failure, not just when the matrix is done).
    - If the user requests a re-run of failed jobs, re-arm caffeinate first.
 9. **Monitor the CI build**:
    - Remind the user not to close their laptop for ~15 minutes while the self-hosted runner builds.
@@ -97,14 +97,14 @@ Prepare a release based on docs/guides/releasing.md.
      fix.
    - Suggest the user to also track the build at https://github.com/vdavid/cmdr/actions.
 10. **In parallel, watch the standalone CI run** (the non-release `CI` workflow that fires on the same push):
-    - It's not a blocker for the release. If it goes red, fix it in the background while the release builds — small
+    - It's not a blocker for the release. If it goes red, fix it in the background while the release builds. Small
       things like lint regressions are common.
     - Surface the failure to the user when convenient; don't interrupt release-build progress reporting for it.
 11. **After the release run succeeds, verify the public surface**:
-    - `gh release view vX.Y.Z --json assets,tagName,publishedAt` — confirm the expected DMGs are attached
+    - `gh release view vX.Y.Z --json assets,tagName,publishedAt`: confirm the expected DMGs are attached
       (`Cmdr_X.Y.Z_aarch64.dmg`, `_x64.dmg`, `_universal.dmg`) and sizes look reasonable.
     - Wait ~30 seconds for the website auto-deploy (the release workflow commits an updated `latest.json` and fires a
       webhook), then `curl -s https://getcmdr.com/latest.json | jq -r .version` and confirm it matches `X.Y.Z`.
     - If `latest.json` still shows the old version after ~2 minutes, the deploy webhook may have failed silently. Tell
       the user; the manual fix is to re-trigger the website-deploy workflow via `workflow_dispatch` from the Actions
-      tab. Don't block release success on this — the GitHub Release is what users actually download.
+      tab. Don't block release success on this. The GitHub Release is what users actually download.

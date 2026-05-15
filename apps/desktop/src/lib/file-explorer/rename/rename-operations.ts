@@ -1,6 +1,6 @@
 /**
  * Rename save flow: trim -> validate -> extension check -> conflict check -> backend rename.
- * Pure logic module — returns instructions instead of calling Tauri directly,
+ * Pure logic module. Returns instructions instead of calling Tauri directly,
  * except for the actual backend calls which are awaited.
  */
 

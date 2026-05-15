@@ -42,7 +42,7 @@ use crate::indexing::writer::{IndexWriter, WriteMessage};
 const MAX_BUFFER_CAPACITY: usize = 500_000;
 
 /// Aggregator for "removal for unknown path, skipping" events. The per-event line is
-/// at TRACE (off by default — file chain captures Debug+ only); this module emits a
+/// at TRACE (off by default; file chain captures Debug+ only); this module emits a
 /// single DEBUG summary every ~5 s, so error report bundles still carry the
 /// existence-of-drift signal without the per-event noise.
 ///
@@ -68,7 +68,7 @@ mod unknown_path_skips {
     static STATE: Mutex<Option<State>> = Mutex::new(None);
 
     /// Increment the counter and emit a summary if the flush interval has elapsed.
-    /// Called on every skipped removal — cheap (one mutex acquisition, one branch).
+    /// Called on every skipped removal (cheap: one mutex acquisition, one branch).
     pub(super) fn record(path: &str) {
         let mut guard = match STATE.lock() {
             Ok(g) => g,
@@ -318,7 +318,7 @@ fn start_next_rescan(
             Ok(c) => c,
             Err(e) => {
                 log::warn!(
-                    "MustScanSubDirs: couldn't open read connection for {} — {e}",
+                    "MustScanSubDirs: couldn't open read connection for {}: {e}",
                     path.display()
                 );
                 active_for_task.store(false, Ordering::Relaxed);
@@ -351,7 +351,7 @@ fn start_next_rescan(
                 }
             }
             Err(e) => {
-                log::warn!("MustScanSubDirs: reconcile failed for {} — {e}", path.display());
+                log::warn!("MustScanSubDirs: reconcile failed for {}: {e}", path.display());
             }
         }
 
@@ -377,7 +377,7 @@ pub(super) struct ReconcileSummary {
 ///
 /// Unlike `scanner::scan_subtree` which deletes all descendants then re-inserts,
 /// this function walks each directory, compares children by name, and only writes
-/// the differences. Safe to interrupt at any point — the DB is never in a
+/// the differences. Safe to interrupt at any point: the DB is never in a
 /// partially-deleted state.
 pub(super) fn reconcile_subtree(
     root: &Path,
@@ -394,7 +394,7 @@ pub(super) fn reconcile_subtree(
     let root_id = match store::resolve_path(conn, &root_str) {
         Ok(Some(id)) => id,
         Ok(None) => {
-            // Root not in DB — this happens when must_scan_sub_dirs fires for a
+            // Root not in DB. This happens when must_scan_sub_dirs fires for a
             // newly created/copied directory. Try to create it: resolve the parent,
             // stat the root, and upsert it via the writer.
             let parent_path = compute_parent_path(&root_str);
@@ -680,12 +680,12 @@ fn handle_removal(
 ) -> Option<Vec<String>> {
     // Check if the path actually exists on disk before deleting from the DB.
     if Path::new(normalized).symlink_metadata().is_ok() {
-        // Path still exists — treat as a modification, not a removal.
+        // Path still exists, so treat as a modification, not a removal.
         let parent_path = compute_parent_path(normalized);
         return handle_creation_or_modification(normalized, &parent_path, conn, event, writer, &mut affected);
     }
 
-    // Path is truly gone — resolve and delete from DB
+    // Path is truly gone; resolve and delete from DB
     let entry_id = match store::resolve_path(conn, normalized) {
         Ok(Some(id)) => id,
         Ok(None) => {
@@ -1232,7 +1232,7 @@ mod tests {
         assert_eq!(
             children.len(),
             1,
-            "file should still be in DB — removal was a false alarm"
+            "file should still be in DB (removal was a false alarm)"
         );
         assert_eq!(children[0].name, "still_here.txt");
     }
@@ -1448,7 +1448,7 @@ mod tests {
         assert_eq!(
             dir_children.len(),
             1,
-            "child file should survive — DeleteSubtreeById must not have been sent"
+            "child file should survive (DeleteSubtreeById must not have been sent)"
         );
         assert_eq!(dir_children[0].name, "precious.txt");
     }
@@ -1641,7 +1641,7 @@ mod tests {
         std::fs::create_dir(&new_dir).unwrap();
         std::fs::write(new_dir.join("child.txt"), "nested child").unwrap();
 
-        // DB only knows about /parent/ — new_dir and child.txt are unknown
+        // DB only knows about /parent/; new_dir and child.txt are unknown
         ensure_path_in_db(&db_path, &parent.to_string_lossy(), &writer);
 
         let cancelled = AtomicBool::new(false);
@@ -1740,7 +1740,7 @@ mod tests {
         assert!(!children[0].is_directory, "item should now be a file, not a directory");
         assert!(
             item_children.is_empty(),
-            "file entry should have no children — old directory's child.txt should be cleaned up"
+            "file entry should have no children (old directory's child.txt should be cleaned up)"
         );
     }
 
@@ -1763,7 +1763,7 @@ mod tests {
         std::fs::create_dir_all(&dir_c).unwrap();
         std::fs::write(dir_c.join("file.txt"), "deep content").unwrap();
 
-        // DB only knows about /root_dir/ — everything inside is new
+        // DB only knows about /root_dir/; everything inside is new
         ensure_path_in_db(&db_path, &root_dir.to_string_lossy(), &writer);
 
         let cancelled = AtomicBool::new(false);
@@ -1830,7 +1830,7 @@ mod tests {
         std::fs::write(new_dir.join("file1.txt"), "aaa").unwrap();
         std::fs::write(new_dir.join("file2.txt"), "bbb").unwrap();
 
-        // Only the PARENT is in the DB — the new directory itself is NOT.
+        // Only the PARENT is in the DB; the new directory itself is NOT.
         // This simulates what happens when FSEvents fires must_scan_sub_dirs
         // for a newly copied/created directory.
         ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);

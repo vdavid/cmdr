@@ -20,7 +20,7 @@ use super::types::{
 // ============================================================================
 
 /// Tracks renames performed during same-FS move for rollback on cancellation.
-/// Each entry is `(original_source, moved_to_dest)` — rollback reverses them.
+/// Each entry is `(original_source, moved_to_dest)`. Rollback reverses them.
 struct MoveTransaction {
     renames: Vec<(PathBuf, PathBuf)>,
 }
@@ -154,7 +154,7 @@ fn move_with_rename(
                     }
                 }
             } else {
-                // No conflict — just rename
+                // No conflict, so just rename
                 fs::rename(source, &dest_path).with_path(source)?;
                 move_tx.record(source.clone(), dest_path);
             }
@@ -223,7 +223,7 @@ fn move_with_rename(
 /// The two look similar in structure but differ in every detail (copy has progress tracking,
 /// symlink handling, byte counting, transaction recording, strategy selection). A shared
 /// abstraction would be forced and fragile. See `copy.rs` `copy_single_item` for the copy side.
-#[allow(clippy::too_many_arguments, reason = "intentional — see doc comment above")]
+#[allow(clippy::too_many_arguments, reason = "intentional; see doc comment above")]
 fn merge_move_directory(
     source_dir: &Path,
     dest_dir: &Path,
@@ -253,7 +253,7 @@ fn merge_move_directory(
         }
 
         if source_child.is_dir() && dest_child.exists() && dest_child.is_dir() {
-            // Both are directories — recurse
+            // Both are directories, recurse
             merge_move_directory(
                 &source_child,
                 &dest_child,
@@ -280,12 +280,12 @@ fn merge_move_directory(
                     move_tx.record(source_child, resolved.path);
                 }
                 None => {
-                    // Skip — source file stays in place
+                    // Skip: source file stays in place
                     continue;
                 }
             }
         } else {
-            // No conflict — just rename
+            // No conflict, just rename
             fs::rename(&source_child, &dest_child).with_path(&source_child)?;
             move_tx.record(source_child, dest_child);
         }
@@ -435,7 +435,7 @@ fn move_with_staging(
             let final_path = destination.join(file_name);
 
             // When both staged and final are directories, merge recursively.
-            // No MoveTransaction needed here — staging cleanup handles rollback.
+            // No MoveTransaction needed here: staging cleanup handles rollback.
             let mut staging_move_tx = MoveTransaction::new();
             if staged_path.is_dir() && final_path.exists() && final_path.is_dir() {
                 merge_move_directory(
@@ -476,7 +476,7 @@ fn move_with_staging(
                     }
                 }
             } else {
-                // No conflict — just rename from staging to final
+                // No conflict, just rename from staging to final
                 fs::rename(&staged_path, &final_path).map_err(|e| WriteOperationError::IoError {
                     path: staged_path.display().to_string(),
                     message: format!("Failed to move from staging: {}", e),

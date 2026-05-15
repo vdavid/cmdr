@@ -46,29 +46,29 @@ That last number is the headline: four out of every five seconds the suite runs,
 
 ### Top sleep call sites (by total ms across the suite)
 
-| Total ms   | Calls | Frame                                                                        |
-| ---------- | ----- | ---------------------------------------------------------------------------- |
-| 171,000    | 1710  | `pollUntil` (helpers.ts:429): the polling interval, 100 ms × everywhere      |
-| 53,500     | 107   | `ensureAppReady` (helpers.ts:117): `sleep(500)` after route nav              |
-| 42,000     | 21    | mtp.spec.ts:117: `sleep(2000)` in `beforeEach` after volume switch           |
-| 40,000     | 20    | `setTheme` accessibility.spec.ts:189: `sleep(2000)` per a11y test            |
-| 32,100     | 107   | `ensureAppReady` (helpers.ts:162): `sleep(300)` after `mcp-nav-to-path`      |
-| 14,000     | 28    | accessibility.spec.ts:359: close dialog wait `sleep(500)`                    |
-| 14,000     | 28    | accessibility.spec.ts:346: open dialog wait `sleep(500)`                     |
-| 10,000     | 5     | mtp-conflicts.spec.ts:70: `sleep(2000)` in `beforeEach` after volume switch  |
-| 10,000     | 1     | mtp.spec.ts:968: `sleep(10000)` for 50 MB local→MTP copy                     |
-| 10,000     | 1     | mtp.spec.ts:936: `sleep(10000)` for 50 MB MTP→local copy                     |
-| 8,000      | 4     | error-pane.spec.ts:62: `sleep(2000)` after injecting permission errors       |
-| 8,000      | 4     | network-toggle.spec.ts:90: `sleep(2000)` after toggling network setting      |
-| 4,200      | 21    | mtp.spec.ts:123: `sleep(200)` after Escape #2                                |
-| 4,200      | 21    | mtp.spec.ts:121: `sleep(200)` after Escape #1                                |
-| 3,600      | 12    | `setSettingViaBridge` network-toggle.spec.ts:64                              |
-| 3,350      | 67    | `moveCursorToFile` (helpers.ts:302): per-keystroke `sleep(50)`               |
-| 3,000      | 1     | mtp.spec.ts:464: `sleep(3000)` after MTP file op                             |
-| 3,000 each | 5     | mtp-conflicts.spec.ts:104, 135, 167, 215, 256: post-conflict `sleep(3000)`   |
-| 3,000      | 1     | file-watching.spec.ts:205: watcher reaction `sleep(3000)`                    |
-| 2,400      | 12    | `selectAll` conflict-helpers.ts:147                                          |
-| 2,000      | 4     | indexing.spec.ts:82: `waitForExactSize` polling sleep                        |
+| Total ms   | Calls | Frame                                                                       |
+| ---------- | ----- | --------------------------------------------------------------------------- |
+| 171,000    | 1710  | `pollUntil` (helpers.ts:429): the polling interval, 100 ms × everywhere     |
+| 53,500     | 107   | `ensureAppReady` (helpers.ts:117): `sleep(500)` after route nav             |
+| 42,000     | 21    | mtp.spec.ts:117: `sleep(2000)` in `beforeEach` after volume switch          |
+| 40,000     | 20    | `setTheme` accessibility.spec.ts:189: `sleep(2000)` per a11y test           |
+| 32,100     | 107   | `ensureAppReady` (helpers.ts:162): `sleep(300)` after `mcp-nav-to-path`     |
+| 14,000     | 28    | accessibility.spec.ts:359: close dialog wait `sleep(500)`                   |
+| 14,000     | 28    | accessibility.spec.ts:346: open dialog wait `sleep(500)`                    |
+| 10,000     | 5     | mtp-conflicts.spec.ts:70: `sleep(2000)` in `beforeEach` after volume switch |
+| 10,000     | 1     | mtp.spec.ts:968: `sleep(10000)` for 50 MB local→MTP copy                    |
+| 10,000     | 1     | mtp.spec.ts:936: `sleep(10000)` for 50 MB MTP→local copy                    |
+| 8,000      | 4     | error-pane.spec.ts:62: `sleep(2000)` after injecting permission errors      |
+| 8,000      | 4     | network-toggle.spec.ts:90: `sleep(2000)` after toggling network setting     |
+| 4,200      | 21    | mtp.spec.ts:123: `sleep(200)` after Escape #2                               |
+| 4,200      | 21    | mtp.spec.ts:121: `sleep(200)` after Escape #1                               |
+| 3,600      | 12    | `setSettingViaBridge` network-toggle.spec.ts:64                             |
+| 3,350      | 67    | `moveCursorToFile` (helpers.ts:302): per-keystroke `sleep(50)`              |
+| 3,000      | 1     | mtp.spec.ts:464: `sleep(3000)` after MTP file op                            |
+| 3,000 each | 5     | mtp-conflicts.spec.ts:104, 135, 167, 215, 256: post-conflict `sleep(3000)`  |
+| 3,000      | 1     | file-watching.spec.ts:205: watcher reaction `sleep(3000)`                   |
+| 2,400      | 12    | `selectAll` conflict-helpers.ts:147                                         |
+| 2,000      | 4     | indexing.spec.ts:82: `waitForExactSize` polling sleep                       |
 
 Tail (smaller sites) are mostly `sleep(200..500)` in conflict and file-watching specs, plus a handful of 1s sleeps in
 MTP setup.
@@ -107,10 +107,10 @@ Full per-test data captured at `/tmp/cmdr-e2e-per-test.tsv` (139 rows, including
 
 ### Flake observed
 
-`mtp.spec.ts:784` (`read-only storage rejects write operations`) timed out waiting for `sunset.jpg` to appear in `photos/`
-on the left MTP pane (15s `mcpAwaitItem` budget exhausted). This is a different flake than the two the previous agent
-called out (`Cancel copy mid-operation` and Linux SMB). Logging it here but not addressing in Step 1; we'll see if it
-survives Step 2 with poll-based waits.
+`mtp.spec.ts:784` (`read-only storage rejects write operations`) timed out waiting for `sunset.jpg` to appear in
+`photos/` on the left MTP pane (15s `mcpAwaitItem` budget exhausted). This is a different flake than the two the
+previous agent called out (`Cancel copy mid-operation` and Linux SMB). Logging it here but not addressing in Step 1;
+we'll see if it survives Step 2 with poll-based waits.
 
 ### Implications for the optimization plan
 
@@ -169,18 +169,18 @@ So now ~56% of the wall-clock is in fixed sleeps (down from 80%). Plenty of room
 
 ### Top sleep call sites (after Step 2)
 
-| Total ms | Calls | Frame                                                            |
-| -------- | ----- | ---------------------------------------------------------------- |
-| 151,550  | 3031  | `pollUntil` (helpers.ts:429): 50 ms interval × every poll        |
-| 3,600    | 12    | `setSettingViaBridge` (network-toggle.spec.ts:65): `sleep(300)`  |
-| 3,400    | 68    | `moveCursorToFile` (helpers.ts:302): `sleep(50)` per keystroke   |
-| 2,400    | 12    | `selectAll` (conflict-helpers.ts:147)                            |
-| 2,100    | 21    | `moveCursorToFile` (helpers.ts:299)                              |
-| 2,100    | 21    | `moveCursorToFile` (helpers.ts:304)                              |
-| 2,000    | 4     | `navigateBackToLeft` (error-pane.spec.ts:80)                     |
-| 2,000    | 2     | `toggleHidden` (file-operations.spec.ts:246)                     |
-| 1,600    | 16    | `selectConflictPolicy` (conflict-helpers.ts:163)                 |
-| 1,000    | 2     | `waitForExactSize` (indexing.spec.ts:82)                         |
+| Total ms | Calls | Frame                                                           |
+| -------- | ----- | --------------------------------------------------------------- |
+| 151,550  | 3031  | `pollUntil` (helpers.ts:429): 50 ms interval × every poll       |
+| 3,600    | 12    | `setSettingViaBridge` (network-toggle.spec.ts:65): `sleep(300)` |
+| 3,400    | 68    | `moveCursorToFile` (helpers.ts:302): `sleep(50)` per keystroke  |
+| 2,400    | 12    | `selectAll` (conflict-helpers.ts:147)                           |
+| 2,100    | 21    | `moveCursorToFile` (helpers.ts:299)                             |
+| 2,100    | 21    | `moveCursorToFile` (helpers.ts:304)                             |
+| 2,000    | 4     | `navigateBackToLeft` (error-pane.spec.ts:80)                    |
+| 2,000    | 2     | `toggleHidden` (file-operations.spec.ts:246)                    |
+| 1,600    | 16    | `selectConflictPolicy` (conflict-helpers.ts:163)                |
+| 1,000    | 2     | `waitForExactSize` (indexing.spec.ts:82)                        |
 
 Compared to the Before table, every top item except `pollUntil` and `moveCursorToFile` is gone. Step 3 / 4 will go after
 the remaining tail.
@@ -222,10 +222,10 @@ In `apps/desktop/test/e2e-playwright/`:
    user-visible signal
 4. **`smb.spec.ts`**: `beforeEach` `sleep(2000)` + Escape sleeps replaced with the same `cmdr://state` poll
 5. **`network-toggle.spec.ts`**: `beforeEach` `sleep(2000)` replaced with the same `cmdr://state` poll
-6. **`accessibility.spec.ts`**: removed the `setTheme` `sleep(2000)` entirely. The only reason for it was
-   color-contrast cache lag, but color-contrast is disabled in this suite. The `:root` `pollUntil` above it is enough.
-   Also trimmed the Settings-section loop's `sleep(500)` (before-pollUntil-visibility) to nothing and the
-   post-visibility `sleep(500)` to `sleep(150)`
+6. **`accessibility.spec.ts`**: removed the `setTheme` `sleep(2000)` entirely. The only reason for it was color-contrast
+   cache lag, but color-contrast is disabled in this suite. The `:root` `pollUntil` above it is enough. Also trimmed the
+   Settings-section loop's `sleep(500)` (before-pollUntil-visibility) to nothing and the post-visibility `sleep(500)` to
+   `sleep(150)`
 7. **`error-pane.spec.ts`**: `injectAndNavigateIntoSubDir` `sleep(2000)` replaced with `pollUntil` on `.error-pane`
    visibility
 8. **`file-watching.spec.ts`**: `sleep(3000)` after deleting the watched directory replaced with a 5 s `pollUntil` that
@@ -307,19 +307,19 @@ shutdown when there's less hanging state), not test wall-clock.
 
 ### Top sleep call sites (Step 3 pass 1)
 
-| Total ms | Calls | Frame                                                               |
-| -------- | ----- | ------------------------------------------------------------------- |
-| 154,650  | 3093  | `pollUntil` (helpers.ts:478): 50 ms interval × every poll           |
-| 10,700   | 107   | `ensureAppReady` (helpers.ts:218): the 100 ms focus-attach margin   |
-| 4,200    | 28    | `accessibility.spec.ts:359`: `sleep(150)` post-visibility           |
-| 3,600    | 12    | `setSettingViaBridge` (network-toggle.spec.ts:65): `sleep(300)`     |
-| 3,400    | 68    | `moveCursorToFile` (helpers.ts:316): `sleep(50)` per keystroke      |
-| 3,000    | 1     | `mtp.spec.ts:490`: single `sleep(3000)` after MTP fixture mutation  |
-| 2,400    | 12    | `selectAll` (conflict-helpers.ts:147)                               |
-| 2,100    | 21    | `moveCursorToFile` (helpers.ts:318)                                 |
-| 2,100    | 21    | `moveCursorToFile` (helpers.ts:313)                                 |
-| 2,000    | 4     | `navigateBackToLeft` (error-pane.spec.ts:76)                        |
-| 2,000    | 2     | `toggleHidden` (file-operations.spec.ts:246)                        |
+| Total ms | Calls | Frame                                                              |
+| -------- | ----- | ------------------------------------------------------------------ |
+| 154,650  | 3093  | `pollUntil` (helpers.ts:478): 50 ms interval × every poll          |
+| 10,700   | 107   | `ensureAppReady` (helpers.ts:218): the 100 ms focus-attach margin  |
+| 4,200    | 28    | `accessibility.spec.ts:359`: `sleep(150)` post-visibility          |
+| 3,600    | 12    | `setSettingViaBridge` (network-toggle.spec.ts:65): `sleep(300)`    |
+| 3,400    | 68    | `moveCursorToFile` (helpers.ts:316): `sleep(50)` per keystroke     |
+| 3,000    | 1     | `mtp.spec.ts:490`: single `sleep(3000)` after MTP fixture mutation |
+| 2,400    | 12    | `selectAll` (conflict-helpers.ts:147)                              |
+| 2,100    | 21    | `moveCursorToFile` (helpers.ts:318)                                |
+| 2,100    | 21    | `moveCursorToFile` (helpers.ts:313)                                |
+| 2,000    | 4     | `navigateBackToLeft` (error-pane.spec.ts:76)                       |
+| 2,000    | 2     | `toggleHidden` (file-operations.spec.ts:246)                       |
 
 The volume-reset `cmdr://state` poll (Step 2's "wait for both panes on local volume", 5s budget) no longer appears as a
 top frame. It now resolves immediately on most tests via the `isStateClean()` short-circuit and falls back to the full
@@ -345,9 +345,9 @@ after.
 
 In `apps/desktop/test/e2e-playwright/`:
 
-1. **`helpers.ts`**: added `isStateClean(tauriPage, localVolumeName)`, which reads `cmdr://state` over MCP and returns true
-   when both panes are on the named local volume AND no `.modal-overlay` is visible. Returns false on any error (caller
-   should fall back to the full reset). Imports `mcpReadResource` from `e2e-shared/mcp-client.js`.
+1. **`helpers.ts`**: added `isStateClean(tauriPage, localVolumeName)`, which reads `cmdr://state` over MCP and returns
+   true when both panes are on the named local volume AND no `.modal-overlay` is visible. Returns false on any error
+   (caller should fall back to the full reset). Imports `mcpReadResource` from `e2e-shared/mcp-client.js`.
 2. **`mtp.spec.ts`**: wrapped the `mcp-volume-select` + `cmdr://state` poll + double-Escape + modal-overlay poll inside
    `if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME)))`. The MTP fixture reset (pause watcher → recreate → rescan
    → resume) still runs every test, as it must.
@@ -417,18 +417,18 @@ keyboard-driven `moveCursorToSubDir` helper (intentional; see "Tests kept on key
 
 ### Top sleep call sites (Step 4 pass 1)
 
-| Total ms | Calls | Frame                                                               |
-| -------- | ----- | ------------------------------------------------------------------- |
-| 154,450  | 3089  | `pollUntil` (helpers.ts:511): 50 ms interval × every poll           |
-| 10,700   | 107   | `ensureAppReady` (helpers.ts:218): the 100 ms focus-attach margin   |
-| 4,200    | 28    | `accessibility.spec.ts:359`: `sleep(150)` post-visibility           |
-| 3,600    | 12    | `setSettingViaBridge` (network-toggle.spec.ts:65): `sleep(300)`     |
-| 3,000    | 1     | `mtp.spec.ts:490`: single `sleep(3000)` after MTP fixture mutation  |
-| 2,400    | 12    | `selectAll` (conflict-helpers.ts:147)                               |
-| 2,000    | 4     | `navigateBackToLeft` (error-pane.spec.ts:76)                        |
-| 2,000    | 2     | `toggleHidden` (file-operations.spec.ts:246)                        |
-| 2,000    | 1     | `mtp.spec.ts:669`: single `sleep(2000)`                             |
-| 2,000    | 1     | `mtp.spec.ts:639`: single `sleep(2000)`                             |
+| Total ms | Calls | Frame                                                              |
+| -------- | ----- | ------------------------------------------------------------------ |
+| 154,450  | 3089  | `pollUntil` (helpers.ts:511): 50 ms interval × every poll          |
+| 10,700   | 107   | `ensureAppReady` (helpers.ts:218): the 100 ms focus-attach margin  |
+| 4,200    | 28    | `accessibility.spec.ts:359`: `sleep(150)` post-visibility          |
+| 3,600    | 12    | `setSettingViaBridge` (network-toggle.spec.ts:65): `sleep(300)`    |
+| 3,000    | 1     | `mtp.spec.ts:490`: single `sleep(3000)` after MTP fixture mutation |
+| 2,400    | 12    | `selectAll` (conflict-helpers.ts:147)                              |
+| 2,000    | 4     | `navigateBackToLeft` (error-pane.spec.ts:76)                       |
+| 2,000    | 2     | `toggleHidden` (file-operations.spec.ts:246)                       |
+| 2,000    | 1     | `mtp.spec.ts:669`: single `sleep(2000)`                            |
+| 2,000    | 1     | `mtp.spec.ts:639`: single `sleep(2000)`                            |
 
 `moveCursorToFile` is gone from the top frames. The new confirmation `pollUntil` inside it still feeds the
 `helpers.ts:511` total but at much lower volume per call (typically one 50 ms tick instead of 20+ keystroke sleeps).
@@ -467,8 +467,8 @@ In `apps/desktop/test/e2e-playwright/`:
 - **`app.spec.ts` › Keyboard navigation › toggles selection with Space key**: relies on `skipParentEntry`
   (keyboard-driven). Not affected.
 - Other `keyboard.press(...)` call sites across the suite (F5/F6/F2/Tab/Backspace/Enter) test the actual keyboard
-  shortcuts and continue to use the keyboard directly; only the cursor-positioning step before pressing them was
-  swapped for MCP.
+  shortcuts and continue to use the keyboard directly; only the cursor-positioning step before pressing them was swapped
+  for MCP.
 
 ### Surprises / notes
 
@@ -551,12 +551,11 @@ No fork, no symlink trick, no per-cwd hack.
 
 1. **Shared virtual MTP backing dir wiped at every Tauri startup.** Run 1 had 3 MTP-shard test failures
    (`deletes multiple selected files on MTP`, `renames file on MTP via keyboard`,
-   `rename to existing name is rejected on MTP`), all timing out waiting for `report.txt` after
-   `recreateMtpFixtures()`. Root cause: every Tauri instance built with `virtual-mtp` runs `setup_virtual_mtp_device()`
-   at startup, which **wipes** `/tmp/cmdr-mtp-e2e-fixtures` via `fs::remove_dir_all` and recreates the tree. With three
-   instances starting nearly simultaneously, the wipe-and-recreate races and the three independent mtp-rs watchers (all
-   pointed at the same backing dir) react to each other's writes. The MTP shard's in-memory device state can end up out
-   of sync with disk.
+   `rename to existing name is rejected on MTP`), all timing out waiting for `report.txt` after `recreateMtpFixtures()`.
+   Root cause: every Tauri instance built with `virtual-mtp` runs `setup_virtual_mtp_device()` at startup, which
+   **wipes** `/tmp/cmdr-mtp-e2e-fixtures` via `fs::remove_dir_all` and recreates the tree. With three instances starting
+   nearly simultaneously, the wipe-and-recreate races and the three independent mtp-rs watchers (all pointed at the same
+   backing dir) react to each other's writes. The MTP shard's in-memory device state can end up out of sync with disk.
 
    **Fix**: added a `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP` env var gate in `src-tauri/src/lib.rs`. The Go runner sets it on
    every non-MTP shard, so only the MTP-shard Tauri instance registers the virtual device and watches the backing dir.
@@ -644,8 +643,8 @@ Step 6's parallel sharding amplified two pre-existing weaknesses:
 
 ### Result
 
-- Before Step 6a: with the 100 ms cushion, the suite was on a thin margin under parallel sharding load (13 failures on
-  a back-to-back validation, with cascading ECONNREFUSED after a mid-suite Tauri crash).
+- Before Step 6a: with the 100 ms cushion, the suite was on a thin margin under parallel sharding load (13 failures on a
+  back-to-back validation, with cascading ECONNREFUSED after a mid-suite Tauri crash).
 - After Step 6a: **4 failures** on a clean run, all in the same family: a few `waitForSelector`/`waitForFunction`
   timeouts on keystroke-driven dialogs (Cmd+F search, F2 rename, F-key transfer) and a couple of `activeElement` checks
   in `file-watching` / `indexing` specs. Different tests fail on each run, confirming this is parallel-load-induced
@@ -684,8 +683,7 @@ inside the explorer), so the activeElement assertion timed out.
 **Fix**: replaced the one-shot `waitForFunction("...closest('.dual-pane-explorer') !== null", 3000)` in `ensureAppReady`
 (`apps/desktop/test/e2e-playwright/helpers.ts`) with a `pollUntil(...)` that, on every iteration:
 
-1. Dismisses any `.modal-overlay` via a synthetic Escape (idempotent; most overlays handle Escape and close
-   themselves).
+1. Dismisses any `.modal-overlay` via a synthetic Escape (idempotent; most overlays handle Escape and close themselves).
 2. If `document.activeElement` is missing or outside the explorer, re-issues `explorer.focus()`.
 3. Returns true once `activeElement.closest('.dual-pane-explorer') !== null`.
 
@@ -725,7 +723,8 @@ flag at processing time, so events arriving _while_ paused are dropped. The prob
 macOS FSEvents has ~200-500 ms delivery latency, so the events from the delete-and-recreate disk I/O can arrive
 **after** `resume_virtual_mtp_watcher` has cleared the flag. The fixture-recreate reuses the same `rel_path`s
 (`Documents/report.txt`, `readonly/photos/sunset.jpg`, etc), so the watcher's stale REMOVE events find the freshly
-re-added handles and remove them, so the in-memory MTP tree ends up missing the very files the test was about to exercise.
+re-added handles and remove them, so the in-memory MTP tree ends up missing the very files the test was about to
+exercise.
 
 Symptoms in the wild:
 
@@ -746,8 +745,8 @@ New IPC command `resync_virtual_mtp_after_disk_change` in `apps/desktop/src-taur
 
 The TS-side `beforeEach` (both `mtp.spec.ts` and `mtp-conflicts.spec.ts`) now calls `pause_virtual_mtp_watcher` →
 `recreateMtpFixtures()` → `resync_virtual_mtp_after_disk_change` instead of the four-step dance. Standalone
-`rescan_virtual_mtp` callers in `mtp-conflicts.spec.ts` (single-file writes with the watcher live) are unchanged, since those
-don't have the recreate-races-rescan problem since dedup via `already_known` handles them.
+`rescan_virtual_mtp` callers in `mtp-conflicts.spec.ts` (single-file writes with the watcher live) are unchanged, since
+those don't have the recreate-races-rescan problem since dedup via `already_known` handles them.
 
 `retries: 1` on the MTP shard in `playwright.config.ts` is now dropped; all shards run at `retries: 0`.
 
@@ -860,8 +859,8 @@ before the loop's final lap.
    and emit `write-cancelled` instead of `write-complete`. The user's intent wins even when it arrived late.
 2. **Svelte:** `operationSettled` is now `$state(false)` (it was a plain `let`), and the Cancel/Rollback buttons
    `disabled={isCancelling || operationSettled}`. Once the terminal event has arrived (complete / error / cancelled),
-   clicking either is a no-op anyway, so it's better to disable them so the user gets honest feedback that the operation is
-   over.
+   clicking either is a no-op anyway, so it's better to disable them so the user gets honest feedback that the operation
+   is over.
 
 The `Stopped`-during-rollback semantics are unchanged: cancelling an in-progress rollback still keeps whatever hasn't
 been deleted yet.
@@ -914,9 +913,10 @@ dispatch).
 
 ### Approach
 
-Replace `tauriPage.keyboard.press('F5')`-style synthesized keystrokes with `dispatchMenuCommand(tauriPage, 'file.copy')`,
-the helper in `helpers.ts` that emits the `execute-command` Tauri event directly, mimicking what the OS native menu
-accelerator does in prod. The Tauri-event path is unaffected by DOM focus state and parallel-load timing.
+Replace `tauriPage.keyboard.press('F5')`-style synthesized keystrokes with
+`dispatchMenuCommand(tauriPage, 'file.copy')`, the helper in `helpers.ts` that emits the `execute-command` Tauri event
+directly, mimicking what the OS native menu accelerator does in prod. The Tauri-event path is unaffected by DOM focus
+state and parallel-load timing.
 
 Rule of thumb: convert when the test cares about the resulting dialog / file state, keep keyboard when the test's title
 or comments mark it as exercising the keyboard pathway itself (e.g. `app.spec.ts` "opens copy dialog with F5",

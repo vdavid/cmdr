@@ -219,7 +219,7 @@ Starting Tauri app...
      Error: oops
 
   1 failed
-[WARN] SMB post-flight: at least one container is no longer accepting TCP — likely died mid-run
+[WARN] SMB post-flight: at least one container is no longer accepting TCP, likely died mid-run
 [ELIFECYCLE] Command failed with exit code 1.
 `
 	out := extractE2ETestOutput(input)

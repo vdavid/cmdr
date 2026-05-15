@@ -73,18 +73,18 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
 ///
 /// Combines the user's indexing-enabled setting with the FDA gate. The FDA gate
 /// blocks the indexer from scanning `/` before the user has decided about Full
-/// Disk Access — otherwise macOS native permission popups (iCloud, Photos, etc.)
+/// Disk Access, otherwise macOS native permission popups (iCloud, Photos, etc.)
 /// stack on top of the in-app FDA modal at first launch.
 ///
 /// Auto-start when ALL of the following hold:
 /// - The user has not disabled indexing (`indexing_enabled != Some(false)`).
 /// - The FDA gate isn't pending (see `crate::fda_gate::is_fda_pending`). The
 ///   gate is pending only when `fda_choice == NotAskedYet` AND the OS reports
-///   FDA isn't granted — i.e., we're still showing the in-app onboarding
+///   FDA isn't granted (i.e., we're still showing the in-app onboarding
 ///   modal. Once the user picks Deny (same session via
 ///   `start_indexing_after_fda_decision`) or Allow (which restarts the app),
 ///   the indexer auto-starts. After Deny, the scan triggers per-folder TCC
-///   prompts as it walks protected paths — that's the "individual Allow/Deny
+///   prompts as it walks protected paths: that's the "individual Allow/Deny
 ///   prompts" contract the user opted into by denying FDA.
 pub fn should_auto_start_indexing(
     indexing_enabled: Option<bool>,
@@ -150,8 +150,8 @@ pub fn stop_indexing() -> Result<(), String> {
 /// Phase classifier used by `start_indexing`'s post-`resume_or_scan` branch.
 /// Returns true only while the phase carries the temporary init store. If
 /// `stop_indexing` swapped the state out from under us during `resume_or_scan`,
-/// the phase is `Disabled` (or briefly `ShuttingDown`) and this returns false
-/// — the caller treats that as "phase changed, shut the manager down".
+/// the phase is `Disabled` (or briefly `ShuttingDown`) and this returns false.
+/// The caller treats that as "phase changed, shut the manager down".
 ///
 /// Extracted as a pure helper so the state-machine race fragment is testable
 /// without standing up an `AppHandle` / `IndexManager`.
@@ -193,12 +193,12 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
 
     // Re-lock and check: if someone called stop_indexing() while we were
     // inside resume_or_scan(), the phase is no longer Initializing.
-    // Respect that — shut down the manager instead of overwriting.
+    // Respect that: shut down the manager instead of overwriting.
     let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
     match (is_initializing_phase(&guard), scan_result) {
         (true, Ok(())) => {
             *guard = IndexPhase::Running(Box::new(manager));
-            log::info!("start_indexing: done — IndexManager is Running");
+            log::info!("start_indexing: done, IndexManager is Running");
 
             // Periodic incremental vacuum: reclaim free pages from deletes/rescans
             // every 30s. Stops automatically when the writer channel closes.

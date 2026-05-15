@@ -407,7 +407,7 @@ mod tests {
         assert_eq!(
             all.len(),
             thread_count,
-            "Expected {} shares but got {} — a concurrent write was lost",
+            "Expected {} shares but got {}. A concurrent write was lost.",
             thread_count,
             all.len()
         );

@@ -50,9 +50,9 @@ All `./scripts/check.sh` checks green at execution time (42 checks, ~2 m 14 s wa
   worthwhile only if access to `#error-reports` widens. ~50 LOC to add later.
 - **Phase 4, save-bundle-to-disk debug option.** Implemented as planned, gated on `cfg!(debug_assertions)`. No
   surprises.
-- **Phase 5, `log_error!` migration scope.** Migrated only the call sites that already produce user-visible error
-  toasts (not every `log::error!`). Strict superset of the plan's "literal interpretation"; this is intentional and
-  matches the plan's stated bias toward better signal.
+- **Phase 5, `log_error!` migration scope.** Migrated only the call sites that already produce user-visible error toasts
+  (not every `log::error!`). Strict superset of the plan's "literal interpretation"; this is intentional and matches the
+  plan's stated bias toward better signal.
 
 ## Operator action required before deploying
 
@@ -68,8 +68,8 @@ Do these in order. None are reversible; do them when you're ready to flip the fe
    ```
    This creates the `cmdr-error-reports` R2 bucket, the `ERROR_REPORT_META` KV namespace (the script prints the KV
    namespace ID, copy it for step 3), and applies the 90-day R2 lifecycle rule.
-3. **Update `apps/api-server/wrangler.toml`**: replace `REPLACE_WITH_KV_ID` with the printed KV namespace ID. Commit
-   the change.
+3. **Update `apps/api-server/wrangler.toml`**: replace `REPLACE_WITH_KV_ID` with the printed KV namespace ID. Commit the
+   change.
 4. **Generate an R2 S3-compat access key** in the Cloudflare dashboard with read access to `cmdr-error-reports`. Keep
    the access key ID and secret handy for step 5.
 5. **Set wrangler secrets** (run from anywhere in the repo):

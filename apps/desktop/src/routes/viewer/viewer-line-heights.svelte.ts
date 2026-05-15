@@ -21,13 +21,13 @@ const pretextReady = import('@chenglou/pretext')
 /**
  * Base viewer line height at scale 1, in CSS pixels. The CSS rule
  * `.line { height: calc(18px * var(--text-scale, 1)) }` and `getLineHeight()`
- * (below) are paired — keep them in sync if you change the base.
+ * (below) are paired. Keep them in sync if you change the base.
  */
 const LINE_HEIGHT_BASE = 18
 
 /**
  * Returns the viewer line height in CSS pixels at the current effective text
- * scale. Use this everywhere instead of a constant — the value changes when
+ * scale. Use this everywhere instead of a constant: the value changes when
  * the user moves the text-size slider or macOS Accessibility settles.
  *
  * Read inside Svelte `$derived`/`$effect` to track scale changes.
@@ -125,7 +125,7 @@ export function createLineHeightMap() {
 
   function reset() {
     ready = false
-    // No version++ here — when ready is false, getters return 0 regardless.
+    // No version++ here: when ready is false, getters return 0 regardless.
     // Bumping version from inside cancel() (called by effects) would create
     // an infinite reactive loop: effect → cancel → version++ → $derived dirty → effect.
     preparedTexts = []
@@ -158,17 +158,17 @@ export function createLineHeightMap() {
     version++
   }
 
-  /** O(1) — returns the Y offset of the top edge of line n. */
+  /** O(1): returns the Y offset of the top edge of line n. */
   function getLineTop(n: number): number {
-    void version // Reactive dependency — ensures $derived expressions recompute after reflow
+    void version // Reactive dependency: ensures $derived expressions recompute after reflow
     if (!ready || n < 0) return 0
     if (n >= cumHeight.length) return cumHeight[cumHeight.length - 1]
     return cumHeight[n]
   }
 
-  /** O(log n) binary search — returns the line index at scroll position y. */
+  /** O(log n) binary search: returns the line index at scroll position y. */
   function getLineAtPosition(y: number): number {
-    void version // Reactive dependency — ensures $derived expressions recompute after reflow
+    void version // Reactive dependency: ensures $derived expressions recompute after reflow
     if (!ready || cumHeight.length <= 1) return 0
     const maxLine = cumHeight.length - 2 // last valid line index
     if (y <= 0) return 0
@@ -190,7 +190,7 @@ export function createLineHeightMap() {
 
   /** Returns the total height of all lines. */
   function getTotalHeight(): number {
-    void version // Reactive dependency — ensures $derived expressions recompute after reflow
+    void version // Reactive dependency: ensures $derived expressions recompute after reflow
     if (!ready || cumHeight.length === 0) return 0
     return cumHeight[cumHeight.length - 1]
   }
@@ -206,7 +206,7 @@ export function createLineHeightMap() {
   }
 
   /**
-   * Force a re-layout at the current width — used when the line height itself
+   * Force a re-layout at the current width, used when the line height itself
    * changed (e.g. text-size slider settled) but the container width hasn't.
    * Pretext layout returns line heights, which scale with `getLineHeight()`,
    * so the prefix sum needs rebuilding.
@@ -263,7 +263,7 @@ export function createLineHeightMap() {
               index,
               total: lines.length,
             })
-            return // abandon — ready stays false
+            return // abandon: ready stays false
           }
 
           prepared[index] = prepare(lines[index], font, { whiteSpace: 'pre-wrap' })
@@ -276,7 +276,7 @@ export function createLineHeightMap() {
           }
         }
 
-        // All lines prepared — check generation is still current
+        // All lines prepared: check generation is still current
         if (thisGeneration !== generation) return
 
         preparedTexts = prepared

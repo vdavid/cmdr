@@ -67,7 +67,7 @@ const codeToKey: Record<string, string> = {
  * Single characters are uppercased, special keys are mapped.
  */
 export function normalizeKeyName(key: string, code?: string): string {
-  // On macOS, Option+key often produces "Dead" — fall back to the physical key via event.code
+  // On macOS, Option+key often produces "Dead"; fall back to the physical key via event.code
   if (key === 'Dead' && code) {
     const match = /^Key([A-Z])$/.exec(code) ?? /^Digit(\d)$/.exec(code)
     if (match) return match[1]

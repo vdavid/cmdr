@@ -838,7 +838,7 @@ mod tests {
             ],
         );
 
-        // Only compute stats for /a/sub (id=4) — leave /a (id=2) and root (id=1) missing
+        // Only compute stats for /a/sub (id=4): leave /a (id=2) and root (id=1) missing
         IndexStore::upsert_dir_stats_by_id(
             &conn,
             &[DirStatsById {
@@ -894,7 +894,7 @@ mod tests {
         //   /grand/parent (id=3)
         //   /grand/parent/leaf (id=4)
         //   /grand/parent/leaf/link (id=5, symlink)
-        //   /grand/sibling (id=6) — no symlinks
+        //   /grand/sibling (id=6), no symlinks
         //   /grand/sibling/file.txt (id=7, 100 bytes)
         insert_entries(
             &conn,
@@ -955,7 +955,7 @@ mod tests {
     #[test]
     fn aggregate_dir_with_only_symlinks_has_zero_size() {
         let (conn, _dir) = open_temp_conn();
-        // /links contains only two symlinks — total size 0, but flag is true
+        // /links contains only two symlinks: total size 0, but flag is true
         insert_entries(
             &conn,
             &[
@@ -1053,7 +1053,7 @@ mod tests {
                             id, cp, pid, pp
                         );
                     }
-                    // Transitively the same must hold for any ancestor — but
+                    // Transitively the same must hold for any ancestor,
                     // chain through `parent_of` to be sure.
                     let mut cursor = pid;
                     let mut hops = 0;
