@@ -2,3 +2,6 @@
 members = ["apps/desktop/src-tauri", "crates/fsevent-stream", "crates/index-query"]
 exclude = ["benchmarks/smb"]
 resolver = "2"
+
+[patch.crates-io]
+smb2 = { path = "../smb2-smb-deadlock" }
