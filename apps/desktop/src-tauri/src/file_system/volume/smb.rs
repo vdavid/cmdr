@@ -511,9 +511,15 @@ impl SmbVolume {
     /// Acquires the client mutex and returns a guard over the `Option<SmbClient>`.
     /// Checks connection state first, then verifies the client is present.
     ///
-    /// Most methods still go through this (stat, list_directory, rename, etc.);
-    /// only the hot streaming-read / compound-write paths use the cheaper
-    /// `clone_connection` helper that releases the lock before driving the op.
+    /// **No longer called from any hot path.** Every read and write goes
+    /// through `clone_session` and drives its op on an owned
+    /// `Connection` clone (cheap `Arc::clone`) — including the streaming
+    /// write path since smb2 0.9's owned `FileWriter`. This method is
+    /// kept for now in case future reconnect / diagnostic paths need a
+    /// guarded `&mut SmbClient` (the `SmbClient` itself is `!Clone`).
+    /// Candidate for removal once we're confident no such caller is
+    /// coming back; see also `LoggedClientGuard`.
+    #[allow(dead_code)]
     async fn acquire_client(&self) -> Result<LoggedClientGuard<'_>, VolumeError> {
         self.check_connection()?;
         let ticket = CLIENT_LOCK_TICKET.fetch_add(1, Ordering::Relaxed);
@@ -1804,6 +1810,21 @@ impl Volume for SmbVolume {
         mut stream: Box<dyn VolumeReadStream>,
         on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        // Lock-free streaming write path.
+        //
+        // Both branches below drive the upload on a cloned `Connection`
+        // (cheap `Arc::clone`) and an `Arc<Tree>`. The client mutex is
+        // held only for the few microseconds of `clone_session()`, never
+        // for the upload itself. With smb2 0.9's owned `FileWriter`, N
+        // concurrent `write_from_stream` calls on one `SmbVolume`
+        // pipeline N WRITE chains over a single SMB session: smb2's
+        // receiver task multiplexes responses by `MessageId`.
+        //
+        // This collapses the historical two-phase pattern (brief
+        // `clone_session` for the fast-path → drop → long `acquire_client`
+        // for the streaming fallback) into a single-phase clone. The old
+        // shape deadlocked under sustained concurrent pressure on QNAP
+        // (Phase C `smb_integration_phase_c_deadlock_repro_qnap`).
         Box::pin(async move {
             let smb_path = self.to_smb_path(dest);
 
@@ -1812,15 +1833,18 @@ impl Volume for SmbVolume {
                 self.share_name, smb_path, size
             );
 
-            // Compound fast-path: when the caller promised a size that fits in
-            // one WRITE, drain the source stream into a buffer and send
+            // Acquire a cloned session once, up front. Both the compound
+            // fast-path and the streaming fallback drive their write on
+            // this same clone — no second `clone_session` needed.
+            let (tree, conn) = self.clone_session().await?;
+
+            // Compound fast-path: when the caller promised a size that fits
+            // in one WRITE, drain the source stream into a buffer and send
             // CREATE+WRITE+FLUSH+CLOSE as a single compound frame (1 RTT
-            // instead of 4). Runs on a cloned `Connection` with no lock held,
-            // so N concurrent small writes pipeline over one SMB session.
-            // Small files are the hot case; for anything larger we fall
-            // through to the streaming writer below.
+            // instead of 4). Small files are the hot case; we fall through
+            // to the streaming writer for anything larger or when the source
+            // returns short.
             if size > 0 {
-                let (tree, mut conn) = self.clone_session().await?;
                 let max_write = conn.params().map(|p| p.max_write_size).unwrap_or(65536) as u64;
                 if size <= max_write {
                     let mut buffer = Vec::with_capacity(size as usize);
@@ -1841,48 +1865,38 @@ impl Volume for SmbVolume {
                             "SmbVolume::write_from_stream: using compound fast-path ({} bytes)",
                             buffer.len()
                         );
+                        let mut conn = conn;
                         let write_result = tree.write_file_compound(&mut conn, &smb_path, &buffer).await;
                         let bytes_written = self.handle_smb_result("write_from_stream(compound)", write_result)?;
                         return Ok(bytes_written);
                     }
-                    // Size mismatch: drop the cloned conn and re-feed the
-                    // already-drained buffer through the streaming writer
-                    // below (which needs the client mutex because
-                    // `FileWriter` borrows `&'a mut Connection` from the
-                    // `SmbClient`).
+                    // Size mismatch: feed the already-drained buffer through
+                    // the streaming writer on the same cloned connection.
+                    // No lock acquired; this is the rare path.
                     debug!(
-                        "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {}; falling back",
+                        "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {}; falling back to streaming writer",
                         buffer.len(),
                         size
                     );
-                    drop(conn);
-                    let tree_arc = tree;
-                    let mut guard = self.acquire_client().await?;
-                    let client = guard.as_mut().unwrap();
-                    let writer_result = client.create_file_writer(&tree_arc, &smb_path).await;
+                    let writer_result = tree.create_file_writer(conn, &smb_path).await;
                     let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
                     if !buffer.is_empty() {
                         let write_result = writer.write_chunk(&buffer).await;
                         self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
                     }
+                    // The source signalled end-of-stream by returning None
+                    // above (we exited the drain loop). No further chunks.
                     let finish_result = writer.finish().await;
                     self.handle_smb_result("write_from_stream(finish)", finish_result)?;
                     return Ok(buffer.len() as u64);
                 }
             }
 
-            // Streaming fallback for large / unknown-size writes. Holds the
-            // client mutex for the duration of the transfer because
-            // `FileWriter<'a>` borrows `&'a mut Connection` from the
-            // `SmbClient` we create it from. Large files are rare in the hot
-            // copy path, so this doesn't hurt concurrency in practice; the
-            // compound fast-path above handles every small file without
-            // touching the client mutex for the write itself.
-            let tree_arc = self.tree_arc().await?;
-            let mut guard = self.acquire_client().await?;
-            let client = guard.as_mut().unwrap();
-
-            let writer_result = client.create_file_writer(&tree_arc, &smb_path).await;
+            // Streaming path for large / unknown-size writes. Drives the
+            // owned `FileWriter` on the cloned `Connection` directly —
+            // no client mutex is held while WRITEs are in flight, so N
+            // concurrent large copies pipeline over one SMB session.
+            let writer_result = tree.create_file_writer(conn, &smb_path).await;
             let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
 
             let mut bytes_read = 0u64;
@@ -1905,7 +1919,11 @@ impl Volume for SmbVolume {
                     // anyway). Dropping directly would leave stale responses
                     // on the connection and poison the next op.
                     let _ = writer.abort().await;
-                    let _ = tree_arc.delete_file(client.connection_mut(), &smb_path).await;
+                    // Best-effort delete of the partial file on its own
+                    // cloned connection (the writer's connection is gone).
+                    if let Ok((tree_for_delete, mut conn_for_delete)) = self.clone_session().await {
+                        let _ = tree_for_delete.delete_file(&mut conn_for_delete, &smb_path).await;
+                    }
                     return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
                 }
             }
