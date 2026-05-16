@@ -353,7 +353,7 @@ pub enum UpgradeResult {
 /// Upgrades an SMB volume to use direct smb2 (stub: returns error).
 #[tauri::command]
 #[specta::specta]
-pub async fn upgrade_to_smb_volume(_volume_id: String) -> Result<UpgradeResult, String> {
+pub async fn upgrade_to_smb_volume(_volume_id: String, _app_handle: tauri::AppHandle) -> Result<UpgradeResult, String> {
     Ok(UpgradeResult::NetworkError {
         message: "Direct SMB connection not supported on this platform".to_string(),
     })
@@ -367,6 +367,7 @@ pub async fn upgrade_to_smb_volume_with_credentials(
     _username: Option<String>,
     _password: Option<String>,
     _remember_in_keychain: bool,
+    _app_handle: tauri::AppHandle,
 ) -> Result<UpgradeResult, String> {
     Ok(UpgradeResult::NetworkError {
         message: "Direct SMB connection not supported on this platform".to_string(),

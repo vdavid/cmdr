@@ -46,6 +46,11 @@ lifecycle:
 - **`network.firstTriggerDone`** (boolean, default `false`, hidden): tracks whether we've already performed a gated
   network action. Persisted across launches.
 
+The runtime mirror of `network.enabled` lives in `network::NETWORK_ENABLED` (`AtomicBool`). `lib.rs::setup` seeds it
+from the persisted settings; `commands::network::set_network_enabled` keeps it in sync with the live toggle.
+`network::is_network_enabled()` is the runtime accessor; BE-side upgrade paths check this before kicking off mDNS or
+waiting on hostname resolution.
+
 At startup, mDNS starts only if `network.enabled && (firstTriggerDone || smb-e2e feature)`. On a fresh install,
 `firstTriggerDone == false` so we stay quiet and the macOS "Cmdr wants to find devices on local networks" prompt
 doesn't fire at app launch.
@@ -160,4 +165,14 @@ convention) and passes it as an explicit mount point to `NetFSMountURLSync`. The
 - **Mount URL must include port when non-standard**: `mount_share_sync` builds `smb://server:port/share` for non-445 ports. The port is passed as a separate parameter through `mount_share` → `mount_share_sync`, not embedded in the server string (embedding it would cause `build_smb_addr` to double the port: `localhost:10480:10480`). `SmbMountInfo.port` extracts the port from `statfs` mount source for upgrade paths.
 - **Strip `.local` from addr for smb2**: `smb2::Connection::connect()` extracts `server_name` from the addr string and uses it in UNC paths. Passing `"foo.local:445"` creates `\\foo.local\IPC$` which some servers reject. The `build_addr` helper in `smb_connection.rs` handles this.
 - **Manual hosts always set `hostname`**: The share listing pipeline guards on `host.hostname` being truthy. `create_network_host` always sets `hostname` (to the address, even for IPs) so manual hosts flow through the pipeline correctly.
+- **SMB upgrade waits briefly for mDNS to warm**: When macOS auto-remounts an SMB share at login, FSEvents fires before
+  mDNS has discovered the host, so `statfs` gives us an IP but the host map is empty. Stored Keychain credentials are
+  keyed by mDNS hostname (`smb://naspolya/share`), not by IP, so a sync IP→hostname lookup misses and we'd prompt the
+  user for credentials they already saved. The upgrade path now (a) kicks off mDNS via `network::ensure_mdns_started`
+  before resolving and (b) calls `smb_upgrade::resolve_ip_to_hostname_with_wait` which polls the discovered-host map
+  every 100ms up to 1500ms for private-range IPv4. Non-private IPs (Tailscale, public DNS) skip the wait — mDNS won't
+  help there. The wait fails open: if mDNS never warms, the IP-only Keychain lookup still runs. Only relevant in dev,
+  where `network.firstTriggerDone == false` keeps mDNS off at launch; prod users hit this once on the very first install
+  but never afterwards. Both entry points are covered: `commands::network::upgrade_to_smb_volume` (manual "Connect
+  directly") and `volumes::watcher::try_upgrade_smb_mount` (FSEvents auto-upgrade).
 - **`statfs` can return mDNS service names instead of IPs**: When macOS auto-reconnects an SMB mount on login, `statfs.f_mntfromname` may contain `//user@Naspolya._smb._tcp.local/share` instead of `//user@192.168.1.111/share`. These service names are not DNS-resolvable. `resolve_server_address()` in `commands/network.rs` detects these (by checking for `._tcp`/`._udp`) and resolves them to IPs via `get_discovered_hosts()`. All upgrade paths (startup, mount-time, manual) go through this resolution. Similarly, `friendly_server_name()` extracts the display name (e.g., `Naspolya`) for UI display.

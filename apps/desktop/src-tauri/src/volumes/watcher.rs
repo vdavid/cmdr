@@ -232,9 +232,22 @@ fn try_upgrade_smb_mount(volume_path: &str) {
         return;
     };
 
+    // Kick mDNS off here (idempotent, no-op if already running or if
+    // `network.enabled` is off). In dev mode `network.firstTriggerDone` is
+    // typically `false`, so the launch-time mDNS gate doesn't fire and
+    // hostname resolution would otherwise miss when macOS auto-remounts an
+    // SMB share at login. See `network::smb_upgrade::resolve_ip_to_hostname_with_wait`.
+    if let Some(app) = APP_HANDLE.get() {
+        crate::network::ensure_mdns_started(app.clone());
+    }
+
     let mount_path = volume_path.to_string();
     tauri::async_runtime::spawn(async move {
-        let hostname = crate::network::smb_upgrade::resolve_ip_to_hostname(&info.server);
+        let hostname = crate::network::smb_upgrade::resolve_ip_to_hostname_with_wait(
+            &info.server,
+            std::time::Duration::from_millis(1500),
+        )
+        .await;
         let creds =
             crate::network::smb_upgrade::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
         let (username, password) = match &creds {

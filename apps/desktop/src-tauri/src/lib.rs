@@ -464,6 +464,11 @@ pub fn run() {
             font_metrics::init_font_metrics(app.handle(), "system-400-12");
             font_metrics::load_all_metrics_from_disk(app.handle());
 
+            // Sync the runtime `network.enabled` flag from settings so BE-side upgrade paths
+            // can gate themselves correctly (default `true`).
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            network::set_network_enabled_flag(saved_settings.network_enabled.unwrap_or(true));
+
             // Start mDNS network discovery only for returning users who've already answered the
             // OS Local Network prompt at least once. Fresh installs stay quiet at launch. The
             // frontend calls `ensure_network_discovery_started` lazily on first user network

@@ -42,11 +42,44 @@ use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, Emitter};
 
 pub use mdns_discovery::start_discovery;
 pub use smb_client::{AuthMode, ShareListError, ShareListResult};
+
+/// Runtime mirror of the `network.enabled` setting. Default `true` matches the
+/// settings default. `lib.rs::setup` updates this from the persisted settings;
+/// `commands::network::set_network_enabled` keeps it in sync with the live toggle.
+static NETWORK_ENABLED: AtomicBool = AtomicBool::new(true);
+
+/// Updates the runtime `network.enabled` flag. Call from app setup (after loading
+/// settings) and from the live-toggle command.
+pub fn set_network_enabled_flag(enabled: bool) {
+    NETWORK_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+/// Returns whether networking is enabled. Used by BE-side upgrade paths to decide
+/// whether they're allowed to kick off mDNS or wait for hostname resolution.
+pub fn is_network_enabled() -> bool {
+    NETWORK_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Idempotently starts mDNS discovery if `network.enabled` is on. Safe to call
+/// from any BE-side upgrade path that needs hostname resolution from the mDNS
+/// cache. No-op if discovery is already running or the user has disabled
+/// networking.
+///
+/// Unlike `commands::network::ensure_network_discovery_started`, this does NOT
+/// re-trigger `upgrade_existing_smb_mounts` — it's meant for paths that ARE the
+/// upgrade flow and just need the mDNS daemon up to resolve IP → hostname.
+pub fn ensure_mdns_started(app_handle: AppHandle) {
+    if !is_network_enabled() {
+        return;
+    }
+    start_discovery(app_handle);
+}
 
 /// Whether a host was discovered via mDNS or added manually by the user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]

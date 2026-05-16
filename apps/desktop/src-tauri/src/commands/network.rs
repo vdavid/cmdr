@@ -8,7 +8,7 @@ use crate::network::{
 
 use crate::network::smb_upgrade::{
     UpgradeError, UpgradeResult, friendly_server_name, get_keychain_password, register_smb_volume,
-    resolve_ip_to_hostname, try_smb_upgrade,
+    resolve_ip_to_hostname_with_wait, try_smb_upgrade,
 };
 
 /// Gets all currently discovered network hosts.
@@ -353,7 +353,7 @@ pub async fn mount_network_share(
 /// Called from the "Connect directly for faster access" UI action.
 #[tauri::command]
 #[specta::specta]
-pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<UpgradeResult, String> {
+pub async fn upgrade_to_smb_volume(volume_id: String, app_handle: tauri::AppHandle) -> Result<UpgradeResult, String> {
     use crate::file_system::get_volume_manager;
     #[cfg(target_os = "macos")]
     use crate::volumes::get_smb_mount_info;
@@ -387,9 +387,14 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<UpgradeResult, S
         info.username
     );
 
+    // Kick mDNS off so IP → hostname resolution has a shot before we hit the
+    // Keychain. Idempotent; no-op if already running or `network.enabled` is off.
+    crate::network::ensure_mdns_started(app_handle);
+
     // Try to get credentials from Keychain. The mount source has the IP, but Cmdr
-    // stores Keychain credentials keyed by hostname (from mDNS). Try both.
-    let hostname = resolve_ip_to_hostname(&info.server);
+    // stores Keychain credentials keyed by hostname (from mDNS). Try both. Briefly
+    // wait for mDNS to warm up so we don't prompt for creds the user already saved.
+    let hostname = resolve_ip_to_hostname_with_wait(&info.server, std::time::Duration::from_millis(1500)).await;
     let display_name = friendly_server_name(&info.server);
     let creds = get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
 
@@ -452,6 +457,7 @@ pub async fn upgrade_to_smb_volume_with_credentials(
     username: Option<String>,
     password: Option<String>,
     remember_in_keychain: bool,
+    app_handle: tauri::AppHandle,
 ) -> Result<UpgradeResult, String> {
     use crate::file_system::get_volume_manager;
     #[cfg(target_os = "macos")]
@@ -475,7 +481,11 @@ pub async fn upgrade_to_smb_volume_with_credentials(
         )
     })?;
 
-    let hostname = resolve_ip_to_hostname(&info.server);
+    // Kick mDNS off so we can save credentials keyed by hostname (not raw IP)
+    // when the user picks "remember".
+    crate::network::ensure_mdns_started(app_handle);
+
+    let hostname = resolve_ip_to_hostname_with_wait(&info.server, std::time::Duration::from_millis(1500)).await;
     let display_name = friendly_server_name(&info.server);
 
     let result = try_smb_upgrade(
@@ -694,6 +704,7 @@ pub fn ensure_network_discovery_started(app_handle: tauri::AppHandle) {
 #[tauri::command]
 #[specta::specta]
 pub fn set_network_enabled(enabled: bool, app_handle: tauri::AppHandle) {
+    crate::network::set_network_enabled_flag(enabled);
     if !enabled {
         crate::network::mdns_discovery::stop_discovery();
         crate::network::clear_discovered_hosts(&app_handle);

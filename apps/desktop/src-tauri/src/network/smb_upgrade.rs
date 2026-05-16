@@ -139,6 +139,64 @@ pub(crate) fn resolve_ip_to_hostname(ip: &str) -> Option<String> {
     None
 }
 
+/// Returns true if `ip` is a literal IPv4 address in a private range (RFC 1918 or
+/// link-local 169.254/16). mDNS can only help for those: public/VPN/Tailscale IPs
+/// won't show up in the local mDNS cache, so there's no point waiting on them.
+///
+/// Returns `false` for non-IP strings (hostnames), since `resolve_ip_to_hostname`
+/// only matches discovered hosts by exact IP.
+pub(crate) fn is_private_ipv4(ip: &str) -> bool {
+    use std::net::Ipv4Addr;
+    let Ok(addr) = ip.parse::<Ipv4Addr>() else {
+        return false;
+    };
+    addr.is_private() || addr.is_link_local()
+}
+
+/// Like `resolve_ip_to_hostname`, but waits briefly for mDNS to populate the
+/// discovered-host cache when the lookup misses on the first try. Solves the
+/// startup race where macOS auto-remounts an SMB share, FSEvents fires before
+/// mDNS has had time to find the host, and `statfs`-derived IP-only Keychain
+/// lookups miss the credentials we have keyed by hostname.
+///
+/// Only waits for private-range IPv4 addresses (where mDNS is plausible) and only
+/// if `is_network_enabled()`. Otherwise returns whatever the immediate sync
+/// lookup gave us. Polls every 100ms up to `timeout`. The caller is responsible
+/// for kicking off discovery via `network::ensure_mdns_started` before calling
+/// this; the wait alone won't start the daemon.
+pub(crate) async fn resolve_ip_to_hostname_with_wait(ip: &str, timeout: std::time::Duration) -> Option<String> {
+    // Fast path: already in the cache.
+    if let Some(hostname) = resolve_ip_to_hostname(ip) {
+        return Some(hostname);
+    }
+    // No point waiting for non-private IPs (Tailscale, public DNS, etc.) or when
+    // networking is disabled by the user.
+    if !is_private_ipv4(ip) || !crate::network::is_network_enabled() {
+        return None;
+    }
+
+    let poll_interval = std::time::Duration::from_millis(100);
+    let start = std::time::Instant::now();
+    while start.elapsed() < timeout {
+        tokio::time::sleep(poll_interval).await;
+        if let Some(hostname) = resolve_ip_to_hostname(ip) {
+            log::debug!(
+                "Resolved IP {} to hostname {} after waiting {:?}",
+                ip,
+                hostname,
+                start.elapsed()
+            );
+            return Some(hostname);
+        }
+    }
+    log::debug!(
+        "Couldn't resolve IP {} to a hostname via mDNS within {:?}; proceeding without",
+        ip,
+        timeout
+    );
+    None
+}
+
 /// Resolves a server address from `statfs` to a connectable address.
 ///
 /// `statfs` can return different formats depending on how the mount was created:
@@ -235,4 +293,98 @@ pub(crate) async fn get_keychain_password(
     .await
     .ok()
     .flatten()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn is_private_ipv4_recognizes_rfc1918_and_link_local() {
+        assert!(is_private_ipv4("10.0.0.1"));
+        assert!(is_private_ipv4("192.168.1.111"));
+        assert!(is_private_ipv4("172.16.5.7"));
+        assert!(is_private_ipv4("169.254.1.2"), "link-local should count");
+    }
+
+    #[test]
+    fn is_private_ipv4_rejects_public_and_special() {
+        assert!(!is_private_ipv4("8.8.8.8"));
+        assert!(!is_private_ipv4("100.64.0.1"), "Tailscale/CGNAT not private");
+        assert!(!is_private_ipv4("127.0.0.1"), "loopback not private");
+        assert!(!is_private_ipv4("naspolya"), "hostnames return false");
+        assert!(!is_private_ipv4(""));
+        assert!(!is_private_ipv4("::1"), "IPv6 currently returns false");
+    }
+
+    /// `resolve_ip_to_hostname_with_wait` must return immediately (no polling)
+    /// when the IP isn't a private-range IPv4 — Tailscale/public DNS won't show
+    /// up in mDNS so there's nothing to wait for.
+    #[tokio::test]
+    async fn wait_helper_returns_immediately_for_non_private_ip() {
+        let start = std::time::Instant::now();
+        let result = resolve_ip_to_hostname_with_wait("8.8.8.8", Duration::from_millis(500)).await;
+        let elapsed = start.elapsed();
+        assert_eq!(result, None);
+        assert!(
+            elapsed < Duration::from_millis(50),
+            "expected fast path (< 50ms), took {:?}",
+            elapsed
+        );
+    }
+
+    /// `resolve_ip_to_hostname_with_wait` must short-circuit when the runtime
+    /// `network.enabled` flag is off, even for a private IP — mDNS isn't running
+    /// so polling would just burn the timeout.
+    #[tokio::test]
+    async fn wait_helper_short_circuits_when_network_disabled() {
+        let prev = crate::network::is_network_enabled();
+        crate::network::set_network_enabled_flag(false);
+
+        let start = std::time::Instant::now();
+        let result = resolve_ip_to_hostname_with_wait("192.168.1.111", Duration::from_millis(500)).await;
+        let elapsed = start.elapsed();
+
+        // Restore before assertions so other tests aren't poisoned by panics.
+        crate::network::set_network_enabled_flag(prev);
+
+        assert_eq!(result, None);
+        assert!(
+            elapsed < Duration::from_millis(50),
+            "expected fast path (< 50ms), took {:?}",
+            elapsed
+        );
+    }
+
+    /// Times out gracefully when no host ever shows up in the cache (and falls
+    /// back to `None` so the caller can use IP-only Keychain lookup).
+    #[tokio::test]
+    async fn wait_helper_times_out_gracefully() {
+        // Ensure network is "enabled" so we exercise the polling path.
+        let prev = crate::network::is_network_enabled();
+        crate::network::set_network_enabled_flag(true);
+
+        // Use a unique private IP that no test has ever populated, so the cache
+        // miss is deterministic.
+        let timeout = Duration::from_millis(300);
+        let start = std::time::Instant::now();
+        let result = resolve_ip_to_hostname_with_wait("10.255.255.254", timeout).await;
+        let elapsed = start.elapsed();
+
+        crate::network::set_network_enabled_flag(prev);
+
+        assert_eq!(result, None);
+        assert!(
+            elapsed >= timeout,
+            "should have polled until timeout; elapsed {:?}",
+            elapsed
+        );
+        // Generous upper bound — single poll interval slack.
+        assert!(
+            elapsed < timeout + Duration::from_millis(250),
+            "shouldn't blow past timeout by much; elapsed {:?}",
+            elapsed
+        );
+    }
 }
