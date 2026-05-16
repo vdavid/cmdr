@@ -13,7 +13,7 @@ export interface ExplorerAPI {
   toggleVolumeChooser: (pane: 'left' | 'right') => void
   openVolumeChooser: () => void
   closeVolumeChooser: () => void
-  toggleHiddenFiles: () => void
+  toggleHiddenFiles: () => boolean
   setViewMode: (mode: ViewMode, pane?: 'left' | 'right') => void
   navigate: (action: 'back' | 'forward' | 'parent') => void
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null

@@ -10,7 +10,7 @@ import {
   quickLook,
   getInfo,
   openInEditor,
-  toggleHiddenFiles,
+  syncMenuShowHidden,
   readClipboardText,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
@@ -143,10 +143,19 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       return
 
     // === View commands ===
-    case 'view.showHidden':
-      // Use Tauri command to toggle and sync menu checkbox state
-      await toggleHiddenFiles()
+    case 'view.showHidden': {
+      // Local-first toggle: flip FE state synchronously so the listing
+      // re-fetch effects land in the next Svelte tick, then push the new
+      // check state to the native menu fire-and-forget. The previous
+      // implementation routed through `toggle_hidden_files` (Rust toggle +
+      // `settings-changed` emit + FE listener), which added an IPC + event
+      // hop and caused the `toggles hidden file visibility` e2e test to
+      // flake ~1/25 runs under slow-lane load.
+      if (!explorerRef) return
+      const newState = explorerRef.toggleHiddenFiles()
+      void syncMenuShowHidden(newState)
       return
+    }
 
     case 'view.briefMode':
       explorerRef?.setViewMode('brief')

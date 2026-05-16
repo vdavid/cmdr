@@ -122,7 +122,18 @@ pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
 }
 
 /// Toggle hidden files visibility - updates menu checkbox and emits event.
-/// This is used by the command palette to sync with menu state.
+///
+/// This is the "external trigger" path: MCP tool calls and any other Rust-side
+/// caller that needs to flip the setting from outside the explorer. It updates
+/// the macOS `CheckMenuItem` and emits `settings-changed` so the explorer
+/// listener picks up the change.
+///
+/// **The keyboard-shortcut / command-palette path does NOT use this.** That
+/// path mutates the explorer's FE state directly (synchronous, no Rust round-
+/// trip) and uses [`sync_menu_show_hidden`] to push the new check state to the
+/// native menu. Routing the FE-driven toggle through here would create an
+/// IPC → event → effect → DOM-update chain that the e2e test against `⌘⇧.`
+/// flaked on (~1/25) when the slow lane was under load.
 #[tauri::command]
 #[specta::specta]
 pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String> {
@@ -142,6 +153,24 @@ pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String
         .map_err(|e| e.to_string())?;
 
     Ok(new_state)
+}
+
+/// One-way sync of the native "Show hidden files" `CheckMenuItem` checked
+/// state from the frontend. Does NOT emit `settings-changed`: the FE is the
+/// caller, it already knows the new state and has already updated its own
+/// view. Idempotent — safe to call with the current state.
+#[tauri::command]
+#[specta::specta]
+pub fn sync_menu_show_hidden<R: Runtime>(app: AppHandle<R>, checked: bool) -> Result<(), String> {
+    let menu_state = app.state::<MenuState<R>>();
+    let guard = menu_state.show_hidden_files.lock_ignore_poison();
+    let Some(check_item) = guard.as_ref() else {
+        // Menu not yet initialized (very early in startup). The next menu
+        // build will pick up the persisted setting, so a no-op here is fine.
+        return Ok(());
+    };
+    check_item.set_checked(checked).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 /// Pushes the full View menu state from the frontend: which pane is active and

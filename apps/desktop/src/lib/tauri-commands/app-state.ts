@@ -102,11 +102,29 @@ export async function setMenuContext(context: 'explorer' | 'other'): Promise<voi
 
 /**
  * Toggle hidden files visibility and sync menu checkbox state.
+ *
+ * **Use sparingly.** The explorer's `view.showHidden` keyboard / palette path
+ * does NOT use this: it flips FE state directly via `explorerRef.toggleHiddenFiles()`
+ * and then calls {@link syncMenuShowHidden} to update the native menu, avoiding
+ * an IPC → event → effect round-trip that caused a 1/25 e2e flake on `⌘⇧.`.
+ * Reach for this from external trigger paths only (MCP tool calls, etc.).
+ *
  * @returns The new state of showHiddenFiles.
  */
 export async function toggleHiddenFiles(): Promise<boolean> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   return invoke<boolean>('toggle_hidden_files')
+}
+
+/**
+ * Push the new "show hidden files" check state to the native menu, after the
+ * frontend has already flipped its own state. Does not emit `settings-changed`
+ * (the FE is the caller, the FE listener would just bounce its own state). Safe
+ * to call even before the menu is built (no-op if uninitialized).
+ */
+export async function syncMenuShowHidden(checked: boolean): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
+  await invoke('sync_menu_show_hidden', { checked })
 }
 
 /**

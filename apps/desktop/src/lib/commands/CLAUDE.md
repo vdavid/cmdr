@@ -78,6 +78,14 @@ This eliminates the old per-command individual events (`show-command-palette`, `
 Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handling to avoid double-toggle. Close tab
 (⌘W) has special logic to close focused non-main windows.
 
+`view.showHidden` specifically uses a **local-first** path inside `handleCommandExecute`: it flips the explorer's
+`showHiddenFiles` state synchronously via `explorerRef.toggleHiddenFiles()`, then fire-and-forgets
+`syncMenuShowHidden(newState)` to update the macOS/Linux `CheckMenuItem` checked state. Previously this case awaited
+the `toggle_hidden_files` Rust IPC, which toggled the menu item and emitted `settings-changed` for the FE to react to.
+That added an IPC + Tauri-event + Svelte-effect hop between the keystroke and the DOM, and the `toggles hidden file
+visibility` e2e spec flaked ~1/25 runs under slow-lane CPU contention. The native menu accelerator / palette-click
+paths are unaffected — they still travel through `on_menu_event` → `settings-changed` → FE listener.
+
 ## Adding a command
 
 1. Add an entry to the `commands` array in `command-registry.ts`.

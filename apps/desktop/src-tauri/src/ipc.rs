@@ -146,6 +146,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::ui::update_menu_context,
         crate::commands::ui::set_menu_context,
         crate::commands::ui::toggle_hidden_files,
+        crate::commands::ui::sync_menu_show_hidden,
         crate::commands::ui::update_view_mode_menu,
         crate::commands::ui::show_in_finder,
         crate::commands::ui::copy_to_clipboard,

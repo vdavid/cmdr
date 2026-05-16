@@ -84,6 +84,7 @@ export {
   updateMenuContext,
   setMenuContext,
   toggleHiddenFiles,
+  syncMenuShowHidden,
   updateViewModeMenu,
   showMainWindow,
   updatePinTabMenu,

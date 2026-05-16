@@ -1881,11 +1881,18 @@
     }
 
     /**
-     * Toggle show hidden files.
+     * Toggle show hidden files. Synchronous FE state flip so the listing
+     * re-fetch effects (FilePane includeHidden $effect → FullList cache reset)
+     * land in the next Svelte tick, not after an IPC + event round-trip via
+     * Rust. The caller is responsible for syncing the native menu's
+     * `CheckMenuItem` checked state separately (`syncMenuShowHidden`).
+     *
+     * @returns The new `showHiddenFiles` state.
      */
-    export function toggleHiddenFiles() {
+    export function toggleHiddenFiles(): boolean {
         showHiddenFiles = !showHiddenFiles
         void saveSettings({ showHiddenFiles })
+        return showHiddenFiles
     }
 
     /**
