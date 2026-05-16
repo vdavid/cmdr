@@ -10,6 +10,36 @@ fn test_volume_copy_config_default() {
     assert_eq!(config.max_conflicts_to_show, 100);
 }
 
+#[test]
+fn test_format_skipped_suffix_zero_is_empty() {
+    // The annotation is only present when something was actually skipped, so
+    // the happy-path completion log stays terse.
+    assert_eq!(format_skipped_suffix(0, 0), "");
+    // Stray byte count without any files: still empty (treat files as the
+    // truth, bytes is just metadata).
+    assert_eq!(format_skipped_suffix(0, 12345), "");
+}
+
+#[test]
+fn test_format_skipped_suffix_singular() {
+    assert_eq!(format_skipped_suffix(1, 0), " (of which skipped 1 file, 0 B)");
+    // Humanized via search::query::format_size (binary GiB labeled GB, per
+    // the existing project convention there).
+    assert_eq!(
+        format_skipped_suffix(1, 3_100_000_000),
+        " (of which skipped 1 file, 2.9 GB)"
+    );
+}
+
+#[test]
+fn test_format_skipped_suffix_plural() {
+    assert_eq!(format_skipped_suffix(2, 200), " (of which skipped 2 files, 200 B)");
+    assert_eq!(
+        format_skipped_suffix(821, 17_500_000_000),
+        " (of which skipped 821 files, 16.3 GB)"
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_scan_for_volume_copy_empty_source_returns_error_without_space_info() {
     // InMemoryVolume without configured space_info returns NotSupported for get_space_info

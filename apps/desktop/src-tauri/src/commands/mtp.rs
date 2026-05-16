@@ -77,7 +77,9 @@ pub async fn connect_mtp_device(app: AppHandle, device_id: String) -> Result<Con
 #[tauri::command]
 #[specta::specta]
 pub async fn disconnect_mtp_device(app: AppHandle, device_id: String) -> Result<(), MtpConnectionError> {
-    mtp::connection_manager().disconnect(&device_id, Some(&app)).await
+    mtp::connection_manager()
+        .disconnect(&device_id, Some(&app), mtp::MtpDisconnectReason::User)
+        .await
 }
 
 /// Gets information about a connected MTP device.

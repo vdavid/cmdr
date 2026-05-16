@@ -27,7 +27,9 @@ pub mod types;
 pub mod virtual_device;
 pub mod watcher;
 
-pub use connection::{ConnectedDeviceInfo, MtpConnectionError, MtpObjectInfo, MtpOperationResult, connection_manager};
+pub use connection::{
+    ConnectedDeviceInfo, MtpConnectionError, MtpDisconnectReason, MtpObjectInfo, MtpOperationResult, connection_manager,
+};
 pub use discovery::list_mtp_devices;
 pub use types::{MtpDeviceInfo, MtpStorageInfo};
 pub use watcher::{set_mtp_enabled, set_mtp_enabled_flag, start_mtp_watcher};

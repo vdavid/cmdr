@@ -10,8 +10,8 @@ use tauri::{AppHandle, Emitter};
 use super::cache::{CachedListing, LISTING_CACHE_TTL_SECS};
 use super::errors::MtpConnectionError;
 use super::{
-    DeviceEntry, MTP_TIMEOUT_SECS, MtpConnectionManager, acquire_device_lock, convert_mtp_datetime, get_mtp_icon_id,
-    map_mtp_error, normalize_mtp_path,
+    DeviceEntry, MTP_TIMEOUT_SECS, MtpConnectionManager, MtpDisconnectReason, acquire_device_lock,
+    convert_mtp_datetime, get_mtp_icon_id, map_mtp_error, normalize_mtp_path,
 };
 use crate::file_system::FileEntry;
 
@@ -641,7 +641,7 @@ impl MtpConnectionManager {
                     "mtp-device-disconnected",
                     serde_json::json!({
                         "deviceId": device_id,
-                        "reason": "disconnected"
+                        "reason": MtpDisconnectReason::Removed,
                     }),
                 );
                 debug!(

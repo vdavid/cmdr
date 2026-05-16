@@ -436,7 +436,7 @@ describe('mtp-store', () => {
 
     it('updates state on mtp-device-disconnected event', async () => {
       let connectedCallback: ((event: { deviceId: string; storages: MtpStorageInfo[] }) => void) | undefined
-      let disconnectedCallback: ((event: { deviceId: string; reason: 'user' | 'disconnected' }) => void) | undefined
+      let disconnectedCallback: ((event: { deviceId: string; reason: 'user' | 'removed' }) => void) | undefined
       vi.mocked(onMtpDeviceConnected).mockImplementation((callback) => {
         connectedCallback = callback
         return Promise.resolve(vi.fn())
@@ -453,7 +453,7 @@ describe('mtp-store', () => {
       expect(getDevice('mtp-336592896')?.connectionState).toBe('connected')
 
       // Simulate disconnect event from backend
-      disconnectedCallback?.({ deviceId: 'mtp-336592896', reason: 'disconnected' })
+      disconnectedCallback?.({ deviceId: 'mtp-336592896', reason: 'removed' })
 
       const device = getDevice('mtp-336592896')
       expect(device?.connectionState).toBe('disconnected')

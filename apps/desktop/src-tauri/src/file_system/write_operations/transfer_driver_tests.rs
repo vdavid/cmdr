@@ -501,6 +501,82 @@ fn sync_driver_bulk_skip_emits_one_progress_event() {
 }
 
 #[test]
+fn sync_driver_tracks_files_skipped_across_bulk_and_per_iter() {
+    // Bulk-skip 2 files + per-iter Skip 1 file + transfer 1 file → 3 skipped
+    // (2 bulk + 1 per-iter), 1 transferred. `files_skipped` / `bytes_skipped`
+    // is the subset of `files_done` / `bytes_done` that came from any Skip
+    // path — used by the volume-copy completion log annotation.
+    let op_id = unique_op_id("sync-skip-counters");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy);
+    let sink = CollectorEventSink::new();
+
+    let mut pre_skip = HashSet::new();
+    pre_skip.insert(PathBuf::from("/bulk1"));
+    pre_skip.insert(PathBuf::from("/bulk2"));
+
+    let outcome = drive_transfer_serial_sync(
+        &sink,
+        &state,
+        &op_id,
+        &paths(&["/bulk1", "/bulk2", "/per-iter", "/keep"]),
+        4,
+        400,
+        2,
+        200,
+        &pre_skip,
+        &copy_config(),
+        |ctx| {
+            if ctx.source_path == Path::new("/per-iter") {
+                Ok(TransferOutcome::Skipped { bytes_accounted: 50 })
+            } else {
+                Ok(TransferOutcome::Transferred { bytes: 100 })
+            }
+        },
+    );
+
+    assert!(matches!(outcome.intent, PostLoopIntent::Completed));
+    assert_eq!(outcome.files_done, 4, "2 bulk + 1 per-iter skip + 1 transferred");
+    assert_eq!(outcome.bytes_done, 350, "200 bulk + 50 skip + 100 transferred");
+    assert_eq!(outcome.files_skipped, 3, "2 bulk + 1 per-iter");
+    assert_eq!(outcome.bytes_skipped, 250, "200 bulk + 50 per-iter");
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}
+
+#[test]
+fn sync_driver_skip_counters_zero_when_nothing_skipped() {
+    let op_id = unique_op_id("sync-skip-counters-zero");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy);
+    let sink = CollectorEventSink::new();
+
+    let outcome = drive_transfer_serial_sync(
+        &sink,
+        &state,
+        &op_id,
+        &paths(&["/a", "/b"]),
+        2,
+        200,
+        0,
+        0,
+        &HashSet::new(),
+        &copy_config(),
+        |_| Ok(TransferOutcome::Transferred { bytes: 100 }),
+    );
+
+    assert!(matches!(outcome.intent, PostLoopIntent::Completed));
+    assert_eq!(outcome.files_done, 2);
+    assert_eq!(outcome.bytes_done, 200);
+    assert_eq!(outcome.files_skipped, 0);
+    assert_eq!(outcome.bytes_skipped, 0);
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}
+
+#[test]
 fn sync_driver_bulk_skip_zero_does_not_emit_extra_event() {
     let op_id = unique_op_id("sync-bulk-skip-zero");
     let state = make_state();
@@ -1120,6 +1196,53 @@ async fn async_driver_progress_accounting_sums_correctly() {
         outcome.bytes_done, 350,
         "200 bulk-skipped + 50 (conflict-skip's `bytes_accounted`) + 100 transferred"
     );
+    assert_eq!(outcome.files_skipped, 3, "2 bulk + 1 conflict-skip");
+    assert_eq!(outcome.bytes_skipped, 250, "200 bulk + 50 conflict-skip");
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn async_driver_skip_counters_zero_when_nothing_skipped() {
+    // No conflicts, no bulk-skip: skip counters stay at zero so the
+    // volume_copy completion log keeps its terse form.
+    let op_id = unique_op_id("async-skip-counters-zero");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy);
+    let sink = CollectorEventSink::new();
+
+    let outcome = drive_transfer_serial_async(
+        &sink,
+        &state,
+        &op_id,
+        &paths(&["/a", "/b"]),
+        Path::new("/dest"),
+        2,
+        200,
+        0,
+        0,
+        &HashSet::new(),
+        &copy_config(),
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async {
+                Ok(ConflictDecision::Proceed {
+                    dest_path: PathBuf::from("/never"),
+                })
+            })
+        },
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            Box::pin(async { Ok(TransferOutcome::Transferred { bytes: 100 }) })
+        },
+    )
+    .await;
+
+    assert!(matches!(outcome.intent, PostLoopIntent::Completed));
+    assert_eq!(outcome.files_done, 2);
+    assert_eq!(outcome.bytes_done, 200);
+    assert_eq!(outcome.files_skipped, 0);
+    assert_eq!(outcome.bytes_skipped, 0);
     uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }

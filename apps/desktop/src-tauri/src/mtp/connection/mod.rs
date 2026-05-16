@@ -71,6 +71,23 @@ pub enum MtpTransferType {
     Upload,
 }
 
+/// Why an MTP device was disconnected.
+///
+/// Surfaced on the `mtp-device-disconnected` event so logs and UI can
+/// distinguish a deliberate user action from a USB-level removal (unplug,
+/// I/O error, etc.). Previously every disconnect was reported as `"user"`,
+/// which made unstable-USB sessions read like the user kept pulling the cable.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum MtpDisconnectReason {
+    /// User explicitly disconnected (toggled MTP off in settings).
+    User,
+    /// The device was removed: USB hotplug saw it gone, or the event loop
+    /// reported `Error::Disconnected`. Includes hard unplugs and I/O-level
+    /// drops (cable, port, phone-side USB stack).
+    Removed,
+}
+
 /// Result of a successful MTP operation.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -376,9 +393,16 @@ impl MtpConnectionManager {
 
     /// Disconnects from an MTP device.
     ///
-    /// Closes the MTP session gracefully.
-    pub async fn disconnect(&self, device_id: &str, app: Option<&AppHandle>) -> Result<(), MtpConnectionError> {
-        info!("Disconnecting from MTP device: {}", device_id);
+    /// Closes the MTP session gracefully. `reason` is forwarded to the
+    /// frontend via the `mtp-device-disconnected` event so logs can tell a
+    /// user-initiated disconnect apart from a hotplug removal.
+    pub async fn disconnect(
+        &self,
+        device_id: &str,
+        app: Option<&AppHandle>,
+        reason: MtpDisconnectReason,
+    ) -> Result<(), MtpConnectionError> {
+        info!("Disconnecting from MTP device: {} (reason: {:?})", device_id, reason);
 
         // Stop the event loop first
         self.stop_event_loop(device_id);
@@ -415,7 +439,7 @@ impl MtpConnectionManager {
                 "mtp-device-disconnected",
                 serde_json::json!({
                     "deviceId": device_id,
-                    "reason": "user"
+                    "reason": reason,
                 }),
             );
         }
@@ -1062,5 +1086,40 @@ mod tests {
 
         // Negative numbers (not valid for u64)
         assert_eq!(parse_device_id("mtp--1"), None);
+    }
+
+    // ========================================================================
+    // MtpDisconnectReason serialization
+    // ========================================================================
+    //
+    // The reason is emitted as a JSON string on the `mtp-device-disconnected`
+    // event and consumed by hand-written TS in `lib/tauri-commands/mtp.ts`.
+    // The serialized form is the contract; pin it.
+
+    #[test]
+    fn test_mtp_disconnect_reason_serializes_to_snake_case() {
+        assert_eq!(serde_json::to_string(&MtpDisconnectReason::User).unwrap(), "\"user\"");
+        assert_eq!(
+            serde_json::to_string(&MtpDisconnectReason::Removed).unwrap(),
+            "\"removed\""
+        );
+    }
+
+    #[test]
+    fn test_mtp_disconnect_reason_embeds_in_event_payload() {
+        // Mirrors the `json!({ "deviceId": ..., "reason": reason })` shape in
+        // `disconnect()` / `handle_device_disconnected()`.
+        let payload = serde_json::json!({
+            "deviceId": "mtp-1",
+            "reason": MtpDisconnectReason::Removed,
+        });
+        assert_eq!(payload["reason"], "removed");
+        assert_eq!(payload["deviceId"], "mtp-1");
+
+        let payload_user = serde_json::json!({
+            "deviceId": "mtp-1",
+            "reason": MtpDisconnectReason::User,
+        });
+        assert_eq!(payload_user["reason"], "user");
     }
 }

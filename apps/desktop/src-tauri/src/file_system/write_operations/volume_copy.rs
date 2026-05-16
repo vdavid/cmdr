@@ -295,6 +295,24 @@ pub async fn scan_for_volume_copy(
     })
 }
 
+/// Formats the trailing "(of which skipped N file(s), X)" annotation for
+/// the completion log. Returns an empty string when nothing was skipped, so
+/// the log stays terse on the happy path. Byte counts go through
+/// `search::query::format_size` so a 35 GB skip doesn't read as
+/// `37656214069 bytes`.
+fn format_skipped_suffix(files_skipped: usize, bytes_skipped: u64) -> String {
+    if files_skipped == 0 {
+        return String::new();
+    }
+    let noun = if files_skipped == 1 { "file" } else { "files" };
+    format!(
+        " (of which skipped {} {}, {})",
+        files_skipped,
+        noun,
+        crate::search::query::format_size(bytes_skipped),
+    )
+}
+
 /// Bumps `files_done` and `bytes_done` for a skipped source and (throttled)
 /// emits a `write-progress` event. Without this, a "Skip all" choice silently
 /// runs through dozens of conflicts with the progress bar pinned at 0% — the
@@ -309,6 +327,8 @@ fn account_skipped_file(
     source_hints: &HashMap<PathBuf, SourceHint>,
     files_done_atomic: &Arc<AtomicUsize>,
     atomic_bytes_done: &Arc<AtomicU64>,
+    files_skipped_atomic: &Arc<AtomicUsize>,
+    bytes_skipped_atomic: &Arc<AtomicU64>,
     last_progress_mutex: &Arc<std::sync::Mutex<Instant>>,
     progress_interval: Duration,
     state: &Arc<WriteOperationState>,
@@ -323,6 +343,8 @@ fn account_skipped_file(
         .unwrap_or(0);
     let new_files = files_done_atomic.fetch_add(1, Ordering::Relaxed) + 1;
     let new_bytes = atomic_bytes_done.fetch_add(hint_size, Ordering::Relaxed) + hint_size;
+    files_skipped_atomic.fetch_add(1, Ordering::Relaxed);
+    bytes_skipped_atomic.fetch_add(hint_size, Ordering::Relaxed);
 
     let mut last = last_progress_mutex.lock().unwrap();
     if last.elapsed() >= progress_interval {
@@ -512,11 +534,17 @@ pub(crate) async fn copy_volumes_with_progress(
     // Shared atomics, updated by in-flight tasks (under concurrency) or
     // the sequential closure below. The driver reads them after each file to
     // keep `files_done` / `bytes_done` in sync for post-loop bookkeeping.
+    // The `*_skipped` atomics are a subset, counting only bulk-skip + per-iter
+    // Skip resolutions; we use them to annotate the completion log.
     let files_done_atomic = Arc::new(AtomicUsize::new(0));
     let atomic_bytes_done = Arc::new(AtomicU64::new(0));
+    let files_skipped_atomic = Arc::new(AtomicUsize::new(0));
+    let bytes_skipped_atomic = Arc::new(AtomicU64::new(0));
     let last_progress_mutex = Arc::new(std::sync::Mutex::new(Instant::now()));
     let files_done;
     let bytes_done;
+    let files_skipped;
+    let bytes_skipped;
     let progress_interval = Duration::from_millis(config.progress_interval_ms);
 
     // Determine concurrency for this batch.
@@ -607,6 +635,8 @@ pub(crate) async fn copy_volumes_with_progress(
     if use_concurrent_path && bulk_skip_files > 0 {
         let new_files = files_done_atomic.fetch_add(bulk_skip_files, Ordering::Relaxed) + bulk_skip_files;
         let new_bytes = atomic_bytes_done.fetch_add(bulk_skip_bytes, Ordering::Relaxed) + bulk_skip_bytes;
+        files_skipped_atomic.fetch_add(bulk_skip_files, Ordering::Relaxed);
+        bytes_skipped_atomic.fetch_add(bulk_skip_bytes, Ordering::Relaxed);
         log::info!(
             "copy_volumes_with_progress: bulk-skipping {} pre-known conflicts ({} bytes) before main iteration",
             bulk_skip_files,
@@ -735,6 +765,8 @@ pub(crate) async fn copy_volumes_with_progress(
                                 &source_hints,
                                 &files_done_atomic,
                                 &atomic_bytes_done,
+                                &files_skipped_atomic,
+                                &bytes_skipped_atomic,
                                 &last_progress_mutex,
                                 progress_interval,
                                 state,
@@ -884,6 +916,8 @@ pub(crate) async fn copy_volumes_with_progress(
         // Sync counters for post-loop reporting.
         files_done = files_done_atomic.load(Ordering::Relaxed);
         bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
+        files_skipped = files_skipped_atomic.load(Ordering::Relaxed);
+        bytes_skipped = bytes_skipped_atomic.load(Ordering::Relaxed);
     } else {
         // Serial path: delegate the per-iter scaffolding (cancellation check,
         // pre-skip, conflict detect/resolve, skip accounting, paired progress
@@ -1165,6 +1199,8 @@ pub(crate) async fn copy_volumes_with_progress(
 
         files_done = outcome.files_done;
         bytes_done = outcome.bytes_done;
+        files_skipped = outcome.files_skipped;
+        bytes_skipped = outcome.bytes_skipped;
         match outcome.intent {
             PostLoopIntent::Completed | PostLoopIntent::Cancelled => {
                 // Both drop into the post-loop branch below, which keys off
@@ -1202,10 +1238,11 @@ pub(crate) async fn copy_volumes_with_progress(
     if copy_error.is_none() && !is_cancelled(&state.intent) {
         // All files copied successfully
         log::info!(
-            "copy_volumes_with_progress: completed op={} files={} bytes={}",
+            "copy_volumes_with_progress: completed op={} files={} bytes={}{}",
             operation_id,
             files_done,
-            bytes_done
+            bytes_done,
+            format_skipped_suffix(files_skipped, bytes_skipped),
         );
 
         events.emit_complete(WriteCompleteEvent {

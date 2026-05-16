@@ -299,10 +299,10 @@ to recover from mistakes.
 
 `routes/settings/+page.svelte`'s `handleKeydown` wraps `getCurrentWindow().close()` in two nested rAFs (mirroring
 `routes/viewer/+page.svelte`'s `closeWindow()`). Calling `close()` synchronously from inside the keydown handler runs
-the destruction on the same GTK main-loop tick that handled the keydown. On Linux/webkit2gtk this stalls **any IPC
-call queued behind the destruction from other webviews** (e.g. the main window) for an undefined time (observed
-60-65 % of test runs landing in the fast path, others timing out past 30 s). macOS uses WKWebView with per-webview
-processes and doesn't exhibit the issue, so it's invisible there. The +16 ms from the rAFs is invisible to the user.
+the destruction on the same GTK main-loop tick that handled the keydown. On Linux/webkit2gtk this stalls **any IPC call
+queued behind the destruction from other webviews** (e.g. the main window) for an undefined time (observed 60-65 % of
+test runs landing in the fast path, others timing out past 30 s). macOS uses WKWebView with per-webview processes and
+doesn't exhibit the issue, so it's invisible there. The +16 ms from the rAFs is invisible to the user.
 
-When adding a new self-closing webview (escape, close button, etc.), defer the `close()` call the same way. See
-commit `46481b29` for the bug-fix that revealed this.
+When adding a new self-closing webview (escape, close button, etc.), defer the `close()` call the same way. See commit
+`46481b29` for the bug-fix that revealed this.

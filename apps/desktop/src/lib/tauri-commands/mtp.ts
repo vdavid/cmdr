@@ -191,7 +191,7 @@ export interface MtpDeviceConnectedEvent {
 /** Event payload for mtp-device-disconnected. */
 export interface MtpDeviceDisconnectedEvent {
   deviceId: string
-  reason: 'user' | 'disconnected'
+  reason: 'user' | 'removed'
 }
 
 /**

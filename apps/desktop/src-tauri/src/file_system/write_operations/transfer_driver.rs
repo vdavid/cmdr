@@ -183,11 +183,17 @@ pub(super) enum TransferOutcome {
 /// Driver's return value to the caller.
 ///
 /// Carries the final counters plus an `intent` so the caller can decide
-/// whether to commit, roll back, or surface an error.
+/// whether to commit, roll back, or surface an error. `files_skipped` and
+/// `bytes_skipped` are a subset of `files_done` / `bytes_done`: they cover
+/// the pre-known-conflict bulk-skip prelude plus per-iter Skip decisions
+/// (conflict resolver returning `Skip` and closure returning `Skipped`).
+/// The caller uses them to annotate the completion log.
 #[derive(Debug)]
 pub(super) struct TransferLoopOutcome {
     pub files_done: usize,
     pub bytes_done: u64,
+    pub files_skipped: usize,
+    pub bytes_skipped: u64,
     pub intent: PostLoopIntent,
 }
 
@@ -370,6 +376,8 @@ where
 {
     let mut files_done = 0usize;
     let mut bytes_done = 0u64;
+    let mut files_skipped = 0usize;
+    let mut bytes_skipped = 0u64;
 
     // ---- Pre-known-conflicts bulk-skip prelude. ----
     // The caller has already filtered the source set (sync ops are per-file
@@ -380,6 +388,8 @@ where
     if bulk_skip_files > 0 {
         files_done += bulk_skip_files;
         bytes_done += bulk_skip_bytes;
+        files_skipped += bulk_skip_files;
+        bytes_skipped += bulk_skip_bytes;
         log::info!(
             "drive_transfer_serial_sync: bulk-skipping {} files ({} bytes) before main iteration",
             bulk_skip_files,
@@ -420,6 +430,8 @@ where
             return TransferLoopOutcome {
                 files_done,
                 bytes_done,
+                files_skipped,
+                bytes_skipped,
                 intent: PostLoopIntent::Cancelled,
             };
         }
@@ -454,6 +466,8 @@ where
             Ok(TransferOutcome::Skipped { bytes_accounted }) => {
                 files_done += 1;
                 bytes_done += bytes_accounted;
+                files_skipped += 1;
+                bytes_skipped += bytes_accounted;
                 // Skip-arm bump emits a throttled progress event so the bar
                 // reflects the user's Skip choice immediately.
                 emit_progress_and_status(
@@ -473,6 +487,8 @@ where
                 return TransferLoopOutcome {
                     files_done,
                     bytes_done,
+                    files_skipped,
+                    bytes_skipped,
                     intent: PostLoopIntent::Cancelled,
                 };
             }
@@ -480,6 +496,8 @@ where
                 return TransferLoopOutcome {
                     files_done,
                     bytes_done,
+                    files_skipped,
+                    bytes_skipped,
                     intent: PostLoopIntent::Failed(e),
                 };
             }
@@ -489,6 +507,8 @@ where
     TransferLoopOutcome {
         files_done,
         bytes_done,
+        files_skipped,
+        bytes_skipped,
         intent: PostLoopIntent::Completed,
     }
 }
@@ -607,12 +627,16 @@ where
 {
     let mut files_done = 0usize;
     let mut bytes_done = 0u64;
+    let mut files_skipped = 0usize;
+    let mut bytes_skipped = 0u64;
     let mut last_progress_time = Instant::now();
 
     // ---- Pre-known-conflicts bulk-skip prelude. ----
     if bulk_skip_files > 0 {
         files_done += bulk_skip_files;
         bytes_done += bulk_skip_bytes;
+        files_skipped += bulk_skip_files;
+        bytes_skipped += bulk_skip_bytes;
         log::info!(
             "drive_transfer_serial_async: bulk-skipping {} files ({} bytes) before main iteration",
             bulk_skip_files,
@@ -653,6 +677,8 @@ where
             return TransferLoopOutcome {
                 files_done,
                 bytes_done,
+                files_skipped,
+                bytes_skipped,
                 intent: PostLoopIntent::Cancelled,
             };
         }
@@ -695,6 +721,8 @@ where
                     // immediately.
                     files_done += 1;
                     bytes_done += bytes_accounted;
+                    files_skipped += 1;
+                    bytes_skipped += bytes_accounted;
                     if last_progress_time.elapsed() >= progress_interval {
                         last_progress_time = Instant::now();
                         emit_progress_and_status(
@@ -717,6 +745,8 @@ where
                     return TransferLoopOutcome {
                         files_done,
                         bytes_done,
+                        files_skipped,
+                        bytes_skipped,
                         intent: PostLoopIntent::Failed(e),
                     };
                 }
@@ -746,6 +776,8 @@ where
             Ok(TransferOutcome::Skipped { bytes_accounted }) => {
                 files_done += 1;
                 bytes_done += bytes_accounted;
+                files_skipped += 1;
+                bytes_skipped += bytes_accounted;
                 if last_progress_time.elapsed() >= progress_interval {
                     last_progress_time = Instant::now();
                     emit_progress_and_status(
@@ -766,6 +798,8 @@ where
                 return TransferLoopOutcome {
                     files_done,
                     bytes_done,
+                    files_skipped,
+                    bytes_skipped,
                     intent: PostLoopIntent::Cancelled,
                 };
             }
@@ -773,6 +807,8 @@ where
                 return TransferLoopOutcome {
                     files_done,
                     bytes_done,
+                    files_skipped,
+                    bytes_skipped,
                     intent: PostLoopIntent::Failed(e),
                 };
             }
@@ -788,6 +824,8 @@ where
         return TransferLoopOutcome {
             files_done,
             bytes_done,
+            files_skipped,
+            bytes_skipped,
             intent: PostLoopIntent::Cancelled,
         };
     }
@@ -795,6 +833,8 @@ where
     TransferLoopOutcome {
         files_done,
         bytes_done,
+        files_skipped,
+        bytes_skipped,
         intent: PostLoopIntent::Completed,
     }
 }

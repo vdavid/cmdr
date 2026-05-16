@@ -12,6 +12,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
 
+use super::connection::MtpDisconnectReason;
+
 /// Global app handle for emitting events from the watcher
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
@@ -54,7 +56,7 @@ pub async fn set_mtp_enabled(enabled: bool) {
         let connected = cm.get_all_connected_devices().await;
         for device in &connected {
             let device_id = device.device.id.clone();
-            auto_disconnect_device(device_id);
+            auto_disconnect_device(device_id, MtpDisconnectReason::User);
         }
 
         // Clear known devices so re-enable detects everything as new
@@ -118,7 +120,7 @@ fn check_for_device_changes() {
     if !removed_devices.is_empty() {
         for device_id in &removed_devices {
             info!("MTP device removed, disconnecting: {}", device_id);
-            auto_disconnect_device(device_id.clone());
+            auto_disconnect_device(device_id.clone(), MtpDisconnectReason::Removed);
         }
 
         #[cfg(target_os = "macos")]
@@ -149,11 +151,11 @@ fn auto_connect_device(device_id: String) {
 }
 
 /// Spawns an async task to disconnect a removed MTP device.
-fn auto_disconnect_device(device_id: String) {
+fn auto_disconnect_device(device_id: String, reason: MtpDisconnectReason) {
     let app = APP_HANDLE.get().cloned();
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
-        if let Err(e) = cm.disconnect(&device_id, app.as_ref()).await {
+        if let Err(e) = cm.disconnect(&device_id, app.as_ref(), reason).await {
             // NotConnected is fine: device may not have been connected yet
             debug!("Disconnect for removed device {} returned: {:?}", device_id, e);
         }
