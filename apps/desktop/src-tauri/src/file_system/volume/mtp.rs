@@ -212,6 +212,16 @@ impl Volume for MtpVolume {
         false
     }
 
+    fn listing_is_watched(&self, _path: &Path) -> bool {
+        // MTP "watching" is volume-level, not path-level. The MTP event loop is
+        // per-device and would report any changes the device emits to any path.
+        // So as long as the device is connected, treat every cached listing on
+        // this volume as oracle-eligible. Caveat: many MTP devices (cameras
+        // especially) never emit per-object events, so `true` means only "the
+        // device is reachable and would forward changes if it sent any".
+        connection_manager().is_connected(&self.device_id)
+    }
+
     fn notify_mutation<'a>(
         &'a self,
         _volume_id: &'a str,
@@ -841,5 +851,50 @@ mod tests {
         // MTP volumes support streaming for direct MTP-to-MTP transfers.
         let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
         assert!(vol.supports_streaming());
+    }
+
+    #[test]
+    fn test_listing_is_watched_false_when_device_not_connected() {
+        // Without `virtual-mtp`, we can still assert the negative case: a freshly
+        // created `MtpVolume` whose device_id was never connected returns false.
+        let vol = MtpVolume::new("mtp-never-connected-9999", 65537, "Test");
+        assert!(!vol.listing_is_watched(Path::new("/DCIM")));
+    }
+
+    /// Connects to a virtual MTP device, asserts the oracle gate flips true, then
+    /// disconnects and asserts it flips false. Requires the `virtual-mtp` feature.
+    #[cfg(feature = "virtual-mtp")]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_listing_is_watched_flips_with_connection() {
+        use crate::mtp::virtual_device::setup_virtual_mtp_device;
+
+        // Register a virtual device backed by a tmp dir.
+        let location_id = setup_virtual_mtp_device();
+        let device_id = format!("mtp-{}", location_id);
+
+        // Before connect: false.
+        let vol = MtpVolume::new(&device_id, 65537, "Test");
+        assert!(!vol.listing_is_watched(Path::new("/")), "expected false before connect");
+
+        // Connect, then assert true.
+        let info = connection_manager()
+            .connect(&device_id, None)
+            .await
+            .expect("virtual-mtp connect should succeed");
+        // Use whatever storage_id the virtual device reported (we don't care
+        // which storage; the gate is volume-level).
+        let storage_id = info.storages.first().expect("virtual device should have storages").id;
+        let vol = MtpVolume::new(&device_id, storage_id, "Test");
+        assert!(vol.listing_is_watched(Path::new("/")), "expected true once connected");
+
+        // Disconnect, then assert false again.
+        connection_manager()
+            .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+            .await
+            .expect("virtual-mtp disconnect should succeed");
+        assert!(
+            !vol.listing_is_watched(Path::new("/")),
+            "expected false after disconnect"
+        );
     }
 }

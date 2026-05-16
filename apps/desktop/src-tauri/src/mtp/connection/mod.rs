@@ -460,6 +460,22 @@ impl MtpConnectionManager {
         })
     }
 
+    /// Returns `true` when `device_id` is currently connected, without awaiting.
+    ///
+    /// Used by `MtpVolume::listing_is_watched` (a sync trait method) to gate the
+    /// fresh-listing oracle. Uses `try_lock` on the devices map so a hot-path
+    /// MTP op holding the mutex doesn't stall pre-flight scan decisions: if the
+    /// lock is contended, treat it as "not watched" and fall through to a real
+    /// read, which is the safe direction. The oracle re-checks on the next
+    /// pre-flight; the lock is held only for short bookkeeping operations on
+    /// the device map, so we won't see sustained false negatives.
+    pub fn is_connected(&self, device_id: &str) -> bool {
+        match self.devices.try_lock() {
+            Ok(guard) => guard.contains_key(device_id),
+            Err(_) => false,
+        }
+    }
+
     /// Gets information about all connected devices.
     pub async fn get_all_connected_devices(&self) -> Vec<ConnectedDeviceInfo> {
         let devices = self.devices.lock().await;

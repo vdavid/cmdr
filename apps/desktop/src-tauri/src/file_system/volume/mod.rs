@@ -519,6 +519,22 @@ pub trait Volume: Send + Sync {
         true
     }
 
+    /// Returns `true` when the listing at `path` is currently being kept in sync
+    /// by a live watcher on this volume. Used by
+    /// `file_system::listing::caching::try_get_watched_listing` to decide whether
+    /// a cached listing can replace a real read in write-op pre-flight.
+    ///
+    /// "Live watcher" is intentionally coarse for non-local backends; the
+    /// returned `true` does NOT mean the cache is byte-perfect with the device
+    /// right now. Every backend has a debounce or settling window between a real
+    /// change and the cache reflecting it. See the freshness contract on
+    /// `try_get_watched_listing` for the per-backend windows callers must tolerate.
+    ///
+    /// Default `false`: new backends without an active watcher opt in explicitly.
+    fn listing_is_watched(&self, _path: &Path) -> bool {
+        false
+    }
+
     // ========================================
     // Indexing: Optional, default None
     // ========================================

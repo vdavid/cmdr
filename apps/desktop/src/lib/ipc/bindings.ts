@@ -3192,6 +3192,12 @@ export type WriteOperationError =
   | { type: 'name_too_long'; path: string }
   // File name contains characters not allowed at the destination.
   | { type: 'invalid_name'; path: string; message: string }
+  /**
+   *  The file is in `STATUS_DELETE_PENDING` on the server: a delete was requested
+   *  but at least one open handle is keeping it alive. Transient — clears when the
+   *  last handle closes. SMB-only today.
+   */
+  | { type: 'delete_pending'; path: string }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

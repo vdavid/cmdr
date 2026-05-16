@@ -49,6 +49,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `on_unmount()`: lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()`: drive indexing hooks; `None` by default.
 - `space_poll_interval()`: recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
+- `listing_is_watched(path)`: returns `true` when this volume's cached listing for `path` is being kept in sync by a live watcher. Used by `file_system::listing::caching::try_get_watched_listing` (the "fresh-listing oracle") to decide whether write-op pre-flight scans can reuse a cached listing instead of re-reading. Default `false` so a new backend without a real watcher won't accidentally claim freshness. **Freshness contract**: a `true` result does NOT mean the cache is byte-perfect with the device right now. Every backend has a debounce or settling window between a real change and the cache reflecting it: local FS ≈ 10 ms (FSEvents coalesce), SMB 200 ms (watcher debounce; > 50 events/dir triggers a `FullRefresh`), MTP 500 ms (event debouncer plus per-device polling; many cameras emit no events at all, so on those `true` means only "the device is reachable"). Callers must treat the result as "fresh as our most recent observation" — the same guarantee a `list_directory` call gives. The MTP and SMB checks are volume-level, not path-level: when the gate flips true, every path on that volume becomes oracle-eligible.
 
 ## Building a new volume
 
@@ -110,6 +111,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `open_read_stream`          | ✅ spawn_blocking    | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       |
 | `write_from_stream`         | ✅ spawn_blocking    | ✅ streaming            | ✅ streaming              | ✅ in-memory       |
 | `supports_watching`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (OS-mount FSEvents)    | ❌                 |
+| `listing_is_watched`        | ✅ path-level (WATCHER_MANAGER) | ✅ volume-level (device connected) | ✅ volume-level (watcher + Direct) | ❌ (default) |
 | `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 |
 | `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             |
 | `notify_mutation`           | default (std::fs)    | ✅ MTP `get_metadata`   | ✅ smb2 `get_metadata`    | ✅ in-memory       |

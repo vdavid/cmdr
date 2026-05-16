@@ -512,3 +512,69 @@ pub(crate) fn increment_sequence(listing_id: &str) -> Option<u64> {
     let seq = listing.sequence.fetch_add(1, Ordering::Relaxed) + 1;
     Some(seq)
 }
+
+/// Returns cached entries for `(volume_id, path)` when the volume reports that this
+/// listing is being kept in sync by an active watcher. Otherwise `None`.
+///
+/// **Freshness contract (read carefully)**: a `Some(_)` result means the volume has
+/// an active change-notification channel and the cache reflects the volume's most
+/// recently observed state. It does NOT mean the cache is byte-perfect with the
+/// device right now: every backend has a debounce or settling window between a real
+/// change and the cache reflecting it.
+///
+/// - Local FS: FSEvents coalesce window (~10 ms).
+/// - SMB: 200 ms watcher debounce; > 50 events per directory triggers a
+///   `FullRefresh` which arrives via a real re-read.
+/// - MTP: 500 ms event debouncer plus per-device polling. Many MTP devices
+///   (cameras especially) never emit per-object events, so "watched" there means
+///   only "the device is reachable and would forward changes if it sent any."
+///
+/// Callers must treat the result as "fresh as our most recent observation," which
+/// is the same guarantee a `list_directory` call gives: it sees the device's state
+/// at the moment the call returned, not at the moment the caller reads its result.
+/// The contract intentionally accepts this window; a tighter one would force us to
+/// re-validate every walk, defeating the whole point of the oracle.
+///
+/// When multiple cached listings exist for the same `(volume_id, path)` pair (two
+/// panes browsing the same directory), the picker is deterministic: highest
+/// `sequence`, ties broken by the latest `created_at`. Both listings receive watcher
+/// events, so they're equally fresh; the tiebreaker is just to keep the result
+/// stable across calls.
+#[allow(dead_code, reason = "M1 plumbing: callers (scan walker, scan-preview) wire up in M2")]
+pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
+    // Step 1: find all listings on this (volume_id, path) and pick the most-recently-updated
+    // one (highest sequence, ties broken by latest created_at). Read the entries out
+    // under the cache lock and drop the lock before crossing any async / volume boundary.
+    let entries: Vec<FileEntry> = {
+        let cache = LISTING_CACHE.read().ok()?;
+        let mut best: Option<(&String, &CachedListing, u64, Instant)> = None;
+        for (id, listing) in cache.iter() {
+            if listing.volume_id != volume_id || listing.path != path {
+                continue;
+            }
+            let seq = listing.sequence.load(Ordering::Relaxed);
+            let created = listing.created_at;
+            best = match best {
+                None => Some((id, listing, seq, created)),
+                Some((_, _, best_seq, best_created))
+                    if seq > best_seq || (seq == best_seq && created > best_created) =>
+                {
+                    Some((id, listing, seq, created))
+                }
+                Some(other) => Some(other),
+            };
+        }
+        let (_, listing, ..) = best?;
+        listing.entries.clone()
+    };
+
+    // Step 2: ask the volume whether this listing is being kept fresh by a watcher.
+    // VolumeManager::get returns an Arc<dyn Volume> which we hold for the duration of
+    // the sync `listing_is_watched` call. No await between this and the entries return.
+    let volume = crate::file_system::get_volume_manager().get(volume_id)?;
+    if volume.listing_is_watched(path) {
+        Some(entries)
+    } else {
+        None
+    }
+}

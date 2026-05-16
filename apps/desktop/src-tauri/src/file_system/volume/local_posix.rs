@@ -245,6 +245,29 @@ impl Volume for LocalPosixVolume {
         true
     }
 
+    fn listing_is_watched(&self, path: &Path) -> bool {
+        // Resolve relative-to-volume paths to their absolute form so the comparison
+        // against `LISTING_CACHE` (which stores absolute paths) lines up.
+        let abs_path = self.resolve(path);
+        // Find any listing on this path (volume-agnostic: the listing cache is keyed
+        // by listing_id and tagged with a volume_id, but LocalPosixVolume doesn't
+        // store its own volume_id — the manager assigns it at registration time).
+        let listings = crate::file_system::listing::caching::find_listings_for_path_on_volume(None, &abs_path);
+        if listings.is_empty() {
+            return false;
+        }
+        // A listing exists; check whether an FSEvents watcher is attached to any
+        // matching listing_id. There's a race window between the listing being
+        // populated and the watcher being registered, during which we deliberately
+        // return false (the listing exists but isn't being kept fresh yet).
+        match crate::file_system::watcher::WATCHER_MANAGER.read() {
+            Ok(manager) => listings
+                .iter()
+                .any(|(lid, ..)| manager.watches.contains_key(lid.as_str())),
+            Err(_) => false,
+        }
+    }
+
     fn local_path(&self) -> Option<PathBuf> {
         Some(self.root.clone())
     }
