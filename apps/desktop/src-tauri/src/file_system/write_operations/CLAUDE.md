@@ -8,6 +8,10 @@ Implements the four destructive file operations as background tasks that stream 
 operation is cancellable, reports byte-level progress, and handles edge cases: symlink loops, same-inode overwrites,
 network mounts, cross-filesystem moves, and name/path length limits.
 
+Pre-flight scans reuse cached listings when the source volume reports an active watcher, avoiding redundant
+`list_directory` calls. The freshness contract and per-backend debounce windows are documented in
+`../volume/CLAUDE.md` and `../listing/caching.rs::try_get_watched_listing`.
+
 ## Files
 
 | File | Responsibility |
