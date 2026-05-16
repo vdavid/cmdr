@@ -358,6 +358,13 @@
     function fetchColumnWidths() {
         if (!listingId || itemsPerColumn <= 0) return
         cancelPendingFetch()
+        // First fetch (no widths yet, for example after entering a new dir) fires
+        // immediately so the cursor-hidden gap is as short as possible. Subsequent
+        // re-fetches keep the 50 ms coalesce to absorb resize bursts.
+        if (columnWidths.length === 0) {
+            void doFetchColumnWidths(false)
+            return
+        }
         pendingFetchTimer = setTimeout(() => {
             pendingFetchTimer = null
             void doFetchColumnWidths(false)
@@ -787,7 +794,7 @@
                             <div
                                 id={`file-${String(globalIndex)}`}
                                 class="file-entry"
-                                class:is-under-cursor={globalIndex === cursorIndex}
+                                class:is-under-cursor={globalIndex === cursorIndex && columnWidths.length > 0}
                                 class:is-selected={selectedIndices.has(globalIndex)}
                                 class:is-striped={stripedRows && globalIndex % 2 === 1}
                                 class:is-restricted={fileIsRestricted}
