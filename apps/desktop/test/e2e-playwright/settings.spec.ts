@@ -45,6 +45,38 @@ test.describe('Settings page', () => {
     expect(sectionTexts.some((t) => t.includes('Keyboard shortcuts'))).toBe(true)
   })
 
+  test('lists top-level sections in the expected order', async () => {
+    // Locks down the full sidebar shape. If you intentionally add/remove/reorder a section,
+    // update both this list and `TOP_LEVEL_ORDER` in `SettingsSidebar.svelte`.
+    const expectedOrder = [
+      'Appearance',
+      'Colors and formats',
+      'Zoom and density',
+      'File and folder sizes',
+      'Listing',
+      'Behavior',
+      'File operations',
+      'Drive indexing',
+      'AI',
+      'File systems',
+      'SMB/Network shares',
+      'MTP (Android/Kindle/cameras)',
+      'Git',
+      'Viewer',
+      'Keyboard shortcuts',
+      'Developer',
+      'MCP server',
+      'Logging',
+      'Updates',
+      'License',
+      'Advanced',
+    ]
+
+    const sectionTexts = await settings.allTextContents('.section-item')
+    const trimmed = sectionTexts.map((t) => t.trim())
+    expect(trimmed).toEqual(expectedOrder)
+  })
+
   test('has a working search input', async () => {
     await settings.waitForSelector('.search-input', 5000)
     await settings.fill('.search-input', 'theme')

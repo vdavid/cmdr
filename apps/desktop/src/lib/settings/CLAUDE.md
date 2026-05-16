@@ -23,7 +23,7 @@ defined once in `settings-registry.ts` and accessed uniformly by both UI and MCP
 Single source of truth for all settings. Each `SettingDefinition` contains:
 
 - `id`: Unique key (e.g., `appearance.uiDensity`)
-- `section`: Path in settings tree (e.g., `['General', 'Appearance']`)
+- `section`: Path in settings tree (e.g., `['Appearance', 'Colors and formats']`)
 - `type`: boolean, number, string, enum, duration
 - `default`: Default value
 - `constraints`: Type-specific validation (min/max, enum options, etc.)
@@ -91,14 +91,42 @@ applied via `data-size-colors` / `data-date-colors` attributes on `<html>`. Sett
 
 ### Sections (`sections/`)
 
-15 section components rendered inside the settings window. `ListingSection` includes:
+Top-level sidebar order (declared in `SettingsSidebar.svelte`'s `TOP_LEVEL_ORDER`; keep in sync with the E2E test in
+`settings.spec.ts`):
 
-- `listing.sizeDisplay`: enum (smart/logical/physical), default smart, toggle-group. Reactive getter:
-  `getSizeDisplayMode()`.
-- `listing.humanFriendlySizeUnits`: boolean, default true, switch. Reactive getter: `getHumanFriendlySizeUnits()`. ON
-  shows "1.02 MB" in size columns and the SelectionInfo primary size readout; OFF shows raw bytes with thin-space triad
-  separators. Volume/disk-space displays, dialogs, and tooltips that already show both formats are unaffected.
-- `listing.sizeMismatchWarning`: boolean, default true, switch. Reactive getter: `getSizeMismatchWarning()`.
+1. **Appearance** — `Colors and formats`, `Zoom and density`, `File and folder sizes`, `Listing`
+2. **Behavior** — `File operations`, `Drive indexing`
+3. **AI** (no subsections)
+4. **File systems** — `SMB/Network shares`, `MTP (Android/Kindle/cameras)`, `Git`
+5. **Viewer** (no subsections)
+6. **Keyboard shortcuts** (special, non-registry)
+7. **Developer** — `MCP server`, `Logging`
+8. **Updates** (no subsections)
+9. **License** (special, non-registry)
+10. **Advanced** (special, auto-generated from `showInAdvanced: true` entries)
+
+Section ↔ component map (`sections/`):
+
+- `AppearanceSection.svelte` → `Appearance > Colors and formats` (theme mode, app color, size/date colors, date/time
+  format, striped rows)
+- `AppearanceZoomSection.svelte` → `Appearance > Zoom and density` (text size, UI density)
+- `AppearanceSizesSection.svelte` → `Appearance > File and folder sizes` (size display, human-friendly units, file size
+  format, size mismatch warning)
+- `ListingSection.svelte` → `Appearance > Listing` (document icons, directory sort, brief column width)
+- `FileOperationsSection.svelte` → `Behavior > File operations` (extension changes only; `maxConflictsToShow` and
+  `progressUpdateInterval` live in Advanced)
+- `DriveIndexingSection.svelte` → `Behavior > Drive indexing` (toggle + clear-index action)
+- `AiSection.svelte` (+ `AiCloudSection.svelte`, `AiLocalSection.svelte`) → `AI`
+- `NetworkSection.svelte` → `File systems > SMB/Network shares`
+- `MtpSection.svelte` → `File systems > MTP (Android/Kindle/cameras)`
+- `GitSection.svelte` → `File systems > Git`
+- `ViewerSection.svelte` → `Viewer`
+- `KeyboardShortcutsSection.svelte` → `Keyboard shortcuts` (special; renders the shortcut table)
+- `McpServerSection.svelte` → `Developer > MCP server`
+- `LoggingSection.svelte` → `Developer > Logging`
+- `UpdatesSection.svelte` → `Updates`
+- `LicenseSection.svelte` → `License` (special; reads `getLicenseInfo`/`getLicenseStatus`)
+- `AdvancedSection.svelte` → `Advanced` (auto-generated UI for every `showInAdvanced: true` entry)
 
 `AdvancedSection` includes `advanced.maxLogStorageMb`: number, default 200, range 0–5000, MB suffix. `0` disables log
 storage entirely (the `Folder` target is dropped from the plugin builder, no error reports possible). Toggling between
@@ -113,10 +141,6 @@ changes take effect on the next keystroke without restart.
 `UpdatesSection` includes `updates.errorReports`: boolean, default false, switch. Opt-in for Flow B (auto-send error
 reports when a user-visible error fires). Flow A (the **Help > Send error report…** menu item and the toast button) is
 always available regardless of this setting. Clicking is the consent.
-
-Full list: `AppearanceSection`, `ListingSection`, `FileOperationsSection`, `MtpSection`, `KeyboardShortcutsSection`,
-`NetworkSection`, `LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`, `AdvancedSection`,
-`DriveIndexingSection`, `AiSection`, `LicenseSection`, `ViewerSection`.
 
 `NetworkSection` includes `network.enabled`: boolean, default true, switch. The top-of-section toggle. When off, the
 volume picker shows "Network (disabled)" and the backend stops mDNS + clears discovered hosts. Below the switch is a
@@ -182,7 +206,7 @@ row intentionally spans the full width.
 - **settings-applier.ts**: Listens for setting changes and applies side effects (CSS vars, backend config sync)
 - **network-settings.ts**: Network-specific setting helpers (proxy config, SMB auth defaults)
 - **settings-window.ts**: Logic for opening/focusing/closing the settings window (Tauri window management). Accepts an
-  optional `section` array (e.g. `['Network', 'SMB/Network shares']`) to deep-link a specific section. Two delivery
+  optional `section` array (e.g. `['File systems', 'SMB/Network shares']`) to deep-link a specific section. Two delivery
   paths: (a) new-window: JSON-encoded array on the URL as `?section=...` (JSON because section names can contain `/`,
   e.g. "SMB/Network shares"); (b) already-open window: emits a `navigate-to-section` Tauri event the settings page
   listens for. The settings page also reads the URL param at mount, so reloads or fresh-opens land on the same section.

@@ -51,7 +51,7 @@ export const settingsMaxWidth = (scale: number): number =>
 /**
  * Opens the settings window, or focuses it if already open. When `section` is provided,
  * the settings window listens for the `navigate-to-section` event and scrolls/highlights
- * the matching section path (e.g., `['Network', 'SMB/Network shares']`).
+ * the matching section path (e.g., `['File systems', 'SMB/Network shares']`).
  */
 export async function openSettingsWindow(section?: string[]): Promise<void> {
   const existing = await WebviewWindow.getByLabel('settings')

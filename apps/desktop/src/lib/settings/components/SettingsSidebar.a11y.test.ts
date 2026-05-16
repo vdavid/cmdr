@@ -33,7 +33,7 @@ describe('SettingsSidebar a11y', () => {
       props: {
         searchQuery: '',
         matchingSections: new Set<string>(),
-        selectedSection: ['General', 'Appearance'],
+        selectedSection: ['Appearance', 'Colors and formats'],
         onSearch: () => {},
         onSectionSelect: () => {},
       },
@@ -49,8 +49,8 @@ describe('SettingsSidebar a11y', () => {
       target,
       props: {
         searchQuery: 'theme',
-        matchingSections: new Set<string>(['Themes']),
-        selectedSection: ['General', 'Appearance'],
+        matchingSections: new Set<string>(['Appearance', 'Appearance/Colors and formats']),
+        selectedSection: ['Appearance', 'Colors and formats'],
         onSearch: () => {},
         onSectionSelect: () => {},
       },
@@ -67,7 +67,7 @@ describe('SettingsSidebar a11y', () => {
       props: {
         searchQuery: '',
         matchingSections: new Set<string>(),
-        selectedSection: ['General', 'Listing'],
+        selectedSection: ['Appearance', 'Listing'],
         onSearch: () => {},
         onSectionSelect: () => {},
       },
@@ -84,7 +84,7 @@ describe('SettingsSidebar a11y', () => {
       props: {
         searchQuery: 'zzznonexistent',
         matchingSections: new Set<string>(),
-        selectedSection: ['General', 'Appearance'],
+        selectedSection: ['Appearance', 'Colors and formats'],
         onSearch: () => {},
         onSectionSelect: () => {},
       },

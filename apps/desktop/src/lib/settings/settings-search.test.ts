@@ -30,11 +30,11 @@ describe('searchSettings', () => {
   })
 
   it('should find settings by section name', () => {
-    const results = searchSettings('general')
+    const results = searchSettings('appearance')
     expect(results.length).toBeGreaterThan(0)
-    // At least one result should be in the General section
-    const hasGeneral = results.some((r) => r.setting.section[0] === 'General')
-    expect(hasGeneral).toBe(true)
+    // At least one result should be in the Appearance section
+    const hasAppearance = results.some((r) => r.setting.section[0] === 'Appearance')
+    expect(hasAppearance).toBe(true)
   })
 
   it('should return empty array when nothing matches', () => {
@@ -73,9 +73,9 @@ describe('getMatchingSections', () => {
   it('should return sections containing matching settings', () => {
     const sections = getMatchingSections('density')
     expect(sections.size).toBeGreaterThan(0)
-    // Should include the parent section path 'General' or 'General/Appearance'
-    const hasGeneral = sections.has('General') || sections.has('General/Appearance')
-    expect(hasGeneral).toBe(true)
+    // Should include the parent section path 'Appearance' or 'Appearance/Zoom and density'
+    const hasAppearance = sections.has('Appearance') || sections.has('Appearance/Zoom and density')
+    expect(hasAppearance).toBe(true)
   })
 
   it('should return empty set when nothing matches', () => {
@@ -88,7 +88,7 @@ describe('sectionHasMatches', () => {
   it('should return true for sections with matching settings', () => {
     const matchingSections = getMatchingSections('density')
     // The function uses path.join('/') to check
-    expect(sectionHasMatches(['General'], matchingSections)).toBe(true)
+    expect(sectionHasMatches(['Appearance'], matchingSections)).toBe(true)
   })
 
   it('should return false for sections without matches', () => {

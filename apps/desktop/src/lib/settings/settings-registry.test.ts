@@ -60,19 +60,19 @@ describe('getDefaultValue', () => {
 })
 
 describe('getSettingsInSection', () => {
-  it('should return settings in General section', () => {
-    const settings = getSettingsInSection(['General'])
+  it('should return settings in Appearance section', () => {
+    const settings = getSettingsInSection(['Appearance'])
     expect(settings.length).toBeGreaterThan(0)
     for (const setting of settings) {
-      expect(setting.section[0]).toBe('General')
+      expect(setting.section[0]).toBe('Appearance')
     }
   })
 
   it('should return settings in nested section', () => {
-    const settings = getSettingsInSection(['General', 'Appearance'])
+    const settings = getSettingsInSection(['Appearance', 'Colors and formats'])
     expect(settings.length).toBeGreaterThan(0)
     for (const setting of settings) {
-      expect(setting.section).toEqual(['General', 'Appearance'])
+      expect(setting.section).toEqual(['Appearance', 'Colors and formats'])
     }
   })
 
@@ -146,16 +146,16 @@ describe('buildSectionTree', () => {
     expect(tree.length).toBeGreaterThan(0)
   })
 
-  it('should have General section at top level', () => {
+  it('should have Appearance section at top level', () => {
     const tree = buildSectionTree()
-    const general = tree.find((s) => s.name === 'General')
-    expect(general).toBeDefined()
+    const appearance = tree.find((s) => s.name === 'Appearance')
+    expect(appearance).toBeDefined()
   })
 
-  it('should have nested Appearance subsection under General', () => {
+  it('should have nested "Colors and formats" subsection under Appearance', () => {
     const tree = buildSectionTree()
-    const general = tree.find((s) => s.name === 'General')
-    expect(general?.subsections.some((s) => s.name === 'Appearance')).toBe(true)
+    const appearance = tree.find((s) => s.name === 'Appearance')
+    expect(appearance?.subsections.some((s) => s.name === 'Colors and formats')).toBe(true)
   })
 
   it('should have path arrays matching section hierarchy', () => {

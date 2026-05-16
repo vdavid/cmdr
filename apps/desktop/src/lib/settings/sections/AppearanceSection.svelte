@@ -3,11 +3,9 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
-    import SettingSelect from '../components/SettingSelect.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
-    import SettingSlider from '../components/SettingSlider.svelte'
     import { getSettingDefinition, getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { openAppearanceSettings } from '$lib/tauri-commands'
@@ -21,15 +19,13 @@
 
     const shouldShow = $derived(createShouldShow(searchQuery))
 
-    // Get definitions for rendering (with fallbacks for type safety)
+    // Definitions for rendering (with fallbacks for type safety)
+    const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
     const appColorDef = getSettingDefinition('appearance.appColor') ?? { label: '', description: '' }
-    const textSizeDef = getSettingDefinition('appearance.textSize') ?? { label: '', description: '' }
-    const uiDensityDef = getSettingDefinition('appearance.uiDensity') ?? { label: '', description: '' }
-    const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
-    const fileSizeDef = getSettingDefinition('appearance.fileSizeFormat') ?? { label: '', description: '' }
     const sizeColorsDef = getSettingDefinition('appearance.sizeColors') ?? { label: '', description: '' }
     const dateColorsDef = getSettingDefinition('appearance.dateColors') ?? { label: '', description: '' }
     const dateTimeDef = getSettingDefinition('appearance.dateTimeFormat') ?? { label: '', description: '' }
+    const stripedRowsDef = getSettingDefinition('listing.stripedRows') ?? { label: '', description: '' }
 
     // App color state
     let appColorValue = $state(getSetting('appearance.appColor'))
@@ -67,7 +63,13 @@
     }
 </script>
 
-<SettingsSection title="Appearance">
+<SettingsSection title="Colors and formats">
+    {#if shouldShow('theme.mode')}
+        <SettingRow id="theme.mode" label={themeModeDef.label} description={themeModeDef.description} {searchQuery}>
+            <SettingToggleGroup id="theme.mode" />
+        </SettingRow>
+    {/if}
+
     {#if shouldShow('appearance.appColor')}
         <SettingRow id="appearance.appColor" label={appColorDef.label} description="" split {searchQuery}>
             {#snippet descriptionContent()}
@@ -106,52 +108,6 @@
                     <span class="app-color-label">Cmdr gold</span>
                 </label>
             </div>
-        </SettingRow>
-    {/if}
-
-    {#if shouldShow('appearance.textSize')}
-        <SettingRow
-            id="appearance.textSize"
-            label={textSizeDef.label}
-            description={textSizeDef.description}
-            split
-            {searchQuery}
-        >
-            <SettingSlider id="appearance.textSize" unit="%" />
-        </SettingRow>
-    {/if}
-
-    {#if shouldShow('appearance.uiDensity')}
-        <SettingRow
-            id="appearance.uiDensity"
-            label={uiDensityDef.label}
-            description={uiDensityDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="appearance.uiDensity" />
-        </SettingRow>
-    {/if}
-
-    {#if shouldShow('appearance.useAppIconsForDocuments')}
-        <SettingRow
-            id="appearance.useAppIconsForDocuments"
-            label={appIconsDef.label}
-            description={appIconsDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="appearance.useAppIconsForDocuments" />
-        </SettingRow>
-    {/if}
-
-    {#if shouldShow('appearance.fileSizeFormat')}
-        <SettingRow
-            id="appearance.fileSizeFormat"
-            label={fileSizeDef.label}
-            description={fileSizeDef.description}
-            split
-            {searchQuery}
-        >
-            <SettingSelect id="appearance.fileSizeFormat" />
         </SettingRow>
     {/if}
 
@@ -223,6 +179,17 @@
                     {/snippet}
                 </SettingRadioGroup>
             </div>
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('listing.stripedRows')}
+        <SettingRow
+            id="listing.stripedRows"
+            label={stripedRowsDef.label}
+            description={stripedRowsDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="listing.stripedRows" />
         </SettingRow>
     {/if}
 </SettingsSection>

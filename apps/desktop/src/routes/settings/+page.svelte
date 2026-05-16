@@ -17,7 +17,7 @@
 
     let searchQuery = $state('')
     let matchingSections = $state<Set<string>>(new Set())
-    let selectedSection = $state<string[]>(['General', 'Appearance'])
+    let selectedSection = $state<string[]>(['Appearance', 'Colors and formats'])
     let initialized = $state(false)
     let contentElement: HTMLElement | null = $state(null)
     let unlistenFocusSelf: UnlistenFn | undefined

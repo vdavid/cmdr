@@ -16,12 +16,12 @@ vi.mock('$lib/settings/settings-store', () => ({
 }))
 
 describe('SectionSummary a11y', () => {
-  it('General section (multiple subsections) has no a11y violations', async () => {
+  it('Appearance section (multiple subsections) has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SectionSummary, {
       target,
-      props: { sectionName: 'General', onNavigate: () => {} },
+      props: { sectionName: 'Appearance', onNavigate: () => {} },
     })
     await tick()
     await expectNoA11yViolations(target)

@@ -1,20 +1,21 @@
 <script lang="ts">
     import AppearanceSection from '$lib/settings/sections/AppearanceSection.svelte'
-    import FileOperationsSection from '$lib/settings/sections/FileOperationsSection.svelte'
+    import AppearanceZoomSection from '$lib/settings/sections/AppearanceZoomSection.svelte'
+    import AppearanceSizesSection from '$lib/settings/sections/AppearanceSizesSection.svelte'
     import ListingSection from '$lib/settings/sections/ListingSection.svelte'
+    import FileOperationsSection from '$lib/settings/sections/FileOperationsSection.svelte'
     import DriveIndexingSection from '$lib/settings/sections/DriveIndexingSection.svelte'
-    import GitSection from '$lib/settings/sections/GitSection.svelte'
-    import UpdatesSection from '$lib/settings/sections/UpdatesSection.svelte'
-    import MtpSection from '$lib/settings/sections/MtpSection.svelte'
+    import AiSection from '$lib/settings/sections/AiSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
+    import MtpSection from '$lib/settings/sections/MtpSection.svelte'
+    import GitSection from '$lib/settings/sections/GitSection.svelte'
+    import ViewerSection from '$lib/settings/sections/ViewerSection.svelte'
     import KeyboardShortcutsSection from '$lib/settings/sections/KeyboardShortcutsSection.svelte'
-    import ThemesSection from '$lib/settings/sections/ThemesSection.svelte'
     import McpServerSection from '$lib/settings/sections/McpServerSection.svelte'
     import LoggingSection from '$lib/settings/sections/LoggingSection.svelte'
-    import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
+    import UpdatesSection from '$lib/settings/sections/UpdatesSection.svelte'
     import LicenseSection from '$lib/settings/sections/LicenseSection.svelte'
-    import AiSection from '$lib/settings/sections/AiSection.svelte'
-    import ViewerSection from '$lib/settings/sections/ViewerSection.svelte'
+    import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
     import SectionSummary from './SectionSummary.svelte'
     import { getMatchingSettingIdsInSection } from '$lib/settings/settings-search'
     import { searchCommands } from '$lib/commands/fuzzy-search'
@@ -27,156 +28,151 @@
 
     const { searchQuery, selectedSection, onNavigate }: Props = $props()
 
-    // Check if we're showing a top-level section (summary view) or a specific subsection
+    // True when a top-level section that itself has navigable subsections is selected — those
+    // render a summary card grid instead of their settings directly.
     const isTopLevelSection = $derived(!searchQuery.trim() && selectedSection.length === 1)
-
-    // Sections that have subsections and should show summary pages
-    const sectionsWithSubsections = ['General', 'Network', 'Developer']
-
-    // Check if current selection should show summary
+    const sectionsWithSubsections = ['Appearance', 'Behavior', 'File systems', 'Developer']
     const showSummary = $derived(isTopLevelSection && sectionsWithSubsections.includes(selectedSection[0]))
 
-    // Handle navigation from summary cards
     function handleNavigate(path: string[]) {
         onNavigate?.(path)
     }
 
-    // Check if a section has any matching settings during search
     function sectionHasMatchingSettings(sectionPath: string[]): boolean {
         if (!searchQuery.trim()) return true
         const matchingIds = getMatchingSettingIdsInSection(searchQuery, sectionPath)
         return matchingIds.size > 0
     }
 
-    // Check if keyboard shortcuts section has matching commands
     function keyboardShortcutsHasMatches(): boolean {
         if (!searchQuery.trim()) return false
         const results = searchCommands(searchQuery)
         return results.length > 0
     }
 
-    // Determine which sections to show based on selection and search
     function shouldShowSection(sectionPath: string[]): boolean {
-        // If searching, only show sections that have matching settings
         if (searchQuery.trim()) {
-            // Special handling for keyboard shortcuts which has commands, not settings
             if (sectionPath.length === 1 && sectionPath[0] === 'Keyboard shortcuts') {
                 return keyboardShortcutsHasMatches()
             }
             return sectionHasMatchingSettings(sectionPath)
         }
-        // If showing summary, don't show any section content
-        if (showSummary) {
-            return false
-        }
-        // Show only the exact selected section (not all under the same root)
+        if (showSummary) return false
         return (
             sectionPath.length === selectedSection.length && sectionPath.every((part, i) => part === selectedSection[i])
         )
     }
+
+    // For top-level sections (no subsections), allow selecting the top level OR matching via search.
+    function shouldShowTopLevel(path: string[]): boolean {
+        return shouldShowSection(path) || (isTopLevelSection && selectedSection[0] === path[0])
+    }
 </script>
 
 <div>
-    <!-- Summary pages for top-level sections -->
     {#if showSummary}
         <SectionSummary sectionName={selectedSection[0]} onNavigate={handleNavigate} />
     {:else}
-        <!-- General sections -->
-        {#if shouldShowSection(['General', 'Appearance'])}
-            <section data-section-id="general-appearance">
+        <!-- Appearance -->
+        {#if shouldShowSection(['Appearance', 'Colors and formats'])}
+            <section data-section-id="appearance-colors-and-formats">
                 <AppearanceSection {searchQuery} />
             </section>
         {/if}
-
-        {#if shouldShowSection(['General', 'Listing'])}
-            <section data-section-id="general-listing">
+        {#if shouldShowSection(['Appearance', 'Zoom and density'])}
+            <section data-section-id="appearance-zoom-and-density">
+                <AppearanceZoomSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['Appearance', 'File and folder sizes'])}
+            <section data-section-id="appearance-file-and-folder-sizes">
+                <AppearanceSizesSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['Appearance', 'Listing'])}
+            <section data-section-id="appearance-listing">
                 <ListingSection {searchQuery} />
             </section>
         {/if}
 
-        {#if shouldShowSection(['General', 'File operations'])}
-            <section data-section-id="general-file-operations">
+        <!-- Behavior -->
+        {#if shouldShowSection(['Behavior', 'File operations'])}
+            <section data-section-id="behavior-file-operations">
                 <FileOperationsSection {searchQuery} />
             </section>
         {/if}
-
-        {#if shouldShowSection(['General', 'Drive indexing'])}
-            <section data-section-id="general-drive-indexing">
+        {#if shouldShowSection(['Behavior', 'Drive indexing'])}
+            <section data-section-id="behavior-drive-indexing">
                 <DriveIndexingSection {searchQuery} />
             </section>
         {/if}
 
-        {#if shouldShowSection(['General', 'Git'])}
-            <section data-section-id="general-git">
-                <GitSection {searchQuery} />
-            </section>
-        {/if}
-
-        {#if shouldShowSection(['General', 'Updates'])}
-            <section data-section-id="general-updates">
-                <UpdatesSection {searchQuery} />
-            </section>
-        {/if}
-
-        {#if shouldShowSection(['General', 'Viewer'])}
-            <section data-section-id="general-viewer">
-                <ViewerSection {searchQuery} />
-            </section>
-        {/if}
-
-        {#if shouldShowSection(['General', 'MTP'])}
-            <section data-section-id="general-mtp">
-                <MtpSection {searchQuery} />
-            </section>
-        {/if}
-
-        <!-- Network sections -->
-        {#if shouldShowSection(['Network', 'SMB/Network shares'])}
-            <section data-section-id="network-smb-network-shares">
-                <NetworkSection {searchQuery} />
-            </section>
-        {/if}
-
-        <!-- Special sections (no subsections, show directly) -->
-        {#if shouldShowSection( ['Keyboard shortcuts'], ) || (isTopLevelSection && selectedSection[0] === 'Keyboard shortcuts')}
-            <section data-section-id="keyboard-shortcuts">
-                <KeyboardShortcutsSection {searchQuery} />
-            </section>
-        {/if}
-
-        {#if shouldShowSection(['Themes']) || (isTopLevelSection && selectedSection[0] === 'Themes')}
-            <section data-section-id="themes">
-                <ThemesSection {searchQuery} />
-            </section>
-        {/if}
-
-        {#if shouldShowSection(['License']) || (isTopLevelSection && selectedSection[0] === 'License')}
-            <section data-section-id="license">
-                <LicenseSection />
-            </section>
-        {/if}
-
-        {#if shouldShowSection(['AI']) || (isTopLevelSection && selectedSection[0] === 'AI')}
+        <!-- AI (top-level, no subsections) -->
+        {#if shouldShowTopLevel(['AI'])}
             <section data-section-id="ai">
                 <AiSection {searchQuery} />
             </section>
         {/if}
 
-        <!-- Developer sections -->
+        <!-- File systems -->
+        {#if shouldShowSection(['File systems', 'SMB/Network shares'])}
+            <section data-section-id="file-systems-smb-network-shares">
+                <NetworkSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['File systems', 'MTP (Android/Kindle/cameras)'])}
+            <section data-section-id="file-systems-mtp-android-kindle-cameras">
+                <MtpSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['File systems', 'Git'])}
+            <section data-section-id="file-systems-git">
+                <GitSection {searchQuery} />
+            </section>
+        {/if}
+
+        <!-- Viewer (top-level, no subsections) -->
+        {#if shouldShowTopLevel(['Viewer'])}
+            <section data-section-id="viewer">
+                <ViewerSection {searchQuery} />
+            </section>
+        {/if}
+
+        <!-- Keyboard shortcuts (special) -->
+        {#if shouldShowTopLevel(['Keyboard shortcuts'])}
+            <section data-section-id="keyboard-shortcuts">
+                <KeyboardShortcutsSection {searchQuery} />
+            </section>
+        {/if}
+
+        <!-- Developer -->
         {#if shouldShowSection(['Developer', 'MCP server'])}
             <section data-section-id="developer-mcp-server">
                 <McpServerSection {searchQuery} />
             </section>
         {/if}
-
         {#if shouldShowSection(['Developer', 'Logging'])}
             <section data-section-id="developer-logging">
                 <LoggingSection {searchQuery} />
             </section>
         {/if}
 
-        <!-- Advanced section (no subsections, show directly) -->
-        {#if shouldShowSection(['Advanced']) || (isTopLevelSection && selectedSection[0] === 'Advanced')}
+        <!-- Updates (top-level, no subsections) -->
+        {#if shouldShowTopLevel(['Updates'])}
+            <section data-section-id="updates">
+                <UpdatesSection {searchQuery} />
+            </section>
+        {/if}
+
+        <!-- License (special) -->
+        {#if shouldShowTopLevel(['License'])}
+            <section data-section-id="license">
+                <LicenseSection />
+            </section>
+        {/if}
+
+        <!-- Advanced (special) -->
+        {#if shouldShowTopLevel(['Advanced'])}
             <section data-section-id="advanced">
                 <AdvancedSection {searchQuery} />
             </section>

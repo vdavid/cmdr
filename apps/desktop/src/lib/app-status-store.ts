@@ -294,7 +294,7 @@ export async function pruneRecentCommands(validIds: ReadonlySet<string>): Promis
 // Settings window section persistence
 // ============================================================================
 
-const DEFAULT_SETTINGS_SECTION = ['General', 'Appearance']
+const DEFAULT_SETTINGS_SECTION = ['Appearance', 'Colors and formats']
 
 /**
  * Loads the last viewed settings section.

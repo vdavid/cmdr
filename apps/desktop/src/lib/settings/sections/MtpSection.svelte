@@ -19,7 +19,7 @@
     const mtpWarningDef = getSettingDefinition('fileOperations.mtpConnectionWarning') ?? defaultDef
 </script>
 
-<SettingsSection title="MTP">
+<SettingsSection title="MTP (Android/Kindle/cameras)">
     {#if shouldShow('fileOperations.mtpEnabled')}
         <SettingRow
             id="fileOperations.mtpEnabled"

@@ -19,13 +19,17 @@
     function getSubsectionDescription(subsection: SettingsSection): string {
         // Return a brief description based on the subsection name
         const descriptions: Record<string, string> = {
-            Appearance: 'Customize fonts, density, and visual display options.',
-            'File operations': 'Configure copy, move, delete, and progress display settings.',
+            'Colors and formats': 'Theme, app color, date and size coloring, and date/time format.',
+            'Zoom and density': 'Text size and UI density for the whole app.',
+            'File and folder sizes': 'How sizes are shown in the file list and warnings about size mismatches.',
+            Listing: 'Document icons, directory sorting, and Brief mode column width.',
+            'File operations': 'Behavior when renaming files (e.g. extension changes).',
             'Drive indexing': 'Background indexing for directory sizes. Manage index storage.',
-            Updates: 'Manage automatic update checks and notifications.',
-            'SMB/Network shares': 'Configure network timeouts and connection settings.',
+            'SMB/Network shares': 'Enable networking, direct SMB connections, share cache, and timeouts.',
+            'MTP (Android/Kindle/cameras)': 'Detect Android, Kindle, and camera devices over USB.',
+            Git: 'Repository chip, per-file status column, and the virtual `.git` portal.',
             'MCP server': 'Configure the Model Context Protocol server for AI integrations.',
-            Logging: 'Debug logging and diagnostic settings.',
+            Logging: 'Verbose console output, log file access, and diagnostic info.',
         }
         return descriptions[subsection.name] ?? `Configure ${subsection.name.toLowerCase()} settings.`
     }

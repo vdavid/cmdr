@@ -31,11 +31,11 @@ describe('allowFileExtensionChanges setting', () => {
 
   it('should be in the File operations section', () => {
     const def = getSettingDefinition('fileOperations.allowFileExtensionChanges')
-    expect(def?.section).toEqual(['General', 'File operations'])
+    expect(def?.section).toEqual(['Behavior', 'File operations'])
   })
 
   it('should appear in File operations section listing', () => {
-    const settings = getSettingsInSection(['General', 'File operations'])
+    const settings = getSettingsInSection(['Behavior', 'File operations'])
     const ids = settings.map((s) => s.id)
     expect(ids).toContain('fileOperations.allowFileExtensionChanges')
   })

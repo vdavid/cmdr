@@ -177,7 +177,7 @@
         // so the user can flip it on. Identified by the synthetic id, not the label, so
         // future label tweaks don't break this branch.
         if (volume.id === 'network' && !getNetworkEnabled()) {
-            void openSettingsWindow(['Network', 'SMB/Network shares'])
+            void openSettingsWindow(['File systems', 'SMB/Network shares'])
             return
         }
 

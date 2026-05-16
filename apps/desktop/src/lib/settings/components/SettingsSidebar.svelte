@@ -16,38 +16,70 @@
     let debounceTimer: ReturnType<typeof setTimeout> | null = null
     const sectionTree = buildSectionTree()
 
-    // Special sections that have dedicated UI (not from registry)
-    // Note: Themes is in the registry, so we don't add it here
-    const specialSections = [
-        { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'] },
-        { name: 'License', path: ['License'] },
-        { name: 'Advanced', path: ['Advanced'] },
-    ]
+    // Special sections have dedicated UI (not driven by the registry).
+    const specialSections: Record<string, { name: string; path: string[] }> = {
+        'Keyboard shortcuts': { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'] },
+        License: { name: 'License', path: ['License'] },
+        Advanced: { name: 'Advanced', path: ['Advanced'] },
+    }
 
-    // Build flat list of all navigable sections for keyboard navigation
-    const allSections = $derived.by(() => {
-        const sections: { name: string; path: string[]; isSubsection: boolean }[] = []
+    // Explicit top-to-bottom sidebar order. Registry-driven sections are looked up by name in
+    // `sectionTree`; special sections come from `specialSections`. Keep this in sync with the
+    // E2E test in `settings.spec.ts` (§ "lists top-level sections in the expected order").
+    const TOP_LEVEL_ORDER = [
+        'Appearance',
+        'Behavior',
+        'AI',
+        'File systems',
+        'Viewer',
+        'Keyboard shortcuts',
+        'Developer',
+        'Updates',
+        'License',
+        'Advanced',
+    ] as const
 
-        // Add sections from tree (including subsections)
-        for (const section of sectionTree) {
-            if (!shouldShowSection(section)) continue
-            sections.push({ name: section.name, path: section.path, isSubsection: false })
-            for (const subsection of section.subsections) {
-                if (!shouldShowSection(subsection)) continue
-                sections.push({ name: subsection.name, path: subsection.path, isSubsection: true })
+    type SidebarEntry =
+        | { kind: 'tree'; node: SettingsSection }
+        | { kind: 'special'; name: string; path: string[] }
+
+    const orderedEntries = $derived.by((): SidebarEntry[] => {
+        const treeByName = new Map(sectionTree.map((s) => [s.name, s]))
+        const entries: SidebarEntry[] = []
+        for (const name of TOP_LEVEL_ORDER) {
+            const node = treeByName.get(name)
+            if (node) {
+                entries.push({ kind: 'tree', node })
+                continue
+            }
+            const special = specialSections[name]
+            if (special) {
+                entries.push({ kind: 'special', name: special.name, path: [...special.path] })
             }
         }
+        return entries
+    })
 
-        // Add special sections
-        for (const special of specialSections) {
-            if (!shouldShowSpecialSection(special.path)) continue
-            sections.push({ name: special.name, path: special.path, isSubsection: false })
+    // Flat list of all visible (top-level + subsection) entries, for keyboard nav.
+    const allSections = $derived.by(() => {
+        const sections: { name: string; path: string[]; isSubsection: boolean }[] = []
+        for (const entry of orderedEntries) {
+            if (entry.kind === 'tree') {
+                const section = entry.node
+                if (!shouldShowSection(section)) continue
+                sections.push({ name: section.name, path: section.path, isSubsection: false })
+                for (const subsection of section.subsections) {
+                    if (!shouldShowSection(subsection)) continue
+                    sections.push({ name: subsection.name, path: subsection.path, isSubsection: true })
+                }
+            } else {
+                if (!shouldShowSpecialSection(entry.path)) continue
+                sections.push({ name: entry.name, path: entry.path, isSubsection: false })
+            }
         }
-
         return sections
     })
 
-    // Find the index of the currently selected section
     function findSelectedIndex(): number {
         return allSections.findIndex(
             (s) => s.path.length === selectedSection.length && s.path.every((part, i) => part === selectedSection[i]),
@@ -58,12 +90,10 @@
         const target = event.target as HTMLInputElement
         const value = target.value
 
-        // Clear any pending debounce timer
         if (debounceTimer) {
             clearTimeout(debounceTimer)
         }
 
-        // Debounce search by 200ms
         debounceTimer = setTimeout(() => {
             onSearch(value)
             debounceTimer = null
@@ -87,22 +117,12 @@
 
     function shouldShowSpecialSection(path: string[]): boolean {
         if (!searchQuery.trim()) return true
-        // For special sections, show if any Advanced setting matches (for Advanced section)
-        if (path[0] === 'Advanced') {
-            return sectionHasMatches(path, matchingSections)
-        }
-        // Keyboard shortcuts: show if any command name matches the search query
-        if (path[0] === 'Keyboard shortcuts') {
-            return matchingSections.has('Keyboard shortcuts')
-        }
-        // License: show if query matches license-related terms
-        if (path[0] === 'License') {
-            return matchingSections.has('License')
-        }
+        if (path[0] === 'Advanced') return sectionHasMatches(path, matchingSections)
+        if (path[0] === 'Keyboard shortcuts') return matchingSections.has('Keyboard shortcuts')
+        if (path[0] === 'License') return matchingSections.has('License')
         return false
     }
 
-    // Shared navigation logic for Up/Down arrows
     function navigateSections(direction: 'up' | 'down') {
         const totalSections = allSections.length
         if (totalSections === 0) return
@@ -118,7 +138,6 @@
         }
     }
 
-    // Keyboard navigation directly changes selection (no separate focus state)
     function handleNavKeydown(event: KeyboardEvent) {
         if (event.key === 'ArrowDown') {
             event.preventDefault()
@@ -129,7 +148,6 @@
         }
     }
 
-    // Handle keyboard in search box - Up/Down move section selector
     function handleSearchKeydown(event: KeyboardEvent) {
         if (event.key === 'ArrowDown') {
             event.preventDefault()
@@ -161,60 +179,57 @@
     </div>
 
     <div class="section-tree" tabindex="0" onkeydown={handleNavKeydown} role="listbox" aria-label="Settings sections">
-        {#each sectionTree as section (section.name)}
-            {#if shouldShowSection(section)}
+        {#each orderedEntries as entry (entry.kind === 'tree' ? entry.node.name : entry.name)}
+            {#if entry.kind === 'tree'}
+                {#if shouldShowSection(entry.node)}
+                    <div class="section-group">
+                        <button
+                            class="section-item"
+                            class:selected={isSelected(entry.node.path)}
+                            onclick={() => {
+                                onSectionSelect(entry.node.path)
+                            }}
+                            role="option"
+                            aria-selected={isSelected(entry.node.path)}
+                            tabindex="-1"
+                        >
+                            {entry.node.name}
+                        </button>
+                        {#if entry.node.subsections.length > 0}
+                            <div class="subsections">
+                                {#each entry.node.subsections as subsection (subsection.name)}
+                                    {#if shouldShowSection(subsection)}
+                                        <button
+                                            class="section-item subsection"
+                                            class:selected={isSelected(subsection.path)}
+                                            onclick={() => {
+                                                onSectionSelect(subsection.path)
+                                            }}
+                                            role="option"
+                                            aria-selected={isSelected(subsection.path)}
+                                            tabindex="-1"
+                                        >
+                                            {subsection.name}
+                                        </button>
+                                    {/if}
+                                {/each}
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
+            {:else if shouldShowSpecialSection(entry.path)}
                 <div class="section-group">
                     <button
                         class="section-item"
-                        class:selected={isSelected(section.path)}
+                        class:selected={isSelected(entry.path)}
                         onclick={() => {
-                            onSectionSelect(section.path)
+                            onSectionSelect(entry.path)
                         }}
                         role="option"
-                        aria-selected={isSelected(section.path)}
+                        aria-selected={isSelected(entry.path)}
                         tabindex="-1"
                     >
-                        {section.name}
-                    </button>
-                    {#if section.subsections.length > 0}
-                        <div class="subsections">
-                            {#each section.subsections as subsection (subsection.name)}
-                                {#if shouldShowSection(subsection)}
-                                    <button
-                                        class="section-item subsection"
-                                        class:selected={isSelected(subsection.path)}
-                                        onclick={() => {
-                                            onSectionSelect(subsection.path)
-                                        }}
-                                        role="option"
-                                        aria-selected={isSelected(subsection.path)}
-                                        tabindex="-1"
-                                    >
-                                        {subsection.name}
-                                    </button>
-                                {/if}
-                            {/each}
-                        </div>
-                    {/if}
-                </div>
-            {/if}
-        {/each}
-
-        <!-- Special sections -->
-        {#each specialSections as special (special.name)}
-            {#if shouldShowSpecialSection(special.path)}
-                <div class="section-group">
-                    <button
-                        class="section-item"
-                        class:selected={isSelected(special.path)}
-                        onclick={() => {
-                            onSectionSelect(special.path)
-                        }}
-                        role="option"
-                        aria-selected={isSelected(special.path)}
-                        tabindex="-1"
-                    >
-                        {special.name}
+                        {entry.name}
                     </button>
                 </div>
             {/if}

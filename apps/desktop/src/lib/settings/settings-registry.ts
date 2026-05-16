@@ -9,15 +9,37 @@ import { cloudProviderPresets } from './cloud-providers'
 
 // ============================================================================
 // Settings Definitions
+//
+// Top-level section order is driven by the order entries appear here.
+// `buildSectionTree()` uses first-appearance order for each (sub)section name.
+// Special non-registry sections (Keyboard shortcuts, License, Advanced) are
+// interleaved in `SettingsSidebar.svelte`.
 // ============================================================================
 
 export const settingsRegistry: SettingDefinition[] = [
   // ========================================================================
-  // General › Appearance
+  // Appearance › Colors and formats
   // ========================================================================
   {
+    id: 'theme.mode',
+    section: ['Appearance', 'Colors and formats'],
+    label: 'Theme mode',
+    description: 'Choose between light, dark, or system-based theme.',
+    keywords: ['theme', 'dark', 'light', 'mode', 'appearance', 'color'],
+    type: 'enum',
+    default: 'system',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'light', label: '☀️ Light' },
+        { value: 'dark', label: '🌙 Dark' },
+        { value: 'system', label: '💻 System' },
+      ],
+    },
+  },
+  {
     id: 'appearance.appColor',
-    section: ['General', 'Appearance'],
+    section: ['Appearance', 'Colors and formats'],
     label: 'App color',
     description: isMacOS()
       ? 'To change your system theme color, go to System Settings > Appearance.'
@@ -34,69 +56,8 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
-    id: 'appearance.textSize',
-    section: ['General', 'Appearance'],
-    label: 'Text size',
-    description:
-      'Scales text and UI throughout the app. Compounds with the macOS Accessibility text size — 100% means "exactly the system size".',
-    keywords: ['text', 'size', 'font', 'larger', 'smaller', 'accessibility', 'a11y', 'zoom', 'scale'],
-    type: 'number',
-    default: 100,
-    component: 'slider',
-    constraints: {
-      min: 75,
-      max: 150,
-      step: 5,
-      sliderStops: [75, 100, 125, 150],
-    },
-  },
-  {
-    id: 'appearance.uiDensity',
-    section: ['General', 'Appearance'],
-    label: 'UI density',
-    description: 'Controls the spacing and size of UI elements throughout the app.',
-    keywords: ['compact', 'comfortable', 'spacious', 'size', 'spacing', 'dense'],
-    type: 'enum',
-    default: 'comfortable',
-    component: 'toggle-group',
-    constraints: {
-      options: [
-        { value: 'compact', label: 'Compact' },
-        { value: 'comfortable', label: 'Comfortable' },
-        { value: 'spacious', label: 'Spacious' },
-      ],
-    },
-  },
-  {
-    id: 'appearance.useAppIconsForDocuments',
-    section: ['General', 'Appearance'],
-    label: 'Use app icons for documents',
-    description:
-      "Show the app's icon for documents instead of generic file type icons. More colorful but slightly slower.",
-    keywords: ['icon', 'document', 'file', 'app', 'colorful', 'finder'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-  },
-  {
-    id: 'appearance.fileSizeFormat',
-    section: ['General', 'Appearance'],
-    label: 'File size format',
-    description: 'How to display file sizes in the file list.',
-    keywords: ['size', 'bytes', 'binary', 'decimal', 'kb', 'mb', 'kib', 'mib'],
-    type: 'enum',
-    default: 'binary',
-    component: 'select',
-    constraints: {
-      options: [
-        { value: 'binary', label: 'Binary (KiB, MiB, GiB)', description: '1 KiB = 1024 bytes' },
-        { value: 'si', label: 'SI decimal (KB, MB, GB)', description: '1 KB = 1000 bytes' },
-      ],
-    },
-  },
-  {
     id: 'appearance.sizeColors',
-    section: ['General', 'Appearance'],
+    section: ['Appearance', 'Colors and formats'],
     label: 'Size colors',
     description:
       'Color file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. App uses shades of the app color.',
@@ -114,7 +75,7 @@ export const settingsRegistry: SettingDefinition[] = [
   },
   {
     id: 'appearance.dateColors',
-    section: ['General', 'Appearance'],
+    section: ['Appearance', 'Colors and formats'],
     label: 'Date colors',
     description:
       'Color modified dates in the file list by age. App fades older dates toward the default text color. Wilting goes green for fresh files, yellow for aging, and brown for old.',
@@ -132,7 +93,7 @@ export const settingsRegistry: SettingDefinition[] = [
   },
   {
     id: 'appearance.dateTimeFormat',
-    section: ['General', 'Appearance'],
+    section: ['Appearance', 'Colors and formats'],
     label: 'Date and time format',
     description: 'How to display dates and times in the file list.',
     keywords: ['date', 'time', 'format', 'iso', 'custom', 'timestamp'],
@@ -151,7 +112,7 @@ export const settingsRegistry: SettingDefinition[] = [
   },
   {
     id: 'appearance.customDateTimeFormat',
-    section: ['General', 'Appearance'],
+    section: ['Appearance', 'Colors and formats'],
     label: 'Custom date/time format',
     description:
       'Format string for custom date/time display. Use placeholders like YYYY, MM, DD, HH, mm, ss. Add a single `|` to split the date and time into two aligned columns (e.g. `YYYY-MM-DD | HH:mm`).',
@@ -160,30 +121,61 @@ export const settingsRegistry: SettingDefinition[] = [
     default: 'YYYY-MM-DD | HH:mm',
     component: 'text-input',
   },
+  {
+    id: 'listing.stripedRows',
+    section: ['Appearance', 'Colors and formats'],
+    label: 'Striped rows',
+    description: 'Alternate row shading for easier line tracking. Applies to both Full and Brief view modes.',
+    keywords: ['stripe', 'zebra', 'alternate', 'row', 'shading', 'accessibility', 'a11y'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
 
   // ========================================================================
-  // General › Listing
+  // Appearance › Zoom and density
   // ========================================================================
   {
-    id: 'listing.directorySortMode',
-    section: ['General', 'Listing'],
-    label: 'Sort directories',
-    description: 'How directories are sorted when changing the sort column.',
-    keywords: ['sort', 'directory', 'folder', 'order', 'listing', 'name', 'size'],
+    id: 'appearance.textSize',
+    section: ['Appearance', 'Zoom and density'],
+    label: 'Text size',
+    description:
+      'Scales text and UI throughout the app. Compounds with the macOS Accessibility text size — 100% means "exactly the system size".',
+    keywords: ['text', 'size', 'font', 'larger', 'smaller', 'accessibility', 'a11y', 'zoom', 'scale'],
+    type: 'number',
+    default: 100,
+    component: 'slider',
+    constraints: {
+      min: 75,
+      max: 150,
+      step: 5,
+      sliderStops: [75, 100, 125, 150],
+    },
+  },
+  {
+    id: 'appearance.uiDensity',
+    section: ['Appearance', 'Zoom and density'],
+    label: 'UI density',
+    description: 'Controls the spacing and size of UI elements throughout the app.',
+    keywords: ['compact', 'comfortable', 'spacious', 'size', 'spacing', 'dense'],
     type: 'enum',
-    default: 'likeFiles',
+    default: 'comfortable',
     component: 'toggle-group',
     constraints: {
       options: [
-        { value: 'likeFiles', label: 'Like files' },
-        { value: 'alwaysByName', label: 'Always by name' },
+        { value: 'compact', label: 'Compact' },
+        { value: 'comfortable', label: 'Comfortable' },
+        { value: 'spacious', label: 'Spacious' },
       ],
     },
   },
 
+  // ========================================================================
+  // Appearance › File and folder sizes
+  // ========================================================================
   {
     id: 'listing.sizeDisplay',
-    section: ['General', 'Listing'],
+    section: ['Appearance', 'File and folder sizes'],
     label: 'Size display',
     description:
       'Smart shows the smaller of content and on-disk size. This helps with disk images and compressed files where the two differ.',
@@ -199,10 +191,9 @@ export const settingsRegistry: SettingDefinition[] = [
       ],
     },
   },
-
   {
     id: 'listing.humanFriendlySizeUnits',
-    section: ['General', 'Listing'],
+    section: ['Appearance', 'File and folder sizes'],
     label: 'Human-friendly size units',
     description: 'On: shows 1.02 MB. Off: shows raw bytes for precise comparison.',
     keywords: ['size', 'human', 'bytes', 'unit', 'format', 'raw', 'precise'],
@@ -210,10 +201,25 @@ export const settingsRegistry: SettingDefinition[] = [
     default: true,
     component: 'switch',
   },
-
+  {
+    id: 'appearance.fileSizeFormat',
+    section: ['Appearance', 'File and folder sizes'],
+    label: 'File size format',
+    description: 'How to display file sizes in the file list.',
+    keywords: ['size', 'bytes', 'binary', 'decimal', 'kb', 'mb', 'kib', 'mib'],
+    type: 'enum',
+    default: 'binary',
+    component: 'select',
+    constraints: {
+      options: [
+        { value: 'binary', label: 'Binary (KiB, MiB, GiB)', description: '1 KiB = 1024 bytes' },
+        { value: 'si', label: 'SI decimal (KB, MB, GB)', description: '1 KB = 1000 bytes' },
+      ],
+    },
+  },
   {
     id: 'listing.sizeMismatchWarning',
-    section: ['General', 'Listing'],
+    section: ['Appearance', 'File and folder sizes'],
     label: 'Size mismatch warning',
     description: 'Shows a warning icon on folders where content and on-disk sizes differ by more than 50% and 200 MB.',
     keywords: ['size', 'mismatch', 'warning', 'alert', 'disk', 'content', 'difference'],
@@ -222,20 +228,39 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
   },
 
+  // ========================================================================
+  // Appearance › Listing
+  // ========================================================================
   {
-    id: 'listing.stripedRows',
-    section: ['General', 'Listing'],
-    label: 'Striped rows',
-    description: 'Alternate row shading for easier line tracking. Applies to both Full and Brief view modes.',
-    keywords: ['stripe', 'zebra', 'alternate', 'row', 'shading', 'accessibility', 'a11y'],
+    id: 'appearance.useAppIconsForDocuments',
+    section: ['Appearance', 'Listing'],
+    label: 'Use app icons for documents',
+    description:
+      "Show the app's icon for documents instead of generic file type icons. More colorful but slightly slower.",
+    keywords: ['icon', 'document', 'file', 'app', 'colorful', 'finder'],
     type: 'boolean',
-    default: false,
+    default: true,
     component: 'switch',
   },
-
+  {
+    id: 'listing.directorySortMode',
+    section: ['Appearance', 'Listing'],
+    label: 'Sort directories',
+    description: 'How directories are sorted when changing the sort column.',
+    keywords: ['sort', 'directory', 'folder', 'order', 'listing', 'name', 'size'],
+    type: 'enum',
+    default: 'likeFiles',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'likeFiles', label: 'Like files' },
+        { value: 'alwaysByName', label: 'Always by name' },
+      ],
+    },
+  },
   {
     id: 'listing.briefColumnWidthMode',
-    section: ['General', 'Listing'],
+    section: ['Appearance', 'Listing'],
     label: 'Maximum column width in Brief mode',
     description:
       'Limits how wide Brief mode columns can grow to fit long filenames. Columns are always capped at the pane width regardless; the chosen limit only kicks in when it would be smaller than the pane.',
@@ -252,7 +277,7 @@ export const settingsRegistry: SettingDefinition[] = [
   },
   {
     id: 'listing.briefColumnWidthMaxPx',
-    section: ['General', 'Listing'],
+    section: ['Appearance', 'Listing'],
     label: 'Brief column width limit',
     description: '',
     keywords: ['brief', 'column', 'width', 'max', 'maximum', 'limit', 'pixel', 'slider'],
@@ -268,68 +293,11 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   // ========================================================================
-  // General › Git
+  // Behavior › File operations
   // ========================================================================
-  {
-    id: 'fileExplorer.git.showRepoChip',
-    section: ['General', 'Git'],
-    label: 'Show repository chip',
-    description:
-      'Display the current branch, ahead/behind, and dirty state above the file list when inside a git repository.',
-    keywords: ['git', 'chip', 'branch', 'breadcrumb', 'repo', 'status', 'ahead', 'behind', 'dirty'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-  },
-  {
-    id: 'fileExplorer.git.showStatusColumn',
-    section: ['General', 'Git'],
-    label: 'Show git status column',
-    description: 'Add a column showing per-file git status (modified, untracked, etc.) in Full mode.',
-    keywords: ['git', 'status', 'column', 'modified', 'untracked', 'ignored', 'added', 'deleted'],
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-  },
-  {
-    id: 'fileExplorer.git.showVirtualGitPortal',
-    section: ['General', 'Git'],
-    label: 'Show virtual git portal',
-    description:
-      'When entering `.git`, show branches, tags, commits, and worktrees as browsable virtual folders. Disable to see the raw `.git` contents instead.',
-    keywords: ['git', 'portal', 'virtual', 'branches', 'tags', 'commits', 'worktrees', 'history'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-  },
-
-  // ========================================================================
-  // General › File operations
-  // ========================================================================
-  {
-    id: 'fileOperations.mtpEnabled',
-    section: ['General', 'MTP'],
-    label: 'Android/Kindle/camera support (PTP and MTP)',
-    description:
-      'Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you\'ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to "File transfer", "Android Auto", or similar. (Varies by device.)',
-    keywords: ['mtp', 'android', 'usb', 'device', 'phone', 'ptpcamerad', 'mobile'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-  },
-  {
-    id: 'fileOperations.mtpConnectionWarning',
-    section: ['General', 'MTP'],
-    label: 'Warn when a device connects',
-    description: 'Show a notification when an Android or camera device connects over USB.',
-    keywords: ['mtp', 'warning', 'notification', 'connect', 'toast', 'android'],
-    type: 'boolean',
-    default: true,
-    component: 'checkbox',
-  },
   {
     id: 'fileOperations.allowFileExtensionChanges',
-    section: ['General', 'File operations'],
+    section: ['Behavior', 'File operations'],
     label: 'Allow file extension changes',
     description: 'What to do when you rename a file and the extension changes.',
     keywords: ['extension', 'rename', 'file', 'change', 'ask', 'confirm'],
@@ -344,246 +312,18 @@ export const settingsRegistry: SettingDefinition[] = [
       ],
     },
   },
-  {
-    id: 'fileOperations.progressUpdateInterval',
-    section: ['General', 'File operations'],
-    label: 'Progress update interval',
-    description:
-      'How often to refresh progress during file operations. Lower values feel more responsive but use more CPU.',
-    keywords: ['progress', 'update', 'interval', 'refresh', 'cpu', 'performance'],
-    type: 'number',
-    default: 500,
-    component: 'slider',
-    constraints: {
-      min: 50,
-      max: 5000,
-      step: 50,
-      sliderStops: [100, 250, 500, 1000, 2000],
-    },
-  },
-  {
-    id: 'fileOperations.maxConflictsToShow',
-    section: ['General', 'File operations'],
-    label: 'Maximum conflicts to show',
-    description: 'Maximum number of file conflicts to display in the preview before an operation.',
-    keywords: ['conflict', 'max', 'limit', 'preview', 'operation'],
-    type: 'number',
-    default: 100,
-    component: 'select',
-    constraints: {
-      options: [
-        { value: 1, label: '1' },
-        { value: 2, label: '2' },
-        { value: 3, label: '3' },
-        { value: 5, label: '5' },
-        { value: 10, label: '10' },
-        { value: 50, label: '50' },
-        { value: 100, label: '100' },
-        { value: 200, label: '200' },
-        { value: 500, label: '500' },
-      ],
-      allowCustom: true,
-      customMin: 1,
-      customMax: 1000,
-    },
-  },
 
   // ========================================================================
-  // General › Updates
-  // ========================================================================
-  {
-    id: 'updates.autoCheck',
-    section: ['General', 'Updates'],
-    label: 'Automatically check for updates',
-    description: 'Periodically check for new versions in the background.',
-    keywords: ['update', 'auto', 'check', 'version', 'background'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-  },
-  {
-    id: 'updates.crashReports',
-    section: ['General', 'Updates'],
-    label: 'Send crash reports',
-    description:
-      'Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location. Never file names or personal data.',
-    keywords: ['crash', 'report', 'privacy', 'telemetry', 'bug', 'error'],
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-  },
-  {
-    id: 'updates.errorReports',
-    section: ['General', 'Updates'],
-    label: 'Send error reports automatically',
-    description:
-      'Send a small log snippet to the developer when an error occurs. Helps fix bugs faster. Off by default. You can always send a manual report from the Help menu.',
-    keywords: ['error', 'report', 'auto', 'send', 'privacy', 'telemetry', 'bug', 'log', 'snippet', 'diagnostics'],
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-  },
-
-  // ========================================================================
-  // Network › SMB/Network shares
-  // ========================================================================
-  {
-    id: 'network.enabled',
-    section: ['Network', 'SMB/Network shares'],
-    label: 'Enable networking',
-    description:
-      "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won't ask macOS for Local Network access.",
-    keywords: ['network', 'enable', 'enabled', 'smb', 'discovery', 'mdns', 'bonjour', 'local', 'permission'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-  },
-  {
-    id: 'network.firstTriggerDone',
-    section: ['Network', 'SMB/Network shares'],
-    label: 'Network discovery started',
-    description: 'Internal: tracks whether discovery has been triggered at least once. Hidden from the UI.',
-    keywords: [],
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-  },
-  {
-    id: 'network.directSmbConnection',
-    section: ['Network', 'SMB/Network shares'],
-    label: 'Connect directly to SMB shares',
-    description:
-      'When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.',
-    keywords: ['smb', 'direct', 'fast', 'connection', 'network', 'performance', 'smb2'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-  },
-  {
-    id: 'network.shareCacheDuration',
-    section: ['Network', 'SMB/Network shares'],
-    label: 'Share cache duration',
-    description: 'How long to cache the list of available shares on a server before refreshing.',
-    keywords: ['cache', 'smb', 'share', 'network', 'refresh', 'ttl'],
-    type: 'duration',
-    default: 30000, // 30 seconds in ms
-    component: 'select',
-    constraints: {
-      unit: 's',
-      options: [
-        { value: 30000, label: '30 seconds' },
-        { value: 300000, label: '5 minutes' },
-        { value: 3600000, label: '1 hour' },
-        { value: 86400000, label: '1 day' },
-        { value: 2592000000, label: '30 days' },
-      ],
-      allowCustom: true,
-      customMin: 1000,
-      customMax: 2592000000,
-    },
-  },
-  {
-    id: 'network.timeoutMode',
-    section: ['Network', 'SMB/Network shares'],
-    label: 'Network timeout mode',
-    description: 'How long to wait when connecting to network shares.',
-    keywords: ['timeout', 'network', 'slow', 'vpn', 'connection', 'latency'],
-    type: 'enum',
-    default: 'normal',
-    component: 'radio',
-    constraints: {
-      options: [
-        { value: 'normal', label: 'Normal', description: 'For typical local networks (15s timeout)' },
-        {
-          value: 'slow',
-          label: 'Slow network',
-          description: 'For VPNs or high-latency connections (45s timeout)',
-        },
-        { value: 'custom', label: 'Custom' },
-      ],
-      allowCustom: true,
-    },
-  },
-  {
-    id: 'network.customTimeout',
-    section: ['Network', 'SMB/Network shares'],
-    label: 'Custom timeout',
-    description: 'Custom timeout in seconds for network operations.',
-    keywords: ['timeout', 'custom', 'seconds'],
-    type: 'number',
-    default: 15,
-    component: 'number-input',
-    constraints: {
-      min: 5,
-      max: 120,
-      step: 1,
-    },
-  },
-  {
-    id: 'network.smbConcurrency',
-    section: ['Network', 'SMB/Network shares'],
-    label: 'Concurrent operations per SMB connection',
-    description:
-      'How many file transfers Cmdr runs in parallel on a single SMB connection. Higher values speed up batch copies of many files (especially many small files) but use more server resources. Default 10 is safe for most home NAS hardware. Changes apply on the next batch copy.',
-    keywords: ['smb', 'concurrency', 'parallel', 'copy', 'batch', 'performance', 'transfer', 'speed'],
-    type: 'number',
-    default: 10,
-    component: 'number-input',
-    showInAdvanced: true,
-    constraints: {
-      min: 1,
-      max: 32,
-      step: 1,
-    },
-  },
-
-  // ========================================================================
-  // Themes
-  // ========================================================================
-  {
-    id: 'theme.mode',
-    section: ['Themes'],
-    label: 'Theme mode',
-    description: 'Choose between light, dark, or system-based theme.',
-    keywords: ['theme', 'dark', 'light', 'mode', 'appearance', 'color'],
-    type: 'enum',
-    default: 'system',
-    component: 'toggle-group',
-    constraints: {
-      options: [
-        { value: 'light', label: '☀️ Light' },
-        { value: 'dark', label: '🌙 Dark' },
-        { value: 'system', label: '💻 System' },
-      ],
-    },
-  },
-
-  // ========================================================================
-  // General > Drive indexing
+  // Behavior › Drive indexing
   // ========================================================================
   {
     id: 'indexing.enabled',
-    section: ['General', 'Drive indexing'],
+    section: ['Behavior', 'Drive indexing'],
     label: 'Drive indexing',
     description: 'Index your drive in the background for instant directory sizes.',
     keywords: ['index', 'drive', 'scan', 'size', 'directory', 'folder', 'background'],
     type: 'boolean',
     default: true,
-    component: 'switch',
-  },
-
-  // ========================================================================
-  // Viewer
-  // ========================================================================
-  {
-    id: 'viewer.wordWrap',
-    section: ['General', 'Viewer'],
-    label: 'Word wrap',
-    description: 'Wrap long lines at the window edge in the file viewer instead of scrolling horizontally.',
-    keywords: ['viewer', 'wrap', 'word', 'line', 'horizontal', 'scroll'],
-    type: 'boolean',
-    default: false,
     component: 'switch',
   },
 
@@ -673,6 +413,195 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   // ========================================================================
+  // File systems › SMB/Network shares
+  // ========================================================================
+  {
+    id: 'network.enabled',
+    section: ['File systems', 'SMB/Network shares'],
+    label: 'Enable networking',
+    description:
+      "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won't ask macOS for Local Network access.",
+    keywords: ['network', 'enable', 'enabled', 'smb', 'discovery', 'mdns', 'bonjour', 'local', 'permission'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'network.firstTriggerDone',
+    section: ['File systems', 'SMB/Network shares'],
+    label: 'Network discovery started',
+    description: 'Internal: tracks whether discovery has been triggered at least once. Hidden from the UI.',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
+    id: 'network.directSmbConnection',
+    section: ['File systems', 'SMB/Network shares'],
+    label: 'Connect directly to SMB shares',
+    description:
+      'When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.',
+    keywords: ['smb', 'direct', 'fast', 'connection', 'network', 'performance', 'smb2'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'network.shareCacheDuration',
+    section: ['File systems', 'SMB/Network shares'],
+    label: 'Share cache duration',
+    description: 'How long to cache the list of available shares on a server before refreshing.',
+    keywords: ['cache', 'smb', 'share', 'network', 'refresh', 'ttl'],
+    type: 'duration',
+    default: 30000, // 30 seconds in ms
+    component: 'select',
+    constraints: {
+      unit: 's',
+      options: [
+        { value: 30000, label: '30 seconds' },
+        { value: 300000, label: '5 minutes' },
+        { value: 3600000, label: '1 hour' },
+        { value: 86400000, label: '1 day' },
+        { value: 2592000000, label: '30 days' },
+      ],
+      allowCustom: true,
+      customMin: 1000,
+      customMax: 2592000000,
+    },
+  },
+  {
+    id: 'network.timeoutMode',
+    section: ['File systems', 'SMB/Network shares'],
+    label: 'Network timeout mode',
+    description: 'How long to wait when connecting to network shares.',
+    keywords: ['timeout', 'network', 'slow', 'vpn', 'connection', 'latency'],
+    type: 'enum',
+    default: 'normal',
+    component: 'radio',
+    constraints: {
+      options: [
+        { value: 'normal', label: 'Normal', description: 'For typical local networks (15s timeout)' },
+        {
+          value: 'slow',
+          label: 'Slow network',
+          description: 'For VPNs or high-latency connections (45s timeout)',
+        },
+        { value: 'custom', label: 'Custom' },
+      ],
+      allowCustom: true,
+    },
+  },
+  {
+    id: 'network.customTimeout',
+    section: ['File systems', 'SMB/Network shares'],
+    label: 'Custom timeout',
+    description: 'Custom timeout in seconds for network operations.',
+    keywords: ['timeout', 'custom', 'seconds'],
+    type: 'number',
+    default: 15,
+    component: 'number-input',
+    constraints: {
+      min: 5,
+      max: 120,
+      step: 1,
+    },
+  },
+  {
+    id: 'network.smbConcurrency',
+    section: ['File systems', 'SMB/Network shares'],
+    label: 'Concurrent operations per SMB connection',
+    description:
+      'How many file transfers Cmdr runs in parallel on a single SMB connection. Higher values speed up batch copies of many files (especially many small files) but use more server resources. Default 10 is safe for most home NAS hardware. Changes apply on the next batch copy.',
+    keywords: ['smb', 'concurrency', 'parallel', 'copy', 'batch', 'performance', 'transfer', 'speed'],
+    type: 'number',
+    default: 10,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 1,
+      max: 32,
+      step: 1,
+    },
+  },
+
+  // ========================================================================
+  // File systems › MTP (Android/Kindle/cameras)
+  // ========================================================================
+  {
+    id: 'fileOperations.mtpEnabled',
+    section: ['File systems', 'MTP (Android/Kindle/cameras)'],
+    label: 'Android/Kindle/camera support (PTP and MTP)',
+    description:
+      'Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you\'ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to "File transfer", "Android Auto", or similar. (Varies by device.)',
+    keywords: ['mtp', 'android', 'usb', 'device', 'phone', 'ptpcamerad', 'mobile'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'fileOperations.mtpConnectionWarning',
+    section: ['File systems', 'MTP (Android/Kindle/cameras)'],
+    label: 'Warn when a device connects',
+    description: 'Show a notification when an Android or camera device connects over USB.',
+    keywords: ['mtp', 'warning', 'notification', 'connect', 'toast', 'android'],
+    type: 'boolean',
+    default: true,
+    component: 'checkbox',
+  },
+
+  // ========================================================================
+  // File systems › Git
+  // ========================================================================
+  {
+    id: 'fileExplorer.git.showRepoChip',
+    section: ['File systems', 'Git'],
+    label: 'Show repository chip',
+    description:
+      'Display the current branch, ahead/behind, and dirty state above the file list when inside a git repository.',
+    keywords: ['git', 'chip', 'branch', 'breadcrumb', 'repo', 'status', 'ahead', 'behind', 'dirty'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'fileExplorer.git.showStatusColumn',
+    section: ['File systems', 'Git'],
+    label: 'Show git status column',
+    description: 'Add a column showing per-file git status (modified, untracked, etc.) in Full mode.',
+    keywords: ['git', 'status', 'column', 'modified', 'untracked', 'ignored', 'added', 'deleted'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    id: 'fileExplorer.git.showVirtualGitPortal',
+    section: ['File systems', 'Git'],
+    label: 'Show virtual git portal',
+    description:
+      'When entering `.git`, show branches, tags, commits, and worktrees as browsable virtual folders. Disable to see the raw `.git` contents instead.',
+    keywords: ['git', 'portal', 'virtual', 'branches', 'tags', 'commits', 'worktrees', 'history'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+
+  // ========================================================================
+  // Viewer
+  // ========================================================================
+  {
+    id: 'viewer.wordWrap',
+    section: ['Viewer'],
+    label: 'Word wrap',
+    description: 'Wrap long lines at the window edge in the file viewer instead of scrolling horizontally.',
+    keywords: ['viewer', 'wrap', 'word', 'line', 'horizontal', 'scroll'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+
+  // ========================================================================
   // Developer › MCP server
   // ========================================================================
   {
@@ -720,24 +649,50 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   // ========================================================================
-  // Advanced (generated UI)
+  // Updates
   // ========================================================================
   {
-    id: 'advanced.dragThreshold',
-    section: ['Advanced'],
-    label: 'Drag threshold',
-    description: 'Minimum distance in pixels before a drag operation starts.',
-    keywords: ['drag', 'threshold', 'pixel', 'distance'],
-    type: 'number',
-    default: 5,
-    component: 'number-input',
-    showInAdvanced: true,
-    constraints: {
-      min: 1,
-      max: 50,
-      step: 1,
-    },
+    id: 'updates.autoCheck',
+    section: ['Updates'],
+    label: 'Automatically check for updates',
+    description: 'Periodically check for new versions in the background.',
+    keywords: ['update', 'auto', 'check', 'version', 'background'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
   },
+  {
+    id: 'updates.crashReports',
+    section: ['Updates'],
+    label: 'Send crash reports',
+    description:
+      'Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location. Never file names or personal data.',
+    keywords: ['crash', 'report', 'privacy', 'telemetry', 'bug', 'error'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    id: 'updates.errorReports',
+    section: ['Updates'],
+    label: 'Send error reports automatically',
+    description:
+      'Send a small log snippet to the developer when an error occurs. Helps fix bugs faster. Off by default. You can always send a manual report from the Help menu.',
+    keywords: ['error', 'report', 'auto', 'send', 'privacy', 'telemetry', 'bug', 'log', 'snippet', 'diagnostics'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+
+  // ========================================================================
+  // Advanced (auto-generated UI, `showInAdvanced: true`).
+  //
+  // Entries below carry a `section` path purely for reference / search; they
+  // are excluded from the section tree and rendered only inside the Advanced
+  // section. `network.smbConcurrency` above and the two `fileOperations.*`
+  // entries below (maxConflictsToShow, progressUpdateInterval) keep their
+  // natural section path AND surface here.
+  // ========================================================================
   {
     id: 'advanced.prefetchBufferSize',
     section: ['Advanced'],
@@ -803,100 +758,6 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
-    id: 'advanced.serviceResolveTimeout',
-    section: ['Advanced'],
-    label: 'Service resolve timeout',
-    description: 'Timeout for resolving network services via Bonjour.',
-    keywords: ['bonjour', 'resolve', 'timeout', 'mdns'],
-    type: 'duration',
-    default: 5000,
-    component: 'duration',
-    showInAdvanced: true,
-    constraints: {
-      unit: 's',
-      minMs: 1000,
-      maxMs: 30000,
-    },
-  },
-  {
-    id: 'advanced.mountTimeout',
-    section: ['Advanced'],
-    label: 'Mount timeout',
-    description: 'Timeout for mounting network shares.',
-    keywords: ['mount', 'timeout', 'network', 'share'],
-    type: 'duration',
-    default: 20000,
-    component: 'duration',
-    showInAdvanced: true,
-    constraints: {
-      unit: 's',
-      minMs: 5000,
-      maxMs: 120000,
-    },
-  },
-  {
-    id: 'advanced.updateCheckInterval',
-    section: ['Advanced'],
-    label: 'Update check interval',
-    description: 'How often to check for updates in the background.',
-    keywords: ['update', 'interval', 'background', 'check'],
-    type: 'duration',
-    default: 3600000, // 60 minutes
-    component: 'duration',
-    showInAdvanced: true,
-    constraints: {
-      unit: 'min',
-      minMs: 300000, // 5 min
-      maxMs: 86400000, // 24 hours
-    },
-  },
-  {
-    id: 'advanced.filterSafeSaveArtifacts',
-    section: ['Advanced'],
-    label: 'Filter safe-save artifacts on SMB',
-    description:
-      'Hide temporary files created by macOS safe-save (like ".sb-" files from TextEdit) in the SMB file watcher. These are transient and normally invisible.',
-    keywords: ['smb', 'safe-save', 'artifact', 'temp', 'sb', 'filter', 'watcher'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-    showInAdvanced: true,
-  },
-  {
-    id: 'advanced.maxLogStorageMb',
-    section: ['Advanced'],
-    label: 'Maximum disk space for log files (MB)',
-    description:
-      'Maximum disk space for log files. Set to 0 to disable log storage; error reports cannot be sent without logs. Changes to a non-zero value take effect on next app launch.',
-    keywords: ['log', 'storage', 'disk', 'mb', 'cap', 'rotation', 'error', 'report', 'privacy'],
-    type: 'number',
-    default: 200,
-    component: 'number-input',
-    showInAdvanced: true,
-    constraints: {
-      min: 0,
-      max: 5000,
-      step: 50,
-    },
-  },
-  {
-    id: 'fileExplorer.typeToJump.resetDelay',
-    section: ['Advanced'],
-    label: 'Type-to-jump reset delay',
-    description:
-      'How long the type-to-jump buffer stays alive after the last keystroke. Lower values reset faster between searches; higher values are more forgiving for slow typists.',
-    keywords: ['type', 'jump', 'reset', 'delay', 'fuzzy', 'search', 'navigation', 'keystroke', 'buffer'],
-    type: 'number',
-    default: 1000,
-    component: 'number-input',
-    showInAdvanced: true,
-    constraints: {
-      min: 300,
-      max: 3000,
-      step: 100,
-    },
-  },
-  {
     id: 'advanced.diskSpaceChangeThreshold',
     section: ['Advanced'],
     label: 'Disk space change threshold (MB)',
@@ -928,6 +789,161 @@ export const settingsRegistry: SettingDefinition[] = [
       min: 1,
       max: 50,
       step: 1,
+    },
+  },
+  {
+    id: 'advanced.dragThreshold',
+    section: ['Advanced'],
+    label: 'Drag threshold',
+    description: 'Minimum distance in pixels before a drag operation starts.',
+    keywords: ['drag', 'threshold', 'pixel', 'distance'],
+    type: 'number',
+    default: 5,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 1,
+      max: 50,
+      step: 1,
+    },
+  },
+  {
+    id: 'fileExplorer.typeToJump.resetDelay',
+    section: ['Advanced'],
+    label: 'Type-to-jump reset delay',
+    description:
+      'How long the type-to-jump buffer stays alive after the last keystroke. Lower values reset faster between searches; higher values are more forgiving for slow typists.',
+    keywords: ['type', 'jump', 'reset', 'delay', 'fuzzy', 'search', 'navigation', 'keystroke', 'buffer'],
+    type: 'number',
+    default: 1000,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 300,
+      max: 3000,
+      step: 100,
+    },
+  },
+  {
+    id: 'fileOperations.maxConflictsToShow',
+    section: ['Behavior', 'File operations'],
+    label: 'Maximum conflicts to show',
+    description: 'Maximum number of file conflicts to display in the preview before an operation.',
+    keywords: ['conflict', 'max', 'limit', 'preview', 'operation'],
+    type: 'number',
+    default: 100,
+    component: 'select',
+    showInAdvanced: true,
+    constraints: {
+      options: [
+        { value: 1, label: '1' },
+        { value: 2, label: '2' },
+        { value: 3, label: '3' },
+        { value: 5, label: '5' },
+        { value: 10, label: '10' },
+        { value: 50, label: '50' },
+        { value: 100, label: '100' },
+        { value: 200, label: '200' },
+        { value: 500, label: '500' },
+      ],
+      allowCustom: true,
+      customMin: 1,
+      customMax: 1000,
+    },
+  },
+  {
+    id: 'fileOperations.progressUpdateInterval',
+    section: ['Behavior', 'File operations'],
+    label: 'Progress update interval',
+    description:
+      'How often to refresh progress during file operations. Lower values feel more responsive but use more CPU.',
+    keywords: ['progress', 'update', 'interval', 'refresh', 'cpu', 'performance'],
+    type: 'number',
+    default: 500,
+    component: 'slider',
+    showInAdvanced: true,
+    constraints: {
+      min: 50,
+      max: 5000,
+      step: 50,
+      sliderStops: [100, 250, 500, 1000, 2000],
+    },
+  },
+  {
+    id: 'advanced.maxLogStorageMb',
+    section: ['Advanced'],
+    label: 'Maximum disk space for log files (MB)',
+    description:
+      'Maximum disk space for log files. Set to 0 to disable log storage; error reports cannot be sent without logs. Changes to a non-zero value take effect on next app launch.',
+    keywords: ['log', 'storage', 'disk', 'mb', 'cap', 'rotation', 'error', 'report', 'privacy'],
+    type: 'number',
+    default: 200,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 0,
+      max: 5000,
+      step: 50,
+    },
+  },
+  {
+    id: 'advanced.mountTimeout',
+    section: ['Advanced'],
+    label: 'Mount timeout',
+    description: 'Timeout for mounting network shares.',
+    keywords: ['mount', 'timeout', 'network', 'share'],
+    type: 'duration',
+    default: 20000,
+    component: 'duration',
+    showInAdvanced: true,
+    constraints: {
+      unit: 's',
+      minMs: 5000,
+      maxMs: 120000,
+    },
+  },
+  {
+    id: 'advanced.filterSafeSaveArtifacts',
+    section: ['Advanced'],
+    label: 'Filter safe-save artifacts on SMB',
+    description:
+      'Hide temporary files created by macOS safe-save (like ".sb-" files from TextEdit) in the SMB file watcher. These are transient and normally invisible.',
+    keywords: ['smb', 'safe-save', 'artifact', 'temp', 'sb', 'filter', 'watcher'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+    showInAdvanced: true,
+  },
+  {
+    id: 'advanced.serviceResolveTimeout',
+    section: ['Advanced'],
+    label: 'Service resolve timeout',
+    description: 'Timeout for resolving network services via Bonjour.',
+    keywords: ['bonjour', 'resolve', 'timeout', 'mdns'],
+    type: 'duration',
+    default: 5000,
+    component: 'duration',
+    showInAdvanced: true,
+    constraints: {
+      unit: 's',
+      minMs: 1000,
+      maxMs: 30000,
+    },
+  },
+  {
+    id: 'advanced.updateCheckInterval',
+    section: ['Advanced'],
+    label: 'Update check interval',
+    description: 'How often to check for updates in the background.',
+    keywords: ['update', 'interval', 'background', 'check'],
+    type: 'duration',
+    default: 3600000, // 60 minutes
+    component: 'duration',
+    showInAdvanced: true,
+    constraints: {
+      unit: 'min',
+      minMs: 300000, // 5 min
+      maxMs: 86400000, // 24 hours
     },
   },
 ]

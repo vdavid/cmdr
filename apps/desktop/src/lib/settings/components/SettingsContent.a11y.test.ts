@@ -28,14 +28,14 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 describe('SettingsContent a11y', () => {
-  it('General summary page has no a11y violations', async () => {
+  it('Appearance summary page has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SettingsContent, {
       target,
       props: {
         searchQuery: '',
-        selectedSection: ['General'],
+        selectedSection: ['Appearance'],
       },
     })
     await tick()

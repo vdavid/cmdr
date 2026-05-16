@@ -199,8 +199,8 @@ Pure logic for organizing volumes into display groups. No reactive state.
 5. Network: always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares. The synthetic entry's
    name flips to `"Network (disabled)"` when `options.networkEnabled === false`. `VolumeBreadcrumb` reads
    `getNetworkEnabled()` from reactive settings to set the option, and intercepts clicks on the disabled entry to open
-   Settings → Network → SMB/Network shares (via `openSettingsWindow(['Network', 'SMB/Network shares'])`) instead of
-   navigating.
+   Settings → File systems → SMB/Network shares (via `openSettingsWindow(['File systems', 'SMB/Network shares'])`)
+   instead of navigating.
 
 `getIconForVolume(volume)`: returns the appropriate icon path for a volume based on its category.
 

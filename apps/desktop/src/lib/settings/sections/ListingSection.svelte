@@ -17,14 +17,8 @@
 
     const shouldShow = $derived(createShouldShow(searchQuery))
 
+    const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
-    const sizeDisplayDef = getSettingDefinition('listing.sizeDisplay') ?? { label: '', description: '' }
-    const humanFriendlySizeUnitsDef = getSettingDefinition('listing.humanFriendlySizeUnits') ?? {
-        label: '',
-        description: '',
-    }
-    const sizeMismatchDef = getSettingDefinition('listing.sizeMismatchWarning') ?? { label: '', description: '' }
-    const stripedRowsDef = getSettingDefinition('listing.stripedRows') ?? { label: '', description: '' }
     const briefWidthModeDef = getSettingDefinition('listing.briefColumnWidthMode') ?? { label: '', description: '' }
 
     // Read the setting directly and subscribe in-window. `reactive-settings.svelte.ts` is only
@@ -40,6 +34,16 @@
 </script>
 
 <SettingsSection title="Listing">
+    {#if shouldShow('appearance.useAppIconsForDocuments')}
+        <SettingRow
+            id="appearance.useAppIconsForDocuments"
+            label={appIconsDef.label}
+            description={appIconsDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="appearance.useAppIconsForDocuments" />
+        </SettingRow>
+    {/if}
     {#if shouldShow('listing.directorySortMode')}
         <SettingRow
             id="listing.directorySortMode"
@@ -48,46 +52,6 @@
             {searchQuery}
         >
             <SettingToggleGroup id="listing.directorySortMode" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('listing.sizeDisplay')}
-        <SettingRow
-            id="listing.sizeDisplay"
-            label={sizeDisplayDef.label}
-            description={sizeDisplayDef.description}
-            {searchQuery}
-        >
-            <SettingToggleGroup id="listing.sizeDisplay" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('listing.humanFriendlySizeUnits')}
-        <SettingRow
-            id="listing.humanFriendlySizeUnits"
-            label={humanFriendlySizeUnitsDef.label}
-            description={humanFriendlySizeUnitsDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="listing.humanFriendlySizeUnits" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('listing.sizeMismatchWarning')}
-        <SettingRow
-            id="listing.sizeMismatchWarning"
-            label={sizeMismatchDef.label}
-            description={sizeMismatchDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="listing.sizeMismatchWarning" />
-        </SettingRow>
-    {/if}
-    {#if shouldShow('listing.stripedRows')}
-        <SettingRow
-            id="listing.stripedRows"
-            label={stripedRowsDef.label}
-            description={stripedRowsDef.description}
-            {searchQuery}
-        >
-            <SettingSwitch id="listing.stripedRows" />
         </SettingRow>
     {/if}
     {#if shouldShow('listing.briefColumnWidthMode')}

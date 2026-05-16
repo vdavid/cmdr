@@ -13,13 +13,13 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
+    if (key === 'theme.mode') return 'system'
     if (key === 'appearance.appColor') return 'system'
-    if (key === 'appearance.uiDensity') return 'comfortable'
-    if (key === 'appearance.useAppIconsForDocuments') return false
-    if (key === 'appearance.fileSizeFormat') return 'auto'
     if (key === 'appearance.sizeColors') return 'rainbow'
+    if (key === 'appearance.dateColors') return 'app'
     if (key === 'appearance.dateTimeFormat') return 'iso'
     if (key === 'appearance.customDateTimeFormat') return 'YYYY-MM-DD HH:mm'
+    if (key === 'listing.stripedRows') return false
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),
@@ -46,7 +46,7 @@ describe('AppearanceSection a11y', () => {
   it('with search query (partial match) has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(AppearanceSection, { target, props: { searchQuery: 'density' } })
+    mount(AppearanceSection, { target, props: { searchQuery: 'color' } })
     await tick()
     await expectNoA11yViolations(target)
   })
