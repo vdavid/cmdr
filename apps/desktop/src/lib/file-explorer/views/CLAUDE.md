@@ -93,7 +93,10 @@ array (`$derived`) drives all virtual-scroll math: `totalSize` is the final pref
 binary-searches `prefixSums` for the visible range, and `getScrollToPositionVariable` looks up exact column edges.
 Scrollbar size and cursor visibility now agree with what's actually rendered. `transition: width 300ms ease` still
 animates width changes within a directory; nav resets snap via the `skipTransition` 2-rAF trick. While widths are in
-flight (first paint, after `FontMetricsNotReady`), every column renders at `capPx` as a fallback.
+flight (first paint, after `FontMetricsNotReady`), every column renders at `capPx` as a fallback, and the cursor
+highlight is suppressed until `columnWidths.length > 0` so the user doesn't see a full-pane-wide cursor stripe for a
+frame. The initial fetch after a dir change skips the 50 ms coalesce so that gap is as short as possible; re-fetches
+during resize keep the coalesce.
 
 **Decision**: A single `$effect` keeps the cursor in view, depending on `cursorIndex`, `containerWidth`,
 `containerHeight`, and `columnWidths.length` **Why**: With exact prefix-sum math, every input that could move the
