@@ -296,9 +296,16 @@ pub async fn delete_files_start(
                 }
             };
 
-            let result =
-                delete_volume_files_with_progress(volume, &app, &operation_id_for_spawn, &state, &sources, &config)
-                    .await;
+            let result = delete_volume_files_with_progress(
+                volume,
+                &volume_id_str,
+                &app,
+                &operation_id_for_spawn,
+                &state,
+                &sources,
+                &config,
+            )
+            .await;
 
             if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
                 cache.remove(&operation_id_for_cleanup);
@@ -365,6 +372,8 @@ pub async fn trash_files_start(
 mod copy_integration_test;
 #[cfg(test)]
 mod delete_integration_test;
+#[cfg(test)]
+mod delete_volume_reuse_tests;
 #[cfg(test)]
 mod move_integration_test;
 #[cfg(test)]
