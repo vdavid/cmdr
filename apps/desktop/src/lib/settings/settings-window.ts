@@ -21,7 +21,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { emitTo } from '@tauri-apps/api/event'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
-import { decorateChildWindowTitle } from '$lib/app-mode'
+import { decorateChildWindowTitle, getAppMode } from '$lib/app-mode'
 
 const log = getAppLogger('settings')
 
@@ -54,11 +54,18 @@ export const settingsMaxWidth = (scale: number): number =>
  * the matching section path (e.g., `['File systems', 'SMB/Network shares']`).
  */
 export async function openSettingsWindow(section?: string[]): Promise<void> {
+  // E2E suites re-open Settings many times; stealing OS focus each time
+  // makes the host machine unusable while tests run. The plugin reaches the
+  // webview over a Unix socket, so it doesn't need OS focus to drive the DOM.
+  const isE2e = getAppMode() === 'e2e'
+
   const existing = await WebviewWindow.getByLabel('settings')
   if (existing) {
     // Emit to the settings window so it can self-focus. Cross-window setFocus()
     // doesn't reliably bring a window to front on macOS.
-    await emitTo('settings', 'focus-self')
+    if (!isE2e) {
+      await emitTo('settings', 'focus-self')
+    }
     if (section) {
       await emitTo('settings', 'navigate-to-section', { section })
     }
@@ -84,6 +91,6 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
     center: true,
     resizable: true,
     decorations: true,
-    focus: true,
+    focus: !isE2e,
   })
 }

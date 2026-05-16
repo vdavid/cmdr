@@ -118,6 +118,24 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(window: Window<R>, shortcut: Str
 #[tauri::command]
 #[specta::specta]
 pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
+    // E2E: on macOS, use `orderFront:` instead of `makeKeyAndOrderFront:` so the
+    // window appears without stealing focus from whatever the user is currently
+    // working in. `window.show()` calls the latter on macOS, which always grabs
+    // OS focus. Linux/Windows test runs happen in headless containers, so the
+    // standard show is fine there.
+    #[cfg(target_os = "macos")]
+    if crate::test_mode::is_e2e_mode() {
+        use objc2::msg_send;
+        use objc2::runtime::AnyObject;
+        let ns_window = window.ns_window().map_err(|e| e.to_string())? as *mut AnyObject;
+        if ns_window.is_null() {
+            return Err("NSWindow pointer is null".into());
+        }
+        unsafe {
+            let _: () = msg_send![ns_window, orderFront: std::ptr::null_mut::<AnyObject>()];
+        }
+        return Ok(());
+    }
     window.show().map_err(|e| e.to_string())
 }
 
