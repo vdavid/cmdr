@@ -1152,6 +1152,22 @@ impl Volume for SmbVolume {
         false
     }
 
+    fn listing_is_watched(&self, _path: &Path) -> bool {
+        // SMB watching is volume-level: the smb_watcher monitors the whole share
+        // via CHANGE_NOTIFY. So once the watcher is alive and the session is
+        // Direct, every cached listing on this volume is oracle-eligible.
+        // `watcher_cancel` is a std `Mutex` (not async): use `try_lock` and treat
+        // contention as "not watched" to keep the oracle out of the lock-wait path.
+        // The oracle will simply fall through to a real read; that's the safe
+        // direction. Don't hold the lock across awaits (we never `.await` here
+        // anyway: this is a sync method).
+        let has_watcher = match self.watcher_cancel.try_lock() {
+            Ok(guard) => guard.is_some(),
+            Err(_) => return false,
+        };
+        has_watcher && self.connection_state() == ConnectionState::Direct
+    }
+
     fn notify_mutation<'a>(
         &'a self,
         _volume_id: &'a str,
@@ -2315,6 +2331,62 @@ mod tests {
         assert_eq!(vol.connection_state(), ConnectionState::Direct);
         vol.transition_to_direct();
         assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    }
+
+    #[test]
+    fn listing_is_watched_false_when_disconnected() {
+        // No watcher_cancel set and state Disconnected: false.
+        let vol = make_test_volume();
+        assert!(!vol.listing_is_watched(Path::new("/")));
+    }
+
+    #[test]
+    fn listing_is_watched_false_when_direct_but_no_watcher() {
+        // State Direct but `watcher_cancel` empty: still false (we need both).
+        let vol = make_test_volume_direct();
+        assert!(!vol.listing_is_watched(Path::new("/")));
+    }
+
+    #[test]
+    fn listing_is_watched_false_when_watcher_set_but_disconnected() {
+        // `watcher_cancel` populated but state Disconnected: false.
+        let vol = make_test_volume();
+        let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
+        *vol.watcher_cancel.lock().unwrap() = Some(tx);
+        assert!(!vol.listing_is_watched(Path::new("/")));
+    }
+
+    #[test]
+    fn listing_is_watched_true_when_direct_and_watcher_set() {
+        // Both conditions met: true.
+        let vol = make_test_volume_direct();
+        let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
+        *vol.watcher_cancel.lock().unwrap() = Some(tx);
+        assert!(vol.listing_is_watched(Path::new("/")));
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_listing_is_watched_flips_with_connection() {
+        // End-to-end check against a live Docker SMB server: after
+        // `connect_smb_volume`, the watcher is spawned and state is Direct,
+        // so the oracle gate returns true. After flipping the state to
+        // Disconnected (simulating a ConnectionLost event), the gate flips
+        // false even though `watcher_cancel` is still set: the contract is
+        // "watcher present AND Direct," and a half-broken volume must not be
+        // treated as fresh.
+        let vol = make_docker_volume().await;
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+        assert!(
+            vol.listing_is_watched(Path::new("/")),
+            "expected true on a freshly-connected Docker volume"
+        );
+
+        vol.transition_to_disconnected();
+        assert!(
+            !vol.listing_is_watched(Path::new("/")),
+            "expected false after transitioning to Disconnected"
+        );
     }
 
     #[test]

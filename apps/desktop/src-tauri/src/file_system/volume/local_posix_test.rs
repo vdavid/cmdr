@@ -548,3 +548,75 @@ async fn test_list_directory_includes_symlinks() {
     // Cleanup
     let _ = fs::remove_dir_all(&test_dir);
 }
+
+/// `listing_is_watched` flips with the watcher lifecycle: false before a listing
+/// opens, true after `start_watching` succeeds, false after `stop_watching`.
+#[test]
+fn test_listing_is_watched_flips_with_watcher_lifecycle() {
+    use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::watcher::{start_watching, stop_watching};
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::atomic::AtomicU64;
+
+    let test_dir = std::env::temp_dir().join(format!(
+        "cmdr_listing_is_watched_test_{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let volume = LocalPosixVolume::new("Test", &test_dir);
+    let path = PathBuf::from(&test_dir);
+
+    // No listing yet, no watcher: false.
+    assert!(!volume.listing_is_watched(&path), "expected false before listing opens");
+
+    // Seed a listing in the cache (the watcher reads its path via LISTING_CACHE).
+    let listing_id = format!("test_liw_{}", std::process::id());
+    {
+        let mut cache = LISTING_CACHE.write().unwrap();
+        cache.insert(
+            listing_id.clone(),
+            CachedListing {
+                volume_id: "root".to_string(),
+                path: path.clone(),
+                entries: Vec::new(),
+                sort_by: SortColumn::Name,
+                sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
+                sequence: AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
+            },
+        );
+    }
+
+    // Listing exists but no watcher: still false (the race-window contract).
+    assert!(
+        !volume.listing_is_watched(&path),
+        "expected false during the listing->watcher gap"
+    );
+
+    // Start the watcher: now true.
+    start_watching(&listing_id, &path).expect("start_watching should succeed on a real temp dir");
+    assert!(
+        volume.listing_is_watched(&path),
+        "expected true once watcher is attached"
+    );
+
+    // Stop the watcher: back to false.
+    stop_watching(&listing_id);
+    assert!(!volume.listing_is_watched(&path), "expected false after watcher stops");
+
+    // Cleanup
+    {
+        let mut cache = LISTING_CACHE.write().unwrap();
+        cache.remove(&listing_id);
+    }
+    let _ = fs::remove_dir_all(&test_dir);
+}
