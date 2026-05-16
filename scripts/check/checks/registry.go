@@ -13,6 +13,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "📐 Format",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		IsFast:            true,
 		Run:               RunOxfmt,
 	},
 
@@ -25,6 +26,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		IsFast:            true,
 		Run:               RunRustfmt,
 	},
 	{
@@ -65,6 +67,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		IsFast:            true,
 		Run:               RunCargoMachete,
 	},
 	{
@@ -96,6 +99,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		IsFast:            true,
 		Run:               RunCfgGate,
 	},
 	{
@@ -106,6 +110,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: false,
 		DependsOn:         nil,
+		IsFast:            true,
 		Run:               RunLogErrorMacro,
 	},
 	{
@@ -116,6 +121,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: false,
 		DependsOn:         nil,
+		IsFast:            true,
 		Run:               RunErrorStringMatch,
 	},
 	{
@@ -136,6 +142,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: false,
 		DependsOn:         nil,
+		IsFast:            true,
 		Run:               RunIpcEnumCamelCase,
 	},
 	{
@@ -197,6 +204,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"oxfmt"},
+		IsFast:      true,
 		Run:         RunStylelint,
 	},
 	{
@@ -206,6 +214,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-stylelint"},
+		IsFast:      true,
 		Run:         RunCSSUnused,
 	},
 	{
@@ -215,6 +224,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-stylelint"},
+		IsFast:      true,
 		Run:         RunA11yContrast,
 	},
 	{
@@ -223,6 +233,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "a11y-coverage",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
+		IsFast:      true,
 		Run:         RunA11yCoverage,
 	},
 	{
@@ -241,6 +252,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
+		IsFast:      true,
 		Run:         RunImportCycles,
 	},
 	{
@@ -250,6 +262,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
+		IsFast:      true,
 		Run:         RunKnip,
 	},
 	{
@@ -259,6 +272,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
+		IsFast:      true,
 		Run:         RunTypeDrift,
 	},
 	{
@@ -277,6 +291,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
+		IsFast:      true,
 		Run:         RunDesktopE2ELinuxTypecheck,
 	},
 	{
@@ -344,6 +359,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"website-build"},
+		IsFast:      true,
 		Run:         RunWebsiteHTMLValidate,
 	},
 	{
@@ -370,6 +386,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppApiServer,
 		Tech:        "⸆⸉ TS",
 		DependsOn:   []string{"api-server-eslint"},
+		IsFast:      true,
 		Run:         RunApiServerTypecheck,
 	},
 	{
@@ -378,6 +395,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppApiServer,
 		Tech:        "⸆⸉ TS",
 		DependsOn:   []string{"api-server-typecheck"},
+		IsFast:      true,
 		Run:         RunApiServerTests,
 	},
 
@@ -390,6 +408,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🐹 Go",
 		FreestyleIncompat: true,
 		DependsOn:         nil,
+		IsFast:            true,
 		Run:               RunGoFmt,
 	},
 	{
@@ -399,6 +418,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
+		IsFast:      true,
 		Run:         RunGoVet,
 	},
 	{
@@ -408,6 +428,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
+		IsFast:      true,
 		Run:         RunStaticcheck,
 	},
 	{
@@ -417,6 +438,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
+		IsFast:      true,
 		Run:         RunIneffassign,
 	},
 	{
@@ -426,6 +448,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   nil,
+		IsFast:      true,
 		Run:         RunMisspell,
 	},
 	{
@@ -435,6 +458,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-gofmt"},
+		IsFast:      true,
 		Run:         RunGocyclo,
 	},
 	{
@@ -462,6 +486,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppScripts,
 		Tech:        "🐹 Go",
 		DependsOn:   []string{"scripts-go-vet"},
+		IsFast:      true,
 		Run:         RunGoTests,
 	},
 
@@ -472,6 +497,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppOther,
 		Tech:        "📏 Metrics",
 		DependsOn:   nil,
+		IsFast:      true,
 		Run:         RunFileLength,
 	},
 	{
@@ -480,6 +506,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppOther,
 		Tech:        "📏 Metrics",
 		DependsOn:   nil,
+		IsFast:      true,
 		Run:         RunClaudeMdReminder,
 	},
 	{
@@ -489,6 +516,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppOther,
 		Tech:        "🔗 Links",
 		DependsOn:   nil,
+		IsFast:      true,
 		Run:         RunChangelogCommitLinks,
 	},
 }
@@ -586,6 +614,29 @@ func FilterSlowChecks(defs []CheckDefinition, includeSlow bool) []CheckDefinitio
 	var result []CheckDefinition
 	for _, def := range defs {
 		if !def.IsSlow {
+			result = append(result, def)
+		}
+	}
+	return result
+}
+
+// FilterFastChecks keeps only checks marked IsFast (the curated pre-commit
+// lane) when `fast` is true; otherwise returns `defs` unchanged. Checks the
+// user explicitly named via --check bypass the filter, so
+// `--fast --check svelte-check` still runs svelte-check alongside the fast set.
+func FilterFastChecks(defs []CheckDefinition, fast bool, namedChecks []string) []CheckDefinition {
+	if !fast {
+		return defs
+	}
+	named := make(map[string]bool, len(namedChecks))
+	for _, name := range namedChecks {
+		if c := GetCheckByID(name); c != nil {
+			named[c.ID] = true
+		}
+	}
+	var result []CheckDefinition
+	for _, def := range defs {
+		if def.IsFast || named[def.ID] {
 			result = append(result, def)
 		}
 	}

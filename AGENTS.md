@@ -103,6 +103,31 @@ Always use the checker script for compilation, linting, formatting, and tests. I
   full list, or multiple `--check` flags.
 - All Rust/Svelte checks: `./scripts/check.sh --rust` or `--svelte`
 - All checks: `./scripts/check.sh`
+
+### When to run what
+
+Three cadences. Pick the one that matches where you are in the work, not the one closest to "done."
+
+- **`./scripts/check.sh --fast` — every few file edits, on a self-imposed rhythm (~7 s).** Don't wait for "before
+  commit"; that's too late, by then a regression is buried under follow-up edits. Run after a small natural unit of
+  work: a function rewritten, a test added, a config touched. Catches roughly half the things the full suite catches,
+  for ~5% of the wall time, so use it liberally. The lane is editorially curated, not derived from timings; mutually
+  exclusive with `--include-slow` / `--only-slow`. Covers:
+  - All formatters (`oxfmt`, `rustfmt`, `gofmt`) and most non-compiling static linters (`cfg-gate`, `log-error-macro`,
+    `error-string-match`, `ipc-enum-camelcase`, `cargo-machete`, `knip`, `import-cycles`, `type-drift`, `stylelint`,
+    `css-unused`, `a11y-contrast`, `a11y-coverage`, `e2e-linux-typecheck`).
+  - Go: `go-vet`, `staticcheck`, `ineffassign`, `misspell`, `gocyclo`, `go-tests`.
+  - API server: `typecheck`, `tests`.
+  - Website: `html-validate` (self-skips when `dist/` is absent).
+  - Warn-only metrics: `file-length`, `claude-md-reminder`, `changelog-links`.
+  - **Does NOT cover**: `clippy`, Rust tests, `cargo-audit`, `cargo-deny`, `jscpd`, `bindings-fresh`, desktop ESLint /
+    `svelte-check` / Svelte tests, website ESLint / typecheck / build / e2e, `docker-build`, or any E2E suite.
+- **`./scripts/check.sh` — before every commit.** The full default suite (everything not marked `IsSlow`). Catches what
+  `--fast` skips: `clippy`, Rust tests, audit/deny, svelte-check, website build, etc. This is the contract that what
+  you're committing won't break CI.
+- **`./scripts/check.sh --include-slow` — before wrapping a milestone, declaring a feature done, or pushing a branch
+  you've been sitting on.** Adds the slow lane on top of the default suite: `desktop-e2e-linux`,
+  `desktop-e2e-playwright`, `rust-tests-linux`, `eslint-typecheck`. Allow ~20 min; this is the gate before "I'm done."
 - **`oxfmt` must always run before you call a task done.** It's monorepo-wide (markdown, YAML, JSON, JS/TS across every
   app) and takes ~1 second, so there's no reason to skip it. It's registered under `AppOther`, which means `--rust` and
   `--svelte` do NOT include it. If you only ran those, CI will catch unformatted markdown / JSON / etc. that you missed.
