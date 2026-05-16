@@ -8,6 +8,7 @@ use super::{
     VolumeReadStream,
 };
 use crate::file_system::listing::FileEntry;
+use crate::file_system::listing::caching::try_get_watched_listing;
 use crate::mtp::connection::{MtpConnectionError, connection_manager};
 use log::debug;
 use std::future::Future;
@@ -107,6 +108,9 @@ impl Volume for MtpVolume {
         on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            #[cfg(test)]
+            test_hooks::bump_list_directory_call_count();
+
             let mtp_path = self.to_mtp_path(path);
 
             debug!(
@@ -476,6 +480,23 @@ impl Volume for MtpVolume {
         self.scan_for_copy_batch_with_progress(paths, None)
     }
 
+    /// Batch scan with parent-grouping + fresh-listing oracle.
+    ///
+    /// Decision flow:
+    /// 1. Group selected paths by their parent directory (one MTP listing per
+    ///    parent on the cold path is the load-bearing optimization: selecting
+    ///    135 photos in `/DCIM/Camera` should produce ONE `list_directory`
+    ///    call, not 135 `get_metadata` calls each of which lists the parent).
+    /// 2. For each unique parent, ask `try_get_watched_listing(volume_id,
+    ///    parent)` first. On hit, every child entry's size + `is_directory`
+    ///    comes from the cached `FileEntry`, no MTP I/O. On miss, fall through
+    ///    to the existing single `list_directory(parent)` per group.
+    ///
+    /// The oracle decision is per-parent: different parents in the same call
+    /// can resolve different ways (one watched, one cold). On oracle hit no
+    /// `list_directory_with_progress` callbacks fire for that parent, so the
+    /// FE's scan-preview counter doesn't tick for those entries; the final
+    /// `BatchScanResult.aggregate` still reflects them.
     fn scan_for_copy_batch_with_progress<'a>(
         &'a self,
         paths: &'a [PathBuf],
@@ -494,19 +515,42 @@ impl Volume for MtpVolume {
                 });
             }
 
-            // Group paths by parent directory so we list each parent at most once
-            let mut by_parent: std::collections::HashMap<PathBuf, Vec<&PathBuf>> = std::collections::HashMap::new();
+            // Group paths by parent. Two keys per group:
+            //   - `original_parent`: the path the FE/cache uses as a listing
+            //     key (typically `/DCIM/Camera`-style absolute). This is what
+            //     the oracle is looked up against.
+            //   - `mtp_parent`: the MTP-relative form used by `list_directory`
+            //     on the cold-cache fallthrough. Stored so we don't call
+            //     `to_mtp_path` twice per group.
+            #[derive(Default)]
+            struct ParentGroup<'p> {
+                original_parent: PathBuf,
+                mtp_parent: String,
+                children: Vec<&'p PathBuf>,
+            }
+            let mut groups: std::collections::HashMap<PathBuf, ParentGroup<'a>> = std::collections::HashMap::new();
             for path in paths {
-                let mtp_path = self.to_mtp_path(path);
-                let mtp_path_buf = PathBuf::from(&mtp_path);
-                let parent = mtp_path_buf.parent().unwrap_or(Path::new("")).to_path_buf();
-                by_parent.entry(parent).or_default().push(path);
+                let original_parent = path.parent().unwrap_or(Path::new("")).to_path_buf();
+                let entry = groups.entry(original_parent.clone()).or_insert_with(|| {
+                    let mtp_path = self.to_mtp_path(path);
+                    let mtp_path_buf = PathBuf::from(&mtp_path);
+                    let mtp_parent = mtp_path_buf
+                        .parent()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    ParentGroup {
+                        original_parent,
+                        mtp_parent,
+                        children: Vec::new(),
+                    }
+                });
+                entry.children.push(path);
             }
 
             debug!(
                 "MtpVolume::scan_for_copy_batch: {} paths across {} unique parent dirs",
                 paths.len(),
-                by_parent.len()
+                groups.len()
             );
 
             // Stage per-path results in a map so the final per_path vec
@@ -522,15 +566,35 @@ impl Volume for MtpVolume {
                 top_level_is_directory: false,
             };
 
-            for (parent, children) in &by_parent {
-                // List the parent directory once (goes through the listing cache).
-                // The MTP listing is what dominates wall-clock on a cold cache
-                // (17 s for 1047 entries via USB), so forward `on_progress` to
-                // `list_directory_with_progress` (via the trait method) so the
-                // scan-preview dialog sees a climbing file count instead of a
-                // frozen 0/0/0 spinner.
-                let parent_str = parent.to_string_lossy();
-                let entries = self.list_directory(Path::new(parent_str.as_ref()), on_progress).await?;
+            for group in groups.values() {
+                // Oracle short-circuit: if the parent is watcher-fresh, use
+                // the cached listing instead of touching the device. The
+                // freshness contract for MTP is volume-level: when this
+                // returns `Some`, the device is connected and would forward
+                // any change events it sends.
+                let cached = try_get_watched_listing(&self.volume_id, &group.original_parent);
+
+                // List the parent directory once on cold cache (goes through
+                // the listing cache). The MTP listing is what dominates
+                // wall-clock on a cold cache (17 s for 1047 entries via USB),
+                // so forward `on_progress` to `list_directory_with_progress`
+                // (via the trait method) so the scan-preview dialog sees a
+                // climbing file count instead of a frozen 0/0/0 spinner. On
+                // an oracle hit there's no list, so no progress ticks fire
+                // for this parent's children — the final aggregate still
+                // includes them.
+                let entries = match cached {
+                    Some(entries) => {
+                        debug!(
+                            "MtpVolume::scan_for_copy_batch: oracle hit for parent {} ({} cached entries, {} selected children)",
+                            group.original_parent.display(),
+                            entries.len(),
+                            group.children.len()
+                        );
+                        entries
+                    }
+                    None => self.list_directory(Path::new(&group.mtp_parent), on_progress).await?,
+                };
 
                 // Index entries by name so each child lookup is O(1). A naive
                 // `entries.iter().find(...)` per child is O(n) and the outer
@@ -540,7 +604,7 @@ impl Volume for MtpVolume {
                 let entries_by_name: std::collections::HashMap<&str, &FileEntry> =
                     entries.iter().map(|e| (e.name.as_str(), e)).collect();
 
-                for child_path in children {
+                for child_path in &group.children {
                     let mtp_path = self.to_mtp_path(child_path);
                     let name = Path::new(&mtp_path).file_name().and_then(|n| n.to_str()).unwrap_or("");
 
@@ -775,6 +839,30 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
             message: e.to_string(),
             raw_os_error: None,
         },
+    }
+}
+
+/// Test-only call counter for `MtpVolume::list_directory`. The
+/// `scan_for_copy_batch_with_progress` integration tests assert "exactly 2
+/// `list_directory` calls for 2 unique parents" without having to wrap the
+/// volume (the override calls `self.list_directory` via static dispatch on
+/// `MtpVolume`, so a wrapper Volume can't intercept it).
+#[cfg(test)]
+pub(super) mod test_hooks {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static LIST_DIRECTORY_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+    pub(super) fn bump_list_directory_call_count() {
+        LIST_DIRECTORY_CALL_COUNT.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn reset_list_directory_call_count() {
+        LIST_DIRECTORY_CALL_COUNT.store(0, Ordering::Relaxed);
+    }
+
+    pub fn list_directory_call_count() -> usize {
+        LIST_DIRECTORY_CALL_COUNT.load(Ordering::Relaxed)
     }
 }
 
