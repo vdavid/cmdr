@@ -301,7 +301,15 @@ pub async fn start_scan_preview(
     };
 
     let progress_interval = progress_interval_ms.unwrap_or(500);
-    ops_start_scan_preview(app, sources, source_volume, sort_column, sort_order, progress_interval)
+    ops_start_scan_preview(
+        app,
+        sources,
+        source_volume,
+        volume_id,
+        sort_column,
+        sort_order,
+        progress_interval,
+    )
 }
 
 #[tauri::command]

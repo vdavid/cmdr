@@ -16,7 +16,9 @@ use super::types::{
     ConflictInfo, IoResultExt, OperationEventSink, ScanProgressEvent, WriteOperationError, WriteOperationPhase,
     WriteOperationType, WriteProgressEvent,
 };
-use crate::file_system::listing::{SortColumn, SortOrder};
+use crate::file_system::listing::caching::try_get_watched_listing;
+use crate::file_system::listing::{FileEntry, SortColumn, SortOrder};
+use crate::file_system::volume::{CopyScanResult, Volume, VolumeError};
 
 /// Callbacks for customizing `walk_dir_recursive` behavior per caller.
 ///
@@ -37,6 +39,13 @@ pub(super) struct WalkContext<'a, E> {
 ///
 /// Shared walker used by both scan preview and write operation scanning.
 /// Behavior is customized via `WalkContext` callbacks for error handling and progress reporting.
+///
+/// **Oracle reuse**: when `volume_id` is provided and the listing cache holds a
+/// watcher-backed listing for the directory currently being walked, the walker
+/// hydrates that level's entries from the cache instead of touching the disk.
+/// See `file_system::listing::caching::try_get_watched_listing` for the full
+/// freshness contract. Pass `None` for `volume_id` to opt out (no listing
+/// lookup is performed, behavior is identical to the pre-oracle walker).
 ///
 /// **Hardlink dedup**: `total_bytes` counts each inode at most once. Cargo's
 /// `target/` (and similar trees: snapshots, sccache caches, deduplicated
@@ -59,6 +68,7 @@ pub(super) fn walk_dir_recursive<E>(
     last_progress_time: &mut Instant,
     visited: &mut HashSet<PathBuf>,
     seen_inodes: &mut HashSet<u64>,
+    volume_id: Option<&str>,
     ctx: &WalkContext<'_, E>,
 ) -> Result<(), E> {
     if (ctx.is_cancelled)() {
@@ -88,19 +98,42 @@ pub(super) fn walk_dir_recursive<E>(
 
         dirs.push(path.to_path_buf());
 
-        let entries = fs::read_dir(path).map_err(|e| (ctx.on_io_error)(path, e))?;
-        for entry in entries.flatten() {
-            walk_dir_recursive(
-                &entry.path(),
+        // Oracle short-circuit: if a watcher-backed listing exists for this dir,
+        // walk it from cache instead of hitting the disk. The recurse-into-files
+        // step below still goes through `walk_dir_recursive`, which re-applies
+        // the oracle at each level.
+        if let Some(vid) = volume_id
+            && let Some(cached_entries) = try_get_watched_listing(vid, path)
+        {
+            walk_cached_entries(
+                path,
                 source_root,
+                cached_entries,
                 files,
                 dirs,
                 total_bytes,
                 last_progress_time,
                 visited,
                 seen_inodes,
+                volume_id,
                 ctx,
             )?;
+        } else {
+            let entries = fs::read_dir(path).map_err(|e| (ctx.on_io_error)(path, e))?;
+            for entry in entries.flatten() {
+                walk_dir_recursive(
+                    &entry.path(),
+                    source_root,
+                    files,
+                    dirs,
+                    total_bytes,
+                    last_progress_time,
+                    visited,
+                    seen_inodes,
+                    volume_id,
+                    ctx,
+                )?;
+            }
         }
     } else {
         log::debug!("scan: skipping special file: {}", path.display());
@@ -114,6 +147,176 @@ pub(super) fn walk_dir_recursive<E>(
     }
 
     Ok(())
+}
+
+/// Walks a directory level using cached `FileEntry` entries instead of `fs::read_dir`.
+///
+/// Used when the oracle reports a watcher-backed listing exists for the current
+/// directory. For each cached entry: files are recorded with size from the
+/// cache; directories recurse via `walk_dir_recursive`, which re-applies the
+/// oracle (so subfolders open in another pane also short-circuit). Cached
+/// symlinks (`is_symlink == true`) are recorded as files without recursing,
+/// matching `walk_dir_recursive`'s symlink policy.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Mirrors `walk_dir_recursive`'s parameter list to keep state threading consistent."
+)]
+fn walk_cached_entries<E>(
+    parent_path: &Path,
+    source_root: &Path,
+    cached: Vec<FileEntry>,
+    files: &mut Vec<FileInfo>,
+    dirs: &mut Vec<PathBuf>,
+    total_bytes: &mut u64,
+    last_progress_time: &mut Instant,
+    visited: &mut HashSet<PathBuf>,
+    seen_inodes: &mut HashSet<u64>,
+    volume_id: Option<&str>,
+    ctx: &WalkContext<'_, E>,
+) -> Result<(), E> {
+    for entry in cached {
+        if (ctx.is_cancelled)() {
+            return Err((ctx.on_cancelled)());
+        }
+        let child_path = PathBuf::from(&entry.path);
+        if entry.is_directory && !entry.is_symlink {
+            // Recurse: the oracle re-applies inside `walk_dir_recursive`, so a
+            // grandchild dir open in another pane is also short-circuited.
+            walk_dir_recursive(
+                &child_path,
+                source_root,
+                files,
+                dirs,
+                total_bytes,
+                last_progress_time,
+                visited,
+                seen_inodes,
+                volume_id,
+                ctx,
+            )?;
+        } else {
+            // File or symlink: record from the cache, no I/O. We can't build a
+            // full `FileInfo` (no `std::fs::Metadata`), but we have everything
+            // the scan-preview caller actually consumes: path, size, and the
+            // symlink flag.
+            let size = entry.size.unwrap_or(0);
+            *total_bytes += size;
+            files.push(FileInfo {
+                path: child_path,
+                source_root: source_root.to_path_buf(),
+                size,
+                modified: entry.modified_at.unwrap_or(0),
+                created: entry.created_at.unwrap_or(0),
+                is_symlink: entry.is_symlink,
+            });
+        }
+    }
+
+    if last_progress_time.elapsed() >= ctx.progress_interval {
+        let current_dir = Some(parent_path.display().to_string());
+        (ctx.on_progress)(files.len(), dirs.len(), *total_bytes, None, current_dir);
+        *last_progress_time = Instant::now();
+    }
+
+    Ok(())
+}
+
+/// Totals returned by `scan_subtree_with_oracle`.
+///
+/// `per_path` carries one entry per direct child of the scanned `path`, sized
+/// to feed into a parent `BatchScanResult` upstream. The vec is empty when
+/// `path` itself is a file (the caller knows it's a file in that case).
+#[derive(Debug, Clone, Default)]
+pub(super) struct SubtreeTotals {
+    pub file_count: usize,
+    pub dir_count: usize,
+    pub total_bytes: u64,
+    /// Per-direct-child results so the scan-preview can populate the
+    /// `BatchScanResult::per_path` slot the copy engine reads later.
+    pub per_path: Vec<(PathBuf, CopyScanResult)>,
+}
+
+/// Scans a subtree using the fresh-listing oracle at every recursion level,
+/// falling back to `volume.list_directory` on cache miss.
+///
+/// This is the oracle-aware analogue of the per-volume `scan_for_copy`. It's
+/// designed for `run_volume_scan_preview` to call when the parent directory of
+/// the selected sources is watcher-backed: top-level files come from the
+/// cached listing directly, top-level directories recurse here.
+///
+/// Cancellation: the future polls `is_cancelled` between entries. Symlinks
+/// (cached `is_symlink == true`) are counted as one entry and not recursed,
+/// matching the local-FS walker's policy.
+pub(super) async fn scan_subtree_with_oracle(
+    volume: &dyn Volume,
+    volume_id: &str,
+    path: &Path,
+    is_cancelled: &(dyn Fn() -> bool + Sync),
+    on_progress: Option<&(dyn Fn(usize) + Sync)>,
+) -> Result<SubtreeTotals, VolumeError> {
+    if is_cancelled() {
+        return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+    }
+
+    // Load entries from oracle or the volume itself.
+    let entries: Vec<FileEntry> = match try_get_watched_listing(volume_id, path) {
+        Some(e) => e,
+        None => volume.list_directory(path, on_progress).await?,
+    };
+
+    let mut totals = SubtreeTotals::default();
+
+    for entry in entries {
+        if is_cancelled() {
+            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+        }
+        let child_path = PathBuf::from(&entry.path);
+        if entry.is_directory && !entry.is_symlink {
+            // Recurse — oracle re-applies inside this call.
+            let child_totals = Box::pin(scan_subtree_with_oracle(
+                volume,
+                volume_id,
+                &child_path,
+                is_cancelled,
+                on_progress,
+            ))
+            .await?;
+            totals.file_count += child_totals.file_count;
+            // The directory itself plus all its descendant dirs.
+            totals.dir_count += 1 + child_totals.dir_count;
+            totals.total_bytes += child_totals.total_bytes;
+            totals.per_path.push((
+                child_path,
+                CopyScanResult {
+                    file_count: child_totals.file_count,
+                    dir_count: child_totals.dir_count,
+                    total_bytes: child_totals.total_bytes,
+                    top_level_is_directory: true,
+                },
+            ));
+            if let Some(cb) = on_progress {
+                cb(totals.file_count);
+            }
+        } else {
+            let size = entry.size.unwrap_or(0);
+            totals.file_count += 1;
+            totals.total_bytes += size;
+            totals.per_path.push((
+                child_path,
+                CopyScanResult {
+                    file_count: 1,
+                    dir_count: 0,
+                    total_bytes: size,
+                    top_level_is_directory: false,
+                },
+            ));
+            if let Some(cb) = on_progress {
+                cb(totals.file_count);
+            }
+        }
+    }
+
+    Ok(totals)
 }
 
 /// Returns `true` if this file's bytes should count toward the running scan
@@ -352,6 +555,12 @@ fn scan_sources_internal(
         },
     };
 
+    // Local FS scan goes through `LocalPosixVolume`, which is always registered as
+    // the `"root"` volume. Passing it threads the oracle through: when the source
+    // (or any subdirectory we recurse into) is open in a pane with a live FSEvents
+    // watcher, the walker skips the disk read for that level.
+    let volume_id = Some(crate::file_system::volume::DEFAULT_VOLUME_ID);
+
     for source in sources {
         let source_root = source.parent().unwrap_or(source);
         walk_dir_recursive(
@@ -363,6 +572,7 @@ fn scan_sources_internal(
             &mut last_progress_time,
             &mut visited,
             &mut seen_inodes,
+            volume_id,
             &ctx,
         )?;
     }
@@ -761,6 +971,7 @@ mod tests {
                 &mut last_progress,
                 &mut visited,
                 &mut seen_inodes,
+                None,
                 &ctx,
             )
             .expect("walk should succeed");
