@@ -5,6 +5,135 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-05-16
+
+### Added
+
+- Reorganize Settings into Appearance, Behavior, File systems, Updates, AI, Network, Privacy, and Advanced
+  ([c3003a05](https://github.com/vdavid/cmdr/commit/c3003a05))
+- Add "Overwrite all smaller" and "Overwrite all older" conflict actions
+  ([2dfd17b8](https://github.com/vdavid/cmdr/commit/2dfd17b8))
+- ⌘⇧T reopens closed tabs; double-click the tab bar opens a new tab
+  ([65417fbe](https://github.com/vdavid/cmdr/commit/65417fbe),
+  [d7a85a33](https://github.com/vdavid/cmdr/commit/d7a85a33))
+- Move AI API keys to the OS keychain, with 300 ms debounced save
+  ([42bc5eaf](https://github.com/vdavid/cmdr/commit/42bc5eaf),
+  [10f8525b](https://github.com/vdavid/cmdr/commit/10f8525b))
+- Command palette recents on empty query (last 10, LRU, grouped, self-heals stale IDs)
+  ([d3406299](https://github.com/vdavid/cmdr/commit/d3406299),
+  [a2971aba](https://github.com/vdavid/cmdr/commit/a2971aba))
+- Type to jump to a file in the explorer ([0b9f943f](https://github.com/vdavid/cmdr/commit/0b9f943f))
+- Sort-column shortcuts ⌘3–6 (Brief) and ⌘F3–F6 (Full) ([74e827e5](https://github.com/vdavid/cmdr/commit/74e827e5))
+- Brief mode: backend-computed per-column widths, plus a max-column-width slider
+  ([d84d5c2a](https://github.com/vdavid/cmdr/commit/d84d5c2a),
+  [f7907107](https://github.com/vdavid/cmdr/commit/f7907107),
+  [f9e40fc4](https://github.com/vdavid/cmdr/commit/f9e40fc4),
+  [e18bdbf4](https://github.com/vdavid/cmdr/commit/e18bdbf4))
+- Volume picker wraps cursor at top and bottom ([206ec7d9](https://github.com/vdavid/cmdr/commit/206ec7d9))
+- USB link-speed indicator in the volume switcher ([637b152e](https://github.com/vdavid/cmdr/commit/637b152e))
+- Stream MTP source-scan progress in the copy dialog (no more 0/0/0 freeze)
+  ([fef1aafd](https://github.com/vdavid/cmdr/commit/fef1aafd))
+- Bulk-skip pre-known conflicts under Skip-all for copy and move
+  ([b365076d](https://github.com/vdavid/cmdr/commit/b365076d))
+- MTP→SMB copy: kill the 2-min stall, faster source scan ([1ae5c198](https://github.com/vdavid/cmdr/commit/1ae5c198))
+- Honest copy ETA on long single-file streams: stop decaying files_rate
+  ([4737acbc](https://github.com/vdavid/cmdr/commit/4737acbc))
+- Format sub-1 files/s readouts instead of rounding to 0 ([ff7a72f9](https://github.com/vdavid/cmdr/commit/ff7a72f9))
+- Strip em-dashes from user copy and docs; rephrase microcopy to sound more human
+  ([971e35c4](https://github.com/vdavid/cmdr/commit/971e35c4),
+  [c39ecdc7](https://github.com/vdavid/cmdr/commit/c39ecdc7),
+  [a16afb0c](https://github.com/vdavid/cmdr/commit/a16afb0c),
+  [adab08fa](https://github.com/vdavid/cmdr/commit/adab08fa))
+
+### Fixed
+
+- Fix MTP delete freezing instead of showing live scan progress
+  ([4e005f95](https://github.com/vdavid/cmdr/commit/4e005f95))
+- Fix Cancel-copy losing the rollback on the APFS clonefile fast path
+  ([9c2e6244](https://github.com/vdavid/cmdr/commit/9c2e6244))
+- SMB upgrade no longer races mDNS in dev ([be1350d7](https://github.com/vdavid/cmdr/commit/be1350d7))
+- "Connect directly" SMB login dialog now shows the actual server name
+  ([0d84e4e7](https://github.com/vdavid/cmdr/commit/0d84e4e7))
+- Bulk-skip no longer pollutes the throughput estimator, and only fires for top-level file conflicts
+  ([55d3ca46](https://github.com/vdavid/cmdr/commit/55d3ca46),
+  [c3be95c1](https://github.com/vdavid/cmdr/commit/c3be95c1))
+- Per-iter Skip on volume copy credits byte progress ([e7f657df](https://github.com/vdavid/cmdr/commit/e7f657df))
+- Show duration settings in their declared unit ([66571349](https://github.com/vdavid/cmdr/commit/66571349))
+- Brief column-width slider enables inside the Settings window
+  ([591e090b](https://github.com/vdavid/cmdr/commit/591e090b))
+- Brief mode horizontal scrollbar drag no longer vibrates at 60 Hz
+  ([b80789e1](https://github.com/vdavid/cmdr/commit/b80789e1))
+- Restore focus when a ModalDialog closes and when the command palette closes
+  ([35413fa3](https://github.com/vdavid/cmdr/commit/35413fa3),
+  [6c45e12d](https://github.com/vdavid/cmdr/commit/6c45e12d))
+- File viewer surfaces `SearchStatus::Cancelled` to the FE on cancel
+  ([14ba2735](https://github.com/vdavid/cmdr/commit/14ba2735))
+- Separate MCP ports for prod (19224) and dev (19225) so dev no longer collides with the installed app
+  ([f0524658](https://github.com/vdavid/cmdr/commit/f0524658))
+- `setSetting` is idempotent on unchanged values ([c49636d8](https://github.com/vdavid/cmdr/commit/c49636d8))
+- Pane state: clear network host on leaving the network volume; skip FilePane MCP sync on Network
+  ([602fcb94](https://github.com/vdavid/cmdr/commit/602fcb94),
+  [a1d19947](https://github.com/vdavid/cmdr/commit/a1d19947))
+
+### Non-app
+
+- Refactor write ops behind a shared transfer driver: per-source loop for copy/move, sink-based inner functions across
+  local and volume code paths, drop one unsafe transmute ([b6833e26](https://github.com/vdavid/cmdr/commit/b6833e26),
+  [1d9f2ca4](https://github.com/vdavid/cmdr/commit/1d9f2ca4),
+  [63b6728e](https://github.com/vdavid/cmdr/commit/63b6728e),
+  [0218a645](https://github.com/vdavid/cmdr/commit/0218a645),
+  [01c8614e](https://github.com/vdavid/cmdr/commit/01c8614e),
+  [101e8385](https://github.com/vdavid/cmdr/commit/101e8385),
+  [118ac6b1](https://github.com/vdavid/cmdr/commit/118ac6b1),
+  [bc957471](https://github.com/vdavid/cmdr/commit/bc957471),
+  [9d7c69e8](https://github.com/vdavid/cmdr/commit/9d7c69e8),
+  [a056eb58](https://github.com/vdavid/cmdr/commit/a056eb58),
+  [5cf1173a](https://github.com/vdavid/cmdr/commit/5cf1173a),
+  [1280056b](https://github.com/vdavid/cmdr/commit/1280056b),
+  [0a7c257c](https://github.com/vdavid/cmdr/commit/0a7c257c),
+  [643e7cb2](https://github.com/vdavid/cmdr/commit/643e7cb2),
+  [afb70901](https://github.com/vdavid/cmdr/commit/afb70901))
+- Parallel-shard the E2E suite across three Tauri instances (MTP isolated, two non-MTP shards balanced); wall-clock 5m
+  49s → 2m 48s ([7802fca3](https://github.com/vdavid/cmdr/commit/7802fca3),
+  [1841e0c5](https://github.com/vdavid/cmdr/commit/1841e0c5),
+  [6e8971a0](https://github.com/vdavid/cmdr/commit/6e8971a0))
+- Cut Playwright wall-clock 10m 12s → 5m 6s via condition polling, MCP-driven cursor moves, beforeEach short-circuits,
+  and a per-keystroke → menu-dispatch migration ([507afb0e](https://github.com/vdavid/cmdr/commit/507afb0e),
+  [3b04806e](https://github.com/vdavid/cmdr/commit/3b04806e),
+  [f907adc2](https://github.com/vdavid/cmdr/commit/f907adc2),
+  [df89b217](https://github.com/vdavid/cmdr/commit/df89b217))
+- Add proptest-based property tests for `platform_case_compare`, search scope parsing, `glob_to_regex`, and
+  `topological_sort_bottom_up` ([2e747bf8](https://github.com/vdavid/cmdr/commit/2e747bf8),
+  [ffd799c8](https://github.com/vdavid/cmdr/commit/ffd799c8),
+  [1813e3dc](https://github.com/vdavid/cmdr/commit/1813e3dc),
+  [2cf586d1](https://github.com/vdavid/cmdr/commit/2cf586d1),
+  [e69e45aa](https://github.com/vdavid/cmdr/commit/e69e45aa))
+- Add state-transition tests for `IndexPhase`, `ActivityPhase`, `DiscoveryState`, and `SearchStatus`
+  ([c0aed651](https://github.com/vdavid/cmdr/commit/c0aed651),
+  [9a9899e9](https://github.com/vdavid/cmdr/commit/9a9899e9),
+  [9dd32504](https://github.com/vdavid/cmdr/commit/9dd32504),
+  [4ae15120](https://github.com/vdavid/cmdr/commit/4ae15120))
+- Add vitest mockIPC harness plus IPC contract tests for SMB connection, file viewer, and write operations
+  ([04c26e4d](https://github.com/vdavid/cmdr/commit/04c26e4d),
+  [3a538b44](https://github.com/vdavid/cmdr/commit/3a538b44),
+  [baa977ed](https://github.com/vdavid/cmdr/commit/baa977ed),
+  [967d93be](https://github.com/vdavid/cmdr/commit/967d93be))
+- Add mutation-testing-driven unit tests across `indexing/store`, `chunked_copy`, `watcher`, `copy_strategy`, and
+  `state` ([ef91cfb8](https://github.com/vdavid/cmdr/commit/ef91cfb8),
+  [a812cd9a](https://github.com/vdavid/cmdr/commit/a812cd9a),
+  [e9a3a9fd](https://github.com/vdavid/cmdr/commit/e9a3a9fd),
+  [b026f43d](https://github.com/vdavid/cmdr/commit/b026f43d),
+  [4f04d03c](https://github.com/vdavid/cmdr/commit/4f04d03c),
+  [41a3a831](https://github.com/vdavid/cmdr/commit/41a3a831))
+- Codify the testing playbook and tools inventory ([9515adde](https://github.com/vdavid/cmdr/commit/9515adde))
+- Add ESLint rule `cmdr/no-arbitrary-sleep-in-e2e` ([a9aea301](https://github.com/vdavid/cmdr/commit/a9aea301))
+- File-length check: 10% growth buffer with growth % shown; split long files into focused modules
+  ([1c1bdeb0](https://github.com/vdavid/cmdr/commit/1c1bdeb0),
+  [2d7c27a3](https://github.com/vdavid/cmdr/commit/2d7c27a3))
+- Pre-commit `--fast` lane in the check runner ([33f77ca5](https://github.com/vdavid/cmdr/commit/33f77ca5))
+- E2E windows get a blue title stripe and `E2E -` prefix so they can't be mistaken for the installed app
+  ([b1f707b7](https://github.com/vdavid/cmdr/commit/b1f707b7))
+
 ## [0.18.0] - 2026-05-12
 
 ### Added
