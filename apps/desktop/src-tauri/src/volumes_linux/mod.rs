@@ -338,7 +338,7 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
         });
     }
 
-    volumes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    volumes.sort_by_key(|v| v.name.to_lowercase());
     volumes
 }
 
@@ -375,7 +375,7 @@ fn get_cloud_drives(mounts: &[MountEntry]) -> Vec<LocationInfo> {
         }
     }
 
-    drives.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    drives.sort_by_key(|d| d.name.to_lowercase());
     drives
 }
 
@@ -443,7 +443,7 @@ fn get_network_mounts() -> Vec<LocationInfo> {
         }
     }
 
-    mounts.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    mounts.sort_by_key(|m| m.name.to_lowercase());
     mounts
 }
 
