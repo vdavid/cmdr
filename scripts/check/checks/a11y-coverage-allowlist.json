@@ -9,7 +9,6 @@
     "apps/desktop/src/lib/settings/sections/AiCloudSection.svelte": "hybrid section (see AiSection)",
     "apps/desktop/src/lib/settings/sections/AiLocalSection.svelte": "hybrid section (see AiSection)",
     "apps/desktop/src/lib/settings/sections/LicenseSection.svelte": "composition of already-audited setting components",
-    "apps/desktop/src/lib/settings/sections/ThemesSection.svelte": "composition of already-audited setting components",
     "apps/desktop/src/lib/settings/sections/DriveIndexingSection.svelte": "composition of already-audited setting components",
     "apps/desktop/src/lib/settings/sections/UpdatesSection.svelte": "composition of already-audited setting components",
     "apps/desktop/src/lib/settings/sections/MtpSection.svelte": "composition of already-audited setting components",

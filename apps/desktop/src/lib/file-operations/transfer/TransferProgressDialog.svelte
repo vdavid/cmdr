@@ -338,11 +338,13 @@
         etaSecondsRaw = event.etaSeconds
         updateDisplayEta(etaSecondsRaw)
 
-        // Scanning-phase metadata (current dir, index-derived expected totals,
-        // FE-computed throughput). Mirrors the waitingForScan path so the same
-        // scan-phase UI surfaces during the backend's foolproof re-scan.
+        // Scanning-phase metadata (current dir, dirs tally, index-derived
+        // expected totals, FE-computed throughput). Mirrors the waitingForScan
+        // path so the same scan-phase UI surfaces during the backend's
+        // foolproof re-scan.
         if (event.phase === 'scanning') {
             scanFilesFound = event.filesDone
+            scanDirsFound = event.dirsDone
             scanBytesFound = event.bytesDone
             scanCurrentDir = event.currentDir ?? null
             if (event.expectedFilesTotal != null) scanExpectedFiles = event.expectedFilesTotal

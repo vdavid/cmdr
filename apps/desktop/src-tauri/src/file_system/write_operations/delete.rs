@@ -2,8 +2,8 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::time::Instant;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use super::helpers::spawn_async_sync;
 use super::scan::{SourceItemTracker, scan_sources};
@@ -173,9 +173,56 @@ struct VolumeDeleteEntry {
     is_dir: bool,
 }
 
+/// Tracks the running tally across the whole recursive scan so the per-entry
+/// `list_directory` callback (which can fire while a single dir is still
+/// streaming entries from a slow MTP USB roundtrip) reads a coherent total.
+struct VolumeScanTracker {
+    /// Last emit timestamp for the global throttle (shared across recursion levels).
+    last_emit: Mutex<Instant>,
+    progress_interval: Duration,
+    /// Files committed to `entries` so far. The per-entry callback adds the
+    /// in-flight `loaded_count` on top to form the displayed tally.
+    files_so_far: std::sync::atomic::AtomicUsize,
+    dirs_so_far: std::sync::atomic::AtomicUsize,
+    bytes_so_far: std::sync::atomic::AtomicU64,
+}
+
+impl VolumeScanTracker {
+    fn new(progress_interval: Duration) -> Self {
+        Self {
+            last_emit: Mutex::new(Instant::now()),
+            progress_interval,
+            files_so_far: std::sync::atomic::AtomicUsize::new(0),
+            dirs_so_far: std::sync::atomic::AtomicUsize::new(0),
+            bytes_so_far: std::sync::atomic::AtomicU64::new(0),
+        }
+    }
+
+    /// Returns true if enough time has passed since the last emit AND atomically
+    /// resets the timer. Single-call gate so callers don't accidentally double-emit.
+    fn should_emit(&self) -> bool {
+        let Ok(mut last) = self.last_emit.lock() else {
+            return false;
+        };
+        if last.elapsed() < self.progress_interval {
+            return false;
+        }
+        *last = Instant::now();
+        true
+    }
+}
+
 /// Recursively enumerates a directory tree via `volume.list_directory()`, collecting
 /// files and directories. Directories are appended after their children, so the
 /// resulting list is already in deepest-first order for safe deletion.
+///
+/// Emits scan progress two ways:
+/// 1. **Per-entry** via `list_directory`'s `on_progress` callback, so the FE sees
+///    the tally climb mid-listing — important for MTP, where one `list_directory`
+///    call on `/DCIM/Camera` with 1k+ photos can take ~17 s of USB roundtrips.
+/// 2. **After each subtree** (this function's tail), as a final snapshot for that
+///    branch. Throttled by the shared `VolumeScanTracker` so it doesn't race
+///    with the per-entry callback.
 #[allow(
     clippy::too_many_arguments,
     reason = "Matches the parameter pattern of other write operation functions"
@@ -188,8 +235,10 @@ async fn scan_volume_recursive(
     state: &Arc<WriteOperationState>,
     events: &dyn OperationEventSink,
     operation_id: &str,
-    last_progress_time: &mut Instant,
+    tracker: &Arc<VolumeScanTracker>,
 ) -> Result<(), WriteOperationError> {
+    use std::sync::atomic::Ordering;
+
     if super::state::is_cancelled(&state.intent) {
         return Err(WriteOperationError::Cancelled {
             message: "Operation cancelled by user".to_string(),
@@ -202,14 +251,58 @@ async fn scan_volume_recursive(
         .map_err(|e| map_volume_error(&path.display().to_string(), e))?;
 
     if is_dir {
-        // Recurse into children first. list_directory returns FileEntry with size,
-        // so we use child.size directly instead of calling get_metadata (which returns
-        // NotSupported on MTP).
+        // Snapshot the cumulative tallies BEFORE the (potentially slow) listing
+        // call. The per-entry callback shows `files_before + loaded_count` so the
+        // FE sees a climbing number even when one `list_directory` takes seconds.
+        // We don't know mid-stream whether each entry is a file or dir, so
+        // optimistically attribute them to `files`; the post-listing loop below
+        // corrects the split via the `dirs_so_far` counter.
+        let files_before = tracker.files_so_far.load(Ordering::Relaxed);
+        let dirs_before = tracker.dirs_so_far.load(Ordering::Relaxed);
+        let bytes_before = tracker.bytes_so_far.load(Ordering::Relaxed);
+        let current_dir_str = path.display().to_string();
+        let op_id_for_cb = operation_id.to_string();
+        let tracker_for_cb = Arc::clone(tracker);
+        let state_for_cb = Arc::clone(state);
+
+        let on_progress = move |loaded_count: usize| {
+            if !tracker_for_cb.should_emit() {
+                return;
+            }
+            let files_now = files_before + loaded_count;
+            state_for_cb.emit_progress_via_sink(
+                events,
+                WriteProgressEvent::new(
+                    op_id_for_cb.clone(),
+                    WriteOperationType::Delete,
+                    WriteOperationPhase::Scanning,
+                    None,
+                    files_now,
+                    0,
+                    bytes_before,
+                    0,
+                )
+                .with_scan_meta(Some(current_dir_str.clone()), dirs_before, None),
+            );
+            update_operation_status(
+                &op_id_for_cb,
+                WriteOperationPhase::Scanning,
+                None,
+                files_now,
+                0,
+                bytes_before,
+                0,
+            );
+        };
+
         let children = volume
-            .list_directory(path, None)
+            .list_directory(path, Some(&on_progress))
             .await
             .map_err(|e| map_volume_error(&path.display().to_string(), e))?;
 
+        // Recurse into children first. list_directory returns FileEntry with size,
+        // so we use child.size directly instead of calling get_metadata (which
+        // returns NotSupported on MTP).
         for child in &children {
             let child_path = PathBuf::from(&child.path);
             if child.is_directory {
@@ -221,12 +314,14 @@ async fn scan_volume_recursive(
                     state,
                     events,
                     operation_id,
-                    last_progress_time,
+                    tracker,
                 ))
                 .await?;
             } else {
                 let size = child.size.unwrap_or(0);
                 *total_bytes += size;
+                tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
+                tracker.bytes_so_far.fetch_add(size, Ordering::Relaxed);
                 entries.push(VolumeDeleteEntry {
                     path: child_path,
                     size,
@@ -236,6 +331,7 @@ async fn scan_volume_recursive(
         }
 
         // Add directory after its children (already deepest-first order)
+        tracker.dirs_so_far.fetch_add(1, Ordering::Relaxed);
         entries.push(VolumeDeleteEntry {
             path: path.to_path_buf(),
             size: 0,
@@ -244,6 +340,7 @@ async fn scan_volume_recursive(
     } else {
         // Top-level file without listing context: size unknown, use 0.
         // Progress still tracks file count accurately.
+        tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
         entries.push(VolumeDeleteEntry {
             path: path.to_path_buf(),
             size: 0,
@@ -251,33 +348,35 @@ async fn scan_volume_recursive(
         });
     }
 
-    // Emit scan progress periodically
-    if last_progress_time.elapsed() >= state.progress_interval {
-        let file_count = entries.iter().filter(|e| !e.is_dir).count();
-        let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
+    // Final snapshot for this subtree (throttled so it doesn't race the per-entry callback).
+    if tracker.should_emit() {
+        let files_done = tracker.files_so_far.load(Ordering::Relaxed);
+        let dirs_done = tracker.dirs_so_far.load(Ordering::Relaxed);
+        let bytes_done = tracker.bytes_so_far.load(Ordering::Relaxed);
+        let current_dir_str = path.display().to_string();
         state.emit_progress_via_sink(
             events,
             WriteProgressEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Delete,
                 WriteOperationPhase::Scanning,
-                current_file.clone(),
-                file_count,
+                None,
+                files_done,
                 0,
-                *total_bytes,
+                bytes_done,
                 0,
-            ),
+            )
+            .with_scan_meta(Some(current_dir_str), dirs_done, None),
         );
         update_operation_status(
             operation_id,
             WriteOperationPhase::Scanning,
-            current_file,
-            file_count,
+            None,
+            files_done,
             0,
-            *total_bytes,
+            bytes_done,
             0,
         );
-        *last_progress_time = Instant::now();
     }
 
     Ok(())
@@ -319,7 +418,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
     // Phase 1: Scan. Recursively enumerate the tree via volume.list_directory().
     let mut entries: Vec<VolumeDeleteEntry> = Vec::new();
     let mut total_bytes = 0u64;
-    let mut last_progress_time = Instant::now();
+    let tracker = Arc::new(VolumeScanTracker::new(state.progress_interval));
 
     for source in sources {
         // Check if the source itself is a file or directory
@@ -334,13 +433,14 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                 state,
                 events,
                 operation_id,
-                &mut last_progress_time,
+                &tracker,
             )
             .await?;
         } else {
             // Top-level file: size unknown without listing the parent, use 0.
             // Progress still tracks file count accurately, and individual file
             // deletes are near-instant on MTP.
+            tracker.files_so_far.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             entries.push(VolumeDeleteEntry {
                 path: source.to_path_buf(),
                 size: 0,
@@ -350,8 +450,9 @@ pub(super) async fn delete_volume_files_with_progress_inner(
     }
 
     let file_count = entries.iter().filter(|e| !e.is_dir).count();
+    let dirs_count = entries.iter().filter(|e| e.is_dir).count();
 
-    // Emit final scan progress
+    // Emit final scan progress (scan complete: tallies == totals)
     state.emit_progress_via_sink(
         events,
         WriteProgressEvent::new(
@@ -363,7 +464,8 @@ pub(super) async fn delete_volume_files_with_progress_inner(
             file_count,
             total_bytes,
             total_bytes,
-        ),
+        )
+        .with_scan_meta(None, dirs_count, None),
     );
 
     // Handle dry-run mode

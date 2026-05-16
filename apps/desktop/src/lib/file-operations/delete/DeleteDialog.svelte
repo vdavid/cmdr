@@ -40,6 +40,11 @@
         sortColumn: SortColumn
         /** Current sort order on source pane */
         sortOrder: SortOrder
+        /** Source volume ID. Routes the scan preview through the Volume trait
+         *  (`run_volume_scan_preview`) for non-local volumes like MTP, so the
+         *  confirmation dialog gets a live climbing tally instead of a silently
+         *  failed local-FS walk. */
+        sourceVolumeId: string
         /** When true, dialog auto-confirms without user interaction (MCP). */
         autoConfirm?: boolean
         onConfirm: (previewId: string | null, isPermanent: boolean) => void
@@ -55,6 +60,7 @@
         isFromCursor,
         sortColumn,
         sortOrder,
+        sourceVolumeId,
         autoConfirm = false,
         onConfirm,
         onCancel,
@@ -152,7 +158,7 @@
         // Start the scan
         isScanning = true
         const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
-        const result = await startScanPreview(sourcePaths, sortColumn, sortOrder, progressIntervalMs)
+        const result = await startScanPreview(sourcePaths, sortColumn, sortOrder, progressIntervalMs, sourceVolumeId)
         previewId = result.previewId
     }
 

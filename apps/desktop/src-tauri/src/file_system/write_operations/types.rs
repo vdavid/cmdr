@@ -92,6 +92,12 @@ pub struct WriteProgressEvent {
     pub files_total: usize,
     pub bytes_done: u64,
     pub bytes_total: u64,
+    /// Directories discovered so far (Scanning phase only; 0 outside scanning).
+    /// `WriteProgressEvent` already carries `files_done`; some UIs want to show
+    /// the dir count separately while the walker is mid-tree. Populated by
+    /// `with_scan_meta`.
+    #[serde(default)]
+    pub dirs_done: usize,
     /// Smoothed bytes/second toward the phase target. `None` during warm-up.
     #[serde(default)]
     pub bytes_per_second: Option<u64>,
@@ -144,6 +150,7 @@ impl WriteProgressEvent {
             files_total,
             bytes_done,
             bytes_total,
+            dirs_done: 0,
             bytes_per_second: None,
             files_per_second: None,
             eta_seconds: None,
@@ -152,16 +159,19 @@ impl WriteProgressEvent {
         }
     }
 
-    /// Attach scanning-phase metadata (current directory + index-derived
-    /// expected totals) to an event. Only emit sites in the scanning phase
-    /// call this; everywhere else leaves the fields at their `None` default.
+    /// Attach scanning-phase metadata (current directory, running dirs count,
+    /// and index-derived expected totals) to an event. Only emit sites in the
+    /// scanning phase call this; everywhere else leaves the fields at their
+    /// defaults (`None` / `0`).
     #[must_use]
     pub fn with_scan_meta(
         mut self,
         current_dir: Option<String>,
+        dirs_done: usize,
         expected: Option<crate::indexing::expected_totals::ExpectedTotals>,
     ) -> Self {
         self.current_dir = current_dir;
+        self.dirs_done = dirs_done;
         if let Some(e) = expected {
             self.expected_files_total = Some(e.files);
             self.expected_bytes_total = Some(e.bytes);

@@ -467,6 +467,8 @@ export interface WriteProgressEvent {
   bytesDone: number
   /** Total bytes to process */
   bytesTotal: number
+  /** Directories discovered during the scanning phase. 0 outside scanning. */
+  dirsDone: number
   /** Smoothed bytes per second toward the phase target. Null during warm-up. */
   bytesPerSecond: number | null
   /** Smoothed files per second toward the phase target. Null during warm-up. */

@@ -318,11 +318,12 @@ fn scan_sources_internal(
         on_symlink_loop: &|path| WriteOperationError::SymlinkLoop {
             path: path.display().to_string(),
         },
-        on_progress: &|files_done, _, bytes_done, current_file, current_dir| {
+        on_progress: &|files_done, dirs_done, bytes_done, current_file, current_dir| {
             log::debug!(
-                "scan: emitting write-progress op={} phase=scanning files_found={} bytes_found={}",
+                "scan: emitting write-progress op={} phase=scanning files_found={} dirs_found={} bytes_found={}",
                 operation_id,
                 files_done,
+                dirs_done,
                 bytes_done
             );
             state.emit_progress_via_sink(
@@ -337,7 +338,7 @@ fn scan_sources_internal(
                     bytes_done,
                     0,
                 )
-                .with_scan_meta(current_dir, expected),
+                .with_scan_meta(current_dir, dirs_done, expected),
             );
             update_operation_status(
                 operation_id,
@@ -388,7 +389,7 @@ fn scan_sources_internal(
             total_bytes,
             total_bytes,
         )
-        .with_scan_meta(None, expected),
+        .with_scan_meta(None, dirs.len(), expected),
     );
 
     Ok(ScanResult {
@@ -876,12 +877,13 @@ mod tests {
             0,
         );
         assert_eq!(event.current_dir, None);
+        assert_eq!(event.dirs_done, 0);
         assert_eq!(event.expected_files_total, None);
         assert_eq!(event.expected_bytes_total, None);
     }
 
     #[test]
-    fn with_scan_meta_populates_all_three_fields() {
+    fn with_scan_meta_populates_all_fields() {
         use super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
         use crate::indexing::expected_totals::ExpectedTotals;
         let event = WriteProgressEvent::new(
@@ -896,12 +898,14 @@ mod tests {
         )
         .with_scan_meta(
             Some("/some/dir".to_string()),
+            3,
             Some(ExpectedTotals {
                 files: 100,
                 bytes: 5000,
             }),
         );
         assert_eq!(event.current_dir.as_deref(), Some("/some/dir"));
+        assert_eq!(event.dirs_done, 3);
         assert_eq!(event.expected_files_total, Some(100));
         assert_eq!(event.expected_bytes_total, Some(5000));
     }
@@ -919,8 +923,9 @@ mod tests {
             0,
             0,
         )
-        .with_scan_meta(Some("/x".to_string()), None);
+        .with_scan_meta(Some("/x".to_string()), 2, None);
         assert_eq!(event.current_dir.as_deref(), Some("/x"));
+        assert_eq!(event.dirs_done, 2);
         // No expected totals → fields stay None so the FE falls back to tallies-only.
         assert_eq!(event.expected_files_total, None);
         assert_eq!(event.expected_bytes_total, None);

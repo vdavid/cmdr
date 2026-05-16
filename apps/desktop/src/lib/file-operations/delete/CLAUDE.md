@@ -49,6 +49,9 @@ dialog before acting. Reuses `TransferProgressDialog` for progress display.
   index-derived `expectedFilesTotal` / `expectedBytesTotal` (when the source paths are covered by the drive index) plus
   `currentDir`, so the confirmation dialog renders a real progress bar capped at 100%, a throughput readout from
   `ScanThroughput` (`../scan-throughput.ts`), and the current scanning directory above the running tallies.
+  `DeleteDialog` forwards `sourceVolumeId` into `startScanPreview` so non-local volumes (MTP, SMB) route through
+  `run_volume_scan_preview` instead of the local-FS walker — without it, an MTP delete would attempt
+  `walk_dir_recursive` on `/DCIM/Camera`, get a path-not-found error, and silently leave the dialog stuck at "0 files".
 - **400ms minimum display**: Progress dialog stays visible for at least 400ms to prevent jarring flashes on fast
   operations.
 - **Cursor positioning**: After delete, cursor stays at the same position index (not same file). Fixed in

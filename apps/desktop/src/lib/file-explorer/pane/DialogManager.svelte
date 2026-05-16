@@ -140,6 +140,7 @@
             isFromCursor={deleteDialogProps.isFromCursor}
             sortColumn={deleteDialogProps.sortColumn}
             sortOrder={deleteDialogProps.sortOrder}
+            sourceVolumeId={deleteDialogProps.sourceVolumeId}
             autoConfirm={deleteDialogProps.autoConfirm}
             onConfirm={onDeleteConfirm}
             onCancel={onDeleteCancel}
