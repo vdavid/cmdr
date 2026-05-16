@@ -183,6 +183,17 @@ fn test_map_volume_error_not_supported() {
     );
 }
 
+#[test]
+fn test_map_volume_error_delete_pending() {
+    // STATUS_DELETE_PENDING surfaces when a delete was requested but an open
+    // handle is keeping the file alive on the server. It MUST become a typed
+    // `WriteOperationError::DeletePending` so the write-error event carries
+    // the transient "file is being removed" friendly copy — not the generic
+    // IoError fallback.
+    let err = map_volume_error("/ctx", VolumeError::DeletePending("STATUS_DELETE_PENDING".to_string()));
+    assert!(matches!(err, WriteOperationError::DeletePending { path } if path == "/ctx"));
+}
+
 // ========================================
 // LocalPosixVolume integration tests
 // ========================================

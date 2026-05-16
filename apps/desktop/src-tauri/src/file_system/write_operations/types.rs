@@ -455,6 +455,12 @@ pub enum WriteOperationError {
         path: String,
         message: String,
     },
+    /// The file is in `STATUS_DELETE_PENDING` on the server: a delete was requested
+    /// but at least one open handle is keeping it alive. Transient — clears when the
+    /// last handle closes. SMB-only today.
+    DeletePending {
+        path: String,
+    },
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,
