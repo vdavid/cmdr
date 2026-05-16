@@ -142,6 +142,7 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
             retry_hint: false,
             action_kind: None,
         },
+        W::DeletePending { path } => kinds::delete_pending(path, raw),
         W::IoError { path, message } => kinds::io_serious(path, message, raw),
     }
 }
