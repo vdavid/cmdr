@@ -92,6 +92,13 @@ export interface FetchRangeParams {
   includeHidden: boolean
   cachedRange: { start: number; end: number }
   onSyncStatusRequest?: (paths: string[]) => void
+  /**
+   * Bypass the "already cached" short-circuit. Set when the backing listing
+   * changed (e.g. a `directory-diff` event added/removed entries within the
+   * cached range) so the cached entries are stale even though the range
+   * indices haven't moved.
+   */
+  force?: boolean
 }
 
 /** Result of fetchVisibleRange */
@@ -136,13 +143,22 @@ export function isRangeCached(
 
 /** Fetches entries for a visible range with prefetch buffer */
 export async function fetchVisibleRange(params: FetchRangeParams): Promise<FetchRangeResult | null> {
-  const { listingId, startItem, endItem, hasParent, totalCount, includeHidden, cachedRange, onSyncStatusRequest } =
-    params
+  const {
+    listingId,
+    startItem,
+    endItem,
+    hasParent,
+    totalCount,
+    includeHidden,
+    cachedRange,
+    onSyncStatusRequest,
+    force,
+  } = params
 
   const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
 
-  // Only fetch if needed range isn't cached
-  if (isRangeCached(fetchStart, fetchEnd, cachedRange)) {
+  // Only fetch if needed range isn't cached (unless `force` says the cache is stale)
+  if (!force && isRangeCached(fetchStart, fetchEnd, cachedRange)) {
     return null // Already cached
   }
 
@@ -163,15 +179,23 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
   }
 }
 
-/** Checks if cache props changed and returns whether reset is needed */
+/**
+ * Checks if cache props changed in a way that warrants a hard reset (wipe
+ * cached entries and column widths, refetch from scratch).
+ *
+ * Hard resets are for cold context changes: navigation, hidden-files toggle,
+ * sort, explicit refresh. `totalCount` changes alone (caused by `directory-diff`
+ * events during bulk ops) trigger a *soft* refresh instead — the visible range
+ * refetches in the background and atomically replaces, so the user never sees
+ * an empty pane mid-burst.
+ */
 export function shouldResetCache(
-  current: { listingId: string; includeHidden: boolean; totalCount: number; cacheGeneration: number },
-  previous: { listingId: string; includeHidden: boolean; totalCount: number; cacheGeneration: number },
+  current: { listingId: string; includeHidden: boolean; cacheGeneration: number },
+  previous: { listingId: string; includeHidden: boolean; cacheGeneration: number },
 ): boolean {
   return (
     current.listingId !== previous.listingId ||
     current.includeHidden !== previous.includeHidden ||
-    current.totalCount !== previous.totalCount ||
     current.cacheGeneration !== previous.cacheGeneration
   )
 }

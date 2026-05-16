@@ -679,8 +679,33 @@
         renameFlow.cancelRename()
     }
 
-    // Cache generation counter - incremented to force list components to re-fetch
+    // Cache generation counter — bumped on **cold context changes** (sort,
+    // hidden-files toggle, explicit refresh, listing swap). The List components
+    // treat this as a hard reset: wipe rendered entries and column widths,
+    // refetch from scratch.
     let cacheGeneration = $state(0)
+
+    // Soft-refresh tick — bumped on every `directory-diff` event (bulk delete,
+    // copy, rename). The List components refetch the visible range in the
+    // background and atomically replace, keeping existing entries on screen
+    // until the new ones land. This is what prevents the empty-pane flicker
+    // that destructive `cacheGeneration` bumps caused mid-bulk-op.
+    let softRefreshTick = $state(0)
+
+    // Throttle the brief-mode column-width refetch during diff bursts. Without
+    // this, a 10 k-file delete fires one `get_brief_column_text_widths` IPC per
+    // coalesced event (~20/sec), each forcing a layout reflow. ~200 ms trailing
+    // means at most ~5 width recomputes/sec, with the final widths always
+    // landing after the burst ends.
+    let columnWidthRefetchTimer: ReturnType<typeof setTimeout> | null = null
+    function scheduleColumnWidthRefetch(): void {
+        if (viewMode !== 'brief') return
+        if (columnWidthRefetchTimer !== null) return
+        columnWidthRefetchTimer = setTimeout(() => {
+            columnWidthRefetchTimer = null
+            briefListRef?.refetchColumnWidths?.()
+        }, 200)
+    }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function refreshView(): void {
@@ -1836,16 +1861,16 @@
                 }
             }
 
-            // Refetch total count and then force the List components to re-fetch
-            // their visible range. We always bump cacheGeneration because renames
-            // don't change totalCount. Brief mode also refetches its per-column
-            // widths since the filename set may have changed (rename / add / remove).
+            // Refetch total count, bump the soft-refresh tick (renames don't
+            // change totalCount, so the tick is what guarantees a refresh),
+            // and schedule a throttled column-width refetch in brief mode.
+            // We deliberately DON'T bump `cacheGeneration` here: that'd cause
+            // a destructive wipe on every diff event, flickering the source
+            // pane empty mid-bulk-op.
             void getTotalCount(listingId, includeHidden).then(async (count) => {
                 totalCount = count
-                cacheGeneration++
-                if (viewMode === 'brief') {
-                    briefListRef?.refetchColumnWidths?.()
-                }
+                softRefreshTick++
+                scheduleColumnWidthRefetch()
 
                 // Post-rename cursor tracking: move cursor to the renamed file
                 const nameToFind = renameFlow.pendingCursorName
@@ -2247,6 +2272,7 @@
                 totalCount={effectiveTotalCount}
                 {includeHidden}
                 {cacheGeneration}
+                {softRefreshTick}
                 {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
@@ -2281,6 +2307,7 @@
                 totalCount={effectiveTotalCount}
                 {includeHidden}
                 {cacheGeneration}
+                {softRefreshTick}
                 {cursorIndex}
                 {isFocused}
                 {syncStatusMap}

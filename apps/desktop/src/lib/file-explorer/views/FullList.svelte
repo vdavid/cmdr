@@ -65,6 +65,14 @@
         totalCount: number
         includeHidden: boolean
         cacheGeneration?: number
+        /**
+         * Bumped on every `directory-diff` event. Triggers a soft refresh
+         * (refetch visible range in the background, keep existing entries
+         * visible until new ones land). Use this instead of `cacheGeneration`
+         * for diff-driven refreshes — `cacheGeneration` does a destructive
+         * wipe that causes empty-pane flicker mid-bulk-operation.
+         */
+        softRefreshTick?: number
         cursorIndex: number
         isFocused?: boolean
         syncStatusMap?: Record<string, SyncStatus>
@@ -109,6 +117,7 @@
         totalCount,
         includeHidden,
         cacheGeneration = 0,
+        softRefreshTick = 0,
         cursorIndex,
         isFocused = true,
         syncStatusMap = {},
@@ -315,7 +324,8 @@
     }
 
     // Fetch entries for the visible range
-    async function fetchVisibleRange() {
+    // `force=true` skips the "already cached" short-circuit; see BriefList for the rationale.
+    async function fetchVisibleRange(force = false) {
         if (!listingId || isFetching) return
 
         const startItem = virtualWindow.startIndex
@@ -324,7 +334,7 @@
         // Check if range is already cached BEFORE setting isFetching
         // This prevents blocking subsequent fetches when data is already available
         const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
-        if (isRangeCached(fetchStart, fetchEnd, cachedRange)) {
+        if (!force && isRangeCached(fetchStart, fetchEnd, cachedRange)) {
             return // Already cached
         }
 
@@ -339,6 +349,7 @@
                 includeHidden,
                 cachedRange,
                 onSyncStatusRequest,
+                force,
             })
             if (result) {
                 cachedEntries = result.entries
@@ -488,18 +499,27 @@
     }
 
     // Track previous values to detect actual changes
-    let prevCacheProps = { listingId: '', includeHidden: false, totalCount: 0, cacheGeneration: 0 }
+    let prevCacheProps = { listingId: '', includeHidden: false, cacheGeneration: 0 }
+    let prevTotalCount = 0
+    let prevSoftTick = 0
 
-    // Single effect: fetch when ready, reset cache when listingId/includeHidden/totalCount/cacheGeneration changes
+    // Hard reset on cold context changes (nav, sort, hidden toggle): wipe
+    // entries, refetch from scratch.
+    // Soft refresh on totalCount or softRefreshTick changes (`directory-diff`
+    // bursts, in-place renames): refetch in background and atomically replace,
+    // keeping existing rows visible — no empty-pane flicker mid-bulk-op.
     $effect(() => {
-        const currentProps = { listingId, includeHidden, totalCount, cacheGeneration }
+        const currentProps = { listingId, includeHidden, cacheGeneration }
+        const currentTotal = totalCount
+        const currentTick = softRefreshTick
         if (!listingId || containerHeight <= 0) return
 
-        // Check if any tracked prop changed (totalCount changes on file add/remove, cacheGeneration on sort)
         if (shouldResetCache(currentProps, prevCacheProps)) {
             cachedEntries = []
             cachedRange = { start: 0, end: 0 }
             prevCacheProps = currentProps
+            prevTotalCount = currentTotal
+            prevSoftTick = currentTick
             // Suppress the grid-template-columns transition for the first paint after
             // a dir switch; otherwise the header (which persists across navs) slides
             // from the previous dir's widths to the new ones.
@@ -509,6 +529,15 @@
                     skipTransition = false
                 })
             })
+            void fetchVisibleRange()
+            return
+        }
+
+        if (currentTotal !== prevTotalCount || currentTick !== prevSoftTick) {
+            prevTotalCount = currentTotal
+            prevSoftTick = currentTick
+            void fetchVisibleRange(true)
+            return
         }
 
         void fetchVisibleRange()

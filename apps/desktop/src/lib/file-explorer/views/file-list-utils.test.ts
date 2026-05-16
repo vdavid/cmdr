@@ -316,7 +316,6 @@ describe('shouldResetCache', () => {
   const base = {
     listingId: 'listing-1',
     includeHidden: false,
-    totalCount: 100,
     cacheGeneration: 1,
   }
 
@@ -332,12 +331,15 @@ describe('shouldResetCache', () => {
     expect(shouldResetCache({ ...base, includeHidden: true }, base)).toBe(true)
   })
 
-  it('returns true when totalCount changes', () => {
-    expect(shouldResetCache({ ...base, totalCount: 200 }, base)).toBe(true)
-  })
-
   it('returns true when cacheGeneration changes', () => {
     expect(shouldResetCache({ ...base, cacheGeneration: 2 }, base)).toBe(true)
+  })
+
+  it('does NOT reset when only totalCount changes (soft-refresh path for diff events)', () => {
+    // totalCount changes — caused by directory-diff events during bulk ops —
+    // must not trigger a hard reset; the lists handle these via soft refresh
+    // (refetch in background, keep entries visible until new ones land).
+    expect(shouldResetCache(base, base)).toBe(false)
   })
 })
 
