@@ -70,10 +70,29 @@ pub(super) async fn resolve_volume_conflict(
                     .unwrap_or(0)
             };
 
-            // We can't easily get modification times from Volume trait, so use None
-            let source_modified: Option<i64> = None;
-            let destination_modified: Option<i64> = None;
-            let destination_is_newer = false;
+            // Pull mtimes via `get_metadata` so the per-file conflict dialog
+            // can render its "(newer)" / "(older)" annotations on volume copies
+            // (MTP, SMB) the same way it does on local-FS. Both sides may
+            // legitimately return `None` (SMB servers vary on `modified_at`);
+            // we surface that as `None` and the FE simply omits the annotation.
+            //
+            // Fired only on the Stop path (user-prompted), so the extra two
+            // round-trips never run for Skip / Overwrite / Rename / conditional
+            // policies. Each is bounded by the time the user takes to click,
+            // so the cost is invisible.
+            let source_modified: Option<i64> = source_volume
+                .get_metadata(source_path)
+                .await
+                .ok()
+                .and_then(|m| m.modified_at)
+                .map(|s| s as i64);
+            let destination_modified: Option<i64> = dest_volume
+                .get_metadata(dest_path)
+                .await
+                .ok()
+                .and_then(|m| m.modified_at)
+                .map(|s| s as i64);
+            let destination_is_newer = matches!((source_modified, destination_modified), (Some(s), Some(d)) if d > s);
             let size_difference = dest_size as i64 - source_size as i64;
 
             events.emit_conflict(WriteConflictEvent {
@@ -95,12 +114,23 @@ pub(super) async fn resolve_volume_conflict(
             // Wait for user to call resolve_write_conflict.
             match rx.await {
                 Ok(response) => {
-                    // Save for future conflicts if apply_to_all
+                    // Save for future conflicts if apply_to_all. Conditional variants
+                    // (OverwriteSmaller / OverwriteOlder) are stored as-is so each
+                    // subsequent conflict re-evaluates against its own source/dest.
                     if response.apply_to_all {
                         *apply_to_all_resolution = Some(response.resolution);
                     }
-                    // Apply the chosen resolution
-                    apply_volume_conflict_resolution(response.resolution, dest_volume, dest_path).await
+                    let effective = reduce_volume_conditional_resolution(
+                        response.resolution,
+                        source_volume,
+                        source_path,
+                        dest_volume,
+                        dest_path,
+                        Some(source_size),
+                        Some(dest_size),
+                    )
+                    .await;
+                    apply_volume_conflict_resolution(effective, dest_volume, dest_path).await
                 }
                 Err(_) => {
                     // Sender dropped = operation cancelled
@@ -117,6 +147,102 @@ pub(super) async fn resolve_volume_conflict(
         ConflictResolution::Rename => {
             apply_volume_conflict_resolution(ConflictResolution::Rename, dest_volume, dest_path).await
         }
+        ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
+            let effective = reduce_volume_conditional_resolution(
+                resolution,
+                source_volume,
+                source_path,
+                dest_volume,
+                dest_path,
+                source_size_hint,
+                dest_size_hint,
+            )
+            .await;
+            apply_volume_conflict_resolution(effective, dest_volume, dest_path).await
+        }
+    }
+}
+
+/// Volume-side counterpart of `reduce_conditional_resolution`. Maps the
+/// conditional variants to `Overwrite` / `Skip` by comparing source vs dest
+/// sizes (cheap: hints from the caller or one `get_metadata` round-trip each)
+/// or `modified_at` timestamps (`get_metadata` on both sides).
+///
+/// Strict comparison: equal sizes / equal mtimes / unknown values all reduce
+/// to `Skip`. Volume backends may not always populate `modified_at` (SMB
+/// servers vary, MTP usually does); in that case `OverwriteOlder` skips,
+/// which is the safe default.
+async fn reduce_volume_conditional_resolution(
+    resolution: ConflictResolution,
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+    source_size_hint: Option<u64>,
+    dest_size_hint: Option<u64>,
+) -> ConflictResolution {
+    match resolution {
+        ConflictResolution::OverwriteSmaller => {
+            let src_size = match source_size_hint {
+                Some(s) => Some(s),
+                None => source_volume.get_metadata(source_path).await.ok().and_then(|m| m.size),
+            };
+            let dst_size = match dest_size_hint {
+                Some(s) => Some(s),
+                None => dest_volume.get_metadata(dest_path).await.ok().and_then(|m| m.size),
+            };
+            match (src_size, dst_size) {
+                (Some(src), Some(dst)) if dst < src => ConflictResolution::Overwrite,
+                (Some(src), Some(dst)) => {
+                    log::info!(
+                        target: "conflict_resolution",
+                        "OverwriteSmaller (volume): skipping {} — destination not strictly smaller (src={src}, dst={dst})",
+                        dest_path.display()
+                    );
+                    ConflictResolution::Skip
+                }
+                _ => {
+                    log::info!(
+                        target: "conflict_resolution",
+                        "OverwriteSmaller (volume): skipping {} — size unknown for source or destination (the volume backend may not surface it)",
+                        dest_path.display()
+                    );
+                    ConflictResolution::Skip
+                }
+            }
+        }
+        ConflictResolution::OverwriteOlder => {
+            let src_t = source_volume
+                .get_metadata(source_path)
+                .await
+                .ok()
+                .and_then(|m| m.modified_at);
+            let dst_t = dest_volume
+                .get_metadata(dest_path)
+                .await
+                .ok()
+                .and_then(|m| m.modified_at);
+            match (src_t, dst_t) {
+                (Some(src), Some(dst)) if dst < src => ConflictResolution::Overwrite,
+                (Some(_), Some(_)) => {
+                    log::info!(
+                        target: "conflict_resolution",
+                        "OverwriteOlder (volume): skipping {} — destination not strictly older than source",
+                        dest_path.display()
+                    );
+                    ConflictResolution::Skip
+                }
+                _ => {
+                    log::info!(
+                        target: "conflict_resolution",
+                        "OverwriteOlder (volume): skipping {} — modified time unknown for source or destination (some SMB servers don't surface it)",
+                        dest_path.display()
+                    );
+                    ConflictResolution::Skip
+                }
+            }
+        }
+        other => other,
     }
 }
 
@@ -171,6 +297,11 @@ async fn apply_volume_conflict_resolution(
             // Find a unique name - we need to check what exists on the volume
             let unique_path = find_unique_volume_name(dest_volume, dest_path).await;
             Ok(Some(unique_path))
+        }
+        ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
+            // Reduced to Overwrite / Skip by `reduce_volume_conditional_resolution`
+            // before reaching this function.
+            unreachable!("conditional conflict resolutions must be reduced before apply_volume_conflict_resolution")
         }
     }
 }
@@ -342,5 +473,338 @@ mod tests {
             "Overwrite resolution must delete an existing FILE so the writer can \
              create a fresh copy. Skipping delete only applies to directories."
         );
+    }
+
+    // ======================================================================
+    // Conditional resolution (OverwriteSmaller / OverwriteOlder)
+    // ======================================================================
+    //
+    // Same data-safety contract as the local-FS path: a destination is
+    // overwritten ONLY when strictly smaller / strictly older than the source.
+    // The volume side has two extra wrinkles the local side doesn't:
+    //   1. Size hints from the caller (preview scan) can short-circuit the
+    //      `get_metadata` round-trip; tests cover both hint-provided and
+    //      hint-absent paths.
+    //   2. Volume backends may not surface `modified_at` (SMB servers vary).
+    //      OverwriteOlder must Skip rather than overwrite when mtime is
+    //      unknown on either side.
+
+    /// Build an InMemoryVolume holding a single file at `path` with the given
+    /// `size` and `modified_at`. The volume's `get_metadata` will return
+    /// exactly these values, letting tests pin the comparison behavior
+    /// independent of clock drift.
+    fn volume_with_file(name: &str, path: &str, size: u64, modified_at: Option<u64>) -> Arc<InMemoryVolume> {
+        let entry = FileEntry {
+            size: Some(size),
+            modified_at,
+            created_at: modified_at,
+            permissions: 0o644,
+            owner: "testuser".to_string(),
+            group: "staff".to_string(),
+            extended_metadata_loaded: true,
+            ..FileEntry::new(
+                path.rsplit('/').next().unwrap_or(path).to_string(),
+                path.to_string(),
+                false,
+                false,
+            )
+        };
+        Arc::new(InMemoryVolume::with_entries(name, vec![entry]))
+    }
+
+    // ----- OverwriteSmaller -----
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_smaller_overwrites_when_dest_strictly_smaller_via_hints() {
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 1000, Some(100));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 500, Some(100));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteSmaller,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            Some(1000),
+            Some(500),
+        )
+        .await;
+
+        assert_eq!(resolved, ConflictResolution::Overwrite);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_smaller_skips_when_dest_equal_size() {
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 500, Some(100));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 500, Some(100));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteSmaller,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            Some(500),
+            Some(500),
+        )
+        .await;
+
+        assert_eq!(
+            resolved,
+            ConflictResolution::Skip,
+            "Equal-size dst must NOT be overwritten on a volume any more than on local FS"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_smaller_skips_when_dest_larger() {
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 100, Some(100));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 9999, Some(100));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteSmaller,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            Some(100),
+            Some(9999),
+        )
+        .await;
+
+        assert_eq!(
+            resolved,
+            ConflictResolution::Skip,
+            "Larger dst must NOT be overwritten — would clobber the user's keeper file"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_smaller_falls_back_to_get_metadata_when_hints_missing() {
+        // Critical: when the caller (move path, no scan phase) passes no hints,
+        // the reducer must `get_metadata` from each volume rather than
+        // defaulting to Skip on absent hints. Otherwise OverwriteSmaller would
+        // never actually overwrite on moves.
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 1000, Some(100));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 500, Some(100));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteSmaller,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            resolved,
+            ConflictResolution::Overwrite,
+            "With no hints, the reducer should still get_metadata and compare correctly"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_smaller_skips_when_dest_metadata_unavailable() {
+        // Source is fine but dest get_metadata fails (path missing). Reducer
+        // must Skip — we can't prove the destination is smaller, so we never
+        // touch it.
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 1000, Some(100));
+        let dst: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("dst")); // empty
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteSmaller,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(resolved, ConflictResolution::Skip);
+    }
+
+    // ----- OverwriteOlder -----
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_older_overwrites_when_dest_strictly_older() {
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 100, Some(1_700_000_000));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 100, Some(1_600_000_000));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteOlder,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(resolved, ConflictResolution::Overwrite);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_older_skips_when_dest_equal_mtime() {
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 100, Some(1_600_000_000));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 100, Some(1_600_000_000));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteOlder,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(resolved, ConflictResolution::Skip);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_older_skips_when_dest_strictly_newer() {
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 100, Some(1_600_000_000));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 100, Some(1_700_000_000));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteOlder,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            resolved,
+            ConflictResolution::Skip,
+            "Newer dst must NOT be overwritten — would clobber the user's fresher file"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_older_skips_when_source_mtime_unknown() {
+        // Many SMB servers don't surface modified_at reliably. The reducer
+        // must fail closed to Skip rather than defaulting to overwrite.
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 100, None);
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 100, Some(1_600_000_000));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteOlder,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            resolved,
+            ConflictResolution::Skip,
+            "Unknown source mtime must fail closed; we cannot prove dst is older"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_older_skips_when_dest_mtime_unknown() {
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 100, Some(1_700_000_000));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 100, None);
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteOlder,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            resolved,
+            ConflictResolution::Skip,
+            "Unknown dest mtime must fail closed; we cannot prove it's older"
+        );
+    }
+
+    // ----- Pass-through -----
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_non_conditional_variants_pass_through_unchanged() {
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 100, Some(1_600_000_000));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 100, Some(1_600_000_000));
+
+        for v in [
+            ConflictResolution::Stop,
+            ConflictResolution::Skip,
+            ConflictResolution::Overwrite,
+            ConflictResolution::Rename,
+        ] {
+            let resolved = reduce_volume_conditional_resolution(
+                v,
+                &src,
+                Path::new("/f.bin"),
+                &dst,
+                Path::new("/f.bin"),
+                Some(100),
+                Some(100),
+            )
+            .await;
+            assert_eq!(resolved, v, "Variant {v:?} must pass through unchanged");
+        }
+    }
+
+    // ----- Axis independence -----
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_smaller_ignores_mtime() {
+        // Smaller AND newer dst: still overwrite under OverwriteSmaller.
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 1000, Some(1_600_000_000));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 100, Some(1_700_000_000));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteSmaller,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            Some(1000),
+            Some(100),
+        )
+        .await;
+
+        assert_eq!(resolved, ConflictResolution::Overwrite);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn volume_older_ignores_size() {
+        // Older AND larger dst: still overwrite under OverwriteOlder.
+        let src: Arc<dyn Volume> = volume_with_file("src", "/f.bin", 100, Some(1_700_000_000));
+        let dst: Arc<dyn Volume> = volume_with_file("dst", "/f.bin", 9999, Some(1_600_000_000));
+
+        let resolved = reduce_volume_conditional_resolution(
+            ConflictResolution::OverwriteOlder,
+            &src,
+            Path::new("/f.bin"),
+            &dst,
+            Path::new("/f.bin"),
+            None,
+            None,
+        )
+        .await;
+
+        assert_eq!(resolved, ConflictResolution::Overwrite);
     }
 }

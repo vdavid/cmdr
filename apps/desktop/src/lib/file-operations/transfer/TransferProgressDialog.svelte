@@ -900,7 +900,7 @@
             <!-- Question -->
             <p class="conflict-question">Do you want to skip, rename, or overwrite?</p>
 
-            <!-- Buttons in two rows -->
+            <!-- Buttons in a 2-column grid: left = this-file action, right = apply-to-all action -->
             <div class="conflict-buttons">
                 <div class="conflict-buttons-row">
                     <Button
@@ -912,26 +912,19 @@
                     </Button>
                     <Button
                         variant="secondary"
-                        onclick={() => handleConflictResolution('rename', false)}
+                        onclick={() => handleConflictResolution('skip', true)}
                         disabled={isResolvingConflict}
                     >
-                        Rename
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        onclick={() => handleConflictResolution('overwrite', false)}
-                        disabled={isResolvingConflict}
-                    >
-                        Overwrite
+                        Skip all
                     </Button>
                 </div>
                 <div class="conflict-buttons-row">
                     <Button
                         variant="secondary"
-                        onclick={() => handleConflictResolution('skip', true)}
+                        onclick={() => handleConflictResolution('rename', false)}
                         disabled={isResolvingConflict}
                     >
-                        Skip all
+                        Rename
                     </Button>
                     <Button
                         variant="secondary"
@@ -940,12 +933,37 @@
                     >
                         Rename all
                     </Button>
+                </div>
+                <div class="conflict-buttons-row">
+                    <Button
+                        variant="secondary"
+                        onclick={() => handleConflictResolution('overwrite', false)}
+                        disabled={isResolvingConflict}
+                    >
+                        Overwrite
+                    </Button>
                     <Button
                         variant="secondary"
                         onclick={() => handleConflictResolution('overwrite', true)}
                         disabled={isResolvingConflict}
                     >
                         Overwrite all
+                    </Button>
+                </div>
+                <div class="conflict-buttons-row">
+                    <Button
+                        variant="secondary"
+                        onclick={() => handleConflictResolution('overwrite_smaller', true)}
+                        disabled={isResolvingConflict}
+                    >
+                        Overwrite all smaller
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        onclick={() => handleConflictResolution('overwrite_older', true)}
+                        disabled={isResolvingConflict}
+                    >
+                        Overwrite all older
                     </Button>
                 </div>
             </div>
@@ -1316,7 +1334,7 @@
 
     .conflict-buttons :global(button) {
         flex: 1;
-        max-width: 120px;
+        max-width: 200px;
     }
 
     .conflict-cancel {

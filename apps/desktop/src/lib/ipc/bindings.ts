@@ -1921,6 +1921,16 @@ export type ConflictResolution =
   | 'overwrite'
   // Rename conflicting files (append " (1)", " (2)", etc.)
   | 'rename'
+  /**
+   *  Overwrite only when the destination is strictly smaller than the source.
+   *  All other conflicts (equal or larger destination, or unknown sizes) are skipped.
+   */
+  | 'overwrite_smaller'
+  /**
+   *  Overwrite only when the destination is strictly older than the source.
+   *  All other conflicts (equal or newer destination, or unknown timestamps) are skipped.
+   */
+  | 'overwrite_older'
 
 // Information about a connected device, including its storages.
 export type ConnectedDeviceInfo = {

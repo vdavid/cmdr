@@ -156,8 +156,11 @@ export async function waitForConflictPolicy(tauriPage: PageLike): Promise<void> 
   expect(found).toBe(true)
 }
 
-/** Selects a conflict resolution policy radio button (skip, overwrite, or stop). */
-export async function selectConflictPolicy(tauriPage: PageLike, policy: 'skip' | 'overwrite' | 'stop'): Promise<void> {
+/** Selects a conflict resolution policy radio button. */
+export async function selectConflictPolicy(
+  tauriPage: PageLike,
+  policy: 'skip' | 'overwrite' | 'overwrite_smaller' | 'overwrite_older' | 'stop',
+): Promise<void> {
   await tauriPage.click(`${TRANSFER_DIALOG} .conflict-policy input[value="${policy}"]`)
   await sleep(100)
 }

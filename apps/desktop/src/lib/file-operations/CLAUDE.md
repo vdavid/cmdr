@@ -20,7 +20,11 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
      bytes, length limits), then checks logical constraints (subfolder, same location)
    - Optional dry-run scan to detect conflicts upfront
    - Shows sampled conflicts (max 200) with streaming progress
-   - User makes conflict decisions before operation starts
+   - User makes conflict decisions before operation starts via a wrap-friendly flexbox of radios: "Skip all", "Overwrite
+     all", "Overwrite all smaller", "Overwrite all older", "Ask for each". The two conditional policies map to the typed
+     `ConflictResolution` variants `overwrite_smaller` / `overwrite_older`; see
+     [`src-tauri/.../write_operations/CLAUDE.md`](../../../src-tauri/src/file_system/write_operations/CLAUDE.md) for the
+     strict-comparison / fail-closed contract.
 
 2. **TransferProgressDialog** (operation execution)
    - If `scanInProgress` is true, subscribes to scan preview events (`scan-preview-progress`, `scan-preview-complete`,
@@ -41,7 +45,11 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
      `expectedFilesTotal` / `expectedBytesTotal` from the drive index, a `ProgressBar` capped at 100% with "X% of
      estimated" text. Current directory (`event.currentDir`) renders above the filename so the user sees where in the
      tree the walker is. Title is reframed per operation: "Verifying before copy…", "Counting items to delete…", etc.
-   - Conflict resolution inline (if using `Stop` mode instead of dry-run)
+   - Conflict resolution inline (if using `Stop` mode instead of dry-run). The per-file dialog has a 2-column grid: left
+     column is the single-file action (`Skip` / `Rename` / `Overwrite`), right column is the apply-to-all variant
+     (`Skip all` / `Rename all` / `Overwrite all`). A 4th row holds the two conditional bulk actions —
+     `Overwrite all smaller` and `Overwrite all older` — which are always apply-to-all by design (no single-file
+     variant; the bulk semantic is the point).
    - Cancel button → rollback transaction (user chooses keep/rollback)
 
 3. **TransferErrorDialog** (error display)

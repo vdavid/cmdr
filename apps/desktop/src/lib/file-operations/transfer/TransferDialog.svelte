@@ -141,6 +141,8 @@
         skip_all: 'skip',
         overwrite_all: 'overwrite',
         rename_all: 'rename',
+        overwrite_all_smaller: 'overwrite_smaller',
+        overwrite_all_older: 'overwrite_older',
     }
     let conflictPolicy = $state<ConflictResolution>(
         autoConfirm && autoConfirmOnConflict
@@ -542,6 +544,14 @@
                     <span>Overwrite all</span>
                 </label>
                 <label class="policy-option">
+                    <input type="radio" bind:group={conflictPolicy} value="overwrite_smaller" />
+                    <span>Overwrite all smaller</span>
+                </label>
+                <label class="policy-option">
+                    <input type="radio" bind:group={conflictPolicy} value="overwrite_older" />
+                    <span>Overwrite all older</span>
+                </label>
+                <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="stop" />
                     <span>Ask for each</span>
                 </label>
@@ -721,8 +731,10 @@
 
     .conflict-policy {
         display: flex;
+        flex-wrap: wrap;
         justify-content: center;
-        gap: var(--spacing-lg);
+        column-gap: var(--spacing-lg);
+        row-gap: var(--spacing-sm);
     }
 
     .policy-option {

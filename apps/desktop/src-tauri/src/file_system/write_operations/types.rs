@@ -57,6 +57,12 @@ pub enum ConflictResolution {
     Overwrite,
     /// Rename conflicting files (append " (1)", " (2)", etc.)
     Rename,
+    /// Overwrite only when the destination is strictly smaller than the source.
+    /// All other conflicts (equal or larger destination, or unknown sizes) are skipped.
+    OverwriteSmaller,
+    /// Overwrite only when the destination is strictly older than the source.
+    /// All other conflicts (equal or newer destination, or unknown timestamps) are skipped.
+    OverwriteOlder,
 }
 
 // ============================================================================
