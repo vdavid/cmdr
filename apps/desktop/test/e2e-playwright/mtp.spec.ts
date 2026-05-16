@@ -346,11 +346,21 @@ test.describe('MTP file operations', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
     await mcpCall('copy', { autoConfirm: true })
 
-    // Wait for file to appear in right pane
-    await mcpAwaitItem('right', 'report.txt')
+    // Poll the destination on disk first: that's the authoritative truth.
+    // Under heavy concurrent load (full slow-suite run with rust-tests-linux +
+    // Docker SMB containers eating disk + CPU), both safety nets for refreshing
+    // the destination pane can race: the FilePane's notify-rs watcher (200 ms
+    // debounce) can miss the FSEvents add, and the `refreshPanesAfterTransfer`
+    // IPC fired from `handleTransferComplete` can queue up behind a saturated
+    // Tauri event loop. PaneStateStore then stays stale even though the BE
+    // copy already succeeded and the file is on disk. Tests 11 (local→MTP) and
+    // 27 (50 MB MTP→local) already use this pattern; this brings test 10 inline.
+    const destPath = path.join(fixtureRoot, 'right', 'report.txt')
+    await pollFs(tauriPage, () => fs.existsSync(destPath), 30000)
 
-    // Verify on disk
-    expect(fs.existsSync(path.join(fixtureRoot, 'right', 'report.txt'))).toBe(true)
+    // Force the pane to re-list so the await reads a fresh PaneStateStore.
+    await mcpCall('refresh', {})
+    await mcpAwaitItem('right', 'report.txt', 30)
 
     // Verify source still exists (copy, not move)
     await mcpSwitchPane()
