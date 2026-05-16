@@ -150,4 +150,5 @@ race).
 
 The single entry point for all linters, formatters, type checkers, and test runners. Always use it instead of raw
 `cargo`, `pnpm vitest`, `eslint`, etc. Its output is concise and CI-aligned. Per-check: `--check <name>`. By language:
-`--rust` / `--svelte`. Slow checks (E2E, Docker): `--only-slow`. See AGENTS.md "Testing and checking".
+`--rust` / `--svelte`. Fast pre-commit lane (~7 s, curated): `--fast`. Slow checks (E2E, Docker): `--only-slow`. See
+AGENTS.md "Testing and checking" for the three-cadence guidance.

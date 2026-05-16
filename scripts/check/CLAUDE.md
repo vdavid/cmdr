@@ -24,6 +24,9 @@ go run ./scripts/check --include-slow
 # Run only slow checks
 go run ./scripts/check --only-slow
 
+# Run only the curated fast pre-commit lane (~10s)
+go run ./scripts/check --fast
+
 # CI mode (no auto-fixing, stop on first failure)
 go run ./scripts/check --ci --fail-fast
 
@@ -46,6 +49,7 @@ go run ./scripts/check --only-freestyle
 | `--verbose`                 | Show detailed output                                    |
 | `--include-slow`            | Include slow checks (excluded by default)               |
 | `--only-slow`               | Run only slow checks                                    |
+| `--fast`                    | Run only the curated fast pre-commit check set          |
 | `--only-freestyle`          | Run freestyle-compatible checks on a VM (skip the rest) |
 | `--prefer-freestyle`        | Run compat checks on VM + the rest locally in parallel  |
 | `--fail-fast`               | Stop on first failure                                   |
@@ -70,6 +74,7 @@ go run ./scripts/check --only-freestyle
     -> selectChecks()                # filter AllChecks by flags
     -> FilterSlowChecks()            # drop IsSlow=true unless --include-slow or --check used
     -> FilterCIOnlyChecks()          # drop CIOnly=true unless --ci or --check named it
+    -> FilterFastChecks()            # if --fast: keep IsFast=true (or named via --check)
     -> ensurePnpmDependencies()      # pnpm install once at root (skipped for Rust-only runs)
     -> Runner.Run():
         goroutine pool (NumCPU semaphore)
@@ -114,6 +119,12 @@ counted as failed. Dependencies not in the selected run set are treated as satis
 **Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`,
 `desktop-e2e-playwright`). Named `--check` invocations implicitly include slow checks
 (`includeSlow = len(checkNames) > 0`).
+
+**Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: ~28 checks that finish in roughly 10s
+on a warm cache, intended to run before every commit. It's an editorial pick, not a timing-derived list (see Key
+decisions below). Named `--check` invocations bypass the filter so `--fast --check svelte-check` still runs
+svelte-check. Mutually exclusive with `--include-slow` / `--only-slow` — combining them errors out, since the lanes are
+intentionally separate.
 
 **CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently: `cargo-udeps`). They're
 silently dropped from local runs (no SKIPPED line) and are not pulled in by `--include-slow` or `--only-slow`. Escape
@@ -161,6 +172,7 @@ DisplayName:       "eslint", // shown in output
 App:               AppDesktop,
 Tech:              "🎨 Svelte",
 IsSlow:            false,
+IsFast:            false, // true = included in --fast (curated pre-commit lane)
 CIOnly:            false, // true = run only in --ci mode (or explicit --check)
 FreestyleIncompat: true, // can NOT run on freestyle.sh VMs (Rust, Docker)
 DependsOn:         []string{"desktop-svelte-prettier"},
@@ -304,6 +316,14 @@ runs only in CI" colocated with the check definition rather than as a hardcoded 
 Orthogonal to `IsSlow`: `--include-slow` and `--only-slow` do NOT pull in CI-only checks (you'd otherwise lose the
 ability to run "all slow checks locally without the CI-only ones"). Negative-sense default (`false` = runs locally)
 matches the other gating fields.
+
+**Decision**: `IsFast` field on `CheckDefinition` and a curated `--fast` pre-commit lane. **Why**: A pre-commit run
+should finish in ~10s so it actually gets used. The list is editorially curated, not derived from CSV timings: warm
+average is what matters, but cold-cache outliers (`cargo-audit` spiking to ~3 min on advisory DB refresh) would silently
+make the lane unreliable on the first run of the day. Mirrors the `IsSlow` / `CIOnly` field pattern (negative-sense
+boolean default, same colocated style). Mutually exclusive with `--include-slow` / `--only-slow` to keep the semantics
+unambiguous: "give me the fast lane" and "give me the slow lane" can't both be true. Named `--check` invocations bypass
+the filter (same escape hatch as `IsSlow` and `CIOnly`).
 
 **Decision**: Skip `pnpm install` when lockfile is unchanged. **Why**: `pnpm install` takes ~20s and pegs all CPUs even
 when deps haven't changed. A marker file (`node_modules/.pnpm-install-marker`) stores `pnpm-lock.yaml`'s mtime after

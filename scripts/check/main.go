@@ -41,6 +41,7 @@ type cliFlags struct {
 	verbose         bool
 	includeSlow     bool
 	onlySlow        bool
+	fast            bool
 	failFast        bool
 	noLog           bool
 	onlyFreestyle   bool
@@ -103,6 +104,7 @@ func main() {
 
 	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
 	checksToRun = checks.FilterCIOnlyChecks(checksToRun, flags.ciMode, flags.checkNames)
+	checksToRun = checks.FilterFastChecks(checksToRun, flags.fast, flags.checkNames)
 
 	if flags.freestyleRemote {
 		checksToRun = checks.FilterFreestyleCompat(checksToRun)
@@ -201,6 +203,7 @@ func parseFlags() *cliFlags {
 		verbose         = flag.Bool("verbose", false, "Show detailed output")
 		includeSlow     = flag.Bool("include-slow", false, "Include slow checks (excluded by default)")
 		onlySlow        = flag.Bool("only-slow", false, "Run only slow checks")
+		fast            = flag.Bool("fast", false, "Run only the curated fast pre-commit check set")
 		failFast        = flag.Bool("fail-fast", false, "Stop on first failure")
 		noLog           = flag.Bool("no-log", false, "Disable CSV stats logging")
 		onlyFreestyle   = flag.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
@@ -217,6 +220,11 @@ func parseFlags() *cliFlags {
 		return nil
 	}
 
+	if *fast && (*includeSlow || *onlySlow) {
+		printError("--fast is mutually exclusive with --include-slow / --only-slow")
+		os.Exit(1)
+	}
+
 	return &cliFlags{
 		rustOnly:        *rustOnly || *rustOnly2,
 		svelteOnly:      *svelteOnly || *svelteOnly2,
@@ -227,6 +235,7 @@ func parseFlags() *cliFlags {
 		verbose:         *verbose,
 		includeSlow:     *includeSlow || *onlySlow || len(checkNames) > 0,
 		onlySlow:        *onlySlow,
+		fast:            *fast,
 		failFast:        *failFast,
 		noLog:           *noLog || *ciMode,
 		onlyFreestyle:   *onlyFreestyle,
@@ -391,6 +400,7 @@ func showUsage() {
 	fmt.Println("    --verbose                Show detailed output")
 	fmt.Println("    --include-slow           Include slow checks (excluded by default)")
 	fmt.Println("    --only-slow              Run only slow checks")
+	fmt.Println("    --fast                   Run only the curated fast pre-commit check set")
 	fmt.Println("    --only-freestyle         Run freestyle-compatible checks on a VM (skip the rest)")
 	fmt.Println("    --prefer-freestyle       Run compat checks on VM + the rest locally in parallel")
 	fmt.Println("    --fail-fast              Stop on first failure")
@@ -404,6 +414,7 @@ func showUsage() {
 	fmt.Println("    go run ./scripts/check --app desktop                # Run only desktop app checks")
 	fmt.Println("    go run ./scripts/check --check desktop-rust-clippy  # Run specific check")
 	fmt.Println("    go run ./scripts/check --include-slow               # Include slow checks")
+	fmt.Println("    go run ./scripts/check --fast                       # Pre-commit lane (fastest)")
 	fmt.Println("    go run ./scripts/check --ci --fail-fast             # CI mode, stop on first failure")
 	fmt.Println()
 	fmt.Println("Available checks:")

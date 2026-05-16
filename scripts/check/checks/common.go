@@ -90,6 +90,7 @@ type CheckDefinition struct {
 	App               App
 	Tech              string
 	IsSlow            bool
+	IsFast            bool // true = included in --fast (pre-commit lane). Curated, not derived.
 	CIOnly            bool // true = run only when --ci is set (or when explicitly named via --check)
 	FreestyleIncompat bool // true = can NOT run on freestyle.sh VMs (Rust compilation, Docker, etc.)
 	// NeedsSmb declares that this check requires the smb-consumer Docker stack
