@@ -144,9 +144,26 @@ Used by the watcher's incremental path and synthetic mkdir to patch listings wit
 - `Renamed { old_name, new_entry }`: same-dir rename, remove old + insert new
 - `FullRefresh`: re-reads directory via Volume trait, computes diff against cache
 
-All variants enrich entries with index data and emit `directory-diff` events. Natural deduplication: `insert_entry_sorted` returns `None` for duplicates, `remove_entry_by_path` returns `None` if already removed.
+All variants enrich entries with index data and queue `directory-diff` events through `diff_emitter::enqueue_diff`. Natural deduplication: `insert_entry_sorted` returns `None` for duplicates, `remove_entry_by_path` returns `None` if already removed.
 
 **Callers**: `Volume::notify_mutation()` (called after each successful create/delete/rename on all volume types) and the `rename_file` command (for local filesystem renames). The old `emit_synthetic_entry_diff` remains as a legacy fallback for `create_file`/`create_directory` on volumes where `supports_local_fs_access()` returns `true`.
+
+### Diff event coalescing (diff_emitter.rs)
+
+All `directory-diff` emit paths funnel through `diff_emitter::enqueue_diff(listing_id, changes)` instead of calling `app.emit` directly. The module buffers changes per listing and flushes one combined event after a 50 ms trailing window. Producers:
+
+- `caching::notify_added` / `notify_removed` / `notify_modified` (single-entry mutations from `notify_directory_changed`)
+- `caching::notify_full_refresh` (SMB STATUS_NOTIFY_ENUM_DIR re-reads)
+- `watcher::handle_directory_change_incremental` (FSEvents incremental path)
+- `watcher::handle_directory_change` (FSEvents full re-read fallback)
+- `commands::file_system::write_ops::emit_synthetic_entry_diff` (`create_file` / `create_directory`)
+- `mtp::connection::event_loop::compute_and_emit_diffs` (MTP event-loop diffs)
+
+**Why**: a 5k-file bulk delete used to fire one `directory-diff` per file. The frontend handler in `FilePane.svelte` runs ~5 IPC calls per event (`getTotalCount`, `refetchColumnWidths`, `fetchEntryUnderCursor`, `fetchListingStats`, plus a virtual-list re-fetch), so the source pane flickered heavily — the brief view's columns collapsed to width-of-name on every recompute. Coalescing into one event per 50 ms caps the FE work at ≤ 20 emits/sec/listing and the flicker goes away.
+
+**Why this is safe**: only the IPC emit is deferred. Cache mutations (`insert_entry_sorted` / `remove_entry_by_path` / `update_entry_sorted`) stay synchronous and inline at the call site, so `get_file_range` always sees the latest entries. Per-change `index` values stay correct because each producer computes them against the cache state at the moment it mutates.
+
+**Cleanup**: `list_directory_end` calls `diff_emitter::drop_pending(listing_id)` so an in-flight buffer for a closed listing doesn't fire a trailing event. The E2E `flush_all_watchers` helper (`#[cfg(feature = "playwright-e2e")]`) also calls `flush_all_pending()` so tests don't have to wait out the 50 ms window.
 
 **Gotcha**: Background task runs to completion even if cancelled on frontend
 **Why**: `loadGeneration` discards stale results, but Rust keeps iterating. Mitigation: `AtomicBool` checked per-entry stops early.

@@ -23,7 +23,6 @@ use super::expand_tilde;
 #[tauri::command]
 #[specta::specta]
 pub async fn create_directory(
-    app: tauri::AppHandle,
     volume_id: Option<String>,
     parent_path: String,
     name: String,
@@ -33,23 +32,18 @@ pub async fn create_directory(
     // Synthetic diff only works for volumes backed by the local filesystem.
     // Protocol-only volumes (MTP) handle UI updates through their own event systems.
     if should_emit_synthetic_diff(volume_id.as_deref()) {
-        emit_synthetic_entry_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+        emit_synthetic_entry_diff(&new_path, &PathBuf::from(&expanded_path));
     }
     Ok(new_path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn create_file(
-    app: tauri::AppHandle,
-    volume_id: Option<String>,
-    parent_path: String,
-    name: String,
-) -> Result<String, IpcError> {
+pub async fn create_file(volume_id: Option<String>, parent_path: String, name: String) -> Result<String, IpcError> {
     let (new_path, expanded_path) = create_file_core(volume_id.clone(), &parent_path, &name).await?;
 
     if should_emit_synthetic_diff(volume_id.as_deref()) {
-        emit_synthetic_entry_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+        emit_synthetic_entry_diff(&new_path, &PathBuf::from(&expanded_path));
     }
     Ok(new_path.to_string_lossy().to_string())
 }
@@ -362,15 +356,15 @@ fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
     }
 }
 
-/// Emits a synthetic `directory-diff` event for a newly created entry (file or directory).
+/// Queues a synthetic `directory-diff` event for a newly created entry.
 ///
 /// Best-effort: if any step fails (stat, cache lookup, etc.) we log a warning
 /// and return. The watcher will pick up the change later.
-fn emit_synthetic_entry_diff(app: &tauri::AppHandle, entry_path: &Path, parent_path: &Path) {
+fn emit_synthetic_entry_diff(entry_path: &Path, parent_path: &Path) {
+    use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::listing::reading::get_single_entry;
     use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};
-    use crate::file_system::watcher::{DiffChange, DirectoryDiff};
-    use tauri::Emitter;
+    use crate::file_system::watcher::DiffChange;
 
     // 1. Construct a FileEntry for the new entry
     let mut entry = match get_single_entry(entry_path) {
@@ -390,30 +384,20 @@ fn emit_synthetic_entry_diff(app: &tauri::AppHandle, entry_path: &Path, parent_p
         return;
     }
 
-    // 4. For each listing, insert and emit
+    // 4. For each listing, insert and enqueue
     for (listing_id, _sort_by, _sort_order, _dir_sort_mode) in listings {
         // insert_entry_sorted acquires LISTING_CACHE write lock and releases it on return
         let Some(index) = insert_entry_sorted(&listing_id, entry.clone()) else {
             continue; // Already exists or listing gone
         };
 
-        // Increment sequence on CachedListing (after LISTING_CACHE write lock is released)
-        let Some(sequence) = crate::file_system::listing::increment_sequence(&listing_id) else {
-            continue;
-        };
-
-        let diff = DirectoryDiff {
-            listing_id: listing_id.clone(),
-            sequence,
-            changes: vec![DiffChange {
+        enqueue_diff(
+            &listing_id,
+            vec![DiffChange {
                 change_type: "add".to_string(),
                 entry: entry.clone(),
                 index,
             }],
-        };
-
-        if let Err(e) = app.emit("directory-diff", &diff) {
-            log::warn!("Synthetic entry diff: couldn't emit event: {}", e);
-        }
+        );
     }
 }

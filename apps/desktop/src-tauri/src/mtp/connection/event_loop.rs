@@ -7,13 +7,13 @@ use log::{debug, info, warn};
 use mtp_rs::MtpDevice;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use tokio::sync::{Mutex, broadcast};
 
 use super::cache::EVENT_DEBOUNCE_MS;
 use super::{MtpConnectionManager, connection_manager, normalize_mtp_path};
 use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
-use crate::file_system::{DirectoryDiff, FileEntry, compute_diff};
+use crate::file_system::{FileEntry, compute_diff};
 use std::path::PathBuf;
 
 impl MtpConnectionManager {
@@ -203,11 +203,10 @@ impl MtpConnectionManager {
 
         // Clone what we need for the spawned task
         let device_id_owned = device_id.to_string();
-        let app_clone = app.clone();
 
         // Spawn task to re-read directories and compute diffs
         tokio::spawn(async move {
-            Self::compute_and_emit_diffs(&device_id_owned, listings, &app_clone).await;
+            Self::compute_and_emit_diffs(&device_id_owned, listings).await;
         });
     }
 
@@ -219,14 +218,7 @@ impl MtpConnectionManager {
     /// 3. Compute the diff between old and new entries
     /// 4. Update LISTING_CACHE with new entries
     /// 5. Emit directory-diff event
-    async fn compute_and_emit_diffs(
-        device_id: &str,
-        listings: Vec<(String, String, PathBuf, Vec<FileEntry>)>,
-        app: &AppHandle,
-    ) {
-        // Track sequence numbers per listing (simple counter, increments each diff)
-        static SEQUENCE_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
+    async fn compute_and_emit_diffs(device_id: &str, listings: Vec<(String, String, PathBuf, Vec<FileEntry>)>) {
         for (listing_id, volume_id, path, old_entries) in listings {
             // Extract storage_id from volume_id (format: "mtp-{device}:{storage}")
             let Some(storage_id) = volume_id.split(':').nth(1).and_then(|s| s.parse::<u32>().ok()) else {
@@ -287,24 +279,10 @@ impl MtpConnectionManager {
             // Update LISTING_CACHE with new entries
             update_listing_entries(&listing_id, new_entries);
 
-            // Get sequence number
-            let sequence = SEQUENCE_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
-
-            // Emit directory-diff event (same format as local watcher)
-            let diff = DirectoryDiff {
-                listing_id: listing_id.clone(),
-                sequence,
-                changes,
-            };
-
-            if let Err(e) = app.emit("directory-diff", &diff) {
-                warn!("MTP diff: failed to emit event: {}", e);
-            } else {
-                debug!(
-                    "MTP diff: emitted directory-diff for listing_id={}, sequence={}",
-                    listing_id, sequence
-                );
-            }
+            // Route through the coalescer so bursts of MTP events (large delete,
+            // many file copies) don't fire one IPC event per change.
+            crate::file_system::listing::diff_emitter::enqueue_diff(&listing_id, changes);
+            debug!("MTP diff: enqueued diff for listing_id={}", listing_id);
         }
     }
 }

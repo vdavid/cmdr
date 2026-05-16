@@ -18,8 +18,8 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 use crate::file_system::listing::{
-    FileEntry, ModifyResult, get_listing_entries, get_listing_path, get_single_entry, has_entry, increment_sequence,
-    insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
+    FileEntry, ModifyResult, get_listing_entries, get_listing_path, get_single_entry, has_entry, insert_entry_sorted,
+    list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
 };
 
 /// Default debounce duration in milliseconds (used if not configured)
@@ -315,29 +315,7 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         return;
     }
 
-    // Increment sequence and emit
-    let app_handle = {
-        let manager = match WATCHER_MANAGER.read() {
-            Ok(m) => m,
-            Err(_) => return,
-        };
-        manager.app_handle.clone()
-    };
-
-    let Some(sequence) = increment_sequence(listing_id) else {
-        return;
-    };
-
-    if let Some(app) = app_handle {
-        let diff = DirectoryDiff {
-            listing_id: listing_id.to_string(),
-            sequence,
-            changes,
-        };
-        if let Err(e) = app.emit("directory-diff", &diff) {
-            log::warn!("Watcher: Failed to emit incremental diff event: {}", e);
-        }
-    }
+    crate::file_system::listing::diff_emitter::enqueue_diff(listing_id, changes);
 }
 
 /// Force a re-read of a directory listing, computing and emitting any diff.
@@ -460,23 +438,7 @@ pub async fn handle_directory_change(listing_id: &str) {
     // Update the unified LISTING_CACHE with new entries
     update_listing_entries(listing_id, new_entries);
 
-    // Increment sequence and get current value
-    let Some(sequence) = increment_sequence(listing_id) else {
-        return;
-    };
-
-    // Emit event to frontend
-    if let Some(app) = app_handle {
-        let diff = DirectoryDiff {
-            listing_id: listing_id.to_string(),
-            sequence,
-            changes,
-        };
-
-        if let Err(e) = app.emit("directory-diff", &diff) {
-            log::warn!("Watcher: Failed to emit event: {}", e);
-        }
-    }
+    crate::file_system::listing::diff_emitter::enqueue_diff(listing_id, changes);
 }
 
 /// Flushes pending watcher events by re-reading every active watch.
@@ -501,6 +463,9 @@ pub async fn flush_all_watchers() {
     for id in listing_ids {
         handle_directory_change(&id).await;
     }
+    // handle_directory_change now enqueues into the coalescer; flush so the
+    // emit happens before this returns (E2E callers expect synchronous flush).
+    crate::file_system::listing::diff_emitter::flush_all_pending();
 }
 
 /// Computes the diff between old and new directory listings.

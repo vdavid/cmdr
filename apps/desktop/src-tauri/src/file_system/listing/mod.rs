@@ -2,6 +2,7 @@
 
 pub(crate) mod brief_columns;
 pub(crate) mod caching;
+pub(crate) mod diff_emitter;
 pub(crate) mod fuzzy_jump;
 pub(crate) mod metadata;
 pub(crate) mod operations;
@@ -40,6 +41,8 @@ pub(crate) use operations::{get_listing_entries, update_listing_entries};
 mod brief_columns_test;
 #[cfg(test)]
 mod caching_test;
+#[cfg(test)]
+mod diff_emitter_test;
 #[cfg(test)]
 mod hidden_files_test;
 #[cfg(test)]

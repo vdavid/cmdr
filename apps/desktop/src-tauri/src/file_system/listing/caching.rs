@@ -262,35 +262,33 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
         return;
     }
 
-    // Get app handle once (same pattern as handle_directory_change)
-    let app_handle = {
-        let manager = match WATCHER_MANAGER.read() {
-            Ok(m) => m,
-            Err(_) => return,
-        };
-        manager.app_handle.clone()
-    };
-    let Some(app) = app_handle else { return };
+    // Skip if no AppHandle is registered yet (test or pre-init context).
+    // Without it the `tokio::spawn` in FullRefresh has no runtime, and the
+    // coalesced flush would never emit anyway.
+    let has_app = WATCHER_MANAGER.read().ok().and_then(|m| m.app_handle.clone()).is_some();
+    if !has_app {
+        return;
+    }
 
     match change {
         DirectoryChange::Added(entry) => {
             let mut entry = entry;
             crate::indexing::enrich_entries_with_index(std::slice::from_mut(&mut entry));
             for (listing_id, ..) in &listings {
-                notify_added(&app, listing_id, entry.clone());
+                notify_added(listing_id, entry.clone());
             }
         }
         DirectoryChange::Removed(name) => {
             let full_path = parent_path.join(&name);
             for (listing_id, ..) in &listings {
-                notify_removed(&app, listing_id, &full_path);
+                notify_removed(listing_id, &full_path);
             }
         }
         DirectoryChange::Modified(entry) => {
             let mut entry = entry;
             crate::indexing::enrich_entries_with_index(std::slice::from_mut(&mut entry));
             for (listing_id, ..) in &listings {
-                notify_modified(&app, listing_id, entry.clone());
+                notify_modified(listing_id, entry.clone());
             }
         }
         DirectoryChange::Renamed { old_name, new_entry } => {
@@ -298,8 +296,8 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
             crate::indexing::enrich_entries_with_index(std::slice::from_mut(&mut new_entry));
             let old_path = parent_path.join(&old_name);
             for (listing_id, ..) in &listings {
-                notify_removed(&app, listing_id, &old_path);
-                notify_added(&app, listing_id, new_entry.clone());
+                notify_removed(listing_id, &old_path);
+                notify_added(listing_id, new_entry.clone());
             }
         }
         DirectoryChange::FullRefresh => {
@@ -309,10 +307,8 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
                 // Refresh all listings on this volume instead.
                 let volume_listings = find_listings_on_volume(volume_id);
                 for (lid, path, sort_by, sort_order, dir_sort_mode) in volume_listings {
-                    let app = app.clone();
                     let volume_id = volume_id.to_string();
                     tokio::spawn(notify_full_refresh(
-                        app,
                         volume_id,
                         path,
                         vec![(lid, sort_by, sort_order, dir_sort_mode)],
@@ -321,78 +317,59 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
             } else {
                 let volume_id = volume_id.to_string();
                 let parent_path = parent_path.to_path_buf();
-                tokio::spawn(notify_full_refresh(app, volume_id, parent_path, listings));
+                tokio::spawn(notify_full_refresh(volume_id, parent_path, listings));
             }
         }
     }
 }
 
-/// Inserts an entry into the cache and emits a single-add diff event.
-fn notify_added(app: &tauri::AppHandle, listing_id: &str, entry: FileEntry) {
-    use crate::file_system::watcher::{DiffChange, DirectoryDiff};
-    use tauri::Emitter;
+/// Inserts an entry into the cache and queues a single-add change for the next
+/// coalesced `directory-diff` flush.
+fn notify_added(listing_id: &str, entry: FileEntry) {
+    use crate::file_system::listing::diff_emitter::enqueue_diff;
+    use crate::file_system::watcher::DiffChange;
 
     let Some(index) = insert_entry_sorted(listing_id, entry.clone()) else {
         return; // Already exists or listing gone
     };
 
-    let Some(sequence) = increment_sequence(listing_id) else {
-        return;
-    };
-
-    let diff = DirectoryDiff {
-        listing_id: listing_id.to_string(),
-        sequence,
-        changes: vec![DiffChange {
+    enqueue_diff(
+        listing_id,
+        vec![DiffChange {
             change_type: "add".to_string(),
             entry,
             index,
         }],
-    };
-    if let Err(e) = app.emit("directory-diff", &diff) {
-        log::warn!("notify_directory_changed: couldn't emit add event: {}", e);
-    }
+    );
 }
 
-/// Removes an entry from the cache and emits a single-remove diff event.
-fn notify_removed(app: &tauri::AppHandle, listing_id: &str, full_path: &Path) {
-    use crate::file_system::watcher::{DiffChange, DirectoryDiff};
-    use tauri::Emitter;
+/// Removes an entry from the cache and queues a single-remove change.
+fn notify_removed(listing_id: &str, full_path: &Path) {
+    use crate::file_system::listing::diff_emitter::enqueue_diff;
+    use crate::file_system::watcher::DiffChange;
 
     let Some((index, removed_entry)) = remove_entry_by_path(listing_id, full_path) else {
         return; // Not in cache or listing gone
     };
 
-    let Some(sequence) = increment_sequence(listing_id) else {
-        return;
-    };
-
-    let diff = DirectoryDiff {
-        listing_id: listing_id.to_string(),
-        sequence,
-        changes: vec![DiffChange {
+    enqueue_diff(
+        listing_id,
+        vec![DiffChange {
             change_type: "remove".to_string(),
             entry: removed_entry,
             index,
         }],
-    };
-    if let Err(e) = app.emit("directory-diff", &diff) {
-        log::warn!("notify_directory_changed: couldn't emit remove event: {}", e);
-    }
+    );
 }
 
-/// Updates an entry in the cache and emits a modify (or remove+add) diff event.
-fn notify_modified(app: &tauri::AppHandle, listing_id: &str, entry: FileEntry) {
-    use crate::file_system::watcher::{DiffChange, DirectoryDiff};
-    use tauri::Emitter;
+/// Updates an entry in the cache and queues a modify (or remove+add) change.
+fn notify_modified(listing_id: &str, entry: FileEntry) {
+    use crate::file_system::listing::diff_emitter::enqueue_diff;
+    use crate::file_system::watcher::DiffChange;
 
     let result = match update_entry_sorted(listing_id, entry.clone()) {
         Some(r) => r,
         None => return,
-    };
-
-    let Some(sequence) = increment_sequence(listing_id) else {
-        return;
     };
 
     let changes = match result {
@@ -419,26 +396,18 @@ fn notify_modified(app: &tauri::AppHandle, listing_id: &str, entry: FileEntry) {
         }
     };
 
-    let diff = DirectoryDiff {
-        listing_id: listing_id.to_string(),
-        sequence,
-        changes,
-    };
-    if let Err(e) = app.emit("directory-diff", &diff) {
-        log::warn!("notify_directory_changed: couldn't emit modify event: {}", e);
-    }
+    enqueue_diff(listing_id, changes);
 }
 
-/// Re-reads a directory via the Volume trait, computes a diff, and emits it.
+/// Re-reads a directory via the Volume trait, computes a diff, and queues it.
 async fn notify_full_refresh(
-    app: tauri::AppHandle,
     volume_id: String,
     parent_path: PathBuf,
     listings: Vec<(String, SortColumn, SortOrder, DirectorySortMode)>,
 ) {
+    use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::listing::sorting::sort_entries;
-    use crate::file_system::watcher::{DirectoryDiff, compute_diff};
-    use tauri::Emitter;
+    use crate::file_system::watcher::compute_diff;
 
     let vol = match crate::file_system::get_volume_manager().get(&volume_id) {
         Some(v) => v,
@@ -487,18 +456,7 @@ async fn notify_full_refresh(
         // Update cache
         crate::file_system::listing::operations::update_listing_entries(listing_id, sorted);
 
-        let Some(sequence) = increment_sequence(listing_id) else {
-            continue;
-        };
-
-        let diff = DirectoryDiff {
-            listing_id: listing_id.clone(),
-            sequence,
-            changes,
-        };
-        if let Err(e) = app.emit("directory-diff", &diff) {
-            log::warn!("notify_directory_changed: couldn't emit refresh event: {}", e);
-        }
+        enqueue_diff(listing_id, changes);
     }
 }
 

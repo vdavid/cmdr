@@ -121,6 +121,9 @@ pub fn list_directory_end(listing_id: &str) {
     // Stop the file watcher
     stop_watching(listing_id);
 
+    // Drop any pending coalesced diff for this listing
+    crate::file_system::listing::diff_emitter::drop_pending(listing_id);
+
     // Remove from listing cache
     if let Ok(mut cache) = LISTING_CACHE.write() {
         cache.remove(listing_id);
