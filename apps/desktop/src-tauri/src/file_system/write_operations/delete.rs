@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use super::helpers::spawn_async_sync;
-use super::scan::{SourceItemTracker, scan_sources};
+use super::scan::{SourceItemTracker, scan_sources, take_cached_scan_result};
 use super::state::{WriteOperationState, update_operation_status};
 use super::types::{
     DryRunResult, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
@@ -14,6 +14,7 @@ use super::types::{
     WriteSourceItemDoneEvent,
 };
 use super::volume_copy::map_volume_error;
+use crate::file_system::listing::caching::try_get_watched_listing;
 use crate::file_system::volume::Volume;
 
 // ============================================================================
@@ -229,7 +230,9 @@ impl VolumeScanTracker {
 )]
 async fn scan_volume_recursive(
     volume: &dyn Volume,
+    volume_id: &str,
     path: &Path,
+    is_dir_hint: Option<bool>,
     entries: &mut Vec<VolumeDeleteEntry>,
     total_bytes: &mut u64,
     state: &Arc<WriteOperationState>,
@@ -245,10 +248,18 @@ async fn scan_volume_recursive(
         });
     }
 
-    let is_dir = volume
-        .is_directory(path)
-        .await
-        .map_err(|e| map_volume_error(&path.display().to_string(), e))?;
+    // Resolve whether `path` is a directory. Prefer the caller's hint (the
+    // top-level cache-hit path supplies it from `CopyScanResult`, the
+    // recursive call supplies it from the parent's `FileEntry`). Without a
+    // hint, fall back to a real `is_directory` probe — which on MTP lists
+    // the parent dir, so we avoid it whenever the oracle can answer.
+    let is_dir = match is_dir_hint {
+        Some(v) => v,
+        None => volume
+            .is_directory(path)
+            .await
+            .map_err(|e| map_volume_error(&path.display().to_string(), e))?,
+    };
 
     if is_dir {
         // Snapshot the cumulative tallies BEFORE the (potentially slow) listing
@@ -295,20 +306,37 @@ async fn scan_volume_recursive(
             );
         };
 
-        let children = volume
-            .list_directory(path, Some(&on_progress))
-            .await
-            .map_err(|e| map_volume_error(&path.display().to_string(), e))?;
+        // Oracle-first: if this directory is watcher-backed in `LISTING_CACHE`,
+        // reuse the cached entries and skip the volume round-trip entirely.
+        // Falls through to `volume.list_directory` on miss, preserving the
+        // per-entry progress callback for slow MTP listings.
+        let children = match try_get_watched_listing(volume_id, path) {
+            Some(cached) => {
+                // The cached listing is already complete, so synthesize a
+                // single end-of-listing progress tick to keep the FE counter
+                // climbing during the cache-fed pass too.
+                on_progress(cached.len());
+                cached
+            }
+            None => volume
+                .list_directory(path, Some(&on_progress))
+                .await
+                .map_err(|e| map_volume_error(&path.display().to_string(), e))?,
+        };
 
         // Recurse into children first. list_directory returns FileEntry with size,
         // so we use child.size directly instead of calling get_metadata (which
-        // returns NotSupported on MTP).
+        // returns NotSupported on MTP). Pass `is_dir_hint = Some(child.is_directory)`
+        // so the recursive call doesn't re-probe (avoids another parent listing
+        // on MTP).
         for child in &children {
             let child_path = PathBuf::from(&child.path);
             if child.is_directory {
                 Box::pin(scan_volume_recursive(
                     volume,
+                    volume_id,
                     &child_path,
+                    Some(true),
                     entries,
                     total_bytes,
                     state,
@@ -393,6 +421,7 @@ async fn scan_volume_recursive(
 )]
 pub(super) async fn delete_volume_files_with_progress(
     volume: Arc<dyn Volume>,
+    volume_id: &str,
     app: &tauri::AppHandle,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -400,7 +429,7 @@ pub(super) async fn delete_volume_files_with_progress(
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
     let events = TauriEventSink::new(app.clone());
-    delete_volume_files_with_progress_inner(volume, &events, operation_id, state, sources, config).await
+    delete_volume_files_with_progress_inner(volume, volume_id, &events, operation_id, state, sources, config).await
 }
 
 #[allow(
@@ -409,43 +438,193 @@ pub(super) async fn delete_volume_files_with_progress(
 )]
 pub(super) async fn delete_volume_files_with_progress_inner(
     volume: Arc<dyn Volume>,
+    volume_id: &str,
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     sources: &[PathBuf],
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
+    use std::sync::atomic::Ordering;
+
     // Phase 1: Scan. Recursively enumerate the tree via volume.list_directory().
+    // Fast path: if the scan preview already enumerated the top-level shape (file
+    // vs dir + size per source), reuse it. The per-source `top_level_is_directory`
+    // and `total_bytes` flags come from `CachedScanResult::per_path` populated by
+    // `run_volume_scan_preview`. We still need to recurse into top-level dirs to
+    // get the per-file paths delete needs — but the recursion's walker is now
+    // oracle-aware, so a watched subtree skips the `list_directory` round-trip.
+    let cached_scan = config.preview_id.as_deref().and_then(take_cached_scan_result);
+
     let mut entries: Vec<VolumeDeleteEntry> = Vec::new();
     let mut total_bytes = 0u64;
     let tracker = Arc::new(VolumeScanTracker::new(state.progress_interval));
+    let mut last_scan_emit = Instant::now();
 
-    for source in sources {
-        // Check if the source itself is a file or directory
-        let is_dir = volume.is_directory(source).await.unwrap_or(false);
+    if let Some(scan) = cached_scan.as_ref() {
+        log::debug!(
+            "delete_volume_files_with_progress: reused cached scan for operation_id={}, files={}, bytes={}, per_path={}",
+            operation_id,
+            scan.file_count,
+            scan.total_bytes,
+            scan.per_path.len()
+        );
 
-        if is_dir {
-            scan_volume_recursive(
-                &*volume,
-                source,
-                &mut entries,
-                &mut total_bytes,
-                state,
-                events,
-                operation_id,
-                &tracker,
-            )
-            .await?;
-        } else {
-            // Top-level file: size unknown without listing the parent, use 0.
-            // Progress still tracks file count accurately, and individual file
-            // deletes are near-instant on MTP.
-            tracker.files_so_far.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            entries.push(VolumeDeleteEntry {
-                path: source.to_path_buf(),
-                size: 0,
-                is_dir: false,
+        // Index cached per-path results by source path so we can look up
+        // `top_level_is_directory` and `total_bytes` for each input source.
+        let by_path: std::collections::HashMap<PathBuf, &crate::file_system::volume::CopyScanResult> =
+            scan.per_path.iter().map(|(p, r)| (p.clone(), r)).collect();
+
+        for source in sources {
+            if super::state::is_cancelled(&state.intent) {
+                events.emit_cancelled(WriteCancelledEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type: WriteOperationType::Delete,
+                    files_processed: 0,
+                    rolled_back: false,
+                });
+                return Err(WriteOperationError::Cancelled {
+                    message: "Operation cancelled by user".to_string(),
+                });
+            }
+
+            match by_path.get(source) {
+                Some(per_path_scan) if !per_path_scan.top_level_is_directory => {
+                    // Top-level file: size comes straight from the cache. No
+                    // `is_directory` probe and no `list_directory` round-trip.
+                    let size = per_path_scan.total_bytes;
+                    tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
+                    tracker.bytes_so_far.fetch_add(size, Ordering::Relaxed);
+                    total_bytes += size;
+                    entries.push(VolumeDeleteEntry {
+                        path: source.to_path_buf(),
+                        size,
+                        is_dir: false,
+                    });
+                }
+                Some(_) => {
+                    // Top-level dir: recurse via the oracle-aware walker, with
+                    // `is_dir_hint = Some(true)` so the recursion never re-probes
+                    // the top-level. Any subtree that's open in another pane and
+                    // watcher-fresh gets cache-fed inside the walker.
+                    scan_volume_recursive(
+                        &*volume,
+                        volume_id,
+                        source,
+                        Some(true),
+                        &mut entries,
+                        &mut total_bytes,
+                        state,
+                        events,
+                        operation_id,
+                        &tracker,
+                    )
+                    .await?;
+                }
+                None => {
+                    // Scan preview was non-volume (local-FS) or didn't include
+                    // this source. Fall back to the no-preview shape for this
+                    // path: oracle-aware walker resolves the type.
+                    scan_volume_recursive(
+                        &*volume,
+                        volume_id,
+                        source,
+                        None,
+                        &mut entries,
+                        &mut total_bytes,
+                        state,
+                        events,
+                        operation_id,
+                        &tracker,
+                    )
+                    .await?;
+                }
+            }
+
+            // Even on the all-files fast path, throttle a single scan-progress
+            // emit per interval so the FE dialog shows movement during the
+            // entry-list build. Without this the user sees "Scanning…" frozen
+            // until the actual delete phase starts.
+            if last_scan_emit.elapsed() >= state.progress_interval {
+                let files_done = tracker.files_so_far.load(Ordering::Relaxed);
+                let dirs_done = tracker.dirs_so_far.load(Ordering::Relaxed);
+                let bytes_done = tracker.bytes_so_far.load(Ordering::Relaxed);
+                state.emit_progress_via_sink(
+                    events,
+                    WriteProgressEvent::new(
+                        operation_id.to_string(),
+                        WriteOperationType::Delete,
+                        WriteOperationPhase::Scanning,
+                        None,
+                        files_done,
+                        0,
+                        bytes_done,
+                        0,
+                    )
+                    .with_scan_meta(Some(source.display().to_string()), dirs_done, None),
+                );
+                update_operation_status(
+                    operation_id,
+                    WriteOperationPhase::Scanning,
+                    None,
+                    files_done,
+                    0,
+                    bytes_done,
+                    0,
+                );
+                last_scan_emit = Instant::now();
+            }
+        }
+    } else {
+        for source in sources {
+            // Oracle-first parent lookup: if the parent's listing is watched
+            // (open in some pane), pull `is_directory` from there instead of
+            // calling `volume.is_directory`, which on MTP lists the parent.
+            // Falls through to the trait probe when the oracle can't answer.
+            let parent_hint = source.parent().and_then(|parent| {
+                let cached_entries = try_get_watched_listing(volume_id, parent)?;
+                let name = source.file_name()?.to_string_lossy().to_string();
+                cached_entries
+                    .iter()
+                    .find(|e| {
+                        PathBuf::from(&e.path)
+                            .file_name()
+                            .map(|n| n.to_string_lossy() == name)
+                            .unwrap_or(false)
+                    })
+                    .map(|e| e.is_directory)
             });
+
+            let is_dir = match parent_hint {
+                Some(v) => v,
+                None => volume.is_directory(source).await.unwrap_or(false),
+            };
+
+            if is_dir {
+                scan_volume_recursive(
+                    &*volume,
+                    volume_id,
+                    source,
+                    Some(true),
+                    &mut entries,
+                    &mut total_bytes,
+                    state,
+                    events,
+                    operation_id,
+                    &tracker,
+                )
+                .await?;
+            } else {
+                // Top-level file: size unknown without listing the parent, use 0.
+                // Progress still tracks file count accurately, and individual file
+                // deletes are near-instant on MTP.
+                tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
+                entries.push(VolumeDeleteEntry {
+                    path: source.to_path_buf(),
+                    size: 0,
+                    is_dir: false,
+                });
+            }
         }
     }
 
