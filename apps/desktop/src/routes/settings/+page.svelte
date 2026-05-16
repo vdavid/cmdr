@@ -111,7 +111,21 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             event.preventDefault()
-            void getCurrentWindow().close()
+            // Defer the close() by two animation frames so the keydown event
+            // loop iteration can settle (including any in-flight IPC ack to
+            // the Tauri runtime) before webkit2gtk begins destroying this
+            // webview. Without this, the synchronous close() runs inside the
+            // same GTK main-loop tick that handled the keydown, and the
+            // destruction can stall queued IPC calls from other webviews —
+            // the root cause of the Linux E2E flake on this binding. Mirrors
+            // the pattern in `routes/viewer/+page.svelte`'s `closeWindow()`.
+            // The +16 ms is invisible to the user.
+            const win = getCurrentWindow()
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    void win.close()
+                })
+            })
         }
         // Prevent Space from triggering Quick Look (bound to Space in main window menu)
         // Space should only activate focused buttons/controls, not bubble up
