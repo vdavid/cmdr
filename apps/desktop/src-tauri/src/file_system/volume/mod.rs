@@ -166,6 +166,11 @@ pub enum VolumeError {
     Cancelled(String),
     /// The path is a directory, not a file (for example, SMB STATUS_FILE_IS_A_DIRECTORY).
     IsADirectory(String),
+    /// The file is in `STATUS_DELETE_PENDING`: a delete has been requested on the server
+    /// but at least one open handle is keeping the file alive. The file will disappear
+    /// once the last handle closes; any new `Create` (stat, open, write) on the path
+    /// fails with this status in the meantime. SMB-only today.
+    DeletePending(String),
     IoError {
         message: String,
         raw_os_error: Option<i32>,
@@ -194,6 +199,7 @@ impl std::fmt::Display for VolumeError {
             Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),
             Self::Cancelled(msg) => write!(f, "Cancelled: {}", msg),
             Self::IsADirectory(path) => write!(f, "Is a directory: {}", path),
+            Self::DeletePending(path) => write!(f, "Delete pending: {}", path),
             Self::IoError { message, .. } => write!(f, "I/O error: {}", message),
             Self::FriendlyGit(err) => write!(f, "git: {}", err),
         }

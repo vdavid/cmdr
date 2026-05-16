@@ -206,6 +206,29 @@ pub(super) fn not_supported(raw_detail: String) -> FriendlyError {
     }
 }
 
+/// `STATUS_DELETE_PENDING`: the file has been marked for deletion on the server
+/// but at least one open handle is keeping it alive. The file disappears the
+/// moment the last handle closes, so retry-after-a-moment is the right hint.
+pub(super) fn delete_pending(path_display: &str, raw_detail: String) -> FriendlyError {
+    FriendlyError {
+        category: ErrorCategory::Transient,
+        title: "File is being removed".into(),
+        explanation: format!(
+            "`{}` is on its way out. The server marked it for deletion, but another \
+            open handle is keeping it around until that handle closes.",
+            path_display
+        ),
+        suggestion: "Here's what to try:\n\
+            - Wait a moment and try again — once the last handle closes, the file disappears\n\
+            - Close any other apps that might have this file open\n\
+            - If it sticks around, restart Cmdr to drop any handles it might still hold"
+            .into(),
+        raw_detail,
+        retry_hint: true,
+        action_kind: None,
+    }
+}
+
 pub(super) fn io_serious(path_display: &str, message: &str, raw_detail: String) -> FriendlyError {
     FriendlyError {
         category: ErrorCategory::Serious,

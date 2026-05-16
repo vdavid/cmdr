@@ -134,6 +134,15 @@ fn fs_info_to_space_info(info: &smb2::client::tree::FsInfo) -> SpaceInfo {
 /// Converts an `smb2::Error` to `VolumeError`.
 fn map_smb_error(err: smb2::Error) -> VolumeError {
     use smb2::ErrorKind;
+    use smb2::types::status::NtStatus;
+
+    // `STATUS_DELETE_PENDING` currently classifies as `ErrorKind::Other` in
+    // smb2 (no typed variant yet), so we detect it via the raw NTSTATUS before
+    // falling through to the generic kind match.
+    if err.status() == Some(NtStatus::DELETE_PENDING) {
+        return VolumeError::DeletePending(err.to_string());
+    }
+
     match err.kind() {
         ErrorKind::NotFound => VolumeError::NotFound(err.to_string()),
         ErrorKind::AlreadyExists => VolumeError::AlreadyExists(err.to_string()),
@@ -1987,6 +1996,26 @@ mod tests {
         };
         let ve = map_smb_error(err);
         assert!(matches!(ve, VolumeError::NotFound(_)));
+    }
+
+    #[test]
+    fn map_smb_error_delete_pending() {
+        // STATUS_DELETE_PENDING surfaces when a delete has been requested but at
+        // least one open handle is keeping the file alive. smb2 currently classifies
+        // it as `ErrorKind::Other`, so `map_smb_error` must dispatch on the raw
+        // NTSTATUS to produce the typed `VolumeError::DeletePending` variant —
+        // otherwise the FE falls back to the generic "disk needs attention" copy
+        // instead of the transient "file is being removed" message.
+        let err = smb2::Error::Protocol {
+            status: smb2::types::status::NtStatus::DELETE_PENDING,
+            command: smb2::types::Command::Create,
+        };
+        let ve = map_smb_error(err);
+        assert!(
+            matches!(ve, VolumeError::DeletePending(_)),
+            "STATUS_DELETE_PENDING should map to VolumeError::DeletePending, got: {:?}",
+            ve,
+        );
     }
 
     #[test]

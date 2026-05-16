@@ -49,6 +49,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
         VolumeError::StorageFull { .. } => kinds::storage_full(raw),
         VolumeError::ConnectionTimeout(_) => kinds::connection_timeout(raw),
         VolumeError::Cancelled(_) => kinds::cancelled(raw),
+        VolumeError::DeletePending(_) => kinds::delete_pending(&path_display, raw),
         VolumeError::IsADirectory(_) => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "This is a folder, not a file".into(),

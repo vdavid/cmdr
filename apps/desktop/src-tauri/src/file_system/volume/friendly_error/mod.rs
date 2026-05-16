@@ -211,6 +211,7 @@ mod tests {
                 true,
             ),
             (VolumeError::Cancelled("x".into()), ErrorCategory::Transient, true),
+            (VolumeError::DeletePending("x".into()), ErrorCategory::Transient, true),
             (
                 VolumeError::IoError {
                     message: "x".into(),
@@ -296,6 +297,7 @@ mod tests {
             VolumeError::NotFound("x".into()),
             VolumeError::PermissionDenied("x".into()),
             VolumeError::ConnectionTimeout("x".into()),
+            VolumeError::DeletePending("x".into()),
             VolumeError::IoError {
                 message: "x".into(),
                 raw_os_error: None,
@@ -355,6 +357,36 @@ mod tests {
                 err
             );
         }
+    }
+
+    #[test]
+    fn delete_pending_uses_dedicated_copy() {
+        let path = Path::new("/Volumes/share/photo.jpg");
+        let err = VolumeError::DeletePending("Protocol error: STATUS_DELETE_PENDING during Create".into());
+        let friendly = friendly_error_from_volume_error(&err, path);
+
+        assert_eq!(friendly.category, ErrorCategory::Transient);
+        assert!(
+            friendly.retry_hint,
+            "DeletePending is transient — user should see a retry hint"
+        );
+        assert!(
+            friendly.title.contains("being removed"),
+            "DeletePending title should say the file is being removed, got: {:?}",
+            friendly.title,
+        );
+        // The path is interpolated into the explanation so the user knows which file.
+        assert!(
+            friendly.explanation.contains("photo.jpg"),
+            "DeletePending explanation should include the path, got: {:?}",
+            friendly.explanation,
+        );
+        // raw_detail preserves the underlying NTSTATUS for the technical-details disclosure.
+        assert!(
+            friendly.raw_detail.contains("DELETE_PENDING"),
+            "raw_detail should preserve the NTSTATUS code, got: {:?}",
+            friendly.raw_detail,
+        );
     }
 
     // ── action_kind tests ───────────────────────────────────────────────

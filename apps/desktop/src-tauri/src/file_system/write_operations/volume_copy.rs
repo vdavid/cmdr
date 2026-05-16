@@ -1619,6 +1619,9 @@ pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOpera
             path,
             message: "Is a directory".to_string(),
         },
+        VolumeError::DeletePending(_) => WriteOperationError::DeletePending {
+            path: context_path.to_string(),
+        },
     }
 }
 
