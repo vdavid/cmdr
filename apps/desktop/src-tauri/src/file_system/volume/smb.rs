@@ -10,6 +10,7 @@ use super::{
     VolumeReadStream, path_to_id,
 };
 use crate::file_system::listing::FileEntry;
+use crate::file_system::listing::caching::try_get_watched_listing;
 use log::{debug, info, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
@@ -288,6 +289,18 @@ impl SmbVolume {
     /// Returns the volume ID (mirrors `path_to_id(mount_path)`).
     pub(crate) fn volume_id(&self) -> &str {
         &self.volume_id
+    }
+
+    /// Test-only: drops the smb2 client session. After calling this, any code
+    /// path that tries to acquire the client mutex sees `None` and returns
+    /// `VolumeError::DeviceDisconnected`. Used by
+    /// `smb_scan_oracle_tests::smb_scan_uses_oracle_on_hit_skips_stat_pipeline`
+    /// to prove the oracle short-circuit doesn't touch the SMB session: if it
+    /// did, the scan would fail with DeviceDisconnected after this call.
+    #[cfg(test)]
+    pub(super) async fn detach_session_for_test(&self) {
+        let mut client_guard = self.client.lock().await;
+        *client_guard = None;
     }
 
     /// Returns the current connection state.
@@ -1485,14 +1498,110 @@ impl Volume for SmbVolume {
                 });
             }
 
+            // Oracle short-circuit: group inputs by parent and ask
+            // `try_get_watched_listing` for each unique parent. Any path whose
+            // parent is watcher-backed gets its size + is_directory from the
+            // cached `FileEntry` (no SMB stat). Remaining paths fall through
+            // to the pipelined-stat flow below. Decision is per-parent: one
+            // call can mix oracle-served paths with pipelined-stat paths.
+            //
+            // SMB stats are per-path (not per-parent listing), so the grouping
+            // here is purely about oracle eligibility; the fallthrough path
+            // doesn't need parent grouping itself.
+            let mut per_path_results: Vec<Option<CopyScanResult>> = (0..paths.len()).map(|_| None).collect();
+            let mut leftover_indices: Vec<usize> = Vec::with_capacity(paths.len());
+            {
+                use std::collections::HashMap;
+                // Cache oracle lookups so two paths sharing a parent only pay
+                // one cache scan + clone. Value: indexed-by-name view over the
+                // cached entries, or None if the oracle missed for this parent.
+                let mut parent_cache: HashMap<PathBuf, Option<Vec<FileEntry>>> = HashMap::new();
+                for (idx, path) in paths.iter().enumerate() {
+                    let original_parent = path.parent().unwrap_or(Path::new("")).to_path_buf();
+                    let entries = parent_cache
+                        .entry(original_parent.clone())
+                        .or_insert_with(|| try_get_watched_listing(&self.volume_id, &original_parent));
+
+                    let Some(cached_entries) = entries.as_ref() else {
+                        leftover_indices.push(idx);
+                        continue;
+                    };
+
+                    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+                        leftover_indices.push(idx);
+                        continue;
+                    };
+
+                    let Some(entry) = cached_entries.iter().find(|e| e.name == name) else {
+                        // Cache doesn't know this child (stale selection,
+                        // encoding mismatch). Fall through to a real stat for
+                        // safety rather than reporting it as missing.
+                        leftover_indices.push(idx);
+                        continue;
+                    };
+
+                    if entry.is_directory {
+                        // Directories still need a recursive scan to count
+                        // descendants. The oracle just told us "this is a
+                        // dir without an SMB stat"; recurse to expand it.
+                        let smb_path = self.to_smb_path(path);
+                        let scan = self.scan_recursive(&smb_path).await?;
+                        per_path_results[idx] = Some(scan);
+                    } else {
+                        per_path_results[idx] = Some(CopyScanResult {
+                            file_count: 1,
+                            dir_count: 0,
+                            total_bytes: entry.size.unwrap_or(0),
+                            top_level_is_directory: false,
+                        });
+                    }
+                }
+
+                if !leftover_indices.is_empty() {
+                    debug!(
+                        "SmbVolume::scan_for_copy_batch: share={}, oracle resolved {}/{} paths; pipelining stats for {}",
+                        self.share_name,
+                        paths.len() - leftover_indices.len(),
+                        paths.len(),
+                        leftover_indices.len()
+                    );
+                }
+            }
+
+            // All paths resolved via oracle: assemble the result and skip the
+            // pipelined-stat machinery entirely.
+            if leftover_indices.is_empty() {
+                let mut aggregate = CopyScanResult {
+                    file_count: 0,
+                    dir_count: 0,
+                    total_bytes: 0,
+                    top_level_is_directory: false,
+                };
+                let mut per_path = Vec::with_capacity(paths.len());
+                for (i, slot) in per_path_results.into_iter().enumerate() {
+                    let scan = slot.expect("oracle path must have populated every index");
+                    aggregate.file_count += scan.file_count;
+                    aggregate.dir_count += scan.dir_count;
+                    aggregate.total_bytes += scan.total_bytes;
+                    per_path.push((paths[i].clone(), scan));
+                }
+                return Ok(BatchScanResult { aggregate, per_path });
+            }
+
             // Pre-compute SMB paths so the pipelined stats can borrow strings
-            // that outlive the futures' lifetimes.
-            let smb_paths: Vec<String> = paths.iter().map(|p| self.to_smb_path(p)).collect();
+            // that outlive the futures' lifetimes. We compute them for the
+            // leftover indices only so an oracle-only path costs zero
+            // `to_smb_path` calls below.
+            let smb_paths: Vec<(usize, String)> = leftover_indices
+                .iter()
+                .map(|&idx| (idx, self.to_smb_path(&paths[idx])))
+                .collect();
 
             debug!(
-                "SmbVolume::scan_for_copy_batch: share={}, {} paths; pipelining stats",
+                "SmbVolume::scan_for_copy_batch: share={}, {} paths leftover for pipelined stats (oracle handled {})",
                 self.share_name,
-                paths.len()
+                smb_paths.len(),
+                paths.len() - smb_paths.len()
             );
 
             // Build N pipelined stats: one cloned `Connection` per path, no
@@ -1514,7 +1623,8 @@ impl Volume for SmbVolume {
             type StatFuture = Pin<Box<dyn Future<Output = (usize, Result<StatOutcome, smb2::Error>)> + Send>>;
             let mut stat_futs: FuturesUnordered<StatFuture> = FuturesUnordered::new();
 
-            for (idx, smb_path) in smb_paths.iter().enumerate() {
+            for (idx, smb_path) in &smb_paths {
+                let idx = *idx;
                 if smb_path.is_empty() {
                     // Root: no stat needed. Inline a ready future so the
                     // ordering logic below still sees a slot for this index.
@@ -1539,9 +1649,9 @@ impl Volume for SmbVolume {
                 }));
             }
 
-            // Stage per-path scan results + "recurse later" list while
-            // draining the pipelined stats as they complete.
-            let mut per_path_results: Vec<Option<CopyScanResult>> = (0..paths.len()).map(|_| None).collect();
+            // `per_path_results` is already shaped to the input length and
+            // pre-populated with oracle-resolved entries; the pipelined-stat
+            // path below only fills the still-None slots.
             // Indices to recurse into after the stat batch finishes.
             let mut dirs_to_recurse: Vec<usize> = Vec::new();
 
@@ -1586,8 +1696,15 @@ impl Volume for SmbVolume {
             // future "Fix 5" (pipelined directory recursion). For the 100 ×
             // tiny-file scenario all sources are files, so this loop is never
             // entered.
+            // `smb_paths` is `Vec<(idx, String)>` keyed by the leftover index;
+            // build a lookup so dir-recursion can find each path by its
+            // original input index.
+            let smb_path_by_idx: std::collections::HashMap<usize, &str> =
+                smb_paths.iter().map(|(i, s)| (*i, s.as_str())).collect();
             for idx in dirs_to_recurse {
-                let smb_path = &smb_paths[idx];
+                let smb_path = smb_path_by_idx
+                    .get(&idx)
+                    .expect("dirs_to_recurse only carries indices from the leftover stat batch");
                 let scan = self.scan_recursive(smb_path).await?;
                 per_path_results[idx] = Some(scan);
             }

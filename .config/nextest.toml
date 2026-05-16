@@ -1,6 +1,18 @@
 # cargo-nextest configuration
 # See https://nexte.st/docs/configuration/ for full documentation
 
+# Tests in the `virtual-mtp` group share a single backing-dir fixture root at
+# `/tmp/cmdr-mtp-e2e-fixtures` (see `mtp::virtual_device::setup_virtual_mtp_device`),
+# so running them concurrently races on a shared filesystem resource and one
+# wins with `DirectoryNotEmpty`. Cap concurrency at 1 to serialize them across
+# nextest's per-process forks.
+[test-groups]
+virtual-mtp = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'test(mtp_scan) + test(listing_is_watched_flips_with_connection)'
+test-group = 'virtual-mtp'
+
 [profile.default]
 # Show test output for failing tests only
 failure-output = "immediate"
