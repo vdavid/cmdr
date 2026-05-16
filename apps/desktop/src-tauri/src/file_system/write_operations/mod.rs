@@ -368,6 +368,8 @@ mod delete_integration_test;
 #[cfg(test)]
 mod move_integration_test;
 #[cfg(test)]
+mod scan_preview_oracle_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod transaction_integration_test;
