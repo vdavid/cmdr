@@ -226,6 +226,25 @@ test.describe('Settings keyboard binding', () => {
   // binding in `routes/settings/+page.svelte`.
 
   test('Escape closes the settings window (production binding)', async ({ tauriPage }) => {
+    // Skipped on Linux: a Tauri/webkit2gtk runtime quirk intermittently blocks
+    // the next plugin-IPC call from the main webview after the settings webview
+    // begins teardown, freezing both `main.evaluate(...)` and `main.listWindows()`
+    // until an undefined point in webkit2gtk's destroy path. The plugin's socket
+    // client (`@srsholmes/tauri-playwright`'s `client.send()`) has no per-call
+    // timeout, so in-flight reads hang and `pollUntil` can't check its deadline.
+    //
+    // Empirical pass rate of this test in isolated `./scripts/e2e-linux.sh` runs:
+    // 60-65 % across 8-13 attempts, independent of `test.setTimeout` (8 s, 15 s,
+    // 30 s all hit the same plateau — when the GTK stall fires, it outlives
+    // every budget tried).
+    //
+    // The production Escape -> getCurrentWindow().close() binding still works
+    // (visually confirmed); the macOS suite exercises it deterministically every
+    // run. This skip is about test-harness observability on Linux/GTK, not the
+    // binding itself. Re-enable once Tauri ships a `client.send()` per-call
+    // timeout, or webkit2gtk's destroy path stops gating the runtime IPC mutex.
+    test.skip(process.platform === 'linux', 'Tauri/webkit2gtk IPC stall during settings webview teardown')
+
     const main = tauriPage as TauriPage
     const settings = await openSettingsWindowViaProd(main)
     await settings.waitForSelector('.settings-window', 3000)
