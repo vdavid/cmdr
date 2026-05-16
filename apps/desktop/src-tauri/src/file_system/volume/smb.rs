@@ -94,6 +94,51 @@ impl ConnectionState {
     }
 }
 
+// ── Client-mutex instrumentation ────────────────────────────────────
+//
+// Pure observability around the `client` mutex on `SmbVolume`. Helps
+// diagnose deadlocks where the lock appears to be held indefinitely by
+// an unknown task. Every acquire allocates a process-global ticket and
+// emits three debug logs: `waiting`, `acquired`, and `released`. Grep
+// one log file for `client-mutex:` to reconstruct who holds the lock,
+// who's queued behind them, and how long each hold lasts.
+
+static CLIENT_LOCK_TICKET: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// RAII wrapper around the client `MutexGuard` that logs on Drop so the
+/// release event is captured even if the caller returns early. Transparent
+/// to callers via `Deref` / `DerefMut` over `Option<SmbClient>`.
+struct LoggedClientGuard<'a> {
+    inner: tokio::sync::MutexGuard<'a, Option<SmbClient>>,
+    ticket: u64,
+    caller: &'static str,
+    acquired_at: std::time::Instant,
+}
+
+impl<'a> std::ops::Deref for LoggedClientGuard<'a> {
+    type Target = Option<SmbClient>;
+    fn deref(&self) -> &Self::Target {
+        &*self.inner
+    }
+}
+
+impl<'a> std::ops::DerefMut for LoggedClientGuard<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut *self.inner
+    }
+}
+
+impl<'a> Drop for LoggedClientGuard<'a> {
+    fn drop(&mut self) {
+        log::debug!(
+            "client-mutex: released ticket={} caller={} held_for={:?}",
+            self.ticket,
+            self.caller,
+            self.acquired_at.elapsed()
+        );
+    }
+}
+
 // ── Type mapping helpers ────────────────────────────────────────────
 
 /// Converts an `smb2::FileTime` to seconds since the Unix epoch, matching
@@ -469,13 +514,39 @@ impl SmbVolume {
     /// Most methods still go through this (stat, list_directory, rename, etc.);
     /// only the hot streaming-read / compound-write paths use the cheaper
     /// `clone_connection` helper that releases the lock before driving the op.
-    async fn acquire_client(&self) -> Result<tokio::sync::MutexGuard<'_, Option<SmbClient>>, VolumeError> {
+    async fn acquire_client(&self) -> Result<LoggedClientGuard<'_>, VolumeError> {
         self.check_connection()?;
+        let ticket = CLIENT_LOCK_TICKET.fetch_add(1, Ordering::Relaxed);
+        let start = std::time::Instant::now();
+        log::debug!(
+            "client-mutex: waiting ticket={} caller=acquire_client share={}",
+            ticket,
+            self.share_name
+        );
         let guard = self.client.lock().await;
+        log::debug!(
+            "client-mutex: acquired ticket={} caller=acquire_client share={} waited={:?}",
+            ticket,
+            self.share_name,
+            start.elapsed()
+        );
         if guard.is_none() {
+            // Drop the unwrapped guard explicitly so the released-log
+            // doesn't fire for a "no-op" acquire that immediately bails.
+            drop(guard);
+            log::debug!(
+                "client-mutex: released ticket={} caller=acquire_client held_for={:?} (no-session-bail)",
+                ticket,
+                start.elapsed()
+            );
             return Err(VolumeError::DeviceDisconnected("SMB session not available".to_string()));
         }
-        Ok(guard)
+        Ok(LoggedClientGuard {
+            inner: guard,
+            ticket,
+            caller: "acquire_client",
+            acquired_at: start,
+        })
     }
 
     /// Reads out a clone of `Arc<Tree>`. Cheap (`Arc::clone`).
@@ -498,12 +569,37 @@ impl SmbVolume {
     async fn clone_session(&self) -> Result<(Arc<Tree>, smb2::client::Connection), VolumeError> {
         self.check_connection()?;
         let tree = self.tree_arc().await?;
+        let ticket = CLIENT_LOCK_TICKET.fetch_add(1, Ordering::Relaxed);
+        let start = std::time::Instant::now();
+        log::debug!(
+            "client-mutex: waiting ticket={} caller=clone_session share={}",
+            ticket,
+            self.share_name
+        );
         let conn = {
             let mut guard = self.client.lock().await;
-            let client = guard
-                .as_mut()
-                .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?;
-            client.connection_mut().clone()
+            log::debug!(
+                "client-mutex: acquired ticket={} caller=clone_session share={} waited={:?}",
+                ticket,
+                self.share_name,
+                start.elapsed()
+            );
+            let acquired_at = std::time::Instant::now();
+            let client = guard.as_mut().ok_or_else(|| {
+                log::debug!(
+                    "client-mutex: released ticket={} caller=clone_session held_for={:?} (no-session-bail)",
+                    ticket,
+                    acquired_at.elapsed()
+                );
+                VolumeError::DeviceDisconnected("SMB session not available".to_string())
+            })?;
+            let c = client.connection_mut().clone();
+            log::debug!(
+                "client-mutex: released ticket={} caller=clone_session held_for={:?}",
+                ticket,
+                acquired_at.elapsed()
+            );
+            c
         };
         Ok((tree, conn))
     }
