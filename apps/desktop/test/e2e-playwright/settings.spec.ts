@@ -12,6 +12,24 @@ import { test, expect } from './fixtures.js'
 import { closeScopedWindow, openSettingsWindowViaProd, pollUntil } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
+/**
+ * Clicks a sidebar `.section-item` by exact (trimmed) text. Returns false if no
+ * matching item exists; the caller can then fail the test with a useful message.
+ */
+function clickSectionByTextJs(name: string): string {
+  return `(function() {
+    var items = document.querySelectorAll('.section-item');
+    var target = ${JSON.stringify(name)};
+    for (var i = 0; i < items.length; i++) {
+      if ((items[i].textContent || '').trim() === target) {
+        items[i].click();
+        return true;
+      }
+    }
+    return false;
+  })()`
+}
+
 test.describe('Settings page', () => {
   let settings: TauriPage
 
@@ -26,23 +44,6 @@ test.describe('Settings page', () => {
 
   test.afterEach(async ({ tauriPage }) => {
     await closeScopedWindow(tauriPage as TauriPage, settings, 'settings')
-  })
-
-  test('renders the settings page', async () => {
-    expect(await settings.isVisible('.settings-window')).toBe(true)
-    expect(await settings.isVisible('.settings-layout')).toBe(true)
-  })
-
-  test('displays sidebar with sections', async () => {
-    expect(await settings.isVisible('.settings-sidebar')).toBe(true)
-    const sectionCount = await settings.count('.section-item')
-    expect(sectionCount).toBeGreaterThan(0)
-  })
-
-  test('shows expected sections like Appearance and Keyboard shortcuts', async () => {
-    const sectionTexts = await settings.allTextContents('.section-item')
-    expect(sectionTexts.some((t) => t.includes('Appearance'))).toBe(true)
-    expect(sectionTexts.some((t) => t.includes('Keyboard shortcuts'))).toBe(true)
   })
 
   test('lists top-level sections in the expected order', async () => {
@@ -77,77 +78,108 @@ test.describe('Settings page', () => {
     expect(trimmed).toEqual(expectedOrder)
   })
 
-  test('has a working search input', async () => {
-    await settings.waitForSelector('.search-input', 5000)
-    await settings.fill('.search-input', 'theme')
+  test('clicking a subsection routes to the matching section component', async () => {
+    // Default boot lands on Appearance > Colors and formats; navigate elsewhere so we
+    // can prove the click handler swapped the content. "File operations" is a small
+    // subsection (one setting) so this stays fast.
+    const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('File operations'))
+    expect(clicked).toBe(true)
 
-    // Wait for the input value to be set
-    await pollUntil(
-      settings,
-      async () => {
-        const value = await settings.inputValue('.search-input')
-        return value === 'theme'
-      },
-      3000,
+    // The content area renders a wrapper `<section data-section-id="...">` per matched
+    // path. Wait for the new wrapper to appear, then read its header + visible labels.
+    await settings.waitForSelector('[data-section-id="behavior-file-operations"]', 3000)
+    const probe = await settings.evaluate<{ title: string; labels: string[] }>(
+      `(function() {
+        var wrapper = document.querySelector('[data-section-id="behavior-file-operations"]');
+        if (!wrapper) return { title: '', labels: [] };
+        var title = (wrapper.querySelector('.section-title')?.textContent || '').trim();
+        var labels = Array.from(wrapper.querySelectorAll('.setting-label')).map(function(el) {
+          return (el.textContent || '').trim();
+        });
+        return { title: title, labels: labels };
+      })()`,
     )
+    expect(probe.title).toBe('File operations')
+    expect(probe.labels).toContain('Allow file extension changes')
 
-    const value = await settings.inputValue('.search-input')
-    expect(value).toBe('theme')
-
-    // Clear search
-    await settings.evaluate(`(function() {
-            var input = document.querySelector('.search-input');
-            if (input) {
-                input.value = '';
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        })()`)
-
-    await pollUntil(
-      settings,
-      async () => {
-        const val = await settings.inputValue('.search-input')
-        return val === ''
-      },
-      3000,
+    // No leftover Appearance content under the wrapper (would mean both rendered together).
+    const otherSectionPresent = await settings.evaluate<boolean>(
+      `!!document.querySelector('[data-section-id="appearance-colors-and-formats"]')`,
     )
+    expect(otherSectionPresent).toBe(false)
   })
 
-  test('navigates between sections when clicking', async () => {
-    await settings.waitForSelector('.settings-sidebar', 5000)
+  test('selecting a top-level section with subsections renders summary cards', async () => {
+    // Appearance has 4 navigable subsections; SectionSummary should surface each as a
+    // `.subsection-card` with a name + description. This catches a regression in either
+    // the summary trigger list in SettingsContent (`sectionsWithSubsections`) or the
+    // SectionSummary component itself.
+    const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Appearance'))
+    expect(clicked).toBe(true)
 
-    // Wait for at least 2 section items
-    await pollUntil(
-      settings,
-      async () => {
-        const count = await settings.count('.section-item')
-        return count >= 2
-      },
-      10000,
+    await settings.waitForSelector('.subsection-card', 3000)
+    const probe = await settings.evaluate<{ names: string[]; firstDescription: string }>(
+      `(function() {
+        var cards = Array.from(document.querySelectorAll('.subsection-card'));
+        var names = cards.map(function(c) { return (c.querySelector('.subsection-name')?.textContent || '').trim(); });
+        var firstDescription = cards.length
+          ? (cards[0].querySelector('.subsection-description')?.textContent || '').trim()
+          : '';
+        return { names: names, firstDescription: firstDescription };
+      })()`,
     )
+    expect(probe.names).toEqual(['Colors and formats', 'Zoom and density', 'File and folder sizes', 'Listing'])
+    // Sanity-check that the SectionSummary description lookup table is wired up (not the
+    // fallback string). The fallback for "Colors and formats" would be
+    // "Configure colors and formats settings." — assert we got the curated copy instead.
+    expect(probe.firstDescription).toBe('Theme, app color, date and size coloring, and date/time format.')
+  })
 
-    // Click second section
-    await settings.evaluate(`(function() {
-            var items = document.querySelectorAll('.section-item');
-            if (items[1]) items[1].click();
-        })()`)
+  test('Colors and formats hosts the theme.mode row (regression for the old Themes section)', async () => {
+    // `theme.mode` used to live in a standalone Themes top-level section. After the
+    // reorg it folds into Appearance > Colors and formats. If the registry path or the
+    // section component drifts apart, this row vanishes — catch that immediately.
+    const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Colors and formats'))
+    expect(clicked).toBe(true)
 
-    // Wait for section to become selected
-    await pollUntil(
-      settings,
-      async () => {
-        const cls = await settings.evaluate<string>(
-          `document.querySelectorAll('.section-item')[1]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('selected')
-      },
-      3000,
+    await settings.waitForSelector('[data-section-id="appearance-colors-and-formats"]', 3000)
+    const labels = await settings.evaluate<string[]>(
+      `Array.from(document.querySelectorAll('[data-section-id="appearance-colors-and-formats"] .setting-label'))
+        .map(function(el) { return (el.textContent || '').trim(); })`,
     )
+    // Theme mode at the top, plus a couple of canaries to confirm the rest of the
+    // subsection didn't lose rows in the rewrite.
+    expect(labels).toContain('Theme mode')
+    expect(labels).toContain('App color')
+    expect(labels).toContain('Striped rows')
+  })
 
-    const classAttr = await settings.evaluate<string>(
-      `document.querySelectorAll('.section-item')[1]?.getAttribute('class') || ''`,
+  test('Advanced section renders auto-generated rows for showInAdvanced entries', async () => {
+    // The Advanced page is registry-driven: every `showInAdvanced: true` entry becomes a
+    // `.advanced-setting-row`. A regression in the iteration / filtering would silently
+    // empty this page out, so this asserts both shape (rows render) and content (a known
+    // entry surfaces with its label).
+    const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Advanced'))
+    expect(clicked).toBe(true)
+
+    await settings.waitForSelector('[data-section-id="advanced"] .advanced-setting-row', 3000)
+    const probe = await settings.evaluate<{ rowCount: number; names: string[] }>(
+      `(function() {
+        var rows = Array.from(document.querySelectorAll('[data-section-id="advanced"] .advanced-setting-row'));
+        var names = rows.map(function(r) {
+          var name = r.querySelector('.setting-name');
+          return name ? (name.textContent || '').replace(/●/g, '').trim() : '';
+        });
+        return { rowCount: rows.length, names: names };
+      })()`,
     )
-    expect(classAttr).toContain('selected')
+    // 16 entries today; assert >= 10 so adding/removing a handful doesn't churn the test.
+    expect(probe.rowCount).toBeGreaterThanOrEqual(10)
+    // Sample entries from both the genuinely-Advanced bucket and the ones that surface
+    // there via `showInAdvanced: true` despite living under another section path.
+    expect(probe.names).toContain('Prefetch buffer size')
+    expect(probe.names).toContain('Maximum conflicts to show')
+    expect(probe.names).toContain('Progress update interval')
   })
 
   test('search narrows the visible sidebar sections and clearing restores them', async () => {
