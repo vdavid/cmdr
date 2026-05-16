@@ -313,25 +313,60 @@ for (const mode of ['light', 'dark'] as const) {
         await settings.waitForSelector('.settings-window', 3000)
         await settings.waitForSelector('.settings-sidebar', 3000)
 
-        // All settings sections with their sidebar paths and data-section-id selectors
+        // All settings sections with their sidebar paths and data-section-id selectors.
+        // Mirror the tree declared in `SettingsSidebar.svelte::TOP_LEVEL_ORDER` and the
+        // section bindings in `SettingsContent.svelte`. Top-level sections that own
+        // subsections (Appearance, Behavior, File systems, Developer) show a summary card
+        // grid when clicked at the top level, so the audit targets each subsection directly.
         const sections: { name: string; path: string[]; sectionId: string }[] = [
-          { name: 'Appearance', path: ['General', 'Appearance'], sectionId: 'general-appearance' },
-          { name: 'Listing', path: ['General', 'Listing'], sectionId: 'general-listing' },
-          { name: 'File operations', path: ['General', 'File operations'], sectionId: 'general-file-operations' },
-          { name: 'Drive indexing', path: ['General', 'Drive indexing'], sectionId: 'general-drive-indexing' },
-          { name: 'Updates', path: ['General', 'Updates'], sectionId: 'general-updates' },
-          { name: 'Viewer', path: ['General', 'Viewer'], sectionId: 'general-viewer' },
           {
-            name: 'SMB/Network shares',
-            path: ['Network', 'SMB/Network shares'],
-            sectionId: 'network-smb-network-shares',
+            name: 'Appearance > Colors and formats',
+            path: ['Appearance', 'Colors and formats'],
+            sectionId: 'appearance-colors-and-formats',
           },
-          { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'], sectionId: 'keyboard-shortcuts' },
-          { name: 'Themes', path: ['Themes'], sectionId: 'themes' },
-          { name: 'License', path: ['License'], sectionId: 'license' },
+          {
+            name: 'Appearance > Zoom and density',
+            path: ['Appearance', 'Zoom and density'],
+            sectionId: 'appearance-zoom-and-density',
+          },
+          {
+            name: 'Appearance > File and folder sizes',
+            path: ['Appearance', 'File and folder sizes'],
+            sectionId: 'appearance-file-and-folder-sizes',
+          },
+          { name: 'Appearance > Listing', path: ['Appearance', 'Listing'], sectionId: 'appearance-listing' },
+          {
+            name: 'Behavior > File operations',
+            path: ['Behavior', 'File operations'],
+            sectionId: 'behavior-file-operations',
+          },
+          {
+            name: 'Behavior > Drive indexing',
+            path: ['Behavior', 'Drive indexing'],
+            sectionId: 'behavior-drive-indexing',
+          },
           { name: 'AI', path: ['AI'], sectionId: 'ai' },
-          { name: 'MCP server', path: ['Developer', 'MCP server'], sectionId: 'developer-mcp-server' },
-          { name: 'Logging', path: ['Developer', 'Logging'], sectionId: 'developer-logging' },
+          {
+            name: 'File systems > SMB/Network shares',
+            path: ['File systems', 'SMB/Network shares'],
+            sectionId: 'file-systems-smb-network-shares',
+          },
+          {
+            name: 'File systems > MTP',
+            path: ['File systems', 'MTP (Android/Kindle/cameras)'],
+            sectionId: 'file-systems-mtp-android-kindle-cameras',
+          },
+          { name: 'File systems > Git', path: ['File systems', 'Git'], sectionId: 'file-systems-git' },
+          { name: 'Viewer', path: ['Viewer'], sectionId: 'viewer' },
+          { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'], sectionId: 'keyboard-shortcuts' },
+          {
+            name: 'Developer > MCP server',
+            path: ['Developer', 'MCP server'],
+            sectionId: 'developer-mcp-server',
+          },
+          { name: 'Developer > Logging', path: ['Developer', 'Logging'], sectionId: 'developer-logging' },
+          { name: 'Updates', path: ['Updates'], sectionId: 'updates' },
+          { name: 'License', path: ['License'], sectionId: 'license' },
           { name: 'Advanced', path: ['Advanced'], sectionId: 'advanced' },
         ]
 

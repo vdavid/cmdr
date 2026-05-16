@@ -252,6 +252,26 @@ test.describe('Settings page', () => {
         })()`)
     await pollUntil(settings, async () => (await settings.count('.section-item')) > 2, 3000)
 
+    // Reset the selected section to the first sidebar entry. Prior tests may
+    // have landed on the last entry (post-reorg, that's `Advanced`), where
+    // ArrowDown is a no-op by design (`navigateSections` clamps at the end of
+    // `allSections`). Without this reset the test reads "no change" and fails
+    // even though the keyboard handler is wired correctly.
+    await settings.evaluate(`(function() {
+            var items = document.querySelectorAll('.section-item');
+            if (items[0]) items[0].click();
+        })()`)
+    await pollUntil(
+      settings,
+      async () => {
+        const cls = await settings.evaluate<string>(
+          `document.querySelectorAll('.section-item')[0]?.getAttribute('class') || ''`,
+        )
+        return cls.includes('selected')
+      },
+      3000,
+    )
+
     await settings.waitForSelector('.section-item.selected', 5000)
     const startSelected = await settings.evaluate<string>(
       `document.querySelector('.section-item.selected')?.textContent?.trim() || ''`,

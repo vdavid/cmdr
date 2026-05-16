@@ -50,15 +50,26 @@ cd apps/desktop
 # Build the Tauri binary with the playwright plugin
 pnpm test:e2e:playwright:build
 
-# Start the app (in a separate terminal)
-CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures /path/to/target/.../release/Cmdr
+# Start the app (in a separate terminal). Both env vars matter:
+# - CMDR_E2E_START_PATH points the app at the fixture root.
+# - CMDR_E2E_MODE=1 turns on the blue title-bar stripe and `E2E -` window-title
+#   decoration (`is_e2e_mode()` in `src-tauri/src/test_mode.rs`). Without it the
+#   app launches looking like a prod build, which is confusing when you have a
+#   real Cmdr open at the same time.
+CMDR_E2E_MODE=1 CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures /path/to/target/.../release/Cmdr
 
-# Run the tests (app must be running with socket at /tmp/tauri-playwright.sock)
-CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright
+# Run the tests (app must be running with socket at /tmp/tauri-playwright.sock).
+# Chain `&& pkill -f 'target.*Cmdr'` so the manually-launched app is torn down
+# when the run finishes — tauri-playwright doesn't manage app lifecycle (it
+# just talks to the socket), so without this you leak a Cmdr process every run.
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright \
+    ; pkill -f 'target.*Cmdr'
 ```
 
 When running manually, the test suite does NOT launch the app. The app must be started with `CMDR_E2E_START_PATH`
-pointing to a fixture directory created by `e2e-shared/fixtures.ts`.
+pointing to a fixture directory created by `e2e-shared/fixtures.ts`. **Always pair the launch with a `pkill` step** —
+neither the test runner nor `closeScopedWindow` kills the main process, so leaks accumulate fast across iterations. The
+`;` (instead of `&&`) keeps the cleanup running even when the tests fail.
 
 ## Running a single spec
 
@@ -66,16 +77,24 @@ When iterating on one spec, **run only that spec**. The full suite takes ~10 min
 when the broken test takes the app down with it (subsequent specs fail with connection errors). Save the full run for
 the final CI-green check.
 
-With the app already running (see "Manually" above), filter by file or by name:
+With the app already running (see "Manually" above), filter by file or by name. The same `; pkill -f 'target.*Cmdr'`
+cleanup applies — chain it after every iteration so the next launch isn't a stale process.
+
+The `pnpm test:e2e:playwright` script already hardcodes `--project tauri`, so a positional spec path collides with
+playwright's project arg parser ("Project not found"). For file filters, call `npx playwright test` directly; for name
+filters, the `pnpm` script form works since `--grep` is a flag.
 
 ```bash
 cd apps/desktop
 
-# By file path (relative to apps/desktop/)
-CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright test/e2e-playwright/brief-cursor-visibility.spec.ts
+# By file path: bypass the pnpm script so the spec path isn't read as a --project arg.
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures npx playwright test \
+    --config test/e2e-playwright/playwright.config.ts --project tauri \
+    test/e2e-playwright/brief-cursor-visibility.spec.ts ; pkill -f 'target.*Cmdr'
 
-# By test-name substring (matches `test('...')` titles)
-CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright --grep "cursor stays in view"
+# By test-name substring (matches `test('...')` and `describe('...')` titles)
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright \
+    --grep "cursor stays in view" ; pkill -f 'target.*Cmdr'
 ```
 
 The checker invocation (`./scripts/check.sh --check desktop-e2e-playwright`) doesn't support filtering: it always runs

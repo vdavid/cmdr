@@ -39,9 +39,16 @@
         'Advanced',
     ] as const
 
+    type TopLevelName = (typeof TOP_LEVEL_ORDER)[number]
+
     type SidebarEntry =
         | { kind: 'tree'; node: SettingsSection }
         | { kind: 'special'; name: string; path: string[] }
+
+    // `Partial<...>` because only a few entries in `TOP_LEVEL_ORDER` are special sections.
+    // Without it the index returns the value type unconditionally, and the `if (special)`
+    // check below trips `no-unnecessary-condition`.
+    const specialByName: Partial<Record<TopLevelName, { name: string; path: string[] }>> = specialSections
 
     const orderedEntries = $derived.by((): SidebarEntry[] => {
         const treeByName = new Map(sectionTree.map((s) => [s.name, s]))
@@ -52,7 +59,7 @@
                 entries.push({ kind: 'tree', node })
                 continue
             }
-            const special = specialSections[name]
+            const special = specialByName[name]
             if (special) {
                 entries.push({ kind: 'special', name: special.name, path: [...special.path] })
             }
@@ -217,7 +224,7 @@
                         {/if}
                     </div>
                 {/if}
-            {:else if shouldShowSpecialSection(entry.path)}
+            {:else if entry.kind === 'special' && shouldShowSpecialSection(entry.path)}
                 <div class="section-group">
                     <button
                         class="section-item"
