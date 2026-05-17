@@ -442,7 +442,7 @@ export const settingsRegistry: SettingDefinition[] = [
     section: ['File systems', 'SMB/Network shares'],
     label: 'Connect directly to SMB shares',
     description:
-      'When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.',
+      "When enabled, Cmdr opens SMB shares with its own fast smb2 connection and skips the system mount. That avoids the macOS keychain dialog and keeps things snappy. Turn this off if you need Finder or other apps to see the same share at the same time, or if a server doesn't speak smb2 well.",
     keywords: ['smb', 'direct', 'fast', 'connection', 'network', 'performance', 'smb2'],
     type: 'boolean',
     default: true,

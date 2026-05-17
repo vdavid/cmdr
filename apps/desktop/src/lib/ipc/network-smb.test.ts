@@ -141,4 +141,41 @@ describe('commands.mountNetworkShare', () => {
       expect(out.error).toEqual({ type: 'auth_failed', message: 'bad credentials' })
     }
   })
+
+  // Direct-smb2 share-open: when the server requires creds and none were
+  // supplied (or a guest probe got refused), the command returns `auth_required`
+  // straight from the smb2 path. The FE re-prompts inline via NetworkMountView
+  // rather than falling back to the kernel `smbfs` credentials dialog (which
+  // is exactly what the direct-smb2 path is here to avoid).
+  it('surfaces auth_required from the direct-smb2 path for re-prompting', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('mount_network_share', () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw typed-error shape to test the wire contract
+      throw { type: 'auth_required', message: '"naspolya" needs a username and password' }
+    })
+
+    const out = await commands.mountNetworkShare('naspolya.local', 'private', null, null, null, null)
+
+    expect(out.status).toBe('error')
+    if (out.status === 'error') {
+      expect(out.error).toEqual({
+        type: 'auth_required',
+        message: '"naspolya" needs a username and password',
+      })
+    }
+  })
+
+  // Regression guard for the kernel-dialog bug: direct-smb2 returns a
+  // synthesized `/Volumes/<share>` path without an OS mount. The FE only
+  // cares about the typed `mountPath` it gets back; it doesn't expect any
+  // smbfs side effect, and it must not branch on filesystem reality.
+  it('accepts the synthesized /Volumes/<share> path from the direct-smb2 path', async () => {
+    const ipc = installIpcMock()
+    const result: MountResult = { mountPath: '/Volumes/Public', alreadyMounted: false }
+    ipc.mock('mount_network_share', () => result)
+
+    const out = await commands.mountNetworkShare('storage.local', 'Public', null, null, 445, 20000)
+
+    expect(out).toEqual({ status: 'ok', data: result })
+  })
 })

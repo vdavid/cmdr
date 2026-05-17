@@ -1564,17 +1564,23 @@ export const commands = {
       }),
     ),
   /**
-   *  Mounts an SMB share to the local filesystem.
+   *  Mounts a network SMB share for use inside Cmdr.
    *
-   *  Attempts to mount the specified share on the server. If credentials are
-   *  provided, they are used for authentication. If the share is already mounted,
-   *  returns the existing mount path without re-mounting.
+   *  When `network.directSmbConnection` is `true` (the default), opens a direct
+   *  smb2 session, registers it as an `SmbVolume` in the `VolumeManager`, and
+   *  returns a logical `MountResult` with `mount_path = /Volumes/<share>`. No OS
+   *  mount happens, so macOS never shows the kernel `smbfs` credentials dialog.
+   *  The synthesized path is purely a logical address: `SmbVolume::supports_local_fs_access()`
+   *  returns `false`, so nothing in Cmdr calls `std::fs::*` against it.
    *
-   *  After a successful OS mount, also establishes a direct smb2 connection and
-   *  registers the share as an `SmbVolume` in the `VolumeManager`. This means
-   *  Cmdr's own file operations go through smb2 (fast), while Finder/Terminal
-   *  use the OS mount (compatible). If smb2 connection fails, the volume falls
-   *  through to a regular `LocalPosixVolume` (registered by the watcher).
+   *  When the setting is `false`, falls back to the legacy behavior: OS mount via
+   *  `NetFSMountURLSync`/`gio mount`, then `register_smb_volume` to layer a direct
+   *  smb2 session on top. Use this opt-out only when an external app (Finder,
+   *  Terminal) genuinely needs the OS mount.
+   *
+   *  The watcher (`volumes::watcher::try_upgrade_smb_mount`) and the manual
+   *  `upgrade_to_smb_volume` command still handle OS-mounted shares from Finder
+   *  or `Cmd+K`, so this change doesn't break those paths.
    *
    *  # Arguments
    *  * `server` - Server hostname or IP address
@@ -1586,7 +1592,8 @@ export const commands = {
    *
    *  # Returns
    *  * `Ok(MountResult)` - Mount successful, with path to mount point
-   *  * `Err(MountError)` - Mount failed with specific error type
+   *  * `Err(MountError)` - Mount failed with a typed error (e.g. `AuthFailed`,
+   *    `HostUnreachable`). The frontend re-prompts for credentials inline.
    */
   mountNetworkShare: (
     server: string,
