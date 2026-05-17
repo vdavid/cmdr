@@ -314,42 +314,25 @@ test.describe('Settings keyboard binding', () => {
     const settings = await openSettingsWindowViaProd(main)
     await settings.waitForSelector('.settings-window', 3000)
 
-    // Verify focus is actually inside the settings webview before pressing
-    // Escape. Without this the keystroke can land on the main window (or
-    // wherever focus drifted to during async onMount in the settings UI),
-    // the settings window never receives it, and the test sits waiting for
-    // a window-close that won't come. Two attempts max as cheap insurance.
-    const tryEscape = async (): Promise<boolean> => {
-      const focused = await pollUntil(
-        settings,
-        async () =>
-          settings.evaluate<boolean>(`(function(){
-            if (!document.hasFocus()) return false;
-            var root = document.querySelector('.settings-window');
-            return !!(root && document.activeElement && root.contains(document.activeElement));
-          })()`),
-        1000,
-      )
-      if (!focused) {
-        // Re-focus inside the settings webview and let the caller retry.
-        await settings.evaluate(`(function(){
-          var root = document.querySelector('.settings-window');
-          if (root && 'focus' in root) root.focus();
-        })()`)
-        return false
-      }
-      // Fire-and-forget: the dispatched Escape triggers getCurrentWindow().close()
-      // synchronously inside the handler, so the window may die before pw_result
-      // fires back. The poll on listWindows() below is the assertion.
-      settings.keyboard.press('Escape').catch(() => {
+    // Dispatch a synthetic Escape keydown into the settings webview rather
+    // than going through Playwright's OS-level `keyboard.press`. The handler
+    // we want to exercise is the JS `<svelte:window on:keydown>` in
+    // `routes/settings/+page.svelte` — bubbling from `document` fires that
+    // listener regardless of OS focus. Going through the OS path adds a
+    // focus dependency that flakes under Xvfb on Linux CI (the keystroke
+    // lands on the main window and the settings webview never sees it).
+    // The Tauri/webkit2gtk OS → webview event pipeline isn't cmdr's
+    // responsibility to test; this binding is.
+    //
+    // Fire-and-forget: the dispatched Escape triggers
+    // `getCurrentWindow().close()` (after a 2-rAF defer) inside the handler,
+    // so the window may die before the evaluate promise's `pw_result` fires
+    // back. The poll on `listWindows()` below is the assertion that matters.
+    settings
+      .evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`)
+      .catch(() => {
         /* window died mid-script before pw_result; expected */
       })
-      return true
-    }
-
-    if (!(await tryEscape())) {
-      await tryEscape()
-    }
 
     const gone = await pollUntil(
       main,

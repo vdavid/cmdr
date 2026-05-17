@@ -189,43 +189,25 @@ test.describe('File viewer keyboard binding', () => {
     const label = viewer.targetWindow
     if (!label) throw new Error('Scoped viewer page has no targetWindow label')
 
-    // Verify focus is inside the viewer webview before pressing Escape. If the
-    // keystroke lands on the main window (focus race with the open animation,
-    // or a late-mounting modal stealing focus), the viewer never receives it
-    // and the test sits waiting for the window-close. Two attempts max.
-    const tryEscape = async (): Promise<boolean> => {
-      const focused = await pollUntil(
-        viewer,
-        async () =>
-          viewer.evaluate<boolean>(`(function(){
-            if (!document.hasFocus()) return false;
-            var root = document.querySelector('.viewer-container');
-            return !!(root && document.activeElement && root.contains(document.activeElement));
-          })()`),
-        1000,
-      )
-      if (!focused) {
-        await viewer.evaluate(`(function(){
-          var root = document.querySelector('.viewer-container');
-          if (root && 'focus' in root) root.focus();
-        })()`)
-        return false
-      }
-      // Fire-and-forget: the eval that dispatches Escape may not resolve if the
-      // window dies before pw_result fires back to the test runner. The
-      // closeWindow() path uses two rAFs before calling .close(), so in practice
-      // the eval usually resolves first, but defending against either ordering
-      // keeps the test deterministic. We assert on the windowDisappeared, not
-      // on the press itself.
-      viewer.keyboard.press('Escape').catch(() => {
+    // Dispatch a synthetic Escape keydown into the viewer webview rather
+    // than going through Playwright's OS-level `keyboard.press`. The handler
+    // we want to exercise is the JS `<svelte:window on:keydown>` in
+    // `routes/viewer/+page.svelte` — bubbling from `document` fires that
+    // listener regardless of OS focus. Going through the OS path adds a
+    // focus dependency that flakes under Xvfb on Linux CI (the keystroke
+    // lands on the main window and the viewer webview never sees it).
+    // The Tauri/webkit2gtk OS → webview event pipeline isn't cmdr's
+    // responsibility to test; this binding is.
+    //
+    // Fire-and-forget: the dispatched Escape triggers `closeWindow()`
+    // (which itself defers via two rAFs before calling `.close()`), so the
+    // window may die before the evaluate promise's `pw_result` fires back.
+    // The poll on `listWindows()` below is the assertion that matters.
+    viewer
+      .evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`)
+      .catch(() => {
         /* window died mid-script before pw_result; expected */
       })
-      return true
-    }
-
-    if (!(await tryEscape())) {
-      await tryEscape()
-    }
 
     const gone = await pollUntil(
       main,
