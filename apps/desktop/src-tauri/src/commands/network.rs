@@ -743,7 +743,7 @@ pub fn set_network_enabled(enabled: bool, app_handle: tauri::AppHandle) {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     //! Tests for `mount_network_share`.
     //!
@@ -751,6 +751,12 @@ mod tests {
     //! NOT trigger an OS-level `smbfs` mount (which on macOS pops the kernel
     //! credentials dialog). The Docker-backed integration tests assert that
     //! after the command succeeds, `/Volumes/<share>` is not an `smbfs` mount.
+    //!
+    //! macOS-only: the bug we guard against is the macOS NetFS dialog. On
+    //! Linux, `mount_network_share` deliberately keeps the gvfs path so the
+    //! FE and Playwright suite see the familiar `/run/user/<uid>/gvfs/...`
+    //! mount, and the assertions in here (`mount_path == /Volumes/<share>`,
+    //! plus the `smbfs`/`cifs` `statfs` check) don't apply on that platform.
     //!
     //! The integration tests live behind `#[ignore]` so they only run when the
     //! `smb-consumer` Docker stack is up (see
@@ -774,16 +780,10 @@ mod tests {
             .unwrap_or(10481)
     }
 
-    /// True iff `mount_path` corresponds to a real `smbfs` (or `cifs`) OS mount.
+    /// True iff `mount_path` corresponds to a real `smbfs` OS mount.
     /// Lives behind `statfs`, so a non-existent path returns `false` cleanly.
-    #[cfg(target_os = "macos")]
     fn is_os_smb_mount(mount_path: &str) -> bool {
         crate::volumes::get_smb_mount_info(mount_path).is_some()
-    }
-
-    #[cfg(target_os = "linux")]
-    fn is_os_smb_mount(mount_path: &str) -> bool {
-        crate::volumes_linux::get_smb_mount_info(mount_path).is_some()
     }
 
     /// Cleans up the registered direct SmbVolume after a test so later tests
@@ -802,7 +802,6 @@ mod tests {
     /// credentials prompt) doesn't exist on Linux, and `mount_network_share`
     /// on Linux deliberately keeps the gvfs path so the FE and Playwright
     /// suite see the familiar `/run/user/<uid>/gvfs/...` mount.
-    #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_mount_network_share_skips_os_mount_guest() {
@@ -846,7 +845,6 @@ mod tests {
     }
 
     /// Same flow against the auth container with credentials.
-    #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_mount_network_share_skips_os_mount_auth() {
@@ -880,7 +878,6 @@ mod tests {
 
     /// Wrong password against the auth container surfaces a typed `AuthFailed`
     /// error from the smb2 path, NOT a silent fallback to OS mount.
-    #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_mount_network_share_bad_password_is_typed_auth_failure() {
@@ -923,7 +920,6 @@ mod tests {
     /// macOS-only because `mount_network_share` on Linux always goes through
     /// the legacy gvfs path, which has different error-mapping semantics; the
     /// Linux failure mode is covered by the existing `mount_linux` suite.
-    #[cfg(target_os = "macos")]
     #[tokio::test]
     async fn mount_network_share_unreachable_host_returns_typed_error() {
         let prev = is_direct_smb_enabled();
