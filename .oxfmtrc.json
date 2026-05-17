@@ -24,6 +24,7 @@
     "**/playwright-report/",
     "**/test-results/",
     "**/coverage/",
+    "apps/desktop/test/smb-servers/.compose/",
     "apps/website/src/pages/pricing.astro"
   ]
 }
