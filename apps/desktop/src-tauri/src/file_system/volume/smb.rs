@@ -118,13 +118,13 @@ struct LoggedClientGuard<'a> {
 impl<'a> std::ops::Deref for LoggedClientGuard<'a> {
     type Target = Option<SmbClient>;
     fn deref(&self) -> &Self::Target {
-        &*self.inner
+        &self.inner
     }
 }
 
 impl<'a> std::ops::DerefMut for LoggedClientGuard<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.inner
+        &mut self.inner
     }
 }
 
@@ -4198,5 +4198,350 @@ mod tests {
             baseline_fds,
             final_fds
         );
+    }
+
+    // ── SMB streaming-write regression test ────────────────────────────
+    //
+    // Helpers + one `#[ignore]`d integration test that guards against the
+    // streaming-write deadlock fixed in commit `efb15479`. See the docstring
+    // on `smb_integration_concurrent_streaming_writes_no_deadlock` for the
+    // full story.
+
+    /// All test artifacts on the SMB share live under this prefix. The
+    /// cleanup helper refuses to delete anything that doesn't start with it.
+    const TEST_PREFIX_ROOT: &str = "_test/cmdr-regression-";
+
+    /// Captures `client-mutex:` (cmdr) and `recv:` (smb2 receiver loop)
+    /// debug lines into bounded ring buffers so a hung test's panic message
+    /// can include the last ~30 lines from each stream. That's invaluable
+    /// for diagnosing a future regression. Installed via `log::set_logger`
+    /// once per process; subsequent installs are no-ops.
+    struct MutexCaptureLogger {
+        mutex_lines: std::sync::Mutex<std::collections::VecDeque<String>>,
+        recv_lines: std::sync::Mutex<std::collections::VecDeque<String>>,
+    }
+    impl log::Log for MutexCaptureLogger {
+        fn enabled(&self, _md: &log::Metadata) -> bool {
+            true
+        }
+        fn log(&self, record: &log::Record) {
+            let msg = format!("{}", record.args());
+            let target = record.target();
+            // `client-mutex:` lines come from smb.rs via `log::debug!` with
+            // the module-path target (`cmdr_lib::file_system::volume::smb`).
+            // `recv:` lines come from the smb2 receiver loop with an `smb2::*`
+            // target.
+            if msg.starts_with("client-mutex:") {
+                let mut q = self.mutex_lines.lock().unwrap();
+                if q.len() >= 200 {
+                    q.pop_front();
+                }
+                q.push_back(format!("[{}] {}", target, msg));
+            } else if msg.starts_with("recv:") || (target.starts_with("smb2") && msg.contains("recv")) {
+                let mut q = self.recv_lines.lock().unwrap();
+                if q.len() >= 200 {
+                    q.pop_front();
+                }
+                q.push_back(format!("[{}] {}", target, msg));
+            }
+            // The captured ring buffers are the diagnostic. We deliberately
+            // skip mirroring to stderr: `eprintln!` is denied crate-wide,
+            // and re-emitting through `log::*` would recurse into this same
+            // logger (and the mutex above) on every call.
+        }
+        fn flush(&self) {}
+    }
+
+    static MUTEX_CAPTURE_LOGGER: OnceLock<&'static MutexCaptureLogger> = OnceLock::new();
+
+    fn install_mutex_capture_logger() -> &'static MutexCaptureLogger {
+        if let Some(l) = MUTEX_CAPTURE_LOGGER.get() {
+            return l;
+        }
+        let leaked: &'static MutexCaptureLogger = Box::leak(Box::new(MutexCaptureLogger {
+            mutex_lines: std::sync::Mutex::new(std::collections::VecDeque::with_capacity(200)),
+            recv_lines: std::sync::Mutex::new(std::collections::VecDeque::with_capacity(200)),
+        }));
+        // Best-effort: if another logger is already installed, ignore.
+        let _ = log::set_logger(leaked);
+        log::set_max_level(log::LevelFilter::Debug);
+        let _ = MUTEX_CAPTURE_LOGGER.set(leaked);
+        leaked
+    }
+
+    /// Deletes every file under `unique_prefix_smb` and then the directory
+    /// itself. Safety: refuses any path that doesn't start with
+    /// `TEST_PREFIX_ROOT`, both at the top level and per entry, so a logic
+    /// bug in the caller can never reach outside the regression sandbox.
+    /// Called explicitly at the end of each pass (best effort: logs but
+    /// never overrides the test outcome).
+    async fn cleanup_test_prefix(vol: &SmbVolume, mount_path: &Path, unique_prefix_smb: &str) {
+        assert!(
+            unique_prefix_smb.starts_with(TEST_PREFIX_ROOT),
+            "cleanup_test_prefix: refusing to clean a prefix outside {TEST_PREFIX_ROOT:?}: {unique_prefix_smb:?}"
+        );
+        let dir_abs = mount_path.join(unique_prefix_smb.trim_start_matches('/'));
+        let rel_of = |abs: &Path| -> String {
+            abs.to_string_lossy()
+                .strip_prefix(mount_path.to_string_lossy().as_ref())
+                .map(|s| s.trim_start_matches('/').to_string())
+                .unwrap_or_else(|| abs.to_string_lossy().to_string())
+        };
+        match vol.list_directory_impl(&dir_abs).await {
+            Ok(entries) => {
+                for entry in entries {
+                    let abs = dir_abs.join(&entry.name);
+                    let rel = rel_of(&abs);
+                    if !rel.starts_with(TEST_PREFIX_ROOT) {
+                        log::warn!("cleanup_test_prefix: refusing to delete {rel} (outside prefix)");
+                        continue;
+                    }
+                    if let Err(e) = vol.delete(&abs).await {
+                        log::warn!("cleanup_test_prefix: failed to delete {rel}: {e:?}");
+                    }
+                }
+            }
+            Err(e) => log::warn!("cleanup_test_prefix: list_directory_impl failed for {dir_abs:?}: {e:?}"),
+        }
+        let rel_dir = rel_of(&dir_abs);
+        if rel_dir.starts_with(TEST_PREFIX_ROOT)
+            && let Err(e) = vol.delete(&dir_abs).await
+        {
+            log::warn!("cleanup_test_prefix: failed to delete prefix dir {rel_dir}: {e:?}");
+        }
+    }
+
+    /// Connects to a Docker SMB fixture's `public` share at `127.0.0.1:port`
+    /// as guest. `mount_label` becomes the synthetic mount path
+    /// (`/Volumes/<label>`); no real OS mount is needed because the test
+    /// only drives the smb2 path.
+    async fn connect_docker_smb_volume(port: u16, mount_label: &str) -> SmbVolume {
+        let mount_path = format!("/Volumes/{mount_label}");
+        connect_smb_volume("public", &mount_path, "127.0.0.1", "public", None, None, port)
+            .await
+            .unwrap_or_else(|e| panic!("connect to 127.0.0.1:{port} failed: {e:?}"))
+    }
+
+    /// One pass of the concurrent-streaming-write scenario:
+    /// - generate `n_files` source files of `file_size` bytes in a tempdir,
+    /// - pre-upload `n_conflicts` of them to the destination at the same
+    ///   size so `OverwriteSmaller` resolves them as Skip,
+    /// - run `copy_volumes_with_progress` over all `n_files` with a timeout,
+    /// - on timeout, panic with the last 30 mutex/recv lines as a diagnostic
+    ///   dump,
+    /// - clean up the unique prefix directory either way.
+    async fn run_concurrent_write_pass(
+        vol: Arc<SmbVolume>,
+        mount_path: &Path,
+        logger: &'static MutexCaptureLogger,
+        n_files: usize,
+        n_conflicts: usize,
+        file_size: usize,
+        timeout_secs: u64,
+    ) -> Duration {
+        use crate::file_system::write_operations::{
+            CollectorEventSink, VolumeCopyConfig, WriteOperationState, copy_volumes_with_progress,
+        };
+
+        assert!(n_conflicts <= n_files);
+
+        let ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let unique_prefix = format!("{TEST_PREFIX_ROOT}{ts}-n{n_files}");
+
+        let dest_dir_abs = mount_path.join(unique_prefix.trim_start_matches('/'));
+        let _ = vol.create_directory(&mount_path.join("_test")).await;
+        vol.create_directory(&dest_dir_abs)
+            .await
+            .expect("create unique dest dir");
+
+        let local_dir = tempfile::TempDir::new().expect("tempdir");
+        for i in 0..n_files {
+            let name = format!("f_{i:04}.bin");
+            let path = local_dir.path().join(&name);
+            // Distinct content per file (byte = i % 251) + an 8-byte seed
+            // prefix, so identical-size pre-uploads still hash-differ from
+            // their sources should we ever want to verify content.
+            let mut buf = vec![0u8; file_size];
+            buf[..8].copy_from_slice(&(i as u64).to_le_bytes());
+            for b in buf.iter_mut().skip(8) {
+                *b = (i % 251) as u8;
+            }
+            std::fs::write(&path, &buf).expect("write source");
+        }
+
+        log::info!("regression: pre-uploading {n_conflicts} conflicting files to {unique_prefix}");
+        for i in 0..n_conflicts {
+            let name = format!("f_{i:04}.bin");
+            let dest_abs = dest_dir_abs.join(&name);
+            let buf = std::fs::read(local_dir.path().join(&name)).unwrap();
+            let stream: Box<dyn VolumeReadStream> = Box::new(InlineReadStream::new(buf.clone()));
+            let size = buf.len() as u64;
+            let progress = |_a: u64, _b: u64| -> std::ops::ControlFlow<()> { std::ops::ControlFlow::Continue(()) };
+            let bytes = vol
+                .write_from_stream(&dest_abs, size, stream, &progress)
+                .await
+                .unwrap_or_else(|e| panic!("pre-upload {name} failed: {e:?}"));
+            assert_eq!(bytes, size, "pre-upload size mismatch");
+        }
+        log::info!("regression: pre-upload done");
+
+        let src_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+            "regression-src",
+            local_dir.path().to_path_buf(),
+        ));
+        let dst_vol: Arc<dyn Volume> = vol.clone() as Arc<dyn Volume>;
+        let source_rel_paths: Vec<PathBuf> = (0..n_files).map(|i| PathBuf::from(format!("f_{i:04}.bin"))).collect();
+
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
+        let events = Arc::new(CollectorEventSink::new());
+        let config = VolumeCopyConfig {
+            conflict_resolution: crate::file_system::write_operations::ConflictResolution::OverwriteSmaller,
+            ..VolumeCopyConfig::default()
+        };
+
+        let start = std::time::Instant::now();
+        log::info!(
+            "regression: spawning copy n_files={n_files} n_conflicts={n_conflicts} size={file_size} timeout={timeout_secs}s"
+        );
+
+        let res = tokio::time::timeout(
+            Duration::from_secs(timeout_secs),
+            copy_volumes_with_progress(
+                events.clone(),
+                "regression-op",
+                &state,
+                Arc::clone(&src_vol),
+                &source_rel_paths,
+                Arc::clone(&dst_vol),
+                &dest_dir_abs,
+                &config,
+            ),
+        )
+        .await;
+
+        let elapsed = start.elapsed();
+
+        let panic_msg: Option<String> = match res {
+            Ok(Ok(())) => {
+                log::info!("regression: copy completed in {elapsed:?}");
+                None
+            }
+            Ok(Err(e)) => Some(format!("regression: copy failed in {elapsed:?}: {e:?}")),
+            Err(_) => {
+                let tail = |q: &std::sync::Mutex<std::collections::VecDeque<String>>| -> Vec<String> {
+                    let q = q.lock().unwrap();
+                    let n = q.len().min(30);
+                    q.iter().skip(q.len() - n).cloned().collect()
+                };
+                let mutex_dump = tail(&logger.mutex_lines);
+                let recv_dump = tail(&logger.recv_lines);
+                let last_ticket = CLIENT_LOCK_TICKET.load(Ordering::Relaxed);
+                Some(format!(
+                    "regression: HANG after {:?} (timeout={}s) n_files={} n_conflicts={} last_ticket={}\n\
+                     ── last {} client-mutex lines ──\n{}\n── last {} recv lines ──\n{}\n",
+                    elapsed,
+                    timeout_secs,
+                    n_files,
+                    n_conflicts,
+                    last_ticket,
+                    mutex_dump.len(),
+                    mutex_dump.join("\n"),
+                    recv_dump.len(),
+                    recv_dump.join("\n"),
+                ))
+            }
+        };
+
+        cleanup_test_prefix(&vol, mount_path, &unique_prefix).await;
+
+        if let Some(m) = panic_msg {
+            panic!("{m}");
+        }
+        elapsed
+    }
+
+    /// Guards the invariant that concurrent streaming writes through
+    /// `SmbVolume::write_from_stream` complete without deadlocking.
+    ///
+    /// Uses the smb2 `smb-maxreadsize` fixture (max_write = 64 KB) so every
+    /// 1 MB write exceeds the server's max_write and is forced through the
+    /// streaming-fallback (FileWriter) path. That's the path that
+    /// historically nested a per-write lock under the client mutex and could
+    /// starve the receiver task to a halt.
+    ///
+    /// Shape (200 files, 140 OverwriteSmaller conflicts + 60 actual copies,
+    /// concurrency=8) mirrors the production workload that originally
+    /// surfaced the bug, where mixed conflict-skip / write iterations on a
+    /// shared SmbClient stressed the lock-ordering pattern hardest.
+    ///
+    /// Run with:
+    ///   docker compose -f ~/projects-git/vdavid/smb2/tests/docker/internal/docker-compose.yml up -d smb-maxreadsize
+    ///   cargo nextest run -p cmdr smb_integration_concurrent_streaming_writes_no_deadlock --run-ignored all
+    ///
+    /// Originally hung at a QNAP NAS for >5 minutes before the fix. See
+    /// commit `ddc71cfb` (lock-ticket instrumentation) and commit `efb15479`
+    /// (the fix: `write_from_stream` no longer holds the client mutex
+    /// across the streaming write). On post-fix code each pass completes in
+    /// roughly 5–15 s.
+    ///
+    /// Follow-up: promote `smb-maxreadsize` from smb2's `internal` fixtures
+    /// to its consumer-class fixtures (vendored into cmdr's `.compose/`)
+    /// so this test can graduate to CI without manual fixture setup.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    #[ignore = "Requires docker-compose smb-maxreadsize on port 10454; manual run only"]
+    async fn smb_integration_concurrent_streaming_writes_no_deadlock() {
+        use futures_util::FutureExt;
+
+        let logger = install_mutex_capture_logger();
+        let prior_concurrency = crate::file_system::smb_concurrency();
+        crate::file_system::set_smb_concurrency(8);
+
+        let vol = Arc::new(connect_docker_smb_volume(10454, "cmdr-regression-maxreadsize").await);
+        let mount_path = vol.mount_path.clone();
+
+        let result = std::panic::AssertUnwindSafe(run_concurrent_write_pass(
+            Arc::clone(&vol),
+            &mount_path,
+            logger,
+            /* n_files = */ 200,
+            /* n_conflicts = */ 140,
+            /* file_size = */ 1024 * 1024,
+            /* timeout_secs = */ 120,
+        ))
+        .catch_unwind()
+        .await;
+
+        // Always restore concurrency, even on panic, before resuming the unwind.
+        crate::file_system::set_smb_concurrency(prior_concurrency);
+        if let Err(p) = result {
+            std::panic::resume_unwind(p);
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "refusing to clean a prefix outside")]
+    fn cleanup_test_prefix_rejects_unsafe_prefix() {
+        // The cleanup helper is async, but the safety assert fires before
+        // any await point. Poll the future once via a no-op waker so we
+        // hit the assert without needing a runtime.
+        use std::task::Context;
+        let vol = make_test_volume();
+        let mount = PathBuf::from("/Volumes/TestShare");
+        let mut fut = Box::pin(cleanup_test_prefix(&vol, &mount, "etc/passwd"));
+        let waker = futures_util::task::noop_waker();
+        let mut cx = Context::from_waker(&waker);
+        let _ = fut.as_mut().poll(&mut cx); // panics in the assert
+    }
+
+    #[test]
+    fn test_prefix_root_is_safely_scoped() {
+        // Static check: the prefix lives under `_test/` and clearly
+        // identifies cmdr's regression test, so a future reader (or a
+        // misconfigured share) can recognize stale artifacts at a glance.
+        assert!(TEST_PREFIX_ROOT.starts_with("_test/"));
+        assert!(TEST_PREFIX_ROOT.contains("cmdr-regression-"));
     }
 }
