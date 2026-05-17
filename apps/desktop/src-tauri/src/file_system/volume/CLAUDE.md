@@ -169,6 +169,13 @@ The same rule applies to write paths: `write_from_stream` must drive the backend
 - **`MtpVolume::to_mtp_path`**: strips the `mtp://{device}/{storage}/` URL prefix and leading slashes, returning the bare relative path the MTP library expects.
 - **`InMemoryVolume::normalize`**: always resolves to an absolute path anchored at `/`.
 
+## FE-initiated share-open: direct smb2 only
+
+When the user opens a network share from Cmdr's Network view (`NetworkMountView`), the `mount_network_share` Tauri command goes straight to a direct smb2 session and never calls `NetFSMountURLSync` (or `gio mount` on Linux). The synthesized `MountResult.mount_path` is a logical address (`/Volumes/<share>`); no real OS mount lives there. `SmbVolume::supports_local_fs_access() = false`, so nothing in Cmdr ever `std::fs::*`s the path.
+
+**Decision**: FE-initiated share-open uses direct smb2 only (no OS mount).
+**Why**: Calling `NetFSMountURLSync` triggers macOS's kernel `smbfs` credentials dialog (via Keychain), even when Cmdr already has working credentials it just used to list the share. The dialog hijacks focus, blocks the FE flow, and is wasted work because Cmdr's data path uses the direct smb2 session anyway (it's the registered `SmbVolume`). Skipping the OS mount eliminates the dialog and keeps the share-open snappy. The `network.directSmbConnection` setting still gates this: when `false`, the command falls back to the legacy OS-mount-then-upgrade flow for users who want Finder to see the same mount. The watcher (`volumes/watcher.rs::try_upgrade_smb_mount`) and `upgrade_to_smb_volume` command still handle OS-mounted shares from Finder / `Cmd+K`, so external-mount upgrade isn't affected.
+
 ## SMB auto-upgrade lifecycle
 
 SMB mounts are automatically upgraded to `SmbVolume` (direct smb2 connection) in two scenarios:
