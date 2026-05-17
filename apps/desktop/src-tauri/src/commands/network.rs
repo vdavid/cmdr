@@ -326,7 +326,18 @@ pub async fn mount_network_share(
 ) -> Result<MountResult, MountError> {
     let actual_port = port.unwrap_or(445);
 
-    if crate::file_system::is_direct_smb_enabled() {
+    // The OS-mount auth-dialog hijack we're avoiding is macOS-specific
+    // (the kernel `smbfs` credentials prompt). On Linux, mounting goes
+    // through gvfs, which is transparent and doesn't pop a kernel dialog —
+    // and the gvfs path is what existing FE and tests expect on that
+    // platform. Keep the direct-smb2-only fast path macOS-only; let Linux
+    // continue to use the OS-mount-then-upgrade flow.
+    #[cfg(target_os = "macos")]
+    let use_direct = crate::file_system::is_direct_smb_enabled();
+    #[cfg(not(target_os = "macos"))]
+    let use_direct = false;
+
+    if use_direct {
         // Direct-smb2-only path. Skips the OS mount entirely; no macOS
         // kernel smbfs credentials dialog.
         connect_smb_volume_direct(
@@ -339,8 +350,8 @@ pub async fn mount_network_share(
         )
         .await
     } else {
-        // Legacy fallback for users who explicitly opt out of direct
-        // connections. Goes through the OS mount, then layers smb2 on top.
+        // Linux always lands here; macOS lands here only when the user
+        // has explicitly turned `network.directSmbConnection` off.
         let result = mount::mount_share(
             server.clone(),
             share.clone(),
@@ -786,6 +797,12 @@ mod tests {
     /// Direct path against the guest container: connects, registers, and never
     /// creates an `smbfs` entry at `/Volumes/<share>`. This is the regression
     /// guard for the kernel credentials dialog.
+    ///
+    /// macOS-only: the bug we guard against (NetFS popping a kernel `smbfs`
+    /// credentials prompt) doesn't exist on Linux, and `mount_network_share`
+    /// on Linux deliberately keeps the gvfs path so the FE and Playwright
+    /// suite see the familiar `/run/user/<uid>/gvfs/...` mount.
+    #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_mount_network_share_skips_os_mount_guest() {
@@ -829,6 +846,7 @@ mod tests {
     }
 
     /// Same flow against the auth container with credentials.
+    #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_mount_network_share_skips_os_mount_auth() {
@@ -862,6 +880,7 @@ mod tests {
 
     /// Wrong password against the auth container surfaces a typed `AuthFailed`
     /// error from the smb2 path, NOT a silent fallback to OS mount.
+    #[cfg(target_os = "macos")]
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_mount_network_share_bad_password_is_typed_auth_failure() {
@@ -900,6 +919,11 @@ mod tests {
     /// Unreachable host: typed `HostUnreachable`/`Timeout`/`ProtocolError`,
     /// no OS mount attempted, and no panic. Uses an unrouted private IP so
     /// the connection fails fast on most networks.
+    ///
+    /// macOS-only because `mount_network_share` on Linux always goes through
+    /// the legacy gvfs path, which has different error-mapping semantics; the
+    /// Linux failure mode is covered by the existing `mount_linux` suite.
+    #[cfg(target_os = "macos")]
     #[tokio::test]
     async fn mount_network_share_unreachable_host_returns_typed_error() {
         let prev = is_direct_smb_enabled();
