@@ -4378,63 +4378,44 @@ mod tests {
     /// Guards the invariant that concurrent streaming writes through
     /// `SmbVolume::write_from_stream` complete without deadlocking.
     ///
-    /// Uses the smb2 `smb-maxreadsize` fixture (max_write = 64 KB) so every
-    /// 1 MB write exceeds the server's max_write and is forced through the
-    /// streaming-fallback (FileWriter) path. That's the path that
-    /// historically nested a per-write lock under the client mutex and could
-    /// starve the receiver task to a halt.
+    /// Uses the consumer-class `smb-consumer-maxreadsize` fixture
+    /// (`smb2 max read = smb2 max write = 65536`) so every 1 MB write exceeds
+    /// the server's max_write and is forced through the streaming-fallback
+    /// (FileWriter) path. That's the path that historically nested a
+    /// per-write lock under the client mutex and could starve the receiver
+    /// task to a halt.
     ///
     /// Shape (200 files, 140 OverwriteSmaller conflicts + 60 actual copies,
     /// concurrency=8) mirrors the production workload that originally
     /// surfaced the bug, where mixed conflict-skip / write iterations on a
     /// shared SmbClient stressed the lock-ordering pattern hardest.
     ///
-    /// Run with:
-    ///   docker compose -f ~/projects-git/vdavid/smb2/tests/docker/internal/docker-compose.yml up -d smb-maxreadsize
-    ///   cargo nextest run -p cmdr smb_integration_concurrent_streaming_writes_no_deadlock --run-ignored all
+    /// Run with `./apps/desktop/test/smb-servers/start.sh core` (CI does
+    /// this) or `start.sh all`, then either `./scripts/check.sh --rust` or
+    /// `cargo nextest run -p cmdr smb_integration_concurrent_streaming_writes_no_deadlock --run-ignored all`.
     ///
-    /// Originally hung at a QNAP NAS for >5 minutes before the fix. See
-    /// commit `ddc71cfb` (lock-ticket instrumentation) and commit `efb15479`
-    /// (the fix: `write_from_stream` no longer holds the client mutex
-    /// across the streaming write). On post-fix code each pass completes in
+    /// Originally hung at a QNAP NAS for >5 minutes before the fix in smb2
+    /// 0.9.0 (`FileWriter` owns its `Connection`) and the matching
+    /// `write_from_stream` rewrite. On post-fix code each pass completes in
     /// roughly 5–15 s.
-    ///
-    /// Follow-up: promote `smb-maxreadsize` from smb2's `internal` fixtures
-    /// to its consumer-class fixtures (vendored into cmdr's `.compose/`)
-    /// so this test can graduate to CI without manual fixture setup.
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-    #[ignore = "Requires docker-compose smb-maxreadsize on port 10454; manual run only"]
+    #[ignore = "Requires docker-compose smb-consumer-maxreadsize on port 10494 (started by start.sh core)"]
     async fn smb_integration_concurrent_streaming_writes_no_deadlock() {
         use futures_util::FutureExt;
 
-        // Graceful skip: cmdr's vendored `.compose/` set doesn't ship
-        // `smb-maxreadsize` yet (it lives in smb2's `internal/` fixtures, not
-        // its consumer-class set). When the fixture isn't running, exit clean
-        // rather than fail CI. The follow-up of promoting the fixture to the
-        // consumer class is tracked in the doc comment above. A quick TCP
-        // probe with a 1 s deadline is enough to tell us whether the server
-        // is up; we don't need to negotiate SMB.
-        let probe = tokio::time::timeout(
-            Duration::from_secs(1),
-            tokio::net::TcpStream::connect("127.0.0.1:10454"),
-        )
-        .await;
-        if !matches!(probe, Ok(Ok(_))) {
-            log::warn!(
-                "smb_integration_concurrent_streaming_writes_no_deadlock: \
-                 smb-maxreadsize fixture not reachable at 127.0.0.1:10454, \
-                 skipping. Start it with \
-                 `docker compose -f ~/projects-git/vdavid/smb2/tests/docker/internal/docker-compose.yml up -d smb-maxreadsize` \
-                 to actually run this regression check."
-            );
-            return;
-        }
-
+        // 10494 matches smb2's smb-consumer-maxreadsize container; override
+        // with `SMB_CONSUMER_MAXREADSIZE_PORT` to match
+        // `smb2::testing::maxreadsize_port()` (requires the `smb-e2e`
+        // feature; bare integration tests hardcode the default).
+        let port: u16 = std::env::var("SMB_CONSUMER_MAXREADSIZE_PORT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10494);
         let logger = install_mutex_capture_logger();
         let prior_concurrency = crate::file_system::smb_concurrency();
         crate::file_system::set_smb_concurrency(8);
 
-        let vol = Arc::new(connect_docker_smb_volume(10454, "cmdr-regression-maxreadsize").await);
+        let vol = Arc::new(connect_docker_smb_volume(port, "cmdr-regression-maxreadsize").await);
         let mount_path = vol.mount_path.clone();
 
         let result = std::panic::AssertUnwindSafe(run_concurrent_write_pass(
