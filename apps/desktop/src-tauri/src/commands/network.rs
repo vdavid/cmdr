@@ -7,8 +7,8 @@ use crate::network::{
 };
 
 use crate::network::smb_upgrade::{
-    UpgradeError, UpgradeResult, friendly_server_name, get_keychain_password, register_smb_volume,
-    resolve_ip_to_hostname_with_wait, try_smb_upgrade,
+    UpgradeError, UpgradeResult, connect_smb_volume_direct, friendly_server_name, get_keychain_password,
+    register_smb_volume, resolve_ip_to_hostname_with_wait, try_smb_upgrade,
 };
 
 /// Gets all currently discovered network hosts.
@@ -280,17 +280,23 @@ pub async fn list_shares_with_credentials(
 
 use crate::network::mount::{self, MountError, MountResult};
 
-/// Mounts an SMB share to the local filesystem.
+/// Mounts a network SMB share for use inside Cmdr.
 ///
-/// Attempts to mount the specified share on the server. If credentials are
-/// provided, they are used for authentication. If the share is already mounted,
-/// returns the existing mount path without re-mounting.
+/// When `network.directSmbConnection` is `true` (the default), opens a direct
+/// smb2 session, registers it as an `SmbVolume` in the `VolumeManager`, and
+/// returns a logical `MountResult` with `mount_path = /Volumes/<share>`. No OS
+/// mount happens, so macOS never shows the kernel `smbfs` credentials dialog.
+/// The synthesized path is purely a logical address: `SmbVolume::supports_local_fs_access()`
+/// returns `false`, so nothing in Cmdr calls `std::fs::*` against it.
 ///
-/// After a successful OS mount, also establishes a direct smb2 connection and
-/// registers the share as an `SmbVolume` in the `VolumeManager`. This means
-/// Cmdr's own file operations go through smb2 (fast), while Finder/Terminal
-/// use the OS mount (compatible). If smb2 connection fails, the volume falls
-/// through to a regular `LocalPosixVolume` (registered by the watcher).
+/// When the setting is `false`, falls back to the legacy behavior: OS mount via
+/// `NetFSMountURLSync`/`gio mount`, then `register_smb_volume` to layer a direct
+/// smb2 session on top. Use this opt-out only when an external app (Finder,
+/// Terminal) genuinely needs the OS mount.
+///
+/// The watcher (`volumes::watcher::try_upgrade_smb_mount`) and the manual
+/// `upgrade_to_smb_volume` command still handle OS-mounted shares from Finder
+/// or `Cmd+K`, so this change doesn't break those paths.
 ///
 /// # Arguments
 /// * `server` - Server hostname or IP address
@@ -302,7 +308,8 @@ use crate::network::mount::{self, MountError, MountResult};
 ///
 /// # Returns
 /// * `Ok(MountResult)` - Mount successful, with path to mount point
-/// * `Err(MountError)` - Mount failed with specific error type
+/// * `Err(MountError)` - Mount failed with a typed error (e.g. `AuthFailed`,
+///   `HostUnreachable`). The frontend re-prompts for credentials inline.
 #[tauri::command]
 #[specta::specta]
 #[allow(
@@ -318,30 +325,44 @@ pub async fn mount_network_share(
     timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
     let actual_port = port.unwrap_or(445);
-    let result = mount::mount_share(
-        server.clone(),
-        share.clone(),
-        username.clone(),
-        password.clone(),
-        actual_port,
-        timeout_ms,
-    )
-    .await?;
 
-    // Try to establish a direct smb2 connection and register as SmbVolume.
-    // If this fails, the FSEvents watcher will register a LocalPosixVolume
-    // as fallback (slower but still functional).
-    register_smb_volume(
-        &server,
-        &share,
-        &result.mount_path,
-        username.as_deref(),
-        password.as_deref(),
-        actual_port,
-    )
-    .await;
+    if crate::file_system::is_direct_smb_enabled() {
+        // Direct-smb2-only path. Skips the OS mount entirely; no macOS
+        // kernel smbfs credentials dialog.
+        connect_smb_volume_direct(
+            &server,
+            &share,
+            username.as_deref(),
+            password.as_deref(),
+            actual_port,
+            timeout_ms,
+        )
+        .await
+    } else {
+        // Legacy fallback for users who explicitly opt out of direct
+        // connections. Goes through the OS mount, then layers smb2 on top.
+        let result = mount::mount_share(
+            server.clone(),
+            share.clone(),
+            username.clone(),
+            password.clone(),
+            actual_port,
+            timeout_ms,
+        )
+        .await?;
 
-    Ok(result)
+        register_smb_volume(
+            &server,
+            &share,
+            &result.mount_path,
+            username.as_deref(),
+            password.as_deref(),
+            actual_port,
+        )
+        .await;
+
+        Ok(result)
+    }
 }
 
 /// Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
@@ -708,5 +729,214 @@ pub fn set_network_enabled(enabled: bool, app_handle: tauri::AppHandle) {
     if !enabled {
         crate::network::mdns_discovery::stop_discovery();
         crate::network::clear_discovered_hosts(&app_handle);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Tests for `mount_network_share`.
+    //!
+    //! The regression guard here is that opening an SMB share from Cmdr does
+    //! NOT trigger an OS-level `smbfs` mount (which on macOS pops the kernel
+    //! credentials dialog). The Docker-backed integration tests assert that
+    //! after the command succeeds, `/Volumes/<share>` is not an `smbfs` mount.
+    //!
+    //! The integration tests live behind `#[ignore]` so they only run when the
+    //! `smb-consumer` Docker stack is up (see
+    //! `apps/desktop/test/smb-servers/start.sh`).
+    use super::*;
+    use crate::file_system::{get_volume_manager, is_direct_smb_enabled, set_direct_smb_enabled, volume::path_to_id};
+
+    /// Default guest-share port (matches `smb-consumer-guest`).
+    fn guest_port() -> u16 {
+        std::env::var("SMB_CONSUMER_GUEST_PORT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10480)
+    }
+
+    /// Default auth-share port (matches `smb-consumer-auth`).
+    fn auth_port() -> u16 {
+        std::env::var("SMB_CONSUMER_AUTH_PORT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10481)
+    }
+
+    /// True iff `mount_path` corresponds to a real `smbfs` (or `cifs`) OS mount.
+    /// Lives behind `statfs`, so a non-existent path returns `false` cleanly.
+    #[cfg(target_os = "macos")]
+    fn is_os_smb_mount(mount_path: &str) -> bool {
+        crate::volumes::get_smb_mount_info(mount_path).is_some()
+    }
+
+    #[cfg(target_os = "linux")]
+    fn is_os_smb_mount(mount_path: &str) -> bool {
+        crate::volumes_linux::get_smb_mount_info(mount_path).is_some()
+    }
+
+    /// Cleans up the registered direct SmbVolume after a test so later tests
+    /// (and the watcher) don't see a stale registration. Idempotent.
+    fn cleanup_registered(share: &str) {
+        let mount_path = format!("/Volumes/{}", share);
+        let volume_id = path_to_id(&mount_path);
+        get_volume_manager().unregister(&volume_id);
+    }
+
+    /// Direct path against the guest container: connects, registers, and never
+    /// creates an `smbfs` entry at `/Volumes/<share>`. This is the regression
+    /// guard for the kernel credentials dialog.
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_mount_network_share_skips_os_mount_guest() {
+        let prev = is_direct_smb_enabled();
+        set_direct_smb_enabled(true);
+
+        let share = "public";
+        cleanup_registered(share);
+
+        let result = mount_network_share(
+            "127.0.0.1".to_string(),
+            share.to_string(),
+            None,
+            None,
+            Some(guest_port()),
+            Some(15_000),
+        )
+        .await
+        .expect("direct smb2 mount should succeed against the guest container");
+
+        // The synthesized path is `/Volumes/<share>` (a logical address).
+        assert_eq!(result.mount_path, format!("/Volumes/{}", share));
+
+        // Regression guard: no real OS-level smbfs mount was created.
+        // The FE-initiated share-open must never produce a kernel mount.
+        assert!(
+            !is_os_smb_mount(&result.mount_path),
+            "expected no smbfs entry at {}, but statfs reports one",
+            result.mount_path
+        );
+
+        // SmbVolume is registered, ready for FE to navigate into.
+        let volume_id = path_to_id(&result.mount_path);
+        let volume = get_volume_manager()
+            .get(&volume_id)
+            .expect("SmbVolume should be registered after mount_network_share");
+        assert!(volume.smb_connection_state().is_some());
+
+        cleanup_registered(share);
+        set_direct_smb_enabled(prev);
+    }
+
+    /// Same flow against the auth container with credentials.
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_mount_network_share_skips_os_mount_auth() {
+        let prev = is_direct_smb_enabled();
+        set_direct_smb_enabled(true);
+
+        let share = "private";
+        cleanup_registered(share);
+
+        let result = mount_network_share(
+            "127.0.0.1".to_string(),
+            share.to_string(),
+            Some("testuser".to_string()),
+            Some("testpass".to_string()),
+            Some(auth_port()),
+            Some(15_000),
+        )
+        .await
+        .expect("direct smb2 mount should succeed against the auth container");
+
+        assert_eq!(result.mount_path, format!("/Volumes/{}", share));
+        assert!(
+            !is_os_smb_mount(&result.mount_path),
+            "expected no smbfs entry at {}, but statfs reports one",
+            result.mount_path
+        );
+
+        cleanup_registered(share);
+        set_direct_smb_enabled(prev);
+    }
+
+    /// Wrong password against the auth container surfaces a typed `AuthFailed`
+    /// error from the smb2 path, NOT a silent fallback to OS mount.
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_mount_network_share_bad_password_is_typed_auth_failure() {
+        let prev = is_direct_smb_enabled();
+        set_direct_smb_enabled(true);
+
+        let share = "private";
+        cleanup_registered(share);
+
+        let result = mount_network_share(
+            "127.0.0.1".to_string(),
+            share.to_string(),
+            Some("testuser".to_string()),
+            Some("wrong-password".to_string()),
+            Some(auth_port()),
+            Some(15_000),
+        )
+        .await;
+
+        match result {
+            Err(MountError::AuthFailed { .. }) | Err(MountError::AuthRequired { .. }) => {}
+            Err(other) => panic!("expected AuthFailed/AuthRequired, got {:?}", other),
+            Ok(_) => panic!("expected an auth error with the wrong password"),
+        }
+
+        // No OS mount sneaks in on the error path either.
+        assert!(
+            !is_os_smb_mount(&format!("/Volumes/{}", share)),
+            "expected no smbfs entry after a failed auth attempt"
+        );
+
+        cleanup_registered(share);
+        set_direct_smb_enabled(prev);
+    }
+
+    /// Unreachable host: typed `HostUnreachable`/`Timeout`/`ProtocolError`,
+    /// no OS mount attempted, and no panic. Uses an unrouted private IP so
+    /// the connection fails fast on most networks.
+    #[tokio::test]
+    async fn mount_network_share_unreachable_host_returns_typed_error() {
+        let prev = is_direct_smb_enabled();
+        set_direct_smb_enabled(true);
+
+        let share = "no-such-share";
+        cleanup_registered(share);
+
+        // Aggressive timeout to keep the test snappy; on a reachable network
+        // the unrouted IP still triggers connection failure within seconds.
+        let result = mount_network_share(
+            "192.0.2.1".to_string(), // RFC 5737 TEST-NET-1
+            share.to_string(),
+            None,
+            None,
+            Some(445),
+            Some(2_000),
+        )
+        .await;
+
+        // We don't care which specific variant fires; the contract is
+        // "typed MountError, not a panic, not a hang past our timeout".
+        assert!(
+            matches!(
+                result,
+                Err(MountError::HostUnreachable { .. })
+                    | Err(MountError::Timeout { .. })
+                    | Err(MountError::ProtocolError { .. })
+            ),
+            "expected a typed network error, got {:?}",
+            result
+        );
+
+        // Never registered a volume on the failure path.
+        let volume_id = path_to_id(&format!("/Volumes/{}", share));
+        assert!(get_volume_manager().get(&volume_id).is_none());
+
+        set_direct_smb_enabled(prev);
     }
 }

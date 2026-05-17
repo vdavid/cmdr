@@ -4,8 +4,13 @@
 //! 1. **Startup** (`file_system::upgrade_existing_smb_mounts`): scans existing mounts
 //! 2. **Mount-time** (`volumes::watcher::try_upgrade_smb_mount`): FSEvents detects new mount
 //! 3. **Manual** (`commands::network::upgrade_to_smb_volume`): user clicks "Connect directly"
+//!
+//! Plus the FE-initiated share-open path (`commands::network::mount_network_share`)
+//! uses `connect_smb_volume_direct` to attach an `SmbVolume` without ever touching
+//! the OS mount layer, so macOS doesn't pop a kernel `smbfs` credentials dialog.
 
 use crate::network::get_discovered_hosts;
+use crate::network::mount::{MountError, MountResult};
 
 /// Result of an SMB volume upgrade attempt.
 #[derive(serde::Serialize, specta::Type)]
@@ -78,6 +83,109 @@ pub(crate) async fn register_smb_volume(
                 e
             );
         }
+    }
+}
+
+/// Default timeout for the FE-initiated direct-smb2 share-open flow. Mirrors
+/// `network::mount::DEFAULT_MOUNT_TIMEOUT_MS` so the user sees the same wait
+/// budget whether direct-smb2 is enabled or the legacy OS-mount path runs.
+const DEFAULT_DIRECT_MOUNT_TIMEOUT_MS: u64 = 20_000;
+
+/// Establishes a direct smb2 session and registers it as an `SmbVolume` without
+/// ever touching the OS mount layer. Used by the FE-initiated share-open flow
+/// (`commands::network::mount_network_share`).
+///
+/// The returned `MountResult.mount_path` is the logical address
+/// `/Volumes/<share>` — no real OS mount lives there. `SmbVolume` reports
+/// `supports_local_fs_access() = false`, so no code path inside Cmdr ever
+/// calls `std::fs::*` against it.
+///
+/// Errors map onto `MountError` variants so the FE can re-prompt for
+/// credentials inline (`AuthFailed`) or surface a reachability problem
+/// (`HostUnreachable`) without seeing the old "bug detected" path.
+pub(crate) async fn connect_smb_volume_direct(
+    server: &str,
+    share: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+    port: u16,
+    timeout_ms: Option<u64>,
+) -> Result<MountResult, MountError> {
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::path_to_id;
+    use crate::file_system::volume::smb::connect_smb_volume;
+    use std::sync::Arc;
+
+    let timeout = std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_DIRECT_MOUNT_TIMEOUT_MS));
+    let resolved_server = resolve_server_address(server);
+    let display = friendly_server_name(server);
+
+    // Synthesize the logical mount path. `SmbVolume::supports_local_fs_access()`
+    // returns `false`, so nothing in Cmdr ever stats this path; it's an address
+    // only. Using `/Volumes/<share>` matches the legacy NetFS naming and keeps
+    // the FE breadcrumb / volume-picker copy unchanged.
+    let mount_path = format!("/Volumes/{}", share);
+
+    let connect_fut = connect_smb_volume(share, &mount_path, &resolved_server, share, username, password, port);
+
+    let connect_result = match tokio::time::timeout(timeout, connect_fut).await {
+        Ok(r) => r,
+        Err(_) => {
+            return Err(MountError::Timeout {
+                message: format!(
+                    "Connection to \"{}\" timed out after {} seconds",
+                    display,
+                    timeout.as_secs()
+                ),
+            });
+        }
+    };
+
+    match connect_result {
+        Ok(volume) => {
+            let volume_id = path_to_id(&mount_path);
+            get_volume_manager().register(&volume_id, Arc::new(volume));
+            log::info!(
+                "Registered direct SmbVolume for {}/{} (id={})",
+                resolved_server,
+                share,
+                volume_id
+            );
+            Ok(MountResult {
+                mount_path,
+                already_mounted: false,
+            })
+        }
+        Err(e) => Err(mount_error_from_smb_error(&e, &display, share)),
+    }
+}
+
+/// Maps an `smb2::Error` to a `MountError` variant by kind, never by message
+/// substring. Mirrors `smb_util::classify_error` but lands on `MountError`
+/// (the FE contract for this command) instead of `ShareListError`.
+fn mount_error_from_smb_error(err: &smb2::Error, server_display: &str, share: &str) -> MountError {
+    use smb2::ErrorKind;
+
+    let raw = err.to_string();
+    match err.kind() {
+        ErrorKind::AuthRequired | ErrorKind::SigningRequired => MountError::AuthRequired {
+            message: format!("\"{}\" needs a username and password", server_display),
+        },
+        ErrorKind::AccessDenied => MountError::AuthFailed {
+            message: "Invalid username or password".to_string(),
+        },
+        ErrorKind::NotFound => MountError::ShareNotFound {
+            message: format!("Share \"{}\" not found on \"{}\"", share, server_display),
+        },
+        ErrorKind::TimedOut => MountError::Timeout {
+            message: format!("Connection to \"{}\" timed out", server_display),
+        },
+        ErrorKind::ConnectionLost => MountError::HostUnreachable {
+            message: format!("Can't connect to \"{}\"", server_display),
+        },
+        _ => MountError::ProtocolError {
+            message: format!("Couldn't connect to \"{}\": {}", server_display, raw),
+        },
     }
 }
 
