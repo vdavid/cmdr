@@ -40,10 +40,11 @@ case "$mode" in
     core)
         echo "Starting core SMB servers (auth scenarios + edge cases)..."
         services=(smb-consumer-guest smb-consumer-auth smb-consumer-both \
-                  smb-consumer-readonly smb-consumer-flaky smb-consumer-slow)
+                  smb-consumer-readonly smb-consumer-flaky smb-consumer-slow \
+                  smb-consumer-maxreadsize)
         ;;
     all)
-        echo "Starting all SMB servers (14 containers)..."
+        echo "Starting all SMB servers (15 containers)..."
         # Empty services list means "all defined in compose" for both `up` and
         # the post-up probe loop. We resolve the actual set via `compose ps`.
         ;;
