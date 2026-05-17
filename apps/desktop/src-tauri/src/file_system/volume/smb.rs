@@ -94,50 +94,7 @@ impl ConnectionState {
     }
 }
 
-// ── Client-mutex instrumentation ────────────────────────────────────
-//
-// Pure observability around the `client` mutex on `SmbVolume`. Helps
-// diagnose deadlocks where the lock appears to be held indefinitely by
-// an unknown task. Every acquire allocates a process-global ticket and
-// emits three debug logs: `waiting`, `acquired`, and `released`. Grep
-// one log file for `client-mutex:` to reconstruct who holds the lock,
-// who's queued behind them, and how long each hold lasts.
-
 static CLIENT_LOCK_TICKET: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-/// RAII wrapper around the client `MutexGuard` that logs on Drop so the
-/// release event is captured even if the caller returns early. Transparent
-/// to callers via `Deref` / `DerefMut` over `Option<SmbClient>`.
-struct LoggedClientGuard<'a> {
-    inner: tokio::sync::MutexGuard<'a, Option<SmbClient>>,
-    ticket: u64,
-    caller: &'static str,
-    acquired_at: std::time::Instant,
-}
-
-impl<'a> std::ops::Deref for LoggedClientGuard<'a> {
-    type Target = Option<SmbClient>;
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl<'a> std::ops::DerefMut for LoggedClientGuard<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
-
-impl<'a> Drop for LoggedClientGuard<'a> {
-    fn drop(&mut self) {
-        log::debug!(
-            "client-mutex: released ticket={} caller={} held_for={:?}",
-            self.ticket,
-            self.caller,
-            self.acquired_at.elapsed()
-        );
-    }
-}
 
 // ── Type mapping helpers ────────────────────────────────────────────
 
@@ -506,53 +463,6 @@ impl SmbVolume {
                 "SMB connection is disconnected".to_string(),
             )),
         }
-    }
-
-    /// Acquires the client mutex and returns a guard over the `Option<SmbClient>`.
-    /// Checks connection state first, then verifies the client is present.
-    ///
-    /// **No longer called from any hot path.** Every read and write goes
-    /// through `clone_session` and drives its op on an owned
-    /// `Connection` clone (cheap `Arc::clone`) — including the streaming
-    /// write path since smb2 0.9's owned `FileWriter`. This method is
-    /// kept for now in case future reconnect / diagnostic paths need a
-    /// guarded `&mut SmbClient` (the `SmbClient` itself is `!Clone`).
-    /// Candidate for removal once we're confident no such caller is
-    /// coming back; see also `LoggedClientGuard`.
-    #[allow(dead_code)]
-    async fn acquire_client(&self) -> Result<LoggedClientGuard<'_>, VolumeError> {
-        self.check_connection()?;
-        let ticket = CLIENT_LOCK_TICKET.fetch_add(1, Ordering::Relaxed);
-        let start = std::time::Instant::now();
-        log::debug!(
-            "client-mutex: waiting ticket={} caller=acquire_client share={}",
-            ticket,
-            self.share_name
-        );
-        let guard = self.client.lock().await;
-        log::debug!(
-            "client-mutex: acquired ticket={} caller=acquire_client share={} waited={:?}",
-            ticket,
-            self.share_name,
-            start.elapsed()
-        );
-        if guard.is_none() {
-            // Drop the unwrapped guard explicitly so the released-log
-            // doesn't fire for a "no-op" acquire that immediately bails.
-            drop(guard);
-            log::debug!(
-                "client-mutex: released ticket={} caller=acquire_client held_for={:?} (no-session-bail)",
-                ticket,
-                start.elapsed()
-            );
-            return Err(VolumeError::DeviceDisconnected("SMB session not available".to_string()));
-        }
-        Ok(LoggedClientGuard {
-            inner: guard,
-            ticket,
-            caller: "acquire_client",
-            acquired_at: start,
-        })
     }
 
     /// Reads out a clone of `Arc<Tree>`. Cheap (`Arc::clone`).
@@ -1821,10 +1731,12 @@ impl Volume for SmbVolume {
         // receiver task multiplexes responses by `MessageId`.
         //
         // This collapses the historical two-phase pattern (brief
-        // `clone_session` for the fast-path → drop → long `acquire_client`
-        // for the streaming fallback) into a single-phase clone. The old
-        // shape deadlocked under sustained concurrent pressure on QNAP
-        // (Phase C `smb_integration_phase_c_deadlock_repro_qnap`).
+        // `clone_session` for the fast-path → drop → long
+        // session-mutex hold for the streaming fallback) into a single
+        // clone. The old shape deadlocked under sustained concurrent
+        // pressure; the regression test
+        // `smb_integration_concurrent_streaming_writes_no_deadlock`
+        // pins this shape.
         Box::pin(async move {
             let smb_path = self.to_smb_path(dest);
 
