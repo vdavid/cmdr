@@ -17,7 +17,9 @@ const setSetting = vi.fn((_id: string, v: string) => {
 
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn(() => currentValue),
-  setSetting: (id: string, v: string) => { setSetting(id, v); },
+  setSetting: (id: string, v: string) => {
+    setSetting(id, v)
+  },
   resetSetting: vi.fn(),
   isModified: vi.fn(() => false),
   onSpecificSettingChange: vi.fn(() => () => {}),
