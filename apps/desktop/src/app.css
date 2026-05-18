@@ -100,11 +100,12 @@
   /* === Volume tint palette (12 hues + none) ===
      The 100% saturated swatches shown in the Settings color picker for
      `appearance.tint{Local,Smb,Mtp}`. At pane render time, the chosen tint
-     is mixed against `--color-bg-primary` at 5% (10% under
-     `prefers-contrast: more`) via the `--pane-tint` custom property
-     applied in `FilePane.svelte`. Tuned at full saturation for clear
-     identity in the picker; the `color-mix(in oklch, …)` does the
-     heavy lifting on perceptual uniformity once thinned out. */
+     is mixed against `--color-bg-primary` at `--pane-tint-fg-pct` (10%
+     light / 15% dark, raised to 15% / 25% under `prefers-contrast: more`)
+     and applied to `.file-pane` from `FilePane.svelte`. Tuned at full
+     saturation for clear identity in the picker; the
+     `color-mix(in oklch, …)` does the heavy lifting on perceptual
+     uniformity once thinned out. */
   --color-tint-red: #ef4444;
   --color-tint-orange: #f97316;
   --color-tint-amber: #f59e0b;
@@ -119,9 +120,9 @@
   --color-tint-brown: #92400e;
 
   /* Tint mix intensity. The pane bg is `--color-bg-primary` mixed with the
-     chosen tint at these percentages. `prefers-contrast: more` (below)
-     raises the tint share to 15% for better visual separation under high
-     contrast. */
+     chosen tint at these percentages. Light baseline is 10%; the dark-mode
+     block lifts it to 15% (dark surfaces have less luminance headroom);
+     `prefers-contrast: more` adds another step on top (15% / 25%). */
   --pane-tint-bg-pct: 90%;
   --pane-tint-fg-pct: 10%;
 
