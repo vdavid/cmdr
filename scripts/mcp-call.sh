@@ -16,7 +16,7 @@ set -euo pipefail
 #   ./scripts/mcp-call.sh --list-tools
 #   ./scripts/mcp-call.sh --read-resource 'cmdr://state'
 
-PORT="${CMDR_MCP_PORT:-9224}"
+PORT="${CMDR_MCP_PORT:-19225}"
 HOST="127.0.0.1"
 BASE_URL="http://${HOST}:${PORT}/mcp"
 TIMEOUT=30
@@ -60,7 +60,7 @@ case "${1:-}" in
         echo "  ./scripts/mcp-call.sh --read-resource <uri>"
         echo "  ./scripts/mcp-call.sh --raw <json-rpc-body>"
         echo ""
-        echo "Environment: CMDR_MCP_PORT (default: 9224)"
+        echo "Environment: CMDR_MCP_PORT (default: 19225 for dev; use 19224 for prod)"
         echo ""
         echo "Examples:"
         echo "  ./scripts/mcp-call.sh search '{\"pattern\":\"*.pdf\",\"limit\":5}'"

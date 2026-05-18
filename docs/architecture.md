@@ -154,7 +154,7 @@ Rules that cut across many modules. All existing commands follow these; apply th
 
 - `pnpm dev` at repo root for hot-reloading Tauri app
 - License mock via `CMDR_MOCK_LICENSE=commercial`
-- MCP server available at `localhost:9224` for agent testing
+- MCP server available at `localhost:19224` (prod) / `localhost:19225` (dev) for agent testing
 - `withGlobalTauri: true` in dev mode (security risk if loading remote content)
 
 ### Checker script

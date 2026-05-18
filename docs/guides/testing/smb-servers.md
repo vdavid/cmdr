@@ -138,7 +138,7 @@ Docker SMB containers don't advertise via mDNS. With the `smb-e2e` feature, virt
 Without it, use the `connect_to_server` MCP tool:
 
 ```bash
-curl -s http://localhost:9224/mcp -d '{
+curl -s http://localhost:19225/mcp -d '{  # or use 19224 for prod
   "jsonrpc": "2.0", "id": 1, "method": "tools/call",
   "params": { "name": "connect_to_server", "arguments": { "address": "localhost:10480" } }
 }'
