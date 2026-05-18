@@ -174,8 +174,9 @@ Three cadences. Pick the one that matches where you are in the work, not the one
 
 Two MCP servers are available when the app is running via `pnpm dev`:
 
-- **cmdr** (port 19224 prod / 19225 dev): high-level app control: navigation, file operations, search, dialogs, state inspection. This is
-  the primary way to test and interact with the running app. Architecture docs: `src-tauri/src/mcp/CLAUDE.md`.
+- **cmdr** (port 19224 prod / 19225 dev): high-level app control: navigation, file operations, search, dialogs, state
+  inspection. This is the primary way to test and interact with the running app. Architecture docs:
+  `src-tauri/src/mcp/CLAUDE.md`.
 - **tauri** (port 9223): low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
   verification and UI automation.
 

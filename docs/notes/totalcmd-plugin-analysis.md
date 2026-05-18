@@ -574,9 +574,10 @@ The big ones I'd want answered first; these shape the API more than format suppo
 1. **Process isolation & crash containment.** TC plugins are in-process DLLs; one bad plugin tanks the app. What's
    Cmdr's stance? WASM (sandboxed, cross-platform, slower)? Subprocess + JSON-RPC (Tauri-native, easy)? Native dylib
    (fast, dangerous)? Pick before you design types, as it dictates the ABI.
-2. **MCP overlap.** You already expose Cmdr to agents via MCP (port 19224 prod / 19225 dev). MCP is essentially "external tool as a stdio
-   JSON-RPC plugin." Should Cmdr's plugin API just _be_ MCP-shaped, so the same plugin serves humans and AI agents? This
-   could collapse two systems into one. Worth a hard look before committing to a bespoke contract.
+2. **MCP overlap.** You already expose Cmdr to agents via MCP (port 19224 prod / 19225 dev). MCP is essentially
+   "external tool as a stdio JSON-RPC plugin." Should Cmdr's plugin API just _be_ MCP-shaped, so the same plugin serves
+   humans and AI agents? This could collapse two systems into one. Worth a hard look before committing to a bespoke
+   contract.
 3. **Trust/permissions model.** TC has none. Cmdr is going to ship to non-developers. Per-plugin capability declarations
    (filesystem scope, network scope, exec scope), Tauri-style consent, signed manifests, and a registry: these need to
    be in v1 of the API, not bolted on. Look at VS Code, Raycast, Obsidian extension permissions.
@@ -670,8 +671,8 @@ So the answer is: **yes, MCP-shape for the contract; no, not stdio for everythin
 transport. You get "humans and AI agents both call plugins through the same surface" without paying stdio overhead for
 things that need to be fast.
 
-(Side note: this also means your existing MCP server on port 19224 prod / 19225 dev and your future plugin host can share a lot of code;
-the plugin host is "MCP, but inbound, with sandboxing.")
+(Side note: this also means your existing MCP server on port 19224 prod / 19225 dev and your future plugin host can
+share a lot of code; the plugin host is "MCP, but inbound, with sandboxing.")
 
 ### 3. Permissions: what good looks like
 
