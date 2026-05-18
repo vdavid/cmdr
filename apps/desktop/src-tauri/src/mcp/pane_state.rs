@@ -190,6 +190,10 @@ pub fn update_focused_pane(app: AppHandle, pane: String) {
 }
 
 /// Tauri command to update tab list for a pane from frontend (for MCP state reporting).
+///
+/// Bumps the generation counter so the MCP `tab` action tool's ack signal (which uses
+/// `GenerationAdvanced`) fires when the FE confirms a tab change. Without the bump, the
+/// tab tool would time out on every call: tab pushes bypass `set_left`/`set_right`.
 #[tauri::command]
 #[specta::specta]
 pub fn update_pane_tabs(app: AppHandle, pane: String, tabs: Vec<TabInfo>) {
@@ -200,6 +204,7 @@ pub fn update_pane_tabs(app: AppHandle, pane: String, tabs: Vec<TabInfo>) {
             _ => return,
         };
         pane_state.write().unwrap().tabs = tabs;
+        store.generation.fetch_add(1, Ordering::Relaxed);
     }
 }
 

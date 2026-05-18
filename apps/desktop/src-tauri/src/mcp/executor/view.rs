@@ -3,18 +3,26 @@
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use super::{PaneStateStore, ToolError, ToolResult};
+use super::{AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, snapshot_generation, wait_for_ack};
 use crate::commands::ui::toggle_hidden_files;
 
-/// Execute toggle_hidden command.
-pub fn execute_toggle_hidden<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+/// Execute toggle_hidden command. Ack: pane generation advances when the FE re-pushes
+/// state with the new visibility flag.
+pub async fn execute_toggle_hidden<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    let pre_gen = snapshot_generation(app);
     let result = toggle_hidden_files(app.clone()).map_err(ToolError::internal)?;
+    wait_for_ack(
+        app,
+        AckSignal::GenerationAdvanced { from: pre_gen },
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
     let state = if result { "visible" } else { "hidden" };
     Ok(json!(format!("OK: Hidden files now {state}")))
 }
 
-/// Execute set_view_mode command.
-pub fn execute_set_view_mode<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+/// Execute set_view_mode command. Ack: pane generation advances.
+pub async fn execute_set_view_mode<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let pane = params
         .get("pane")
         .and_then(|v| v.as_str())
@@ -35,12 +43,20 @@ pub fn execute_set_view_mode<R: Runtime>(app: &AppHandle<R>, params: &Value) -> 
         store.set_focused_pane(pane.to_string());
     }
 
+    let pre_gen = snapshot_generation(app);
     app.emit("mcp-set-view-mode", json!({"pane": pane, "mode": mode}))?;
+    wait_for_ack(
+        app,
+        AckSignal::GenerationAdvanced { from: pre_gen },
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
     Ok(json!(format!("OK: Set {pane} pane to {mode} view")))
 }
 
-/// Execute unified sort command.
-pub fn execute_sort<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+/// Execute unified sort command. Ack: pane generation advances (the FE re-orders and
+/// re-pushes state).
+pub async fn execute_sort<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let pane = params
         .get("pane")
         .and_then(|v| v.as_str())
@@ -70,7 +86,14 @@ pub fn execute_sort<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResul
         store.set_focused_pane(pane.to_string());
     }
 
+    let pre_gen = snapshot_generation(app);
     app.emit("mcp-sort", json!({"pane": pane, "by": by, "order": order}))?;
+    wait_for_ack(
+        app,
+        AckSignal::GenerationAdvanced { from: pre_gen },
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
 
     let order_name = if order == "asc" { "ascending" } else { "descending" };
     Ok(json!(format!("OK: Sorted {pane} pane by {by} ({order_name})")))

@@ -3,14 +3,18 @@
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use super::{PaneStateStore, ToolError, ToolResult};
+use super::{AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, snapshot_generation, wait_for_ack};
 
 /// Execute copy command.
+///
+/// Ack contract:
+/// - `autoConfirm: true` → pane generation must advance (selection/state push after copy starts).
+/// - `autoConfirm: false` → `transfer-confirmation` soft dialog must appear.
 ///
 /// Note: We cannot validate whether files are selected because selection state
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
-pub fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
     let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
 
@@ -20,24 +24,39 @@ pub fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResul
         ));
     }
 
+    let pre_gen = snapshot_generation(app);
     app.emit(
         "mcp-copy",
         json!({"autoConfirm": auto_confirm, "onConflict": on_conflict}),
     )?;
 
     if auto_confirm {
+        wait_for_ack(
+            app,
+            AckSignal::GenerationAdvanced { from: pre_gen },
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
         Ok(json!("OK: Copy started with auto-confirm."))
     } else {
+        wait_for_ack(
+            app,
+            AckSignal::SoftDialogAppeared("transfer-confirmation"),
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
         Ok(json!("OK: Copy dialog opened. Waiting for user confirmation."))
     }
 }
 
 /// Execute move command.
 ///
+/// Ack contract: same as `copy` (transfer-confirmation dialog shape).
+///
 /// Note: We cannot validate whether files are selected because selection state
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
-pub fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
     let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
 
@@ -47,61 +66,111 @@ pub fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResul
         ));
     }
 
+    let pre_gen = snapshot_generation(app);
     app.emit(
         "mcp-move",
         json!({"autoConfirm": auto_confirm, "onConflict": on_conflict}),
     )?;
 
     if auto_confirm {
+        wait_for_ack(
+            app,
+            AckSignal::GenerationAdvanced { from: pre_gen },
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
         Ok(json!("OK: Move started with auto-confirm."))
     } else {
+        wait_for_ack(
+            app,
+            AckSignal::SoftDialogAppeared("transfer-confirmation"),
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
         Ok(json!("OK: Move dialog opened. Waiting for user confirmation."))
     }
 }
 
 /// Execute delete command.
 ///
+/// Ack contract:
+/// - `autoConfirm: true` → pane generation must advance.
+/// - `autoConfirm: false` → `delete-confirmation` soft dialog must appear.
+///
 /// Note: We cannot validate whether files are selected because selection state
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
-pub fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
 
+    let pre_gen = snapshot_generation(app);
     app.emit("mcp-delete", json!({"autoConfirm": auto_confirm}))?;
 
     if auto_confirm {
+        wait_for_ack(
+            app,
+            AckSignal::GenerationAdvanced { from: pre_gen },
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
         Ok(json!("OK: Delete started with auto-confirm."))
     } else {
+        wait_for_ack(
+            app,
+            AckSignal::SoftDialogAppeared("delete-confirmation"),
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
         Ok(json!("OK: Delete dialog opened. Waiting for user confirmation."))
     }
 }
 
-/// Execute mkdir command.
+/// Execute mkdir command. Ack: `mkdir-confirmation` soft dialog appears.
 ///
 /// Note: We cannot validate whether the current directory is writable because
 /// the current directory path is managed by the frontend. The validation happens
 /// when the actual mkdir operation is attempted, which will return an appropriate
 /// error if the directory is not writable.
-pub fn execute_mkdir<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+pub async fn execute_mkdir<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     app.emit("mcp-mkdir", ())?;
+    wait_for_ack(
+        app,
+        AckSignal::SoftDialogAppeared("mkdir-confirmation"),
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
     Ok(json!("OK: Create folder dialog opened."))
 }
 
-/// Execute mkfile command.
-pub fn execute_mkfile<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+/// Execute mkfile command. Ack: `new-file-confirmation` soft dialog appears.
+pub async fn execute_mkfile<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     app.emit("mcp-mkfile", ())?;
+    wait_for_ack(
+        app,
+        AckSignal::SoftDialogAppeared("new-file-confirmation"),
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
     Ok(json!("OK: Create file dialog opened."))
 }
 
-/// Execute refresh command.
-pub fn execute_refresh<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+/// Execute refresh command. Ack: pane generation advances after the FE re-pushes state.
+pub async fn execute_refresh<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    let pre_gen = snapshot_generation(app);
     app.emit("mcp-refresh", ())?;
+    wait_for_ack(
+        app,
+        AckSignal::GenerationAdvanced { from: pre_gen },
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
     Ok(json!("OK: Pane refreshed"))
 }
 
-/// Execute the unified select command.
+/// Execute the unified select command. Ack: pane generation advances (the new
+/// selection is pushed via the next `update_*_pane_state`).
 /// Emits event to frontend to manipulate file selection.
-pub fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let pane = params
         .get("pane")
         .and_then(|v| v.as_str())
@@ -157,10 +226,17 @@ pub fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
         store.set_focused_pane(pane.to_string());
     }
 
+    let pre_gen = snapshot_generation(app);
     app.emit(
         "mcp-select",
         json!({"pane": pane, "start": start, "count": count, "mode": mode}),
     )?;
 
+    wait_for_ack(
+        app,
+        AckSignal::GenerationAdvanced { from: pre_gen },
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
     Ok(json!(format!("OK: Selection updated in {pane} pane")))
 }
