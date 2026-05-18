@@ -9,7 +9,7 @@
 </script>
 
 <span class="toast-text">
-    Crash report sent. Thanks for helping improve Cmdr. ❤️
+    Crash report sent. Thanks for helping improve Cmdr.
     <button class="opt-out-link" onclick={handleOpenSettings}> Change in Settings &gt; Updates. </button>
 </span>
 
