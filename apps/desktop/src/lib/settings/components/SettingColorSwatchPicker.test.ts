@@ -11,13 +11,13 @@ import { mount, tick } from 'svelte'
 import SettingColorSwatchPicker from './SettingColorSwatchPicker.svelte'
 
 let currentValue: string = 'none'
-const setSetting = vi.fn(async (_id: string, v: string) => {
+const setSetting = vi.fn((_id: string, v: string) => {
   currentValue = v
 })
 
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn(() => currentValue),
-  setSetting: (id: string, v: string) => setSetting(id, v),
+  setSetting: (id: string, v: string) => { setSetting(id, v); },
   resetSetting: vi.fn(),
   isModified: vi.fn(() => false),
   onSpecificSettingChange: vi.fn(() => () => {}),
@@ -87,7 +87,7 @@ describe('SettingColorSwatchPicker', () => {
     await tick()
     const selected = target.querySelectorAll('button[aria-selected="true"]')
     expect(selected.length).toBe(1)
-    expect(selected[0]?.getAttribute('aria-label')).toBe('Cyan')
+    expect(selected[0].getAttribute('aria-label')).toBe('Cyan')
   })
 
   it('opens via Enter on the trigger and closes via Escape', async () => {

@@ -29,6 +29,7 @@ vi.mock('$lib/settings/settings-store', () => ({
 }))
 
 import { initVolumeTints, cleanupVolumeTints, getPaneTintBg } from './volume-tint.svelte'
+import { setSetting } from '$lib/settings/settings-store'
 
 beforeEach(() => {
   settings.clear()
@@ -79,13 +80,12 @@ describe('getPaneTintBg with configured tints', () => {
 })
 
 describe('reactivity', () => {
-  it('updates the result when a setting changes after init', async () => {
+  it('updates the result when a setting changes after init', () => {
     initVolumeTints()
     expect(getPaneTintBg('root', 'apfs', 'main_volume')).toBeNull()
 
     // Simulate cross-window setting update
-    const { setSetting } = await import('$lib/settings/settings-store')
-    await setSetting('appearance.tintLocal', 'amber')
+    setSetting('appearance.tintLocal', 'amber')
 
     const bg = getPaneTintBg('root', 'apfs', 'main_volume')
     expect(bg).toContain('var(--color-tint-amber)')
@@ -99,7 +99,7 @@ describe('reactivity', () => {
     expect(getPaneTintBg('root', 'apfs', 'main_volume')).toBeNull()
   })
 
-  it('cleanupVolumeTints lets a re-init read fresh values', async () => {
+  it('cleanupVolumeTints lets a re-init read fresh values', () => {
     settings.set('appearance.tintLocal', 'pink')
     initVolumeTints()
     expect(getPaneTintBg('root', 'apfs', 'main_volume')).toContain('var(--color-tint-pink)')

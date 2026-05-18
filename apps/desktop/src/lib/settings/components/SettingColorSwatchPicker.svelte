@@ -94,7 +94,7 @@
     $effect(() => {
         if (!open) return
         document.addEventListener('pointerdown', handleDocumentPointerDown, true)
-        return () => document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+        return () => { document.removeEventListener('pointerdown', handleDocumentPointerDown, true); }
     })
 
     const triggerLabel = $derived(`${label} (currently: ${colorLabel(value)})`)
@@ -110,7 +110,10 @@
         aria-expanded={open}
         aria-label={triggerLabel}
         style={value === 'none' ? undefined : `background-color: var(--color-tint-${value})`}
-        onclick={() => (open ? closePopover() : openPopover())}
+        onclick={() => {
+            if (open) closePopover()
+            else openPopover()
+        }}
         onkeydown={handleTriggerKeydown}
     ></button>
 
@@ -130,7 +133,7 @@
                     aria-label="No tint"
                     data-selected={value === 'none'}
                     class="swatch is-none"
-                    onclick={() => selectColor('none')}
+                    onclick={() => { selectColor('none'); }}
                 >
                     <span class="diagonal" aria-hidden="true"></span>
                 </button>
@@ -143,7 +146,7 @@
                         data-selected={value === color}
                         class="swatch"
                         style={`background-color: var(--color-tint-${color})`}
-                        onclick={() => selectColor(color)}
+                        onclick={() => { selectColor(color); }}
                     ></button>
                 {/each}
             </div>
