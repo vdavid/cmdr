@@ -103,12 +103,9 @@ func scanWorkflowFile(path, repoRoot string) ([]string, error) {
 	}
 	defer f.Close()
 
-	var (
-		violations []string
-		inOnBlock  bool
-		onIndent   int = -1
-		lineNum    int
-	)
+	var violations []string
+	tracker := onBlockTracker{onIndent: -1}
+	lineNum := 0
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		lineNum++
@@ -118,67 +115,94 @@ func scanWorkflowFile(path, repoRoot string) ([]string, error) {
 			continue
 		}
 
-		// (1) tag-pinned actions
-		if m := usesRefRE.FindStringSubmatch(trimmed); m != nil {
-			repo, ref := m[2], m[3]
-			if !isExemptUsesRef(repo) && !sha40RE.MatchString(ref) {
-				violations = append(violations,
-					fmt.Sprintf("%s:%d: tag/branch-pinned action: %s@%s (SHA-pin: '@<40-hex> # %s')",
-						rel, lineNum, repo, ref, ref))
-			}
+		if v := checkUsesLine(trimmed, lineNum, rel); v != "" {
+			violations = append(violations, v)
 		}
-
-		// (2) pull_request_target trigger
-		if onIntroRE.MatchString(trimmed) {
-			inOnBlock = true
-			onIndent = -1
-			continue
+		if v := tracker.update(line, trimmed, lineNum, rel); v != "" {
+			violations = append(violations, v)
 		}
-		if m := onInlineRE.FindStringSubmatch(trimmed); m != nil {
-			if strings.Contains(m[1], "pull_request_target") {
-				violations = append(violations,
-					fmt.Sprintf("%s:%d: pull_request_target trigger (wave-4 entry vector)", rel, lineNum))
-			}
-			continue
-		}
-		if inOnBlock {
-			if m := triggerKeyRE.FindStringSubmatch(line); m != nil {
-				indent := len(m[1])
-				if onIndent == -1 {
-					onIndent = indent
-				}
-				if indent == onIndent {
-					if m[2] == "pull_request_target" {
-						violations = append(violations,
-							fmt.Sprintf("%s:%d: pull_request_target trigger (wave-4 entry vector)", rel, lineNum))
-					}
-					continue
-				}
-			}
-			// Any line at indent <= 0 (i.e. a new top-level key) ends the on: block.
-			if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") && trimmed != "" {
-				inOnBlock = false
-				onIndent = -1
-			}
-		}
-
-		// (3) workflow-scoped id-token: write
-		// Workflow-level `permissions:` is at column 0 (top-level key), so
-		// its children sit at 2-space indent. Job-level `permissions:` lives
-		// under `jobs.<name>.`, so its children sit at ≥6-space indent. We
-		// flag anything with indent ≤ 4 as workflow-scoped.
-		if m := idTokenWriteRE.FindStringSubmatch(line); m != nil {
-			indent := len(m[1])
-			if indent <= 4 {
-				violations = append(violations,
-					fmt.Sprintf("%s:%d: workflow-scoped 'id-token: write' (must be job-scoped)", rel, lineNum))
-			}
+		if v := checkIdTokenLine(line, lineNum, rel); v != "" {
+			violations = append(violations, v)
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("read %s: %w", rel, err)
 	}
 	return violations, nil
+}
+
+// checkUsesLine flags tag/branch-pinned third-party action references.
+func checkUsesLine(trimmed string, lineNum int, rel string) string {
+	m := usesRefRE.FindStringSubmatch(trimmed)
+	if m == nil {
+		return ""
+	}
+	repo, ref := m[2], m[3]
+	if isExemptUsesRef(repo) || sha40RE.MatchString(ref) {
+		return ""
+	}
+	return fmt.Sprintf("%s:%d: tag/branch-pinned action: %s@%s (SHA-pin: '@<40-hex> # %s')",
+		rel, lineNum, repo, ref, ref)
+}
+
+// checkIdTokenLine flags workflow-scoped `id-token: write` permissions.
+// Workflow-level `permissions:` is at column 0, so its children sit at
+// 2-space indent. Job-level `permissions:` lives under `jobs.<name>.`,
+// so its children sit at ≥6-space indent. Anything ≤4 is workflow-scoped.
+func checkIdTokenLine(line string, lineNum int, rel string) string {
+	m := idTokenWriteRE.FindStringSubmatch(line)
+	if m == nil {
+		return ""
+	}
+	if len(m[1]) > 4 {
+		return ""
+	}
+	return fmt.Sprintf("%s:%d: workflow-scoped 'id-token: write' (must be job-scoped)", rel, lineNum)
+}
+
+// onBlockTracker walks the top-level `on:` block to flag pull_request_target
+// triggers, in either inline (`on: [push, pull_request_target]`) or
+// block-mapping (`on:\n  pull_request_target:`) form. State is per-file.
+type onBlockTracker struct {
+	inOnBlock bool
+	onIndent  int
+}
+
+func (t *onBlockTracker) update(line, trimmed string, lineNum int, rel string) string {
+	if onIntroRE.MatchString(trimmed) {
+		t.inOnBlock = true
+		t.onIndent = -1
+		return ""
+	}
+	if m := onInlineRE.FindStringSubmatch(trimmed); m != nil {
+		if strings.Contains(m[1], "pull_request_target") {
+			return fmt.Sprintf("%s:%d: pull_request_target trigger (wave-4 entry vector)", rel, lineNum)
+		}
+		return ""
+	}
+	if !t.inOnBlock {
+		return ""
+	}
+	return t.processInsideOnBlock(line, trimmed, lineNum, rel)
+}
+
+func (t *onBlockTracker) processInsideOnBlock(line, trimmed string, lineNum int, rel string) string {
+	if m := triggerKeyRE.FindStringSubmatch(line); m != nil {
+		indent := len(m[1])
+		if t.onIndent == -1 {
+			t.onIndent = indent
+		}
+		if indent == t.onIndent && m[2] == "pull_request_target" {
+			return fmt.Sprintf("%s:%d: pull_request_target trigger (wave-4 entry vector)", rel, lineNum)
+		}
+		return ""
+	}
+	// Any line at column 0 (a new top-level key) ends the on: block.
+	if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") && trimmed != "" {
+		t.inOnBlock = false
+		t.onIndent = -1
+	}
+	return ""
 }
 
 // isExemptUsesRef returns true for `uses:` targets that don't need SHA pinning:
