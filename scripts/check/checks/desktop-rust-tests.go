@@ -14,13 +14,13 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 
 	// Check if cargo-nextest is installed
 	if !CommandExists("cargo-nextest") {
-		installCmd := exec.Command("cargo", "install", "cargo-nextest", "--locked")
+		installCmd := exec.Command("cargo", "install", "cargo-nextest", "--version", "0.9.136", "--locked")
 		if _, err := RunCommand(installCmd, true); err != nil {
 			return CheckResult{}, fmt.Errorf("failed to install cargo-nextest: %w", err)
 		}
 	}
 
-	cmd := exec.Command("cargo", "nextest", "run")
+	cmd := exec.Command("cargo", "nextest", "run", "--locked")
 	cmd.Dir = rustDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {

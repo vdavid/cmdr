@@ -28,7 +28,7 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 	// the only build pass we do. --fix is reserved for the failure branch
 	// because it ignores -D warnings, can rewrite source files, and re-running
 	// it speculatively doubled wall time on every clean run.
-	cmd := exec.Command("cargo", "clippy", "--all-targets", "--", "-D", "warnings")
+	cmd := exec.Command("cargo", "clippy", "--locked", "--all-targets", "--", "-D", "warnings")
 	cmd.Dir = rustDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
@@ -37,7 +37,7 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 		}
 
 		// Locally: try to auto-fix, then re-check.
-		fixCmd := exec.Command("cargo", "clippy", "--all-targets", "--fix", "--allow-dirty", "--allow-staged")
+		fixCmd := exec.Command("cargo", "clippy", "--locked", "--all-targets", "--fix", "--allow-dirty", "--allow-staged")
 		fixCmd.Dir = rustDir
 		_, _ = RunCommand(fixCmd, true)
 

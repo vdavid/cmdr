@@ -9,7 +9,7 @@ import (
 
 // RunIneffassign detects ineffectual assignments.
 func RunIneffassign(ctx *CheckContext) (CheckResult, error) {
-	ineffassignBin, err := EnsureGoTool("ineffassign", "github.com/gordonklaus/ineffassign@latest")
+	ineffassignBin, err := EnsureGoTool("ineffassign", "github.com/gordonklaus/ineffassign@v0.2.0")
 	if err != nil {
 		return CheckResult{}, err
 	}

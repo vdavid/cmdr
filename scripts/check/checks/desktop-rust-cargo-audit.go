@@ -143,7 +143,7 @@ func parseAuditJSON(output string) (cargoAuditReport, error) {
 // RunCargoAudit checks for security vulnerabilities.
 func RunCargoAudit(ctx *CheckContext) (CheckResult, error) {
 	if !CommandExists("cargo-audit") {
-		installCmd := exec.Command("cargo", "install", "cargo-audit")
+		installCmd := exec.Command("cargo", "install", "cargo-audit", "--version", "0.22.1", "--locked")
 		if _, err := RunCommand(installCmd, true); err != nil {
 			return CheckResult{}, fmt.Errorf("failed to install cargo-audit: %w", err)
 		}
