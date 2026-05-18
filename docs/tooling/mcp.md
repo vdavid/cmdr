@@ -34,6 +34,23 @@ Code's MCP integration is connected. Always call `tools/list` first if you're un
 ./scripts/mcp-call.sh --list-tools
 ```
 
+## Action-tool ack contract
+
+Action tools (`copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`, `select`, `toggle_hidden`, `set_view_mode`,
+`sort`, `tab`, `open_under_cursor`, `nav_to_parent`, `nav_back`, `nav_forward`, and `dialog` open/close/focus/confirm)
+now wait for the frontend to acknowledge the dispatched action before returning `OK`. Default budget is 1500 ms. If the
+FE is stalled, the tool returns a typed error naming the missing signal — no more false-positive `OK`s.
+
+What this means for automation:
+
+- `OK` is now a meaningful contract: the FE accepted the action. The downstream operation may still be running (a copy
+  of 10 GB returns `OK` when the FE accepts the dialog, not when bytes finish).
+- For long-running operations, poll completion via the `await` tool just like before.
+- Timeouts surface as JSON-RPC errors with a clear message ("Action not acknowledged by backend within 1500 ms (waiting
+  for: …)"). Treat them as real failures — don't retry blindly; check `cmdr://state` to triage.
+
+Architecture details: `apps/desktop/src-tauri/src/mcp/CLAUDE.md` § "Action-tool ack contract".
+
 ## Connection resilience
 
 The MCP server goes down during hot reloads (up to 15s for Rust changes, up to 3s for frontend changes). Multiple agents

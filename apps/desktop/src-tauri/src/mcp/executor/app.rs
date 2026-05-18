@@ -3,7 +3,7 @@
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use super::{PaneStateStore, ToolError, ToolResult};
+use super::{AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, snapshot_generation, wait_for_ack};
 
 /// Execute quit command.
 pub fn execute_quit<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
@@ -38,7 +38,10 @@ pub fn execute_swap_panes<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
 }
 
 /// Execute unified tab command.
-pub fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+///
+/// Ack: pane generation advances after the FE pushes the new tab list via
+/// `update_pane_tabs` (which bumps generation specifically for this case).
+pub async fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let action = params
         .get("action")
         .and_then(|v| v.as_str())
@@ -104,41 +107,39 @@ pub fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult
         }
     }
 
-    match action {
+    let pre_gen = snapshot_generation(app);
+    let ok_msg = match action {
         "new" => {
             app.emit("mcp-tab", json!({"action": "new", "pane": pane}))?;
-            Ok(json!(format!("OK: Creating new tab in {} pane", pane)))
+            format!("OK: Creating new tab in {} pane", pane)
         }
         "reopen" => {
             app.emit("mcp-tab", json!({"action": "reopen", "pane": pane}))?;
-            Ok(json!(format!("OK: Reopening last closed tab in {} pane", pane)))
+            format!("OK: Reopening last closed tab in {} pane", pane)
         }
         "close" => {
             app.emit(
                 "mcp-tab",
                 json!({"action": "close", "pane": pane, "tabId": resolved_tab_id}),
             )?;
-            Ok(json!(format!("OK: Closing tab {} in {} pane", resolved_tab_id, pane)))
+            format!("OK: Closing tab {} in {} pane", resolved_tab_id, pane)
         }
         "close_others" => {
             app.emit(
                 "mcp-tab",
                 json!({"action": "close_others", "pane": pane, "tabId": resolved_tab_id}),
             )?;
-            Ok(json!(format!(
+            format!(
                 "OK: Closing other tabs in {} pane (keeping {} and pinned)",
                 pane, resolved_tab_id
-            )))
+            )
         }
         "activate" => {
             app.emit(
                 "mcp-tab",
                 json!({"action": "activate", "pane": pane, "tabId": resolved_tab_id}),
             )?;
-            Ok(json!(format!(
-                "OK: Switched to tab {} in {} pane",
-                resolved_tab_id, pane
-            )))
+            format!("OK: Switched to tab {} in {} pane", resolved_tab_id, pane)
         }
         "set_pinned" => {
             let pinned = params
@@ -150,8 +151,16 @@ pub fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult
                 "mcp-tab",
                 json!({"action": "set_pinned", "pane": pane, "tabId": resolved_tab_id, "pinned": pinned}),
             )?;
-            Ok(json!(format!("OK: {} tab {} in {} pane", verb, resolved_tab_id, pane)))
+            format!("OK: {} tab {} in {} pane", verb, resolved_tab_id, pane)
         }
-        _ => Err(ToolError::invalid_params(format!("Unknown tab action: {}", action))),
-    }
+        _ => return Err(ToolError::invalid_params(format!("Unknown tab action: {}", action))),
+    };
+
+    wait_for_ack(
+        app,
+        AckSignal::GenerationAdvanced { from: pre_gen },
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
+    Ok(json!(ok_msg))
 }

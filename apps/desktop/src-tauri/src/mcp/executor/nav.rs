@@ -5,11 +5,20 @@ use std::path::Path;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use super::{PaneStateStore, ToolError, ToolResult, mcp_round_trip, mcp_round_trip_with_timeout};
+use super::{
+    AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_round_trip, mcp_round_trip_with_timeout,
+    snapshot_generation, wait_for_ack,
+};
 
 /// Execute a navigation command without parameters.
 /// These emit keyboard-equivalent events to the frontend.
-pub fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
+///
+/// Ack contract:
+/// - `nav_to_parent`, `nav_back`, `nav_forward` → pane generation must advance (path
+///   changes get pushed via `update_*_pane_state`).
+/// - `open_under_cursor` → either pane generation advances (directory case, path
+///   changes) OR a `viewer-*` window appears (file case). We OR both signals.
+pub async fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
     let key = match name {
         "open_under_cursor" => "Enter",
         "nav_to_parent" => "Backspace",
@@ -26,7 +35,19 @@ pub fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
         _ => "Navigation action completed",
     };
 
+    let pre_gen = snapshot_generation(app);
     app.emit("mcp-key", json!({"key": key}))?;
+
+    // Pick the ack signal that matches what this command can actually produce.
+    let signal = if name == "open_under_cursor" {
+        AckSignal::Any(vec![
+            AckSignal::GenerationAdvanced { from: pre_gen },
+            AckSignal::WindowAppeared("viewer"),
+        ])
+    } else {
+        AckSignal::GenerationAdvanced { from: pre_gen }
+    };
+    wait_for_ack(app, signal, DEFAULT_ACK_TIMEOUT).await?;
     Ok(json!(format!("OK: {action}")))
 }
 

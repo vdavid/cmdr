@@ -735,7 +735,13 @@ export const commands = {
   updateRightPaneState: (state: PaneState) => __TAURI_INVOKE<void>('update_right_pane_state', { state }),
   // Tauri command to update focused pane from frontend.
   updateFocusedPane: (pane: string) => __TAURI_INVOKE<void>('update_focused_pane', { pane }),
-  // Tauri command to update tab list for a pane from frontend (for MCP state reporting).
+  /**
+   *  Tauri command to update tab list for a pane from frontend (for MCP state reporting).
+   *
+   *  Bumps the generation counter so the MCP `tab` action tool's ack signal (which uses
+   *  `GenerationAdvanced`) fires when the FE confirms a tab change. Without the bump, the
+   *  tab tool would time out on every call: tab pushes bypass `set_left`/`set_right`.
+   */
   updatePaneTabs: (pane: string, tabs: TabInfo[]) => __TAURI_INVOKE<void>('update_pane_tabs', { pane, tabs }),
   // Tauri command: frontend notifies that a soft dialog opened.
   notifyDialogOpened: (dialogType: string) => __TAURI_INVOKE<void>('notify_dialog_opened', { dialogType }),

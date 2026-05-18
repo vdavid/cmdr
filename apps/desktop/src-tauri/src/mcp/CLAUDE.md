@@ -52,7 +52,30 @@ Directory module split by tool category. `mod.rs` contains the main `execute_too
 - `async_tools.rs`: await, connect_to_server, remove_manual_server, set_setting
 - `search.rs`: search index loading, search, ai_search
 
-Most tools are fire-and-forget: emit a Tauri event and return "OK" immediately.
+**Action-tool ack contract.** Every fire-and-forget action tool now waits for a backend ack signal before returning `OK`. Previously the tool returned `OK` the instant the event was dispatched; if the FE was stalled (modal blocking input, error pane up, race during startup), the action was silently dropped and MCP reported success anyway. The ack contract makes `OK` a meaningful promise: the FE has actually processed the dispatched action.
+
+The mechanism lives in `executor/ack.rs`. Each tool:
+
+1. Captures a precondition snapshot (typically `snapshot_generation(app)`).
+2. Emits its existing event / runs its existing command.
+3. Calls `wait_for_ack(app, signal, DEFAULT_ACK_TIMEOUT)` — default 1500 ms.
+4. Returns the original `OK` string on success, or a typed `ToolError::internal` whose message names the missing signal and the elapsed budget on timeout.
+
+`AckSignal` variants:
+
+| Variant                  | Fires when                                                              | Used by                                                                                                                          |
+| ------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `GenerationAdvanced`     | `PaneStateStore.generation` is strictly greater than the captured value | Anything that mutates pane state (`refresh`, `select`, `set_view_mode`, `sort`, `toggle_hidden`, `tab`, `nav_*`, auto-confirmed `copy`/`move`/`delete`, `dialog confirm`) |
+| `SoftDialogAppeared(id)` | A soft dialog with that ID is in `SoftDialogTracker`                    | Confirmation dialogs from `copy`/`move`/`delete` (autoConfirm: false), `mkdir`, `mkfile`; `dialog open about`                    |
+| `WindowAppeared(label)`  | A `webview_windows()` entry matches the label (exact, or `viewer-*`)    | `dialog open settings|file-viewer`, `dialog focus`                                                                               |
+| `WindowDisappeared`      | The matching `webview_windows()` entry is gone                          | `dialog close settings|file-viewer|about`                                                                                        |
+| `Any([...])`             | Logical OR — any inner signal fires                                     | `open_under_cursor` (directory case bumps generation, file case opens a viewer window)                                           |
+
+The polling cadence is 250 ms for state-driven signals (matching the existing `await` tool) and 100 ms for window/dialog appearance signals (windows show up faster than full pane state pushes).
+
+The 1500 ms budget is a backend-side latency budget, not a client-facing knob: MCP clients shouldn't have to tune ack timeouts. Bump it per-call via the `Duration` argument to `wait_for_ack` if a specific operation has a known higher latency floor; don't expose it as a tool parameter.
+
+**Note on `update_pane_tabs`.** Tab changes flow through this command (not `set_left`/`set_right`), so it also bumps the generation counter. Without that, the `tab` tool's ack would time out on every call.
 
 Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Used by `move_cursor` and `set_setting` (5s timeout). `nav_to_path` uses `mcp_round_trip_with_timeout` with a 30s timeout because it waits for the directory listing to complete (the frontend delays the response until `handleListingComplete` fires in FilePane). Resources that need frontend data use `resource_round_trip` (same pattern but returns `data` from the response). Used by `cmdr://settings`. Use these patterns for any new tool/resource where the backend would otherwise need to replicate frontend knowledge.
 
@@ -83,6 +106,16 @@ Directory module split by test category:
 - `spec_compliance_tests.rs`: MCP spec 2025-11-25 compliance, origin validation, SSE events
 
 ## Key decisions
+
+### MCP action tools wait for backend ack before returning success
+
+**Decision (May 2026):** Every fire-and-forget action tool waits for a typed ack signal (`AckSignal::GenerationAdvanced`, `SoftDialogAppeared`, `WindowAppeared`, `WindowDisappeared`, or `Any`) within a 1500 ms budget before returning `OK`. On timeout, the tool returns a `ToolError::internal` whose message names the missing signal and elapsed budget.
+
+**Why.** Real QA hit a paper-cut: MCP tools were returning `OK` while the FE was stalled (modal blocking input, error pane up, race during startup), so the dispatched action was silently dropped. That made MCP unreliable as an automation surface. The ack contract makes `OK` a real promise: the FE actually processed the dispatched action.
+
+**Why 1500 ms.** Most state pushes complete within ~100–300 ms in practice (FE debouncing, IPC round-trip). 1500 ms gives a generous margin for the slow cases (cold start, large directory listings) while still failing fast when the FE genuinely isn't responding. Latency-sensitive tools (`nav_to_path`) keep their existing higher budgets via `mcp_round_trip_with_timeout`.
+
+**Why not a per-tool client-facing timeout knob.** The timeout is a backend-side latency budget, not a client concern. MCP clients shouldn't have to tune it per call — they expect tools to either succeed or report a clear failure.
 
 ### Why agent-centric API?
 
@@ -159,9 +192,11 @@ The `cmdr://settings` resource and `set_setting` tool both use round-trips to th
 
 `volume_name` flows through `PaneState` from the FE via `update_left_pane_state` / `update_right_pane_state` on every state push (`FilePane.svelte`).
 
-### Tool execution is async but mostly synchronous
+### Tool execution is async; action tools wait for ack
 
-`execute_tool()` is an async function. Most tools are fire-and-forget: they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). This applies even with `autoConfirm: true`: the tool returns when the operation starts, not when it completes. Three categories of async tools exist: (1) `mcp_round_trip` tools (`nav_to_path`, `move_cursor`) that wait up to 5s for the frontend to confirm success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
+`execute_tool()` is an async function. Action tools follow the ack contract (see "Action-tool ack contract" above): dispatch the event, then `wait_for_ack` for a small backend-side signal before returning. The tool's reported "OK" thus means "the FE accepted the dispatched action," not "the underlying operation completed." For long-running operations (a copy of 10 GB), the agent still has to poll via the `await` tool to observe completion. The ack-contract change made the FE-accepted line meaningful — pre-May 2026, the tool returned `OK` even when the FE wasn't listening.
+
+Three categories of latency-sensitive tools exist beyond the ack contract: (1) `mcp_round_trip` tools (`nav_to_path`, `move_cursor`, `set_setting`) that wait up to 5–30 s for an explicit `mcp-response` event with success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API, (3) `select_volume` which polls until the target pane's `volume_name` matches.
 
 ### Error codes are JSON-RPC standard
 

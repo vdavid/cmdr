@@ -1,3 +1,4 @@
+mod ack_system_tests;
 mod pane_state_tests;
 mod protocol_tests;
 mod request_response_tests;
