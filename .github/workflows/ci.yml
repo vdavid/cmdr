@@ -37,6 +37,7 @@ jobs:
           filters: |
             rust:
               - 'apps/desktop/src-tauri/**'
+              - 'apps/desktop/rust-toolchain.toml'
             svelte:
               - 'apps/desktop/src/**'
               - 'apps/desktop/static/**'
