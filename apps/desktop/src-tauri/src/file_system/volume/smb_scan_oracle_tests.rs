@@ -24,7 +24,8 @@ use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::Volume;
-use crate::file_system::volume::smb::{SmbVolume, connect_smb_volume};
+use crate::file_system::volume::smb::{SmbConnectionParams, SmbVolume, connect_smb_volume};
+use crate::file_system::volume::smb_volume_id;
 
 fn unique(suffix: &str) -> String {
     static N: AtomicU64 = AtomicU64::new(0);
@@ -79,7 +80,9 @@ async fn make_docker_volume() -> SmbVolume {
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(10480);
-    connect_smb_volume("public", "/tmp/smb-test-mount", "127.0.0.1", "public", None, None, port)
+    let volume_id = smb_volume_id("127.0.0.1", port, "public");
+    let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
+    connect_smb_volume("public", "/tmp/smb-test-mount", &volume_id, params)
         .await
         .unwrap_or_else(|e| {
             panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")

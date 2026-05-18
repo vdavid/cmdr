@@ -251,7 +251,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         let icon = get_icon_for_path(&mount_point);
 
         Some(VolumeInfo {
-            id: path_to_id(&mount_point),
+            id: volume_id_for_mount(&mount_point),
             name,
             path: mount_point,
             category,
@@ -487,7 +487,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
             }
 
             volumes.push(LocationInfo {
-                id: path_to_id(&path),
+                id: volume_id_for_mount(&path),
                 name,
                 path: path.clone(),
                 category: LocationCategory::AttachedVolume,
@@ -631,7 +631,27 @@ fn get_volume_name(url: &objc2_foundation::NSURL, path: &str) -> String {
     }
 }
 
-pub(crate) use crate::file_system::volume::path_to_id;
+pub(crate) use crate::file_system::volume::{path_to_id, smb_volume_id};
+
+/// Volume ID for a mount path, SMB-aware.
+///
+/// For SMB mounts (smbfs), the ID is keyed by `(server, port, share)` via
+/// [`smb_volume_id`], not by the path-shape. Two SMB shares with the same
+/// case-folded name on different servers (a NAS sharing `Public`, a Docker
+/// container sharing `public`) thus get distinct IDs, instead of colliding on
+/// `volumespublic`. See [`smb_volume_id`] for the full rationale.
+///
+/// Falls back to [`path_to_id`] for non-SMB mounts and for SMB mounts where
+/// `statfs` no longer recovers the mount info (typical right after unmount).
+/// The unmount path should generally use [`VolumeManager::find_by_root`]
+/// instead, which doesn't depend on `statfs`.
+pub(crate) fn volume_id_for_mount(mount_path: &str) -> String {
+    if let Some(info) = get_smb_mount_info(mount_path) {
+        smb_volume_id(&info.server, info.port, &info.share)
+    } else {
+        path_to_id(mount_path)
+    }
+}
 
 /// Get icon for a path as base64-encoded WebP.
 ///

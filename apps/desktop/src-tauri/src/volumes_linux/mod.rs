@@ -324,7 +324,7 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
         let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
 
         volumes.push(LocationInfo {
-            id: path_to_id(&entry.mountpoint),
+            id: volume_id_for_mount(&entry.mountpoint),
             name,
             path: entry.mountpoint.clone(),
             category: LocationCategory::AttachedVolume,
@@ -428,7 +428,7 @@ fn get_network_mounts() -> Vec<LocationInfo> {
                 continue;
             }
             mounts.push(LocationInfo {
-                id: path_to_id(&path),
+                id: volume_id_for_mount(&path),
                 name: share,
                 path,
                 category: LocationCategory::Network,
@@ -498,7 +498,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
     };
 
     Some(VolumeInfo {
-        id: path_to_id(&mount_point),
+        id: volume_id_for_mount(&mount_point),
         name,
         path: mount_point,
         category,
@@ -512,7 +512,33 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
     })
 }
 
-pub(crate) use crate::file_system::volume::path_to_id;
+pub(crate) use crate::file_system::volume::{path_to_id, smb_volume_id};
+
+/// Volume ID for a mount path, SMB-aware.
+///
+/// For CIFS mounts and GVFS SMB shares, the ID is keyed by `(server, port, share)`
+/// via [`smb_volume_id`] rather than by the path-shape, so two SMB shares with
+/// the same case-folded name on different servers don't collide on the same ID.
+/// See the macOS twin in `volumes/mod.rs` for the full rationale.
+///
+/// Falls back to [`path_to_id`] for non-SMB mounts and for SMB mounts where the
+/// mount table no longer recovers the source (typical right after unmount). The
+/// unmount path should generally use `VolumeManager::find_by_root` instead.
+pub(crate) fn volume_id_for_mount(mount_path: &str) -> String {
+    // CIFS mount: /proc/mounts records the source as `//server[:port]/share`.
+    if let Some(info) = get_smb_mount_info(mount_path) {
+        return smb_volume_id(&info.server, info.port, &info.share);
+    }
+    // GVFS SMB share: /run/user/<uid>/gvfs/smb-share:server=...,share=...
+    // GVFS doesn't expose the port, so default to 445. Mixing custom-port GVFS
+    // mounts on the same host+share isn't something GVFS supports today.
+    if let Some(dirname) = Path::new(mount_path).file_name().and_then(|n| n.to_str())
+        && let Some((server, share)) = parse_gvfs_smb_dirname(dirname)
+    {
+        return smb_volume_id(&server, 445, &share);
+    }
+    path_to_id(mount_path)
+}
 
 /// Extract a display name from a mount path.
 fn mount_display_name(mountpoint: &str) -> String {

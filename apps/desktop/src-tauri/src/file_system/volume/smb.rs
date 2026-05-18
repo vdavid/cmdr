@@ -7,7 +7,7 @@
 
 use super::{
     BatchScanResult, CopyScanResult, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError,
-    VolumeReadStream, path_to_id,
+    VolumeReadStream,
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_watched_listing;
@@ -213,7 +213,7 @@ pub struct SmbVolume {
     /// SMB share name. Mirrors `params.share_name`, kept here for cheap reads
     /// in log lines and hot paths without locking `params`.
     share_name: String,
-    /// Volume ID for listing cache lookups (from `path_to_id(mount_path)`).
+    /// Volume ID for listing cache lookups (from `smb_volume_id(server, port, share)`).
     volume_id: String,
     /// Connection parameters (host, port, share, credentials) used to build the
     /// current session and to rebuild it on `attempt_reconnect`. `RwLock` because
@@ -288,7 +288,7 @@ impl SmbVolume {
         }
     }
 
-    /// Returns the volume ID (mirrors `path_to_id(mount_path)`).
+    /// Returns the volume ID (mirrors `smb_volume_id(server, port, share)`).
     pub(crate) fn volume_id(&self) -> &str {
         &self.volume_id
     }
@@ -2042,38 +2042,50 @@ impl Volume for SmbVolume {
 /// Creates an `SmbVolume` by connecting to a server and share.
 ///
 /// Used by the mount flow to establish the smb2 session alongside the OS mount.
-/// Also spawns a background watcher task for detecting external changes.
-/// The credentials are stored on the resulting `SmbVolume` so it can rebuild
-/// its own session via `attempt_reconnect` after a transient connection loss.
+/// Also spawns a background watcher task for detecting external changes. The
+/// credentials inside `params` are stored on the resulting `SmbVolume` so it
+/// can rebuild its own session via `attempt_reconnect` after a transient
+/// connection loss.
+///
+/// `volume_id` must match the key the caller will use to register the volume
+/// with `VolumeManager`. Production callers derive it from the mount path via
+/// `volume_id_for_mount` so the OS-event watcher and this path always agree;
+/// tests typically pass `smb_volume_id(server, port, share)` directly.
 pub async fn connect_smb_volume(
     name: &str,
     mount_path: &str,
-    server: &str,
-    share_name: &str,
-    username: Option<&str>,
-    password: Option<&str>,
-    port: u16,
+    volume_id: &str,
+    params: SmbConnectionParams,
 ) -> Result<SmbVolume, smb2::Error> {
-    let params = SmbConnectionParams {
-        server: server.to_string(),
-        share_name: share_name.to_string(),
-        port,
-        username: username.unwrap_or("Guest").to_string(),
-        password: password.unwrap_or("").to_string(),
-    };
-
     let (client, tree) = build_session(&params).await?;
-    let volume_id = path_to_id(mount_path);
-
     let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree);
     vol.spawn_watcher(&params);
     Ok(vol)
+}
+
+impl SmbConnectionParams {
+    /// Builds the params struct for an optionally-authenticated connection.
+    ///
+    /// `username = None` and `password = None` becomes a guest connection
+    /// (`"Guest"` / empty password), matching the historical mount-time
+    /// defaults. The fields are public so callers with explicit credentials
+    /// in hand can build the struct directly.
+    pub fn new(server: &str, share_name: &str, port: u16, username: Option<&str>, password: Option<&str>) -> Self {
+        Self {
+            server: server.to_string(),
+            share_name: share_name.to_string(),
+            port,
+            username: username.unwrap_or("Guest").to_string(),
+            password: password.unwrap_or("").to_string(),
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::file_system::volume::InMemoryVolume;
+    use crate::file_system::volume::smb_volume_id;
 
     // ── Type mapping tests ──────────────────────────────────────────
 
@@ -2555,7 +2567,9 @@ mod tests {
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(10480);
-        connect_smb_volume("public", "/tmp/smb-test-mount", "127.0.0.1", "public", None, None, port)
+        let volume_id = smb_volume_id("127.0.0.1", port, "public");
+        let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
+        connect_smb_volume("public", "/tmp/smb-test-mount", &volume_id, params)
             .await
             .unwrap_or_else(|e| {
                 panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
@@ -3995,17 +4009,11 @@ mod tests {
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(10481);
-        connect_smb_volume(
-            "private",
-            "/tmp/smb-soak-mount",
-            "127.0.0.1",
-            "private",
-            Some("testuser"),
-            Some("testpass"),
-            port,
-        )
-        .await
-        .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB auth container at 127.0.0.1:{port} ({e:?})"))
+        let volume_id = smb_volume_id("127.0.0.1", port, "private");
+        let params = SmbConnectionParams::new("127.0.0.1", "private", port, Some("testuser"), Some("testpass"));
+        connect_smb_volume("private", "/tmp/smb-soak-mount", &volume_id, params)
+            .await
+            .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB auth container at 127.0.0.1:{port} ({e:?})"))
     }
 
     #[tokio::test]
@@ -4418,7 +4426,9 @@ mod tests {
     /// only drives the smb2 path.
     async fn connect_docker_smb_volume(port: u16, mount_label: &str) -> SmbVolume {
         let mount_path = format!("/Volumes/{mount_label}");
-        connect_smb_volume("public", &mount_path, "127.0.0.1", "public", None, None, port)
+        let volume_id = smb_volume_id("127.0.0.1", port, "public");
+        let params = SmbConnectionParams::new("127.0.0.1", "public", port, None, None);
+        connect_smb_volume("public", &mount_path, &volume_id, params)
             .await
             .unwrap_or_else(|e| panic!("connect to 127.0.0.1:{port} failed: {e:?}"))
     }

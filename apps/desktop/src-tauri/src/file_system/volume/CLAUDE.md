@@ -384,7 +384,7 @@ spawned detached task. This is safe because the stream always lives in an async 
 **Why**: Every mutation method (`create_file`, `create_directory`, `delete`, `rename`) knows what changed. Adding the notification call at the end of each method keeps it colocated with the mutation. The alternative (notification calls in every Tauri command) is fragile, easy to miss a call site.
 
 **Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups
-**Why**: `notify_mutation` needs to call `notify_directory_changed(volume_id, ...)` to find the right cached listings. The volume_id is computed at creation time (`path_to_id(mount_path)` for SMB, `"{device_id}:{storage_id}"` for MTP) and stored on the struct rather than recomputed on every mutation.
+**Why**: `notify_mutation` needs to call `notify_directory_changed(volume_id, ...)` to find the right cached listings. The volume_id is computed at creation time (`smb_volume_id(server, port, share)` for SMB so two same-named shares on different servers don't collide — see `volumes/CLAUDE.md` § "Volume IDs"; `"{device_id}:{storage_id}"` for MTP) and stored on the struct rather than recomputed on every mutation.
 
 **Decision**: `SmbVolume::supports_local_fs_access()` returns `false`
 **Why**: `SmbVolume` now handles listing updates via `notify_mutation` using its own smb2 `get_metadata`. The old `std::fs`-based synthetic diff path (`emit_synthetic_entry_diff`) is redundant and goes through the slow OS mount. Returning `false` skips it.

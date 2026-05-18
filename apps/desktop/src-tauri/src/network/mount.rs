@@ -575,4 +575,74 @@ mod tests {
             mount_result.mount_path
         );
     }
+
+    /// Regression test for the SMB volume-ID-per-mount fix.
+    ///
+    /// `path_to_id` lowercases the mount path, so two SMB shares with the same
+    /// case-folded name on different servers (a NAS sharing `Public`, a Docker
+    /// container sharing `public`) used to collide on `volumespublic`. The
+    /// collision cross-contaminated `lastUsedPaths` and tab state and surfaced
+    /// as wrong-case paths flowing into `SmbVolume::list_directory`, producing
+    /// `STATUS_OBJECT_PATH_NOT_FOUND` from the server. After the fix, the ID
+    /// is keyed by `(server, port, share)`, so two same-named shares on
+    /// different ports/hosts must produce distinct IDs.
+    ///
+    /// Exercises the real OS-mount → `resolve_path_volume_fast` path against
+    /// the Docker guest container, then asserts the resulting volume ID is in
+    /// the new `smb-…-…-…` shape rather than the legacy path-shape form.
+    #[cfg(target_os = "macos")]
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_volume_id_is_per_mount_not_per_path_shape() {
+        use std::time::Duration;
+
+        let port: u16 = std::env::var("SMB_CONSUMER_GUEST_PORT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10480);
+        let host = "localhost".to_string();
+
+        // Pre-clean to exercise the cold mount path.
+        let _ = std::process::Command::new("diskutil")
+            .args(["unmount", "force", "/Volumes/public"])
+            .output();
+
+        let mount_result = mount_share(host.clone(), "public".to_string(), None, None, port, Some(8_000))
+            .await
+            .unwrap_or_else(|e| panic!("guest mount against {host}:{port} failed: {e:?}"));
+
+        // Give NetFS a moment to settle so statfs reports the SMB mount info.
+        tokio::time::sleep(Duration::from_millis(200)).await;
+
+        let volume = crate::volumes::resolve_path_volume_fast(&mount_result.mount_path);
+
+        // Unmount before assertions so a panic doesn't leak the mount.
+        let _ = std::process::Command::new("diskutil")
+            .args(["unmount", "force", &mount_result.mount_path])
+            .output();
+
+        let volume = volume.expect("resolve_path_volume_fast should return Some for a fresh SMB mount");
+
+        // The pre-fix ID was `volumespublic`, which is what `path_to_id` produces
+        // for `/Volumes/public`. The new ID encodes server, port, and share.
+        assert_ne!(
+            volume.id, "volumespublic",
+            "expected SMB-shaped ID, got the path-shape one (regression)"
+        );
+        assert!(
+            volume.id.starts_with("smb-"),
+            "expected SMB-shaped ID (smb-...), got {}",
+            volume.id
+        );
+        assert!(
+            volume.id.contains(&format!("-{port}-")),
+            "expected ID to embed the port ({port}); got {}",
+            volume.id
+        );
+        assert!(
+            volume.id.ends_with("-public"),
+            "expected ID to end with the share name; got {}",
+            volume.id
+        );
+    }
 }

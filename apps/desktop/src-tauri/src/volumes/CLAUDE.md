@@ -31,9 +31,29 @@ OBSERVER_INSTALLED: OnceLock<()>         // idempotency gate
 
 `start_volume_watcher` is idempotent (second call returns early). The observer `RcBlock` closures aren't kept in our own static; `addObserverForName:object:queue:usingBlock:` retains the block for the lifetime of the registration, and we never remove the observer. Same pattern as `file_system/open_with.rs`.
 
-## `path_to_id`
+## Volume IDs: `path_to_id` and `smb_volume_id`
 
-`path_to_id` (keep only alphanumeric + `-`, lowercase, `/` → `"root"`) is `pub(crate)` in `mod.rs` and called from `watcher.rs`. The constant `DEFAULT_VOLUME_ID = "root"` is defined in `mod.rs` and used in both files.
+`path_to_id` (keep only alphanumeric + `-`, lowercase, `/` → `"root"`) is `pub(crate)` in
+`file_system/volume/mod.rs` and re-exported from `volumes/mod.rs`. The constant `DEFAULT_VOLUME_ID = "root"` is
+defined alongside it.
+
+**SMB mounts use `smb_volume_id(server, port, share)` instead of `path_to_id`.** Path-shape IDs lowercase the mount
+path, so two SMB shares with the same case-folded name on different servers (a NAS sharing `Public`, a Docker
+container sharing `public`) collided on `volumespublic`. The collision cross-contaminated `lastUsedPaths`, tab
+`volumeId` fields, and per-volume state, and surfaced as wrong-cased paths flowing into `SmbVolume::list_directory`
+with the server replying `STATUS_OBJECT_PATH_NOT_FOUND`. Keying SMB by `(server, port, share)` (server and share
+lowercased to match DNS / SMB protocol case-insensitivity, server dots replaced by `-`) puts each mount in its own
+slot and removes the entire class of collision.
+
+`volume_id_for_mount(mount_path)` is the dispatch helper: it returns `smb_volume_id(...)` for SMB mounts (detected
+via `get_smb_mount_info`'s statfs read) and `path_to_id` for everything else. Use this at every site that derives
+an ID from a path: `get_attached_volumes`, `resolve_path_volume_fast`, `volumes/watcher.rs::register_volume_with_manager`,
+and the linux twins.
+
+**The unmount path can't use `volume_id_for_mount` directly.** Once `NSWorkspaceDidUnmount` fires, `statfs` on the
+gone-volume path no longer recovers SMB info, so the helper falls back to `path_to_id` and produces the wrong ID.
+Use `VolumeManager::find_by_root(volume_path)` instead — it looks up by `Volume::root()` and returns whatever ID
+the volume was registered under. See `handle_volume_unmounted`.
 
 `ICLOUD_VOLUME_ID = "cloud-icloud"` is also exported from `mod.rs`. iCloud Drive is the only cloud-drive entry that gets a hardcoded ID (others are derived from their `~/Library/CloudStorage/<provider>` directory names). Cross-module callers should use the constant; `file_system/volume/friendly_error.rs` matches the literal string with a sync-point comment because `crate::volumes` is macOS-only and can't be imported from the cross-platform `friendly_error` module.
 
@@ -74,6 +94,19 @@ The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::f
 **Why**: Same two-site sync problem as SMB enrichment, but for MTP-derived volume fields. Originally only `volume_broadcast.rs` set `usb_speed` from the device info; the `list_volumes` IPC variant hardcoded `None`, so the bootstrap call (used until the `volumes-changed` event lands) produced volumes with a missing dot until a later push refreshed them. Any new MTP-derived `LocationInfo` field needs to be set in BOTH `append_mtp_volumes` copies. The Linux variant lives in `commands/volumes_linux.rs` and mirrors the macOS one.
 
 ## Key decisions
+
+**Decision**: SMB volume IDs are keyed by `(server, port, share)`, not by mount path
+**Why**: `path_to_id("/Volumes/Public")` and `path_to_id("/Volumes/public")` both produce `volumespublic`, so a NAS's
+`Public` share and a Docker container's `public` share collided on one ID. The collision cross-contaminated every
+per-volume store: `lastUsedPaths`, persisted tab `volumeId` fields, the in-memory `VolumeManager`, and any future
+per-volume preference. The user-visible bug was a wrong-case path leaking from a stale `lastUsedPaths` entry into
+`SmbVolume::list_directory`, where the case-sensitive `strip_prefix` against `mount_path` failed and the smb2 path
+was constructed as `Volumes\Public` (relative under the share root), producing `STATUS_OBJECT_PATH_NOT_FOUND` from
+Samba. `smb_volume_id(server, port, share)` removes the entire collision class. Server is lowercased (DNS is
+case-insensitive); share is lowercased (SMB share names are case-insensitive per Windows / Samba default); dots in
+the server (IPs) are replaced by `-` so the ID stays in `[a-z0-9-]`. Statfs is the canonical source for both the
+watcher and the mount-time `register_smb_volume`, so they always agree. The unmount path looks up by
+`VolumeManager::find_by_root` because statfs no longer recovers SMB info once the mount is gone.
 
 **Decision**: Gate launch-time icon fetches on the FDA decision (`crate::fda_gate::is_fda_pending_runtime()`)
 **Why**: `NSWorkspace.iconForFile:` resolution touches LaunchServices and several adjacent TCC services beyond the input path itself. On a fresh prod install with FDA off, calling it for `/Applications`, `~/Desktop`, `~/Documents`, `~/Downloads`, the iCloud root, and per-provider cloud-storage paths stacked **5–10 macOS native permission popups** (MediaLibrary, AppData, Desktop, Documents, Downloads, ...) on top of the in-app FDA modal, exactly the onboarding-flood UX the modal is supposed to replace. Returning `icon: None` from `get_icon_for_path()` while the gate is pending eliminates the entire class. The frontend already falls back to a generic folder icon when `icon` is missing, so the sidebar still shows favorite/volume entries during onboarding; they just look generic for the few seconds before the user clicks Allow or Deny. See `commands/indexing.rs::start_indexing_after_fda_decision` for the gate-clear + re-emit on the deny path; the allow path requires a restart, so re-entering `setup()` sets the gate to `false` via the OS probe.

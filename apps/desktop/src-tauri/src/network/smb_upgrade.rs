@@ -7,6 +7,32 @@
 
 use crate::network::get_discovered_hosts;
 
+/// Derives the SMB volume ID from `statfs(mount_path)` (macOS) or
+/// `/proc/mounts` (Linux). Returns `None` if the path isn't an SMB mount.
+///
+/// Used so the mount-time `register_smb_volume` derives the same canonical ID
+/// as the OS-event watcher (which only has the mount path to work with). The
+/// caller passed `server` may be an mDNS service name or display string that
+/// statfs would normalize to an IP, so deriving from statfs is what makes the
+/// two sites agree.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn volume_id_from_statfs(mount_path: &str) -> Option<String> {
+    #[cfg(target_os = "macos")]
+    let info = crate::volumes::get_smb_mount_info(mount_path)?;
+    #[cfg(target_os = "linux")]
+    let info = crate::volumes_linux::get_smb_mount_info(mount_path)?;
+    Some(crate::file_system::volume::smb_volume_id(
+        &info.server,
+        info.port,
+        &info.share,
+    ))
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+fn volume_id_from_statfs(_mount_path: &str) -> Option<String> {
+    None
+}
+
 /// Result of an SMB volume upgrade attempt.
 #[derive(serde::Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -61,9 +87,18 @@ pub(crate) async fn register_smb_volume(
         share
     );
 
-    match connect_smb_volume(share, mount_path, &resolved_server, share, username, password, port).await {
+    // Derive the volume ID before connect so SmbVolume's internal ID, the
+    // ID we pass to `connect_smb_volume`, and the ID the OS-event watcher
+    // computes via `volume_id_for_mount` all agree. Statfs is the canonical
+    // source — `server` as passed in may be an mDNS service name or display
+    // string that wouldn't match what the watcher later sees.
+    let volume_id = volume_id_from_statfs(mount_path)
+        .unwrap_or_else(|| crate::file_system::volume::smb_volume_id(server, port, share));
+
+    let params =
+        crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
+    match connect_smb_volume(share, mount_path, &volume_id, params).await {
         Ok(volume) => {
-            let volume_id = crate::file_system::volume::path_to_id(mount_path);
             // Use register (overwrite) so SmbVolume always wins over any
             // LocalPosixVolume the watcher may have registered in the race window.
             get_volume_manager().register(&volume_id, Arc::new(volume));
@@ -100,7 +135,9 @@ pub(crate) async fn try_smb_upgrade(
     let resolved_server = resolve_server_address(server);
     let display = friendly_server_name(server);
 
-    match connect_smb_volume(share, mount_path, &resolved_server, share, username, password, port).await {
+    let params =
+        crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
+    match connect_smb_volume(share, mount_path, volume_id, params).await {
         Ok(volume) => {
             get_volume_manager().register(volume_id, Arc::new(volume));
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);

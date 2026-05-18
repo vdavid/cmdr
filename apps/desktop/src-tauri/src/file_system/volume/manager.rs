@@ -75,6 +75,22 @@ impl VolumeManager {
         self.volumes.read().ok()?.get(id).cloned()
     }
 
+    /// Finds a registered volume by its mount path (the value `Volume::root()` returns).
+    ///
+    /// Used by the unmount path: when `NSWorkspaceDidUnmount` (macOS) or the
+    /// `/proc/mounts` watcher (Linux) fires, `statfs` on the now-gone path can no
+    /// longer recover the SMB mount info, so we can't rederive the volume ID from
+    /// the path. Looking up by `root()` instead lets us find the entry we
+    /// registered, whatever ID it was keyed under.
+    pub fn find_by_root(&self, root: &std::path::Path) -> Option<(String, Arc<dyn Volume>)> {
+        self.volumes
+            .read()
+            .ok()?
+            .iter()
+            .find(|(_, v)| v.root() == root)
+            .map(|(id, v)| (id.clone(), Arc::clone(v)))
+    }
+
     /// Gets the default volume.
     pub fn default_volume(&self) -> Option<Arc<dyn Volume>> {
         let default_id = self.default_volume_id.read().ok()?.clone()?;
@@ -190,6 +206,30 @@ mod tests {
 
         manager.unregister("test");
         assert!(manager.default_volume().is_none());
+    }
+
+    #[test]
+    fn test_find_by_root_returns_registered_entry() {
+        let manager = VolumeManager::new();
+        let volume = Arc::new(InMemoryVolume::new("Test Volume"));
+        manager.register("test-id", volume);
+
+        let (id, v) = manager
+            .find_by_root(std::path::Path::new("/"))
+            .expect("InMemoryVolume root is /");
+        assert_eq!(id, "test-id");
+        assert_eq!(v.name(), "Test Volume");
+    }
+
+    #[test]
+    fn test_find_by_root_returns_none_for_unknown_root() {
+        let manager = VolumeManager::new();
+        manager.register("test-id", Arc::new(InMemoryVolume::new("Test")));
+        assert!(
+            manager
+                .find_by_root(std::path::Path::new("/nonexistent/path"))
+                .is_none()
+        );
     }
 
     #[test]

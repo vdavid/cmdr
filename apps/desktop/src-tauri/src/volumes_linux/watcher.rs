@@ -325,7 +325,7 @@ fn register_volume_with_manager(volume_path: &str) {
     use crate::file_system::volume::LocalPosixVolume;
     use std::sync::Arc;
 
-    let volume_id = super::path_to_id(volume_path);
+    let volume_id = super::volume_id_for_mount(volume_path);
 
     // For GVFS SMB shares, extract the share name instead of the raw dirname
     let name = if let Some(dirname) = Path::new(volume_path).file_name().and_then(|n| n.to_str()) {
@@ -344,11 +344,19 @@ fn register_volume_with_manager(volume_path: &str) {
 }
 
 /// Unregister a volume from the global VolumeManager.
+///
+/// Looks up the volume by `root()` first (works even after the mount is gone,
+/// when `volume_id_for_mount`'s SMB branch can no longer recover the right ID).
+/// Falls back to deriving the ID from the path if no entry matches.
 fn unregister_volume_from_manager(volume_path: &str) {
     use crate::file_system::get_volume_manager;
 
-    let volume_id = super::path_to_id(volume_path);
-    get_volume_manager().unregister(&volume_id);
+    let manager = get_volume_manager();
+    let volume_id = manager
+        .find_by_root(Path::new(volume_path))
+        .map(|(id, _)| id)
+        .unwrap_or_else(|| super::volume_id_for_mount(volume_path));
+    manager.unregister(&volume_id);
     debug!("Unregistered volume: {} ({})", volume_id, volume_path);
 }
 

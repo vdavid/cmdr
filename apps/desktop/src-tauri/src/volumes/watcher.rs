@@ -155,15 +155,22 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
     debug!("Volume unmounted: {}", volume_path);
 
     // Call `on_unmount` before unregistering so an `SmbVolume` can disconnect
-    // its smb2 session cleanly.
-    {
-        let volume_id = super::path_to_id(volume_path);
-        if let Some(volume) = crate::file_system::get_volume_manager().get(&volume_id) {
+    // its smb2 session cleanly. Look up by root rather than by path-derived ID:
+    // by the time the unmount notification fires, `statfs(volume_path)` no longer
+    // returns the SMB mount info, so a path-derived ID would miss the SMB volume
+    // we actually need to clean up. See `VolumeManager::find_by_root`.
+    let registered_id = {
+        let manager = crate::file_system::get_volume_manager();
+        let lookup = manager.find_by_root(std::path::Path::new(volume_path));
+        if let Some((id, volume)) = &lookup {
             volume.on_unmount();
+            Some(id.clone())
+        } else {
+            None
         }
-    }
+    };
 
-    unregister_volume_from_manager(volume_path);
+    unregister_volume_from_manager(volume_path, registered_id.as_deref());
 
     if let Some(app) = APP_HANDLE.get() {
         let payload = VolumeEventPayload {
@@ -187,7 +194,7 @@ fn register_volume_with_manager(volume_path: &str) {
     use std::path::Path;
     use std::sync::Arc;
 
-    let volume_id = super::path_to_id(volume_path);
+    let volume_id = super::volume_id_for_mount(volume_path);
 
     let name = Path::new(volume_path)
         .file_name()
@@ -208,10 +215,18 @@ fn register_volume_with_manager(volume_path: &str) {
 }
 
 /// Unregister a volume from the `VolumeManager`.
-fn unregister_volume_from_manager(volume_path: &str) {
+///
+/// If `registered_id` is `Some`, unregister that exact entry. Use this when the
+/// caller has already looked up the volume via `find_by_root` (the unmount path
+/// must do this because `statfs` no longer recovers SMB info after the mount is
+/// gone). Otherwise, fall back to deriving the ID from the path, which is only
+/// safe for local volumes where `path_to_id` is unambiguous.
+fn unregister_volume_from_manager(volume_path: &str, registered_id: Option<&str>) {
     use crate::file_system::get_volume_manager;
 
-    let volume_id = super::path_to_id(volume_path);
+    let volume_id = registered_id
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| super::volume_id_for_mount(volume_path));
     get_volume_manager().unregister(&volume_id);
     debug!("Unregistered volume: {} ({})", volume_id, volume_path);
 }
