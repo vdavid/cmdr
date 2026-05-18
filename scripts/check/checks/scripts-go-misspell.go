@@ -9,7 +9,7 @@ import (
 
 // RunMisspell checks for spelling mistakes.
 func RunMisspell(ctx *CheckContext) (CheckResult, error) {
-	misspellBin, err := EnsureGoTool("misspell", "github.com/client9/misspell/cmd/misspell@latest")
+	misspellBin, err := EnsureGoTool("misspell", "github.com/client9/misspell/cmd/misspell@v0.3.4")
 	if err != nil {
 		return CheckResult{}, err
 	}

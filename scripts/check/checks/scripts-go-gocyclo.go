@@ -12,7 +12,7 @@ const GocycloThreshold = 15
 
 // RunGocyclo checks cyclomatic complexity of Go functions.
 func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
-	gocycloBin, err := EnsureGoTool("gocyclo", "github.com/fzipp/gocyclo/cmd/gocyclo@latest")
+	gocycloBin, err := EnsureGoTool("gocyclo", "github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0")
 	if err != nil {
 		return CheckResult{}, err
 	}

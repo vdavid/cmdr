@@ -19,7 +19,7 @@ func RunCargoDeny(ctx *CheckContext) (CheckResult, error) {
 
 	// Check if cargo-deny is installed
 	if !CommandExists("cargo-deny") {
-		installCmd := exec.Command("cargo", "install", "cargo-deny")
+		installCmd := exec.Command("cargo", "install", "cargo-deny", "--version", "0.19.6", "--locked")
 		if _, err := RunCommand(installCmd, true); err != nil {
 			return CheckResult{}, fmt.Errorf("failed to install cargo-deny: %w", err)
 		}

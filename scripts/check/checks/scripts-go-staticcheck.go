@@ -9,7 +9,7 @@ import (
 
 // RunStaticcheck runs staticcheck for static analysis.
 func RunStaticcheck(ctx *CheckContext) (CheckResult, error) {
-	staticcheckBin, err := EnsureGoTool("staticcheck", "honnef.co/go/tools/cmd/staticcheck@latest")
+	staticcheckBin, err := EnsureGoTool("staticcheck", "honnef.co/go/tools/cmd/staticcheck@v0.7.0")
 	if err != nil {
 		return CheckResult{}, err
 	}

@@ -489,6 +489,15 @@ var AllChecks = []CheckDefinition{
 		IsFast:      true,
 		Run:         RunGoTests,
 	},
+	{
+		ID:          "scripts-go-govulncheck",
+		Nickname:    "govulncheck",
+		DisplayName: "govulncheck",
+		App:         AppScripts,
+		Tech:        "🐹 Go",
+		DependsOn:   nil,
+		Run:         RunGovulncheck,
+	},
 
 	// Monorepo-wide metrics (informational, never fails)
 	{
@@ -518,6 +527,16 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   nil,
 		IsFast:      true,
 		Run:         RunChangelogCommitLinks,
+	},
+	{
+		ID:          "workflows-hardening",
+		Nickname:    "workflows",
+		DisplayName: "workflows hardening",
+		App:         AppOther,
+		Tech:        "🔒 Security",
+		DependsOn:   nil,
+		IsFast:      true,
+		Run:         RunWorkflowsHardening,
 	},
 }
 

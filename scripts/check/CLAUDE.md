@@ -147,7 +147,9 @@ The chosen `RUST_LOG` value is echoed at the top of the timestamped log so it's 
 captured. When unset, the log starts with `=== RUST_LOG unset (default warn level) ===`.
 
 **Go tool auto-install:** `EnsureGoTool(name, installPath)` checks PATH first, then runs `go install` and returns the
-full binary path. Used for staticcheck, nilaway, etc.
+full binary path. Used for staticcheck, nilaway, etc. The `installPath` MUST pin a specific version (`@vX.Y.Z` or a
+pseudo-version), never `@latest`: an `@latest` install is the Go-side equivalent of the wave-1-2 npm-registry-trojan
+vector. Same rule applies to `cargo install` calls inside checks: pin both `--version` and `--locked`.
 
 **TTY detection:** `golang.org/x/term.IsTerminal` gates the live status line; CI logs stay clean.
 
@@ -223,8 +225,9 @@ before tests.
 | Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                                                    |
 | Website    | Docker  | docker-build                                                                                                                                                                                                              |
 | API server | TS      | oxfmt, eslint, typecheck, tests                                                                                                                                                                                           |
-| Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests                                                                                                                                   |
+| Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                      |
 | Other      | Metrics | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links                                                                                                                                           |
+| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                |
 
 ## Output format
 
@@ -259,6 +262,33 @@ output formatting, clearer failure messages. Auto-installed by the check script 
 dependencies (gtk3-rs, unic-\*, fxhash, proc-macro-error, etc.) trigger unmaintained-crate advisories we can't control.
 `cargo-audit` still catches critical security vulnerabilities. License, bans, and sources checks in `cargo-deny` remain
 active. See comment in `src-tauri/deny.toml`.
+
+**Decision**: every operational `cargo` command in checks passes `--locked`. **Why**: without it, cargo silently
+re-resolves `Cargo.lock` whenever upstream metadata shifts (a yank, a new transitive dep version). For a 1028-crate
+lockfile, that resolution window is wide and lets a freshly-published malicious version land mid-build. `--locked`
+fails loudly if the lockfile would change. Applies to `cargo clippy`, `cargo nextest run` (in both `desktop-rust-tests`
+and `desktop-rust-integration-tests`), and `cargo +nightly udeps`. Audit/deny/machete read `Cargo.lock` without
+updating it, so `--locked` is moot for them, but the install of those tools still uses `--locked` to lock the tool's
+own dep tree.
+
+**Decision**: every tool install pins `--version` and `--locked` (cargo) or `@vX.Y.Z` (Go). **Why**: an unpinned tool
+install (`cargo install cargo-audit` or `EnsureGoTool(..., "@latest")`) means each fresh checkout pulls whatever's
+latest. A wave-1-2-class compromise of any of these tool repositories would auto-propagate. Pinning is the Go-side
+equivalent of the pnpm `minimum-release-age` defense (a fresh version can't land without a deliberate bump).
+
+**Decision**: `workflows-hardening` check enforces three GitHub Actions invariants and acts as a regression guard.
+**Why**: cmdr's workflows are already correctly hardened (every third-party action is SHA-pinned with a comment, no
+`pull_request_target` triggers, no workflow-scoped `id-token: write`). Without an automated guard, a future PR or a
+Renovate misconfiguration could silently regress any of those without anyone noticing in review. The check fails on
+tag/branch-pinned third-party actions, on `pull_request_target` triggers (wave-4's entry vector), and on
+workflow-scoped `id-token: write` (must be job-scoped per the wave-4 OIDC-token-extraction lesson). Local actions
+(`./...`) are exempt.
+
+**Decision**: `govulncheck` runs against every Go module. **Why**: cargo-audit covers Rust deps; nothing covered Go
+until now. `govulncheck` is static-analysis-based, so it only flags vulns actually reachable from the code (low false
+positive rate). Most of cmdr's Go modules are dep-free tooling scripts but still call into the Go stdlib, which gets
+its own CVEs; the check found 7 real reachable stdlib vulns the first time it ran (fixed by bumping mise's Go pin).
+Mirrors the cargo-audit role on the Rust side.
 
 **Decision**: `cfg-gate` check to catch ungated macOS-only crate imports. **Why**: Rust code using macOS-only crates
 (from `[target.'cfg(target_os = "macos")'.dependencies]`) compiles fine on macOS but fails on Linux if the `use` isn't

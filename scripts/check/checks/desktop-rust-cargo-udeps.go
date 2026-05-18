@@ -21,14 +21,14 @@ func RunCargoUdeps(ctx *CheckContext) (CheckResult, error) {
 
 	// Check if cargo-udeps is installed
 	if !CommandExists("cargo-udeps") {
-		installCmd := exec.Command("cargo", "install", "cargo-udeps", "--locked")
+		installCmd := exec.Command("cargo", "install", "cargo-udeps", "--version", "0.1.61", "--locked")
 		if _, err := RunCommand(installCmd, true); err != nil {
 			return CheckResult{}, fmt.Errorf("failed to install cargo-udeps: %w", err)
 		}
 	}
 
 	// cargo-udeps requires nightly
-	cmd := exec.Command("cargo", "+nightly", "udeps", "--all-targets")
+	cmd := exec.Command("cargo", "+nightly", "udeps", "--locked", "--all-targets")
 	cmd.Dir = rustDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {

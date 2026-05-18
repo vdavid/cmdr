@@ -19,7 +19,7 @@ func RunCargoMachete(ctx *CheckContext) (CheckResult, error) {
 	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
 
 	if !CommandExists("cargo-machete") {
-		installCmd := exec.Command("cargo", "install", "cargo-machete", "--locked")
+		installCmd := exec.Command("cargo", "install", "cargo-machete", "--version", "0.9.2", "--locked")
 		if output, err := RunCommand(installCmd, true); err != nil {
 			return CheckResult{}, fmt.Errorf("failed to install cargo-machete\n%s", indentOutput(output))
 		}
