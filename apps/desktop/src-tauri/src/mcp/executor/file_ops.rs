@@ -154,16 +154,21 @@ pub async fn execute_mkfile<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     Ok(json!("OK: Create file dialog opened."))
 }
 
-/// Execute refresh command. Ack: pane generation advances after the FE re-pushes state.
+/// Execute refresh command.
+///
+/// TODO(mcp-ack): No reliable ack signal yet. `refresh` asks the FE to re-list the
+/// current pane. If the listing comes back byte-identical to the cached state (very
+/// common for MTP and SMB after an operation already pushed fresh state, or for any
+/// pane that hasn't drifted since the last update), the FE skips the
+/// `update_*_pane_state` call to avoid a redundant generation bump. That leaves
+/// `refresh` without a `GenerationAdvanced` signal.
+///
+/// Two acceptable follow-ups: (1) switch to `mcp_round_trip` so the FE explicitly
+/// emits `mcp-response` once re-list completes regardless of whether state changed;
+/// (2) always bump generation on re-list. Until one of those, refresh stays
+/// fire-and-forget. The original bug is less acute here than for destructive tools.
 pub async fn execute_refresh<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    let pre_gen = snapshot_generation(app);
     app.emit("mcp-refresh", ())?;
-    wait_for_ack(
-        app,
-        AckSignal::GenerationAdvanced { from: pre_gen },
-        DEFAULT_ACK_TIMEOUT,
-    )
-    .await?;
     Ok(json!("OK: Pane refreshed"))
 }
 
