@@ -22,6 +22,7 @@
     let contentElement: HTMLElement | null = $state(null)
     let unlistenFocusSelf: UnlistenFn | undefined
     let unlistenNavigate: UnlistenFn | undefined
+    let unlistenMcpClose: UnlistenFn | undefined
 
     function safeParseSectionParam(raw: string): string[] | null {
         try {
@@ -217,6 +218,19 @@
                 handleSectionSelect(event.payload.section)
             })
 
+            // MCP can request that this window close (used by `dialog close settings`).
+            // Mirror the Escape-key handler: defer the close() by two rAFs so the in-flight
+            // IPC ack can settle before webkit2gtk begins destroying the webview.
+            unlistenMcpClose = await listen('mcp-settings-close', () => {
+                log.debug('Received mcp-settings-close, closing window')
+                const win = getCurrentWindow()
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        void win.close()
+                    })
+                })
+            })
+
             log.debug('Settings page ready')
         } catch (error) {
             log.error('Failed to initialize settings: {error}', { error })
@@ -231,6 +245,7 @@
         // Clean up event listeners
         unlistenFocusSelf?.()
         unlistenNavigate?.()
+        unlistenMcpClose?.()
         cleanupAccentColor()
         cleanupTextSize()
     })

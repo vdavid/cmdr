@@ -179,6 +179,26 @@ fn soft_dialog_tracker_membership_matches_ack_check() {
 }
 
 #[test]
+fn soft_dialog_disappeared_signal_flips_after_close() {
+    // The ack contract for `dialog close <confirmation>` relies on the tracker
+    // losing the dialog ID. Pins the semantic: after `close()` the tracker reports
+    // the id as absent, which is what `AckSignal::SoftDialogDisappeared` checks.
+    let tracker = SoftDialogTracker::new();
+    let id = "mkdir-confirmation";
+
+    tracker.open(id.to_string());
+    let after_open_absent = !tracker.get_open_types().iter().any(|d| d == id);
+    assert!(!after_open_absent, "dialog must be present right after open");
+
+    tracker.close(id);
+    let after_close_absent = !tracker.get_open_types().iter().any(|d| d == id);
+    assert!(
+        after_close_absent,
+        "tracker must report the dialog as gone after close — this is what `SoftDialogDisappeared` polls"
+    );
+}
+
+#[test]
 fn soft_dialog_tracker_distinguishes_dialog_ids() {
     // Important for the ack contract: copy/move both open "transfer-confirmation",
     // but delete opens "delete-confirmation". The tracker must distinguish so the
