@@ -5,6 +5,7 @@
   "timezone": "Europe/Budapest",
   "automerge": true,
   "platformAutomerge": true,
+  "minimumReleaseAge": "14 days",
   "packageRules": [
     {
       "description": "Group all non-major updates into one weekly PR",
@@ -36,6 +37,7 @@
   "vulnerabilityAlerts": {
     "enabled": true,
     "schedule": ["at any time"],
-    "automerge": true
+    "automerge": true,
+    "minimumReleaseAge": "3 days"
   }
 }
