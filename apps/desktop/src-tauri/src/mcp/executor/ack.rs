@@ -17,9 +17,29 @@
 //! - `WindowAppeared` / `WindowDisappeared`: a Tauri webview window with the given label
 //!   prefix appeared (or vanished). Use this for child windows (settings, file-viewer,
 //!   about) and for `dialog close` actions.
-//! - `Any`: succeeds when any of the inner signals fire (logical OR). Used by
-//!   `open_under_cursor` where opening a directory bumps the pane generation but opening
-//!   a file launches a viewer window.
+//! - `WindowCountBelow`: the number of windows matching a label prefix is strictly less
+//!   than a snapshotted count. Use this for close-one-of-many scenarios (closing a
+//!   specific `viewer-*` window by path) where `WindowDisappeared` would only fire when
+//!   ALL viewers are gone.
+//!
+//! Multi-mode tools that can produce different signals depending on what happened (the
+//! original `open_under_cursor` was the only such case) live outside the ack contract
+//! entirely — they use `mcp_round_trip` and let the FE explicitly signal completion. An
+//! earlier `AckSignal::Any` variant tried to OR these together but couldn't cover the
+//! OS-open branch (Enter on a non-directory file produces neither a state push nor a
+//! viewer window); round-trip is the only honest ack for that shape.
+//!
+//! ## Caveat: `GenerationAdvanced` is not a per-action ack
+//!
+//! `snapshot_generation` + dispatch + wait for `GenerationAdvanced` proves the FE pushed
+//! pane state recently after dispatch — not that it specifically handled this action. An
+//! unrelated state push (other pane's MTP watcher, a tab refresh) between the snapshot
+//! and the dispatch can satisfy the signal without the FE having processed our event.
+//! In practice this is a much weaker false-positive class than the original "always OK"
+//! bug (the FE was almost certainly running, since something pushed state), so the
+//! contract is acceptable. Stronger guarantees would require either a request-id-based
+//! `mcp-response` round-trip (see `mcp_round_trip`) or per-tool FE acks. TODO(mcp-ack):
+//! revisit if real-world false positives surface.
 //!
 //! ## Timeout
 //!
@@ -48,6 +68,13 @@ use crate::mcp::pane_state::PaneStateStore;
 /// Default ack budget. Backend-side latency budget; not a client-facing knob.
 pub const DEFAULT_ACK_TIMEOUT: Duration = Duration::from_millis(1500);
 
+/// Ack budget for navigation tools whose state push can include a directory listing
+/// against a remote backend (SMB/MTP). Local paths still ack in ~50 ms; remote paths
+/// can take a few seconds end-to-end. 5 s strikes a balance: still bounded, but no
+/// spurious timeouts on a working remote share. `nav_to_path` and `select_volume`
+/// use higher round-trip budgets via `mcp_round_trip_with_timeout`.
+pub const NAV_ACK_TIMEOUT: Duration = Duration::from_secs(5);
+
 /// Polling cadence for state-driven signals. Matches the existing `await` tool.
 const STATE_POLL_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -70,11 +97,15 @@ pub enum AckSignal {
     /// A Tauri webview window whose label equals (or starts with, for viewers)
     /// the given pattern appeared.
     WindowAppeared(&'static str),
-    /// A Tauri webview window matching the pattern vanished.
+    /// A Tauri webview window matching the pattern vanished. For prefix families
+    /// like `viewer`, this fires only when zero matching windows remain; use
+    /// `WindowCountBelow` to wait for *one* viewer to close while others stay open.
     WindowDisappeared(&'static str),
-    /// Succeeds when any inner signal fires. Used for tools where the ack
-    /// kind depends on what got opened (for example `open_under_cursor`).
-    Any(Vec<AckSignal>),
+    /// The number of webview windows matching the pattern is strictly less than
+    /// `threshold`. Used to ack "close one of N viewers" cleanly: snapshot the
+    /// count, dispatch the close, wait for the count to drop. For close-all,
+    /// use `threshold: 1` (i.e., wait for count to reach 0).
+    WindowCountBelow { prefix: &'static str, threshold: usize },
 }
 
 impl AckSignal {
@@ -88,9 +119,8 @@ impl AckSignal {
             AckSignal::SoftDialogDisappeared(id) => format!("soft dialog '{id}' closed"),
             AckSignal::WindowAppeared(label) => format!("window '{label}' opened"),
             AckSignal::WindowDisappeared(label) => format!("window '{label}' closed"),
-            AckSignal::Any(signals) => {
-                let parts: Vec<String> = signals.iter().map(|s| s.describe()).collect();
-                format!("any of [{}]", parts.join(", "))
+            AckSignal::WindowCountBelow { prefix, threshold } => {
+                format!("window count for '{prefix}' < {threshold}")
             }
         }
     }
@@ -150,26 +180,43 @@ fn check_signal<R: Runtime>(app: &AppHandle<R>, signal: &AckSignal) -> bool {
         AckSignal::SoftDialogDisappeared(id) => app
             .try_state::<SoftDialogTracker>()
             .map(|tracker| !tracker.get_open_types().iter().any(|d| d == id))
-            // If the tracker isn't registered (test contexts), treat the dialog as
-            // gone — there's nothing to wait for.
+            // Asymmetry vs. SoftDialogAppeared (which returns false when the tracker
+            // isn't registered): if the tracker isn't there, no dialog is open either,
+            // so "this dialog is gone" is trivially true. The Appeared variant must
+            // wait — without a tracker it can never see the dialog. Lets unit tests
+            // drive close paths without spinning up a tracker fixture, while keeping
+            // the open path strict.
             .unwrap_or(true),
         AckSignal::WindowAppeared(pattern) => window_matches(app, pattern),
         AckSignal::WindowDisappeared(pattern) => !window_matches(app, pattern),
-        AckSignal::Any(signals) => signals.iter().any(|s| check_signal(app, s)),
+        AckSignal::WindowCountBelow { prefix, threshold } => count_windows_matching(app, prefix) < *threshold,
     }
 }
 
 /// True if any Tauri webview window has a label exactly equal to `pattern`,
 /// or (for the `viewer` family) starting with `pattern-`.
 fn window_matches<R: Runtime>(app: &AppHandle<R>, pattern: &str) -> bool {
+    count_windows_matching(app, pattern) > 0
+}
+
+/// Count of Tauri webview windows matching `pattern`. For prefix families
+/// (`viewer`), counts every `viewer-*` window; for exact labels (`settings`,
+/// `file-viewer-help`, etc.), returns 0 or 1.
+fn count_windows_matching<R: Runtime>(app: &AppHandle<R>, pattern: &str) -> usize {
     let windows = app.webview_windows();
-    // `viewer-` is a label prefix family — each opened file has its own
-    // `viewer-<id>` window. Other tracked labels (settings, about) are exact.
     if pattern == "viewer" {
-        windows.keys().any(|k| k.starts_with("viewer-"))
+        windows.keys().filter(|k| k.starts_with("viewer-")).count()
+    } else if windows.contains_key(pattern) {
+        1
     } else {
-        windows.contains_key(pattern)
+        0
     }
+}
+
+/// Snapshot the current count of Tauri webview windows matching `prefix`.
+/// Use with `WindowCountBelow { threshold: snapshot }` to ack on "one closed."
+pub fn snapshot_window_count<R: Runtime>(app: &AppHandle<R>, prefix: &'static str) -> usize {
+    count_windows_matching(app, prefix)
 }
 
 /// Whether any leaf in the signal tree references windows or soft dialogs.
@@ -179,10 +226,10 @@ fn signal_uses_windows(signal: &AckSignal) -> bool {
     match signal {
         AckSignal::WindowAppeared(_)
         | AckSignal::WindowDisappeared(_)
+        | AckSignal::WindowCountBelow { .. }
         | AckSignal::SoftDialogAppeared(_)
         | AckSignal::SoftDialogDisappeared(_) => true,
-        AckSignal::Any(signals) => signals.iter().any(signal_uses_windows),
-        _ => false,
+        AckSignal::GenerationAdvanced { .. } => false,
     }
 }
 
@@ -223,13 +270,13 @@ mod tests {
         assert!(closed.contains("closed"));
         assert!(AckSignal::WindowAppeared("settings").describe().contains("settings"));
         assert!(AckSignal::WindowDisappeared("settings").describe().contains("settings"));
-        let any = AckSignal::Any(vec![
-            AckSignal::GenerationAdvanced { from: 1 },
-            AckSignal::WindowAppeared("viewer"),
-        ]);
-        let s = any.describe();
-        assert!(s.contains("any of"));
-        assert!(s.contains("viewer"));
+        let count = AckSignal::WindowCountBelow {
+            prefix: "viewer",
+            threshold: 3,
+        }
+        .describe();
+        assert!(count.contains("viewer"));
+        assert!(count.contains("3"));
     }
 
     #[test]
@@ -239,10 +286,10 @@ mod tests {
         assert!(signal_uses_windows(&AckSignal::SoftDialogDisappeared(
             "mkdir-confirmation"
         )));
-        assert!(signal_uses_windows(&AckSignal::Any(vec![
-            AckSignal::GenerationAdvanced { from: 0 },
-            AckSignal::WindowAppeared("viewer"),
-        ])));
+        assert!(signal_uses_windows(&AckSignal::WindowCountBelow {
+            prefix: "viewer",
+            threshold: 1,
+        }));
     }
 
     // Verifies the core promise: once the generation strictly advances past

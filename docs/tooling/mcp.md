@@ -4,8 +4,9 @@ Two MCP servers are available when the app is running via `pnpm dev`.
 
 ## Servers
 
-- **cmdr** (port 19224 prod / 19225 dev): High-level app control: navigation, file operations, search, dialogs, state inspection. This is
-  the primary way to test and interact with the running app. Architecture docs: `src-tauri/src/mcp/CLAUDE.md`.
+- **cmdr** (port 19224 prod / 19225 dev): High-level app control: navigation, file operations, search, dialogs, state
+  inspection. This is the primary way to test and interact with the running app. Architecture docs:
+  `src-tauri/src/mcp/CLAUDE.md`.
 - **tauri** (port 9223): Low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
   verification and UI automation.
 
@@ -37,9 +38,13 @@ Code's MCP integration is connected. Always call `tools/list` first if you're un
 ## Action-tool ack contract
 
 Action tools (`copy`, `move`, `delete`, `mkdir`, `mkfile`, `select`, `toggle_hidden`, `set_view_mode`, `sort`, `tab`,
-`open_under_cursor`, `nav_to_parent`, `nav_back`, `nav_forward`, and `dialog` open/close/focus/confirm) now wait for the
-frontend to acknowledge the dispatched action before returning `OK`. Default budget is 1500 ms. If the FE is stalled,
-the tool returns a typed error naming the missing signal — no more false-positive `OK`s.
+`nav_to_parent`, `nav_back`, `nav_forward`, and `dialog` open/close/focus/confirm) now wait for the frontend to
+acknowledge the dispatched action before returning `OK`. Default budget is 1500 ms; the navigation family
+(`nav_to_parent`, `nav_back`, `nav_forward`) gets 5 s because remote backends (SMB, MTP) routinely need a few seconds
+for their directory listing even on success. `open_under_cursor` uses a true round-trip (`mcp-response` from the FE
+after the action resolves, 5 s timeout) because Enter on a non-directory file delegates to the OS default app, which
+produces neither a state push nor a viewer window — the FE is the only source of truth for "this finished." If the FE is
+stalled, the tool returns a typed error naming the missing signal — no more false-positive `OK`s.
 
 `refresh` is the one tool that stays fire-and-forget for now: the FE skips state pushes when the re-listing is
 byte-identical to the cached state, so there's no reliable ack signal. Search the Rust codebase for `TODO(mcp-ack):` to
@@ -52,9 +57,10 @@ What this means for automation:
 - For long-running operations, poll completion via the `await` tool just like before.
 - Timeouts surface as JSON-RPC errors with a clear message ("Action not acknowledged by backend within 1500 ms (waiting
   for: …)"). Treat them as real failures — don't retry blindly; check `cmdr://state` to triage.
-- One legit timeout source: navigating into a remote share (`open_under_cursor` on an SMB host, `nav_to_path` into
-  `/Volumes/<share>` right after a mount) can take a few seconds end-to-end. The tool will time out at 1500 ms even
-  though the navigation eventually succeeds. Use `await` with `path` or `path_contains` after dispatching to confirm.
+- `dialog close file-viewer` on a path that isn't open returns an `invalid_params` error fast ("No file viewer windows
+  are open"); closing one of multiple viewers acks as soon as the count drops by one, not when all viewers vanish.
+- Very slow remote shares can still exceed even the 5 s nav budget. If a nav tool times out but the navigation actually
+  succeeds in the background, follow up with `await` (`path` / `path_contains`) to confirm the destination landed.
 
 Architecture details: `apps/desktop/src-tauri/src/mcp/CLAUDE.md` § "Action-tool ack contract".
 

@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
-    AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_round_trip, mcp_round_trip_with_timeout,
+    AckSignal, NAV_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_round_trip, mcp_round_trip_with_timeout,
     snapshot_generation, wait_for_ack,
 };
 
@@ -16,11 +16,34 @@ use super::{
 /// Ack contract:
 /// - `nav_to_parent`, `nav_back`, `nav_forward` → pane generation must advance (path
 ///   changes get pushed via `update_*_pane_state`).
-/// - `open_under_cursor` → either pane generation advances (directory case, path
-///   changes) OR a `viewer-*` window appears (file case). We OR both signals.
+/// - `open_under_cursor` → round-trip via `mcp-open-under-cursor`. The FE awaits the
+///   resolved action (directory navigation, viewer window, or OS open-with-default) and
+///   emits `mcp-response`. We can't rely on `GenerationAdvanced` or `WindowAppeared`
+///   here because the OS-open branch produces neither — `openFile()` hands the path to
+///   the OS default and returns, no state push, no viewer window. The round-trip is the
+///   only honest ack for this multi-mode command.
+///
+/// The `nav_to_parent` / `nav_back` / `nav_forward` family uses `NAV_ACK_TIMEOUT` (5 s)
+/// instead of the default 1500 ms because navigation can touch a remote backend
+/// (SMB/MTP), whose directory listing can take a few seconds even on success. With the
+/// default budget, every remote-share `Enter` would surface a false-negative timeout
+/// while the navigation actually succeeded in the background.
 pub async fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
+    if name == "open_under_cursor" {
+        // Round-trip: FE awaits `handleNavigate(entry)` and emits `mcp-response`.
+        // 5 s timeout covers the slow case (large directory listing) without being
+        // open-ended.
+        return mcp_round_trip_with_timeout(
+            app,
+            "mcp-open-under-cursor",
+            json!({}),
+            "OK: Opened item under cursor".to_string(),
+            5,
+        )
+        .await;
+    }
+
     let key = match name {
-        "open_under_cursor" => "Enter",
         "nav_to_parent" => "Backspace",
         "nav_back" => "GoBack",       // Custom event, handled by frontend
         "nav_forward" => "GoForward", // Custom event
@@ -28,7 +51,6 @@ pub async fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> 
     };
 
     let action = match name {
-        "open_under_cursor" => "Opened item under cursor",
         "nav_to_parent" => "Navigated to parent directory",
         "nav_back" => "Navigated back",
         "nav_forward" => "Navigated forward",
@@ -38,16 +60,7 @@ pub async fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> 
     let pre_gen = snapshot_generation(app);
     app.emit("mcp-key", json!({"key": key}))?;
 
-    // Pick the ack signal that matches what this command can actually produce.
-    let signal = if name == "open_under_cursor" {
-        AckSignal::Any(vec![
-            AckSignal::GenerationAdvanced { from: pre_gen },
-            AckSignal::WindowAppeared("viewer"),
-        ])
-    } else {
-        AckSignal::GenerationAdvanced { from: pre_gen }
-    };
-    wait_for_ack(app, signal, DEFAULT_ACK_TIMEOUT).await?;
+    wait_for_ack(app, AckSignal::GenerationAdvanced { from: pre_gen }, NAV_ACK_TIMEOUT).await?;
     Ok(json!(format!("OK: {action}")))
 }
 

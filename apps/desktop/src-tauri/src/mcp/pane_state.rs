@@ -145,6 +145,22 @@ impl PaneStateStore {
         self.generation.fetch_add(1, Ordering::Relaxed);
     }
 
+    /// Update the tab list for a single pane. Mirrors `set_left`/`set_right` in
+    /// bumping the generation counter so the MCP `tab` action tool's ack signal
+    /// (`GenerationAdvanced`) fires when the FE confirms a tab change. Returns
+    /// `false` if `pane` is neither `"left"` nor `"right"` (the caller already
+    /// dispatched the event, so silent drop matches the prior behavior).
+    pub fn set_tabs(&self, pane: &str, tabs: Vec<TabInfo>) -> bool {
+        let pane_state = match pane {
+            "left" => &self.left,
+            "right" => &self.right,
+            _ => return false,
+        };
+        pane_state.write().unwrap().tabs = tabs;
+        self.generation.fetch_add(1, Ordering::Relaxed);
+        true
+    }
+
     pub fn get_generation(&self) -> u64 {
         self.generation.load(Ordering::Relaxed)
     }
@@ -191,20 +207,15 @@ pub fn update_focused_pane(app: AppHandle, pane: String) {
 
 /// Tauri command to update tab list for a pane from frontend (for MCP state reporting).
 ///
-/// Bumps the generation counter so the MCP `tab` action tool's ack signal (which uses
-/// `GenerationAdvanced`) fires when the FE confirms a tab change. Without the bump, the
-/// tab tool would time out on every call: tab pushes bypass `set_left`/`set_right`.
+/// Delegates to `PaneStateStore::set_tabs`, which bumps the generation counter so the
+/// MCP `tab` action tool's ack signal (`GenerationAdvanced`) fires when the FE confirms
+/// a tab change. Without that bump the tab tool would time out on every call: tab
+/// pushes bypass `set_left`/`set_right`.
 #[tauri::command]
 #[specta::specta]
 pub fn update_pane_tabs(app: AppHandle, pane: String, tabs: Vec<TabInfo>) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
-        let pane_state = match pane.as_str() {
-            "left" => &store.left,
-            "right" => &store.right,
-            _ => return,
-        };
-        pane_state.write().unwrap().tabs = tabs;
-        store.generation.fetch_add(1, Ordering::Relaxed);
+        store.set_tabs(pane.as_str(), tabs);
     }
 }
 
