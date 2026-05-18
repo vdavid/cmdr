@@ -61,6 +61,12 @@ pub enum AckSignal {
     GenerationAdvanced { from: u64 },
     /// A soft dialog with this ID appeared in `SoftDialogTracker`.
     SoftDialogAppeared(&'static str),
+    /// A soft dialog with this ID is no longer present in `SoftDialogTracker`.
+    /// Use this when an MCP tool dispatches a close to a soft (overlay) dialog:
+    /// the FE's `ModalDialog` runs `notifyDialogClosed` on destroy, so the
+    /// tracker reflects the close even when the surrounding pane state didn't
+    /// change (e.g. cancelling a confirmation dialog doesn't bump generation).
+    SoftDialogDisappeared(&'static str),
     /// A Tauri webview window whose label equals (or starts with, for viewers)
     /// the given pattern appeared.
     WindowAppeared(&'static str),
@@ -79,6 +85,7 @@ impl AckSignal {
                 format!("pane state generation > {from}")
             }
             AckSignal::SoftDialogAppeared(id) => format!("soft dialog '{id}' opened"),
+            AckSignal::SoftDialogDisappeared(id) => format!("soft dialog '{id}' closed"),
             AckSignal::WindowAppeared(label) => format!("window '{label}' opened"),
             AckSignal::WindowDisappeared(label) => format!("window '{label}' closed"),
             AckSignal::Any(signals) => {
@@ -140,6 +147,12 @@ fn check_signal<R: Runtime>(app: &AppHandle<R>, signal: &AckSignal) -> bool {
             .try_state::<SoftDialogTracker>()
             .map(|tracker| tracker.get_open_types().iter().any(|d| d == id))
             .unwrap_or(false),
+        AckSignal::SoftDialogDisappeared(id) => app
+            .try_state::<SoftDialogTracker>()
+            .map(|tracker| !tracker.get_open_types().iter().any(|d| d == id))
+            // If the tracker isn't registered (test contexts), treat the dialog as
+            // gone — there's nothing to wait for.
+            .unwrap_or(true),
         AckSignal::WindowAppeared(pattern) => window_matches(app, pattern),
         AckSignal::WindowDisappeared(pattern) => !window_matches(app, pattern),
         AckSignal::Any(signals) => signals.iter().any(|s| check_signal(app, s)),
@@ -159,10 +172,15 @@ fn window_matches<R: Runtime>(app: &AppHandle<R>, pattern: &str) -> bool {
     }
 }
 
-/// Whether any leaf in the signal tree references windows. Drives poll cadence.
+/// Whether any leaf in the signal tree references windows or soft dialogs.
+/// Both are FE-side mutations that don't require a full pane-state push, so
+/// they should react with the tighter cadence.
 fn signal_uses_windows(signal: &AckSignal) -> bool {
     match signal {
-        AckSignal::WindowAppeared(_) | AckSignal::WindowDisappeared(_) => true,
+        AckSignal::WindowAppeared(_)
+        | AckSignal::WindowDisappeared(_)
+        | AckSignal::SoftDialogAppeared(_)
+        | AckSignal::SoftDialogDisappeared(_) => true,
         AckSignal::Any(signals) => signals.iter().any(signal_uses_windows),
         _ => false,
     }
@@ -200,6 +218,9 @@ mod tests {
                 .describe()
                 .contains("delete-confirmation")
         );
+        let closed = AckSignal::SoftDialogDisappeared("mkdir-confirmation").describe();
+        assert!(closed.contains("mkdir-confirmation"));
+        assert!(closed.contains("closed"));
         assert!(AckSignal::WindowAppeared("settings").describe().contains("settings"));
         assert!(AckSignal::WindowDisappeared("settings").describe().contains("settings"));
         let any = AckSignal::Any(vec![
@@ -215,6 +236,9 @@ mod tests {
     fn signal_uses_windows_picks_tighter_cadence() {
         assert!(!signal_uses_windows(&AckSignal::GenerationAdvanced { from: 0 }));
         assert!(signal_uses_windows(&AckSignal::WindowAppeared("settings")));
+        assert!(signal_uses_windows(&AckSignal::SoftDialogDisappeared(
+            "mkdir-confirmation"
+        )));
         assert!(signal_uses_windows(&AckSignal::Any(vec![
             AckSignal::GenerationAdvanced { from: 0 },
             AckSignal::WindowAppeared("viewer"),

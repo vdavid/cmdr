@@ -67,11 +67,14 @@ The mechanism lives in `executor/ack.rs`. Each tool:
 | ------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `GenerationAdvanced`     | `PaneStateStore.generation` is strictly greater than the captured value | Anything that mutates pane state (`select`, `set_view_mode`, `sort`, `toggle_hidden`, `tab`, `nav_*`, auto-confirmed `copy`/`move`/`delete`, `dialog confirm`). NOT `refresh` — see TODO note below.                                  |
 | `SoftDialogAppeared(id)` | A soft dialog with that ID is in `SoftDialogTracker`                    | Confirmation dialogs from `copy`/`move`/`delete` (autoConfirm: false), `mkdir`, `mkfile`; `dialog open about`                    |
+| `SoftDialogDisappeared(id)` | A soft dialog with that ID is no longer in `SoftDialogTracker`        | `dialog close <confirmation>` — the FE `ModalDialog` fires `notifyDialogClosed` on unmount, so the tracker reflects the close even when cancel doesn't bump pane generation |
 | `WindowAppeared(label)`  | A `webview_windows()` entry matches the label (exact, or `viewer-*`)    | `dialog open settings|file-viewer`, `dialog focus`                                                                               |
 | `WindowDisappeared`      | The matching `webview_windows()` entry is gone                          | `dialog close settings|file-viewer|about`                                                                                        |
 | `Any([...])`             | Logical OR — any inner signal fires                                     | `open_under_cursor` (directory case bumps generation, file case opens a viewer window)                                           |
 
-The polling cadence is 250 ms for state-driven signals (matching the existing `await` tool) and 100 ms for window/dialog appearance signals (windows show up faster than full pane state pushes).
+The polling cadence is 250 ms for state-driven signals (matching the existing `await` tool) and 100 ms for window/soft-dialog signals (both react faster than a full pane state push).
+
+**Gotcha/Why**: `dialog close <settings>` requires the settings window to listen for the `mcp-settings-close` event and close itself (`apps/desktop/src/routes/settings/+page.svelte`). Without that listener the backend keeps polling for `WindowDisappeared("settings")` and times out at 1500 ms while the window stays put. Same shape applies if you add new window-based dialogs: the FE side has to opt in.
 
 The 1500 ms budget is a backend-side latency budget, not a client-facing knob: MCP clients shouldn't have to tune ack timeouts. Bump it per-call via the `Duration` argument to `wait_for_ack` if a specific operation has a known higher latency floor; don't expose it as a tool parameter.
 

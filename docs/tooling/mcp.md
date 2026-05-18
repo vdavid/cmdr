@@ -52,6 +52,9 @@ What this means for automation:
 - For long-running operations, poll completion via the `await` tool just like before.
 - Timeouts surface as JSON-RPC errors with a clear message ("Action not acknowledged by backend within 1500 ms (waiting
   for: …)"). Treat them as real failures — don't retry blindly; check `cmdr://state` to triage.
+- One legit timeout source: navigating into a remote share (`open_under_cursor` on an SMB host, `nav_to_path` into
+  `/Volumes/<share>` right after a mount) can take a few seconds end-to-end. The tool will time out at 1500 ms even
+  though the navigation eventually succeeds. Use `await` with `path` or `path_contains` after dispatching to confirm.
 
 Architecture details: `apps/desktop/src-tauri/src/mcp/CLAUDE.md` § "Action-tool ack contract".
 

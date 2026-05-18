@@ -4,7 +4,8 @@
 //! - `open settings|file-viewer|about` → child window appears in `webview_windows()`.
 //! - `open` confirmation dialogs → not allowed (use copy/move/delete/mkdir/mkfile instead).
 //! - `close settings|file-viewer|about` → matching window disappears.
-//! - `close <confirmation>` → soft dialog is no longer in the tracker, ack via dialog gone.
+//! - `close <confirmation>` → soft dialog is no longer in `SoftDialogTracker`. Cancel
+//!   doesn't reliably bump pane generation, so we wait for the tracker entry to vanish.
 //! - `focus settings|file-viewer|about` → window is present (no-op fast path; if the
 //!   window isn't there, the wait_for_ack times out, which is the correct contract for
 //!   focusing a non-existent dialog).
@@ -197,14 +198,13 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
         }
         "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
             app.emit("close-confirmation", ())?;
-            // For soft confirmation dialogs we can't directly probe a "disappeared"
-            // signal — we'd need a NotSoftDialog variant. Instead, ack on a generation
-            // bump: when the dialog closes, the FE typically re-pushes pane state.
-            // Pragmatic and matches the current FE behavior.
-            let pre_gen = snapshot_generation(app);
+            // Soft confirmation dialogs unmount their `ModalDialog`, which fires
+            // `notifyDialogClosed` and updates the `SoftDialogTracker`. Wait for the
+            // tracker to lose the dialog ID. Cancel doesn't reliably bump generation
+            // (that's what we used to wait for, and it broke on every cancel).
             wait_for_ack(
                 app,
-                AckSignal::GenerationAdvanced { from: pre_gen },
+                AckSignal::SoftDialogDisappeared(soft_dialog_id(dialog_type)),
                 DEFAULT_ACK_TIMEOUT,
             )
             .await?;
