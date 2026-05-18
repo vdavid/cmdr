@@ -88,6 +88,35 @@ export type BriefColumnWidthMode = 'paneWidth' | 'limited'
 export type AppColor = 'system' | 'cmdr-gold'
 export type SizeColorsPalette = 'none' | 'app' | 'rainbow'
 export type DateColorsPalette = 'off' | 'app' | 'wilting'
+export type VolumeTintColor =
+  | 'none'
+  | 'red'
+  | 'orange'
+  | 'amber'
+  | 'lime'
+  | 'green'
+  | 'teal'
+  | 'cyan'
+  | 'blue'
+  | 'indigo'
+  | 'purple'
+  | 'pink'
+  | 'brown'
+/** Ordered list of selectable tints (excludes 'none'), as shown in the picker. */
+export const VOLUME_TINT_COLORS: readonly Exclude<VolumeTintColor, 'none'>[] = [
+  'red',
+  'orange',
+  'amber',
+  'lime',
+  'green',
+  'teal',
+  'cyan',
+  'blue',
+  'indigo',
+  'purple',
+  'pink',
+  'brown',
+] as const
 export type AiProvider = 'off' | 'cloud' | 'local'
 export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
 
@@ -102,6 +131,9 @@ export interface SettingsValues {
   'appearance.dateColors': DateColorsPalette
   'appearance.dateTimeFormat': DateTimeFormat
   'appearance.customDateTimeFormat': string
+  'appearance.tintLocal': VolumeTintColor
+  'appearance.tintSmb': VolumeTintColor
+  'appearance.tintMtp': VolumeTintColor
 
   // Listing
   'listing.directorySortMode': DirectorySortMode

@@ -20,6 +20,9 @@ vi.mock('$lib/settings/settings-store', () => ({
     if (key === 'appearance.dateTimeFormat') return 'iso'
     if (key === 'appearance.customDateTimeFormat') return 'YYYY-MM-DD HH:mm'
     if (key === 'listing.stripedRows') return false
+    if (key === 'appearance.tintLocal') return 'none'
+    if (key === 'appearance.tintSmb') return 'none'
+    if (key === 'appearance.tintMtp') return 'none'
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),

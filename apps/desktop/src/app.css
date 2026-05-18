@@ -97,6 +97,34 @@
   /* === Striped rows (zebra striping for file lists) === */
   --color-bg-stripe: color-mix(in oklch, var(--color-bg-primary), var(--color-text-primary) 4%);
 
+  /* === Volume tint palette (12 hues + none) ===
+     The 100% saturated swatches shown in the Settings color picker for
+     `appearance.tint{Local,Smb,Mtp}`. At pane render time, the chosen tint
+     is mixed against `--color-bg-primary` at 5% (10% under
+     `prefers-contrast: more`) via the `--pane-tint` custom property
+     applied in `FilePane.svelte`. Tuned at full saturation for clear
+     identity in the picker; the `color-mix(in oklch, …)` does the
+     heavy lifting on perceptual uniformity once thinned out. */
+  --color-tint-red: #ef4444;
+  --color-tint-orange: #f97316;
+  --color-tint-amber: #f59e0b;
+  --color-tint-lime: #84cc16;
+  --color-tint-green: #22c55e;
+  --color-tint-teal: #14b8a6;
+  --color-tint-cyan: #06b6d4;
+  --color-tint-blue: #3b82f6;
+  --color-tint-indigo: #6366f1;
+  --color-tint-purple: #a855f7;
+  --color-tint-pink: #ec4899;
+  --color-tint-brown: #92400e;
+
+  /* Tint mix intensity. The pane bg is `--color-bg-primary` mixed with the
+     chosen tint at these percentages. `prefers-contrast: more` (below)
+     raises the tint share to 15% for better visual separation under high
+     contrast. */
+  --pane-tint-bg-pct: 90%;
+  --pane-tint-fg-pct: 10%;
+
   /* === Selection === */
   --color-selection-fg: #c9a227;
 
@@ -348,6 +376,12 @@
     /* === Hover tints === */
     --color-tint-hover: color-mix(in srgb, white, transparent 94%);
 
+    /* Volume tints need more presence on dark backgrounds: a 10% mix against
+       `#1e1e1e` mostly vanishes. 15% gets the hue across without coloring
+       text. `prefers-contrast: more` below stacks on top for 25%. */
+    --pane-tint-bg-pct: 85%;
+    --pane-tint-fg-pct: 15%;
+
     /* === Focus ring shadow === */
     --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, white, transparent 92%);
 
@@ -394,6 +428,26 @@
     --color-age-recent: #a8d040;
     --color-age-aging: #dcc24a;
     --color-age-old: #d49858;
+  }
+}
+
+/* Raise volume-tint intensity for users who request more contrast.
+   Light scheme: 10% → 15%. Dark scheme: 15% baseline (see dark block above)
+   → 25% (combined query below). */
+@media (prefers-contrast: more) {
+  :root {
+    --pane-tint-bg-pct: 85%;
+    --pane-tint-fg-pct: 15%;
+  }
+}
+
+/* Dark + more-contrast stacks on top of both prior blocks. Order matters:
+   this MUST come after both `prefers-color-scheme: dark` and
+   `prefers-contrast: more` for the cascade to land here. */
+@media (prefers-color-scheme: dark) and (prefers-contrast: more) {
+  :root {
+    --pane-tint-bg-pct: 75%;
+    --pane-tint-fg-pct: 25%;
   }
 }
 

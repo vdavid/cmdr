@@ -8,6 +8,7 @@
     import { startUpdateChecker } from '$lib/updates/updater.svelte'
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
+    import { initVolumeTints, cleanupVolumeTints } from '$lib/file-explorer/pane/volume-tint.svelte'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initFocusWatchdog } from '$lib/focus-watchdog'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
@@ -177,6 +178,9 @@
             // Initialize settings and apply them to CSS variables
             await initSettingsApplier()
 
+            // Subscribe to volume-tint settings so FilePane bg updates live
+            initVolumeTints()
+
             // One-time migration of pre-launch testers' plaintext API keys from settings.json to
             // the OS secret store. TODO: remove this call after 2026-09-01 (see function comment).
             // Awaited so the first `getAiApiKey` below sees the freshly-migrated value.
@@ -270,6 +274,7 @@
         cleanupTextSize()
         cleanupReactiveSettings()
         cleanupSettingsApplier()
+        cleanupVolumeTints()
         cleanupMcpShortcutsListener()
         cleanupMcpMainBridge()
         cleanupAutoSendToastListener()

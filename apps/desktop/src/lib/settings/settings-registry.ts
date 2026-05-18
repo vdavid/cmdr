@@ -2,10 +2,16 @@
  * Settings registry - single source of truth for all settings.
  */
 
-import type { SettingDefinition, SettingId, SettingsValues } from './types'
-import { SettingValidationError } from './types'
+import type { EnumOption, SettingDefinition, SettingId, SettingsValues } from './types'
+import { SettingValidationError, VOLUME_TINT_COLORS } from './types'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { cloudProviderPresets } from './cloud-providers'
+
+/** Options list for the three `appearance.tint{Local,Smb,Mtp}` settings. */
+const TINT_COLOR_OPTIONS: EnumOption[] = [
+  { value: 'none', label: 'No tint' },
+  ...VOLUME_TINT_COLORS.map((c) => ({ value: c, label: c.charAt(0).toUpperCase() + c.slice(1) })),
+]
 
 // ============================================================================
 // Settings Definitions
@@ -130,6 +136,40 @@ export const settingsRegistry: SettingDefinition[] = [
     type: 'boolean',
     default: false,
     component: 'switch',
+  },
+  // Volume tints (12-color picker, rendered by `AppearanceSection.svelte` via
+  // `SettingColorSwatchPicker`, not the registry-driven enum components).
+  // Enum type carries the valid values for MCP agents and runtime validation;
+  // live-apply happens reactively in `FilePane.svelte` via `volume-tint.svelte.ts`.
+  {
+    id: 'appearance.tintLocal',
+    section: ['Appearance', 'Colors and formats'],
+    label: 'Tint local-volume panes',
+    description: 'Background tint applied to panes showing a local drive.',
+    keywords: ['tint', 'pane', 'color', 'volume', 'local', 'background', 'highlight'],
+    type: 'enum',
+    default: 'none',
+    constraints: { options: TINT_COLOR_OPTIONS },
+  },
+  {
+    id: 'appearance.tintSmb',
+    section: ['Appearance', 'Colors and formats'],
+    label: 'Tint SMB/network panes',
+    description: 'Background tint applied to panes showing an SMB or network share.',
+    keywords: ['tint', 'pane', 'color', 'volume', 'smb', 'network', 'background', 'highlight'],
+    type: 'enum',
+    default: 'none',
+    constraints: { options: TINT_COLOR_OPTIONS },
+  },
+  {
+    id: 'appearance.tintMtp',
+    section: ['Appearance', 'Colors and formats'],
+    label: 'Tint MTP panes',
+    description: 'Background tint applied to panes showing an Android, Kindle, or camera device.',
+    keywords: ['tint', 'pane', 'color', 'volume', 'mtp', 'android', 'kindle', 'camera', 'background', 'highlight'],
+    type: 'enum',
+    default: 'none',
+    constraints: { options: TINT_COLOR_OPTIONS },
   },
 
   // ========================================================================

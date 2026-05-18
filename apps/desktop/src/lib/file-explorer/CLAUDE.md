@@ -188,6 +188,12 @@ Core explorer UI components:
 - **rename-flow.svelte.ts**: rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
 - **type-to-jump-state.svelte.ts** / **TypeToJumpIndicator.svelte**: type-to-jump factory + the "Jump: …" chip. See
   [Type-to-jump](#type-to-jump) below.
+- **volume-tint.svelte.ts**: per-pane background tinting by volume kind (local / SMB / MTP). Reads
+  `appearance.tint{Local,Smb,Mtp}` reactively, returns a `color-mix(in oklch, ...)` expression that `FilePane.svelte`
+  applies as inline `background-color`. Mix share flows through `--pane-tint-{bg,fg}-pct` so dark mode and
+  `prefers-contrast: more` can each dial it up without re-evaluating the helper. Live-tuned matrix: 10% (light), 15%
+  (light AAA), 15% (dark), 25% (dark AAA) — dark needs more because there's less luminance headroom against `#1e1e1e`.
+  Pure classifier `volumeKindFor` is unit-tested separately in `volume-tint.test.ts`.
 
 ### Type-to-jump
 

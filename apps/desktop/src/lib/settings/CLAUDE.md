@@ -171,11 +171,13 @@ wrapper.
 
 ### Components (`components/`)
 
-12 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
+13 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
 and action button styles), `SettingRow`, `SettingSwitch`, `SettingCheckbox` (less prominent than switch, for secondary
 boolean options), `SettingSelect`, `SettingSlider`, `SettingNumberInput`, `SettingPasswordInput` (supports both
 settings-store-driven and controlled/external value+onchange modes), `SettingRadioGroup`, `SettingToggleGroup`,
-`SettingsSidebar`, `SettingsContent`. Also `SectionSummary` for collapsed-section previews.
+`SettingColorSwatchPicker` (circle trigger + 4×4 swatch popover for picking a tint color; used by Appearance > Colors
+and formats for the per-volume-type pane tints), `SettingsSidebar`, `SettingsContent`. Also `SectionSummary` for
+collapsed-section previews.
 
 ### 50-50 split layout guideline
 

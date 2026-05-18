@@ -69,6 +69,25 @@ var allowedUnusedVariables = map[string]bool{
 	"color-apple-purple":   true,
 	"color-apple-red":      true,
 	"color-apple-yellow":   true,
+	// Volume-tint palette - 12 swatches selected at runtime by `appearance.tint{Local,Smb,Mtp}`.
+	// Read via `var(--color-tint-${color})` from SettingColorSwatchPicker.svelte and
+	// composed into a color-mix() expression by volume-tint.svelte.ts applied to FilePane.
+	"color-tint-amber":  true,
+	"color-tint-blue":   true,
+	"color-tint-brown":  true,
+	"color-tint-cyan":   true,
+	"color-tint-green":  true,
+	"color-tint-indigo": true,
+	"color-tint-lime":   true,
+	"color-tint-orange": true,
+	"color-tint-pink":   true,
+	"color-tint-purple": true,
+	"color-tint-red":    true,
+	"color-tint-teal":   true,
+	// Pane tint mix percentages - referenced from the color-mix() expression built in
+	// volume-tint.svelte.ts and overridden by the prefers-contrast: more media query.
+	"pane-tint-bg-pct": true,
+	"pane-tint-fg-pct": true,
 }
 
 // allowedUndefinedClasses lists classes used in templates that don't need CSS definitions

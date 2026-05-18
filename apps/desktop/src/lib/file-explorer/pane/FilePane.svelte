@@ -89,6 +89,7 @@
 
     const log = getAppLogger('fileExplorer')
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
+    import { getPaneTintBg } from './volume-tint.svelte'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-resolution'
@@ -354,6 +355,11 @@
     const currentVolumeInfo = $derived(getStoreVolumes().find((v) => v.id === volumeId) ?? null)
     /** True if this pane is on an SMB share (any state: direct, os_mount, or disconnected). */
     const isSmbVolume = $derived(currentVolumeInfo?.smbConnectionState != null)
+    /**
+     * Background tint for this pane based on the user's volume-type tint settings.
+     * `null` when the user picked "no tint" for this volume's kind (the common case).
+     */
+    const paneTintBg = $derived(getPaneTintBg(volumeId, currentVolumeInfo?.fsType, currentVolumeInfo?.category))
     /**
      * Reactive: the per-volume reconnect cycle state, or `null` if no cycle is
      * running. The manager is the single source of truth for the view. By the
@@ -2208,6 +2214,7 @@
     onkeydown={() => {}}
     role="region"
     aria-label="{paneId === 'left' ? 'Left' : 'Right'} file pane"
+    style={paneTintBg ? `background-color: ${paneTintBg}` : undefined}
 >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="header" oncontextmenu={handleBreadcrumbContextMenu}>

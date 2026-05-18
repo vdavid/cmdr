@@ -27,9 +27,10 @@ export type {
   DateColorsPalette,
   ThemeMode,
   UiDensity,
+  VolumeTintColor,
 } from './types'
 
-export { densityMappings, formatDuration, SettingValidationError } from './types'
+export { densityMappings, formatDuration, SettingValidationError, VOLUME_TINT_COLORS } from './types'
 
 // Registry
 export {

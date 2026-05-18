@@ -5,6 +5,7 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
+    import SettingColorSwatchPicker from '../components/SettingColorSwatchPicker.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import { getSettingDefinition, getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
@@ -26,6 +27,9 @@
     const dateColorsDef = getSettingDefinition('appearance.dateColors') ?? { label: '', description: '' }
     const dateTimeDef = getSettingDefinition('appearance.dateTimeFormat') ?? { label: '', description: '' }
     const stripedRowsDef = getSettingDefinition('listing.stripedRows') ?? { label: '', description: '' }
+    const tintLocalDef = getSettingDefinition('appearance.tintLocal') ?? { label: '', description: '' }
+    const tintSmbDef = getSettingDefinition('appearance.tintSmb') ?? { label: '', description: '' }
+    const tintMtpDef = getSettingDefinition('appearance.tintMtp') ?? { label: '', description: '' }
 
     // App color state
     let appColorValue = $state(getSetting('appearance.appColor'))
@@ -192,6 +196,48 @@
             <SettingSwitch id="listing.stripedRows" />
         </SettingRow>
     {/if}
+
+    {#if shouldShow('appearance.tintLocal') || shouldShow('appearance.tintSmb') || shouldShow('appearance.tintMtp')}
+        <div class="tint-group" role="group" aria-labelledby="tint-group-heading">
+            <h3 id="tint-group-heading" class="tint-group-heading">Tint volume types</h3>
+            <p class="tint-group-description">
+                Adds a faint background tint to panes so you can tell volume types apart at a glance.
+            </p>
+            {#if shouldShow('appearance.tintLocal')}
+                <SettingRow
+                    id="appearance.tintLocal"
+                    label={tintLocalDef.label}
+                    description={tintLocalDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingColorSwatchPicker id="appearance.tintLocal" label={tintLocalDef.label} />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('appearance.tintSmb')}
+                <SettingRow
+                    id="appearance.tintSmb"
+                    label={tintSmbDef.label}
+                    description={tintSmbDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingColorSwatchPicker id="appearance.tintSmb" label={tintSmbDef.label} />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('appearance.tintMtp')}
+                <SettingRow
+                    id="appearance.tintMtp"
+                    label={tintMtpDef.label}
+                    description={tintMtpDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingColorSwatchPicker id="appearance.tintMtp" label={tintMtpDef.label} />
+                </SettingRow>
+            {/if}
+        </div>
+    {/if}
 </SettingsSection>
 
 <style>
@@ -326,5 +372,24 @@
         padding: 1px 4px;
         border-radius: var(--radius-xs);
         font-family: var(--font-mono);
+    }
+
+    .tint-group {
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-md);
+        border-top: 1px solid var(--color-border-subtle);
+    }
+
+    .tint-group-heading {
+        font-size: var(--font-size-md);
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-xxs);
+    }
+
+    .tint-group-description {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin: 0 0 var(--spacing-sm);
     }
 </style>
