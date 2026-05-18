@@ -1936,6 +1936,20 @@
     }
 
     /**
+     *  Opens the entry under the focused pane's cursor and waits for it to complete.
+     *  Unlike `sendKeyToFocusedPane('Enter')`, this returns a Promise so MCP can ack on
+     *  real completion (directory listing finished, or OS open-with-default dispatched)
+     *  rather than guessing via state-push heuristics that don't fire for OS-opened
+     *  files. Used by the `open_under_cursor` round-trip in `mcp-listeners.ts`.
+     */
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically by MCP listeners
+    export async function openItemUnderCursor(): Promise<void> {
+        const paneRef = getPaneRef(focusedPane)
+        if (!paneRef) throw new Error('Focused pane is not available')
+        await paneRef.openCursorItem()
+    }
+
+    /**
      * Set sort column for a specific pane (or focused pane if not specified).
      * Used by command palette.
      */

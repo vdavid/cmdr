@@ -130,33 +130,51 @@ fn generation_gate_stays_false_when_no_push_happens() {
 // ── update_pane_tabs MUST also bump generation ─────────────────────────
 
 /// The `tab` MCP tool acks via `GenerationAdvanced`. Tab updates flow through
-/// `update_pane_tabs`, which writes to `pane_state.tabs` directly rather than going
-/// through `set_left`/`set_right`. If that path didn't bump generation, every `tab`
-/// call would time out. This test pins the wiring in place.
+/// `update_pane_tabs` → `PaneStateStore::set_tabs`, which bumps generation. If that
+/// path ever stops bumping, every `tab` call would time out. This test pins both the
+/// helper contract and the side-effect.
 #[test]
-fn update_pane_tabs_bumps_generation() {
-    // We can't call the `#[tauri::command]` function directly without an AppHandle,
-    // but we can simulate its body: write tabs, then bump generation.
+fn set_tabs_bumps_generation_and_returns_true_for_valid_pane() {
     let store = PaneStateStore::new();
     let before = store.get_generation();
 
-    // Replicate what the command's body does.
-    {
-        let pane_state = &store.left;
-        pane_state.write().unwrap().tabs = vec![TabInfo {
+    let ok = store.set_tabs(
+        "left",
+        vec![TabInfo {
             id: "t1".to_string(),
             path: "/tmp".to_string(),
             pinned: false,
             active: true,
-        }];
-        store.generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    }
+        }],
+    );
 
+    assert!(ok, "set_tabs must return true for a valid pane name");
     assert!(
         store.get_generation() > before,
-        "update_pane_tabs must bump generation so the `tab` MCP tool can ack"
+        "set_tabs must bump generation so the `tab` MCP tool can ack"
     );
     assert_eq!(store.get_left().tabs.len(), 1);
+}
+
+/// Unknown pane names are a no-op: no panic, no generation bump, return false.
+/// Pins the silent-drop contract the `update_pane_tabs` command relies on.
+#[test]
+fn set_tabs_returns_false_for_unknown_pane() {
+    let store = PaneStateStore::new();
+    let before = store.get_generation();
+
+    let ok = store.set_tabs(
+        "middle",
+        vec![TabInfo {
+            id: "t1".to_string(),
+            path: "/tmp".to_string(),
+            pinned: false,
+            active: true,
+        }],
+    );
+
+    assert!(!ok, "set_tabs must return false for an unknown pane name");
+    assert_eq!(store.get_generation(), before, "unknown pane must not bump generation");
 }
 
 // ── SoftDialogTracker semantics the ack helper relies on ──────────────

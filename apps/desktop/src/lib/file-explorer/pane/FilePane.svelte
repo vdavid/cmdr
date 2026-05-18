@@ -1590,6 +1590,21 @@
         return listRef?.getEntryAt(cursorIndex)
     }
 
+    /**
+     *  Opens the entry under the cursor exactly like pressing Enter: navigates into a
+     *  directory or hands a file to the OS default app. Returns a promise that resolves
+     *  once the action completes (or rejects on failure), so callers (the MCP
+     *  `open_under_cursor` round-trip) can ack on real completion rather than guessing.
+     */
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically by DualPaneExplorer/MCP
+    export async function openCursorItem(): Promise<void> {
+        const entry = getEntryUnderCursor()
+        if (!entry) {
+            throw new Error('No entry under cursor')
+        }
+        await handleNavigate(entry)
+    }
+
     // Exported so DualPaneExplorer can forward keyboard events
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleKeyDown(e: KeyboardEvent) {

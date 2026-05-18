@@ -18,6 +18,7 @@ export interface ExplorerAPI {
   navigate: (action: 'back' | 'forward' | 'parent') => void
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null
   sendKeyToFocusedPane: (key: string) => void
+  openItemUnderCursor: () => Promise<void>
   setSortColumn: (column: 'name' | 'extension' | 'size' | 'modified' | 'created', pane?: 'left' | 'right') => void
   setSortOrder: (order: 'asc' | 'desc' | 'toggle', pane?: 'left' | 'right') => void
   setSort: (

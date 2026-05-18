@@ -12,7 +12,9 @@ mod nav;
 mod search;
 mod view;
 
-pub(crate) use ack::{AckSignal, DEFAULT_ACK_TIMEOUT, snapshot_generation, wait_for_ack};
+pub(crate) use ack::{
+    AckSignal, DEFAULT_ACK_TIMEOUT, NAV_ACK_TIMEOUT, snapshot_generation, snapshot_window_count, wait_for_ack,
+};
 
 #[cfg(test)]
 mod tests;

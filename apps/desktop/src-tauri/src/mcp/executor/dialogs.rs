@@ -3,7 +3,12 @@
 //! Ack contract:
 //! - `open settings|file-viewer|about` → child window appears in `webview_windows()`.
 //! - `open` confirmation dialogs → not allowed (use copy/move/delete/mkdir/mkfile instead).
-//! - `close settings|file-viewer|about` → matching window disappears.
+//! - `close settings` → matching Tauri window disappears.
+//! - `close file-viewer` → snapshot the viewer-window count, ack when it drops (so
+//!   closing one of N viewers acks without waiting for all to vanish). Returns an
+//!   `invalid_params` error fast-path if no viewers are open at all.
+//! - `close about` → soft dialog `about` is no longer in `SoftDialogTracker` (`about`
+//!   is an overlay, not a separate window).
 //! - `close <confirmation>` → soft dialog is no longer in `SoftDialogTracker`. Cancel
 //!   doesn't reliably bump pane generation, so we wait for the tracker entry to vanish.
 //! - `focus settings|file-viewer|about` → window is present (no-op fast path; if the
@@ -17,7 +22,9 @@ use std::path::Path;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use super::{AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, snapshot_generation, wait_for_ack};
+use super::{
+    AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, snapshot_generation, snapshot_window_count, wait_for_ack,
+};
 
 /// Execute the unified dialog command.
 /// Handles opening, focusing, and closing dialogs.
@@ -172,28 +179,50 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
             Ok(json!("OK: Closed settings"))
         }
         "file-viewer" => {
+            // Snapshot the viewer count first. If zero, fast-fail: there's nothing to
+            // close, and waiting for a count drop would just time out at 1500 ms.
+            let before = snapshot_window_count(app, "viewer");
+            if before == 0 {
+                return Err(ToolError::invalid_params("No file viewer windows are open."));
+            }
             if let Some(path) = path {
                 app.emit("close-file-viewer", json!({"path": path}))?;
-                // We don't know which specific viewer label maps to which path without
-                // FE help, so wait for any viewer-* window state to shift. If no viewer
-                // matched, the FE no-ops and we ack immediately (no viewers = signal
-                // satisfied for "viewer disappeared" only if ALL viewers gone; cannot
-                // disambiguate). Use a generation-advance fallback via Any: if the
-                // viewer count changed, the FE will push state; otherwise we time out.
-                wait_for_ack(app, AckSignal::WindowDisappeared("viewer"), DEFAULT_ACK_TIMEOUT).await?;
+                // Closing one of N viewers: ack when the count drops below `before`.
+                // If the path doesn't match any open viewer, the count stays put and
+                // we time out — which is the right contract (caller asked to close a
+                // specific viewer that isn't there).
+                wait_for_ack(
+                    app,
+                    AckSignal::WindowCountBelow {
+                        prefix: "viewer",
+                        threshold: before,
+                    },
+                    DEFAULT_ACK_TIMEOUT,
+                )
+                .await?;
                 Ok(json!(format!("OK: Closed file viewer for {path}")))
             } else {
                 app.emit("close-all-file-viewers", ())?;
-                wait_for_ack(app, AckSignal::WindowDisappeared("viewer"), DEFAULT_ACK_TIMEOUT).await?;
+                // Close-all: ack when zero viewers remain (`count < 1`).
+                wait_for_ack(
+                    app,
+                    AckSignal::WindowCountBelow {
+                        prefix: "viewer",
+                        threshold: 1,
+                    },
+                    DEFAULT_ACK_TIMEOUT,
+                )
+                .await?;
                 Ok(json!("OK: Closed all file viewer dialogs"))
             }
         }
         "about" => {
+            // `about` is a soft dialog (overlay in the main window), tracked via
+            // SoftDialogTracker (id: "about"). If it isn't open, the tracker doesn't
+            // hold the id and `SoftDialogDisappeared` returns immediately — close is
+            // a fast no-op in that case, no timeout.
             app.emit("close-about", ())?;
-            wait_for_ack(app, AckSignal::WindowDisappeared("about"), DEFAULT_ACK_TIMEOUT).await?;
-            // "about" is actually a soft dialog, but WindowDisappeared is benign: it
-            // also succeeds when no such window exists. For correctness, also accept
-            // the tracker no longer having "about" — wrap in Any.
+            wait_for_ack(app, AckSignal::SoftDialogDisappeared("about"), DEFAULT_ACK_TIMEOUT).await?;
             Ok(json!("OK: Closed about dialog"))
         }
         "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {

@@ -60,6 +60,9 @@ export interface FilePaneAPI {
   handleKeyDown(e: KeyboardEvent): void
   handleKeyUp(e: KeyboardEvent): void
 
+  /** Opens the entry under the cursor; awaits directory load or OS handoff. */
+  openCursorItem(): Promise<void>
+
   /** Type-to-jump: route one printable keystroke into the pane's buffer. */
   handleJumpKeystroke(char: string): void
   /** Type-to-jump: clear the buffer + hide the indicator immediately. */

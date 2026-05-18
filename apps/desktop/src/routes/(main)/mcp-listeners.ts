@@ -88,6 +88,28 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     }
   })
 
+  // Round-trip for open-under-cursor: backend can't infer outcome from state pushes
+  // alone (Enter on a non-directory file delegates to the OS default app and produces
+  // no MCP-observable signal). FE awaits the action and replies via mcp-response.
+  await listenTauri('mcp-open-under-cursor', (event) => {
+    const { requestId } = event.payload as { requestId: string }
+    void (async () => {
+      const { emit } = await import('@tauri-apps/api/event')
+      try {
+        const explorerRef = getExplorer()
+        if (!explorerRef) {
+          await emit('mcp-response', { requestId, ok: false, error: 'Explorer is not ready' })
+          return
+        }
+        await explorerRef.openItemUnderCursor()
+        await emit('mcp-response', { requestId, ok: true })
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e)
+        await emit('mcp-response', { requestId, ok: false, error })
+      }
+    })()
+  })
+
   await listenTauri('mcp-move-cursor', (event) => {
     const { pane, to, requestId } = event.payload as { pane: 'left' | 'right'; to: number | string; requestId: string }
     void (async () => {
