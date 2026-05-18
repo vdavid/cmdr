@@ -1,6 +1,28 @@
 //! SMB share mounting using macOS NetFS.framework.
 //!
 //! Provides async mount operations with proper error handling and credential support.
+//!
+//! ## Credential handling: why we pass creds explicitly to NetFS
+//!
+//! `NetFSMountURLSync` accepts `user`, `passwd`, and an `openOptions` CFDictionary.
+//! When `user`/`passwd` are both `NULL` and `openOptions` doesn't say otherwise,
+//! NetFS falls back to looking up credentials in the system Keychain. If the lookup
+//! misses (fresh host, fresh Docker container, brand-new NAS), the kernel `smbfs`
+//! kext pops a credential dialog with the current OS user prefilled. That dialog
+//! steals focus, blocks the caller, and looks like the app has frozen.
+//!
+//! Cmdr already collects credentials (or "guest") in the frontend. We pass them
+//! down so NetFS never reaches the Keychain fallback:
+//!
+//! - **Credentialed mount**: build CFStrings from the supplied user + password and
+//!   pass them as `user`/`passwd`. NetFS uses them directly.
+//! - **Guest mount**: set `kNetFSUseGuestKey` (literal key `"Guest"`) to
+//!   `kCFBooleanTrue` in `openOptions`. NetFS skips the Keychain and authenticates
+//!   as guest. `user`/`passwd` stay `NULL` in this case, per Apple's NetFS docs.
+//!
+//! The constant `kNetFSUseGuestKey` is a `#define` in `<NetFS/NetFS.h>` (not an
+//! exported symbol), so we recreate the CFString from the literal `"Guest"` at the
+//! call site rather than linking to an `extern "C"` static.
 
 use core_foundation::base::TCFType;
 use core_foundation::string::CFString;
@@ -165,23 +187,42 @@ pub fn mount_share_sync(
     // If so, pick a disambiguated path (public-1, public-2, ...) like Finder does.
     let explicit_mount_path = disambiguated_mount_path(server, share, port);
 
-    // When disambiguating, force a new SMB session so macOS doesn't reuse
-    // the existing session to the same hostname (different port = different server).
-    let open_options = if explicit_mount_path.is_some() {
+    // Build openOptions. Two reasons we may need a dict:
+    //   1. Guest mount (no credentials): set `kNetFSUseGuestKey = true` so NetFS
+    //      doesn't consult the Keychain and pop a credential dialog.
+    //   2. Disambiguating against an existing same-hostname mount: set
+    //      `ForceNewSession = true` so macOS opens a fresh SMB session instead of
+    //      reusing the existing one (different port = different server).
+    // If neither applies, pass NULL (NetFS uses default behavior).
+    let want_guest = cf_user.is_none() && cf_pass.is_none();
+    let want_force_new_session = explicit_mount_path.is_some();
+    let open_options = if want_guest || want_force_new_session {
         unsafe {
             let dict = core_foundation::dictionary::CFDictionaryCreateMutable(
                 ptr::null(),
-                1,
+                2,
                 &core_foundation::dictionary::kCFTypeDictionaryKeyCallBacks,
                 &core_foundation::dictionary::kCFTypeDictionaryValueCallBacks,
             );
-            let key = CFString::new("ForceNewSession");
-            let value = core_foundation::boolean::kCFBooleanTrue;
-            core_foundation::dictionary::CFDictionarySetValue(
-                dict,
-                key.as_concrete_TypeRef() as *const c_void,
-                value as *const c_void,
-            );
+            let true_value = core_foundation::boolean::kCFBooleanTrue;
+            if want_guest {
+                // `kNetFSUseGuestKey` is a `#define` in <NetFS/NetFS.h>, not an
+                // exported symbol. Build the CFString from its literal value.
+                let guest_key = CFString::new("Guest");
+                core_foundation::dictionary::CFDictionarySetValue(
+                    dict,
+                    guest_key.as_concrete_TypeRef() as *const c_void,
+                    true_value as *const c_void,
+                );
+            }
+            if want_force_new_session {
+                let force_key = CFString::new("ForceNewSession");
+                core_foundation::dictionary::CFDictionarySetValue(
+                    dict,
+                    force_key.as_concrete_TypeRef() as *const c_void,
+                    true_value as *const c_void,
+                );
+            }
             dict as *const c_void
         }
     } else {
@@ -193,8 +234,9 @@ pub fn mount_share_sync(
 
     // Call NetFSMountURLSync. Mount path is NULL even when disambiguating;
     // NetFS auto-creates the mount point in /Volumes/ (we can't mkdir there).
-    // With ForceNewSession, NetFS treats this as a separate server and picks
+    // With `ForceNewSession`, NetFS treats this as a separate server and picks
     // a disambiguated name (public-1, public-2, etc.) automatically.
+    // With `Guest`, NetFS authenticates as guest without consulting Keychain.
     let result = unsafe {
         NetFSMountURLSync(
             cf_url.as_concrete_TypeRef() as *const c_void,
@@ -467,5 +509,70 @@ mod tests {
         // Verify default timeout is reasonable (10-60 seconds)
         const { assert!(DEFAULT_MOUNT_TIMEOUT_MS >= 10_000) };
         const { assert!(DEFAULT_MOUNT_TIMEOUT_MS <= 60_000) };
+    }
+
+    /// Regression test for the macOS NetFS guest-mount credential dialog.
+    ///
+    /// Asserts a guest mount completes within a tight wall-clock budget. A
+    /// blocking kernel `smbfs` prompt waits for user input indefinitely, so a
+    /// sub-budget completion is the proxy for "no dialog appeared." Gated to
+    /// macOS because Linux uses gvfs, which has neither the dialog nor this
+    /// mount path.
+    ///
+    /// We don't add a paired auth-success / auth-failure test here because
+    /// NetFS caches SMB sessions across calls — once `testuser`+`testpass`
+    /// authenticates once, subsequent calls (even with wrong creds) ride the
+    /// cached session, so a tight harness can't reliably distinguish "creds
+    /// passed correctly" from "session reused" without forcibly tearing down
+    /// the session. The guest path is what regressed in real use and is what
+    /// this test guards. Manual end-to-end coverage for the auth path runs
+    /// via `pnpm dev` against the same Docker containers.
+    #[cfg(target_os = "macos")]
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_mount_guest_no_dialog() {
+        use std::time::{Duration, Instant};
+
+        let port: u16 = std::env::var("SMB_CONSUMER_GUEST_PORT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10480);
+        // Use `localhost` rather than `127.0.0.1`: NetFS itself handles either,
+        // but the wider SMB test harness uses `localhost` to dodge the smbutil
+        // loopback quirk on non-standard ports.
+        let host = "localhost".to_string();
+
+        // Pre-clean any stale mount from a previous run so we exercise the
+        // real first-mount path (the one that pops the dialog when broken).
+        let _ = std::process::Command::new("diskutil")
+            .args(["unmount", "force", "/Volumes/public"])
+            .output();
+
+        // 10 s budget: a real credential dialog blocks the call indefinitely,
+        // so this picks up the regression even under cold Docker startup.
+        let budget = Duration::from_secs(10);
+        let start = Instant::now();
+        let result = mount_share(host.clone(), "public".to_string(), None, None, port, Some(8_000)).await;
+        let elapsed = start.elapsed();
+
+        // Always try to unmount so a successful mount doesn't linger between runs.
+        if let Ok(ref ok) = result {
+            let _ = std::process::Command::new("diskutil")
+                .args(["unmount", "force", &ok.mount_path])
+                .output();
+        }
+
+        assert!(
+            elapsed < budget,
+            "guest mount took {:?} (budget {:?}); a credential dialog probably blocked NetFS",
+            elapsed,
+            budget
+        );
+        let mount_result = result.unwrap_or_else(|e| panic!("guest mount against {host}:{port} failed: {e:?}"));
+        assert!(
+            mount_result.mount_path.starts_with("/Volumes/"),
+            "expected /Volumes/* mount path, got {}",
+            mount_result.mount_path
+        );
     }
 }
