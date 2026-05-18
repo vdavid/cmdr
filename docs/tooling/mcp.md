@@ -36,10 +36,14 @@ Code's MCP integration is connected. Always call `tools/list` first if you're un
 
 ## Action-tool ack contract
 
-Action tools (`copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`, `select`, `toggle_hidden`, `set_view_mode`,
-`sort`, `tab`, `open_under_cursor`, `nav_to_parent`, `nav_back`, `nav_forward`, and `dialog` open/close/focus/confirm)
-now wait for the frontend to acknowledge the dispatched action before returning `OK`. Default budget is 1500 ms. If the
-FE is stalled, the tool returns a typed error naming the missing signal — no more false-positive `OK`s.
+Action tools (`copy`, `move`, `delete`, `mkdir`, `mkfile`, `select`, `toggle_hidden`, `set_view_mode`, `sort`, `tab`,
+`open_under_cursor`, `nav_to_parent`, `nav_back`, `nav_forward`, and `dialog` open/close/focus/confirm) now wait for the
+frontend to acknowledge the dispatched action before returning `OK`. Default budget is 1500 ms. If the FE is stalled,
+the tool returns a typed error naming the missing signal — no more false-positive `OK`s.
+
+`refresh` is the one tool that stays fire-and-forget for now: the FE skips state pushes when the re-listing is
+byte-identical to the cached state, so there's no reliable ack signal. Search the Rust codebase for `TODO(mcp-ack):` to
+follow this.
 
 What this means for automation:
 
