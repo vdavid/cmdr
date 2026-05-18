@@ -391,9 +391,9 @@ needed), the **Advanced** section component.
 - Write the Vitest unit tests for the state factory.
 - Write the a11y Vitest test for `TypeToJumpIndicator.a11y.test.ts`.
 - Write the Playwright E2E spec covering golden paths.
-- **MCP surface**: `DualPaneExplorer.svelte` already exposes pane state to the cmdr MCP server (port 19224 prod / 19225 dev). Add the
-  type-to-jump buffer + indicator visibility + last matched filename to that surface so agents can drive and assert this
-  feature in tests. See `src-tauri/src/mcp/CLAUDE.md` for the resource conventions.
+- **MCP surface**: `DualPaneExplorer.svelte` already exposes pane state to the cmdr MCP server (port 19224 prod / 19225
+  dev). Add the type-to-jump buffer + indicator visibility + last matched filename to that surface so agents can drive
+  and assert this feature in tests. See `src-tauri/src/mcp/CLAUDE.md` for the resource conventions.
 - Update CLAUDE.md files noted in § Docs updates.
 - Run `./scripts/check.sh` (full suite). Fix any warnings (file-length allowlist: leave warnings as warnings per
   `~/projects-git/vdavid/cmdr/.claude/rules/file-length-allowlist.md`).
