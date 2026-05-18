@@ -53,6 +53,7 @@ export interface ExplorerAPI {
   refreshNetworkHosts: () => void
   injectError: (pane: 'left' | 'right', friendly: FriendlyError) => void
   resetError: (pane: 'left' | 'right' | 'both') => void
+  triggerTransferError: (friendly: FriendlyError) => void
   newTab: () => boolean
   closeActiveTab: () => 'closed' | 'last-tab'
   closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>

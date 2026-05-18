@@ -2226,6 +2226,16 @@
         }
     }
 
+    /** Debug only: open the TransferErrorDialog with a synthetic error carrying the given FriendlyError. */
+    export function triggerTransferError(friendly: FriendlyError) {
+        const error: WriteOperationError = {
+            type: 'io_error',
+            path: '/debug/preview',
+            message: friendly.title,
+        }
+        dialogs.handleTransferError(error, friendly)
+    }
+
     /** Refresh network hosts in the focused pane (used by ⌘R shortcut). */
     export function refreshNetworkHosts() {
         const paneRef = getPaneRef(focusedPane)

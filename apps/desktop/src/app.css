@@ -71,6 +71,10 @@
   --color-error-text: #b91c1c;
   --color-warning: #e65100;
   --color-warning-bg: rgba(230, 81, 0, 0.1);
+  /* Opaque sibling for full-surface uses (modal dialogs) where the translucent
+     `--color-warning-bg` would let the layer beneath bleed through. Matches the
+     visual of the translucent tint when composited over `--color-bg-secondary`. */
+  --color-warning-bg-solid: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-secondary));
   /* Same reasoning as `--color-error-text`: the brand `--color-warning` at `#e65100`
      clocks ~3.3:1 on the warning tint; this darker variant meets AA. */
   --color-warning-text: #9a3412;
@@ -319,6 +323,8 @@
     --color-error-text: #fca5a5;
     --color-warning: #f5a623;
     --color-warning-bg: rgba(245, 166, 35, 0.15);
+    /* Opaque sibling for full-surface uses; see light-mode comment. */
+    --color-warning-bg-solid: color-mix(in srgb, var(--color-warning) 15%, var(--color-bg-secondary));
     --color-warning-text: #fdba74;
 
     /* Disk usage bar: solid colors, same mixing strategy as light mode */

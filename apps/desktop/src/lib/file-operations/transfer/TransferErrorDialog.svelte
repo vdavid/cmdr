@@ -36,7 +36,7 @@
         category === 'serious'
             ? 'width: 420px; max-width: 90vw; background: var(--color-error-bg); border-color: var(--color-error-border)'
             : category === 'transient'
-              ? 'width: 420px; max-width: 90vw; background: var(--color-warning-bg); border-color: var(--color-border-strong)'
+              ? 'width: 420px; max-width: 90vw; background: var(--color-warning-bg-solid); border-color: var(--color-border-strong)'
               : 'width: 420px; max-width: 90vw; background: var(--color-bg-secondary); border-color: var(--color-border-strong)',
     )
 

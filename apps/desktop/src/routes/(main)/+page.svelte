@@ -294,6 +294,10 @@
                 const { pane } = event.payload as { pane: 'left' | 'right' | 'both' }
                 explorerRef?.resetError(pane)
             })
+            await listenTauri('debug-trigger-transfer-error', (event) => {
+                const { friendly } = event.payload as { friendly: FriendlyError }
+                explorerRef?.triggerTransferError(friendly)
+            })
         }
     }
 
