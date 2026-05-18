@@ -23,7 +23,7 @@ smb-consumer-smb-consumer-50shares-1   smb-consumer-smb-consumer-50shares   "smb
 smb-consumer-smb-consumer-auth-1       smb-consumer-smb-consumer-auth       "smbd --foreground -…"   smb-consumer-auth       4 seconds ago   Up 3 seconds (healthy)   0.0.0.0:10481->445/tcp, [::]:10481->445/tcp
 SMB servers ready! Connection URLs:
   smb://localhost:10480/public    # smb-consumer-guest (no auth)
-Use './stop.sh' to stop all containers.
+Use './apps/desktop/test/smb-servers/stop.sh' to stop all containers.
 [ELIFECYCLE] Command failed with exit code 2.
 post-elifecycle noise that should be dropped
 `
