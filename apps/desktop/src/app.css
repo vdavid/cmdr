@@ -133,17 +133,28 @@
   --pane-tint-fg-pct: 10%;
 
   /* === Selection ===
-   * Selected-row text reads `--color-selection-fg`. The primary value carries
-   * the gold "this row is selected" identity. The fallback drops back to
-   * `--color-text-primary` for the few cases where the row bg is hostile
-   * enough that no recognizable gold can clear AA on top — specifically
-   * dark mode + a pane tint + cursor-active (yellow accent over a tinted
-   * dark surface). The CSS rule that switches between them lives further
-   * down in this file (search for "selection-fg fallback"). The contrast
-   * checker's `row_state_matrix.go` synthesizer mirrors that rule. */
-  --color-selection-fg-primary: #5a4000;
+   * Selected-row text reads `--color-selection-fg`. Inspired by Total
+   * Commander, we use red for selection — distinct enough from the
+   * default text color (black on light, white on dark) by hue and
+   * luminance to read clearly. The primary value carries the identity
+   * across the full row-state matrix; the fallback drops back to
+   * `--color-text-primary` for the dark + tinted + cursor-active corner
+   * where no AA-clearing red exists. The CSS rule that switches between
+   * them lives further down (search for "selection-fg fallback"). The
+   * contrast checker's `row_state_matrix.go` synthesizer mirrors it. */
+  --color-selection-fg-primary: #b60000;
   --color-selection-fg-fallback: var(--color-text-primary);
   --color-selection-fg: var(--color-selection-fg-primary);
+  /* Selection background and border — dark mode only (the light-mode
+   * red on white reads cleanly enough without a bg layer). The bg is a
+   * touch darker than `--color-bg-primary`, applied via a scoped rule
+   * in `FullList.svelte`. The border is a faint fixed gray (no accent
+   * relationship) that draws as an inset `box-shadow` between
+   * consecutive selected rows — purely there to keep dense selections
+   * visually countable. Both default to transparent so they're a no-op
+   * in light mode. */
+  --color-selection-bg: transparent;
+  --color-selection-border: transparent;
 
   /* === Git portal ===
      * Distinct from `--color-accent` to keep the "you're in history-land" feel
@@ -497,9 +508,14 @@
     /* === Focus ring shadow === */
     --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, white, transparent 92%);
 
-    /* === Selection (dark) === see light mode for primary/fallback rationale */
-    --color-selection-fg-primary: #d4a82a;
+    /* === Selection (dark) === see light mode for primary/fallback rationale.
+       In dark mode we also paint a slightly darker bg on selected rows and a
+       faint hairline between consecutive selected rows; the tokens default
+       to transparent in light so they're effectively dark-mode-only. */
+    --color-selection-fg-primary: #ff8c8c;
     --color-selection-fg-fallback: var(--color-text-primary);
+    --color-selection-bg: #141414;
+    --color-selection-border: rgba(255, 255, 255, 0.1);
 
     /* Git portal: brighter teal in dark mode for readability against
        the dark background. */

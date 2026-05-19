@@ -60,8 +60,8 @@ func TestSelectionDiff(t *testing.T) {
 }
 
 // TestRedCandidates checks each candidate red against TWO constraints:
-//   1. WCAG AA (≥4.5:1) on the worst-case row bg for its mode.
-//   2. Differentiation ratio (≥some target) against `--color-text-primary`.
+//  1. WCAG AA (≥4.5:1) on the worst-case row bg for its mode.
+//  2. Differentiation ratio (≥some target) against `--color-text-primary`.
 //
 // Worst-case bgs are sampled from the existing matrix output; we don't
 // recompute them here.

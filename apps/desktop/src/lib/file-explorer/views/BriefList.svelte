@@ -999,6 +999,20 @@
         background-color: var(--color-bg-stripe);
     }
 
+    /* Selected rows: darker bg (dark mode only — see FullList.svelte and
+       app.css). Cursor rules win by specificity, so cursor-on-selected
+       still shows the cursor highlight. */
+    .file-entry.is-selected {
+        background-color: var(--color-selection-bg);
+    }
+
+    /* Faint hairline between two consecutive selected rows. `box-shadow:
+       inset` draws on top of `background-color` and takes zero layout
+       space. Skipped when the row is under the cursor. */
+    .file-entry.is-selected + .file-entry.is-selected:not(.is-under-cursor) {
+        box-shadow: inset 0 1px 0 var(--color-selection-border);
+    }
+
     .file-entry.is-under-cursor {
         background-color: var(--color-cursor-inactive);
     }

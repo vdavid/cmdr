@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 )
 
 // Row-state matrix.
@@ -107,12 +108,25 @@ func resolveRowBg(vars *VarTable, mode Mode, tint paneTintHue, variant string) (
 	}
 	switch variant {
 	case "plain":
+		// Selected rows get a darker bg via `--color-selection-bg`
+		// (dark mode only; transparent in light). Since the matrix's
+		// text roles (`color-selection-fg` and `color-size-*-selected`)
+		// only render on SELECTED rows, the relevant bg here is the
+		// selection-bg if defined.
+		if sel, ok := resolveSelectionBg(vars, mode, paneBg); ok {
+			return sel, true
+		}
 		return paneBg, true
 	case "striped":
-		// The stripe rule sets `background-color: var(--color-bg-stripe)`,
-		// which is an opaque color computed from bg-primary. It REPLACES
-		// the pane-tinted bg rather than overlaying it — pane tint is not
-		// visible on striped rows. (See FullList.svelte lines 998-1003.)
+		// On a selected row the stripe is overridden by the selection
+		// bg (same rule + same specificity, but `.is-selected` appears
+		// later in `FullList.svelte`'s `<style>`). The matrix's text
+		// roles only apply to selected rows, so model that.
+		if sel, ok := resolveSelectionBg(vars, mode, paneBg); ok {
+			return sel, true
+		}
+		// Fallback for modes where selection-bg is transparent (light):
+		// render the stripe color on top of the pane bg.
 		c, ok := resolveVar(vars, mode, "color-bg-stripe")
 		if !ok {
 			return RGBA{}, false
@@ -141,6 +155,26 @@ func resolveRowBg(vars *VarTable, mode Mode, tint paneTintHue, variant string) (
 		return c, true
 	}
 	return RGBA{}, false
+}
+
+// resolveSelectionBg returns the opaque selection bg for selected rows, or
+// ok=false when `--color-selection-bg` is undefined or fully transparent
+// (which is the light-mode default — light keeps the pane bg under selected
+// text, the new red foreground carries the signal on its own).
+func resolveSelectionBg(vars *VarTable, mode Mode, fallbackPaneBg RGBA) (RGBA, bool) {
+	c, ok := resolveVar(vars, mode, "color-selection-bg")
+	if !ok {
+		return RGBA{}, false
+	}
+	if c.A <= 0 {
+		// `transparent` means "no selection-bg in this mode" — caller
+		// should use the pane bg.
+		return RGBA{}, false
+	}
+	if !c.Opaque() {
+		c = CompositeOver(c, fallbackPaneBg)
+	}
+	return c, true
 }
 
 // resolvePaneBg returns the opaque pane background: `--color-bg-primary` when
@@ -304,12 +338,8 @@ func shouldUseSelectionFgFallback(mode Mode, tint paneTintHue, variant string) b
 // pick up the swap automatically.
 func withSelectionFgFallback(v *VarTable) *VarTable {
 	out := NewVarTable()
-	for k, val := range v.Light {
-		out.Light[k] = val
-	}
-	for k, val := range v.Dark {
-		out.Dark[k] = val
-	}
+	maps.Copy(out.Light, v.Light)
+	maps.Copy(out.Dark, v.Dark)
 	out.Light["color-selection-fg"] = "var(--color-selection-fg-fallback)"
 	out.Dark["color-selection-fg"] = "var(--color-selection-fg-fallback)"
 	return out
