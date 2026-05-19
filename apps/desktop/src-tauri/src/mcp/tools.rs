@@ -482,6 +482,23 @@ fn get_network_tools() -> Vec<Tool> {
                 "required": ["host_id"]
             }),
         },
+        Tool {
+            name: "upgrade_smb_to_direct".to_string(),
+            description: "Upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O. Uses \
+                          Keychain creds. Returns OK, NeedsCredentials, or NetworkError. See \
+                          cmdr://state volumes for each SMB share's smbConnectionState."
+                .to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "volume_id": {
+                        "type": "string",
+                        "description": "Volume ID of the SMB share (e.g. smb-192-168-1-111-445-naspi). See cmdr://state volumes."
+                    }
+                },
+                "required": ["volume_id"]
+            }),
+        },
     ]
 }
 
@@ -671,16 +688,16 @@ mod tests {
     #[test]
     fn test_network_tools_count() {
         let tools = get_network_tools();
-        // connect_to_server, remove_manual_server
-        assert_eq!(tools.len(), 2);
+        // connect_to_server, remove_manual_server, upgrade_smb_to_direct
+        assert_eq!(tools.len(), 3);
     }
 
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
         // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1
-        // settings + 2 network + 1 await = 29
-        assert_eq!(tools.len(), 29);
+        // settings + 3 network + 1 await = 30
+        assert_eq!(tools.len(), 30);
     }
 
     #[test]

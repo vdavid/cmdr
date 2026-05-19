@@ -504,9 +504,26 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
         yaml.push_str("volumes:\n");
         #[cfg(target_os = "macos")]
         {
-            let locations = volumes::list_locations();
-            for loc in locations {
-                yaml.push_str(&format!("  - {}\n", loc.name));
+            let mut locations = volumes::list_locations();
+            // Enrich with VolumeManager-derived SMB connection state so agents
+            // can see whether an SMB share is `direct` (smb2), `os_mount`
+            // (fallback through macOS), or `disconnected` (smb2 dropped, FE
+            // reconnect cycle running). Non-SMB volumes omit the field.
+            volumes::enrich_smb_connection_state(&mut locations);
+            for loc in &locations {
+                if let Some(state) = loc.smb_connection_state {
+                    let state_str = match state {
+                        volumes::SmbConnectionState::Direct => "direct",
+                        volumes::SmbConnectionState::OsMount => "os_mount",
+                        volumes::SmbConnectionState::Disconnected => "disconnected",
+                    };
+                    yaml.push_str(&format!(
+                        "  - name: {}\n    id: {}\n    smbConnectionState: {}\n",
+                        loc.name, loc.id, state_str
+                    ));
+                } else {
+                    yaml.push_str(&format!("  - {}\n", loc.name));
+                }
             }
             yaml.push_str("  - Network\n");
         }

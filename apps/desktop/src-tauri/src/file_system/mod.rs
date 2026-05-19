@@ -186,8 +186,22 @@ pub fn get_volume_manager() -> &'static VolumeManager {
 ///
 /// Scans all registered volumes, finds those on `smbfs`, and tries to establish
 /// a parallel smb2 session for each. Non-blocking: failures are logged and skipped.
+///
+/// If any SMB mounts are found, kicks off mDNS via `ensure_mdns_started` so the
+/// upgrade's Keychain lookup (keyed by hostname, not IP) can find stored creds.
+/// This mirrors the manual "Connect directly" and mount-time auto-upgrade paths,
+/// so existing OS-mounted SMB shares get the same treatment as new ones — see
+/// the "SMB upgrade waits briefly for mDNS to warm" gotcha in
+/// `network/CLAUDE.md`. Kicking off mDNS will pop the macOS Local Network prompt
+/// once per app on first launch; that's the trade-off for not requiring users
+/// to click "Connect directly" on every relaunch when they have direct-SMB on
+/// and an existing mount.
+///
+/// Returns silently when:
+/// - direct-SMB is disabled (`network.directSmbConnection`),
+/// - or no SMB mounts are registered (no scan cost, no prompt).
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub fn upgrade_existing_smb_mounts() {
+pub fn upgrade_existing_smb_mounts(app_handle: tauri::AppHandle) {
     #[cfg(target_os = "macos")]
     use crate::volumes::get_smb_mount_info;
     #[cfg(target_os = "linux")]
@@ -228,6 +242,13 @@ pub fn upgrade_existing_smb_mounts() {
         "Found {} SMB mount(s) to upgrade to direct connections",
         volumes_to_upgrade.len()
     );
+
+    // Kick off mDNS so `resolve_ip_to_hostname` can find the host. Without this,
+    // the Keychain lookup misses on auth-required shares (creds are keyed by
+    // hostname like `smb://naspolya/share`, not by IP). Same pattern as the
+    // manual `upgrade_to_smb_volume` and mount-time `try_upgrade_smb_mount`
+    // paths. Idempotent: no-op if mDNS is already running.
+    crate::network::ensure_mdns_started(app_handle);
 
     // Use tauri's runtime spawn (this runs during setup() before Tokio is fully available).
     // Wait for mDNS discovery to reach Active state (initial burst complete) so hostname

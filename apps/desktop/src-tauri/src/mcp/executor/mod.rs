@@ -162,6 +162,7 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         // Network commands
         "connect_to_server" => async_tools::execute_connect_to_server(app, params).await,
         "remove_manual_server" => async_tools::execute_remove_manual_server(app, params),
+        "upgrade_smb_to_direct" => async_tools::execute_upgrade_smb_to_direct(app, params).await,
         // Async wait
         "await" => async_tools::execute_await(app, params).await,
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),

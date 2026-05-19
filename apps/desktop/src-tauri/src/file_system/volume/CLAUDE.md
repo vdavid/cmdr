@@ -207,17 +207,22 @@ The same rule applies to write paths: `write_from_stream` must drive the backend
 
 SMB mounts are automatically upgraded to `SmbVolume` (direct smb2 connection) in two scenarios:
 
-1. **Startup** (`file_system::upgrade_existing_smb_mounts`): Scans registered volumes for `smbfs` type. Waits for mDNS
-   discovery to reach `Active` state (polls every 500ms, up to 15s) because Keychain credentials are keyed by hostname
-   (from mDNS), not IP (from `statfs`). Uses `tauri::async_runtime::spawn` (not `tokio::spawn`; runs during `setup()`
-   before Tokio is fully available). Emits `volumes-changed` after upgrades so the frontend refreshes indicators.
+1. **Startup** (`file_system::upgrade_existing_smb_mounts(app_handle)`): Scans registered volumes for `smbfs` type. If
+   any are found, calls `network::ensure_mdns_started` to kick off mDNS itself (creds are keyed by hostname, not IP),
+   then waits for mDNS to reach `Active` state (polls every 500ms, up to 15s). Uses `tauri::async_runtime::spawn` (not
+   `tokio::spawn`; runs during `setup()` before Tokio is fully available). Emits `volumes-changed` after upgrades so
+   the frontend refreshes indicators. **No `firstTriggerDone` gate**: the function is a no-op when no SMB mounts are
+   present (no network activity, no macOS Local Network prompt). When mounts are present AND `network.directSmbConnection`
+   is on (default `true`), it kicks off mDNS — that's when the macOS prompt fires, once per app per data dir. Before
+   this change the upgrade was gated behind `firstTriggerDone`, so dev profiles with auto-reconnected SMB shares stayed
+   on the slow OS-mount path forever.
 
 2. **Mount detection** (`volumes/watcher.rs::try_upgrade_smb_mount`): When FSEvents detects a new volume in `/Volumes/`
-   and it's `smbfs`, spawns a background upgrade attempt. By this point mDNS is already active.
+   and it's `smbfs`, spawns a background upgrade attempt. Calls `ensure_mdns_started` to kick off mDNS too.
 
 Both paths check the `network.directSmbConnection` setting (global `AtomicBool`). Both are best-effort. Failures log a
 warning and the volume stays as `LocalPosixVolume`. The "Connect directly" UI action (`upgrade_to_smb_volume` command)
-provides a manual upgrade path.
+and the MCP `upgrade_smb_to_direct` tool provide manual upgrade paths.
 
 ## SMB live-reconnect lifecycle
 

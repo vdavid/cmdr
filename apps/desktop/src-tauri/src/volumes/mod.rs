@@ -81,6 +81,33 @@ pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
 }
 
 /// Returns true if the filesystem type is SMB (macOS `smbfs` or Linux `cifs`).
+/// Enriches volume entries with SMB connection state from the `VolumeManager`.
+///
+/// For each volume, looks up the registered `Volume` in `VolumeManager` and reads
+/// its `smb_connection_state()` if any. SMB shares without a direct smb2 session
+/// (typical OS-mounted shares before auto-upgrade) are tagged as `OsMount` so
+/// the FE picker can show the yellow indicator.
+///
+/// Used by the `list_volumes` IPC call, the `volumes-changed` push, and the MCP
+/// `cmdr://state` resource — all three need the same enrichment, and previously
+/// the logic was duplicated across `commands/volumes.rs` and
+/// `volume_broadcast.rs` with a "keep these in sync" gotcha. Now there's one
+/// implementation.
+pub fn enrich_smb_connection_state(volumes: &mut [LocationInfo]) {
+    let manager = crate::file_system::get_volume_manager();
+    for vol in volumes.iter_mut() {
+        if let Some(registered) = manager.get(&vol.id) {
+            vol.smb_connection_state = registered.smb_connection_state();
+        }
+
+        // SMB shares without a direct smb2 connection show as OsMount (yellow).
+        // This covers pre-existing mounts registered as LocalPosixVolume at startup.
+        if vol.smb_connection_state.is_none() && is_smb_fs_type(vol.fs_type.as_deref()) {
+            vol.smb_connection_state = Some(SmbConnectionState::OsMount);
+        }
+    }
+}
+
 pub fn is_smb_fs_type(fs_type: Option<&str>) -> bool {
     matches!(fs_type, Some("smbfs" | "cifs"))
 }

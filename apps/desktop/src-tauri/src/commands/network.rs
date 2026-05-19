@@ -354,6 +354,24 @@ pub async fn mount_network_share(
 #[tauri::command]
 #[specta::specta]
 pub async fn upgrade_to_smb_volume(volume_id: String, app_handle: tauri::AppHandle) -> Result<UpgradeResult, String> {
+    // Kick mDNS off so IP → hostname resolution has a shot before we hit the
+    // Keychain. Idempotent; no-op if already running or `network.enabled` is off.
+    // Kept here (and not in `upgrade_to_smb_volume_inner`) because
+    // `ensure_mdns_started` requires a concrete `AppHandle`, while the inner
+    // function needs to stay AppHandle-free so the MCP executor (generic over
+    // `Runtime`) can call it. MCP relies on mDNS having been started elsewhere
+    // (initial launch with `firstTriggerDone == true`, or any prior network
+    // action); the MCP tool's description tells agents to take a network
+    // action first if their target volume needs hostname-keyed creds.
+    crate::network::ensure_mdns_started(app_handle);
+    upgrade_to_smb_volume_inner(volume_id).await
+}
+
+/// Body of `upgrade_to_smb_volume` minus the mDNS kick (which needs concrete
+/// `AppHandle`). Used by the Tauri command above and by the MCP
+/// `upgrade_smb_to_direct` executor — both routes share the same Keychain
+/// lookup, mDNS-cached hostname resolution, and `try_smb_upgrade` body.
+pub async fn upgrade_to_smb_volume_inner(volume_id: String) -> Result<UpgradeResult, String> {
     use crate::file_system::get_volume_manager;
     #[cfg(target_os = "macos")]
     use crate::volumes::get_smb_mount_info;
@@ -386,10 +404,6 @@ pub async fn upgrade_to_smb_volume(volume_id: String, app_handle: tauri::AppHand
         info.share,
         info.username
     );
-
-    // Kick mDNS off so IP → hostname resolution has a shot before we hit the
-    // Keychain. Idempotent; no-op if already running or `network.enabled` is off.
-    crate::network::ensure_mdns_started(app_handle);
 
     // Try to get credentials from Keychain. The mount source has the IP, but Cmdr
     // stores Keychain credentials keyed by hostname (from mDNS). Try both. Briefly
@@ -691,7 +705,7 @@ pub fn remove_manual_server(server_id: String, app_handle: tauri::AppHandle) -> 
 pub fn ensure_network_discovery_started(app_handle: tauri::AppHandle) {
     crate::network::start_discovery(app_handle.clone());
     manual_servers::load_manual_servers(&app_handle);
-    crate::file_system::upgrade_existing_smb_mounts();
+    crate::file_system::upgrade_existing_smb_mounts(app_handle.clone());
 
     #[cfg(feature = "smb-e2e")]
     crate::network::virtual_smb_hosts::setup_virtual_smb_hosts(&app_handle);

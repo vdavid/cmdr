@@ -141,6 +141,69 @@ pub fn execute_remove_manual_server<R: Runtime>(app: &AppHandle<R>, params: &Val
     }
 }
 
+/// Execute `upgrade_smb_to_direct`: upgrade an OS-mounted SMB volume to a direct
+/// smb2 session. Thin wrapper around the existing `upgrade_to_smb_volume` Tauri
+/// command (same code path that powers the "Connect directly" UI button) so
+/// agents get the same behaviour as users: tries stored Keychain credentials,
+/// returns a typed result mirroring `UpgradeResult` (Success / CredentialsNeeded
+/// / NetworkError). On `CredentialsNeeded`, agents are out of luck for now —
+/// credential prompts are interactive; a future tool could accept credentials
+/// inline and call `upgrade_to_smb_volume_with_credentials`.
+///
+/// Only meaningful on macOS / Linux (the underlying command is platform-gated).
+/// On other platforms the Tauri stub returns an error; we surface it as an
+/// MCP internal error.
+pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let volume_id = params
+        .get("volume_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'volume_id' parameter"))?;
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        use crate::network::smb_upgrade::UpgradeResult;
+        // Calls the inner helper rather than the Tauri command itself because
+        // the Tauri command takes concrete `tauri::AppHandle` (= `AppHandle<Wry>`)
+        // while the MCP executor's `app` is generic over `Runtime`. The inner
+        // function carries all the upgrade logic minus the mDNS kick (which
+        // needs a concrete handle). Agents wanting hostname-keyed Keychain
+        // creds need mDNS already running — see the tool description.
+        match crate::commands::network::upgrade_to_smb_volume_inner(volume_id.to_string()).await {
+            Ok(UpgradeResult::Success) => Ok(json!(format!("OK: Upgraded {} to direct smb2", volume_id))),
+            Ok(UpgradeResult::CredentialsNeeded {
+                server,
+                share,
+                display_name,
+                ..
+            }) => {
+                let server_label = if display_name.is_empty() { server } else { display_name };
+                Ok(json!(format!(
+                    "Needs credentials: share={} on {}. Cmdr's Keychain didn't have a working password for this share. \
+                     Agents can't prompt; the user has to enter credentials via the UI's 'Connect directly' button. \
+                     (If mDNS isn't running, hostname-keyed creds also won't be found; trigger any network UI action first.)",
+                    share, server_label
+                )))
+            }
+            Ok(UpgradeResult::NetworkError { message }) => Err(ToolError::internal(format!(
+                "Network error while upgrading {}: {}",
+                volume_id, message
+            ))),
+            Err(e) => Err(ToolError::internal(format!(
+                "upgrade_to_smb_volume_inner({}) failed: {}",
+                volume_id, e
+            ))),
+        }
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        let _ = volume_id;
+        Err(ToolError::internal(
+            "upgrade_smb_to_direct is only supported on macOS and Linux".to_string(),
+        ))
+    }
+}
+
 // ── Settings ─────────────────────────────────────────────────────────
 
 /// Execute set_setting command via round-trip to the frontend.

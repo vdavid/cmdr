@@ -21,7 +21,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-29 semantic tools grouped by category:
+30 semantic tools grouped by category:
 - Navigation (6): `select_volume` (also accepts MTP volume names), `nav_to_path` (supports `mtp://` paths, skips filesystem existence check), `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (6): `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`. `copy`/`move` accept optional `autoConfirm` (bool) and `onConflict` (`skip_all`|`overwrite_all`|`rename_all`). `delete` accepts optional `autoConfirm`. When `autoConfirm` is true, the dialog opens and immediately confirms.
@@ -31,12 +31,12 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - App (3): `switch_pane`, `swap_panes`, `quit`
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
 - Settings (1): `set_setting` (change a setting value via round-trip to frontend)
-- Network (2): `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID)
+- Network (3): `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID), `upgrade_smb_to_direct` (upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O; thin wrapper over the existing manual "Connect directly" Tauri command — tries Keychain creds, returns a typed result mirroring `UpgradeResult`)
 - Async (1): `await` (poll PaneStateStore until a condition is met: `has_item`, `item_count_gte`, `path`, or `path_contains`. Supports `after_generation` to avoid matching stale state)
 
 ### Resources (`resources.rs`)
 
-- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache, `recentErrors`). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs); `recentErrors` is the last 20 directory-listing failures with `atUnixMs`, `listingId`, `volumeId`, `path`, `message` (see `listing_errors.rs` and the freshness contract below). Supports `?include=panes,volumes,dialogs,listings,recentErrors` projection (defaults to all) and `?compact=true` (drops the `files:` list inside each pane while keeping every summary field). Example: `cmdr://state?include=listings,recentErrors` is the minimal payload for "did the last listing succeed?".
+- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache, `recentErrors`). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. SMB volumes appear as structured entries with `name`, `id`, and `smbConnectionState` (`direct` | `os_mount` | `disconnected`) so agents can route the `upgrade_smb_to_direct` tool at the right volumes; non-SMB volumes stay as bare `- {name}` lines. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs); `recentErrors` is the last 20 directory-listing failures with `atUnixMs`, `listingId`, `volumeId`, `path`, `message` (see `listing_errors.rs` and the freshness contract below). Supports `?include=panes,volumes,dialogs,listings,recentErrors` projection (defaults to all) and `?compact=true` (drops the `files:` list inside each pane while keeping every summary field). Example: `cmdr://state?include=listings,recentErrors` is the minimal payload for "did the last listing succeed?".
 - `cmdr://dialogs/available`: Static metadata about available dialogs
 - `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
 - `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).
@@ -50,7 +50,7 @@ Directory module split by tool category. `mod.rs` contains the main `execute_too
 - `nav.rs`: navigation commands (with and without params)
 - `file_ops.rs`: copy, move, delete, mkdir, mkfile, refresh, select
 - `dialogs.rs`: unified dialog open/focus/close/confirm
-- `async_tools.rs`: await, connect_to_server, remove_manual_server, set_setting
+- `async_tools.rs`: await, connect_to_server, remove_manual_server, upgrade_smb_to_direct, set_setting
 - `search.rs`: search index loading, search, ai_search
 
 **Action-tool ack contract.** Every fire-and-forget action tool now waits for a backend ack signal before returning `OK`. Previously the tool returned `OK` the instant the event was dispatched; if the FE was stalled (modal blocking input, error pane up, race during startup), the action was silently dropped and MCP reported success anyway. The ack contract makes `OK` a meaningful promise: the FE has actually processed the dispatched action.

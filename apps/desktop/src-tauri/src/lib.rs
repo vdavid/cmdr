@@ -501,15 +501,14 @@ pub fn run() {
             space_poller::start();
 
             // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking).
-            // Gated on the same lazy-startup conditions as mDNS above. Opening a TCP socket to
-            // a private-IP SMB server triggers macOS's Local Network prompt independently, so
-            // we must not run this on fresh installs either. Returning users already answered
-            // the prompt; lazy users wait until they click Network or use the picker's "Connect
-            // directly" indicator.
+            // No `firstTriggerDone` gate here: the function is a no-op when there are no SMB
+            // mounts (no network activity, no prompt). When there ARE mounts and direct-SMB is
+            // enabled, the function kicks off mDNS itself so the Keychain lookup can resolve
+            // hostnames — same shape as the manual "Connect directly" and mount-time paths.
+            // The macOS Local Network prompt fires once per app and only when an SMB mount is
+            // present at launch; subsequent launches start mDNS eagerly via `firstTriggerDone`.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            if should_start_network_at_launch {
-                file_system::upgrade_existing_smb_mounts();
-            }
+            file_system::upgrade_existing_smb_mounts(app.handle().clone());
 
             // Check if there's an existing license (for menu text)
             let has_existing_license = licensing::get_license_info(app.handle()).is_some();

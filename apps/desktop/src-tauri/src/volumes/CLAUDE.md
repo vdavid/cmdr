@@ -87,8 +87,8 @@ The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::f
 **Gotcha**: Use `is_smb_fs_type()` to detect SMB volumes, never raw `"smbfs"` / `"cifs"` string comparisons
 **Why**: The helper in `mod.rs` handles both macOS (`smbfs`) and Linux (`cifs`) in one place. Raw string comparisons scatter platform knowledge and are easy to get wrong.
 
-**Gotcha**: `LocationInfo` enrichment with `VolumeManager` data happens in two places
-**Why**: `commands/volumes.rs::enrich_smb_connection_state` (for `list_volumes` IPC calls) and `volume_broadcast.rs::enrich_smb_connection_state` (for `volumes-changed` push events). Both must stay in sync. The pattern is: build the base `LocationInfo` from OS APIs, then cross-reference `VolumeManager` to add runtime state (`smb_connection_state`). If new enrichment fields are added, update both call sites.
+**Decision**: `LocationInfo` enrichment with `VolumeManager` data lives in one place: `volumes::enrich_smb_connection_state`
+**Why**: Previously duplicated across `commands/volumes.rs` (for `list_volumes` IPC) and `volume_broadcast.rs` (for `volumes-changed` push) with a "must stay in sync" gotcha. With MCP's `cmdr://state` becoming a third caller, the sync risk grew to three sites. The helper now lives in `volumes::mod.rs` and all three call it. New enrichment fields go there once, not three times.
 
 **Gotcha**: `append_mtp_volumes` is duplicated across `commands/volumes.rs` and `volume_broadcast.rs` (and their Linux counterparts), and both populate the MTP-only `usb_speed` field from `ConnectedDeviceInfo::device::usb_speed`
 **Why**: Same two-site sync problem as SMB enrichment, but for MTP-derived volume fields. Originally only `volume_broadcast.rs` set `usb_speed` from the device info; the `list_volumes` IPC variant hardcoded `None`, so the bootstrap call (used until the `volumes-changed` event lands) produced volumes with a missing dot until a later push refreshed them. Any new MTP-derived `LocationInfo` field needs to be set in BOTH `append_mtp_volumes` copies. The Linux variant lives in `commands/volumes_linux.rs` and mirrors the macOS one.
