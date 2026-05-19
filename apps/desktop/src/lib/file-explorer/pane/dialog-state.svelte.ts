@@ -1,7 +1,7 @@
 import { formatBytes, refreshListing } from '$lib/tauri-commands'
 import { listen, findFileIndex } from '$lib/tauri-commands'
-import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import { addToast } from '$lib/ui/toast'
+import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
 import type { TransferDialogPropsData } from './transfer-operations'
@@ -344,16 +344,17 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
-    handleTransferComplete(filesProcessed: number, bytesProcessed: number) {
+    handleTransferComplete(filesProcessed: number, filesSkipped: number, bytesProcessed: number) {
       const op = transferProgressProps?.operationType ?? 'copy'
       const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
-      log.info(`${opLabel} complete: ${String(filesProcessed)} files (${formatBytes(bytesProcessed)})`)
-      const itemWord = filesProcessed === 1 ? 'file' : 'files'
-      const toastMessage =
-        op === 'trash'
-          ? `Moved ${formatNumber(filesProcessed)} ${itemWord} to trash`
-          : `${opLabel} complete: ${formatNumber(filesProcessed)} ${itemWord}`
-      addToast(toastMessage)
+      log.info(
+        `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatBytes(bytesProcessed)})`,
+      )
+      const toastMessage = composeTransferCompleteToast({ operationType: op, filesProcessed, filesSkipped })
+      // Bump the timeout for the long mixed/all-skipped sentences (default 4s reads as
+      // a flicker for users still parsing the second clause). 7s comfortably covers the
+      // longest variant without staying around long enough to nag.
+      addToast(toastMessage, { timeoutMs: 7000 })
 
       refreshPanesAfterTransfer()
       getSourcePaneRef()?.clearOperationSnapshot()

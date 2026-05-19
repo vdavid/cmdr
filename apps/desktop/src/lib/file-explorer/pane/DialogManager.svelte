@@ -70,7 +70,7 @@
             preKnownConflicts: string[],
         ) => void
         onTransferCancel: () => void
-        onTransferComplete: (filesProcessed: number, bytesProcessed: number) => void
+        onTransferComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
         onTransferCancelled: (filesProcessed: number) => void
         onTransferError: (error: WriteOperationError, friendly?: FriendlyError) => void
         onTransferErrorClose: () => void

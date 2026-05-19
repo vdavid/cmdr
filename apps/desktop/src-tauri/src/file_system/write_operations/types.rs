@@ -181,12 +181,20 @@ impl WriteProgressEvent {
 }
 
 /// Completion event payload.
+///
+/// `files_processed` counts every source the operation considered (transferred + skipped),
+/// matching the driver's `files_done`. `files_skipped` is the subset that was skipped via
+/// conflict resolution (bulk pre-known-conflict skip, per-iter Skip from the resolver, or
+/// closure-side Skip such as same-inode self-copy). For delete/trash, skipping isn't a
+/// concept and the field is always 0. The FE uses both to compose user-facing summaries
+/// like "Copy complete: 3 copied, 2 skipped" instead of the misleading "0 files".
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WriteCompleteEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
     pub files_processed: usize,
+    pub files_skipped: usize,
     pub bytes_processed: u64,
 }
 

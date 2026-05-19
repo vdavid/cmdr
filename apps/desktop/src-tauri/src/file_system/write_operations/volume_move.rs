@@ -483,6 +483,7 @@ pub(super) async fn move_volumes_with_progress(
     let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock().unwrap().take();
     let files_done = outcome.files_done;
     let bytes_done = outcome.bytes_done;
+    let files_skipped = outcome.files_skipped;
 
     match outcome.intent {
         PostLoopIntent::Completed => {
@@ -496,6 +497,7 @@ pub(super) async fn move_volumes_with_progress(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_done,
+                files_skipped,
                 bytes_processed: bytes_done,
             });
             Ok(())
@@ -866,6 +868,7 @@ pub(super) async fn move_within_same_volume_with_progress(
 
     let files_moved = outcome.files_done;
     let bytes_moved = outcome.bytes_done;
+    let files_skipped = outcome.files_skipped;
 
     match outcome.intent {
         PostLoopIntent::Completed => {
@@ -879,6 +882,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_moved,
+                files_skipped,
                 bytes_processed: bytes_moved,
             });
             Ok(())

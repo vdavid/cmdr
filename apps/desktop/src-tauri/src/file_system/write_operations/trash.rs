@@ -230,6 +230,7 @@ pub(super) fn trash_files_with_progress(
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Trash,
             files_processed: items_done,
+            files_skipped: 0,
             bytes_processed: bytes_done,
         },
     );

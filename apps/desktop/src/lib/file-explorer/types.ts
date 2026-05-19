@@ -490,6 +490,7 @@ export interface WriteCompleteEvent {
   operationId: string
   operationType: WriteOperationType
   filesProcessed: number
+  filesSkipped: number
   bytesProcessed: number
 }
 

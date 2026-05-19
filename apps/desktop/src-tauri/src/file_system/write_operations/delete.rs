@@ -157,6 +157,7 @@ pub(super) fn delete_files_with_progress_inner(
         operation_id: operation_id.to_string(),
         operation_type: WriteOperationType::Delete,
         files_processed: files_done,
+        files_skipped: 0,
         bytes_processed: bytes_done,
     });
 
@@ -774,6 +775,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
         operation_id: operation_id.to_string(),
         operation_type: WriteOperationType::Delete,
         files_processed: files_done,
+        files_skipped: 0,
         bytes_processed: bytes_done,
     });
 

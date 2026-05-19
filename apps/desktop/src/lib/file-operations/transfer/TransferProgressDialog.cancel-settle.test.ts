@@ -211,14 +211,14 @@ describe('TransferProgressDialog cancel-settle gate (M4)', () => {
         operationId: 'op-1',
         operationType: 'delete',
         filesProcessed: 5,
+        filesSkipped: 0,
         bytesProcessed: 1234,
-        skippedCount: 0,
       } as WriteCompleteEvent)
       await tick()
       vi.advanceTimersByTime(450)
       await tick()
       expect(onComplete, 'complete path is unchanged by M4 (closes on min-display gate)').toHaveBeenCalledTimes(1)
-      expect(onComplete).toHaveBeenCalledWith(5, 1234)
+      expect(onComplete).toHaveBeenCalledWith(5, 0, 1234)
       unmount(component)
     } finally {
       vi.useRealTimers()

@@ -94,7 +94,7 @@
         itemSizes?: number[]
         /** Whether the scan preview is still running (this dialog should subscribe to scan events) */
         scanInProgress?: boolean
-        onComplete: (filesProcessed: number, bytesProcessed: number) => void
+        onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: WriteOperationError, friendly?: FriendlyError) => void
     }
@@ -402,6 +402,7 @@
         cleanup()
 
         const totalFiles = event.filesProcessed
+        const totalSkipped = event.filesSkipped
         const totalBytes = event.bytesProcessed
 
         // Enforce minimum display time to prevent jarring one-frame flash
@@ -409,10 +410,10 @@
         const delay = Math.max(0, MIN_DISPLAY_MS - elapsed)
         if (delay > 0) {
             setTimeout(() => {
-                onComplete(totalFiles, totalBytes)
+                onComplete(totalFiles, totalSkipped, totalBytes)
             }, delay)
         } else {
-            onComplete(totalFiles, totalBytes)
+            onComplete(totalFiles, totalSkipped, totalBytes)
         }
     }
 

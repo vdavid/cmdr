@@ -113,6 +113,7 @@ fn move_with_rename(
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
     let mut files_done = 0;
+    let mut files_skipped = 0usize;
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut move_tx = MoveTransaction::new();
 
@@ -143,6 +144,7 @@ fn move_with_rename(
                     state,
                     &mut apply_to_all_resolution,
                     &mut move_tx,
+                    &mut files_skipped,
                 )?;
             } else if dest_path.exists() {
                 // File-to-file (or type mismatch) conflict
@@ -161,6 +163,7 @@ fn move_with_rename(
                     }
                     None => {
                         // Skip this file
+                        files_skipped += 1;
                         continue;
                     }
                 }
@@ -211,6 +214,7 @@ fn move_with_rename(
         operation_id: operation_id.to_string(),
         operation_type: WriteOperationType::Move,
         files_processed: files_done,
+        files_skipped,
         bytes_processed: 0, // Rename doesn't track bytes
     });
 
@@ -235,6 +239,7 @@ fn merge_move_directory(
     state: &Arc<WriteOperationState>,
     apply_to_all_resolution: &mut Option<ConflictResolution>,
     move_tx: &mut MoveTransaction,
+    files_skipped: &mut usize,
 ) -> Result<(), WriteOperationError> {
     let entries = fs::read_dir(source_dir).with_path(source_dir)?;
 
@@ -265,6 +270,7 @@ fn merge_move_directory(
                 state,
                 apply_to_all_resolution,
                 move_tx,
+                files_skipped,
             )?;
         } else if dest_child.exists() {
             // File conflict (or type mismatch)
@@ -283,6 +289,7 @@ fn merge_move_directory(
                 }
                 None => {
                     // Skip: source file stays in place
+                    *files_skipped += 1;
                     continue;
                 }
             }
@@ -336,6 +343,7 @@ fn move_with_staging(
     let mut transaction = CopyTransaction::new();
     let mut files_done = 0;
     let mut bytes_done = 0u64;
+    let mut files_skipped = 0usize;
     let mut last_progress_time = Instant::now();
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
@@ -445,6 +453,7 @@ fn move_with_staging(
                     state,
                     &mut apply_to_all_resolution,
                     &mut staging_move_tx,
+                    &mut files_skipped,
                 )?;
             } else if final_path.exists() {
                 // File conflict (or type mismatch)
@@ -470,6 +479,7 @@ fn move_with_staging(
                         } else {
                             let _ = fs::remove_file(&staged_path);
                         }
+                        files_skipped += 1;
                         continue;
                     }
                 }
@@ -509,6 +519,7 @@ fn move_with_staging(
         operation_id: operation_id.to_string(),
         operation_type: WriteOperationType::Move,
         files_processed: files_done,
+        files_skipped,
         bytes_processed: bytes_done,
     });
 

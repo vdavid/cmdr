@@ -81,6 +81,11 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
 - **transfer/ScanPhaseBody.svelte**: Scan-phase tallies/throughput/current-dir body shared by both `waitingForScan` and
   `phase === 'scanning'` branches in `TransferProgressDialog.svelte`
 - **transfer/transfer-error-messages.ts**: Operation-specific error strings
+- **transfer/transfer-complete-toast.ts**: Pure
+  `composeTransferCompleteToast({ operationType, filesProcessed, filesSkipped })` helper that picks the right "Copy/Move
+  complete" wording. Branches on copy vs move (move skip means "already at target"; copy mixed-case asserts "All N at
+  the target"), and on single-vs-multi for the singular-file edge. Trash/delete keep the historic short wording. Backed
+  by `transfer-complete-toast.test.ts`. Called from `dialog-state.svelte.ts::handleTransferComplete`.
 
 ### Delete/trash (`delete/`)
 

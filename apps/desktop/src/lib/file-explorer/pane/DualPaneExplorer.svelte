@@ -2572,8 +2572,8 @@
     onTransferCancel={() => {
         dialogs.handleTransferCancel()
     }}
-    onTransferComplete={(files: number, bytes: number) => {
-        dialogs.handleTransferComplete(files, bytes)
+    onTransferComplete={(files: number, skipped: number, bytes: number) => {
+        dialogs.handleTransferComplete(files, skipped, bytes)
     }}
     onTransferCancelled={(files: number) => {
         dialogs.handleTransferCancelled(files)

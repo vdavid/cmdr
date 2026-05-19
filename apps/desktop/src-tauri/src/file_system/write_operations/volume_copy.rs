@@ -1157,6 +1157,7 @@ pub(crate) async fn copy_volumes_with_progress(
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Copy,
             files_processed: files_done,
+            files_skipped,
             bytes_processed: bytes_done,
         });
 
