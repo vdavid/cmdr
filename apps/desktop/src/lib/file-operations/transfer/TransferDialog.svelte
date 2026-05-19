@@ -541,23 +541,23 @@
             <div class="conflict-policy">
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="skip" />
-                    <span>Skip all</span>
+                    <span>{totalConflictCount === 1 ? 'Skip' : 'Skip all'}</span>
                 </label>
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="overwrite" />
-                    <span>Overwrite all</span>
+                    <span>{totalConflictCount === 1 ? 'Overwrite' : 'Overwrite all'}</span>
                 </label>
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="overwrite_smaller" />
-                    <span>Overwrite all smaller</span>
+                    <span>{totalConflictCount === 1 ? 'Overwrite if smaller' : 'Overwrite all smaller'}</span>
                 </label>
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="overwrite_older" />
-                    <span>Overwrite all older</span>
+                    <span>{totalConflictCount === 1 ? 'Overwrite if older' : 'Overwrite all older'}</span>
                 </label>
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="stop" />
-                    <span>Ask for each</span>
+                    <span>{totalConflictCount === 1 ? 'Ask later' : 'Ask for each'}</span>
                 </label>
             </div>
         </div>

@@ -21,7 +21,9 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
    - Optional dry-run scan to detect conflicts upfront
    - Shows sampled conflicts (max 200) with streaming progress
    - User makes conflict decisions before operation starts via a wrap-friendly flexbox of radios: "Skip all", "Overwrite
-     all", "Overwrite all smaller", "Overwrite all older", "Ask for each". The two conditional policies map to the typed
+     all", "Overwrite all smaller", "Overwrite all older", "Ask for each". When `totalConflictCount === 1`, the radio
+     labels drop "all" ("Skip", "Overwrite", "Overwrite if smaller", "Overwrite if older") and "Ask for each" becomes
+     "Ask later" since a single conflict can't be asked "for each". The two conditional policies map to the typed
      `ConflictResolution` variants `overwrite_smaller` / `overwrite_older`; see
      [`src-tauri/.../write_operations/CLAUDE.md`](../../../src-tauri/src/file_system/write_operations/CLAUDE.md) for the
      strict-comparison / fail-closed contract.
