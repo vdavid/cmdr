@@ -309,9 +309,9 @@
   --color-age-old: #6e2a08;
 }
 
-/* === Date age palette: Off ===
+/* === Date age palette: None ===
    All tiers fall back to the secondary text color (no coloring). */
-:root[data-date-colors='off'] {
+:root[data-date-colors='none'] {
   --color-age-fresh: var(--color-text-secondary);
   --color-age-recent: var(--color-text-secondary);
   --color-age-aging: var(--color-text-secondary);

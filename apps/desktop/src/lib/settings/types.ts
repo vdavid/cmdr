@@ -87,7 +87,7 @@ export type SizeDisplayMode = 'smart' | 'logical' | 'physical'
 export type BriefColumnWidthMode = 'paneWidth' | 'limited'
 export type AppColor = 'system' | 'cmdr-gold'
 export type SizeColorsPalette = 'none' | 'app' | 'rainbow'
-export type DateColorsPalette = 'off' | 'app' | 'wilting'
+export type DateColorsPalette = 'none' | 'app' | 'wilting'
 export type VolumeTintColor =
   | 'none'
   | 'red'

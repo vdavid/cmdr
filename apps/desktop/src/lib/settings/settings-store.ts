@@ -27,7 +27,7 @@ interface SettingChangedPayload {
 // ============================================================================
 
 const STORE_NAME = 'settings.json'
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
 
 let storeInstance: Store | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
@@ -187,10 +187,17 @@ async function setupCrossWindowListener(): Promise<void> {
  * Migrate settings from older schema versions.
  */
 async function migrateSettings(store: Store, fromVersion: number): Promise<void> {
-  // Currently no migrations needed, just set version
   if (fromVersion < 1) {
-    // Future migrations would go here
-    // Example: rename old keys, convert formats, etc.
+    // No-op placeholder for the original schema.
+  }
+
+  if (fromVersion < 2) {
+    // `appearance.dateColors` renamed its "no coloring" value from `off` to
+    // `none` to match `appearance.sizeColors`.
+    const dateColors = await store.get<string>('appearance.dateColors')
+    if (dateColors === 'off') {
+      await store.set('appearance.dateColors', 'none')
+    }
   }
 
   await store.set('_schemaVersion', SCHEMA_VERSION)
