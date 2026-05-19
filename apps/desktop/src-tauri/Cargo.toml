@@ -173,6 +173,8 @@ mdns-sd = { version = "0.19", features = ["logging"] }
 smb2 = "0.10.0"
 # NFD normalization for APFS collation and SMB path normalization
 unicode-normalization = "0.1"
+# Percent-decoding for MCP resource URI query strings (cross-platform).
+urlencoding = "2.1.3"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 file_icon_provider = "1.0.0"
@@ -180,7 +182,6 @@ core-foundation = "0.10.1"
 core-services = "1.0.0"
 icns = "0.4.0"
 plist = "1.8.0"
-urlencoding = "2.1.3"
 objc2 = { version = "0.6", features = ["std", "exception"] }
 objc2-foundation = { version = "0.3", features = [
     "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",

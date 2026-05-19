@@ -10,7 +10,9 @@ use std::path::Path;
 
 #[cfg(target_os = "macos")]
 use super::ErrorActionKind;
-use super::{ErrorCategory, FriendlyError, Markdown};
+#[cfg(target_os = "macos")]
+use super::Markdown;
+use super::{ErrorCategory, FriendlyError};
 use crate::file_system::volume::VolumeError;
 use crate::md;
 
