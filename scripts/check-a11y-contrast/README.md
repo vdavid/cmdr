@@ -46,6 +46,25 @@ both a text color and a background, the tool:
    the static `app.css` fallback (`#d4a006`) and silently miss issues that surface when the user's macOS accent is Apple
    Blue, Purple, Graphite, etc. See `accent_matrix.go` for the variant list.
 
+In addition to the rule walker, two scenario synthesizers cover cases where the text color and the background are set on
+different selectors — cases the walker can't pair on its own:
+
+- **Row state matrix** (`row_state_matrix.go`): the file-list selected-row text colors (`--color-selection-fg` and the
+  `--color-size-*-selected` mixes) are set on `.is-selected` descendants while the row bg is set elsewhere (the pane,
+  the stripe rule, or the cursor rules). The synthesizer composites the bg the row will actually render with — pane tint
+  × stripe × cursor state × accent variant — and pairs each text role against it. About 1000 pairs evaluated;
+  worst-case-per-(role, mode, tint, variant) reported. Mirrors the three-tier selection-fg cascade in `app.css` (primary
+  → cursor → fallback) so the synthesizer's verdict matches what the runtime actually paints.
+- **Dropdown ancestor-bg matrix** (`dropdown_states.go`): hand-listed `(descendant-text-var, ancestor-bg-var)` tuples
+  for cases where bg comes from an ancestor selector and `[data-highlighted]` (the dropdown options today; designed for
+  easy extension). Runs every entry against the accent matrix + both modes.
+
+The parser also normalizes `app.css` before extracting vars: every `@supports not (color: color-mix(...))` block is
+stripped (those carry old-WebKit hex fallbacks that would otherwise overwrite the modern `color-mix` formulas), and
+**every** `@media (prefers-color-scheme: dark)` block is descended into rather than only the first (the codebase has
+more than one — for example a small block carrying the selection-fg fallback rule sits before the main dark token
+table).
+
 ## Output
 
 ```
@@ -78,16 +97,30 @@ matrix), resolved fg hex, resolved bg hex, actual ratio, required threshold, and
 ## Architecture
 
 ```
-main.go       Entry, walks `apps/desktop/src/**/*.svelte`, orchestrates.
-parser.go     Parses app.css (light + dark var tables) and Svelte <style>
-              blocks into Rule structs.
-resolver.go   Resolves a CSS value string (literal / var() / color-mix()) to
-              RGBA per mode.
-contrast.go   sRGB parsing, hex/rgb()/named literals, sRGB + OKLCH mixing
-              (premultiplied alpha), WCAG 2.2 contrast math.
-analyzer.go   Walks parsed rules per mode, tracks cascade state by compound
-              class set, emits Finding per (selector, mode) pair.
-reporter.go   Pretty prints violations and optional warnings.
+main.go              Entry, walks `apps/desktop/src/**/*.svelte`, orchestrates
+                     the rule walker + scenario synthesizers.
+parser.go            Parses app.css (light + dark var tables) and Svelte <style>
+                     blocks into Rule structs. Strips `@supports not (...)` and
+                     descends into every `@media (prefers-color-scheme: dark)`.
+resolver.go          Resolves a CSS value string (literal / var() / color-mix())
+                     to RGBA per mode. Tracks visited var names in `Deps` so
+                     callers can decide whether to sweep the accent matrix.
+contrast.go          sRGB parsing, hex/rgb()/named literals, sRGB + OKLCH mixing
+                     (premultiplied alpha), WCAG 2.2 contrast math.
+analyzer.go          Walks parsed rules per mode, tracks cascade state by
+                     compound class set, emits Finding per (selector, mode) pair.
+                     Uses `evaluateAt` to run worst-case across accent variants
+                     when the pair is accent-sensitive.
+reporter.go          Pretty prints violations and optional warnings.
+accent_matrix.go     Runtime accent variants (the 8 macOS system accents +
+                     Cmdr gold) and the per-variant VarTable override.
+size_tiers.go        `.size-*` utility classes × known container bgs, since
+                     they're only `color:` rules with no paired bg.
+row_state_matrix.go  Selected-row text × (pane tint × stripe × cursor state ×
+                     accent variant) bg composition. Models the three-tier
+                     `--color-selection-fg` cascade.
+dropdown_states.go   Hand-listed (descendant-text-var, ancestor-bg-var) tuples
+                     for "secondary text on accent-bg" cases.
 ```
 
 Tests:
@@ -96,6 +129,16 @@ Tests:
 - `resolver_test.go`: var() fallbacks, nested color-mix, dark overrides.
 - `parser_test.go`: app.css + Svelte parsing, selector extraction.
 - `analyzer_test.go`: cascade inheritance, known false-positive cases.
+- `accent_matrix_test.go`: variant sweep + per-variant resolution.
+
+Diagnostic helpers (skipped by default; gated on env vars):
+
+- `before_after_test.go` (`CMDR_PRINT_BEFORE_AFTER=1`): prints a curated before/after comparison table for the
+  selected-row text-role × bg matrix. Useful when iterating on selection colors to see how a change affects every
+  meaningful combination.
+- `diff_test.go` (`CMDR_PRINT_SELECTION_DIFF=1`, `CMDR_PRINT_RED_CANDIDATES=1`): prints the contrast ratio between the
+  selected-row text color and the unselected-row text color across modes + accents (differentiation, not the AA-vs-bg
+  question), plus a sweep of candidate red hexes against the worst- case bgs for picking a new selection color.
 
 ## Extending
 
@@ -116,6 +159,21 @@ WCAG AA (current) uses 4.5:1 / 3:1. For AAA, change the constants in `analyzer.e
 
 Not built yet. If the team decides certain findings are acceptable (marketing badges, subtle hover tints), add a JSON
 allowlist alongside this README and filter in `main.go` before calling `Report`.
+
+### Add a new "text from one selector, bg from another" scenario
+
+When the rule walker can't pair a text role with its actual bg (the bg lives on an ancestor or sibling selector that the
+walker doesn't traverse), reach for one of the synthesizers:
+
+- For file-list selected-row text colors, add a new entry to `rowSelectedTextRoles` in `row_state_matrix.go`.
+- For "secondary text on accent-bg" cases like dropdown options, append a new entry to `dropdownScenarios` in
+  `dropdown_states.go`.
+- For a one-off pair (specific descendant + specific ancestor bg) that's not in either bucket, mirror the
+  `dropdown_states.go` pattern in a new `<thing>_states.go` and wire it into `main.go` alongside the other
+  `Analyzer.AnalyzeXxx` calls.
+
+If the scenario depends on the active accent, you don't need to do anything special — the synthesizers iterate
+`AccentVariants` automatically.
 
 ## Known trade-offs
 

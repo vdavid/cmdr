@@ -999,11 +999,19 @@
         background-color: var(--color-bg-stripe);
     }
 
-    /* Selected rows: darker bg (dark mode only — see FullList.svelte and
-       app.css). Cursor rules win by specificity, so cursor-on-selected
-       still shows the cursor highlight. */
+    /* Selected rows: darker bg (light `#e6e6e6`, dark `#141414`); see
+       FullList.svelte and app.css for the cascade rationale. Cursor
+       rules win by specificity, so cursor-on-selected still shows the
+       cursor highlight. */
     .file-entry.is-selected {
         background-color: var(--color-selection-bg);
+    }
+
+    /* Cursor-on-selected: swap the selection text color to the cursor
+       variant (AA-safe against the cursor bg). See FullList.svelte for
+       the full rationale. */
+    .file-entry.is-selected.is-under-cursor {
+        --color-selection-fg: var(--color-selection-fg-cursor);
     }
 
     /* Faint hairline between two consecutive selected rows. `box-shadow:
@@ -1015,6 +1023,9 @@
 
     .file-entry.is-under-cursor {
         background-color: var(--color-cursor-inactive);
+        /* Faint accent-colored hairline outlining the cursor row. See
+           FullList.svelte for the rationale. */
+        box-shadow: inset 0 0 0 1px var(--color-cursor-outline);
     }
 
     .brief-list-container.is-focused .file-entry.is-under-cursor {

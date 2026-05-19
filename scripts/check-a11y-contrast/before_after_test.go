@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -168,12 +169,8 @@ func passStr(p bool) string {
 
 func cloneVars(v *VarTable) *VarTable {
 	out := NewVarTable()
-	for k, val := range v.Light {
-		out.Light[k] = val
-	}
-	for k, val := range v.Dark {
-		out.Dark[k] = val
-	}
+	maps.Copy(out.Light, v.Light)
+	maps.Copy(out.Dark, v.Dark)
 	return out
 }
 
@@ -255,8 +252,8 @@ func evalScenario(base *VarTable, sc beforeAfterScenario, applyFallback bool) (F
 			vars = withAccentOverride(vars, AccentVariant{Name: "yellow", Light: "#ffc601", Dark: "#ffc601"})
 		}
 	}
-	if applyFallback && shouldUseSelectionFgFallback(sc.mode, sc.tint, sc.variant) {
-		vars = withSelectionFgFallback(vars)
+	if applyFallback {
+		vars = withSelectionFgVariant(vars, selectionFgTokenFor(sc.mode, sc.tint, sc.variant))
 	}
 	bg, ok := resolveRowBg(vars, sc.mode, sc.tint, sc.variant)
 	if !ok {

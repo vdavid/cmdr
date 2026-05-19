@@ -260,13 +260,10 @@ func (a *Analyzer) evalRowCellForAccent(
 	if !accent.IsDefault {
 		vars = withAccentOverride(a.Vars, accent)
 	}
-	// Mirror the `selection-fg fallback` rule in `app.css`: in dark mode,
-	// when the pane is tinted AND the row is cursor-active + selected,
-	// `--color-selection-fg` swaps to `--color-selection-fg-fallback`.
-	// The resolver doesn't model rule-level CSS overrides; apply by hand.
-	if shouldUseSelectionFgFallback(mode, tint, variant) {
-		vars = withSelectionFgFallback(vars)
-	}
+	// Mirror the three-tier `--color-selection-fg` cascade from `app.css`
+	// + `FullList.svelte`. The resolver doesn't model rule-level CSS
+	// overrides, so apply the right tier by hand per scenario.
+	vars = withSelectionFgVariant(vars, selectionFgTokenFor(mode, tint, variant))
 	bg, ok := resolveRowBg(vars, mode, tint, variant)
 	if !ok {
 		return 0
@@ -318,30 +315,39 @@ func evalRowText(
 	}, true
 }
 
-// shouldUseSelectionFgFallback mirrors the `app.css` rule that swaps
-// `--color-selection-fg` to its fallback. Keep this predicate in sync with
-// the CSS selector (see the "selection-fg fallback" block in `app.css`).
+// selectionFgTokenFor picks which `--color-selection-fg-*` variant applies
+// to a given scenario, mirroring the three-tier cascade in `app.css` +
+// `FullList.svelte`. Keep this in sync with the CSS rules: the order from
+// least- to most-specific is primary → cursor → fallback.
 //
-// Today the rule triggers when ALL of these hold:
-//   - dark mode (light mode's primary value is dark enough to clear AA on
-//     every tinted bg without help)
-//   - the pane has a tint applied
-//   - the row is the focused cursor-active row (`.is-under-cursor` +
-//     focused container, in our matrix terms: `variant == "cursor-active"`).
-func shouldUseSelectionFgFallback(mode Mode, tint paneTintHue, variant string) bool {
-	return mode == ModeDark && tint.VarName != "" && variant == "cursor-active"
+// The cascade today:
+//   - default: `--color-selection-fg-primary` (the strong red, AA-safe vs
+//     `--color-selection-bg`).
+//   - row is under cursor: `--color-selection-fg-cursor` (a hair darker
+//     red in light, lighter in dark, AA-safe vs the translucent cursor bg).
+//   - dark + tinted pane + cursor-active: `--color-selection-fg-fallback`
+//     (= `--color-text-primary`), because no red variant clears AA there.
+func selectionFgTokenFor(mode Mode, tint paneTintHue, variant string) string {
+	if mode == ModeDark && tint.VarName != "" && variant == "cursor-active" {
+		return "color-selection-fg-fallback"
+	}
+	if variant == "cursor-active" || variant == "cursor-inactive" {
+		return "color-selection-fg-cursor"
+	}
+	return "color-selection-fg-primary"
 }
 
-// withSelectionFgFallback returns a VarTable derived from v with
-// `--color-selection-fg` pointing at `--color-selection-fg-fallback` so the
-// `--color-size-*-selected` mixes (which reference `--color-selection-fg`)
-// pick up the swap automatically.
-func withSelectionFgFallback(v *VarTable) *VarTable {
+// withSelectionFgVariant returns a VarTable derived from v with
+// `--color-selection-fg` pointing at the named variant token. Both modes
+// get the override so the `--color-size-*-selected` mixes (which reference
+// `--color-selection-fg`) pick up the right tier automatically.
+func withSelectionFgVariant(v *VarTable, tokenName string) *VarTable {
 	out := NewVarTable()
 	maps.Copy(out.Light, v.Light)
 	maps.Copy(out.Dark, v.Dark)
-	out.Light["color-selection-fg"] = "var(--color-selection-fg-fallback)"
-	out.Dark["color-selection-fg"] = "var(--color-selection-fg-fallback)"
+	expr := fmt.Sprintf("var(--%s)", tokenName)
+	out.Light["color-selection-fg"] = expr
+	out.Dark["color-selection-fg"] = expr
 	return out
 }
 

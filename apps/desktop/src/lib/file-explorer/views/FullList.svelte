@@ -1003,12 +1003,22 @@
         background-color: var(--color-bg-stripe);
     }
 
-    /* Selected rows: darker bg (dark mode only — tokens default to
-       transparent in light) overrides the stripe so the selection reads
-       as a single block. Cursor rules win by specificity (see below), so
-       cursor-on-selected still shows the cursor highlight. */
+    /* Selected rows: darker bg (in both modes — light's `#e6e6e6`, dark's
+       `#141414`) overrides the stripe so the selection reads as a single
+       block. Cursor rules win by specificity (see below), so cursor-on-
+       selected still shows the cursor highlight. */
     .file-entry.is-selected {
         background-color: var(--color-selection-bg);
+    }
+
+    /* When the cursor is on a selected row, the text color shifts from
+       the primary (strong red, AA-safe against `--color-selection-bg`)
+       to the cursor variant (slightly darker/lighter red, AA-safe
+       against the translucent cursor bg). The tinted-dark + cursor-active
+       corner has its own fallback rule in app.css that wins over this
+       via higher specificity. */
+    .file-entry.is-selected.is-under-cursor {
+        --color-selection-fg: var(--color-selection-fg-cursor);
     }
 
     /* Faint hairline between two consecutive selected rows so dense
@@ -1023,6 +1033,11 @@
 
     .file-entry.is-under-cursor {
         background-color: var(--color-cursor-inactive);
+        /* Faint accent-colored hairline outlining the cursor row. `inset`
+           draws inside the row with no layout shift. Visible in both the
+           focused (`is-focused`) and unfocused states so the cursor stays
+           distinguishable from the selection bg. */
+        box-shadow: inset 0 0 0 1px var(--color-cursor-outline);
     }
 
     .full-list-container.is-focused .file-entry.is-under-cursor {

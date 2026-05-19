@@ -66,6 +66,13 @@
   /* === Cursor (row highlight in file lists) === */
   --color-cursor-inactive: color-mix(in srgb, var(--color-bg-tertiary), transparent 60%);
   --color-cursor-active: color-mix(in oklch, var(--color-accent), transparent 80%);
+  /* Faint accent-colored hairline painted as an `inset` box-shadow around
+     the row under the cursor (in both focused and unfocused states). It
+     differentiates the cursor row from a selected row whose background is
+     a similar luminance and helps the user keep track of position
+     regardless of pane tint or selection state. Subtle by design — 35%
+     alpha. */
+  --color-cursor-outline: color-mix(in oklch, var(--color-accent), transparent 65%);
 
   /* === Semantic Colors === */
   --color-allow: #2e7d32;
@@ -142,19 +149,20 @@
    * where no AA-clearing red exists. The CSS rule that switches between
    * them lives further down (search for "selection-fg fallback"). The
    * contrast checker's `row_state_matrix.go` synthesizer mirrors it. */
-  --color-selection-fg-primary: #b60000;
+  --color-selection-fg-primary: #cc0000;
+  --color-selection-fg-cursor: #b80808;
   --color-selection-fg-fallback: var(--color-text-primary);
   --color-selection-fg: var(--color-selection-fg-primary);
-  /* Selection background and border — dark mode only (the light-mode
-   * red on white reads cleanly enough without a bg layer). The bg is a
-   * touch darker than `--color-bg-primary`, applied via a scoped rule
-   * in `FullList.svelte`. The border is a faint fixed gray (no accent
-   * relationship) that draws as an inset `box-shadow` between
-   * consecutive selected rows — purely there to keep dense selections
-   * visually countable. Both default to transparent so they're a no-op
-   * in light mode. */
-  --color-selection-bg: transparent;
-  --color-selection-border: transparent;
+  /* Selection background and hairline border applied to selected rows in
+   * both modes. Light mode: faint gray bg a touch darker than
+   * `--color-bg-primary` (lower than the stripe color, more distinct from
+   * the warm cursor highlight by luminance) and a faint dark hairline
+   * between consecutive selected rows. Dark mode: darker bg, faint white
+   * hairline. Border draws as `inset` box-shadow so row height doesn't
+   * change. Both axes are purely there to keep dense selections visually
+   * countable on top of the red text identity. */
+  --color-selection-bg: #f2f2f2;
+  --color-selection-border: rgba(0, 0, 0, 0.03);
 
   /* === Git portal ===
      * Distinct from `--color-accent` to keep the "you're in history-land" feel
@@ -384,6 +392,7 @@
     --color-accent-subtle: rgba(212, 160, 6, 0.15);
     --color-cursor-inactive: rgba(232, 232, 232, 0.4);
     --color-cursor-active: rgba(212, 160, 6, 0.2);
+    --color-cursor-outline: rgba(212, 160, 6, 0.35);
     --color-warning-bg-solid: #f3e5dc;
     --color-disk-ok: #74a376;
     --color-disk-warning: #e47b42;
@@ -415,6 +424,7 @@
   --color-accent-subtle: rgba(212, 160, 6, 0.15);
   --color-cursor-inactive: rgba(232, 232, 232, 0.4);
   --color-cursor-active: rgba(212, 160, 6, 0.2);
+  --color-cursor-outline: rgba(212, 160, 6, 0.35);
   --color-warning-bg-solid: #f3e5dc;
   --color-disk-ok: #74a376;
   --color-disk-warning: #e47b42;
@@ -512,10 +522,11 @@
        In dark mode we also paint a slightly darker bg on selected rows and a
        faint hairline between consecutive selected rows; the tokens default
        to transparent in light so they're effectively dark-mode-only. */
-    --color-selection-fg-primary: #ff8c8c;
+    --color-selection-fg-primary: #ff4040;
+    --color-selection-fg-cursor: #ff8c8c;
     --color-selection-fg-fallback: var(--color-text-primary);
     --color-selection-bg: #141414;
-    --color-selection-border: rgba(255, 255, 255, 0.1);
+    --color-selection-border: rgba(255, 255, 255, 0.025);
 
     /* Git portal: brighter teal in dark mode for readability against
        the dark background. */
@@ -569,6 +580,7 @@
       --color-accent-subtle: rgba(255, 194, 6, 0.15);
       --color-cursor-inactive: rgba(51, 51, 51, 0.4);
       --color-cursor-active: rgba(255, 194, 6, 0.2);
+      --color-cursor-outline: rgba(255, 194, 6, 0.35);
       --color-warning-bg-solid: #483d29;
       --color-disk-ok: #588b5b;
       --color-disk-warning: #bf892d;
@@ -596,6 +608,7 @@
     --color-accent-subtle: rgba(255, 194, 6, 0.15);
     --color-cursor-inactive: rgba(51, 51, 51, 0.4);
     --color-cursor-active: rgba(255, 194, 6, 0.2);
+    --color-cursor-outline: rgba(255, 194, 6, 0.35);
     --color-warning-bg-solid: #483d29;
     --color-disk-ok: #588b5b;
     --color-disk-warning: #bf892d;
