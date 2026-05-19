@@ -5,8 +5,8 @@ fn test_resource_count() {
     let resources = get_all_resources();
     assert_eq!(
         resources.len(),
-        4,
-        "Expected 4 resources (cmdr://state, cmdr://dialogs/available, cmdr://indexing, cmdr://settings)"
+        5,
+        "Expected 5 resources (cmdr://state, cmdr://dialogs/available, cmdr://indexing, cmdr://settings, cmdr://logs)"
     );
 }
 
@@ -40,7 +40,13 @@ fn test_no_duplicate_resource_uris() {
 #[test]
 fn test_resources_exist() {
     let resources = get_all_resources();
-    let expected_uris = ["cmdr://state", "cmdr://dialogs/available", "cmdr://indexing"];
+    let expected_uris = [
+        "cmdr://state",
+        "cmdr://dialogs/available",
+        "cmdr://indexing",
+        "cmdr://settings",
+        "cmdr://logs",
+    ];
     for uri in expected_uris {
         assert!(resources.iter().any(|r| r.uri == uri), "Missing resource: {}", uri);
     }

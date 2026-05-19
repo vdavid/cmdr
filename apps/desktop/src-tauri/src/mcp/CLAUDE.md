@@ -36,10 +36,11 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Resources (`resources.rs`)
 
-- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs), useful for triaging orphan listings in error reports.
+- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache, `recentErrors`). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs); `recentErrors` is the last 20 directory-listing failures with `atUnixMs`, `listingId`, `volumeId`, `path`, `message` (see `listing_errors.rs` and the freshness contract below). Supports `?include=panes,volumes,dialogs,listings,recentErrors` projection (defaults to all) and `?compact=true` (drops the `files:` list inside each pane while keeping every summary field). Example: `cmdr://state?include=listings,recentErrors` is the minimal payload for "did the last listing succeed?".
 - `cmdr://dialogs/available`: Static metadata about available dialogs
 - `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
 - `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).
+- `cmdr://logs`: Tail of the live `cmdr.log` file. Query: `?since=<iso>&filter=<substring>&limit=<n>`. `limit` defaults to 100, capped at 1000; `filter` is a case-sensitive substring match (no regex dep); `since` drops lines whose ISO-8601 timestamp prefix is ≤ the given value (lines without a timestamp prefix, like a Rust panic, are kept). Reads the last ~5 MB of the file from the end so a 50 MB rotated log doesn't blow up MCP memory. Returns oldest-first.
 
 ### Executor (`executor/`)
 
@@ -99,6 +100,7 @@ Constants and configuration for the MCP server (port, bind address, transport se
 
 - `PaneStateStore`: Current state of left/right panes (path, files, cursor, selection, tabs, type-to-jump). Includes a monotonic `generation` counter (AtomicU64) bumped on every `set_left`/`set_right`. Exposed in `cmdr://state` as `generation:` and used by the `await` tool's `after_generation` param to avoid matching stale state. The optional `typeToJump` field (buffer, indicatorVisible, indicatorStale, lastMatchedName) mirrors the per-pane type-to-jump state when a buffer or indicator is live, so MCP-driven tests can assert the feature without DOM access.
 - `SoftDialogTracker`: Which dialogs MCP thinks are open (in `dialog_state.rs`)
+- `listing_errors`: Bounded ring buffer (capacity 20) of the most recent `listing-error` events. Populated from `file_system::listing::streaming` at both `emit_error` sites — see the call to `crate::mcp::listing_errors::record(...)` right before the FE event fires, so MCP-visible state matches what the FE saw. Surfaced as `recentErrors:` in `cmdr://state`. **Freshness contract**: the buffer holds the absolute-newest 20 errors process-wide; on a busy session older errors silently drop off, so test scenarios that need older context should snapshot earlier and compare. Cancellations are not recorded — only failures.
 
 Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `update_pane_tabs`, etc.). Settings are fetched on-demand via round-trip to the frontend rather than stored in a state store.
 

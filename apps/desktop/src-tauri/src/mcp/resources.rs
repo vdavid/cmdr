@@ -38,7 +38,11 @@ pub fn get_all_resources() -> Vec<Resource> {
         Resource {
             uri: "cmdr://state".to_string(),
             name: "App state".to_string(),
-            description: "Complete state of the Cmdr app including both panes, volumes, and dialogs".to_string(),
+            description: "Complete app state (both panes, volumes, dialogs, listings, recent listing errors). \
+                          Supports `?include=panes,volumes,dialogs,listings,recentErrors` to project only \
+                          listed sections, and `?compact=true` to drop the per-pane file lists. Examples: \
+                          `cmdr://state?include=listings,recentErrors` or `cmdr://state?compact=true`."
+                .to_string(),
             mime_type: "text/yaml".to_string(),
         },
         Resource {
@@ -59,7 +63,121 @@ pub fn get_all_resources() -> Vec<Resource> {
             description: "All settings with current values, defaults, types, and constraints".to_string(),
             mime_type: "text/yaml".to_string(),
         },
+        Resource {
+            uri: "cmdr://logs".to_string(),
+            name: "Recent logs".to_string(),
+            description:
+                "Tail of the live cmdr.log file. Query: `?since=<unix-ms-or-iso>&filter=<substring>&limit=<n>`. \
+                          `limit` defaults to 100, cap 1000. `filter` is a case-sensitive substring match. \
+                          `since` drops lines whose timestamp is <= the given moment. Lines come back oldest-first, \
+                          one per line, in the same format the on-disk log uses."
+                    .to_string(),
+            mime_type: "text/plain".to_string(),
+        },
     ]
+}
+
+/// Options parsed from a `cmdr://state?...` URI.
+#[derive(Debug, Clone, Default)]
+struct StateOptions {
+    /// Whitelist of top-level sections to include. `None` = include all.
+    include: Option<std::collections::HashSet<String>>,
+    /// When true, omit `files:` lists in each pane to cut the largest source of
+    /// noise. The per-pane summary fields (`path`, `volumeId`, `cursor.index`,
+    /// `totalFiles`, etc.) are still rendered.
+    compact: bool,
+}
+
+/// Options parsed from a `cmdr://logs?...` URI.
+#[derive(Debug, Clone, Default)]
+struct LogOptions {
+    /// Drop lines whose ISO-8601 timestamp is `<=` this value. Lines without a
+    /// recognizable timestamp prefix are kept (better to surface noise than to
+    /// silently drop a panic line that didn't fit the usual prefix).
+    since_iso: Option<String>,
+    /// Case-sensitive substring filter.
+    filter: Option<String>,
+    /// Max lines to return. Defaults to 100, clamped to 1000.
+    limit: usize,
+}
+
+const LOG_DEFAULT_LIMIT: usize = 100;
+const LOG_MAX_LIMIT: usize = 1000;
+/// How far back from end-of-file to read. 5 MB easily covers the most recent
+/// few thousand lines on a busy session, without slurping the whole rotated
+/// log (up to 50 MB per file).
+const LOG_TAIL_WINDOW_BYTES: u64 = 5 * 1024 * 1024;
+
+/// Parses `?k=v&k=v` query string into a flat map. Returns an empty map for
+/// `None` or `Some("")`. Percent-decodes values (and keys).
+fn parse_query(q: Option<&str>) -> std::collections::HashMap<String, String> {
+    let mut out = std::collections::HashMap::new();
+    let Some(q) = q else { return out };
+    if q.is_empty() {
+        return out;
+    }
+    for pair in q.split('&') {
+        if pair.is_empty() {
+            continue;
+        }
+        let (k, v) = match pair.split_once('=') {
+            Some(kv) => kv,
+            None => (pair, ""),
+        };
+        let key = urlencoding::decode(k)
+            .map(|c| c.into_owned())
+            .unwrap_or_else(|_| k.to_string());
+        let value = urlencoding::decode(v)
+            .map(|c| c.into_owned())
+            .unwrap_or_else(|_| v.to_string());
+        out.insert(key, value);
+    }
+    out
+}
+
+/// Splits a URI into `(base, query)`. `cmdr://state?a=b` → `("cmdr://state", Some("a=b"))`.
+fn split_uri(uri: &str) -> (&str, Option<&str>) {
+    match uri.split_once('?') {
+        Some((base, query)) => (base, Some(query)),
+        None => (uri, None),
+    }
+}
+
+fn parse_state_options(query: Option<&str>) -> StateOptions {
+    let q = parse_query(query);
+    let include = q.get("include").map(|v| {
+        v.split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect::<std::collections::HashSet<String>>()
+    });
+    let compact = q.get("compact").map(|v| v == "true" || v == "1").unwrap_or(false);
+    StateOptions { include, compact }
+}
+
+fn parse_log_options(query: Option<&str>) -> LogOptions {
+    let q = parse_query(query);
+    let since_iso = q.get("since").cloned().filter(|s| !s.is_empty());
+    let filter = q.get("filter").cloned().filter(|s| !s.is_empty());
+    let limit = q
+        .get("limit")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(LOG_DEFAULT_LIMIT)
+        .clamp(1, LOG_MAX_LIMIT);
+    LogOptions {
+        since_iso,
+        filter,
+        limit,
+    }
+}
+
+impl StateOptions {
+    fn includes(&self, section: &str) -> bool {
+        match &self.include {
+            None => true,
+            Some(set) => set.contains(section),
+        }
+    }
 }
 
 /// Format a file entry in compact format.
@@ -103,7 +221,12 @@ fn format_file_compact(
 }
 
 /// Build YAML for a single pane.
-fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
+///
+/// When `compact` is true, omits the `files:` list (the largest source of YAML
+/// volume in the default state read) while keeping every summary field. The
+/// per-pane `cursor`, `totalFiles`, and `loadedRange` still show, so callers
+/// can still tell where the cursor is without paying for 100 file lines.
+fn build_pane_yaml_with_options(state: &PaneState, indent: &str, compact: bool) -> String {
     let mut lines = Vec::new();
 
     // Tabs (first, gives context for which tab is active before showing its content)
@@ -178,20 +301,27 @@ fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
     }
 
     // Files list
-    lines.push(format!("{}files:", indent));
+    if compact {
+        // `compact` callers care about path / volumeId / cursor / totalFiles, not
+        // the 100-entry virtual-scroll window. Emit a single placeholder so the
+        // YAML still shows the section exists.
+        lines.push(format!("{}files: <omitted: compact=true>", indent));
+    } else {
+        lines.push(format!("{}files:", indent));
 
-    let is_full_mode = state.view_mode == "full";
-    let selected_set: std::collections::HashSet<usize> = state.selected_indices.iter().copied().collect();
+        let is_full_mode = state.view_mode == "full";
+        let selected_set: std::collections::HashSet<usize> = state.selected_indices.iter().copied().collect();
 
-    for (idx, file) in state.files.iter().enumerate() {
-        // Convert local index to global index based on loaded_start
-        let global_idx = state.loaded_start + idx;
-        let is_cursor = global_idx == state.cursor_index;
-        let is_selected = selected_set.contains(&global_idx);
-        // In full mode, include details for all files. In brief mode, only for cursor.
-        let include_details = is_full_mode || is_cursor;
-        let formatted = format_file_compact(file, global_idx, is_cursor, is_selected, include_details);
-        lines.push(format!("{}  - \"{}\"", indent, formatted));
+        for (idx, file) in state.files.iter().enumerate() {
+            // Convert local index to global index based on loaded_start
+            let global_idx = state.loaded_start + idx;
+            let is_cursor = global_idx == state.cursor_index;
+            let is_selected = selected_set.contains(&global_idx);
+            // In full mode, include details for all files. In brief mode, only for cursor.
+            let include_details = is_full_mode || is_cursor;
+            let formatted = format_file_compact(file, global_idx, is_cursor, is_selected, include_details);
+            lines.push(format!("{}  - \"{}\"", indent, formatted));
+        }
     }
 
     lines.join("\n")
@@ -308,130 +438,16 @@ async fn resource_round_trip<R: Runtime>(
 }
 
 /// Read a resource by URI.
+///
+/// Supports query parameters on `cmdr://state` (`?include=...&compact=...`) and
+/// `cmdr://logs` (`?since=...&filter=...&limit=...`). See the resource entries
+/// in [`get_all_resources`] for full syntax.
 pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result<ResourceContent, String> {
-    let (content, mime_type) = match uri {
+    let (base, query) = split_uri(uri);
+    let (content, mime_type) = match base {
         "cmdr://state" => {
-            let store = app.try_state::<PaneStateStore>().ok_or("Pane state not available")?;
-            let focused = store.get_focused_pane();
-            let left = store.get_left();
-            let right = store.get_right();
-
-            let generation = store.get_generation();
-            let mut yaml = String::new();
-
-            // Generation counter (for `await` tool's `after_generation` param)
-            yaml.push_str(&format!("generation: {}\n", generation));
-
-            // Focused pane
-            yaml.push_str(&format!("focused: {}\n", focused));
-
-            // Show hidden (use left pane's setting as the global one)
-            yaml.push_str(&format!("showHidden: {}\n", left.show_hidden));
-
-            // Left pane
-            yaml.push_str("left:\n");
-            yaml.push_str(&build_pane_yaml(&left, "  "));
-            yaml.push('\n');
-
-            // Right pane
-            yaml.push_str("right:\n");
-            yaml.push_str(&build_pane_yaml(&right, "  "));
-            yaml.push('\n');
-
-            // Volumes list
-            yaml.push_str("volumes:\n");
-            #[cfg(target_os = "macos")]
-            {
-                let locations = volumes::list_locations();
-                for loc in locations {
-                    yaml.push_str(&format!("  - {}\n", loc.name));
-                }
-                // Virtual volumes (frontend-only, not from list_locations)
-                yaml.push_str("  - Network\n");
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                yaml.push_str("  - root\n");
-            }
-
-            // MTP volumes (from connected devices)
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
-            {
-                let devices = crate::mtp::connection::connection_manager()
-                    .get_all_connected_devices()
-                    .await;
-                for device_info in &devices {
-                    let has_multiple = device_info.storages.len() > 1;
-                    let device_name = device_info
-                        .device
-                        .product
-                        .as_deref()
-                        .or(device_info.device.manufacturer.as_deref())
-                        .unwrap_or(&device_info.device.id);
-                    for storage in &device_info.storages {
-                        let display_name = if has_multiple {
-                            format!("{} - {}", device_name, storage.name)
-                        } else {
-                            device_name.to_string()
-                        };
-                        let volume_id = format!("{}:{}", device_info.device.id, storage.id);
-                        yaml.push_str(&format!("  - name: {}\n    id: {}\n", display_name, volume_id));
-                    }
-                }
-            }
-
-            // Dialogs: derived from window manager + soft dialog tracker
-            let mut dialog_entries: Vec<String> = Vec::new();
-
-            // Window-based dialogs: derive from Tauri's window manager
-            let windows = app.webview_windows();
-            if windows.contains_key("settings") {
-                dialog_entries.push("  - type: settings".to_string());
-            }
-            for (label, window) in &windows {
-                if label.starts_with("viewer-") {
-                    if let Some(path) = extract_viewer_path(window) {
-                        dialog_entries.push(format!("  - type: file-viewer\n    path: \"{}\"", path));
-                    } else {
-                        dialog_entries.push("  - type: file-viewer".to_string());
-                    }
-                }
-            }
-
-            // Soft (overlay) dialogs: from tracker
-            if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
-                for dialog_type in tracker.get_open_types() {
-                    dialog_entries.push(format!("  - type: {}", dialog_type));
-                }
-            }
-
-            if dialog_entries.is_empty() {
-                yaml.push_str("dialogs: []\n");
-            } else {
-                yaml.push_str("dialogs:\n");
-                for entry in &dialog_entries {
-                    yaml.push_str(entry);
-                    yaml.push('\n');
-                }
-            }
-
-            // Active listings: every entry currently in LISTING_CACHE. Helps triage
-            // bugs caused by orphan listings (started but not bound to a pane) and
-            // race conditions involving in-flight directory loads.
-            let listings = crate::file_system::listing::caching::snapshot_listings();
-            if listings.is_empty() {
-                yaml.push_str("listings: []\n");
-            } else {
-                yaml.push_str("listings:\n");
-                for l in &listings {
-                    yaml.push_str(&format!(
-                        "  - id: {}\n    volumeId: {}\n    path: {:?}\n    entries: {}\n    ageMs: {}\n",
-                        l.listing_id, l.volume_id, l.path, l.entry_count, l.age_ms
-                    ));
-                }
-            }
-
-            (yaml, "text/yaml")
+            let opts = parse_state_options(query);
+            (build_state_yaml(app, &opts).await?, "text/yaml")
         }
         "cmdr://dialogs/available" => {
             let yaml = build_available_dialogs_yaml(app);
@@ -445,6 +461,10 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
             let text = resource_round_trip(app, "mcp-get-all-settings", json!({})).await?;
             (text, "text/yaml")
         }
+        "cmdr://logs" => {
+            let opts = parse_log_options(query);
+            (read_log_tail(&opts)?, "text/plain")
+        }
         _ => return Err(format!("Unknown resource URI: {}", uri)),
     };
 
@@ -453,6 +473,200 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
         mime_type: mime_type.to_string(),
         text: content,
     })
+}
+
+/// Build the `cmdr://state` YAML, respecting `include` / `compact` options.
+async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOptions) -> Result<String, String> {
+    let store = app.try_state::<PaneStateStore>().ok_or("Pane state not available")?;
+    let focused = store.get_focused_pane();
+    let left = store.get_left();
+    let right = store.get_right();
+
+    let generation = store.get_generation();
+    let mut yaml = String::new();
+
+    // Always present: anchors for `await` and for orienting the reader.
+    yaml.push_str(&format!("generation: {}\n", generation));
+    yaml.push_str(&format!("focused: {}\n", focused));
+    yaml.push_str(&format!("showHidden: {}\n", left.show_hidden));
+
+    if opts.includes("panes") {
+        yaml.push_str("left:\n");
+        yaml.push_str(&build_pane_yaml_with_options(&left, "  ", opts.compact));
+        yaml.push('\n');
+
+        yaml.push_str("right:\n");
+        yaml.push_str(&build_pane_yaml_with_options(&right, "  ", opts.compact));
+        yaml.push('\n');
+    }
+
+    if opts.includes("volumes") {
+        yaml.push_str("volumes:\n");
+        #[cfg(target_os = "macos")]
+        {
+            let locations = volumes::list_locations();
+            for loc in locations {
+                yaml.push_str(&format!("  - {}\n", loc.name));
+            }
+            yaml.push_str("  - Network\n");
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            yaml.push_str("  - root\n");
+        }
+
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        {
+            let devices = crate::mtp::connection::connection_manager()
+                .get_all_connected_devices()
+                .await;
+            for device_info in &devices {
+                let has_multiple = device_info.storages.len() > 1;
+                let device_name = device_info
+                    .device
+                    .product
+                    .as_deref()
+                    .or(device_info.device.manufacturer.as_deref())
+                    .unwrap_or(&device_info.device.id);
+                for storage in &device_info.storages {
+                    let display_name = if has_multiple {
+                        format!("{} - {}", device_name, storage.name)
+                    } else {
+                        device_name.to_string()
+                    };
+                    let volume_id = format!("{}:{}", device_info.device.id, storage.id);
+                    yaml.push_str(&format!("  - name: {}\n    id: {}\n", display_name, volume_id));
+                }
+            }
+        }
+    }
+
+    if opts.includes("dialogs") {
+        let mut dialog_entries: Vec<String> = Vec::new();
+        let windows = app.webview_windows();
+        if windows.contains_key("settings") {
+            dialog_entries.push("  - type: settings".to_string());
+        }
+        for (label, window) in &windows {
+            if label.starts_with("viewer-") {
+                if let Some(path) = extract_viewer_path(window) {
+                    dialog_entries.push(format!("  - type: file-viewer\n    path: \"{}\"", path));
+                } else {
+                    dialog_entries.push("  - type: file-viewer".to_string());
+                }
+            }
+        }
+        if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
+            for dialog_type in tracker.get_open_types() {
+                dialog_entries.push(format!("  - type: {}", dialog_type));
+            }
+        }
+        if dialog_entries.is_empty() {
+            yaml.push_str("dialogs: []\n");
+        } else {
+            yaml.push_str("dialogs:\n");
+            for entry in &dialog_entries {
+                yaml.push_str(entry);
+                yaml.push('\n');
+            }
+        }
+    }
+
+    if opts.includes("listings") {
+        let listings = crate::file_system::listing::caching::snapshot_listings();
+        if listings.is_empty() {
+            yaml.push_str("listings: []\n");
+        } else {
+            yaml.push_str("listings:\n");
+            for l in &listings {
+                yaml.push_str(&format!(
+                    "  - id: {}\n    volumeId: {}\n    path: {:?}\n    entries: {}\n    ageMs: {}\n",
+                    l.listing_id, l.volume_id, l.path, l.entry_count, l.age_ms
+                ));
+            }
+        }
+    }
+
+    if opts.includes("recentErrors") {
+        let errors = super::listing_errors::snapshot();
+        if errors.is_empty() {
+            yaml.push_str("recentErrors: []\n");
+        } else {
+            yaml.push_str("recentErrors:\n");
+            for e in &errors {
+                yaml.push_str(&format!(
+                    "  - atUnixMs: {}\n    listingId: {}\n    volumeId: {}\n    path: {:?}\n    message: {:?}\n",
+                    e.at_unix_ms, e.listing_id, e.volume_id, e.path, e.message
+                ));
+            }
+        }
+    }
+
+    Ok(yaml)
+}
+
+/// Read the tail of the live `cmdr.log`, respecting `since` / `filter` / `limit`.
+///
+/// Reads up to [`LOG_TAIL_WINDOW_BYTES`] from the end of the file (5 MB), which
+/// fits several thousand lines on a normal session — way more than the default
+/// limit of 100. If the user passes a `since` older than the start of the
+/// window, lines beyond the window are silently dropped; we keep the read
+/// bounded so a 50 MB rotated log doesn't blow up MCP memory.
+fn read_log_tail(opts: &LogOptions) -> Result<String, String> {
+    use std::io::{Read, Seek, SeekFrom};
+
+    let log_dir = crate::logging::log_dir().ok_or("Log directory is not configured yet")?;
+    let log_path = log_dir.join("cmdr.log");
+
+    let mut file = std::fs::File::open(&log_path).map_err(|e| format!("Can't open {}: {}", log_path.display(), e))?;
+    let file_size = file
+        .metadata()
+        .map_err(|e| format!("Can't stat {}: {}", log_path.display(), e))?
+        .len();
+
+    let window = LOG_TAIL_WINDOW_BYTES.min(file_size);
+    let start_pos = file_size.saturating_sub(window);
+    file.seek(SeekFrom::Start(start_pos))
+        .map_err(|e| format!("Can't seek log file: {}", e))?;
+    let mut buf = Vec::with_capacity(window as usize);
+    file.read_to_end(&mut buf)
+        .map_err(|e| format!("Can't read log file: {}", e))?;
+    // Drop a possibly-partial leading line so the first surviving line is
+    // structurally intact. Only do this if we didn't read from byte 0.
+    let text = String::from_utf8_lossy(&buf);
+    let mut lines: Vec<&str> = if start_pos == 0 {
+        text.lines().collect()
+    } else {
+        text.lines().skip(1).collect()
+    };
+
+    if let Some(since) = opts.since_iso.as_deref() {
+        lines.retain(|line| line_timestamp_passes_since(line, since));
+    }
+    if let Some(filter) = opts.filter.as_deref() {
+        lines.retain(|line| line.contains(filter));
+    }
+
+    let take = opts.limit.min(lines.len());
+    let start = lines.len() - take;
+    Ok(lines[start..].join("\n"))
+}
+
+/// Returns true when `line`'s leading ISO-8601 timestamp is strictly greater
+/// than `since`. Lexicographic comparison works because both sides are
+/// ISO-8601 with the same precision (millisecond) and a constant zone suffix
+/// for the live log. Lines without a recognizable timestamp prefix are kept
+/// (we'd rather over-include a panic line than silently drop one).
+fn line_timestamp_passes_since(line: &str, since: &str) -> bool {
+    // The fern logger writes lines like `2026-05-19T08:30:02.000+02:00 INFO ...`.
+    // The timestamp is everything up to the first space.
+    let Some(ts) = line.split_whitespace().next() else {
+        return true;
+    };
+    if !ts.starts_with(|c: char| c.is_ascii_digit()) {
+        return true;
+    }
+    ts.as_bytes() > since.as_bytes()
 }
 
 /// Format a duration in milliseconds as a human-readable string.
@@ -593,7 +807,89 @@ mod tests {
     #[test]
     fn test_resource_count() {
         let resources = get_all_resources();
-        assert_eq!(resources.len(), 4);
+        assert_eq!(resources.len(), 5);
+    }
+
+    #[test]
+    fn parse_state_options_defaults() {
+        let opts = parse_state_options(None);
+        assert!(opts.include.is_none());
+        assert!(!opts.compact);
+        assert!(opts.includes("panes"));
+        assert!(opts.includes("anything"));
+    }
+
+    #[test]
+    fn parse_state_options_include_filters_sections() {
+        let opts = parse_state_options(Some("include=panes,listings"));
+        let inc = opts.include.as_ref().unwrap();
+        assert_eq!(inc.len(), 2);
+        assert!(opts.includes("panes"));
+        assert!(opts.includes("listings"));
+        assert!(!opts.includes("volumes"));
+        assert!(!opts.includes("recentErrors"));
+    }
+
+    #[test]
+    fn parse_state_options_compact_truthy() {
+        assert!(parse_state_options(Some("compact=true")).compact);
+        assert!(parse_state_options(Some("compact=1")).compact);
+        assert!(!parse_state_options(Some("compact=false")).compact);
+        assert!(!parse_state_options(Some("compact=")).compact);
+    }
+
+    #[test]
+    fn parse_log_options_defaults_and_clamping() {
+        let opts = parse_log_options(None);
+        assert_eq!(opts.limit, LOG_DEFAULT_LIMIT);
+        assert!(opts.since_iso.is_none());
+        assert!(opts.filter.is_none());
+
+        let opts = parse_log_options(Some("limit=99999"));
+        assert_eq!(opts.limit, LOG_MAX_LIMIT, "limit should clamp to max");
+
+        let opts = parse_log_options(Some("limit=0"));
+        assert_eq!(opts.limit, 1, "limit should floor at 1 (zero is meaningless)");
+    }
+
+    #[test]
+    fn parse_log_options_decodes_percent() {
+        let opts = parse_log_options(Some("filter=hello%20world&since=2026-05-19T08%3A30%3A00.000%2B02%3A00"));
+        assert_eq!(opts.filter.as_deref(), Some("hello world"));
+        assert_eq!(opts.since_iso.as_deref(), Some("2026-05-19T08:30:00.000+02:00"));
+    }
+
+    #[test]
+    fn split_uri_no_query() {
+        let (base, q) = split_uri("cmdr://state");
+        assert_eq!(base, "cmdr://state");
+        assert!(q.is_none());
+    }
+
+    #[test]
+    fn split_uri_with_query() {
+        let (base, q) = split_uri("cmdr://state?include=panes&compact=true");
+        assert_eq!(base, "cmdr://state");
+        assert_eq!(q, Some("include=panes&compact=true"));
+    }
+
+    #[test]
+    fn line_timestamp_passes_since_basic() {
+        let line = "2026-05-19T08:30:02.000+02:00 INFO foo";
+        assert!(line_timestamp_passes_since(line, "2026-05-19T08:30:01.000+02:00"));
+        assert!(!line_timestamp_passes_since(line, "2026-05-19T08:30:02.000+02:00"));
+        assert!(!line_timestamp_passes_since(line, "2026-05-19T08:30:03.000+02:00"));
+    }
+
+    #[test]
+    fn line_timestamp_passes_since_keeps_lines_without_timestamp() {
+        // A panic line that doesn't start with a timestamp must not be dropped.
+        assert!(line_timestamp_passes_since(
+            "thread main panicked at ...",
+            "2026-05-19T08:30:00.000+02:00"
+        ));
+        // Empty line: keep.
+        assert!(line_timestamp_passes_since("", "2026-05-19T08:30:00.000+02:00"));
     }
 
     #[test]
@@ -746,7 +1042,7 @@ mod tests {
             type_to_jump: None,
         };
 
-        let yaml = build_pane_yaml(&state, "  ");
+        let yaml = build_pane_yaml_with_options(&state, "  ", false);
 
         assert!(yaml.contains("volume: Macintosh HD"));
         assert!(yaml.contains("volumeId: root"));
@@ -836,7 +1132,7 @@ mod tests {
             tabs: vec![],
             ..PaneState::default()
         };
-        let yaml = build_pane_yaml(&state, "  ");
+        let yaml = build_pane_yaml_with_options(&state, "  ", false);
         assert!(!yaml.contains("tabs:"));
     }
 

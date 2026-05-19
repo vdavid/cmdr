@@ -6,6 +6,7 @@
 pub mod config;
 pub mod dialog_state;
 mod executor;
+pub mod listing_errors;
 pub mod pane_state;
 mod protocol;
 pub mod resources;

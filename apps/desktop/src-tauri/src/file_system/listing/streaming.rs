@@ -336,7 +336,16 @@ pub async fn list_directory_start_streaming(
                 if matches!(&e, VolumeError::PermissionDenied(_)) {
                     crate::restricted_paths::record_denial(&path_for_error);
                 }
-                events_for_error.emit_error(&listing_id_for_cleanup, e.to_string(), Some(friendly));
+                let message = e.to_string();
+                // Record into the MCP recent-errors ring buffer so `cmdr://state`
+                // surfaces what just failed, without callers grepping the log file.
+                crate::mcp::listing_errors::record(
+                    &listing_id_for_cleanup,
+                    &volume_id_owned,
+                    &path_for_error.to_string_lossy(),
+                    &message,
+                );
+                events_for_error.emit_error(&listing_id_for_cleanup, message, Some(friendly));
             }
             Ok(()) => {
                 // Success: listing-complete already emitted. If this path was
@@ -542,7 +551,9 @@ pub(crate) async fn read_directory_with_progress(
         && volume_root_path.as_deref() == Some(path)
         && let Some(friendly) = friendly_error_for_restricted_empty_root(volume_id, path)
     {
-        events.emit_error(listing_id, friendly.raw_detail.clone(), Some(friendly));
+        let message = friendly.raw_detail.clone();
+        crate::mcp::listing_errors::record(listing_id, volume_id, &path.to_string_lossy(), &message);
+        events.emit_error(listing_id, message, Some(friendly));
         return Ok(());
     }
 
