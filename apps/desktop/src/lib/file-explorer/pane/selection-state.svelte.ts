@@ -102,7 +102,11 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
     return result
   }
 
-  function handleShiftNavigation(newIndex: number, cursorIndex: number, hasParent: boolean) {
+  // Mouse Shift+click: anchor/end/range-shrink semantics.
+  // First call drops an anchor at the cursor's prior index and decides "add" vs
+  // "remove" once based on whether the anchor was already selected. Subsequent
+  // calls re-apply range [anchor, newEnd], including shrinking it back.
+  function handleShiftMouseNavigation(newIndex: number, cursorIndex: number, hasParent: boolean) {
     // Set anchor if not already set (use current cursor position before moving)
     if (selectionAnchorIndex === null) {
       selectionAnchorIndex = cursorIndex
@@ -112,6 +116,36 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
 
     // Apply the range selection
     applyRangeSelection(newIndex, hasParent)
+    onChanged?.()
+  }
+
+  // Keyboard Shift+arrow/Page/Home/End: stateless toggle-and-fill.
+  //   1. Toggle the item at the cursor's old position.
+  //   2. Set every item the cursor jumps over to that toggled state.
+  //   3. Include the landing item only when `overflow` (intended jump > actual jump
+  //      because we hit a list boundary).
+  // `..` (index 0 when hasParent) is never selected; when the cursor sits on it,
+  // the fill defaults to "select" so Shift+PgDn / Shift+End from `..` selects.
+  function handleShiftKeyboardNavigation(oldCursor: number, newCursor: number, overflow: boolean, hasParent: boolean) {
+    const oldIsParent = hasParent && oldCursor === 0
+    const target = oldIsParent ? true : !selectedIndices.has(oldCursor)
+
+    const apply = (i: number) => {
+      if (target) selectedIndices.add(i)
+      else selectedIndices.delete(i)
+    }
+
+    if (!oldIsParent) apply(oldCursor)
+
+    const step = Math.sign(newCursor - oldCursor)
+    if (step !== 0) {
+      const endFill = overflow ? newCursor : newCursor - step
+      for (let i = oldCursor + step; step > 0 ? i <= endFill : i >= endFill; i += step) {
+        if (hasParent && i === 0) continue
+        apply(i)
+      }
+    }
+
     onChanged?.()
   }
 
@@ -169,7 +203,8 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
 
     clearSelection,
     toggleAt,
-    handleShiftNavigation,
+    handleShiftMouseNavigation,
+    handleShiftKeyboardNavigation,
     clearRangeState,
     selectAll,
     deselectAll,

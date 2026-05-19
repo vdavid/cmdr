@@ -79,7 +79,7 @@ export interface ListViewAPI {
   refreshIndexSizes(): void
   getEntryAt(globalIndex: number): FileEntry | undefined
   /** BriefList only */
-  handleKeyNavigation?(key: string, event?: KeyboardEvent): number | undefined
+  handleKeyNavigation?(key: string, event?: KeyboardEvent): { newIndex: number; overflow: boolean } | undefined
   /** BriefList only: refetch per-column text widths after a listing change. */
   refetchColumnWidths?(): void
   /** FullList only */

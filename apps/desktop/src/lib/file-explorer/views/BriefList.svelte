@@ -571,8 +571,13 @@
         return Math.max(1, count)
     }
 
-    // Handle keyboard navigation
-    export function handleKeyNavigation(key: string, event?: KeyboardEvent): number | undefined {
+    // Handle keyboard navigation.
+    // `overflow` = the requested step was clamped by a list boundary; used by
+    // Shift+nav to decide whether to include the landing item in the range fill.
+    export function handleKeyNavigation(
+        key: string,
+        event?: KeyboardEvent,
+    ): { newIndex: number; overflow: boolean } | undefined {
         // Try navigation shortcuts first (Home/End/PageUp/PageDown)
         if (event) {
             const visibleColumns = countVisibleColumns()
@@ -583,24 +588,26 @@
                 visibleColumns,
             })
             if (result) {
-                return result.newIndex
+                return { newIndex: result.newIndex, overflow: result.overflow }
             }
         }
 
         // Handle arrow keys
         if (key === 'ArrowUp') {
-            return Math.max(0, cursorIndex - 1)
+            const newIndex = Math.max(0, cursorIndex - 1)
+            return { newIndex, overflow: newIndex === cursorIndex }
         }
         if (key === 'ArrowDown') {
-            return Math.min(totalCount - 1, cursorIndex + 1)
+            const newIndex = Math.min(totalCount - 1, cursorIndex + 1)
+            return { newIndex, overflow: newIndex === cursorIndex }
         }
         if (key === 'ArrowLeft') {
-            const newIndex = cursorIndex - itemsPerColumn
-            return newIndex >= 0 ? newIndex : 0
+            const raw = cursorIndex - itemsPerColumn
+            return { newIndex: raw >= 0 ? raw : 0, overflow: raw < 0 }
         }
         if (key === 'ArrowRight') {
-            const newIndex = cursorIndex + itemsPerColumn
-            return newIndex < totalCount ? newIndex : totalCount - 1
+            const raw = cursorIndex + itemsPerColumn
+            return { newIndex: raw < totalCount ? raw : totalCount - 1, overflow: raw >= totalCount }
         }
         return undefined
     }

@@ -10,10 +10,17 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **Insert**: toggle selection at cursor and move cursor down (Total Commander style). `..` isn't selectable, but the
   cursor still advances. At the last row the cursor stays put. No physical Insert key on Apple keyboards — users can
   remap via Karabiner-Elements, plug in a PC USB keyboard, or rebind in Settings → Shortcuts.
-- **Shift+click / Shift+arrow**: range selection with anchor (A) and end (B). If anchor already selected, range
+- **Shift+click**: mouse range selection with anchor (A) and end (B). If anchor was already selected, the range
   deselects.
+- **Shift+arrow / Shift+Page / Shift+Home/End / Shift+Left/Right (Brief)**: keyboard toggle-and-fill. Toggles the item
+  at the cursor's _old_ position, then sets (not toggles) every item the cursor jumps over to that toggled state. The
+  landing item is included only when the jump **overflowed** (intended distance > actual distance because of a list
+  boundary clamp). Home/End always overflow; arrows overflow when pressed at a boundary (no movement);
+  PageUp/PageDown/Brief Left/Right overflow when clamped. Full-mode Shift+Left/Right behave like Shift+Home/End. The
+  model is intentionally asymmetric: Shift+Down 3× then Shift+Up 3× does NOT restore the start state — each press
+  independently toggles the cursor's item.
 - **Cmd+A / Cmd+Shift+A**: select all / deselect all
-- **".." entry can't be selected**
+- **".." entry can't be selected**: keyboard fills from `..` default to "select" (so Shift+End from `..` selects).
 - **Cleared on navigation**: selection is per-directory
 
 ### Implementation
@@ -40,7 +47,8 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 ### Gotchas
 
 - **Parent offset**: when `hasParent`, frontend indices = backend indices + 1
-- **Range shrinking**: moving cursor back toward anchor removes items no longer in range
+- **Range shrinking (mouse Shift+click only)**: moving cursor back toward anchor removes items no longer in range. The
+  keyboard path is stateless (toggle-and-fill) and doesn't shrink.
 - **Optimization flag**: `allSelected: true` avoids sending 500k indices over IPC
 - **`allSelected` + cancel**: calls `selectAll()` for move/delete/trash (source listing changed), leaves untouched for
   copy (source listing unchanged)

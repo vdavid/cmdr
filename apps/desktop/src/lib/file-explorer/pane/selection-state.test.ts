@@ -148,7 +148,7 @@ describe('createSelectionState', () => {
 
     it('resets anchor', () => {
       const state = createSelectionState()
-      state.handleShiftNavigation(2, 1, false)
+      state.handleShiftMouseNavigation(2, 1, false)
       state.clearSelection()
       expect(state.anchorIndex).toBeNull()
     })
@@ -208,10 +208,10 @@ describe('createSelectionState', () => {
     })
   })
 
-  describe('handleShiftNavigation', () => {
+  describe('handleShiftMouseNavigation', () => {
     it('sets anchor on first shift-navigation and selects range', () => {
       const state = createSelectionState()
-      state.handleShiftNavigation(3, 2, false)
+      state.handleShiftMouseNavigation(3, 2, false)
       expect(state.anchorIndex).toBe(2)
       expect(state.selectedIndices.has(2)).toBe(true)
       expect(state.selectedIndices.has(3)).toBe(true)
@@ -219,8 +219,8 @@ describe('createSelectionState', () => {
 
     it('extends range on subsequent shift-navigation', () => {
       const state = createSelectionState()
-      state.handleShiftNavigation(3, 2, false) // anchor=2, range 2-3
-      state.handleShiftNavigation(5, 3, false) // extend to 5
+      state.handleShiftMouseNavigation(3, 2, false) // anchor=2, range 2-3
+      state.handleShiftMouseNavigation(5, 3, false) // extend to 5
       expect(state.selectedIndices.has(2)).toBe(true)
       expect(state.selectedIndices.has(3)).toBe(true)
       expect(state.selectedIndices.has(4)).toBe(true)
@@ -229,8 +229,8 @@ describe('createSelectionState', () => {
 
     it('shrinks range when cursor moves back toward anchor', () => {
       const state = createSelectionState()
-      state.handleShiftNavigation(5, 2, false) // anchor=2, range 2-5
-      state.handleShiftNavigation(3, 5, false) // shrink to 2-3
+      state.handleShiftMouseNavigation(5, 2, false) // anchor=2, range 2-5
+      state.handleShiftMouseNavigation(3, 5, false) // shrink to 2-3
       expect(state.selectedIndices.has(2)).toBe(true)
       expect(state.selectedIndices.has(3)).toBe(true)
       expect(state.selectedIndices.has(4)).toBe(false)
@@ -239,8 +239,8 @@ describe('createSelectionState', () => {
 
     it('empties range when cursor returns to anchor', () => {
       const state = createSelectionState()
-      state.handleShiftNavigation(4, 2, false) // anchor=2, range 2-4
-      state.handleShiftNavigation(2, 4, false) // back to anchor
+      state.handleShiftMouseNavigation(4, 2, false) // anchor=2, range 2-4
+      state.handleShiftMouseNavigation(2, 4, false) // back to anchor
       // When cursor == anchor, range is empty
       expect(state.selectedIndices.has(3)).toBe(false)
       expect(state.selectedIndices.has(4)).toBe(false)
@@ -253,7 +253,7 @@ describe('createSelectionState', () => {
       state.toggleAt(3, false)
       state.toggleAt(4, false)
       // Shift-navigate from index 2 (which is selected) -> deselect mode
-      state.handleShiftNavigation(4, 2, false)
+      state.handleShiftMouseNavigation(4, 2, false)
       expect(state.selectedIndices.has(2)).toBe(false)
       expect(state.selectedIndices.has(3)).toBe(false)
       expect(state.selectedIndices.has(4)).toBe(false)
@@ -261,7 +261,7 @@ describe('createSelectionState', () => {
 
     it('skips ".." entry (index 0) when hasParent', () => {
       const state = createSelectionState()
-      state.handleShiftNavigation(2, 0, true) // anchor at 0
+      state.handleShiftMouseNavigation(2, 0, true) // anchor at 0
       // Index 0 should be skipped in range
       expect(state.selectedIndices.has(0)).toBe(false)
       expect(state.selectedIndices.has(1)).toBe(true)
@@ -270,7 +270,7 @@ describe('createSelectionState', () => {
 
     it('navigates downward from single item', () => {
       const state = createSelectionState()
-      state.handleShiftNavigation(1, 0, false) // anchor=0, select 0-1
+      state.handleShiftMouseNavigation(1, 0, false) // anchor=0, select 0-1
       expect(state.selectedIndices.has(0)).toBe(true)
       expect(state.selectedIndices.has(1)).toBe(true)
     })
@@ -278,9 +278,9 @@ describe('createSelectionState', () => {
     it('fires onChanged on every step so MCP state sync runs', () => {
       const onChanged = vi.fn()
       const state = createSelectionState({ onChanged })
-      state.handleShiftNavigation(3, 2, false)
+      state.handleShiftMouseNavigation(3, 2, false)
       expect(onChanged).toHaveBeenCalledTimes(1)
-      state.handleShiftNavigation(5, 3, false)
+      state.handleShiftMouseNavigation(5, 3, false)
       expect(onChanged).toHaveBeenCalledTimes(2)
     })
   })
@@ -289,7 +289,7 @@ describe('createSelectionState', () => {
     it('resets anchor without clearing selection', () => {
       const state = createSelectionState()
       // Shift-navigate from unselected index 1 to 3 (select mode)
-      state.handleShiftNavigation(3, 1, false)
+      state.handleShiftMouseNavigation(3, 1, false)
       expect(state.anchorIndex).toBe(1)
       expect(state.selectedIndices.size).toBe(3) // 1, 2, 3
 
@@ -300,10 +300,136 @@ describe('createSelectionState', () => {
     })
   })
 
-  describe('edge cases', () => {
-    it('handles single-item selection via shift-navigation', () => {
+  describe('handleShiftKeyboardNavigation', () => {
+    // Toggle-and-fill semantics: signature is (oldCursor, newCursor, overflow, hasParent).
+    // The cursor's old item is toggled; items the cursor jumps over are set to that
+    // toggled state; the landing item is included only when overflow is true.
+
+    it('Shift+Down 1 step from unselected #5 toggles #5 only, leaves #6 alone', () => {
       const state = createSelectionState()
-      state.handleShiftNavigation(5, 5, false) // anchor and end are same
+      state.handleShiftKeyboardNavigation(5, 6, false, false)
+      expect(state.selectedIndices.has(5)).toBe(true)
+      expect(state.selectedIndices.has(6)).toBe(false)
+    })
+
+    it('Shift+Down 1 step from selected #5 toggles #5 off, leaves #6 alone', () => {
+      const state = createSelectionState()
+      state.setSelectedIndices([5])
+      state.handleShiftKeyboardNavigation(5, 6, false, false)
+      expect(state.selectedIndices.has(5)).toBe(false)
+      expect(state.selectedIndices.has(6)).toBe(false)
+    })
+
+    it('Shift+PgDn from #5 to #25 (no overflow): toggle #5, fill #6..#24, #25 untouched', () => {
+      const state = createSelectionState()
+      // Mix pre-existing states to prove the range is SET, not toggled
+      state.setSelectedIndices([7, 10, 25])
+      state.handleShiftKeyboardNavigation(5, 25, false, false)
+      // #5 toggled from unselected → selected; target state = true; #6..#24 all selected
+      expect(state.selectedIndices.has(5)).toBe(true)
+      for (let i = 6; i <= 24; i++) {
+        expect(state.selectedIndices.has(i)).toBe(true)
+      }
+      // Landing untouched: still selected (was pre-selected)
+      expect(state.selectedIndices.has(25)).toBe(true)
+    })
+
+    it('Shift+PgDn with overflow: landing IS included', () => {
+      const state = createSelectionState()
+      // Cursor on #5 (selected), intended PgDn would land on #25 but clamps to #23
+      state.setSelectedIndices([5, 10, 23])
+      state.handleShiftKeyboardNavigation(5, 23, true, false)
+      // Target = false (toggled from selected); fill #6..#23 → all deselected
+      expect(state.selectedIndices.has(5)).toBe(false)
+      for (let i = 6; i <= 23; i++) {
+        expect(state.selectedIndices.has(i)).toBe(false)
+      }
+    })
+
+    it('Shift+Up at boundary #0 (no parent, overflow): toggles #0', () => {
+      const state = createSelectionState()
+      state.handleShiftKeyboardNavigation(0, 0, true, false)
+      expect(state.selectedIndices.has(0)).toBe(true)
+    })
+
+    it('Shift+Up at #0 == ".." (hasParent, overflow): no-op', () => {
+      const state = createSelectionState()
+      state.handleShiftKeyboardNavigation(0, 0, true, true)
+      expect(state.selectedIndices.has(0)).toBe(false)
+      expect(state.selectedIndices.size).toBe(0)
+    })
+
+    it('Shift+End from #0 == ".." (hasParent, overflow): fill #1..last with target=true', () => {
+      const state = createSelectionState()
+      state.handleShiftKeyboardNavigation(0, 10, true, true)
+      expect(state.selectedIndices.has(0)).toBe(false) // ".." stays
+      for (let i = 1; i <= 10; i++) {
+        expect(state.selectedIndices.has(i)).toBe(true)
+      }
+    })
+
+    it('Shift+PgDn from #0 == ".." (hasParent, no overflow): fill #1..#9 with target=true, #10 untouched', () => {
+      const state = createSelectionState()
+      state.handleShiftKeyboardNavigation(0, 10, false, true)
+      expect(state.selectedIndices.has(0)).toBe(false)
+      for (let i = 1; i <= 9; i++) {
+        expect(state.selectedIndices.has(i)).toBe(true)
+      }
+      expect(state.selectedIndices.has(10)).toBe(false)
+    })
+
+    it('Shift+Home from #5 (hasParent, overflow): toggle #5, fill #4..#1 with that state, skip #0', () => {
+      const state = createSelectionState()
+      state.handleShiftKeyboardNavigation(5, 0, true, true)
+      expect(state.selectedIndices.has(5)).toBe(true)
+      for (let i = 1; i <= 4; i++) {
+        expect(state.selectedIndices.has(i)).toBe(true)
+      }
+      expect(state.selectedIndices.has(0)).toBe(false) // ".." skipped even on overflow
+    })
+
+    it('Shift+End from selected #5 (overflow): toggle #5 off, fill #6..last off', () => {
+      const state = createSelectionState()
+      state.setSelectedIndices([5, 6, 7, 8, 9])
+      state.handleShiftKeyboardNavigation(5, 9, true, false)
+      for (let i = 5; i <= 9; i++) {
+        expect(state.selectedIndices.has(i)).toBe(false)
+      }
+    })
+
+    it('asymmetry: Shift+Down 3× then Shift+Up 3× does NOT restore the start (intentional)', () => {
+      const state = createSelectionState()
+      // Start: nothing selected, cursor on #5. Simulate Shift+Down ×3 → cursor ends on #8.
+      state.handleShiftKeyboardNavigation(5, 6, false, false) // toggle #5 → on
+      state.handleShiftKeyboardNavigation(6, 7, false, false) // toggle #6 → on
+      state.handleShiftKeyboardNavigation(7, 8, false, false) // toggle #7 → on
+      expect([5, 6, 7].every((i) => state.selectedIndices.has(i))).toBe(true)
+      expect(state.selectedIndices.has(8)).toBe(false)
+      // Now Shift+Up ×3 → cursor returns to #5
+      state.handleShiftKeyboardNavigation(8, 7, false, false) // toggle #8 → on
+      state.handleShiftKeyboardNavigation(7, 6, false, false) // toggle #7 → off
+      state.handleShiftKeyboardNavigation(6, 5, false, false) // toggle #6 → off
+      // Items #5 (still on), #6, #7 deselected, #8 newly selected.
+      expect(state.selectedIndices.has(5)).toBe(true)
+      expect(state.selectedIndices.has(6)).toBe(false)
+      expect(state.selectedIndices.has(7)).toBe(false)
+      expect(state.selectedIndices.has(8)).toBe(true)
+    })
+
+    it('fires onChanged once per call', () => {
+      const onChanged = vi.fn()
+      const state = createSelectionState({ onChanged })
+      state.handleShiftKeyboardNavigation(5, 10, false, false)
+      expect(onChanged).toHaveBeenCalledTimes(1)
+      state.handleShiftKeyboardNavigation(10, 9, false, false)
+      expect(onChanged).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('edge cases', () => {
+    it('handles single-item mouse shift-navigation (anchor == end)', () => {
+      const state = createSelectionState()
+      state.handleShiftMouseNavigation(5, 5, false) // anchor and end are same
       // When newEnd === anchor, range is empty
       expect(state.selectedIndices.size).toBe(0)
     })

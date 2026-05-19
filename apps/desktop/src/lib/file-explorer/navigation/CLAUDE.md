@@ -112,6 +112,11 @@ Meta+Home/End is intentionally not handled (passes to OS). Returns `null` for un
 
 Brief PageUp/PageDown lands on the **bottom row** of the target column (TUI convention).
 
+`NavigationResult` also carries an `overflow: boolean` field: `true` when the requested step was clamped at a list
+boundary (intended distance > actual distance). Home/End are always overflow. PageUp/PageDown are overflow when the page
+step would cross 0 or `totalCount - 1`. Callers wiring keyboard Shift+nav use this to decide whether to include the
+landing item in the toggle-and-fill range — see `file-explorer/CLAUDE.md` § Selection.
+
 ## `VolumeBreadcrumb.svelte`
 
 Pure presentational component. Reads the volume list from the shared `volume-store.svelte.ts` (no fetching, no event

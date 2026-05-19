@@ -1418,7 +1418,7 @@
 
     function handleSelect(index: number, shiftKey = false) {
         if (shiftKey) {
-            selection.handleShiftNavigation(index, cursorIndex, hasParent)
+            selection.handleShiftMouseNavigation(index, cursorIndex, hasParent)
         } else {
             selection.clearRangeState()
         }
@@ -1515,17 +1515,18 @@
         onNetworkHostChange?.(host)
     }
 
-    // Helper: Handle navigation result by updating cursor index and scrolling
-    // If shiftKey is true, handles range selection; otherwise clears range state
+    // Helper: Handle navigation result by updating cursor index and scrolling.
+    // On Shift+nav: toggle-and-fill keyboard selection. `overflow` (intended
+    // jump > actual jump because of a list boundary) decides whether the
+    // landing item is included in the range fill.
     function applyNavigation(
         newIndex: number,
         listRef: { scrollToIndex: (index: number) => void } | undefined,
         shiftKey = false,
+        overflow = false,
     ) {
         if (shiftKey) {
-            selection.handleShiftNavigation(newIndex, cursorIndex, hasParent)
-        } else {
-            selection.clearRangeState()
+            selection.handleShiftKeyboardNavigation(cursorIndex, newIndex, overflow, hasParent)
         }
         cursorIndex = newIndex
         listRef?.scrollToIndex(newIndex)
@@ -1534,10 +1535,10 @@
 
     // Helper: Handle brief mode key navigation
     function handleBriefModeKeys(e: KeyboardEvent): boolean {
-        const newIndex: number | undefined = briefListRef?.handleKeyNavigation?.(e.key, e)
-        if (newIndex !== undefined) {
+        const result = briefListRef?.handleKeyNavigation?.(e.key, e)
+        if (result !== undefined) {
             e.preventDefault()
-            applyNavigation(newIndex, briefListRef, e.shiftKey)
+            applyNavigation(result.newIndex, briefListRef, e.shiftKey, result.overflow)
             return true
         }
         return false
@@ -1553,30 +1554,33 @@
         })
         if (shortcutResult) {
             e.preventDefault()
-            applyNavigation(shortcutResult.newIndex, fullListRef, e.shiftKey)
+            applyNavigation(shortcutResult.newIndex, fullListRef, e.shiftKey, shortcutResult.overflow)
             return true
         }
 
-        // Handle arrow navigation
+        // Handle arrow navigation. Overflow = the step was clamped at a boundary.
         if (e.key === 'ArrowDown') {
             e.preventDefault()
-            applyNavigation(Math.min(cursorIndex + 1, effectiveTotalCount - 1), fullListRef, e.shiftKey)
+            const newIndex = Math.min(cursorIndex + 1, effectiveTotalCount - 1)
+            applyNavigation(newIndex, fullListRef, e.shiftKey, newIndex === cursorIndex)
             return true
         }
         if (e.key === 'ArrowUp') {
             e.preventDefault()
-            applyNavigation(Math.max(cursorIndex - 1, 0), fullListRef, e.shiftKey)
+            const newIndex = Math.max(cursorIndex - 1, 0)
+            applyNavigation(newIndex, fullListRef, e.shiftKey, newIndex === cursorIndex)
             return true
         }
-        // Left/Right arrows jump to first/last (same as Brief mode at boundaries)
+        // Left/Right arrows jump to first/last (same as Brief mode at boundaries).
+        // These always overflow: intended distance = infinity.
         if (e.key === 'ArrowLeft') {
             e.preventDefault()
-            applyNavigation(0, fullListRef, e.shiftKey)
+            applyNavigation(0, fullListRef, e.shiftKey, true)
             return true
         }
         if (e.key === 'ArrowRight') {
             e.preventDefault()
-            applyNavigation(effectiveTotalCount - 1, fullListRef, e.shiftKey)
+            applyNavigation(effectiveTotalCount - 1, fullListRef, e.shiftKey, true)
             return true
         }
         return false
@@ -1681,8 +1685,8 @@
         }
     }
 
-    // Handle key release - clear range state when Shift is released
-    // This ensures a new Shift+navigation starts fresh selection from current cursor
+    // Handle key release - terminates the mouse Shift+click anchor gesture so the next
+    // gesture starts fresh. Keyboard Shift+nav is stateless and doesn't need this.
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleKeyUp(e: KeyboardEvent) {
         if (e.key === 'Shift') {

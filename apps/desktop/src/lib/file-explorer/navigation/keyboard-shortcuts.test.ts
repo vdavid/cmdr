@@ -22,16 +22,16 @@ describe('handleNavigationShortcut', () => {
       totalCount: 100,
     }
 
-    it('handles Option+ArrowUp as Home', () => {
+    it('handles Option+ArrowUp as Home (always overflow)', () => {
       const event = createKeyboardEvent('ArrowUp', { altKey: true })
       const result = handleNavigationShortcut(event, context)
-      expect(result).toEqual({ newIndex: 0, handled: true })
+      expect(result).toEqual({ newIndex: 0, handled: true, overflow: true })
     })
 
-    it('handles Home key', () => {
+    it('handles Home key (always overflow)', () => {
       const event = createKeyboardEvent('Home')
       const result = handleNavigationShortcut(event, context)
-      expect(result).toEqual({ newIndex: 0, handled: true })
+      expect(result).toEqual({ newIndex: 0, handled: true, overflow: true })
     })
 
     it('does not handle Home with metaKey', () => {
@@ -47,16 +47,16 @@ describe('handleNavigationShortcut', () => {
       totalCount: 100,
     }
 
-    it('handles Option+ArrowDown as End', () => {
+    it('handles Option+ArrowDown as End (always overflow)', () => {
       const event = createKeyboardEvent('ArrowDown', { altKey: true })
       const result = handleNavigationShortcut(event, context)
-      expect(result).toEqual({ newIndex: 99, handled: true })
+      expect(result).toEqual({ newIndex: 99, handled: true, overflow: true })
     })
 
-    it('handles End key', () => {
+    it('handles End key (always overflow)', () => {
       const event = createKeyboardEvent('End')
       const result = handleNavigationShortcut(event, context)
-      expect(result).toEqual({ newIndex: 99, handled: true })
+      expect(result).toEqual({ newIndex: 99, handled: true, overflow: true })
     })
 
     it('does not handle End with metaKey', () => {
@@ -72,12 +72,12 @@ describe('handleNavigationShortcut', () => {
       }
       const event = createKeyboardEvent('End')
       const result = handleNavigationShortcut(event, emptyContext)
-      expect(result).toEqual({ newIndex: 0, handled: true })
+      expect(result).toEqual({ newIndex: 0, handled: true, overflow: true })
     })
   })
 
   describe('PageUp in Full mode', () => {
-    it('moves up by visible items', () => {
+    it('moves up by visible items (no overflow)', () => {
       const context: NavigationContext = {
         currentIndex: 50,
         totalCount: 100,
@@ -86,7 +86,7 @@ describe('handleNavigationShortcut', () => {
       const event = createKeyboardEvent('PageUp')
       const result = handleNavigationShortcut(event, context)
       // pageSize = max(1, 20 - 1) = 19
-      expect(result).toEqual({ newIndex: 31, handled: true })
+      expect(result).toEqual({ newIndex: 31, handled: true, overflow: false })
     })
 
     it('uses default page size when visibleItems not provided', () => {
@@ -97,10 +97,10 @@ describe('handleNavigationShortcut', () => {
       const event = createKeyboardEvent('PageUp')
       const result = handleNavigationShortcut(event, context)
       // pageSize defaults to 20
-      expect(result).toEqual({ newIndex: 30, handled: true })
+      expect(result).toEqual({ newIndex: 30, handled: true, overflow: false })
     })
 
-    it('clamps to 0', () => {
+    it('clamps to 0 (overflow=true)', () => {
       const context: NavigationContext = {
         currentIndex: 5,
         totalCount: 100,
@@ -108,12 +108,24 @@ describe('handleNavigationShortcut', () => {
       }
       const event = createKeyboardEvent('PageUp')
       const result = handleNavigationShortcut(event, context)
-      expect(result).toEqual({ newIndex: 0, handled: true })
+      expect(result).toEqual({ newIndex: 0, handled: true, overflow: true })
+    })
+
+    it('exact boundary (raw = 0) is not overflow', () => {
+      const context: NavigationContext = {
+        currentIndex: 19,
+        totalCount: 100,
+        visibleItems: 20,
+      }
+      // pageSize = 19, raw = 19 - 19 = 0 → not clamped
+      const event = createKeyboardEvent('PageUp')
+      const result = handleNavigationShortcut(event, context)
+      expect(result).toEqual({ newIndex: 0, handled: true, overflow: false })
     })
   })
 
   describe('PageDown in Full mode', () => {
-    it('moves down by visible items', () => {
+    it('moves down by visible items (no overflow)', () => {
       const context: NavigationContext = {
         currentIndex: 50,
         totalCount: 100,
@@ -122,7 +134,7 @@ describe('handleNavigationShortcut', () => {
       const event = createKeyboardEvent('PageDown')
       const result = handleNavigationShortcut(event, context)
       // pageSize = max(1, 20 - 1) = 19
-      expect(result).toEqual({ newIndex: 69, handled: true })
+      expect(result).toEqual({ newIndex: 69, handled: true, overflow: false })
     })
 
     it('uses default page size when visibleItems not provided', () => {
@@ -132,11 +144,10 @@ describe('handleNavigationShortcut', () => {
       }
       const event = createKeyboardEvent('PageDown')
       const result = handleNavigationShortcut(event, context)
-      // pageSize defaults to 20
-      expect(result).toEqual({ newIndex: 70, handled: true })
+      expect(result).toEqual({ newIndex: 70, handled: true, overflow: false })
     })
 
-    it('clamps to totalCount - 1', () => {
+    it('clamps to totalCount - 1 (overflow=true)', () => {
       const context: NavigationContext = {
         currentIndex: 95,
         totalCount: 100,
@@ -144,7 +155,19 @@ describe('handleNavigationShortcut', () => {
       }
       const event = createKeyboardEvent('PageDown')
       const result = handleNavigationShortcut(event, context)
-      expect(result).toEqual({ newIndex: 99, handled: true })
+      expect(result).toEqual({ newIndex: 99, handled: true, overflow: true })
+    })
+
+    it('exact boundary (raw = totalCount-1) is not overflow', () => {
+      const context: NavigationContext = {
+        currentIndex: 80,
+        totalCount: 100,
+        visibleItems: 20,
+      }
+      // pageSize = 19, raw = 80 + 19 = 99 = lastIndex → not clamped
+      const event = createKeyboardEvent('PageDown')
+      const result = handleNavigationShortcut(event, context)
+      expect(result).toEqual({ newIndex: 99, handled: true, overflow: false })
     })
   })
 
@@ -153,7 +176,7 @@ describe('handleNavigationShortcut', () => {
     // itemsPerColumn = 10, visibleColumns = 3
     // Layout: Col0[0-9], Col1[10-19], Col2[20-29], Col3[30-39], etc.
 
-    it('moves left by visible columns minus 1', () => {
+    it('moves left by visible columns minus 1 (no overflow)', () => {
       const context: NavigationContext = {
         currentIndex: 35, // Column 3, row 5
         totalCount: 50,
@@ -165,10 +188,10 @@ describe('handleNavigationShortcut', () => {
       // columnsToMove = max(1, 3 - 1) = 2
       // currentColumn = 3, targetColumn = 1
       // targetColumnStart = 10, bottommost = min(49, 10 + 10 - 1) = 19
-      expect(result).toEqual({ newIndex: 19, handled: true })
+      expect(result).toEqual({ newIndex: 19, handled: true, overflow: false })
     })
 
-    it('jumps to first item when near start', () => {
+    it('jumps to first item when near start (overflow=true)', () => {
       const context: NavigationContext = {
         currentIndex: 5, // Column 0, row 5
         totalCount: 50,
@@ -178,10 +201,10 @@ describe('handleNavigationShortcut', () => {
       const event = createKeyboardEvent('PageUp')
       const result = handleNavigationShortcut(event, context)
       // targetColumn would be -2, which is <= 0, so jump to 0
-      expect(result).toEqual({ newIndex: 0, handled: true })
+      expect(result).toEqual({ newIndex: 0, handled: true, overflow: true })
     })
 
-    it('jumps to first item from column 1', () => {
+    it('jumps to first item from column 1 (overflow=true)', () => {
       const context: NavigationContext = {
         currentIndex: 15, // Column 1, row 5
         totalCount: 50,
@@ -191,12 +214,12 @@ describe('handleNavigationShortcut', () => {
       const event = createKeyboardEvent('PageUp')
       const result = handleNavigationShortcut(event, context)
       // targetColumn = 1 - 2 = -1, which is <= 0
-      expect(result).toEqual({ newIndex: 0, handled: true })
+      expect(result).toEqual({ newIndex: 0, handled: true, overflow: true })
     })
   })
 
   describe('PageDown in Brief mode', () => {
-    it('moves right by visible columns minus 1', () => {
+    it('moves right by visible columns minus 1 (no overflow)', () => {
       const context: NavigationContext = {
         currentIndex: 15, // Column 1, row 5
         totalCount: 50,
@@ -209,10 +232,10 @@ describe('handleNavigationShortcut', () => {
       // currentColumn = 1, targetColumn = 3
       // totalColumns = ceil(50/10) = 5, so 3 < 4 (last column index)
       // targetColumnStart = 30, bottommost = min(49, 30 + 10 - 1) = 39
-      expect(result).toEqual({ newIndex: 39, handled: true })
+      expect(result).toEqual({ newIndex: 39, handled: true, overflow: false })
     })
 
-    it('jumps to last item when near end', () => {
+    it('jumps to last item when near end (overflow=true)', () => {
       const context: NavigationContext = {
         currentIndex: 35, // Column 3, row 5
         totalCount: 50,
@@ -222,10 +245,10 @@ describe('handleNavigationShortcut', () => {
       const event = createKeyboardEvent('PageDown')
       const result = handleNavigationShortcut(event, context)
       // totalColumns = 5, targetColumn = 3 + 2 = 5 >= 4 (last column index)
-      expect(result).toEqual({ newIndex: 49, handled: true })
+      expect(result).toEqual({ newIndex: 49, handled: true, overflow: true })
     })
 
-    it('handles partial last column', () => {
+    it('handles partial last column (overflow=true)', () => {
       const context: NavigationContext = {
         currentIndex: 25, // Column 2, row 5
         totalCount: 45, // Last column only has 5 items
@@ -236,7 +259,7 @@ describe('handleNavigationShortcut', () => {
       const result = handleNavigationShortcut(event, context)
       // totalColumns = ceil(45/10) = 5, targetColumn = 2 + 2 = 4 (last column)
       // 4 >= 4, so jump to last item
-      expect(result).toEqual({ newIndex: 44, handled: true })
+      expect(result).toEqual({ newIndex: 44, handled: true, overflow: true })
     })
   })
 
