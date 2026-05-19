@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use super::caching::{
     CachedListing, LISTING_CACHE, ModifyResult, find_listings_for_path, find_listings_for_path_on_volume, has_entry,
-    insert_entry_sorted, remove_entry_by_path, update_entry_sorted,
+    insert_entry_sorted, notify_added, remove_entry_by_path, update_entry_sorted,
 };
 use super::metadata::FileEntry;
 use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
@@ -226,6 +226,44 @@ fn test_insert_entry_sorted_returns_none_for_duplicate() {
 fn test_insert_entry_sorted_returns_none_for_missing_listing() {
     let result = insert_entry_sorted("nonexistent_listing_id", make_entry("test.txt", false, Some(100)));
     assert_eq!(result, None);
+}
+
+#[test]
+fn notify_added_upserts_when_entry_already_present() {
+    // Race that motivated the upsert: SMB watcher fires an Added event mid-write
+    // (stat catches the file at partial size), then `write_from_stream`'s own
+    // post-close `notify_mutation` fires its Added with the final size. Without
+    // upsert the first-write wins (Samba's mid-write partial size sticks) and
+    // the FE shows the wrong size until the next manual refresh. With upsert
+    // the second observation updates the cached entry to the final size.
+    let id = insert_test_listing(
+        "notify_added_upsert",
+        "/test",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![],
+    );
+
+    // First observation: partial size (what the watcher would see mid-write).
+    notify_added("notify_added_upsert", make_entry("photo.jpg", false, Some(2_359_284)));
+    // Second observation: final size (what the post-close stat sees).
+    notify_added("notify_added_upsert", make_entry("photo.jpg", false, Some(4_989_168)));
+
+    let cache = LISTING_CACHE.read().unwrap();
+    let listing = cache.get("notify_added_upsert").unwrap();
+    assert_eq!(
+        listing.entries.len(),
+        1,
+        "should still be exactly one entry, not duplicated"
+    );
+    assert_eq!(
+        listing.entries[0].size,
+        Some(4_989_168),
+        "second (final) size must overwrite the partial-size observation"
+    );
+    drop(cache);
+    cleanup_listing(&id);
 }
 
 // ============================================================================

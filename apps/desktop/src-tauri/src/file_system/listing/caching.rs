@@ -337,12 +337,28 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
 
 /// Inserts an entry into the cache and queues a single-add change for the next
 /// coalesced `directory-diff` flush.
-fn notify_added(listing_id: &str, entry: FileEntry) {
+///
+/// **Upsert semantics**: if a cached entry with the same path already exists,
+/// delegates to `notify_modified` so the cache reflects the latest observation
+/// instead of dropping it. This matters when the SMB / MTP watcher fires an
+/// Add event mid-write (the watcher's stat catches a partial file size), then
+/// `Volume::write_from_stream` fires its own Add post-close with the final
+/// size. Without upsert, the partial size from the watcher sticks and the FE
+/// shows a wrong size until the next manual refresh. Concretely seen on
+/// MTP→SMB copies: 9 files copied, 3 stuck at half size (watcher stat'd
+/// mid-write, self-notify lost the race against `insert_entry_sorted`'s
+/// duplicate guard).
+pub(super) fn notify_added(listing_id: &str, entry: FileEntry) {
     use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::watcher::DiffChange;
 
+    if has_entry(listing_id, &entry.path) {
+        notify_modified(listing_id, entry);
+        return;
+    }
+
     let Some(index) = insert_entry_sorted(listing_id, entry.clone()) else {
-        return; // Already exists or listing gone
+        return; // Listing gone (or, harmless: lost a TOCTOU race against another add — Modified would no-op).
     };
 
     enqueue_diff(
