@@ -6,6 +6,7 @@ import { load, type Store } from '@tauri-apps/plugin-store'
 import { commands as ipcCommands } from '$lib/ipc/bindings'
 import { commands } from '$lib/commands/command-registry'
 import { getAppLogger } from '$lib/logging/logger'
+import { pluralize } from '$lib/utils/pluralize'
 import { toPlatformShortcut } from './key-capture'
 
 const log = getAppLogger('shortcuts')
@@ -74,8 +75,9 @@ export async function initializeShortcuts(): Promise<void> {
   }
 
   if (customShortcuts.size > 0) {
-    log.debug('Loaded {count} custom shortcuts: {ids}', {
+    log.debug('Loaded {count} {shortcutsNoun}: {ids}', {
       count: customShortcuts.size,
+      shortcutsNoun: pluralize(customShortcuts.size, 'custom shortcut'),
       ids: [...customShortcuts.keys()].join(', '),
     })
   } else {

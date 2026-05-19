@@ -147,9 +147,9 @@ impl EventReconciler {
         }
         if self.buffer.len() >= MAX_BUFFER_CAPACITY {
             log::warn!(
-                "Reconciler: buffer cap reached ({}). \
-                 Dropping further events; a full rescan will run after the current scan.",
-                pluralize(MAX_BUFFER_CAPACITY as u64, "event")
+                // allowed-pluralize-noun: MAX_BUFFER_CAPACITY is the const 500_000.
+                "Reconciler: buffer cap reached ({MAX_BUFFER_CAPACITY} events). \
+                 Dropping further events; a full rescan will run after the current scan."
             );
             self.buffer_overflow = true;
             self.buffer.clear();
@@ -180,7 +180,10 @@ impl EventReconciler {
         let mut last_event_id = scan_start_event_id;
         let mut affected_paths: Vec<String> = Vec::new();
 
-        log::info!("Reconciler: replaying {total} buffered events (scan_start_event_id={scan_start_event_id})");
+        log::info!(
+            "Reconciler: replaying {} (scan_start_event_id={scan_start_event_id})",
+            pluralize(total as u64, "buffered event")
+        );
 
         for event in &self.buffer {
             // Skip events that the scan already covered

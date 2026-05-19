@@ -381,31 +381,36 @@ impl WriterStats {
             return;
         }
 
-        let deltas: &[(&str, u64)] = &[
-            ("inserts", self.current.insert_entries - self.previous.insert_entries),
-            ("upserts", self.current.upsert_entry - self.previous.upsert_entry),
-            ("moves", self.current.move_entry - self.previous.move_entry),
-            ("deletes", self.current.delete_entry - self.previous.delete_entry),
+        // (singular, plural, count). Pluralizing per row keeps the "+1 insert"
+        // / "+5 inserts" form natural; baking `+s` everywhere reads as "+1 inserts".
+        let deltas: &[(&str, &str, u64)] = &[
+            ("insert", "inserts", self.current.insert_entries - self.previous.insert_entries),
+            ("upsert", "upserts", self.current.upsert_entry - self.previous.upsert_entry),
+            ("move", "moves", self.current.move_entry - self.previous.move_entry),
+            ("delete", "deletes", self.current.delete_entry - self.previous.delete_entry),
             (
+                "delete_subtree",
                 "delete_subtrees",
                 self.current.delete_subtree - self.previous.delete_subtree,
             ),
             (
-                "propagate",
+                "propagation",
+                "propagations",
                 self.current.propagate_delta - self.previous.propagate_delta,
             ),
             (
+                "aggregate",
                 "aggregates",
                 self.current.compute_aggregates - self.previous.compute_aggregates,
             ),
-            ("flushes", self.current.flush - self.previous.flush),
-            ("other", self.current.other - self.previous.other),
+            ("flush", "flushes", self.current.flush - self.previous.flush),
+            ("other", "others", self.current.other - self.previous.other),
         ];
 
         let parts: Vec<String> = deltas
             .iter()
-            .filter(|(_, count)| *count > 0)
-            .map(|(name, count)| format!("{count} {name}"))
+            .filter(|(_, _, count)| *count > 0)
+            .map(|(singular, plural, count)| pluralize_with(*count, singular, plural))
             .collect();
 
         let breakdown = if parts.is_empty() {
@@ -1388,7 +1393,10 @@ fn handle_incremental_vacuum(conn: &rusqlite::Connection) {
             if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum(2000)") {
                 log::warn!("Writer: incremental_vacuum failed: {e}");
             } else {
-                log::debug!("Writer: incremental_vacuum reclaimed up to 2000 of {free} free pages");
+                log::debug!(
+                    "Writer: incremental_vacuum reclaimed up to 2000 of {}",
+                    pluralize(free as u64, "free page")
+                );
             }
         }
         Ok(_) => {} // No free pages, nothing to do

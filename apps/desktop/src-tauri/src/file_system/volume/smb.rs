@@ -4482,7 +4482,10 @@ mod tests {
             std::fs::write(&path, &buf).expect("write source");
         }
 
-        log::info!("regression: pre-uploading {n_conflicts} conflicting files to {unique_prefix}");
+        log::info!(
+            "regression: pre-uploading {} to {unique_prefix}",
+            crate::pluralize::pluralize(n_conflicts as u64, "conflicting file")
+        );
         for i in 0..n_conflicts {
             let name = format!("f_{i:04}.bin");
             let dest_abs = dest_dir_abs.join(&name);

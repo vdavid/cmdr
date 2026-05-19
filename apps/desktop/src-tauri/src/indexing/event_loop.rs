@@ -16,7 +16,7 @@ use super::scanner;
 use super::store::{self, IndexStore};
 use super::watcher;
 use super::writer::{IndexWriter, WriteMessage};
-use crate::pluralize::{pluralize, pluralize_with};
+use crate::pluralize::pluralize;
 
 // ── Live event loop ──────────────────────────────────────────────────
 
@@ -216,8 +216,9 @@ pub(super) async fn run_live_event_loop(
                             &volume_id,
                             RescanReason::WatcherChannelOverflow,
                             format!(
-                                "The filesystem watcher's event channel overflowed after \
-                                 {event_count} live events. Some file changes were lost."
+                                "The filesystem watcher's event channel overflowed after {}. \
+                                 Some file changes were lost.",
+                                pluralize(event_count, "live event")
                             ),
                         );
                         // Drain and discard remaining events: they're a partial
@@ -719,9 +720,9 @@ pub(super) async fn run_replay_event_loop(
     // ── Phase 2: After HistoryDone ───────────────────────────────────
 
     if deduped_total < event_count {
+        // allowed-pluralize-noun: dedup only kicks in when event_count >= 2.
         log::info!(
-            "Replay: deduplicated {event_count} raw events to {deduped_total} unique \
-             ({:.0}% reduction)",
+            "Replay: deduplicated {event_count} raw events to {deduped_total} unique ({:.0}% reduction)",
             (1.0 - deduped_total as f64 / event_count.max(1) as f64) * 100.0,
         );
     }
@@ -827,9 +828,9 @@ pub(super) async fn run_replay_event_loop(
             &volume_id,
             RescanReason::TooManySubdirRescans,
             format!(
-                "Replay accumulated more than {} needing full \
-                 rescans. This typically means a major filesystem reorganization happened.",
-                pluralize_with(MAX_PENDING_RESCANS as u64, "directory", "directories")
+                // allowed-pluralize-noun: MAX_PENDING_RESCANS is the const 1_000.
+                "Replay accumulated more than {MAX_PENDING_RESCANS} directories needing full \
+                 rescans. This typically means a major filesystem reorganization happened."
             ),
         );
         if let Some(tx) = fallback_tx.take() {
@@ -894,9 +895,10 @@ pub(super) async fn run_replay_event_loop(
                             &volume_id,
                             RescanReason::WatcherChannelOverflow,
                             format!(
-                                "The filesystem watcher's event channel overflowed after \
-                                 {event_count} replay + {live_count} live events. Some file \
-                                 changes were lost."
+                                "The filesystem watcher's event channel overflowed after {} + {}. \
+                                 Some file changes were lost.",
+                                pluralize(event_count, "replay event"),
+                                pluralize(live_count, "live event"),
                             ),
                         );
                         if let Some(tx) = fallback_tx.take() {
@@ -918,7 +920,11 @@ pub(super) async fn run_replay_event_loop(
         }
     }
 
-    log::info!("Replay event loop: stopped ({event_count} replay + {live_count} live events)");
+    log::info!(
+        "Replay event loop: stopped ({} + {})",
+        pluralize(event_count, "replay event"),
+        pluralize(live_count, "live event"),
+    );
     Ok(())
 }
 
@@ -1247,10 +1253,10 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
 
     if stale_count > 0 || new_file_count > 0 || !new_dir_paths.is_empty() {
         log::debug!(
-            "Replay verification: {stale_count} stale, {new_file_count} new files, \
-             {} new dirs across {} affected dirs",
-            new_dir_paths.len(),
-            affected_paths.len(),
+            "Replay verification: {stale_count} stale, {}, {} across {}",
+            pluralize(new_file_count, "new file"),
+            pluralize(new_dir_paths.len() as u64, "new dir"),
+            pluralize(affected_paths.len() as u64, "affected dir"),
         );
     }
 

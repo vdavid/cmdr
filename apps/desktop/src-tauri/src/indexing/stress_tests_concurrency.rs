@@ -961,6 +961,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
     checkpoint_handle.join().expect("checkpoint thread panicked");
 
     let total_events = events_fired.load(Ordering::Relaxed);
+    // allowed-pluralize-noun: stress test explicitly fires many reconciler events.
     log::info!(target: "stall_probe::test", "storm fired {total_events} reconciler events");
 
     // ── Assertion: each listing must complete within the SLA ──────────
@@ -981,10 +982,10 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
             .collect::<Vec<_>>()
             .join("\n  ");
         panic!(
-            "{} exceeded the {SLA_MS}ms SLA under reconciler load (storm: {}):\n  {summary}\n\n\
+            // allowed-pluralize-noun: stress test explicitly fires many events.
+            "{} exceeded the {SLA_MS}ms SLA under reconciler load (storm: {total_events} events):\n  {summary}\n\n\
              See the captured `stall_probe::*` log lines above (run with --no-capture to see them on stderr).",
             pluralize(violators.len() as u64, "listing"),
-            pluralize(total_events, "event"),
         );
     }
 

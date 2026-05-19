@@ -183,7 +183,7 @@ impl IndexManager {
                 let gap = current_id.saturating_sub(since_event_id);
                 DEBUG_STATS.set_phase(
                     ActivityPhase::Replaying,
-                    &format!("app launch, ~{gap} pending FSEvents"),
+                    &format!("app launch, ~{}", pluralize(gap, "pending FSEvent")),
                 );
                 log::info!("Replay: watcher started (since_event_id={since_event_id}, current={current_id})");
             }

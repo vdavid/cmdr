@@ -447,7 +447,10 @@
     let unlisteners: UnlistenFn[] = []
 
     function cleanup() {
-        log.debug('Cleaning up {count} event listeners', { count: unlisteners.length })
+        log.debug('Cleaning up {count} {listenersNoun}', {
+            count: unlisteners.length,
+            listenersNoun: pluralize(unlisteners.length, 'event listener'),
+        })
         for (const unlisten of unlisteners) {
             unlisten()
         }

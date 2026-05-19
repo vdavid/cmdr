@@ -102,7 +102,8 @@ pub fn set_max_log_storage_mb(value: u64) -> Result<(), String> {
             Ok(0) => {}
             Ok(n) => log::info!(
                 target: "cmdr_lib::logging",
-                "Eager-pruned {n} log files after cap change ({value} MB → keep {new_keep}).",
+                "Eager-pruned {} after cap change ({value} MB → keep {new_keep}).",
+                crate::pluralize::pluralize(n as u64, "log file"),
             ),
             Err(err) => return Err(format!("Failed to eager-prune log files: {err}")),
         }

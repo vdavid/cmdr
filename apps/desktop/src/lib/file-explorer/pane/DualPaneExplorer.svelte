@@ -1717,8 +1717,12 @@
             return
         }
         log.debug(
-            'openDeleteDialog: opening delete confirmation. {count} valid entries, sourceVolId={volId}',
-            { count: validEntries.length, volId: getPaneVolumeId(focusedPane) },
+            'openDeleteDialog: opening delete confirmation. {count} {entriesNoun}, sourceVolId={volId}',
+            {
+                count: validEntries.length,
+                entriesNoun: pluralize(validEntries.length, 'valid entry', 'valid entries'),
+                volId: getPaneVolumeId(focusedPane),
+            },
         )
 
         const sourceItems: DeleteSourceItem[] = validEntries.map((e) => ({

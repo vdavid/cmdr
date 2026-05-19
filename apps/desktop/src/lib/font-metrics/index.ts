@@ -92,6 +92,7 @@ export async function ensureFontMetricsLoaded(): Promise<void> {
 
       const elapsed = performance.now() - startTime
       const widthCount = Object.keys(widths).length
+      // allowed-pluralize-noun: widths come from a fixed Unicode range yielding thousands of entries.
       log.info('Measurement complete in {elapsed}ms, stored {widthCount} character widths', {
         elapsed: elapsed.toFixed(0),
         widthCount,

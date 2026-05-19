@@ -51,6 +51,7 @@ async function getStore(): Promise<Store> {
     for (const def of settingsRegistry) {
       defaults[def.id] = def.default
     }
+    // allowed-pluralize-noun: settingsRegistry is a fixed const with many entries.
     log.debug('Loading store with {count} default settings', { count: Object.keys(defaults).length })
     storeInstance = await load(STORE_NAME, { defaults, autoSave: false })
     log.debug('Store instance created successfully')
