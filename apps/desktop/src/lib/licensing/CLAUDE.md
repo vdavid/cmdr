@@ -101,10 +101,18 @@ dismiss). The About window and modals read the cached value on mount.
 
 ## Development
 
-**Run with mock license**:
+**Run with mock license**: Set `CMDR_MOCK_LICENSE` to one of `personal`, `personal_reminder`, `commercial`, `perpetual`,
+`expired`, or `expired_no_modal`. Debug builds only; release builds ignore it.
 
 ```bash
-CMDR_MOCK_LICENSE=commercial pnpm tauri dev
+CMDR_MOCK_LICENSE=commercial pnpm dev
+```
+
+**Trigger the commercial reminder on launch**: use the `personal_reminder` mock value. The modal pops on app start
+without waiting 30 days or editing `license.json`.
+
+```bash
+CMDR_MOCK_LICENSE=personal_reminder pnpm dev
 ```
 
 **Reset trial** (debug builds only):
@@ -112,9 +120,6 @@ CMDR_MOCK_LICENSE=commercial pnpm tauri dev
 ```bash
 security delete-generic-password -s "com.veszelovszki.cmdr" -a "trial-*"
 ```
-
-**Test commercial reminder**: Set `firstRunTimestamp` in
-`~/Library/Application Support/com.veszelovszki.cmdr/license.json` to 31 days ago.
 
 **Generate a test license key**: See
 [API server CLAUDE.md](../../../../apps/api-server/CLAUDE.md#generate-a-test-license-key).

@@ -32,7 +32,7 @@
 <style>
     .btn {
         font-weight: 500;
-        line-height: 1;
+        line-height: 1.5;
         border-radius: var(--radius-md);
         transition: all var(--transition-base);
     }

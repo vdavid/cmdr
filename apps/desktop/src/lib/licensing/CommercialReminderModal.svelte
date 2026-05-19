@@ -15,7 +15,7 @@
     }
 
     async function handleGetCommercial() {
-        await openExternalUrl('https://getcmdr.com/commercial')
+        await openExternalUrl('https://getcmdr.com/pricing/')
     }
 </script>
 
@@ -26,28 +26,28 @@
     onclose={() => {
         void handleDismiss()
     }}
-    containerStyle="max-width: 420px; background: var(--color-bg-primary); border-color: var(--color-border)"
+    containerStyle="max-width: 600px; background: var(--color-bg-primary); border-color: var(--color-border)"
 >
     {#snippet title()}Thanks for using Cmdr!{/snippet}
 
     <div class="modal-body">
-        <p class="message">
-            You're using a Personal license. If you're using Cmdr at work, please get a Commercial license to stay
-            compliant.
-        </p>
+        <p class="message">You're using a Personal license.</p>
+        <p class="message">If you're using Cmdr at work, please get a Commercial license to stay compliant.</p>
 
         <p class="info">Commercial licenses are $59/year/user and support continued development.</p>
 
         <div class="actions">
+            <Button variant="secondary" onclick={handleDismiss}>
+                I only use Cmdr<br />for personal purposes
+            </Button>
             <Button variant="primary" onclick={handleGetCommercial}>Get commercial license</Button>
-            <Button variant="secondary" onclick={handleDismiss}>Remind me in 30 days</Button>
         </div>
     </div>
 </ModalDialog>
 
 <style>
     .modal-body {
-        padding: 0 var(--spacing-2xl) var(--spacing-xl);
+        padding: var(--spacing-md) var(--spacing-2xl) var(--spacing-xl);
     }
 
     .message {
@@ -67,6 +67,9 @@
     .actions {
         display: flex;
         gap: var(--spacing-md);
-        justify-content: flex-end;
+    }
+
+    .actions :global(button) {
+        flex: 1;
     }
 </style>
