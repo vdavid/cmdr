@@ -840,3 +840,105 @@ async fn same_volume_move_pre_known_conflicts_bulk_skip() {
         "bulk-skip must account 2 conflicts in one event",
     );
 }
+
+// ============================================================================
+// Regression: bytes_total flows through move progress events
+// ============================================================================
+
+/// Cross-volume move emits `bytes_total > 0` on every Copying-phase progress
+/// event. Without this, the FE's `TransferProgressDialog` hides the Size
+/// progress bar (the dialog gates it behind `{#if bytesTotal > 0}`), so the
+/// user only saw the Files bar during MTP→local moves. The shared preflight
+/// scan now feeds the real total into the driver and every per-source emit.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_emits_bytes_total_on_progress() {
+    let (source, dest) = make_volumes();
+    source.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+    source.create_file(Path::new("/b.txt"), b"bravo-bravo").await.unwrap();
+    let expected_total = (b"alpha".len() + b"bravo-bravo".len()) as u64;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-bytes-total",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/a.txt"), PathBuf::from("/b.txt")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let copying: Vec<_> = progress
+        .iter()
+        .filter(|p| p.phase == WriteOperationPhase::Copying)
+        .collect();
+    assert!(!copying.is_empty(), "expected at least one Copying progress event");
+    for ev in &copying {
+        assert_eq!(
+            ev.bytes_total, expected_total,
+            "every Copying progress event must carry the real bytes_total (got {} for files_done={})",
+            ev.bytes_total, ev.files_done,
+        );
+    }
+
+    let complete = events.complete.lock().unwrap();
+    assert_eq!(complete[0].bytes_processed, expected_total);
+}
+
+/// Same-volume rename emits `bytes_total > 0` on every Copying-phase progress
+/// event. Even though rename transfers no bytes, the FE shows the Size bar
+/// tracking alongside the Files bar so the two stay visually paired.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn same_volume_move_emits_bytes_total_on_progress() {
+    let volume: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("V").with_space_info(10_000_000, 10_000_000));
+    volume.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+    volume.create_file(Path::new("/b.txt"), b"bravo-bravo").await.unwrap();
+    volume.create_directory(Path::new("/dst")).await.unwrap();
+    let expected_total = (b"alpha".len() + b"bravo-bravo".len()) as u64;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_within_same_volume_with_progress(
+        events.clone(),
+        "op-same-move-bytes-total",
+        &state,
+        Arc::clone(&volume),
+        &[PathBuf::from("/a.txt"), PathBuf::from("/b.txt")],
+        Path::new("/dst"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let copying: Vec<_> = progress
+        .iter()
+        .filter(|p| p.phase == WriteOperationPhase::Copying)
+        .collect();
+    assert!(!copying.is_empty(), "expected at least one Copying progress event");
+    for ev in &copying {
+        assert_eq!(
+            ev.bytes_total, expected_total,
+            "every Copying progress event must carry the real bytes_total (got {} for files_done={})",
+            ev.bytes_total, ev.files_done,
+        );
+    }
+
+    let complete = events.complete.lock().unwrap();
+    assert_eq!(complete[0].bytes_processed, expected_total);
+}

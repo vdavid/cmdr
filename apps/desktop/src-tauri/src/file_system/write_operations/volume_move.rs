@@ -5,6 +5,7 @@
 //! - Both local: delegates to `move_files_start` (handles same-fs rename optimization)
 //! - Cross-volume: copy to destination then delete sources
 
+use std::collections::HashMap;
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
@@ -27,53 +28,12 @@ use super::types::{
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
+use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{Volume, VolumeError};
 
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
-
-/// Pre-stats the subset of `source_paths` whose filenames appear in
-/// `pre_known_conflicts` and returns those that are directories on
-/// `source_volume`. Returns an empty set when not relevant (non-Skip
-/// resolution, empty pre-known list, or no source-name matches).
-///
-/// Move has no scan phase, so we can't reuse a `SourceHint` map like
-/// `volume_copy` does. We stat each candidate up front to keep the
-/// bulk-skip prelude file-only (directories must fall through to per-iter
-/// conflict resolution so their non-conflicting children still move). This
-/// is one extra `get_metadata` round-trip per name-matching candidate
-/// (typically few), only when the user picked Skip with a non-empty
-/// pre-known conflict list. Acceptable cost for correctness.
-async fn collect_known_directory_paths(
-    source_volume: &Arc<dyn Volume>,
-    source_paths: &[PathBuf],
-    config_resolution: ConflictResolution,
-    config_pre_known_conflicts: &[String],
-) -> std::collections::HashSet<PathBuf> {
-    use std::collections::HashSet;
-    if config_resolution != ConflictResolution::Skip || config_pre_known_conflicts.is_empty() {
-        return HashSet::new();
-    }
-    let names: HashSet<&str> = config_pre_known_conflicts.iter().map(String::as_str).collect();
-    let mut out = HashSet::new();
-    for p in source_paths {
-        let name_matches = p
-            .file_name()
-            .and_then(|n| n.to_str())
-            .map(|n| names.contains(n))
-            .unwrap_or(false);
-        if !name_matches {
-            continue;
-        }
-        if let Ok(meta) = source_volume.get_metadata(p).await
-            && meta.is_directory
-        {
-            out.insert(p.clone());
-        }
-    }
-    out
-}
 
 /// Per-call future shape for the driver's `conflict_resolver` closure.
 type ResolveFut<'a> = Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
@@ -233,34 +193,48 @@ pub(super) async fn move_volumes_with_progress(
     dest_path: &Path,
     config: &VolumeCopyConfig,
 ) -> Result<(), WriteFailure> {
-    let total_files = source_paths.len();
-
-    // Move has no scan phase, so it tracks no per-source byte hints. The
-    // driver's `bulk_skip_bytes` stays at 0; pre-skipped sources only bump
-    // the file counter.
+    // Phase 1: Preflight scan. Same helper the copy pipeline uses; we need
+    // it for `total_bytes` (so the FE's Size progress bar isn't pinned at
+    // zero) and for per-source `is_directory` / `size` hints (which save an
+    // `is_directory` probe per source inside the copy+delete loop on MTP).
     //
-    // Copy+delete per file: on partial failure, already-moved files exist
-    // at dest, remaining files stay at source. No data loss, but the move
-    // is partial.
-    //
-    // Bulk-skip is **file-only** (a top-level directory matching a pre-known
-    // conflict means only SOME of its children collide — dropping the whole
-    // subtree would lose non-conflicting files). Pre-stat the name-matching
-    // candidates against `source_volume` so we can exclude directories.
-    let known_directory_paths = collect_known_directory_paths(
+    // Copy+delete per file: on partial failure, already-moved files exist at
+    // dest, remaining files stay at source. No data loss, but the move is
+    // partial.
+    let preflight = scan_volume_sources(
         &source_volume,
         source_paths,
-        config.conflict_resolution,
-        &config.pre_known_conflicts,
+        config,
+        operation_id,
+        WriteOperationType::Move,
+        state,
+        &*events,
     )
-    .await;
+    .await?;
+    let total_files = preflight.total_files;
+    let total_bytes = preflight.total_bytes;
+    let known_directory_paths = preflight.known_directory_paths();
+    let source_hints: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(preflight.source_hints);
+
+    // Bulk-skip is **file-only** (a top-level directory matching a pre-known
+    // conflict means only SOME of its children collide — dropping the whole
+    // subtree would lose non-conflicting files).
     let pre_skip_paths = build_pre_skip_set(
         source_paths,
         config.conflict_resolution,
         &config.pre_known_conflicts,
         &known_directory_paths,
     );
-    let bulk_skip_files = pre_skip_paths.len();
+    let mut bulk_skip_files = 0usize;
+    let mut bulk_skip_bytes = 0u64;
+    for path in &pre_skip_paths {
+        let size = source_hints
+            .get(path)
+            .map(|h| if h.is_directory { 0 } else { h.size })
+            .unwrap_or(0);
+        bulk_skip_files += 1;
+        bulk_skip_bytes += size;
+    }
 
     let driver_config = DriverConfig {
         operation_type: WriteOperationType::Move,
@@ -293,11 +267,9 @@ pub(super) async fn move_volumes_with_progress(
         source_paths,
         dest_path,
         total_files,
-        // Move tracks no byte totals: every progress event sets
-        // `bytes_total = 0`. The driver respects whatever we pass.
-        0,
+        total_bytes,
         bulk_skip_files,
-        0,
+        bulk_skip_bytes,
         &pre_skip_paths,
         &driver_config,
         {
@@ -320,6 +292,7 @@ pub(super) async fn move_volumes_with_progress(
             let state = Arc::clone(state);
             let events = Arc::clone(&events);
             let apply_to_all = Arc::clone(&apply_to_all_cell);
+            let source_hints = Arc::clone(&source_hints);
             let config = config_owned.clone();
             let operation_id = operation_id_owned.clone();
             move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
@@ -328,6 +301,7 @@ pub(super) async fn move_volumes_with_progress(
                 let state = Arc::clone(&state);
                 let events = Arc::clone(&events);
                 let apply_to_all = Arc::clone(&apply_to_all);
+                let source_hints = Arc::clone(&source_hints);
                 let config = config.clone();
                 let operation_id = operation_id.clone();
                 let source_path_owned = input.source_path.to_path_buf();
@@ -338,11 +312,10 @@ pub(super) async fn move_volumes_with_progress(
                         "move_between_volumes: conflict detected at {}",
                         initial_dest_owned.display()
                     );
-                    // Move has no scan phase, so pass `None` source-size
-                    // hints; the resolver falls back to `scan_for_copy`
-                    // (one MTP listing per conflicting source). The copy
-                    // path is the one that supplies real hints from the
-                    // cached scan.
+                    // Reuse the cached scan hint so the conflict dialog
+                    // doesn't re-list the parent dir per conflict on MTP.
+                    let source_hint = source_hints.get(&source_path_owned).copied();
+                    let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
                     let mut latched = apply_to_all.lock().unwrap().take();
                     let resolved = resolve_volume_conflict(
                         &source_volume,
@@ -354,7 +327,7 @@ pub(super) async fn move_volumes_with_progress(
                         &operation_id,
                         &state,
                         &mut latched,
-                        None,
+                        source_size_hint,
                         dest_size_hint,
                     )
                     .await;
@@ -366,10 +339,12 @@ pub(super) async fn move_volumes_with_progress(
                                 "move_between_volumes: skipping {} due to conflict resolution",
                                 source_path_owned.display()
                             );
-                            // Move has no pre-flight byte scan, so skip-bytes
-                            // stays at 0 (consistent with the move bulk-skip
-                            // prelude that always credits 0 bytes).
-                            ConflictDecision::Skip { bytes_accounted: 0 }
+                            // Credit the source's byte size so the Size bar
+                            // matches the file counter when every source is
+                            // skipped. Dirs report 0 in `source_hints` (the
+                            // recursive total isn't tracked there).
+                            let bytes_accounted = source_hint.map(|h| h.size).unwrap_or(0);
+                            ConflictDecision::Skip { bytes_accounted }
                         }
                         Some(dest_path) => ConflictDecision::Proceed { dest_path },
                     })
@@ -383,6 +358,7 @@ pub(super) async fn move_volumes_with_progress(
             let state = Arc::clone(state);
             let events = Arc::clone(&events);
             let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
+            let source_hints = Arc::clone(&source_hints);
             let operation_id = operation_id_owned.clone();
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
@@ -391,6 +367,7 @@ pub(super) async fn move_volumes_with_progress(
                 let state = Arc::clone(&state);
                 let events = Arc::clone(&events);
                 let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
+                let source_hints = Arc::clone(&source_hints);
                 let operation_id = operation_id.clone();
                 let last_progress_time = Arc::clone(&last_progress_time);
                 let source_path = ctx.source_path.to_path_buf();
@@ -401,11 +378,16 @@ pub(super) async fn move_volumes_with_progress(
                 let bytes_done_so_far = ctx.bytes_done_so_far;
                 let files_done_so_far = ctx.files_done_so_far;
                 Box::pin(async move {
-                    // Probe is-directory once: needed both to pick the
-                    // delete shape (recursive vs single) and as a hint for
-                    // `copy_single_path`. Volume-move has no scan phase to
-                    // cache this, so the stat is unavoidable.
-                    let source_is_dir = source_volume.is_directory(&source_path).await.unwrap_or(false);
+                    // Use the cached scan hint for type + size. Falls back to
+                    // a per-source `is_directory` probe if the hint is missing
+                    // (cached preview without per-path data, or future
+                    // backends that don't populate it).
+                    let hint = source_hints.get(&source_path).copied();
+                    let source_is_dir = match hint {
+                        Some(h) => h.is_directory,
+                        None => source_volume.is_directory(&source_path).await.unwrap_or(false),
+                    };
+                    let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
 
                     let no_progress = |_: u64, _: u64| -> ControlFlow<()> {
                         if is_cancelled(&state.intent) {
@@ -417,7 +399,7 @@ pub(super) async fn move_volumes_with_progress(
                         &source_volume,
                         &source_path,
                         source_is_dir,
-                        None,
+                        source_size_hint,
                         &dest_volume,
                         &dest_item_path,
                         &state,
@@ -486,7 +468,7 @@ pub(super) async fn move_volumes_with_progress(
                                 new_files,
                                 total_files,
                                 new_bytes,
-                                0,
+                                total_bytes,
                             ),
                         );
                     }
@@ -665,25 +647,47 @@ pub(super) async fn move_within_same_volume_with_progress(
     dest_path: &Path,
     config: &VolumeCopyConfig,
 ) -> Result<(), WriteOperationError> {
-    let total_files = source_paths.len();
-
-    // Bulk-skip is file-only. Same-volume move has no scan phase, so we
-    // pre-stat name-matching candidates against the volume to identify
-    // directories. See `move_volumes_with_progress` for the full reasoning.
-    let known_directory_paths = collect_known_directory_paths(
+    // Phase 1: Preflight scan. Same-volume rename doesn't transfer bytes
+    // (MTP MoveObject is one USB call per file), but we still want to show
+    // the user a Size progress bar that tracks alongside the Files bar, and
+    // we want the bulk-skip prelude to know which sources are directories
+    // without a per-source `is_directory` probe. The preflight call hits the
+    // cached preview from TransferDialog for free in the common case;
+    // otherwise it's one batch scan up front.
+    let preflight = scan_volume_sources(
         &volume,
         source_paths,
-        config.conflict_resolution,
-        &config.pre_known_conflicts,
+        config,
+        operation_id,
+        WriteOperationType::Move,
+        state,
+        &*events,
     )
-    .await;
+    .await
+    .map_err(|f| f.error)?;
+    let total_files = preflight.total_files;
+    let total_bytes = preflight.total_bytes;
+    let known_directory_paths = preflight.known_directory_paths();
+    let source_hints: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(preflight.source_hints);
+
+    // Bulk-skip is file-only. Top-level directory matches are excluded so
+    // their non-conflicting children still move.
     let pre_skip_paths = build_pre_skip_set(
         source_paths,
         config.conflict_resolution,
         &config.pre_known_conflicts,
         &known_directory_paths,
     );
-    let bulk_skip_files = pre_skip_paths.len();
+    let mut bulk_skip_files = 0usize;
+    let mut bulk_skip_bytes = 0u64;
+    for path in &pre_skip_paths {
+        let size = source_hints
+            .get(path)
+            .map(|h| if h.is_directory { 0 } else { h.size })
+            .unwrap_or(0);
+        bulk_skip_files += 1;
+        bulk_skip_bytes += size;
+    }
 
     let driver_config = DriverConfig {
         operation_type: WriteOperationType::Move,
@@ -708,11 +712,9 @@ pub(super) async fn move_within_same_volume_with_progress(
         source_paths,
         dest_path,
         total_files,
-        // Same-volume move tracks no per-byte total: `bytes_total = 0` on
-        // every progress event. The driver respects what we pass.
-        0,
+        total_bytes,
         bulk_skip_files,
-        0,
+        bulk_skip_bytes,
         &pre_skip_paths,
         &driver_config,
         {
@@ -728,6 +730,7 @@ pub(super) async fn move_within_same_volume_with_progress(
             let state = Arc::clone(state);
             let events = Arc::clone(&events);
             let apply_to_all = Arc::clone(&apply_to_all_cell);
+            let source_hints = Arc::clone(&source_hints);
             let config = config_owned.clone();
             let operation_id = operation_id_owned.clone();
             move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
@@ -735,6 +738,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                 let state = Arc::clone(&state);
                 let events = Arc::clone(&events);
                 let apply_to_all = Arc::clone(&apply_to_all);
+                let source_hints = Arc::clone(&source_hints);
                 let config = config.clone();
                 let operation_id = operation_id.clone();
                 let source_path_owned = input.source_path.to_path_buf();
@@ -745,10 +749,10 @@ pub(super) async fn move_within_same_volume_with_progress(
                         "move_within_same_volume: conflict detected at {}",
                         initial_dest_owned.display()
                     );
+                    let source_hint = source_hints.get(&source_path_owned).copied();
+                    let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
                     let mut latched = apply_to_all.lock().unwrap().take();
                     // Same volume on both sides; pass `&volume` twice.
-                    // `None` source-size hint matches the legacy shape
-                    // (same-volume move has no scan phase).
                     let resolved = resolve_volume_conflict(
                         &volume,
                         &source_path_owned,
@@ -759,7 +763,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                         &operation_id,
                         &state,
                         &mut latched,
-                        None,
+                        source_size_hint,
                         dest_size_hint,
                     )
                     .await;
@@ -771,9 +775,11 @@ pub(super) async fn move_within_same_volume_with_progress(
                                 "move_within_same_volume: skipping {} due to conflict resolution",
                                 source_path_owned.display()
                             );
-                            // Move has no pre-flight byte scan, so skip-bytes
-                            // stays at 0.
-                            ConflictDecision::Skip { bytes_accounted: 0 }
+                            // Credit the source's byte size so the Size bar
+                            // matches the file counter when every source is
+                            // skipped.
+                            let bytes_accounted = source_hint.map(|h| h.size).unwrap_or(0);
+                            ConflictDecision::Skip { bytes_accounted }
                         }
                         Some(dest_path) => ConflictDecision::Proceed { dest_path },
                     })
@@ -785,12 +791,14 @@ pub(super) async fn move_within_same_volume_with_progress(
             let progress_interval = state.progress_interval;
             let state = Arc::clone(state);
             let events = Arc::clone(&events);
+            let source_hints = Arc::clone(&source_hints);
             let operation_id = operation_id_owned.clone();
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let volume = Arc::clone(&volume);
                 let state = Arc::clone(&state);
                 let events = Arc::clone(&events);
+                let source_hints = Arc::clone(&source_hints);
                 let operation_id = operation_id.clone();
                 let last_progress_time = Arc::clone(&last_progress_time);
                 let source_path = ctx.source_path.to_path_buf();
@@ -801,12 +809,20 @@ pub(super) async fn move_within_same_volume_with_progress(
                 let bytes_done_so_far = ctx.bytes_done_so_far;
                 let files_done_so_far = ctx.files_done_so_far;
                 Box::pin(async move {
-                    let size = volume
-                        .get_metadata(&source_path)
-                        .await
-                        .ok()
-                        .and_then(|m| m.size)
-                        .unwrap_or(0);
+                    // Use the cached scan hint for size. Falls back to a
+                    // per-source stat if the hint is missing (cached preview
+                    // without per-path data, or future backends that don't
+                    // populate it).
+                    let size = match source_hints.get(&source_path).copied() {
+                        Some(h) if !h.is_directory => h.size,
+                        Some(_) => 0,
+                        None => volume
+                            .get_metadata(&source_path)
+                            .await
+                            .ok()
+                            .and_then(|m| m.size)
+                            .unwrap_or(0),
+                    };
 
                     volume
                         .rename(&source_path, &dest_item_path, false)
@@ -836,7 +852,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                                 new_files,
                                 total_files,
                                 new_bytes,
-                                0,
+                                total_bytes,
                             ),
                         );
                     }

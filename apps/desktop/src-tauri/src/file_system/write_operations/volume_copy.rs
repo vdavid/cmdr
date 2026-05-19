@@ -28,24 +28,13 @@ use uuid::Uuid;
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
-use super::scan::take_cached_scan_result;
-use super::transfer_driver::{
-    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
-    build_pre_skip_set, drive_transfer_serial_async,
-};
-
-/// Per-source hints collected during the scan phase, so the copy loop can
-/// skip re-probing the source type/size per file. `size` is only meaningful
-/// when `is_directory == false`; it's the top-level file's size and feeds
-/// the SMB compound fast-path.
-#[derive(Clone, Copy, Default)]
-struct SourceHint {
-    is_directory: bool,
-    size: u64,
-}
 use super::state::{
     OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, load_intent, register_operation_status,
     unregister_operation_status, update_operation_status,
+};
+use super::transfer_driver::{
+    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
+    build_pre_skip_set, drive_transfer_serial_async,
 };
 use super::types::{
     ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult,
@@ -53,6 +42,7 @@ use super::types::{
     WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::volume_conflict::resolve_volume_conflict;
+use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{SourceItemInfo, Volume, VolumeError};
 
@@ -422,112 +412,24 @@ pub(crate) async fn copy_volumes_with_progress(
         source_paths.len()
     );
 
-    // Phase 1: Scan sources (or reuse cached scan from preview)
-    let total_files;
-    let total_bytes;
-
-    // Per-source hint collected during the scan: whether the top-level path
-    // is a directory and, for top-level files, the file size. The copy loop
-    // reuses these to skip an `is_directory` probe per file and, for SMB, to
-    // pick the 1-RTT compound fast-path when the file fits in one READ.
-    let mut source_hints: HashMap<PathBuf, SourceHint> = HashMap::with_capacity(source_paths.len());
-
-    if let Some(cached) = config.preview_id.as_deref().and_then(take_cached_scan_result) {
-        total_files = cached.file_count;
-        total_bytes = cached.total_bytes;
-        log::debug!(
-            "copy_volumes_with_progress: reused cached scan for operation_id={}, files={}, bytes={}, per_path={}",
-            operation_id,
-            total_files,
-            total_bytes,
-            cached.per_path.len()
-        );
-        // Volume scan previews carry per-path results so we can seed source_hints
-        // directly. Without this, we'd `is_directory` each path here, and on MTP
-        // every `is_directory` lists the parent dir (15k photos in /DCIM/Camera =
-        // 15k sequential parent listings, ~2 min stall before the copy starts).
-        // Local-FS scans don't populate per_path; the unwrap_or default leaves
-        // source_hints empty (the conflict-resolution and SMB compound fast-paths
-        // both fall back cleanly when a hint is missing).
-        for (source_path, scan) in cached.per_path {
-            let size = if scan.top_level_is_directory {
-                0
-            } else {
-                scan.total_bytes
-            };
-            source_hints.insert(
-                source_path,
-                SourceHint {
-                    is_directory: scan.top_level_is_directory,
-                    size,
-                },
-            );
-        }
-    } else {
-        log::debug!(
-            "copy_volumes_with_progress: scanning sources for operation_id={}",
-            operation_id
-        );
-
-        state.emit_progress_via_sink(
-            &*events,
-            WriteProgressEvent::new(
-                operation_id.to_string(),
-                WriteOperationType::Copy,
-                WriteOperationPhase::Scanning,
-                None,
-                0,
-                0,
-                0,
-                0,
-            ),
-        );
-
-        if is_cancelled(&state.intent) {
-            return Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            }));
-        }
-
-        // Single pipelined batch scan. For SMB this fires N stat requests
-        // over one session in parallel instead of N sequential RTTs (Fix 4).
-        // Default impl loops per-path for backends where per-path I/O is
-        // cheap (local FS, in-memory). MTP overrides to group by parent dir.
-        let batch = source_volume.scan_for_copy_batch(source_paths).await.map_err(|e| {
-            // No specific source path here; pick the first one or fall back to the dest.
-            let path = source_paths.first().cloned().unwrap_or_else(|| dest_path.to_path_buf());
-            WriteFailure::from_volume(&path, e)
-        })?;
-
-        total_files = batch.aggregate.file_count;
-        let total_dirs = batch.aggregate.dir_count;
-        total_bytes = batch.aggregate.total_bytes;
-
-        for (source_path, scan) in &batch.per_path {
-            // For top-level files, `scan.total_bytes` == the file size.
-            // For directories, we leave `size = 0` (unused downstream).
-            let size = if scan.top_level_is_directory {
-                0
-            } else {
-                scan.total_bytes
-            };
-            source_hints.insert(
-                source_path.clone(),
-                SourceHint {
-                    is_directory: scan.top_level_is_directory,
-                    size,
-                },
-            );
-        }
-
-        log::debug!(
-            "copy_volumes_with_progress: scan complete for operation_id={}, files={}, dirs={}, bytes={}",
-            operation_id,
-            total_files,
-            total_dirs,
-            total_bytes
-        );
-    }
+    // Phase 1: Preflight scan (reuses the dialog's cached preview when one is
+    // available). Populates `total_files`, `total_bytes`, and per-source
+    // `is_directory` / `size` hints so the copy loop doesn't have to re-probe
+    // each source. Shared with the move pipeline.
+    let preflight = scan_volume_sources(
+        &source_volume,
+        source_paths,
+        config,
+        operation_id,
+        WriteOperationType::Copy,
+        state,
+        &*events,
+    )
+    .await?;
+    let total_files = preflight.total_files;
+    let total_bytes = preflight.total_bytes;
+    let known_directory_paths = preflight.known_directory_paths();
+    let mut source_hints = preflight.source_hints;
 
     // Phase 2: Check destination space
     let dest_space = dest_volume
@@ -613,15 +515,9 @@ pub(crate) async fn copy_volumes_with_progress(
     // conflict instead of jumping to the full skipped count immediately.
     // Bulk-skip is **file-only**: a top-level directory's name matching a
     // pre-known conflict means only some of its children collide at dest, so
-    // dropping the whole subtree would lose non-conflicting files. We collect
-    // the top-level directory paths from `source_hints` (populated by the
-    // batched scan above) and exclude them; the loop falls through to
-    // per-iter conflict resolution for those.
-    let known_directory_paths: HashSet<PathBuf> = source_hints
-        .iter()
-        .filter(|&(_path, hint)| hint.is_directory)
-        .map(|(path, _hint)| path.clone())
-        .collect();
+    // dropping the whole subtree would lose non-conflicting files. Top-level
+    // directory paths come from `preflight.known_directory_paths()` (computed
+    // from the batched scan's `is_directory` hints).
     let pre_skip_paths: HashSet<PathBuf> = build_pre_skip_set(
         source_paths,
         config.conflict_resolution,

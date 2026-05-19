@@ -36,6 +36,7 @@ mod types;
 mod volume_conflict;
 mod volume_copy;
 mod volume_move;
+mod volume_preflight;
 mod volume_strategy;
 
 use std::path::PathBuf;
