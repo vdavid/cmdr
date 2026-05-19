@@ -120,7 +120,7 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
         None => return,
     };
 
-    log::debug!("enrich: {} under {parent_path}", pluralize(dir_count, "dir"));
+    log::debug!("enrich: {} under {parent_path}", pluralize(dir_count as u64, "dir"));
 
     // Use the integer-keyed fast path: resolve parent once, batch-fetch child stats
     if let Err(e) = pool
@@ -136,7 +136,7 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
         .iter()
         .filter(|e| e.is_directory && !e.is_symlink && e.recursive_size.is_some())
         .count();
-    log::debug!("enrich: {enriched}/{} got sizes", pluralize(dir_count, "dir"));
+    log::debug!("enrich: {enriched}/{} got sizes", pluralize(dir_count as u64, "dir"));
 }
 
 /// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.

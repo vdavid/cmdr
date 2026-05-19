@@ -995,7 +995,7 @@ async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<()
             if let Some((line_count, last_line)) = log_diagnostics(ai_dir) {
                 log::debug!(
                     "AI server: log has {}, last: {last_line}",
-                    pluralize(line_count, "line")
+                    pluralize(line_count as u64, "line")
                 );
             }
         }

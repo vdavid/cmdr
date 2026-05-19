@@ -126,8 +126,8 @@ fn validate_user_note(user_note: Option<String>) -> Result<Option<String>, Strin
     match user_note {
         Some(n) if n.chars().count() > MAX_USER_NOTE_CHARS => Err(format!(
             "User note is too long ({}). Maximum is {}.",
-            pluralize(n.chars().count(), "char"),
-            pluralize(MAX_USER_NOTE_CHARS, "char"),
+            pluralize(n.chars().count() as u64, "char"),
+            pluralize(MAX_USER_NOTE_CHARS as u64, "char"),
         )),
         other => Ok(other),
     }

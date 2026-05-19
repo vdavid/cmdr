@@ -4234,7 +4234,7 @@ mod tests {
         if total_iters < 20 {
             panic!(
                 "soak ran only {}; need at least 20 to compute drift (set CMDR_SOAK_ITERATIONS=100 minimum)",
-                crate::pluralize::pluralize(total_iters, "iteration")
+                crate::pluralize::pluralize(total_iters as u64, "iteration")
             );
         }
 

@@ -54,7 +54,7 @@ pub fn save(provider_id: &str, api_key: &str) -> Result<(), AiApiKeyError> {
     crate::secrets::store().set(&key, api_key.as_bytes())?;
     info!(
         "AI API key saved for provider {provider_id} ({})",
-        pluralize(key_len, "byte")
+        pluralize(key_len as u64, "byte")
     );
     Ok(())
 }

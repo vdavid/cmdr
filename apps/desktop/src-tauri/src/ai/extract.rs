@@ -85,6 +85,6 @@ pub fn extract_bundled_llama_server<R: Runtime>(app: &AppHandle<R>, ai_dir: &Pat
         return Err(String::from("llama-server binary not found in bundled resources"));
     }
 
-    log::debug!("AI: copied {} from bundled resources", pluralize(copied_count, "file"));
+    log::debug!("AI: copied {} from bundled resources", pluralize(copied_count as u64, "file"));
     Ok(())
 }

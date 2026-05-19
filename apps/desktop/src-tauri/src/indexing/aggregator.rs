@@ -84,7 +84,7 @@ pub fn compute_all_aggregates_reported(
     let dir_count = dir_entries.len();
     log::debug!(
         "Aggregation: starting bottom-up computation for {}",
-        pluralize_with(dir_count, "directory", "directories")
+        pluralize_with(dir_count as u64, "directory", "directories")
     );
 
     // Bulk-load direct children stats for ALL parent IDs in two SQL queries
@@ -278,7 +278,7 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
     let dir_count = dir_entries.len();
     log::debug!(
         "Subtree aggregation: starting bottom-up computation for {} under {root}",
-        pluralize_with(dir_count, "directory", "directories")
+        pluralize_with(dir_count as u64, "directory", "directories")
     );
 
     // Load direct children stats scoped to this subtree via recursive CTE
@@ -337,7 +337,7 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
     let count = missing_ids.len();
     log::debug!(
         "Backfill: {} missing dir_stats, computing...",
-        pluralize_with(count, "directory", "directories")
+        pluralize_with(count as u64, "directory", "directories")
     );
 
     // Load ALL directory entries for the topological sort (we need the full

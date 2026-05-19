@@ -143,7 +143,7 @@ pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<
 
         log::debug!(
             "Search index loaded: {}, generation {generation}, took {:?}",
-            pluralize_with(row_count, "entry", "entries"),
+            pluralize_with(row_count as u64, "entry", "entries"),
             t.elapsed()
         );
         Ok(SearchIndex {

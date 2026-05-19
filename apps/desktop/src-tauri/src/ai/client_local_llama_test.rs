@@ -69,7 +69,7 @@ async fn local_streaming_emits_multiple_chunks_progressively() {
         .await
         .expect("stream should open against local server");
 
-    let mut chunks: usize = 0;
+    let mut chunks: u64 = 0;
     let mut total = String::new();
     let mut first_chunk_at = None;
     while let Some(item) = stream.next().await {

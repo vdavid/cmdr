@@ -113,7 +113,7 @@ async fn collect_stream(backend: &AiBackend, model_label: &str) -> String {
     .await
     .expect("stream open");
     let mut text = String::new();
-    let mut chunks: usize = 0;
+    let mut chunks: u64 = 0;
     while let Some(item) = stream.next().await {
         let chunk = item.expect("chunk ok");
         text.push_str(&chunk);

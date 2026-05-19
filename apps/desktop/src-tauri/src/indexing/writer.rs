@@ -808,7 +808,7 @@ fn handle_insert_entries_v2(
     if elapsed > 100 {
         log::debug!(
             "Writer: insert_entries_v2_batch ({}) took {elapsed}ms",
-            pluralize_with(count, "entry", "entries")
+            pluralize_with(count as u64, "entry", "entries")
         );
     }
     bump_generation(mutation_counter);

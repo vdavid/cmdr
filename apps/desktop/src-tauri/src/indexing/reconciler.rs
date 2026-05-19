@@ -149,7 +149,7 @@ impl EventReconciler {
             log::warn!(
                 "Reconciler: buffer cap reached ({}). \
                  Dropping further events; a full rescan will run after the current scan.",
-                pluralize(MAX_BUFFER_CAPACITY, "event")
+                pluralize(MAX_BUFFER_CAPACITY as u64, "event")
             );
             self.buffer_overflow = true;
             self.buffer.clear();
@@ -208,7 +208,7 @@ impl EventReconciler {
 
         log::info!(
             "Reconciler: replayed {processed}/{} (last_event_id={last_event_id})",
-            pluralize(total, "event")
+            pluralize(total as u64, "event")
         );
         Ok(last_event_id)
     }
@@ -1916,7 +1916,7 @@ mod tests {
             remaining == 0,
             "pending rescans should be drained after active rescan completes, \
              but {} remain",
-            pluralize(remaining, "path")
+            pluralize(remaining as u64, "path")
         );
 
         writer.shutdown();

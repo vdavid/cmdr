@@ -744,7 +744,7 @@ pub(super) async fn run_replay_event_loop(
             log::info!(
                 "Replay: complete ({}, {}, {:.1}s)",
                 pluralize(event_count, "event"),
-                pluralize(affected_paths.len(), "affected dir"),
+                pluralize(affected_paths.len() as u64, "affected dir"),
                 replay_start.elapsed().as_secs_f64(),
             );
         }
@@ -829,7 +829,7 @@ pub(super) async fn run_replay_event_loop(
             format!(
                 "Replay accumulated more than {} needing full \
                  rescans. This typically means a major filesystem reorganization happened.",
-                pluralize_with(MAX_PENDING_RESCANS, "directory", "directories")
+                pluralize_with(MAX_PENDING_RESCANS as u64, "directory", "directories")
             ),
         );
         if let Some(tx) = fallback_tx.take() {

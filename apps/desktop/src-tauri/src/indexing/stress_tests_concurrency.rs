@@ -983,7 +983,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
         panic!(
             "{} exceeded the {SLA_MS}ms SLA under reconciler load (storm: {}):\n  {summary}\n\n\
              See the captured `stall_probe::*` log lines above (run with --no-capture to see them on stderr).",
-            pluralize(violators.len(), "listing"),
+            pluralize(violators.len() as u64, "listing"),
             pluralize(total_events, "event"),
         );
     }

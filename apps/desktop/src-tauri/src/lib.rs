@@ -324,7 +324,7 @@ pub fn run() {
                 n => log::info!(
                     target: "cmdr_lib::logging",
                     "Log storage enabled: keep up to {} × 50 MB ({} MB cap)",
-                    pluralize::pluralize(n, "file"),
+                    pluralize::pluralize(n as u64, "file"),
                     n * 50,
                 ),
             }
