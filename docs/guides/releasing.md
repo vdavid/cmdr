@@ -16,14 +16,19 @@ land.
 
 Before tagging a release:
 
-1. Boot a Monterey 12.7+ VM (or a real old Mac) and open the dev build.
-2. Confirm the four user-visible spots aren't broken:
+1. On any Mac, run `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` from the repo root. This forces the fallback path on modern
+   WebKit by faking `hasColorMix = false` (routes the JS branches through sRGB mix) and setting `data-force-old-webkit`
+   on `<html>` (activates the mirror of the `@supports not (...)` blocks in `app.css`). It doesn't perfectly replicate
+   Safari 15.x's renderer, but it does prove the fallback values look reasonable.
+2. Optionally, boot a Monterey 12.7+ VM or a real old Mac and open the dev build. Note that ARM Monterey VMs ship with
+   current Safari (17.x), so the bug isn't reproducible there without an early-12.x IPSW.
+3. Either way, confirm the four user-visible spots aren't broken:
    - The "Open System Settings" button hovers to a lighter gold (not black).
    - The per-pane disk usage bar fills with green/orange/red instead of just the gray track.
    - The file-list cursor row has a visible gold-tinted background.
    - In dark mode, file-list size column shows the rainbow tier colors (not uniform gray).
-3. Grep the app log for `Old WebKit detected:` — `logWebkitCompat()` emits this on startup when `color-mix()` isn't
-   supported. If you see it on Monterey 12.7+, the fallback path is doing its job.
+4. Grep the app log for `Old WebKit detected:` — `logWebkitCompat()` emits this on startup when `color-mix()` isn't
+   supported (or when the dev override is on). If you see it on Monterey 12.7+, the fallback path is doing its job.
 
 If a new `color-mix()` token lands without a matching entry in the `@supports not` blocks, those four spots silently
 break on old WebKit. Keep the lists in `app.css` in sync, and prefer the JS-derivation pattern (`accent-color.ts`,

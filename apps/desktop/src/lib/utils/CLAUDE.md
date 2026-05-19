@@ -29,6 +29,11 @@ the variables go unset and downstream UI loses color. Two safety nets work toget
 `webkit-compat.ts` exposes `hasColorMix` (computed once at module load) so consumers can branch, and `logWebkitCompat()`
 which the main layout calls at boot — emits one log line so we can spot affected users in error reports.
 
+**Dev override**: `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the fallback path on modern WebKit. It does two things
+at module load: flips `hasColorMix` to `false` (routes the JS-mix branches) and sets `data-force-old-webkit` on `<html>`
+(activates the `:root[data-force-old-webkit]` blocks in `app.css` that mirror the `@supports not (...)` fallbacks). Use
+it to verify the old-WebKit look without tracking down a real Safari 15.x environment.
+
 See `docs/guides/releasing.md` § "Pre-release smoke test on old macOS" for the manual check before tagging.
 
 ## filename-validation.ts

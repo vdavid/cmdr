@@ -19,7 +19,26 @@ import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('webkit-compat')
 
+/**
+ * Dev override: when `VITE_CMDR_FORCE_OLD_WEBKIT=1` is passed to `pnpm dev`,
+ * we pretend `color-mix()` is unsupported even on modern WebKit. This is the
+ * way to visually verify the fallback path on your current Mac without
+ * tracking down a real Safari 15.x environment. Two effects:
+ *
+ *  - `hasColorMix` is forced to `false`, which routes the JS branches in
+ *    `accent-color.ts` and `volume-tint.svelte.ts` through the sRGB-mix path.
+ *  - `data-force-old-webkit` is set on `<html>`, which activates the mirror of
+ *    the `@supports not (...)` CSS blocks in `app.css`. Without this, the
+ *    CSS-side fallback wouldn't trigger (modern WebKit happily parses
+ *    `color-mix()`).
+ *
+ * Vite only exposes env vars to client code when they're prefixed with `VITE_`.
+ * The flag is read at module load, so set it before `pnpm dev` starts.
+ */
+const FORCE_OLD_WEBKIT = import.meta.env.VITE_CMDR_FORCE_OLD_WEBKIT === '1'
+
 function checkColorMix(): boolean {
+  if (FORCE_OLD_WEBKIT) return false
   if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') return true
   // Universal gate: anything we ship that uses `color-mix(in oklch, …)` also
   // covers the `in srgb` case (oklch is the strictly newer feature).
@@ -28,6 +47,14 @@ function checkColorMix(): boolean {
 
 /** True on modern WebKit (Safari 16.4+ / current Chrome/Firefox). */
 export const hasColorMix: boolean = checkColorMix()
+
+// Apply the dev override's CSS side as early as possible — before first paint
+// would be ideal. Module-level code on a SvelteKit client script runs after
+// document parse, so there can be a brief flash of the modern values; that's
+// acceptable for a dev-only knob.
+if (FORCE_OLD_WEBKIT && typeof document !== 'undefined') {
+  document.documentElement.setAttribute('data-force-old-webkit', '')
+}
 
 /**
  * Logs WebKit-compatibility flags once at boot so old-WebKit users surface
