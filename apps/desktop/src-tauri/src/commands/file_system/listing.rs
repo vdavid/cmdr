@@ -322,9 +322,42 @@ pub fn list_directory_end(listing_id: String) {
 
 /// Force a re-read of a watched directory listing, emitting any diff.
 /// Used after write operations (move) when the file watcher may not fire promptly.
+///
+/// Short-circuits when the listing's volume reports `listing_is_watched(path) == true`.
+/// In that case the cache is already being kept fresh by the volume's `notify_mutation`
+/// pipeline (per-file `Added` / `Removed` / `Modified` events patched into `LISTING_CACHE`
+/// after every successful mutation), so a full `list_directory` re-read is redundant
+/// and costs a lot on slow backends: a 1k-entry MTP folder takes ~17 s and holds the
+/// USB session, colliding with the user's next op. Returns `TimedOut { data: (),
+/// timed_out: false }` immediately when the short-circuit fires, matching the
+/// `timed_out: false` shape the FE already handles on the fast-path.
+///
+/// Note: only this user-triggered command is gated. The FSEvents/SMB/MTP watcher
+/// callbacks call `handle_directory_change` directly and are intentionally left
+/// alone — they're how the cache stays in sync in the first place.
 #[tauri::command]
 #[specta::specta]
 pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
+    // Short-circuit on watcher-backed listings: the volume's `notify_mutation`
+    // pipeline keeps `LISTING_CACHE` fresh, so a full re-read here is pure
+    // redundancy. See the doc comment above for why this matters on MTP/SMB.
+    if let Some((volume_id, path)) = crate::file_system::listing::get_listing_volume_id_and_path(&listing_id)
+        && let Some(volume) = get_volume_manager().get(&volume_id)
+        && volume.listing_is_watched(&path)
+    {
+        log::debug!(
+            target: "refresh_listing",
+            "refresh_listing: short-circuit, watcher-backed listing (listing_id={}, volume_id={}, path={})",
+            listing_id,
+            volume_id,
+            path.display(),
+        );
+        return TimedOut {
+            data: (),
+            timed_out: false,
+        };
+    }
+
     let timed_out = tokio::time::timeout(Duration::from_secs(2), async {
         crate::file_system::watcher::handle_directory_change(&listing_id).await;
     })
@@ -366,5 +399,210 @@ pub fn refresh_listing_index_sizes(listing_id: String) -> Result<(), String> {
 pub fn benchmark_log(message: String) {
     if crate::benchmark::is_enabled() {
         eprintln!("{}", message);
+    }
+}
+
+#[cfg(test)]
+mod refresh_listing_tests {
+    //! Tests for the `refresh_listing` short-circuit on watcher-backed listings (M1
+    //! of the cancel-settled plan). Pattern adapted from
+    //! `write_operations::delete_volume_reuse_tests` — a counter-wrapping
+    //! `InMemoryVolume` whose `listing_is_watched` is flipped per test, seeded into
+    //! `LISTING_CACHE` and `VolumeManager`, then we call `refresh_listing` and
+    //! assert `list_directory` was or wasn't invoked.
+    use super::*;
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+    use crate::file_system::listing::metadata::FileEntry;
+    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
+    use std::future::Future;
+    use std::path::Path;
+    use std::pin::Pin;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+
+    /// Wraps an `InMemoryVolume` and counts `list_directory` calls. `watched` is
+    /// flipped per test to pin both short-circuit and fall-through behaviour.
+    struct CountingVolume {
+        inner: InMemoryVolume,
+        watched: AtomicBool,
+        list_dir_calls: AtomicUsize,
+    }
+
+    impl CountingVolume {
+        fn new(name: &str, watched: bool) -> Self {
+            Self {
+                inner: InMemoryVolume::new(name),
+                watched: AtomicBool::new(watched),
+                list_dir_calls: AtomicUsize::new(0),
+            }
+        }
+
+        fn list_dir_count(&self) -> usize {
+            self.list_dir_calls.load(Ordering::Relaxed)
+        }
+    }
+
+    impl Volume for CountingVolume {
+        fn name(&self) -> &str {
+            self.inner.name()
+        }
+        fn root(&self) -> &Path {
+            self.inner.root()
+        }
+
+        fn list_directory<'a>(
+            &'a self,
+            path: &'a Path,
+            on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+            self.list_dir_calls.fetch_add(1, Ordering::Relaxed);
+            self.inner.list_directory(path, on_progress)
+        }
+
+        fn get_metadata<'a>(
+            &'a self,
+            path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+            self.inner.get_metadata(path)
+        }
+
+        fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+            self.inner.exists(path)
+        }
+
+        fn is_directory<'a>(
+            &'a self,
+            path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+            self.inner.is_directory(path)
+        }
+
+        fn listing_is_watched(&self, _path: &Path) -> bool {
+            self.watched.load(Ordering::Relaxed)
+        }
+    }
+
+    fn unique(suffix: &str) -> String {
+        static N: AtomicU64 = AtomicU64::new(0);
+        format!(
+            "refresh_listing_{}_{}_{}",
+            suffix,
+            std::process::id(),
+            N.fetch_add(1, Ordering::Relaxed)
+        )
+    }
+
+    fn insert_listing(listing_id: &str, volume_id: &str, path: &str) {
+        let mut cache = LISTING_CACHE.write().unwrap();
+        cache.insert(
+            listing_id.to_string(),
+            CachedListing {
+                volume_id: volume_id.to_string(),
+                path: PathBuf::from(path),
+                entries: Vec::new(),
+                sort_by: SortColumn::Name,
+                sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
+                sequence: AtomicU64::new(1),
+                created_at: std::time::Instant::now(),
+            },
+        );
+    }
+
+    fn remove_listing(listing_id: &str) {
+        let _ = LISTING_CACHE.write().unwrap().remove(listing_id);
+    }
+
+    /// Watched volume: short-circuit fires, `list_directory` never called.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn refresh_listing_short_circuits_on_watched_volume() {
+        let vid = unique("short_circuit_vid");
+        let lid = unique("short_circuit_lid");
+        let path = "/dcim";
+
+        let vol = Arc::new(CountingVolume::new("watched-vol", true));
+        get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
+        insert_listing(&lid, &vid, path);
+
+        let result = refresh_listing(lid.clone()).await;
+
+        assert!(!result.timed_out, "short-circuit returns timed_out=false");
+        assert_eq!(
+            vol.list_dir_count(),
+            0,
+            "watched-backed refresh_listing must skip list_directory",
+        );
+
+        remove_listing(&lid);
+        get_volume_manager().unregister(&vid);
+    }
+
+    /// Unwatched volume: fall-through path runs (`handle_directory_change` calls
+    /// `list_directory`). The InMemoryVolume's directory exists so we get a real
+    /// listing rather than NotFound.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn refresh_listing_falls_through_on_unwatched() {
+        let vid = unique("fallthrough_vid");
+        let lid = unique("fallthrough_lid");
+        let path = "/dcim";
+
+        let vol = Arc::new(CountingVolume::new("unwatched-vol", false));
+        // Populate one file so `list_directory` succeeds.
+        vol.inner.create_file(Path::new("/dcim/a.jpg"), b"alpha").await.unwrap();
+        get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
+        insert_listing(&lid, &vid, path);
+
+        let result = refresh_listing(lid.clone()).await;
+
+        assert!(!result.timed_out, "fast InMemory list_directory shouldn't time out");
+        assert!(
+            vol.list_dir_count() >= 1,
+            "unwatched volume must fall through to list_directory (count was {})",
+            vol.list_dir_count(),
+        );
+
+        remove_listing(&lid);
+        get_volume_manager().unregister(&vid);
+    }
+
+    /// No cache entry for the listing_id: today's behaviour is a clean no-op
+    /// (`handle_directory_change` early-returns). The short-circuit must NOT
+    /// suppress that path or panic; we just assert the call completes cleanly.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn refresh_listing_falls_through_on_missing_listing() {
+        let lid = unique("missing_lid");
+        // No insert_listing call; no register call.
+        let result = refresh_listing(lid).await;
+        assert!(
+            !result.timed_out,
+            "missing listing should resolve quickly without timeout"
+        );
+    }
+
+    /// Cache has the listing but the volume isn't registered: short-circuit
+    /// can't ask `listing_is_watched`, so we fall through to today's behaviour
+    /// (`handle_directory_change` finds no volume, falls back to local std::fs
+    /// for the path which doesn't exist, and returns cleanly without panic).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn refresh_listing_falls_through_when_volume_not_registered() {
+        let vid = unique("unregistered_vid");
+        let lid = unique("unregistered_lid");
+        // Use a path that doesn't exist on disk so the std::fs fallback returns
+        // NotFound and the function exits cleanly.
+        let path = "/tmp/cmdr-refresh-listing-test-nonexistent-path-xyz123";
+
+        // Note: NO get_volume_manager().register() call.
+        insert_listing(&lid, &vid, path);
+
+        let result = refresh_listing(lid.clone()).await;
+
+        assert!(
+            !result.timed_out,
+            "unregistered-volume fallthrough should resolve quickly"
+        );
+
+        remove_listing(&lid);
     }
 }

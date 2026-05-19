@@ -188,6 +188,17 @@ pub fn get_listing_path(listing_id: &str) -> Option<PathBuf> {
     cache.get(listing_id).map(|listing| listing.path.clone())
 }
 
+/// Returns `(volume_id, path)` for a cached listing in one read-lock acquisition.
+///
+/// Used by `refresh_listing` so the short-circuit check can ask the volume
+/// `listing_is_watched(path)` without two separate cache reads.
+pub fn get_listing_volume_id_and_path(listing_id: &str) -> Option<(String, PathBuf)> {
+    let cache = LISTING_CACHE.read().ok()?;
+    cache
+        .get(listing_id)
+        .map(|listing| (listing.volume_id.clone(), listing.path.clone()))
+}
+
 /// Removes an entry by its path from the cached listing.
 ///
 /// Returns `(old_index, removed_entry)` or `None` if the listing or entry wasn't found.

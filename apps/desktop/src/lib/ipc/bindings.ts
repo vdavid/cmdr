@@ -61,6 +61,19 @@ export const commands = {
   /**
    *  Force a re-read of a watched directory listing, emitting any diff.
    *  Used after write operations (move) when the file watcher may not fire promptly.
+   *
+   *  Short-circuits when the listing's volume reports `listing_is_watched(path) == true`.
+   *  In that case the cache is already being kept fresh by the volume's `notify_mutation`
+   *  pipeline (per-file `Added` / `Removed` / `Modified` events patched into `LISTING_CACHE`
+   *  after every successful mutation), so a full `list_directory` re-read is redundant
+   *  and costs a lot on slow backends: a 1k-entry MTP folder takes ~17 s and holds the
+   *  USB session, colliding with the user's next op. Returns `TimedOut { data: (),
+   *  timed_out: false }` immediately when the short-circuit fires, matching the
+   *  `timed_out: false` shape the FE already handles on the fast-path.
+   *
+   *  Note: only this user-triggered command is gated. The FSEvents/SMB/MTP watcher
+   *  callbacks call `handle_directory_change` directly and are intentionally left
+   *  alone — they're how the cache stays in sync in the first place.
    */
   refreshListing: (listingId: string) => __TAURI_INVOKE<TimedOut<null>>('refresh_listing', { listingId }),
   getFileRange: (listingId: string, start: number, count: number, includeHidden: boolean) =>
@@ -141,8 +154,8 @@ export const commands = {
       __TAURI_INVOKE('get_files_at_indices', { listingId, selectedIndices, includeHidden }),
     ),
   /**
-   *  Gets file paths at specific frontend indices from a cached listing (batch version of path extraction).
-   *  Handles the parent ".." offset internally; callers pass frontend indices.
+   *  Gets file paths at specific frontend indices from a cached listing (batch version of path
+   *  extraction). Handles the parent ".." offset internally; callers pass frontend indices.
    */
   getPathsAtIndices: (listingId: string, selectedIndices: number[], includeHidden: boolean, hasParent: boolean) =>
     typedError<string[], string>(
@@ -158,8 +171,8 @@ export const commands = {
    *  The FE applies chrome + clamp on top.
    *
    *  Error mapping (consumed by the FE):
-   *  - `font_metrics_not_ready`: at least one column had no measurable filename
-   *    in the font cache. FE retries after `ensureFontMetricsLoaded` resolves.
+   *  - `font_metrics_not_ready`: at least one column had no measurable filename in the font cache. FE
+   *    retries after `ensureFontMetricsLoaded` resolves.
    *  - `invalid_items_per_column`: caller sent 0; FE clamps to >= 1 normally.
    *  - `listing_not_found:{id}`: listing already ended (or never started).
    *  - Anything else is a pass-through (cache-lock poisoning etc.).
@@ -448,7 +461,8 @@ export const commands = {
     ),
   /**
    *  Unified move across volume types. Same events as `copy_between_volumes`.
-   *  Handles same-volume (native rename/move), both-local (native move), and cross-volume (copy+delete).
+   *  Handles same-volume (native rename/move), both-local (native move), and cross-volume
+   *  (copy+delete).
    */
   moveBetweenVolumes: (
     sourceVolumeId: string,
@@ -569,7 +583,10 @@ export const commands = {
    */
   getGitStatusForPaths: (repoRoot: string, dir: string) =>
     __TAURI_INVOKE<TimedOut<EntryStatus[]>>('get_git_status_for_paths', { repoRoot, dir }),
-  // Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not locked).
+  /**
+   *  Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not
+   *  locked).
+   */
   checkRenamePermission: (path: string) =>
     typedError<null, IpcError>(__TAURI_INVOKE('check_rename_permission', { path })),
   /**
@@ -1068,16 +1085,14 @@ export const commands = {
    *  onboarding), and start the indexer.
    *
    *  Three things happen at the gate boundary:
-   *  1. Clear the FDA-pending atomic (`crate::fda_gate::set_fda_pending(false)`)
-   *     so subsequent code paths can run normally. The deny path runs in the
-   *     same process; the allow path restarts the app, which re-enters
-   *     `setup()` and sets the atomic via the OS probe.
-   *  2. Start the MTP hotplug watcher. MTP is opt-in per device; the
-   *     watcher itself doesn't trigger TCC.
-   *  3. Start the drive indexer. On the Deny path this is what surfaces the
-   *     "individual Allow/Deny prompts" the user signed up for by denying
-   *     FDA: the scan walks protected folders, macOS fires one TCC popup per
-   *     folder, the user grants or denies each. Folders that get denied stay
+   *  1. Clear the FDA-pending atomic (`crate::fda_gate::set_fda_pending(false)`) so subsequent code
+   *     paths can run normally. The deny path runs in the same process; the allow path restarts the
+   *     app, which re-enters `setup()` and sets the atomic via the OS probe.
+   *  2. Start the MTP hotplug watcher. MTP is opt-in per device; the watcher itself doesn't trigger
+   *     TCC.
+   *  3. Start the drive indexer. On the Deny path this is what surfaces the "individual Allow/Deny
+   *     prompts" the user signed up for by denying FDA: the scan walks protected folders, macOS fires
+   *     one TCC popup per folder, the user grants or denies each. Folders that get denied stay
    *     unindexed (size shows as `<dir>`); the rest get indexed normally.
    *
    *  **No proactive `volumes-changed` re-emission.** Emitting here would
@@ -1651,8 +1666,8 @@ export const commands = {
    *  `VolumeUnreachableBanner`. Looks up the volume by id, then runs `diskutil
    *  unmount <mount_path>` (macOS). The OS unmount fires FSEvents, which triggers
    *  the existing volume watcher → `Volume::on_unmount` pipeline:
-   *    - `SmbVolume::on_unmount` flips `unmounted=true`, stops the watcher task,
-   *      drops the smb2 session.
+   *    - `SmbVolume::on_unmount` flips `unmounted=true`, stops the watcher task, drops the smb2
+   *      session.
    *    - The volume is removed from `VolumeManager`.
    *    - A `volumes-changed` event flows to the frontend.
    *
@@ -2326,15 +2341,24 @@ export type ListingStats = {
   totalDirs: number
   // Total logical size in bytes (files + directory recursive sizes).
   totalSize: number
-  // Total physical (on-disk) size in bytes. Mirrors `total_size` but uses `physical_size` / `recursive_physical_size`.
+  /**
+   *  Total physical (on-disk) size in bytes. Mirrors `total_size` but uses `physical_size` /
+   *  `recursive_physical_size`.
+   */
   totalPhysicalSize: number
   // Present only if `selected_indices` was provided.
   selectedFiles: number | null
   // Present only if `selected_indices` was provided.
   selectedDirs: number | null
-  // Total logical size of selected entries in bytes. Present only if `selected_indices` was provided.
+  /**
+   *  Total logical size of selected entries in bytes. Present only if `selected_indices` was
+   *  provided.
+   */
   selectedSize: number | null
-  // Total physical size of selected entries in bytes. Present only if `selected_indices` was provided.
+  /**
+   *  Total physical size of selected entries in bytes. Present only if `selected_indices` was
+   *  provided.
+   */
   selectedPhysicalSize: number | null
 }
 
@@ -2715,7 +2739,10 @@ export type ResortResult = {
   newSelectedIndices: number[] | null
 }
 
-// A conflict detected during pre-copy scanning: a source item that already exists at the destination.
+/**
+ *  A conflict detected during pre-copy scanning: a source item that already exists at the
+ *  destination.
+ */
 export type ScanConflict = {
   // Relative to volume root.
   sourcePath: string
@@ -2940,7 +2967,10 @@ export type SystemMemoryInfo = {
   totalBytes: number
   // Wired + compressor-occupied memory (kernel, drivers; can't be freed).
   wiredBytes: number
-  // App memory: active + inactive - purgeable (process memory the user can free by quitting apps).
+  /**
+   *  App memory: active + inactive - purgeable (process memory the user can free by quitting
+   *  apps).
+   */
   appBytes: number
   // Free: free + purgeable + speculative (available for new allocations).
   freeBytes: number
@@ -3081,7 +3111,8 @@ export type ValidationError =
 
 /**
  *  Result of verifying a license key without persisting it.
- *  Kept separate from `LicenseInfo` so the full key doesn't leak to the frontend via `get_license_info`.
+ *  Kept separate from `LicenseInfo` so the full key doesn't leak to the frontend via
+ *  `get_license_info`.
  */
 export type VerifyResult = {
   info: LicenseInfo
