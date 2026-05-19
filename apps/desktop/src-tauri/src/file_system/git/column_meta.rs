@@ -2,20 +2,17 @@
 //!
 //! ## Modified column
 //!
-//! Every virtual entry gets a real timestamp into `modified_at` so the
-//! Modified column never reads as blank. Inside a snapshot (commit / tag /
-//! stash tree walk) every file and subdir borrows the snapshot's commit
-//! date. That's a frozen point in time, so the same date everywhere is
+//! Every virtual entry gets a real timestamp into `modified_at` so the Modified column never reads
+//! as blank. Inside a snapshot (commit / tag / stash tree walk) every file and subdir borrows the
+//! snapshot's commit date. That's a frozen point in time, so the same date everywhere is
 //! semantically correct.
 //!
 //! ## Size column (loose semantics)
 //!
-//! `display_size` overrides the byte-formatted Size cell with a short
-//! string per row (`+12 / -3`, `5 files`, `12 items`, `on main`, short
-//! SHA). The numeric `size` keeps a within-category sort key so the user
-//! can still sort by Size and get a useful order. Cross-category Size
-//! sorting is meaningless on purpose. Each cell is self-explaining via
-//! tooltip + aria-label.
+//! `display_size` overrides the byte-formatted Size cell with a short string per row (`+12 / -3`,
+//! `5 files`, `12 items`, `on main`, short SHA). The numeric `size` keeps a within-category sort
+//! key so the user can still sort by Size and get a useful order. Cross-category Size sorting is
+//! meaningless on purpose. Each cell is self-explaining via tooltip + aria-label.
 
 use std::path::Path;
 
@@ -25,10 +22,9 @@ use gix::object::tree::EntryKind;
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::{RepoHandle, count_ahead_behind};
 
-/// Picks a fallback comparison branch for ahead/behind when the branch has
-/// no configured upstream. Tries `main`, then `master`. Returns the
-/// resolved tip commit id of the fallback so callers can pass it straight
-/// to `count_ahead_behind`. Returns `None` when neither branch exists.
+/// Picks a fallback comparison branch for ahead/behind when the branch has no configured upstream.
+/// Tries `main`, then `master`. Returns the resolved tip commit id of the fallback so callers can
+/// pass it straight to `count_ahead_behind`. Returns `None` when neither branch exists.
 pub fn fallback_default_branch_tip(repo: &gix::Repository) -> Option<(String, ObjectId)> {
     use gix::refs::PartialName;
     for name in ["main", "master"] {
@@ -47,11 +43,9 @@ pub fn fallback_default_branch_tip(repo: &gix::Repository) -> Option<(String, Ob
     None
 }
 
-/// Resolves the configured upstream tracking ref (`origin/main` etc.) for
-/// a local branch name.
+/// Resolves the configured upstream tracking ref (`origin/main` etc.) for a local branch name.
 ///
-/// Returns `(short_name, commit_id)`. `short_name` is the
-/// `<remote>/<branch>` form for tooltips.
+/// Returns `(short_name, commit_id)`. `short_name` is the `<remote>/<branch>` form for tooltips.
 pub fn upstream_tip(repo: &gix::Repository, local_branch: &str) -> Option<(String, ObjectId)> {
     use gix::refs::PartialName;
     let local_full = format!("refs/heads/{}", local_branch);
@@ -75,12 +69,11 @@ pub struct AheadBehind {
     pub vs: String,
 }
 
-/// Computes ahead/behind for `local_branch` against its upstream, falling
-/// back to `main` / `master` when no upstream is configured.
+/// Computes ahead/behind for `local_branch` against its upstream, falling back to `main` / `master`
+/// when no upstream is configured.
 ///
-/// Returns `None` when no comparison branch can be found (the branch
-/// itself is the default and there's no upstream. In that case the
-/// caller leaves the cell blank).
+/// Returns `None` when no comparison branch can be found (the branch itself is the default and
+/// there's no upstream. In that case the caller leaves the cell blank).
 pub fn ahead_behind_for_branch(repo: &gix::Repository, local_branch: &str, local_tip: ObjectId) -> Option<AheadBehind> {
     if let Some((vs, upstream_id)) = upstream_tip(repo, local_branch) {
         let (ahead, behind) = count_ahead_behind(repo, local_tip, upstream_id)?;
@@ -88,17 +81,15 @@ pub fn ahead_behind_for_branch(repo: &gix::Repository, local_branch: &str, local
     }
     let (vs, fallback_id) = fallback_default_branch_tip(repo)?;
     if vs == local_branch {
-        // Comparing main against itself produces (0, 0); the cell would
-        // mislead the user into thinking the branch is up to date with
-        // some upstream that doesn't exist.
+        // Comparing main against itself produces (0, 0); the cell would mislead the user into
+        // thinking the branch is up to date with some upstream that doesn't exist.
         return None;
     }
     let (ahead, behind) = count_ahead_behind(repo, local_tip, fallback_id)?;
     Some(AheadBehind { ahead, behind, vs })
 }
 
-/// Decoded commit metadata used for column population: the committer
-/// timestamp (in seconds).
+/// Decoded commit metadata used for column population: the committer timestamp (in seconds).
 pub struct CommitMeta {
     pub committer_secs: i64,
 }
@@ -119,13 +110,11 @@ pub fn commit_meta(repo: &gix::Repository, id: ObjectId) -> Result<CommitMeta, F
     })
 }
 
-/// Counts files changed between `commit_id` and its first parent. For an
-/// initial commit (no parent) returns the total number of entries reachable
-/// from the commit's tree.
+/// Counts files changed between `commit_id` and its first parent. For an initial commit (no
+/// parent) returns the total number of entries reachable from the commit's tree.
 ///
-/// Uses gix's tree-diff. We also collect the recursive byte total of the
-/// commit tree as a side effect because the tree walk is identical; the
-/// caller can drop it if not needed.
+/// Uses gix's tree-diff. We also collect the recursive byte total of the commit tree as a side
+/// effect because the tree walk is identical; the caller can drop it if not needed.
 pub fn files_changed_count(repo: &gix::Repository, commit_id: ObjectId) -> Option<u64> {
     let commit = repo.find_commit(commit_id).ok()?;
     let tree = commit.tree().ok()?;
@@ -135,8 +124,8 @@ pub fn files_changed_count(repo: &gix::Repository, commit_id: ObjectId) -> Optio
         // Initial commit: count every blob in the tree.
         return Some(count_blobs_recursive(repo, &tree));
     }
-    // Diff against first parent (the conventional "main" parent for merge
-    // commits, same as `git show`).
+    // Diff against first parent (the conventional "main" parent for merge commits, same as
+    // `git show`).
     let parent = repo.find_commit(parents[0]).ok()?;
     let parent_tree = parent.tree().ok()?;
 
@@ -176,8 +165,8 @@ fn count_blobs_recursive(_repo: &gix::Repository, tree: &gix::Tree<'_>) -> u64 {
     count
 }
 
-/// Recursive byte total for a tree at `sub_path` inside `commit_id`.
-/// Used to populate `size` on directory entries inside snapshots.
+/// Recursive byte total for a tree at `sub_path` inside `commit_id`. Used to populate `size` on
+/// directory entries inside snapshots.
 pub fn recursive_tree_size(repo: &gix::Repository, commit_id: ObjectId, sub_path: &str) -> Option<u64> {
     let commit = repo.find_commit(commit_id).ok()?;
     let mut tree = commit.tree().ok()?;
@@ -220,8 +209,8 @@ fn sum_tree_bytes(repo: &gix::Repository, tree: &gix::Tree<'_>) -> u64 {
     total
 }
 
-/// Newest commit timestamp across the listed branches' tips. Returns
-/// `None` for an empty branch list.
+/// Newest commit timestamp across the listed branches' tips. Returns `None` for an empty branch
+/// list.
 pub fn newest_branch_tip_secs(handle: &RepoHandle) -> Option<u64> {
     let repo = handle.to_thread_local();
     let mut newest: Option<i64> = None;
@@ -240,8 +229,8 @@ pub fn newest_branch_tip_secs(handle: &RepoHandle) -> Option<u64> {
     newest.and_then(|s| u64::try_from(s).ok())
 }
 
-/// Newest tag date (annotated tag date for annotated tags, commit date for
-/// lightweight). Returns `None` when there are no tags.
+/// Newest tag date (annotated tag date for annotated tags, commit date for lightweight). Returns
+/// `None` when there are no tags.
 pub fn newest_tag_secs(handle: &RepoHandle) -> Option<u64> {
     let repo = handle.to_thread_local();
     let mut newest: Option<i64> = None;
@@ -257,9 +246,8 @@ pub fn newest_tag_secs(handle: &RepoHandle) -> Option<u64> {
     newest.and_then(|s| u64::try_from(s).ok())
 }
 
-/// Returns the annotated-tag time (when `id` points to a tag object) or
-/// the underlying commit's committer time. Used for both per-tag and
-/// per-category Modified columns.
+/// Returns the annotated-tag time (when `id` points to a tag object) or the underlying commit's
+/// committer time. Used for both per-tag and per-category Modified columns.
 pub fn tag_or_commit_secs(repo: &gix::Repository, id: ObjectId) -> Option<i64> {
     let obj = repo.find_object(id).ok()?;
     if obj.kind == gix::object::Kind::Tag {
@@ -285,8 +273,7 @@ pub fn tag_or_commit_secs(repo: &gix::Repository, id: ObjectId) -> Option<i64> {
     None
 }
 
-/// HEAD commit's committer time, in seconds. Used for `commits/`
-/// category Modified.
+/// HEAD commit's committer time, in seconds. Used for `commits/` category Modified.
 pub fn head_commit_secs(handle: &RepoHandle) -> Option<u64> {
     let repo = handle.to_thread_local();
     let id = repo.head_id().ok()?.detach();
