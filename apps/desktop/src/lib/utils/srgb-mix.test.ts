@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseHex, toHex, mixSrgb, withAlpha } from './srgb-mix'
+import { parseHex, toHex, mixSrgb, withAlpha, relativeLuminance, contrastRatio, readableFgOn } from './srgb-mix'
 
 describe('parseHex', () => {
   it('parses 6-digit hex', () => {
@@ -68,5 +68,61 @@ describe('withAlpha', () => {
 
   it('rounds channel values', () => {
     expect(withAlpha('#ffffff', 1)).toBe('rgba(255, 255, 255, 1)')
+  })
+})
+
+describe('relativeLuminance', () => {
+  it('returns 0 for pure black', () => {
+    expect(relativeLuminance('#000000')).toBeCloseTo(0, 5)
+  })
+
+  it('returns 1 for pure white', () => {
+    expect(relativeLuminance('#ffffff')).toBeCloseTo(1, 5)
+  })
+
+  it('matches known WCAG values within 4 decimal places', () => {
+    // Apple blue and Apple purple, which drive the runtime accent-fg picker.
+    expect(relativeLuminance('#087aff')).toBeCloseTo(0.212, 2)
+    expect(relativeLuminance('#a54fa7')).toBeCloseTo(0.164, 2)
+  })
+})
+
+describe('contrastRatio', () => {
+  it('returns 21 for black vs white', () => {
+    expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 4)
+  })
+
+  it('returns 1 for identical colors', () => {
+    expect(contrastRatio('#aabbcc', '#aabbcc')).toBeCloseTo(1, 5)
+  })
+
+  it('is symmetric in its arguments', () => {
+    const a = contrastRatio('#087aff', '#000000')
+    const b = contrastRatio('#000000', '#087aff')
+    expect(a).toBeCloseTo(b, 6)
+  })
+})
+
+describe('readableFgOn', () => {
+  it('picks black on bright accents (Cmdr gold, yellow, orange)', () => {
+    expect(readableFgOn('#d4a006')).toBe('#000000')
+    expect(readableFgOn('#ffc601')).toBe('#000000')
+    expect(readableFgOn('#f6821b')).toBe('#000000')
+  })
+
+  it('picks black on Apple Blue (the macOS default)', () => {
+    // Apple Blue is the macOS default. Black wins (5.24:1 vs 4.01:1).
+    expect(readableFgOn('#087aff')).toBe('#000000')
+  })
+
+  it('picks white on Apple Purple (the only accent where white wins today)', () => {
+    // Apple Purple is the dimmest system accent. White wins (4.91:1 vs 4.28:1).
+    expect(readableFgOn('#a54fa7')).toBe('#ffffff')
+  })
+
+  it('picks black on accents at the crossover (graphite, pink, red)', () => {
+    expect(readableFgOn('#8b8c8c')).toBe('#000000')
+    expect(readableFgOn('#f74f9f')).toBe('#000000')
+    expect(readableFgOn('#ff5157')).toBe('#000000')
   })
 })

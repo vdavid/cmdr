@@ -71,3 +71,48 @@ export function withAlpha(hex: string, alpha: number): string {
   const { r, g, b } = parseHex(hex)
   return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`
 }
+
+/**
+ * WCAG 2.2 relative luminance of an opaque sRGB color. Returns 0..1.
+ *
+ * The check-side analog lives in `scripts/check-a11y-contrast/contrast.go`;
+ * keep the two in sync (this is a hand-rolled mirror, not shared code,
+ * because the Go check has no JS dependency).
+ */
+export function relativeLuminance(hex: string): number {
+  const { r, g, b } = parseHex(hex)
+  const channel = (c: number) => {
+    const v = c / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  }
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+}
+
+/**
+ * WCAG contrast ratio between two opaque sRGB hex colors, in [1, 21].
+ */
+export function contrastRatio(a: string, b: string): number {
+  const la = relativeLuminance(a)
+  const lb = relativeLuminance(b)
+  const [light, dark] = la >= lb ? [la, lb] : [lb, la]
+  return (light + 0.05) / (dark + 0.05)
+}
+
+/**
+ * Picks black or white as the readable foreground for text on a given bg.
+ *
+ * Returns whichever of `#000000` / `#ffffff` gives the higher contrast.
+ * Concrete tradeoffs:
+ *   - Apple Blue (#087aff): black gives 5.24:1, white 4.01:1 → black.
+ *   - Apple Purple (#a54fa7): black gives 4.28:1, white 4.91:1 → white.
+ *   - Cmdr gold (#d4a006) / yellow / orange / green / pink / red / graphite:
+ *     black is the clear winner.
+ *
+ * Apple Purple is the only system accent today where white reads better.
+ * Without this auto-pick we'd ship a fixed dark `#1a1a1a` that fails AA on
+ * Apple Purple AND Apple Blue (the macOS default), which is what shipped
+ * before the contrast-check accent matrix surfaced it.
+ */
+export function readableFgOn(bgHex: string): '#000000' | '#ffffff' {
+  return contrastRatio('#000000', bgHex) >= contrastRatio('#ffffff', bgHex) ? '#000000' : '#ffffff'
+}

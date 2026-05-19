@@ -17,7 +17,7 @@ import { commands } from '$lib/ipc/bindings'
 import { getAppLogger } from '$lib/logging/logger'
 import { clearDirectoryIconCache } from '$lib/icon-cache'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
-import { mixSrgb, withAlpha } from '$lib/utils/srgb-mix'
+import { mixSrgb, readableFgOn, withAlpha } from '$lib/utils/srgb-mix'
 
 const log = getAppLogger('accent-color')
 
@@ -68,14 +68,37 @@ function applyDerivedAccentTokens(): void {
   const root = document.documentElement.style
   const accent = activeAccentHex()
   const dark = isDarkMode()
-  // Hover: light lightens by 15% white; dark by 10% (less luminance headroom).
-  const hoverWhitePct = dark ? 0.1 : 0.15
-  root.setProperty('--color-accent-hover', mixSrgb(accent, '#ffffff', hoverWhitePct))
+  // Foreground text on top of `--color-accent` (primary buttons, selected
+  // sidebar items, etc.). Picks black or white based on the accent's
+  // luminance — was a fixed `#1a1a1a` in app.css, which failed AA on Apple
+  // Blue (the default macOS accent) and Apple Purple. `readableFgOn` picks
+  // whichever of black/white gives higher contrast against the active accent,
+  // mirrored in the contrast-checker's accent matrix
+  // (`scripts/check-a11y-contrast/accent_matrix.go`).
+  const fg = readableFgOn(accent)
+  root.setProperty('--color-accent-fg', fg)
+  // Hover: shift away from the readable-fg color so contrast holds (and
+  // often improves) on hover. For accents that take BLACK text (gold,
+  // yellow, orange, green, red, blue, …) hover lightens by 15% white;
+  // dark mode by 10% (less luminance headroom). For accents that take
+  // WHITE text (Apple Purple is the only one today) hover DARKENS by
+  // 15%/10% instead — lightening a dark-text-on-purple bg makes white
+  // text drop below AA, which is what the accent matrix was flagging.
+  const hoverPct = dark ? 0.1 : 0.15
+  const hoverTowards = fg === '#000000' ? '#ffffff' : '#000000'
+  root.setProperty('--color-accent-hover', mixSrgb(accent, hoverTowards, hoverPct))
   // Subtle: same alpha in both schemes.
   root.setProperty('--color-accent-subtle', withAlpha(accent, 0.15))
-  // Text-on-bg: light mixes 65% black for ≥4.5:1; dark keeps the bright accent
-  // since it already reads well against dark surfaces.
-  root.setProperty('--color-accent-text', dark ? accent : mixSrgb(accent, '#000000', 0.65))
+  // Text-on-bg:
+  //   - light mode mixes 65% black (already-dark accent on light surfaces,
+  //     ≥4.5:1 against `--color-bg-primary` / `--color-bg-secondary`).
+  //   - dark mode used to pass the raw accent through, which works for the
+  //     bright Cmdr gold (#ffc206) and the brighter Apple accents, but
+  //     Apple Purple (#a54fa7) on `#1e1e1e` is only 3.4:1. Lightening
+  //     dark accents by 35% toward white lifts them above AA in dark mode
+  //     while leaving the already-bright accents readable. Stays gold-ish
+  //     for gold, paler-but-still-purple for purple, etc.
+  root.setProperty('--color-accent-text', dark ? mixSrgb(accent, '#ffffff', 0.35) : mixSrgb(accent, '#000000', 0.65))
 }
 
 function applyAccentForCurrentSetting(): void {

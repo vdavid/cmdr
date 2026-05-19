@@ -84,6 +84,20 @@ inside `{ html }` tooltips. The `html` variant renders via `innerHTML`; only use
 Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. Extends
 `HTMLButtonAttributes` so all native button attributes pass through.
 
+`.btn-primary` renders `color: var(--color-accent-fg)` on `background: var(--color-accent)`. Both are derived at runtime
+by `lib/accent-color.ts`:
+
+- `--color-accent`: the active macOS system accent (or Cmdr gold if the user picked "App" color).
+- `--color-accent-fg`: picked dynamically as `#000000` or `#ffffff` (whichever wins WCAG contrast on the active accent
+  via `readableFgOn` in `lib/utils/srgb-mix.ts`). Apple Purple is the only system accent today that takes white text;
+  every other system accent reads black. The static `app.css` value (`#1a1a1a`) is a first-paint fallback only.
+- `--color-accent-hover`: lightens by 15% (light mode) or 10% (dark) for accents that take black text, and **darkens**
+  by the same amount for accents that take white text (Purple). That keeps the readable-fg contrast on hover.
+
+The contrast checker (`scripts/check-a11y-contrast`) mirrors all of this in its accent matrix and runs against the 9
+runtime variants. **Don't restyle `.btn-*` colors from a scoped feature component** — `scripts/check-btn-restyle` will
+flag it. If you genuinely need a one-off variant, add the rationale via a `/* allowed-btn-restyle: <reason> */` comment.
+
 ## LinkButton
 
 Use this for anything that should look and behave like a link. Renders a `<button>` by default (in-app actions like

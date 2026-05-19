@@ -25,6 +25,11 @@ the variables go unset and downstream UI loses color. Two safety nets work toget
 - `app.css` ships static fallback declarations inside `@supports not (color: color-mix(...))` blocks.
 - `accent-color.ts` and `volume-tint.svelte.ts` compute their runtime-derived colors in JS using `mixSrgb` / `withAlpha`
   from `srgb-mix.ts`, sidestepping `color-mix()` entirely for the tokens that depend on the live macOS accent color.
+- `srgb-mix.ts` also exports `relativeLuminance`, `contrastRatio`, and `readableFgOn`. `readableFgOn(accentHex)` returns
+  `#000000` or `#ffffff` based on which gives the higher WCAG contrast against the given accent. Used by
+  `accent-color.ts` to compute `--color-accent-fg` per runtime accent. The same logic is mirrored in
+  `scripts/check-a11y-contrast/accent_matrix.go` so the design-time checker exercises every macOS-accent variant against
+  the JS-derived fg.
 
 `webkit-compat.ts` exposes `hasColorMix` (computed once at module load) so consumers can branch, and `logWebkitCompat()`
 which the main layout calls at boot — emits one log line so we can spot affected users in error reports.

@@ -44,7 +44,13 @@
      * reads the macOS system accent color and overrides --color-accent via
      * accent-color.ts → initAccentColor(). See src-tauri/src/accent_color.rs. */
   --color-accent: #d4a006;
-  --color-accent-fg: #1a1a1a; /* Text on accent backgrounds: dark in both themes for a11y */
+  /* First-paint / fallback only. `accent-color.ts:applyDerivedAccentTokens`
+     overrides this at runtime to either `#000000` or `#ffffff`, whichever
+     gives higher contrast against the active accent. The static `#1a1a1a`
+     here is fine for the Cmdr-gold fallback; for the runtime macOS accents
+     the JS path is what keeps primary-button text readable, in particular
+     on Apple Purple, where dark text falls below AA. */
+  --color-accent-fg: #1a1a1a;
   --color-accent-text: color-mix(
     in srgb,
     var(--color-accent),
