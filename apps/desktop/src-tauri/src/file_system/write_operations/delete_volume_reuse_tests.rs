@@ -16,8 +16,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::Duration;
 
 use super::delete::delete_volume_files_with_progress_inner;
-use super::state::{CachedScanResult, SCAN_PREVIEW_RESULTS, WriteOperationState};
-use super::types::{CollectorEventSink, WriteOperationConfig};
+use super::state::{CachedScanResult, OperationIntent, SCAN_PREVIEW_RESULTS, WriteOperationState};
+use super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationError};
 use crate::file_system::get_volume_manager;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
@@ -434,5 +434,62 @@ async fn delete_mid_scan_listing_close() {
     );
 
     remove_listing(&parent_lid_inserted);
+    get_volume_manager().unregister(&vid);
+}
+
+/// Regression test: cancel landing during the scan phase of a volume delete
+/// must emit `write-cancelled` before propagating `Err(Cancelled)` up. Prior
+/// to the fix, `scan_volume_recursive`'s top-of-function cancel check returned
+/// `Cancelled` without emitting, and the `?` propagation at the call site
+/// passed it through silently — the FE never saw the terminal cancel event.
+///
+/// The pattern: pre-set `state.intent` to `Stopped` so the recursion's cancel
+/// check fires on first entry. Direct `intent.store(...)` is acceptable here
+/// because we're testing the emit behaviour on Cancelled return, not the
+/// state-machine transition itself.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn delete_cancel_during_scan_emits_write_cancelled() {
+    let vid = unique("cancel_scan_emits");
+
+    let vol = Arc::new(CountingVolume::new("cancel-scan-vol", false));
+    vol.inner.create_file(Path::new("/dir/a.jpg"), b"alpha").await.unwrap();
+    vol.inner.create_file(Path::new("/dir/b.jpg"), b"betabb").await.unwrap();
+    get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    // Pre-cancel: the very first cancel check inside `scan_volume_recursive`
+    // will fire and return `Cancelled`. Without the fix, no `write-cancelled`
+    // event would be emitted before the `?` propagates the error.
+    state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+
+    let config = WriteOperationConfig::default(); // preview_id: None
+
+    let result = delete_volume_files_with_progress_inner(
+        vol.clone() as Arc<dyn Volume>,
+        &vid,
+        events.as_ref(),
+        "test-op-cancel-scan-emits",
+        &state,
+        &[PathBuf::from("/dir")],
+        &config,
+    )
+    .await;
+
+    assert!(
+        matches!(result, Err(WriteOperationError::Cancelled { .. })),
+        "scan-time cancel must propagate as Cancelled: {:?}",
+        result
+    );
+    let cancelled = events.cancelled.lock().unwrap();
+    assert!(
+        !cancelled.is_empty(),
+        "write-cancelled must be emitted before Cancelled propagates from scan",
+    );
+    assert!(
+        !cancelled.first().unwrap().rolled_back,
+        "scan-time cancel is a Stopped (not RollingBack) outcome"
+    );
+
     get_volume_manager().unregister(&vid);
 }

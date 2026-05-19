@@ -223,6 +223,12 @@ impl VolumeScanTracker {
 ///    photos can take ~17 s of USB roundtrips.
 /// 2. **After each subtree** (this function's tail), as a final snapshot for that branch. Throttled
 ///    by the shared `VolumeScanTracker` so it doesn't race with the per-entry callback.
+///
+/// **Cancel contract**: this function does NOT emit `write-cancelled` before returning
+/// `Err(Cancelled)`. The cancel check fires at every recursion level, so emitting here would
+/// multi-fire. Top-level callers must call `emit_cancelled_if_aborted` (or otherwise emit
+/// `write-cancelled`) on the returned result before propagating it, so the FE sees the proper
+/// terminal event for the cancel flow.
 #[allow(
     clippy::too_many_arguments,
     reason = "Matches the parameter pattern of other write operation functions"
@@ -409,6 +415,26 @@ async fn scan_volume_recursive(
     Ok(())
 }
 
+/// Emits `write-cancelled` when `result` is `Err(Cancelled)`. Use this after
+/// every top-level `scan_volume_recursive` call so the FE sees the proper
+/// terminal event before the error propagates up. See `scan_volume_recursive`'s
+/// "Cancel contract" doc for why this is the caller's responsibility.
+fn emit_cancelled_if_aborted(
+    result: &Result<(), WriteOperationError>,
+    events: &dyn OperationEventSink,
+    operation_id: &str,
+    tracker: &VolumeScanTracker,
+) {
+    if matches!(result, Err(WriteOperationError::Cancelled { .. })) {
+        events.emit_cancelled(WriteCancelledEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Delete,
+            files_processed: tracker.files_so_far.load(std::sync::atomic::Ordering::Relaxed),
+            rolled_back: false,
+        });
+    }
+}
+
 /// Deletes files on a non-local volume (like MTP) with progress reporting.
 ///
 /// Uses `volume.list_directory()` for scanning and `volume.delete()` per item.
@@ -506,7 +532,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                     // `is_dir_hint = Some(true)` so the recursion never re-probes
                     // the top-level. Any subtree that's open in another pane and
                     // watcher-fresh gets cache-fed inside the walker.
-                    scan_volume_recursive(
+                    let result = scan_volume_recursive(
                         &*volume,
                         volume_id,
                         source,
@@ -518,13 +544,15 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                         operation_id,
                         &tracker,
                     )
-                    .await?;
+                    .await;
+                    emit_cancelled_if_aborted(&result, events, operation_id, &tracker);
+                    result?;
                 }
                 None => {
                     // Scan preview was non-volume (local-FS) or didn't include
                     // this source. Fall back to the no-preview shape for this
                     // path: oracle-aware walker resolves the type.
-                    scan_volume_recursive(
+                    let result = scan_volume_recursive(
                         &*volume,
                         volume_id,
                         source,
@@ -536,7 +564,9 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                         operation_id,
                         &tracker,
                     )
-                    .await?;
+                    .await;
+                    emit_cancelled_if_aborted(&result, events, operation_id, &tracker);
+                    result?;
                 }
             }
 
@@ -600,7 +630,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
             };
 
             if is_dir {
-                scan_volume_recursive(
+                let result = scan_volume_recursive(
                     &*volume,
                     volume_id,
                     source,
@@ -612,7 +642,9 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                     operation_id,
                     &tracker,
                 )
-                .await?;
+                .await;
+                emit_cancelled_if_aborted(&result, events, operation_id, &tracker);
+                result?;
             } else {
                 // Top-level file: size unknown without listing the parent, use 0.
                 // Progress still tracks file count accurately, and individual file
