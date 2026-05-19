@@ -10,6 +10,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { systemStrings } from '$lib/system-strings.svelte'
 
     const log = getAppLogger('onboarding')
 
@@ -88,7 +89,7 @@
         <p>If you decide to allow:</p>
 
         <ol class="steps">
-            <li>Click <strong>Open System Settings</strong> below</li>
+            <li>Click <strong>Open {systemStrings.systemSettings}</strong> below</li>
             <li>
                 {#if isVenturaOrNewer}
                     Find <strong>Cmdr</strong> in the list and toggle it on
@@ -104,7 +105,7 @@
         </ol>
 
         <div class="buttons">
-            <Button variant="primary" onclick={handleOpenSettings}>Open System Settings</Button>
+            <Button variant="primary" onclick={handleOpenSettings}>Open {systemStrings.systemSettings}</Button>
             <Button variant="danger" onclick={handleDeny}>Deny</Button>
         </div>
         {#if hasClickedOpenSettings}

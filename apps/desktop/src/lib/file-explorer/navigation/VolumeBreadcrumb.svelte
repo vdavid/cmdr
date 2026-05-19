@@ -25,8 +25,8 @@
         return `${label} (Max. ${mbps} MB/s)`
     }
 
-    const RESTRICTED_FOLDER_TOOLTIP =
-        'Access to this folder is limited. Grant Cmdr Full Disk Access in System Settings → Privacy & Security → Full Disk Access to remove all such limits. Or grant per-folder access in System Settings → Privacy & Security → Files & Folders → Cmdr.'
+    import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
+    const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
     import {
         getVolumes,
         getVolumesTimedOut,

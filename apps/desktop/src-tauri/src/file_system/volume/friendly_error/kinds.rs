@@ -16,7 +16,7 @@
 //! `WriteOperationError::SymlinkLoop`, `VolumeError::FriendlyGit`) stay inline
 //! in their respective mapper.
 
-use super::{ErrorActionKind, ErrorCategory, FriendlyError};
+use super::{ErrorActionKind, ErrorCategory, FriendlyError, Markdown};
 use crate::md;
 
 pub(super) fn not_found(path_display: &str, raw_detail: String) -> FriendlyError {
@@ -54,10 +54,12 @@ pub(super) fn tcc_restricted(path_display: &str, raw_detail: String) -> Friendly
             This is a privacy gate, not a Cmdr bug.",
             path_display,
         ),
-        suggestion: md!("Two ways to fix:\n\
-            - Grant Cmdr **Full Disk Access** in **System Settings → Privacy & Security → Full Disk Access** \
+        suggestion: Markdown::literal(crate::system_strings::expand(
+            "Two ways to fix:\n\
+            - Grant Cmdr **{full_disk_access}** in **{system_settings} → {privacy_and_security} → {full_disk_access}** \
             to remove all such limits at once.\n\
-            - Or grant per-folder access for just this folder in **System Settings → Privacy & Security → Files and Folders → Cmdr**."),
+            - Or grant per-folder access for just this folder in **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr**.",
+        )),
         raw_detail,
         retry_hint: false,
         action_kind: Some(ErrorActionKind::OpenPrivacySettings),
@@ -73,12 +75,14 @@ pub(super) fn permission_denied(path_display: &str, raw_detail: String) -> Frien
             can access which folders, and Cmdr hasn't been granted access to this one yet.",
             path_display,
         ),
-        suggestion: md!("Here's what to try:\n\
-            - Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access\n\
+        suggestion: Markdown::literal(crate::system_strings::expand(
+            "Here's what to try:\n\
+            - Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n\
             - Check the folder's permissions in Finder: right-click the folder, choose Get Info, \
             and look under Sharing & Permissions\n\
             - If this is a shared folder, ask the owner to update permissions\n\
-            - In Terminal, run `ls -la` on the path to see the current permissions"),
+            - In Terminal, run `ls -la` on the path to see the current permissions",
+        )),
         raw_detail,
         retry_hint: false,
         action_kind: Some(ErrorActionKind::OpenPrivacySettings),

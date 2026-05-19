@@ -10,7 +10,7 @@ use std::path::Path;
 
 #[cfg(target_os = "macos")]
 use super::ErrorActionKind;
-use super::{ErrorCategory, FriendlyError};
+use super::{ErrorCategory, FriendlyError, Markdown};
 use crate::file_system::volume::VolumeError;
 use crate::md;
 
@@ -89,11 +89,13 @@ pub(super) fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeEr
             explanation: md!("Your Mac's network connection is down, so Cmdr can't reach this \
                 volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, \
                 or the network interface is disabled."),
-            suggestion: md!("Here's what to try:\n\
-                - Check Wi-Fi or Ethernet status in **System Settings > Network**\n\
+            suggestion: Markdown::literal(crate::system_strings::expand(
+                "Here's what to try:\n\
+                - Check Wi-Fi or Ethernet status in **{system_settings} > Network**\n\
                 - If you're on Wi-Fi, try turning it off and on again\n\
                 - In Terminal, run `ping google.com` to test your connection\n\
-                - Navigate here again once you're back online"),
+                - Navigate here again once you're back online",
+            )),
             raw_detail,
             retry_hint: true,
             action_kind: None,
@@ -229,12 +231,14 @@ pub(super) fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeEr
                 permissions yet.",
                 path_display
             ),
-            suggestion: md!("Here's what to try:\n\
-                - Open **System Settings > Privacy & Security > Files and Folders** and grant \
+            suggestion: Markdown::literal(crate::system_strings::expand(
+                "Here's what to try:\n\
+                - Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant \
                 Cmdr access\n\
                 - If this is a system-protected folder (like system directories), you may \
-                need to grant Cmdr **Full Disk Access** under Privacy & Security\n\
-                - In Terminal, run `ls -la` on this path to check ownership and permissions"),
+                need to grant Cmdr **{full_disk_access}** under {privacy_and_security}\n\
+                - In Terminal, run `ls -la` on this path to check ownership and permissions",
+            )),
             raw_detail,
             retry_hint: false,
             action_kind: Some(ErrorActionKind::OpenPrivacySettings),
@@ -267,13 +271,15 @@ pub(super) fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeEr
                 can access which folders, and Cmdr hasn't been granted access to this one yet.",
                 path_display
             ),
-            suggestion: md!("Here's what to try:\n\
-                - Open **System Settings > Privacy & Security > Files and Folders** and grant \
+            suggestion: Markdown::literal(crate::system_strings::expand(
+                "Here's what to try:\n\
+                - Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant \
                 Cmdr access\n\
                 - Check the folder's permissions in Finder: right-click it, choose Get Info, \
                 and look under Sharing & Permissions\n\
                 - If this is a shared folder, ask the owner to update permissions\n\
-                - In Terminal, run `ls -la` on this path to see the current permissions"),
+                - In Terminal, run `ls -la` on this path to see the current permissions",
+            )),
             raw_detail,
             retry_hint: false,
             action_kind: Some(ErrorActionKind::OpenPrivacySettings),
@@ -339,12 +345,14 @@ pub(super) fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeEr
             category: ErrorCategory::NeedsAction,
             title: "Disk is full".into(),
             explanation: md!("There isn't enough free space on this volume to complete the operation."),
-            suggestion: md!("Here's what to try:\n\
+            suggestion: Markdown::literal(crate::system_strings::expand(
+                "Here's what to try:\n\
                 - Free up space by moving or deleting files you no longer need\n\
                 - Empty the Trash (right-click the Trash icon in the Dock)\n\
                 - In Terminal, run `df -h` to see how much space is left on each volume\n\
-                - Check **System Settings > General > Storage** for a breakdown of what's \
-                using space"),
+                - Check **{system_settings} > General > Storage** for a breakdown of what's \
+                using space",
+            )),
             raw_detail,
             retry_hint: false,
             action_kind: None,

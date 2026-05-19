@@ -123,6 +123,7 @@ mod settings;
 mod short_id;
 mod space_poller;
 mod system_memory;
+mod system_strings;
 pub mod test_mode;
 #[cfg(target_os = "macos")]
 mod text_size;

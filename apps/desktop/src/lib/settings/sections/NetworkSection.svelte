@@ -8,6 +8,7 @@
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { openSystemSettingsUrl } from '$lib/tauri-commands'
+    import { systemStrings } from '$lib/system-strings.svelte'
 
     interface Props {
         searchQuery: string
@@ -27,6 +28,9 @@
         event.preventDefault()
         void openSystemSettingsUrl('x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork')
     }
+
+    // allowed-pluralize-noun: "access" is a singular noun, not a count-driven plural; the interpolation is the localized pane label, not a count.
+    const localNetworkAccessLabel = $derived(`${systemStrings.localNetwork} access`)
 </script>
 
 <SettingsSection title="SMB/Network shares">
@@ -41,15 +45,15 @@
         </SettingRow>
 
         <div class="local-network-info">
-            <h3>Local Network access</h3>
+            <h3>{localNetworkAccessLabel}</h3>
             <p>
-                Cmdr needs Local Network access to find SMB servers, list available shares, and connect directly for
+                Cmdr needs {localNetworkAccessLabel} to find SMB servers, list available shares, and connect directly for
                 faster file transfers. The first time you open Network or use <strong>Connect to server…</strong>, macOS
                 will ask. Say yes.
             </p>
             <p>
                 Manage this anytime in <button type="button" class="link-button" onclick={handlePrivacyLinkClick}
-                    >System Settings &gt; Privacy &amp; Security &gt; Local Network</button
+                    >{systemStrings.systemSettings} &gt; {systemStrings.privacyAndSecurity} &gt; {systemStrings.localNetwork}</button
                 >.
             </p>
             <p class="muted">

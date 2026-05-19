@@ -94,6 +94,7 @@
         requestVolumeRefresh,
     } from '$lib/stores/volume-store.svelte'
     import { initRestrictedPathsStore } from '$lib/stores/restricted-paths-store.svelte'
+    import { initSystemStrings } from '$lib/system-strings.svelte'
     import { initialize as initMtpStore } from '$lib/mtp'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
@@ -1092,6 +1093,7 @@
             initMtpStore(),
             smbReconnectManager.init(),
             initRestrictedPathsStore(),
+            initSystemStrings(),
         ])
 
         // Load persisted state, resolve volumes, and create tab managers

@@ -28,6 +28,7 @@
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { notifyOnboardingComplete, setFdaPromptShowing } from '$lib/updates/updater.svelte'
+    import { initSystemStrings } from '$lib/system-strings.svelte'
     import { notifyAiOnboardingComplete } from '$lib/ai/ai-state.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
@@ -398,6 +399,10 @@
             // License check failed (expected in E2E tests without Tauri backend)
             // App continues without license features
         }
+
+        // Hydrate localized macOS pane labels so the FDA onboarding modal
+        // shows them in the same language the user sees in System Settings.
+        await initSystemStrings()
 
         // Check FDA status
         const settings = await loadSettings()

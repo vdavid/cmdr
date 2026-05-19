@@ -38,10 +38,10 @@
     import { pluralize } from '$lib/utils/pluralize'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
+    import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     import InfoIcon from '~icons/lucide/info'
 
-    const RESTRICTED_FOLDER_TOOLTIP =
-        'Access to this folder is limited. Grant Cmdr Full Disk Access in System Settings → Privacy & Security → Full Disk Access to remove all such limits. Or grant per-folder access in System Settings → Privacy & Security → Files & Folders → Cmdr.'
+    const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
     import { iconCacheCleared } from '$lib/icon-cache'
     import { escapeHtml, tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState } from '../rename/rename-state.svelte'

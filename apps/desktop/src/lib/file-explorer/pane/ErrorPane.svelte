@@ -7,6 +7,7 @@
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import Button from '$lib/ui/Button.svelte'
     import { renderErrorMarkdown } from './error-pane-utils'
+    import { systemStrings } from '$lib/system-strings.svelte'
 
     interface Props {
         friendly: FriendlyError
@@ -114,7 +115,7 @@
 
         {#if isPermissionDenied && isMacOS()}
             <div class="cta">
-                <Button variant="primary" onclick={() => openPrivacySettings()}>Open System Settings</Button>
+                <Button variant="primary" onclick={() => openPrivacySettings()}>Open {systemStrings.systemSettings}</Button>
             </div>
         {/if}
 

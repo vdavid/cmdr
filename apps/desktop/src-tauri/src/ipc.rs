@@ -430,6 +430,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::ai::manager::stop_ai_server,
         crate::ai::manager::check_ai_connection,
         crate::system_memory::get_system_memory_info,
+        crate::system_strings::get_localized_system_strings,
         crate::ai::manager::start_ai_download,
         crate::ai::manager::cancel_ai_download,
         crate::ai::manager::dismiss_ai_offer,

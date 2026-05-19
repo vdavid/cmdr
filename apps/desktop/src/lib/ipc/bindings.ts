@@ -921,6 +921,11 @@ export const commands = {
    *  non-overlapping categories (unlike `sysinfo` where used + available > total).
    */
   getSystemMemoryInfo: () => __TAURI_INVOKE<SystemMemoryInfo>('get_system_memory_info'),
+  /**
+   *  Tauri command: returns the localized system strings. The frontend caches
+   *  the result for the session.
+   */
+  getLocalizedSystemStrings: () => __TAURI_INVOKE<LocalizedSystemStrings>('get_localized_system_strings'),
   // Cancels an in-progress download.
   cancelAiDownload: () => __TAURI_INVOKE<void>('cancel_ai_download'),
   // Dismisses the AI offer notification for 7 days.
@@ -2368,6 +2373,21 @@ export type ListingStatus =
   | { status: 'ready' }
   | { status: 'cancelled' }
   | { status: 'error'; message: string }
+
+/**
+ *  Snapshot of the system pane labels we surface in user-facing copy.
+ *
+ *  Field names match the placeholder tokens used by [`expand`] (`{system_settings}` →
+ *  [`Self::system_settings`], etc.).
+ */
+export type LocalizedSystemStrings = {
+  systemSettings: string
+  privacyAndSecurity: string
+  fullDiskAccess: string
+  filesAndFolders: string
+  localNetwork: string
+  appearance: string
+}
 
 // Category of a location item.
 export type LocationCategory =

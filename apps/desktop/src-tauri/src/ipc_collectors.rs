@@ -133,6 +133,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::ai::manager::stop_ai_server,
         crate::ai::manager::check_ai_connection,
         crate::system_memory::get_system_memory_info,
+        crate::system_strings::get_localized_system_strings,
         crate::ai::manager::cancel_ai_download,
         crate::ai::manager::dismiss_ai_offer,
         crate::ai::manager::uninstall_ai,

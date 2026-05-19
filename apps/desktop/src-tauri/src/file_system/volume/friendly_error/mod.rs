@@ -269,7 +269,14 @@ mod tests {
             "User should be able to retry after granting access"
         );
         assert!(friendly.title.contains("iCloud"));
-        assert!(friendly.suggestion.as_str().contains("Full Disk Access"));
+        // The suggestion mentions FDA by whichever name the host OS shows in
+        // System Settings (English on en-locale hosts, localized elsewhere).
+        let fda_label = &crate::system_strings::snapshot().full_disk_access;
+        assert!(
+            friendly.suggestion.as_str().contains(fda_label),
+            "expected suggestion to mention `{fda_label}`: {}",
+            friendly.suggestion
+        );
 
         let lowered = format!("{} {} {}", friendly.title, friendly.explanation, friendly.suggestion).to_lowercase();
         for word in ["error", "failed", "just", "simple", "easy"] {

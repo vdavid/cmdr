@@ -8,6 +8,7 @@
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initTextSize, cleanupTextSize, getEffectiveScale } from '$lib/text-size.svelte'
+    import { initSystemStrings } from '$lib/system-strings.svelte'
     import { SETTINGS_BASE_MIN_HEIGHT, settingsMaxWidth, settingsMinWidth } from '$lib/settings/settings-window'
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
@@ -172,6 +173,9 @@
 
             // Apply compounded text size (system Accessibility × user setting)
             await initTextSize()
+
+            // Hydrate localized macOS pane labels for the Network and Appearance sections.
+            await initSystemStrings()
 
             // Load last viewed section, but a `?section=...` URL param wins so callers (like
             // the volume picker's "Network (disabled)" entry) can deep-link. The param is a
