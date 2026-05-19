@@ -139,6 +139,8 @@ privacy-focused users. The architecture doesn't fight this switch: it's just a d
 
 ## Gotchas
 
+**Gotcha**: Only **local** AI requires Apple Silicon. Cloud AI (BYOK OpenAI / Anthropic / Gemini / any OpenAI-compatible endpoint) works on Intel Macs too. Don't gate the whole AI subsystem on `is_local_ai_supported()` — gate only the local-specific code paths (`start_ai_server`, `start_ai_download`, and the `Offer` branch of `compute_ai_status` in `manager.rs`). The frontend has its own short-circuit: `ai-state.svelte.ts::initAiState` returns early when `ai.provider === "cloud"` so the install toast never fires for cloud users, regardless of arch. A previous version of `get_ai_status` returned `Offer` on Intel because the default provider is `"local"`; users saw the download toast and only learned their hardware couldn't run it after clicking Download and hitting the `start_ai_download` rejection. Now `compute_ai_status` gates `Offer` on `local_ai_supported`.
+
 **Gotcha**: `genai` requires `base_url` to end with `/`. Without the trailing slash, `Url::join("chat/completions")` strips the last segment and you'd hit `https://api.openai.com/chat/completions` (404) instead of `/v1/chat/completions`. `client.rs::build_client` normalizes by appending `/` if missing.
 
 **Gotcha**: `genai 0.6` auto-routes `gpt-5*`, `*-codex`, `*-pro` to the Responses API, but `o1*`/`o3*`/`o4*`/`chatgpt-*` stay on Chat Completions even though they also reject custom `temperature`. We layer `is_openai_chat_reasoning_model()` on top to strip `temperature`/`top_p` and substitute `ReasoningEffort::Low` for those. The heuristic also matches `gpt-5*` as defense-in-depth in case `genai`'s routing rule changes.

@@ -1,7 +1,12 @@
-//! Local AI features powered by local LLMs via llama-server.
+//! AI features. Two paths:
 //!
-//! AI features require Apple Silicon (M1 or later). Intel Macs are not supported
-//! because the bundled llama-server binary is ARM64-only.
+//! - **Local LLM** via bundled `llama-server`. Requires Apple Silicon (M1+) because the
+//!   binary is ARM64-only. Gated by [`is_local_ai_supported`].
+//! - **Cloud AI** (OpenAI / Anthropic / Gemini / any OpenAI-compatible endpoint, BYOK).
+//!   Works on any hardware, including Intel Macs.
+//!
+//! Don't conflate the two: an Intel user can absolutely use AI features, just not the
+//! local path. Code that turns off "AI" wholesale on non-aarch64 is a bug.
 //!
 //! ## Model registry
 //!

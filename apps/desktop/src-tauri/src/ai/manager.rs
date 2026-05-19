@@ -116,21 +116,59 @@ pub fn shutdown() {
 #[specta::specta]
 pub fn get_ai_status() -> AiStatus {
     let manager = MANAGER.lock_ignore_poison();
-    match &*manager {
-        Some(m) if m.provider == "off" => AiStatus::Unavailable,
-        Some(m) if m.state.installed && m.child_pid.is_some() => AiStatus::Available,
-        Some(m) if m.state.installed => AiStatus::Unavailable, // installed but server not running
-        Some(m) => {
-            // Check if dismissed
-            if let Some(until) = m.state.dismissed_until
-                && is_still_dismissed(until)
-            {
-                return AiStatus::Unavailable;
-            }
-            AiStatus::Offer
-        }
-        None => AiStatus::Unavailable,
+    let Some(m) = manager.as_ref() else {
+        return AiStatus::Unavailable;
+    };
+    compute_ai_status(
+        &m.provider,
+        m.state.installed,
+        m.child_pid.is_some(),
+        m.state.dismissed_until,
+        is_local_ai_supported(),
+        current_unix_seconds(),
+    )
+}
+
+/// Pure decision function for [`get_ai_status`]. Split out so the global `MANAGER` lock
+/// and the compile-time `cfg!(target_arch)` gate don't have to participate in tests.
+fn compute_ai_status(
+    provider: &str,
+    installed: bool,
+    server_running: bool,
+    dismissed_until: Option<u64>,
+    local_ai_supported: bool,
+    now_secs: u64,
+) -> AiStatus {
+    if provider == "off" {
+        return AiStatus::Unavailable;
     }
+    if installed && server_running {
+        return AiStatus::Available;
+    }
+    if installed {
+        return AiStatus::Unavailable; // installed but server not running
+    }
+    // Not installed. Only offer the local-model download if the hardware can run it;
+    // otherwise the user sees the toast, clicks Download, and only then discovers
+    // `start_ai_download` rejects with "Local AI not supported on this hardware".
+    // Cloud AI is unaffected: the frontend short-circuits this status path when
+    // `ai.provider === "cloud"` (see `ai-state.svelte.ts::initAiState`).
+    if !local_ai_supported {
+        return AiStatus::Unavailable;
+    }
+    if let Some(until) = dismissed_until
+        && now_secs < until
+    {
+        return AiStatus::Unavailable;
+    }
+    AiStatus::Offer
+}
+
+fn current_unix_seconds() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
 }
 
 /// Returns the port the llama-server is listening on, if running.
@@ -823,14 +861,6 @@ fn cleanup_stale_partial_download(m: &mut ManagerState) {
     }
 }
 
-fn is_still_dismissed(until_timestamp: u64) -> bool {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    now < until_timestamp
-}
-
 async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let ai_dir = get_ai_dir(app);
     fs::create_dir_all(&ai_dir).map_err(|e| format!("Failed to create AI directory: {e}"))?;
@@ -1076,5 +1106,62 @@ mod tests {
         // When manager is not initialized, status is Unavailable
         let status = get_ai_status();
         assert_eq!(status, AiStatus::Unavailable);
+    }
+
+    // --- compute_ai_status: pure decision function ---
+
+    const NOW: u64 = 1_700_000_000;
+
+    #[test]
+    fn compute_ai_status_provider_off_is_unavailable() {
+        let s = compute_ai_status("off", true, true, None, true, NOW);
+        assert_eq!(s, AiStatus::Unavailable);
+    }
+
+    #[test]
+    fn compute_ai_status_installed_and_running_is_available() {
+        let s = compute_ai_status("local", true, true, None, true, NOW);
+        assert_eq!(s, AiStatus::Available);
+    }
+
+    #[test]
+    fn compute_ai_status_installed_but_server_down_is_unavailable() {
+        let s = compute_ai_status("local", true, false, None, true, NOW);
+        assert_eq!(s, AiStatus::Unavailable);
+    }
+
+    #[test]
+    fn compute_ai_status_not_installed_offers_on_apple_silicon() {
+        let s = compute_ai_status("local", false, false, None, true, NOW);
+        assert_eq!(s, AiStatus::Offer);
+    }
+
+    #[test]
+    fn compute_ai_status_not_installed_does_not_offer_on_intel() {
+        // The bug this guard fixes: Intel users with default provider="local" used to see
+        // the AI download toast, only to be rejected by `start_ai_download` on click.
+        let s = compute_ai_status("local", false, false, None, false, NOW);
+        assert_eq!(s, AiStatus::Unavailable);
+    }
+
+    #[test]
+    fn compute_ai_status_intel_with_installed_state_still_unavailable() {
+        // Defense in depth: even if state somehow says installed on Intel (e.g. user copied
+        // their data dir across machines), we still don't claim Available because the binary
+        // is ARM64-only and won't run.
+        let s = compute_ai_status("local", true, false, None, false, NOW);
+        assert_eq!(s, AiStatus::Unavailable);
+    }
+
+    #[test]
+    fn compute_ai_status_dismissed_offer_is_hidden() {
+        let s = compute_ai_status("local", false, false, Some(NOW + 60), true, NOW);
+        assert_eq!(s, AiStatus::Unavailable);
+    }
+
+    #[test]
+    fn compute_ai_status_expired_dismissal_offers_again() {
+        let s = compute_ai_status("local", false, false, Some(NOW - 60), true, NOW);
+        assert_eq!(s, AiStatus::Offer);
     }
 }
