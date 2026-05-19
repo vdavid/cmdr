@@ -23,7 +23,8 @@
         type DirStats,
     } from './file-list-utils'
     import { getDirStatsBatch } from '$lib/tauri-commands'
-    import { formatSizeForDisplay, formatNumber, pluralize } from '../selection/selection-info-utils'
+    import { formatSizeForDisplay, formatNumber } from '../selection/selection-info-utils'
+    import { pluralize } from '$lib/utils/pluralize'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import InfoIcon from '~icons/lucide/info'

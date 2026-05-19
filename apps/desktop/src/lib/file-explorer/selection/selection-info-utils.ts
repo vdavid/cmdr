@@ -200,8 +200,6 @@ export function isPermissionDenied(entry: FileEntry | null): boolean {
 // Selection summary utilities
 // ============================================================================
 
-export { pluralize } from '$lib/utils/pluralize'
-
 /** Formats a number with thousands separators using en-US locale */
 export function formatNumber(n: number): string {
   return n.toLocaleString('en-US')

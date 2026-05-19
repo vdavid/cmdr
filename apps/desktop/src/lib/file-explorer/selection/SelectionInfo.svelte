@@ -9,10 +9,10 @@
         isPermissionDenied as checkPermissionDenied,
         formatSizeForDisplay,
         formatSizeHtmlColored,
-        pluralize,
         formatNumber,
         calculatePercentage,
     } from './selection-info-utils'
+    import { pluralize } from '$lib/utils/pluralize'
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import {
         formatFileSize,

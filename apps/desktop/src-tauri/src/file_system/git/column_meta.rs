@@ -25,8 +25,6 @@ use gix::object::tree::EntryKind;
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::{RepoHandle, count_ahead_behind};
 
-pub use crate::pluralize::{pluralize, pluralize_with};
-
 /// Picks a fallback comparison branch for ahead/behind when the branch has
 /// no configured upstream. Tries `main`, then `master`. Returns the
 /// resolved tip commit id of the fallback so callers can pass it straight
@@ -296,17 +294,4 @@ pub fn head_commit_secs(handle: &RepoHandle) -> Option<u64> {
     let committer = commit.committer().ok()?;
     let time = committer.time().ok()?;
     u64::try_from(time.seconds).ok()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn pluralize_singular_and_plural() {
-        assert_eq!(pluralize(0_u64, "file"), "0 files");
-        assert_eq!(pluralize(1_u64, "file"), "1 file");
-        assert_eq!(pluralize(2_u64, "file"), "2 files");
-        assert_eq!(pluralize_with(12_u64, "branch", "branches"), "12 branches");
-    }
 }

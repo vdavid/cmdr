@@ -12,13 +12,12 @@ import (
 
 // AllowPluralizeNounComment opts a single line out of the pluralize-noun
 // check. Place it on the flagged line as a trailing comment, or on the line
-// immediately above.
+// immediately above. The same spelling works for Rust and TS/Svelte: both
+// language families treat `//` as a line comment, so one marker covers all
+// scanned files.
 //
 //	// allowed-pluralize-noun: structured key=value log fields, not a count + noun
 const AllowPluralizeNounComment = "// allowed-pluralize-noun:"
-
-// allowPluralizeNounCommentTs is the TS/Svelte spelling of the opt-out marker.
-const allowPluralizeNounCommentTs = "// allowed-pluralize-noun:"
 
 // pluralizeNounSuffixRe matches a `{varname}` interpolation immediately
 // followed by a single space and a word ending in `s`. Catches the common
@@ -302,6 +301,5 @@ func isPluralizeNounFalsePositive(slice string) bool {
 }
 
 func hasAllowPluralizeNounComment(line string) bool {
-	return strings.Contains(line, AllowPluralizeNounComment) ||
-		strings.Contains(line, allowPluralizeNounCommentTs)
+	return strings.Contains(line, AllowPluralizeNounComment)
 }

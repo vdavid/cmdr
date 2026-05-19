@@ -40,7 +40,8 @@ Exported functions:
 - `isBrokenSymlink(entry)`: checks `entry.isSymlink && entry.iconId === 'symlink-broken'`. Does NOT use filesystem
   flags.
 - `isPermissionDenied(entry)`: `!isSymlink && permissions === 0 && size === undefined`.
-- `pluralize`, `formatNumber`, `calculatePercentage`: selection summary helpers.
+- `formatNumber`, `calculatePercentage`: selection summary helpers. (Count + noun formatting goes through
+  [`$lib/utils/pluralize`](../../utils/pluralize.ts).)
 
 `sizeTierClasses` export: `['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']`. CSS rules for these classes must
 exist in the consuming view, not here.
