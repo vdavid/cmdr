@@ -69,7 +69,7 @@ export const settingsRegistry: SettingDefinition[] = [
       'Color file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. App uses shades of the app color.',
     keywords: ['size', 'color', 'tier', 'rainbow', 'app', 'highlight', 'kb', 'mb', 'gb', 'tb'],
     type: 'enum',
-    default: 'rainbow',
+    default: 'none',
     component: 'toggle-group',
     constraints: {
       options: [
@@ -87,7 +87,7 @@ export const settingsRegistry: SettingDefinition[] = [
       'Color modified dates in the file list by age. App fades older dates toward the default text color. Wilting goes green for fresh files, yellow for aging, and brown for old.',
     keywords: ['date', 'color', 'age', 'modified', 'wilting', 'app', 'fresh', 'old'],
     type: 'enum',
-    default: 'app',
+    default: 'off',
     component: 'toggle-group',
     constraints: {
       options: [

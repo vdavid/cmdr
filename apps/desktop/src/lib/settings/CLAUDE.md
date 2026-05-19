@@ -76,8 +76,8 @@ Every site that shows a modified date in the UI flows through one entry point:
 
 ### Color palettes (size + date)
 
-`appearance.sizeColors` (default `rainbow`) and `appearance.dateColors` (default `wilting`) each pick a color palette
-applied via `data-size-colors` / `data-date-colors` attributes on `<html>`. Settings applier wires both. CSS tokens
+`appearance.sizeColors` (default `none`) and `appearance.dateColors` (default `off`) each pick a color palette applied
+via `data-size-colors` / `data-date-colors` attributes on `<html>`. Settings applier wires both. CSS tokens
 (`--color-size-*`, `--color-age-*`) live in `app.css`. Date coloring uses four tiers (`age-fresh`, `age-recent`,
 `age-aging`, `age-old`) applied per-component (year, month, day, time) by the helpers in
 `lib/settings/age-tier-utils.ts`. The setting value `app` (renamed from the older `accent`) refers to the user-facing
