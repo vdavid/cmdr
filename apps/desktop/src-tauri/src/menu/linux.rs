@@ -24,8 +24,8 @@ use super::{
 /// Differences from macOS:
 /// - No cmdr app menu (Settings and license go under Edit, About under Help)
 /// - "Show in file manager" instead of "Show in Finder"
-/// - Function-key accelerators (F2-F8, Shift+F8) omitted: GTK intercepts them
-///   before the webview, and is_focused() fails on Linux, so JS dispatch handles these
+/// - Function-key accelerators (F2-F8, Shift+F8) omitted: GTK intercepts them before the webview,
+///   and is_focused() fails on Linux, so JS dispatch handles these
 /// - Tab and Space accelerators omitted (GTK accessibility conflicts)
 /// - Placeholder `&` mnemonics (first letter): final mnemonic pass is Milestone 7
 pub(crate) fn build_menu_linux<R: Runtime>(
@@ -390,7 +390,8 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, GO_FORWARD_ID, &go_forward_item, &go_menu, 1);
     register_item(&mut items, GO_PARENT_ID, &go_parent_item, &go_menu, 3);
 
-    // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7), close_others(8)
+    // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7),
+    // close_others(8)
     register_item(&mut items, NEW_TAB_ID, &new_tab_item, &tab_menu, 0);
     register_item(&mut items, CLOSE_TAB_ID, &close_tab_item, &tab_menu, 1);
     register_item(&mut items, REOPEN_CLOSED_TAB_ID, &reopen_closed_tab_item, &tab_menu, 2);

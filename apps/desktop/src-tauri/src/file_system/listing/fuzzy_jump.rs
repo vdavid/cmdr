@@ -38,15 +38,14 @@ use crate::file_system::listing::metadata::FileEntry;
 ///
 /// Rules:
 /// - When `include_hidden` is `false`, dotfiles (`name.starts_with('.')`) are skipped.
-/// - The match runs against the whole filename (including extension); fuzzy scoring
-///   already rewards prefix and word-boundary matches, so we don't split on the dot.
-/// - Smart-case: an all-lowercase query matches case-insensitively; any uppercase
-///   character makes that character case-sensitive (delegated to nucleo-matcher).
-/// - Ties (equal score) resolve to the lower index, which matches the listing's
-///   active sort order.
+/// - The match runs against the whole filename (including extension); fuzzy scoring already rewards
+///   prefix and word-boundary matches, so we don't split on the dot.
+/// - Smart-case: an all-lowercase query matches case-insensitively; any uppercase character makes
+///   that character case-sensitive (delegated to nucleo-matcher).
+/// - Ties (equal score) resolve to the lower index, which matches the listing's active sort order.
 /// - Empty query → `None`. Empty listing → `None`.
-/// - The synthetic `..` parent entry is **not** in `LISTING_CACHE` (it's prepended
-///   by the frontend), so there's no special case for it here.
+/// - The synthetic `..` parent entry is **not** in `LISTING_CACHE` (it's prepended by the
+///   frontend), so there's no special case for it here.
 ///
 /// ## Index space
 ///

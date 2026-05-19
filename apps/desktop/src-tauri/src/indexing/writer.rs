@@ -432,8 +432,9 @@ impl WriterStats {
 /// (`bulk_get_children_stats_by_id` and `bulk_get_child_dir_ids`) by tracking
 /// the same information incrementally as entries are inserted.
 struct AccumulatorMaps {
-    /// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`: direct children only.
-    /// `has_symlinks_direct` is `true` if any direct child of `parent_id` is a symlink.
+    /// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count,
+    /// has_symlinks_direct)`: direct children only. `has_symlinks_direct` is `true` if any
+    /// direct child of `parent_id` is a symlink.
     direct_stats: HashMap<i64, (u64, u64, u64, u64, bool)>,
     /// `parent_id -> Vec<child_dir_id>`: direct child directories only.
     child_dirs: HashMap<i64, Vec<i64>>,

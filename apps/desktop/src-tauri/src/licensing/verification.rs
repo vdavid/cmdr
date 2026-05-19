@@ -76,7 +76,8 @@ pub struct LicenseInfo {
 }
 
 /// Result of verifying a license key without persisting it.
-/// Kept separate from `LicenseInfo` so the full key doesn't leak to the frontend via `get_license_info`.
+/// Kept separate from `LicenseInfo` so the full key doesn't leak to the frontend via
+/// `get_license_info`.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VerifyResult {
@@ -196,7 +197,8 @@ pub async fn activate_license_async(
     commit_license(app, &full_key, short_code)
 }
 
-/// Get stored license info, if any. Returns a cached result after the first successful verification.
+/// Get stored license info, if any. Returns a cached result after the first successful
+/// verification.
 pub fn get_license_info(app: &tauri::AppHandle) -> Option<LicenseInfo> {
     // Fast path: return cached info if available
     if let Ok(cache) = LICENSE_CACHE.lock()

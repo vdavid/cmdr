@@ -264,12 +264,11 @@ async fn apply_volume_conflict_resolution(
         ConflictResolution::Overwrite => {
             // Cmdr's UX promise is "Overwrite means merge for dirs, replace for files":
             //
-            // - For files: delete the dest first so the streaming writer lands a fresh
-            //   copy. Same-named files in dest get genuinely replaced, byte-for-byte.
-            // - For directories: SKIP the delete entirely. The recursive copy will
-            //   merge into the existing tree; same-named files inside get overwritten
-            //   by the streaming writers, files in dest that aren't in source are
-            //   preserved.
+            // - For files: delete the dest first so the streaming writer lands a fresh copy. Same-named files
+            //   in dest get genuinely replaced, byte-for-byte.
+            // - For directories: SKIP the delete entirely. The recursive copy will merge into the existing
+            //   tree; same-named files inside get overwritten by the streaming writers, files in dest that
+            //   aren't in source are preserved.
             //
             // The dir branch is enforced HERE rather than relying on `Volume::delete`'s
             // "file or empty directory" trait contract. Today every backend honors
@@ -482,12 +481,10 @@ mod tests {
     // Same data-safety contract as the local-FS path: a destination is
     // overwritten ONLY when strictly smaller / strictly older than the source.
     // The volume side has two extra wrinkles the local side doesn't:
-    //   1. Size hints from the caller (preview scan) can short-circuit the
-    //      `get_metadata` round-trip; tests cover both hint-provided and
-    //      hint-absent paths.
-    //   2. Volume backends may not surface `modified_at` (SMB servers vary).
-    //      OverwriteOlder must Skip rather than overwrite when mtime is
-    //      unknown on either side.
+    //   1. Size hints from the caller (preview scan) can short-circuit the `get_metadata` round-trip;
+    //      tests cover both hint-provided and hint-absent paths.
+    //   2. Volume backends may not surface `modified_at` (SMB servers vary). OverwriteOlder must Skip
+    //      rather than overwrite when mtime is unknown on either side.
 
     /// Build an InMemoryVolume holding a single file at `path` with the given
     /// `size` and `modified_at`. The volume's `get_metadata` will return

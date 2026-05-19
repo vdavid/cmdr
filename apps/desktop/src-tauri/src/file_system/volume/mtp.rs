@@ -483,14 +483,13 @@ impl Volume for MtpVolume {
     /// Batch scan with parent-grouping + fresh-listing oracle.
     ///
     /// Decision flow:
-    /// 1. Group selected paths by their parent directory (one MTP listing per
-    ///    parent on the cold path is the load-bearing optimization: selecting
-    ///    135 photos in `/DCIM/Camera` should produce ONE `list_directory`
-    ///    call, not 135 `get_metadata` calls each of which lists the parent).
-    /// 2. For each unique parent, ask `try_get_watched_listing(volume_id,
-    ///    parent)` first. On hit, every child entry's size + `is_directory`
-    ///    comes from the cached `FileEntry`, no MTP I/O. On miss, fall through
-    ///    to the existing single `list_directory(parent)` per group.
+    /// 1. Group selected paths by their parent directory (one MTP listing per parent on the cold
+    ///    path is the load-bearing optimization: selecting 135 photos in `/DCIM/Camera` should
+    ///    produce ONE `list_directory` call, not 135 `get_metadata` calls each of which lists the
+    ///    parent).
+    /// 2. For each unique parent, ask `try_get_watched_listing(volume_id, parent)` first. On hit,
+    ///    every child entry's size + `is_directory` comes from the cached `FileEntry`, no MTP I/O.
+    ///    On miss, fall through to the existing single `list_directory(parent)` per group.
     ///
     /// The oracle decision is per-parent: different parents in the same call
     /// can resolve different ways (one watched, one cold). On oracle hit no
@@ -516,12 +515,10 @@ impl Volume for MtpVolume {
             }
 
             // Group paths by parent. Two keys per group:
-            //   - `original_parent`: the path the FE/cache uses as a listing
-            //     key (typically `/DCIM/Camera`-style absolute). This is what
-            //     the oracle is looked up against.
-            //   - `mtp_parent`: the MTP-relative form used by `list_directory`
-            //     on the cold-cache fallthrough. Stored so we don't call
-            //     `to_mtp_path` twice per group.
+            //   - `original_parent`: the path the FE/cache uses as a listing key (typically
+            //     `/DCIM/Camera`-style absolute). This is what the oracle is looked up against.
+            //   - `mtp_parent`: the MTP-relative form used by `list_directory` on the cold-cache fallthrough.
+            //     Stored so we don't call `to_mtp_path` twice per group.
             #[derive(Default)]
             struct ParentGroup<'p> {
                 original_parent: PathBuf,

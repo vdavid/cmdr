@@ -2,9 +2,8 @@
 //!
 //! Two watchers run concurrently:
 //! - `/proc/mounts` (inotify): detects standard mount/unmount operations
-//! - `/run/user/<uid>/gvfs/` (inotify): detects GVFS SMB share mount/unmount
-//!   (these are subdirectories of a single gvfsd-fuse mount, so they don't
-//!   appear in `/proc/mounts`)
+//! - `/run/user/<uid>/gvfs/` (inotify): detects GVFS SMB share mount/unmount (these are
+//!   subdirectories of a single gvfsd-fuse mount, so they don't appear in `/proc/mounts`)
 //!
 //! Both diff against known state and emit `volume-mounted` / `volume-unmounted`
 //! Tauri events. Also registers/unregisters volumes with the global `VolumeManager`.

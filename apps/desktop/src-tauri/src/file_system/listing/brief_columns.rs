@@ -8,8 +8,8 @@
 //! Backend is the natural home for this because:
 //! - it already holds every filename (no IPC round-trip per column needed),
 //! - it already holds cached font metrics keyed by font ID,
-//! - widths must agree with the virtual-scroll math, which lives FE-side and
-//!   consumes these widths via a single IPC call per layout change.
+//! - widths must agree with the virtual-scroll math, which lives FE-side and consumes these widths
+//!   via a single IPC call per layout change.
 //!
 //! Column-major layout: with `has_parent = true`, column 0 displays the `".."`
 //! literal followed by the first `items_per_column - 1` real entries; subsequent

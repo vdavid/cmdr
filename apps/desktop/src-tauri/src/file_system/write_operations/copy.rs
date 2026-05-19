@@ -153,7 +153,8 @@ pub(super) fn copy_files_with_progress_inner(
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
-    // Emit initial copying phase event (important when reusing cached scan - no scanning events were emitted)
+    // Emit initial copying phase event (important when reusing cached scan - no scanning events were
+    // emitted)
     state.emit_progress_via_sink(
         events,
         WriteProgressEvent::new(

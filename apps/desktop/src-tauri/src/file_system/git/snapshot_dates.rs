@@ -11,14 +11,14 @@
 //! For a tree-listing call at `(commit_id, dir_path)` returning N entries:
 //!
 //! 1. Collect the entry set: top-level relative names visible under `dir_path`.
-//! 2. Walk commits backwards from `commit_id` by commit time, newest first.
-//!    For each commit, diff against its first parent. For every changed path
-//!    starting with `dir_path/`, find which top-level entry it falls under and,
-//!    if we don't have a date yet, record this commit's committer time.
-//! 3. Stop early when every entry is dated, or after `MAX_COMMITS_PER_WALK`,
-//!    or when the rev-walk runs out of commits.
-//! 4. Entries that didn't get a date within the cap fall back to the
-//!    snapshot's commit date (`tree::list_tree` handles that).
+//! 2. Walk commits backwards from `commit_id` by commit time, newest first. For each commit, diff
+//!    against its first parent. For every changed path starting with `dir_path/`, find which
+//!    top-level entry it falls under and, if we don't have a date yet, record this commit's
+//!    committer time.
+//! 3. Stop early when every entry is dated, or after `MAX_COMMITS_PER_WALK`, or when the rev-walk
+//!    runs out of commits.
+//! 4. Entries that didn't get a date within the cap fall back to the snapshot's commit date
+//!    (`tree::list_tree` handles that).
 //!
 //! For initial commits (no parent), every entry gets the initial commit's
 //! date, short-circuited up front.

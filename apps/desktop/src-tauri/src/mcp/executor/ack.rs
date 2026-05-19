@@ -8,19 +8,18 @@
 //!
 //! ## Signals
 //!
-//! - `GenerationAdvanced`: the `PaneStateStore` generation counter strictly advanced past
-//!   a captured value. Use this for actions that mutate pane state (navigation, refresh,
-//!   selection, view mode, sort, tabs, cursor moves, auto-confirmed copy/move/delete).
+//! - `GenerationAdvanced`: the `PaneStateStore` generation counter strictly advanced past a
+//!   captured value. Use this for actions that mutate pane state (navigation, refresh, selection,
+//!   view mode, sort, tabs, cursor moves, auto-confirmed copy/move/delete).
 //! - `SoftDialogAppeared`: a soft (overlay) dialog with the given ID appeared in the
-//!   `SoftDialogTracker`. Use this for confirmation dialogs (transfer, delete, mkdir,
-//!   mkfile) when `autoConfirm: false`.
-//! - `WindowAppeared` / `WindowDisappeared`: a Tauri webview window with the given label
-//!   prefix appeared (or vanished). Use this for child windows (settings, file-viewer,
-//!   about) and for `dialog close` actions.
-//! - `WindowCountBelow`: the number of windows matching a label prefix is strictly less
-//!   than a snapshotted count. Use this for close-one-of-many scenarios (closing a
-//!   specific `viewer-*` window by path) where `WindowDisappeared` would only fire when
-//!   ALL viewers are gone.
+//!   `SoftDialogTracker`. Use this for confirmation dialogs (transfer, delete, mkdir, mkfile) when
+//!   `autoConfirm: false`.
+//! - `WindowAppeared` / `WindowDisappeared`: a Tauri webview window with the given label prefix
+//!   appeared (or vanished). Use this for child windows (settings, file-viewer, about) and for
+//!   `dialog close` actions.
+//! - `WindowCountBelow`: the number of windows matching a label prefix is strictly less than a
+//!   snapshotted count. Use this for close-one-of-many scenarios (closing a specific `viewer-*`
+//!   window by path) where `WindowDisappeared` would only fire when ALL viewers are gone.
 //!
 //! Multi-mode tools that can produce different signals depending on what happened (the
 //! original `open_under_cursor` was the only such case) live outside the ack contract

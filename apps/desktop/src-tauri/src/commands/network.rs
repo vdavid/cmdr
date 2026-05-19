@@ -579,8 +579,8 @@ pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::comman
 /// `VolumeUnreachableBanner`. Looks up the volume by id, then runs `diskutil
 /// unmount <mount_path>` (macOS). The OS unmount fires FSEvents, which triggers
 /// the existing volume watcher → `Volume::on_unmount` pipeline:
-///   - `SmbVolume::on_unmount` flips `unmounted=true`, stops the watcher task,
-///     drops the smb2 session.
+///   - `SmbVolume::on_unmount` flips `unmounted=true`, stops the watcher task, drops the smb2
+///     session.
 ///   - The volume is removed from `VolumeManager`.
 ///   - A `volumes-changed` event flows to the frontend.
 ///

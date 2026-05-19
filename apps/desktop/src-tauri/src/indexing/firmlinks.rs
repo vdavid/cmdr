@@ -67,10 +67,10 @@ const PRIVATE_SYMLINK_DIRS: &[&str] = &["/tmp", "/var", "/etc"];
 /// Normalize a path for index lookups.
 ///
 /// On macOS, two normalizations are applied:
-/// 1. Resolve well-known `/private` symlinks: `/tmp/foo` → `/private/tmp/foo`
-///    (the index stores canonical paths because the scanner follows symlinks).
-/// 2. Replace `/System/Volumes/Data/` firmlink prefixes:
-///    `/System/Volumes/Data/Users/foo` → `/Users/foo`.
+/// 1. Resolve well-known `/private` symlinks: `/tmp/foo` → `/private/tmp/foo` (the index stores
+///    canonical paths because the scanner follows symlinks).
+/// 2. Replace `/System/Volumes/Data/` firmlink prefixes: `/System/Volumes/Data/Users/foo` →
+///    `/Users/foo`.
 ///
 /// Paths that don't match any pattern are returned unchanged.
 pub fn normalize_path(path: &str) -> String {

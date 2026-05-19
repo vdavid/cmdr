@@ -78,14 +78,12 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
 ///
 /// Auto-start when ALL of the following hold:
 /// - The user has not disabled indexing (`indexing_enabled != Some(false)`).
-/// - The FDA gate isn't pending (see `crate::fda_gate::is_fda_pending`). The
-///   gate is pending only when `fda_choice == NotAskedYet` AND the OS reports
-///   FDA isn't granted (i.e., we're still showing the in-app onboarding
-///   modal. Once the user picks Deny (same session via
-///   `start_indexing_after_fda_decision`) or Allow (which restarts the app),
-///   the indexer auto-starts. After Deny, the scan triggers per-folder TCC
-///   prompts as it walks protected paths: that's the "individual Allow/Deny
-///   prompts" contract the user opted into by denying FDA.
+/// - The FDA gate isn't pending (see `crate::fda_gate::is_fda_pending`). The gate is pending only
+///   when `fda_choice == NotAskedYet` AND the OS reports FDA isn't granted (i.e., we're still
+///   showing the in-app onboarding modal. Once the user picks Deny (same session via
+///   `start_indexing_after_fda_decision`) or Allow (which restarts the app), the indexer
+///   auto-starts. After Deny, the scan triggers per-folder TCC prompts as it walks protected paths:
+///   that's the "individual Allow/Deny prompts" contract the user opted into by denying FDA.
 pub fn should_auto_start_indexing(
     indexing_enabled: Option<bool>,
     fda_choice: FullDiskAccessChoice,

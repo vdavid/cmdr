@@ -461,16 +461,14 @@ fn live_event_storm_with_concurrent_reads() {
 
     // Prepare event storm: creates, modifies, deletes, MustScanSubDirs.
     // Paths are synthetic and don't exist on disk, so stat() will fail:
-    // - Creates/modifies: stat fails -> reconciler tries to delete from DB.
-    //   Paths that DON'T match DB entries are no-ops.
-    //   Paths that DO match DB entries get deleted (testing deletion resilience).
+    // - Creates/modifies: stat fails -> reconciler tries to delete from DB. Paths that DON'T match DB
+    //   entries are no-ops. Paths that DO match DB entries get deleted (testing deletion resilience).
     // - Removals: stat fails -> resolve path in DB -> delete if found.
-    // - MustScanSubDirs: same as create/modify (process_fs_event doesn't
-    //   special-case it).
+    // - MustScanSubDirs: same as create/modify (process_fs_event doesn't special-case it).
     //
     // We use two classes of paths:
-    // 1. Non-resolvable paths (under /nonexistent/) -- exercise the code path
-    //    without affecting indexed data.
+    // 1. Non-resolvable paths (under /nonexistent/) -- exercise the code path without affecting indexed
+    //    data.
     // 2. Paths matching real DB entries -- test actual deletions.
     let mut events: Vec<FsChangeEvent> = Vec::new();
     let mut event_id_counter: u64 = 200;
@@ -629,11 +627,11 @@ fn live_event_storm_with_concurrent_reads() {
 //   - /tmp re-listing's enrichment phase took 2m3s for dirs that took 10ms the first time
 //
 // Iteration log (synth load → observed listing latency):
-//   1. Single reconciler thread, 500 evt/s pacing, 50 subdirs × 20 files
-//      → ~14K events fired, listings finished in 0–1ms each. Insufficient pressure.
+//   1. Single reconciler thread, 500 evt/s pacing, 50 subdirs × 20 files → ~14K events fired,
+//      listings finished in 0–1ms each. Insufficient pressure.
 //   2. 4 reconciler threads at full speed (no pacing), checkpoint-truncate thread @2 Hz,
-//      `BackfillMissingDirStats` / `ComputeAllAggregates` injected periodically,
-//      same tree size → ~142K events fired, listings still 0–3ms each.
+//      `BackfillMissingDirStats` / `ComputeAllAggregates` injected periodically, same tree size →
+//      ~142K events fired, listings still 0–3ms each.
 //
 // Negative finding: under this load shape, the WAL/read-pool/single-writer architecture
 // really does decouple read-side enrichment from write-side reconciler work. The 2-minute

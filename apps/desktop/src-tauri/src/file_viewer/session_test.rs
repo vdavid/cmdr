@@ -194,12 +194,10 @@ fn search_cancel_works() {
 #[test]
 fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
     // Pins the full `Running → Cancelled` transition contract:
-    // 1. Cancelling a running search must surface as `Cancelled` on poll
-    //    (not silently flip to Idle, which would erase the user-visible
-    //    "search was cancelled" signal).
-    // 2. Starting a fresh search after a cancel resets the observable
-    //    status: the new search either reports `Running` while in flight
-    //    or `Done` if it finishes between calls.
+    // 1. Cancelling a running search must surface as `Cancelled` on poll (not silently flip to Idle,
+    //    which would erase the user-visible "search was cancelled" signal).
+    // 2. Starting a fresh search after a cancel resets the observable status: the new search either
+    //    reports `Running` while in flight or `Done` if it finishes between calls.
     let dir = create_test_dir("search_cancel_transition");
     // Large enough to keep the thread busy long enough for the cancel to
     // race the loop body (the inner loop checks the flag per chunk).

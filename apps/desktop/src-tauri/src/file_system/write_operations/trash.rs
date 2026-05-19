@@ -88,8 +88,8 @@ pub struct TrashItemError {
 /// * `operation_id` - Unique operation ID for event correlation
 /// * `state` - Shared state with cancellation flag and progress interval
 /// * `sources` - Top-level items to trash
-/// * `item_sizes` - Optional per-item sizes for byte-level progress (from scan
-///   preview or drive index). When `None`, bytes progress is not reported.
+/// * `item_sizes` - Optional per-item sizes for byte-level progress (from scan preview or drive
+///   index). When `None`, bytes progress is not reported.
 pub(super) fn trash_files_with_progress(
     app: &tauri::AppHandle,
     operation_id: &str,

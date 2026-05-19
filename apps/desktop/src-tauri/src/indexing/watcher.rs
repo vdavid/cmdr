@@ -120,8 +120,8 @@ pub struct DriveWatcher {
 impl DriveWatcher {
     /// Start watching `root` for filesystem changes.
     ///
-    /// - `since_when`: FSEvents event ID to replay from. Use `0` for "since now"
-    ///   (maps to `kFSEventStreamEventIdSinceNow`).
+    /// - `since_when`: FSEvents event ID to replay from. Use `0` for "since now" (maps to
+    ///   `kFSEventStreamEventIdSinceNow`).
     /// - `event_sender`: channel to receive parsed events on.
     ///
     /// The watcher runs until [`stop`](Self::stop) is called or the sender is dropped.

@@ -14,11 +14,11 @@
 //! Cmdr already collects credentials (or "guest") in the frontend. We pass them
 //! down so NetFS never reaches the Keychain fallback:
 //!
-//! - **Credentialed mount**: build CFStrings from the supplied user + password and
-//!   pass them as `user`/`passwd`. NetFS uses them directly.
-//! - **Guest mount**: set `kNetFSUseGuestKey` (literal key `"Guest"`) to
-//!   `kCFBooleanTrue` in `openOptions`. NetFS skips the Keychain and authenticates
-//!   as guest. `user`/`passwd` stay `NULL` in this case, per Apple's NetFS docs.
+//! - **Credentialed mount**: build CFStrings from the supplied user + password and pass them as
+//!   `user`/`passwd`. NetFS uses them directly.
+//! - **Guest mount**: set `kNetFSUseGuestKey` (literal key `"Guest"`) to `kCFBooleanTrue` in
+//!   `openOptions`. NetFS skips the Keychain and authenticates as guest. `user`/`passwd` stay
+//!   `NULL` in this case, per Apple's NetFS docs.
 //!
 //! The constant `kNetFSUseGuestKey` is a `#define` in `<NetFS/NetFS.h>` (not an
 //! exported symbol), so we recreate the CFString from the literal `"Guest"` at the
@@ -188,11 +188,11 @@ pub fn mount_share_sync(
     let explicit_mount_path = disambiguated_mount_path(server, share, port);
 
     // Build openOptions. Two reasons we may need a dict:
-    //   1. Guest mount (no credentials): set `kNetFSUseGuestKey = true` so NetFS
-    //      doesn't consult the Keychain and pop a credential dialog.
-    //   2. Disambiguating against an existing same-hostname mount: set
-    //      `ForceNewSession = true` so macOS opens a fresh SMB session instead of
-    //      reusing the existing one (different port = different server).
+    //   1. Guest mount (no credentials): set `kNetFSUseGuestKey = true` so NetFS doesn't consult the
+    //      Keychain and pop a credential dialog.
+    //   2. Disambiguating against an existing same-hostname mount: set `ForceNewSession = true` so
+    //      macOS opens a fresh SMB session instead of reusing the existing one (different port =
+    //      different server).
     // If neither applies, pass NULL (NetFS uses default behavior).
     let want_guest = cf_user.is_none() && cf_pass.is_none();
     let want_force_new_session = explicit_mount_path.is_some();

@@ -40,7 +40,8 @@ pub enum ValidationOutcome {
 #[serde(rename_all = "camelCase")]
 struct ValidationRequest {
     transaction_id: String,
-    /// Hashed device identifier for fair-use tracking. `None` if the platform UUID couldn't be read.
+    /// Hashed device identifier for fair-use tracking. `None` if the platform UUID couldn't be
+    /// read.
     device_id: Option<String>,
 }
 

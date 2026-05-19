@@ -18,13 +18,11 @@ use crate::file_system::volume::{Volume, VolumeError};
 /// Copies a single path from source volume to destination volume.
 ///
 /// Dispatches on two cases:
-/// - Both volumes are `LocalPosixVolume` and the source/destination are on the
-///   same APFS volume → delegate to the native `copy_files_start` path
-///   upstream (handled in `copy_between_volumes`; this function isn't called
-///   for that case).
-/// - Otherwise → generic streaming pipe via `open_read_stream` +
-///   `write_from_stream`, walking directories recursively so the user can
-///   cancel between files.
+/// - Both volumes are `LocalPosixVolume` and the source/destination are on the same APFS volume →
+///   delegate to the native `copy_files_start` path upstream (handled in `copy_between_volumes`;
+///   this function isn't called for that case).
+/// - Otherwise → generic streaming pipe via `open_read_stream` + `write_from_stream`, walking
+///   directories recursively so the user can cancel between files.
 #[allow(
     clippy::too_many_arguments,
     reason = "Cross-volume copy needs source/dest volumes, paths, the source type hint, the size hint, shared state, and two progress callbacks. Bundling into a struct adds ceremony without cleaning anything up."

@@ -464,8 +464,8 @@ pub fn set_reopen_closed_tab_enabled<R: Runtime>(app: AppHandle<R>, enabled: boo
 
 /// Enables or disables explorer-scoped menu items based on the current context.
 /// - `"explorer"`: all menu items enabled (main file explorer has focus)
-/// - `"other"`: all non-App items disabled except Close tab (⌘W), which doubles as
-///   "close the focused window" (standard macOS behavior)
+/// - `"other"`: all non-App items disabled except Close tab (⌘W), which doubles as "close the
+///   focused window" (standard macOS behavior)
 #[tauri::command]
 #[specta::specta]
 pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {

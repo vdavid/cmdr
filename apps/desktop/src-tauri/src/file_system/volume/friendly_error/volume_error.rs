@@ -3,8 +3,8 @@
 //! Most variants delegate to the canonical `kinds::*` constructors so users see
 //! the same copy regardless of which layer the error originated in. A few
 //! variants are unique to this layer:
-//! - `IoError { raw_os_error: Some(_) }` dispatches to `errno::friendly_error_from_errno`
-//!   for per-errno copy
+//! - `IoError { raw_os_error: Some(_) }` dispatches to `errno::friendly_error_from_errno` for
+//!   per-errno copy
 //! - `FriendlyGit(_)` carries a fully-shaped `FriendlyError` from the git module
 
 use std::path::Path;

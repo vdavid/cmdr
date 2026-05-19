@@ -6,16 +6,14 @@
 //!
 //! ## How git errors reach the user
 //!
-//! 1. A volume hook (`try_route_listing`, `try_route_metadata`,
-//!    `try_open_blob_stream`) returns `Err(FriendlyGitError)` from the
-//!    git module.
-//! 2. `mod.rs::friendly_to_volume_error` wraps it as
-//!    `VolumeError::FriendlyGit(FriendlyGitError)`: a typed variant that
-//!    carries the kind + path + optional raw detail end-to-end.
-//! 3. The streaming pipeline (`listing/streaming.rs`) emits a
-//!    `listing-error` event. `friendly_error_from_volume_error` matches
-//!    on `FriendlyGit` and calls `to_friendly_error()` so `ErrorPane`
-//!    renders title + explanation + suggestion + category.
+//! 1. A volume hook (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`) returns
+//!    `Err(FriendlyGitError)` from the git module.
+//! 2. `mod.rs::friendly_to_volume_error` wraps it as `VolumeError::FriendlyGit(FriendlyGitError)`:
+//!    a typed variant that carries the kind + path + optional raw detail end-to-end.
+//! 3. The streaming pipeline (`listing/streaming.rs`) emits a `listing-error` event.
+//!    `friendly_error_from_volume_error` matches on `FriendlyGit` and calls `to_friendly_error()`
+//!    so `ErrorPane` renders title + explanation + suggestion
+//!    + category.
 
 use std::error::Error as StdError;
 use std::fmt;

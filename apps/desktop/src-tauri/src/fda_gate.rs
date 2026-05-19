@@ -12,12 +12,10 @@
 //!
 //! The gate has two pieces:
 //!
-//! 1. `is_fda_pending(fda_choice, os_fda_granted)`: pure decision used at
-//!    startup and by tests. Pending iff the user hasn't decided AND the OS
-//!    reports FDA isn't granted.
-//! 2. A process-global `AtomicBool` set once at startup (and cleared when
-//!    the user denies FDA in-session). Read by code that runs after startup
-//!    via `is_fda_pending_runtime()`.
+//! 1. `is_fda_pending(fda_choice, os_fda_granted)`: pure decision used at startup and by tests.
+//!    Pending iff the user hasn't decided AND the OS reports FDA isn't granted.
+//! 2. A process-global `AtomicBool` set once at startup (and cleared when the user denies FDA
+//!    in-session). Read by code that runs after startup via `is_fda_pending_runtime()`.
 //!
 //! On non-macOS platforms FDA doesn't exist; the runtime gate is always
 //! `false` (open) so cross-platform callers get the right behaviour without

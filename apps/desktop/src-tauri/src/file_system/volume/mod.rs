@@ -81,11 +81,10 @@ pub(crate) fn path_to_id(path: &str) -> String {
 ///
 /// # Case folding
 ///
-/// - Server: DNS hostnames are case-insensitive, so `Naspolya` and `naspolya`
-///   are the same host. Lowercased.
-/// - Share: SMB is case-insensitive for share names per the protocol (Windows
-///   and Samba default), so `Public` and `public` on the same server are the
-///   same share. Lowercased.
+/// - Server: DNS hostnames are case-insensitive, so `Naspolya` and `naspolya` are the same host.
+///   Lowercased.
+/// - Share: SMB is case-insensitive for share names per the protocol (Windows and Samba default),
+///   so `Public` and `public` on the same server are the same share. Lowercased.
 /// - Port: literal, no folding.
 pub fn smb_volume_id(server: &str, port: u16, share: &str) -> String {
     fn sanitize(s: &str) -> String {
@@ -144,7 +143,8 @@ pub struct BatchScanResult {
     pub per_path: Vec<(PathBuf, CopyScanResult)>,
 }
 
-/// A conflict detected during pre-copy scanning: a source item that already exists at the destination.
+/// A conflict detected during pre-copy scanning: a source item that already exists at the
+/// destination.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanConflict {
@@ -339,8 +339,8 @@ impl From<std::io::Error> for VolumeError {
 ///
 /// Methods are split into two categories:
 /// - **Sync**: Identity accessors and capability flags that return struct fields. No I/O.
-/// - **Async**: Methods that perform I/O. Return `Pin<Box<dyn Future<Output = T> + Send + '_>>`
-///   for object safety (`dyn Volume`). Implementors wrap bodies in `Box::pin(async { ... })`.
+/// - **Async**: Methods that perform I/O. Return `Pin<Box<dyn Future<Output = T> + Send + '_>>` for
+///   object safety (`dyn Volume`). Implementors wrap bodies in `Box::pin(async { ... })`.
 pub trait Volume: Send + Sync {
     /// Returns the display name for this volume (like "Macintosh HD", "Dropbox").
     fn name(&self) -> &str;
@@ -454,10 +454,12 @@ pub trait Volume: Send + Sync {
     // Mutation notification
     // ========================================
 
-    /// Called after a successful mutation to update any active listings showing the parent directory.
+    /// Called after a successful mutation to update any active listings showing the parent
+    /// directory.
     ///
-    /// Default implementation uses `std::fs` to stat the entry and calls `notify_directory_changed`.
-    /// Non-local volumes (SMB, MTP) override to use their own protocol for metadata.
+    /// Default implementation uses `std::fs` to stat the entry and calls
+    /// `notify_directory_changed`. Non-local volumes (SMB, MTP) override to use their own
+    /// protocol for metadata.
     fn notify_mutation<'a>(
         &'a self,
         volume_id: &'a str,

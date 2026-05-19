@@ -7,7 +7,8 @@
 //!
 //! Events emitted:
 //! - `drag-image-size` `{ width, height }`: on drag enter
-//! - `drag-modifiers` `{ altHeld, cmdHeld, shiftHeld }`: on drag enter and every drag update (only when changed)
+//! - `drag-modifiers` `{ altHeld, cmdHeld, shiftHeld }`: on drag enter and every drag update (only
+//!   when changed)
 //!
 //! ## Resilience
 //!
@@ -15,8 +16,8 @@
 //! from the actual webview instance (not a hardcoded name), so wry version changes are safe.
 //! If macOS deprecates APIs we rely on, the swizzle degrades gracefully:
 //! - Drag image detection disabled → the DOM overlay is always shown (redundant but functional)
-//! - Modifier key detection disabled → falls back to JS keydown/keyup (works when webview has focus,
-//!   but not during OS-level drags initiated outside the window)
+//! - Modifier key detection disabled → falls back to JS keydown/keyup (works when webview has
+//!   focus, but not during OS-level drags initiated outside the window)
 //! - Image swapping disabled → self-drags show the OS drag image over the window (functional)
 //!
 //! Rust panics inside swizzled functions are caught via `catch_unwind` to prevent crashes
@@ -113,7 +114,8 @@ pub fn install(app_handle: AppHandle) {
 /// Performs the actual swizzle installation given the native webview pointer.
 ///
 /// # Safety
-/// `webview_ptr` must be a valid pointer to the ObjC webview object (from `PlatformWebview::inner()`).
+/// `webview_ptr` must be a valid pointer to the ObjC webview object (from
+/// `PlatformWebview::inner()`).
 unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
     let obj = webview_ptr as *const AnyObject;
     if obj.is_null() {
@@ -190,8 +192,8 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
 // --- Modifier key detection ---
 
 /// Reads the current Alt/Cmd/Shift modifier state from `[NSEvent modifierFlags]`.
-/// This is a class method that reads hardware state, so it works even when the webview isn't focused.
-/// Returns all flags as `false` if NSEvent can't be found (graceful degradation).
+/// This is a class method that reads hardware state, so it works even when the webview isn't
+/// focused. Returns all flags as `false` if NSEvent can't be found (graceful degradation).
 fn read_modifiers() -> DragModifiers {
     let Some(cls) = AnyClass::get(c"NSEvent") else {
         warn_once(
@@ -273,7 +275,8 @@ unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObjec
 }
 
 /// Forwards to wry's original `draggingExited:`. Returns void.
-/// If the original wasn't saved, this is a no-op (drag exit still works, wry just won't fire its handler).
+/// If the original wasn't saved, this is a no-op (drag exit still works, wry just won't fire its
+/// handler).
 unsafe fn call_original_exited(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) {
     unsafe {
         if let Some(&original) = ORIGINAL_EXITED_IMP.get() {

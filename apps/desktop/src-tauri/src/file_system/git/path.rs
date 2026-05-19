@@ -117,9 +117,8 @@ pub fn is_virtual(path: &Path) -> bool {
 /// Returns `None` when:
 /// - The path isn't inside any `.git/` (the caller should run real-FS code).
 /// - We can't open the repo (broken `.git`, permission denied, etc.).
-/// - The path points at a real `.git/*` entry that isn't a virtual category
-///   (`HEAD`, `config`, `hooks/`, `objects/`, etc.). The volume hook then
-///   falls through to the real-FS code path.
+/// - The path points at a real `.git/*` entry that isn't a virtual category (`HEAD`, `config`,
+///   `hooks/`, `objects/`, etc.). The volume hook then falls through to the real-FS code path.
 ///
 /// Errors are surfaced via the friendly-error path on actual operations,
 /// not here – this function is a router.

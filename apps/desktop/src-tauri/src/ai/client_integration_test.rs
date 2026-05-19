@@ -5,8 +5,8 @@
 //! The point is to lock in behavior we care about per-model:
 //! - Regular chat models (`gpt-4o-mini`): `temperature` and `top_p` go on `/v1/chat/completions`.
 //! - GPT-5 / pro / codex: routed to `/v1/responses`, no temperature, `reasoning.effort` set.
-//! - OpenAI reasoning chat models (`o3-mini` etc.): stay on `/v1/chat/completions` but
-//!   omit `temperature` (defense-in-depth heuristic in our client).
+//! - OpenAI reasoning chat models (`o3-mini` etc.): stay on `/v1/chat/completions` but omit
+//!   `temperature` (defense-in-depth heuristic in our client).
 
 use genai::chat::ChatOptions;
 use serde_json::{Value, json};

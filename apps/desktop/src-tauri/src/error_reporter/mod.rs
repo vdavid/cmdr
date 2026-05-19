@@ -17,10 +17,10 @@
 //!
 //! ## Module layout
 //!
-//! - [`bundle_builder`]: the two build pipelines (Flow A streaming and Flow B legacy
-//!   window) plus the shared zip-writing path.
-//! - [`bundle_capper`]: post-hoc size cap that trims log content from the head of the
-//!   newest file. Used by Flow B and as defense-in-depth on Flow A.
+//! - [`bundle_builder`]: the two build pipelines (Flow A streaming and Flow B legacy window) plus
+//!   the shared zip-writing path.
+//! - [`bundle_capper`]: post-hoc size cap that trims log content from the head of the newest file.
+//!   Used by Flow B and as defense-in-depth on Flow A.
 //! - [`tail_walker`]: reads a log file from the end backward in 64 KB chunks.
 //! - [`auto_dispatcher`]: Flow B (opt-in auto-send on user-visible errors).
 //! - [`breadcrumbs`]: bounded ring buffer of recent triage events.
@@ -143,22 +143,20 @@ impl BuildMode {
 
 /// Time filter applied when picking which log content to include.
 ///
-/// - `Recent { window }`: include only log lines whose leading ISO-8601 timestamp falls
-///   within `[now - window, now]`. The default for Flow A's manual-send path is one
-///   hour (`flow_a_default()`). Implemented as a tail-walker that reads each log file
-///   from the end backward in 64 KB chunks, stops the moment it crosses the cutoff,
-///   and streams lines straight into the zip writer (no full-file read, no
-///   intermediate `Vec<String>`). Lines without a parseable timestamp (panic backtrace
-///   continuation, state YAML) pass through untouched; the cut boundary always lands
-///   on a timestamped line. See [`tail_walker`] for the implementation.
-/// - `Window { first_error_at }`: include content whose timestamp falls inside
-///   `[first_error_at - 30 min, now]`. Files entirely outside that window are dropped;
-///   surviving files are line-filtered by parsing the leading ISO-8601 stamp. Used by
-///   Flow B (auto-send): the window is anchored on the actual error, so we ship
-///   surrounding context without the noise. This path still uses the full-read +
-///   per-line filter pipeline because the bundle-build runs off the user's hot path
-///   (in a debounced background task) and the simpler code is easier to reason about
-///   for the auto-send flow.
+/// - `Recent { window }`: include only log lines whose leading ISO-8601 timestamp falls within
+///   `[now - window, now]`. The default for Flow A's manual-send path is one hour
+///   (`flow_a_default()`). Implemented as a tail-walker that reads each log file from the end
+///   backward in 64 KB chunks, stops the moment it crosses the cutoff, and streams lines straight
+///   into the zip writer (no full-file read, no intermediate `Vec<String>`). Lines without a
+///   parseable timestamp (panic backtrace continuation, state YAML) pass through untouched; the cut
+///   boundary always lands on a timestamped line. See [`tail_walker`] for the implementation.
+/// - `Window { first_error_at }`: include content whose timestamp falls inside `[first_error_at -
+///   30 min, now]`. Files entirely outside that window are dropped; surviving files are
+///   line-filtered by parsing the leading ISO-8601 stamp. Used by Flow B (auto-send): the window is
+///   anchored on the actual error, so we ship surrounding context without the noise. This path
+///   still uses the full-read + per-line filter pipeline because the bundle-build runs off the
+///   user's hot path (in a debounced background task) and the simpler code is easier to reason
+///   about for the auto-send flow.
 #[derive(Debug, Clone, Copy)]
 pub enum BundleScope {
     Recent { window: Duration },
@@ -222,11 +220,10 @@ impl ResolvedSettings {
     ///
     /// Default resolution order, per field:
     /// 1. The user's persisted value, if any (`Some(_)` in the loader struct).
-    /// 2. The FE-pushed registry default (see [`settings_defaults`]). Avoids drift when
-    ///    the FE registry's default changes.
-    /// 3. A hardcoded fallback. Used only before the FE has called
-    ///    `record_settings_defaults` (very early errors, unit tests with no FE);
-    ///    it's a safety net, not the primary source.
+    /// 2. The FE-pushed registry default (see [`settings_defaults`]). Avoids drift when the FE
+    ///    registry's default changes.
+    /// 3. A hardcoded fallback. Used only before the FE has called `record_settings_defaults` (very
+    ///    early errors, unit tests with no FE); it's a safety net, not the primary source.
     fn from_settings(s: &crate::settings::loader::Settings) -> Self {
         Self {
             indexing_enabled: s
@@ -311,9 +308,8 @@ pub struct LogLevelSnapshot {
 ///
 /// `sample_first` and `sample_last` are the preview samples the dialog renders. With the
 /// post-fix-7 tail-walker pipeline:
-/// - `sample_first` is the **oldest** lines we kept for the live file (the head of the
-///   in-window content, NOT the head of the file on disk (that one is hours/days old
-///   and not in the bundle)).
+/// - `sample_first` is the **oldest** lines we kept for the live file (the head of the in-window
+///   content, NOT the head of the file on disk (that one is hours/days old and not in the bundle)).
 /// - `sample_last` is the **newest** lines (the very tail of what we shipped).
 ///
 /// The field names are kept for FE compatibility with `apps/desktop/src/lib/error-reporter/`

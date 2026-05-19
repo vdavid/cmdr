@@ -260,8 +260,8 @@ impl SmbVolume {
     /// * `name` - Display name (typically the share name)
     /// * `mount_path` - OS mount point path
     /// * `volume_id` - Volume ID for listing cache lookups
-    /// * `params` - Connection parameters (server, share, port, credentials) used to
-    ///   build the current session and to rebuild it on `attempt_reconnect`
+    /// * `params` - Connection parameters (server, share, port, credentials) used to build the
+    ///   current session and to rebuild it on `attempt_reconnect`
     /// * `client` - Connected `SmbClient`
     /// * `tree` - Connected `Tree` for the share
     pub fn new(
@@ -661,10 +661,10 @@ impl SmbVolume {
                     // Expected fall-through cases: the caller is using the typed
                     // `VolumeError` variant as a signal, not an error:
                     // - `NotFound` for existence checks (rename dest, conflict detection)
-                    // - `IsADirectory` for `delete()`'s "try delete_file first, fall back to
-                    //   delete_directory" fast-path
-                    // - `AlreadyExists` for `copy_directory_streaming`'s "create_directory
-                    //   is idempotent for merge" path
+                    // - `IsADirectory` for `delete()`'s "try delete_file first, fall back to delete_directory"
+                    //   fast-path
+                    // - `AlreadyExists` for `copy_directory_streaming`'s "create_directory is idempotent for merge"
+                    //   path
                     debug!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
                 } else {
                     warn!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
@@ -764,12 +764,11 @@ impl SmbVolume {
     ///
     /// Idempotent and single-flight:
     /// - If state is already `Direct`, returns Ok cheaply.
-    /// - On auth failure, re-pulls credentials from the secret store (in case
-    ///   the user updated them) and retries once before giving up.
+    /// - On auth failure, re-pulls credentials from the secret store (in case the user updated
+    ///   them) and retries once before giving up.
     /// - On success: stores the new client + tree, restarts the watcher, emits
     ///   `smb-connection-changed { state: "direct" }`.
-    /// - On failure: state stays `Disconnected`; the FE backoff cycle decides
-    ///   whether to retry.
+    /// - On failure: state stays `Disconnected`; the FE backoff cycle decides whether to retry.
     async fn do_attempt_reconnect(&self) -> Result<(), VolumeError> {
         // Bail early if `on_unmount` already ran. Doing this before taking the
         // lock means a queued caller doesn't pay the lock-acquisition cost for
@@ -2651,8 +2650,8 @@ mod tests {
     async fn smb_integration_attempt_reconnect_rebuilds_session() {
         // Drives the full reconnect cycle against a real SMB server:
         // 1. Connect, verify Direct.
-        // 2. Force-flip to Disconnected (simulating a ConnectionLost event).
-        //    Drop the underlying client + tree to mimic a dead session.
+        // 2. Force-flip to Disconnected (simulating a ConnectionLost event). Drop the underlying client +
+        //    tree to mimic a dead session.
         // 3. Verify hot-path ops fail with DeviceDisconnected.
         // 4. Call attempt_reconnect; verify it succeeds and state is Direct.
         // 5. Verify hot-path ops work again.
@@ -3934,8 +3933,8 @@ mod tests {
     // hammers the same pipeline thousands of times and watches for drift.
     //
     // Modes (pick via env):
-    // - Default (no env):           `CMDR_SOAK_ITERATIONS=100` (≈1–2 min).
-    //   Sanity-check run for gross leaks.
+    // - Default (no env):           `CMDR_SOAK_ITERATIONS=100` (≈1–2 min). Sanity-check run for gross
+    //   leaks.
     // - Explicit iteration count:    `CMDR_SOAK_ITERATIONS=3000 ...`
     // - Time-bounded:                `CMDR_SOAK_DURATION_SECS=1800 ...` (30 min)
     //
@@ -4436,11 +4435,10 @@ mod tests {
 
     /// One pass of the concurrent-streaming-write scenario:
     /// - generate `n_files` source files of `file_size` bytes in a tempdir,
-    /// - pre-upload `n_conflicts` of them to the destination at the same
-    ///   size so `OverwriteSmaller` resolves them as Skip,
+    /// - pre-upload `n_conflicts` of them to the destination at the same size so `OverwriteSmaller`
+    ///   resolves them as Skip,
     /// - run `copy_volumes_with_progress` over all `n_files` with a timeout,
-    /// - on timeout, panic with the last 30 mutex/recv lines as a diagnostic
-    ///   dump,
+    /// - on timeout, panic with the last 30 mutex/recv lines as a diagnostic dump,
     /// - clean up the unique prefix directory either way.
     async fn run_concurrent_write_pass(
         vol: Arc<SmbVolume>,
@@ -4592,7 +4590,8 @@ mod tests {
     ///
     /// Run with `./apps/desktop/test/smb-servers/start.sh core` (CI does
     /// this) or `start.sh all`, then either `./scripts/check.sh --rust` or
-    /// `cargo nextest run -p cmdr smb_integration_concurrent_streaming_writes_no_deadlock --run-ignored all`.
+    /// `cargo nextest run -p cmdr smb_integration_concurrent_streaming_writes_no_deadlock
+    /// --run-ignored all`.
     ///
     /// Originally hung at a QNAP NAS for >5 minutes before the fix in smb2
     /// 0.9.0 (`FileWriter` owns its `Connection`) and the matching

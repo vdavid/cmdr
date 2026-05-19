@@ -38,10 +38,12 @@ impl MtpConnectionManager {
             .await
     }
 
-    /// Downloads a file from the MTP device to a local path, with optional progress/cancellation callback.
+    /// Downloads a file from the MTP device to a local path, with optional progress/cancellation
+    /// callback.
     ///
-    /// The `on_progress` callback receives `(bytes_done, bytes_total)` and returns `ControlFlow::Break(())`
-    /// to cancel the transfer. On cancellation, the partial file is removed.
+    /// The `on_progress` callback receives `(bytes_done, bytes_total)` and returns
+    /// `ControlFlow::Break(())` to cancel the transfer. On cancellation, the partial file is
+    /// removed.
     #[allow(
         clippy::too_many_arguments,
         reason = "mirrors download_file with added on_progress callback"

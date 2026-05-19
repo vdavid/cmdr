@@ -236,8 +236,8 @@ fn is_localhost_origin(origin: &str) -> bool {
 }
 
 /// Validate Accept header for MCP compliance.
-/// Per spec: The client MUST include an Accept header listing both application/json and text/event-stream.
-/// We log a warning but allow requests for backwards compatibility.
+/// Per spec: The client MUST include an Accept header listing both application/json and
+/// text/event-stream. We log a warning but allow requests for backwards compatibility.
 pub fn validate_accept_header(headers: &HeaderMap) {
     if let Some(accept) = headers.get(header::ACCEPT) {
         let accept_str = accept.to_str().unwrap_or("");

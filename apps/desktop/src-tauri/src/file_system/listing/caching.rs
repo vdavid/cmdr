@@ -30,7 +30,8 @@ pub enum DirectoryChange {
 pub enum ModifyResult {
     /// Entry was updated without changing its sorted position.
     UpdatedInPlace { index: usize },
-    /// Entry was removed from `old_index` and re-inserted at `new_index` because sort-relevant fields changed.
+    /// Entry was removed from `old_index` and re-inserted at `new_index` because sort-relevant
+    /// fields changed.
     Moved { old_index: usize, new_index: usize },
 }
 
@@ -481,11 +482,11 @@ pub(crate) fn increment_sequence(listing_id: &str) -> Option<u64> {
 /// change and the cache reflecting it.
 ///
 /// - Local FS: FSEvents coalesce window (~10 ms).
-/// - SMB: 200 ms watcher debounce; > 50 events per directory triggers a
-///   `FullRefresh` which arrives via a real re-read.
-/// - MTP: 500 ms event debouncer plus per-device polling. Many MTP devices
-///   (cameras especially) never emit per-object events, so "watched" there means
-///   only "the device is reachable and would forward changes if it sent any."
+/// - SMB: 200 ms watcher debounce; > 50 events per directory triggers a `FullRefresh` which arrives
+///   via a real re-read.
+/// - MTP: 500 ms event debouncer plus per-device polling. Many MTP devices (cameras especially)
+///   never emit per-object events, so "watched" there means only "the device is reachable and would
+///   forward changes if it sent any."
 ///
 /// Callers must treat the result as "fresh as our most recent observation," which
 /// is the same guarantee a `list_directory` call gives: it sees the device's state

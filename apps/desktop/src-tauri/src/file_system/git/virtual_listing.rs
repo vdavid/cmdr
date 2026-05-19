@@ -1,9 +1,8 @@
 //! Virtual `.git/` listings.
 //!
-//! - `list_root` – the portal root: real `.git/*` entries (HEAD, config,
-//!   hooks/, objects/, refs/, etc.) followed by the six virtual category
-//!   entries (`branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
-//!   `submodules/`).
+//! - `list_root` – the portal root: real `.git/*` entries (HEAD, config, hooks/, objects/, refs/,
+//!   etc.) followed by the six virtual category entries (`branches/`, `tags/`, `commits/`,
+//!   `stash/`, `worktrees/`, `submodules/`).
 //! - `list_branches` / `list_tags` – refs as virtual dirs
 //!
 //! Real `.git/*` entries that aren't the root listing fall through to the

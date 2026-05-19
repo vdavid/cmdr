@@ -4,14 +4,13 @@
 //!
 //! We split test hooks along two axes:
 //!
-//! - **Hard hooks** (changes the binary shape) live behind Cargo features, e.g.
-//!   `playwright-e2e`, `virtual-mtp`, `smb-e2e`. They add commands, plugins, or
-//!   alternative backends and are compiled out of production binaries.
-//! - **Soft hooks** (runtime-only) live behind environment variables read by
-//!   this module. They are **strictly additive**: they may add a delay, skip a
-//!   non-essential step, or emit extra telemetry, but they must never replace
-//!   production logic. With the env var unset, the code path is exactly what
-//!   production runs.
+//! - **Hard hooks** (changes the binary shape) live behind Cargo features, e.g. `playwright-e2e`,
+//!   `virtual-mtp`, `smb-e2e`. They add commands, plugins, or alternative backends and are compiled
+//!   out of production binaries.
+//! - **Soft hooks** (runtime-only) live behind environment variables read by this module. They are
+//!   **strictly additive**: they may add a delay, skip a non-essential step, or emit extra
+//!   telemetry, but they must never replace production logic. With the env var unset, the code path
+//!   is exactly what production runs.
 //!
 //! The canonical env vars handled here are documented in
 //! `docs/testing.md` § "E2E env-var hooks". New soft hooks should be wired

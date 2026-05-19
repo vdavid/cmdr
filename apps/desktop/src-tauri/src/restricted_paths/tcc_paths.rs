@@ -23,9 +23,11 @@ use std::sync::OnceLock;
 /// of one of these (component-wise prefix, not a string `starts_with`).
 ///
 /// Sources:
-/// - Per-folder TCC services: `kTCCServiceSystemPolicy{Downloads,Documents,Desktop,Pictures,Movies,Music}Folder`
+/// - Per-folder TCC services:
+///   `kTCCServiceSystemPolicy{Downloads,Documents,Desktop,Pictures,Movies,Music}Folder`
 /// - FDA-gated paths: Safari/Mail/Messages history live in `~/Library/`
-/// - FileProvider TCC: `~/Library/Mobile Documents/com~apple~CloudDocs` (iCloud) + `~/Library/CloudStorage` (Dropbox/Drive/etc.)
+/// - FileProvider TCC: `~/Library/Mobile Documents/com~apple~CloudDocs` (iCloud) +
+///   `~/Library/CloudStorage` (Dropbox/Drive/etc.)
 /// - SystemPolicyAppData: `~/Library/Containers` + `~/Library/Group Containers`
 const HOME_RELATIVE_PREFIXES: &[&str] = &[
     // Per-folder TCC services

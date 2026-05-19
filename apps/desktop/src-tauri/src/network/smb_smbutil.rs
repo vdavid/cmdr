@@ -262,7 +262,8 @@ enum SmbutilOutcome {
     allow(dead_code, reason = "Used by macOS smbutil path and tests")
 )]
 fn classify_smbutil_stderr(stderr: &str) -> SmbutilOutcome {
-    // allowed-error-string-match: smbutil CLI has no structured error output; LC_ALL=C forces English strings
+    // allowed-error-string-match: smbutil CLI has no structured error output; LC_ALL=C forces English
+    // strings
     if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
         SmbutilOutcome::AuthRequired
     } else {

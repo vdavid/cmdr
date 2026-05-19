@@ -11,15 +11,14 @@
 //!
 //! ## How
 //!
-//! - `Markdown(String)` is the typed wrapper. Serializes transparently as a
-//!   JSON string so the wire format is unchanged.
-//! - `md!("template", arg, arg, ...)` works like `format!` but each `{}` arg
-//!   must implement `MarkdownArg`. Plain `&str` / `String` / `Path` escape
-//!   automatically; a `Markdown` value passes through unescaped. There is no
-//!   way to interpolate a raw runtime string without going through one of
-//!   those paths.
-//! - `Markdown::literal(s)` wraps an already-trusted string (typically a
-//!   static literal). The author asserts the content is safe markdown.
+//! - `Markdown(String)` is the typed wrapper. Serializes transparently as a JSON string so the wire
+//!   format is unchanged.
+//! - `md!("template", arg, arg, ...)` works like `format!` but each `{}` arg must implement
+//!   `MarkdownArg`. Plain `&str` / `String` / `Path` escape automatically; a `Markdown` value
+//!   passes through unescaped. There is no way to interpolate a raw runtime string without going
+//!   through one of those paths.
+//! - `Markdown::literal(s)` wraps an already-trusted string (typically a static literal). The
+//!   author asserts the content is safe markdown.
 //!
 //! ## Escaping
 //!

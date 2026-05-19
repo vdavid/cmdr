@@ -2,7 +2,8 @@
 //!
 //! Opens the file and can immediately serve lines at any byte position.
 //! Scans backward up to MAX_BACKWARD_SCAN bytes to find a newline boundary.
-//! If no newline is found (for example, in a binary file), treats the seek position as a line start.
+//! If no newline is found (for example, in a binary file), treats the seek position as a line
+//! start.
 //!
 //! Supports Fraction seeking by multiplying fraction × total_bytes.
 //! Does NOT support Line seeking (use LineIndexBackend for that).

@@ -82,7 +82,8 @@ fn test_tool_input_schemas_are_valid() {
 #[test]
 fn test_total_tool_count() {
     let tools = get_all_tools();
-    // 6 nav + 2 cursor + 1 select + 6 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1 settings + 2 network + 1 await = 29
+    // 6 nav + 2 cursor + 1 select + 6 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1
+    // settings + 2 network + 1 await = 29
     assert_eq!(
         tools.len(),
         29,

@@ -112,7 +112,8 @@ pub(super) async fn create_directory_core(
     Ok((new_path, expanded_path))
 }
 
-/// Core file creation logic, separated from the Tauri command so it can be tested without `AppHandle`.
+/// Core file creation logic, separated from the Tauri command so it can be tested without
+/// `AppHandle`.
 pub(super) async fn create_file_core(
     volume_id: Option<String>,
     parent_path: &str,

@@ -178,7 +178,8 @@ fn test_map_volume_error_already_exists() {
 fn test_map_volume_error_not_supported() {
     let err = map_volume_error("/ctx", VolumeError::NotSupported);
     assert!(
-        // allowed-error-string-match: testing Display impl of WriteOperationError; no typed sub-variant for "not supported"
+        // allowed-error-string-match: testing Display impl of WriteOperationError; no typed sub-variant for "not
+        // supported"
         matches!(err, WriteOperationError::IoError { path, message } if message.contains("not supported") && path == "/ctx")
     );
 }
@@ -1096,11 +1097,10 @@ async fn test_stop_mode_does_not_bulk_skip_pre_known_conflicts() {
 /// Stale / garbage entries in `pre_known_conflicts` must not crash or silently
 /// skip files the user didn't intend to skip. Two scenarios:
 /// 1. Names in `pre_known_conflicts` that don't match any source path → ignored.
-/// 2. Source files whose names happen to match a pre-known entry but are NOT
-///    actually conflicting at dest (dest content has changed since pre-flight) →
-///    still skipped under Skip mode (user explicitly chose to skip files of
-///    those names). Source remains intact, dest is untouched. No data loss
-///    on either side.
+/// 2. Source files whose names happen to match a pre-known entry but are NOT actually conflicting
+///    at dest (dest content has changed since pre-flight) → still skipped under Skip mode (user
+///    explicitly chose to skip files of those names). Source remains intact, dest is untouched. No
+///    data loss on either side.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_pre_known_conflicts_with_stale_entries_is_safe() {
     let (source, dest) = make_volumes();
@@ -1706,11 +1706,11 @@ async fn test_concurrent_copy_cancellation_mid_batch() {
 // the QNAP `naspi` share to a local temp dir, through the real
 // `copy_volumes_with_progress` code path. Requires:
 //
-// - QNAP reachable at 192.168.1.111 with the `naspi` share,
-//   user "david", password in `SMB2_TEST_NAS_PASSWORD` env var.
-// - 100 × 10 KB files pre-uploaded at `_test/bench_100tiny/f_000.bin`
-//   through `f_099.bin` (see `smb2`'s `bench_100_tiny_files_seq_vs_parallel`
-//   (running that benchmark uploads them as a side effect).
+// - QNAP reachable at 192.168.1.111 with the `naspi` share, user "david", password in
+//   `SMB2_TEST_NAS_PASSWORD` env var.
+// - 100 × 10 KB files pre-uploaded at `_test/bench_100tiny/f_000.bin` through `f_099.bin` (see
+//   `smb2`'s `bench_100_tiny_files_seq_vs_parallel` (running that benchmark uploads them as a side
+//   effect).
 //
 // Run with:
 //   cd apps/desktop/src-tauri && cargo test --release \

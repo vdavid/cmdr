@@ -11,7 +11,8 @@ pub struct SystemMemoryInfo {
     pub total_bytes: u64,
     /// Wired + compressor-occupied memory (kernel, drivers; can't be freed).
     pub wired_bytes: u64,
-    /// App memory: active + inactive - purgeable (process memory the user can free by quitting apps).
+    /// App memory: active + inactive - purgeable (process memory the user can free by quitting
+    /// apps).
     pub app_bytes: u64,
     /// Free: free + purgeable + speculative (available for new allocations).
     pub free_bytes: u64,
@@ -93,8 +94,9 @@ fn macos_memory_info() -> SystemMemoryInfo {
 
         wired_pages = vm_info.wire_count as u64;
         compressor_pages = vm_info.compressor_page_count as u64;
-        // internal_page_count = anonymous pages owned by processes (what Activity Monitor calls "App Memory").
-        // Unlike active+inactive, this excludes file-backed cache that macOS freely reclaims.
+        // internal_page_count = anonymous pages owned by processes (what Activity Monitor calls "App
+        // Memory"). Unlike active+inactive, this excludes file-backed cache that macOS freely
+        // reclaims.
         internal_pages = vm_info.internal_page_count as u64;
         purgeable_pages = vm_info.purgeable_count as u64;
     }

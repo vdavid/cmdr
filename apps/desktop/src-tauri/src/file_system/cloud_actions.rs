@@ -18,7 +18,6 @@
 //! menu items only for files under `~/Library/Mobile Documents/com~apple~CloudDocs/`
 //! (iCloud Drive). For Dropbox/GDrive/OneDrive items the menu items don't appear;
 //! the user has to use the provider's own client (or Finder).
-//!
 use std::path::Path;
 #[cfg(target_os = "macos")]
 use std::path::PathBuf;

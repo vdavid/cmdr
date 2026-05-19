@@ -1576,7 +1576,8 @@ pub(super) fn write_error_event_from(
     }
 }
 
-/// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks one.
+/// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks
+/// one.
 pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOperationError {
     match e {
         VolumeError::NotFound(path) => WriteOperationError::SourceNotFound { path },

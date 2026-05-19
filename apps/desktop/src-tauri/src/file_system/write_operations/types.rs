@@ -530,7 +530,8 @@ fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
     }
 }
 
-/// Extension trait for converting `io::Result` to `Result<T, WriteOperationError>` with path context.
+/// Extension trait for converting `io::Result` to `Result<T, WriteOperationError>` with path
+/// context.
 pub(super) trait IoResultExt<T> {
     fn with_path(self, path: &Path) -> Result<T, WriteOperationError>;
 }

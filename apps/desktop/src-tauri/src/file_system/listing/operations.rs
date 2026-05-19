@@ -178,7 +178,8 @@ pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Re
     Ok(visible_entries(&listing.entries, include_hidden).position(|e| e.name == name))
 }
 
-/// Finds the indices of multiple files by name in a cached listing (batch version of `find_file_index`).
+/// Finds the indices of multiple files by name in a cached listing (batch version of
+/// `find_file_index`).
 ///
 /// Single pass over cached entries, O(entries + names). Returns only found names as keys.
 pub fn find_file_indices(
@@ -450,15 +451,18 @@ pub struct ListingStats {
     pub total_dirs: usize,
     /// Total logical size in bytes (files + directory recursive sizes).
     pub total_size: u64,
-    /// Total physical (on-disk) size in bytes. Mirrors `total_size` but uses `physical_size` / `recursive_physical_size`.
+    /// Total physical (on-disk) size in bytes. Mirrors `total_size` but uses `physical_size` /
+    /// `recursive_physical_size`.
     pub total_physical_size: u64,
     /// Present only if `selected_indices` was provided.
     pub selected_files: Option<usize>,
     /// Present only if `selected_indices` was provided.
     pub selected_dirs: Option<usize>,
-    /// Total logical size of selected entries in bytes. Present only if `selected_indices` was provided.
+    /// Total logical size of selected entries in bytes. Present only if `selected_indices` was
+    /// provided.
     pub selected_size: Option<u64>,
-    /// Total physical size of selected entries in bytes. Present only if `selected_indices` was provided.
+    /// Total physical size of selected entries in bytes. Present only if `selected_indices` was
+    /// provided.
     pub selected_physical_size: Option<u64>,
 }
 

@@ -28,7 +28,8 @@ pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
     .map_err(IpcError::from_err)
 }
 
-/// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not locked).
+/// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not
+/// locked).
 #[tauri::command]
 #[specta::specta]
 pub async fn check_rename_permission(path: String) -> Result<(), IpcError> {
@@ -400,7 +401,8 @@ fn check_sibling_conflict(_old_path: &Path, new_path: &Path) -> (bool, bool, Opt
     (true, false, Some(conflict))
 }
 
-/// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's `get_metadata`.
+/// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's
+/// `get_metadata`.
 async fn check_sibling_conflict_via_volume(volume_id: &str, new_path: &Path) -> (bool, Option<ConflictFileInfo>) {
     let volume = match crate::file_system::get_volume_manager().get(volume_id) {
         Some(v) => v,
@@ -456,7 +458,8 @@ mod tests {
     async fn test_check_rename_permission_nonexistent() {
         let result = check_rename_permission("/nonexistent_12345/file.txt".to_string()).await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is the only signal
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is
+        // the only signal
         assert!(result.unwrap_err().message.contains("doesn't exist"));
     }
 
@@ -580,7 +583,8 @@ mod tests {
         )
         .await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is the only signal
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is
+        // the only signal
         assert!(result.unwrap_err().message.contains("already exists"));
         // Both files still intact
         assert!(old.exists());
@@ -629,7 +633,8 @@ mod tests {
     async fn test_move_to_trash_nonexistent() {
         let result = move_to_trash("/nonexistent_12345/trash_me.txt".to_string()).await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is the only signal
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is
+        // the only signal
         assert!(result.unwrap_err().message.contains("doesn't exist"));
     }
 }

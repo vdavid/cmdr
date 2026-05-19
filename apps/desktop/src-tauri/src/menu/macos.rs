@@ -278,7 +278,8 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // --- Tab menu ---
     let new_tab_item = MenuItem::with_id(app, NEW_TAB_ID, "New tab", true, Some("Cmd+T"))?;
     let close_tab_item = MenuItem::with_id(app, CLOSE_TAB_ID, "Close tab", true, Some("Cmd+W"))?;
-    // Disabled initially; frontend enables it after the first close via `set_reopen_closed_tab_enabled`.
+    // Disabled initially; frontend enables it after the first close via
+    // `set_reopen_closed_tab_enabled`.
     let reopen_closed_tab_item = MenuItem::with_id(
         app,
         REOPEN_CLOSED_TAB_ID,
@@ -403,7 +404,8 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, GO_FORWARD_ID, &go_forward_item, &go_menu, 1);
     register_item(&mut items, GO_PARENT_ID, &go_parent_item, &go_menu, 3);
 
-    // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7), close_others(8)
+    // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7),
+    // close_others(8)
     register_item(&mut items, NEW_TAB_ID, &new_tab_item, &tab_menu, 0);
     register_item(&mut items, CLOSE_TAB_ID, &close_tab_item, &tab_menu, 1);
     register_item(&mut items, REOPEN_CLOSED_TAB_ID, &reopen_closed_tab_item, &tab_menu, 2);

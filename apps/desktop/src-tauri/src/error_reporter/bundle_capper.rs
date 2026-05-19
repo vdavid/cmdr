@@ -21,16 +21,16 @@ const MIN_TAIL_LINES_OF_NEWEST_FILE: usize = 50;
 ///
 /// Behavior:
 /// 1. `manifest.json` is always preserved in full (verbatim, with its original mtime).
-/// 2. `logs/*` entries are sorted newest-first by their stored mtime so the most
-///    recent context wins the budget race.
-/// 3. Each log entry's content is line-split. Lines are packed into the output zip
-///    starting from the **end** of the file (the newest lines) until the compressed
-///    output approaches the cap. Older lines get dropped.
+/// 2. `logs/*` entries are sorted newest-first by their stored mtime so the most recent context
+///    wins the budget race.
+/// 3. Each log entry's content is line-split. Lines are packed into the output zip starting from
+///    the **end** of the file (the newest lines) until the compressed output approaches the cap.
+///    Older lines get dropped.
 /// 4. If a single entry won't fit even partially, we still preserve the last
-///    [`MIN_TAIL_LINES_OF_NEWEST_FILE`] lines of the newest file, even if it pushes the
-///    output ~10% over the cap. Shipping a 1.1 MB bundle with useful tail beats
-///    shipping a 542-byte bundle with only the manifest (which is what the broken
-///    pre-fix-6 implementation did (see the bug report).
+///    [`MIN_TAIL_LINES_OF_NEWEST_FILE`] lines of the newest file, even if it pushes the output ~10%
+///    over the cap. Shipping a 1.1 MB bundle with useful tail beats shipping a 542-byte bundle with
+///    only the manifest (which is what the broken pre-fix-6 implementation did (see the bug
+///    report).
 ///
 /// If the input zip is already under the cap, returns it untouched.
 pub fn cap_bundle_to_mb(zip_bytes: Vec<u8>, cap_mb: usize) -> Vec<u8> {

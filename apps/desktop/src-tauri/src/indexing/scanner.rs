@@ -581,8 +581,8 @@ mod tests {
     fn scan_test_tempdir() -> tempfile::TempDir {
         // Create in CWD instead of /tmp/ to avoid:
         // - Linux: /tmp/ is in EXCLUDED_PREFIXES
-        // - macOS: /tmp is a symlink to /private/tmp, causing path mismatches
-        //   with normalize_path() which resolves /tmp → /private/tmp
+        // - macOS: /tmp is a symlink to /private/tmp, causing path mismatches with normalize_path() which
+        //   resolves /tmp → /private/tmp
         tempfile::Builder::new()
             .prefix("cmdr-scan-test-")
             .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))

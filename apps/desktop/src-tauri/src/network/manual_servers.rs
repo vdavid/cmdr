@@ -441,7 +441,8 @@ fn add_server_entry_to_path(path: &Path, entry: ManualServerEntry) {
 // Public API
 // ---------------------------------------------------------------------------
 
-/// Adds a manual server: parses input, checks reachability, persists, and injects into discovery state.
+/// Adds a manual server: parses input, checks reachability, persists, and injects into discovery
+/// state.
 pub async fn add_manual_server<R: Runtime>(
     input: &str,
     app_handle: &AppHandle<R>,

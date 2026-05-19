@@ -2,12 +2,12 @@
 //!
 //! ## What this exercises
 //!
-//! - The `PaneStateStore.generation` counter strictly advances on every `set_left` /
-//!   `set_right`. The ack helper relies on this invariant.
-//! - `update_pane_tabs` bumps generation too. Without this, the `tab` MCP tool would
-//!   time out on every call (tab pushes bypass `set_left`/`set_right`).
-//! - The `SoftDialogTracker` `get_open_types()` lookup behaves the way `AckSignal::SoftDialogAppeared`
-//!   relies on (set membership, exact ID match).
+//! - The `PaneStateStore.generation` counter strictly advances on every `set_left` / `set_right`.
+//!   The ack helper relies on this invariant.
+//! - `update_pane_tabs` bumps generation too. Without this, the `tab` MCP tool would time out on
+//!   every call (tab pushes bypass `set_left`/`set_right`).
+//! - The `SoftDialogTracker` `get_open_types()` lookup behaves the way
+//!   `AckSignal::SoftDialogAppeared` relies on (set membership, exact ID match).
 //! - `AckSignal::describe` produces useful, debuggable error context for each variant.
 //!
 //! ## What this can't exercise here

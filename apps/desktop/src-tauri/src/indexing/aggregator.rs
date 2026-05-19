@@ -1,7 +1,8 @@
 //! Dir stats computation: bottom-up aggregation and incremental delta propagation.
 //!
 //! Three modes:
-//! - **Full aggregation**: after a full scan, compute `dir_stats` for every directory (deepest first).
+//! - **Full aggregation**: after a full scan, compute `dir_stats` for every directory (deepest
+//!   first).
 //! - **Subtree aggregation**: after a subtree scan, compute `dir_stats` only under a given root.
 //! - **Delta propagation**: after a watcher event, walk up the ancestor chain updating counts.
 //!
@@ -14,7 +15,8 @@ use rusqlite::{Connection, params};
 use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError, resolve_path};
 use crate::pluralize::pluralize_with;
 
-/// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`.
+/// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count,
+/// has_symlinks_direct)`.
 ///
 /// `has_symlinks_direct` is `true` if any direct child of `parent_id` is a symlink.
 /// OR-aggregated with descendant directories' `recursive_has_symlinks` during the
@@ -481,7 +483,8 @@ fn topological_sort_bottom_up(entries: &[(i64, i64)]) -> Vec<i64> {
 
 /// Bulk-load direct children stats for ALL parent IDs in a single SQL query.
 ///
-/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`.
+/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count,
+/// has_symlinks_direct)`.
 fn bulk_get_children_stats_by_id(conn: &Connection) -> Result<ChildrenStatsMap, IndexStoreError> {
     let mut stmt = conn.prepare(
         "SELECT parent_id,
@@ -557,8 +560,9 @@ fn bulk_get_all_dir_stats(conn: &Connection) -> Result<HashMap<i64, DirStatsById
 
 /// Load direct children stats scoped to a subtree via recursive CTE.
 ///
-/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`.
-/// Only includes entries whose parent is within the subtree rooted at `root_id`.
+/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count,
+/// has_symlinks_direct)`. Only includes entries whose parent is within the subtree rooted at
+/// `root_id`.
 fn scoped_get_children_stats_by_id(conn: &Connection, root_id: i64) -> Result<ChildrenStatsMap, IndexStoreError> {
     let mut stmt = conn.prepare(
         "WITH RECURSIVE subtree(id) AS (

@@ -18,7 +18,8 @@ use super::{
 };
 
 /// Max chars in the `Copy "<filename>"` context menu label before middle-ellipsis kicks in.
-/// Picked to fit typical filenames while capping pathological 100+ char names that blow the menu width.
+/// Picked to fit typical filenames while capping pathological 100+ char names that blow the menu
+/// width.
 pub(super) const COPY_FILENAME_MAX_CHARS: usize = 50;
 
 /// Platform-aware accelerator for "Copy path to clipboard".

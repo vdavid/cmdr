@@ -283,8 +283,9 @@ pub fn get_operation_status(operation_id: &str) -> Option<OperationStatus> {
 
 /// Cancels an in-progress write operation.
 ///
-/// State transitions: `Running → RollingBack` (rollback=true), `Running → Stopped` (rollback=false),
-/// `RollingBack → Stopped` (cancel during rollback). Other transitions are no-ops.
+/// State transitions: `Running → RollingBack` (rollback=true), `Running → Stopped`
+/// (rollback=false), `RollingBack → Stopped` (cancel during rollback). Other transitions are
+/// no-ops.
 ///
 /// # Arguments
 /// * `operation_id` - The operation ID to cancel

@@ -9,9 +9,9 @@
 //!
 //! - One `NSDraggingItem` per file (Finder/IntelliJ iterate items reading file URLs).
 //! - Each item's `NSPasteboardItem` vends `public.file-url`.
-//! - The first item additionally vends `public.utf8-plain-text` with all paths
-//!   shell-escaped and space-joined (so `pasteboard.string(forType:)` returns the
-//!   joined list, which is the standard "drop into terminal" gesture).
+//! - The first item additionally vends `public.utf8-plain-text` with all paths shell-escaped and
+//!   space-joined (so `pasteboard.string(forType:)` returns the joined list, which is the standard
+//!   "drop into terminal" gesture).
 //! - The first item also vends `NSFilenamesPboardType` (legacy `NSArray<NSString>`
 //!   of all paths). Required for compatibility with stock wry's `collect_paths`
 //!   ([drag_drop.rs:18-32](https://github.com/tauri-apps/wry/blob/dev/src/wkwebview/drag_drop.rs#L18-L32))
@@ -19,9 +19,9 @@
 //!   pre-10.13 Mac app that still calls `propertyListForType(NSFilenamesPboardType)`
 //!   directly. Drop this once [wry#1723](https://github.com/tauri-apps/wry/pull/1723)
 //!   is merged and a wry release containing it ships through `tauri-runtime-wry`.
-//! - The rich PNG icon is set as `setDraggingFrame:contents:` on every item, so
-//!   the existing `drag_image_swap` swizzle keeps working unchanged (it operates
-//!   on `NSDraggingItem`s regardless of writer type).
+//! - The rich PNG icon is set as `setDraggingFrame:contents:` on every item, so the existing
+//!   `drag_image_swap` swizzle keeps working unchanged (it operates on `NSDraggingItem`s regardless
+//!   of writer type).
 
 use std::path::{Path, PathBuf};
 use std::ptr::NonNull;

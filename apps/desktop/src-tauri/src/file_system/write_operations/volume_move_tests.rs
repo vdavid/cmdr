@@ -334,18 +334,17 @@ async fn cross_volume_move_pre_known_conflicts_bulk_skip() {
 /// the bulk-skip exclusion.
 ///
 /// Setup:
-/// - source: `/file.txt` (file conflict), `/docs` (dir whose name also
-///   appears in pre_known_conflicts because the FE's top-level conflict
-///   scan reports name collisions regardless of type).
+/// - source: `/file.txt` (file conflict), `/docs` (dir whose name also appears in
+///   pre_known_conflicts because the FE's top-level conflict scan reports name collisions
+///   regardless of type).
 /// - dest: `/file.txt`, `/docs/guide.txt`.
 /// - `pre_known_conflicts: ["file.txt", "docs"]`, `resolution = Skip`.
 ///
 /// Expected:
-/// - `file.txt` bulk-skips: the source still has it, dest still has
-///   `old-file`, the source side is preserved (Skip is non-destructive).
-/// - `docs` does NOT bulk-skip. We pin this by inspecting the FIRST
-///   non-zero progress event: with the bug, it would account both
-///   `file.txt` AND `docs` (files_done = 2). With the fix, only
+/// - `file.txt` bulk-skips: the source still has it, dest still has `old-file`, the source side is
+///   preserved (Skip is non-destructive).
+/// - `docs` does NOT bulk-skip. We pin this by inspecting the FIRST non-zero progress event: with
+///   the bug, it would account both `file.txt` AND `docs` (files_done = 2). With the fix, only
 ///   `file.txt` (files_done = 1).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn cross_volume_move_top_level_directory_excluded_from_bulk_skip() {

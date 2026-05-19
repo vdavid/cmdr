@@ -211,15 +211,13 @@ fn run_scan_preview(
 /// Runs a volume-based scan preview (for MTP and other non-local volumes).
 ///
 /// Decision flow per parent group (sources sharing a parent directory):
-/// - Fresh-listing oracle hit: cached entries supply size + `is_directory` for
-///   each selected child, so the per-group `BatchScanResult` slice is built
-///   without any volume I/O for top-level files. Top-level directories among
-///   the inputs recurse via `scan_subtree_with_oracle`, which re-applies the
-///   oracle at every level (so a subfolder open in another pane is also
+/// - Fresh-listing oracle hit: cached entries supply size + `is_directory` for each selected child,
+///   so the per-group `BatchScanResult` slice is built without any volume I/O for top-level files.
+///   Top-level directories among the inputs recurse via `scan_subtree_with_oracle`, which
+///   re-applies the oracle at every level (so a subfolder open in another pane is also
 ///   short-circuited).
-/// - Oracle miss: falls through to `volume.scan_for_copy_batch_with_progress`,
-///   preserving the cold-cache parent-grouping optimizations on MTP and the
-///   pipelined stat optimization on SMB.
+/// - Oracle miss: falls through to `volume.scan_for_copy_batch_with_progress`, preserving the
+///   cold-cache parent-grouping optimizations on MTP and the pipelined stat optimization on SMB.
 ///
 /// Emits the same `scan-preview-progress` / `scan-preview-complete` events as
 /// the pre-oracle code, so the FE dialog behavior is unchanged.

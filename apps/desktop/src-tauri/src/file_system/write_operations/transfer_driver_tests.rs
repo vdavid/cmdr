@@ -19,10 +19,10 @@
 //!   - cancellation between sources is honored
 //!   - cancellation reflected in `TransferLoopOutcome.intent`
 //!   - post-loop intent check catches mid-arm cancellation race
-//! - **Status cache parity**: every emitted progress event has a matching
-//!   `update_operation_status` call (verified via `get_operation_status`).
-//! - **Sync driver only**: `&mut`-state captures work (the prototype's whole
-//!   point) — exercise a captured `tracker`-like counter.
+//! - **Status cache parity**: every emitted progress event has a matching `update_operation_status`
+//!   call (verified via `get_operation_status`).
+//! - **Sync driver only**: `&mut`-state captures work (the prototype's whole point) — exercise a
+//!   captured `tracker`-like counter.
 
 use super::super::state::{
     OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,

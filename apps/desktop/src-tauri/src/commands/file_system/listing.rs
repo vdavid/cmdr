@@ -225,8 +225,8 @@ pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize
 /// The FE applies chrome + clamp on top.
 ///
 /// Error mapping (consumed by the FE):
-/// - `font_metrics_not_ready`: at least one column had no measurable filename
-///   in the font cache. FE retries after `ensureFontMetricsLoaded` resolves.
+/// - `font_metrics_not_ready`: at least one column had no measurable filename in the font cache. FE
+///   retries after `ensureFontMetricsLoaded` resolves.
 /// - `invalid_items_per_column`: caller sent 0; FE clamps to >= 1 normally.
 /// - `listing_not_found:{id}`: listing already ended (or never started).
 /// - Anything else is a pass-through (cache-lock poisoning etc.).
@@ -288,8 +288,8 @@ pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Re
     ops_get_file_at(&listing_id, index, include_hidden)
 }
 
-/// Gets file paths at specific frontend indices from a cached listing (batch version of path extraction).
-/// Handles the parent ".." offset internally; callers pass frontend indices.
+/// Gets file paths at specific frontend indices from a cached listing (batch version of path
+/// extraction). Handles the parent ".." offset internally; callers pass frontend indices.
 #[tauri::command]
 #[specta::specta]
 pub fn get_paths_at_indices(

@@ -24,8 +24,8 @@ use crate::file_system::volume::{CopyScanResult, Volume, VolumeError};
 ///
 /// `on_progress` is called as `(files_done, dirs_done, bytes_done, current_file, current_dir)`:
 /// - `current_file` is just the filename component of the entry being processed
-/// - `current_dir` is the absolute parent directory path, surfaced to the UI so
-///   the user sees "in directory: …" alongside the filename
+/// - `current_dir` is the absolute parent directory path, surfaced to the UI so the user sees "in
+///   directory: …" alongside the filename
 pub(super) struct WalkContext<'a, E> {
     pub(super) progress_interval: Duration,
     pub(super) is_cancelled: &'a dyn Fn() -> bool,
@@ -343,8 +343,9 @@ fn file_bytes_count_toward_total(metadata: &fs::Metadata, seen_inodes: &mut Hash
 
 /// Builds a map from top-level source path to the number of files it contains in the scan result.
 ///
-/// Each `FileInfo` has a `source_root` (the parent of the top-level source) and a `path` (the full file path).
-/// The top-level source is reconstructed as `source_root + first component of (path relative to source_root)`.
+/// Each `FileInfo` has a `source_root` (the parent of the top-level source) and a `path` (the full
+/// file path). The top-level source is reconstructed as `source_root + first component of (path
+/// relative to source_root)`.
 pub(super) fn build_source_file_counts(files: &[FileInfo]) -> std::collections::HashMap<PathBuf, usize> {
     let mut counts = std::collections::HashMap::new();
     for file_info in files {
@@ -384,7 +385,8 @@ impl SourceItemTracker {
         }
     }
 
-    /// Records a processed file. Returns `Some(source_path)` when all files for that source are done.
+    /// Records a processed file. Returns `Some(source_path)` when all files for that source are
+    /// done.
     pub fn record(&mut self, file_info: &FileInfo) -> Option<PathBuf> {
         let source_path = top_level_source_path(file_info);
         let count = self.processed.entry(source_path.clone()).or_insert(0);

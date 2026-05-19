@@ -12,18 +12,15 @@
 //!
 //! ## Risks (knowingly accepted)
 //!
-//! - **`UIPreferredContentSizeCategoryName` is undocumented.** If Apple renames
-//!   or removes it, `read_system_multiplier()` returns `1.0` (the "Large" default)
-//!   and the user's in-app slider continues to work. No crash, just no system
-//!   integration.
-//! - **`com.apple.accessibility.api` is an undocumented distributed
-//!   notification.** It's the same bus Apple's own components react to for
-//!   "something in Accessibility changed". Same fallback story: if it stops
-//!   firing, the value still reads correctly on next app launch.
-//! - **Per-app overrides** (`com.apple.universalaccess` → `FontSizeCategory`)
-//!   are intentionally ignored. Cmdr ships its own per-app slider in Settings;
-//!   layering the system per-app override on top adds complexity for a feature
-//!   users won't reach for.
+//! - **`UIPreferredContentSizeCategoryName` is undocumented.** If Apple renames or removes it,
+//!   `read_system_multiplier()` returns `1.0` (the "Large" default) and the user's in-app slider
+//!   continues to work. No crash, just no system integration.
+//! - **`com.apple.accessibility.api` is an undocumented distributed notification.** It's the same
+//!   bus Apple's own components react to for "something in Accessibility changed". Same fallback
+//!   story: if it stops firing, the value still reads correctly on next app launch.
+//! - **Per-app overrides** (`com.apple.universalaccess` → `FontSizeCategory`) are intentionally
+//!   ignored. Cmdr ships its own per-app slider in Settings; layering the system per-app override
+//!   on top adds complexity for a feature users won't reach for.
 //!
 //! ## Mapping
 //!

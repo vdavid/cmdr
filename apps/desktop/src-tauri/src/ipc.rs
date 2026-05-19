@@ -17,34 +17,32 @@
 //!
 //! - Each command has `#[tauri::command]` + `#[specta::specta]`.
 //! - Each DTO crossing the IPC boundary has `#[derive(specta::Type)]`.
-//! - [`builder()`] returns a [`tauri_specta::Builder`] holding every command
-//!   and event the app exposes; [`run`](crate::run) attaches it to
-//!   `tauri::Builder::default()` via `.invoke_handler(builder.invoke_handler())`
-//!   and `builder.mount_events(app)` in setup.
+//! - [`builder()`] returns a [`tauri_specta::Builder`] holding every command and event the app
+//!   exposes; [`run`](crate::run) attaches it to `tauri::Builder::default()` via
+//!   `.invoke_handler(builder.invoke_handler())` and `builder.mount_events(app)` in setup.
 //! - In debug builds we call [`builder().export(...)`] to regenerate
-//!   `apps/desktop/src/lib/ipc/bindings.ts` on each launch (that's the only
-//!   place the bindings are written to disk; everything else just imports them).
+//!   `apps/desktop/src/lib/ipc/bindings.ts` on each launch (that's the only place the bindings are
+//!   written to disk; everything else just imports them).
 //!
 //! ## File layout
 //!
 //! - `ipc.rs` (this file) holds the `builder()` entry point, the runtime
-//!   `tauri::generate_handler![]` dispatch macro call, and the `greet` smoke
-//!   test command.
-//! - [`crate::ipc_collectors`] holds the per-platform `collect_*_types`
-//!   helpers (one per `#[cfg]` group) plus the `collect_all_types` combiner
-//!   that `builder()` hands to `tauri_specta::internal::command`.
+//!   `tauri::generate_handler![]` dispatch macro call, and the `greet` smoke test command.
+//! - [`crate::ipc_collectors`] holds the per-platform `collect_*_types` helpers (one per `#[cfg]`
+//!   group) plus the `collect_all_types` combiner that `builder()` hands to
+//!   `tauri_specta::internal::command`.
 //!
 //! ## Platform-specific commands and `collect_commands!`
 //!
 //! `collect_commands!` doesn't support `#[cfg(...)]` inline attributes because
 //! the macro only accepts path expressions. We work around this by:
 //!
-//! 1. Using `tauri::generate_handler![]` (which supports `#[cfg(...)`) for the
-//!    runtime invoke handler.
-//! 2. Using `specta::function::collect_functions![]` in static functions, one
-//!    per platform group, to collect type info separately.
-//! 3. Combining everything via `tauri_specta::internal::command` which accepts
-//!    a runtime handler and a type-collector fn pointer.
+//! 1. Using `tauri::generate_handler![]` (which supports `#[cfg(...)`) for the runtime invoke
+//!    handler.
+//! 2. Using `specta::function::collect_functions![]` in static functions, one per platform group,
+//!    to collect type info separately.
+//! 3. Combining everything via `tauri_specta::internal::command` which accepts a runtime handler
+//!    and a type-collector fn pointer.
 
 #[cfg(test)]
 use specta_typescript::Typescript;

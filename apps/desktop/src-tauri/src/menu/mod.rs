@@ -2,21 +2,17 @@
 //!
 //! ## File layout
 //!
-//! - `mod.rs` (this file): shared types (`MenuState`, `MenuItems`, `MenuItemEntry`,
-//!   `MenuContext`, `NetworkHostMenuContext`, `CommandScope`, `ViewMode`), all menu
-//!   item ID constants, and the ID ↔ command-registry mapping (`menu_id_to_command`
-//!   and `command_id_to_menu_id`).
-//! - `menu_items.rs`: menu item builder helpers and submenu factories (sort,
-//!   zoom), accelerator/label platform-aware helpers, `register_item`, and
-//!   `truncate_for_menu_label`.
-//! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher,
-//!   context menus (file, breadcrumb, tab, network host), viewer menu, plus
-//!   `FileContextInfo` / `ContextMenuResult`.
-//! - `menu_handlers.rs`: event handlers and live-update helpers:
-//!   `rebuild_view_mode_items`, `sync_view_mode_check_states`,
-//!   `update_menu_item_accelerator`, `frontend_shortcut_to_accelerator`, and
-//!   the macOS post-construction helpers (`cleanup_macos_menus`,
-//!   `set_macos_menu_icons`).
+//! - `mod.rs` (this file): shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `MenuContext`,
+//!   `NetworkHostMenuContext`, `CommandScope`, `ViewMode`), all menu item ID constants, and the ID
+//!   ↔ command-registry mapping (`menu_id_to_command` and `command_id_to_menu_id`).
+//! - `menu_items.rs`: menu item builder helpers and submenu factories (sort, zoom),
+//!   accelerator/label platform-aware helpers, `register_item`, and `truncate_for_menu_label`.
+//! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher, context menus (file,
+//!   breadcrumb, tab, network host), viewer menu, plus `FileContextInfo` / `ContextMenuResult`.
+//! - `menu_handlers.rs`: event handlers and live-update helpers: `rebuild_view_mode_items`,
+//!   `sync_view_mode_check_states`, `update_menu_item_accelerator`,
+//!   `frontend_shortcut_to_accelerator`, and the macOS post-construction helpers
+//!   (`cleanup_macos_menus`, `set_macos_menu_icons`).
 //! - `macos.rs` / `linux.rs`: platform-specific menu bar shape.
 //! - `open_with.rs` (macOS): "Open with" submenu builder.
 

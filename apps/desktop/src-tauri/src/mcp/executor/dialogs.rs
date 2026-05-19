@@ -4,18 +4,18 @@
 //! - `open settings|file-viewer|about` → child window appears in `webview_windows()`.
 //! - `open` confirmation dialogs → not allowed (use copy/move/delete/mkdir/mkfile instead).
 //! - `close settings` → matching Tauri window disappears.
-//! - `close file-viewer` → snapshot the viewer-window count, ack when it drops (so
-//!   closing one of N viewers acks without waiting for all to vanish). Returns an
-//!   `invalid_params` error fast-path if no viewers are open at all.
-//! - `close about` → soft dialog `about` is no longer in `SoftDialogTracker` (`about`
-//!   is an overlay, not a separate window).
-//! - `close <confirmation>` → soft dialog is no longer in `SoftDialogTracker`. Cancel
-//!   doesn't reliably bump pane generation, so we wait for the tracker entry to vanish.
-//! - `focus settings|file-viewer|about` → window is present (no-op fast path; if the
-//!   window isn't there, the wait_for_ack times out, which is the correct contract for
-//!   focusing a non-existent dialog).
-//! - `confirm <transfer|delete>` → pane generation advances (the FE accepted the
-//!   confirmation and the underlying copy/move/delete started, producing a state push).
+//! - `close file-viewer` → snapshot the viewer-window count, ack when it drops (so closing one of N
+//!   viewers acks without waiting for all to vanish). Returns an `invalid_params` error fast-path
+//!   if no viewers are open at all.
+//! - `close about` → soft dialog `about` is no longer in `SoftDialogTracker` (`about` is an
+//!   overlay, not a separate window).
+//! - `close <confirmation>` → soft dialog is no longer in `SoftDialogTracker`. Cancel doesn't
+//!   reliably bump pane generation, so we wait for the tracker entry to vanish.
+//! - `focus settings|file-viewer|about` → window is present (no-op fast path; if the window isn't
+//!   there, the wait_for_ack times out, which is the correct contract for focusing a non-existent
+//!   dialog).
+//! - `confirm <transfer|delete>` → pane generation advances (the FE accepted the confirmation and
+//!   the underlying copy/move/delete started, producing a state push).
 
 use std::path::Path;
 

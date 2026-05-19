@@ -6,13 +6,12 @@
 //! ## Edge cases
 //!
 //! - **Multicolor** (default macOS option): `controlAccentColor` returns blue.
-//! - **Graphite**: Returns a desaturated gray (~`#8c8c8c`). The CSS `color-mix()`
-//!   derivations still work but produce muted hover/subtle variants. This matches
-//!   the user's intent for a neutral interface.
-//! - **Light/dark mode switching**: `NSSystemColorsDidChangeNotification` fires on
-//!   appearance changes too, so we re-read and emit the mode-appropriate color.
-//!   WKWebView separately handles `prefers-color-scheme` media queries, so our
-//!   observer only needs to update the accent color.
+//! - **Graphite**: Returns a desaturated gray (~`#8c8c8c`). The CSS `color-mix()` derivations still
+//!   work but produce muted hover/subtle variants. This matches the user's intent for a neutral
+//!   interface.
+//! - **Light/dark mode switching**: `NSSystemColorsDidChangeNotification` fires on appearance
+//!   changes too, so we re-read and emit the mode-appropriate color. WKWebView separately handles
+//!   `prefers-color-scheme` media queries, so our observer only needs to update the accent color.
 
 use std::ptr::NonNull;
 

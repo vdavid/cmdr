@@ -7,15 +7,15 @@
 //!
 //! Public surface:
 //!
-//! - [`dispatch::init`] / [`dispatch::set_stdout_threshold`]: builds the tree + the
-//!   verbose-toggle knob.
-//! - **Resolved log dir cache** ([`set_log_dir`] / [`log_dir`]): the path is derived in
-//!   `lib.rs` from `CMDR_LOG_DIR` / `CMDR_DATA_DIR` / the Tauri default. The error
-//!   reporter bundle builder needs the same path without re-deriving the env-var logic.
-//! - **Live keep-count** ([`set_keep_count`] / [`keep_count`]): the rotation keep-N value
-//!   the file chain was built with. `file-rotate` is one-shot; changing this at runtime
-//!   does NOT reconfigure the chain, but [`eager_prune`] uses it to delete excess
-//!   archived files immediately when the user lowers the cap.
+//! - [`dispatch::init`] / [`dispatch::set_stdout_threshold`]: builds the tree + the verbose-toggle
+//!   knob.
+//! - **Resolved log dir cache** ([`set_log_dir`] / [`log_dir`]): the path is derived in `lib.rs`
+//!   from `CMDR_LOG_DIR` / `CMDR_DATA_DIR` / the Tauri default. The error reporter bundle builder
+//!   needs the same path without re-deriving the env-var logic.
+//! - **Live keep-count** ([`set_keep_count`] / [`keep_count`]): the rotation keep-N value the file
+//!   chain was built with. `file-rotate` is one-shot; changing this at runtime does NOT reconfigure
+//!   the chain, but [`eager_prune`] uses it to delete excess archived files immediately when the
+//!   user lowers the cap.
 //! - **One-shot pruner** ([`eager_prune`]): for the user-lowered-the-cap case.
 //! - **Listing helper** ([`list_recent_log_files`]): for bundle building and diagnostics.
 

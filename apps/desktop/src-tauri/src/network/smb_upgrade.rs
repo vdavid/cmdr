@@ -239,8 +239,8 @@ pub(crate) async fn resolve_ip_to_hostname_with_wait(ip: &str, timeout: std::tim
 /// `statfs` can return different formats depending on how the mount was created:
 /// - An IP address like `192.168.1.111`: usable as-is
 /// - A DNS hostname like `fileserver.corp.example.com`: usable as-is
-/// - An mDNS service name like `Naspolya._smb._tcp.local`: NOT resolvable by DNS,
-///   must be resolved to an IP via the mDNS discovery state
+/// - An mDNS service name like `Naspolya._smb._tcp.local`: NOT resolvable by DNS, must be resolved
+///   to an IP via the mDNS discovery state
 ///
 /// Returns the resolved IP if possible, otherwise the original string.
 pub(crate) fn resolve_server_address(server: &str) -> String {

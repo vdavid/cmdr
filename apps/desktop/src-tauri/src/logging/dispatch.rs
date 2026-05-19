@@ -25,11 +25,11 @@
 //!
 //! Runtime mutability:
 //!
-//! - **Stdout level** flips between Info and Debug via [`set_stdout_threshold`]. An
-//!   `AtomicU8` consulted by the chain's filter, no dispatch rebuild, no log lines lost.
-//! - **File rotation cap** is fixed at startup (file-rotate doesn't expose a live
-//!   reconfigure). `set_keep_count` + `eager_prune` in the parent module already covered
-//!   this. Same restart-required envelope as the plugin had.
+//! - **Stdout level** flips between Info and Debug via [`set_stdout_threshold`]. An `AtomicU8`
+//!   consulted by the chain's filter, no dispatch rebuild, no log lines lost.
+//! - **File rotation cap** is fixed at startup (file-rotate doesn't expose a live reconfigure).
+//!   `set_keep_count` + `eager_prune` in the parent module already covered this. Same
+//!   restart-required envelope as the plugin had.
 
 use std::io::Write;
 use std::path::PathBuf;

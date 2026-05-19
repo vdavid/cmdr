@@ -756,16 +756,15 @@ impl IndexManager {
         self.scan_handle = None;
         self.scanning.store(false, Ordering::Relaxed);
 
-        // 2. Stop the watcher. Dropping the sender closes the channel, which
-        //    causes event_rx.recv() to return None in the event loop.
+        // 2. Stop the watcher. Dropping the sender closes the channel, which causes event_rx.recv() to
+        //    return None in the event loop.
         if let Some(ref mut watcher) = self.drive_watcher {
             watcher.stop();
         }
         self.drive_watcher = None;
 
-        // 3. Wait for the event loop to drain (process final batch + UpdateLastEventId).
-        //    Use block_in_place so we can .await the join handle without blocking the
-        //    tokio runtime thread pool.
+        // 3. Wait for the event loop to drain (process final batch + UpdateLastEventId). Use block_in_place
+        //    so we can .await the join handle without blocking the tokio runtime thread pool.
         let task = self.live_event_task.lock().unwrap().take();
         if let Some(task) = task {
             tokio::task::block_in_place(|| {

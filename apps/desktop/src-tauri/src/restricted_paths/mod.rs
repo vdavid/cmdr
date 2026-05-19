@@ -9,18 +9,16 @@
 //!
 //! Public flow:
 //!
-//! 1. Capture sites (indexer scanner, listing IPC) call `record_denial(path)`
-//!    when they hit `PermissionDenied` on a path that passes
-//!    `tcc_paths::is_potentially_tcc_restricted`. The path enters the set.
-//! 2. Successful listings call `clear_path(path)` to drop entries that have
-//!    become accessible.
-//! 3. On `NSApplicationDidBecomeActive`, the observer fires
-//!    `reprobe_all_async()` which spawns a blocking task that runs
-//!    `read_dir` against each known restricted path. Paths that now
-//!    succeed are cleared. Paths still denied stay in the set.
-//! 4. Any change emits a debounced `restricted-paths-changed` event
-//!    carrying the full sorted set. The frontend store hydrates initially
-//!    via `get_restricted_paths()` and patches via the event afterwards.
+//! 1. Capture sites (indexer scanner, listing IPC) call `record_denial(path)` when they hit
+//!    `PermissionDenied` on a path that passes `tcc_paths::is_potentially_tcc_restricted`. The path
+//!    enters the set.
+//! 2. Successful listings call `clear_path(path)` to drop entries that have become accessible.
+//! 3. On `NSApplicationDidBecomeActive`, the observer fires `reprobe_all_async()` which spawns a
+//!    blocking task that runs `read_dir` against each known restricted path. Paths that now succeed
+//!    are cleared. Paths still denied stay in the set.
+//! 4. Any change emits a debounced `restricted-paths-changed` event carrying the full sorted set.
+//!    The frontend store hydrates initially via `get_restricted_paths()` and patches via the event
+//!    afterwards.
 //!
 //! On non-macOS, the predicate always returns `false` so the set never
 //! gains entries and the observer is a no-op (or compiled out).

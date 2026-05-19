@@ -1,11 +1,10 @@
 //! Bundle construction. Reads + redacts log content and emits a zip with a manifest.
 //!
 //! Two pipelines live here:
-//! - [`build_bundle_streaming`] (Flow A): tail-walks each log file, streams in-window
-//!   lines straight into the zip, stops as soon as the compressed cap or the timestamp
-//!   cutoff fires.
-//! - [`build_bundle_legacy_window`] (Flow B): reads each file in full, line-filters by
-//!   timestamp, packs into a `BTreeMap`, then calls [`build_zip`].
+//! - [`build_bundle_streaming`] (Flow A): tail-walks each log file, streams in-window lines
+//!   straight into the zip, stops as soon as the compressed cap or the timestamp cutoff fires.
+//! - [`build_bundle_legacy_window`] (Flow B): reads each file in full, line-filters by timestamp,
+//!   packs into a `BTreeMap`, then calls [`build_zip`].
 //!
 //! Public entry point is [`build_bundle`], which dispatches on the scope. Capping is in
 //! the sibling [`super::bundle_capper`] module. Flow A enforces the cap inline; Flow B

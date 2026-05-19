@@ -27,10 +27,9 @@
 //! The whole point of this abstraction is to enforce, in one place, that **the
 //! `transfer_one` closure is NEVER invoked**:
 //!
-//! 1. for a source in the pre-known-conflicts bulk-skip set under
-//!    `ConflictResolution::Skip`, nor
-//! 2. after a top-level conflict resolution returned Skip (async driver only —
-//!    the sync driver delegates this to the closure), nor
+//! 1. for a source in the pre-known-conflicts bulk-skip set under `ConflictResolution::Skip`, nor
+//! 2. after a top-level conflict resolution returned Skip (async driver only — the sync driver
+//!    delegates this to the closure), nor
 //! 3. after cancellation has been signaled on the operation state.
 //!
 //! `transfer_driver_tests.rs` pins each of these properties so a future refactor
@@ -41,11 +40,11 @@
 //!
 //! The four operations split cleanly along sync/async lines:
 //!
-//! - `copy_files_with_progress_inner` runs inside `tokio::task::spawn_blocking`
-//!   and uses synchronous `std::fs` I/O. Its loop is sync, and the closure
-//!   captures `&mut CopyTransaction` + `&mut HashSet<PathBuf>` + `&mut SourceItemTracker`.
-//! - The three volume ops are async (they `await` on the `Volume` trait's
-//!   `Pin<Box<dyn Future>>`-returning methods).
+//! - `copy_files_with_progress_inner` runs inside `tokio::task::spawn_blocking` and uses
+//!   synchronous `std::fs` I/O. Its loop is sync, and the closure captures `&mut CopyTransaction` +
+//!   `&mut HashSet<PathBuf>` + `&mut SourceItemTracker`.
+//! - The three volume ops are async (they `await` on the `Volume` trait's `Pin<Box<dyn
+//!   Future>>`-returning methods).
 //!
 //! Trying to be generic over sync/async via boxed futures would force every
 //! sync caller through an unnecessary `Pin<Box<dyn Future>>` allocation per
@@ -58,17 +57,15 @@
 //! The two paths differ in where conflict resolution lives, and that split is
 //! load-bearing:
 //!
-//! - **Sync driver (`drive_transfer_serial_sync`)**: the closure handles
-//!   conflict resolution. Local-FS conflicts are discovered mid-flight inside
-//!   `copy_single_item` (a parent directory might be a regular file blocking
-//!   `create_dir_all`; that's a per-file conflict the driver can't pre-detect
-//!   via `dest.get_metadata` on the top-level source). The driver only
-//!   guarantees the bulk-skip prelude and the data-safety check ordering.
-//! - **Async driver (`drive_transfer_serial_async`)**: the driver owns top-level
-//!   conflict detection (`dest_volume.get_metadata` per source) and dispatch to
-//!   `resolve_volume_conflict`. Volume conflict resolution is uniform
-//!   (Stop/Skip/Overwrite/Rename, all at the top-level path) which is why the
-//!   driver can host it.
+//! - **Sync driver (`drive_transfer_serial_sync`)**: the closure handles conflict resolution.
+//!   Local-FS conflicts are discovered mid-flight inside `copy_single_item` (a parent directory
+//!   might be a regular file blocking `create_dir_all`; that's a per-file conflict the driver can't
+//!   pre-detect via `dest.get_metadata` on the top-level source). The driver only guarantees the
+//!   bulk-skip prelude and the data-safety check ordering.
+//! - **Async driver (`drive_transfer_serial_async`)**: the driver owns top-level conflict detection
+//!   (`dest_volume.get_metadata` per source) and dispatch to `resolve_volume_conflict`. Volume
+//!   conflict resolution is uniform (Stop/Skip/Overwrite/Rename, all at the top-level path) which
+//!   is why the driver can host it.
 //!
 //! This asymmetry is the same one the production code has today; the driver
 //! just makes it explicit and enforces the data-safety contract for both
@@ -76,21 +73,18 @@
 //!
 //! # What the driver does NOT do
 //!
-//! - **Scan phase**: scanning, disk-space check, and source-hint construction
-//!   are pre-loop concerns owned by the caller. They produce the inputs the
-//!   driver needs (`total_files`, `total_bytes`, `pre_skip_paths`).
-//! - **`SourceItemTracker`** (`write-source-item-done` emit): local-FS-only
-//!   concern. The sync driver's closure threads `SourceItemTracker` through
-//!   itself (it's `!Sync` and lives on the serial path only); volume ops
-//!   don't emit this event today.
-//! - **`CopyTransaction`** (rollback bookkeeping): local-FS-only. The closure
-//!   captures `&mut transaction`; the driver never sees it. On a non-Ok
-//!   `TransferLoopOutcome.intent`, the caller decides whether to invoke
-//!   `rollback_with_progress`.
-//! - **Concurrent path**: deliberately out of scope. `copy_volumes_with_progress`
-//!   keeps its `FuturesUnordered` block inline (only 1 of the 4 ops needs
-//!   concurrency, so abstracting it would be a 1-of-4 abstraction, not a shared
-//!   pattern — see plan § "Concurrent driver scope").
+//! - **Scan phase**: scanning, disk-space check, and source-hint construction are pre-loop concerns
+//!   owned by the caller. They produce the inputs the driver needs (`total_files`, `total_bytes`,
+//!   `pre_skip_paths`).
+//! - **`SourceItemTracker`** (`write-source-item-done` emit): local-FS-only concern. The sync
+//!   driver's closure threads `SourceItemTracker` through itself (it's `!Sync` and lives on the
+//!   serial path only); volume ops don't emit this event today.
+//! - **`CopyTransaction`** (rollback bookkeeping): local-FS-only. The closure captures `&mut
+//!   transaction`; the driver never sees it. On a non-Ok `TransferLoopOutcome.intent`, the caller
+//!   decides whether to invoke `rollback_with_progress`.
+//! - **Concurrent path**: deliberately out of scope. `copy_volumes_with_progress` keeps its
+//!   `FuturesUnordered` block inline (only 1 of the 4 ops needs concurrency, so abstracting it
+//!   would be a 1-of-4 abstraction, not a shared pattern — see plan § "Concurrent driver scope").
 
 // A handful of driver surface items aren't wired up by today's three callers
 // (`TransferOutcome::Skipped`, `DriverConfig::{conflict_resolution,
@@ -328,8 +322,7 @@ pub(super) struct DriverConfig {
 /// following hold:
 ///
 /// - the source is NOT in the pre-known-conflicts bulk-skip set, AND
-/// - cancellation has NOT been observed on `state.intent` at the start of
-///   this iteration.
+/// - cancellation has NOT been observed on `state.intent` at the start of this iteration.
 ///
 /// Top-level conflict resolution is the **closure's** responsibility for the
 /// sync path (local-FS conflicts happen mid-flight inside `copy_single_item`
@@ -339,14 +332,13 @@ pub(super) struct DriverConfig {
 ///
 /// # What the driver does
 ///
-/// 1. Pre-known-conflicts bulk-skip prelude. Sums `bulk_skip_bytes` from the
-///    caller, increments counters, and emits one bulk progress event.
-/// 2. Per-source loop:
-///    a. Check cancellation. If cancelled, return with `PostLoopIntent::Cancelled`.
-///    b. Skip pre-known-conflict sources (no closure invocation).
-///    c. Call `transfer_one`. On `Ok`, update counters. On `Err` with
-///    `WriteOperationError::Cancelled`, return `PostLoopIntent::Cancelled`. On
-///    any other `Err`, return `PostLoopIntent::Failed`.
+/// 1. Pre-known-conflicts bulk-skip prelude. Sums `bulk_skip_bytes` from the caller, increments
+///    counters, and emits one bulk progress event.
+/// 2. Per-source loop: a. Check cancellation. If cancelled, return with
+///    `PostLoopIntent::Cancelled`. b. Skip pre-known-conflict sources (no closure invocation). c.
+///    Call `transfer_one`. On `Ok`, update counters. On `Err` with
+///    `WriteOperationError::Cancelled`, return `PostLoopIntent::Cancelled`. On any other `Err`,
+///    return `PostLoopIntent::Failed`.
 /// 3. Return `PostLoopIntent::Completed` if the loop drained without incident.
 ///
 /// # Why no async / no boxed-future variant
@@ -557,21 +549,18 @@ pub(super) enum ConflictDecision {
 /// following hold:
 ///
 /// - the source is NOT in the pre-known-conflicts bulk-skip set, AND
-/// - cancellation has NOT been observed on `state.intent` at the start of
-///   this iteration, AND
-/// - the conflict resolver returned `ConflictDecision::Proceed` (not Skip)
-///   when a top-level conflict was detected.
+/// - cancellation has NOT been observed on `state.intent` at the start of this iteration, AND
+/// - the conflict resolver returned `ConflictDecision::Proceed` (not Skip) when a top-level
+///   conflict was detected.
 ///
 /// # What the driver does
 ///
 /// 1. Pre-known-conflicts bulk-skip prelude (emit one bulk progress event).
-/// 2. Per-source loop:
-///    a. Cancellation check. If cancelled, return `PostLoopIntent::Cancelled`.
-///    b. Skip pre-known-conflict sources (no closure invocation).
-///    c. Conflict detection via `dest_meta_fetcher`. If conflict, invoke
-///    `conflict_resolver` and respect its decision.
-///    d. If Skip, do skip accounting + emit throttled progress; continue.
-///    e. If Proceed, invoke `transfer_one` with the resolved dest path.
+/// 2. Per-source loop: a. Cancellation check. If cancelled, return `PostLoopIntent::Cancelled`. b.
+///    Skip pre-known-conflict sources (no closure invocation). c. Conflict detection via
+///    `dest_meta_fetcher`. If conflict, invoke `conflict_resolver` and respect its decision. d. If
+///    Skip, do skip accounting + emit throttled progress; continue. e. If Proceed, invoke
+///    `transfer_one` with the resolved dest path.
 /// 3. Return `PostLoopIntent::Completed` if the loop drained without incident.
 ///
 /// # Closure-bound shape: boxed future, not `AsyncFnMut`

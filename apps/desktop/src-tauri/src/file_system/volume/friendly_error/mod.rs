@@ -1,12 +1,12 @@
 //! Friendly error mapping: turns raw errors + path into user-facing error info.
 //!
 //! Three sources produce a `FriendlyError`, each in its own sibling module:
-//! - `volume_error`: `VolumeError` (used by listing-error path; richest, dispatches
-//!   to errno on raw `IoError`)
-//! - `write_error`: `WriteOperationError` (used by `write-error` events; mirror of
-//!   `volume_error` for the post-`map_volume_error` shape)
-//! - `errno`: raw macOS errnos with a non-macOS fallback (called from
-//!   `volume_error` when an `IoError` carries a `raw_os_error`)
+//! - `volume_error`: `VolumeError` (used by listing-error path; richest, dispatches to errno on raw
+//!   `IoError`)
+//! - `write_error`: `WriteOperationError` (used by `write-error` events; mirror of `volume_error`
+//!   for the post-`map_volume_error` shape)
+//! - `errno`: raw macOS errnos with a non-macOS fallback (called from `volume_error` when an
+//!   `IoError` carries a `raw_os_error`)
 //! - `empty_root`: TCC-restricted volume root hint (a single special case)
 //!
 //! `enrich_with_provider` (in sibling module `provider.rs`) layers

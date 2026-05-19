@@ -43,7 +43,8 @@ pub async fn copy_between_volumes(
 }
 
 /// Unified move across volume types. Same events as `copy_between_volumes`.
-/// Handles same-volume (native rename/move), both-local (native move), and cross-volume (copy+delete).
+/// Handles same-volume (native rename/move), both-local (native move), and cross-volume
+/// (copy+delete).
 #[tauri::command]
 #[specta::specta]
 pub async fn move_between_volumes(

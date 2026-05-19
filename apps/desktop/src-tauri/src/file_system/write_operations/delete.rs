@@ -218,12 +218,11 @@ impl VolumeScanTracker {
 /// resulting list is already in deepest-first order for safe deletion.
 ///
 /// Emits scan progress two ways:
-/// 1. **Per-entry** via `list_directory`'s `on_progress` callback, so the FE sees
-///    the tally climb mid-listing — important for MTP, where one `list_directory`
-///    call on `/DCIM/Camera` with 1k+ photos can take ~17 s of USB roundtrips.
-/// 2. **After each subtree** (this function's tail), as a final snapshot for that
-///    branch. Throttled by the shared `VolumeScanTracker` so it doesn't race
-///    with the per-entry callback.
+/// 1. **Per-entry** via `list_directory`'s `on_progress` callback, so the FE sees the tally climb
+///    mid-listing — important for MTP, where one `list_directory` call on `/DCIM/Camera` with 1k+
+///    photos can take ~17 s of USB roundtrips.
+/// 2. **After each subtree** (this function's tail), as a final snapshot for that branch. Throttled
+///    by the shared `VolumeScanTracker` so it doesn't race with the per-entry callback.
 #[allow(
     clippy::too_many_arguments,
     reason = "Matches the parameter pattern of other write operation functions"

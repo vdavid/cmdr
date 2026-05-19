@@ -1114,9 +1114,9 @@ struct VerifyResult {
 /// the writer channel using integer-keyed write messages:
 /// 1. **Stale entries**: DB children that no longer exist on disk get
 ///    `DeleteEntryById`/`DeleteSubtreeById` (auto-propagates deltas).
-/// 2. **Missing entries**: Disk children not in DB get `UpsertEntryV2`.
-///    New files also get `PropagateDeltaById`. New directories are collected
-///    in `new_dir_paths` for the caller to scan via `scan_subtree`.
+/// 2. **Missing entries**: Disk children not in DB get `UpsertEntryV2`. New files also get
+///    `PropagateDeltaById`. New directories are collected in `new_dir_paths` for the caller to scan
+///    via `scan_subtree`.
 fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) -> VerifyResult {
     // ── Phase 1: Bulk-read DB state via ReadPool (no INDEXING lock) ──
     // Snapshot: parent_path → (parent_id, Vec<EntryRow>)

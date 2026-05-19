@@ -122,7 +122,8 @@ pub fn needs_validation(app: &tauri::AppHandle) -> bool {
 }
 
 /// Check if a server validation has ever completed successfully.
-/// Returns false if no `last_validation_timestamp` exists (license was committed locally but never server-verified).
+/// Returns false if no `last_validation_timestamp` exists (license was committed locally but never
+/// server-verified).
 pub fn has_been_validated(app: &tauri::AppHandle) -> bool {
     let store = match app.store("license.json") {
         Ok(s) => s,

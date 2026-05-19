@@ -14,14 +14,14 @@ use super::{
 /// These emit keyboard-equivalent events to the frontend.
 ///
 /// Ack contract:
-/// - `nav_to_parent`, `nav_back`, `nav_forward` → pane generation must advance (path
-///   changes get pushed via `update_*_pane_state`).
-/// - `open_under_cursor` → round-trip via `mcp-open-under-cursor`. The FE awaits the
-///   resolved action (directory navigation, viewer window, or OS open-with-default) and
-///   emits `mcp-response`. We can't rely on `GenerationAdvanced` or `WindowAppeared`
-///   here because the OS-open branch produces neither — `openFile()` hands the path to
-///   the OS default and returns, no state push, no viewer window. The round-trip is the
-///   only honest ack for this multi-mode command.
+/// - `nav_to_parent`, `nav_back`, `nav_forward` → pane generation must advance (path changes get
+///   pushed via `update_*_pane_state`).
+/// - `open_under_cursor` → round-trip via `mcp-open-under-cursor`. The FE awaits the resolved
+///   action (directory navigation, viewer window, or OS open-with-default) and emits
+///   `mcp-response`. We can't rely on `GenerationAdvanced` or `WindowAppeared` here because the
+///   OS-open branch produces neither — `openFile()` hands the path to the OS default and returns,
+///   no state push, no viewer window. The round-trip is the only honest ack for this multi-mode
+///   command.
 ///
 /// The `nav_to_parent` / `nav_back` / `nav_forward` family uses `NAV_ACK_TIMEOUT` (5 s)
 /// instead of the default 1500 ms because navigation can touch a remote backend
@@ -137,13 +137,11 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
             //
             // The previous "wait for `path` to change" formulation had two
             // false-timeout failure modes:
-            //   1. Re-selecting the same volume: path doesn't change → 30s timeout
-            //      (a no-op should succeed instantly).
-            //   2. Switching to the virtual `Network` volume: the FE swaps in
-            //      NetworkBrowser without changing the pane path, so polling
-            //      for path change deadlocked. This was the actual root cause
-            //      of the SMB tests' `retries: 1` paying ~30s per first-run
-            //      failure.
+            //   1. Re-selecting the same volume: path doesn't change → 30s timeout (a no-op should succeed
+            //      instantly).
+            //   2. Switching to the virtual `Network` volume: the FE swaps in NetworkBrowser without changing
+            //      the pane path, so polling for path change deadlocked. This was the actual root cause of the
+            //      SMB tests' `retries: 1` paying ~30s per first-run failure.
             //
             // `volume_name` flows through `PaneState` via `update_left_pane_state`
             // / `update_right_pane_state` on every FE-side state push (see

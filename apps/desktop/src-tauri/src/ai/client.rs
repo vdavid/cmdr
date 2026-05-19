@@ -5,9 +5,9 @@
 //!
 //! Two backend constructors:
 //! - [`AiBackend::local`]: forces the OpenAI adapter at `http://127.0.0.1:<port>/v1/`.
-//! - [`AiBackend::remote`]: BYOK. The model name picks the adapter (e.g. `claude-*` →
-//!   Anthropic native, `gemini-*` → Gemini native, `gpt-5*`/`*-pro`/`*-codex` → OpenAI
-//!   Responses), and `base_url` overrides the endpoint.
+//! - [`AiBackend::remote`]: BYOK. The model name picks the adapter (e.g. `claude-*` → Anthropic
+//!   native, `gemini-*` → Gemini native, `gpt-5*`/`*-pro`/`*-codex` → OpenAI Responses), and
+//!   `base_url` overrides the endpoint.
 
 use std::sync::Arc;
 use std::time::Duration;

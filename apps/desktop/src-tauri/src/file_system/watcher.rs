@@ -54,7 +54,8 @@ pub struct DiffChange {
     #[serde(rename = "type")]
     pub change_type: String,
     pub entry: FileEntry,
-    /// Position in the sorted listing: old listing for `"remove"`, new listing for `"add"`/`"modify"`.
+    /// Position in the sorted listing: old listing for `"remove"`, new listing for
+    /// `"add"`/`"modify"`.
     pub index: usize,
 }
 

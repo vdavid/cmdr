@@ -1,10 +1,10 @@
 //! "Open with" candidate apps and launch wrappers, backed by `NSWorkspace`.
 //!
 //! Two responsibilities:
-//! - **Listing candidates** for one or more selected files via
-//!   `URLsForApplicationsToOpenURL:` (modern macOS 12+ API). Multi-selection picks the
-//!   intersection of per-file candidate lists. Results are cached by lowercased extension
-//!   for the session and invalidated when an app launches or terminates.
+//! - **Listing candidates** for one or more selected files via `URLsForApplicationsToOpenURL:`
+//!   (modern macOS 12+ API). Multi-selection picks the intersection of per-file candidate lists.
+//!   Results are cached by lowercased extension for the session and invalidated when an app
+//!   launches or terminates.
 //! - **Launching** the chosen app with the full selection via
 //!   `openURLs:withApplicationAtURL:configuration:completionHandler:` (one launch, multi-URL).
 //!
@@ -79,8 +79,9 @@ mod imp {
     use std::time::{Duration, Instant};
 
     /// Per-extension cache TTL fallback. The primary invalidation signal is
-    /// `NSWorkspace.didLaunchApplicationNotification` (subscribed in `start_invalidation_observer`),
-    /// but a TTL guards against missed signals (apps installed via Finder drag, system updates).
+    /// `NSWorkspace.didLaunchApplicationNotification` (subscribed in
+    /// `start_invalidation_observer`), but a TTL guards against missed signals (apps installed
+    /// via Finder drag, system updates).
     const CACHE_TTL: Duration = Duration::from_secs(30 * 60);
 
     /// Stack size for LaunchServices worker threads. Must accommodate deep
