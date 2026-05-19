@@ -274,6 +274,34 @@ pub struct WriteCancelledEvent {
     pub rolled_back: bool,
 }
 
+/// Settled event payload. Emitted exactly once per write operation, after the
+/// spawned background task has fully returned (success, error, cancelled, or
+/// panic). Pairs with the terminal outcome event (`write-complete` /
+/// `write-cancelled` / `write-error`): the FE waits for `write-settled` before
+/// clearing the "Cancelling…" dialog so the user isn't tempted to dispatch a
+/// new op while the volume is still tearing down (USB session teardown on MTP,
+/// for example).
+///
+/// Ordering contract: this event is emitted AFTER the terminal outcome event
+/// for the same `operation_id`. The FE buffers any out-of-order delivery
+/// defensively; the BE guarantees the BE-side emit order.
+///
+/// `volume_id` is populated when the source volume is known at the time the
+/// guard is set up. Local-FS operations leave it `None` (they don't have a
+/// volume_id concept beyond the implicit "root"). The FE doesn't currently
+/// filter on volume_id — the per-op `operation_id` is the binding signal —
+/// but it's carried for future diagnostics and consistency.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WriteSettledEvent {
+    pub operation_id: String,
+    pub operation_type: WriteOperationType,
+    /// Source volume id when known (MTP/SMB volume ops). `None` for local-FS
+    /// operations.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub volume_id: Option<String>,
+}
+
 /// Conflict event payload (emitted when Stop mode encounters a conflict).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -706,6 +734,20 @@ pub trait OperationEventSink: Send + Sync {
     fn emit_scan_conflict(&self, conflict: ConflictInfo);
     /// Final dry-run result with conflict sample.
     fn emit_dry_run_complete(&self, result: DryRunResult);
+    /// Emitted exactly once per op, after the spawned task fully returns
+    /// (success, error, cancel, or panic). Default impl is a no-op so existing
+    /// production sinks compile unchanged — `TauriEventSink` and
+    /// `CollectorEventSink` override it. See `WriteSettledEvent` for the
+    /// ordering contract.
+    ///
+    /// Production emit goes through `WriteSettledGuard` directly to
+    /// `app.emit`; this trait method exists so tests can observe the same
+    /// event without a Tauri runtime.
+    #[allow(
+        dead_code,
+        reason = "Trait method consumed only by test sinks; production emits via WriteSettledGuard"
+    )]
+    fn emit_settled(&self, _event: WriteSettledEvent) {}
 }
 
 /// Tauri-backed event sink: calls `app.emit()` for each event.
@@ -756,6 +798,10 @@ impl OperationEventSink for TauriEventSink {
         use tauri::Emitter;
         let _ = self.app.emit("dry-run-complete", &result);
     }
+    fn emit_settled(&self, event: WriteSettledEvent) {
+        use tauri::Emitter;
+        let _ = self.app.emit("write-settled", &event);
+    }
 }
 
 /// Test event sink: stores events for inspection.
@@ -773,6 +819,7 @@ pub(crate) struct CollectorEventSink {
     pub scan_progress: std::sync::Mutex<Vec<ScanProgressEvent>>,
     pub scan_conflicts: std::sync::Mutex<Vec<ConflictInfo>>,
     pub dry_run: std::sync::Mutex<Vec<DryRunResult>>,
+    pub settled: std::sync::Mutex<Vec<WriteSettledEvent>>,
 }
 
 #[cfg(test)]
@@ -787,6 +834,7 @@ impl CollectorEventSink {
             scan_progress: std::sync::Mutex::new(Vec::new()),
             scan_conflicts: std::sync::Mutex::new(Vec::new()),
             dry_run: std::sync::Mutex::new(Vec::new()),
+            settled: std::sync::Mutex::new(Vec::new()),
         }
     }
 }
@@ -817,6 +865,9 @@ impl OperationEventSink for CollectorEventSink {
     }
     fn emit_dry_run_complete(&self, result: DryRunResult) {
         self.dry_run.lock().unwrap().push(result);
+    }
+    fn emit_settled(&self, event: WriteSettledEvent) {
+        self.settled.lock().unwrap().push(event);
     }
 }
 

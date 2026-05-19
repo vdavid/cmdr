@@ -145,9 +145,19 @@ pub async fn move_between_volumes(
     }
     register_operation_status(&operation_id, WriteOperationType::Move);
 
+    let source_volume_name = source_volume.name().to_string();
     tokio::spawn(async move {
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
+        // RAII settle guard: emits `write-settled` after the spawned task
+        // returns. Drop runs at end of scope; the FE waits on this event
+        // before closing the "Cancelling…" dialog.
+        let _settled_guard = crate::file_system::write_operations::state::WriteSettledGuard::new(
+            app_for_error.clone(),
+            operation_id_for_cleanup.clone(),
+            WriteOperationType::Move,
+            Some(source_volume_name),
+        );
 
         let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
         let result: Result<(), WriteFailure> = move_volumes_with_progress(
@@ -161,11 +171,6 @@ pub async fn move_between_volumes(
             &config,
         )
         .await;
-
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
 
         use tauri::Emitter;
         match result {
@@ -185,10 +190,17 @@ pub async fn move_between_volumes(
                 );
                 let _ = app_for_error.emit(
                     "write-error",
-                    write_error_event_from(operation_id_for_cleanup, WriteOperationType::Move, failure),
+                    write_error_event_from(operation_id_for_cleanup.clone(), WriteOperationType::Move, failure),
                 );
             }
         }
+
+        // Cleanup happens AFTER terminal events emit, BEFORE the settle
+        // guard's Drop. See `volume_copy.rs` for the full ordering rationale.
+        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+            cache.remove(&operation_id_for_cleanup);
+        }
+        unregister_operation_status(&operation_id_for_cleanup);
     });
 
     Ok(WriteOperationStartResult {
@@ -571,9 +583,18 @@ async fn move_within_same_volume(
     }
     register_operation_status(&operation_id, WriteOperationType::Move);
 
+    let volume_name = volume.name().to_string();
     tokio::spawn(async move {
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
+        // Settle guard: emits `write-settled` when the task exits. See
+        // `volume_copy.rs` for the ordering rationale.
+        let _settled_guard = crate::file_system::write_operations::state::WriteSettledGuard::new(
+            app_for_error.clone(),
+            operation_id_for_cleanup.clone(),
+            WriteOperationType::Move,
+            Some(volume_name),
+        );
 
         let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
         let result: Result<(), WriteOperationError> = move_within_same_volume_with_progress(
@@ -586,11 +607,6 @@ async fn move_within_same_volume(
             &config,
         )
         .await;
-
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
 
         use tauri::Emitter;
         match result {
@@ -610,10 +626,15 @@ async fn move_within_same_volume(
                 );
                 let _ = app_for_error.emit(
                     "write-error",
-                    WriteErrorEvent::new(operation_id_for_cleanup, WriteOperationType::Move, e),
+                    WriteErrorEvent::new(operation_id_for_cleanup.clone(), WriteOperationType::Move, e),
                 );
             }
         }
+
+        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+            cache.remove(&operation_id_for_cleanup);
+        }
+        unregister_operation_status(&operation_id_for_cleanup);
     });
 
     Ok(WriteOperationStartResult {

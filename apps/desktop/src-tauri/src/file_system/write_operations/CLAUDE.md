@@ -209,12 +209,40 @@ exits, partial files or staging directories may remain on disk. These use the `.
 | `write-complete` | Operation finished successfully |
 | `write-cancelled` | Operation cancelled (includes `rolled_back` flag) |
 | `write-error` | Operation failed. Carries `error: WriteOperationError` (typed) plus `friendly: FriendlyError` (rendered title/explanation/suggestion + category) populated by `WriteErrorEvent::new` via `friendly_from_write_error`. The FE renders the `friendly` payload directly in `TransferErrorDialog` and applies category-based colors. |
+| `write-settled` | Emitted once per op after the spawned background task fully returns. See [Settle contract](#settle-contract). |
 | `write-source-item-done` | All files for a top-level source item processed (for gradual deselection) |
 | `dry-run-complete` | `config.dry_run == true` (returns `DryRunResult`) |
 | `scan-preview-progress` | During `start_scan_preview` |
 | `scan-preview-complete` | Preview scan finished |
 | `scan-preview-error` | Preview scan failed |
 | `scan-preview-cancelled` | Preview scan cancelled |
+
+## Settle contract
+
+`write-settled` fires exactly once per operation, after the spawned background task has fully torn down — including
+in-flight USB / network teardown that may briefly outlive the `write-cancelled` emit. The FE uses it to gate the
+"Cancelling…" dialog close so the user can't dispatch a new op against a still-tearing-down volume (the wedge mode
+the M2 cancel propagation already shortens but doesn't eliminate).
+
+**Ordering**: `write-settled` always fires AFTER the terminal outcome event (`write-complete` / `write-cancelled` /
+`write-error`) for the same `operation_id`. The BE guarantees this by placing the settle emit in a `WriteSettledGuard`
+RAII struct whose `Drop` runs at the very end of the spawn-task scope, AFTER all the conditional terminal-event emits.
+
+**Guard pattern**: every spawn-task entry point (`start_write_operation` in `mod.rs`, the volume-delete branch in
+`delete_files_start`, `copy_between_volumes`, `move_between_volumes`, `move_within_same_volume`) constructs a
+`WriteSettledGuard` at the top of the spawned task. The guard's `Drop` impl emits the event. This makes the emit
+panic-safe: even if the handler closure panics and the task exits via `JoinError`, the guard still drops as part of
+stack unwinding, so the FE never hangs waiting for a settle that never comes. See
+`settle_event_tests.rs::settled_fires_on_panic_unwind` for the safety-net pin.
+
+**Payload**: `{ operationId: String, operationType, volumeId: Option<String> }`. The `volume_id` is best-effort: filled
+with the source volume's display name for volume-aware ops (copy/move between volumes, volume delete), `None` for pure
+local-FS operations. The FE currently filters only by `operationId`; `volume_id` is for diagnostics and forward
+compatibility.
+
+**Tests**: `settle_event_tests.rs` pins the guard's invariants (single fire, panic safety, ordering relative to the
+terminal event). `volume_cancel_tests::volume_*_emits_write_settled_event` pin the integration shape against the
+volume-delete handler.
 
 ## Key decisions
 

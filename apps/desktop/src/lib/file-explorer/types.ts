@@ -524,6 +524,21 @@ export interface WriteCancelledEvent {
   rolledBack: boolean
 }
 
+/** Settled event payload: emitted once per op after the spawned background
+ *  task has fully torn down. Pairs with the terminal outcome event
+ *  (`write-complete` / `write-cancelled` / `write-error`). The dialog uses
+ *  this to gate clearing the "Cancelling…" state so the user can't dispatch
+ *  a new op against a still-tearing-down volume.
+ *
+ *  Ordering contract: BE emits `write-settled` AFTER the terminal event.
+ *  FE buffers any out-of-order delivery defensively. */
+export interface WriteSettledEvent {
+  operationId: string
+  operationType: WriteOperationType
+  /** Source volume id when known (MTP/SMB volume ops). Optional. */
+  volumeId?: string
+}
+
 /** Conflict event payload (emitted when stop mode encounters a conflict). */
 export interface WriteConflictEvent {
   operationId: string

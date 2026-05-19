@@ -160,9 +160,20 @@ pub async fn copy_between_volumes(
     let operation_id_for_spawn = operation_id.clone();
 
     // Spawn background task
+    let source_volume_name = source_volume.name().to_string();
     tokio::spawn(async move {
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
+        // RAII settle guard: emits `write-settled` after the spawned task
+        // returns (success, error, cancel, or panic). Drop runs last in
+        // scope, so the FE sees the terminal write-* event first, then
+        // settle, and clears the dialog.
+        let _settled_guard = crate::file_system::write_operations::state::WriteSettledGuard::new(
+            app_for_error.clone(),
+            operation_id_for_cleanup.clone(),
+            WriteOperationType::Copy,
+            Some(source_volume_name),
+        );
 
         let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
         let result: Result<(), WriteFailure> = copy_volumes_with_progress(
@@ -176,12 +187,6 @@ pub async fn copy_between_volumes(
             &config,
         )
         .await;
-
-        // Clean up state
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
 
         // Handle result
         use tauri::Emitter;
@@ -205,10 +210,17 @@ pub async fn copy_between_volumes(
                 );
                 let _ = app_for_error.emit(
                     "write-error",
-                    write_error_event_from(operation_id_for_cleanup, WriteOperationType::Copy, failure),
+                    write_error_event_from(operation_id_for_cleanup.clone(), WriteOperationType::Copy, failure),
                 );
             }
         }
+
+        // Clean up state. Order: terminal event → cache cleanup → settle
+        // (via WriteSettledGuard's Drop at end of scope).
+        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+            cache.remove(&operation_id_for_cleanup);
+        }
+        unregister_operation_status(&operation_id_for_cleanup);
     });
 
     Ok(WriteOperationStartResult {

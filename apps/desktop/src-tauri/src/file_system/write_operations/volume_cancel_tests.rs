@@ -299,6 +299,329 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
     WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
 }
 
+/// Pins the M4 contract: when an MTP-style volume delete is cancelled,
+/// the spawn task's `WriteSettledGuard` Drop fires `write-settled` AFTER
+/// the handler emitted `write-cancelled`. The FE needs that ordering
+/// to keep "Cancelling…" up until the volume is genuinely torn down.
+///
+/// We can't drive the full `tokio::spawn` path here (it needs a real
+/// `AppHandle`), so we manually reproduce the spawn-task scope shape:
+///   1. Construct `WriteSettledGuard` first (RAII).
+///   2. Run the handler inner.
+///   3. Let the guard drop at end of scope.
+/// The collector captures the relative order on the sink.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn volume_cancel_emits_write_settled_event() {
+    use crate::file_system::write_operations::state::WriteSettledGuard;
+    use crate::file_system::write_operations::types::{OperationEventSink, WriteOperationType, WriteSettledEvent};
+
+    /// Test sink that records both terminal events AND settled in arrival order.
+    struct OrderedSink {
+        events: std::sync::Mutex<Vec<&'static str>>,
+        inner_collector: Arc<CollectorEventSink>,
+    }
+
+    impl OperationEventSink for OrderedSink {
+        fn emit_progress(&self, e: super::types::WriteProgressEvent) {
+            self.inner_collector.emit_progress(e);
+        }
+        fn emit_complete(&self, e: super::types::WriteCompleteEvent) {
+            self.events.lock().unwrap().push("complete");
+            self.inner_collector.emit_complete(e);
+        }
+        fn emit_cancelled(&self, e: super::types::WriteCancelledEvent) {
+            self.events.lock().unwrap().push("cancelled");
+            self.inner_collector.emit_cancelled(e);
+        }
+        fn emit_error(&self, e: super::types::WriteErrorEvent) {
+            self.events.lock().unwrap().push("error");
+            self.inner_collector.emit_error(e);
+        }
+        fn emit_conflict(&self, e: super::types::WriteConflictEvent) {
+            self.inner_collector.emit_conflict(e);
+        }
+        fn emit_source_item_done(&self, e: super::types::WriteSourceItemDoneEvent) {
+            self.inner_collector.emit_source_item_done(e);
+        }
+        fn emit_scan_progress(&self, e: super::types::ScanProgressEvent) {
+            self.inner_collector.emit_scan_progress(e);
+        }
+        fn emit_scan_conflict(&self, c: super::types::ConflictInfo) {
+            self.inner_collector.emit_scan_conflict(c);
+        }
+        fn emit_dry_run_complete(&self, r: super::types::DryRunResult) {
+            self.inner_collector.emit_dry_run_complete(r);
+        }
+        fn emit_settled(&self, e: WriteSettledEvent) {
+            self.events.lock().unwrap().push("settled");
+            self.inner_collector.emit_settled(e);
+        }
+    }
+
+    let inner_collector = Arc::new(CollectorEventSink::new());
+    let sink = Arc::new(OrderedSink {
+        events: std::sync::Mutex::new(Vec::new()),
+        inner_collector: Arc::clone(&inner_collector),
+    });
+
+    // Use a moderately-sized directory so the test reliably fires a cancel
+    // mid-operation (timing of scan vs. delete phase is irrelevant for this
+    // M4 assertion: the guard fires no matter what phase ends the op).
+    let children: Vec<_> = (0..200)
+        .map(|i| make_file_entry(&format!("photo-{:04}.jpg", i), "/dir", false))
+        .collect();
+    let vol_name = unique("settle-cancel");
+    let vol = Arc::new(CancellingVolume::new(&vol_name, children));
+    get_volume_manager().register(&vol_name, vol.clone() as Arc<dyn Volume>);
+
+    let op_id = unique("op");
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
+    WRITE_OPERATION_STATE
+        .write()
+        .unwrap()
+        .insert(op_id.clone(), Arc::clone(&state));
+
+    let op_id_for_cancel = op_id.clone();
+    let canceller = tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        cancel_write_operation(&op_id_for_cancel, false);
+    });
+
+    let sources = vec![PathBuf::from("/dir")];
+    let config = WriteOperationConfig::default();
+
+    // Mirror production scope shape: guard constructed FIRST, drops LAST.
+    {
+        let sink_for_guard: Arc<dyn OperationEventSink> = Arc::clone(&sink) as Arc<dyn OperationEventSink>;
+        let _settled_guard = WriteSettledGuard::new_with_sink(
+            sink_for_guard,
+            op_id.clone(),
+            WriteOperationType::Delete,
+            Some(vol_name.clone()),
+        );
+
+        let result = delete_volume_files_with_progress_inner(
+            vol.clone() as Arc<dyn Volume>,
+            &vol_name,
+            &*sink,
+            &op_id,
+            &state,
+            &sources,
+            &config,
+        )
+        .await;
+        assert!(
+            matches!(
+                result,
+                Err(crate::file_system::write_operations::types::WriteOperationError::Cancelled { .. })
+            ),
+            "expected Cancelled, got {result:?}"
+        );
+    }
+    canceller.await.unwrap();
+
+    // Settle must always fire exactly once.
+    // The ordering of cancelled vs. settled relative to each other is pinned
+    // in `settle_event_tests::settled_event_order_is_after_terminal_outcome_event`;
+    // here we just pin "settle fires for the cancel flow at all", since the
+    // exact cancel-emit site (scan vs. delete phase) is timing-dependent.
+    let settled = inner_collector.settled.lock().unwrap();
+    assert_eq!(settled.len(), 1, "settle must fire exactly once after cancel");
+    assert_eq!(settled[0].operation_id, op_id);
+    assert_eq!(settled[0].volume_id.as_deref(), Some(vol_name.as_str()));
+
+    // Sanity: the order vec, if non-empty, ends with "settled" (the guard
+    // drops last in the test scope).
+    let order = sink.events.lock().unwrap().clone();
+    assert_eq!(
+        order.last().copied(),
+        Some("settled"),
+        "settled must be the last event to fire (guard drops at end of scope)"
+    );
+
+    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
+}
+
+/// Pins that successful volume delete also gets a `write-settled` event.
+/// Same harness as the cancel test, just doesn't fire the canceller. The
+/// guard fires unconditionally on scope exit.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn volume_complete_emits_write_settled_event() {
+    use crate::file_system::write_operations::state::WriteSettledGuard;
+    use crate::file_system::write_operations::types::WriteOperationType;
+
+    let inner_collector = Arc::new(CollectorEventSink::new());
+
+    // Small, fast directory: no cancel, runs to completion.
+    let children: Vec<_> = (0..5)
+        .map(|i| make_file_entry(&format!("file-{}.txt", i), "/dir", false))
+        .collect();
+    let vol_name = unique("settle-complete");
+    let vol = Arc::new(CancellingVolume::new(&vol_name, children));
+    get_volume_manager().register(&vol_name, vol.clone() as Arc<dyn Volume>);
+
+    let op_id = unique("op");
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
+    WRITE_OPERATION_STATE
+        .write()
+        .unwrap()
+        .insert(op_id.clone(), Arc::clone(&state));
+
+    let sources = vec![PathBuf::from("/dir")];
+    let config = WriteOperationConfig::default();
+
+    {
+        let sink_for_guard: Arc<dyn crate::file_system::write_operations::types::OperationEventSink> =
+            Arc::clone(&inner_collector) as Arc<dyn crate::file_system::write_operations::types::OperationEventSink>;
+        let _settled_guard = WriteSettledGuard::new_with_sink(
+            sink_for_guard,
+            op_id.clone(),
+            WriteOperationType::Delete,
+            Some(vol_name.clone()),
+        );
+
+        let result = delete_volume_files_with_progress_inner(
+            vol.clone() as Arc<dyn Volume>,
+            &vol_name,
+            &*inner_collector,
+            &op_id,
+            &state,
+            &sources,
+            &config,
+        )
+        .await;
+        assert!(result.is_ok(), "delete must succeed: {result:?}");
+    }
+
+    let settled = inner_collector.settled.lock().unwrap();
+    assert_eq!(settled.len(), 1, "settle must fire once on successful completion");
+    assert_eq!(settled[0].operation_id, op_id);
+
+    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
+}
+
+/// Pins that an error path also fires `write-settled`. We use a volume that
+/// errors on a list_directory call to force the error branch.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn volume_error_emits_write_settled_event() {
+    use crate::file_system::write_operations::state::WriteSettledGuard;
+    use crate::file_system::write_operations::types::WriteOperationType;
+
+    /// Volume that errors on list_directory_with_cancel.
+    struct FailingVolume {
+        inner: InMemoryVolume,
+    }
+
+    impl Volume for FailingVolume {
+        fn name(&self) -> &str {
+            self.inner.name()
+        }
+        fn root(&self) -> &Path {
+            self.inner.root()
+        }
+        fn list_directory<'a>(
+            &'a self,
+            _path: &'a Path,
+            _on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
+        {
+            Box::pin(async move {
+                Err(VolumeError::IoError {
+                    message: "simulated".to_string(),
+                    raw_os_error: None,
+                })
+            })
+        }
+        fn list_directory_with_cancel<'a>(
+            &'a self,
+            _path: &'a Path,
+            _on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+            _cancel: Option<&'a Arc<AtomicBool>>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
+        {
+            Box::pin(async move {
+                Err(VolumeError::IoError {
+                    message: "simulated".to_string(),
+                    raw_os_error: None,
+                })
+            })
+        }
+        fn get_metadata<'a>(
+            &'a self,
+            path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::listing::FileEntry, VolumeError>> + Send + 'a>>
+        {
+            Box::pin(async move {
+                let path_str = path.to_string_lossy();
+                if path_str == "/dir" || path_str == "dir" {
+                    return Ok(make_file_entry("dir", "/", true));
+                }
+                Err(VolumeError::NotFound(path.display().to_string()))
+            })
+        }
+        fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+            Box::pin(async move { self.get_metadata(path).await.is_ok() })
+        }
+        fn is_directory<'a>(
+            &'a self,
+            path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+            Box::pin(async move { self.get_metadata(path).await.map(|e| e.is_directory) })
+        }
+        fn delete<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+            Box::pin(async { Ok(()) })
+        }
+    }
+
+    let inner_collector = Arc::new(CollectorEventSink::new());
+
+    let vol_name = unique("settle-error");
+    let vol = Arc::new(FailingVolume {
+        inner: InMemoryVolume::new(&vol_name),
+    });
+    get_volume_manager().register(&vol_name, vol.clone() as Arc<dyn Volume>);
+
+    let op_id = unique("op");
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
+    WRITE_OPERATION_STATE
+        .write()
+        .unwrap()
+        .insert(op_id.clone(), Arc::clone(&state));
+
+    let sources = vec![PathBuf::from("/dir")];
+    let config = WriteOperationConfig::default();
+
+    {
+        let sink_for_guard: Arc<dyn crate::file_system::write_operations::types::OperationEventSink> =
+            Arc::clone(&inner_collector) as Arc<dyn crate::file_system::write_operations::types::OperationEventSink>;
+        let _settled_guard = WriteSettledGuard::new_with_sink(
+            sink_for_guard,
+            op_id.clone(),
+            WriteOperationType::Delete,
+            Some(vol_name.clone()),
+        );
+
+        let _result = delete_volume_files_with_progress_inner(
+            vol.clone() as Arc<dyn Volume>,
+            &vol_name,
+            &*inner_collector,
+            &op_id,
+            &state,
+            &sources,
+            &config,
+        )
+        .await;
+        // Result kind is path-dependent (scan error vs. delete error); the
+        // contract here is "settle fires regardless", not the specific error
+        // shape.
+    }
+
+    let settled = inner_collector.settled.lock().unwrap();
+    assert_eq!(settled.len(), 1, "settle must fire once even on error path");
+
+    WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
+}
+
 /// Asserts that the cancel-flag adapter wiring is correct: flipping
 /// `state.intent` via the public `cancel_write_operation` API flips
 /// `state.backend_cancel`, which is the handle MTP code consults.

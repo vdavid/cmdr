@@ -25,6 +25,7 @@ import type {
   WriteOperationError,
   WriteOperationStartResult,
   WriteProgressEvent,
+  WriteSettledEvent,
   WriteSourceItemDoneEvent,
 } from '../file-explorer/types'
 
@@ -41,6 +42,7 @@ export type {
   WriteOperationError,
   WriteOperationStartResult,
   WriteProgressEvent,
+  WriteSettledEvent,
   WriteSourceItemDoneEvent,
   ConflictInfo,
   DryRunResult,
@@ -195,6 +197,15 @@ export async function onWriteError(callback: (event: WriteErrorEvent) => void): 
 
 export async function onWriteCancelled(callback: (event: WriteCancelledEvent) => void): Promise<UnlistenFn> {
   return listen<WriteCancelledEvent>('write-cancelled', (event) => {
+    callback(event.payload)
+  })
+}
+
+/** Emitted once per op after the spawned background task has fully torn
+ *  down. See `WriteSettledEvent` for the ordering contract relative to the
+ *  terminal outcome event. */
+export async function onWriteSettled(callback: (event: WriteSettledEvent) => void): Promise<UnlistenFn> {
+  return listen<WriteSettledEvent>('write-settled', (event) => {
     callback(event.payload)
   })
 }

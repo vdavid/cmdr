@@ -53,7 +53,7 @@ use helpers::{
 use move_op::move_files_with_progress;
 #[cfg(not(test))]
 use state::WriteOperationState;
-use state::{WRITE_OPERATION_STATE, register_operation_status, unregister_operation_status};
+use state::{WRITE_OPERATION_STATE, WriteSettledGuard, register_operation_status, unregister_operation_status};
 use trash::trash_files_with_progress;
 
 // Re-export public types
@@ -68,7 +68,7 @@ pub use types::{
     ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent, ScanPreviewStartResult,
     ScanProgressEvent, SortColumn, SortOrder, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
-    WriteOperationType, WriteProgressEvent,
+    WriteOperationType, WriteProgressEvent, WriteSettledEvent,
 };
 
 // Re-export for tests (these are pub(crate) in helpers.rs and state.rs)
@@ -128,13 +128,18 @@ where
     tokio::spawn(async move {
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
+        // RAII guard: emits `write-settled` when this task exits, no matter
+        // how (handler success, error, cancel, or panic via JoinError). FE
+        // gates the "Cancelling…" dialog close on this event so the user
+        // can't dispatch a new op against a still-tearing-down volume.
+        let _settled_guard = WriteSettledGuard::new(
+            app_for_error.clone(),
+            operation_id_for_cleanup.clone(),
+            operation_type,
+            None,
+        );
 
         let result = tokio::task::spawn_blocking(move || handler(app, operation_id_for_spawn, state)).await;
-
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
 
         use tauri::Emitter;
         match result {
@@ -146,7 +151,7 @@ where
                 // Handler error (validation, I/O, etc.): emit write-error as safety net
                 let _ = app_for_error.emit(
                     "write-error",
-                    WriteErrorEvent::new(operation_id_for_cleanup, operation_type, e),
+                    WriteErrorEvent::new(operation_id_for_cleanup.clone(), operation_type, e),
                 );
             }
             Err(join_error) => {
@@ -154,7 +159,7 @@ where
                 let _ = app_for_error.emit(
                     "write-error",
                     WriteErrorEvent::new(
-                        operation_id_for_cleanup,
+                        operation_id_for_cleanup.clone(),
                         operation_type,
                         WriteOperationError::IoError {
                             path: String::new(),
@@ -164,6 +169,14 @@ where
                 );
             }
         }
+
+        // Cache cleanup happens AFTER terminal events are emitted, BEFORE the
+        // settle guard drops (the guard is the very last thing in scope).
+        // Order: terminal event → cache removal → `write-settled` via Drop.
+        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+            cache.remove(&operation_id_for_cleanup);
+        }
+        unregister_operation_status(&operation_id_for_cleanup);
     });
 
     Ok(WriteOperationStartResult {
@@ -272,6 +285,16 @@ pub async fn delete_files_start(
         tokio::spawn(async move {
             let operation_id_for_cleanup = operation_id_for_spawn.clone();
             let app_for_error = app.clone();
+            // RAII settle guard: fires `write-settled` when the task exits.
+            // Drop runs last in scope so the FE sees the terminal event
+            // (write-cancelled / write-error / write-complete) first, then
+            // settle, then is free to clear the dialog.
+            let _settled_guard = WriteSettledGuard::new(
+                app_for_error.clone(),
+                operation_id_for_cleanup.clone(),
+                WriteOperationType::Delete,
+                Some(volume_id_str.clone()),
+            );
 
             let volume = match crate::file_system::get_volume_manager().get(&volume_id_str) {
                 Some(v) => v,
@@ -307,11 +330,6 @@ pub async fn delete_files_start(
             )
             .await;
 
-            if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-                cache.remove(&operation_id_for_cleanup);
-            }
-            unregister_operation_status(&operation_id_for_cleanup);
-
             use tauri::Emitter;
             match result {
                 Ok(()) => {}
@@ -319,10 +337,15 @@ pub async fn delete_files_start(
                 Err(e) => {
                     let _ = app_for_error.emit(
                         "write-error",
-                        WriteErrorEvent::new(operation_id_for_cleanup, WriteOperationType::Delete, e),
+                        WriteErrorEvent::new(operation_id_for_cleanup.clone(), WriteOperationType::Delete, e),
                     );
                 }
             }
+
+            if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+                cache.remove(&operation_id_for_cleanup);
+            }
+            unregister_operation_status(&operation_id_for_cleanup);
         });
 
         Ok(WriteOperationStartResult {
@@ -378,6 +401,8 @@ mod delete_volume_reuse_tests;
 mod move_integration_test;
 #[cfg(test)]
 mod scan_preview_oracle_tests;
+#[cfg(test)]
+mod settle_event_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

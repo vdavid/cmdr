@@ -10,6 +10,7 @@
         onWriteComplete,
         onWriteError,
         onWriteCancelled,
+        onWriteSettled,
         onWriteConflict,
         resolveWriteConflict,
         cancelWriteOperation,
@@ -26,6 +27,7 @@
         type WriteCompleteEvent,
         type WriteErrorEvent,
         type WriteCancelledEvent,
+        type WriteSettledEvent,
         type WriteConflictEvent,
         type UnlistenFn,
     } from '$lib/tauri-commands'
@@ -156,6 +158,11 @@
 
     /** Minimum display time (ms) to prevent jarring one-frame flash. */
     const MIN_DISPLAY_MS = 400
+    /** After this many ms of waiting for the backend to settle, the
+     *  "Cancelling…" label gets a clarifying tail ("(finishing USB transfers)").
+     *  Picked at 200 ms so a fast settle (the common case after M2) clears
+     *  before the label ever changes. */
+    const SLOW_SETTLE_LABEL_MS = 200
 
     // Scan waiting state (when scan preview is still running from TransferDialog)
     let waitingForScan = $state(false)
@@ -196,6 +203,20 @@
     let isCancelling = $state(false)
     let isRollingBack = $state(false)
     let destroyed = false
+    /** Set when `write-cancelled` arrives for this op. The dialog stays in
+     *  "Cancelling…" until BOTH this AND `settleEventReceived` are true,
+     *  giving the BE time to tear down in-flight USB / network ops. */
+    let cancelEventReceived = $state(false)
+    /** Set when `write-settled` arrives for this op. See M4 of
+     *  `docs/specs/cancel-settled-plan.md` for the contract. */
+    let settleEventReceived = $state(false)
+    /** Cached `WriteCancelledEvent` payload — held until settle arrives so we
+     *  can pass `filesProcessed` to `onCancelled` at close time. */
+    let cancelEventPayload: WriteCancelledEvent | null = null
+    /** Flips true once the settle wait has exceeded `SLOW_SETTLE_LABEL_MS`.
+     *  Drives the "(finishing USB transfers)" tail on the dialog label. */
+    let settleSlow = $state(false)
+    let slowSettleTimer: ReturnType<typeof setTimeout> | null = null
     /** Set when the operation reaches a terminal state (complete, error, cancel, rollback).
      *  Prevents onDestroy's safety-net cancel from interfering with an already-handled outcome.
      *  Reactive ($state) so the Cancel/Rollback buttons can disable themselves during the
@@ -210,6 +231,7 @@
         | { type: 'complete'; event: WriteCompleteEvent }
         | { type: 'error'; event: WriteErrorEvent }
         | { type: 'cancelled'; event: WriteCancelledEvent }
+        | { type: 'settled'; event: WriteSettledEvent }
         | { type: 'conflict'; event: WriteConflictEvent }
     let pendingEvents: BufferedEvent[] = []
 
@@ -239,6 +261,9 @@
                     break
                 case 'cancelled':
                     handleCancelled(entry.event)
+                    break
+                case 'settled':
+                    handleSettled(entry.event)
                     break
                 case 'conflict':
                     handleConflict(entry.event)
@@ -411,9 +436,75 @@
             rolledBack: event.rolledBack,
         })
 
+        cancelEventReceived = true
+        cancelEventPayload = event
+        // Mark the operation as settled at the dialog state-machine level so
+        // Cancel/Rollback buttons disable (the BE state is already gone or
+        // about to be). The "Cancelling…" indicator stays on the FE side
+        // until `write-settled` lands.
         operationSettled = true
+
+        // Rollback path: the backend already finished tearing down by the
+        // time it emits a non-rolled-back cancel (the user clicked Cancel
+        // during Rollback) or a rolled-back cancel (rollback completed
+        // normally). In both cases, settling has effectively happened. We
+        // still wait for `write-settled` for consistency, but start the slow
+        // label timer regardless.
+        startSlowSettleTimer()
+
+        maybeFinishCancelClose()
+    }
+
+    /** Called once the BE has signalled `write-settled` for the operation
+     *  the dialog is bound to. Combines with `write-cancelled` (already
+     *  received) to drive the close-out. Defensive about ordering: if
+     *  settle somehow arrives before cancelled, we wait. */
+    function handleSettled(event: WriteSettledEvent) {
+        if (!filterEvent({ type: 'settled', event })) return
+
+        log.debug('Settle event arrived for op={operationId}', { operationId: event.operationId })
+
+        settleEventReceived = true
+        clearSlowSettleTimer()
+        maybeFinishCancelClose()
+    }
+
+    function startSlowSettleTimer() {
+        if (slowSettleTimer !== null) return
+        slowSettleTimer = setTimeout(() => {
+            settleSlow = true
+            slowSettleTimer = null
+        }, SLOW_SETTLE_LABEL_MS)
+    }
+
+    function clearSlowSettleTimer() {
+        if (slowSettleTimer !== null) {
+            clearTimeout(slowSettleTimer)
+            slowSettleTimer = null
+        }
+        settleSlow = false
+    }
+
+    /** Closes the dialog if both `write-cancelled` and `write-settled` have
+     *  arrived. Applies the existing `MIN_DISPLAY_MS` floor so a sub-frame
+     *  cancel doesn't flash. Idempotent: safe to call from both handlers. */
+    function maybeFinishCancelClose() {
+        if (!cancelEventReceived || !settleEventReceived) return
+        if (cancelEventPayload === null) return
+
+        const payload = cancelEventPayload
+        cancelEventPayload = null // single-shot
         cleanup()
-        onCancelled(event.filesProcessed)
+
+        const elapsed = Date.now() - startTime
+        const delay = Math.max(0, MIN_DISPLAY_MS - elapsed)
+        if (delay > 0) {
+            setTimeout(() => {
+                onCancelled(payload.filesProcessed)
+            }, delay)
+        } else {
+            onCancelled(payload.filesProcessed)
+        }
     }
 
     function handleConflict(event: WriteConflictEvent) {
@@ -455,6 +546,7 @@
             unlisten()
         }
         unlisteners = []
+        clearSlowSettleTimer()
     }
 
     /** Dispatches the backend command based on operation type. */
@@ -534,6 +626,7 @@
         unlisteners.push(await onWriteComplete(handleComplete))
         unlisteners.push(await onWriteError(handleError))
         unlisteners.push(await onWriteCancelled(handleCancelled))
+        unlisteners.push(await onWriteSettled(handleSettled))
         unlisteners.push(await onWriteConflict(handleConflict))
 
         log.debug('Event subscriptions ready, starting {op}', { op: operationType })
@@ -632,19 +725,24 @@
                 isRollingBack = false
             }
         } else {
-            // Cancel: close immediately, keep partial files
+            // Cancel: keep partial files. Stay in "Cancelling…" until both
+            // `write-cancelled` and `write-settled` have landed (M4 of
+            // `docs/specs/cancel-settled-plan.md`): the BE may still be
+            // tearing down USB / network sessions, and dispatching a new op
+            // against a volume in that state is what wedged the device in
+            // the original incident.
             log.info('Cancelling operation (keeping partial files): {operationId}', { operationId })
             isCancelling = true
+            startSlowSettleTimer()
             try {
                 await cancelWriteOperation(operationId, false)
-                log.debug('Cancel request sent successfully')
-                // Close immediately without waiting for backend confirmation
-                operationSettled = true
-                cleanup()
-                onCancelled(filesDone)
+                log.debug('Cancel request sent; waiting for write-cancelled + write-settled')
+                // Don't close here. The dialog closes from
+                // `maybeFinishCancelClose` once both events arrive.
             } catch (err) {
                 log.error('Failed to cancel operation: {error}', { error: err })
                 isCancelling = false
+                clearSlowSettleTimer()
             }
         }
     }
@@ -836,6 +934,12 @@
             {scanTitle}
         {:else if isRollingBack}
             Rolling back...
+        {:else if isCancelling || cancelEventReceived}
+            {#if settleSlow}
+                Cancelling... (finishing USB transfers)
+            {:else}
+                Cancelling...
+            {/if}
         {:else if conflictEvent}
             File already exists
         {:else}
