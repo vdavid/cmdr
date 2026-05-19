@@ -1,14 +1,18 @@
-//! Background SMB change watcher using a dedicated smb2 connection.
+//! Background SMB change watcher.
 //!
-//! Monitors a share for external changes via `CHANGE_NOTIFY`, debounces
-//! events, and feeds them into `notify_directory_changed`. Runs as a
-//! `tokio::spawn`ed task with its own smb2 session (separate from the
-//! main `SmbVolume` connection).
+//! Long-polls `CHANGE_NOTIFY` on the share root, debounces events, and feeds
+//! them into `notify_directory_changed`. Spawned by `SmbVolume::spawn_watcher`
+//! with its own dedicated smb2 session (a separate TCP connection from the
+//! volume's primary client), so the watcher's long-polls don't multiplex with
+//! heavy concurrent writes on the main connection.
+//!
+//! No internal reconnect: on `next_events` errors, the task returns and
+//! `SmbVolume::attempt_reconnect` is the single source of truth for
+//! re-establishing the session — it respawns the watcher when it succeeds.
 
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
 use log::{debug, info, warn};
-use smb2::client::tree::Tree;
 use smb2::{ClientConfig, FileNotifyAction, SmbClient};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -21,20 +25,12 @@ const WATCHER_BATCH_THRESHOLD: usize = 50;
 /// Debounce window: after receiving a batch of events, wait this long for more.
 const WATCHER_DEBOUNCE: Duration = Duration::from_millis(200);
 
-/// Delay between reconnection attempts when the watcher connection drops.
-const WATCHER_RECONNECT_DELAY: Duration = Duration::from_secs(5);
-
-/// Maximum reconnection attempts before giving up.
-const WATCHER_MAX_RECONNECT_ATTEMPTS: u32 = 3;
-
-/// Runs a background SMB change watcher on a dedicated smb2 connection.
+/// Runs the SMB change watcher on a dedicated smb2 session.
 ///
-/// Establishes its own connection to the same server/share and uses
-/// `CHANGE_NOTIFY` to detect external changes. Events are debounced,
-/// converted to `DirectoryChange`, and fed into `notify_directory_changed`.
-///
-/// The task exits when `cancel_rx` fires, the connection is permanently lost,
-/// or an unrecoverable error occurs.
+/// Exits on cancel (`cancel_rx`), on `next_events` error, or on a clean
+/// watcher close. On error exit, the parent `SmbVolume`'s reconnect machinery
+/// picks up via the next hot-path op observing the dead session and respawns
+/// this task from `attempt_reconnect`.
 pub(super) async fn run_smb_watcher(
     addr: String,
     share_name: String,
@@ -44,29 +40,6 @@ pub(super) async fn run_smb_watcher(
     mount_path: PathBuf,
     cancel_rx: tokio::sync::oneshot::Receiver<()>,
 ) {
-    /// Establishes a watcher connection and returns (client, tree).
-    async fn connect_watcher(
-        addr: &str,
-        share_name: &str,
-        username: &str,
-        password: &str,
-    ) -> Result<(SmbClient, Tree), smb2::Error> {
-        let config = ClientConfig {
-            addr: addr.to_string(),
-            timeout: Duration::from_secs(10),
-            username: username.to_string(),
-            password: password.to_string(),
-            domain: String::new(),
-            auto_reconnect: false,
-            compression: true,
-            dfs_enabled: false,
-            dfs_target_overrides: Default::default(),
-        };
-        let mut client = SmbClient::connect(config).await?;
-        let tree = client.connect_share(share_name).await?;
-        Ok((client, tree))
-    }
-
     /// Converts a watcher filename (NFC from server) to an NFD display path
     /// suitable for macOS mount paths.
     fn to_nfd_display_path(mount_path: &Path, relative: &str) -> PathBuf {
@@ -193,188 +166,166 @@ pub(super) async fn run_smb_watcher(
     // ── Main watcher loop ──────────────────────────────────────────
 
     let mut cancel_rx = cancel_rx;
-    let mut reconnect_attempts = 0u32;
 
-    'outer: loop {
-        // Establish the dedicated watcher connection
-        let (mut client, tree) = match connect_watcher(&addr, &share_name, &username, &password).await {
-            Ok(pair) => {
-                if reconnect_attempts > 0 {
-                    info!(
-                        "smb_watcher({}): reconnected after {} attempt(s)",
-                        share_name, reconnect_attempts
-                    );
-                } else {
-                    info!("smb_watcher({}): connected, starting watch", share_name);
-                }
-                reconnect_attempts = 0;
-                pair
-            }
-            Err(e) => {
-                reconnect_attempts += 1;
-                if reconnect_attempts > WATCHER_MAX_RECONNECT_ATTEMPTS {
-                    warn!(
-                        "smb_watcher({}): failed to connect after {} attempts, giving up: {}",
-                        share_name, WATCHER_MAX_RECONNECT_ATTEMPTS, e
-                    );
-                    return;
-                }
-                warn!(
-                    "smb_watcher({}): connection failed (attempt {}/{}): {}, retrying in {:?}",
-                    share_name, reconnect_attempts, WATCHER_MAX_RECONNECT_ATTEMPTS, e, WATCHER_RECONNECT_DELAY
-                );
-                tokio::select! {
-                    _ = tokio::time::sleep(WATCHER_RECONNECT_DELAY) => continue 'outer,
-                    _ = &mut cancel_rx => {
-                        debug!("smb_watcher({}): cancelled during reconnect wait", share_name);
-                        return;
-                    }
-                }
-            }
-        };
+    // Establish the dedicated watcher session. We do this once: on any error,
+    // we bail and let SmbVolume's reconnect machinery respawn us.
+    let config = ClientConfig {
+        addr: addr.clone(),
+        timeout: Duration::from_secs(10),
+        username,
+        password,
+        domain: String::new(),
+        auto_reconnect: false,
+        compression: true,
+        dfs_enabled: false,
+        dfs_target_overrides: Default::default(),
+    };
+    let mut client = match SmbClient::connect(config).await {
+        Ok(c) => c,
+        Err(e) => {
+            warn!("smb_watcher({}): connect failed: {}", share_name, e);
+            return;
+        }
+    };
+    let tree = match client.connect_share(&share_name).await {
+        Ok(t) => t,
+        Err(e) => {
+            warn!("smb_watcher({}): tree connect failed: {}", share_name, e);
+            return;
+        }
+    };
 
-        // Start watching from the share root (recursive)
-        let mut watcher = match client.watch(&tree, "", true).await {
-            Ok(w) => w,
-            Err(e) => {
-                warn!("smb_watcher({}): failed to start watch: {}", share_name, e);
-                reconnect_attempts += 1;
-                if reconnect_attempts > WATCHER_MAX_RECONNECT_ATTEMPTS {
-                    warn!("smb_watcher({}): giving up after repeated watch failures", share_name);
-                    return;
+    // Open the watcher handle on the share root (recursive). Since smb2 0.10
+    // `Watcher` is `'static` (owns a `Connection` clone of `client`'s), and
+    // keeps one CHANGE_NOTIFY request pre-issued at all times so events that
+    // arrive while we process the previous batch don't fall in a re-arm gap.
+    let mut watcher = match client.watch(&tree, "", true).await {
+        Ok(w) => {
+            info!("smb_watcher({}): connected, starting watch", share_name);
+            w
+        }
+        Err(e) => {
+            warn!("smb_watcher({}): failed to start watch: {}", share_name, e);
+            return;
+        }
+    };
+
+    loop {
+        let events_result = tokio::select! {
+            result = watcher.next_events() => result,
+            _ = &mut cancel_rx => {
+                debug!("smb_watcher({}): cancelled, closing watcher", share_name);
+                if let Err(e) = watcher.close().await {
+                    debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
                 }
-                tokio::select! {
-                    _ = tokio::time::sleep(WATCHER_RECONNECT_DELAY) => continue 'outer,
-                    _ = &mut cancel_rx => {
-                        debug!("smb_watcher({}): cancelled during watch retry wait", share_name);
-                        return;
-                    }
-                }
+                return;
             }
         };
 
-        // Event loop
-        loop {
-            let events_result = tokio::select! {
-                result = watcher.next_events() => result,
-                _ = &mut cancel_rx => {
-                    debug!("smb_watcher({}): cancelled, closing watcher", share_name);
-                    if let Err(e) = watcher.close().await {
-                        debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
-                    }
-                    return;
+        match events_result {
+            Ok(events) => {
+                // Collect events by parent directory, debouncing with a short wait.
+                let mut events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>> = HashMap::new();
+
+                for event in &events {
+                    // SMB watcher filenames use backslashes; normalize to forward slashes
+                    let normalized_filename = event.filename.replace('\\', "/");
+                    let parent = Path::new(&normalized_filename)
+                        .parent()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    let parent_display = to_nfd_display_path(&mount_path, &parent);
+
+                    events_by_dir
+                        .entry(parent_display)
+                        .or_default()
+                        .push((event.action, normalized_filename));
                 }
-            };
 
-            match events_result {
-                Ok(events) => {
-                    // Collect events by parent directory, debouncing with a short wait
-                    let mut events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>> = HashMap::new();
-
-                    for event in &events {
-                        // SMB watcher filenames use backslashes; normalize to forward slashes
-                        let normalized_filename = event.filename.replace('\\', "/");
-                        let parent = Path::new(&normalized_filename)
-                            .parent()
-                            .map(|p| p.to_string_lossy().to_string())
-                            .unwrap_or_default();
-                        let parent_display = to_nfd_display_path(&mount_path, &parent);
-
-                        events_by_dir
-                            .entry(parent_display)
-                            .or_default()
-                            .push((event.action, normalized_filename));
-                    }
-
-                    // Debounce: wait briefly for more events in the same batch
-                    loop {
-                        let more = tokio::select! {
-                            result = tokio::time::timeout(WATCHER_DEBOUNCE, watcher.next_events()) => {
-                                match result {
-                                    Ok(Ok(more_events)) => Some(more_events),
-                                    Ok(Err(_)) => None,
-                                    Err(_) => None, // timeout: done debouncing
-                                }
-                            },
-                            _ = &mut cancel_rx => {
-                                // Process what we have, then exit
-                                process_event_batch(events_by_dir, &volume_id, &mount_path).await;
-                                debug!("smb_watcher({}): cancelled during debounce, closing", share_name);
-                                if let Err(e) = watcher.close().await {
-                                    debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
-                                }
-                                return;
+                // Debounce: wait briefly for more events in the same batch. The
+                // smb2 0.10 watcher already keeps one CHANGE_NOTIFY pre-issued
+                // on the wire, so events that arrive during this debounce
+                // window land in the next response, not a server-side gap.
+                // The debounce here exists only to batch FE notifications.
+                loop {
+                    let more = tokio::select! {
+                        result = tokio::time::timeout(WATCHER_DEBOUNCE, watcher.next_events()) => {
+                            match result {
+                                Ok(Ok(more_events)) => Some(more_events),
+                                Ok(Err(_)) => None,
+                                Err(_) => None, // timeout: done debouncing
                             }
-                        };
-
-                        match more {
-                            Some(more_events) => {
-                                for event in &more_events {
-                                    let normalized_filename = event.filename.replace('\\', "/");
-                                    let parent = Path::new(&normalized_filename)
-                                        .parent()
-                                        .map(|p| p.to_string_lossy().to_string())
-                                        .unwrap_or_default();
-                                    let parent_display = to_nfd_display_path(&mount_path, &parent);
-
-                                    events_by_dir
-                                        .entry(parent_display)
-                                        .or_default()
-                                        .push((event.action, normalized_filename));
-                                }
-                            }
-                            None => break, // timeout or error: process batch
-                        }
-                    }
-
-                    let total_events: usize = events_by_dir.values().map(|v| v.len()).sum();
-                    debug!(
-                        "smb_watcher({}): processing {} event(s) across {} dir(s)",
-                        share_name,
-                        total_events,
-                        events_by_dir.len()
-                    );
-
-                    process_event_batch(events_by_dir, &volume_id, &mount_path).await;
-                }
-                Err(e) => {
-                    // Check for STATUS_NOTIFY_ENUM_DIR (buffer overflow)
-                    let is_enum_dir = matches!(
-                        &e,
-                        smb2::Error::Protocol { status, .. }
-                            if *status == smb2::types::status::NtStatus::NOTIFY_ENUM_DIR
-                    );
-
-                    if is_enum_dir {
-                        debug!(
-                            "smb_watcher({}): STATUS_NOTIFY_ENUM_DIR, emitting FullRefresh for share root",
-                            share_name
-                        );
-                        notify_directory_changed(&volume_id, &mount_path, DirectoryChange::FullRefresh);
-                        // Continue watching: the server is still alive
-                        continue;
-                    }
-
-                    // Connection lost or other error: try to reconnect
-                    warn!("smb_watcher({}): error from next_events: {}", share_name, e);
-
-                    // Close the watcher handle (best-effort, connection may be dead)
-                    let _ = watcher.close().await;
-
-                    reconnect_attempts += 1;
-                    if reconnect_attempts > WATCHER_MAX_RECONNECT_ATTEMPTS {
-                        warn!("smb_watcher({}): too many errors, giving up", share_name);
-                        return;
-                    }
-
-                    tokio::select! {
-                        _ = tokio::time::sleep(WATCHER_RECONNECT_DELAY) => continue 'outer,
+                        },
                         _ = &mut cancel_rx => {
-                            debug!("smb_watcher({}): cancelled during error reconnect wait", share_name);
+                            // Process what we have, then exit
+                            process_event_batch(events_by_dir, &volume_id, &mount_path).await;
+                            debug!("smb_watcher({}): cancelled during debounce, closing", share_name);
+                            if let Err(e) = watcher.close().await {
+                                debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
+                            }
                             return;
                         }
+                    };
+
+                    match more {
+                        Some(more_events) => {
+                            for event in &more_events {
+                                let normalized_filename = event.filename.replace('\\', "/");
+                                let parent = Path::new(&normalized_filename)
+                                    .parent()
+                                    .map(|p| p.to_string_lossy().to_string())
+                                    .unwrap_or_default();
+                                let parent_display = to_nfd_display_path(&mount_path, &parent);
+
+                                events_by_dir
+                                    .entry(parent_display)
+                                    .or_default()
+                                    .push((event.action, normalized_filename));
+                            }
+                        }
+                        None => break, // timeout or error: process batch
                     }
                 }
+
+                let total_events: usize = events_by_dir.values().map(|v| v.len()).sum();
+                debug!(
+                    "smb_watcher({}): processing {} event(s) across {} dir(s)",
+                    share_name,
+                    total_events,
+                    events_by_dir.len()
+                );
+
+                process_event_batch(events_by_dir, &volume_id, &mount_path).await;
+            }
+            Err(e) => {
+                // Check for STATUS_NOTIFY_ENUM_DIR (buffer overflow).
+                let is_enum_dir = matches!(
+                    &e,
+                    smb2::Error::Protocol { status, .. }
+                        if *status == smb2::types::status::NtStatus::NOTIFY_ENUM_DIR
+                );
+
+                if is_enum_dir {
+                    debug!(
+                        "smb_watcher({}): STATUS_NOTIFY_ENUM_DIR, emitting FullRefresh for share root",
+                        share_name
+                    );
+                    notify_directory_changed(&volume_id, &mount_path, DirectoryChange::FullRefresh);
+                    // The pipelined-next CHANGE_NOTIFY is already outstanding,
+                    // so events arriving during the consumer's re-scan land in
+                    // it. Keep watching.
+                    continue;
+                }
+
+                // Other errors mean the session is likely dead. Bail; the
+                // SmbVolume reconnect cycle will respawn us with a fresh
+                // session.
+                warn!(
+                    "smb_watcher({}): next_events failed: {} — bailing, SmbVolume reconnect will respawn",
+                    share_name, e
+                );
+                let _ = watcher.close().await;
+                return;
             }
         }
     }

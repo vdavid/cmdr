@@ -736,9 +736,23 @@ impl SmbVolume {
         }
     }
 
-    /// Spawns the background watcher task using the current `params`. Replaces
-    /// any prior `watcher_cancel`. Called from `connect_smb_volume` (initial
-    /// setup) and from `attempt_reconnect` (after a session rebuild).
+    /// Spawns the background watcher task on its own dedicated smb2 session.
+    /// Replaces any prior `watcher_cancel`. Called from `connect_smb_volume`
+    /// (initial setup) and from `attempt_reconnect` (after a session rebuild).
+    ///
+    /// We could share the volume's session with the watcher (smb2 0.10's
+    /// `Watcher` is `'static`, owns a `Connection` clone), but in practice
+    /// stacking the watcher's CHANGE_NOTIFY long-polls on the same TCP
+    /// session as heavy concurrent writes wedges Samba — the
+    /// `smb_integration_concurrent_streaming_writes_no_deadlock` test
+    /// hangs against `smb-consumer-maxreadsize` (64 KB max read/write) when
+    /// the watcher shares the connection. Keeping the watcher on its own
+    /// TCP+session matches the pre-smb2-0.10 isolation; what we *do* keep
+    /// from the new API is the pipelining (`Watcher` keeps one CHANGE_NOTIFY
+    /// pre-issued, closing the response→re-arm loss window) and the lack
+    /// of internal reconnect (single source of truth is
+    /// `SmbVolume::attempt_reconnect`; the watcher bails on errors and we
+    /// respawn here on the next successful reconnect).
     fn spawn_watcher(&self, params: &SmbConnectionParams) {
         use crate::network::smb_connection::build_smb_addr;
 
