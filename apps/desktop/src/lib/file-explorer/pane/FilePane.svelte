@@ -1416,9 +1416,14 @@
         }
     }
 
-    function handleSelect(index: number, shiftKey = false) {
+    function handleSelect(index: number, shiftKey = false, metaKey = false) {
         if (shiftKey) {
+            // Shift wins over Cmd when both are held (matches Finder).
             selection.handleShiftMouseNavigation(index, cursorIndex, hasParent)
+        } else if (metaKey) {
+            // Cmd+click toggles the clicked item. `..` is a no-op inside toggleAt.
+            selection.toggleAt(index, hasParent)
+            selection.clearRangeState()
         } else {
             selection.clearRangeState()
         }

@@ -12,6 +12,8 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
   remap via Karabiner-Elements, plug in a PC USB keyboard, or rebind in Settings → Shortcuts.
 - **Shift+click**: mouse range selection with anchor (A) and end (B). If anchor was already selected, the range
   deselects.
+- **Cmd+click**: toggles the clicked item's selection (Finder-style). Moves the cursor to the clicked item and clears
+  the Shift+click anchor. `..` is a no-op. Shift wins when both modifiers are held.
 - **Shift+arrow / Shift+Page / Shift+Home/End / Shift+Left/Right (Brief)**: keyboard toggle-and-fill. Toggles the item
   at the cursor's _old_ position, then sets (not toggles) every item the cursor jumps over to that toggled state. The
   landing item is included only when the jump **overflowed** (intended distance > actual distance because of a list

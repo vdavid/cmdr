@@ -93,7 +93,7 @@
         showGitColumn?: boolean
         /** Rename state for inline editing */
         renameState?: RenameState | null
-        onSelect: (index: number, shiftKey?: boolean) => void
+        onSelect: (index: number, shiftKey?: boolean, metaKey?: boolean) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
@@ -398,6 +398,19 @@
         void fetchVisibleRange()
     }
 
+    // Click-to-rename: if clicking the entry already under the cursor (no modifiers),
+    // start a timer that activates rename after 800ms. Drag tracking still runs in
+    // `handleMouseDown` so the cursor item remains draggable; crossing the drag
+    // threshold cancels the rename timer.
+    function maybeStartClickToRename(event: MouseEvent, index: number) {
+        if (index === cursorIndex && !event.shiftKey && !event.metaKey && !renameState?.active && onStartRename) {
+            startClickToRename(event, onStartRename)
+        } else {
+            // Clicking a different entry cancels any pending click-to-rename timer
+            cancelClickToRename()
+        }
+    }
+
     // Handle file mousedown - selects and initiates drag tracking
     function handleMouseDown(event: MouseEvent, index: number) {
         if (event.button !== 0) return
@@ -412,20 +425,11 @@
 
         // ".." entry: just move cursor, no drag tracking
         if (entry.name === '..') {
-            onSelect(index, event.shiftKey)
+            onSelect(index, event.shiftKey, event.metaKey)
             return
         }
 
-        // Click-to-rename: if clicking the entry already under the cursor
-        // (without Shift), start a timer that activates rename after 800ms.
-        // Drag tracking still runs below so the cursor item remains draggable;
-        // crossing the drag threshold cancels the rename timer.
-        if (index === cursorIndex && !event.shiftKey && !renameState?.active && onStartRename) {
-            startClickToRename(event, onStartRename)
-        } else {
-            // Clicking a different entry cancels any pending click-to-rename timer
-            cancelClickToRename()
-        }
+        maybeStartClickToRename(event, index)
 
         const hasSelection = selectedIndices.size > 0
 
@@ -437,18 +441,18 @@
                 { type: 'single', path: entry.path, iconId: entry.iconId, index, fileInfo },
                 {
                     onDragStart: () => {
-                        onSelect(index, event.shiftKey)
+                        onSelect(index, event.shiftKey, event.metaKey)
                     },
                     onDragCancel: () => {
                         // Just do a normal select on cancel (mouseup without drag)
-                        onSelect(index, event.shiftKey)
+                        onSelect(index, event.shiftKey, event.metaKey)
                     },
                     onDragInitiate,
                 },
             )
         } else {
-            // Has selection: move cursor immediately (Shift+click still does range selection)
-            onSelect(index, event.shiftKey)
+            // Has selection: move cursor immediately (Shift+click ranges, Cmd+click toggles)
+            onSelect(index, event.shiftKey, event.metaKey)
 
             // Always drag the selection (regardless of which file clicked)
             // Find the first selected file's icon for the drag preview
