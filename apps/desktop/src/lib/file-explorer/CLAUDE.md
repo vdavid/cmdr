@@ -30,7 +30,19 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **State**: `SvelteSet<number>` (from `svelte/reactivity`) in `FilePane.svelte`. O(1) add/remove/has
 - **Preserved on sort/filter**: `resort_listing` accepts `selectedIndices[]`, returns `newSelectedIndices[]`
 - **Write operations receive indices**: backend resolves to paths from cached listing
-- **Visual**: `--color-selection-fg` (yellow foreground)
+- **Visual**: three-tier `--color-selection-fg` cascade (red, Total-Commander-style):
+  - `--color-selection-fg-primary` (strong red — `#cc0000` light, `#ff4040` dark) applies on the selection bg.
+  - `--color-selection-fg-cursor` (`#b80808` / `#ff8c8c`) takes over when the row is also under the cursor
+    (`.is-selected.is-under-cursor`), where the bg flips to the translucent cursor color.
+  - `--color-selection-fg-fallback` (= `--color-text-primary`) takes over in the dark + tinted + cursor-active corner
+    where no AA-clearing red exists; CSS rule keyed on `.file-pane[data-pane-tint]`.
+  - `--color-selection-bg` paints a faint darker block under selected rows (light `#f2f2f2`, dark `#141414`); zebra
+    stripes are auto-overridden by cascade order.
+  - `--color-selection-border` draws a 1px `inset` `box-shadow` between consecutive selected rows so dense selections
+    stay countable; suppressed on the cursor row's top.
+  - Independent: every cursor row (focused or unfocused) gets a faint accent-colored `inset` outline via
+    `--color-cursor-outline` so cursor stays distinguishable from the selection bg, regardless of selection state.
+  - All combinations clear WCAG AA 4.5:1; verified by the row-state matrix in `scripts/check-a11y-contrast/`.
 
 ### Operation lifecycle
 
