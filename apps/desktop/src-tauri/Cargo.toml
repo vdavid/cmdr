@@ -162,7 +162,7 @@ mime_guess = "2"
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation
 # Path dep until mtp-rs 0.15.0 is published. Switch back to a crates.io version once released.
-mtp-rs = { path = "../../../../../../../mtp-rs" }
+mtp-rs = { path = "../../../../mtp-rs" }
 # USB hotplug detection for MTP device watcher
 nusb = "0.2.3"
 bytes = "1"
