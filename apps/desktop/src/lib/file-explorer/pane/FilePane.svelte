@@ -108,9 +108,9 @@
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import { requestVolumeRefresh, getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
-    import { getDiskUsageLevel, getUsedPercent, formatBarTooltipHtml } from '../disk-space-utils'
+    import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
     import { getFileSizeFormat, getTypeToJumpResetDelay } from '$lib/settings/reactive-settings.svelte'
-    import { formatSizeHtmlColored } from '../selection/selection-info-utils'
+    import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
     interface Props {
         initialPath: string
@@ -2375,7 +2375,7 @@
         <div
             class="disk-usage-bar-wrapper"
             use:tooltip={volumeSpace
-                ? { html: formatBarTooltipHtml(volumeSpace, (b) => formatSizeHtmlColored(b, getFileSizeFormat())) }
+                ? { text: formatBarTooltip(volumeSpace, (b) => formatFileSizeWithFormat(b, getFileSizeFormat())) }
                 : ''}
         >
             <div

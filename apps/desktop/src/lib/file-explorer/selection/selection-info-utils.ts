@@ -74,17 +74,6 @@ export function formatSizeForDisplay(
 }
 
 /**
- * Renders a byte count as a colored HTML span string (e.g. `<span class="size-mb">1.02 MB</span>`).
- * For embedding inside HTML strings (tooltips, error messages, etc.). Use the `<Size>` component
- * for inline rendering in Svelte templates.
- */
-export function formatSizeHtmlColored(bytes: number, format: FileSizeFormat): string {
-  return formatSizeForDisplay(bytes, { humanFriendly: true, format })
-    .map((p) => `<span class="${p.tierClass}">${p.value}</span>`)
-    .join('')
-}
-
-/**
  * Wraps an already-formatted size string (e.g. `"1.02 MB"`, `"512 bytes"`) in a colored span
  * based on its unit suffix. Use when the value comes from a foreign formatter (like the legacy
  * `formatBytes` in `tauri-commands`) and you just need tier coloring on top, without re-formatting.

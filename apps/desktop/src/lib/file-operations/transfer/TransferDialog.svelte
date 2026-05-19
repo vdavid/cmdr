@@ -28,9 +28,10 @@
     import Button from '$lib/ui/Button.svelte'
     import { generateTitle, toVolumeRelativePath } from './transfer-dialog-utils'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
-    import { formatNumber, formatSizeHtmlColored } from '$lib/file-explorer/selection/selection-info-utils'
+    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import Size from '$lib/ui/Size.svelte'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+    import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('transferDialog')
@@ -192,12 +193,12 @@
         return getPathValidationError(sourcePaths, editedPath)
     })
 
-    // Format space info for display (returns colored HTML)
-    function formatSpaceInfoHtml(space: VolumeSpaceInfo | null): string {
+    // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
+    function formatSpaceInfo(space: VolumeSpaceInfo | null): string {
         if (!space) return ''
         const format = getFileSizeFormat()
-        const free = formatSizeHtmlColored(space.availableBytes, format)
-        const total = formatSizeHtmlColored(space.totalBytes, format)
+        const free = formatFileSizeWithFormat(space.availableBytes, format)
+        const total = formatFileSizeWithFormat(space.totalBytes, format)
         return `${free} free of ${total}`
     }
 
@@ -472,8 +473,7 @@
             {/each}
         </select>
         {#if volumeSpace}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from typed space info + tier classes; no user input. -->
-            <span class="space-info">{@html formatSpaceInfoHtml(volumeSpace)}</span>
+            <span class="space-info">{formatSpaceInfo(volumeSpace)}</span>
         {/if}
     </div>
 

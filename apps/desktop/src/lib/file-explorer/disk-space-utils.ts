@@ -49,35 +49,3 @@ export function formatBarTooltip(space: VolumeSpaceInfo, formatSize: FormatSize)
     return `${base}. This bar is yellow to indicate that the volume is somewhat low on space.`
   return base
 }
-
-/**
- * HTML variants of the disk-space formatters that wrap each size value in a colored span
- * (`size-kb` / `size-mb` / `size-gb` / `size-tb`). Pass `formatSizeHtml` as a function that
- * returns colored HTML (such as `formatSizeHtmlColored(bytes, format)`). Outputs are meant
- * to be rendered via `{@html}` or fed to the tooltip action.
- */
-export function formatDiskSpaceStatusHtml(space: VolumeSpaceInfo, formatSizeHtml: FormatSize): string {
-  const freeText = formatSizeHtml(space.availableBytes)
-  const totalText = formatSizeHtml(space.totalBytes)
-  const freePercent = Math.max(0, Math.min(100, Math.round((space.availableBytes / space.totalBytes) * 100)))
-  return `${freeText} of ${totalText} free (${String(freePercent)}%)`
-}
-
-export function formatDiskSpaceShortHtml(space: VolumeSpaceInfo, formatSizeHtml: FormatSize): string {
-  const freeText = formatSizeHtml(space.availableBytes)
-  const totalText = formatSizeHtml(space.totalBytes)
-  return `${freeText} free of ${totalText}`
-}
-
-export function formatBarTooltipHtml(space: VolumeSpaceInfo, formatSizeHtml: FormatSize): string {
-  const freeText = formatSizeHtml(space.availableBytes)
-  const totalText = formatSizeHtml(space.totalBytes)
-  const usedPercent = getUsedPercent(space)
-  const freePercent = 100 - usedPercent
-  const level = getDiskUsageLevel(usedPercent)
-  const base = `${freeText} of ${totalText} free (${String(freePercent)}%)`
-  if (level.label === 'Critical') return `${base}. This bar is red to indicate that the volume is low on space.`
-  if (level.label === 'Warning')
-    return `${base}. This bar is yellow to indicate that the volume is somewhat low on space.`
-  return base
-}

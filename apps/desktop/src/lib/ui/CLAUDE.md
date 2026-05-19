@@ -188,11 +188,15 @@ Parent controls spacing via its own wrapper. Used in `PtpcameradDialog`, `MtpPer
 decimal) and follows palette swaps via the `data-size-colors` attribute on `<html>` automatically.
 
 Use this in Svelte templates: `<Size bytes={entry.size} />`. For HTML string contexts (tooltips, error messages, prose
-that goes through `{@html}`), use one of two helpers from `$lib/file-explorer/selection/selection-info-utils.ts`:
+that goes through `{@html}`), use `colorizeSizeString(text)` from
+`$lib/file-explorer/selection/selection-info-utils.ts`: pass an already-formatted size string (for example, from
+`formatFileSizeWithFormat` or the legacy `formatBytes` in `$lib/tauri-commands`) and it wraps the value in the right
+tier span.
 
-- `formatSizeHtmlColored(bytes, format)`: full pipeline: byte count → formatted string → colored span.
-- `colorizeSizeString(text)`: when you already have a formatted size string (for example, from the legacy `formatBytes`
-  in `$lib/tauri-commands`) and just need to wrap it in the right tier span.
+Free-space displays (volume picker, status bar, usage-bar tooltip, transfer-dialog destination info) intentionally DON'T
+tier-color the numbers — for "free space" big-is-good, and red GB would falsely signal "low space". They use the plain
+formatters from `disk-space-utils.ts` with `formatFileSizeWithFormat` for the inner formatter. The usage-bar itself
+stays color-coded (driven by `getDiskUsageLevel`, which is the right signal for free space).
 
 The `<Size>` component does NOT cover the raw-bytes triad mode used by the file-list size column (which is gated by
 `listing.humanFriendlySizeUnits`). That column renders `formatSizeForDisplay` directly because it also needs the

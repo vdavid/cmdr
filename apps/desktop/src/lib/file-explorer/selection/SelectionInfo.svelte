@@ -8,7 +8,6 @@
         isBrokenSymlink as checkBrokenSymlink,
         isPermissionDenied as checkPermissionDenied,
         formatSizeForDisplay,
-        formatSizeHtmlColored,
         formatNumber,
         calculatePercentage,
     } from './selection-info-utils'
@@ -33,11 +32,13 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
-    import { formatDiskSpaceStatusHtml } from '../disk-space-utils'
+    import { formatDiskSpaceStatus } from '../disk-space-utils'
+    import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
-    function diskSpaceStatusHtml(space: VolumeSpaceInfo): string {
+    // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
+    function diskSpaceStatusText(space: VolumeSpaceInfo): string {
         const format = getFileSizeFormat()
-        return formatDiskSpaceStatusHtml(space, (b) => formatSizeHtmlColored(b, format))
+        return formatDiskSpaceStatus(space, (b) => formatFileSizeWithFormat(b, format))
     }
 
     interface Props {
@@ -218,8 +219,7 @@
     {#if displayMode === 'empty'}
         <span class="summary-text">Nothing in here.</span>
         {#if volumeSpace}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from typed disk space + tier classes; no user input. -->
-            <span class="disk-space-text">{@html diskSpaceStatusHtml(volumeSpace)}</span>
+            <span class="disk-space-text">{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'file-info' && entry}
         <!-- Brief mode without selection: show file info -->
@@ -247,15 +247,13 @@
             {#if datePlaceholder !== null}{datePlaceholder}{:else}<DateLabel modifiedAt={dateTimestamp} />{/if}
         </span>
         {#if volumeSpace}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from typed disk space + tier classes; no user input. -->
-            <span class="disk-space-text">{@html diskSpaceStatusHtml(volumeSpace)}</span>
+            <span class="disk-space-text">{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'no-selection'}
         <!-- Full mode without selection: show totals -->
         <span class="summary-text">{noSelectionText}</span>
         {#if volumeSpace}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from typed disk space + tier classes; no user input. -->
-            <span class="disk-space-text">{@html diskSpaceStatusHtml(volumeSpace)}</span>
+            <span class="disk-space-text">{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'selection-summary' && stats}
         <!-- Selection summary -->
