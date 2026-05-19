@@ -189,11 +189,15 @@ Core explorer UI components:
 - **type-to-jump-state.svelte.ts** / **TypeToJumpIndicator.svelte**: type-to-jump factory + the "Jump: …" chip. See
   [Type-to-jump](#type-to-jump) below.
 - **volume-tint.svelte.ts**: per-pane background tinting by volume kind (local / SMB / MTP). Reads
-  `appearance.tint{Local,Smb,Mtp}` reactively, returns a `color-mix(in oklch, ...)` expression that `FilePane.svelte`
-  applies as inline `background-color`. Mix share flows through `--pane-tint-{bg,fg}-pct` so dark mode and
-  `prefers-contrast: more` can each dial it up without re-evaluating the helper. Live-tuned matrix: 10% (light), 15%
-  (light AAA), 15% (dark), 25% (dark AAA) — dark needs more because there's less luminance headroom against `#1e1e1e`.
-  Pure classifier `volumeKindFor` is unit-tested separately in `volume-tint.test.ts`.
+  `appearance.tint{Local,Smb,Mtp}` reactively, returns either a `color-mix(in oklch, ...)` expression (modern WebKit) or
+  a precomputed sRGB hex string (Safari < 16.2, common on macOS 12 Monterey). The branch is picked once at module load
+  via `hasColorMix` from `$lib/utils/webkit-compat.ts`. On the old-WebKit branch, a `mediaTick` `$state` re-fires
+  `$derived` callers when `prefers-color-scheme` / `prefers-contrast` flips, since CSS no longer re-evaluates the string
+  at paint time. `FilePane.svelte` applies the result as inline `background-color`. Mix share flows through
+  `--pane-tint-{bg,fg}-pct` so dark mode and `prefers-contrast: more` can each dial it up without re-evaluating the
+  helper. Live-tuned matrix: 10% (light), 15% (light AAA), 15% (dark), 25% (dark AAA) — dark needs more because there's
+  less luminance headroom against `#1e1e1e`. Pure classifier `volumeKindFor` is unit-tested separately in
+  `volume-tint.test.ts`.
 
 ### Type-to-jump
 

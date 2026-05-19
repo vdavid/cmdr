@@ -10,6 +10,7 @@
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initVolumeTints, cleanupVolumeTints } from '$lib/file-explorer/pane/volume-tint.svelte'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { logWebkitCompat } from '$lib/utils/webkit-compat'
     import { initFocusWatchdog } from '$lib/focus-watchdog'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
@@ -180,6 +181,13 @@
 
             // Subscribe to volume-tint settings so FilePane bg updates live
             initVolumeTints()
+
+            // Log once whether this WebKit supports the modern CSS we lean on
+            // (`color-mix()`). Old Safari versions on macOS 12 Monterey fall
+            // back to the static declarations in `app.css`; surfacing this in
+            // logs lets us spot affected users in error reports without
+            // depending on UA-string sniffing.
+            logWebkitCompat()
 
             // One-time migration of pre-launch testers' plaintext API keys from settings.json to
             // the OS secret store. TODO: remove this call after 2026-09-01 (see function comment).

@@ -7,6 +7,28 @@ How to release a new version of Cmdr. Use the `/release` command to start.
 - `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in GitHub secrets
 - Self-hosted runner: `create-dmg` must be installed (`brew install create-dmg`)
 
+## Pre-release smoke test on old macOS
+
+Cmdr targets macOS 12 Monterey and up. The bundled Safari there can be 15.x, which doesn't support `color-mix()` (16.2+)
+or `oklch` color (16.4+). We carry static sRGB fallbacks for both in `app.css` (`@supports not (color: color-mix(...))`
+blocks) and via JS in `accent-color.ts` / `volume-tint.svelte.ts`. The fallbacks have to stay in sync as new tokens
+land.
+
+Before tagging a release:
+
+1. Boot a Monterey 12.7+ VM (or a real old Mac) and open the dev build.
+2. Confirm the four user-visible spots aren't broken:
+   - The "Open System Settings" button hovers to a lighter gold (not black).
+   - The per-pane disk usage bar fills with green/orange/red instead of just the gray track.
+   - The file-list cursor row has a visible gold-tinted background.
+   - In dark mode, file-list size column shows the rainbow tier colors (not uniform gray).
+3. Grep the app log for `Old WebKit detected:` — `logWebkitCompat()` emits this on startup when `color-mix()` isn't
+   supported. If you see it on Monterey 12.7+, the fallback path is doing its job.
+
+If a new `color-mix()` token lands without a matching entry in the `@supports not` blocks, those four spots silently
+break on old WebKit. Keep the lists in `app.css` in sync, and prefer the JS-derivation pattern (`accent-color.ts`,
+`volume-tint.svelte.ts`) for any token that depends on the live macOS accent color.
+
 ## Keep the Mac awake during the build
 
 The self-hosted runner lives on this Mac. If the machine sleeps (even briefly, or just the display), GitHub Actions

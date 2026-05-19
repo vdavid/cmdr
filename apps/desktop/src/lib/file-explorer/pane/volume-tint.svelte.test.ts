@@ -28,6 +28,15 @@ vi.mock('$lib/settings/settings-store', () => ({
   onSettingChange: vi.fn(() => () => {}),
 }))
 
+// Pin the modern-WebKit branch: tests below assert the CSS `color-mix(...)`
+// string shape. The JS-mix fallback path (old WebKit) reads live CSS vars via
+// `getComputedStyle`, which jsdom doesn't resolve for custom properties — that
+// path is exercised end-to-end on real WebKit instead.
+vi.mock('$lib/utils/webkit-compat', () => ({
+  hasColorMix: true,
+  logWebkitCompat: vi.fn(),
+}))
+
 import { initVolumeTints, cleanupVolumeTints, getPaneTintBg } from './volume-tint.svelte'
 import { setSetting } from '$lib/settings/settings-store'
 

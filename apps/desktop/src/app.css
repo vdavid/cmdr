@@ -312,6 +312,57 @@
   --color-age-old: var(--color-text-secondary);
 }
 
+/* Old-WebKit fallback (light mode).
+ *
+ * `color-mix()` arrived in Safari 16.2 (Dec 2022) and `color-mix(in oklch, …)`
+ * in 16.4 (Mar 2023). macOS 12 Monterey ships with Safari 15.x out of the box,
+ * and Tauri's WKWebView tracks the system Safari. When a `color-mix()` value
+ * fails to parse, the entire declaration is invalid and the variable goes
+ * unset — disk-bar fills, the file-list cursor row, the primary-button hover,
+ * and the dark-mode size palette all silently lose their color.
+ *
+ * This block redeclares each `color-mix()`-derived token as a static sRGB
+ * approximation. Old WebKit honors these (the `@supports not` gate triggers
+ * because it doesn't understand `color-mix()`); modern WebKit skips the block
+ * entirely. For tokens that follow the user's live macOS accent color,
+ * `accent-color.ts` additionally writes concrete hex onto `:root` at runtime,
+ * which overrides both branches.
+ *
+ * Order matters: `:root[data-size-colors=…]` / `[data-date-colors=…]` overrides
+ * land *before* this block but only carry the `color-mix()` declarations, so
+ * on old WebKit the alternate palettes silently collapse to the static
+ * defaults declared here. Acceptable trade-off — the four visible bugs are
+ * the priority. Keep this list in sync with the `color-mix()` definitions
+ * above; the `@supports`-based check in `scripts/check-css-fallbacks/`
+ * surfaces additions that lack a fallback.
+ */
+@supports not (color: color-mix(in oklch, red, blue)) {
+  :root {
+    --color-accent-text: #4a3802;
+    --color-accent-hover: #daae2b;
+    --color-accent-subtle: rgba(212, 160, 6, 0.15);
+    --color-cursor-inactive: rgba(232, 232, 232, 0.4);
+    --color-cursor-active: rgba(212, 160, 6, 0.2);
+    --color-warning-bg-solid: #f3e5dc;
+    --color-disk-ok: #74a376;
+    --color-disk-warning: #e47b42;
+    --color-bg-stripe: #f6f6f6;
+    --color-git-portal-subtle: rgba(13, 124, 138, 0.15);
+    --color-overlay: rgba(0, 0, 0, 0.5);
+    --color-overlay-light: rgba(0, 0, 0, 0.4);
+    --color-overlay-heavy: rgba(0, 0, 0, 0.6);
+    --color-tint-hover: rgba(0, 0, 0, 0.04);
+    --shadow-focus-contrast: 0 0 0 4px rgba(0, 0, 0, 0.1);
+    --color-size-bytes-selected: #a18a40;
+    --color-size-kb-selected: #b09337;
+    --color-size-mb-selected: #ba9930;
+    --color-size-gb-selected: #c49f2a;
+    --color-age-recent: #a38631;
+    --color-age-aging: #877749;
+    --color-age-old: #716c5c;
+  }
+}
+
 /* Dark Mode - automatically applied when user's system prefers dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -429,6 +480,36 @@
     --color-age-recent: #a8d040;
     --color-age-aging: #dcc24a;
     --color-age-old: #d49858;
+  }
+
+  /* Old-WebKit fallback (dark mode). See the light-mode counterpart above for
+     the full rationale. The rainbow size palette is the most visible case: it
+     reaches *all* file lists once the user is in dark mode, so leaving it
+     unset on Safari 15.x renders the whole size column gray. */
+  @supports not (color: color-mix(in oklch, red, blue)) {
+    :root {
+      --color-accent-hover: #ffc81f;
+      --color-accent-subtle: rgba(255, 194, 6, 0.15);
+      --color-cursor-inactive: rgba(51, 51, 51, 0.4);
+      --color-cursor-active: rgba(255, 194, 6, 0.2);
+      --color-warning-bg-solid: #483d29;
+      --color-disk-ok: #588b5b;
+      --color-disk-warning: #bf892d;
+      --color-toast-warn-bg: #3a3429;
+      --color-toast-error-bg: #3a2c2b;
+      --color-toast-success-bg: #29362e;
+      --color-overlay: rgba(0, 0, 0, 0.5);
+      --color-overlay-light: rgba(0, 0, 0, 0.4);
+      --color-overlay-heavy: rgba(0, 0, 0, 0.6);
+      --color-tint-hover: rgba(255, 255, 255, 0.06);
+      --shadow-focus-contrast: 0 0 0 4px rgba(255, 255, 255, 0.08);
+      --color-git-portal-subtle: rgba(77, 208, 225, 0.15);
+      --color-size-bytes: #90b390;
+      --color-size-kb: #c3b57b;
+      --color-size-mb: #c8a57b;
+      --color-size-gb: #c89090;
+      --color-size-tb: #b598c8;
+    }
   }
 }
 

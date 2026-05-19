@@ -14,6 +14,22 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 | `shorten-middle.ts`           | `shortenMiddle` mid-truncation + `createPretextMeasure` factory            |
 | `shorten-middle.test.ts`      | Vitest tests for shortenMiddle (mock measureWidth, 14 tests)               |
 | `shorten-middle-action.ts`    | Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext |
+| `srgb-mix.ts`                 | Tiny sRGB color helpers (`mixSrgb`, `withAlpha`, `parseHex`, `toHex`)      |
+| `webkit-compat.ts`            | One-shot `color-mix()` feature detection + boot-time telemetry log         |
+
+## srgb-mix.ts / webkit-compat.ts
+
+The CSS we ship uses `color-mix()` heavily; Safari < 16.2 (still in the wild on macOS 12 Monterey) doesn't parse it, so
+the variables go unset and downstream UI loses color. Two safety nets work together:
+
+- `app.css` ships static fallback declarations inside `@supports not (color: color-mix(...))` blocks.
+- `accent-color.ts` and `volume-tint.svelte.ts` compute their runtime-derived colors in JS using `mixSrgb` / `withAlpha`
+  from `srgb-mix.ts`, sidestepping `color-mix()` entirely for the tokens that depend on the live macOS accent color.
+
+`webkit-compat.ts` exposes `hasColorMix` (computed once at module load) so consumers can branch, and `logWebkitCompat()`
+which the main layout calls at boot — emits one log line so we can spot affected users in error reports.
+
+See `docs/guides/releasing.md` § "Pre-release smoke test on old macOS" for the manual check before tagging.
 
 ## filename-validation.ts
 
