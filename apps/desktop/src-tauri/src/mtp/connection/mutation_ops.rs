@@ -1,7 +1,7 @@
 //! MTP mutation operations: delete, create folder, rename, and move.
 
 use log::{debug, warn};
-use mtp_rs::{ObjectHandle, StorageId};
+use mtp_rs::{CancelToken, ObjectHandle, StorageId};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -28,9 +28,46 @@ impl MtpConnectionManager {
         storage_id: u32,
         object_path: &str,
     ) -> Result<(), MtpConnectionError> {
+        self.delete_object_with_cancel(device_id, storage_id, object_path, None)
+            .await
+    }
+
+    /// Like [`delete_object`](Self::delete_object) but accepts a cooperative
+    /// cancel token. Cancellation is checked:
+    /// 1. Before each recursive child delete (between iterations of the
+    ///    children loop).
+    /// 2. Before each per-handle `GetObjectInfo` USB roundtrip inside
+    ///    `list_objects` (via `mtp-rs`'s `list_objects_with_cancel`).
+    /// 3. Before issuing the final `DeleteObject` PTP request (via
+    ///    `delete_with_cancel`).
+    ///
+    /// A flipped token bails with `MtpConnectionError::Cancelled` within ≈one
+    /// USB roundtrip's latency, so `OperationIntent::Stopped` actually stops
+    /// the wire activity instead of just the loop above it.
+    pub async fn delete_object_with_cancel(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        object_path: &str,
+        cancel: Option<&CancelToken>,
+    ) -> Result<(), MtpConnectionError> {
+        // Fast bail before any I/O if cancel is already set. Cheap and avoids
+        // taking the devices registry lock on a doomed call.
+        if let Some(t) = cancel
+            && t.is_cancelled()
+        {
+            return Err(MtpConnectionError::Cancelled {
+                device_id: device_id.to_string(),
+                message: "Delete cancelled before start".to_string(),
+            });
+        }
+
         debug!(
-            "MTP delete_object: device={}, storage={}, path={}",
-            device_id, storage_id, object_path
+            "MTP delete_object: device={}, storage={}, path={}, cancel={}",
+            device_id,
+            storage_id,
+            object_path,
+            cancel.is_some()
         );
 
         // Get the device and resolve path to handle
@@ -71,10 +108,14 @@ impl MtpConnectionManager {
         let is_dir = object_info.format == mtp_rs::ptp::ObjectFormatCode::Association;
 
         if is_dir {
-            // For directories, we need to recursively delete contents first
+            // For directories, recursively delete contents first. Threading the
+            // cancel token into `list_objects_with_cancel` is what makes the
+            // 950-entry `/DCIM/Camera` listing bail at the next per-handle USB
+            // boundary instead of running all 950 GetObjectInfo roundtrips to
+            // completion.
             let children = tokio::time::timeout(
                 Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.list_objects(Some(object_handle)),
+                storage.list_objects_with_cancel(Some(object_handle), cancel),
             )
             .await
             .map_err(|_| MtpConnectionError::Timeout {
@@ -85,9 +126,19 @@ impl MtpConnectionManager {
             drop(storage);
             drop(device);
 
-            // Recursively delete children
+            // Recursively delete children. The token is checked between
+            // iterations and inside each child's own list/delete USB call.
             let parent_path = normalize_mtp_path(object_path);
             for child_info in children {
+                if let Some(t) = cancel
+                    && t.is_cancelled()
+                {
+                    return Err(MtpConnectionError::Cancelled {
+                        device_id: device_id.to_string(),
+                        message: "Delete cancelled between children".to_string(),
+                    });
+                }
+
                 let child_path = parent_path.join(&child_info.filename);
                 let child_path_str = child_path.to_string_lossy().to_string();
 
@@ -105,7 +156,7 @@ impl MtpConnectionManager {
                 }
 
                 // Use Box::pin for recursive async call
-                Box::pin(self.delete_object(device_id, storage_id, &child_path_str)).await?;
+                Box::pin(self.delete_object_with_cancel(device_id, storage_id, &child_path_str, cancel)).await?;
             }
 
             // Re-acquire device and storage lock to delete the now-empty folder
@@ -120,20 +171,28 @@ impl MtpConnectionManager {
             })?
             .map_err(|e| map_mtp_error(e, device_id))?;
 
-            tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.delete(object_handle))
-                .await
-                .map_err(|_| MtpConnectionError::Timeout {
-                    device_id: device_id.to_string(),
-                })?
-                .map_err(|e| map_mtp_error(e, device_id))?;
+            tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                storage.delete_with_cancel(object_handle, cancel),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
         } else {
-            // For files, just delete directly
-            tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.delete(object_handle))
-                .await
-                .map_err(|_| MtpConnectionError::Timeout {
-                    device_id: device_id.to_string(),
-                })?
-                .map_err(|e| map_mtp_error(e, device_id))?;
+            // For files, just delete directly. The cancel check inside
+            // delete_with_cancel bails before the PTP `DeleteObject` request
+            // is issued, so a cancelled token never touches the wire here.
+            tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                storage.delete_with_cancel(object_handle, cancel),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
         }
 
         // Remove from path cache

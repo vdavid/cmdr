@@ -384,3 +384,5 @@ mod tests;
 mod transaction_integration_test;
 #[cfg(test)]
 mod validation_integration_test;
+#[cfg(test)]
+mod volume_cancel_tests;

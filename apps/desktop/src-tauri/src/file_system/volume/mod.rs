@@ -363,6 +363,29 @@ pub trait Volume: Send + Sync {
         on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>>;
 
+    /// Cancel-aware version of [`list_directory`](Self::list_directory).
+    ///
+    /// `cancel`, when `Some`, is consulted by backends that issue many small
+    /// USB or network roundtrips inside one listing (currently MTP — a 950-entry
+    /// folder is 950 `GetObjectInfo` calls). When the flag flips to `true`,
+    /// the backend bails between roundtrips with `VolumeError::Cancelled`
+    /// instead of running to completion.
+    ///
+    /// Local and in-memory backends ignore the flag (their listings are
+    /// effectively atomic from the caller's perspective). SMB ignores it
+    /// today — adding SMB cancel propagation is a follow-up.
+    ///
+    /// Default impl delegates to `list_directory`, dropping the flag.
+    fn list_directory_with_cancel<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        cancel: Option<&'a std::sync::Arc<AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        let _ = cancel;
+        self.list_directory(path, on_progress)
+    }
+
     /// Gets metadata for a single path (relative to volume root).
     fn get_metadata<'a>(
         &'a self,
@@ -432,6 +455,23 @@ pub trait Volume: Send + Sync {
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let _ = path;
         Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
+    /// Cancel-aware version of [`delete`](Self::delete).
+    ///
+    /// MTP overrides this to thread the cancel flag through to mtp-rs's
+    /// `delete_with_cancel`, which bails before issuing the `DeleteObject` PTP
+    /// request when the flag is set. For non-empty directories the MTP
+    /// implementation also checks the flag between recursive child deletes.
+    ///
+    /// Default impl delegates to `delete`, dropping the flag.
+    fn delete_with_cancel<'a>(
+        &'a self,
+        path: &'a Path,
+        cancel: Option<&'a std::sync::Arc<AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        let _ = cancel;
+        self.delete(path)
     }
 
     /// Renames/moves a file or directory within this volume.

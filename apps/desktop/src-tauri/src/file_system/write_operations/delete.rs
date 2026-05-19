@@ -318,7 +318,7 @@ async fn scan_volume_recursive(
                 cached
             }
             None => volume
-                .list_directory(path, Some(&on_progress))
+                .list_directory_with_cancel(path, Some(&on_progress), Some(&state.backend_cancel))
                 .await
                 .map_err(|e| map_volume_error(&path.display().to_string(), e))?,
         };
@@ -682,7 +682,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
         }
 
         volume
-            .delete(&entry.path)
+            .delete_with_cancel(&entry.path, Some(&state.backend_cancel))
             .await
             .map_err(|e| map_volume_error(&entry.path.display().to_string(), e))?;
 
@@ -732,7 +732,9 @@ pub(super) async fn delete_volume_files_with_progress_inner(
         }
 
         // Best-effort directory removal (may fail if not empty due to partial delete)
-        let _ = volume.delete(&entry.path).await;
+        let _ = volume
+            .delete_with_cancel(&entry.path, Some(&state.backend_cancel))
+            .await;
     }
 
     // Emit completion

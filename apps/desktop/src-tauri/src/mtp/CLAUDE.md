@@ -79,6 +79,65 @@ It never orchestrates MTP connections.
 - **Event loop shutdown**: uses a biased `tokio::select!` so the shutdown signal (broadcast channel) is always checked first.
 - **Volume IDs**: MTP storage volumes use `"{device_id}:{storage_id}"` (e.g., `"mtp-336592896:65537"`).
 
+## Cancel propagation (M2 of cancel-settled)
+
+Long MTP operations bail at the next per-USB-roundtrip boundary when the
+caller's write-op intent flips to `Stopped`/`RollingBack`. Until M2 the cancel
+only stopped the **loop above** the USB call — the in-flight `list_objects` for
+a 950-photo `/DCIM/Camera` still ran all 950 `GetObjectInfo` roundtrips to
+completion (15–30 s), and the user's next op queued behind it, hit the 30 s
+op timeout, and wedged the device.
+
+Wiring:
+
+- `WriteOperationState.backend_cancel` (`Arc<AtomicBool>`) is created per write
+  op alongside `intent`. `cancel_write_operation` and
+  `cancel_all_write_operations` flip both together so any cancel path stops the
+  wire activity.
+- `MtpVolume::list_directory_with_cancel` and `MtpVolume::delete_with_cancel`
+  wrap the flag as a fresh `mtp_rs::CancelToken` via
+  `CancelToken::from_arc(Arc::clone(...))` — the token shares the inner atomic,
+  no second polling task.
+- `MtpConnectionManager::list_directory_with_cancel`,
+  `list_directory_with_progress_and_cancel`, and `delete_object_with_cancel`
+  thread the token to `storage.list_objects_with_cancel` /
+  `storage.delete_with_cancel` in `mtp-rs`. The token is also checked between
+  iterations of the recursive child-delete loop inside `delete_object_with_cancel`.
+
+The actual stop point is **per-handle in `ObjectListing::next`** (one
+`GetObjectInfo` USB roundtrip each, ~17 ms on real Android). One roundtrip's
+latency is well under the user-visible "Cancelling…" indicator's settling
+window.
+
+### Why not PTP `CancelTransaction (0x4001)` for list/delete?
+
+PTP defines `CancelTransaction` (interrupt-OUT control request, SIC class-cancel
+with `bRequest=0x64`). mtp-rs already implements it via
+`Transport::cancel_transfer` for streaming downloads (`FileDownload::cancel`),
+where there's a multi-MB bulk-IN transfer to drain.
+
+For `list_objects` and `delete_object`, each PTP transaction completes in
+milliseconds. Mid-transaction cancel via `CancelTransaction` would be
+high-complexity (drain bulk endpoints, recover session state) for sub-roundtrip
+benefit. Checking the token **between** roundtrips:
+
+- Bails within ≈one USB roundtrip's latency (the actual wedge point).
+- Leaves bulk endpoints in a clean state — no drain race.
+- Leaves the device session intact for the next op.
+
+Streaming downloads continue to use the SIC class-cancel path (see the
+"Transfer cancellation" section in `mtp-rs/AGENTS.md`); that's a different
+mechanism for a different problem.
+
+### Hardware caveats
+
+Some Android devices may still leave the session in a degraded state after a
+flurry of operations, even when cancel is clean on our side (Pixel 6/7 era
+firmware has been observed mis-handling rapid op-cancel-op sequences). This is
+hardware-side and unfixable in software; the M4 settled-state gate ensures the
+user doesn't issue the next op until our side is fully quiet, which avoids
+provoking the device-side bug in practice.
+
 ## Dependencies
 
 - `mtp_rs`: MTP session, object listing, file transfer

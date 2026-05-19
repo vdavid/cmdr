@@ -75,6 +75,20 @@ pub struct WriteOperationState {
     /// at every `write-progress` emit site, so every emitter (local copy/delete,
     /// volume copy/move, MTP, SMB) reports rates and ETA uniformly.
     pub estimator: std::sync::Mutex<EtaEstimator>,
+    /// Cooperative cancel flag for in-flight backend I/O. Flipped whenever the
+    /// op transitions out of `Running` (via `cancel_write_operation`,
+    /// `cancel_all_write_operations`, or `cancel_all_write_operations_with_rollback`).
+    /// MTP volume ops thread this into `list_objects_with_cancel` /
+    /// `delete_with_cancel` so an in-flight `GetObjectInfo` loop bails at the
+    /// next per-handle USB boundary (≈one roundtrip) instead of running the
+    /// full 950-photo `/DCIM/Camera` listing to completion. Non-MTP backends
+    /// ignore it for now.
+    ///
+    /// Kept as a raw `Arc<AtomicBool>` (not the mtp-rs `CancelToken` type) so
+    /// this module doesn't pull mtp-rs onto non-MTP platforms; the MTP wiring
+    /// layer (`mtp::connection`) builds a fresh `mtp_rs::CancelToken` from
+    /// this flag at the entry point of each MTP-aware call.
+    pub backend_cancel: Arc<AtomicBool>,
 }
 
 impl WriteOperationState {
@@ -87,6 +101,7 @@ impl WriteOperationState {
             progress_interval,
             conflict_resolution_tx: std::sync::Mutex::new(None),
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
+            backend_cancel: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -312,6 +327,9 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
         }
 
         state.intent.store(target as u8, Ordering::Relaxed);
+        // Any transition out of `Running` should also stop in-flight backend
+        // I/O (per-handle MTP loops, etc.) — not just the loop above it.
+        state.backend_cancel.store(true, Ordering::Release);
         // Drop the conflict resolution sender to unblock any waiting receiver
         let _ = state.conflict_resolution_tx.lock().unwrap().take();
     }
@@ -329,6 +347,7 @@ pub fn cancel_all_write_operations() {
             if current != OperationIntent::Stopped {
                 log::info!("cancel_all_write_operations: stopping op={id}");
                 state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+                state.backend_cancel.store(true, Ordering::Release);
                 // Drop the conflict resolution sender to unblock any waiting receiver
                 let _ = state.conflict_resolution_tx.lock().unwrap().take();
             }
@@ -691,6 +710,67 @@ mod tests {
             Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {} // good
             other => panic!("expected sender to be dropped, got {other:?}"),
         }
+        uninstall_state(&id);
+    }
+
+    // ---- backend_cancel flag flipping (M2 wedge fix) ------------------------
+
+    #[test]
+    fn backend_cancel_starts_unset_on_fresh_state() {
+        let state = WriteOperationState::new(Duration::from_millis(50));
+        assert!(!state.backend_cancel.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn cancel_write_operation_flips_backend_cancel_to_stopped() {
+        let id = unique_id("cancel-flips-backend-stopped");
+        let state = install_state(&id, OperationIntent::Running);
+        assert!(!state.backend_cancel.load(Ordering::Acquire));
+        cancel_write_operation(&id, false);
+        assert!(
+            state.backend_cancel.load(Ordering::Acquire),
+            "cancel → Stopped must also flip backend_cancel so in-flight USB ops bail"
+        );
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_write_operation_flips_backend_cancel_to_rolling_back() {
+        let id = unique_id("cancel-flips-backend-rb");
+        let state = install_state(&id, OperationIntent::Running);
+        cancel_write_operation(&id, true);
+        assert!(
+            state.backend_cancel.load(Ordering::Acquire),
+            "cancel → RollingBack must also flip backend_cancel — the user wants the wire activity stopped, even though we're going to delete created files"
+        );
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_all_write_operations_flips_backend_cancel() {
+        let id = unique_id("cancel-all-flips-backend");
+        let state = install_state(&id, OperationIntent::Running);
+        cancel_all_write_operations();
+        assert!(
+            state.backend_cancel.load(Ordering::Acquire),
+            "cancel_all must flip backend_cancel so teardown also stops the wire activity"
+        );
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_stopped_is_noop_for_backend_cancel_too() {
+        // Stopped → anything is terminal, so backend_cancel state must not
+        // change either. This guards against a subtle regression where the
+        // flag flip happens before the validity check.
+        let id = unique_id("cancel-stopped-noop");
+        let state = install_state(&id, OperationIntent::Stopped);
+        state.backend_cancel.store(false, Ordering::Release);
+        cancel_write_operation(&id, true);
+        assert!(
+            !state.backend_cancel.load(Ordering::Acquire),
+            "Stopped is terminal: invalid transition must not flip backend_cancel"
+        );
         uninstall_state(&id);
     }
 

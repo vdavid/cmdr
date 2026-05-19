@@ -1,7 +1,7 @@
 //! MTP directory listing and path resolution.
 
 use log::{debug, error, info};
-use mtp_rs::{ObjectHandle, StorageId};
+use mtp_rs::{CancelToken, ObjectHandle, StorageId};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -42,6 +42,22 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        self.list_directory_with_cancel(device_id, storage_id, path, None).await
+    }
+
+    /// Like [`list_directory`](Self::list_directory) but accepts a cooperative
+    /// cancel token. When the token flips, the in-flight per-handle
+    /// `GetObjectInfo` loop bails within one USB roundtrip with
+    /// `MtpConnectionError::Cancelled`. Use this from MTP write-op paths so
+    /// `OperationIntent::Stopped` cuts the wire activity, not just the loop
+    /// above it.
+    pub async fn list_directory_with_cancel(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        cancel: Option<&CancelToken>,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         use std::sync::atomic::Ordering;
 
         // Generate unique request ID for tracing this call
@@ -61,7 +77,7 @@ impl MtpConnectionManager {
 
         // Wrap the entire operation to ensure we decrement the counter on exit
         let result = self
-            .list_directory_inner(request_id, device_id, storage_id, path, call_start)
+            .list_directory_inner(request_id, device_id, storage_id, path, call_start, cancel)
             .await;
 
         let concurrent_after = CONCURRENT_LIST_CALLS.fetch_sub(1, Ordering::Relaxed);
@@ -75,21 +91,25 @@ impl MtpConnectionManager {
         result
     }
 
-    /// Lists directory contents with a progress callback.
+    /// Lists directory contents with a progress callback and an optional
+    /// cooperative cancel token.
     ///
-    /// Same as `list_directory`, but calls `on_progress(fetched_count)` periodically
-    /// during the per-object metadata fetch phase so callers can report incremental
-    /// progress to the UI.
+    /// Same as `list_directory_with_cancel`, but calls `on_progress(fetched_count)`
+    /// periodically during the per-object metadata fetch phase so callers can
+    /// report incremental progress to the UI. The token is threaded into the
+    /// per-handle stream so a flipped flag aborts the USB roundtrip loop
+    /// within one roundtrip's latency.
     ///
-    /// This is a separate method (not merged with `list_directory`) because the
-    /// `&dyn Fn(usize)` callback is not `Send`, and `list_directory` must produce
-    /// a `Send` future for use in Tauri commands and `tokio::spawn`.
-    pub async fn list_directory_with_progress(
+    /// This is a separate method (not merged with `list_directory_with_cancel`)
+    /// because the `&dyn Fn(usize)` callback is not `Send`, and the non-progress
+    /// path must produce a `Send` future for use in Tauri commands and `tokio::spawn`.
+    pub async fn list_directory_with_progress_and_cancel(
         &self,
         device_id: &str,
         storage_id: u32,
         path: &str,
         on_progress: &(dyn Fn(usize) + Sync),
+        cancel: Option<&CancelToken>,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         use std::sync::atomic::Ordering;
 
@@ -107,7 +127,15 @@ impl MtpConnectionManager {
         );
 
         let result = self
-            .list_directory_inner_with_progress(request_id, device_id, storage_id, path, call_start, on_progress)
+            .list_directory_inner_with_progress(
+                request_id,
+                device_id,
+                storage_id,
+                path,
+                call_start,
+                on_progress,
+                cancel,
+            )
             .await;
 
         let concurrent_after = CONCURRENT_LIST_CALLS.fetch_sub(1, Ordering::Relaxed);
@@ -132,6 +160,7 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
         call_start: Instant,
+        cancel: Option<&CancelToken>,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         // Normalize the path for building child paths
         let parent_path = normalize_mtp_path(path);
@@ -249,33 +278,39 @@ impl MtpConnectionManager {
 
         let list_objects_start = Instant::now();
         debug!(
-            "MTP list_directory [req#{}]: calling list_objects (parent={:?})...",
-            request_id, parent_opt
+            "MTP list_directory [req#{}]: calling list_objects (parent={:?}, cancel={})...",
+            request_id,
+            parent_opt,
+            cancel.is_some()
         );
-        let object_infos =
-            match tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.list_objects(parent_opt)).await {
-                Ok(Ok(infos)) => infos,
-                Ok(Err(e)) => {
-                    let mapped_err = map_mtp_error(e, device_id);
-                    error!(
-                        "MTP list_directory [req#{}]: list_objects failed after {:?}: {:?}",
-                        request_id,
-                        list_objects_start.elapsed(),
-                        mapped_err
-                    );
-                    return Err(mapped_err);
-                }
-                Err(_) => {
-                    error!(
-                        "MTP list_directory [req#{}]: list_objects timed out after {:?}",
-                        request_id,
-                        list_objects_start.elapsed()
-                    );
-                    return Err(MtpConnectionError::Timeout {
-                        device_id: device_id.to_string(),
-                    });
-                }
-            };
+        let object_infos = match tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.list_objects_with_cancel(parent_opt, cancel),
+        )
+        .await
+        {
+            Ok(Ok(infos)) => infos,
+            Ok(Err(e)) => {
+                let mapped_err = map_mtp_error(e, device_id);
+                error!(
+                    "MTP list_directory [req#{}]: list_objects failed after {:?}: {:?}",
+                    request_id,
+                    list_objects_start.elapsed(),
+                    mapped_err
+                );
+                return Err(mapped_err);
+            }
+            Err(_) => {
+                error!(
+                    "MTP list_directory [req#{}]: list_objects timed out after {:?}",
+                    request_id,
+                    list_objects_start.elapsed()
+                );
+                return Err(MtpConnectionError::Timeout {
+                    device_id: device_id.to_string(),
+                });
+            }
+        };
 
         debug!(
             "MTP list_directory [req#{}]: list_objects returned {} objects in {:?}, total USB I/O time={:?}",
@@ -317,6 +352,10 @@ impl MtpConnectionManager {
     /// incremental feedback during MTP folder navigation.
     ///
     /// Only called from `block_on` (sync Volume trait), so no `Send` requirement.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "internal helper that mirrors `list_directory_inner` with the extra progress callback; grouping into a struct would obscure the call-trace request_id logging"
+    )]
     async fn list_directory_inner_with_progress(
         &self,
         request_id: u64,
@@ -325,6 +364,7 @@ impl MtpConnectionManager {
         path: &str,
         call_start: Instant,
         on_progress: &(dyn Fn(usize) + Sync),
+        cancel: Option<&CancelToken>,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         let parent_path = normalize_mtp_path(path);
 
@@ -382,10 +422,11 @@ impl MtpConnectionManager {
             Some(parent_handle)
         };
 
-        // Get streaming listing (fast: single USB transaction for GetObjectHandles)
+        // Get streaming listing (fast: single USB transaction for GetObjectHandles).
+        // The cancel token threads into the per-handle GetObjectInfo loop below.
         let mut listing = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.list_objects_stream(parent_opt),
+            storage.list_objects_stream_with_cancel(parent_opt, cancel),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {

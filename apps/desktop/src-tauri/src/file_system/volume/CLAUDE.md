@@ -55,6 +55,33 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
     3. The `refresh_listing` Tauri command (`commands/file_system/listing.rs`) — short-circuits the post-transfer redundant `list_directory` re-read entirely when the volume is keeping the cache fresh via `notify_mutation`. Without this, a 1k-entry MTP folder paid ~17 s + USB session collision after every transfer outcome, wedging the next user op.
   Default `false` so a new backend without a real watcher won't accidentally claim freshness. **Freshness contract**: a `true` result does NOT mean the cache is byte-perfect with the device right now. Every backend has a debounce or settling window between a real change and the cache reflecting it: local FS ≈ 10 ms (FSEvents coalesce), SMB 200 ms (watcher debounce; > 50 events/dir triggers a `FullRefresh`), MTP 500 ms (event debouncer plus per-device polling; many cameras emit no events at all, so on those `true` means only "the device is reachable"). Callers must treat the result as "fresh as our most recent observation" — the same guarantee a `list_directory` call gives. The MTP and SMB checks are volume-level, not path-level: when the gate flips true, every path on that volume becomes oracle-eligible.
 
+## Cancel-aware variants
+
+`list_directory_with_cancel(path, on_progress, cancel)` and
+`delete_with_cancel(path, cancel)` accept an
+`Option<&Arc<AtomicBool>>` that backends interpret as a cooperative cancel
+flag. Default impls delegate to the non-cancel `list_directory` / `delete`,
+dropping the flag — so adding a new backend doesn't have to implement them
+unless its operations are interruptible at a meaningful boundary.
+
+- `MtpVolume` overrides both. The flag wraps a fresh `mtp_rs::CancelToken` via
+  `CancelToken::from_arc(Arc::clone(...))` (shared atomic, no polling task) and
+  threads through to mtp-rs's `list_objects_with_cancel` /
+  `delete_with_cancel`. That bails the per-handle `GetObjectInfo` loop within
+  one USB roundtrip's latency.
+- `LocalPosixVolume`, `SmbVolume`, and `InMemoryVolume` inherit the default
+  (ignore the flag). Local listings are effectively atomic; SMB cancel
+  propagation is a follow-up.
+
+The write-op layer hands `Some(&state.backend_cancel)` (a clone of the same
+`Arc<AtomicBool>` that `cancel_write_operation` flips when intent leaves
+`Running`). Volumes that ignore the flag are unaffected; volumes that consume
+it stop their wire activity, not just the loop above.
+
+See `apps/desktop/src-tauri/src/mtp/CLAUDE.md` § "Cancel propagation" for the
+MTP-specific wiring and the rationale for "between-roundtrip" cancel vs PTP
+`CancelTransaction`.
+
 ## Building a new volume
 
 Adding a new backend (say, FTP, WebDAV, S3, or a new device protocol) is a matter of implementing the `Volume` trait and opting into the capability flags that make sense for your backend. The checklist below walks the path in the order you'd hit each concern.

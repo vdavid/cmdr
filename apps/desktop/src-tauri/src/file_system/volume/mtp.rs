@@ -107,28 +107,49 @@ impl Volume for MtpVolume {
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.list_directory_with_cancel(path, on_progress, None)
+    }
+
+    fn list_directory_with_cancel<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        cancel: Option<&'a std::sync::Arc<std::sync::atomic::AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             #[cfg(test)]
             test_hooks::bump_list_directory_call_count();
 
             let mtp_path = self.to_mtp_path(path);
 
+            // Build a mtp_rs CancelToken that shares the caller's Arc<AtomicBool>.
+            // No second polling task: flipping the original atomic flips the token.
+            let cancel_token = cancel.map(|c| mtp_rs::CancelToken::from_arc(std::sync::Arc::clone(c)));
+            let cancel_ref = cancel_token.as_ref();
+
             debug!(
-                "MtpVolume::list_directory: device={}, storage={}, input_path={}, mtp_path={}",
+                "MtpVolume::list_directory: device={}, storage={}, input_path={}, mtp_path={}, cancel={}",
                 self.device_id,
                 self.storage_id,
                 path.display(),
-                mtp_path
+                mtp_path,
+                cancel_ref.is_some()
             );
 
             let start = std::time::Instant::now();
             let result = if let Some(on_progress) = on_progress {
                 connection_manager()
-                    .list_directory_with_progress(&self.device_id, self.storage_id, &mtp_path, on_progress)
+                    .list_directory_with_progress_and_cancel(
+                        &self.device_id,
+                        self.storage_id,
+                        &mtp_path,
+                        on_progress,
+                        cancel_ref,
+                    )
                     .await
             } else {
                 connection_manager()
-                    .list_directory(&self.device_id, self.storage_id, &mtp_path)
+                    .list_directory_with_cancel(&self.device_id, self.storage_id, &mtp_path, cancel_ref)
                     .await
             };
 
@@ -322,11 +343,22 @@ impl Volume for MtpVolume {
     }
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.delete_with_cancel(path, None)
+    }
+
+    fn delete_with_cancel<'a>(
+        &'a self,
+        path: &'a Path,
+        cancel: Option<&'a std::sync::Arc<std::sync::atomic::AtomicBool>>,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
 
+            let cancel_token = cancel.map(|c| mtp_rs::CancelToken::from_arc(std::sync::Arc::clone(c)));
+            let cancel_ref = cancel_token.as_ref();
+
             connection_manager()
-                .delete_object(&self.device_id, self.storage_id, &mtp_path)
+                .delete_object_with_cancel(&self.device_id, self.storage_id, &mtp_path, cancel_ref)
                 .await
                 .map_err(map_mtp_error)?;
 

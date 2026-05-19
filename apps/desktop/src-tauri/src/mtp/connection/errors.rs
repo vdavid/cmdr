@@ -121,7 +121,7 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
         mtp_rs::Error::Timeout => MtpConnectionError::Timeout {
             device_id: device_id.to_string(),
         },
-        mtp_rs::Error::Cancelled => MtpConnectionError::Other {
+        mtp_rs::Error::Cancelled => MtpConnectionError::Cancelled {
             device_id: device_id.to_string(),
             message: "Operation cancelled".to_string(),
         },
