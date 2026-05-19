@@ -611,6 +611,20 @@
         selection.toggleAt(cursorIndex, hasParent)
     }
 
+    /**
+     * Toggle selection at cursor, then move cursor down by one row. Mirrors
+     * the Total Commander Insert-key behavior. `toggleAt` no-ops on `..` (the
+     * parent entry isn't selectable); the cursor still advances. At the last
+     * row the selection toggles but the cursor stays put (no wrap-around).
+     */
+    export function toggleSelectionAndMoveDownAtCursor(): void {
+        selection.toggleAt(cursorIndex, hasParent)
+        if (cursorIndex < effectiveTotalCount - 1) {
+            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+            applyNavigation(cursorIndex + 1, listRef, false)
+        }
+    }
+
     export function selectRange(startIndex: number, endIndex: number): void {
         selection.selectRange(startIndex, endIndex, hasParent)
     }
@@ -1573,8 +1587,20 @@
         // Space - toggle selection at cursor
         if (e.key === ' ') {
             e.preventDefault()
+            // Stop propagation so the document-level centralized dispatch doesn't
+            // re-fire `selection.toggle` (whose case in command-dispatch.ts exists
+            // for palette/MCP triggers).
+            e.stopPropagation()
             selection.toggleAt(cursorIndex, hasParent)
 
+            return true
+        }
+        // Insert - toggle selection at cursor and move cursor down (Total Commander style)
+        if (e.key === 'Insert') {
+            e.preventDefault()
+            // See Space note above re: stopPropagation.
+            e.stopPropagation()
+            toggleSelectionAndMoveDownAtCursor()
             return true
         }
         // Cmd+A - select all (Cmd+Shift+A - deselect all)
@@ -1835,11 +1861,15 @@
         }
     })
 
-    // Re-fetch entry under the cursor when cursorIndex changes (debounced: status bar info can lag one frame)
+    // Re-fetch entry under the cursor when cursorIndex changes (debounced: status bar info can lag one frame).
+    // Also sync to MCP so cmdr://state reflects keyboard nav (arrows, Insert, PageUp/Down, Home/End, click-to-position).
+    // Previously, only listing changes and visible-range scrolls triggered the sync, so cursor moves within an
+    // already-rendered window stayed invisible to MCP-driven agents.
     $effect(() => {
         void cursorIndex // Track
         if (listingId && !loading) {
             debouncedFetchEntry.call()
+            debouncedSyncMcp.call()
         }
     })
 

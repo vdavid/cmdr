@@ -2079,7 +2079,7 @@
 
     /**
      * Handle selection action from MCP.
-     * @param action - The selection action (clear, selectAll, deselectAll, toggleAtCursor, selectRange)
+     * @param action - The selection action (clear, selectAll, deselectAll, toggleAtCursor, toggleAtCursorAndMoveDown, selectRange)
      * @param startIndex - Start index for range selection
      * @param endIndex - End index for range selection
      */
@@ -2097,6 +2097,9 @@
                 break
             case 'toggleAtCursor':
                 paneRef.toggleSelectionAtCursor()
+                break
+            case 'toggleAtCursorAndMoveDown':
+                paneRef.toggleSelectionAndMoveDownAtCursor()
                 break
             case 'selectRange':
                 if (startIndex !== undefined && endIndex !== undefined) {

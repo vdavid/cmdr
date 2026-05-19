@@ -424,6 +424,14 @@ export const commands: Command[] = [
     shortcuts: ['Space'],
   },
   {
+    id: 'selection.toggleAndDown',
+    name: 'Toggle selection and move down',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['Insert'],
+    description: 'Selects or deselects the file under the cursor, then moves down (Total Commander style)',
+  },
+  {
     id: 'selection.selectAll',
     name: 'Select all',
     scope: 'Main window/File list',

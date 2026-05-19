@@ -9,6 +9,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import FilePane from './FilePane.svelte'
 import { waitForUpdates, useMountTarget } from './integration-test-utils'
+import { findFileIndex } from '$lib/tauri-commands'
 
 // ============================================================================
 // Mock setup (must be in each test file; Vitest hoists vi.mock calls)
@@ -93,6 +94,7 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn().mockResolvedValue(undefined),
   notifyDialogClosed: vi.fn().mockResolvedValue(undefined),
   watchVolumeSpace: vi.fn().mockResolvedValue(undefined),
+  getDirStatsBatch: vi.fn().mockResolvedValue({}),
 }))
 
 vi.mock('$lib/icon-cache', async () => {
@@ -100,6 +102,7 @@ vi.mock('$lib/icon-cache', async () => {
   return {
     getCachedIcon: vi.fn().mockReturnValue('/icons/file.png'),
     iconCacheVersion: writable(0),
+    iconCacheCleared: writable(0),
     prefetchIcons: vi.fn().mockResolvedValue(undefined),
   }
 })
@@ -130,6 +133,11 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
   getSizeDisplayMode: vi.fn().mockReturnValue('smart'),
   getNetworkEnabled: vi.fn().mockReturnValue(true),
+  getSizeMismatchWarning: vi.fn().mockReturnValue(false),
+  getStripedRows: vi.fn().mockReturnValue(false),
+  getBriefColumnWidthMode: vi.fn().mockReturnValue('auto'),
+  getBriefColumnWidthMaxPx: vi.fn().mockReturnValue(400),
+  getIsCmdrGold: vi.fn().mockReturnValue(false),
 }))
 
 vi.mock('$lib/drag-drop', () => ({ startDragTracking: vi.fn() }))
@@ -346,6 +354,186 @@ describe('Selection state consistency', () => {
 
     // Should be empty
     expect(getSelectedIndices()).toEqual([])
+  })
+
+  it('Insert key toggles selection and moves cursor down', async () => {
+    const component = mount(FilePane, {
+      target: getTarget(),
+      props: {
+        initialPath: '/',
+        volumeId: 'root',
+        volumePath: '/',
+        isFocused: true,
+        showHiddenFiles: true,
+        viewMode: 'brief',
+      },
+    })
+
+    await waitForUpdates(100)
+
+    type Api = {
+      handleKeyDown: (e: KeyboardEvent) => void
+      adoptListing: (s: {
+        currentPath: string
+        listingId: string
+        totalCount: number
+        cursorIndex: number
+        selectedIndices: number[]
+        lastSequence: number
+      }) => void
+      getSelectedIndices: () => number[]
+      getCursorIndex: () => number
+    }
+    const c = component as unknown as Api
+
+    // Test mocks don't drive the `listing-complete` event, so totalCount stays
+    // at 0 unless we adopt a listing. Seed: 10 rows, no parent, cursor at 0.
+    c.adoptListing({
+      currentPath: '/',
+      listingId: 'mock-listing',
+      totalCount: 10,
+      cursorIndex: 0,
+      selectedIndices: [],
+      lastSequence: 0,
+    })
+    // Let the listingId-driven $effect (refetch totalCount + clamp cursor) settle
+    // before we exercise the handler — otherwise its async chain races with the keypress.
+    await waitForUpdates(50)
+
+    expect(c.getSelectedIndices()).toEqual([])
+    expect(c.getCursorIndex()).toBe(0)
+
+    const insertEvent = new KeyboardEvent('keydown', { key: 'Insert', bubbles: true })
+    c.handleKeyDown(insertEvent)
+    await tick()
+
+    // Cursor row 0 is selected, cursor advanced to row 1
+    expect(c.getSelectedIndices()).toEqual([0])
+    expect(c.getCursorIndex()).toBe(1)
+
+    // Press again at row 1: select row 1, advance to row 2
+    c.handleKeyDown(insertEvent)
+    await tick()
+    expect(c.getSelectedIndices().sort()).toEqual([0, 1])
+    expect(c.getCursorIndex()).toBe(2)
+  })
+
+  it('Insert on ".." advances cursor without selecting the parent entry', async () => {
+    // initialPath !== volumePath produces a ".." entry at index 0
+    const component = mount(FilePane, {
+      target: getTarget(),
+      props: {
+        initialPath: '/test',
+        volumeId: 'root',
+        volumePath: '/',
+        isFocused: true,
+        showHiddenFiles: true,
+        viewMode: 'brief',
+      },
+    })
+
+    await waitForUpdates(100)
+
+    type Api = {
+      handleKeyDown: (e: KeyboardEvent) => void
+      adoptListing: (s: {
+        currentPath: string
+        listingId: string
+        totalCount: number
+        cursorIndex: number
+        selectedIndices: number[]
+        lastSequence: number
+      }) => void
+      getSelectedIndices: () => number[]
+      getCursorIndex: () => number
+    }
+    const c = component as unknown as Api
+
+    // 10 backend rows + ".." = 11 frontend rows; cursor on ".." (index 0).
+    // Same race as the "last row" test: the listingId-driven $effect calls
+    // findFileIndex (mocked to 0) and would yank the cursor off ".." onto
+    // the first real row. Return null so the effect leaves cursor alone.
+    vi.mocked(findFileIndex).mockResolvedValueOnce(null)
+    c.adoptListing({
+      currentPath: '/test',
+      listingId: 'mock-listing',
+      totalCount: 10,
+      cursorIndex: 0,
+      selectedIndices: [],
+      lastSequence: 0,
+    })
+    await waitForUpdates(50)
+
+    expect(c.getCursorIndex()).toBe(0) // sitting on ".."
+    expect(c.getSelectedIndices()).toEqual([])
+
+    const insertEvent = new KeyboardEvent('keydown', { key: 'Insert', bubbles: true })
+    c.handleKeyDown(insertEvent)
+    await tick()
+
+    // ".." stayed unselected; cursor moved down anyway
+    expect(c.getSelectedIndices()).toEqual([])
+    expect(c.getCursorIndex()).toBe(1)
+  })
+
+  it('Insert at last row toggles but does not move cursor past end', async () => {
+    const component = mount(FilePane, {
+      target: getTarget(),
+      props: {
+        initialPath: '/',
+        volumeId: 'root',
+        volumePath: '/',
+        isFocused: true,
+        showHiddenFiles: true,
+        viewMode: 'brief',
+      },
+    })
+
+    await waitForUpdates(100)
+
+    type Api = {
+      handleKeyDown: (e: KeyboardEvent) => void
+      adoptListing: (s: {
+        currentPath: string
+        listingId: string
+        totalCount: number
+        cursorIndex: number
+        selectedIndices: number[]
+        lastSequence: number
+      }) => void
+      getSelectedIndices: () => number[]
+      getCursorIndex: () => number
+    }
+    const c = component as unknown as Api
+
+    // 10 rows, no parent, cursor on the last row (index 9).
+    // The listingId-driven $effect would otherwise call findFileIndex (mocked to 0)
+    // and yank the cursor back to 0 after we adopt cursor: 9.
+    vi.mocked(findFileIndex).mockResolvedValueOnce(8)
+    c.adoptListing({
+      currentPath: '/',
+      listingId: 'mock-listing',
+      totalCount: 10,
+      cursorIndex: 9,
+      selectedIndices: [],
+      lastSequence: 0,
+    })
+    await waitForUpdates(50)
+    // After the effect settles, cursor lands wherever findFileIndex pointed.
+    // We just need it pinned to the last row before pressing Insert.
+    const setCursorIndex = (component as unknown as { setCursorIndex: (i: number) => Promise<void> }).setCursorIndex
+    await setCursorIndex(9)
+    await tick()
+
+    expect(c.getCursorIndex()).toBe(9)
+
+    const insertEvent = new KeyboardEvent('keydown', { key: 'Insert', bubbles: true })
+    c.handleKeyDown(insertEvent)
+    await tick()
+
+    // Last row toggled; cursor stayed put
+    expect(c.getSelectedIndices()).toEqual([9])
+    expect(c.getCursorIndex()).toBe(9)
   })
 
   it('handleKeyUp export exists and handles Shift release', async () => {

@@ -41,6 +41,7 @@ export interface FilePaneAPI {
   clearSelection(): void
   selectAll(): void
   toggleSelectionAtCursor(): void
+  toggleSelectionAndMoveDownAtCursor(): void
   selectRange(startIndex: number, endIndex: number): void
   snapshotSelectionForOperation(): Promise<void>
   clearOperationSnapshot(): string[] | 'all' | null

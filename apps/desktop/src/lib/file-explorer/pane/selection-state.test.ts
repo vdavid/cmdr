@@ -38,6 +38,22 @@ describe('createSelectionState', () => {
       expect(wasSelected).toBe(true)
       expect(state.selectedIndices.has(0)).toBe(true)
     })
+
+    it('fires onChanged on every mutating toggle (so MCP state stays in sync)', () => {
+      const onChanged = vi.fn()
+      const state = createSelectionState({ onChanged })
+      state.toggleAt(2, false) // select
+      expect(onChanged).toHaveBeenCalledTimes(1)
+      state.toggleAt(2, false) // deselect
+      expect(onChanged).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not fire onChanged when toggling ".." (no state change)', () => {
+      const onChanged = vi.fn()
+      const state = createSelectionState({ onChanged })
+      state.toggleAt(0, true) // parent entry, no-op
+      expect(onChanged).not.toHaveBeenCalled()
+    })
   })
 
   describe('selectAll', () => {
@@ -183,6 +199,13 @@ describe('createSelectionState', () => {
       state.selectRange(2, 4, false)
       expect(state.getSelectedIndices().sort((a, b) => a - b)).toEqual([2, 3, 4, 10])
     })
+
+    it('fires onChanged so MCP state sync runs', () => {
+      const onChanged = vi.fn()
+      const state = createSelectionState({ onChanged })
+      state.selectRange(1, 3, false)
+      expect(onChanged).toHaveBeenCalled()
+    })
   })
 
   describe('handleShiftNavigation', () => {
@@ -250,6 +273,15 @@ describe('createSelectionState', () => {
       state.handleShiftNavigation(1, 0, false) // anchor=0, select 0-1
       expect(state.selectedIndices.has(0)).toBe(true)
       expect(state.selectedIndices.has(1)).toBe(true)
+    })
+
+    it('fires onChanged on every step so MCP state sync runs', () => {
+      const onChanged = vi.fn()
+      const state = createSelectionState({ onChanged })
+      state.handleShiftNavigation(3, 2, false)
+      expect(onChanged).toHaveBeenCalledTimes(1)
+      state.handleShiftNavigation(5, 3, false)
+      expect(onChanged).toHaveBeenCalledTimes(2)
     })
   })
 

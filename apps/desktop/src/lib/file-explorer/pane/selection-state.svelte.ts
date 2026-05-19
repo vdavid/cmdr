@@ -90,13 +90,16 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
     // Can't select ".." entry
     if (hasParent && index === 0) return false
 
+    let result: boolean
     if (selectedIndices.has(index)) {
       selectedIndices.delete(index)
-      return false
+      result = false
     } else {
       selectedIndices.add(index)
-      return true
+      result = true
     }
+    onChanged?.()
+    return result
   }
 
   function handleShiftNavigation(newIndex: number, cursorIndex: number, hasParent: boolean) {
@@ -109,6 +112,7 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
 
     // Apply the range selection
     applyRangeSelection(newIndex, hasParent)
+    onChanged?.()
   }
 
   function selectAll(hasParent: boolean, effectiveTotalCount: number) {
@@ -133,6 +137,7 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
       selectedIndices.add(i)
     }
     clearRangeState()
+    onChanged?.()
   }
 
   function isAllSelected(hasParent: boolean, effectiveTotalCount: number): boolean {

@@ -437,6 +437,14 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
     }
 
     // === Selection commands ===
+    case 'selection.toggle':
+      explorerRef?.handleSelectionAction('toggleAtCursor')
+      return
+
+    case 'selection.toggleAndDown':
+      explorerRef?.handleSelectionAction('toggleAtCursorAndMoveDown')
+      return
+
     case 'selection.selectAll': {
       // ⌘A is a native menu accelerator (so it shows in the Edit menu), which means
       // macOS intercepts it before the webview. When a text input is focused, route

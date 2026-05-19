@@ -7,6 +7,9 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 ### User interaction
 
 - **Space**: toggle selection at cursor
+- **Insert**: toggle selection at cursor and move cursor down (Total Commander style). `..` isn't selectable, but the
+  cursor still advances. At the last row the cursor stays put. No physical Insert key on Apple keyboards — users can
+  remap via Karabiner-Elements, plug in a PC USB keyboard, or rebind in Settings → Shortcuts.
 - **Shift+click / Shift+arrow**: range selection with anchor (A) and end (B). If anchor already selected, range
   deselects.
 - **Cmd+A / Cmd+Shift+A**: select all / deselect all
