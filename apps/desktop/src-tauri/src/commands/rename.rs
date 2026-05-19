@@ -458,8 +458,7 @@ mod tests {
     async fn test_check_rename_permission_nonexistent() {
         let result = check_rename_permission("/nonexistent_12345/file.txt".to_string()).await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is
-        // the only signal
+        // allowed-error-string-match: IpcError is a flat struct; message is the signal
         assert!(result.unwrap_err().message.contains("doesn't exist"));
     }
 
@@ -583,8 +582,7 @@ mod tests {
         )
         .await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is
-        // the only signal
+        // allowed-error-string-match: IpcError is a flat struct; message is the signal
         assert!(result.unwrap_err().message.contains("already exists"));
         // Both files still intact
         assert!(old.exists());
@@ -633,8 +631,7 @@ mod tests {
     async fn test_move_to_trash_nonexistent() {
         let result = move_to_trash("/nonexistent_12345/trash_me.txt".to_string()).await;
         assert!(result.is_err());
-        // allowed-error-string-match: IpcError is a flat struct with no typed variants; message content is
-        // the only signal
+        // allowed-error-string-match: IpcError is a flat struct; message is the signal
         assert!(result.unwrap_err().message.contains("doesn't exist"));
     }
 }

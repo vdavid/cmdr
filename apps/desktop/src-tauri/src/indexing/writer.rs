@@ -384,10 +384,22 @@ impl WriterStats {
         // (singular, plural, count). Pluralizing per row keeps the "+1 insert"
         // / "+5 inserts" form natural; baking `+s` everywhere reads as "+1 inserts".
         let deltas: &[(&str, &str, u64)] = &[
-            ("insert", "inserts", self.current.insert_entries - self.previous.insert_entries),
-            ("upsert", "upserts", self.current.upsert_entry - self.previous.upsert_entry),
+            (
+                "insert",
+                "inserts",
+                self.current.insert_entries - self.previous.insert_entries,
+            ),
+            (
+                "upsert",
+                "upserts",
+                self.current.upsert_entry - self.previous.upsert_entry,
+            ),
             ("move", "moves", self.current.move_entry - self.previous.move_entry),
-            ("delete", "deletes", self.current.delete_entry - self.previous.delete_entry),
+            (
+                "delete",
+                "deletes",
+                self.current.delete_entry - self.previous.delete_entry,
+            ),
             (
                 "delete_subtree",
                 "delete_subtrees",
