@@ -89,7 +89,7 @@
 
     const log = getAppLogger('fileExplorer')
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
-    import { getPaneTintBg } from './volume-tint.svelte'
+    import { getPaneTintBg, getPaneTintName } from './volume-tint.svelte'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-resolution'
@@ -360,6 +360,13 @@
      * `null` when the user picked "no tint" for this volume's kind (the common case).
      */
     const paneTintBg = $derived(getPaneTintBg(volumeId, currentVolumeInfo?.fsType, currentVolumeInfo?.category))
+    /**
+     * Active tint name (or null) for `data-pane-tint` on `.file-pane`. The
+     * selection-fg fallback rule in `app.css` keys off this attribute to
+     * switch text color when the tinted bg + cursor-active would otherwise
+     * push selection-fg below AA. Always tracks `paneTintBg`.
+     */
+    const paneTintName = $derived(getPaneTintName(volumeId, currentVolumeInfo?.fsType, currentVolumeInfo?.category))
     /**
      * Reactive: the per-volume reconnect cycle state, or `null` if no cycle is
      * running. The manager is the single source of truth for the view. By the
@@ -2254,6 +2261,7 @@
     role="region"
     aria-label="{paneId === 'left' ? 'Left' : 'Right'} file pane"
     style={paneTintBg ? `background-color: ${paneTintBg}` : undefined}
+    data-pane-tint={paneTintName ?? undefined}
 >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="header" oncontextmenu={handleBreadcrumbContextMenu}>

@@ -174,3 +174,24 @@ export function getPaneTintBg(
   void mediaTick
   return computeTintHex(tint)
 }
+
+/**
+ * Reactive: returns the active tint name for a pane (`"red"`, `"amber"`, …)
+ * or `null` when no tint is set. Mirrors `getPaneTintBg` but exposes the
+ * name rather than the CSS value, so callers can wire `data-pane-tint` on
+ * `.file-pane` for selectors that need to react to "tinted vs. not."
+ * The selection-fg fallback rule in `app.css` uses this attribute.
+ */
+export function getPaneTintName(
+  volumeId: string,
+  fsType: string | undefined,
+  category: LocationCategory | undefined,
+): VolumeTintColor | null {
+  const kind = volumeKindFor(volumeId, fsType, category)
+  const tint = tintForKind(kind)
+  if (tint === 'none') return null
+  // Touch the reactive trigger for the old-WebKit path so callers stay
+  // reactive to media flips (same rationale as `getPaneTintBg`).
+  if (!hasColorMix) void mediaTick
+  return tint
+}

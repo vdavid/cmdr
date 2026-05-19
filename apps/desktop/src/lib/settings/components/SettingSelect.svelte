@@ -372,4 +372,26 @@
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
     }
+
+    /* When the parent option is highlighted (cursor over, or checked), the bg
+       flips to `--color-accent`. The description's resting `--color-text-tertiary`
+       (#666 / #a0a0a0) drops to ~1–2.4:1 contrast on every system accent. Switch
+       it to `--color-accent-fg` (auto-picked black/white via `readableFgOn`) so
+       it matches the label's color and stays readable. The secondary visual
+       weight is lost in this state — but on a saturated bg there's no opacity
+       that stays both secondary and AA-compliant for Apple Purple (the worst
+       dark-fg case). The contrast checker's `dropdown_states.go` matrix
+       validates this against every accent variant. */
+    :global(.select-item[data-highlighted]) .option-description,
+    :global(.select-item[data-state='checked']) .option-description {
+        color: var(--color-accent-fg);
+    }
+
+    /* Exception: when `Custom...` is highlighted, the other checked items lose
+       their accent bg (see the `.custom-highlighted .select-item...` rule
+       above). Revert the description color so it stays readable on the
+       now-transparent bg. */
+    :global(.custom-highlighted .select-item[data-state='checked']:not([data-highlighted])) .option-description {
+        color: var(--color-text-tertiary);
+    }
 </style>

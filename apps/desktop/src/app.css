@@ -132,8 +132,18 @@
   --pane-tint-bg-pct: 90%;
   --pane-tint-fg-pct: 10%;
 
-  /* === Selection === */
-  --color-selection-fg: #c9a227;
+  /* === Selection ===
+   * Selected-row text reads `--color-selection-fg`. The primary value carries
+   * the gold "this row is selected" identity. The fallback drops back to
+   * `--color-text-primary` for the few cases where the row bg is hostile
+   * enough that no recognizable gold can clear AA on top — specifically
+   * dark mode + a pane tint + cursor-active (yellow accent over a tinted
+   * dark surface). The CSS rule that switches between them lives further
+   * down in this file (search for "selection-fg fallback"). The contrast
+   * checker's `row_state_matrix.go` synthesizer mirrors that rule. */
+  --color-selection-fg-primary: #5a4000;
+  --color-selection-fg-fallback: var(--color-text-primary);
+  --color-selection-fg: var(--color-selection-fg-primary);
 
   /* === Git portal ===
      * Distinct from `--color-accent` to keep the "you're in history-land" feel
@@ -318,6 +328,20 @@
   --color-age-old: var(--color-text-secondary);
 }
 
+/* selection-fg fallback: dark mode + pane tint + focused cursor on a selected
+   row. In this state the row bg becomes the translucent yellow accent
+   composited over a tinted dark surface — Y around 0.09. Even the brightest
+   gold we'd be willing to call "selection identity" can't reach 4.5:1 there.
+   Drop to `--color-text-primary` so the row stays readable; the gold
+   identity is sacrificed only in this one corner. The size tiers
+   (`--color-size-*-selected`) derive from `--color-selection-fg`, so they
+   switch in lockstep. Mirrored in `row_state_matrix.go`'s synthesizer. */
+@media (prefers-color-scheme: dark) {
+  .file-pane[data-pane-tint] .full-list-container.is-focused .file-entry.is-selected.is-under-cursor {
+    --color-selection-fg: var(--color-selection-fg-fallback);
+  }
+}
+
 /* Old-WebKit fallback (light mode).
  *
  * `color-mix()` arrived in Safari 16.2 (Dec 2022) and `color-mix(in oklch, …)`
@@ -473,8 +497,9 @@
     /* === Focus ring shadow === */
     --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, white, transparent 92%);
 
-    /* === Selection === */
-    --color-selection-fg: #d4a82a;
+    /* === Selection (dark) === see light mode for primary/fallback rationale */
+    --color-selection-fg-primary: #d4a82a;
+    --color-selection-fg-fallback: var(--color-text-primary);
 
     /* Git portal: brighter teal in dark mode for readability against
        the dark background. */
