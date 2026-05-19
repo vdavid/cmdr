@@ -10,6 +10,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import FriendlyErrorContent from './FriendlyErrorContent.svelte'
 import type { FriendlyError } from '$lib/file-explorer/types'
+import type { Markdown } from '$lib/ipc/bindings'
+
+const md = (s: string): Markdown => s as Markdown
 
 const openExternalUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 const openSystemSettingsUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
@@ -23,8 +26,8 @@ function makeFriendly(overrides: Partial<FriendlyError> = {}): FriendlyError {
   return {
     category: 'serious',
     title: 'Whatever',
-    explanation: 'Plain text explanation.',
-    suggestion: 'Plain text suggestion.',
+    explanation: md('Plain text explanation.'),
+    suggestion: md('Plain text suggestion.'),
     rawDetail: 'detail',
     retryHint: false,
     ...overrides,
@@ -40,7 +43,7 @@ function mountContent(friendly: FriendlyError) {
 
 describe('FriendlyErrorContent', () => {
   it('renders explanation and suggestion as plain text when no markdown', async () => {
-    const target = mountContent(makeFriendly({ explanation: 'Hello world.', suggestion: 'Try again.' }))
+    const target = mountContent(makeFriendly({ explanation: md('Hello world.'), suggestion: md('Try again.') }))
     await tick()
 
     expect(target.textContent).toContain('Hello world.')
@@ -48,7 +51,7 @@ describe('FriendlyErrorContent', () => {
   })
 
   it('renders **bold** as <strong>', async () => {
-    const target = mountContent(makeFriendly({ explanation: 'A **bold** thing.', suggestion: 'Plain.' }))
+    const target = mountContent(makeFriendly({ explanation: md('A **bold** thing.'), suggestion: md('Plain.') }))
     await tick()
 
     const strong = target.querySelector('strong')
@@ -56,7 +59,7 @@ describe('FriendlyErrorContent', () => {
   })
 
   it('renders bullet lists as <ul><li>', async () => {
-    const target = mountContent(makeFriendly({ explanation: 'Plain.', suggestion: '- one\n- two\n- three' }))
+    const target = mountContent(makeFriendly({ explanation: md('Plain.'), suggestion: md('- one\n- two\n- three') }))
     await tick()
 
     const items = target.querySelectorAll('li')
@@ -71,7 +74,7 @@ describe('FriendlyErrorContent', () => {
 
     const target = mountContent(
       makeFriendly({
-        suggestion: '[Open settings](x-apple.systempreferences:com.apple.preference.security?Privacy)',
+        suggestion: md('[Open settings](x-apple.systempreferences:com.apple.preference.security?Privacy)'),
       }),
     )
     await tick()
@@ -90,7 +93,7 @@ describe('FriendlyErrorContent', () => {
     openSystemSettingsUrl.mockClear()
     openExternalUrl.mockClear()
 
-    const target = mountContent(makeFriendly({ suggestion: '[docs](https://example.com)' }))
+    const target = mountContent(makeFriendly({ suggestion: md('[docs](https://example.com)') }))
     await tick()
 
     const link = target.querySelector<HTMLAnchorElement>('a')
@@ -102,7 +105,7 @@ describe('FriendlyErrorContent', () => {
   })
 
   it('does not crash when click target has no anchor parent', async () => {
-    const target = mountContent(makeFriendly({ explanation: 'Plain text.' }))
+    const target = mountContent(makeFriendly({ explanation: md('Plain text.') }))
     await tick()
 
     const div = target.querySelector('.error-content') as HTMLElement

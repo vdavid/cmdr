@@ -2136,10 +2136,16 @@ export type FileEntry = {
 export type FriendlyError = {
   category: ErrorCategory
   title: string
-  // Markdown (rendered by snarkdown on FE).
-  explanation: string
-  // Markdown rendered by snarkdown on the frontend.
-  suggestion: string
+  /**
+   *  Markdown (rendered by snarkdown on FE). Build with `md!(...)` so
+   *  interpolated runtime strings get escaped.
+   */
+  explanation: Markdown
+  /**
+   *  Markdown rendered by snarkdown on the frontend. Build with `md!(...)`
+   *  so interpolated runtime strings get escaped.
+   */
+  suggestion: Markdown
   // For the technical details disclosure, for example "ETIMEDOUT (os error 60)".
   rawDetail: string
   // FE shows a "Try again" button when true.
@@ -2391,6 +2397,8 @@ export type ManualConnectResult = {
   host: NetworkHost
   sharePath: string | null
 }
+
+export type Markdown = string & { readonly __markdown: unique symbol }
 
 // Errors that can occur during mount operations.
 export type MountError =

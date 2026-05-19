@@ -264,8 +264,12 @@ When you need to handle a new errno or `VolumeError` variant:
 2. Pick the right `ErrorCategory`: **Transient** (retry might work), **NeedsAction** (user must do something),
    **Serious** (something is genuinely broken)
 3. Write the message following the rules below
-4. Add a unit test asserting the category and that the text follows the style rules
-5. Run the existing `error_messages_never_contain_error_or_failed` test to catch violations
+4. Build `explanation` / `suggestion` with the `md!(...)` macro (see `friendly_error/markdown.rs`). Templates are
+   trusted markdown; positional `{}` args route through `MarkdownArg::render_arg` which escapes plain strings
+   (paths, OS messages, names) and passes a `Markdown` value through unescaped. **Use positional `{}` only** —
+   captured-identifier syntax (`md!("foo {bar}")`) bypasses escaping and renders the literal `{bar}` in the UI.
+5. Add a unit test asserting the category and that the text follows the style rules
+6. Run the existing `error_messages_never_contain_error_or_failed` test to catch violations
 
 ### Adding a new provider
 
@@ -361,6 +365,9 @@ The hook order is fixed: `resolve()` first (normalizes the path), then `try_rout
 
 **Decision**: Friendly error mapping lives in Rust, not the frontend
 **Why**: The mapping needs access to the full path (for provider detection) and platform-specific errno codes. Doing it in Rust keeps the frontend thin (principle: smart backend, thin frontend) and avoids duplicating errno knowledge in TypeScript. The frontend receives a ready-to-render `FriendlyError` struct with markdown strings.
+
+**Decision**: `FriendlyError.explanation` / `.suggestion` are typed `Markdown`, not `String`; built via the `md!` macro
+**Why**: Raw OS messages and provider names contain markdown specials (the bug was `STATUS_DELETE_PENDING` rendering as italics because `format!()` baked the underscores straight into the explanation). The `Markdown` newtype + `md!` macro escape every interpolated runtime value via the `MarkdownArg` trait while leaving the trusted template literal alone. `#[serde(transparent)]` keeps the wire format identical to the old `String`, and the FE bindings.ts post-processing brands the type as `string & { readonly __markdown: unique symbol }` so the single `renderErrorMarkdown` call site only accepts wire-supplied markdown values. See `friendly_error/markdown.rs` for the macro, the trait, the HTML-entity escape strategy (snarkdown doesn't honor CommonMark `\` escapes, so `\_` would render literally — we emit `&#95;` instead, which snarkdown ignores and the browser decodes), the conservative escape set (line-start chars like `.` / `-` / `#` left alone so paths render naturally), and the captured-identifier footgun warning.
 
 **Decision**: `LocalPosixVolume` uses `symlink_metadata` for `exists()` instead of `Path::exists()`
 **Why**: `Path::exists()` follows symlinks. A dangling symlink returns `false`, which would make the volume claim a file doesn't exist when it visibly does in a directory listing. `symlink_metadata` detects the symlink itself, matching what the user sees.

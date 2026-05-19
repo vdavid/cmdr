@@ -528,10 +528,29 @@ mod tests {
     #[ignore = "side-effect: rewrites bindings.ts; run via `pnpm bindings:regen` or with --run-ignored=ignored-only"]
     fn export_bindings_test() {
         let b = builder();
+        let out_path = "../src/lib/ipc/bindings.ts";
         b.export(
             Typescript::default().header("// AUTO-GENERATED: do not edit. Regenerate with `pnpm bindings:regen`.\n"),
-            "../src/lib/ipc/bindings.ts",
+            out_path,
         )
         .expect("Failed to export bindings");
+
+        // Post-process: brand the `Markdown` type. Specta with
+        // `#[serde(transparent)]` emits the `Markdown` newtype as a plain
+        // string `type Markdown = string`. Rewrite that single line into a
+        // branded type so the compiler distinguishes "trusted markdown from
+        // the wire" from arbitrary strings. See
+        // `file_system/volume/friendly_error/markdown.rs` for the Rust side
+        // and `apps/desktop/src/lib/markdown.ts` for the FE renderer.
+        let contents = std::fs::read_to_string(out_path).expect("read bindings.ts");
+        let branded = contents.replace(
+            "export type Markdown = string",
+            "export type Markdown = string & { readonly __markdown: unique symbol }",
+        );
+        assert_ne!(
+            branded, contents,
+            "post-processing: expected to rewrite `export type Markdown = string` in bindings.ts, but the line wasn't found"
+        );
+        std::fs::write(out_path, branded).expect("write branded bindings.ts");
     }
 }

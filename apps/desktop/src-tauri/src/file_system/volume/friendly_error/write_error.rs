@@ -16,6 +16,7 @@
 //! function is the fallback when only the typed write error is in scope.
 
 use super::{ErrorCategory, FriendlyError, kinds};
+use crate::md;
 
 /// Converts a `WriteOperationError` into a `FriendlyError` for the transfer-error
 /// dialog. Mirrors `friendly_error_from_volume_error` but works downstream of the
@@ -56,13 +57,13 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Not enough space".into(),
-            explanation: format!(
+            explanation: md!(
                 "{} needs {} bytes but only has {} bytes free.",
                 volume_name.as_deref().unwrap_or("The destination"),
                 required,
                 available,
             ),
-            suggestion: "Free up space at the destination, or pick a different one.".into(),
+            suggestion: md!("Free up space at the destination, or pick a different one."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,
@@ -70,8 +71,12 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::DestinationInsideSource { source, destination } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Destination is inside the source".into(),
-            explanation: format!("Cmdr can't copy `{source}` into `{destination}`. That would loop forever."),
-            suggestion: "Pick a destination outside the source folder.".into(),
+            explanation: md!(
+                "Cmdr can't copy `{}` into `{}`. That would loop forever.",
+                source,
+                destination,
+            ),
+            suggestion: md!("Pick a destination outside the source folder."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,
@@ -79,8 +84,8 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::SymlinkLoop { path } => FriendlyError {
             category: ErrorCategory::Serious,
             title: "Symlink loop".into(),
-            explanation: format!("`{path}` contains symlinks that point back at themselves."),
-            suggestion: "Resolve the loop manually before retrying.".into(),
+            explanation: md!("`{}` contains symlinks that point back at themselves.", path),
+            suggestion: md!("Resolve the loop manually before retrying."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,
@@ -88,12 +93,12 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::ReadOnlyDevice { path, device_name } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Read-only device".into(),
-            explanation: format!(
+            explanation: md!(
                 "{} can't be written to. Tried `{}`.",
                 device_name.as_deref().unwrap_or("This device"),
                 path,
             ),
-            suggestion: "Pick a destination that supports writing.".into(),
+            suggestion: md!("Pick a destination that supports writing."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,
@@ -101,8 +106,8 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::FileLocked { path } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "File is locked".into(),
-            explanation: format!("`{path}` is locked and can't be changed."),
-            suggestion: "On macOS, unlock it via Finder > Get Info > uncheck Locked. Then try again.".into(),
+            explanation: md!("`{}` is locked and can't be changed.", path),
+            suggestion: md!("On macOS, unlock it via Finder > Get Info > uncheck Locked. Then try again."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,
@@ -110,10 +115,11 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::TrashNotSupported { path } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Trash not supported here".into(),
-            explanation: format!(
-                "`{path}` is on a volume that doesn't have a trash (network shares, FAT-formatted drives, …)."
+            explanation: md!(
+                "`{}` is on a volume that doesn't have a trash (network shares, FAT-formatted drives, …).",
+                path,
             ),
-            suggestion: "Delete the file directly instead of moving it to trash.".into(),
+            suggestion: md!("Delete the file directly instead of moving it to trash."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,
@@ -127,8 +133,8 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::NameTooLong { path } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Name too long".into(),
-            explanation: format!("The filesystem at `{path}` doesn't accept names this long."),
-            suggestion: "Rename the file to something shorter and try again.".into(),
+            explanation: md!("The filesystem at `{}` doesn't accept names this long.", path),
+            suggestion: md!("Rename the file to something shorter and try again."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,
@@ -136,8 +142,8 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::InvalidName { path, message } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Invalid file name".into(),
-            explanation: format!("The destination at `{path}` won't accept this name: {message}."),
-            suggestion: "Rename the file (avoid special characters), then try again.".into(),
+            explanation: md!("The destination at `{}` won't accept this name: {}.", path, message,),
+            suggestion: md!("Rename the file (avoid special characters), then try again."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,

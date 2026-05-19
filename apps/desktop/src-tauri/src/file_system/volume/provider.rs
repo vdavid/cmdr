@@ -5,7 +5,8 @@
 
 use std::path::Path;
 
-use super::friendly_error::{ErrorCategory, FriendlyError};
+use super::friendly_error::{ErrorCategory, FriendlyError, Markdown};
+use crate::md;
 
 // ============================================================================
 // Provider enrichment
@@ -202,132 +203,131 @@ fn detect_provider(path: &Path) -> Option<Provider> {
     None
 }
 
-/// Builds a provider-specific suggestion string.
-fn provider_suggestion(provider: &Provider, error: &FriendlyError) -> String {
+/// Builds a provider-specific suggestion. Provider display names are static
+/// strings, but we still route them through `md!` so the type signature is
+/// consistent and any future user-supplied text gets escaped by default.
+fn provider_suggestion(provider: &Provider, error: &FriendlyError) -> Markdown {
     let name = provider.display_name();
 
     match provider {
         Provider::MacDroid => match error.category {
-            ErrorCategory::Transient => "This folder is managed by **MacDroid**. Here's what to try:\n\
-                    - Open MacDroid and check that your phone is connected\n\
-                    - Make sure your phone is unlocked and set to file transfer mode\n\
-                    - Unplug and replug the USB cable, then navigate here again"
-                .to_string(),
-            ErrorCategory::NeedsAction => "This folder is managed by **MacDroid**. Here's what to try:\n\
-                    - Open MacDroid and check that your phone is connected\n\
-                    - Make sure your phone is unlocked with the screen on\n\
-                    - Check that USB file transfer mode is enabled on your phone"
-                .to_string(),
-            ErrorCategory::Serious => "This folder is managed by **MacDroid**. Here's what to try:\n\
-                    - Unplug and replug the USB cable\n\
-                    - Restart MacDroid\n\
-                    - Try a different USB port or cable"
-                .to_string(),
+            ErrorCategory::Transient => md!("This folder is managed by **MacDroid**. Here's what to try:\n\
+                - Open MacDroid and check that your phone is connected\n\
+                - Make sure your phone is unlocked and set to file transfer mode\n\
+                - Unplug and replug the USB cable, then navigate here again"),
+            ErrorCategory::NeedsAction => md!("This folder is managed by **MacDroid**. Here's what to try:\n\
+                - Open MacDroid and check that your phone is connected\n\
+                - Make sure your phone is unlocked with the screen on\n\
+                - Check that USB file transfer mode is enabled on your phone"),
+            ErrorCategory::Serious => md!("This folder is managed by **MacDroid**. Here's what to try:\n\
+                - Unplug and replug the USB cable\n\
+                - Restart MacDroid\n\
+                - Try a different USB port or cable"),
         },
 
         Provider::ICloud => match error.category {
-            ErrorCategory::Transient => format!(
-                "This folder is managed by **{name}**. Here's what to try:\n\
-                    - Check your internet connection\n\
-                    - Make sure you're signed in to iCloud in System Settings\n\
-                    - Navigate here again to retry"
+            ErrorCategory::Transient => md!(
+                "This folder is managed by **{}**. Here's what to try:\n\
+                - Check your internet connection\n\
+                - Make sure you're signed in to iCloud in System Settings\n\
+                - Navigate here again to retry",
+                name,
             ),
-            ErrorCategory::NeedsAction => format!(
-                "This folder is managed by **{name}**. Here's what to try:\n\
-                    - Check that iCloud Drive is enabled in **System Settings > Apple Account > iCloud**\n\
-                    - Make sure you're signed in to the right Apple account\n\
-                    - Check your iCloud storage isn't full"
+            ErrorCategory::NeedsAction => md!(
+                "This folder is managed by **{}**. Here's what to try:\n\
+                - Check that iCloud Drive is enabled in **System Settings > Apple Account > iCloud**\n\
+                - Make sure you're signed in to the right Apple account\n\
+                - Check your iCloud storage isn't full",
+                name,
             ),
-            ErrorCategory::Serious => format!(
-                "This folder is managed by **{name}**. Here's what to try:\n\
-                    - Sign out and back in to iCloud in System Settings\n\
-                    - Check Apple's [system status page](https://www.apple.com/support/systemstatus/)"
+            ErrorCategory::Serious => md!(
+                "This folder is managed by **{}**. Here's what to try:\n\
+                - Sign out and back in to iCloud in System Settings\n\
+                - Check Apple's [system status page](https://www.apple.com/support/systemstatus/)",
+                name,
             ),
         },
 
         Provider::MacFuse => match error.category {
-            ErrorCategory::Transient => "This is a **macFUSE** mount. The remote server may be slow or unreachable. \
+            ErrorCategory::Transient => md!(
+                "This is a **macFUSE** mount. The remote server may be slow or unreachable. \
                 Here's what to try:\n\
-                    - Check your network connection\n\
-                    - Check that the remote server is running\n\
-                    - Navigate here again to retry"
-                .to_string(),
-            ErrorCategory::Serious => "This is a **macFUSE** mount. The FUSE process backing it has likely \
+                - Check your network connection\n\
+                - Check that the remote server is running\n\
+                - Navigate here again to retry"
+            ),
+            ErrorCategory::Serious => md!("This is a **macFUSE** mount. The FUSE process backing it has likely \
                 crashed or disconnected. Here's what to try:\n\
-                    - Force-unmount the volume: run `umount -f /Volumes/<name>` in Terminal\n\
-                    - Remount using the original mount command\n\
-                    - If this keeps happening, check that macFUSE is up to date"
-                .to_string(),
-            ErrorCategory::NeedsAction => "This is a **macFUSE** mount. Here's what to try:\n\
-                    - Check that the FUSE process backing this mount is still running\n\
-                    - Force-unmount and remount the volume if needed\n\
-                    - Make sure macFUSE is up to date in **System Settings > General > Login Items & Extensions**"
-                .to_string(),
+                - Force-unmount the volume: run `umount -f /Volumes/<name>` in Terminal\n\
+                - Remount using the original mount command\n\
+                - If this keeps happening, check that macFUSE is up to date"),
+            ErrorCategory::NeedsAction => md!("This is a **macFUSE** mount. Here's what to try:\n\
+                - Check that the FUSE process backing this mount is still running\n\
+                - Force-unmount and remount the volume if needed\n\
+                - Make sure macFUSE is up to date in **System Settings > General > Login Items & Extensions**"),
         },
 
         Provider::PCloudFuse => match error.category {
-            ErrorCategory::Transient => "This folder is on **pCloud**'s virtual drive. Here's what to try:\n\
-                    - Check your internet connection\n\
-                    - Make sure the pCloud app is running\n\
-                    - Navigate here again to retry"
-                .to_string(),
-            ErrorCategory::Serious => "This folder is on **pCloud**'s virtual drive. The pCloud FUSE process may have \
+            ErrorCategory::Transient => md!("This folder is on **pCloud**'s virtual drive. Here's what to try:\n\
+                - Check your internet connection\n\
+                - Make sure the pCloud app is running\n\
+                - Navigate here again to retry"),
+            ErrorCategory::Serious => md!(
+                "This folder is on **pCloud**'s virtual drive. The pCloud FUSE process may have \
                 crashed. Here's what to try:\n\
-                    - Quit and reopen the pCloud app\n\
-                    - If the drive doesn't reappear, force-unmount it: run `umount -f /Volumes/pCloudDrive` in Terminal\n\
-                    - After a macOS update, re-approve pCloud's system extension in \
-                      **System Settings > General > Login Items & Extensions**"
-                .to_string(),
-            ErrorCategory::NeedsAction => "This folder is on **pCloud**'s virtual drive. Here's what to try:\n\
-                    - Make sure the pCloud app is running and you're signed in\n\
-                    - Check your internet connection\n\
-                    - After a macOS update, re-approve pCloud's system extension in \
-                      **System Settings > General > Login Items & Extensions**"
-                .to_string(),
+                - Quit and reopen the pCloud app\n\
+                - If the drive doesn't reappear, force-unmount it: run `umount -f /Volumes/pCloudDrive` in Terminal\n\
+                - After a macOS update, re-approve pCloud's system extension in \
+                  **System Settings > General > Login Items & Extensions**"
+            ),
+            ErrorCategory::NeedsAction => md!("This folder is on **pCloud**'s virtual drive. Here's what to try:\n\
+                - Make sure the pCloud app is running and you're signed in\n\
+                - Check your internet connection\n\
+                - After a macOS update, re-approve pCloud's system extension in \
+                  **System Settings > General > Login Items & Extensions**"),
         },
 
         Provider::VeraCrypt => match error.category {
-            ErrorCategory::Transient => format!(
-                "This is a **{name}** encrypted volume. Here's what to try:\n\
-                    - Check that the VeraCrypt volume is still mounted\n\
-                    - Navigate here again to retry"
+            ErrorCategory::Transient => md!(
+                "This is a **{}** encrypted volume. Here's what to try:\n\
+                - Check that the VeraCrypt volume is still mounted\n\
+                - Navigate here again to retry",
+                name,
             ),
-            ErrorCategory::NeedsAction => format!(
-                "This is a **{name}** encrypted volume. Here's what to try:\n\
-                    - Open VeraCrypt and check that this volume is mounted\n\
-                    - Dismount and remount the volume if needed"
+            ErrorCategory::NeedsAction => md!(
+                "This is a **{}** encrypted volume. Here's what to try:\n\
+                - Open VeraCrypt and check that this volume is mounted\n\
+                - Dismount and remount the volume if needed",
+                name,
             ),
-            ErrorCategory::Serious => format!(
-                "This is a **{name}** encrypted volume. Here's what to try:\n\
-                    - Dismount and remount the volume in VeraCrypt\n\
-                    - If the volume keeps having issues, check it with VeraCrypt's repair tools"
+            ErrorCategory::Serious => md!(
+                "This is a **{}** encrypted volume. Here's what to try:\n\
+                - Dismount and remount the volume in VeraCrypt\n\
+                - If the volume keeps having issues, check it with VeraCrypt's repair tools",
+                name,
             ),
         },
 
         Provider::CmVolumes => match error.category {
-            ErrorCategory::Transient => "This is a cloud mount. Here's what to try:\n\
-                    - Check your internet connection\n\
-                    - Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n\
-                    - Navigate here again to retry"
-                .to_string(),
-            _ => "This is a cloud mount. Here's what to try:\n\
-                    - Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n\
-                    - Disconnect and reconnect the mount\n\
-                    - Check your credentials haven't expired"
-                .to_string(),
+            ErrorCategory::Transient => md!("This is a cloud mount. Here's what to try:\n\
+                - Check your internet connection\n\
+                - Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n\
+                - Navigate here again to retry"),
+            _ => md!("This is a cloud mount. Here's what to try:\n\
+                - Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n\
+                - Disconnect and reconnect the mount\n\
+                - Check your credentials haven't expired"),
         },
 
         Provider::GenericCloudStorage => match error.category {
-            ErrorCategory::Transient => "This folder is managed by a cloud provider. Here's what to try:\n\
-                    - Check your internet connection\n\
-                    - Check that the sync app is running\n\
-                    - Navigate here again to retry"
-                .to_string(),
-            _ => "This folder is managed by a cloud provider. Here's what to try:\n\
-                    - Check that the sync app is running\n\
-                    - Sign out and back in to the cloud app\n\
-                    - Check your internet connection"
-                .to_string(),
+            ErrorCategory::Transient => md!("This folder is managed by a cloud provider. Here's what to try:\n\
+                - Check your internet connection\n\
+                - Check that the sync app is running\n\
+                - Navigate here again to retry"),
+            _ => md!("This folder is managed by a cloud provider. Here's what to try:\n\
+                - Check that the sync app is running\n\
+                - Sign out and back in to the cloud app\n\
+                - Check your internet connection"),
         },
 
         // Cloud providers with an app name: Dropbox, Google Drive, OneDrive, Box,
@@ -335,23 +335,33 @@ fn provider_suggestion(provider: &Provider, error: &FriendlyError) -> String {
         _ => {
             let app = provider.app_name().unwrap_or(name);
             match error.category {
-                ErrorCategory::Transient => format!(
-                    "This folder is managed by **{name}**. Here's what to try:\n\
+                ErrorCategory::Transient => md!(
+                    "This folder is managed by **{}**. Here's what to try:\n\
                     - Check your internet connection\n\
-                    - Open {app} and make sure it's running and synced\n\
-                    - Navigate here again to retry"
+                    - Open {} and make sure it's running and synced\n\
+                    - Navigate here again to retry",
+                    name,
+                    app,
                 ),
-                ErrorCategory::NeedsAction => format!(
-                    "This folder is managed by **{name}**. Here's what to try:\n\
-                    - Open {app} and check your sync status\n\
-                    - Make sure you're signed in to {app}\n\
-                    - Check that you have access to this folder in {name}"
+                ErrorCategory::NeedsAction => md!(
+                    "This folder is managed by **{}**. Here's what to try:\n\
+                    - Open {} and check your sync status\n\
+                    - Make sure you're signed in to {}\n\
+                    - Check that you have access to this folder in {}",
+                    name,
+                    app,
+                    app,
+                    name,
                 ),
-                ErrorCategory::Serious => format!(
-                    "This folder is managed by **{name}**. Here's what to try:\n\
-                    - Quit and reopen {app}\n\
-                    - Sign out and back in to {app}\n\
-                    - Check {name}'s status page for outages"
+                ErrorCategory::Serious => md!(
+                    "This folder is managed by **{}**. Here's what to try:\n\
+                    - Quit and reopen {}\n\
+                    - Sign out and back in to {}\n\
+                    - Check {}'s status page for outages",
+                    name,
+                    app,
+                    app,
+                    name,
                 ),
             }
         }
@@ -478,7 +488,7 @@ mod tests {
             "suggestion should be overwritten by provider enrichment"
         );
         assert!(
-            friendly.suggestion.contains("Dropbox"),
+            friendly.suggestion.as_str().contains("Dropbox"),
             "enriched suggestion should mention Dropbox"
         );
     }
@@ -527,7 +537,7 @@ mod tests {
             enrich_with_provider(&mut friendly, &path);
 
             assert!(
-                friendly.suggestion.contains(expected_provider.display_name())
+                friendly.suggestion.as_str().contains(expected_provider.display_name())
                     || *expected_provider == Provider::GenericCloudStorage
                     || *expected_provider == Provider::CmVolumes,
                 "Suggestion for {:?} should mention provider name. Got: {}",
@@ -549,7 +559,7 @@ mod tests {
             enrich_with_provider(&mut friendly, path);
 
             assert!(
-                friendly.suggestion.contains(expected_provider.display_name()),
+                friendly.suggestion.as_str().contains(expected_provider.display_name()),
                 "Suggestion for {:?} should mention provider name. Got: {}",
                 expected_provider,
                 friendly.suggestion
@@ -562,7 +572,7 @@ mod tests {
         let mut friendly = friendly_error_from_volume_error(&err, &cm_path);
         enrich_with_provider(&mut friendly, &cm_path);
         assert!(
-            friendly.suggestion.contains("cloud mount"),
+            friendly.suggestion.as_str().contains("cloud mount"),
             "CmVolumes suggestion should mention cloud mount"
         );
     }
@@ -580,15 +590,15 @@ mod tests {
             let error = FriendlyError {
                 category,
                 title: "test".into(),
-                explanation: "test".into(),
-                suggestion: "placeholder".into(),
+                explanation: md!("test"),
+                suggestion: md!("placeholder"),
                 raw_detail: "test".into(),
                 retry_hint: false,
                 action_kind: None,
             };
             let suggestion = provider_suggestion(&Provider::MacFuse, &error);
             assert!(
-                suggestion.contains("macFUSE"),
+                suggestion.as_str().contains("macFUSE"),
                 "MacFuse {:?} suggestion should mention macFUSE. Got: {}",
                 category,
                 suggestion
@@ -607,15 +617,15 @@ mod tests {
             let error = FriendlyError {
                 category,
                 title: "test".into(),
-                explanation: "test".into(),
-                suggestion: "placeholder".into(),
+                explanation: md!("test"),
+                suggestion: md!("placeholder"),
                 raw_detail: "test".into(),
                 retry_hint: false,
                 action_kind: None,
             };
             let suggestion = provider_suggestion(&Provider::PCloudFuse, &error);
             assert!(
-                suggestion.contains("pCloud"),
+                suggestion.as_str().contains("pCloud"),
                 "PCloudFuse {:?} suggestion should mention pCloud. Got: {}",
                 category,
                 suggestion
@@ -637,14 +647,14 @@ mod tests {
                 let error = FriendlyError {
                     category: *category,
                     title: "test".into(),
-                    explanation: "test".into(),
-                    suggestion: "placeholder".into(),
+                    explanation: md!("test"),
+                    suggestion: md!("placeholder"),
                     raw_detail: "test".into(),
                     retry_hint: false,
                     action_kind: None,
                 };
                 let suggestion = provider_suggestion(provider, &error);
-                let lower = suggestion.to_lowercase();
+                let lower = suggestion.as_str().to_lowercase();
 
                 assert!(
                     !lower.contains("error") && !lower.contains("failed"),
@@ -662,15 +672,15 @@ mod tests {
         let error = FriendlyError {
             category: ErrorCategory::Serious,
             title: "test".into(),
-            explanation: "test".into(),
-            suggestion: "placeholder".into(),
+            explanation: md!("test"),
+            suggestion: md!("placeholder"),
             raw_detail: "test".into(),
             retry_hint: false,
             action_kind: None,
         };
         let suggestion = provider_suggestion(&Provider::MacFuse, &error);
         assert!(
-            suggestion.contains("umount -f"),
+            suggestion.as_str().contains("umount -f"),
             "MacFuse Serious suggestion should mention force-unmount. Got: {}",
             suggestion
         );
@@ -681,15 +691,15 @@ mod tests {
         let error = FriendlyError {
             category: ErrorCategory::Serious,
             title: "test".into(),
-            explanation: "test".into(),
-            suggestion: "placeholder".into(),
+            explanation: md!("test"),
+            suggestion: md!("placeholder"),
             raw_detail: "test".into(),
             retry_hint: false,
             action_kind: None,
         };
         let suggestion = provider_suggestion(&Provider::PCloudFuse, &error);
         assert!(
-            suggestion.contains("System Settings"),
+            suggestion.as_str().contains("System Settings"),
             "PCloudFuse Serious suggestion should mention System Settings. Got: {}",
             suggestion
         );

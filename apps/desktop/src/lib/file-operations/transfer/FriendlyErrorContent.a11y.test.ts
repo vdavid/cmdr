@@ -12,7 +12,10 @@ import { describe, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import FriendlyErrorContent from './FriendlyErrorContent.svelte'
 import type { FriendlyError } from '$lib/file-explorer/types'
+import type { Markdown } from '$lib/ipc/bindings'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+
+const md = (s: string): Markdown => s as Markdown
 
 vi.mock('$lib/tauri-commands', () => ({
   openExternalUrl: vi.fn(() => Promise.resolve()),
@@ -23,8 +26,8 @@ function makeFriendly(overrides: Partial<FriendlyError> = {}): FriendlyError {
   return {
     category: 'serious',
     title: 'Whatever',
-    explanation: 'Plain text explanation.',
-    suggestion: 'Plain text suggestion.',
+    explanation: md('Plain text explanation.'),
+    suggestion: md('Plain text suggestion.'),
     rawDetail: 'detail',
     retryHint: false,
     ...overrides,
@@ -48,8 +51,8 @@ describe('FriendlyErrorContent a11y', () => {
       props: {
         friendly: makeFriendly({
           category: 'transient',
-          explanation: 'A **bold** thing happened.',
-          suggestion: '- one\n- two\n- three',
+          explanation: md('A **bold** thing happened.'),
+          suggestion: md('- one\n- two\n- three'),
           retryHint: true,
         }),
       },
@@ -66,7 +69,7 @@ describe('FriendlyErrorContent a11y', () => {
       props: {
         friendly: makeFriendly({
           category: 'needs_action',
-          suggestion: '[Open settings](x-apple.systempreferences:com.apple.preference.security?Privacy)',
+          suggestion: md('[Open settings](x-apple.systempreferences:com.apple.preference.security?Privacy)'),
         }),
       },
     })

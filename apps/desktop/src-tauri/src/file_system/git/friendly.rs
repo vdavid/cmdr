@@ -234,8 +234,10 @@ impl FriendlyGitError {
         FriendlyError {
             category: self.kind.category(),
             title: self.kind.title().to_string(),
-            explanation: self.kind.explanation().to_string(),
-            suggestion: self.kind.suggestion().to_string(),
+            // Git friendly-error copy is hand-authored markdown (sometimes
+            // contains `code` spans and **bold**); wrap as literal.
+            explanation: crate::file_system::volume::friendly_error::Markdown::literal(self.kind.explanation()),
+            suggestion: crate::file_system::volume::friendly_error::Markdown::literal(self.kind.suggestion()),
             raw_detail,
             retry_hint: matches!(self.kind.category(), ErrorCategory::Transient),
             action_kind: None,
@@ -351,8 +353,8 @@ mod tests {
         ] {
             let f = FriendlyGitError::new(kind, "/some/path").to_friendly_error();
             never_says_error_or_failed(&f.title);
-            never_says_error_or_failed(&f.explanation);
-            never_says_error_or_failed(&f.suggestion);
+            never_says_error_or_failed(f.explanation.as_str());
+            never_says_error_or_failed(f.suggestion.as_str());
         }
     }
 }

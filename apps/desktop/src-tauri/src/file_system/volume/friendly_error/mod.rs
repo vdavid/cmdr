@@ -16,6 +16,7 @@
 mod empty_root;
 mod errno;
 mod kinds;
+mod markdown;
 mod volume_error;
 mod write_error;
 
@@ -24,6 +25,7 @@ use serde::{Deserialize, Serialize};
 // Public API re-exports: keep the `volume::friendly_error::*` import surface
 // unchanged for callers regardless of how the module is split internally.
 pub use empty_root::friendly_error_for_restricted_empty_root;
+pub use markdown::{Markdown, MarkdownArg};
 pub use volume_error::friendly_error_from_volume_error;
 pub use write_error::friendly_from_write_error;
 
@@ -52,10 +54,12 @@ pub enum ErrorActionKind {
 pub struct FriendlyError {
     pub category: ErrorCategory,
     pub title: String,
-    /// Markdown (rendered by snarkdown on FE).
-    pub explanation: String,
-    /// Markdown rendered by snarkdown on the frontend.
-    pub suggestion: String,
+    /// Markdown (rendered by snarkdown on FE). Build with `md!(...)` so
+    /// interpolated runtime strings get escaped.
+    pub explanation: Markdown,
+    /// Markdown rendered by snarkdown on the frontend. Build with `md!(...)`
+    /// so interpolated runtime strings get escaped.
+    pub suggestion: Markdown,
     /// For the technical details disclosure, for example "ETIMEDOUT (os error 60)".
     pub raw_detail: String,
     /// FE shows a "Try again" button when true.
@@ -265,7 +269,7 @@ mod tests {
             "User should be able to retry after granting access"
         );
         assert!(friendly.title.contains("iCloud"));
-        assert!(friendly.suggestion.contains("Full Disk Access"));
+        assert!(friendly.suggestion.as_str().contains("Full Disk Access"));
 
         let lowered = format!("{} {} {}", friendly.title, friendly.explanation, friendly.suggestion).to_lowercase();
         for word in ["error", "failed", "just", "simple", "easy"] {
@@ -335,8 +339,8 @@ mod tests {
 
             // Check title, explanation, and suggestion (not raw_detail, which is technical)
             let title_lower = friendly.title.to_lowercase();
-            let explanation_lower = friendly.explanation.to_lowercase();
-            let suggestion_lower = friendly.suggestion.to_lowercase();
+            let explanation_lower = friendly.explanation.as_str().to_lowercase();
+            let suggestion_lower = friendly.suggestion.as_str().to_lowercase();
 
             assert!(
                 !title_lower.contains("error") && !title_lower.contains("failed"),
@@ -359,6 +363,41 @@ mod tests {
         }
     }
 
+    /// Regression: the raw OS message `STATUS_DELETE_PENDING during Create` used
+    /// to flow straight into `format!()` inside `kinds::io_serious`, which made
+    /// snarkdown render `_DELETE_` as italics in the UI. With `Markdown` + `md!`,
+    /// the runtime `message` arg is encoded as HTML entities so the wire format
+    /// carries `STATUS&#95;DELETE&#95;PENDING`; snarkdown passes the entities
+    /// through and the browser decodes them as plain underscores.
+    #[test]
+    fn io_serious_escapes_message_markdown_specials() {
+        let path = Path::new("/Volumes/share/_todo_pics/photo.jpg");
+        // io_serious is reached by IoError without a raw_os_error (or with an
+        // unrecognized one on macOS; on non-macOS it's the only path).
+        let err = VolumeError::IoError {
+            message: "Protocol error: STATUS_DELETE_PENDING during Create".into(),
+            raw_os_error: None,
+        };
+        let friendly = friendly_error_from_volume_error(&err, path);
+
+        let exp = friendly.explanation.as_str();
+        assert!(
+            exp.contains("STATUS&#95;DELETE&#95;PENDING"),
+            "explanation should HTML-encode underscores in runtime message, got: {exp:?}"
+        );
+        // Sanity: the raw unescaped form must NOT appear, or snarkdown would
+        // render it as italics.
+        assert!(
+            !exp.contains("STATUS_DELETE_PENDING"),
+            "explanation must not contain raw underscores from runtime message, got: {exp:?}"
+        );
+        // The path's literal underscores are also encoded.
+        assert!(
+            exp.contains("&#95;todo&#95;pics"),
+            "explanation should HTML-encode underscores in the path, got: {exp:?}"
+        );
+    }
+
     #[test]
     fn delete_pending_uses_dedicated_copy() {
         let path = Path::new("/Volumes/share/photo.jpg");
@@ -377,7 +416,7 @@ mod tests {
         );
         // The path is interpolated into the explanation so the user knows which file.
         assert!(
-            friendly.explanation.contains("photo.jpg"),
+            friendly.explanation.as_str().contains("photo.jpg"),
             "DeletePending explanation should include the path, got: {:?}",
             friendly.explanation,
         );

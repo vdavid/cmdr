@@ -15,6 +15,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import TransferErrorDialog from './TransferErrorDialog.svelte'
 import type { FriendlyError } from '$lib/file-explorer/types'
+import type { Markdown } from '$lib/ipc/bindings'
+
+// The `Markdown` brand is enforced by the wire shape; in tests we forge it
+// to author fixtures with plain string literals.
+const md = (s: string): Markdown => s as Markdown
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -28,8 +33,8 @@ function makeFriendly(overrides: Partial<FriendlyError> = {}): FriendlyError {
   return {
     category: 'serious',
     title: 'Backend Title',
-    explanation: 'Backend explanation with **bold** text.',
-    suggestion: '- step one\n- step two',
+    explanation: md('Backend explanation with **bold** text.'),
+    suggestion: md('- step one\n- step two'),
     rawDetail: 'STATUS_TEST (os error 42)',
     retryHint: false,
     ...overrides,
@@ -69,8 +74,8 @@ describe('TransferErrorDialog: friendlyError prop', () => {
   it('renders markdown in explanation and suggestion (bold and list)', async () => {
     const target = mountDialog({
       friendlyError: makeFriendly({
-        explanation: "Cmdr couldn't finish. Try **opening Finder** first.",
-        suggestion: '- one\n- two\n- three',
+        explanation: md("Cmdr couldn't finish. Try **opening Finder** first."),
+        suggestion: md('- one\n- two\n- three'),
       }),
     })
     await tick()

@@ -1,3 +1,5 @@
+import type { Markdown } from '$lib/ipc/bindings'
+
 export interface FileEntry {
   name: string
   path: string
@@ -103,8 +105,9 @@ export type ErrorActionKind = 'open_privacy_settings'
 export interface FriendlyError {
   category: 'transient' | 'needs_action' | 'serious'
   title: string
-  explanation: string
-  suggestion: string
+  // Branded markdown from the Rust `md!(...)` site (escaping happens there).
+  explanation: Markdown
+  suggestion: Markdown
   rawDetail: string
   retryHint: boolean
   actionKind?: ErrorActionKind | null

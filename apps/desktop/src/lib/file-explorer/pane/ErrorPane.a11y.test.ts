@@ -10,6 +10,9 @@ import { describe, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import ErrorPane from './ErrorPane.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+import type { Markdown } from '$lib/ipc/bindings'
+
+const md = (s: string): Markdown => s as Markdown
 
 vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: vi.fn(() => Promise.resolve()),
@@ -22,8 +25,8 @@ vi.mock('$lib/shortcuts/key-capture', () => ({
 const transientError = {
   category: 'transient' as const,
   title: 'Couldn\u2019t reach the drive',
-  explanation: 'The network folder didn\u2019t respond. It may be offline.',
-  suggestion: 'Check your Wi-Fi and try again.',
+  explanation: md('The network folder didn\u2019t respond. It may be offline.'),
+  suggestion: md('Check your Wi-Fi and try again.'),
   rawDetail: 'EIO: timed out after 2000ms',
   retryHint: true,
 }
@@ -31,8 +34,8 @@ const transientError = {
 const seriousError = {
   category: 'serious' as const,
   title: 'Couldn\u2019t read this folder',
-  explanation: 'The folder is damaged or in an unknown format.',
-  suggestion: 'Try a different tool to recover the data.',
+  explanation: md('The folder is damaged or in an unknown format.'),
+  suggestion: md('Try a different tool to recover the data.'),
   rawDetail: 'EBADF: bad file descriptor',
   retryHint: false,
 }
@@ -40,8 +43,8 @@ const seriousError = {
 const permissionError = {
   category: 'needs_action' as const,
   title: 'We have no permission to read this folder',
-  explanation: 'macOS protects some folders until you grant access.',
-  suggestion: 'Open System Settings > Privacy & Security and add Cmdr.',
+  explanation: md('macOS protects some folders until you grant access.'),
+  suggestion: md('Open System Settings > Privacy & Security and add Cmdr.'),
   rawDetail: 'EACCES: permission denied',
   retryHint: false,
 }

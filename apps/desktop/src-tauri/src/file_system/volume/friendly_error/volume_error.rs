@@ -12,6 +12,7 @@ use std::path::Path;
 use super::errno::friendly_error_from_errno;
 use super::{ErrorCategory, FriendlyError, kinds};
 use crate::file_system::volume::VolumeError;
+use crate::md;
 
 /// Converts a `VolumeError` into a user-facing `FriendlyError`.
 ///
@@ -53,8 +54,8 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
         VolumeError::IsADirectory(_) => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "This is a folder, not a file".into(),
-            explanation: format!("Cmdr tried to open `{}` as a file, but it's a folder.", path_display),
-            suggestion: "Navigate into the folder instead of opening it as a file.".into(),
+            explanation: md!("Cmdr tried to open `{}` as a file, but it's a folder.", path_display),
+            suggestion: md!("Navigate into the folder instead of opening it as a file."),
             raw_detail: raw,
             retry_hint: false,
             action_kind: None,
