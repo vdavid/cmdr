@@ -114,6 +114,7 @@ mod network;
 mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
+mod pluralize;
 mod redact;
 mod restricted_paths;
 pub mod search;
@@ -322,7 +323,8 @@ pub fn run() {
                 ),
                 n => log::info!(
                     target: "cmdr_lib::logging",
-                    "Log storage enabled: keep up to {n} files × 50 MB ({} MB cap)",
+                    "Log storage enabled: keep up to {} × 50 MB ({} MB cap)",
+                    pluralize::pluralize(n, "file"),
                     n * 50,
                 ),
             }

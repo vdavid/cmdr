@@ -163,8 +163,8 @@
         if (!stats) return ''
         const { totalFiles, totalDirs } = stats
 
-        const filesPart = `${formatNumber(totalFiles)} ${pluralize(totalFiles, 'file', 'files')}`
-        const dirsPart = totalDirs > 0 ? ` and ${formatNumber(totalDirs)} ${pluralize(totalDirs, 'dir', 'dirs')}` : ''
+        const filesPart = `${formatNumber(totalFiles)} ${pluralize(totalFiles, 'file')}`
+        const dirsPart = totalDirs > 0 ? ` and ${formatNumber(totalDirs)} ${pluralize(totalDirs, 'dir')}` : ''
 
         return `No selection, ${filesPart}${dirsPart}.`
     })
@@ -269,7 +269,7 @@
                     ({sizePercentage}%) selected in
                 {/if}
                 {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
-                {pluralize(totalDirs, 'dir', 'dirs')}{#if totalSize === 0}
+                {pluralize(totalDirs, 'dir')}{#if totalSize === 0}
                     selected{/if}.
                 {#if showSelectionStale}
                     <span class="stale-indicator stale-icon" use:tooltip={'Updating index, size may change.'}
@@ -282,9 +282,9 @@
                 of
                 {#each totalSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
                 ({sizePercentage}%) selected in {formatNumber(selectedFiles)} of {formatNumber(totalFiles)}
-                {pluralize(totalFiles, 'file', 'files')}{#if hasDirs}
+                {pluralize(totalFiles, 'file')}{#if hasDirs}
                     &nbsp;and {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
-                    {pluralize(totalDirs, 'dir', 'dirs')}{/if}.
+                    {pluralize(totalDirs, 'dir')}{/if}.
                 {#if showSelectionStale}
                     <span class="stale-indicator stale-icon" use:tooltip={'Updating index, size may change.'}
                         ><IconHourglass width="12" height="12" /></span

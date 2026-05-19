@@ -18,6 +18,7 @@ use tokio::sync::oneshot;
 
 use crate::indexing::aggregator::{self, AggregationPhase, AggregationProgress};
 use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, IndexStoreError};
+use crate::pluralize::{pluralize, pluralize_with};
 
 // ── Aggregation progress events ──────────────────────────────────────
 
@@ -414,7 +415,8 @@ impl WriterStats {
         };
 
         log::debug!(
-            "Writer: +{delta_total} msgs{breakdown} in {:.1}s [{} total]",
+            "Writer: +{}{breakdown} in {:.1}s [{} total]",
+            pluralize(delta_total, "msg"),
             elapsed.as_secs_f64(),
             self.current.total,
         );
@@ -803,7 +805,10 @@ fn handle_insert_entries_v2(
     }
     let elapsed = t.elapsed().as_millis();
     if elapsed > 100 {
-        log::debug!("Writer: insert_entries_v2_batch ({count} entries) took {elapsed}ms");
+        log::debug!(
+            "Writer: insert_entries_v2_batch ({}) took {elapsed}ms",
+            pluralize_with(count, "entry", "entries")
+        );
     }
     bump_generation(mutation_counter);
     // Emit flushing progress when we know the expected total
@@ -1327,7 +1332,8 @@ fn handle_compute_all_aggregates(
     match result {
         Ok(count) => {
             log::info!(
-                "ComputeAllAggregates: done, {count} directories in {:.1}s",
+                "ComputeAllAggregates: done, {} in {:.1}s",
+                pluralize_with(count, "directory", "directories"),
                 t.elapsed().as_secs_f64(),
             );
         }
@@ -1340,7 +1346,8 @@ fn handle_compute_subtree_aggregates(conn: &rusqlite::Connection, root: &str) {
     match aggregator::compute_subtree_aggregates(conn, root) {
         Ok(count) => {
             log::debug!(
-                "Index writer: computed subtree aggregates for {count} dirs under {root} ({}ms)",
+                "Index writer: computed subtree aggregates for {} under {root} ({}ms)",
+                pluralize(count, "dir"),
                 t.elapsed().as_millis(),
             );
             // The subtree's own `recursive_has_symlinks` was just computed.
@@ -1365,7 +1372,8 @@ fn handle_backfill_missing_dir_stats(conn: &rusqlite::Connection) {
         }
         Ok(count) => {
             log::info!(
-                "BackfillMissingDirStats: computed stats for {count} dirs in {:.1}s",
+                "BackfillMissingDirStats: computed stats for {} in {:.1}s",
+                pluralize(count, "dir"),
                 t.elapsed().as_secs_f64(),
             );
         }

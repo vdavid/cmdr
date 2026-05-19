@@ -3,6 +3,7 @@ import { viewerGetLines, isIpcError } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { createLineHeightMap, getLineHeight } from './viewer-line-heights.svelte'
 import { onDebouncedScaleChange } from '$lib/text-size.svelte'
+import { pluralize } from '$lib/utils/pluralize'
 
 const log = getAppLogger('viewer')
 
@@ -183,10 +184,11 @@ export function createViewerScroll(deps: ScrollDeps) {
       const cacheStartLine = seekType === 'fraction' ? fetchFrom : chunk.firstLineNumber
 
       log.debug(
-        'fetchLines[{fetchId}]: received {lineCount} lines, backend says firstLine={firstLine}, caching at {cacheStart}',
+        'fetchLines[{fetchId}]: received {lineCount} {linesNoun}, backend says firstLine={firstLine}, caching at {cacheStart}',
         {
           fetchId,
           lineCount: chunk.lines.length,
+          linesNoun: pluralize(chunk.lines.length, 'line'),
           firstLine: chunk.firstLineNumber,
           cacheStart: cacheStartLine,
         },

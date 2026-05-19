@@ -14,6 +14,7 @@ use rusqlite::Connection;
 use super::firmlinks;
 use super::store::{self, DirStatsById, IndexStore, IndexStoreError};
 use crate::file_system::listing::FileEntry;
+use crate::pluralize::pluralize;
 
 // ── Read pool (lock-free enrichment reads) ──────────────────────────
 
@@ -119,7 +120,7 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
         None => return,
     };
 
-    log::debug!("enrich: {dir_count} dirs under {parent_path}");
+    log::debug!("enrich: {} under {parent_path}", pluralize(dir_count, "dir"));
 
     // Use the integer-keyed fast path: resolve parent once, batch-fetch child stats
     if let Err(e) = pool
@@ -135,7 +136,7 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
         .iter()
         .filter(|e| e.is_directory && !e.is_symlink && e.recursive_size.is_some())
         .count();
-    log::debug!("enrich: {enriched}/{dir_count} dirs got sizes");
+    log::debug!("enrich: {enriched}/{} got sizes", pluralize(dir_count, "dir"));
 }
 
 /// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.

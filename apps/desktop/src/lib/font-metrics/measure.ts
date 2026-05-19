@@ -1,6 +1,7 @@
 // Character measurement using Canvas API
 
 import { getAppLogger } from '$lib/logging/logger'
+import { pluralize } from '$lib/utils/pluralize'
 
 const log = getAppLogger('fontMetrics')
 
@@ -156,8 +157,9 @@ export function measureCharWidths(fontFamily: string, fontSize: number, fontWeig
     }
   }
 
-  log.debug('Measured {totalChars} characters for {fontFamily} {fontWeight} {fontSize}px', {
+  log.debug('Measured {totalChars} {charactersNoun} for {fontFamily} {fontWeight} {fontSize}px', {
     totalChars,
+    charactersNoun: pluralize(totalChars, 'character'),
     fontFamily,
     fontWeight,
     fontSize,

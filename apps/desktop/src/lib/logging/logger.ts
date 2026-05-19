@@ -5,7 +5,7 @@
  *   import { getAppLogger } from '$lib/logging/logger'
  *   const log = getAppLogger('myFeature')
  *   log.debug('Loading data for {userId}', { userId })
- *   log.info('Loaded {count} items', { count })
+ *   log.info('Loaded {count} {itemsNoun}', { count, itemsNoun: pluralize(count, 'item') })
  *   log.warn('Slow operation: {ms}ms', { ms })
  *   log.error('Failed to load: {error}', { error })
  *
@@ -194,7 +194,7 @@ export async function setVerboseLogging(enabled: boolean): Promise<void> {
  *
  * @example
  * const log = getAppLogger('fileExplorer')
- * log.debug('Selected {count} items', { count })
+ * log.debug('Selected {count} {itemsNoun}', { count, itemsNoun: pluralize(count, 'item') })
  */
 export function getAppLogger(feature: string): Logger {
   return getLogTapeLogger(['app', feature])

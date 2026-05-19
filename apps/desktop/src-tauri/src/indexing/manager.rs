@@ -21,6 +21,7 @@ use super::state::{INDEXING, IndexPhase};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
 use super::writer::{IndexWriter, WriteMessage};
+use crate::pluralize::pluralize;
 
 // ── IndexManager ─────────────────────────────────────────────────────
 
@@ -441,7 +442,10 @@ impl IndexManager {
                         reconciler.buffer_event(event);
                         buffered_count += 1;
                     }
-                    log::info!("Reconciler: {buffered_count} events buffered during scan");
+                    log::info!(
+                        "Reconciler: {} buffered during scan",
+                        pluralize(buffered_count, "event")
+                    );
 
                     if reconciler.did_buffer_overflow() {
                         emit_rescan_notification(

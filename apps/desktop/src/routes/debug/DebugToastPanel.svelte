@@ -1,5 +1,6 @@
 <script lang="ts">
     import { addToast, dismissTransientToasts, clearAllToasts, getToasts } from '$lib/ui/toast'
+    import { pluralize } from '$lib/utils/pluralize'
 
     let toastCounter = $state(0)
 </script>
@@ -105,7 +106,7 @@
         </div>
         <div class="toast-debug-row">
             <span class="toast-debug-label">Active</span>
-            <span class="toast-debug-count">{getToasts().length} toasts</span>
+            <span class="toast-debug-count">{getToasts().length} {pluralize(getToasts().length, 'toast')}</span>
         </div>
     </div>
 </section>

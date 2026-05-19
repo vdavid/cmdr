@@ -19,6 +19,7 @@ use jwalk::WalkDir;
 use crate::indexing::firmlinks;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::pluralize::{pluralize, pluralize_with};
 
 // ── Exclusion prefixes ──────────────────────────────────────────────
 
@@ -418,7 +419,9 @@ fn run_scan(
     // Flush final batch
     flush_batch(&mut batch, writer)?;
     log::debug!(
-        "Scanner: walk complete: {total_entries} entries, {total_dirs} dirs in {}ms",
+        "Scanner: walk complete: {}, {} in {}ms",
+        pluralize_with(total_entries, "entry", "entries"),
+        pluralize(total_dirs, "dir"),
         start.elapsed().as_millis()
     );
 

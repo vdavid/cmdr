@@ -6,6 +6,7 @@ use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::indexing::ReadPool;
 use crate::indexing::writer::WRITER_GENERATION;
+use crate::pluralize::pluralize_with;
 
 // ── Search entry (in-memory representation) ──────────────────────────
 
@@ -141,7 +142,8 @@ pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<
         }
 
         log::debug!(
-            "Search index loaded: {row_count} entries, generation {generation}, took {:?}",
+            "Search index loaded: {}, generation {generation}, took {:?}",
+            pluralize_with(row_count, "entry", "entries"),
             t.elapsed()
         );
         Ok(SearchIndex {

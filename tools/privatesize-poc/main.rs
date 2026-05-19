@@ -83,6 +83,11 @@ fn human(bytes: u64) -> String {
     }
 }
 
+fn bytes_label(n: u64) -> String {
+    // allowed-pluralize-noun: this IS the pluralize helper; the check looks for callers, not the implementation.
+    if n == 1 { String::from("1 byte") } else { format!("{n} bytes") }
+}
+
 fn main() {
     let path = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!("Usage: privatesize-poc <path>");
@@ -182,16 +187,19 @@ fn main() {
     println!("No privatesize:   {no_private}");
     println!();
     println!(
-        "Logical (len):    {} ({total_logical} bytes)",
-        human(total_logical)
+        "Logical (len):    {} ({})",
+        human(total_logical),
+        bytes_label(total_logical)
     );
     println!(
-        "Physical (blocks):{} ({total_blocks} bytes)",
-        human(total_blocks)
+        "Physical (blocks):{} ({})",
+        human(total_blocks),
+        bytes_label(total_blocks)
     );
     println!(
-        "Private size:     {} ({total_private} bytes)",
-        human(total_private)
+        "Private size:     {} ({})",
+        human(total_private),
+        bytes_label(total_private)
     );
     println!();
     let savings = total_blocks.saturating_sub(total_private);

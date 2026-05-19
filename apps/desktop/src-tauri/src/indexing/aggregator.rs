@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use rusqlite::{Connection, params};
 
 use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError, resolve_path};
+use crate::pluralize::pluralize_with;
 
 /// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`.
 ///
@@ -79,7 +80,10 @@ pub fn compute_all_aggregates_reported(
     }
 
     let dir_count = dir_entries.len();
-    log::debug!("Aggregation: starting bottom-up computation for {dir_count} directories");
+    log::debug!(
+        "Aggregation: starting bottom-up computation for {}",
+        pluralize_with(dir_count, "directory", "directories")
+    );
 
     // Bulk-load direct children stats for ALL parent IDs in two SQL queries
     log::debug!("Aggregation: loading direct children stats (bulk query)...");
@@ -159,8 +163,9 @@ fn compute_and_write(
                 dir_count,
             ));
             log::debug!(
-                "Aggregation: processed {}/{dir_count} directories ({:.1}s)",
+                "Aggregation: processed {}/{} ({:.1}s)",
                 i + 1,
+                pluralize_with(dir_count, "directory", "directories"),
                 start.elapsed().as_secs_f64()
             );
         }
@@ -184,7 +189,8 @@ fn compute_and_write(
     }
 
     log::debug!(
-        "Aggregation: complete. {count} directories processed in {:.1}s",
+        "Aggregation: complete. {} processed in {:.1}s",
+        pluralize_with(count, "directory", "directories"),
         start.elapsed().as_secs_f64()
     );
 
@@ -268,7 +274,10 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
 
     let start = std::time::Instant::now();
     let dir_count = dir_entries.len();
-    log::debug!("Subtree aggregation: starting bottom-up computation for {dir_count} directories under {root}");
+    log::debug!(
+        "Subtree aggregation: starting bottom-up computation for {} under {root}",
+        pluralize_with(dir_count, "directory", "directories")
+    );
 
     // Load direct children stats scoped to this subtree via recursive CTE
     let direct_stats = scoped_get_children_stats_by_id(conn, root_id)?;
@@ -302,7 +311,8 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
     }
 
     log::debug!(
-        "Subtree aggregation: complete. {count} directories processed in {:.1}ms",
+        "Subtree aggregation: complete. {} processed in {:.1}ms",
+        pluralize_with(count, "directory", "directories"),
         start.elapsed().as_secs_f64() * 1000.0,
     );
 
@@ -323,7 +333,10 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
 
     let start = std::time::Instant::now();
     let count = missing_ids.len();
-    log::debug!("Backfill: {count} directories missing dir_stats, computing...");
+    log::debug!(
+        "Backfill: {} missing dir_stats, computing...",
+        pluralize_with(count, "directory", "directories")
+    );
 
     // Load ALL directory entries for the topological sort (we need the full
     // tree structure to compute bottom-up correctly, since a missing dir's

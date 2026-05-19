@@ -115,21 +115,21 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
         Cat::Branches => {
             let count = count_local_branches(&repo);
             fe.size = Some(count);
-            fe.display_size = Some(column_meta::pluralize(count, "branch", "branches"));
+            fe.display_size = Some(column_meta::pluralize_with(count, "branch", "branches"));
             fe.display_size_tooltip = Some(format!("{} on this repo", fe.display_size.as_ref().unwrap()));
             fe.modified_at = newest_branch_tip_secs(handle);
         }
         Cat::Tags => {
             let count = count_tags(&repo);
             fe.size = Some(count);
-            fe.display_size = Some(column_meta::pluralize(count, "tag", "tags"));
+            fe.display_size = Some(column_meta::pluralize(count, "tag"));
             fe.display_size_tooltip = Some(format!("{} on this repo", fe.display_size.as_ref().unwrap()));
             fe.modified_at = newest_tag_secs(handle);
         }
         Cat::Commits => {
             let count = count_commits_capped(&repo);
             fe.size = Some(count);
-            fe.display_size = Some(column_meta::pluralize(count, "commit", "commits"));
+            fe.display_size = Some(column_meta::pluralize(count, "commit"));
             fe.display_size_tooltip = Some(format!("{} reachable from HEAD", fe.display_size.as_ref().unwrap()));
             fe.modified_at = head_commit_secs(handle);
         }
@@ -138,7 +138,7 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
                 .map(|v| v.len() as u64)
                 .unwrap_or(0);
             fe.size = Some(count);
-            fe.display_size = Some(column_meta::pluralize(count, "stash entry", "stash entries"));
+            fe.display_size = Some(column_meta::pluralize_with(count, "stash entry", "stash entries"));
             fe.display_size_tooltip = Some(fe.display_size.clone().unwrap());
             fe.modified_at = newest_stash_secs(repo_root);
         }
@@ -146,7 +146,7 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
             let entries = super::worktrees::list_worktrees(handle, repo_root).unwrap_or_default();
             let count = entries.len() as u64;
             fe.size = Some(count);
-            fe.display_size = Some(column_meta::pluralize(count, "linked worktree", "linked worktrees"));
+            fe.display_size = Some(column_meta::pluralize(count, "linked worktree"));
             fe.display_size_tooltip = Some(fe.display_size.clone().unwrap());
             fe.modified_at = newest_worktree_head_secs(&repo);
         }
@@ -154,7 +154,7 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
             let entries = super::submodules::list_submodules(handle, repo_root).unwrap_or_default();
             let count = entries.len() as u64;
             fe.size = Some(count);
-            fe.display_size = Some(column_meta::pluralize(count, "submodule", "submodules"));
+            fe.display_size = Some(column_meta::pluralize(count, "submodule"));
             fe.display_size_tooltip = Some(fe.display_size.clone().unwrap());
             fe.modified_at = newest_submodule_secs(&repo, handle, repo_root);
         }
@@ -207,10 +207,10 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
                 }
                 if let Some(n) = column_meta::files_changed_count(&repo, id) {
                     fe.size = Some(n);
-                    fe.display_size = Some(column_meta::pluralize(n, "file", "files"));
+                    fe.display_size = Some(column_meta::pluralize(n, "file"));
                     fe.display_size_tooltip = Some(format!(
                         "{} changed compared to the parent commit",
-                        column_meta::pluralize(n, "file", "files")
+                        column_meta::pluralize(n, "file")
                     ));
                 }
             }

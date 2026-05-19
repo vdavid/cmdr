@@ -16,6 +16,7 @@ use super::scanner;
 use super::store::{self, IndexStore};
 use super::watcher;
 use super::writer::{IndexWriter, WriteMessage};
+use crate::pluralize::{pluralize, pluralize_with};
 
 // ── Live event loop ──────────────────────────────────────────────────
 
@@ -183,8 +184,8 @@ pub(super) async fn run_live_event_loop(
                         DEBUG_STATS.live_event_count.store(event_count, Ordering::Relaxed);
                         if event_count.is_multiple_of(10_000) {
                             log::debug!(
-                                "Live event processing: {event_count} events received \
-                                 ({} pending deduplicated)",
+                                "Live event processing: {} received ({} pending deduplicated)",
+                                pluralize(event_count, "event"),
                                 pending_events.len()
                             );
                         }
@@ -263,7 +264,7 @@ pub(super) async fn run_live_event_loop(
         }
     }
 
-    log::info!("Live event processing: stopped ({event_count} events)");
+    log::info!("Live event processing: stopped ({})", pluralize(event_count, "event"));
     log::info!(target: "stall_probe::reconciler", "live_event_loop_stopped events={event_count}");
 }
 
@@ -598,7 +599,7 @@ pub(super) async fn run_replay_event_loop(
 
         // HistoryDone marks end of replay phase
         if event.flags.history_done {
-            log::info!("Replay: HistoryDone received after {event_count} events");
+            log::info!("Replay: HistoryDone received after {}", pluralize(event_count, "event"));
 
             // Flush remaining deduplicated events before leaving Phase 1
             deduped_total += flush_replay_batch(
@@ -668,9 +669,10 @@ pub(super) async fn run_replay_event_loop(
                 &volume_id,
                 RescanReason::ReplayOverflow,
                 format!(
-                    "Replay processed {event_count} events, exceeding the safety limit of \
+                    "Replay processed {}, exceeding the safety limit of \
                      {REPLAY_EVENT_COUNT_LIMIT}. This can happen when Full Disk Access was \
-                     toggled."
+                     toggled.",
+                    pluralize(event_count, "event")
                 ),
             );
             if let Some(tx) = fallback_tx.take() {
@@ -710,7 +712,7 @@ pub(super) async fn run_replay_event_loop(
 
         // Log milestone counts
         if event_count.is_multiple_of(10_000) {
-            log::debug!("Replay: {event_count} events processed so far");
+            log::debug!("Replay: {} processed so far", pluralize(event_count, "event"));
         }
     }
 
@@ -740,8 +742,9 @@ pub(super) async fn run_replay_event_loop(
     match writer.flush().await {
         Ok(()) => {
             log::info!(
-                "Replay: complete ({event_count} events, {} affected dirs, {:.1}s)",
-                affected_paths.len(),
+                "Replay: complete ({}, {}, {:.1}s)",
+                pluralize(event_count, "event"),
+                pluralize(affected_paths.len(), "affected dir"),
                 replay_start.elapsed().as_secs_f64(),
             );
         }
@@ -824,8 +827,9 @@ pub(super) async fn run_replay_event_loop(
             &volume_id,
             RescanReason::TooManySubdirRescans,
             format!(
-                "Replay accumulated more than {MAX_PENDING_RESCANS} directories needing full \
-                 rescans. This typically means a major filesystem reorganization happened."
+                "Replay accumulated more than {} needing full \
+                 rescans. This typically means a major filesystem reorganization happened.",
+                pluralize_with(MAX_PENDING_RESCANS, "directory", "directories")
             ),
         );
         if let Some(tx) = fallback_tx.take() {
@@ -863,8 +867,8 @@ pub(super) async fn run_replay_event_loop(
                         live_count += 1;
                         if live_count.is_multiple_of(10_000) {
                             log::debug!(
-                                "Live event processing (post-replay): {live_count} events \
-                                 ({} pending deduplicated)",
+                                "Live event processing (post-replay): {} ({} pending deduplicated)",
+                                pluralize(live_count, "event"),
                                 live_pending_events.len()
                             );
                         }

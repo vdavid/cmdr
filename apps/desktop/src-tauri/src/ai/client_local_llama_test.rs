@@ -69,7 +69,7 @@ async fn local_streaming_emits_multiple_chunks_progressively() {
         .await
         .expect("stream should open against local server");
 
-    let mut chunks = 0;
+    let mut chunks: usize = 0;
     let mut total = String::new();
     let mut first_chunk_at = None;
     while let Some(item) = stream.next().await {
@@ -95,7 +95,8 @@ async fn local_streaming_emits_multiple_chunks_progressively() {
 
     log::info!(
         target: "ai_smoke",
-        "local stream → {chunks} chunks, ttft={ttft:?}, total={total_elapsed:?}, content: {total}"
+        "local stream → {}, ttft={ttft:?}, total={total_elapsed:?}, content: {total}",
+        crate::pluralize::pluralize(chunks, "chunk")
     );
 }
 

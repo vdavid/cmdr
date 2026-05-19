@@ -6,6 +6,7 @@
 use crate::error_reporter::{
     self, BundleKind, BundleManifest, BundleScope, FLOW_A_BUNDLE_CAP_MB, settings_defaults::SettingValue,
 };
+use crate::pluralize::pluralize;
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -124,8 +125,9 @@ pub async fn save_error_report_to_disk(app: tauri::AppHandle, user_note: Option<
 fn validate_user_note(user_note: Option<String>) -> Result<Option<String>, String> {
     match user_note {
         Some(n) if n.chars().count() > MAX_USER_NOTE_CHARS => Err(format!(
-            "User note is too long ({} chars). Maximum is {MAX_USER_NOTE_CHARS} chars.",
-            n.chars().count(),
+            "User note is too long ({}). Maximum is {}.",
+            pluralize(n.chars().count(), "char"),
+            pluralize(MAX_USER_NOTE_CHARS, "char"),
         )),
         other => Ok(other),
     }

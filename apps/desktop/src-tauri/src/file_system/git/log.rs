@@ -207,10 +207,10 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
         // count, still a useful "size of this snapshot" cue.
         if let Some(n) = files_changed_count(&repo, id) {
             fe.size = Some(n);
-            fe.display_size = Some(column_meta::pluralize(n, "file", "files"));
+            fe.display_size = Some(column_meta::pluralize(n, "file"));
             fe.display_size_tooltip = Some(format!(
                 "{} changed compared to the parent commit",
-                column_meta::pluralize(n, "file", "files")
+                column_meta::pluralize(n, "file")
             ));
         }
         out.push(fe);

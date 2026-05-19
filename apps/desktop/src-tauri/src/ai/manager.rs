@@ -13,6 +13,7 @@ use super::process::{
 };
 use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, is_local_ai_supported};
 use crate::ignore_poison::IgnorePoison;
+use crate::pluralize::pluralize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -992,7 +993,10 @@ async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<()
         if i % 10 == 9 {
             log::debug!("AI server: still waiting for health check ({}s)...", (i + 1) / 2);
             if let Some((line_count, last_line)) = log_diagnostics(ai_dir) {
-                log::debug!("AI server: log has {line_count} lines, last: {last_line}");
+                log::debug!(
+                    "AI server: log has {}, last: {last_line}",
+                    pluralize(line_count, "line")
+                );
             }
         }
     }

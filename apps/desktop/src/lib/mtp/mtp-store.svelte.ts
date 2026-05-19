@@ -19,6 +19,7 @@ import {
   onMtpPermissionError,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { pluralize } from '$lib/utils/pluralize'
 
 const logger = getAppLogger('mtp')
 
@@ -301,9 +302,10 @@ export async function initialize(): Promise<void> {
       storages: event.storages,
       displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
     })
-    logger.info('MTP device connected: {deviceId} ({count} storages)', {
+    logger.info('MTP device connected: {deviceId} ({count} {storagesNoun})', {
       deviceId: event.deviceId,
       count: event.storages.length,
+      storagesNoun: pluralize(event.storages.length, 'storage'),
     })
   })
 

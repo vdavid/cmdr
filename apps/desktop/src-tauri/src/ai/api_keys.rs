@@ -4,6 +4,7 @@
 //! key sits in the OS-native secret backend (macOS Keychain, Linux Secret Service, etc.) instead
 //! of `settings.json`. One entry per provider keyed as `ai.apiKey.<providerId>`.
 
+use crate::pluralize::pluralize;
 use crate::secrets::SecretStoreError;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
@@ -51,7 +52,10 @@ pub fn save(provider_id: &str, api_key: &str) -> Result<(), AiApiKeyError> {
     let key = store_key(provider_id);
     let key_len = api_key.len();
     crate::secrets::store().set(&key, api_key.as_bytes())?;
-    info!("AI API key saved for provider {provider_id} ({key_len} bytes)");
+    info!(
+        "AI API key saved for provider {provider_id} ({})",
+        pluralize(key_len, "byte")
+    );
     Ok(())
 }
 

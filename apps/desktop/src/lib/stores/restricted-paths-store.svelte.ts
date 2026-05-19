@@ -20,6 +20,7 @@ import { listen } from '@tauri-apps/api/event'
 import { SvelteSet } from 'svelte/reactivity'
 import { getRestrictedPaths } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { pluralize } from '$lib/utils/pluralize'
 
 const logger = getAppLogger('restricted-paths-store')
 
@@ -45,7 +46,10 @@ export async function initRestrictedPathsStore(): Promise<void> {
   await listen<RestrictedPathsChangedPayload>('restricted-paths-changed', (event) => {
     paths.clear()
     for (const p of event.payload.paths) paths.add(p)
-    logger.debug('restricted-paths-changed: {count} paths', { count: event.payload.paths.length })
+    logger.debug('restricted-paths-changed: {count} {pathsNoun}', {
+      count: event.payload.paths.length,
+      pathsNoun: pluralize(event.payload.paths.length, 'path'),
+    })
   })
 
   const bootstrap = await getRestrictedPaths()
@@ -54,5 +58,8 @@ export async function initRestrictedPathsStore(): Promise<void> {
     for (const p of bootstrap) paths.add(p)
   }
   initialized = true
-  logger.debug('Restricted-paths store initialized ({count} paths)', { count: paths.size })
+  logger.debug('Restricted-paths store initialized ({count} {pathsNoun})', {
+    count: paths.size,
+    pathsNoun: pluralize(paths.size, 'path'),
+  })
 }

@@ -22,6 +22,7 @@
     } from '$lib/file-explorer/types'
     import { getSetting } from '$lib/settings'
     import { validateDirectoryPath } from '$lib/utils/filename-validation'
+    import { pluralize } from '$lib/utils/pluralize'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -274,7 +275,10 @@
             conflictCheckComplete = true
 
             if (totalConflictCount > 0) {
-                log.info('Found {count} conflicts at destination', { count: totalConflictCount })
+                log.info('Found {count} {conflictsNoun} at destination', {
+                    count: totalConflictCount,
+                    conflictsNoun: pluralize(totalConflictCount, 'conflict'),
+                })
             }
         } catch (err) {
             log.error('Failed to check for conflicts: {error}', { error: err })

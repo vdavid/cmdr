@@ -4234,7 +4234,8 @@ mod tests {
         // ratio (10%-window math needs two non-trivial samples).
         if total_iters < 20 {
             panic!(
-                "soak ran only {total_iters} iterations; need at least 20 to compute drift (set CMDR_SOAK_ITERATIONS=100 minimum)"
+                "soak ran only {}; need at least 20 to compute drift (set CMDR_SOAK_ITERATIONS=100 minimum)",
+                crate::pluralize::pluralize(total_iters, "iteration")
             );
         }
 

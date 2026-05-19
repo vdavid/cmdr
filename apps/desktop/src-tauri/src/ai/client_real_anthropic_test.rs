@@ -75,7 +75,7 @@ async fn smoke_claude_haiku_stream() {
     .expect("stream open");
 
     let mut text = String::new();
-    let mut chunks = 0;
+    let mut chunks: usize = 0;
     while let Some(item) = stream.next().await {
         let chunk = item.expect("chunk ok");
         text.push_str(&chunk);
@@ -84,5 +84,9 @@ async fn smoke_claude_haiku_stream() {
 
     assert!(!text.trim().is_empty(), "expected non-empty assembled text");
     assert!(chunks > 0, "expected at least one chunk");
-    log::info!(target: "ai_smoke", "claude-3-5-haiku stream → {chunks} chunks, total: {text}");
+    log::info!(
+        target: "ai_smoke",
+        "claude-3-5-haiku stream → {}, total: {text}",
+        crate::pluralize::pluralize(chunks, "chunk")
+    );
 }

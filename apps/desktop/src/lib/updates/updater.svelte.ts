@@ -2,6 +2,7 @@ import { commands } from '$lib/ipc/bindings'
 import { getVersion } from '@tauri-apps/api/app'
 import { getSetting, onSpecificSettingChange } from '$lib/settings/settings-store'
 import { getAppLogger } from '$lib/logging/logger'
+import { pluralize } from '$lib/utils/pluralize'
 import UpdateToastContent from './UpdateToastContent.svelte'
 import UpdateCheckToastContent from './UpdateCheckToastContent.svelte'
 import { addToast, dismissToast } from '$lib/ui/toast'
@@ -240,7 +241,11 @@ export function startUpdateChecker(): () => void {
   const unsubscribe = onSpecificSettingChange('advanced.updateCheckInterval', () => {
     clearInterval(intervalId)
     const newInterval = getCheckIntervalMs()
-    log.info('Interval changed to {minutes} minutes', { minutes: newInterval / 60000 })
+    const minutes = newInterval / 60000
+    log.info('Interval changed to {minutes} {minutesNoun}', {
+      minutes,
+      minutesNoun: pluralize(minutes, 'minute'),
+    })
     intervalId = setInterval(() => {
       void checkForUpdates()
     }, newInterval)

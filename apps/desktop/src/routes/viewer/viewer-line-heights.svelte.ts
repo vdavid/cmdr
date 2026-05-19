@@ -1,6 +1,7 @@
 import type { PreparedText } from '@chenglou/pretext'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
+import { pluralize } from '$lib/utils/pluralize'
 
 const log = getAppLogger('viewer')
 
@@ -228,8 +229,9 @@ export function createLineHeightMap() {
 
     if (lines.length === 0) return
     if (lines.length > MAX_LINES) {
-      log.debug('Skipping line height map: {count} lines exceeds limit of {max}', {
+      log.debug('Skipping line height map: {count} {linesNoun} exceeds limit of {max}', {
         count: lines.length,
+        linesNoun: pluralize(lines.length, 'line'),
         max: MAX_LINES,
       })
       return
@@ -283,8 +285,9 @@ export function createLineHeightMap() {
         buildPrefixSum(maxWidth)
         ready = true
 
-        log.info('Line height map ready: {count} lines, total height {height}px, prepared in {ms}ms', {
+        log.info('Line height map ready: {count} {linesNoun}, total height {height}px, prepared in {ms}ms', {
           count: lines.length,
+          linesNoun: pluralize(lines.length, 'line'),
           height: getTotalHeight().toFixed(0),
           ms: (performance.now() - startTime).toFixed(1),
         })

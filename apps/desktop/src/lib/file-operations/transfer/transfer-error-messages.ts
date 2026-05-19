@@ -132,6 +132,7 @@ export function getUserFriendlyMessage(
       const isDeleteOp = operationType === 'delete' || operationType === 'trash'
       return {
         title: "Couldn't access this location",
+        // allowed-pluralize-noun: `verb` is an action name (copy/move/delete), not a count.
         message: `You don't have permission to ${verb} files here.`,
         suggestion: isDeleteOp
           ? isMacOS()

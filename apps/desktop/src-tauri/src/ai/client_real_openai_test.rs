@@ -113,13 +113,17 @@ async fn collect_stream(backend: &AiBackend, model_label: &str) -> String {
     .await
     .expect("stream open");
     let mut text = String::new();
-    let mut chunks = 0;
+    let mut chunks: usize = 0;
     while let Some(item) = stream.next().await {
         let chunk = item.expect("chunk ok");
         text.push_str(&chunk);
         chunks += 1;
     }
-    log::info!(target: "ai_smoke", "{model_label} stream → {chunks} chunks, total: {text}");
+    log::info!(
+        target: "ai_smoke",
+        "{model_label} stream → {}, total: {text}",
+        crate::pluralize::pluralize(chunks, "chunk")
+    );
     text
 }
 

@@ -25,14 +25,7 @@ use gix::object::tree::EntryKind;
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::{RepoHandle, count_ahead_behind};
 
-/// Pluralizes a noun based on count: `1 commit` / `12 commits`.
-pub fn pluralize(count: u64, singular: &str, plural: &str) -> String {
-    if count == 1 {
-        format!("1 {}", singular)
-    } else {
-        format!("{} {}", count, plural)
-    }
-}
+pub use crate::pluralize::{pluralize, pluralize_with};
 
 /// Picks a fallback comparison branch for ahead/behind when the branch has
 /// no configured upstream. Tries `main`, then `master`. Returns the
@@ -311,9 +304,9 @@ mod tests {
 
     #[test]
     fn pluralize_singular_and_plural() {
-        assert_eq!(pluralize(0, "file", "files"), "0 files");
-        assert_eq!(pluralize(1, "file", "files"), "1 file");
-        assert_eq!(pluralize(2, "file", "files"), "2 files");
-        assert_eq!(pluralize(12, "branch", "branches"), "12 branches");
+        assert_eq!(pluralize(0_u64, "file"), "0 files");
+        assert_eq!(pluralize(1_u64, "file"), "1 file");
+        assert_eq!(pluralize(2_u64, "file"), "2 files");
+        assert_eq!(pluralize_with(12_u64, "branch", "branches"), "12 branches");
     }
 }

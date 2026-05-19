@@ -13,6 +13,7 @@ use crate::indexing::reconciler::{self, EventReconciler};
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::watcher::{FsChangeEvent, FsEventFlags};
 use crate::indexing::writer::WriteMessage;
+use crate::pluralize::pluralize;
 
 use super::stress_test_helpers::{build_synthetic_tree, check_db_consistency, make_file_entry, setup_writer};
 
@@ -982,9 +983,10 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
             .collect::<Vec<_>>()
             .join("\n  ");
         panic!(
-            "{count} listing(s) exceeded the {SLA_MS}ms SLA under reconciler load (storm: {total_events} events):\n  {summary}\n\n\
+            "{} exceeded the {SLA_MS}ms SLA under reconciler load (storm: {}):\n  {summary}\n\n\
              See the captured `stall_probe::*` log lines above (run with --no-capture to see them on stderr).",
-            count = violators.len(),
+            pluralize(violators.len(), "listing"),
+            pluralize(total_events, "event"),
         );
     }
 

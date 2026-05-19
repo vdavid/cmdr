@@ -12,6 +12,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { listVolumes, refreshVolumes } from '$lib/tauri-commands'
 import type { VolumeInfo } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
+import { pluralize } from '$lib/utils/pluralize'
 
 const logger = getAppLogger('volume-store')
 
@@ -99,8 +100,9 @@ export async function initVolumeStore(): Promise<void> {
       }
     }
 
-    logger.debug('volumes-changed: {count} volumes, timedOut={timedOut}', {
+    logger.debug('volumes-changed: {count} {volumesNoun}, timedOut={timedOut}', {
       count: event.payload.data.length,
+      volumesNoun: pluralize(event.payload.data.length, 'volume'),
       timedOut: event.payload.timedOut,
     })
   })
@@ -131,7 +133,10 @@ export async function initVolumeStore(): Promise<void> {
   if (!receivedEvent) {
     volumes = result.data
     timedOut = result.timedOut
-    logger.debug('Bootstrap: {count} volumes', { count: result.data.length })
+    logger.debug('Bootstrap: {count} {volumesNoun}', {
+      count: result.data.length,
+      volumesNoun: pluralize(result.data.length, 'volume'),
+    })
   }
 
   initialized = true

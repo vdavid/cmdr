@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy, untrack } from 'svelte'
+    import { pluralize } from '$lib/utils/pluralize'
     import FilePane from './FilePane.svelte'
     import type { FilePaneAPI } from './types'
     import PaneResizer from './PaneResizer.svelte'
@@ -1706,8 +1707,12 @@
         const validEntries = entries.filter((e) => e.name !== '..')
         if (validEntries.length === 0) {
             log.warn(
-                'openDeleteDialog: no validEntries after getFilesAtIndices (got {count} entries, all filtered as ".." parent), bailing. backendIndices={indices}',
-                { count: entries.length, indices: backendIndices.join(',') },
+                'openDeleteDialog: no validEntries after getFilesAtIndices (got {count} {entriesNoun}, all filtered as ".." parent), bailing. backendIndices={indices}',
+                {
+                    count: entries.length,
+                    entriesNoun: pluralize(entries.length, 'entry', 'entries'),
+                    indices: backendIndices.join(','),
+                },
             )
             return
         }

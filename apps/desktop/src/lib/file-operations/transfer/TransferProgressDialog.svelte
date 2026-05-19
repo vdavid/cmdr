@@ -41,6 +41,7 @@
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { formatDate, formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { pluralize } from '$lib/utils/pluralize'
     import Size from '$lib/ui/Size.svelte'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
@@ -301,12 +302,14 @@
     function handleProgress(event: WriteProgressEvent) {
         if (!filterEvent({ type: 'progress', event })) return
 
-        log.debug('Progress event: {phase} {filesDone}/{filesTotal} files, {bytesDone}/{bytesTotal} bytes', {
+        log.debug('Progress event: {phase} {filesDone}/{filesTotal} {filesNoun}, {bytesDone}/{bytesTotal} {bytesNoun}', {
             phase: event.phase,
             filesDone: event.filesDone,
             filesTotal: event.filesTotal,
+            filesNoun: pluralize(event.filesTotal, 'file'),
             bytesDone: event.bytesDone,
             bytesTotal: event.bytesTotal,
+            bytesNoun: pluralize(event.bytesTotal, 'byte'),
         })
 
         // Drop the smoothed ETA on phase transitions; the backend estimator
@@ -362,10 +365,12 @@
     function handleComplete(event: WriteCompleteEvent) {
         if (!filterEvent({ type: 'complete', event })) return
 
-        log.info('{op} complete: {filesProcessed} files, {bytesProcessed} bytes', {
+        log.info('{op} complete: {filesProcessed} {filesNoun}, {bytesProcessed} {bytesNoun}', {
             op: operationLabel,
             filesProcessed: event.filesProcessed,
+            filesNoun: pluralize(event.filesProcessed, 'file'),
             bytesProcessed: event.bytesProcessed,
+            bytesNoun: pluralize(event.bytesProcessed, 'byte'),
         })
 
         operationSettled = true
@@ -399,9 +404,10 @@
     function handleCancelled(event: WriteCancelledEvent) {
         if (!filterEvent({ type: 'cancelled', event })) return
 
-        log.info('{op} cancelled after {filesProcessed} files, rolledBack={rolledBack}', {
+        log.info('{op} cancelled after {filesProcessed} {filesNoun}, rolledBack={rolledBack}', {
             op: operationLabel,
             filesProcessed: event.filesProcessed,
+            filesNoun: pluralize(event.filesProcessed, 'file'),
             rolledBack: event.rolledBack,
         })
 
@@ -508,9 +514,10 @@
     }
 
     async function startOperation() {
-        log.info('Starting {op} operation: {sourceCount} sources', {
+        log.info('Starting {op} operation: {sourceCount} {sourcesNoun}', {
             op: operationType,
             sourceCount: sourcePaths.length,
+            sourcesNoun: pluralize(sourcePaths.length, 'source'),
         })
 
         startTime = Date.now()
@@ -732,9 +739,11 @@
         scanUnlisteners.push(
             await onScanPreviewComplete((event) => {
                 if (!isOurScanEvent(event.previewId)) return
-                log.info('Scan preview complete: {filesTotal} files, {bytesTotal} bytes', {
+                log.info('Scan preview complete: {filesTotal} {filesNoun}, {bytesTotal} {bytesNoun}', {
                     filesTotal: event.filesTotal,
+                    filesNoun: pluralize(event.filesTotal, 'file'),
                     bytesTotal: event.bytesTotal,
+                    bytesNoun: pluralize(event.bytesTotal, 'byte'),
                 })
                 scanFilesFound = event.filesTotal
                 scanDirsFound = event.dirsTotal

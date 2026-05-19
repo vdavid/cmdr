@@ -18,6 +18,7 @@ use crate::search::{
 };
 
 use crate::indexing::writer::WRITER_GENERATION;
+use crate::pluralize::pluralize_with;
 use crate::search::ai::{self, query_builder as ai_query_builder};
 
 #[derive(Debug, Clone, Serialize, specta::Type)]
@@ -106,7 +107,10 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
                     backstop_timer: Some(backstop),
                     load_cancel: Some(cancel),
                 });
-                log::debug!("Search index ready: {entry_count} entries");
+                log::debug!(
+                    "Search index ready: {}",
+                    pluralize_with(entry_count, "entry", "entries")
+                );
                 // Emit event to frontend
                 use tauri::Emitter;
                 let _ = app_clone.emit(

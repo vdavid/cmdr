@@ -402,19 +402,22 @@ describe('formatSizeForDisplay', () => {
 
 describe('pluralize', () => {
   it('returns singular for count of 1', () => {
-    expect(pluralize(1, 'file', 'files')).toBe('file')
-    expect(pluralize(1, 'dir', 'dirs')).toBe('dir')
+    expect(pluralize(1, 'file')).toBe('file')
+    expect(pluralize(1, 'dir')).toBe('dir')
+    expect(pluralize(1, 'entry', 'entries')).toBe('entry')
   })
 
   it('returns plural for count of 0', () => {
-    expect(pluralize(0, 'file', 'files')).toBe('files')
-    expect(pluralize(0, 'dir', 'dirs')).toBe('dirs')
+    expect(pluralize(0, 'file')).toBe('files')
+    expect(pluralize(0, 'dir')).toBe('dirs')
+    expect(pluralize(0, 'entry', 'entries')).toBe('entries')
   })
 
   it('returns plural for count greater than 1', () => {
-    expect(pluralize(2, 'file', 'files')).toBe('files')
-    expect(pluralize(100, 'dir', 'dirs')).toBe('dirs')
-    expect(pluralize(1000000, 'byte', 'bytes')).toBe('bytes')
+    expect(pluralize(2, 'file')).toBe('files')
+    expect(pluralize(100, 'dir')).toBe('dirs')
+    expect(pluralize(1000000, 'byte')).toBe('bytes')
+    expect(pluralize(3, 'entry', 'entries')).toBe('entries')
   })
 })
 

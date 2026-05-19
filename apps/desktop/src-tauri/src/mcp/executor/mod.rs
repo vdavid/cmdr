@@ -26,6 +26,7 @@ use tauri::{AppHandle, Emitter, Listener, Runtime};
 
 use super::pane_state::PaneStateStore;
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
+use crate::pluralize::pluralize;
 
 /// Result of tool execution.
 pub type ToolResult = Result<Value, ToolError>;
@@ -117,7 +118,8 @@ async fn mcp_round_trip_with_timeout<R: Runtime>(
         Ok(Ok(Err(err))) => Err(ToolError::internal(err)),
         Ok(Err(_)) => Err(ToolError::internal("Frontend response channel dropped")),
         Err(_) => Err(ToolError::internal(format!(
-            "Frontend did not respond within {timeout_secs} seconds"
+            "Frontend did not respond within {}",
+            pluralize(timeout_secs, "second")
         ))),
     }
 }

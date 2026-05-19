@@ -22,6 +22,7 @@
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
+    import { pluralize } from '$lib/utils/pluralize'
 
     interface Props {
         onClose: () => void
@@ -357,7 +358,8 @@
                     {#if pendingVerification}
                         <div class="info-row-sub">
                             <span class="info-hint">
-                                We'll verify with the server automatically within {validationIntervalDays} days.
+                                We'll verify with the server automatically within {validationIntervalDays}
+                                {pluralize(validationIntervalDays, 'day')}.
                             </span>
                         </div>
                     {/if}
@@ -417,7 +419,7 @@
                 {/if}
                 <p class="help-text">
                     {#if isServerInvalidError && serverInvalidRetryCount >= 3}
-                        We've tried {serverInvalidRetryCount} times and it didn't work. We're sorry for the trouble. Please
+                        We've tried {serverInvalidRetryCount} {pluralize(serverInvalidRetryCount, 'time')} and it didn't work. We're sorry for the trouble. Please
                         drop us a message at
                         <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
                             >{SUPPORT_EMAIL}</LinkButton

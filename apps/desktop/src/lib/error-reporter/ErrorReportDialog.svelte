@@ -22,6 +22,7 @@
     import BundleSavedToastContent, { setLastSavedBundlePath } from './BundleSavedToastContent.svelte'
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { pluralize } from '$lib/utils/pluralize'
 
     const log = getAppLogger('errorReportDialog')
 
@@ -211,11 +212,15 @@
                 <h3 class="details-heading">Manifest</h3>
                 <pre class="details-block">{JSON.stringify(displayedManifest, null, 2)}</pre>
 
-                <h3 class="details-heading">Sample of first {preview.sampleFirst.length} lines</h3>
+                <h3 class="details-heading">
+                    Sample of first {preview.sampleFirst.length} {pluralize(preview.sampleFirst.length, 'line')}
+                </h3>
                 <pre class="details-block sample-block">{preview.sampleFirst.join('\n') ||
                         '(no log lines available)'}</pre>
 
-                <h3 class="details-heading">Sample of last {preview.sampleLast.length} lines</h3>
+                <h3 class="details-heading">
+                    Sample of last {preview.sampleLast.length} {pluralize(preview.sampleLast.length, 'line')}
+                </h3>
                 <pre class="details-block sample-block">{preview.sampleLast.join('\n') ||
                         '(no log lines available)'}</pre>
 

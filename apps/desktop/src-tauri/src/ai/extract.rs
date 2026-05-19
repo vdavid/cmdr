@@ -4,6 +4,8 @@ use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, Manager, Runtime};
 
+use crate::pluralize::pluralize;
+
 /// Binary filename for the llama-server executable.
 pub const LLAMA_SERVER_BINARY: &str = "llama-server";
 
@@ -30,7 +32,7 @@ pub fn extract_bundled_llama_server<R: Runtime>(app: &AppHandle<R>, ai_dir: &Pat
 
     let entries = fs::read_dir(&resource_dir).map_err(|e| format!("Failed to read bundled AI directory: {e}"))?;
 
-    let mut copied_count = 0;
+    let mut copied_count: usize = 0;
     for entry in entries {
         let entry = entry.map_err(|e| format!("Failed to read directory entry: {e}"))?;
         let src_path = entry.path();
@@ -83,6 +85,6 @@ pub fn extract_bundled_llama_server<R: Runtime>(app: &AppHandle<R>, ai_dir: &Pat
         return Err(String::from("llama-server binary not found in bundled resources"));
     }
 
-    log::debug!("AI: copied {copied_count} files from bundled resources");
+    log::debug!("AI: copied {} from bundled resources", pluralize(copied_count, "file"));
     Ok(())
 }

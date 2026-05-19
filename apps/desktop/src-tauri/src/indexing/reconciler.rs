@@ -32,6 +32,7 @@ use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::pluralize::pluralize;
 
 // ── EventReconciler ──────────────────────────────────────────────────
 
@@ -52,6 +53,8 @@ const MAX_BUFFER_CAPACITY: usize = 500_000;
 mod unknown_path_skips {
     use std::sync::Mutex;
     use std::time::Instant;
+
+    use crate::pluralize::pluralize;
 
     const FLUSH_INTERVAL_SECS: u64 = 5;
     const SAMPLE_LEN: usize = 80;
@@ -101,7 +104,8 @@ mod unknown_path_skips {
             // Drop the lock before logging so the message format won't reenter under it.
             drop(guard);
             log::debug!(
-                "Reconciler: skipped {count} removals for unknown paths in {secs:.1}s [{total} total], sample: {sample}",
+                "Reconciler: skipped {} for unknown paths in {secs:.1}s [{total} total], sample: {sample}",
+                pluralize(count, "removal")
             );
         }
     }
@@ -143,8 +147,9 @@ impl EventReconciler {
         }
         if self.buffer.len() >= MAX_BUFFER_CAPACITY {
             log::warn!(
-                "Reconciler: buffer cap reached ({MAX_BUFFER_CAPACITY} events). \
-                 Dropping further events; a full rescan will run after the current scan."
+                "Reconciler: buffer cap reached ({}). \
+                 Dropping further events; a full rescan will run after the current scan.",
+                pluralize(MAX_BUFFER_CAPACITY, "event")
             );
             self.buffer_overflow = true;
             self.buffer.clear();
@@ -200,7 +205,10 @@ impl EventReconciler {
             let _ = writer.send(WriteMessage::UpdateLastEventId(last_event_id));
         }
 
-        log::info!("Reconciler: replayed {processed}/{total} events (last_event_id={last_event_id})");
+        log::info!(
+            "Reconciler: replayed {processed}/{} (last_event_id={last_event_id})",
+            pluralize(total, "event")
+        );
         Ok(last_event_id)
     }
 
@@ -1906,7 +1914,8 @@ mod tests {
         assert!(
             remaining == 0,
             "pending rescans should be drained after active rescan completes, \
-             but {remaining} paths remain"
+             but {} remain",
+            pluralize(remaining, "path")
         );
 
         writer.shutdown();

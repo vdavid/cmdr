@@ -20,6 +20,7 @@
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
+    import { pluralize } from '$lib/utils/pluralize'
     import { createViewerSearch } from './viewer-search.svelte'
     import { createViewerScroll } from './viewer-scroll.svelte'
     import { createTextWidthTracker } from './viewer-text-width.svelte'
@@ -264,10 +265,11 @@
         isIndexing = result.isIndexing
 
         log.debug(
-            'Opened file: {fileName}, {totalBytes} bytes, totalLines={totalLines}, estimatedTotalLines={estimatedTotalLines}, backend={backendType}, isIndexing={isIndexing}',
+            'Opened file: {fileName}, {totalBytes} {bytesNoun}, totalLines={totalLines}, estimatedTotalLines={estimatedTotalLines}, backend={backendType}, isIndexing={isIndexing}',
             {
                 fileName: result.fileName,
                 totalBytes: result.totalBytes,
+                bytesNoun: pluralize(result.totalBytes, 'byte'),
                 totalLines: result.totalLines,
                 estimatedTotalLines: result.estimatedTotalLines,
                 backendType: result.backendType,
@@ -284,7 +286,10 @@
             scroll.lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
         }
 
-        log.debug('Initial cache: {count} lines loaded', { count: result.initialLines.lines.length })
+        log.debug('Initial cache: {count} {linesNoun} loaded', {
+            count: result.initialLines.lines.length,
+            linesNoun: pluralize(result.initialLines.lines.length, 'line'),
+        })
 
         // For FullLoad files, fetch ALL lines so the height map can prepare them.
         // The initial chunk only contains ~200 lines, but FullLoad files are <1MB so
@@ -299,8 +304,9 @@
             const tFetch = performance.now()
             viewerGetLines(result.sessionId, 'line', startLine, remaining)
                 .then((chunk) => {
-                    log.debug('FullLoad fetch remaining {count} lines took {ms}ms', {
+                    log.debug('FullLoad fetch remaining {count} {linesNoun} took {ms}ms', {
                         count: chunk.lines.length,
+                        linesNoun: pluralize(chunk.lines.length, 'line'),
                         ms: Math.round(performance.now() - tFetch),
                     })
                     for (let i = 0; i < chunk.lines.length; i++) {

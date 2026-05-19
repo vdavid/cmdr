@@ -125,6 +125,17 @@ var AllChecks = []CheckDefinition{
 		Run:               RunErrorStringMatch,
 	},
 	{
+		ID:                "desktop-pluralize-noun",
+		Nickname:          "pluralize-noun",
+		DisplayName:       "pluralize-noun",
+		App:               AppDesktop,
+		Tech:              "📚 Docs",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Run:               RunPluralizeNoun,
+	},
+	{
 		ID:                "desktop-bindings-fresh",
 		Nickname:          "bindings-fresh",
 		DisplayName:       "bindings-fresh",

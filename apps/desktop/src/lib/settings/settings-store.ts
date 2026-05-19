@@ -8,6 +8,7 @@ import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
 import { getAppLogger } from '$lib/logging/logger'
+import { pluralize } from '$lib/utils/pluralize'
 import { commands } from '$lib/ipc/bindings'
 import type { SettingValue } from '$lib/ipc/bindings'
 
@@ -87,7 +88,10 @@ export async function initializeSettings(): Promise<void> {
     }
 
     // Load all settings into cache
-    log.debug('Loading {count} settings from store into cache', { count: settingsRegistry.length })
+    log.debug('Loading {count} {settingsNoun} from store into cache', {
+      count: settingsRegistry.length,
+      settingsNoun: pluralize(settingsRegistry.length, 'setting'),
+    })
     let loadedCount = 0
     let defaultCount = 0
 

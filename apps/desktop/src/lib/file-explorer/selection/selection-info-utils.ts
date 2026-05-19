@@ -200,10 +200,7 @@ export function isPermissionDenied(entry: FileEntry | null): boolean {
 // Selection summary utilities
 // ============================================================================
 
-/** Formats a count with proper singular/plural form */
-export function pluralize(count: number, singular: string, plural: string): string {
-  return count === 1 ? singular : plural
-}
+export { pluralize } from '$lib/utils/pluralize'
 
 /** Formats a number with thousands separators using en-US locale */
 export function formatNumber(n: number): string {
