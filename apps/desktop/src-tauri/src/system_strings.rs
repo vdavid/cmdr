@@ -41,6 +41,7 @@
 //! the user's preferred language during a session, and even when it does the
 //! cost of being one session behind is zero (relaunch picks up the change).
 
+#[cfg(target_os = "macos")]
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
@@ -121,6 +122,7 @@ pub fn expand(input: &str) -> String {
 
 /// One (bundle resource, key) tuple per field. Order doesn't matter; we just
 /// look up each independently and merge the misses with the English defaults.
+#[cfg(target_os = "macos")]
 struct StringSource {
     /// Absolute path to a `.loctable` (binary plist) inside a system bundle.
     loctable: &'static str,
@@ -135,6 +137,7 @@ struct StringSource {
 /// labels). The `Appearance.appex/InfoPlist.loctable` key `CFBundleDisplayName`
 /// is the bundle's own display name, which is what System Settings renders as
 /// the pane title.
+#[cfg(target_os = "macos")]
 struct StringCatalog {
     system_settings: StringSource,
     privacy_and_security: StringSource,
@@ -144,6 +147,7 @@ struct StringCatalog {
     appearance: StringSource,
 }
 
+#[cfg(target_os = "macos")]
 const CATALOG: StringCatalog = StringCatalog {
     system_settings: StringSource {
         loctable: "/System/Applications/System Settings.app/Contents/Resources/Localizable.loctable",
@@ -212,12 +216,12 @@ fn build_snapshot() -> LocalizedSystemStrings {
     // Stubs/Linux: the labels never reach the UI (the surfaces that use them
     // are macOS-only modals), but the snapshot exists so the IPC command
     // returns something sensible if a Linux harness calls it.
-    let _ = &CATALOG;
     LocalizedSystemStrings::english_defaults()
 }
 
 /// Parsed loctable: outer key is the language code (`en`, `hu`, `en_GB`,
 /// `pt-PT`, ...), inner map is `string_key → localized_value`.
+#[cfg(target_os = "macos")]
 type LoctableData = HashMap<String, HashMap<String, String>>;
 
 #[cfg(target_os = "macos")]
@@ -244,14 +248,10 @@ fn parse_loctable(path: &str) -> Option<LoctableData> {
     Some(out)
 }
 
-#[cfg(not(target_os = "macos"))]
-fn parse_loctable(_path: &str) -> Option<LoctableData> {
-    None
-}
-
 /// Picks the first language in `langs` whose loctable entry for `key` exists.
 /// Falls back to `en` last, so a missing target language still produces the
 /// canonical English string before bailing to `None`.
+#[cfg(target_os = "macos")]
 fn lookup_in_table(table: &LoctableData, langs: &[String], key: &str) -> Option<String> {
     for candidate in candidate_lang_codes(langs) {
         if let Some(inner) = table.get(&candidate)
@@ -268,6 +268,7 @@ fn lookup_in_table(table: &LoctableData, langs: &[String], key: &str) -> Option<
 /// candidates: the original, an `_`-normalized form (`en-GB` → `en_GB`), and
 /// the base language (`en-GB` → `en`). Duplicates are dropped while preserving
 /// order. `en` is appended at the end as a universal fallback.
+#[cfg(target_os = "macos")]
 fn candidate_lang_codes(preferred: &[String]) -> Vec<String> {
     let mut out: Vec<String> = Vec::with_capacity(preferred.len() * 3 + 1);
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -301,15 +302,11 @@ fn apple_languages() -> Vec<String> {
     array.iter().map(|s| s.to_string()).collect()
 }
 
-#[cfg(not(target_os = "macos"))]
-fn apple_languages() -> Vec<String> {
-    vec!["en".to_string()]
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn candidate_codes_handle_bcp47_to_underscore_and_base() {
         let out = candidate_lang_codes(&["en-GB".to_string(), "hu-HU".to_string()]);
@@ -325,12 +322,14 @@ mod tests {
         assert!(out.contains(&"en".to_string()));
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn candidate_codes_dedupe_when_base_matches_original() {
         let out = candidate_lang_codes(&["en".to_string()]);
         assert_eq!(out, vec!["en".to_string()]);
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn candidate_codes_always_include_english_fallback() {
         let out = candidate_lang_codes(&["fi".to_string()]);
@@ -347,6 +346,7 @@ mod tests {
         assert!(out.contains("{unknown_token}"));
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn lookup_in_table_walks_candidate_languages_in_order() {
         let mut table: LoctableData = HashMap::new();
