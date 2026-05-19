@@ -86,6 +86,13 @@
             onclose()
             return
         }
+        // When a button is focused (user Tab'd to it), let the browser activate
+        // that button on Enter instead of firing the dialog's default action.
+        // Without this, Tab'ing to Cancel and pressing Enter would still trigger
+        // Copy/Move/etc., which surprises users coming from Windows or the web.
+        if (event.key === 'Enter' && event.target instanceof HTMLButtonElement) {
+            return
+        }
         onkeydown?.(event)
     }
 

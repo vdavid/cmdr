@@ -1,6 +1,7 @@
 /**
  * Behavior tests for `ModalDialog.svelte`. Tier-3 a11y wiring lives in
- * `ModalDialog.a11y.test.ts`. This file covers focus restoration on close.
+ * `ModalDialog.a11y.test.ts`. This file covers focus restoration on close
+ * and the Enter-on-focused-button suppression.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -68,6 +69,52 @@ describe('ModalDialog focus restoration', () => {
     }).not.toThrow()
     await tick()
 
+    target.remove()
+  })
+})
+
+describe('ModalDialog Enter key', () => {
+  // Body containing both a button (Cancel) and an input. The test dispatches Enter
+  // from each and verifies the dialog's default-action handler only fires for the input.
+  const bodyWithControls = createRawSnippet(() => ({
+    render: () => `<div><button id="cancel-btn">Cancel</button><input id="path-input" /></div>`,
+  }))
+
+  it('suppresses the default action when Enter is pressed on a focused button', async () => {
+    const onkeydown = vi.fn()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ModalDialog, {
+      target,
+      props: { titleId: 't', title: titleSnippet, children: bodyWithControls, onkeydown },
+    })
+    await tick()
+
+    const cancelBtn = target.querySelector<HTMLButtonElement>('#cancel-btn')
+    if (!cancelBtn) throw new Error('cancel button not rendered')
+    cancelBtn.focus()
+    cancelBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+
+    expect(onkeydown).not.toHaveBeenCalled()
+    target.remove()
+  })
+
+  it('still fires the default action when Enter is pressed on a non-button element', async () => {
+    const onkeydown = vi.fn()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ModalDialog, {
+      target,
+      props: { titleId: 't', title: titleSnippet, children: bodyWithControls, onkeydown },
+    })
+    await tick()
+
+    const input = target.querySelector<HTMLInputElement>('#path-input')
+    if (!input) throw new Error('input not rendered')
+    input.focus()
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+
+    expect(onkeydown).toHaveBeenCalledTimes(1)
     target.remove()
   })
 })
