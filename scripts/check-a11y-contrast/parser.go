@@ -77,18 +77,37 @@ func ParseAppCSS(content string) *VarTable {
 	content = stripComments(content)
 	table := NewVarTable()
 
-	// Pull the dark-mode block out first so we don't accidentally eat it into
-	// the light-mode pass.
-	darkBody, darkStart, darkEnd := extractDarkModeBlock(content)
-	if darkStart >= 0 {
-		darkRoot := extractRootBlock(darkBody)
+	// Pull every `@media (prefers-color-scheme: dark)` block out first so we
+	// don't accidentally eat them into the light-mode pass. The codebase
+	// has multiple such blocks: one big one that overrides design tokens,
+	// plus smaller ones that only contain non-`:root` rules (selectors like
+	// `.cmdr-tooltip` or a fallback `data-pane-tint` switch). We extract
+	// every block's `:root` contents into `table.Dark`, then blank out the
+	// whole `@media` so the light loop doesn't see it.
+	for {
+		darkBody, darkStart, darkEnd := extractDarkModeBlock(content)
+		if darkStart < 0 {
+			break
+		}
+		// Strip any `@supports not (...)` blocks INSIDE the dark body first
+		// (the dark `@supports not` carries the old-WebKit fallback hexes;
+		// we want the color-mix formulas from the dark main `:root`).
+		cleanDark := stripSupportsNotBlocks(darkBody)
+		darkRoot := extractRootBlock(cleanDark)
 		extractVarDefs(darkRoot, table.Dark)
 
 		// Replace the dark block with an equivalent number of spaces so that
-		// line numbers don't shift (not strictly needed, but tidy) and so the
-		// next pass doesn't see it.
+		// line numbers don't shift (not strictly needed, but tidy) and so
+		// the next iteration / next pass doesn't see it.
 		content = content[:darkStart] + strings.Repeat(" ", darkEnd-darkStart) + content[darkEnd:]
 	}
+
+	// Strip top-level `@supports not (...)` blocks too — these carry the
+	// old-WebKit fallback hexes that, without this strip, would overwrite the
+	// modern `color-mix(...)` formulas from the main `:root` (last writer
+	// wins in `extractVarDefs`). The check models modern WebKit; the
+	// fallbacks are a separate concern verified by `check-css-fallbacks`.
+	content = stripSupportsNotBlocks(content)
 
 	// Now parse all `:root { ... }` blocks remaining (light mode).
 	for {
@@ -101,6 +120,36 @@ func ParseAppCSS(content string) *VarTable {
 	}
 
 	return table
+}
+
+// stripSupportsNotBlocks replaces every `@supports not (...) { ... }` body
+// with whitespace so subsequent `:root` extraction sees only the
+// always-applies declarations. We assume the cmdr convention: `@supports not`
+// blocks carry old-WebKit hex fallbacks for the same vars the main `:root`
+// defines via `color-mix(...)`. Without this strip, the fallbacks would
+// overwrite the formulas in the parser's last-writer-wins var table.
+func stripSupportsNotBlocks(s string) string {
+	out := s
+	for {
+		// Find the start of the next `@supports not (...)` rule.
+		idx := strings.Index(out, "@supports not")
+		if idx < 0 {
+			return out
+		}
+		// Find the opening `{` after the condition.
+		brace := strings.IndexByte(out[idx:], '{')
+		if brace < 0 {
+			return out
+		}
+		open := idx + brace
+		end := matchingBrace(out, open)
+		if end < 0 {
+			return out
+		}
+		// Replace from `@supports` to the closing `}` with spaces so byte
+		// offsets / line numbers don't shift.
+		out = out[:idx] + strings.Repeat(" ", end-idx+1) + out[end+1:]
+	}
 }
 
 func stripComments(s string) string {

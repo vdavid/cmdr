@@ -83,6 +83,17 @@ func main() {
 	// combo explicitly. See `size_tiers.go` for the context list.
 	allFindings = append(allFindings, analyzer.AnalyzeSizeTiers()...)
 
+	// File-list selected-row text colors (`--color-selection-fg` and the
+	// `--color-size-*-selected` tiers) are set on different selectors from
+	// the row bg (which depends on pane tint + stripe + cursor state + the
+	// active macOS accent). The rule walker never pairs them. See
+	// `row_state_matrix.go` for the composition.
+	allFindings = append(allFindings, analyzer.AnalyzeRowStates()...)
+
+	// Secondary text inside an accent-bg ancestor (the highlighted dropdown
+	// option's description, today). See `dropdown_states.go` for the list.
+	allFindings = append(allFindings, analyzer.AnalyzeDropdownStates()...)
+
 	violations := FilterViolations(allFindings)
 	warnings := append([]string{}, analyzer.Warnings...)
 	for _, f := range allFindings {
