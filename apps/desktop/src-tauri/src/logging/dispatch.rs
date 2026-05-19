@@ -152,7 +152,12 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
         .level(log::LevelFilter::Trace)
         // Live verbose-toggle gate: drops anything below the current AtomicU8.
         .filter(|metadata| metadata.level() <= stdout_threshold())
-        .chain(std::io::stderr());
+        // Stderr writes can fail with `BrokenPipe` (parent process closed the
+        // inherited fd, or our stdout is piped into a reader that already exited).
+        // Without the wrapper, fern's fallback path would re-attempt stderr,
+        // also fail, and panic — killing the tokio task that happened to be
+        // logging. See `BrokenPipeTolerantWriter` doc for the longer story.
+        .chain(Box::new(BrokenPipeTolerantWriter(std::io::stderr())) as Box<dyn Write + Send>);
 
     // Default noise suppression, applied to the stdout chain only. The file chain
     // intentionally keeps these at Debug so error reports include them.
@@ -238,6 +243,43 @@ fn parse_level_filter(s: &str) -> Option<log::LevelFilter> {
         "error" => Some(log::LevelFilter::Error),
         "off" => Some(log::LevelFilter::Off),
         _ => None,
+    }
+}
+
+/// `Write` adapter that silently absorbs `BrokenPipe` errors so the logger never
+/// panics when stderr is closed under us.
+///
+/// **Why**: fern's chain target receives a `Box<dyn Write + Send>`. On every record
+/// fern calls `write_all(...)`; if that returns `Err`, fern falls back to a direct
+/// `std::io::stderr()` write, and if THAT also fails fern calls `panic!`. When the
+/// process inherited stderr from a parent that has since exited (Cmdr launched from
+/// Terminal, terminal window closed) or from a pipe whose reader hung up
+/// (`Cmdr 2>&1 | head -n 1`), every subsequent log call would tear down the calling
+/// task — visible to the user as a "task panicked" dialog.
+///
+/// **What**: any `BrokenPipe` (`ErrorKind::BrokenPipe`) on `write` or `flush` is
+/// reported as success (consuming the whole buffer). Other errors propagate
+/// unchanged — full-disk, permission-denied, etc. shouldn't be silently swallowed,
+/// because they'd hide real bugs in any writer this wrapper might end up wrapping in
+/// future. The file chain is independent and keeps working when stderr is dead; the
+/// dropped stderr lines are intentional (no one is reading them anyway).
+struct BrokenPipeTolerantWriter<W: Write>(W);
+
+impl<W: Write> Write for BrokenPipeTolerantWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        match self.0.write(buf) {
+            Ok(n) => Ok(n),
+            Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => Ok(buf.len()),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        match self.0.flush() {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -505,6 +547,66 @@ mod tests {
         ] {
             assert_eq!(level_filter_from_u8(f as u8), f);
         }
+    }
+
+    /// Stderr is the stdout chain's destination. When the parent process closes the
+    /// inherited fd — power user launches Cmdr from Terminal then closes the window,
+    /// or pipes Cmdr's output and the receiver exits early — writes start failing with
+    /// `BrokenPipe`. Without this wrapper, fern would fall back to a direct
+    /// `std::io::stderr()` write (same broken fd, same failure) and `panic!`. Every
+    /// tokio task that logs after that point dies with the fern message visible to the
+    /// user as a "task panicked" dialog.
+    #[test]
+    fn broken_pipe_tolerant_swallows_broken_pipe_on_write() {
+        struct AlwaysBrokenPipe;
+        impl Write for AlwaysBrokenPipe {
+            fn write(&mut self, _buf: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::from(std::io::ErrorKind::BrokenPipe))
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Err(std::io::Error::from(std::io::ErrorKind::BrokenPipe))
+            }
+        }
+        let mut w = BrokenPipeTolerantWriter(AlwaysBrokenPipe);
+        // write_all is what fern calls on the chain target. It loops over `write`
+        // until everything is consumed; the wrapper claims success on every byte.
+        let result = w.write_all(b"the wire is closed but log() must not panic");
+        assert!(result.is_ok(), "BrokenPipe must be swallowed: {result:?}");
+        let flush = w.flush();
+        assert!(flush.is_ok(), "BrokenPipe on flush must also be swallowed: {flush:?}");
+    }
+
+    /// Non-BrokenPipe failures must still propagate. A wrapper that swallows every error
+    /// would mask a genuine bug (full disk, permission denied) in some future writer
+    /// the same chain target wraps.
+    #[test]
+    fn broken_pipe_tolerant_propagates_other_io_errors() {
+        struct AlwaysPermissionDenied;
+        impl Write for AlwaysPermissionDenied {
+            fn write(&mut self, _buf: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+            }
+        }
+        let mut w = BrokenPipeTolerantWriter(AlwaysPermissionDenied);
+        let result = w.write(b"x");
+        assert!(matches!(result, Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied));
+        let flush = w.flush();
+        assert!(matches!(flush, Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied));
+    }
+
+    /// Healthy writes pass through unchanged.
+    #[test]
+    fn broken_pipe_tolerant_passes_through_healthy_writes() {
+        use std::sync::Arc;
+        let buf: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
+        let mut w = BrokenPipeTolerantWriter(SharedBufferWriter(buf.clone()));
+        w.write_all(b"hello").expect("healthy write must succeed");
+        w.flush().expect("healthy flush must succeed");
+        let guard = buf.lock().unwrap();
+        assert_eq!(&*guard, b"hello");
     }
 
     #[test]
