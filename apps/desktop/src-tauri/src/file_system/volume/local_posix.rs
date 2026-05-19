@@ -550,6 +550,11 @@ impl Volume for LocalPosixVolume {
             .unwrap();
             flush_res.map_err(VolumeError::from)?;
 
+            // No `notify_mutation` call here: `LocalPosixVolume`'s mutation
+            // methods (create_file/delete/rename) all rely on FSEvents to
+            // patch the cache, and FSEvents is reliable on local FS. The
+            // SMB / MTP overrides need it because their out-of-band
+            // notification channels can lose events; we don't.
             Ok(bytes_written)
         })
     }

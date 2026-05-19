@@ -787,10 +787,21 @@ impl Volume for MtpVolume {
                 chunks.push(bytes::Bytes::from(data));
             }
 
-            connection_manager()
+            let bytes_written = connection_manager()
                 .upload_from_chunks(&self.device_id, self.storage_id, &dest_folder, &filename, size, chunks)
                 .await
-                .map_err(map_mtp_error)
+                .map_err(map_mtp_error)?;
+
+            // Patch the listing cache from local knowledge so the destination
+            // pane sees the new file immediately. The MTP USB event loop is
+            // unreliable for self-mutations (many devices emit no events at
+            // all), so without this the cache would only catch up on the
+            // next manual refresh.
+            if let Some(parent) = dest.parent() {
+                self.notify_mutation(&self.volume_id, parent, MutationEvent::Created(filename))
+                    .await;
+            }
+            Ok(bytes_written)
         })
     }
 }

@@ -1888,94 +1888,112 @@ impl Volume for SmbVolume {
             // instead of 4). Small files are the hot case; we fall through
             // to the streaming writer for anything larger or when the source
             // returns short.
-            if size > 0 {
-                let max_write = conn.params().map(|p| p.max_write_size).unwrap_or(65536) as u64;
-                if size <= max_write {
-                    let mut buffer = Vec::with_capacity(size as usize);
-                    while let Some(chunk_result) = stream.next_chunk().await {
-                        let chunk = chunk_result?;
-                        buffer.extend_from_slice(&chunk);
-                        // Fire progress per chunk AND honor cancellation, so
-                        // the fast-path has the same cancel/progress contract
-                        // as the streaming fallback below. Cancel here aborts
-                        // before the compound WRITE touches the wire: the
-                        // destination never sees a partial file.
-                        if on_progress(buffer.len() as u64, size).is_break() {
-                            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+            let bytes_written = 'write: {
+                if size > 0 {
+                    let max_write = conn.params().map(|p| p.max_write_size).unwrap_or(65536) as u64;
+                    if size <= max_write {
+                        let mut buffer = Vec::with_capacity(size as usize);
+                        while let Some(chunk_result) = stream.next_chunk().await {
+                            let chunk = chunk_result?;
+                            buffer.extend_from_slice(&chunk);
+                            // Fire progress per chunk AND honor cancellation, so
+                            // the fast-path has the same cancel/progress contract
+                            // as the streaming fallback below. Cancel here aborts
+                            // before the compound WRITE touches the wire: the
+                            // destination never sees a partial file.
+                            if on_progress(buffer.len() as u64, size).is_break() {
+                                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                            }
                         }
-                    }
-                    if buffer.len() as u64 == size {
+                        if buffer.len() as u64 == size {
+                            debug!(
+                                "SmbVolume::write_from_stream: using compound fast-path ({} bytes)",
+                                buffer.len()
+                            );
+                            let mut conn = conn;
+                            let write_result = tree.write_file_compound(&mut conn, &smb_path, &buffer).await;
+                            break 'write self.handle_smb_result("write_from_stream(compound)", write_result)?;
+                        }
+                        // Size mismatch: feed the already-drained buffer through
+                        // the streaming writer on the same cloned connection.
+                        // No lock acquired; this is the rare path.
                         debug!(
-                            "SmbVolume::write_from_stream: using compound fast-path ({} bytes)",
-                            buffer.len()
+                            "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {}; falling back to streaming writer",
+                            buffer.len(),
+                            size
                         );
-                        let mut conn = conn;
-                        let write_result = tree.write_file_compound(&mut conn, &smb_path, &buffer).await;
-                        let bytes_written = self.handle_smb_result("write_from_stream(compound)", write_result)?;
-                        return Ok(bytes_written);
+                        let writer_result = tree.create_file_writer(conn, &smb_path).await;
+                        let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
+                        if !buffer.is_empty() {
+                            let write_result = writer.write_chunk(&buffer).await;
+                            self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
+                        }
+                        // The source signalled end-of-stream by returning None
+                        // above (we exited the drain loop). No further chunks.
+                        let finish_result = writer.finish().await;
+                        self.handle_smb_result("write_from_stream(finish)", finish_result)?;
+                        break 'write buffer.len() as u64;
                     }
-                    // Size mismatch: feed the already-drained buffer through
-                    // the streaming writer on the same cloned connection.
-                    // No lock acquired; this is the rare path.
-                    debug!(
-                        "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {}; falling back to streaming writer",
-                        buffer.len(),
-                        size
-                    );
-                    let writer_result = tree.create_file_writer(conn, &smb_path).await;
-                    let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
-                    if !buffer.is_empty() {
-                        let write_result = writer.write_chunk(&buffer).await;
-                        self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
-                    }
-                    // The source signalled end-of-stream by returning None
-                    // above (we exited the drain loop). No further chunks.
-                    let finish_result = writer.finish().await;
-                    self.handle_smb_result("write_from_stream(finish)", finish_result)?;
-                    return Ok(buffer.len() as u64);
                 }
+
+                // Streaming path for large / unknown-size writes. Drives the
+                // owned `FileWriter` on the cloned `Connection` directly —
+                // no client mutex is held while WRITEs are in flight, so N
+                // concurrent large copies pipeline over one SMB session.
+                let writer_result = tree.create_file_writer(conn, &smb_path).await;
+                let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
+
+                let mut bytes_read = 0u64;
+
+                while let Some(chunk_result) = stream.next_chunk().await {
+                    let chunk = chunk_result?;
+                    if chunk.is_empty() {
+                        continue;
+                    }
+
+                    let write_result = writer.write_chunk(&chunk).await;
+                    self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
+
+                    bytes_read += chunk.len() as u64;
+
+                    if on_progress(bytes_read, size) == std::ops::ControlFlow::Break(()) {
+                        // Abort drains in-flight WRITE responses and closes the
+                        // handle without the server-side fsync that `finish()`
+                        // would force (we're about to delete the partial file
+                        // anyway). Dropping directly would leave stale responses
+                        // on the connection and poison the next op.
+                        let _ = writer.abort().await;
+                        // Best-effort delete of the partial file on its own
+                        // cloned connection (the writer's connection is gone).
+                        if let Ok((tree_for_delete, mut conn_for_delete)) = self.clone_session().await {
+                            let _ = tree_for_delete.delete_file(&mut conn_for_delete, &smb_path).await;
+                        }
+                        return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                    }
+                }
+
+                let finish_result = writer.finish().await;
+                self.handle_smb_result("write_from_stream(finish)", finish_result)?;
+
+                bytes_read
+            };
+
+            // Patch the listing cache from local knowledge so the destination
+            // pane sees the new file without waiting for a CHANGE_NOTIFY
+            // round-trip. The SMB watcher has a loss window between
+            // consecutive `next_events()` calls; relying on it alone left
+            // bulk cross-volume copies showing only a subset of the just-
+            // copied files until the user navigated away and back.
+            if let (Some(parent), Some(name)) = (dest.parent(), dest.file_name()) {
+                let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+                self.notify_mutation(
+                    &self.volume_id,
+                    &parent_display,
+                    super::MutationEvent::Created(name.to_string_lossy().to_string()),
+                )
+                .await;
             }
-
-            // Streaming path for large / unknown-size writes. Drives the
-            // owned `FileWriter` on the cloned `Connection` directly —
-            // no client mutex is held while WRITEs are in flight, so N
-            // concurrent large copies pipeline over one SMB session.
-            let writer_result = tree.create_file_writer(conn, &smb_path).await;
-            let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
-
-            let mut bytes_read = 0u64;
-
-            while let Some(chunk_result) = stream.next_chunk().await {
-                let chunk = chunk_result?;
-                if chunk.is_empty() {
-                    continue;
-                }
-
-                let write_result = writer.write_chunk(&chunk).await;
-                self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
-
-                bytes_read += chunk.len() as u64;
-
-                if on_progress(bytes_read, size) == std::ops::ControlFlow::Break(()) {
-                    // Abort drains in-flight WRITE responses and closes the
-                    // handle without the server-side fsync that `finish()`
-                    // would force (we're about to delete the partial file
-                    // anyway). Dropping directly would leave stale responses
-                    // on the connection and poison the next op.
-                    let _ = writer.abort().await;
-                    // Best-effort delete of the partial file on its own
-                    // cloned connection (the writer's connection is gone).
-                    if let Ok((tree_for_delete, mut conn_for_delete)) = self.clone_session().await {
-                        let _ = tree_for_delete.delete_file(&mut conn_for_delete, &smb_path).await;
-                    }
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
-                }
-            }
-
-            let finish_result = writer.finish().await;
-            self.handle_smb_result("write_from_stream(finish)", finish_result)?;
-
-            Ok(bytes_read)
+            Ok(bytes_written)
         })
     }
 
