@@ -102,6 +102,9 @@ Only add JSDoc that actually adds info. No tautologies.
 ### Rust
 
 - Max 120 char lines, 4-space indent, cognitive complexity threshold: 15, enforced by clippy.
+- Wrap comments (`//`, `///`, `//!`) at 100 chars. Stable `rustfmt` doesn't enforce this (it's a manual convention). To
+  bulk-reflow, run nightly `rustfmt` once with `unstable_features = true`, `wrap_comments = true`, `comment_width = 100`
+  in `rustfmt.toml`, then revert the config.
 
 ### CSS
 
