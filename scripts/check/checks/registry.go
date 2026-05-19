@@ -239,6 +239,16 @@ var AllChecks = []CheckDefinition{
 		Run:         RunA11yContrast,
 	},
 	{
+		ID:          "desktop-svelte-btn-restyle",
+		Nickname:    "btn-restyle",
+		DisplayName: "btn-restyle",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   []string{"desktop-svelte-stylelint"},
+		IsFast:      true,
+		Run:         RunBtnRestyle,
+	},
+	{
 		ID:          "desktop-svelte-a11y-coverage",
 		Nickname:    "a11y-coverage",
 		DisplayName: "a11y-coverage",

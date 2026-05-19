@@ -115,7 +115,7 @@ Three cadences. Pick the one that matches where you are in the work, not the one
   exclusive with `--include-slow` / `--only-slow`. Covers:
   - All formatters (`oxfmt`, `rustfmt`, `gofmt`) and most non-compiling static linters (`cfg-gate`, `log-error-macro`,
     `error-string-match`, `ipc-enum-camelcase`, `cargo-machete`, `knip`, `import-cycles`, `type-drift`, `stylelint`,
-    `css-unused`, `a11y-contrast`, `a11y-coverage`, `e2e-linux-typecheck`).
+    `css-unused`, `a11y-contrast`, `btn-restyle`, `a11y-coverage`, `e2e-linux-typecheck`).
   - Go: `go-vet`, `staticcheck`, `ineffassign`, `misspell`, `gocyclo`, `go-tests`.
   - API server: `typecheck`, `tests`.
   - Website: `html-validate` (self-skips when `dist/` is absent).
