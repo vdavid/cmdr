@@ -15,6 +15,10 @@ type Resolver struct {
 	Vars *VarTable
 	// seen guards against variable recursion within a single resolution.
 	seen map[string]bool
+	// Deps records every var name visited during resolution. The accent
+	// matrix in accent_matrix.go consults this to decide whether a pair
+	// needs to be re-evaluated under runtime accent overrides.
+	Deps map[string]bool
 	// Warnings accumulates non-fatal issues (oklch skips, unresolved vars
 	// treated as opaque fallbacks, etc.) encountered during resolution.
 	Warnings []string
@@ -28,6 +32,7 @@ func NewResolver(vars *VarTable, mode Mode) *Resolver {
 		Vars:        vars,
 		CurrentMode: mode,
 		seen:        make(map[string]bool),
+		Deps:        make(map[string]bool),
 	}
 }
 
@@ -83,6 +88,7 @@ func (r *Resolver) resolveVar(value string) (RGBA, error) {
 
 	name := strings.TrimSpace(args[0])
 	name = strings.TrimPrefix(name, "--")
+	r.Deps[name] = true
 
 	// Resolve the variable if defined.
 	raw, ok := r.Vars.Raw(name, r.CurrentMode)

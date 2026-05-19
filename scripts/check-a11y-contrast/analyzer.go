@@ -22,6 +22,11 @@ type Finding struct {
 	FontWeight  int
 	Placeholder bool
 	Warnings    []string
+	// AccentVariant is set when this finding was produced by the accent
+	// matrix overriding `--color-accent` to a runtime variant (for example,
+	// "blue"). Empty when the pair was evaluated with the static app.css
+	// fallback only.
+	AccentVariant string
 }
 
 // Analyzer runs per-file: for each rule that sets both color and background
@@ -125,10 +130,17 @@ func (a *Analyzer) analyzeFileForMode(pf *ParsedFile, mode Mode) []Finding {
 		}
 		isPlaceholder := rule.Pseudo == "placeholder"
 		if f, ok := a.evaluate(pf.Path, rule.Line, rule.Selector, st.color, st.background, st.fontSize, st.fontWeight, isPlaceholder, mode); ok {
-			if _, seen := latest[key]; !seen {
-				order = append(order, key)
+			// Key findings by selector (not cascade state) so distinct
+			// pseudo-class states like `.btn-primary` and
+			// `.btn-primary:hover` emit separate verdicts. Hover renders
+			// as a distinct visual state, and a low-contrast resting bg
+			// is just as bad as a low-contrast hover bg. Collapsing them
+			// hides the worse of the two.
+			fk := rule.Selector
+			if _, seen := latest[fk]; !seen {
+				order = append(order, fk)
 			}
-			latest[key] = f
+			latest[fk] = f
 		}
 	}
 
@@ -224,25 +236,58 @@ func applyRule(rule *Rule, st *classState) {
 }
 
 func (a *Analyzer) evaluate(file string, line int, selector, colorExpr, bgExpr string, fontPx float64, fontWeight int, isPlaceholder bool, mode Mode) (Finding, bool) {
-	fgRes := NewResolver(a.Vars, mode)
+	base, accentDep, ok := a.evaluateAt(a.Vars, file, line, selector, colorExpr, bgExpr, fontPx, fontWeight, isPlaceholder, mode)
+	if !ok {
+		return Finding{}, false
+	}
+
+	if !accentDep {
+		return base, true
+	}
+
+	// Sweep the accent matrix and keep the worst-case finding. We use the
+	// base finding (default accent) as the starting worst.
+	worst := base
+	for _, variant := range AccentVariants {
+		if variant.IsDefault {
+			continue
+		}
+		vars := withAccentOverride(a.Vars, variant)
+		alt, _, altOk := a.evaluateAt(vars, file, line, selector, colorExpr, bgExpr, fontPx, fontWeight, isPlaceholder, mode)
+		if !altOk {
+			continue
+		}
+		if alt.Ratio < worst.Ratio {
+			alt.AccentVariant = variant.Name
+			worst = alt
+		}
+	}
+	return worst, true
+}
+
+// evaluateAt runs one (vars, mode) pass. Returns the finding, whether the
+// resolution depended on `--color-accent` (so the caller can decide whether
+// to sweep the matrix), and ok=false on resolver error.
+func (a *Analyzer) evaluateAt(vars *VarTable, file string, line int, selector, colorExpr, bgExpr string, fontPx float64, fontWeight int, isPlaceholder bool, mode Mode) (Finding, bool, bool) {
+	fgRes := NewResolver(vars, mode)
 	fg, err := fgRes.Resolve(colorExpr)
 	if err != nil {
 		a.Warnings = append(a.Warnings, fmt.Sprintf("%s:%d [%s] fg %q (%s): %v", file, line, selector, colorExpr, mode, err))
-		return Finding{}, false
+		return Finding{}, false, false
 	}
-	bgRes := NewResolver(a.Vars, mode)
+	bgRes := NewResolver(vars, mode)
 	bg, err := bgRes.Resolve(bgExpr)
 	if err != nil {
 		a.Warnings = append(a.Warnings, fmt.Sprintf("%s:%d [%s] bg %q (%s): %v", file, line, selector, bgExpr, mode, err))
-		return Finding{}, false
+		return Finding{}, false, false
 	}
 
 	// Composite bg over `--color-bg-primary` if translucent. Same for fg
 	// (fg-on-translucent-bg is rare but can happen when color-mix uses
 	// `transparent` on the fg side).
 	if !bg.Opaque() {
-		primaryRes := NewResolver(a.Vars, mode)
-		if raw, ok := a.Vars.Raw("color-bg-primary", mode); ok {
+		primaryRes := NewResolver(vars, mode)
+		if raw, ok := vars.Raw("color-bg-primary", mode); ok {
 			if solid, err := primaryRes.Resolve(raw); err == nil {
 				bg = CompositeOver(bg, solid)
 			} else {
@@ -266,6 +311,8 @@ func (a *Analyzer) evaluate(file string, line int, selector, colorExpr, bgExpr s
 	warnings := append([]string{}, fgRes.Warnings...)
 	warnings = append(warnings, bgRes.Warnings...)
 
+	accentDep := dependsOnAccent(fgRes.Deps) || dependsOnAccent(bgRes.Deps)
+
 	return Finding{
 		File:        file,
 		Line:        line,
@@ -280,7 +327,7 @@ func (a *Analyzer) evaluate(file string, line int, selector, colorExpr, bgExpr s
 		FontWeight:  fontWeight,
 		Placeholder: isPlaceholder,
 		Warnings:    warnings,
-	}, true
+	}, accentDep, true
 }
 
 // FilterViolations returns only the findings that failed their threshold.

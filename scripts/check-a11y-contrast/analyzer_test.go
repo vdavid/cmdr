@@ -40,8 +40,13 @@ func TestAnalyzerInheritsCompoundSelectorBg(t *testing.T) {
 	a := NewAnalyzer(vars)
 	findings := a.AnalyzeFile(pf)
 
+	// The analyzer reports the worst-case finding across the runtime accent
+	// matrix (see accent_matrix.go), and purple is the worst variant for
+	// `#1a1a1a`-on-accent. The test still verifies cascade inheritance: a bg
+	// of #a54fa7 means `.item.sub.selected` correctly inherited
+	// `var(--color-accent)` from `.item.selected` and resolved it.
 	want := map[string]map[Mode]string{
-		".item.sub.selected": {ModeLight: "#d4a006", ModeDark: "#ffc206"},
+		".item.sub.selected": {ModeLight: "#a54fa7", ModeDark: "#a54fa7"},
 	}
 	for _, f := range findings {
 		if m, ok := want[f.Selector]; ok {

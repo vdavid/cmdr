@@ -39,15 +39,22 @@ both a text color and a background, the tool:
 3. Composites translucent colors over `--color-bg-primary`.
 4. Computes WCAG 2.2 contrast ratio for light and dark mode separately.
 5. Flags pairs below 4.5:1 (normal text) or 3:1 (large text: ≥24px, or ≥18.66px with weight ≥700).
+6. **Accent matrix**: for any pair whose resolution depends on `--color-accent` (directly or via a derived token like
+   `--color-accent-hover`, `--color-accent-text`, `--color-age-*`, `--color-size-*`), re-evaluates under every runtime
+   accent variant `accent-color.ts` can produce (the 8 macOS system accents + Cmdr gold), and reports the worst case.
+   The variant name is shown in the violation line as `accent=<name>`. Without this pass, the check would only validate
+   the static `app.css` fallback (`#d4a006`) and silently miss issues that surface when the user's macOS accent is Apple
+   Blue, Purple, Graphite, etc. See `accent_matrix.go` for the variant list.
 
 ## Output
 
 ```
 apps/desktop/src/lib/ui/Button.svelte:97  .btn-danger:hover:not(:disabled)  mode=light  fg=#d32f2f  bg=#fbeaea  ratio=4.28  need=4.5  delta=-0.22
+apps/desktop/src/lib/ui/Button.svelte:68  .btn-primary                      mode=light  accent=purple  fg=#1a1a1a  bg=#a54fa7  ratio=3.54  need=4.5  delta=-0.96
 ```
 
-Each line is: `file:line`, selector, mode, resolved fg hex, resolved bg hex, actual ratio, required threshold, and the
-delta (how much contrast is missing).
+Each line is: `file:line`, selector, mode, optional `accent=<name>` (set when the worst case came from the accent
+matrix), resolved fg hex, resolved bg hex, actual ratio, required threshold, and the delta.
 
 ## Scope and limitations
 

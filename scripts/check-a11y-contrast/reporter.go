@@ -39,11 +39,15 @@ func Report(violations []Finding, warnings []string, rootDir string, verbose boo
 			if v.Placeholder {
 				tag = " [placeholder]"
 			}
+			accent := ""
+			if v.AccentVariant != "" {
+				accent = fmt.Sprintf("  accent=%s", v.AccentVariant)
+			}
 			fmt.Printf(
-				"  %s%s:%d%s  %s%s%s  mode=%s  fg=%s  bg=%s  ratio=%.2f  need=%.1f  delta=-%.2f%s\n",
+				"  %s%s:%d%s  %s%s%s  mode=%s%s  fg=%s  bg=%s  ratio=%.2f  need=%.1f  delta=-%.2f%s\n",
 				colorRed, RelPath(rootDir, v.File), v.Line, colorReset,
 				colorDim, v.Selector, colorReset,
-				v.Mode,
+				v.Mode, accent,
 				v.FG.Hex(), v.BG.Hex(),
 				v.Ratio, v.Threshold, delta,
 				tag,
