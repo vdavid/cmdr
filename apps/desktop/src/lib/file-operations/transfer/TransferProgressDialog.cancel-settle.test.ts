@@ -167,7 +167,7 @@ describe('TransferProgressDialog cancel-settle gate (M4)', () => {
       expect(onCancelled, 'onCancelled fires after settle + min-display gate').toHaveBeenCalledTimes(1)
       expect(onCancelled).toHaveBeenCalledWith(3)
 
-      unmount(component)
+      void unmount(component)
     } finally {
       vi.useRealTimers()
     }
@@ -196,7 +196,7 @@ describe('TransferProgressDialog cancel-settle gate (M4)', () => {
       expect(onCancelled, 'onCancelled fires once both events have landed').toHaveBeenCalledTimes(1)
       expect(onCancelled).toHaveBeenCalledWith(7)
 
-      unmount(component)
+      void unmount(component)
     } finally {
       vi.useRealTimers()
     }
@@ -213,13 +213,13 @@ describe('TransferProgressDialog cancel-settle gate (M4)', () => {
         filesProcessed: 5,
         filesSkipped: 0,
         bytesProcessed: 1234,
-      } as WriteCompleteEvent)
+      })
       await tick()
       vi.advanceTimersByTime(450)
       await tick()
       expect(onComplete, 'complete path is unchanged by M4 (closes on min-display gate)').toHaveBeenCalledTimes(1)
       expect(onComplete).toHaveBeenCalledWith(5, 0, 1234)
-      unmount(component)
+      void unmount(component)
     } finally {
       vi.useRealTimers()
     }
@@ -242,7 +242,7 @@ describe('TransferProgressDialog cancel-settle gate (M4)', () => {
       vi.advanceTimersByTime(450)
       await tick()
       expect(onCancelled, 'foreign op id must not close this dialog').not.toHaveBeenCalled()
-      unmount(component)
+      void unmount(component)
     } finally {
       vi.useRealTimers()
     }

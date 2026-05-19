@@ -69,7 +69,7 @@ export function mixSrgb(a: string, b: string, t: number): string {
  */
 export function withAlpha(hex: string, alpha: number): string {
   const { r, g, b } = parseHex(hex)
-  return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`
+  return `rgba(${String(Math.round(r))}, ${String(Math.round(g))}, ${String(Math.round(b))}, ${String(alpha)})`
 }
 
 /**
