@@ -91,6 +91,30 @@ impl MtpVolume {
         // Strip leading slash if present
         path_str.strip_prefix('/').unwrap_or(&path_str).to_string()
     }
+
+    /// Normalizes any caller-supplied path on this volume to the canonical
+    /// absolute MTP URL (`mtp://{device_id}/{storage_id}[/inner/path]`).
+    ///
+    /// `notify_directory_changed` matches `LISTING_CACHE` entries by exact path
+    /// equality. Cached listings always store the absolute URL form because
+    /// pane navigation feeds the URL into the listing pipeline. Write/delete
+    /// callers, however, may hand us a volume-relative path (e.g. `/file-a.txt`
+    /// after the cross-volume copy orchestrator does `dest_path.join(name)`
+    /// with `dest_path = "/"`). Without this conversion the lookup misses
+    /// every time and the cache patch is silently dropped, leaving the
+    /// destination pane stale until the lossy MTP event loop catches up.
+    fn to_url_path(&self, path: &Path) -> PathBuf {
+        let path_str = path.to_string_lossy();
+        if path_str.starts_with("mtp://") {
+            return path.to_path_buf();
+        }
+        let inner = self.to_mtp_path(path);
+        if inner.is_empty() {
+            self.root.clone()
+        } else {
+            self.root.join(inner)
+        }
+    }
 }
 
 impl Volume for MtpVolume {
@@ -256,12 +280,17 @@ impl Volume for MtpVolume {
         Box::pin(async move {
             use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
 
+            // Normalize once so every branch (incl. get_metadata's parent
+            // lookup) sees the canonical absolute MTP URL. Callers happily
+            // hand us either form depending on which layer they came from.
+            let parent_url = self.to_url_path(parent_path);
+            let parent_ref = parent_url.as_path();
             // MTP's get_metadata lists the parent dir to find the entry, which is expensive
             // but correct. The MTP event loop (connection/event_loop.rs) also handles
             // change notifications, so this is belt-and-suspenders for self-mutations.
             match mutation {
                 MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
-                    let entry_path = parent_path.join(name);
+                    let entry_path = parent_ref.join(name);
                     match self.get_metadata(&entry_path).await {
                         Ok(entry) => {
                             let change = if matches!(mutation, MutationEvent::Created(_)) {
@@ -269,7 +298,7 @@ impl Volume for MtpVolume {
                             } else {
                                 DirectoryChange::Modified(entry)
                             };
-                            notify_directory_changed(&self.volume_id, parent_path, change);
+                            notify_directory_changed(&self.volume_id, parent_ref, change);
                         }
                         Err(e) => {
                             debug!(
@@ -281,15 +310,15 @@ impl Volume for MtpVolume {
                     }
                 }
                 MutationEvent::Deleted(name) => {
-                    notify_directory_changed(&self.volume_id, parent_path, DirectoryChange::Removed(name));
+                    notify_directory_changed(&self.volume_id, parent_ref, DirectoryChange::Removed(name));
                 }
                 MutationEvent::Renamed { from, to } => {
-                    let new_path = parent_path.join(&to);
+                    let new_path = parent_ref.join(&to);
                     match self.get_metadata(&new_path).await {
                         Ok(entry) => {
                             notify_directory_changed(
                                 &self.volume_id,
-                                parent_path,
+                                parent_ref,
                                 DirectoryChange::Renamed {
                                     old_name: from,
                                     new_entry: entry,
