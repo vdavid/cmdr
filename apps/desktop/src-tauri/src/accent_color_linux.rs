@@ -244,7 +244,7 @@ mod tests {
         let elapsed = start.elapsed();
 
         assert!(
-            elapsed < std::time::Duration::from_secs(2),
+            elapsed < Duration::from_secs(2),
             "read_accent_color took {elapsed:?}, expected < 2 s (PROBE_TIMEOUT={PROBE_TIMEOUT:?})",
         );
         assert!(color.starts_with('#'), "expected #rrggbb, got {color}");
