@@ -184,6 +184,7 @@ export interface SettingsValues {
 
   // Viewer
   'viewer.wordWrap': boolean
+  'fileViewer.suppressBinaryWarning': boolean
 
   // AI
   'ai.provider': AiProvider

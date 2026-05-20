@@ -5,6 +5,10 @@ Opens files in a read-only viewer with instant load for any file size, virtual s
 ## Key files
 
 - `open-viewer.ts`: `openFileViewer(filePath)` creates new `WebviewWindow` with unique label
+- `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` helper that classifies a file as `image` / `document`
+  / `<EXT-uppercased>` (or "don't warn" for text/source/unknown). The viewer route renders a red banner at the top
+  whenever the helper says `shouldWarn`. Suppressible per-instance via the banner's **Close** button or forever via
+  **Never show this warning again** (flips `fileViewer.suppressBinaryWarning` in Settings > Advanced).
 - Route: `apps/desktop/src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar
 
 ## User interaction

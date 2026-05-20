@@ -28,6 +28,7 @@
     import { handleNavigationKey, handleToggleKey } from './viewer-keyboard'
     import Size from '$lib/ui/Size.svelte'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
+    import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
 
     const log = getAppLogger('viewer')
 
@@ -59,6 +60,25 @@
     let windowReady = $state(false)
     let closeRequested = $state(false)
     let closing = false
+
+    // Binary-file warning banner. Read the persisted suppress setting once at
+    // mount; we don't reactively follow live setting changes during a single
+    // viewer session (the banner is per-instance UI). `bannerDismissed` is the
+    // local "Close" action; the "Never show again" action flips the setting
+    // AND sets this flag for the current instance.
+    let warningSuppressed = $state(false)
+    let bannerDismissed = $state(false)
+    const warning = $derived(categorizeForViewerWarning(fileName))
+    const showWarningBanner = $derived(warning.shouldWarn && !bannerDismissed && !warningSuppressed && !loading)
+
+    function dismissBanner(): void {
+        bannerDismissed = true
+    }
+
+    function suppressBannerForever(): void {
+        setSetting('fileViewer.suppressBinaryWarning', true)
+        bannerDismissed = true
+    }
 
     // Event listener cleanup functions
     let unlistenMcpClose: UnlistenFn | undefined
@@ -378,6 +398,7 @@
         try {
             await initializeSettings()
             scroll.wordWrap = getSetting('viewer.wordWrap')
+            warningSuppressed = getSetting('fileViewer.suppressBinaryWarning')
         } catch {
             // Settings store not available in this context, use defaults
         }
@@ -438,6 +459,27 @@
 
 <main class="viewer-container" bind:this={scroll.containerRef} tabindex={-1}>
     <h1 class="sr-only">File viewer</h1>
+    {#if showWarningBanner}
+        <!--
+            Banner explaining that the file viewer shows raw bytes; the user
+            probably wanted Quick Look (⇧Space) or "Open in associated app"
+            (Enter / double-click). Local "Close" dismisses this instance;
+            "Never show this warning again" flips a persisted setting.
+        -->
+        <aside class="binary-warning" role="note">
+            <p class="binary-warning-text">
+                This is the raw view of the file. You might want to view the actual <strong>{warning.label}</strong>
+                instead. To do that, close this window and press <kbd>⇧Space</kbd> to open the quick view, or press
+                <kbd>Enter</kbd> (or double-click the file) to open it in the associated app.
+            </p>
+            <div class="binary-warning-actions">
+                <button type="button" class="binary-warning-action" onclick={dismissBanner}>Close</button>
+                <button type="button" class="binary-warning-action" onclick={suppressBannerForever}
+                    >Never show this warning again</button
+                >
+            </div>
+        </aside>
+    {/if}
     {#if search.searchVisible}
         <div class="search-bar" role="search">
             <input
@@ -629,6 +671,74 @@
         background: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-strong);
         flex-shrink: 0;
+    }
+
+    /* Binary-file warning banner. Reuses the existing error palette
+       (`--color-error-bg/text/border`) and the project-standard inline
+       `<kbd>` + link-button conventions (see `lib/ui/LinkButton.svelte` and
+       the MTP / Quick Look hint toasts) so it reads as part of Cmdr's
+       visual language, not a one-off. Bottom border mirrors `.search-bar`. */
+    .binary-warning {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--color-error-bg);
+        color: var(--color-error-text);
+        border-bottom: 1px solid var(--color-error-border);
+        flex-shrink: 0;
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
+    }
+
+    .binary-warning-text {
+        margin: 0;
+    }
+
+    /* Matches the `<kbd>` styling in the Quick Look hint toast
+       (`QuickLookHintToastContent.svelte`): tertiary background, primary
+       text color. Reads as a key inset across both modes without needing
+       a special palette per banner color. */
+    .binary-warning-text kbd {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        padding: 0 var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        white-space: nowrap;
+    }
+
+    .binary-warning-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-md);
+    }
+
+    /* Same shape as `LinkButton.svelte` — error-tinted to fit the banner
+       (the global accent would clash with the red bg), but the rest is
+       identical: underline always, no per-state recolor, same focus ring
+       conventions. Both action buttons share this class; we don't fork
+       "Close" vs "Never show again" visually. */
+    .binary-warning-action {
+        font: inherit;
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--color-error-text);
+        text-decoration: underline;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- matches LinkButton convention for click affordance */
+        cursor: pointer;
+    }
+
+    .binary-warning-action:hover {
+        text-decoration: underline;
+    }
+
+    .binary-warning-action:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+        box-shadow: var(--shadow-focus-contrast);
     }
 
     .search-input {

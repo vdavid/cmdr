@@ -815,6 +815,18 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
+    id: 'fileViewer.suppressBinaryWarning',
+    section: ['Advanced'],
+    label: 'Suppress the raw-view warning for binary files',
+    description:
+      "F3 opens Cmdr's file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click 'Never show this warning again' in the banner) to suppress the warning for good.",
+    keywords: ['viewer', 'binary', 'image', 'pdf', 'raw', 'warning', 'banner', 'f3', 'quick', 'look'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    showInAdvanced: true,
+  },
+  {
     id: 'fileExplorer.suppressQuickLookHint',
     section: ['Advanced'],
     label: 'Suppress the Space-key Quick Look hint',
