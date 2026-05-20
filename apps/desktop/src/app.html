@@ -28,13 +28,13 @@
         }
       }
 
-      /* Background is intentionally NOT set here. The window uses an
-         `NSVisualEffectView` (Sidebar material, configured via
-         `tauri.conf.json` › `windowEffects` + `transparent: true`); the
-         WKWebView is transparent (`drawsBackground: NO`), so any opaque
-         color painted on `html` / `body` / `#loading-screen` would cover the
-         vibrancy and break the liquid-glass effect. `app.css` paints the
-         translucent `--color-bg-primary` on `body` once it loads. */
+      /* Background is intentionally NOT set on `html` / `body` /
+         `#loading-screen`. The settings window opens with `transparent:
+         true` + an `NSVisualEffectView` Sidebar material behind the
+         webview (see `settings-window.ts`); any opaque color painted on
+         these root elements would cover that vibrancy. Each window's
+         layout component paints its own bg on top — `.page-wrapper` for
+         the main window, `.settings-window` for the settings window. */
       html,
       body {
         margin: 0;

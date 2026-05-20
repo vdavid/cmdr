@@ -84,14 +84,12 @@
     <div class="tab-list" role="tablist" aria-label="{paneId} pane tabs">
         {#each tabs as tab, index (tab.id)}
             {@const isActive = tab.id === activeTabId}
-            {@const isBeforeActive = index < tabs.length - 1 && tabs[index + 1].id === activeTabId}
             {@const isAfterActive = index > 0 && tabs[index - 1].id === activeTabId}
             <button
                 class="tab"
                 class:active={isActive}
                 class:pinned={tab.pinned}
                 class:unreachable={!!tab.unreachable}
-                class:before-active={isBeforeActive}
                 class:after-active={isAfterActive}
                 role="tab"
                 aria-selected={isActive}
@@ -234,13 +232,14 @@
             color var(--transition-fast);
     }
 
-    /* Faint hairline separator between adjacent inactive tabs (skipped
-       next to the active tab and at the leftmost edge of the list).
-       Sits at the tab's left edge, ~70 % of tab height, with ~2 px of
-       breathing room above and below thanks to top/bottom 15 %. The
-       `tab-list { gap: 5px }` rule below leaves enough room around the
-       separator (1 px wide line + 2 px margin on each side). */
-    .tab:not(.active, .before-active, .after-active, :first-child)::before {
+    /* Faint hairline separator centered in the gap between two adjacent
+       inactive tabs. The selector skips: the active tab itself, the
+       inactive tab immediately *after* the active one (its left side
+       meets the active tab, where we hide the gap), and the first child
+       (no preceding tab). `.before-active` IS allowed — its left side
+       meets another inactive tab. ~70 % of tab height, centered by
+       top/bottom 15 %. */
+    .tab:not(.active, .after-active, :first-child)::before {
         content: '';
         position: absolute;
         left: -3px;
@@ -250,6 +249,12 @@
         background-color: var(--color-tab-separator);
     }
 
+    /* Remove the gap on either side of the active tab. `.tab-list { gap:
+       5px }` paints a 5 px strip of `--color-bg-tab-inactive` between
+       every two tabs, which reads as a hard color boundary right next to
+       the active tab. Pulling the active tab's margins by `-5 px` (= the
+       gap) closes the strip; the Chrome-style shoulders then bridge to
+       the adjacent inactive tabs. */
     .tab.active {
         /* Same bg as the path bar below (`--color-bg-secondary`), so the
            active tab visually merges with the chrome row underneath. The
@@ -263,10 +268,29 @@
         height: calc(var(--spacing-tab-bar-height) + 1px);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-bottom: -1px;
+        /* Absorb the `.tab-list { gap: 5px }` on either side: the gap
+           paints `--color-bg-tab-inactive` between tabs, which reads as a
+           hard color stripe right next to the active tab. Negative
+           margins close that strip so the active tab visually butts up
+           against (or under, via shoulders) the adjacent inactive tabs.
+           First-child / last-child overrides below handle the ends of
+           the tab list where there's no gap to absorb. */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- exact gap absorption, must match `.tab-list { gap }` */
+        margin-left: -5px;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- exact gap absorption, must match `.tab-list { gap }` */
+        margin-right: -5px;
         z-index: 1;
         /* Let the Chrome-style shoulders extend past the tab's left/right
            edges into the surrounding inactive-tab area. */
         overflow: visible;
+    }
+
+    .tab.active:first-child {
+        margin-left: 0;
+    }
+
+    .tab.active:last-child {
+        margin-right: 0;
     }
 
     /* Accent top border on active tab */
@@ -331,14 +355,19 @@
         -webkit-mask-image: radial-gradient(circle at top right, transparent 8px, black 8px);
     }
 
+    /* Hover on inactive tabs: a tiny shift toward the *opposite* end of
+       the lightness scale. Light mode darkens by 5 %, dark mode lightens
+       by 5 %. Either way the inactive tab visibly responds to the cursor.
+       Label flips to `--color-text-primary` so the contrast against the
+       slightly-darker (light) hover bg stays well above WCAG AA. */
     .tab:hover:not(.active) {
-        background-color: color-mix(in srgb, var(--color-bg-secondary), white 8%);
-        color: var(--color-text-secondary);
+        background-color: color-mix(in srgb, var(--color-bg-tab-inactive), black 5%);
+        color: var(--color-text-primary);
     }
 
     @media (prefers-color-scheme: dark) {
         .tab:hover:not(.active) {
-            background-color: color-mix(in srgb, var(--color-bg-tab-inactive), white 6%);
+            background-color: color-mix(in srgb, var(--color-bg-tab-inactive), white 5%);
         }
     }
 

@@ -7,7 +7,6 @@
     import { initializeSettings, forceSave as forceSettingsSave } from '$lib/settings'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
-    import { subscribeTranslucency } from '$lib/settings/settings-applier'
     import { initTextSize, cleanupTextSize, getEffectiveScale } from '$lib/text-size.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { SETTINGS_BASE_MIN_HEIGHT, settingsMaxWidth, settingsMinWidth } from '$lib/settings/settings-window'
@@ -45,7 +44,6 @@
     let unlistenFocusSelf: UnlistenFn | undefined
     let unlistenNavigate: UnlistenFn | undefined
     let unlistenMcpClose: UnlistenFn | undefined
-    let cleanupTranslucency: (() => void) | undefined
 
     function safeParseSectionParam(raw: string): string[] | null {
         try {
@@ -190,12 +188,6 @@
             await Promise.all([initializeSettings(), initializeShortcuts()])
             log.debug('Settings and shortcuts initialization complete')
 
-            // Apply the translucency setting (data-translucency on <html>)
-            // and subscribe to live toggles. Each Tauri webview has its own
-            // DOM, so the main window's settings-applier doesn't reach this
-            // window — we hook the lightweight per-window helper here.
-            cleanupTranslucency = subscribeTranslucency()
-
             // Read system accent color from macOS and listen for changes
             await initAccentColor()
 
@@ -280,7 +272,6 @@
         unlistenMcpClose?.()
         cleanupAccentColor()
         cleanupTextSize()
-        cleanupTranslucency?.()
     })
 
     // Also handle beforeunload for when window is closed directly

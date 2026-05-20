@@ -62,6 +62,14 @@
         justify-content: center;
         background: var(--color-border-strong);
         flex-shrink: 0;
+        /* Sit above the per-pane tab-bar's active-tab stacking context
+           (`.tab.active` uses `z-index: 1` so its `margin-bottom: -1px`
+           overlap with the path bar paints on top). The active tab's
+           shoulders extend past its left/right edges and would otherwise
+           sit over this divider; raising the resizer's z-index keeps it
+           on top. */
+        position: relative;
+        z-index: var(--z-sticky);
         transition: background-color var(--transition-fast);
     }
 

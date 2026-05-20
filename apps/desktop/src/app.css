@@ -12,50 +12,43 @@
   color-scheme: light dark;
 
   /* === Backgrounds === */
-  /* Background tokens are intentionally semi-transparent so the macOS
-     `NSVisualEffectView` (Sidebar material, applied via
-     `tauri.conf.json` › `windowEffects`) shows through with a subtle
-     wallpaper-blur — Finder-style "liquid glass". Tuned at ~88% so text
-     contrast against the underlying material still clears WCAG AA in both
-     light and dark wallpapers; verified by `a11y-contrast`. */
-  --color-bg-primary: rgba(255, 255, 255, 0.85);
-  --color-bg-secondary: rgba(245, 245, 245, 0.78);
+  /* Main-window backgrounds are fully opaque. The settings window has its
+     own translucent palette further down (`--color-bg-settings-primary` +
+     sidebar tokens) — it's the only window that opts into the macOS
+     `NSVisualEffectView` (Sidebar material). */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e8e8e8;
-  /* Status-bar surface that contrasts gently with `--color-bg-secondary`.
-     Light: a touch darker than secondary. Dark: a touch lighter. Used by
-     `SelectionInfo` so the status band reads as distinct from the
-     function-key bar below (which keeps `--color-bg-secondary`). */
-  --color-bg-info-bar: rgba(236, 236, 236, 0.78);
-  /* Inactive tab surface. Reads as "inactive" — slightly darker than
-     `--color-bg-secondary` (which the active tab now adopts) in light
-     mode, slightly lighter in dark mode. The contrast against
-     `--color-bg-secondary` is what conveys "this tab isn't selected"
-     without needing a hard border. */
-  --color-bg-tab-inactive: rgba(225, 225, 225, 0.78);
-  /* Faint vertical hairline between adjacent inactive tabs. Light enough
-     to read as "subdivider" rather than "this is its own thing". */
+  /* Status-bar surface, slightly darker than `--color-bg-secondary` so the
+     `SelectionInfo` band reads as distinct from the function-key bar
+     below it. */
+  --color-bg-info-bar: #ececec;
+  /* Inactive tab surface — slightly darker than `--color-bg-secondary` in
+     light mode, slightly lighter in dark mode. The contrast against the
+     active tab (which uses `bg-secondary`) is what conveys "this tab
+     isn't selected" without needing a hard border. `.tab-bar` uses this
+     too so the empty area around tabs blends with the inactive tabs. */
+  --color-bg-tab-inactive: #e6e6e6;
+  /* Faint vertical hairline between adjacent inactive tabs. */
   --color-tab-separator: rgba(0, 0, 0, 0.12);
-  /* Settings-window sidebar (the "section selector"). In light mode the
-     sidebar reads as a near-white "card" that's slightly **lighter** than
-     the rest of the translucent window (`--color-bg-primary` ≈ 0.85α). A
-     subtle two-stop gradient (darker top-left → ~10% brighter bottom-right)
-     gives the card a faint diagonal lift. Dark-mode overrides flip both
-     stops to a darker pair (see the dark block below). */
+
+  /* === Settings-window translucency ===
+     The settings window opens with `transparent: true` +
+     `setEffects({ effects: ['sidebar'] })` (see `settings-window.ts`), so
+     the tokens below sit on top of a live `NSVisualEffectView` Sidebar
+     material. Tuned for a clear liquid-glass look without sacrificing AA;
+     verified manually against busy wallpapers (the `a11y-contrast` matrix
+     doesn't synthesize settings-window combos). */
+  /* Window backdrop tint */
+  --color-bg-settings-primary: rgba(255, 255, 255, 0.6);
+  /* Sidebar gradient (light): near-white "card" slightly *lighter* than
+     the rest of the window. A subtle two-stop gradient (darker top-left →
+     ~10% brighter bottom-right) gives the card a faint diagonal lift. */
   --color-bg-sidebar-from: rgba(255, 255, 255, 0.9);
   --color-bg-sidebar-to: rgba(255, 255, 255, 0.96);
-  /* Settings-window background. Kept distinct from `--color-bg-primary` so
-     we can push the settings window further into glass territory without
-     dragging the main window's file-list alpha down (which the a11y matrix
-     caps at 0.85 light / 0.93 dark on the brown-tint cursor-active
-     corner). The `row_state_matrix.go` synthesizer doesn't pair settings
-     contexts, so going lower here is safe by that check; verify text
-     legibility manually against busy wallpapers. */
-  --color-bg-settings-primary: rgba(255, 255, 255, 0.6);
-  /* Sidebar border + box-shadow. In light mode: a 1 px white border to
-     "extend" the card edge into the white interior, plus a faint, mostly-
-     right-leaning shadow so the card visibly floats over the vibrant frame.
-     Dark mode keeps a regular border and no shadow (the bg contrast alone
-     does the work there). */
+  /* Sidebar 1 px outline + faint right-leaning shadow so the card visibly
+     floats over the vibrant frame around it. Dark mode swaps both for a
+     regular border + no shadow (the bg contrast alone does the work). */
   --color-sidebar-border: rgba(255, 255, 255, 0.95);
   --shadow-sidebar: 6px 0 18px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.03);
 
@@ -150,12 +143,10 @@
   --color-toast-success-bg: #f0fdf4;
 
   /* === Striped rows (zebra striping for file lists) ===
-     Uses an OPAQUE `#ffffff` base (not `var(--color-bg-primary)`, which is
-     now translucent for the macOS vibrancy backdrop). Striped rows are a
-     visual replacement of the base pane bg, so they should be a single
-     opaque layer rather than a second translucent layer stacked on top of
-     `.content`'s `bg-primary` — that would double the alpha (~99.5%) and
-     produce a visible darker stripe vs non-stripe rows. */
+     A tiny 4 % mix of `--color-text-primary` into the pane bg. Defined
+     against an opaque `#ffffff` base (rather than `--color-bg-primary`)
+     so the value stays stable if `--color-bg-primary` is ever swapped
+     for a translucent token in the future. */
   --color-bg-stripe: color-mix(in oklch, #ffffff, var(--color-text-primary) 4%);
 
   /* === Volume tint palette (12 hues + none) ===
@@ -410,24 +401,6 @@
   --color-age-old: var(--color-text-secondary);
 }
 
-/* === Translucency: Off ===
-   When the user disables `appearance.translucency` (Settings > Appearance >
-   Colors and formats), the three translucent bg tokens snap to fully opaque
-   values so the webview covers the macOS `NSVisualEffectView` Sidebar
-   material that sits behind it. The visual-effect view itself is set up
-   statically in `tauri.conf.json` and stays alive — disabling it at runtime
-   would need a Tauri command — but the opaque webview hides it. */
-:root[data-translucency='off'] {
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f5f5f5;
-  --color-bg-info-bar: #ececec;
-  --color-bg-sidebar-from: #fafafa;
-  --color-bg-sidebar-to: #ffffff;
-  --color-sidebar-border: #ffffff;
-  --color-bg-settings-primary: #ffffff;
-  --color-bg-tab-inactive: #e1e1e1;
-}
-
 /* selection-fg fallback: dark mode + pane tint + focused cursor on a selected
    row. In this state the row bg becomes the translucent yellow accent
    composited over a tinted dark surface — Y around 0.09. Even the brightest
@@ -528,35 +501,30 @@
 /* Dark Mode - automatically applied when user's system prefers dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
-    /* === Backgrounds === */
-    /* Semi-transparent for the same Sidebar-material reason as light mode.
-       Slightly heavier alpha than light mode because dark backgrounds need
-       more body to keep text contrast against bright wallpapers. */
-    --color-bg-primary: rgba(30, 30, 30, 0.93);
-    --color-bg-secondary: rgba(42, 42, 42, 0.86);
+    /* === Backgrounds (dark, main window — opaque) === */
+    --color-bg-primary: #1e1e1e;
+    --color-bg-secondary: #2a2a2a;
     --color-bg-tertiary: #333333;
-    /* Dark mode: lighter than secondary (opposite of light mode) so the
-       status band lifts away from the function-key bar below. */
-    --color-bg-info-bar: rgba(50, 50, 50, 0.86);
-    /* Inactive tab surface (dark): slightly lighter than the active-tab
-       bg (`--color-bg-secondary`) so unselected tabs read as recessed.
-       Light mode flips the relationship (darker than secondary). */
-    --color-bg-tab-inactive: rgba(30, 30, 30, 0.86);
+    /* Status band, slightly lighter than secondary (opposite of light
+       mode) so it lifts away from the function-key bar below. */
+    --color-bg-info-bar: #323232;
+    /* Inactive tab surface: darker than secondary so unselected tabs read
+       as recessed against the active tab. Tab-bar uses this too. */
+    --color-bg-tab-inactive: #1e1e1e;
     /* Tab separator (dark): light hairline visible against the tab
        surfaces around it. */
     --color-tab-separator: rgba(255, 255, 255, 0.12);
-    /* Settings-window sidebar (dark). Same logic as light mode but flipped:
-       both stops sit **darker** than `--color-bg-primary`, with a slight
-       diagonal brightening so the card reads as one panel. */
+
+    /* === Settings-window translucency (dark) ===
+       See the light-mode counterpart at the top of this file for the
+       why. Both gradient stops sit *darker* than the main window bg in
+       this mode, with a slight diagonal brightening so the sidebar card
+       reads as one panel. */
+    --color-bg-settings-primary: rgba(30, 30, 30, 0.7);
     --color-bg-sidebar-from: rgba(18, 18, 18, 0.78);
     --color-bg-sidebar-to: rgba(38, 38, 38, 0.72);
-    /* Settings-window background (dark). Same rationale as the light
-       counterpart: distinct from `--color-bg-primary` so the settings
-       window can run more glassy without affecting the main window. */
-    --color-bg-settings-primary: rgba(30, 30, 30, 0.7);
-    /* Dark-mode border + shadow: a neutral border for visibility against
-       the dark vibrancy, no box-shadow (bg contrast alone separates the
-       card from the frame). */
+    /* Neutral border + no shadow in dark mode: the bg contrast alone
+       separates the card from the surrounding frame. */
     --color-sidebar-border: var(--color-border);
     --shadow-sidebar: none;
 
@@ -681,20 +649,6 @@
     --color-age-recent: #a8d040;
     --color-age-aging: #dcc24a;
     --color-age-old: #d49858;
-  }
-
-  /* === Translucency: Off (dark) ===
-     Same logic as light mode (see the light-mode block for the full
-     rationale): opaque values so the webview covers the visual-effect view. */
-  :root[data-translucency='off'] {
-    --color-bg-primary: #1e1e1e;
-    --color-bg-secondary: #2a2a2a;
-    --color-bg-info-bar: #323232;
-    --color-bg-sidebar-from: #161616;
-    --color-bg-sidebar-to: #262626;
-    --color-sidebar-border: var(--color-border);
-    --color-bg-settings-primary: #1e1e1e;
-    --color-bg-tab-inactive: #1e1e1e;
   }
 
   /* Old-WebKit fallback (dark mode). See the light-mode counterpart above for
@@ -1026,11 +980,12 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  /* `html` must stay transparent so the macOS `NSVisualEffectView`
-     (Sidebar material, set in `tauri.conf.json`) shows through. The
-     opaque `--bg` in `app.html`'s inline critical CSS was the original
-     blocker; this rule is the belt-and-braces override in case the
-     inline style ever drifts. */
+  /* Both root elements stay transparent. The main window paints its bg
+     on `.page-wrapper` (see `(main)/+layout.svelte`); the settings window
+     paints `.settings-window` translucent so the macOS
+     `NSVisualEffectView` Sidebar material it sets up at window-creation
+     time shows through. Keeping `html` / `body` transparent means
+     neither painted layer has to fight an opaque root underneath. */
   background-color: transparent;
   color: var(--color-text-primary);
   /* Disable text selection globally */
@@ -1040,14 +995,6 @@ body {
   cursor: default;
 }
 
-/* `body` is intentionally transparent so the chrome bars (`.tab-bar`,
-   `.title-bar`, `.header`, `.selection-info`, etc., each painted with
-   `--color-bg-secondary` / `--color-bg-info-bar`) are the only layer between
-   the user and the `NSVisualEffectView` (Sidebar material, set in
-   `tauri.conf.json`). Without this, body's `--color-bg-primary` would paint
-   underneath every bar, compounding alpha (1 − (1 − α_body) × (1 − α_bar))
-   and pushing the chrome to ~99 % opaque. File rows have no bg of their own
-   either, so the file list area shows pure vibrancy. */
 body {
   display: flex;
   flex-direction: column;

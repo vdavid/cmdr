@@ -24,7 +24,6 @@
     // Definitions for rendering (with fallbacks for type safety)
     const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
     const appColorDef = getSettingDefinition('appearance.appColor') ?? { label: '', description: '' }
-    const translucencyDef = getSettingDefinition('appearance.translucency') ?? { label: '', description: '' }
     const sizeColorsDef = getSettingDefinition('appearance.sizeColors') ?? { label: '', description: '' }
     const dateColorsDef = getSettingDefinition('appearance.dateColors') ?? { label: '', description: '' }
     const dateTimeDef = getSettingDefinition('appearance.dateTimeFormat') ?? { label: '', description: '' }
@@ -133,20 +132,6 @@
                     <span class="app-color-label">Cmdr gold</span>
                 </label>
             </div>
-        </SettingRow>
-    {/if}
-
-    {#if shouldShow('appearance.translucency')}
-        <SettingRow id="appearance.translucency" label={translucencyDef.label} description="" {searchQuery}>
-            {#snippet descriptionContent()}
-                Liquid glass-y look if also enabled in your
-                <LinkButton onclick={() => void openAppearanceSettings()}
-                    >{isMacOS()
-                        ? `${systemStrings.systemSettings}`
-                        : 'desktop appearance settings'}</LinkButton
-                >.
-            {/snippet}
-            <SettingSwitch id="appearance.translucency" />
         </SettingRow>
     {/if}
 

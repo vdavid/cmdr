@@ -94,8 +94,10 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
     resizable: true,
     decorations: true,
     focus: !isE2e,
-    // Translucent glass backdrop — mirrors the main window. Requires
-    // `tauri/macos-private-api` (already enabled in `Cargo.toml`).
+    // Translucent glass backdrop. The settings window is the only window
+    // that opts into the macOS `NSVisualEffectView` material; the main
+    // window is plain opaque. Requires `tauri/macos-private-api` (enabled
+    // in `Cargo.toml`).
     transparent: true,
     backgroundColor: [0, 0, 0, 0],
     // Overlay title bar so the traffic lights can sit inside the sidebar

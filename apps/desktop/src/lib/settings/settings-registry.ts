@@ -62,16 +62,6 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
-    id: 'appearance.translucency',
-    section: ['Appearance', 'Colors and formats'],
-    label: 'Translucency',
-    description: 'Liquid glass-y look if also enabled in your System Settings.',
-    keywords: ['translucency', 'translucent', 'vibrancy', 'glass', 'blur', 'transparency', 'liquid'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
-  },
-  {
     id: 'appearance.sizeColors',
     section: ['Appearance', 'Colors and formats'],
     label: 'Size colors',

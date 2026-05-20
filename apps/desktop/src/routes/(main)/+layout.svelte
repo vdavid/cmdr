@@ -316,5 +316,11 @@
         flex-direction: column;
         flex: 1;
         min-height: 0;
+        /* Opaque main-window backdrop. The shared `app.html` keeps `html`
+           and `body` transparent (so the settings window's translucent
+           backdrop can show the macOS `NSVisualEffectView` behind it).
+           Painting on `.page-wrapper` covers the whole main window
+           without affecting any other window. */
+        background-color: var(--color-bg-primary);
     }
 </style>

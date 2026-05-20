@@ -6,7 +6,6 @@
 import {
   getSetting,
   onSettingChange,
-  onSpecificSettingChange,
   initializeSettings,
   type UiDensity,
   type SizeColorsPalette,
@@ -58,39 +57,6 @@ function applySizeColors(palette: SizeColorsPalette): void {
 function applyDateColors(palette: DateColorsPalette): void {
   document.documentElement.dataset.dateColors = palette
   log.debug('Applied date colors palette: {palette}', { palette })
-}
-
-/**
- * Toggles the window's translucent (macOS `NSVisualEffectView` Sidebar
- * material) backdrop by setting `data-translucency` on the root element.
- * `app.css` scopes the opaque-bg fallback to `[data-translucency='off']`.
- * The vibrancy material is configured statically in `tauri.conf.json` and
- * stays alive behind the webview either way; when this is off, the CSS
- * paints the webview's bg fully opaque so the material isn't visible.
- */
-function applyTranslucency(enabled: boolean): void {
-  document.documentElement.dataset.translucency = enabled ? 'on' : 'off'
-  log.debug('Applied translucency: {enabled}', { enabled })
-}
-
-/**
- * Per-window translucency hook. The full `initSettingsApplier` lifecycle has
- * a lot of main-window-only side effects (backend pushes, density getters,
- * etc.) and only runs in `(main)/+layout.svelte`. Secondary windows
- * (settings, viewer) need just the CSS-token side of translucency on their
- * own `<html>` element — each Tauri webview has its own DOM, so the
- * `data-translucency` attribute is per-window.
- *
- * Call this on the secondary window's mount; the returned function cleans
- * up the subscription. Reads the current value, applies it immediately,
- * and subscribes via `onSpecificSettingChange` so toggles in the Settings
- * window propagate via the cross-window `settings:changed` event.
- */
-export function subscribeTranslucency(): () => void {
-  applyTranslucency(getSetting('appearance.translucency'))
-  return onSpecificSettingChange('appearance.translucency', (_id, value) => {
-    applyTranslucency(value)
-  })
 }
 
 /**
@@ -165,9 +131,6 @@ function applyAllSettings(): void {
   // Date age color palette
   applyDateColors(getSetting('appearance.dateColors'))
 
-  // Translucency (macOS vibrancy backdrop)
-  applyTranslucency(getSetting('appearance.translucency'))
-
   // Theme (light / dark / system). Must run at startup or windows that open
   // before the user touches Settings will flash the wrong theme.
   void applyTheme(getSetting('theme.mode'))
@@ -220,10 +183,6 @@ function handleSettingChange(id: string, value: unknown): void {
   }
   if (id === 'appearance.dateColors') {
     applyDateColors(value as DateColorsPalette)
-    return
-  }
-  if (id === 'appearance.translucency') {
-    applyTranslucency(value as boolean)
     return
   }
   if (id === 'theme.mode') {

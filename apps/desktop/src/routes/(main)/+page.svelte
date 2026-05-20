@@ -764,11 +764,9 @@
         position: relative;
     }
 
-    /* The dev/e2e overlay alpha was tuned for an opaque title bar. With the
-       title bar now `bg-secondary` (translucent for the macOS vibrancy
-       backdrop), a 60% tint piles on top and washes the glass out. Drop the
-       tint to 25% — the hue still reads clearly as DEV / E2E, and the
-       remaining vibrancy stays visible (`~22%` of the wallpaper showing). */
+    /* Dev/E2E mode title-bar tint at 25 % alpha — strong enough to read
+       clearly as DEV / E2E, light enough to leave the underlying title
+       bar visible. */
     /*noinspection CssUnusedSymbol*/
     .title-bar.dev-mode::after {
         content: '';
