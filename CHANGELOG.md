@@ -5,6 +5,153 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-05-20
+
+### Added
+
+- Cmd+click toggles selection ([c6adee74](https://github.com/vdavid/cmdr/commit/c6adee74))
+- Bind `Insert` to toggle selection in Total Commander style
+  ([719e4f9b](https://github.com/vdavid/cmdr/commit/719e4f9b))
+- Modify Shift+Arrow/Page/Home/End behavior to align more with other file managers
+  ([47932132](https://github.com/vdavid/cmdr/commit/47932132))
+- Switch selection to red. Clears WCAG AA across all backgrounds!
+  ([9028722c](https://github.com/vdavid/cmdr/commit/9028722c),
+  [02b295da](https://github.com/vdavid/cmdr/commit/02b295da),
+  [069bc400](https://github.com/vdavid/cmdr/commit/069bc400),
+  [14a36dd8](https://github.com/vdavid/cmdr/commit/14a36dd8))
+- Tint each pane's background by volume type (local/SMB/MTP)
+  ([3f5629d3](https://github.com/vdavid/cmdr/commit/3f5629d3))
+- Improve MCP: replace fire-and-forgets with wound-trips ([48a9701c](https://github.com/vdavid/cmdr/commit/48a9701c),
+  [3c1b0dc9](https://github.com/vdavid/cmdr/commit/3c1b0dc9),
+  [e12285d1](https://github.com/vdavid/cmdr/commit/e12285d1),
+  [df11caef](https://github.com/vdavid/cmdr/commit/df11caef))
+- New MCP resources: `cmdr://logs` + filters, `cmdr://state` filters, `recentErrors`, `upgrade_smb_to_direct`, SMB
+  connection state ([e597d24d](https://github.com/vdavid/cmdr/commit/e597d24d),
+  [640c3330](https://github.com/vdavid/cmdr/commit/640c3330))
+- SMB volumes auto-upgrade from OS-mount to direct smb2 sessions
+  ([640c3330](https://github.com/vdavid/cmdr/commit/640c3330))
+- Propagate MTP cancel all the way to the USB layer; dialog stays at "Cancelling…" until the device settles. No more
+  30-second wedges! ([0de4c6b7](https://github.com/vdavid/cmdr/commit/0de4c6b7),
+  [1696355d](https://github.com/vdavid/cmdr/commit/1696355d),
+  [f894e60e](https://github.com/vdavid/cmdr/commit/f894e60e),
+  [b4018891](https://github.com/vdavid/cmdr/commit/b4018891))
+- Copy/move/delete pre-flight scans reuse watcher-backed listings. Skip a 17s MTP re-list when the folder is already
+  open in another pane! ([9d434638](https://github.com/vdavid/cmdr/commit/9d434638),
+  [ba20ca3e](https://github.com/vdavid/cmdr/commit/ba20ca3e),
+  [49187230](https://github.com/vdavid/cmdr/commit/49187230),
+  [fdebd329](https://github.com/vdavid/cmdr/commit/fdebd329),
+  [b90b9003](https://github.com/vdavid/cmdr/commit/b90b9003))
+- SMB streaming writes no longer hold the client mutex (smb2 0.9). Concurrent writes pipeline over one session
+  ([3d0d5db7](https://github.com/vdavid/cmdr/commit/3d0d5db7),
+  [06bc5da7](https://github.com/vdavid/cmdr/commit/06bc5da7),
+  [ed4b6886](https://github.com/vdavid/cmdr/commit/ed4b6886))
+- Bump SMB watcher to smb2 0.10 to stop losing events between polls
+  ([432d13ff](https://github.com/vdavid/cmdr/commit/432d13ff))
+- Localize macOS pane names in onboarding and error dialogs (points at what System Settings actually shows)
+  ([bad5d926](https://github.com/vdavid/cmdr/commit/bad5d926))
+- Coalesce `directory-diff` events with soft-refresh in the FE. No more empty-pane flicker on bulk ops!
+  ([54674854](https://github.com/vdavid/cmdr/commit/54674854),
+  [13b486a8](https://github.com/vdavid/cmdr/commit/13b486a8))
+- Honest transfer-complete toasts: report copied vs skipped separately
+  ([5cdf989e](https://github.com/vdavid/cmdr/commit/5cdf989e))
+- Friendly message for SMB `STATUS_DELETE_PENDING` (was misleading "disk needs attention")
+  ([a560243b](https://github.com/vdavid/cmdr/commit/a560243b))
+- Polish the license nudge: clearer copy and layout ([95007952](https://github.com/vdavid/cmdr/commit/95007952))
+- Add fallback UI colors on macOS Monterey, achieving macOS 12.x compat!
+  ([5792b10e](https://github.com/vdavid/cmdr/commit/5792b10e))
+- Improve accent-fg to match WCAG AA+ against all colors, and add cursor outline
+  ([d00ba5b4](https://github.com/vdavid/cmdr/commit/d00ba5b4))
+- Properly pluralize all words ("1 file"/"10 files") everywhere
+  ([eb360370](https://github.com/vdavid/cmdr/commit/eb360370))
+
+### Fixed
+
+- Fix MTP destination pane staying stale after cross-volume writes
+  ([873f1102](https://github.com/vdavid/cmdr/commit/873f1102))
+- Fix SMB/MTP listing cache going stale when the watcher misses an event
+  ([1dea24e1](https://github.com/vdavid/cmdr/commit/1dea24e1),
+  [ab98ee88](https://github.com/vdavid/cmdr/commit/ab98ee88))
+- Fix MTP delete not emitting `write-cancelled` when cancel landed mid-iteration
+  ([e21ca6d3](https://github.com/vdavid/cmdr/commit/e21ca6d3))
+- Fix transfer dialog wedging at "Cancelling…" when Cancel raced ahead of the `operationId` IPC
+  ([2b2a5ec6](https://github.com/vdavid/cmdr/commit/2b2a5ec6))
+- Fix MCP `open_under_cursor` on the Network view ([0aec8fbd](https://github.com/vdavid/cmdr/commit/0aec8fbd))
+- Fix Linux startup hanging on a half-configured D-Bus (probes now bounded by a 500 ms timeout)
+  ([91afacbf](https://github.com/vdavid/cmdr/commit/91afacbf),
+  [85580df9](https://github.com/vdavid/cmdr/commit/85580df9))
+- Fix `refresh_listing` short-circuiting on local volumes during the FSEvents symlink race
+  ([57ef1034](https://github.com/vdavid/cmdr/commit/57ef1034))
+- Fix two SMB shares with the same case-folded name on different servers colliding on the same volume ID
+  ([f2414556](https://github.com/vdavid/cmdr/commit/f2414556))
+- Fix opening a guest SMB share popping the kernel `smbfs` credential dialog
+  ([92119464](https://github.com/vdavid/cmdr/commit/92119464))
+- Fix `TransferErrorDialog` being see-through in the transient branch
+  ([f01af359](https://github.com/vdavid/cmdr/commit/f01af359))
+- Fix error dialogs rendering OS strings with markdown bleed-through (`STATUS<em>DELETE</em>PENDING`)
+  ([dbd7a2ac](https://github.com/vdavid/cmdr/commit/dbd7a2ac))
+- Fix Brief mode cursor stripe briefly spanning the entire pane while column widths load
+  ([d676efa5](https://github.com/vdavid/cmdr/commit/d676efa5))
+- Fix Move dialog hiding the Size progress bar (`bytes_total` was 0)
+  ([8856e012](https://github.com/vdavid/cmdr/commit/8856e012))
+- Fix conflict-resolution radios reading "Skip all" / "Ask for each" when only one conflict exists
+  ([4eac76b4](https://github.com/vdavid/cmdr/commit/4eac76b4))
+- Fix focused-button Enter firing the dialog's default action instead of the focused button
+  ([079a0ce1](https://github.com/vdavid/cmdr/commit/079a0ce1))
+- Fix free-space numbers tier-coloring as red on healthy disks
+  ([8219a06c](https://github.com/vdavid/cmdr/commit/8219a06c))
+- Fix the AI offer prompting Intel Macs for a local-model download they can't run
+  ([52f3cd81](https://github.com/vdavid/cmdr/commit/52f3cd81))
+- Fix every tokio task crashing when stderr becomes a broken pipe
+  ([31d97e06](https://github.com/vdavid/cmdr/commit/31d97e06))
+- Fix Linux compile errors in `errno.rs` and `mcp/resources.rs`
+  ([90b0afee](https://github.com/vdavid/cmdr/commit/90b0afee))
+- Fix Linux compile errors in `system_strings.rs` (macOS-only loctable items)
+  ([e852f04a](https://github.com/vdavid/cmdr/commit/e852f04a))
+- Fix `clippy::unnecessary_sort_by` on Linux volume sorting (1.95 picked it up)
+  ([03faf480](https://github.com/vdavid/cmdr/commit/03faf480))
+
+### Non-app
+
+- Cap every Rust test at 8 s (matches the Playwright convention), with documented exceptions
+  ([eb67f389](https://github.com/vdavid/cmdr/commit/eb67f389))
+- Stop gating `desktop-e2e-linux` on `desktop-rust` in CI ([66a2e501](https://github.com/vdavid/cmdr/commit/66a2e501))
+- Harden the checker against supply-chain attacks: `--locked` everywhere, pinned tool versions, new
+  `workflows-hardening` + `govulncheck` checks ([7d771ca8](https://github.com/vdavid/cmdr/commit/7d771ca8))
+- Declare `rustfmt` and `clippy` as required `rust-toolchain.toml` components
+  ([a23222eb](https://github.com/vdavid/cmdr/commit/a23222eb))
+- Trigger Rust CI on `rust-toolchain.toml` changes ([0f8c9ffb](https://github.com/vdavid/cmdr/commit/0f8c9ffb))
+- Dev override `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` to test the old-WebKit fallback on modern Macs
+  ([17537510](https://github.com/vdavid/cmdr/commit/17537510))
+- 14-day release-age gate via Renovate (3-day override for security advisories)
+  ([8bd5af1e](https://github.com/vdavid/cmdr/commit/8bd5af1e))
+- Shared `pluralize` helper for log/error/UI strings, plus a `pluralize-noun` check
+  ([0ae2ee92](https://github.com/vdavid/cmdr/commit/0ae2ee92),
+  [ec277ba8](https://github.com/vdavid/cmdr/commit/ec277ba8),
+  [e070fc34](https://github.com/vdavid/cmdr/commit/e070fc34))
+- Force file-backed secret store under `CMDR_E2E_MODE=1` (no more Keychain prompts in unattended E2E)
+  ([ecb495fc](https://github.com/vdavid/cmdr/commit/ecb495fc))
+- New `btn-restyle` check (forbids `.btn-*` overrides); accent-matrix in the contrast check
+  ([51f31939](https://github.com/vdavid/cmdr/commit/51f31939),
+  [0e885f5d](https://github.com/vdavid/cmdr/commit/0e885f5d))
+- Codify 100-char Rust comment width; reflow existing comments
+  ([b76b9277](https://github.com/vdavid/cmdr/commit/b76b9277),
+  [610f66f6](https://github.com/vdavid/cmdr/commit/610f66f6))
+- Vendor `smb-consumer-maxreadsize` and pin the SMB streaming-write no-deadlock invariant (200 × 1 MB at concurrency 8)
+  ([1ae6eec7](https://github.com/vdavid/cmdr/commit/1ae6eec7),
+  [e8259eef](https://github.com/vdavid/cmdr/commit/e8259eef),
+  [e750920b](https://github.com/vdavid/cmdr/commit/e750920b))
+- Ticketed acquire/release logs on the `SmbVolume` client mutex
+  ([2e4aeb9d](https://github.com/vdavid/cmdr/commit/2e4aeb9d))
+- E2E focus hygiene: viewer/settings windows skip OS focus, Escape-binding tests use synthetic dispatch
+  ([be21bebe](https://github.com/vdavid/cmdr/commit/be21bebe),
+  [0dfdcb2a](https://github.com/vdavid/cmdr/commit/0dfdcb2a))
+- Defensive disk-poll + refresh in the MTP→local copy E2E ([9693b283](https://github.com/vdavid/cmdr/commit/9693b283))
+- Stamp the running E2E test name into the main window's OS title
+  ([1181e0c1](https://github.com/vdavid/cmdr/commit/1181e0c1))
+- Document the UTM Ubuntu VM loop for iterating Linux-only tests
+  ([917938ee](https://github.com/vdavid/cmdr/commit/917938ee))
+- Switch `mtp-rs` to crates.io 0.15.0 (off the path dep) ([f98313f0](https://github.com/vdavid/cmdr/commit/f98313f0))
+
 ## [0.19.0] - 2026-05-16
 
 ### Added
