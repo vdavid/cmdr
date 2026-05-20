@@ -18,7 +18,7 @@
     import { setSetting } from '$lib/settings'
     import { openSettingsWindow } from '$lib/settings/settings-window'
 
-    import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint'
+    import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
 
     function handleOpenSettings() {
         dismissToast(QUICK_LOOK_HINT_TOAST_ID)

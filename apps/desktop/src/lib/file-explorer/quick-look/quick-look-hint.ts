@@ -30,8 +30,9 @@ import { getSetting } from '$lib/settings'
 import { addToast, getToasts } from '$lib/ui/toast'
 
 import QuickLookHintToastContent from './QuickLookHintToastContent.svelte'
+import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
 
-export const QUICK_LOOK_HINT_TOAST_ID = 'quick-look-hint'
+export { QUICK_LOOK_HINT_TOAST_ID }
 
 /**
  * Show the Quick Look hint toast unless (a) the user has permanently opted
