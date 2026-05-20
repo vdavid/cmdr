@@ -9,9 +9,8 @@ channel = "1.95.0"
 # the runner picks them up automatically — without this, every CI Rust job
 # fails at the rustfmt step.
 components = ["rustfmt", "clippy"]
-# Release builds need both targets for the universal binary, and the standalone
-# `rustup target add x86_64-apple-darwin` step in `release.yml` runs from the
-# repo root (not `apps/desktop`), so it adds the target to a *different*
-# toolchain than the pinned channel `pnpm tauri build` actually uses. Declaring
-# the targets here makes rustup sync them with the pinned channel automatically.
+# Release builds the universal binary from both arch targets, so the pinned
+# channel needs both available. Listing them here makes rustup auto-sync them
+# the first time the toolchain is resolved; no separate `rustup target add`
+# step is needed in CI.
 targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
