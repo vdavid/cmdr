@@ -163,6 +163,16 @@
      *  Picked at 200 ms so a fast settle (the common case after M2) clears
      *  before the label ever changes. */
     const SLOW_SETTLE_LABEL_MS = 200
+    /** Last-resort cap on how long we'll keep the dialog open after the user
+     *  clicks Cancel. The settle gate (M4) is supposed to fire `write-cancelled`
+     *  + `write-settled` quickly, but if the BE op state was already gone when
+     *  we issued the cancel (e.g. it was cleaned up by `cancel_all_write_operations`
+     *  during a hot-reload or by a previous teardown), no events ever fire and
+     *  the dialog would otherwise stay at "Cancelling…" forever. Ten seconds is
+     *  well above the legitimate settle window (USB tear-down is typically < 2 s
+     *  even on bad devices) and well below "the user thinks the app is wedged."
+     *  See the comment on `handleCancel` for the cases this catches. */
+    const CANCEL_SETTLE_FALLBACK_MS = 10_000
 
     // Scan waiting state (when scan preview is still running from TransferDialog)
     let waitingForScan = $state(false)
@@ -217,6 +227,10 @@
      *  Drives the "(finishing USB transfers)" tail on the dialog label. */
     let settleSlow = $state(false)
     let slowSettleTimer: ReturnType<typeof setTimeout> | null = null
+    /** Last-resort fallback that closes the dialog if neither `write-cancelled`
+     *  nor `write-settled` arrives after the user clicks Cancel. See the
+     *  doc comment on `CANCEL_SETTLE_FALLBACK_MS`. */
+    let cancelSettleFallbackTimer: ReturnType<typeof setTimeout> | null = null
     /** Set when the operation reaches a terminal state (complete, error, cancel, rollback).
      *  Prevents onDestroy's safety-net cancel from interfering with an already-handled outcome.
      *  Reactive ($state) so the Cancel/Rollback buttons can disable themselves during the
@@ -467,6 +481,7 @@
 
         settleEventReceived = true
         clearSlowSettleTimer()
+        clearCancelSettleFallbackTimer()
         maybeFinishCancelClose()
     }
 
@@ -484,6 +499,37 @@
             slowSettleTimer = null
         }
         settleSlow = false
+    }
+
+    function startCancelSettleFallbackTimer() {
+        if (cancelSettleFallbackTimer !== null) return
+        cancelSettleFallbackTimer = setTimeout(() => {
+            cancelSettleFallbackTimer = null
+            // If we still haven't received both terminal events, the BE op state
+            // is gone (or never existed) — synthesise a clean close so the dialog
+            // doesn't stay at "Cancelling…" forever. Hand the FE a Cancelled
+            // outcome with `filesProcessed: 0` so the caller's cleanup runs.
+            if (!cancelEventReceived || !settleEventReceived) {
+                log.warn(
+                    'Cancel settle fallback fired for op={operationId} after {ms}ms (cancelled={c}, settled={s}); closing dialog',
+                    {
+                        operationId,
+                        ms: CANCEL_SETTLE_FALLBACK_MS,
+                        c: cancelEventReceived,
+                        s: settleEventReceived,
+                    },
+                )
+                cleanup()
+                onCancelled(0)
+            }
+        }, CANCEL_SETTLE_FALLBACK_MS)
+    }
+
+    function clearCancelSettleFallbackTimer() {
+        if (cancelSettleFallbackTimer !== null) {
+            clearTimeout(cancelSettleFallbackTimer)
+            cancelSettleFallbackTimer = null
+        }
     }
 
     /** Closes the dialog if both `write-cancelled` and `write-settled` have
@@ -548,6 +594,7 @@
         }
         unlisteners = []
         clearSlowSettleTimer()
+        clearCancelSettleFallbackTimer()
     }
 
     /** Dispatches the backend command based on operation type. */
@@ -642,13 +689,19 @@
             })
 
             // If the dialog was destroyed/cancelled while waiting for the IPC response,
-            // cancel the operation immediately and bail out
+            // cancel the operation immediately and bail out. Crucially, we must call
+            // `onCancelled` so the parent removes the dialog from state — otherwise
+            // the listeners are torn down by `cleanup()` but the `<TransferProgressDialog>`
+            // stays mounted forever (the BE eventually emits `write-cancelled` +
+            // `write-settled`, but no one's listening anymore). That stuck dialog
+            // poisons every following operation through ensureAppReady's Escape.
             if (destroyed) {
                 log.info('Dialog destroyed before operationId arrived; cancelling op={operationId}', {
                     operationId,
                 })
                 void cancelWriteOperation(operationId, true)
                 cleanup()
+                onCancelled(0)
                 return
             }
 
@@ -735,6 +788,7 @@
             log.info('Cancelling operation (keeping partial files): {operationId}', { operationId })
             isCancelling = true
             startSlowSettleTimer()
+            startCancelSettleFallbackTimer()
             try {
                 await cancelWriteOperation(operationId, false)
                 log.debug('Cancel request sent; waiting for write-cancelled + write-settled')
@@ -744,6 +798,7 @@
                 log.error('Failed to cancel operation: {error}', { error: err })
                 isCancelling = false
                 clearSlowSettleTimer()
+                clearCancelSettleFallbackTimer()
             }
         }
     }

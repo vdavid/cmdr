@@ -189,12 +189,18 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
       // — a fast settle (< 200 ms after cancel) may close before we poll.
       // But ordering must be right.
 
-      // Wait for the dialog to actually close.
-      await pollUntil(
+      // Wait for the dialog to actually close — and assert it does. The
+      // previous version polled without asserting, which let the test pass
+      // even when the dialog stayed up (the dialog needs both `write-cancelled`
+      // AND `write-settled` to close; one of them firing isn't enough). A
+      // stuck progress dialog at test exit poisons every following write-op
+      // test through the next beforeEach's Escape, so catch it here.
+      const closed = await pollUntil(
         tauriPage,
         async () => !(await tauriPage.isVisible('[data-dialog-id="transfer-progress"]')),
         3_000,
       )
+      expect(closed, 'transfer-progress dialog must close within 3 s after settle').toBe(true)
 
       // Ordering: write-cancelled must arrive before (or simultaneously with)
       // write-settled, per the BE contract.
@@ -231,16 +237,22 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
         return out;
       })()`)
       if (survivors.length > 0) {
+        // Verify "immediately F8 again dispatches successfully" via a
+        // non-destructive responsiveness check: after settle, an MCP cursor
+        // move should round-trip quickly. The previous "F8 + Escape on the
+        // delete-confirmation dialog" check was destructive (the Escape
+        // sometimes raced with a synthesized Enter on the focused primary
+        // button, auto-confirming the delete and leaving a stuck
+        // `transfer-progress` dialog whose op blocked the MTP session — that
+        // contaminated every following write-op test). Cursor-move exercises
+        // the same FE acceptance path without ever entering the delete code
+        // path, so a leak is impossible.
+        const before = Date.now()
         await moveCursorToFile(tauriPage, survivors[0])
-        await pressKey(tauriPage, 'Space')
-        await pressKey(tauriPage, 'F8')
-        // The second confirmation dialog must open within a reasonable
-        // window — pre-M4 this could fall behind a wedged volume.
-        await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 5_000)
-        // Don't actually delete — close the confirmation. The test's
-        // primary contract (settle-gated cancel + immediate F8 dispatchable)
-        // is verified by this point.
-        await tauriPage.keyboard.press('Escape')
+        const elapsed = Date.now() - before
+        expect(elapsed, `cursor move after settle must round-trip quickly (took ${String(elapsed)} ms)`).toBeLessThan(
+          1_500,
+        )
       }
     } finally {
       await tauriPage.evaluate(`(async function() {
