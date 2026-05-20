@@ -46,7 +46,7 @@ describe('QuickLookHintToastContent', () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(QuickLookHintToastContent, { target, props: {} })
-    const text = target.textContent ?? ''
+    const text = target.textContent
     expect(text).toContain('Space')
     expect(text).toContain('selects the file under the cursor')
     expect(text).toContain('Finder')
@@ -64,7 +64,7 @@ describe('QuickLookHintToastContent', () => {
     mount(QuickLookHintToastContent, { target, props: {} })
     await tick()
     const settingsButton = Array.from(target.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Settings > Keyboard shortcuts'),
+      b.textContent.includes('Settings > Keyboard shortcuts'),
     )
     if (!settingsButton) throw new Error('Settings link missing')
     settingsButton.click()
@@ -79,7 +79,7 @@ describe('QuickLookHintToastContent', () => {
     mount(QuickLookHintToastContent, { target, props: {} })
     await tick()
     const suppressButton = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === "Don't show again",
+      (b) => b.textContent.trim() === "Don't show again",
     )
     if (!suppressButton) throw new Error("Don't show again button missing")
     suppressButton.click()

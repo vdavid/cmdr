@@ -31,7 +31,7 @@
         paneId,
         isFocused = false,
         initialNetworkHost = null,
-        initialAutoMountShare = undefined,
+        initialAutoMountShare,
         onVolumeChange,
         onNetworkHostChange,
     }: Props = $props()

@@ -117,7 +117,7 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
   // `capabilities/settings.json`. Radius matches `--radius-xxl` in
   // `app.css` so the NSWindow corner curve and the webview's CSS clip line
   // up exactly.
-  win.once('tauri://created', () => {
+  void win.once('tauri://created', () => {
     void win
       .setEffects({
         effects: [Effect.Sidebar],
