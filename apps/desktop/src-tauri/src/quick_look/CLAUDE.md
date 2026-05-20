@@ -82,10 +82,14 @@ macro can't coerce. We compute the URL once and let the macro do the wrapping. S
 `previewItemAtIndex` in `controller.rs`.
 
 **Gotcha**: Setting `is_open = false` inside `close_on_main` races the close observer.
-**Why**: `panel.orderOut(nil)` triggers `NSWindowWillCloseNotification` asynchronously. If we
-flip `is_open` synchronously here AND the observer flips it again on the notification, a quick
-reopen could see `is_open == false` (good) but then the observer's late flip resets to false
-mid-reopen, breaking the reopen. The observer path is the single source of truth.
+**Why**: `panel.orderOut(nil)` posts `NSWindowWillCloseNotification` asynchronously. Apple's
+docs don't mention this (they only attribute the notification to `[NSWindow close]`), but
+empirically `QLPreviewPanel` posts it on `orderOut:` too — verified via the MCP smoke procedure
+in `apps/desktop/test/manual/quick-look-mcp.md`: the observer fires ~200 ms after the close IPC
+returns. If we flip `is_open` synchronously here AND the observer flips it again on the
+notification, a quick reopen could see `is_open == false` (good) but then the observer's late
+flip resets to false mid-reopen, breaking the reopen. The observer path is the single source of
+truth; don't introduce a parallel flip.
 
 **Gotcha**: `Path::exists()` is not a valid Quick Look gate.
 **Why**: MTP virtual paths return false from `exists()` even when the file is real on the device.
