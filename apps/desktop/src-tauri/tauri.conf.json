@@ -11,6 +11,7 @@
   },
   "app": {
     "withGlobalTauri": false,
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "Cmdr",
@@ -25,7 +26,13 @@
           "y": 17
         },
         "hiddenTitle": true,
-        "acceptFirstMouse": true
+        "acceptFirstMouse": true,
+        "windowEffects": {
+          "effects": ["sidebar"],
+          "state": "followsWindowActiveState"
+        },
+        "backgroundColor": [0, 0, 0, 0],
+        "transparent": true
       }
     ],
     "security": {

@@ -12,14 +12,20 @@
   color-scheme: light dark;
 
   /* === Backgrounds === */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f5f5f5;
+  /* Background tokens are intentionally semi-transparent so the macOS
+     `NSVisualEffectView` (Sidebar material, applied via
+     `tauri.conf.json` › `windowEffects`) shows through with a subtle
+     wallpaper-blur — Finder-style "liquid glass". Tuned at ~88% so text
+     contrast against the underlying material still clears WCAG AA in both
+     light and dark wallpapers; verified by `a11y-contrast`. */
+  --color-bg-primary: rgba(255, 255, 255, 0.85);
+  --color-bg-secondary: rgba(245, 245, 245, 0.5);
   --color-bg-tertiary: #e8e8e8;
   /* Status-bar surface that contrasts gently with `--color-bg-secondary`.
      Light: a touch darker than secondary. Dark: a touch lighter. Used by
      `SelectionInfo` so the status band reads as distinct from the
      function-key bar below (which keeps `--color-bg-secondary`). */
-  --color-bg-info-bar: #ececec;
+  --color-bg-info-bar: rgba(236, 236, 236, 0.5);
 
   /* === Borders === */
   --color-border-strong: #bbb;
@@ -111,8 +117,14 @@
   --color-toast-success-stripe: #16a34a;
   --color-toast-success-bg: #f0fdf4;
 
-  /* === Striped rows (zebra striping for file lists) === */
-  --color-bg-stripe: color-mix(in oklch, var(--color-bg-primary), var(--color-text-primary) 4%);
+  /* === Striped rows (zebra striping for file lists) ===
+     Uses an OPAQUE `#ffffff` base (not `var(--color-bg-primary)`, which is
+     now translucent for the macOS vibrancy backdrop). Striped rows are a
+     visual replacement of the base pane bg, so they should be a single
+     opaque layer rather than a second translucent layer stacked on top of
+     `.content`'s `bg-primary` — that would double the alpha (~99.5%) and
+     produce a visible darker stripe vs non-stripe rows. */
+  --color-bg-stripe: color-mix(in oklch, #ffffff, var(--color-text-primary) 4%);
 
   /* === Volume tint palette (12 hues + none) ===
      The 100% saturated swatches shown in the Settings color picker for
@@ -154,7 +166,7 @@
    * them lives further down (search for "selection-fg fallback"). The
    * contrast checker's `row_state_matrix.go` synthesizer mirrors it. */
   --color-selection-fg-primary: #cc0000;
-  --color-selection-fg-cursor: #b80808;
+  --color-selection-fg-cursor: #a30000;
   --color-selection-fg-fallback: var(--color-text-primary);
   --color-selection-fg: var(--color-selection-fg-primary);
   /* Selection background and hairline border applied to selected rows in
@@ -358,6 +370,19 @@
   --color-age-old: var(--color-text-secondary);
 }
 
+/* === Translucency: Off ===
+   When the user disables `appearance.translucency` (Settings > Appearance >
+   Colors and formats), the three translucent bg tokens snap to fully opaque
+   values so the webview covers the macOS `NSVisualEffectView` Sidebar
+   material that sits behind it. The visual-effect view itself is set up
+   statically in `tauri.conf.json` and stays alive — disabling it at runtime
+   would need a Tauri command — but the opaque webview hides it. */
+:root[data-translucency='off'] {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f5;
+  --color-bg-info-bar: #ececec;
+}
+
 /* selection-fg fallback: dark mode + pane tint + focused cursor on a selected
    row. In this state the row bg becomes the translucent yellow accent
    composited over a tinted dark surface — Y around 0.09. Even the brightest
@@ -459,12 +484,15 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* === Backgrounds === */
-    --color-bg-primary: #1e1e1e;
-    --color-bg-secondary: #2a2a2a;
+    /* Semi-transparent for the same Sidebar-material reason as light mode.
+       Slightly heavier alpha than light mode because dark backgrounds need
+       more body to keep text contrast against bright wallpapers. */
+    --color-bg-primary: rgba(30, 30, 30, 0.93);
+    --color-bg-secondary: rgba(42, 42, 42, 0.7);
     --color-bg-tertiary: #333333;
     /* Dark mode: lighter than secondary (opposite of light mode) so the
        status band lifts away from the function-key bar below. */
-    --color-bg-info-bar: #323232;
+    --color-bg-info-bar: rgba(50, 50, 50, 0.7);
 
     /* === Borders === */
     --color-border-strong: #555555;
@@ -547,6 +575,12 @@
     --color-git-portal-text: #80deea;
     --color-git-portal-subtle: color-mix(in oklch, var(--color-git-portal), transparent 85%);
 
+    /* === Striped rows (dark) ===
+       Same logic as light mode: opaque base so striped rows are a single
+       layer that replaces the pane's translucent backdrop, not a second
+       translucent layer that doubles its alpha. */
+    --color-bg-stripe: color-mix(in oklch, #1e1e1e, var(--color-text-primary) 4%);
+
     /* === Search Highlight === */
     --color-highlight: rgba(255, 213, 100, 0.9);
     --color-highlight-active: rgba(255, 150, 100, 0.9);
@@ -581,6 +615,15 @@
     --color-age-recent: #a8d040;
     --color-age-aging: #dcc24a;
     --color-age-old: #d49858;
+  }
+
+  /* === Translucency: Off (dark) ===
+     Same logic as light mode (see the light-mode block for the full
+     rationale): opaque values so the webview covers the visual-effect view. */
+  :root[data-translucency='off'] {
+    --color-bg-primary: #1e1e1e;
+    --color-bg-secondary: #2a2a2a;
+    --color-bg-info-bar: #323232;
   }
 
   /* Old-WebKit fallback (dark mode). See the light-mode counterpart above for
@@ -912,7 +955,12 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: var(--color-bg-primary);
+  /* `html` must stay transparent so the macOS `NSVisualEffectView`
+     (Sidebar material, set in `tauri.conf.json`) shows through. The
+     opaque `--bg` in `app.html`'s inline critical CSS was the original
+     blocker; this rule is the belt-and-braces override in case the
+     inline style ever drifts. */
+  background-color: transparent;
   color: var(--color-text-primary);
   /* Disable text selection globally */
   user-select: none;
@@ -921,6 +969,14 @@ body {
   cursor: default;
 }
 
+/* `body` is intentionally transparent so the chrome bars (`.tab-bar`,
+   `.title-bar`, `.header`, `.selection-info`, etc., each painted with
+   `--color-bg-secondary` / `--color-bg-info-bar`) are the only layer between
+   the user and the `NSVisualEffectView` (Sidebar material, set in
+   `tauri.conf.json`). Without this, body's `--color-bg-primary` would paint
+   underneath every bar, compounding alpha (1 − (1 − α_body) × (1 − α_bar))
+   and pushing the chrome to ~99 % opaque. File rows have no bg of their own
+   either, so the file list area shows pure vibrancy. */
 body {
   display: flex;
   flex-direction: column;

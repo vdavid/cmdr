@@ -2624,6 +2624,16 @@
         flex-direction: column;
         /* Anchor for the type-to-jump indicator (absolutely positioned, bottom-right). */
         position: relative;
+        /* The pane's single translucent base layer. `.content` is the only
+           ancestor that's mounted continuously across every dynamic state
+           (loading, error, MTP, file list, etc.), so painting it once here
+           guarantees a stable backdrop with no transition frame where the
+           vibrancy bleeds through. Downstream views (FullList / BriefList /
+           ErrorPane / …) keep their interior elements transparent so this
+           stays the single base layer — no doubling. Highlights (selection,
+           cursor) sit on top intentionally; their alpha is the tint, not a
+           second base layer. */
+        background-color: var(--color-bg-primary);
     }
 
     .error-message {

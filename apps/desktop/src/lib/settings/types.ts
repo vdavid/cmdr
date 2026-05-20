@@ -123,6 +123,7 @@ export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | 
 export interface SettingsValues {
   // Appearance
   'appearance.appColor': AppColor
+  'appearance.translucency': boolean
   'appearance.textSize': number
   'appearance.uiDensity': UiDensity
   'appearance.useAppIconsForDocuments': boolean

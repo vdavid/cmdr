@@ -69,16 +69,16 @@ compact/comfortable/spacious). The virtual scroll uses an `itemSize` parameter f
 
 **Decision**: `FullList`'s column header lives **inside** the scroll container as a `position: sticky; top: 0;` child,
 not as a sibling above. **Why**: when the user has "Always show scrollbars" set (System Settings → Appearance),
-non-overlay scrollbars steal a ~15 px gutter from the scroll container. A sibling header rendering at the wrapper's
-full width then misaligned with the data rows below. Moving the header inside makes it share the row content width
+non-overlay scrollbars steal a ~15 px gutter from the scroll container. A sibling header rendering at the wrapper's full
+width then misaligned with the data rows below. Moving the header inside makes it share the row content width
 automatically (and therefore the scrollbar gutter), so columns line up at every scrollbar mode without JS measurement.
 The trade-off is virtual-scroll math: row positions are now `headerHeight` pixels into the scrollable content, so
-`FullList` derives `spacerScrollTop = max(0, scrollTop - headerHeight)` and `rowAreaHeight = containerHeight -
-headerHeight` and feeds those into `calculateVirtualWindow` / `getScrollToPosition` / `firstVisibleGlobalIndex` /
-`lastVisibleGlobalIndex` / `getVisibleItemsCountUtil`. `scrollToIndex` adds `headerHeight` back when writing to
-`scrollContainer.scrollTop`. A11y: the listbox role moves off `.full-list` (now a generic scroll container) onto a
-`.listbox-region` inner wrapper around `.virtual-spacer` so the sticky header isn't a direct child of the listbox
-(would violate `aria-required-children`).
+`FullList` derives `spacerScrollTop = max(0, scrollTop - headerHeight)` and
+`rowAreaHeight = containerHeight - headerHeight` and feeds those into `calculateVirtualWindow` / `getScrollToPosition` /
+`firstVisibleGlobalIndex` / `lastVisibleGlobalIndex` / `getVisibleItemsCountUtil`. `scrollToIndex` adds `headerHeight`
+back when writing to `scrollContainer.scrollTop`. A11y: the listbox role moves off `.full-list` (now a generic scroll
+container) onto a `.listbox-region` inner wrapper around `.virtual-spacer` so the sticky header isn't a direct child of
+the listbox (would violate `aria-required-children`).
 
 **Decision**: Virtual scroll in frontend, data in backend **Why**: Sending 50k entries over IPC = 17.4MB, ~4s transfer.
 Virtual scroll fetches only visible ~50 items on demand. Backend-driven caching eliminates serialization overhead.

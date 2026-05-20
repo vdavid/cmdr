@@ -896,9 +896,7 @@
             </div>
         </div>
         {#if (hasParent ? totalCount - 1 : totalCount) === 0}
-            <div class="empty-folder-message" style="height: {rowAreaHeight - (hasParent ? rowHeight : 0)}px;">
-                Empty folder
-            </div>
+            <div class="empty-folder-message">Empty folder</div>
         {/if}
         </div>
     </div>
@@ -952,9 +950,28 @@
     /* Semantic wrapper for the listbox role; no visual styling. The class
        exists so the role + aria-activedescendant can sit on a child of the
        scroll container without violating aria-required-children (the sticky
-       header is a sibling, not a child of this region). */
+       header is a sibling, not a child of this region).
+       `min-height: calc(100% - <header height>)` makes the listbox always
+       span the rest of the pane below the sticky header, even when there
+       are fewer rows than fit on screen — so the empty area is still part
+       of the listbox (for hit testing / focus) while staying transparent
+       (file rows paint the bg, not this wrapper). The header's own height
+       is `calc(22px * var(--font-scale))`, mirrored here so subtracting it
+       lands the listbox exactly flush with the scroll container's bottom
+       at every text scale, with no spurious scrollbar. */
+    /* Semantic listbox wrapper — no background, no stacking context. The
+       pane bg lives on `.file-pane > .content` (see FilePane.svelte). */
     .listbox-region {
         outline: none;
+    }
+
+    .empty-folder-message {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
     }
 
     .virtual-window {
@@ -967,6 +984,12 @@
         padding: var(--spacing-xxs) var(--spacing-sm);
         gap: var(--spacing-sm);
         align-items: center;
+        /* Rows are transparent. The pane's base translucent layer lives on
+           `.file-pane > .content` (see FilePane.svelte) — painting it once
+           there is the single-source-of-truth approach: every pane pixel
+           gets exactly one base layer, never zero (no flicker on state
+           swap) and never two (no double-paint). Highlights (selection,
+           cursor) keep their own bgs and sit on top as intentional tints. */
         /* Guarantee one visual line per row regardless of cell content length */
         white-space: nowrap;
         transition: grid-template-columns 300ms ease;
@@ -1292,12 +1315,4 @@
         color: var(--color-text-primary);
     }
 
-    .empty-folder-message {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-    }
 </style>

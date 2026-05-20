@@ -974,6 +974,8 @@
         padding: var(--spacing-xxs) var(--spacing-sm);
         gap: var(--spacing-sm);
         align-items: center;
+        /* Rows are transparent; pane bg lives on `.file-pane > .content`.
+           See FullList.svelte / FilePane.svelte for the rationale. */
         white-space: nowrap;
         overflow: hidden;
     }

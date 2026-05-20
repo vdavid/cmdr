@@ -759,12 +759,17 @@
         position: relative;
     }
 
+    /* The dev/e2e overlay alpha was tuned for an opaque title bar. With the
+       title bar now `bg-secondary` (translucent for the macOS vibrancy
+       backdrop), a 60% tint piles on top and washes the glass out. Drop the
+       tint to 25% — the hue still reads clearly as DEV / E2E, and the
+       remaining vibrancy stays visible (`~22%` of the wallpaper showing). */
     /*noinspection CssUnusedSymbol*/
     .title-bar.dev-mode::after {
         content: '';
         position: absolute;
         inset: 0;
-        background-color: color-mix(in srgb, hotpink, transparent 40%);
+        background-color: color-mix(in srgb, hotpink, transparent 75%);
         pointer-events: none;
     }
 
@@ -773,7 +778,7 @@
         content: '';
         position: absolute;
         inset: 0;
-        background-color: color-mix(in srgb, dodgerblue, transparent 40%);
+        background-color: color-mix(in srgb, dodgerblue, transparent 75%);
         pointer-events: none;
     }
 

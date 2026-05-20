@@ -60,6 +60,19 @@ function applyDateColors(palette: DateColorsPalette): void {
 }
 
 /**
+ * Toggles the window's translucent (macOS `NSVisualEffectView` Sidebar
+ * material) backdrop by setting `data-translucency` on the root element.
+ * `app.css` scopes the opaque-bg fallback to `[data-translucency='off']`.
+ * The vibrancy material is configured statically in `tauri.conf.json` and
+ * stays alive behind the webview either way; when this is off, the CSS
+ * paints the webview's bg fully opaque so the material isn't visible.
+ */
+function applyTranslucency(enabled: boolean): void {
+  document.documentElement.dataset.translucency = enabled ? 'on' : 'off'
+  log.debug('Applied translucency: {enabled}', { enabled })
+}
+
+/**
  * Density currently has no CSS-side effect: `--spacing-icon-size` is owned
  * by `app.css` as `calc(16px * var(--font-scale))`, and row height /
  * density-spacing flow through `getRowHeight()` / `getDensitySpacing()`
@@ -131,6 +144,9 @@ function applyAllSettings(): void {
   // Date age color palette
   applyDateColors(getSetting('appearance.dateColors'))
 
+  // Translucency (macOS vibrancy backdrop)
+  applyTranslucency(getSetting('appearance.translucency'))
+
   // Theme (light / dark / system). Must run at startup or windows that open
   // before the user touches Settings will flash the wrong theme.
   void applyTheme(getSetting('theme.mode'))
@@ -183,6 +199,10 @@ function handleSettingChange(id: string, value: unknown): void {
   }
   if (id === 'appearance.dateColors') {
     applyDateColors(value as DateColorsPalette)
+    return
+  }
+  if (id === 'appearance.translucency') {
+    applyTranslucency(value as boolean)
     return
   }
   if (id === 'theme.mode') {
