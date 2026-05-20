@@ -11,6 +11,7 @@
         "core:window:allow-start-dragging",
         "core:window:allow-close",
         "core:window:allow-theme",
+        "core:window:allow-set-effects",
         "core:webview:allow-webview-close",
         "core:webview:allow-create-webview-window",
         "core:app:allow-set-app-theme",

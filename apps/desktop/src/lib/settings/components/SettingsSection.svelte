@@ -23,8 +23,9 @@
         font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-sm);
-        padding-bottom: var(--spacing-xs);
-        border-bottom: 1px solid var(--color-border);
+        /* Border / padding removed — the larger bottom margin gives the title
+           breathing room from the rows below without a horizontal hairline,
+           matching System Settings. */
+        margin: 0 0 var(--spacing-lg);
     }
 </style>

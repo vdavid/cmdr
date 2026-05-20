@@ -18,7 +18,9 @@
  */
 
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emitTo } from '@tauri-apps/api/event'
+import { Effect, EffectState } from '@tauri-apps/api/window'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { decorateChildWindowTitle, getAppMode } from '$lib/app-mode'
@@ -78,7 +80,7 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
   // "SMB/Network shares"). Plain `join('/')` would split incorrectly on the receiving end.
   const scale = getEffectiveScale()
 
-  new WebviewWindow('settings', {
+  const win = new WebviewWindow('settings', {
     url: section ? `/settings?section=${encodeURIComponent(JSON.stringify(section))}` : '/settings',
     title: decorateChildWindowTitle('Settings'),
     // Open at max width so the content-area starts at its scaled cap; user can
@@ -92,5 +94,36 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
     resizable: true,
     decorations: true,
     focus: !isE2e,
+    // Translucent glass backdrop — mirrors the main window. Requires
+    // `tauri/macos-private-api` (already enabled in `Cargo.toml`).
+    transparent: true,
+    backgroundColor: [0, 0, 0, 0],
+    // Overlay title bar so the traffic lights can sit inside the sidebar
+    // (see `routes/settings/+page.svelte` for the matching layout). The
+    // `hiddenTitle` keeps the OS from painting the window title text.
+    titleBarStyle: 'overlay',
+    hiddenTitle: true,
+    trafficLightPosition: new LogicalPosition(20, 29),
+  })
+
+  // Apply the `NSVisualEffectView` Sidebar material **after** creation. The
+  // `windowEffects` field on the JS `WebviewWindow` options was silently
+  // dropping on the way to the Rust runtime in this Tauri version, leaving
+  // the settings window with no vibrancy behind the translucent webview.
+  // `setEffects` is the explicit IPC path and reliably installs the
+  // material; the `core:window:allow-set-effects` permission is granted in
+  // `capabilities/settings.json`. Radius matches `--radius-xxl` in
+  // `app.css` so the NSWindow corner curve and the webview's CSS clip line
+  // up exactly.
+  win.once('tauri://created', () => {
+    void win
+      .setEffects({
+        effects: [Effect.Sidebar],
+        state: EffectState.FollowsWindowActiveState,
+        radius: 29,
+      })
+      .catch((error: unknown) => {
+        log.warn('Failed to apply window effects: {error}', { error: String(error) })
+      })
   })
 }

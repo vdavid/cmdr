@@ -6,6 +6,7 @@
 import {
   getSetting,
   onSettingChange,
+  onSpecificSettingChange,
   initializeSettings,
   type UiDensity,
   type SizeColorsPalette,
@@ -70,6 +71,26 @@ function applyDateColors(palette: DateColorsPalette): void {
 function applyTranslucency(enabled: boolean): void {
   document.documentElement.dataset.translucency = enabled ? 'on' : 'off'
   log.debug('Applied translucency: {enabled}', { enabled })
+}
+
+/**
+ * Per-window translucency hook. The full `initSettingsApplier` lifecycle has
+ * a lot of main-window-only side effects (backend pushes, density getters,
+ * etc.) and only runs in `(main)/+layout.svelte`. Secondary windows
+ * (settings, viewer) need just the CSS-token side of translucency on their
+ * own `<html>` element — each Tauri webview has its own DOM, so the
+ * `data-translucency` attribute is per-window.
+ *
+ * Call this on the secondary window's mount; the returned function cleans
+ * up the subscription. Reads the current value, applies it immediately,
+ * and subscribes via `onSpecificSettingChange` so toggles in the Settings
+ * window propagate via the cross-window `settings:changed` event.
+ */
+export function subscribeTranslucency(): () => void {
+  applyTranslucency(getSetting('appearance.translucency'))
+  return onSpecificSettingChange('appearance.translucency', (_id, value) => {
+    applyTranslucency(value)
+  })
 }
 
 /**

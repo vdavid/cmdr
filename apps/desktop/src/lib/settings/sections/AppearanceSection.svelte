@@ -24,6 +24,7 @@
     // Definitions for rendering (with fallbacks for type safety)
     const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
     const appColorDef = getSettingDefinition('appearance.appColor') ?? { label: '', description: '' }
+    const translucencyDef = getSettingDefinition('appearance.translucency') ?? { label: '', description: '' }
     const sizeColorsDef = getSettingDefinition('appearance.sizeColors') ?? { label: '', description: '' }
     const dateColorsDef = getSettingDefinition('appearance.dateColors') ?? { label: '', description: '' }
     const dateTimeDef = getSettingDefinition('appearance.dateTimeFormat') ?? { label: '', description: '' }
@@ -97,7 +98,24 @@
                             setSetting('appearance.appColor', 'system')
                         }}
                     />
-                    <span class="color-swatch system-swatch"></span>
+                    <!-- The system swatch doubles as a click-through to
+                         System Settings › Appearance (where the user actually
+                         changes the underlying color). No visual cue by
+                         intent — discoverable, not advertised.
+                         `stopPropagation` keeps the click from also flipping
+                         the surrounding radio. -->
+                    <span
+                        class="color-swatch system-swatch"
+                        role="button"
+                        tabindex="-1"
+                        aria-label="Open System Settings to change the system theme color"
+                        onclick={(e: MouseEvent) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            void openAppearanceSettings()
+                        }}
+                        onkeydown={() => {}}
+                    ></span>
                     <span class="app-color-label">System theme color</span>
                 </label>
                 <label class="app-color-option">
@@ -115,6 +133,20 @@
                     <span class="app-color-label">Cmdr gold</span>
                 </label>
             </div>
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('appearance.translucency')}
+        <SettingRow id="appearance.translucency" label={translucencyDef.label} description="" {searchQuery}>
+            {#snippet descriptionContent()}
+                Liquid glass-y look if also enabled in your
+                <LinkButton onclick={() => void openAppearanceSettings()}
+                    >{isMacOS()
+                        ? `${systemStrings.systemSettings}`
+                        : 'desktop appearance settings'}</LinkButton
+                >.
+            {/snippet}
+            <SettingSwitch id="appearance.translucency" />
         </SettingRow>
     {/if}
 
@@ -380,7 +412,11 @@
     .tint-group {
         margin-top: var(--spacing-md);
         padding-top: var(--spacing-md);
-        border-top: 1px solid var(--color-border-subtle);
+        /* `border-top` removed — the preceding `.setting-row` already
+           paints its own `border-bottom`, so a `border-top` here renders
+           a doubled separator between "Striped rows" and "Tint volume
+           types". The `padding-top` + `margin-top` give the group
+           breathing room without an extra hairline. */
     }
 
     .tint-group-heading {

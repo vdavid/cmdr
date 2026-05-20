@@ -26,6 +26,29 @@
      `SelectionInfo` so the status band reads as distinct from the
      function-key bar below (which keeps `--color-bg-secondary`). */
   --color-bg-info-bar: rgba(236, 236, 236, 0.5);
+  /* Settings-window sidebar (the "section selector"). In light mode the
+     sidebar reads as a near-white "card" that's slightly **lighter** than
+     the rest of the translucent window (`--color-bg-primary` ≈ 0.85α). A
+     subtle two-stop gradient (darker top-left → ~10% brighter bottom-right)
+     gives the card a faint diagonal lift. Dark-mode overrides flip both
+     stops to a darker pair (see the dark block below). */
+  --color-bg-sidebar-from: rgba(255, 255, 255, 0.9);
+  --color-bg-sidebar-to: rgba(255, 255, 255, 0.96);
+  /* Settings-window background. Kept distinct from `--color-bg-primary` so
+     we can push the settings window further into glass territory without
+     dragging the main window's file-list alpha down (which the a11y matrix
+     caps at 0.85 light / 0.93 dark on the brown-tint cursor-active
+     corner). The `row_state_matrix.go` synthesizer doesn't pair settings
+     contexts, so going lower here is safe by that check; verify text
+     legibility manually against busy wallpapers. */
+  --color-bg-settings-primary: rgba(255, 255, 255, 0.6);
+  /* Sidebar border + box-shadow. In light mode: a 1 px white border to
+     "extend" the card edge into the white interior, plus a faint, mostly-
+     right-leaning shadow so the card visibly floats over the vibrant frame.
+     Dark mode keeps a regular border and no shadow (the bg contrast alone
+     does the work there). */
+  --color-sidebar-border: rgba(255, 255, 255, 0.95);
+  --shadow-sidebar: 6px 0 18px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.03);
 
   /* === Borders === */
   --color-border-strong: #bbb;
@@ -296,6 +319,14 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  /* Mid-large radius — used for "card" elements inside translucent windows
+     (e.g., the settings-window sidebar). */
+  --radius-xl: 20px;
+  /* Window-level radius. Mirrors the `windowEffects.radius` set in
+     `settings-window.ts` so the webview's content clips at the same curve
+     the NSWindow does (no square-corner vibrancy leak). Matches Apple's
+     Sequoia/Tahoe stock material-panel window radius. */
+  --radius-xxl: 29px;
   --radius-full: 9999px;
 
   /* === Shadows (light) === */
@@ -381,6 +412,10 @@
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f5f5f5;
   --color-bg-info-bar: #ececec;
+  --color-bg-sidebar-from: #fafafa;
+  --color-bg-sidebar-to: #ffffff;
+  --color-sidebar-border: #ffffff;
+  --color-bg-settings-primary: #ffffff;
 }
 
 /* selection-fg fallback: dark mode + pane tint + focused cursor on a selected
@@ -493,6 +528,20 @@
     /* Dark mode: lighter than secondary (opposite of light mode) so the
        status band lifts away from the function-key bar below. */
     --color-bg-info-bar: rgba(50, 50, 50, 0.7);
+    /* Settings-window sidebar (dark). Same logic as light mode but flipped:
+       both stops sit **darker** than `--color-bg-primary`, with a slight
+       diagonal brightening so the card reads as one panel. */
+    --color-bg-sidebar-from: rgba(18, 18, 18, 0.78);
+    --color-bg-sidebar-to: rgba(38, 38, 38, 0.72);
+    /* Settings-window background (dark). Same rationale as the light
+       counterpart: distinct from `--color-bg-primary` so the settings
+       window can run more glassy without affecting the main window. */
+    --color-bg-settings-primary: rgba(30, 30, 30, 0.7);
+    /* Dark-mode border + shadow: a neutral border for visibility against
+       the dark vibrancy, no box-shadow (bg contrast alone separates the
+       card from the frame). */
+    --color-sidebar-border: var(--color-border);
+    --shadow-sidebar: none;
 
     /* === Borders === */
     --color-border-strong: #555555;
@@ -624,6 +673,10 @@
     --color-bg-primary: #1e1e1e;
     --color-bg-secondary: #2a2a2a;
     --color-bg-info-bar: #323232;
+    --color-bg-sidebar-from: #161616;
+    --color-bg-sidebar-to: #262626;
+    --color-sidebar-border: var(--color-border);
+    --color-bg-settings-primary: #1e1e1e;
   }
 
   /* Old-WebKit fallback (dark mode). See the light-mode counterpart above for

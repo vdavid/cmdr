@@ -679,7 +679,12 @@
             class:e2e-mode={appMode === 'e2e'}
             data-tauri-drag-region
         >
-            <span class="title-text">
+            <!-- Mark the text span as a drag region too. The header above
+                 has `data-tauri-drag-region`, but Tauri's drag detection
+                 looks for the attribute on the element under the cursor
+                 (mousedown target) — without it on the span, mousedowns on
+                 the title text don't initiate a window drag. -->
+            <span class="title-text" data-tauri-drag-region>
                 {#if appMode === 'dev'}DEV MODE - {windowTitle} - DEV MODE{:else if appMode === 'e2e'}E2E MODE - {windowTitle} - E2E MODE{:else}{windowTitle}{/if}
             </span>
         </header>

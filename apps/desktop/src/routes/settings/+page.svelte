@@ -7,6 +7,7 @@
     import { initializeSettings, forceSave as forceSettingsSave } from '$lib/settings'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { subscribeTranslucency } from '$lib/settings/settings-applier'
     import { initTextSize, cleanupTextSize, getEffectiveScale } from '$lib/text-size.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { SETTINGS_BASE_MIN_HEIGHT, settingsMaxWidth, settingsMinWidth } from '$lib/settings/settings-window'
@@ -24,6 +25,7 @@
     let unlistenFocusSelf: UnlistenFn | undefined
     let unlistenNavigate: UnlistenFn | undefined
     let unlistenMcpClose: UnlistenFn | undefined
+    let cleanupTranslucency: (() => void) | undefined
 
     function safeParseSectionParam(raw: string): string[] | null {
         try {
@@ -168,6 +170,12 @@
             await Promise.all([initializeSettings(), initializeShortcuts()])
             log.debug('Settings and shortcuts initialization complete')
 
+            // Apply the translucency setting (data-translucency on <html>)
+            // and subscribe to live toggles. Each Tauri webview has its own
+            // DOM, so the main window's settings-applier doesn't reach this
+            // window — we hook the lightweight per-window helper here.
+            cleanupTranslucency = subscribeTranslucency()
+
             // Read system accent color from macOS and listen for changes
             await initAccentColor()
 
@@ -252,6 +260,7 @@
         unlistenMcpClose?.()
         cleanupAccentColor()
         cleanupTextSize()
+        cleanupTranslucency?.()
     })
 
     // Also handle beforeunload for when window is closed directly
@@ -267,6 +276,14 @@
 <!-- Prevent body from being a tab stop by keeping focus within the settings window -->
 <main class="settings-window" tabindex="-1">
     <h1 class="sr-only">Settings</h1>
+    <!-- Drag region for moving the window. Spans the top strip of the window
+         (40 px) so the user can grab anywhere up there — including over the
+         traffic-light row's free space — to drag. The traffic-light buttons
+         themselves are NSWindow chrome and stay clickable on top of this
+         (`pointer-events: none` would also work; the OS chrome paints over
+         the webview either way). The `data-tauri-drag-region` attribute is
+         what Tauri's overlay-titlebar implementation looks for. -->
+    <div class="window-drag-region" data-tauri-drag-region aria-hidden="true"></div>
     {#if initialized}
         <div class="settings-layout">
             <SettingsSidebar
@@ -290,19 +307,41 @@
     .settings-window {
         width: 100%;
         height: 100vh;
-        background: var(--color-bg-primary);
+        /* `--color-bg-settings-primary` is a settings-only translucent token
+           (defined in `app.css`). Kept separate from `--color-bg-primary` so
+           the settings window can run more glass-y without dragging the main
+           window's file-list alpha down (capped by the a11y row-state matrix
+           at 0.85 / 0.93). The macOS `NSVisualEffectView` (Sidebar material)
+           sits behind the webview thanks to `transparent: true` +
+           `backgroundColor: [0,0,0,0]` + the explicit `setEffects()` call in
+           `settings-window.ts`. */
+        background: var(--color-bg-settings-primary);
         color: var(--color-text-primary);
         font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-sm);
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        /* Anchor for the absolutely-positioned `.window-drag-region` strip. */
+        position: relative;
+        /* Match the OS window corner radius set via
+           `windowEffects.radius` in `settings-window.ts`. Without this the
+           content's edges would square-clip against the rounded NSWindow
+           corners and leak vibrancy through the gap. */
+        border-radius: var(--radius-xxl);
     }
 
     .settings-layout {
         display: flex;
         flex: 1;
         overflow: hidden;
+        /* 8 px of breathing room (`--spacing-sm`) on all four sides — the
+           sidebar's own `border-radius: var(--radius-xl)` makes it float
+           visibly inside this padded frame. Vibrancy peeks through the gap.
+           Padding lives here (not on `.settings-window`) so the drag-region
+           strip can extend edge-to-edge over the window's top, including the
+           area above the padding. */
+        padding: var(--spacing-sm);
     }
 
     .settings-content-wrapper {
@@ -318,5 +357,18 @@
         justify-content: center;
         height: 100%;
         color: var(--color-text-tertiary);
+    }
+
+    /* Invisible drag handle covering the top strip of the window. Lets the
+       user grab and move the window from anywhere above the visible chrome
+       — the traffic lights sit on top as NSWindow buttons, so they keep
+       working. Positioned absolutely so it doesn't push other layout. */
+    .window-drag-region {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        z-index: var(--z-dropdown);
     }
 </style>

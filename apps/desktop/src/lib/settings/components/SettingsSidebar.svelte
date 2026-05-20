@@ -1,4 +1,5 @@
 <script lang="ts">
+    import IconSearch from '~icons/lucide/search'
     import { buildSectionTree, type SettingsSection } from '$lib/settings'
     import { sectionHasMatches } from '$lib/settings/settings-search'
 
@@ -162,12 +163,21 @@
         } else if (event.key === 'ArrowUp') {
             event.preventDefault()
             navigateSections('up')
+        } else if (event.key === 'a' && (event.metaKey || event.ctrlKey)) {
+            // Cmd/Ctrl+A doesn't reach the input by default because the
+            // settings window's Edit menu doesn't bind a Select-All item to
+            // it (the app uses a custom menu, not the macOS-standard Edit
+            // menu). Select the input's text manually so the user gets the
+            // expected behavior.
+            event.preventDefault()
+            searchInput?.select()
         }
     }
 </script>
 
 <aside class="settings-sidebar">
     <div class="search-container">
+        <span class="search-icon" aria-hidden="true"><IconSearch /></span>
         <input
             bind:this={searchInput}
             type="text"
@@ -248,24 +258,58 @@
     .settings-sidebar {
         width: 220px;
         min-width: 220px;
-        border-right: 1px solid var(--color-border);
         display: flex;
         flex-direction: column;
-        background: var(--color-bg-secondary);
+        /* Subtle angled gradient: darker top-left → ~10% brighter bottom-right.
+           In light mode both stops are near-white (sidebar lighter than
+           `--color-bg-primary`); in dark mode both stops are darker. See
+           `app.css` for the tokens. */
+        background: linear-gradient(135deg, var(--color-bg-sidebar-from), var(--color-bg-sidebar-to));
+        /* Sidebar floats as a "card" inside the window's 8 px padding (see
+           `routes/settings/+page.svelte`). Matching radius + thin border +
+           subtle right-leaning shadow define its edge against the vibrant
+           frame around it. The shadow token is `none` in dark mode where
+           the bg contrast alone separates the card. */
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--color-sidebar-border);
+        box-shadow: var(--shadow-sidebar);
+        /* Top padding leaves the traffic-light row clear of the search
+           field. The sidebar's top edge sits at the window's 8 px padding;
+           the lights land at the sidebar's local y ≈ 22 px. */
+        padding-top: calc(var(--spacing-xl) + var(--spacing-md));
     }
 
     .search-container {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-sm);
         position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        /* Sits roughly centered in the input's left padded zone (input-x ≈ 20,
+           where container-x = 8 input-left + 12 = 20). The icon glyph is
+           16 px wide so its right edge lands at input-x ≈ 28, with the
+           text starting at input-x ≈ 36 (= 32 + 4 from the input's
+           padding-left). */
+        left: calc(var(--spacing-sm) + var(--spacing-md));
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        color: var(--color-text-tertiary);
+        pointer-events: none;
+        font-size: var(--font-size-sm);
     }
 
     .search-input {
         width: 100%;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        padding-right: var(--spacing-2xl);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
+        /* ~Double the previous padding for a chunkier, System-Settings-style
+           pill. Vertical: xs → sm (4 → 8). Horizontal: 20 / 24 → 36 / 32. */
+        padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) calc(var(--spacing-2xl) + var(--spacing-xs));
+        border: 1px solid transparent;
+        /* Full pill — System Settings-style. */
+        border-radius: var(--radius-full);
+        background: var(--color-bg-secondary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         outline: none;
@@ -282,7 +326,7 @@
 
     .search-clear {
         position: absolute;
-        right: 12px;
+        right: calc(var(--spacing-sm) + var(--spacing-xs));
         top: 50%;
         transform: translateY(-50%);
         background: none;
