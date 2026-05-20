@@ -205,6 +205,16 @@
         return hosts.findIndex((h) => h.name.toLowerCase() === name.toLowerCase())
     }
 
+    /** Opens the host (or "Connect to server…" row) under the cursor — same action Enter triggers. */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView / MCP
+    export function openCursorItem(): void {
+        if (isCursorOnConnectRow) {
+            onConnectToServer?.()
+        } else if (cursorIndex >= 0 && cursorIndex < hosts.length) {
+            onHostSelect?.(hosts[cursorIndex])
+        }
+    }
+
     /** Check for ⌘R refresh shortcut */
     function isRefreshShortcut(e: KeyboardEvent): boolean {
         return e.key === 'r' && e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey

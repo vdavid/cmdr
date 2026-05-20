@@ -1646,6 +1646,12 @@
      */
     // noinspection JSUnusedGlobalSymbols -- Used dynamically by DualPaneExplorer/MCP
     export async function openCursorItem(): Promise<void> {
+        if (isNetworkView) {
+            // Network view: cursor lives in NetworkBrowser/ShareBrowser, not the file list.
+            // Delegate to NetworkMountView, which forwards to whichever child is active.
+            networkMountViewRef?.openCursorItem()
+            return
+        }
         const entry = getEntryUnderCursor()
         if (!entry) {
             throw new Error('No entry under cursor')

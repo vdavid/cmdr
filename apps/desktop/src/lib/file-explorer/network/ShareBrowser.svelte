@@ -317,6 +317,14 @@
         return sortedShares.findIndex((s) => s.name.toLowerCase() === name.toLowerCase())
     }
 
+    /** Opens the share under the cursor — same action Enter triggers. */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView / MCP
+    export function openCursorItem(): void {
+        if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
+            onShareSelect?.(sortedShares[cursorIndex], authenticatedCredentials)
+        }
+    }
+
     function handleShareClick(index: number) {
         cursorIndex = index
     }

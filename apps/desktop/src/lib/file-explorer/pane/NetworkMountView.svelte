@@ -184,6 +184,16 @@
         return networkBrowserRef?.findItemIndex(name) ?? -1
     }
 
+    /** Opens the host or share under the cursor — same action Enter triggers. */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by FilePane / MCP
+    export function openCursorItem(): void {
+        if (currentNetworkHost) {
+            shareBrowserRef?.openCursorItem()
+        } else {
+            networkBrowserRef?.openCursorItem()
+        }
+    }
+
     /** Refresh network hosts (used by ⌘R shortcut). */
     export function refreshNetworkHosts() {
         networkBrowserRef?.refresh()

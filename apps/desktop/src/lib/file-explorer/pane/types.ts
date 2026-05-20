@@ -100,6 +100,7 @@ export interface BrowserAPI {
   handleKeyDown(e: KeyboardEvent): boolean
   setCursorIndex(index: number): void
   findItemIndex(name: string): number
+  openCursorItem(): void
 }
 
 /** Typed interface for NetworkBrowser's exported methods (extends BrowserAPI with refresh). */
@@ -112,6 +113,7 @@ export interface NetworkMountViewAPI {
   handleKeyDown(e: KeyboardEvent): void
   setCursorIndex(index: number): void
   findItemIndex(name: string): number
+  openCursorItem(): void
   refreshNetworkHosts(): void
   setNetworkHost(host: NetworkHost | null): void
 }
