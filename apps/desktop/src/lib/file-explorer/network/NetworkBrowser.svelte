@@ -205,6 +205,18 @@
         return hosts.findIndex((h) => h.name.toLowerCase() === name.toLowerCase())
     }
 
+    /**
+     * Returns the host under the cursor, or `null` when the cursor sits on the
+     * "Connect to server…" pseudo-row or the list is empty. Consumed by the
+     * "Copy path between panes" command so cursor-on-server mirrors that server.
+     */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView
+    export function getHostUnderCursor(): NetworkHost | null {
+        if (isCursorOnConnectRow) return null
+        if (cursorIndex < 0 || cursorIndex >= hosts.length) return null
+        return hosts[cursorIndex]
+    }
+
     /** Opens the host (or "Connect to server…" row) under the cursor — same action Enter triggers. */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView / MCP
     export function openCursorItem(): void {
@@ -289,6 +301,11 @@
             return true
         }
 
+        // ⌘← / ⌘→ are reserved for "Copy path between panes" (document-level
+        // dispatch), so let them bubble instead of jumping the cursor.
+        if (e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+            return false
+        }
         if (handleArrowAndEnter(e.key)) {
             e.preventDefault()
             return true

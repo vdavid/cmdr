@@ -464,6 +464,17 @@
 
     /** Applies a path change to the active tab in-place (the normal non-pinned flow). */
     function applyPathChange(pane: 'left' | 'right', path: string) {
+        // Drop stale `onPathChange` events that arrive after the pane was
+        // switched to the virtual `network` volume. Without this gate, a
+        // listing-complete from the previous SMB folder lands after the user
+        // (or a command like "Copy path between panes") flips to Network, and
+        // `pushPath` inherits `volumeId='network'` while writing a real path
+        // — corrupting both `pane.path` and `lastUsedPathForVolume('network')`.
+        const currentVolumeId = getPaneVolumeId(pane)
+        if (currentVolumeId === 'network' && !path.startsWith('smb://')) {
+            log.debug('Dropping stale onPathChange on network pane: {path}', { path })
+            return
+        }
         setPanePath(pane, path)
         setPaneHistory(pane, pushPath(getPaneHistory(pane), path))
         saveAppStatus({ [paneKey(pane, 'path')]: path })
@@ -2375,6 +2386,103 @@
 
         log.warn('Volume not found: {name}', { name })
         return false
+    }
+
+    /**
+     * "Copy path from <source> to <target> pane" command. Mirrors the source
+     * pane's location (volume + path + network state) into the target pane,
+     * without shifting keyboard focus. When the source pane is focused, the
+     * cursor refines the destination: cursor-on-folder uses the folder's path;
+     * cursor-on-server (network browser) sets the target's selected host;
+     * cursor-on-share (share browser) queues auto-mount on the target.
+     */
+    export function copyPathBetweenPanes(source: 'left' | 'right', target: 'left' | 'right'): void {
+        if (source === target) return
+        const sourcePaneRef = getPaneRef(source)
+        if (!sourcePaneRef) return
+
+        const sourceVolumeId = getPaneVolumeId(source)
+        const sourcePath = getPanePath(source)
+        const sourceHistoryEntry = getCurrentEntry(getPaneHistory(source))
+        const sourceHost = sourceHistoryEntry.networkHost ?? null
+        const sourceFocused = focusedPane === source
+
+        // Normal listing on the source: cursor-on-folder refines the path.
+        if (sourceVolumeId !== 'network') {
+            let destPath = sourcePath
+            if (sourceFocused) {
+                const entry = sourcePaneRef.getCursorEntry()
+                if (entry && entry.isDirectory && entry.name !== '..') {
+                    destPath = entry.path
+                }
+            }
+            mirrorLocalStateToPane(target, sourceVolumeId, destPath)
+            return
+        }
+
+        // Source is on the network volume (host list or share list).
+        let destHost: NetworkHost | null = sourceHost
+        let destAutoMountShare: string | undefined
+        if (sourceFocused) {
+            const cursor = sourcePaneRef.getNetworkCursorEntry()
+            if (cursor?.kind === 'host') {
+                destHost = cursor.host
+            } else if (cursor?.kind === 'share' && sourceHost) {
+                destAutoMountShare = cursor.share.name
+            }
+        }
+        mirrorNetworkStateToPane(target, destHost, destAutoMountShare)
+    }
+
+    /** Helper: mirror a {volumeId, path} state to a target pane without shifting focus. */
+    function mirrorLocalStateToPane(target: 'left' | 'right', volumeId: string, path: string): void {
+        const originalFocused = focusedPane
+        const targetVolumeId = getPaneVolumeId(target)
+        if (targetVolumeId !== volumeId) {
+            const volumePath = volumes.find((v) => v.id === volumeId)?.path ?? path
+            handleVolumeChange(target, volumeId, volumePath, path)
+        } else if (getPanePath(target) === path) {
+            // Already on the same volume and path; nothing to do.
+        } else {
+            setPanePath(target, path)
+            setPaneHistory(target, pushPath(getPaneHistory(target), path))
+            saveAppStatus({ [paneKey(target, 'path')]: path })
+            saveTabsForPaneSide(target)
+            void getPaneRef(target)?.navigateToPath(path)
+        }
+        restoreFocus(originalFocused)
+    }
+
+    /** Helper: mirror a network state ({host, autoMountShare}) to a target pane without shifting focus. */
+    function mirrorNetworkStateToPane(
+        target: 'left' | 'right',
+        host: NetworkHost | null,
+        autoMountShare: string | undefined,
+    ): void {
+        const originalFocused = focusedPane
+        const targetPaneRef = getPaneRef(target)
+        if (getPaneVolumeId(target) !== 'network') {
+            handleVolumeChange(target, 'network', 'smb://', 'smb://')
+        }
+        targetPaneRef?.setNetworkHost(host)
+        setPaneHistory(
+            target,
+            push(getPaneHistory(target), {
+                volumeId: 'network',
+                path: 'smb://',
+                networkHost: host ?? undefined,
+            }),
+        )
+        targetPaneRef?.setNetworkAutoMount(autoMountShare)
+        restoreFocus(originalFocused)
+    }
+
+    /** Restore focus to a pane after a target-pane state change so the user keeps working where they were. */
+    function restoreFocus(pane: 'left' | 'right'): void {
+        if (focusedPane !== pane) {
+            focusedPane = pane
+            saveAppStatus({ focusedPane: pane })
+        }
     }
 
     /**

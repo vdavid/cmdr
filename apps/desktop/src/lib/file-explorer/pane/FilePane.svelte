@@ -239,7 +239,7 @@
     // Disk space info for the current volume (fetched on mount, volume change, and after file ops)
     let volumeSpace: VolumeSpaceInfo | null = $state(null)
 
-    import type { ListViewAPI, VolumeBreadcrumbAPI, NetworkMountViewAPI } from './types'
+    import type { ListViewAPI, VolumeBreadcrumbAPI, NetworkMountViewAPI, NetworkCursorEntry } from './types'
 
     // Component refs for keyboard navigation
     let fullListRef: ListViewAPI | undefined = $state()
@@ -436,6 +436,9 @@
 
     // Network browsing state - tracked here for history navigation integration
     let currentNetworkHost = $state<NetworkHost | null>(null)
+    // Pending share to auto-mount on the network host. Set by "Copy path between
+    // panes" when the source pane has the cursor on a share. Cleared on volume leave.
+    let pendingAutoMountShare = $state<string | undefined>(undefined)
 
     // Clear the selected network host whenever the pane leaves the network
     // volume so that re-entering Network always lands on the host list, not on
@@ -452,6 +455,9 @@
     $effect(() => {
         if (!isNetworkView && currentNetworkHost !== null) {
             currentNetworkHost = null
+        }
+        if (!isNetworkView && pendingAutoMountShare !== undefined) {
+            pendingAutoMountShare = undefined
         }
     })
 
@@ -502,6 +508,28 @@
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function getPathUnderCursor(): string | undefined {
         return entryUnderCursor?.path
+    }
+
+    /**
+     * The full `FileEntry` under the cursor (or `null`). Used by the
+     * "Copy path between panes" command to detect whether the cursor sits on
+     * a directory (incl. symlinks-to-directories) vs. a file or `..`.
+     * `..` is reported as-is (as a synthetic parent entry); callers should
+     * filter on `name === '..'` if needed.
+     */
+    // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.copyPathBetweenPanes
+    export function getCursorEntry(): FileEntry | null {
+        return entryUnderCursor
+    }
+
+    /**
+     * The network browser's cursor target (host or share), or `null` when
+     * this pane is not in the network view or nothing valid is under the cursor.
+     */
+    // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.copyPathBetweenPanes
+    export function getNetworkCursorEntry(): NetworkCursorEntry | null {
+        if (!isNetworkView) return null
+        return networkMountViewRef?.getNetworkCursorEntry() ?? null
     }
 
     /** Also scrolls to make the cursor visible and syncs state to MCP. */
@@ -831,6 +859,17 @@
     export function setNetworkHost(host: NetworkHost | null): void {
         currentNetworkHost = host
         networkMountViewRef?.setNetworkHost(host)
+    }
+
+    /**
+     * Queues a share to auto-mount once `NetworkMountView`'s `ShareBrowser` is ready.
+     * Survives a not-yet-mounted view because the value is held here and re-passed
+     * via the `initialAutoMountShare` prop. Cleared automatically when the pane
+     * leaves the network volume.
+     */
+    // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.copyPathBetweenPanes
+    export function setNetworkAutoMount(shareName: string | undefined): void {
+        pendingAutoMountShare = shareName
     }
 
     /** Navigates up and selects the folder we came from. Returns false if already at root. */
@@ -1557,8 +1596,19 @@
         // fetchEntryUnderCursor is handled by the $effect tracking cursorIndex
     }
 
+    /**
+     * `⌘←` / `⌘→` belong to "Copy path between panes" (document-level dispatch).
+     * Bail so the local pane handlers don't also move the cursor when those
+     * shortcuts fire. Other modifier + arrow combos keep their existing behavior.
+     */
+    function isShortcutModifierArrow(e: KeyboardEvent): boolean {
+        if (!e.metaKey) return false
+        return e.key === 'ArrowLeft' || e.key === 'ArrowRight'
+    }
+
     // Helper: Handle brief mode key navigation
     function handleBriefModeKeys(e: KeyboardEvent): boolean {
+        if (isShortcutModifierArrow(e)) return false
         const result = briefListRef?.handleKeyNavigation?.(e.key, e)
         if (result !== undefined) {
             e.preventDefault()
@@ -1570,6 +1620,7 @@
 
     // Helper: Handle full mode key navigation
     function handleFullModeKeys(e: KeyboardEvent): boolean {
+        if (isShortcutModifierArrow(e)) return false
         const visibleItems: number = fullListRef?.getVisibleItemsCount?.() ?? 20
         const shortcutResult = handleNavigationShortcut(e, {
             currentIndex: cursorIndex,
@@ -2355,6 +2406,7 @@
                 {paneId}
                 {isFocused}
                 initialNetworkHost={currentNetworkHost}
+                initialAutoMountShare={pendingAutoMountShare}
                 {onVolumeChange}
                 onNetworkHostChange={handleNetworkHostChange}
             />

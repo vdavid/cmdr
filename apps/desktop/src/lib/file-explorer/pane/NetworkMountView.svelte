@@ -4,7 +4,7 @@
     import { mountNetworkShare, resolvePathVolume } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
     import { getAppLogger } from '$lib/logging/logger'
-    import type { NetworkBrowserAPI, BrowserAPI } from './types'
+    import type { NetworkBrowserAPI, ShareBrowserAPI, NetworkCursorEntry } from './types'
     import NetworkBrowser from '../network/NetworkBrowser.svelte'
     import ShareBrowser from '../network/ShareBrowser.svelte'
     import ConnectToServerDialog from '../network/ConnectToServerDialog.svelte'
@@ -17,6 +17,12 @@
         isFocused?: boolean
         /** Externally controlled network host (for history navigation) */
         initialNetworkHost?: NetworkHost | null
+        /**
+         * Share name to auto-mount on this host. Used by "Copy path between
+         * panes" when the source pane has the cursor on a share. Reactive:
+         * a new non-empty value re-arms the auto-mount gate.
+         */
+        initialAutoMountShare?: string | undefined
         onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
         onNetworkHostChange?: (host: NetworkHost | null) => void
     }
@@ -25,6 +31,7 @@
         paneId,
         isFocused = false,
         initialNetworkHost = null,
+        initialAutoMountShare = undefined,
         onVolumeChange,
         onNetworkHostChange,
     }: Props = $props()
@@ -36,7 +43,7 @@
 
     // Connect-to-server dialog
     let showConnectDialog = $state(false)
-    let autoMountShare = $state<string | undefined>(undefined)
+    let autoMountShare = $state<string | undefined>(initialAutoMountShare)
 
     // Mounting state
     let isMounting = $state(false)
@@ -50,11 +57,20 @@
 
     // Component refs for keyboard navigation
     let networkBrowserRef: NetworkBrowserAPI | undefined = $state()
-    let shareBrowserRef: BrowserAPI | undefined = $state()
+    let shareBrowserRef: ShareBrowserAPI | undefined = $state()
 
     // Sync when parent changes the prop (for example, history navigation)
     $effect(() => {
         currentNetworkHost = initialNetworkHost
+    })
+
+    // Push a new auto-mount target down into ShareBrowser. Used by "Copy path
+    // between panes" with cursor on a share. ShareBrowser dedupes repeat values,
+    // so re-passing the same name is harmless.
+    $effect(() => {
+        if (initialAutoMountShare && initialAutoMountShare !== autoMountShare) {
+            autoMountShare = initialAutoMountShare
+        }
     })
 
     function handleNetworkHostSelect(host: NetworkHost) {
@@ -182,6 +198,22 @@
             return shareBrowserRef?.findItemIndex(name) ?? -1
         }
         return networkBrowserRef?.findItemIndex(name) ?? -1
+    }
+
+    /**
+     * Returns what's under the cursor in the network browser stack:
+     * a host (server list), a share (share list), or `null` (connect row,
+     * login form, mounting state, mount error, empty list).
+     */
+    // noinspection JSUnusedGlobalSymbols -- used by FilePane.getNetworkCursorEntry
+    export function getNetworkCursorEntry(): NetworkCursorEntry | null {
+        if (isMounting || mountError) return null
+        if (currentNetworkHost) {
+            const share = shareBrowserRef?.getShareUnderCursor() ?? null
+            return share ? { kind: 'share', share } : null
+        }
+        const host = networkBrowserRef?.getHostUnderCursor() ?? null
+        return host ? { kind: 'host', host } : null
     }
 
     /** Opens the host or share under the cursor — same action Enter triggers. */

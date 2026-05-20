@@ -310,6 +310,17 @@
         return !!selection && !selection.isCollapsed && selection.toString().length > 0
     }
 
+    /**
+     * True when focus is in a text-editing element. Used to let macOS's native
+     * line-start/line-end behavior (⌘← / ⌘→) reach inputs even though those
+     * combos are bound to "Copy path between panes" globally.
+     */
+    function isTextInputFocused(): boolean {
+        const active = document.activeElement
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return true
+        return !!active?.closest('[contenteditable]')
+    }
+
     /** Check if any modal dialog is open that should suppress centralized dispatch. */
     function isModalDialogOpen(): boolean {
         return (
@@ -332,6 +343,12 @@
             // Let the browser copy selected text natively (for example, from the error pane)
             // instead of triggering our file-copy command.
             if (shortcutString === '⌘C' && hasTextSelection()) {
+                return
+            }
+            // Let macOS's native line-start / line-end (⌘← / ⌘→) reach text inputs
+            // instead of triggering "Copy path between panes" from inside a rename
+            // editor, the palette search, the search dialog, settings inputs, etc.
+            if ((shortcutString === '⌘←' || shortcutString === '⌘→') && isTextInputFocused()) {
                 return
             }
             const commandId = lookupCommand(shortcutString)

@@ -11,6 +11,7 @@ export interface ExplorerAPI {
   refocus: () => void
   switchPane: () => void
   swapPanes: () => void
+  copyPathBetweenPanes: (source: 'left' | 'right', target: 'left' | 'right') => void
   toggleVolumeChooser: (pane: 'left' | 'right') => void
   openVolumeChooser: () => void
   closeVolumeChooser: () => void

@@ -106,6 +106,10 @@ row. Clicking it calls `forgetCredentials` and clears `authenticatedCredentials`
 
 Shares displayed sorted case-insensitively. Escape/Backspace go back to host list.
 
+The `autoMountShare` prop fires once per distinct value (tracked via `lastAutoMountAttempt`), not once per
+`ShareBrowser` instance. This lets the "Copy path between panes" command auto-mount a different share without forcing a
+remount when the source pane's cursor moves to another share on the same host.
+
 ## `NetworkLoginForm.svelte`
 
 Props: `host`, `shareName?`, `authMode`, `errorMessage?`, `isConnecting?`, `onConnect`, `onCancel`.

@@ -78,8 +78,10 @@
     // Track authenticated credentials for mounting
     let authenticatedCredentials = $state<{ username: string; password: string } | null>(null)
 
-    // Auto-mount tracking (for smb://host/share URLs)
-    let autoMountAttempted = $state(false)
+    // Auto-mount tracking: track the last share we tried so the same prop value
+    // doesn't re-fire, but a new value (for example via "Copy path between panes"
+    // with cursor on a different share) does.
+    let lastAutoMountAttempt = $state<string | undefined>(undefined)
 
     // Container tracking for PageUp/PageDown
     let listContainer: HTMLDivElement | undefined = $state()
@@ -98,11 +100,12 @@
         void syncPaneStateToMcp()
     })
 
-    // Auto-mount a share if requested (from smb://host/share URL)
+    // Auto-mount a share if requested (from smb://host/share URL, or "Copy path
+    // between panes" with cursor on a share). Fires once per distinct prop value.
     $effect(() => {
         const shareName = autoMountShare
-        if (autoMountAttempted || !shareName || loading || sortedShares.length === 0) return
-        autoMountAttempted = true
+        if (!shareName || shareName === lastAutoMountAttempt || loading || sortedShares.length === 0) return
+        lastAutoMountAttempt = shareName
 
         const match = sortedShares.find(
             (s) => s.name.localeCompare(shareName, undefined, { sensitivity: 'base' }) === 0,
@@ -317,6 +320,19 @@
         return sortedShares.findIndex((s) => s.name.toLowerCase() === name.toLowerCase())
     }
 
+    /**
+     * Returns the share under the cursor, or `null` when nothing valid is highlighted
+     * (login form, empty list, out-of-range index). Consumed by the
+     * "Copy path between panes" command so cursor-on-share mounts that share on the
+     * target pane.
+     */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView
+    export function getShareUnderCursor(): ShareInfo | null {
+        if (showLoginForm) return null
+        if (cursorIndex < 0 || cursorIndex >= sortedShares.length) return null
+        return sortedShares[cursorIndex]
+    }
+
     /** Opens the share under the cursor — same action Enter triggers. */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView / MCP
     export function openCursorItem(): void {
@@ -368,6 +384,11 @@
         return true
     }
 
+    /** `⌘←` / `⌘→` belong to "Copy path between panes" (document-level dispatch). */
+    function isCopyPathBetweenPanesShortcut(e: KeyboardEvent): boolean {
+        return e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+    }
+
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (showLoginForm) {
             // Login form handles its own keyboard events
@@ -394,7 +415,7 @@
             return true
         }
 
-        // Handle arrow keys
+        if (isCopyPathBetweenPanesShortcut(e)) return false
         if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
             e.preventDefault()
             return handleArrowKey(e.key)

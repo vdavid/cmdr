@@ -214,6 +214,14 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       explorerRef?.toggleVolumeChooser('right')
       return
 
+    case 'pane.copyPathLeftToRight':
+      explorerRef?.copyPathBetweenPanes('left', 'right')
+      return
+
+    case 'pane.copyPathRightToLeft':
+      explorerRef?.copyPathBetweenPanes('right', 'left')
+      return
+
     // === Tab commands ===
     case 'tab.new': {
       const success = explorerRef?.newTab()

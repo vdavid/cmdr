@@ -152,6 +152,24 @@ export const commands: Command[] = [
     showInPalette: true,
     shortcuts: ['⌥F2'],
   },
+  {
+    id: 'pane.copyPathLeftToRight',
+    name: 'Copy path from left to right pane',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘→'],
+    description:
+      'Open the left pane’s location on the right. When the left pane is focused and the cursor is on a folder, that folder opens on the right instead.',
+  },
+  {
+    id: 'pane.copyPathRightToLeft',
+    name: 'Copy path from right to left pane',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘←'],
+    description:
+      'Open the right pane’s location on the left. When the right pane is focused and the cursor is on a folder, that folder opens on the left instead.',
+  },
 
   // ============================================================================
   // Main window - Tab commands

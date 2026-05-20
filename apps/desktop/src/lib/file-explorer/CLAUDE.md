@@ -357,6 +357,15 @@ finished importing during the rebuild. This is a SvelteKit bug (sveltejs/kit#152
 crash and forces a clean page reload. The recovery listener is imported from `+layout.ts` (a stable module that survives
 layout component re-evaluation). If sveltejs/kit#15287 gets fixed, the workaround can be removed.
 
+**Stale `onPathChange` from a slow listing can poison a pane after a volume switch.** `FilePane.onPathChange` fires on
+`listing-complete` for whatever path the pane was loading. If the user (or a command like "Copy path between panes")
+flips the pane to a different volume — especially the virtual `network` volume — between `listing-start` and
+`listing-complete`, the stale callback lands on a pane whose `volumeId` no longer matches the path it carries.
+`applyPathChange` in `DualPaneExplorer` guards against the `network` case (drops paths that don't start with `smb://`)
+because `pushPath` inherits the current `volumeId` and would otherwise write a malformed `{network, /Volumes/...}`
+history entry plus a corrupted `lastUsedPathForVolume('network')`. If you introduce another virtual-volume namespace
+with its own non-filesystem prefix, extend the guard.
+
 ## Views (`views/`)
 
 `BriefList` and `FullList` virtual-scrolling components. Brief-mode column widths come from the

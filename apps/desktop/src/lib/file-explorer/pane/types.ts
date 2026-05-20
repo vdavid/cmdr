@@ -1,4 +1,4 @@
-import type { FileEntry, FriendlyError, NetworkHost } from '../types'
+import type { FileEntry, FriendlyError, NetworkHost, ShareInfo } from '../types'
 
 /** State snapshot for swapping panes without backend calls. */
 export interface SwapState {
@@ -23,6 +23,10 @@ export interface FilePaneAPI {
   getFilenameUnderCursor(): string | undefined
   /** Reactive: reads the entry-under-cursor `$state`, so `$effect`s tracking this stay subscribed. */
   getPathUnderCursor(): string | undefined
+  /** Full FileEntry under the cursor (incl. `..` synthetic entry), or null. */
+  getCursorEntry(): FileEntry | null
+  /** Cursor target inside the network view (host or share), or null. */
+  getNetworkCursorEntry(): NetworkCursorEntry | null
   setCursorIndex(index: number): Promise<void>
   getCursorIndex(): number
   isInNetworkView(): boolean
@@ -36,6 +40,8 @@ export interface FilePaneAPI {
   findNetworkItemIndex(name: string): number
   refreshNetworkHosts(): void
   setNetworkHost(host: NetworkHost | null): void
+  /** Queue a share name to auto-mount once the share browser is ready. */
+  setNetworkAutoMount(shareName: string | undefined): void
 
   getSelectedIndices(): number[]
   isAllSelected(): boolean
@@ -110,6 +116,14 @@ export interface BrowserAPI {
 /** Typed interface for NetworkBrowser's exported methods (extends BrowserAPI with refresh). */
 export interface NetworkBrowserAPI extends BrowserAPI {
   refresh(): void
+  /** Host under cursor; `null` when cursor sits on "Connect to server…" or list is empty. */
+  getHostUnderCursor(): NetworkHost | null
+}
+
+/** Typed interface for ShareBrowser. */
+export interface ShareBrowserAPI extends BrowserAPI {
+  /** Share under cursor; `null` when login form is up or list is empty. */
+  getShareUnderCursor(): ShareInfo | null
 }
 
 /** Typed interface for NetworkMountView's exported methods. */
@@ -120,4 +134,14 @@ export interface NetworkMountViewAPI {
   openCursorItem(): void
   refreshNetworkHosts(): void
   setNetworkHost(host: NetworkHost | null): void
+  /**
+   * Returns what the cursor is on inside the network view:
+   * - `'host'` (host list, cursor on a real host),
+   * - `'share'` (share list, cursor on a share),
+   * - `null` (anywhere else: connect row, login form, mounting state, error).
+   */
+  getNetworkCursorEntry(): NetworkCursorEntry | null
 }
+
+/** Cursor target inside the network browser stack, returned by NetworkMountView. */
+export type NetworkCursorEntry = { kind: 'host'; host: NetworkHost } | { kind: 'share'; share: ShareInfo }
