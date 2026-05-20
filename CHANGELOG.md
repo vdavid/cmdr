@@ -5,6 +5,38 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-05-21
+
+### Added
+
+- Add Quick Look (⇧Space) ([6778494b](https://github.com/vdavid/cmdr/commit/6778494b))
+- Add ⌘← / ⌘→ to copy the cursor path between panes ([a3e15f45](https://github.com/vdavid/cmdr/commit/a3e15f45))
+- Add red binary-file warning in the file viewer ([74e7b0cd](https://github.com/vdavid/cmdr/commit/74e7b0cd))
+- Redesign Settings window to look like System Settings ([69480931](https://github.com/vdavid/cmdr/commit/69480931),
+  [76be4f8a](https://github.com/vdavid/cmdr/commit/76be4f8a),
+  [9668a078](https://github.com/vdavid/cmdr/commit/9668a078),
+  [91c31f35](https://github.com/vdavid/cmdr/commit/91c31f35))
+- Redesign tab bar, flatten panes for a more native-macOS look, fix UI glitches
+  ([dc7d6500](https://github.com/vdavid/cmdr/commit/dc7d6500),
+  [9668a078](https://github.com/vdavid/cmdr/commit/9668a078),
+  [3771570a](https://github.com/vdavid/cmdr/commit/3771570a),
+  [79ed3b6c](https://github.com/vdavid/cmdr/commit/79ed3b6c))
+
+### Fixed
+
+- Fix transfer dialog showing "✓ 0 files" when pre-flight scan beat the FE listeners
+  ([8525835c](https://github.com/vdavid/cmdr/commit/8525835c))
+- Fix stale path events corrupting the breadcrumb after switching a pane to Network
+  ([a3e15f45](https://github.com/vdavid/cmdr/commit/a3e15f45))
+- Fix Quick Look toast/content import cycle ([b3d67fe6](https://github.com/vdavid/cmdr/commit/b3d67fe6))
+
+### Non-app
+
+- Move `rust-toolchain.toml` to the workspace root so every crate pins one toolchain (fixes v0.20.0's
+  `rustup target add` drift) ([41e999ab](https://github.com/vdavid/cmdr/commit/41e999ab))
+- Add `workflows-rustup` check forbidding `rustup target/component add` in workflows
+  ([c68630ee](https://github.com/vdavid/cmdr/commit/c68630ee))
+
 ## [0.20.0] - 2026-05-20
 
 ### Added
