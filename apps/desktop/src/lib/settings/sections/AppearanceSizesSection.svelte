@@ -22,6 +22,11 @@
     }
     const fileSizeDef = getSettingDefinition('appearance.fileSizeFormat') ?? { label: '', description: '' }
     const sizeMismatchDef = getSettingDefinition('listing.sizeMismatchWarning') ?? { label: '', description: '' }
+    // `appearance.sizeColors` is registered under `Appearance > Colors and formats`. We
+    // render it here too because users hunt for it under "file sizes" just as often.
+    // The registry stays single-entry, so search returns one canonical hit (linking to
+    // its primary section). `shouldShow` still gates this row when a query is active.
+    const sizeColorsDef = getSettingDefinition('appearance.sizeColors') ?? { label: '', description: '' }
 </script>
 
 <SettingsSection title="File and folder sizes">
@@ -67,6 +72,17 @@
             {searchQuery}
         >
             <SettingSwitch id="listing.sizeMismatchWarning" />
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('appearance.sizeColors')}
+        <SettingRow
+            id="appearance.sizeColors"
+            label={sizeColorsDef.label}
+            description={sizeColorsDef.description}
+            {searchQuery}
+        >
+            <SettingToggleGroup id="appearance.sizeColors" />
         </SettingRow>
     {/if}
 </SettingsSection>

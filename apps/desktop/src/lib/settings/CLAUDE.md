@@ -169,6 +169,32 @@ Cloud and local are independent features with separate state machines (`connecti
 local). They share almost nothing except the `provider` toggle and `shouldShow` function, passed as props from the
 wrapper.
 
+### Mirroring a setting in multiple sections
+
+A setting can appear in more than one UI section without duplicating it in the registry. Each `Section.svelte`
+explicitly renders its rows by ID (`getSettingDefinition('foo.bar')` + `shouldShow('foo.bar')` + `SettingRow` /
+`SettingSwitch` / etc.), so adding the same ID block to a second section just makes it visible there too.
+
+Example (live): `appearance.sizeColors` is registered under `Appearance > Colors and formats` and rendered there in
+`AppearanceSection.svelte`. The same row is mirrored in `AppearanceSizesSection.svelte` because users hunt for it under
+"file sizes" just as often.
+
+What this gets you for free:
+
+- **Single source of truth.** Label, description, keywords, default, type constraints, persistence — all live once in
+  the registry. Editing them updates every place the setting is rendered.
+- **Search returns one hit per setting.** `searchSettings` walks the registry, not the UI tree, so a search for "size
+  colors" produces exactly one result that links to the registered (canonical) section.
+- **Active search still filters correctly.** `shouldShow(id)` returns `true` whenever the query matches the id,
+  regardless of which section is currently rendering. So a "size" search inside the mirror section keeps the row
+  visible.
+
+Edge case: the sidebar's "section contains a match" highlight reads only `setting.section`, so it only marks the
+canonical section. Mirror sections are discoverable by browsing, not via the sidebar highlight. If a setting earns a
+sidebar highlight in multiple sections, add a small optional `mirrorSections: SectionPath[]` field to the registry and
+fold it into `getMatchingSectionsForSettings` in `settings-search.ts` — but ship the mirror without it first; the
+canonical-only highlight is usually the right behavior.
+
 ### Components (`components/`)
 
 13 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
