@@ -191,12 +191,19 @@ jobs:
   desktop-e2e-linux:
     name: E2E tests (Playwright, Linux)
     runs-on: ubuntu-latest
-    needs: [changes, desktop-rust, desktop-svelte]
+    # NOT gated on `desktop-rust`. The two are independent: a Rust unit-test
+    # failure shouldn't silently skip e2e validation (and vice versa). Gating
+    # them together hid a 4-day red main streak in May 2026, where a flaky
+    # accent-color unit test kept blocking e2e from ever running on PRs that
+    # touched neither path. Keep the `desktop-svelte` gate — the e2e binary
+    # embeds the frontend build, so without a green Svelte build there's no
+    # artifact worth running.
+    needs: [changes, desktop-svelte]
     if: |
       always() &&
       (inputs.run_all || needs.changes.outputs.desktop == 'true') &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled')
+      needs.desktop-svelte.result != 'failure' &&
+      needs.desktop-svelte.result != 'cancelled'
 
     steps:
       - name: Checkout code
