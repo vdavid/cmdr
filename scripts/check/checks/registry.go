@@ -559,6 +559,16 @@ var AllChecks = []CheckDefinition{
 		IsFast:      true,
 		Run:         RunWorkflowsHardening,
 	},
+	{
+		ID:          "workflows-rustup",
+		Nickname:    "rustup-add",
+		DisplayName: "workflows / rustup add",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		DependsOn:   nil,
+		IsFast:      true,
+		Run:         RunWorkflowsRustup,
+	},
 }
 
 // GetCheckByID returns a check definition by its ID or nickname.
