@@ -15,7 +15,7 @@ use super::types::{
 };
 use super::volume_copy::map_volume_error;
 use crate::file_system::listing::caching::try_get_watched_listing;
-use crate::file_system::volume::Volume;
+use crate::file_system::volume::{Volume, VolumeError};
 
 // ============================================================================
 // Delete implementation
@@ -714,10 +714,39 @@ pub(super) async fn delete_volume_files_with_progress_inner(
             });
         }
 
-        volume
+        // E2E throttle so cancel-during-delete tests on fast virtual MTP have a
+        // deterministic window in which to click Cancel before all files are
+        // gone. Reuses the copy throttle knob (`set_test_throttle` exposes a
+        // generic per-step throttle). Zero-cost outside E2E.
+        if let Some(ms) = crate::test_mode::effective_copy_throttle_ms()
+            && ms > 0
+        {
+            tokio::time::sleep(Duration::from_millis(ms)).await;
+        }
+
+        match volume
             .delete_with_cancel(&entry.path, Some(&state.backend_cancel))
             .await
-            .map_err(|e| map_volume_error(&entry.path.display().to_string(), e))?;
+        {
+            Ok(()) => {}
+            // Cancel landed mid-iteration (during the throttle sleep or inside
+            // delete_with_cancel itself). The top-of-loop cancel check only
+            // catches cancels that land between iterations; without this arm,
+            // the `?` propagation would surface as a Cancelled error with no
+            // `write-cancelled` event, breaking the M4 settle contract.
+            Err(VolumeError::Cancelled(_)) => {
+                events.emit_cancelled(WriteCancelledEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type: WriteOperationType::Delete,
+                    files_processed: files_done,
+                    rolled_back: false,
+                });
+                return Err(WriteOperationError::Cancelled {
+                    message: "Operation cancelled by user".to_string(),
+                });
+            }
+            Err(e) => return Err(map_volume_error(&entry.path.display().to_string(), e)),
+        }
 
         files_done += 1;
         bytes_done += entry.size;

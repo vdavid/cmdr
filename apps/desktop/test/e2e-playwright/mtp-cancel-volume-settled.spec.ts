@@ -108,6 +108,17 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
     await mcpNavToPath('left', `${mtpPath}/DCIM`)
     await mcpAwaitItem('left', 'cancel-00.jpg', 30)
 
+    // Slow each per-file delete so the Cancel click reliably lands BEFORE the
+    // op completes. Linux's virtual MTP can blow through the 12 tiny
+    // `cancel-*.jpg` files fast enough that without a throttle `write-complete`
+    // fires before our Cancel click is processed and no `write-cancelled` /
+    // `write-settled` events ever land — exactly what the test is verifying.
+    // 200 ms × 12 = 2.4 s worst case, plenty of room for the BE-side cancel
+    // round-trip.
+    await tauriPage.evaluate(
+      `window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: 200 })`,
+    )
+
     // Subscribe to write-cancelled, write-settled, and write-complete so the
     // assertions can sequence events from the BE.
     await tauriPage.evaluate(`(async function() {
@@ -255,6 +266,10 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
         )
       }
     } finally {
+      // Always clear the throttle so it doesn't slow down following tests.
+      await tauriPage.evaluate(
+        `window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null })`,
+      )
       await tauriPage.evaluate(`(async function() {
         const ids = ['__cancelledListenerId', '__settledListenerId', '__completeListenerId'];
         const events = ['write-cancelled', 'write-settled', 'write-complete'];
