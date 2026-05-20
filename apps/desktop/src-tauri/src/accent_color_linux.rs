@@ -7,6 +7,8 @@
 //! Also observes the portal's `SettingChanged` signal for live accent color
 //! updates, matching the macOS `NSSystemColorsDidChangeNotification` behavior.
 
+use std::time::Duration;
+
 use log::{debug, info, warn};
 use tauri::{AppHandle, Emitter, Runtime};
 use zbus::zvariant::{OwnedValue, Value};
@@ -19,6 +21,13 @@ const PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
 const PORTAL_IFACE: &str = "org.freedesktop.portal.Settings";
 const APPEARANCE_NS: &str = "org.freedesktop.appearance";
 const ACCENT_KEY: &str = "accent-color";
+
+/// Hard cap on each probe. A healthy local session-bus / gsettings responds in milliseconds;
+/// anything slower than this means a misconfigured environment (orphan socket with no daemon,
+/// stalled subprocess) and we should fall through to the next tier instead of blocking app
+/// startup. Without this cap, `zbus::Connection::session()` can hang indefinitely on a
+/// half-configured D-Bus (observed at 120 s+ on the GitHub Actions Ubuntu runner).
+const PROBE_TIMEOUT: Duration = Duration::from_millis(500);
 
 /// Converts sRGB floats in [0, 1] to a `#rrggbb` hex string.
 fn rgb_floats_to_hex(r: f64, g: f64, b: f64) -> String {
@@ -55,13 +64,18 @@ fn extract_rgb(value: &Value<'_>) -> Option<(f64, f64, f64)> {
 }
 
 /// Reads accent color via XDG Desktop Portal D-Bus (GNOME 47+, KDE Plasma 5.23+).
-fn read_accent_color_portal() -> Option<String> {
-    let conn = zbus::blocking::Connection::session().ok()?;
-    let proxy = zbus::blocking::Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, PORTAL_IFACE).ok()?;
-
-    let reply: OwnedValue = proxy.call("ReadOne", &(APPEARANCE_NS, ACCENT_KEY)).ok()?;
-
-    let (r, g, b) = extract_rgb(&reply)?;
+/// Bounded by `PROBE_TIMEOUT` so a stalled session bus can't hang the caller.
+async fn read_accent_color_portal() -> Option<String> {
+    let probe = async {
+        let conn = zbus::Connection::session().await.ok()?;
+        let proxy = zbus::Proxy::new(&conn, PORTAL_DEST, PORTAL_PATH, PORTAL_IFACE)
+            .await
+            .ok()?;
+        let reply: OwnedValue = proxy.call("ReadOne", &(APPEARANCE_NS, ACCENT_KEY)).await.ok()?;
+        let (r, g, b) = extract_rgb(&reply)?;
+        Some((r, g, b))
+    };
+    let (r, g, b) = tokio::time::timeout(PROBE_TIMEOUT, probe).await.ok().flatten()?;
     let hex = rgb_floats_to_hex(r, g, b);
     debug!("XDG Portal accent color: ({r:.3}, {g:.3}, {b:.3}) -> {hex}");
     Some(hex)
@@ -84,11 +98,12 @@ fn gnome_accent_name_to_hex(name: &str) -> Option<&'static str> {
 }
 
 /// Reads accent color via `gsettings` (older GNOME without portal support).
-fn read_accent_color_gsettings() -> Option<String> {
-    let output = std::process::Command::new("gsettings")
+/// Bounded by `PROBE_TIMEOUT` so a hung gsettings subprocess can't block startup.
+async fn read_accent_color_gsettings() -> Option<String> {
+    let probe = tokio::process::Command::new("gsettings")
         .args(["get", "org.gnome.desktop.interface", "accent-color"])
-        .output()
-        .ok()?;
+        .output();
+    let output = tokio::time::timeout(PROBE_TIMEOUT, probe).await.ok()?.ok()?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -107,13 +122,16 @@ fn read_accent_color_gsettings() -> Option<String> {
 }
 
 /// Reads accent color with fallback chain: XDG Portal → gsettings → brand gold.
-fn read_accent_color() -> String {
-    if let Some(hex) = read_accent_color_portal() {
+/// Each tier is wrapped in `PROBE_TIMEOUT` (500 ms) so a half-configured session
+/// bus or a stalled `gsettings` subprocess can't wedge the caller — at worst we
+/// pay ~1 s total in the pathological case before settling on the brand fallback.
+async fn read_accent_color() -> String {
+    if let Some(hex) = read_accent_color_portal().await {
         return hex;
     }
     debug!("XDG Portal accent color not available, trying gsettings");
 
-    if let Some(hex) = read_accent_color_gsettings() {
+    if let Some(hex) = read_accent_color_gsettings().await {
         return hex;
     }
     debug!("gsettings accent color not available, using Cmdr brand gold");
@@ -124,17 +142,16 @@ fn read_accent_color() -> String {
 /// Tauri command: returns the current Linux accent color as a hex string.
 #[tauri::command]
 #[specta::specta]
-pub fn get_accent_color() -> String {
-    read_accent_color()
+pub async fn get_accent_color() -> String {
+    read_accent_color().await
 }
 
 /// Starts observing XDG Portal `SettingChanged` signal for live accent color updates.
 /// Emits `accent-color-changed` events to the frontend, matching macOS behavior.
 pub fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
-    let initial = read_accent_color();
-    debug!("Linux accent color: {initial}");
-
     tauri::async_runtime::spawn(async move {
+        let initial = read_accent_color().await;
+        debug!("Linux accent color: {initial}");
         if let Err(e) = watch_portal_signal(app_handle).await {
             debug!("Portal accent color watcher not available: {e}");
         }
@@ -201,11 +218,40 @@ mod tests {
         assert_eq!(gnome_accent_name_to_hex(""), None);
     }
 
-    #[test]
-    fn read_accent_color_returns_valid_hex() {
-        let color = read_accent_color();
-        assert!(color.starts_with('#'));
-        assert_eq!(color.len(), 7);
+    /// Verifies the two contracts that matter:
+    ///   1. `read_accent_color` always returns within the combined `PROBE_TIMEOUT`
+    ///      budget (`portal` + `gsettings` ≤ 2 × 500 ms = 1 s), so a flaky
+    ///      session-bus or hung subprocess can never block app startup.
+    ///   2. The result is a valid `#rrggbb` hex string, regardless of which
+    ///      tier produced it (portal / gsettings / brand fallback).
+    ///
+    /// Replaces the older `read_accent_color_returns_valid_hex`, which had the
+    /// same shape assertions but **no timeout assertion** and called the
+    /// unbounded blocking zbus connect. That hung CI for 120 s when the
+    /// GitHub Actions Ubuntu runner shipped an orphan session-bus socket
+    /// (path set, no daemon serving). The new timeout in production code makes
+    /// the function honest, and this test pins it down so the regression can't
+    /// come back.
+    ///
+    /// Asserting a `<2 s` wall-clock with a `500 ms` budget gives plenty of
+    /// slack for slow CI runners / heavy parallelism while still catching the
+    /// "blocking forever" regression — anything close to 2 s means a probe
+    /// stopped honoring its timeout.
+    #[tokio::test]
+    async fn read_accent_color_is_bounded_and_returns_valid_hex() {
+        let start = std::time::Instant::now();
+        let color = read_accent_color().await;
+        let elapsed = start.elapsed();
+
+        assert!(
+            elapsed < std::time::Duration::from_secs(2),
+            "read_accent_color took {elapsed:?}, expected < 2 s (PROBE_TIMEOUT={PROBE_TIMEOUT:?})",
+        );
+        assert!(color.starts_with('#'), "expected #rrggbb, got {color}");
+        assert_eq!(color.len(), 7, "expected #rrggbb (7 chars), got {color}");
+        for c in color.chars().skip(1) {
+            assert!(c.is_ascii_hexdigit(), "invalid hex digit in {color}");
+        }
     }
 
     #[test]
