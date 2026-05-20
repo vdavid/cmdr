@@ -232,6 +232,13 @@
     let scrollContainer: HTMLDivElement | undefined = $state()
     let containerHeight = $state(0)
     let scrollTop = $state(0)
+    // The header is a `position: sticky` element inside the scroll container,
+    // so the row area starts `headerHeight` pixels into the scrollable content.
+    // All virtual-scroll math operates in row-area-local coords: subtract the
+    // header offset from `scrollTop` / `containerHeight` before passing through.
+    let headerHeight = $state(0)
+    const rowAreaHeight = $derived(Math.max(0, containerHeight - headerHeight))
+    const spacerScrollTop = $derived(Math.max(0, scrollTop - headerHeight))
 
     // ==== Virtual scrolling derived calculations ====
     const virtualWindow = $derived(
@@ -239,8 +246,8 @@
             direction: 'vertical',
             itemSize: rowHeight,
             bufferSize,
-            containerSize: containerHeight,
-            scrollOffset: scrollTop,
+            containerSize: rowAreaHeight,
+            scrollOffset: spacerScrollTop,
             totalItems: totalCount,
         }),
     )
@@ -256,10 +263,10 @@
     //
     // The ".." row's (often huge) recursive size only factors in when that row is
     // actually on screen; otherwise the size column stays oversized after scrolling.
-    const firstVisibleGlobalIndex = $derived(rowHeight > 0 ? Math.floor(scrollTop / rowHeight) : 0)
+    const firstVisibleGlobalIndex = $derived(rowHeight > 0 ? Math.floor(spacerScrollTop / rowHeight) : 0)
     const lastVisibleGlobalIndex = $derived(
-        rowHeight > 0 && containerHeight > 0
-            ? Math.min(totalCount - 1, Math.floor((scrollTop + containerHeight - 1) / rowHeight))
+        rowHeight > 0 && rowAreaHeight > 0
+            ? Math.min(totalCount - 1, Math.floor((spacerScrollTop + rowAreaHeight - 1) / rowHeight))
             : -1,
     )
     const isParentRowVisible = $derived(hasParent && firstVisibleGlobalIndex === 0)
@@ -492,8 +499,11 @@
     // Exported for parent to call when arrow keys change cursor position
     export function scrollToIndex(index: number) {
         if (!scrollContainer) return
-        const newScrollTop = getScrollToPosition(index, rowHeight, scrollTop, containerHeight)
-        if (newScrollTop !== undefined) {
+        // `getScrollToPosition` works in row-area coords. Translate back to the
+        // scroll container's coordinate space by adding the sticky-header offset.
+        const spacerPos = getScrollToPosition(index, rowHeight, spacerScrollTop, rowAreaHeight)
+        if (spacerPos !== undefined) {
+            const newScrollTop = spacerPos + headerHeight
             scrollContainer.scrollTop = newScrollTop
             // Also update state directly to trigger reactive chain immediately
             // (scroll events may be batched or delayed by the browser)
@@ -550,7 +560,7 @@
 
     // Returns the number of visible items (for Page Up/Down navigation)
     export function getVisibleItemsCount(): number {
-        return getVisibleItemsCountUtil(containerHeight, rowHeight)
+        return getVisibleItemsCountUtil(rowAreaHeight, rowHeight)
     }
 
     // Re-fetch icons when the icon cache is cleared (settings or theme change)
@@ -643,59 +653,69 @@
 </script>
 
 <div class="full-list-container" class:is-focused={isFocused} class:is-compact={isCompact}>
-    <!-- Header row with sortable columns (outside scroll container for correct height calculation) -->
-    <div
-        class="header-row"
-        class:no-transition={skipTransition}
-        role="toolbar"
-        aria-label="Sort columns"
-        style="grid-template-columns: {gridTemplate};"
-    >
-        <span class="header-icon"></span>
-        <SortableHeader
-            column="name"
-            label="Name"
-            currentSortColumn={sortBy}
-            currentSortOrder={sortOrder}
-            onClick={onSortChange ?? (() => {})}
-        />
-        {#if gitColumnVisible}
-            <span class="header-git" title="Git status of each file">Git</span>
-        {/if}
-        <SortableHeader
-            column="extension"
-            label="Ext"
-            currentSortColumn={sortBy}
-            currentSortOrder={sortOrder}
-            onClick={onSortChange ?? (() => {})}
-        />
-        <SortableHeader
-            column="size"
-            label="Size"
-            currentSortColumn={sortBy}
-            currentSortOrder={sortOrder}
-            onClick={onSortChange ?? (() => {})}
-            align="right"
-        />
-        <SortableHeader
-            column="modified"
-            label="Modified"
-            currentSortColumn={sortBy}
-            currentSortOrder={sortOrder}
-            onClick={onSortChange ?? (() => {})}
-        />
-    </div>
-    <!-- Scrollable file list -->
+    <!-- Scrollable file list. The header row is a `position: sticky` child so it
+         shares the row content width (and therefore the scrollbar gutter) with
+         the data rows — no manual scrollbar-width compensation needed. The
+         `role="listbox"` lives on the inner rows wrapper because a listbox's
+         children must be options/groups; the sortable header sits outside that
+         sub-tree to keep that contract while staying visually sticky inside
+         the same scroll container. -->
     <div
         class="full-list"
         bind:this={scrollContainer}
         bind:clientHeight={containerHeight}
         onscroll={handleScroll}
         tabindex="-1"
-        role="listbox"
-        aria-label="File list"
-        aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
     >
+        <!-- Role/aria intentionally omitted: the header sits inside the
+             listbox, and `role="toolbar"` would violate aria-required-children.
+             The sort buttons inside remain individually focusable. -->
+        <div
+            class="header-row"
+            class:no-transition={skipTransition}
+            style="grid-template-columns: {gridTemplate};"
+            bind:clientHeight={headerHeight}
+        >
+            <span class="header-icon"></span>
+            <SortableHeader
+                column="name"
+                label="Name"
+                currentSortColumn={sortBy}
+                currentSortOrder={sortOrder}
+                onClick={onSortChange ?? (() => {})}
+            />
+            {#if gitColumnVisible}
+                <span class="header-git" title="Git status of each file">Git</span>
+            {/if}
+            <SortableHeader
+                column="extension"
+                label="Ext"
+                currentSortColumn={sortBy}
+                currentSortOrder={sortOrder}
+                onClick={onSortChange ?? (() => {})}
+            />
+            <SortableHeader
+                column="size"
+                label="Size"
+                currentSortColumn={sortBy}
+                currentSortOrder={sortOrder}
+                onClick={onSortChange ?? (() => {})}
+            />
+            <SortableHeader
+                column="modified"
+                label="Modified"
+                currentSortColumn={sortBy}
+                currentSortOrder={sortOrder}
+                onClick={onSortChange ?? (() => {})}
+            />
+        </div>
+        <div
+            class="listbox-region"
+            role="listbox"
+            aria-label="File list"
+            aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
+            tabindex="-1"
+        >
         <!-- Spacer div provides accurate scrollbar for full list size -->
         <div class="virtual-spacer" style="height: {virtualWindow.totalSize}px;">
             <!-- Visible window positioned with translateY -->
@@ -876,10 +896,11 @@
             </div>
         </div>
         {#if (hasParent ? totalCount - 1 : totalCount) === 0}
-            <div class="empty-folder-message" style="height: {containerHeight - (hasParent ? rowHeight : 0)}px;">
+            <div class="empty-folder-message" style="height: {rowAreaHeight - (hasParent ? rowHeight : 0)}px;">
                 Empty folder
             </div>
         {/if}
+        </div>
     </div>
 </div>
 
@@ -910,6 +931,13 @@
         background: var(--color-bg-secondary);
         height: calc(22px * var(--font-scale));
         flex-shrink: 0;
+        /* Sticky inside the scroll container: the header always shares the row
+           content width (auto-shrinking when a vertical scrollbar appears) so
+           columns line up with the data rows beneath. The `top: 0` pin keeps
+           the header in view during vertical scroll. */
+        position: sticky;
+        top: 0;
+        z-index: 1;
         transition: grid-template-columns 300ms ease;
     }
 
@@ -919,6 +947,14 @@
 
     .virtual-spacer {
         position: relative;
+    }
+
+    /* Semantic wrapper for the listbox role; no visual styling. The class
+       exists so the role + aria-activedescendant can sit on a child of the
+       scroll container without violating aria-required-children (the sticky
+       header is a sibling, not a child of this region). */
+    .listbox-region {
+        outline: none;
     }
 
     .virtual-window {

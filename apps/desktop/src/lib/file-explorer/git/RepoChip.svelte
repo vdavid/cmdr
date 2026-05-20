@@ -62,17 +62,33 @@
 
 <style>
   .repo-chip {
+    /* Match the path bar's cross-axis height exactly at every zoom level.
+       Approach:
+       - `align-self: stretch` makes the chip's height follow the parent row,
+         not the other way around.
+       - Zero vertical padding and `line-height: 1` keep the chip's intrinsic
+         height strictly shorter than `--font-size-sm × default line-height`
+         (the path bar's natural line box), so the chip never forces the row
+         to grow. Without this clamp, sub-pixel rounding at higher zoom levels
+         tipped the chip past the row by one device pixel and caused a 1 px
+         layout shift the instant a repo was detected.
+       - The contents (icon + label) center vertically via the chip's own
+         inline-flex `align-items: center`. */
+    align-self: stretch;
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-xs);
-    padding: var(--spacing-xxs) var(--spacing-sm);
+    padding: 0 var(--spacing-sm);
+    line-height: 1;
     border-radius: var(--radius-full);
     font-size: var(--font-size-xs);
     font-weight: 500;
-    line-height: 1.4;
     background: var(--color-bg-tertiary);
     color: var(--color-text-secondary);
-    border: 1px solid var(--color-border);
+    /* Outline as an inset shadow rather than a `border`: a border adds layout
+       height, which would push the row by 1 px. `box-shadow: inset` is
+       paint-only. */
+    box-shadow: inset 0 0 0 1px var(--color-border);
     white-space: nowrap;
     user-select: none;
     cursor: default;
@@ -81,14 +97,14 @@
   .repo-chip.dirty {
     background: var(--color-warning-bg);
     color: var(--color-warning-text);
-    border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-warning) 30%, transparent);
   }
 
   .repo-chip.ahead,
   .repo-chip.behind {
     background: var(--color-git-portal-subtle);
     color: var(--color-git-portal-text);
-    border-color: color-mix(in srgb, var(--color-git-portal) 30%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-git-portal) 30%, transparent);
   }
 
   .repo-chip.detached,
