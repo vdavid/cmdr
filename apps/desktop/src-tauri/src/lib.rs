@@ -115,6 +115,7 @@ mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
 mod pluralize;
+mod quick_look;
 mod redact;
 mod restricted_paths;
 pub mod search;
@@ -570,6 +571,12 @@ pub fn run() {
             // Initialize custom updater state (shared between download and install commands)
             #[cfg(target_os = "macos")]
             app.manage(updater::UpdateState::new());
+
+            // Native Quick Look controller. Empty on init; populated lazily
+            // when the user presses Shift+Space. macOS-only state machine;
+            // on other platforms the type is `Mutex<()>` so this compiles
+            // everywhere.
+            app.manage(quick_look::init_state());
 
             // Initialize pane state store for MCP context tools
             app.manage(mcp::PaneStateStore::new());

@@ -739,8 +739,12 @@ export const commands = {
     ),
   // Show a file in Finder (reveal in parent folder)
   showInFinder: (path: string) => typedError<null, string>(__TAURI_INVOKE('show_in_finder', { path })),
-  // Quick Look preview (macOS only)
-  quickLook: (path: string) => typedError<null, string>(__TAURI_INVOKE('quick_look', { path })),
+  // Open (or re-open) Quick Look on the given path.
+  quickLookOpen: (path: string, volumeId: string) =>
+    typedError<null, string>(__TAURI_INVOKE('quick_look_open', { path, volumeId })),
+  quickLookSetPath: (path: string, volumeId: string) =>
+    typedError<null, string>(__TAURI_INVOKE('quick_look_set_path', { path, volumeId })),
+  quickLookClose: () => typedError<null, string>(__TAURI_INVOKE('quick_look_close')),
   // Open the Get Info window for a file (macOS only, no-op on other platforms)
   getInfo: (path: string) => typedError<null, string>(__TAURI_INVOKE('get_info', { path })),
   // Open file in the system's default text editor (macOS only)

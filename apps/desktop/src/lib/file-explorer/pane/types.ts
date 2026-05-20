@@ -21,6 +21,8 @@ export interface FilePaneAPI {
   getListingId(): string
   isLoading(): boolean
   getFilenameUnderCursor(): string | undefined
+  /** Reactive: reads the entry-under-cursor `$state`, so `$effect`s tracking this stay subscribed. */
+  getPathUnderCursor(): string | undefined
   setCursorIndex(index: number): Promise<void>
   getCursorIndex(): number
   isInNetworkView(): boolean
@@ -71,6 +73,8 @@ export interface FilePaneAPI {
 
   /** Debug only: inject a FriendlyError into this pane's error state. */
   injectError(friendly: FriendlyError): void
+  /** Reactive: true when the pane is rendering a full-pane error (FriendlyError or `unreachable` banner). */
+  isInErrorState(): boolean
 }
 
 /** Typed interface for BriefList/FullList exported methods used by FilePane. */

@@ -7,7 +7,8 @@ import {
   openExternalUrl,
   showInFinder,
   copyToClipboard,
-  quickLook,
+  quickLookOpen,
+  quickLookClose,
   getInfo,
   openInEditor,
   syncMenuShowHidden,
@@ -15,6 +16,11 @@ import {
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
 } from '$lib/tauri-commands'
+import {
+  quickLookState,
+  quickLookDispatchGuardJustFired,
+  armQuickLookDispatchGuard,
+} from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { invoke } from '@tauri-apps/api/core'
 import { addToast } from '$lib/ui/toast'
 import { getSetting, setSetting } from '$lib/settings'
@@ -397,10 +403,34 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
     }
 
     case 'file.quickLook': {
-      const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
-      if (entryUnderCursor) {
-        await quickLook(entryUnderCursor.path)
+      // Shift+Space toggles. The panel close path (✕, Esc, our `quickLookClose`
+      // call below) all converge on a `quick-look-closed` event that flips
+      // `isOpen` back to false in the state singleton, so the next press opens.
+      //
+      // Race guard: every Shift+Space keypress fires this case twice — once via
+      // AppKit's menu accelerator (`on_menu_event` → `execute-command` event)
+      // and once via WKWebView's keydown → centralized JS shortcut dispatch.
+      // Without the guard, the second fire toggles the panel back. The guard
+      // also covers the panel-key Shift+Space-from-listener path (which arms
+      // it before flipping `isOpen`).
+      if (quickLookDispatchGuardJustFired()) {
+        return
       }
+      armQuickLookDispatchGuard()
+      if (quickLookState.isOpen) {
+        quickLookState.isOpen = false
+        await quickLookClose()
+        return
+      }
+      const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+      if (!entryUnderCursor) return
+      const volumeId = explorerRef?.getFocusedPaneVolumeId() ?? 'root'
+      // Optimistically flip `isOpen` before the IPC: AppKit returns from
+      // `makeKeyAndOrderFront:` synchronously and the panel is up by the time
+      // the IPC resolves, but the optimistic flip means a second Shift+Space
+      // press immediately after the first reads the right state.
+      quickLookState.isOpen = true
+      await quickLookOpen(entryUnderCursor.path, volumeId)
       return
     }
 

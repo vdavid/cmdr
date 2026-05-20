@@ -29,6 +29,12 @@ vi.mock('$lib/logging/logger', () => ({
   }),
 }))
 
+// Mock the quick-look state so the watchdog can read `isOpen` without dragging
+// in the Tauri event API or the IPC command surface. Tests that exercise the
+// Quick Look suppression branch flip `quickLookState.isOpen` directly.
+const { quickLookState } = vi.hoisted(() => ({ quickLookState: { isOpen: false } }))
+vi.mock('$lib/file-explorer/quick-look/quick-look-state.svelte', () => ({ quickLookState }))
+
 import { initFocusWatchdog, _resetForTests } from './focus-watchdog'
 
 describe('focus watchdog', () => {
@@ -42,6 +48,9 @@ describe('focus watchdog', () => {
     // for these tests so the watchdog's "main window not focused" suppression
     // doesn't swallow every case.
     hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+    // Reset the Quick Look mock between tests so a flip in one case doesn't
+    // leak into the next.
+    quickLookState.isOpen = false
   })
 
   afterEach(() => {
@@ -143,6 +152,21 @@ describe('focus watchdog', () => {
     stray.focus()
     vi.advanceTimersByTime(600)
     expect(warnSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not warn while the Quick Look panel is open', () => {
+    // QLPreviewPanel takes key focus, so `document.activeElement` falls back
+    // to `<body>` — the same symptom the watchdog warns about. The panel
+    // open-state acts as a "dialog" for suppression purposes.
+    const stray = document.createElement('input')
+    document.body.appendChild(stray)
+    document.body.focus()
+
+    quickLookState.isOpen = true
+    initFocusWatchdog()
+    vi.advanceTimersByTime(2000)
+
+    expect(warnSpy).not.toHaveBeenCalled()
   })
 
   it('does not warn during the initial paint if focus is already inside the explorer', () => {

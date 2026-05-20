@@ -191,7 +191,11 @@ objc2-app-kit = { version = "0.3", features = [
     "NSDragging", "NSDraggingItem", "NSImage", "NSColor", "NSColorSpace",
     "NSApplication", "NSMenu", "NSMenuItem", "NSPasteboard", "NSRunningApplication",
     "NSWorkspace", "NSPanel", "NSOpenPanel", "NSSavePanel", "NSWindow", "NSResponder",
+    "NSEvent",
 ] }
+# Native macOS Quick Look panel (QLPreviewPanel + protocols). Published 2025-10-04, well
+# outside the 14-day cool-off; tracks the same objc2 0.6 family as the other bindings above.
+objc2-quick-look-ui = { version = "0.3.2", features = ["QLPreviewPanel", "QLPreviewItem", "objc2-app-kit"] }
 block2 = "0.6"
 security-framework = "3.2"
 # Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay

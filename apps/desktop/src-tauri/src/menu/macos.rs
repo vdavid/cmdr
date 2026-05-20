@@ -97,7 +97,11 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         Some(show_in_file_manager_accelerator()),
     )?;
     let get_info_item = MenuItem::with_id(app, GET_INFO_ID, "Get info", true, Some("Cmd+I"))?;
-    let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, Some("Space"))?;
+    // Shift+Space rather than plain Space: AppKit consumes modifier
+    // accelerators before the webview can capture them, so the menu actually
+    // fires. Plain Space was dead — the webview's Tier-2 selection-toggle
+    // handler ate the keydown before AppKit's menu dispatcher saw it.
+    let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, Some("Shift+Space"))?;
 
     let file_menu = Submenu::with_items(
         app,

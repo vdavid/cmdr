@@ -81,6 +81,7 @@
     import { cancelClickToRename } from '../rename/rename-activation'
     import { type DirectorySortMode } from '$lib/settings'
     import { addToast, dismissTransientToasts } from '$lib/ui/toast'
+    import { maybeShowQuickLookHint } from '../quick-look/quick-look-hint'
     import { createRenameFlow } from './rename-flow.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
@@ -490,6 +491,17 @@
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function getFilenameUnderCursor(): string | undefined {
         return entryUnderCursor?.name
+    }
+
+    /**
+     * Absolute path of the entry under the cursor (or `undefined` when the listing is empty
+     * or hasn't resolved the entry yet). Reads the reactive `entryUnderCursor` $state, so
+     * Quick Look's cursor-follow $effect in `DualPaneExplorer.svelte` stays subscribed
+     * across cursor moves, listing swaps, and pane switches.
+     */
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
+    export function getPathUnderCursor(): string | undefined {
+        return entryUnderCursor?.path
     }
 
     /** Also scrolls to make the cursor visible and syncs state to MCP. */
@@ -1600,14 +1612,26 @@
 
     // Helper: Handle selection-related key events
     function handleSelectionKeys(e: KeyboardEvent): boolean {
-        // Space - toggle selection at cursor
-        if (e.key === ' ') {
+        // Space - toggle selection at cursor. `Shift+Space` is the Quick Look
+        // accelerator: AppKit consumes the menu shortcut before the webview
+        // sees the keydown, so we shouldn't observe it here in practice. We
+        // still gate `!e.shiftKey` defensively — AppKit can release modifier
+        // keydowns to the webview in edge cases (menu rebuild during shortcut
+        // customization, focus mid-flight), and we don't want Shift+Space to
+        // ever silently toggle selection.
+        if (e.key === ' ' && !e.shiftKey) {
             e.preventDefault()
             // Stop propagation so the document-level centralized dispatch doesn't
             // re-fire `selection.toggle` (whose case in command-dispatch.ts exists
             // for palette/MCP triggers).
             e.stopPropagation()
             selection.toggleAt(cursorIndex, hasParent)
+            // Finder-convert education: the first time the user presses Space
+            // in the file list, explain that Cmdr uses Space for selection and
+            // ⇧Space for Quick Look. The selection toggle above still applies
+            // normally — the toast is purely additive. Subsequent presses are
+            // no-ops (the helper reads its own "shown once" persisted flag).
+            maybeShowQuickLookHint()
 
             return true
         }
@@ -1717,6 +1741,19 @@
         error = null
         friendlyError = friendly
         loading = false
+    }
+
+    /**
+     * Reactive: true when this pane is showing a full-pane error state — either
+     * a `FriendlyError` (listing failed for an existing path) or the
+     * `unreachable` banner (volume couldn't be resolved at startup, or SMB
+     * reconnect gave up). Used by Quick Look's M3 hook in DualPaneExplorer to
+     * close the panel when the focused pane goes into a state where its
+     * `getPathUnderCursor()` would no longer return a meaningful path.
+     */
+    // noinspection JSUnusedGlobalSymbols -- consumed by DualPaneExplorer's Quick Look effect
+    export function isInErrorState(): boolean {
+        return friendlyError !== null || unreachable !== null
     }
 
     /** Show the SMB login form for a "Connect directly" upgrade that needs credentials. */

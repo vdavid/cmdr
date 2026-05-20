@@ -815,6 +815,18 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
+    id: 'fileExplorer.suppressQuickLookHint',
+    section: ['Advanced'],
+    label: 'Suppress the Space-key Quick Look hint',
+    description:
+      "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click 'Don't show again' in the toast) to suppress the reminder for good.",
+    keywords: ['quick', 'look', 'preview', 'space', 'finder', 'hint', 'toast', 'reminder'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    showInAdvanced: true,
+  },
+  {
     id: 'fileExplorer.tabs.closedTabHistorySize',
     section: ['Advanced'],
     label: 'Number of closed tabs to remember per pane',

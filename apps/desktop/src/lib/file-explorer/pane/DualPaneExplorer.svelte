@@ -7,7 +7,14 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
-    import { getFileAt, getFilesAtIndices, openInEditor, setSelfDragResolvedOperation } from '$lib/tauri-commands'
+    import {
+        getFileAt,
+        getFilesAtIndices,
+        openInEditor,
+        quickLookSetPath,
+        setSelfDragResolvedOperation,
+    } from '$lib/tauri-commands'
+    import { closeFromPaneError, quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { saveAppStatus, saveLastUsedPathForVolume, type ViewMode } from '$lib/app-status-store'
     import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import {
@@ -1317,6 +1324,7 @@
         unlistenIndexAggregationComplete?.()
         unlistenMcpTab?.()
         if (tabSyncTimer) clearTimeout(tabSyncTimer)
+        if (quickLookFollowTimer !== null) clearTimeout(quickLookFollowTimer)
         // No cleanup needed for throttle (no pending timers)
         cleanupVolumeStore()
         cleanupNetworkDiscovery()
@@ -1776,6 +1784,78 @@
         }
     })
 
+    // Quick Look cursor-follow (M2): while the panel is open, push the path under the
+    // focused pane's cursor to the backend on every cursor move, pane switch, or
+    // directory navigation. The backend silently no-ops for volumes without local-fs
+    // access (MTP, virtual git portal), so no skip logic is needed here.
+    //
+    // Trailing-edge debounce ~100 ms: holding ArrowDown shouldn't fire `reloadData`
+    // 60×/s. The generation counter (same pattern as `type-to-jump-state.svelte.ts`)
+    // drops out-of-order responses if the user nav-bursts faster than IPC round-trip;
+    // each scheduled call captures its generation and bails on a stale fire.
+    const QUICK_LOOK_FOLLOW_DEBOUNCE_MS = 100
+    let quickLookFollowGeneration = 0
+    let quickLookFollowTimer: ReturnType<typeof setTimeout> | null = null
+    let quickLookLastSentPath: string | undefined
+    $effect(() => {
+        if (!quickLookState.isOpen) {
+            // Panel closed → cancel any pending dispatch and forget the last-sent path
+            // so re-opening on the same entry doesn't get suppressed by the dedupe.
+            if (quickLookFollowTimer !== null) {
+                clearTimeout(quickLookFollowTimer)
+                quickLookFollowTimer = null
+            }
+            quickLookLastSentPath = undefined
+            return
+        }
+        const pane = focusedPane
+        const paneRef = paneRefs[pane]
+        const path = paneRef?.getPathUnderCursor()
+        const volId = getPaneVolumeId(pane)
+        // Bail when the pane isn't ready or the cursor isn't on a resolvable entry.
+        // No path → don't reloadData with stale state; wait for the next $effect fire
+        // once the entry resolves (FilePane fetches it on every cursorIndex change).
+        if (!path || !volId) return
+        const generation = ++quickLookFollowGeneration
+        if (quickLookFollowTimer !== null) clearTimeout(quickLookFollowTimer)
+        quickLookFollowTimer = setTimeout(() => {
+            quickLookFollowTimer = null
+            // Stale-generation check: a newer cursor move bumped the generation
+            // while this timer was waiting. Drop this fire — the newer one will
+            // schedule its own.
+            if (generation !== quickLookFollowGeneration) return
+            // Panel could have closed during the debounce window. Skip the IPC.
+            if (!quickLookState.isOpen) return
+            // Skip if the path hasn't actually changed since the last dispatch:
+            // a focused-pane setCursorIndex during nav can fire the $effect with
+            // the same entry resolved (debounced re-fetch lands later). Cheap to
+            // dedupe; backend's `reloadData` is fine but the round-trip isn't free.
+            if (path === quickLookLastSentPath) return
+            quickLookLastSentPath = path
+            void quickLookSetPath(path, volId).catch((e: unknown) => {
+                log.warn('quickLookSetPath failed: {error}', { error: String(e) })
+            })
+        }, QUICK_LOOK_FOLLOW_DEBOUNCE_MS)
+    })
+
+    // Quick Look error-state close (M3): when the focused pane transitions into
+    // an error state (volume unmounted, listing failed) while the panel is open,
+    // dismiss the panel. Sitting on a stale path while the underlying volume is
+    // gone is worse UX than just closing — and the cursor-follow effect above
+    // would otherwise be stuck on the last-known path until the user moves
+    // focus or navigates somewhere reachable.
+    $effect(() => {
+        if (!quickLookState.isOpen) return
+        const paneRef = paneRefs[focusedPane]
+        // `isInErrorState` reads two `$state` fields under the hood
+        // (`friendlyError`, `unreachable`), so Svelte tracks them through this
+        // call and we re-run when either flips. Don't bother destructuring —
+        // the call site is the dependency.
+        if (paneRef?.isInErrorState()) {
+            closeFromPaneError()
+        }
+    })
+
     /** Programmatically confirms an already-open dialog (for MCP). */
     export function confirmDialog(dialogType: string, onConflict?: string) {
         dialogs.confirmOpenDialog(dialogType, onConflict)
@@ -2030,6 +2110,73 @@
     /** Returns the current directory path of the focused pane. */
     export function getFocusedPanePath(): string {
         return getPanePath(focusedPane)
+    }
+
+    /** Volume id of the focused pane's active tab. Used by Quick Look's IPC gate. */
+    export function getFocusedPaneVolumeId(): string {
+        return getPaneVolumeId(focusedPane)
+    }
+
+    /**
+     * Route a key event forwarded by the native Quick Look panel back into the
+     * focused pane. The panel is the key window while it's open, so DOM keydowns
+     * never reach our webview — `previewPanel:handleEvent:` in the Rust delegate
+     * is the only path arrow keys / type-to-jump can travel.
+     *
+     * We synthesise a `KeyboardEvent` and hand it to the pane's `handleKeyDown`
+     * directly. Plan note (specs/quick-look-plan.md "Why we forward keys via a
+     * Tauri event"): re-dispatching via `paneEl.dispatchEvent` would create an
+     * `isTrusted: false` event with suppressed defaults; calling the handler
+     * function is the cleaner cut and matches how `sendKeyToFocusedPane` already
+     * works for MCP-driven nav.
+     *
+     * Surface covered: ArrowUp/Down/Left/Right, PageUp/PageDown, Home/End,
+     * Enter (open), Backspace (parent), and printable letters/digits for
+     * type-to-jump. Shift+Space close is handled in the listener before this
+     * method is called.
+     *
+     * Type-to-jump is intercepted by `handleKeyDown` _above_ FilePane in the
+     * normal DOM path, so we mirror that intercept here: a printable letter/
+     * digit goes straight to `handleJumpKeystroke`, and reset keys
+     * (arrows/page/home/end/enter/tab/backspace) clear the buffer before
+     * falling through to the navigation handler.
+     */
+    // noinspection JSUnusedGlobalSymbols -- consumed by quick-look-state
+    export function routePanelKey(payload: {
+        key: string
+        code: string
+        shiftKey: boolean
+        metaKey: boolean
+        altKey: boolean
+        ctrlKey: boolean
+    }) {
+        const paneRef = getPaneRef(focusedPane)
+        if (!paneRef) return
+        const event = new KeyboardEvent('keydown', {
+            key: payload.key,
+            code: payload.code,
+            shiftKey: payload.shiftKey,
+            metaKey: payload.metaKey,
+            altKey: payload.altKey,
+            ctrlKey: payload.ctrlKey,
+            bubbles: false,
+        })
+        // Mirror DualPaneExplorer's `handleKeyDown` type-to-jump intercept: the
+        // panel-forwarded path bypasses the DOM listener, so without this the
+        // pane's `handleKeyDown` would never see letters/digits as jump chars
+        // (FilePane delegates type-to-jump to its parent — see the intercept
+        // in this component's own `handleKeyDown` above).
+        if (!paneRef.isRenaming()) {
+            if (isTypeToJumpChar(event)) {
+                paneRef.handleJumpKeystroke(event.key)
+                return
+            }
+            if (isTypeToJumpResetKey(event)) {
+                paneRef.clearJumpState()
+                // Fall through to the navigation handler.
+            }
+        }
+        paneRef.handleKeyDown(event)
     }
 
     /**

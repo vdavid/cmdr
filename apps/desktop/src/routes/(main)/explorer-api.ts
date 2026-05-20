@@ -4,6 +4,7 @@
  */
 
 import type { ViewMode } from '$lib/app-status-store'
+import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import type { FriendlyError } from '$lib/file-explorer/types'
 
 export interface ExplorerAPI {
@@ -17,7 +18,21 @@ export interface ExplorerAPI {
   setViewMode: (mode: ViewMode, pane?: 'left' | 'right') => void
   navigate: (action: 'back' | 'forward' | 'parent') => void
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null
+  /**
+   * Volume id of the focused pane's current tab. Used by Quick Look's open/setPath
+   * IPC, which gates non-local-fs volumes (MTP) on the backend.
+   */
+  getFocusedPaneVolumeId: () => string
   sendKeyToFocusedPane: (key: string) => void
+  /**
+   * Routes a key event received from the native Quick Look panel back into the
+   * focused pane's navigation primitives. Used while the panel is key (the panel
+   * delegate forwards keys it didn't want via the `quick-look-key` Tauri event).
+   * Implementation keeps this narrow: arrow / page / home / end / type-to-jump
+   * letters; everything else is ignored. Shift+Space close is handled by the
+   * listener directly, not via this method.
+   */
+  routePanelKey: (payload: QuickLookKeyEventPayload) => void
   openItemUnderCursor: () => Promise<void>
   setSortColumn: (column: 'name' | 'extension' | 'size' | 'modified' | 'created', pane?: 'left' | 'right') => void
   setSortOrder: (order: 'asc' | 'desc' | 'toggle', pane?: 'left' | 'right') => void

@@ -386,7 +386,10 @@ export const commands: Command[] = [
     name: isMacOS() ? 'Quick look' : 'Preview',
     scope: 'Main window/File list',
     showInPalette: isMacOS(),
-    shortcuts: [],
+    // ⇧Space matches the menu accelerator. key-capture.ts maps `' '` → 'Space',
+    // and registry shortcuts use that same `⇧Space` form (no separator) for the
+    // Tier-1 dispatcher and the menu-accelerator sync to agree.
+    shortcuts: isMacOS() ? ['⇧Space'] : [],
   },
   {
     id: 'file.contextMenu',

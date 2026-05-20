@@ -6,7 +6,13 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 
 ### User interaction
 
-- **Space**: toggle selection at cursor
+- **Space**: toggle selection at cursor (macOS only — must be unshifted; **Shift+Space** opens Quick Look instead, see
+  [`quick-look/`](quick-look/) and `src-tauri/src/quick_look/CLAUDE.md`). Each plain-Space press also fires an
+  educational toast for Finder converts (lives in [`quick-look/quick-look-hint.ts`](quick-look/quick-look-hint.ts)). The
+  toast keeps reappearing as a gentle reminder until the user clicks "Don't show again" (or flips
+  `fileExplorer.suppressQuickLookHint` in Settings > Advanced). While the toast is on screen, further Space presses just
+  toggle selection — the hint module no-ops if the toast is already visible. The X on the toast frame closes the current
+  instance without suppressing future ones.
 - **Insert**: toggle selection at cursor and move cursor down (Total Commander style). `..` isn't selectable, but the
   cursor still advances. At the last row the cursor stays put. No physical Insert key on Apple keyboards — users can
   remap via Karabiner-Elements, plug in a PC USB keyboard, or rebind in Settings → Shortcuts.

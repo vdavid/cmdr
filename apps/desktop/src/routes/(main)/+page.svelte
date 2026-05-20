@@ -37,6 +37,7 @@
         type CommandDispatchContext,
     } from './command-dispatch'
     import { setupMcpListeners } from './mcp-listeners'
+    import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { initAppMode, getAppMode, type AppMode } from '$lib/app-mode'
     import {
         hideExpirationModal,
@@ -487,6 +488,12 @@
         await setupMcpListeners({ getExplorer: () => explorerRef, listenTauri })
         await initIndexState()
         await setupWindowFocusListener()
+        // Native Quick Look (macOS) event wiring: `quick-look-closed` flips
+        // `isOpen` on the state singleton; `quick-look-key` routes panel
+        // keystrokes back into the focused pane (and intercepts Shift+Space
+        // to close).
+        const unlistenQuickLook = await initQuickLookListeners(() => explorerRef)
+        tauriUnlistenFns.push(unlistenQuickLook)
     }
 
     /** Sync file-scoped menu items with main window focus state. */

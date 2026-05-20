@@ -14,6 +14,7 @@
  * focus episode"; resets when a pane regains focus.
  */
 
+import { quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('focus-watchdog')
@@ -44,7 +45,12 @@ function anyDialogOpen(): boolean {
 }
 
 function shouldSuppress(): boolean {
-  return !document.hasFocus() || focusInsideExplorer() || anyDialogOpen()
+  // Quick Look's QLPreviewPanel is key while open, so our webview's
+  // `document.activeElement` falls back to `<body>` and looks like
+  // misplaced focus. AppKit will restore focus to the main window when the
+  // panel closes, and the user is in control of when that happens (Shift+
+  // Space, Esc, ✕). Treat the panel as the "dialog" for watchdog purposes.
+  return !document.hasFocus() || focusInsideExplorer() || anyDialogOpen() || quickLookState.isOpen
 }
 
 function check(): void {

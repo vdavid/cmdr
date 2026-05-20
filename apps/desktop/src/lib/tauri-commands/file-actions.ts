@@ -87,11 +87,32 @@ export async function copyToClipboard(text: string): Promise<void> {
 }
 
 /**
- * Quick Look preview (macOS only).
- * @param path - Absolute path to the file.
+ * Open the native Quick Look panel on the given path (macOS only).
+ * No-op on volumes without local-fs access (MTP etc.) and on non-macOS.
+ * @param path - Absolute path to the file under the cursor.
+ * @param volumeId - Volume id of the path. Backend uses this to gate non-local volumes.
  */
-export async function quickLook(path: string): Promise<void> {
-  const res = await commands.quickLook(path)
+export async function quickLookOpen(path: string, volumeId: string): Promise<void> {
+  const res = await commands.quickLookOpen(path, volumeId)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
+ * Retarget an open Quick Look panel to a new path (macOS only). No-op when the panel isn't
+ * currently open. Used by M2's cursor-follow effect.
+ */
+export async function quickLookSetPath(path: string, volumeId: string): Promise<void> {
+  const res = await commands.quickLookSetPath(path, volumeId)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
+ * Close the Quick Look panel (macOS only). No-op when not open.
+ * The backend also emits `quick-look-closed` when the panel is dismissed by ✕ or Esc;
+ * the frontend listens for that event in `quick-look-state.svelte.ts`.
+ */
+export async function quickLookClose(): Promise<void> {
+  const res = await commands.quickLookClose()
   if (res.status === 'error') throwIpcError(res.error)
 }
 

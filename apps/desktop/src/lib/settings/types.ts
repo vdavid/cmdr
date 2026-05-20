@@ -152,6 +152,9 @@ export interface SettingsValues {
   // Type-to-jump
   'fileExplorer.typeToJump.resetDelay': number
 
+  // Quick Look
+  'fileExplorer.suppressQuickLookHint': boolean
+
   // File operations
   'fileOperations.mtpEnabled': boolean
   'fileOperations.mtpConnectionWarning': boolean
