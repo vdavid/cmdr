@@ -130,7 +130,9 @@ export async function initAccentColor(): Promise<void> {
   // the dark-mode `@media` block), but the *mix shares* differ per scheme.
   if (typeof window !== 'undefined') {
     darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    darkModeListener = () => { applyDerivedAccentTokens(); }
+    darkModeListener = () => {
+      applyDerivedAccentTokens()
+    }
     darkModeQuery.addEventListener('change', darkModeListener)
   }
 
