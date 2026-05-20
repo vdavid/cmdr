@@ -104,7 +104,6 @@
         display: flex;
         flex-shrink: 0;
         background: var(--color-bg-secondary);
-        border-top: 1px solid var(--color-border-strong);
     }
 
     button {
@@ -120,6 +119,7 @@
         font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
+        transition: background-color var(--transition-fast);
     }
 
     button:last-child {
@@ -138,9 +138,7 @@
     kbd {
         font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-xs);
-        background: var(--color-bg-tertiary);
         color: var(--color-text-secondary);
-        border-radius: var(--radius-sm);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px var(--spacing-xs);
     }

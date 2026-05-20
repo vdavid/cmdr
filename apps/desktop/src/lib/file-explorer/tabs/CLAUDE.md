@@ -13,13 +13,12 @@ Per-pane tab system for the dual-pane file explorer. Each pane side (left/right)
 
 ## Key decisions
 
-**Decision**: Tabs fill the entire bar height (`.tab { height: var(--spacing-tab-bar-height) }`) and the bar carries a
-non-scaled `padding-top: 3px` to push the colored top of the active tab below the (fixed-height) window title-bar.
-**Why**: tab and bar heights both scale with `--font-scale`, so any constant gap between them would scale too, making
-the colored top edge drift visibly across text sizes. Locking the tab to bar height eliminates the proportional gap; the
-3 px padding gives the static breathing room between title-bar and tab top, hidden inside the bar's own `bg-secondary`
-so it reads as a continuous strip. The active tab is `bar-height + 1px` with `margin-bottom: -1px` to cover the bar's
-bottom border (unchanged from the historical pattern).
+**Decision**: Tabs sit flush with the window title-bar — no top spacer. Tab and bar both use `--spacing-tab-bar-height`.
+**Why**: a fixed pixel spacer (e.g. `padding-top: 3px`) on the bar created a visible gap above the active tab; the user
+wants the colored top edge of the active tab to touch the title-bar at every text scale. With matching heights and
+`align-items: end`, tabs naturally land at the bar's bottom edge with no extra offset. The active tab still uses
+`bar-height + 1px` with `margin-bottom: -1px` so it hangs 1 px into the path bar below (covers any 1 px seam at the
+bar's lower edge).
 
 **Decision**: Cold load on tab switch via `{#key activeTabId}`: destroys and recreates FilePane, no warm cache **Why**:
 Keeping inactive tabs alive would mean multiple FilePanes with active file watchers, listing caches, and scroll state in

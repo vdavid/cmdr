@@ -54,12 +54,16 @@
         margin: 0 calc(-1 * var(--spacing-xs));
         background: transparent;
         border: none;
+        border-radius: var(--radius-sm);
         font: inherit;
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         white-space: nowrap;
         text-align: left;
         height: 100%;
+        transition:
+            background-color var(--transition-fast),
+            color var(--transition-fast);
     }
 
     .sortable-header:hover {

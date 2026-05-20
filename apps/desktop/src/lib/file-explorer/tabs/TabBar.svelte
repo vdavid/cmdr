@@ -155,20 +155,14 @@
     .tab-bar {
         display: flex;
         align-items: end;
-        /* Total height = scaled tab band + 3 px non-scaled top spacer.
-         * The spacer is bg-secondary (same as the bar), so it visually reads
-         * as a slim continuation of the (fixed-height) window title-bar above.
-         * Tabs anchor to the bar's content-area bottom (align-items: end);
-         * with `box-sizing: border-box`, the padding-top reduces the content
-         * area to exactly `--spacing-tab-bar-height`, so the colored top edge
-         * of the active tab sits 3 px below the title-bar at every scale. */
-        height: calc(var(--spacing-tab-bar-height) + 3px);
-        min-height: calc(var(--spacing-tab-bar-height) + 3px);
-        max-height: calc(var(--spacing-tab-bar-height) + 3px);
+        /* Tabs sit flush with the window title-bar — no top spacer. Tabs
+         * anchor to the bar's content-area bottom (align-items: end) and
+         * match the bar height exactly via `--spacing-tab-bar-height`. */
+        height: var(--spacing-tab-bar-height);
+        min-height: var(--spacing-tab-bar-height);
+        max-height: var(--spacing-tab-bar-height);
         background-color: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- 3px is a deliberate non-scaling visual offset, no spacing token fits */
-        padding: 3px var(--spacing-xxs) 0;
+        padding: 0 var(--spacing-xxs);
         overflow: hidden;
     }
 
@@ -317,7 +311,10 @@
         line-height: 1;
         color: var(--color-text-tertiary);
         opacity: 0;
-        transition: opacity var(--transition-fast);
+        transition:
+            opacity var(--transition-fast),
+            background-color var(--transition-fast),
+            color var(--transition-fast);
     }
 
     /* Show close button on tab hover or when tab is active */

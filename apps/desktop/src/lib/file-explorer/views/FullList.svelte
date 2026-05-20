@@ -907,8 +907,7 @@
         /* grid-template-columns set via inline style for shrink-wrapped column widths */
         gap: var(--spacing-sm);
         padding: var(--spacing-xxs) var(--spacing-sm);
-        background: var(--color-bg-header);
-        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg-secondary);
         height: calc(22px * var(--font-scale));
         flex-shrink: 0;
         transition: grid-template-columns 300ms ease;
@@ -1019,6 +1018,16 @@
        via higher specificity. */
     .file-entry.is-selected.is-under-cursor {
         --color-selection-fg: var(--color-selection-fg-cursor);
+        /* Size tiers are otherwise computed as `color-mix(secondary, selection-fg)`,
+           so even with `--color-selection-fg` swapped to the cursor variant the
+           size triads keep a grayer cast than the name/date. Collapse the
+           gradient on the cursor row so every column reads as the same lighter
+           red. */
+        --color-size-bytes-selected: var(--color-selection-fg);
+        --color-size-kb-selected: var(--color-selection-fg);
+        --color-size-mb-selected: var(--color-selection-fg);
+        --color-size-gb-selected: var(--color-selection-fg);
+        --color-size-tb-selected: var(--color-selection-fg);
     }
 
     /* Faint hairline between two consecutive selected rows so dense
@@ -1036,8 +1045,10 @@
         /* Faint accent-colored hairline outlining the cursor row. `inset`
            draws inside the row with no layout shift. Visible in both the
            focused (`is-focused`) and unfocused states so the cursor stays
-           distinguishable from the selection bg. */
+           distinguishable from the selection bg. The `border-radius`
+           softens the cursor box; the box-shadow follows the radius. */
         box-shadow: inset 0 0 0 1px var(--color-cursor-outline);
+        border-radius: var(--radius-sm);
     }
 
     .full-list-container.is-focused .file-entry.is-under-cursor {

@@ -302,8 +302,7 @@
         font-family: var(--font-system), sans-serif;
         font-size: calc(var(--font-size-sm) * 0.95);
         color: var(--color-text-secondary);
-        background-color: var(--color-bg-secondary);
-        border-top: 1px solid var(--color-border-strong);
+        background-color: var(--color-bg-info-bar);
         min-height: 1.5em;
     }
 

@@ -55,14 +55,14 @@
 
 <style>
     .pane-resizer {
-        width: 5px;
+        width: 4px;
         cursor: col-resize;
         display: flex;
         align-items: center;
         justify-content: center;
         background: var(--color-border-strong);
         flex-shrink: 0;
-        transition: background-color var(--transition-base);
+        transition: background-color var(--transition-fast);
     }
 
     .pane-resizer:hover,

@@ -2571,13 +2571,11 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        border: 1px solid var(--color-border-strong);
     }
 
     .header {
         padding: var(--spacing-xxs) var(--spacing-sm);
         background-color: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border-strong);
         font-size: var(--font-size-sm);
         white-space: nowrap;
         display: flex;
@@ -2597,6 +2595,7 @@
         height: 100%;
         transition: none;
         pointer-events: none;
+        border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
     }
 
     .path {

@@ -659,6 +659,7 @@
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
+        transition: background-color var(--transition-fast);
     }
 
     .volume-name:hover {
@@ -1108,6 +1109,9 @@
         align-items: center;
         gap: var(--spacing-xs);
         margin-left: var(--spacing-xxs);
+        transition:
+            background-color var(--transition-fast),
+            color var(--transition-fast);
     }
 
     .breadcrumb-options-trigger:hover,

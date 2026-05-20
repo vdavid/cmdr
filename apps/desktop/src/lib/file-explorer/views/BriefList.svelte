@@ -917,8 +917,7 @@
     .header-row {
         display: flex;
         height: calc(22px * var(--font-scale));
-        background: var(--color-bg-header);
-        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg-secondary);
         flex-shrink: 0;
         padding: 0 var(--spacing-xs);
     }
@@ -1026,6 +1025,7 @@
         /* Faint accent-colored hairline outlining the cursor row. See
            FullList.svelte for the rationale. */
         box-shadow: inset 0 0 0 1px var(--color-cursor-outline);
+        border-radius: var(--radius-sm);
     }
 
     .brief-list-container.is-focused .file-entry.is-under-cursor {

@@ -15,7 +15,11 @@
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e8e8e8;
-  --color-bg-header: #f0f0f0;
+  /* Status-bar surface that contrasts gently with `--color-bg-secondary`.
+     Light: a touch darker than secondary. Dark: a touch lighter. Used by
+     `SelectionInfo` so the status band reads as distinct from the
+     function-key bar below (which keeps `--color-bg-secondary`). */
+  --color-bg-info-bar: #ececec;
 
   /* === Borders === */
   --color-border-strong: #bbb;
@@ -316,13 +320,20 @@
 }
 
 /* === Size tier palette: None ===
-   All tiers fall back to the secondary text color (no coloring). */
+   All tiers fall back to the secondary text color (no coloring). The
+   selected variants also flatten so a selected row doesn't fall back to
+   the gradient otherwise baked into `--color-size-*-selected`. */
 :root[data-size-colors='none'] {
   --color-size-bytes: var(--color-text-secondary);
   --color-size-kb: var(--color-text-secondary);
   --color-size-mb: var(--color-text-secondary);
   --color-size-gb: var(--color-text-secondary);
   --color-size-tb: var(--color-text-secondary);
+  --color-size-bytes-selected: var(--color-selection-fg);
+  --color-size-kb-selected: var(--color-selection-fg);
+  --color-size-mb-selected: var(--color-selection-fg);
+  --color-size-gb-selected: var(--color-selection-fg);
+  --color-size-tb-selected: var(--color-selection-fg);
 }
 
 /* === Date age palette: Wilting (light) ===
@@ -451,7 +462,9 @@
     --color-bg-primary: #1e1e1e;
     --color-bg-secondary: #2a2a2a;
     --color-bg-tertiary: #333333;
-    --color-bg-header: #252525;
+    /* Dark mode: lighter than secondary (opposite of light mode) so the
+       status band lifts away from the function-key bar below. */
+    --color-bg-info-bar: #323232;
 
     /* === Borders === */
     --color-border-strong: #555555;
