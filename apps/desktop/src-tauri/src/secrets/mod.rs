@@ -81,6 +81,19 @@ fn init_store() -> Box<dyn SecretStore> {
         return Box::new(plain_file::PlainFileStore::new(dir));
     }
 
+    // E2E runs must never hit the OS keychain. A locked macOS Keychain pops a
+    // GUI password prompt that blocks every secret read until the user types
+    // their password — fatal for an unattended test run (the dialog steals
+    // focus, the tests time out, half the suite goes red for non-code reasons).
+    // Force the file backend so an E2E session's credentials live alongside its
+    // ephemeral data dir and disappear with it.
+    if crate::test_mode::is_e2e_mode() {
+        let dir = secret_store_dir();
+        info!("Secret store: PlainFileStore (CMDR_E2E_MODE=1)");
+        FILE_BACKED.store(true, std::sync::atomic::Ordering::Relaxed);
+        return Box::new(plain_file::PlainFileStore::new(dir));
+    }
+
     #[cfg(target_os = "macos")]
     {
         info!("Secret store: KeychainStore (macOS)");
