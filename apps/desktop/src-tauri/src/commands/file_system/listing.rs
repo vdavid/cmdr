@@ -323,14 +323,24 @@ pub fn list_directory_end(listing_id: String) {
 /// Force a re-read of a watched directory listing, emitting any diff.
 /// Used after write operations (move) when the file watcher may not fire promptly.
 ///
-/// Short-circuits when the listing's volume reports `listing_is_watched(path) == true`.
-/// In that case the cache is already being kept fresh by the volume's `notify_mutation`
-/// pipeline (per-file `Added` / `Removed` / `Modified` events patched into `LISTING_CACHE`
-/// after every successful mutation), so a full `list_directory` re-read is redundant
-/// and costs a lot on slow backends: a 1k-entry MTP folder takes ~17 s and holds the
-/// USB session, colliding with the user's next op. Returns `TimedOut { data: (),
-/// timed_out: false }` immediately when the short-circuit fires, matching the
-/// `timed_out: false` shape the FE already handles on the fast-path.
+/// Short-circuits when the listing lives on a **non-local** volume that reports
+/// `listing_is_watched(path) == true`. There the cache is being kept fresh by the
+/// volume's `notify_mutation` pipeline (per-file `Added` / `Removed` / `Modified`
+/// events patched into `LISTING_CACHE` after every successful mutation), so a full
+/// `list_directory` re-read is pure redundancy and costs a lot on slow backends:
+/// a 1k-entry MTP folder takes ~17 s and holds the USB session, colliding with
+/// the user's next op.
+///
+/// Local volumes always re-read. FSEvents on macOS races with `/tmp` ↔ `/private/tmp`
+/// symlink resolution and with the fixture-recreate beforeEach loops we run in E2E,
+/// so the cache is not reliably fresh at the moment `refresh_listing` lands — and
+/// a local `list_directory` is sub-millisecond, so paying for a re-read is the
+/// right trade. The whole point of the user/FE calling `refresh` is "I think the
+/// cache might be stale, please update it"; on local FS that's exactly what we do.
+///
+/// Returns `TimedOut { data: (), timed_out: false }` immediately when the
+/// short-circuit fires, matching the `timed_out: false` shape the FE already
+/// handles on the fast-path.
 ///
 /// Note: only this user-triggered command is gated. The FSEvents/SMB/MTP watcher
 /// callbacks call `handle_directory_change` directly and are intentionally left
@@ -338,16 +348,14 @@ pub fn list_directory_end(listing_id: String) {
 #[tauri::command]
 #[specta::specta]
 pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
-    // Short-circuit on watcher-backed listings: the volume's `notify_mutation`
-    // pipeline keeps `LISTING_CACHE` fresh, so a full re-read here is pure
-    // redundancy. See the doc comment above for why this matters on MTP/SMB.
     if let Some((volume_id, path)) = crate::file_system::listing::get_listing_volume_id_and_path(&listing_id)
         && let Some(volume) = get_volume_manager().get(&volume_id)
+        && volume.local_path().is_none()
         && volume.listing_is_watched(&path)
     {
         log::debug!(
             target: "refresh_listing",
-            "refresh_listing: short-circuit, watcher-backed listing (listing_id={}, volume_id={}, path={})",
+            "refresh_listing: short-circuit, watcher-backed non-local listing (listing_id={}, volume_id={}, path={})",
             listing_id,
             volume_id,
             path.display(),
