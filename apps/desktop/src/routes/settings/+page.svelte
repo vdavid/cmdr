@@ -22,6 +22,26 @@
     let selectedSection = $state<string[]>(['Appearance', 'Colors and formats'])
     let initialized = $state(false)
     let contentElement: HTMLElement | null = $state(null)
+    let contentScrollTop = $state(0)
+    /** Mask string for the scroll wrapper. Top-fade band height tracks
+        `scrollTop` 0..70 px and caps at 70. Within the band the top 20 %
+        is fully transparent (= hides scrolled-up content); the remaining
+        80 % linearly fades to fully visible. At `scrollTop = 0` the band
+        is zero-wide, so the gradient effectively collapses to "all black
+        = no fade." Stylelint's allowed-values list rejects mask-image
+        with a `calc(var(...) / 5)` so we compute the whole string in JS
+        and apply it via `style:mask-image` (inline runtime style, not
+        scoped CSS that gets linted). */
+    const contentMaskImage = $derived.by(() => {
+        const band = Math.min(Math.max(contentScrollTop, 0), 70)
+        const opaque = band / 5
+        return `linear-gradient(to bottom, transparent 0px, transparent ${String(opaque)}px, black ${String(band)}px)`
+    })
+    function handleContentScroll(): void {
+        if (contentElement) {
+            contentScrollTop = contentElement.scrollTop
+        }
+    }
     let unlistenFocusSelf: UnlistenFn | undefined
     let unlistenNavigate: UnlistenFn | undefined
     let unlistenMcpClose: UnlistenFn | undefined
@@ -294,7 +314,14 @@
                 onSectionSelect={handleSectionSelect}
             />
             <!-- tabindex="-1" prevents this from being a tab stop while still allowing programmatic scrolling -->
-            <div class="settings-content-wrapper" bind:this={contentElement} tabindex="-1">
+            <div
+                class="settings-content-wrapper"
+                bind:this={contentElement}
+                onscroll={handleContentScroll}
+                style:mask-image={contentMaskImage}
+                style:-webkit-mask-image={contentMaskImage}
+                tabindex="-1"
+            >
                 <SettingsContent {searchQuery} {selectedSection} onNavigate={handleSectionSelect} />
             </div>
         </div>
@@ -349,6 +376,14 @@
         overflow-y: auto;
         padding: var(--spacing-lg);
         outline: none;
+        /* `mask-image` is set inline via `style:mask-image={contentMaskImage}`
+           — the gradient depends on scrollTop, and stylelint's allowed-
+           values list rejects calc-with-custom-property forms for mask-image.
+           Inline runtime styles bypass the scoped-CSS lint. See the
+           `contentMaskImage` derived value in the script block for the
+           gradient math: top 20% of the band fully transparent (hides
+           content), bottom 80% fades to fully visible. At scrollTop=0 the
+           band is zero-wide so the mask collapses to "no fade". */
     }
 
     .settings-loading {
