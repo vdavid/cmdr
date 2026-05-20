@@ -1,17 +1,63 @@
 # cargo-nextest configuration
 # See https://nexte.st/docs/configuration/ for full documentation
+#
+# Default test timeout policy
+# ---------------------------
+# Every Rust test must complete in ≤ 8 s, matching the Playwright E2E suite's
+# default. Anything slower is a bug: a real-time-dependent test, an unguarded
+# network/IPC call, or an environment race. The cap is intentionally tight so a
+# hung test fails the suite in seconds instead of blocking CI for the legacy
+# 120 s nextest default. Background:
+#
+#   2026-05-19/20: `accent_color_linux::tests::read_accent_color_returns_valid_hex`
+#   hit nextest's prior 120 s cap because `zbus::blocking::Connection::session()`
+#   had no timeout and the GitHub Actions runner had a half-configured D-Bus
+#   (orphan socket, no daemon). Cost: 4 days of red main CI before anyone
+#   noticed. Fix combined a 500 ms probe timeout in the production code with
+#   this tightened nextest cap so the suite shouts immediately next time.
+#
+# Exceptions
+# ----------
+# To grant a higher cap, add a `[[profile.default.overrides]]` block matching
+# the specific test(s) by name and explain WHY in a comment alongside it. The
+# bar is high: the test must exercise something that can't be made faster
+# without losing coverage (a real network call, a build artifact materialisation,
+# etc.). "It just takes that long" is not a reason — refactor the test instead.
 
+[test-groups]
 # Tests in the `virtual-mtp` group share a single backing-dir fixture root at
 # `/tmp/cmdr-mtp-e2e-fixtures` (see `mtp::virtual_device::setup_virtual_mtp_device`),
 # so running them concurrently races on a shared filesystem resource and one
 # wins with `DirectoryNotEmpty`. Cap concurrency at 1 to serialize them across
 # nextest's per-process forks.
-[test-groups]
 virtual-mtp = { max-threads = 1 }
 
 [[profile.default.overrides]]
 filter = 'test(mtp_scan) + test(listing_is_watched_flips_with_connection)'
 test-group = 'virtual-mtp'
+
+[[profile.default.overrides]]
+# SMB integration tests (`#[ignore]`-gated, only run by the
+# `desktop-rust-integration-tests` check, which boots a real Docker Samba stack).
+# Each test pays the SMB session setup + auth + network round-trip cost; the
+# happy paths land in 1–3 s, but pathological-case tests (timeouts, slow
+# servers, big-listing pagination) intentionally probe slow behavior and need
+# headroom. 30 s is generous enough for those without losing the "hung forever"
+# safety net.
+filter = 'test(smb_integration_)'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# `error_reporter::tests::cap_bundle_*` builds a 5+ MB compressed zip from
+# 200 000 synthetic log lines, then trims it. The point of the input size is to
+# mirror a realistic full-rotation log dir; running the test on a smaller input
+# would stop covering the headline regression it pins (1-MB cap producing a
+# 542-byte zip with only the manifest — see the test doc-comment). Generation +
+# deflate + cap takes ~1–2 s on a quiet warm machine; under contention (50 other
+# checks running in parallel under `./scripts/check.sh`), it crosses 8 s.
+# 30 s headroom keeps the test honest without removing the "hung forever" net.
+filter = 'test(=error_reporter::tests::cap_bundle_keeps_newest_lines_and_manifest) + test(=error_reporter::tests::cap_bundle_prefers_newer_files)'
+slow-timeout = { period = "30s", terminate-after = 1 }
 
 [profile.default]
 # Show test output for failing tests only
@@ -24,8 +70,9 @@ retries = 0
 test-threads = "num-cpus"
 # Fail fast - stop on first failure
 fail-fast = false
-# Show the slowest tests
-slow-timeout = { period = "60s", terminate-after = 2 }
+# Hard cap on every test (see policy at top of file). period × terminate-after
+# = 8 s × 1 = kill after 8 s of wall-clock.
+slow-timeout = { period = "8s", terminate-after = 1 }
 
 [profile.ci]
 # Inherit from default profile
