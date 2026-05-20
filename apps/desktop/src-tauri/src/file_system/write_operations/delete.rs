@@ -714,6 +714,18 @@ pub(super) async fn delete_volume_files_with_progress_inner(
             });
         }
 
+        // E2E throttle so cancel-during-delete tests have a deterministic
+        // window in which to click Cancel before all files are gone. Reuses
+        // the copy throttle knob — the env var / IPC override is described
+        // as "per-file copy throttle" but functionally just delays each
+        // per-file step, which is exactly what we need here too. Unset
+        // outside E2E, so this is zero-cost in production.
+        if let Some(ms) = crate::test_mode::effective_copy_throttle_ms()
+            && ms > 0
+        {
+            tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
+        }
+
         volume
             .delete_with_cancel(&entry.path, Some(&state.backend_cancel))
             .await

@@ -699,7 +699,14 @@
                 log.info('Dialog destroyed before operationId arrived; cancelling op={operationId}', {
                     operationId,
                 })
-                void cancelWriteOperation(operationId, true)
+                // `rollback=false`: user clicked Cancel before the op even had
+                // its ID — treat it like a plain Cancel (the `Cancel` button's
+                // `handleCancel(false)` path), not a Rollback. Rollback is only
+                // for "undo the files I already copied", which is meaningless
+                // before any file has been touched. Sending `true` here used
+                // to wedge the cancel-settled gate on operations that don't
+                // support rollback (delete).
+                void cancelWriteOperation(operationId, false)
                 cleanup()
                 onCancelled(0)
                 return
