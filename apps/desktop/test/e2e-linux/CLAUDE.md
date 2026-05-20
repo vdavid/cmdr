@@ -111,3 +111,46 @@ Running SMB tests in isolation avoids this. Investigating the root cause is trac
 | --------------------- | ---------------------------------------- | -------------------- |
 | `desktop-e2e-linux`   | Playwright E2E in Docker                 | No (slow)            |
 | `e2e-linux-typecheck` | TypeScript check on e2e-playwright files | Yes                  |
+
+## Running Linux Rust tests on the UTM VM (faster than CI roundtrips)
+
+David runs a UTM-Apple-Virtualization Ubuntu VM that mounts the repo via VirtioFS. File edits on the Mac side are
+visible inside the VM immediately, so iterating on Linux-only test code (`accent_color_linux`, `volume::mtp_linux`, GVFS
+/ D-Bus paths) is much faster than pushing to CI and waiting for the runner.
+
+Setup is documented in `CONTRIBUTING.md` § "Linux testing (Ubuntu VM)". The host is on DHCP, so the IP rotates; ask the
+user (or run `ip -4 addr show enp0s1 | awk '/inet /{print $2}'` from inside the VM). User is `veszelovszki`. SSH is
+key-based.
+
+From the Mac, the iterate loop is:
+
+```bash
+# 1. Get the VM's current IP (paste from the user if they ran `ip a`)
+VM=10.139.81.203                    # replace with current IP
+
+# 2. Run a single test (or a name filter) — cargo + cargo-nextest live on the VM,
+#    accessed via `bash -lc` so the rustup PATH is set up.
+ssh veszelovszki@$VM 'bash -lc "cd ~/cmdr/apps/desktop/src-tauri && cargo nextest run --no-fail-fast <test-name>"'
+```
+
+The `cmdr` repo is bind-mounted at `~/cmdr` (= `/mnt/cmdr/cmdr`). `target/` and `node_modules/` are intentionally on the
+VM's local disk, not on VirtioFS, because virtiofs is slow for the millions of small files cargo and pnpm produce. That
+local disk is small (62 GB total), so if a build hits `No space left on device`:
+
+```bash
+ssh veszelovszki@$VM 'df -h /mnt/cmdr/cmdr/target'                  # check usage
+ssh veszelovszki@$VM 'rm -rf /mnt/cmdr/cmdr/target/release \
+                            /mnt/cmdr/cmdr/target/debug/incremental \
+                            /mnt/cmdr/cmdr/target/debug/Cmdr'      # free 10 GB in seconds
+```
+
+A full `cargo clean` works too but loses all dep artifacts — next build pays ~10 min on aarch64. Prefer the targeted
+cleanup above.
+
+**Gotcha**: On first SSH after the VM reboots, `rustup` may re-sync the toolchain (~1 min) before `cargo` returns. Wrap
+the test invocation in a high timeout the first time.
+
+**Gotcha**: The VM has a half-configured D-Bus (session-bus socket present, daemon serving) — exactly the shape that
+broke `read_accent_color_returns_valid_hex` in CI for 4 days in May 2026. Linux unit tests with bounded probes can
+exercise the live D-Bus path here in addition to Docker (where the bus is absent entirely). That dual coverage is the
+whole reason to keep the VM around for unit tests, not just E2E.
