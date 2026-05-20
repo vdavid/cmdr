@@ -106,6 +106,16 @@
                     handleContextMenu(e, tab.id)
                 }}
             >
+                {#if isActive}
+                    <!-- Chrome-style "shoulders": small concave quarter-
+                         circle wedges that stick out past the active tab's
+                         bottom corners, carving a smooth rounded notch into
+                         the adjacent inactive tabs. They share the active
+                         tab's bg color so the tab reads as "flowing into"
+                         the path bar surface below. -->
+                    <span class="tab-shoulder tab-shoulder-left" aria-hidden="true"></span>
+                    <span class="tab-shoulder tab-shoulder-right" aria-hidden="true"></span>
+                {/if}
                 {#if tab.unreachable}
                     <span class="warning-icon" use:tooltip={'Unreachable'} aria-label="Unreachable">
                         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -161,9 +171,18 @@
         height: var(--spacing-tab-bar-height);
         min-height: var(--spacing-tab-bar-height);
         max-height: var(--spacing-tab-bar-height);
-        background-color: var(--color-bg-secondary);
+        /* Bar bg matches the inactive tabs so adjacent inactive tabs blend
+           into the bar around them. The active tab (`bg-secondary`, same
+           as the col header / path bar below) is the only contrasting
+           surface in the strip. Side-effect: the active tab's
+           `bg-secondary` no longer stacks on a second `bg-secondary` layer
+           from the bar, so its effective opacity now matches the path bar
+           and col header exactly. */
+        background-color: var(--color-bg-tab-inactive);
         padding: 0 var(--spacing-xxs);
-        overflow: hidden;
+        /* Need `overflow: visible` so the active-tab shoulders can extend
+           outside the tab into the surrounding gap + inactive-tab area. */
+        overflow: visible;
     }
 
     .tab-list {
@@ -171,9 +190,15 @@
         flex: 1;
         min-width: 0;
         align-items: end;
-        overflow: hidden;
+        /* `overflow: visible` so the active-tab shoulders can extend
+           outside the list into the surrounding (gap + inactive-tab)
+           area without being clipped. */
+        overflow: visible;
+        /* 5 px gap = 2 px margin + 1 px separator + 2 px margin between
+           adjacent tabs. The `.tab::before` separator (above) sits inside
+           this gap at `left: -3px`. */
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        gap: 1px;
+        gap: 5px;
     }
 
     .tab {
@@ -192,7 +217,11 @@
         padding: 0 var(--spacing-sm);
         border: none;
         border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-        background-color: transparent;
+        /* Inactive tabs get a distinct "recessed" bg: slightly darker than
+           `--color-bg-secondary` in light mode, slightly lighter in dark
+           mode. `.tab.active` below overrides this with `bg-secondary` so
+           the selected tab merges with the path bar. */
+        background-color: var(--color-bg-tab-inactive);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
         font-family: var(--font-system);
@@ -205,28 +234,39 @@
             color var(--transition-fast);
     }
 
-    /* Subtle separator between inactive tabs, hidden next to the active tab */
+    /* Faint hairline separator between adjacent inactive tabs (skipped
+       next to the active tab and at the leftmost edge of the list).
+       Sits at the tab's left edge, ~70 % of tab height, with ~2 px of
+       breathing room above and below thanks to top/bottom 15 %. The
+       `tab-list { gap: 5px }` rule below leaves enough room around the
+       separator (1 px wide line + 2 px margin on each side). */
     .tab:not(.active, .before-active, .after-active, :first-child)::before {
         content: '';
         position: absolute;
-        left: -1px;
-        top: 5px;
-        bottom: 5px;
+        left: -3px;
+        top: 15%;
+        bottom: 15%;
         width: 1px;
-        background-color: var(--color-border-subtle);
+        background-color: var(--color-tab-separator);
     }
 
     .tab.active {
-        background-color: color-mix(in oklch, var(--color-bg-primary), var(--color-accent) 4%);
+        /* Same bg as the path bar below (`--color-bg-secondary`), so the
+           active tab visually merges with the chrome row underneath. The
+           accent line at the top + the rounded "shoulder" elements at the
+           bottom are what make it read as "tab, not gap". */
+        background-color: var(--color-bg-secondary);
         color: var(--color-text-primary);
         font-weight: 500;
-        /* Bar height + 1px so the active tab covers the tab-bar bottom border;
-         * the extra px hangs below via `margin-bottom: -1px`. */
+        /* Bar height + 1px so the active tab covers any seam with the
+           path bar; the extra px hangs below via `margin-bottom: -1px`. */
         height: calc(var(--spacing-tab-bar-height) + 1px);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-bottom: -1px;
         z-index: 1;
-        box-shadow: 0 0 4px color-mix(in srgb, black, transparent 96%);
+        /* Let the Chrome-style shoulders extend past the tab's left/right
+           edges into the surrounding inactive-tab area. */
+        overflow: visible;
     }
 
     /* Accent top border on active tab */
@@ -242,16 +282,64 @@
         border-radius: 1px 1px 0 0;
     }
 
-    @media (prefers-color-scheme: dark) {
-        .tab.active {
-            background-color: color-mix(in oklch, var(--color-bg-primary), var(--color-accent) 7%);
-            box-shadow: 0 0 4px color-mix(in srgb, black, transparent 85%);
-        }
+    /* Chrome-style "shoulders": pseudo-elements that stick out past the
+       active tab's bottom-left and bottom-right corners with the same bg
+       as the tab, then mask out a quarter-circle so the visible shape is
+       a concave curve. This carves a smooth rounded notch out of the
+       adjacent inactive tab's surface — the active tab reads as "flowing
+       into" the path bar below while the inactive tabs around it bend
+       away. Won't be visible when there's no adjacent inactive tab
+       (`:first-child` / `:last-child` ends of the tab list), which is
+       fine — the bar's own bg matches the active tab anyway. */
+    .tab-shoulder {
+        position: absolute;
+        /* Explicit `top: auto` so `bottom: 0` is the only vertical anchor —
+           inherited cascade (or a future stacking-context tweak) can't shove
+           these to the top accidentally. */
+        top: auto;
+        bottom: 0;
+        width: 8px;
+        height: 8px;
+        background-color: var(--color-bg-secondary);
+        pointer-events: none;
+    }
+
+    /* Left shoulder: 8 × 8 box that sticks out 8 px to the left of the
+       active tab's bottom-left corner. The mask keeps only the
+       *bottom-right* curved triangle of the box visible (= the area
+       closest to the tab); the rest is transparent. That visible chunk
+       forms a smooth convex bulge extending the active tab's
+       bottom-left corner outward into the adjacent inactive tab's
+       surface. */
+    .tab-shoulder-left {
+        left: -8px;
+        /* `transparent` inside the top-left quarter-disc (away from tab),
+           `black` outside (= near tab → opaque, visible). */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- mask uses raw px in radial-gradient args */
+        mask-image: radial-gradient(circle at top left, transparent 8px, black 8px);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- vendor-prefixed mask, WKWebView fallback */
+        -webkit-mask-image: radial-gradient(circle at top left, transparent 8px, black 8px);
+    }
+
+    /* Right shoulder: mirror image of the left — visible bottom-left
+       curved triangle near the tab's bottom-right corner. */
+    .tab-shoulder-right {
+        right: -8px;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- mask uses raw px in radial-gradient args */
+        mask-image: radial-gradient(circle at top right, transparent 8px, black 8px);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- vendor-prefixed mask, WKWebView fallback */
+        -webkit-mask-image: radial-gradient(circle at top right, transparent 8px, black 8px);
     }
 
     .tab:hover:not(.active) {
-        background-color: color-mix(in srgb, var(--color-bg-tertiary), transparent 40%);
+        background-color: color-mix(in srgb, var(--color-bg-secondary), white 8%);
         color: var(--color-text-secondary);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .tab:hover:not(.active) {
+            background-color: color-mix(in srgb, var(--color-bg-tab-inactive), white 6%);
+        }
     }
 
     /* Hide separator when hovering an inactive tab */
