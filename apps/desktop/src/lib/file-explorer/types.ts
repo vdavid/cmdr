@@ -702,3 +702,10 @@ export interface ScanPreviewErrorEvent {
 export interface ScanPreviewCancelledEvent {
   previewId: string
 }
+
+/** Cached scan-preview totals (returned by `checkScanPreviewStatus`). */
+export interface ScanPreviewTotals {
+  filesTotal: number
+  dirsTotal: number
+  bytesTotal: number
+}

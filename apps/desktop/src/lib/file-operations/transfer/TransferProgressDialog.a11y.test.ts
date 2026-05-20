@@ -29,7 +29,7 @@ vi.mock('$lib/tauri-commands', () => ({
   resolveWriteConflict: vi.fn(() => Promise.resolve()),
   cancelWriteOperation: vi.fn(() => Promise.resolve()),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
-  checkScanPreviewStatus: vi.fn(() => Promise.resolve(false)),
+  checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
   onScanPreviewProgress: vi.fn(() => Promise.resolve(() => {})),
   onScanPreviewComplete: vi.fn(() => Promise.resolve(() => {})),
   onScanPreviewError: vi.fn(() => Promise.resolve(() => {})),

@@ -22,7 +22,7 @@ vi.mock('$lib/tauri-commands', () => ({
   formatBytes: vi.fn((n: number) => `${String(n)} B`),
   startScanPreview: vi.fn(() => Promise.resolve({ previewId: 'preview-1' })),
   cancelScanPreview: vi.fn(() => Promise.resolve()),
-  checkScanPreviewStatus: vi.fn(() => Promise.resolve(false)),
+  checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
   onScanPreviewProgress: vi.fn(() => Promise.resolve(() => {})),
   onScanPreviewComplete: vi.fn(() => Promise.resolve(() => {})),
   onScanPreviewError: vi.fn(() => Promise.resolve(() => {})),

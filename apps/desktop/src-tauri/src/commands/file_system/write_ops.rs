@@ -2,7 +2,7 @@
 
 use crate::file_system::write_operations::{
     ConflictResolution, ScanPreviewStartResult, cancel_scan_preview as ops_cancel_scan_preview,
-    is_scan_preview_complete as ops_is_scan_preview_complete, resolve_write_conflict as ops_resolve_write_conflict,
+    get_scan_preview_totals as ops_get_scan_preview_totals, resolve_write_conflict as ops_resolve_write_conflict,
     start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
@@ -313,13 +313,17 @@ pub fn cancel_scan_preview(preview_id: String) {
     ops_cancel_scan_preview(&preview_id);
 }
 
-/// Checks whether scan preview results are cached (scan completed successfully).
-/// Used by TransferProgressDialog to handle the race condition where the scan completes
-/// between TransferDialog closing and TransferProgressDialog mounting.
+/// Returns the cached totals from a completed scan preview, or `null` while the
+/// scan is still running / cancelled / errored. The FE uses the presence of a
+/// value both as a "scan done" signal and to repopulate display state when its
+/// listeners missed the events (a watcher-backed oracle can finish before the
+/// FE finishes the `startScanPreview()` IPC round-trip).
 #[tauri::command]
 #[specta::specta]
-pub fn check_scan_preview_status(preview_id: String) -> bool {
-    ops_is_scan_preview_complete(&preview_id)
+pub fn check_scan_preview_status(
+    preview_id: String,
+) -> Option<crate::file_system::write_operations::ScanPreviewTotals> {
+    ops_get_scan_preview_totals(&preview_id)
 }
 
 /// In Stop mode, the operation pauses on conflict and waits for this call to proceed.

@@ -70,11 +70,20 @@ pub fn start_scan_preview(
     ScanPreviewStartResult { preview_id }
 }
 
-/// Returns true if scan preview results are cached (scan completed successfully).
-pub fn is_scan_preview_complete(preview_id: &str) -> bool {
-    SCAN_PREVIEW_RESULTS
-        .read()
-        .is_ok_and(|cache| cache.contains_key(preview_id))
+/// Returns the cached totals from a completed scan preview, or `None` if the
+/// scan is still running, was cancelled, or errored. The FE uses this both to
+/// know whether the scan is done AND to recover its display state when the
+/// scan-preview events fired before listeners were attached (a real race
+/// surfaced by M2a's watcher-backed oracle, which can complete a scan in
+/// ~5 ms — faster than the FE's `await startScanPreview()` IPC round-trip).
+pub fn get_scan_preview_totals(preview_id: &str) -> Option<super::types::ScanPreviewTotals> {
+    let cache = SCAN_PREVIEW_RESULTS.read().ok()?;
+    let cached = cache.get(preview_id)?;
+    Some(super::types::ScanPreviewTotals {
+        files_total: cached.file_count,
+        dirs_total: cached.dirs.len(),
+        bytes_total: cached.total_bytes,
+    })
 }
 
 /// Cancels a running scan preview.
@@ -495,4 +504,44 @@ pub(super) async fn run_oracle_aware_batch_scan(
         .collect();
 
     Ok(BatchScanResult { aggregate, per_path })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `get_scan_preview_totals` must return the cached counters when a scan
+    /// has completed. Pins the contract the FE relies on to recover its
+    /// display state when scan events fire before listeners attach (the
+    /// regression that flaked `mtp-copy-preflight-uses-cache.spec.ts` after
+    /// M2a's watcher-backed oracle made scans nearly instant).
+    #[test]
+    fn get_scan_preview_totals_returns_cached_counts_after_complete() {
+        let preview_id = format!("test-{}", Uuid::new_v4());
+        SCAN_PREVIEW_RESULTS.write().unwrap().insert(
+            preview_id.clone(),
+            CachedScanResult {
+                files: Vec::new(),
+                dirs: vec![PathBuf::from("/d1"), PathBuf::from("/d2")],
+                file_count: 7,
+                total_bytes: 12_345,
+                per_path: Vec::new(),
+            },
+        );
+
+        let totals = get_scan_preview_totals(&preview_id).expect("totals should be present");
+        assert_eq!(totals.files_total, 7);
+        assert_eq!(totals.dirs_total, 2);
+        assert_eq!(totals.bytes_total, 12_345);
+
+        SCAN_PREVIEW_RESULTS.write().unwrap().remove(&preview_id);
+    }
+
+    /// `get_scan_preview_totals` returns `None` while the scan is still
+    /// running (the cache is keyed by preview_id; absence == not complete).
+    #[test]
+    fn get_scan_preview_totals_returns_none_for_unknown_preview() {
+        let unknown = format!("nonexistent-{}", Uuid::new_v4());
+        assert!(get_scan_preview_totals(&unknown).is_none());
+    }
 }

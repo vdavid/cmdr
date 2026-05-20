@@ -15,6 +15,7 @@ import type {
   ScanPreviewErrorEvent,
   ScanPreviewProgressEvent,
   ScanPreviewStartResult,
+  ScanPreviewTotals,
   SortColumn,
   SortOrder,
   WriteCancelledEvent,
@@ -54,6 +55,7 @@ export type {
   ScanPreviewCompleteEvent,
   ScanPreviewErrorEvent,
   ScanPreviewCancelledEvent,
+  ScanPreviewTotals,
 }
 
 // ============================================================================
@@ -77,8 +79,10 @@ export async function cancelScanPreview(previewId: string): Promise<void> {
   await commands.cancelScanPreview(previewId)
 }
 
-/** Checks whether scan preview results are cached (scan completed successfully). */
-export async function checkScanPreviewStatus(previewId: string): Promise<boolean> {
+/** Returns the cached scan-preview totals if the scan has completed; `null` otherwise.
+ * Used to recover FE display state when scan events fire before listeners attach
+ * (M2a's watcher-backed oracle can finish in ~5 ms, beating the FE round-trip). */
+export async function checkScanPreviewStatus(previewId: string): Promise<ScanPreviewTotals | null> {
   return commands.checkScanPreviewStatus(previewId)
 }
 

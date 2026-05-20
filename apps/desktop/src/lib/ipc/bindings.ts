@@ -413,11 +413,18 @@ export const commands = {
     }),
   cancelScanPreview: (previewId: string) => __TAURI_INVOKE<void>('cancel_scan_preview', { previewId }),
   /**
-   *  Checks whether scan preview results are cached (scan completed successfully).
-   *  Used by TransferProgressDialog to handle the race condition where the scan completes
-   *  between TransferDialog closing and TransferProgressDialog mounting.
+   *  Returns the cached totals from a completed scan preview, or `null` while the
+   *  scan is still running / cancelled / errored. The FE uses the presence of a
+   *  value both as a "scan done" signal and to repopulate display state when its
+   *  listeners missed the events (a watcher-backed oracle can finish before the
+   *  FE finishes the `startScanPreview()` IPC round-trip).
    */
-  checkScanPreviewStatus: (previewId: string) => __TAURI_INVOKE<boolean>('check_scan_preview_status', { previewId }),
+  checkScanPreviewStatus: (previewId: string) =>
+    __TAURI_INVOKE<{
+      filesTotal: number
+      dirsTotal: number
+      bytesTotal: number
+    } | null>('check_scan_preview_status', { previewId }),
   // In Stop mode, the operation pauses on conflict and waits for this call to proceed.
   resolveWriteConflict: (operationId: string, resolution: ConflictResolution, applyToAll: boolean) =>
     __TAURI_INVOKE<void>('resolve_write_conflict', { operationId, resolution, applyToAll }),
@@ -2791,6 +2798,19 @@ export type ScanConflict = {
 // Result of starting a scan preview.
 export type ScanPreviewStartResult = {
   previewId: string
+}
+
+/**
+ *  Cached scan-preview totals, returned by `check_scan_preview_status` when the
+ *  scan has already completed. Lets the FE recover from a race where events
+ *  fired between IPC dispatch and listener registration (M2a's watcher-backed
+ *  oracle can finish a scan in ~5 ms, so the FE sometimes registers its
+ *  listeners too late and never sees the progress/complete events).
+ */
+export type ScanPreviewTotals = {
+  filesTotal: number
+  dirsTotal: number
+  bytesTotal: number
 }
 
 // A search match found by a backend.

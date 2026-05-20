@@ -716,6 +716,19 @@ pub struct ScanPreviewStartResult {
     pub preview_id: String,
 }
 
+/// Cached scan-preview totals, returned by `check_scan_preview_status` when the
+/// scan has already completed. Lets the FE recover from a race where events
+/// fired between IPC dispatch and listener registration (M2a's watcher-backed
+/// oracle can finish a scan in ~5 ms, so the FE sometimes registers its
+/// listeners too late and never sees the progress/complete events).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanPreviewTotals {
+    pub files_total: usize,
+    pub dirs_total: usize,
+    pub bytes_total: u64,
+}
+
 // ============================================================================
 // Volume copy types
 // ============================================================================

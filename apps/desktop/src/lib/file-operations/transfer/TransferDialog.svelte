@@ -343,15 +343,16 @@
 
         // Check if the scan already completed while we were awaiting the IPC return.
         // Events that arrived before previewId was set were dropped (isOurScanEvent returned false),
-        // so we need to check the backend's cached result.
+        // so we need to read the backend's cached totals and hydrate the dialog from them.
+        // Without this, M2a's watcher-backed oracle (a ~5 ms scan) lands its events
+        // before we register listeners and the dialog shows "✓ 0 files" forever.
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- may have changed during await
         if (isScanning) {
-            const alreadyComplete = await checkScanPreviewStatus(previewId)
-            if (alreadyComplete) {
-                // The scan finished before we could listen. Re-fetch the result by triggering
-                // a fresh scan status check; the backend will re-emit the complete event.
-                // For now, mark as complete with whatever stats we have (they'll be updated
-                // when the copy starts and reads the cached scan result).
+            const totals = await checkScanPreviewStatus(previewId)
+            if (totals) {
+                filesFound = totals.filesTotal
+                dirsFound = totals.dirsTotal
+                bytesFound = totals.bytesTotal
                 isScanning = false
                 scanComplete = true
                 conflictCheckPromise = checkConflicts()

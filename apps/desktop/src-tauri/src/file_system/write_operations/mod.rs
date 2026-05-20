@@ -58,7 +58,7 @@ use state::{WRITE_OPERATION_STATE, WriteSettledGuard, register_operation_status,
 use trash::trash_files_with_progress;
 
 // Re-export public types
-pub use scan_preview::{cancel_scan_preview, is_scan_preview_complete, start_scan_preview};
+pub use scan_preview::{cancel_scan_preview, get_scan_preview_totals, start_scan_preview};
 pub use state::{
     cancel_all_write_operations, cancel_write_operation, get_operation_status, list_active_operations,
     resolve_write_conflict,
@@ -67,9 +67,9 @@ pub use state::{
 pub use types::{
     ConflictInfo, ConflictResolution, DryRunResult, OperationStatus, OperationSummary, ScanPreviewCancelledEvent,
     ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent, ScanPreviewStartResult,
-    ScanProgressEvent, SortColumn, SortOrder, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
-    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
-    WriteOperationType, WriteProgressEvent, WriteSettledEvent,
+    ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder, WriteCancelledEvent, WriteCompleteEvent,
+    WriteConflictEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase,
+    WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
 };
 
 // Re-export for tests (these are pub(crate) in helpers.rs and state.rs)
