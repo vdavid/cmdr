@@ -114,6 +114,21 @@ A lightweight listener keeps concerns separated and reduces overhead.
 
 ## Gotchas
 
+### Modifier-key accelerators may fire twice (menu + JS)
+
+For commands that have BOTH a native-menu accelerator (`menu/macos.rs` `Some("Shift+Space")` etc.) AND a registry
+shortcut (`shortcuts: ['⇧Space']`), AppKit can leak the modifier keydown to the webview even after the menu accelerator
+has fired. So `on_menu_event` emits `execute-command file.quickLook` AND `handleGlobalKeyDown` in `+page.svelte` also
+sees the keydown and calls `handleCommandExecute('file.quickLook')`. **Both paths run, both reach the dispatcher.**
+
+The race is not theoretical — observed empirically as `FE:user-action file.quickLook (×2, deduplicated)` log lines in
+the Quick Look feature. Most other commands aren't toggles, so the double-fire is invisible (palette-open is idempotent,
+etc.). For toggles, the dispatcher needs an arm-on-entry race-guard that swallows the second fire inside a short window
+(~200 ms). See `file-explorer/quick-look/quick-look-state.svelte.ts` (`quickLookDispatchGuardJustFired` /
+`armQuickLookDispatchGuard`) for the pattern.
+
+If you add a new toggle command with both a menu accelerator and a registry shortcut, plan to add a similar guard.
+
 ### Scope hierarchy is hardcoded
 
 `scopeHierarchy` in `scope-hierarchy.ts` is a static object. Adding a new scope requires updating the object manually.
