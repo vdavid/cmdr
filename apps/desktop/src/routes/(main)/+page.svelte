@@ -73,25 +73,8 @@
     /** Opens the debug window (dev mode only) */
     async function openDebugWindow() {
         try {
-            const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-            // Check if debug window already exists
-            const existing = await WebviewWindow.getByLabel('debug')
-            if (existing) {
-                await existing.setFocus()
-                return
-            }
-            // Create new debug window
-            new WebviewWindow('debug', {
-                url: '/debug',
-                title: 'Debug',
-                width: 480,
-                height: 500,
-                resizable: true,
-                minimizable: false,
-                maximizable: false,
-                closable: true,
-                focus: true,
-            })
+            const { openDebugWindow: open } = await import('$lib/debug/debug-window')
+            await open()
         } catch (error) {
             // eslint-disable-next-line no-console -- Debug window is dev-only
             console.error('Failed to open debug window:', error)
