@@ -207,9 +207,7 @@ impl From<smb2::ConnectionDiagnostics> for ConnectionDiagnosticsDto {
                 responses_stray: c.metrics.responses_stray,
                 wire_bytes_received: c.metrics.wire_bytes_received,
                 status_pending_loops: c.metrics.status_pending_loops,
-                unsolicited_notifications_received: c
-                    .metrics
-                    .unsolicited_notifications_received,
+                unsolicited_notifications_received: c.metrics.unsolicited_notifications_received,
                 signature_failures: c.metrics.signature_failures,
                 decrypt_failures: c.metrics.decrypt_failures,
                 decompress_failures: c.metrics.decompress_failures,
