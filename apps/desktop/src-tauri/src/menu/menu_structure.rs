@@ -30,7 +30,7 @@ use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID,
     FILE_NEW_FOLDER_ID, FILE_VIEW_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
     NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
-    TAB_PIN_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -113,6 +113,15 @@ pub fn build_context_menu<R: Runtime>(
         menu.append(&edit_item)?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
     }
+
+    // Toggle selection (Space). No real accelerator registered — the JS handler in
+    // FilePane.svelte owns the Space keydown; this Some("Space") string is purely
+    // a visual hint for the context menu and never fires globally. Placing it in its
+    // own group makes the Space shortcut discoverable without crowding the activation
+    // (Open / View / Edit) or operations (Copy / Move / Rename) groups.
+    let toggle_selection_item = MenuItem::with_id(app, TOGGLE_SELECTION_ID, "Toggle selection", true, Some("Space"))?;
+    menu.append(&toggle_selection_item)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
 
     // Copy / Move / Rename group
     let copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy", true, Some("F5"))?;

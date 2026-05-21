@@ -84,6 +84,7 @@ pub const QUICK_LOOK_ID: &str = "quick_look";
 pub const RENAME_ID: &str = "rename";
 pub const SELECT_ALL_ID: &str = "select_all_files";
 pub const DESELECT_ALL_ID: &str = "deselect_all";
+pub const TOGGLE_SELECTION_ID: &str = "toggle_selection";
 
 /// Menu item IDs for cloud actions (macOS File Provider).
 pub const CLOUD_MAKE_OFFLINE_ID: &str = "cloud_make_offline";
@@ -233,6 +234,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         QUICK_LOOK_ID => Some(("file.quickLook", CommandScope::FileScoped)),
         SELECT_ALL_ID => Some(("selection.selectAll", CommandScope::FileScoped)),
         DESELECT_ALL_ID => Some(("selection.deselectAll", CommandScope::FileScoped)),
+        TOGGLE_SELECTION_ID => Some(("selection.toggle", CommandScope::FileScoped)),
 
         // Cloud actions (macOS File Provider)
         CLOUD_MAKE_OFFLINE_ID => Some(("cloud.makeOffline", CommandScope::FileScoped)),
@@ -302,6 +304,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "file.quickLook" => Some(QUICK_LOOK_ID),
         "selection.selectAll" => Some(SELECT_ALL_ID),
         "selection.deselectAll" => Some(DESELECT_ALL_ID),
+        "selection.toggle" => Some(TOGGLE_SELECTION_ID),
         "view.zoom.set75" => Some(VIEW_ZOOM_75_ID),
         "view.zoom.set100" => Some(VIEW_ZOOM_100_ID),
         "view.zoom.set125" => Some(VIEW_ZOOM_125_ID),
