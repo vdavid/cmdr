@@ -1,10 +1,13 @@
 /**
  * Tier 3 a11y tests for `SearchInputArea.svelte`.
  *
- * Pattern row + scope row + filter row. Many controls (input, toggles,
- * selects) cover the default state (filters "any"), an expanded
- * size filter (single bound), a "between" size filter (two bounds),
- * and a date filter.
+ * Post-M2, this component owns the scope row + filter row only. The pattern input moved into
+ * `SearchBar.svelte` and the AI prompt input was absorbed into the same bar (with the chip row
+ * carrying the mode discriminator). M3 will further refactor these rows into filter chips with
+ * popovers.
+ *
+ * Covers default state (filters "any"), an expanded size filter (single bound), "between" size
+ * filter (two bounds), a date filter, and the disabled state.
  */
 
 import { describe, it } from 'vitest'
@@ -17,9 +20,6 @@ type Props = ComponentProps<typeof SearchInputArea>
 
 function baseProps(overrides: Partial<Props> = {}): Props {
   return {
-    patternInputElement: undefined,
-    namePattern: '',
-    patternType: 'glob',
     caseSensitive: false,
     scope: '',
     excludeSystemDirs: true,
@@ -37,8 +37,6 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     disabled: false,
     onInput: () => () => {},
     onSelect: () => () => {},
-    onSearch: () => {},
-    onTogglePatternType: () => {},
     onToggleCaseSensitive: () => {},
     onToggleExcludeSystemDirs: () => {},
     onSetScope: () => {},
@@ -62,7 +60,6 @@ describe('SearchInputArea a11y', () => {
     mount(SearchInputArea, {
       target,
       props: baseProps({
-        namePattern: '*.jpg',
         sizeFilter: 'gte',
         sizeValue: '10',
         sizeUnit: 'MB',
@@ -78,7 +75,6 @@ describe('SearchInputArea a11y', () => {
     mount(SearchInputArea, {
       target,
       props: baseProps({
-        namePattern: 'report*',
         scope: '~/Documents, !node_modules',
         sizeFilter: 'between',
         sizeValue: '1',
@@ -99,25 +95,18 @@ describe('SearchInputArea a11y', () => {
     document.body.appendChild(target)
     mount(SearchInputArea, {
       target,
-      props: baseProps({
-        disabled: true,
-        namePattern: 'anything',
-      }),
+      props: baseProps({ disabled: true }),
     })
     await tick()
     await expectNoA11yViolations(target)
   })
 
-  it('regex mode + case-sensitive has no a11y violations', async () => {
+  it('case-sensitive toggle on has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SearchInputArea, {
       target,
-      props: baseProps({
-        patternType: 'regex',
-        caseSensitive: true,
-        namePattern: '^report.*\\.md$',
-      }),
+      props: baseProps({ caseSensitive: true }),
     })
     await tick()
     await expectNoA11yViolations(target)

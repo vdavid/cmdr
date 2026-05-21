@@ -5,12 +5,14 @@
      * Follows the command palette pattern (custom overlay, not ModalDialog).
      * Searches the in-memory index by filename (wildcards), size, and date.
      *
-     * Input layout:
-     * - AI enabled: two rows (AI prompt row on top, focused) + pattern row (bottom)
-     * - AI disabled: single pattern row with Search button
+     * Layout (post-M2):
+     *   1. SearchBar: one input drives all modes (AI, filename, regex).
+     *   2. SearchModeChips: mode discriminator (chips below the bar).
+     *   3. SearchInputArea: scope row + filter row (M3 will turn these into chips).
+     *   4. SearchResults: column headers + results + status bar.
      *
-     * This is the orchestrator: overlay, mount/unmount, keyboard dispatch, search
-     * execution, state wiring to child components via props/callbacks.
+     * This is the orchestrator: overlay, mount/unmount, keyboard dispatch, search execution,
+     * state wiring to child components via props/callbacks.
      */
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
@@ -30,8 +32,10 @@
     import { getSetting } from '$lib/settings'
     import { isScanning, getEntriesScanned } from '$lib/indexing'
     import {
-        getNamePattern,
-        setNamePattern,
+        getQuery,
+        setQuery,
+        getMode,
+        setMode,
         getSizeFilter,
         setSizeFilter,
         getSizeValue,
@@ -64,10 +68,6 @@
         setIsIndexAvailable,
         getAiStatus,
         setAiStatus,
-        getAiPrompt,
-        setAiPrompt,
-        getPatternType,
-        setPatternType,
         getCaseSensitive,
         setCaseSensitive,
         getScope,
@@ -78,8 +78,10 @@
         setCaveat,
         buildSearchQuery,
         clearSearchState,
+        type SearchMode,
     } from './search-state.svelte'
-    import AiSearchRow from './AiSearchRow.svelte'
+    import SearchBar from './SearchBar.svelte'
+    import SearchModeChips from './SearchModeChips.svelte'
     import SearchInputArea from './SearchInputArea.svelte'
     import SearchResults from './SearchResults.svelte'
 
@@ -94,8 +96,7 @@
 
     const { onNavigate, onClose, currentFolderPath }: Props = $props()
 
-    let aiPromptInputElement: HTMLInputElement | undefined = $state()
-    let patternInputElement: HTMLInputElement | undefined = $state()
+    let queryInputElement: HTMLInputElement | undefined = $state()
     let dialogElement: HTMLDivElement | undefined = $state()
     let searchResultsComponent: SearchResults | undefined = $state()
     let hoveredIndex = $state<number | null>(null)
@@ -136,7 +137,8 @@
     }
 
     // Reactive derived state (read from search-state module)
-    const namePattern = $derived(getNamePattern())
+    const query = $derived(getQuery())
+    const mode = $derived(getMode())
     const sizeFilter = $derived(getSizeFilter())
     const sizeValue = $derived(getSizeValue())
     const sizeUnit = $derived(getSizeUnit())
@@ -153,8 +155,6 @@
     const isSearching = $derived(getIsSearching())
     const isIndexAvailable = $derived(getIsIndexAvailable())
     const aiStatus = $derived(getAiStatus())
-    const aiPrompt = $derived(getAiPrompt())
-    const patternType = $derived(getPatternType())
     const caseSensitive = $derived(getCaseSensitive())
     const scope = $derived(getScope())
     const excludeSystemDirs = $derived(getExcludeSystemDirs())
@@ -175,13 +175,20 @@
     // Subscribe to icon cache version for reactivity
     const iconVersion = $derived($iconCacheVersion)
 
-    /** Focuses the appropriate input based on whether AI is enabled. */
-    function focusActiveInput(): void {
-        if (aiEnabled) {
-            aiPromptInputElement?.focus()
-        } else {
-            patternInputElement?.focus()
+    /**
+     * When AI gets disabled mid-session (provider switched off), make sure we're not stuck on
+     * the AI mode. Filename is the fallback. Doesn't run on the AI-on side because we want the
+     * user's explicit pick (filename or regex) to stick when AI comes back on.
+     */
+    $effect(() => {
+        if (!aiEnabled && getMode() === 'ai') {
+            setMode('filename')
         }
+    })
+
+    /** Focuses the unified query input. */
+    function focusInput(): void {
+        queryInputElement?.focus()
     }
 
     /** Capture-phase Escape handler. Fires before native elements (select, date picker) can consume the event. */
@@ -201,8 +208,13 @@
         unlistenReady = await onSearchIndexReady((entryCount: number) => {
             setIsIndexReady(true)
             setIndexEntryCount(entryCount)
-            // Auto-run pending search if user already typed something
-            if (getNamePattern().trim() || getSizeFilter() !== 'any' || getDateFilter() !== 'any') {
+            // Auto-run pending search if user already typed something (filename/regex only;
+            // AI mode always waits for explicit Enter / ⌘Enter).
+            const pendingMode = getMode()
+            if (
+                pendingMode !== 'ai' &&
+                (getQuery().trim() || getSizeFilter() !== 'any' || getDateFilter() !== 'any')
+            ) {
                 void executeSearch()
             }
         })
@@ -234,7 +246,7 @@
             .catch(() => {})
 
         await tick()
-        focusActiveInput()
+        focusInput()
     })
 
     onDestroy(() => {
@@ -252,6 +264,8 @@
 
     function scheduleSearch(): void {
         if (debounceTimer) clearTimeout(debounceTimer)
+        // AI mode never auto-applies: the AI call costs money and must be explicit.
+        if (getMode() === 'ai') return
         debounceTimer = setTimeout(() => {
             void executeSearch()
         }, 200)
@@ -326,7 +340,12 @@
         return true
     }
 
-    /** Populates filter fields from AI response. Returns the set of changed field names. */
+    /**
+     * Populates filter fields from AI response. Returns the set of changed field names.
+     * Also flips `mode` and overwrites `query` to reflect the AI's translation, so the user sees
+     * exactly what was searched and can keep iterating on it. M4 will surface the original prompt
+     * separately in the transparency strip.
+     */
     function applyAiFilters(result: {
         display: {
             namePattern?: string | null
@@ -345,12 +364,15 @@
     }): SvelteSet<string> {
         const changed = new SvelteSet<string>()
         if (result.display.namePattern != null) {
-            setNamePattern(result.display.namePattern)
-            changed.add('name')
+            setQuery(result.display.namePattern)
+            changed.add('query')
         }
-        if (result.display.patternType === 'regex' || result.display.patternType === 'glob') {
-            setPatternType(result.display.patternType)
-            changed.add('patternType')
+        if (result.display.patternType === 'regex') {
+            setMode('regex')
+            changed.add('mode')
+        } else if (result.display.patternType === 'glob') {
+            setMode('filename')
+            changed.add('mode')
         }
         if (result.query.caseSensitive != null) {
             setCaseSensitive(result.query.caseSensitive)
@@ -390,8 +412,8 @@
 
     /** Runs AI translation for a given query text, populates filters, and searches. */
     async function executeAiSearch(queryText: string): Promise<void> {
-        const query = queryText.trim()
-        if (!query) return
+        const trimmed = queryText.trim()
+        if (!trimmed) return
 
         aiError = ''
         setCaveat('')
@@ -402,7 +424,7 @@
         setAiStatus(`Calling ${providerLabel}...`)
         let translateResult: Awaited<ReturnType<typeof translateSearchQuery>>
         try {
-            translateResult = await translateSearchQuery(query)
+            translateResult = await translateSearchQuery(trimmed)
         } catch (e: unknown) {
             aiError = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e)
             setAiStatus('')
@@ -429,8 +451,29 @@
         return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
     }
 
-    function togglePatternType(): void {
-        setPatternType(getPatternType() === 'glob' ? 'regex' : 'glob')
+    /** Returns the chip slot for a given keyboard shortcut number (⌘1 / ⌘2 / ⌘3), or null. */
+    function modeForShortcutNumber(n: number): SearchMode | null {
+        // ⌘4 is reserved for Content when it ships; do not wire it now.
+        if (aiEnabled) {
+            if (n === 1) return 'ai'
+            if (n === 2) return 'filename'
+            if (n === 3) return 'regex'
+        } else {
+            if (n === 1) return 'filename'
+            if (n === 2) return 'regex'
+        }
+        return null
+    }
+
+    function handleModeChange(newMode: SearchMode): void {
+        if (getMode() === newMode) return
+        setMode(newMode)
+        // Switching mode preserves the typed query; only re-trigger auto-apply for non-AI modes.
+        if (newMode !== 'ai') scheduleSearch()
+    }
+
+    function handleQueryInput(value: string): void {
+        setQuery(value)
         scheduleSearch()
     }
 
@@ -469,14 +512,9 @@
         return true
     }
 
-    /** Returns true if the active element is the AI prompt input. */
-    function isInAiPromptInput(): boolean {
-        return document.activeElement === aiPromptInputElement
-    }
-
-    /** Returns true if the active element is the pattern input. */
-    function isInPatternInput(): boolean {
-        return document.activeElement === patternInputElement
+    /** Returns true if the active element is the unified query input. */
+    function isInQueryInput(): boolean {
+        return document.activeElement === queryInputElement
     }
 
     /** Matches a plain modifier-key combo (one of cmd/alt, no others, no shift). */
@@ -485,22 +523,36 @@
         return mod === 'meta' ? e.metaKey && !e.altKey : e.altKey && !e.metaKey
     }
 
-    /** Clears all dialog state (⌘N "new search") and refocuses the active input. */
+    /** Clears all dialog state (⌘N "new search") and refocuses the query input. */
     function clearAndRefocus(): void {
         clearSearchState()
         void tick().then(() => {
-            focusActiveInput()
+            focusInput()
         })
     }
 
-    /** Runs an AI search from the current prompt; no-op when AI is off or the prompt is empty. */
-    function runAiFromPrompt(): void {
+    /** Runs an AI search from the current query; no-op when AI is off or the query is empty. */
+    function runAiFromQuery(): void {
         if (!aiEnabled) return
-        const prompt = getAiPrompt().trim()
-        if (prompt) void executeAiSearch(prompt)
+        const trimmed = getQuery().trim()
+        if (trimmed) void executeAiSearch(trimmed)
     }
 
-    /** Handles modifier-key shortcuts (⌘N, ⌥F, ⌥D, ⌘Enter). Returns true if handled. */
+    /** Handles ⌘1 / ⌘2 / ⌘3 mode switches. Returns true if handled. */
+    function handleModeShortcut(e: KeyboardEvent): boolean {
+        if (!e.metaKey || e.altKey || e.shiftKey) return false
+        if (e.key < '1' || e.key > '9') return false
+        const n = parseInt(e.key, 10)
+        const target = modeForShortcutNumber(n)
+        if (!target) return false
+        e.preventDefault()
+        handleModeChange(target)
+        // Keep the input focused so the user can keep typing.
+        focusInput()
+        return true
+    }
+
+    /** Handles modifier-key shortcuts (⌘N, ⌥F, ⌥D, ⌘Enter, ⌘1-⌘3). Returns true if handled. */
     function handleModifierShortcuts(e: KeyboardEvent): boolean {
         // ⌘N: clear search state and start fresh. Captured here so the global ⌘N (new tab) doesn't
         // fire while the dialog is open. The dialog already calls stopPropagation on every keydown,
@@ -524,9 +576,10 @@
         }
         if (matchKey(e, 'Enter', 'meta')) {
             e.preventDefault()
-            runAiFromPrompt()
+            runAiFromQuery()
             return true
         }
+        if (handleModeShortcut(e)) return true
         return false
     }
 
@@ -557,7 +610,11 @@
                 break
             case 'ArrowDown':
             case 'ArrowUp':
-                handleArrowNav(e)
+                // Ignore arrow keys when focus is on a mode chip; the chip row owns ←/→ for chip
+                // nav, and ArrowUp/Down shouldn't fight that.
+                if (isInQueryInput() || document.activeElement?.closest('.results-container')) {
+                    handleArrowNav(e)
+                }
                 break
             case 'Enter':
                 e.preventDefault()
@@ -566,20 +623,21 @@
         }
     }
 
-    /** Handles plain Enter key based on which input is focused. */
+    /** Handles plain Enter key based on the active mode and what's focused. */
     function handleEnterKey(): void {
-        if (isInAiPromptInput()) {
-            // Enter in AI prompt row: run AI search
-            void executeAiSearch(getAiPrompt())
-        } else if (isInPatternInput()) {
-            // Enter in pattern row: run manual search immediately
-            void executeSearch()
-        } else if (cursorIndex < results.length) {
-            // Enter with results focused: navigate
-            onNavigate(results[cursorIndex].path)
-        } else {
-            void executeSearch()
+        if (isInQueryInput()) {
+            if (getMode() === 'ai') {
+                runAiFromQuery()
+            } else {
+                void executeSearch()
+            }
+            return
         }
+        if (cursorIndex < results.length) {
+            onNavigate(results[cursorIndex].path)
+            return
+        }
+        void executeSearch()
     }
 
     function handleResultClick(index: number): void {
@@ -607,23 +665,28 @@
     <div class="search-dialog" bind:this={dialogElement}>
         <h2 id="search-dialog-title" class="sr-only">Search files</h2>
 
-        {#if aiEnabled}
-            <AiSearchRow
-                bind:inputElement={aiPromptInputElement}
-                {aiPrompt}
-                onPromptInput={inputHandler(setAiPrompt, false)}
-                onAiSearch={(query: string) => void executeAiSearch(query)}
-                disabled={inputsDisabled}
-                {caveatText}
-                {aiStatus}
-                {aiError}
-            />
+        <SearchBar
+            bind:inputElement={queryInputElement}
+            {query}
+            {mode}
+            disabled={inputsDisabled}
+            aiHighlight={highlightedFields.has('query')}
+            onInput={handleQueryInput}
+        />
+
+        <SearchModeChips {mode} {aiEnabled} disabled={inputsDisabled} onSelect={handleModeChange} />
+
+        {#if caveatText}
+            <div class="caveat-row">{caveatText}</div>
+        {/if}
+        {#if aiStatus}
+            <div class="ai-status">{aiStatus}</div>
+        {/if}
+        {#if aiError}
+            <div class="ai-error">{aiError}</div>
         {/if}
 
         <SearchInputArea
-            bind:patternInputElement
-            {namePattern}
-            {patternType}
             {caseSensitive}
             {scope}
             {excludeSystemDirs}
@@ -641,8 +704,6 @@
             disabled={inputsDisabled}
             onInput={inputHandler}
             onSelect={selectHandler}
-            onSearch={() => void executeSearch()}
-            onTogglePatternType={togglePatternType}
             onToggleCaseSensitive={() => {
                 setCaseSensitive(!getCaseSensitive())
                 scheduleSearch()
@@ -664,7 +725,7 @@
             {isIndexReady}
             {isSearching}
             {hasSearched}
-            {namePattern}
+            {query}
             {sizeFilter}
             {dateFilter}
             {scanning}
@@ -702,6 +763,28 @@
         flex-direction: column;
         box-shadow: var(--shadow-lg);
         overflow: hidden;
+    }
+
+    /* AI status / caveat / error: surface-matched strip below the chip row. M4 will replace this
+       with a dedicated transparency strip; for now we keep parity with the old AiSearchRow. */
+    .caveat-row,
+    .ai-status,
+    .ai-error {
+        padding: var(--spacing-xs) var(--spacing-lg);
+        background: var(--color-bg-primary);
+        font-size: var(--font-size-sm);
+    }
+
+    .caveat-row {
+        color: var(--color-text-tertiary);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .ai-status,
+    .ai-error {
+        color: var(--color-text-secondary);
     }
 
     /* Visually hidden but accessible to screen readers */

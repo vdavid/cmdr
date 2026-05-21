@@ -33,7 +33,7 @@ const defaultProps = {
   isIndexReady: true,
   isSearching: false,
   hasSearched: false,
-  namePattern: '',
+  query: '',
   sizeFilter: 'any',
   dateFilter: 'any',
   scanning: false,
@@ -98,7 +98,7 @@ describe('SearchResults a11y', () => {
         ...defaultProps,
         isIndexReady: false,
         hasSearched: true,
-        namePattern: '*.jpg',
+        query: '*.jpg',
       },
     })
     await tick()
@@ -114,7 +114,7 @@ describe('SearchResults a11y', () => {
         ...defaultProps,
         isSearching: true,
         hasSearched: true,
-        namePattern: '*.jpg',
+        query: '*.jpg',
       },
     })
     await tick()
@@ -129,7 +129,7 @@ describe('SearchResults a11y', () => {
       props: {
         ...defaultProps,
         hasSearched: true,
-        namePattern: 'nonexistentpattern',
+        query: 'nonexistentpattern',
       },
     })
     await tick()
@@ -167,7 +167,7 @@ describe('SearchResults a11y', () => {
         results,
         cursorIndex: 0,
         hasSearched: true,
-        namePattern: 'photo*',
+        query: 'photo*',
         totalCount: 2,
       },
     })

@@ -8,13 +8,23 @@ export type SizeFilter = 'any' | 'gte' | 'lte' | 'between'
 export type DateFilter = 'any' | 'after' | 'before' | 'between'
 export type SizeUnit = 'KB' | 'MB' | 'GB'
 
+/**
+ * Unified search mode. M2 collapses the previous split (AI prompt row vs filename pattern row)
+ * into a single `query` input with a `mode` discriminator. The chip row below the bar drives
+ * `mode`; the input below it drives `query`. AI mode is hidden when the AI provider is off.
+ */
+export type SearchMode = 'ai' | 'filename' | 'regex'
+
 // Module-level reactive state
 let isIndexReady = $state(false)
 let indexEntryCount = $state(0)
 let isSearching = $state(false)
 
-// Query fields
-let namePattern = $state('')
+// Unified query field. M2: replaces the separate `namePattern` and `aiPrompt` fields.
+let query = $state('')
+// Active search mode. Drives placeholder, chip styling, and how Enter dispatches.
+let mode = $state<SearchMode>('filename')
+
 let sizeFilter = $state<SizeFilter>('any')
 let sizeValue = $state('')
 let sizeUnit = $state<SizeUnit>('MB')
@@ -32,15 +42,12 @@ let cursorIndex = $state(0)
 // Index availability: false when indexing is disabled or not started
 let isIndexAvailable = $state(true)
 
-// Pattern type (glob vs regex)
-let patternType = $state<PatternType>('glob')
-
 // Case sensitivity
 let caseSensitive = $state(false)
 
-// AI state
+// AI status text shown while a translation/search is in flight.
 let aiStatus = $state('')
-let aiPrompt = $state('')
+// Caveat returned by the AI translator (shown after a translation completes).
 let caveat = $state('')
 
 // Scope (folder filter)
@@ -61,8 +68,11 @@ export function getIndexEntryCount(): number {
 export function getIsSearching(): boolean {
   return isSearching
 }
-export function getNamePattern(): string {
-  return namePattern
+export function getQuery(): string {
+  return query
+}
+export function getMode(): SearchMode {
+  return mode
 }
 export function getSizeFilter(): SizeFilter {
   return sizeFilter
@@ -100,14 +110,8 @@ export function getCursorIndex(): number {
 export function getIsIndexAvailable(): boolean {
   return isIndexAvailable
 }
-export function getPatternType(): PatternType {
-  return patternType
-}
 export function getAiStatus(): string {
   return aiStatus
-}
-export function getAiPrompt(): string {
-  return aiPrompt
 }
 export function getCaseSensitive(): boolean {
   return caseSensitive
@@ -132,8 +136,11 @@ export function setIndexEntryCount(value: number): void {
 export function setIsSearching(value: boolean): void {
   isSearching = value
 }
-export function setNamePattern(value: string): void {
-  namePattern = value
+export function setQuery(value: string): void {
+  query = value
+}
+export function setMode(value: SearchMode): void {
+  mode = value
 }
 export function setSizeFilter(value: SizeFilter): void {
   sizeFilter = value
@@ -171,14 +178,8 @@ export function setCursorIndex(value: number): void {
 export function setIsIndexAvailable(value: boolean): void {
   isIndexAvailable = value
 }
-export function setPatternType(value: PatternType): void {
-  patternType = value
-}
 export function setAiStatus(value: string): void {
   aiStatus = value
-}
-export function setAiPrompt(value: string): void {
-  aiPrompt = value
 }
 export function setCaseSensitive(value: boolean): void {
   caseSensitive = value
@@ -211,39 +212,45 @@ export function parseDateToTimestamp(value: string): number | undefined {
 }
 
 /** Applies the current size filter state to the query. */
-function applySizeQuery(query: SearchQuery): void {
+function applySizeQuery(q: SearchQuery): void {
   if (sizeFilter === 'any') return
   const minBytes = parseSizeToBytes(sizeValue, sizeUnit)
   if (sizeFilter === 'gte' && minBytes !== undefined) {
-    query.minSize = minBytes
+    q.minSize = minBytes
   } else if (sizeFilter === 'lte' && minBytes !== undefined) {
-    query.maxSize = minBytes
+    q.maxSize = minBytes
   } else if (sizeFilter === 'between') {
-    if (minBytes !== undefined) query.minSize = minBytes
+    if (minBytes !== undefined) q.minSize = minBytes
     const maxBytes = parseSizeToBytes(sizeValueMax, sizeUnitMax)
-    if (maxBytes !== undefined) query.maxSize = maxBytes
+    if (maxBytes !== undefined) q.maxSize = maxBytes
   }
 }
 
 /** Applies the current date filter state to the query. */
-function applyDateQuery(query: SearchQuery): void {
+function applyDateQuery(q: SearchQuery): void {
   if (dateFilter === 'any') return
   const ts = parseDateToTimestamp(dateValue)
   if (dateFilter === 'after' && ts !== undefined) {
-    query.modifiedAfter = ts
+    q.modifiedAfter = ts
   } else if (dateFilter === 'before' && ts !== undefined) {
-    query.modifiedBefore = ts
+    q.modifiedBefore = ts
   } else if (dateFilter === 'between') {
-    if (ts !== undefined) query.modifiedAfter = ts
+    if (ts !== undefined) q.modifiedAfter = ts
     const tsMax = parseDateToTimestamp(dateValueMax)
-    if (tsMax !== undefined) query.modifiedBefore = tsMax
+    if (tsMax !== undefined) q.modifiedBefore = tsMax
   }
 }
 
-/** Builds a SearchQuery from the current state. */
+/**
+ * Builds a `SearchQuery` from the current state. Used by filename and regex modes; AI mode goes
+ * through `translateSearchQuery` first and then populates state before this is called. The backend
+ * `patternType` is derived from `mode`: filename maps to glob, regex to regex. AI mode (which only
+ * reaches here after AI translation flipped the mode) maps to glob as a safe default.
+ */
 export function buildSearchQuery(): SearchQuery {
-  const query: SearchQuery = {
-    namePattern: namePattern.trim() || null,
+  const patternType: PatternType = mode === 'regex' ? 'regex' : 'glob'
+  const q: SearchQuery = {
+    namePattern: query.trim() || null,
     patternType,
     minSize: null,
     maxSize: null,
@@ -255,17 +262,17 @@ export function buildSearchQuery(): SearchQuery {
 
   // Only include caseSensitive when explicitly set, so Rust uses the platform default (None)
   if (caseSensitive) {
-    query.caseSensitive = true
+    q.caseSensitive = true
   }
 
   if (!excludeSystemDirs) {
-    query.excludeSystemDirs = false
+    q.excludeSystemDirs = false
   }
 
-  applySizeQuery(query)
-  applyDateQuery(query)
+  applySizeQuery(q)
+  applyDateQuery(q)
 
-  return query
+  return q
 }
 
 /**
@@ -274,7 +281,8 @@ export function buildSearchQuery(): SearchQuery {
  * never calls this. The only reset path is the user pressing `⌘N`.
  */
 export function clearSearchState(): void {
-  namePattern = ''
+  query = ''
+  mode = 'filename'
   sizeFilter = 'any'
   sizeValue = ''
   sizeUnit = 'MB'
@@ -287,10 +295,8 @@ export function clearSearchState(): void {
   totalCount = 0
   cursorIndex = 0
   isIndexAvailable = true
-  patternType = 'glob'
   caseSensitive = false
   aiStatus = ''
-  aiPrompt = ''
   caveat = ''
   scope = ''
   excludeSystemDirs = true

@@ -1,15 +1,18 @@
 <script lang="ts">
     /**
-     * SearchInputArea: pattern row + scope row + filter row.
+     * SearchInputArea: scope row + filter row.
      *
-     * All query configuration inputs. The parent orchestrator owns search execution;
-     * this component renders the inputs and fires callbacks on changes.
+     * M2 collapsed the previous pattern row and AI prompt row into the unified `SearchBar` plus
+     * `SearchModeChips`. This component now owns the remaining query-configuration controls until
+     * M3 turns them into filter chips with popovers.
+     *
+     * The parent orchestrator owns search execution; this component renders the inputs and fires
+     * callbacks on changes.
      */
     import { SvelteSet } from 'svelte/reactivity'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { SizeFilter, SizeUnit, DateFilter, PatternType } from './search-state.svelte'
+    import type { SizeFilter, SizeUnit, DateFilter } from './search-state.svelte'
     import {
-        setNamePattern,
         setSizeFilter,
         setSizeValue,
         setSizeUnit,
@@ -22,9 +25,6 @@
     } from './search-state.svelte'
 
     interface Props {
-        patternInputElement: HTMLInputElement | undefined
-        namePattern: string
-        patternType: PatternType
         caseSensitive: boolean
         scope: string
         excludeSystemDirs: boolean
@@ -43,19 +43,13 @@
         onInput: (setter: (v: string) => void, search?: boolean) => (e: Event) => void
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T constrains the setter's param type to match the cast
         onSelect: <T extends string>(setter: (v: T) => void, search?: boolean) => (e: Event) => void
-        onSearch: () => void
-        onTogglePatternType: () => void
         onToggleCaseSensitive: () => void
         onToggleExcludeSystemDirs: () => void
         onSetScope: (path: string) => void
         scheduleSearch: () => void
     }
 
-    /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
-    let {
-        patternInputElement = $bindable(),
-        namePattern,
-        patternType,
+    const {
         caseSensitive,
         scope,
         excludeSystemDirs,
@@ -73,65 +67,16 @@
         disabled,
         onInput,
         onSelect,
-        onSearch,
-        onTogglePatternType,
         onToggleCaseSensitive,
         onToggleExcludeSystemDirs,
         onSetScope,
         scheduleSearch,
     }: Props = $props()
-    /* eslint-enable prefer-const */
 </script>
-
-<!-- Pattern / search row (always visible) -->
-<div class="input-row">
-    <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5" />
-        <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-    </svg>
-    <input
-        bind:this={patternInputElement}
-        type="text"
-        class="name-input"
-        class:ai-highlight={highlightedFields.has('name')}
-        placeholder={patternType === 'regex'
-            ? 'Regular expression pattern'
-            : 'Filename pattern (use * and ? as wildcards)'}
-        value={namePattern}
-        oninput={onInput(setNamePattern)}
-        {disabled}
-        aria-label="Filename pattern"
-        spellcheck="false"
-        autocomplete="off"
-        autocapitalize="off"
-    />
-    <button
-        class="pattern-type-toggle"
-        class:active={caseSensitive}
-        class:ai-highlight={highlightedFields.has('caseSensitive')}
-        onclick={onToggleCaseSensitive}
-        {disabled}
-        title={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
-        aria-label={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
-    >
-        Aa
-    </button>
-    <button
-        class="pattern-type-toggle"
-        class:ai-highlight={highlightedFields.has('patternType')}
-        onclick={onTogglePatternType}
-        {disabled}
-        title="Toggle between glob and regex matching"
-        aria-label="Pattern type: {patternType === 'regex' ? 'Regex' : 'Glob'}"
-    >
-        {patternType === 'regex' ? 'Regex' : 'Glob'}
-    </button>
-    <button class="action-button" onclick={onSearch} {disabled} title="Search (Enter)"> Search </button>
-</div>
 
 <!-- Scope row -->
 <div class="input-row">
-    <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path
             d="M2 4.5V12.5C2 13.05 2.45 13.5 3 13.5H13C13.55 13.5 14 13.05 14 12.5V6.5C14 5.95 13.55 5.5 13 5.5H8L6.5 3.5H3C2.45 3.5 2 3.95 2 4.5Z"
             stroke="currentColor"
@@ -176,6 +121,17 @@
             i
         </button>
     </div>
+    <button
+        class="pattern-type-toggle"
+        class:active={caseSensitive}
+        class:ai-highlight={highlightedFields.has('caseSensitive')}
+        onclick={onToggleCaseSensitive}
+        {disabled}
+        title={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
+        aria-label={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
+    >
+        Aa
+    </button>
     <button
         class="pattern-type-toggle"
         class:active={excludeSystemDirs}
@@ -318,25 +274,14 @@
 </div>
 
 <style>
-    /* Row surfaces tonal-separate from the dialog body via `--color-bg-primary` against the
-       dialog's `--color-bg-secondary`. No 1px line at the row boundary: the surface change
-       carries the separation. */
+    /* Scope row sits on the same primary surface as the search bar / mode chips, with a hairline
+       above to separate it from the chip row. M3 will replace this row with a chip strip. */
     .input-row {
         display: flex;
         align-items: center;
         padding: var(--spacing-md) var(--spacing-lg);
         background: var(--color-bg-primary);
         gap: var(--spacing-sm);
-    }
-
-    /* Pattern row (the first .input-row in this component) gets the taller search-bar feel. */
-    .input-row:first-of-type {
-        padding-top: var(--spacing-lg);
-        padding-bottom: var(--spacing-lg);
-    }
-
-    /* Hairline between rows, only where two same-surface regions abut. */
-    .input-row + .input-row {
         border-top: 1px solid var(--color-border-subtle);
     }
 
@@ -355,13 +300,6 @@
         min-width: 0;
     }
 
-    /* Pattern row's input is the primary entry point: bump to the dialog-title scale so it
-       reads as the main affordance. The row's increased padding above gives it the taller
-       search-bar feel called out in the redesign plan. */
-    .input-row:first-of-type .name-input {
-        font-size: var(--font-size-lg);
-    }
-
     .name-input:focus {
         border-color: var(--color-accent);
         box-shadow: var(--shadow-focus);
@@ -376,27 +314,6 @@
         background: var(--color-accent-subtle);
         border-radius: var(--radius-sm);
         transition: background 1.5s ease-out;
-    }
-
-    /* Shared button style for Search */
-    .action-button {
-        flex-shrink: 0;
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-secondary);
-        color: var(--color-text-secondary);
-        white-space: nowrap;
-    }
-
-    .action-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .action-button:not(:disabled):hover {
-        background: var(--color-bg-tertiary);
     }
 
     .pattern-type-toggle {

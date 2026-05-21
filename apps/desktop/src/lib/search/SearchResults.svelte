@@ -19,7 +19,8 @@
         isIndexReady: boolean
         isSearching: boolean
         hasSearched: boolean
-        namePattern: string
+        /** Current query text. Used to differentiate "no query yet" from "0 results found". */
+        query: string
         sizeFilter: string
         dateFilter: string
         scanning: boolean
@@ -41,7 +42,7 @@
         isIndexReady,
         isSearching,
         hasSearched,
-        namePattern,
+        query,
         sizeFilter,
         dateFilter,
         scanning,
@@ -83,7 +84,7 @@
         }
         if (isIndexReady) {
             if (isSearching) return 'Searching...'
-            if (!hasSearched || (!namePattern.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
+            if (!hasSearched || (!query.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
                 return `Index ready (${formatEntryCount(indexEntryCount)} entries)`
             }
             if (totalCount === 0) return 'No results'
@@ -171,7 +172,7 @@
             <span class="loading-pulse" aria-hidden="true"></span>
             Searching...
         </div>
-    {:else if results.length === 0 && hasSearched && !isSearching && (namePattern.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
+    {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
         <div class="no-results">No files found</div>
     {:else}
         {#each results as entry, index (entry.path)}

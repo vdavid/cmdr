@@ -4,7 +4,9 @@ import {
   parseDateToTimestamp,
   buildSearchQuery,
   clearSearchState,
-  setNamePattern,
+  setQuery,
+  setMode,
+  getMode,
   setSizeFilter,
   setSizeValue,
   setSizeUnit,
@@ -13,7 +15,6 @@ import {
   setSizeValueMax,
   setSizeUnitMax,
   setDateValueMax,
-  setPatternType,
   getScope,
   setScope,
 } from './search-state.svelte'
@@ -83,9 +84,9 @@ describe('buildSearchQuery', () => {
     expect(query.modifiedBefore).toBeNull()
   })
 
-  it('includes name pattern when set', () => {
+  it('includes the query text as namePattern when set', () => {
     clearSearchState()
-    setNamePattern('*.pdf')
+    setQuery('*.pdf')
     const query = buildSearchQuery()
     expect(query.namePattern).toBe('*.pdf')
   })
@@ -156,7 +157,7 @@ describe('buildSearchQuery', () => {
 
 describe('clearSearchState', () => {
   it('clears all state', () => {
-    setNamePattern('test')
+    setQuery('test')
     setSizeFilter('gte')
     setDateFilter('after')
     clearSearchState()
@@ -166,18 +167,26 @@ describe('clearSearchState', () => {
     expect(query.modifiedAfter).toBeNull()
   })
 
-  it('uses regex pattern type when set', () => {
+  it('uses regex patternType when mode is regex', () => {
     clearSearchState()
-    setPatternType('regex')
+    setMode('regex')
     const query = buildSearchQuery()
     expect(query.patternType).toBe('regex')
   })
 
-  it('resets pattern type to glob on clearSearchState', () => {
-    setPatternType('regex')
+  it('resets mode to filename on clearSearchState', () => {
+    setMode('regex')
     clearSearchState()
+    expect(getMode()).toBe('filename')
     const query = buildSearchQuery()
     expect(query.patternType).toBe('glob')
+  })
+
+  it('clears the query field', () => {
+    setQuery('something')
+    clearSearchState()
+    const query = buildSearchQuery()
+    expect(query.namePattern).toBeNull()
   })
 })
 
