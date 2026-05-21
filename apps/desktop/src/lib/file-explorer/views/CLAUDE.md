@@ -22,15 +22,14 @@ without DOM performance issues.
   columns based on the currently loaded entries. Uses `@chenglou/pretext` for canvas-based measurement (no DOM reflow).
   FullList transitions `grid-template-columns` over 300ms so widths refine smoothly as more entries stream in.
 - **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`), `listing.sizeMismatchWarning` (via
-  `getSizeMismatchWarning()`), and `listing.humanFriendlySizeUnits` (via `getHumanFriendlySizeUnits()`, paired with
-  `getFileSizeFormat()`) settings. Size cells are rendered through `formatSizeForDisplay` from
-  `selection/selection-info-utils.ts`, which delegates to triads in raw-bytes mode and to a single tier-tagged
-  human-friendly string when the toggle is on. `measure-column-widths.ts` accepts the same options so the size column
-  shrink-wraps the actually-rendered cell text. Uses Lucide icons (via `unplugin-icons`): `~icons/lucide/circle-alert`
-  for size mismatch warnings and `~icons/lucide/hourglass` for stale index indicators. Also renders an optional Git
-  status column between Name and Ext when `gitRepoRoot` is set and `showGitColumn` is true (gated by the
-  `fileExplorer.git.showStatusColumn` setting in `FilePane`); fetches `fetchStatusMap` and refreshes on
-  `git-state-changed` for the active repo
+  `getSizeMismatchWarning()`), and `listing.sizeUnit` (via `getFileSizeUnit()`, paired with `getFileSizeFormat()`)
+  settings. Size cells are rendered through `formatSizeForDisplay` from `selection/selection-info-utils.ts`, which
+  delegates to triads in bytes mode, a dynamic friendliest-unit string in dynamic mode, and a forced single-unit string
+  in `kB`/`MB`/`GB` mode. `measure-column-widths.ts` accepts the same options so the size column shrink-wraps the
+  actually-rendered cell text. Uses Lucide icons (via `unplugin-icons`): `~icons/lucide/circle-alert` for size mismatch
+  warnings and `~icons/lucide/hourglass` for stale index indicators. Also renders an optional Git status column between
+  Name and Ext when `gitRepoRoot` is set and `showGitColumn` is true (gated by the `fileExplorer.git.showStatusColumn`
+  setting in `FilePane`); fetches `fetchStatusMap` and refreshes on `git-state-changed` for the active repo
 - **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in
   `full-list-utils.ts`)
 - **view-modes.test.ts** – Integration tests for hidden-file filtering and directory listing structure (uses

@@ -39,7 +39,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
         }
       : { text: '', parts: { left: [], right: null } },
   getSizeDisplayMode: () => 'smart',
-  getHumanFriendlySizeUnits: () => false,
+  getFileSizeUnit: () => 'bytes',
   getFileSizeFormat: () => 'binary',
 }))
 

@@ -50,7 +50,7 @@ const baseArgs = {
   indexing: false,
   showSizeMismatchWarning: false,
   sortBy: 'name' as const,
-  sizeFormatOpts: { humanFriendly: false, format: 'binary' as const },
+  sizeFormatOpts: { unit: 'bytes' as const, format: 'binary' as const },
 }
 
 describe('computeFullListColumnWidths', () => {
@@ -228,7 +228,7 @@ describe('computeFullListColumnWidths', () => {
     const human = computeFullListColumnWidths({
       ...baseArgs,
       entries: [big],
-      sizeFormatOpts: { humanFriendly: true, format: 'binary' },
+      sizeFormatOpts: { unit: 'dynamic' as const, format: 'binary' as const },
     })
     // "123 456 789" (with thin spaces) is 11 visible chars; "117.74 MB" is 9.
     // With our deterministic length*7 measurer the human-friendly cell is narrower.

@@ -10,6 +10,7 @@ import {
   type UiDensity,
   type DateTimeFormat,
   type FileSizeFormat,
+  type FileSizeUnit,
   type DirectorySortMode,
   type SizeDisplayMode,
   type BriefColumnWidthMode,
@@ -32,7 +33,7 @@ let useAppIconsForDocuments = $state<boolean>(true)
 let directorySortMode = $state<DirectorySortMode>('likeFiles')
 let appColor = $state<AppColor>('cmdr-gold')
 let sizeDisplay = $state<SizeDisplayMode>('smart')
-let humanFriendlySizeUnits = $state<boolean>(true)
+let sizeUnit = $state<FileSizeUnit>('dynamic')
 let sizeMismatchWarning = $state<boolean>(true)
 let stripedRows = $state<boolean>(false)
 let briefColumnWidthMode = $state<BriefColumnWidthMode>('paneWidth')
@@ -63,7 +64,7 @@ export async function initReactiveSettings(): Promise<void> {
     directorySortMode = getSetting('listing.directorySortMode')
     appColor = getSetting('appearance.appColor')
     sizeDisplay = getSetting('listing.sizeDisplay')
-    humanFriendlySizeUnits = getSetting('listing.humanFriendlySizeUnits')
+    sizeUnit = getSetting('listing.sizeUnit')
     sizeMismatchWarning = getSetting('listing.sizeMismatchWarning')
     stripedRows = getSetting('listing.stripedRows')
     briefColumnWidthMode = getSetting('listing.briefColumnWidthMode')
@@ -121,8 +122,8 @@ function applySettingChange(id: string, value: unknown): void {
     case 'listing.sizeDisplay':
       sizeDisplay = value as SizeDisplayMode
       break
-    case 'listing.humanFriendlySizeUnits':
-      humanFriendlySizeUnits = value as boolean
+    case 'listing.sizeUnit':
+      sizeUnit = value as FileSizeUnit
       break
     case 'listing.sizeMismatchWarning':
       sizeMismatchWarning = value as boolean
@@ -214,9 +215,15 @@ export function getSizeMismatchWarning(): boolean {
   return sizeMismatchWarning
 }
 
-/** Get whether to show human-friendly size units (e.g. "1.02 MB") instead of raw bytes */
-export function getHumanFriendlySizeUnits(): boolean {
-  return humanFriendlySizeUnits
+/**
+ * Get the current size-unit mode. `'dynamic'` picks the friendliest unit per
+ * file ("1.02 MB"); `'bytes'` shows raw byte triads for precise comparison;
+ * `'kB'`/`'MB'`/`'GB'` force a fixed unit so sizes are apples-to-apples across
+ * a directory. The chosen base (binary KB / SI kB) follows
+ * `appearance.fileSizeFormat`.
+ */
+export function getFileSizeUnit(): FileSizeUnit {
+  return sizeUnit
 }
 
 /** Get current file size format ("binary" or "si") */

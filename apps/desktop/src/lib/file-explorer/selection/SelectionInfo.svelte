@@ -18,7 +18,7 @@
         formatDateTime,
         formattedDate,
         getSizeDisplayMode,
-        getHumanFriendlySizeUnits,
+        getFileSizeUnit,
         getFileSizeFormat,
     } from '$lib/settings/reactive-settings.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
@@ -93,7 +93,7 @@
 
     const sizeDisplayMode = $derived(getSizeDisplayMode())
     const sizeFormatOpts = $derived({
-        humanFriendly: getHumanFriendlySizeUnits(),
+        unit: getFileSizeUnit(),
         format: getFileSizeFormat(),
     })
     const displayName = $derived(entry?.name ?? '')

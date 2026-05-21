@@ -52,7 +52,7 @@
         getSizeDisplayMode,
         getSizeMismatchWarning,
         getStripedRows,
-        getHumanFriendlySizeUnits,
+        getFileSizeUnit,
         getFileSizeFormat,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
@@ -169,9 +169,9 @@
     // Striped rows setting
     const stripedRows = $derived(getStripedRows())
 
-    // Human-friendly vs. raw-bytes size formatting
+    // Size column rendering: user-picked unit (dynamic / bytes / kB / MB / GB) × binary/SI base.
     const sizeFormatOpts = $derived({
-        humanFriendly: getHumanFriendlySizeUnits(),
+        unit: getFileSizeUnit(),
         format: getFileSizeFormat(),
     })
 

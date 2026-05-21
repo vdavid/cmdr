@@ -329,68 +329,127 @@ describe('tierClassForUnit', () => {
 })
 
 describe('formatSizeForDisplay', () => {
-  describe('raw-bytes mode (humanFriendly: false)', () => {
+  describe("bytes mode (unit: 'bytes')", () => {
     it('delegates to formatSizeTriads for small values', () => {
-      const result = formatSizeForDisplay(512, { humanFriendly: false, format: 'binary' })
+      const result = formatSizeForDisplay(512, { unit: 'bytes', format: 'binary' })
       expect(result).toEqual(formatSizeTriads(512))
     })
 
     it('delegates to formatSizeTriads for large values', () => {
-      const result = formatSizeForDisplay(1_073_208, { humanFriendly: false, format: 'binary' })
+      const result = formatSizeForDisplay(1_073_208, { unit: 'bytes', format: 'binary' })
       expect(result).toEqual(formatSizeTriads(1_073_208))
       // Sanity-check: matches user's example "1 073 208" (with thin spaces)
       expect(result.map((t) => t.value).join('')).toBe('1 073 208')
     })
 
-    it('ignores the format option in raw-bytes mode', () => {
-      const binary = formatSizeForDisplay(1024, { humanFriendly: false, format: 'binary' })
-      const si = formatSizeForDisplay(1024, { humanFriendly: false, format: 'si' })
+    it('ignores the format option in bytes mode', () => {
+      const binary = formatSizeForDisplay(1024, { unit: 'bytes', format: 'binary' })
+      const si = formatSizeForDisplay(1024, { unit: 'bytes', format: 'si' })
       expect(binary).toEqual(si)
     })
   })
 
-  describe('human-friendly mode (humanFriendly: true)', () => {
+  describe("dynamic mode (unit: 'dynamic')", () => {
     it('returns one element with size-bytes for sub-KB binary values', () => {
-      const result = formatSizeForDisplay(512, { humanFriendly: true, format: 'binary' })
+      const result = formatSizeForDisplay(512, { unit: 'dynamic', format: 'binary' })
       expect(result).toHaveLength(1)
       expect(result[0]).toEqual({ value: '512 bytes', tierClass: 'size-bytes' })
     })
 
     it('returns size-kb for binary 1024', () => {
-      const result = formatSizeForDisplay(1024, { humanFriendly: true, format: 'binary' })
+      const result = formatSizeForDisplay(1024, { unit: 'dynamic', format: 'binary' })
       expect(result).toEqual([{ value: '1.00 KB', tierClass: 'size-kb' }])
     })
 
     it('returns size-mb for ~1 MB (matches feature spec example "1.02 MB")', () => {
-      const result = formatSizeForDisplay(1_073_208, { humanFriendly: true, format: 'binary' })
+      const result = formatSizeForDisplay(1_073_208, { unit: 'dynamic', format: 'binary' })
       expect(result).toEqual([{ value: '1.02 MB', tierClass: 'size-mb' }])
     })
 
     it('returns size-gb for ~1 GB binary', () => {
-      const result = formatSizeForDisplay(1024 ** 3, { humanFriendly: true, format: 'binary' })
+      const result = formatSizeForDisplay(1024 ** 3, { unit: 'dynamic', format: 'binary' })
       expect(result).toEqual([{ value: '1.00 GB', tierClass: 'size-gb' }])
     })
 
     it('returns size-tb for TB and beyond', () => {
-      const tb = formatSizeForDisplay(1024 ** 4, { humanFriendly: true, format: 'binary' })
-      const pb = formatSizeForDisplay(1024 ** 5, { humanFriendly: true, format: 'binary' })
+      const tb = formatSizeForDisplay(1024 ** 4, { unit: 'dynamic', format: 'binary' })
+      const pb = formatSizeForDisplay(1024 ** 5, { unit: 'dynamic', format: 'binary' })
       expect(tb[0].tierClass).toBe('size-tb')
       expect(pb[0].tierClass).toBe('size-tb')
     })
 
     it('boundary: SI 1000 is 1.00 kB (size-kb tier)', () => {
-      const result = formatSizeForDisplay(1000, { humanFriendly: true, format: 'si' })
+      const result = formatSizeForDisplay(1000, { unit: 'dynamic', format: 'si' })
       expect(result).toEqual([{ value: '1.00 kB', tierClass: 'size-kb' }])
     })
 
     it('boundary: binary 1023 is still bytes', () => {
-      const result = formatSizeForDisplay(1023, { humanFriendly: true, format: 'binary' })
+      const result = formatSizeForDisplay(1023, { unit: 'dynamic', format: 'binary' })
       expect(result).toEqual([{ value: '1023 bytes', tierClass: 'size-bytes' }])
     })
 
     it('SI 1024 is 1.02 kB', () => {
-      const result = formatSizeForDisplay(1024, { humanFriendly: true, format: 'si' })
+      const result = formatSizeForDisplay(1024, { unit: 'dynamic', format: 'si' })
       expect(result).toEqual([{ value: '1.02 kB', tierClass: 'size-kb' }])
+    })
+  })
+
+  describe('forced unit modes (kB / MB / GB)', () => {
+    it("forces kB even for sub-KB values, but tier stays size-bytes (binary → 'KB')", () => {
+      const result = formatSizeForDisplay(512, { unit: 'kB', format: 'binary' })
+      expect(result).toEqual([{ value: '0.50 KB', tierClass: 'size-bytes' }])
+    })
+
+    it("forces kB with SI casing ('kB') and 1000-based math; tier matches magnitude", () => {
+      const result = formatSizeForDisplay(2500, { unit: 'kB', format: 'si' })
+      expect(result).toEqual([{ value: '2.50 kB', tierClass: 'size-kb' }])
+    })
+
+    it('forces MB even for very large values (no GB rollover) — tier reflects real GB magnitude', () => {
+      const tenGB = 10 * 1000 ** 3
+      const result = formatSizeForDisplay(tenGB, { unit: 'MB', format: 'si' })
+      expect(result).toEqual([{ value: '10000.00 MB', tierClass: 'size-gb' }])
+    })
+
+    it('forces GB even for very small values; tier still reflects bytes-magnitude', () => {
+      const result = formatSizeForDisplay(512, { unit: 'GB', format: 'binary' })
+      expect(result[0].value).toBe('0.00 GB')
+      expect(result[0].tierClass).toBe('size-bytes')
+    })
+
+    it('binary MB on 1 MiB returns exactly 1.00 MB with size-mb tier', () => {
+      const result = formatSizeForDisplay(1024 ** 2, { unit: 'MB', format: 'binary' })
+      expect(result).toEqual([{ value: '1.00 MB', tierClass: 'size-mb' }])
+    })
+
+    it('SI MB on 1 MB (10^6) returns exactly 1.00 MB with size-mb tier', () => {
+      const result = formatSizeForDisplay(1_000_000, { unit: 'MB', format: 'si' })
+      expect(result).toEqual([{ value: '1.00 MB', tierClass: 'size-mb' }])
+    })
+
+    it('zero bytes in any forced unit keeps the bytes-tier color', () => {
+      const result = formatSizeForDisplay(0, { unit: 'kB', format: 'binary' })
+      expect(result).toEqual([{ value: '0.00 KB', tierClass: 'size-bytes' }])
+    })
+
+    it('binary kB on exactly 1 KiB returns 1.00 KB with size-kb tier', () => {
+      const result = formatSizeForDisplay(1024, { unit: 'kB', format: 'binary' })
+      expect(result).toEqual([{ value: '1.00 KB', tierClass: 'size-kb' }])
+    })
+
+    it("binary 1 GiB forced as 'GB' is 1.00 GB with size-gb tier", () => {
+      const result = formatSizeForDisplay(1024 ** 3, { unit: 'GB', format: 'binary' })
+      expect(result).toEqual([{ value: '1.00 GB', tierClass: 'size-gb' }])
+    })
+
+    it('forced MB on a sub-KB file: shows as 0.00 MB but tiers as size-bytes', () => {
+      const result = formatSizeForDisplay(349, { unit: 'MB', format: 'binary' })
+      expect(result).toEqual([{ value: '0.00 MB', tierClass: 'size-bytes' }])
+    })
+
+    it('forced kB on a TB-sized file: tier caps at size-tb', () => {
+      const result = formatSizeForDisplay(1024 ** 5, { unit: 'kB', format: 'binary' })
+      expect(result[0].tierClass).toBe('size-tb')
     })
   })
 })

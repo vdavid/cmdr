@@ -36,7 +36,7 @@ vi.mock('$lib/ui/toast', () => ({
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatFileSize: (n: number) => `${String(n)} B`,
   getFileSizeFormat: () => 'binary',
-  getHumanFriendlySizeUnits: () => false,
+  getFileSizeUnit: () => 'bytes',
   getNetworkEnabled: () => true,
   // VolumeBreadcrumb's `onMount` prefetches the generic folder icon with this flag.
   getUseAppIconsForDocuments: () => false,

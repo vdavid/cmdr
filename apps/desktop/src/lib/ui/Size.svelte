@@ -10,8 +10,13 @@
     }
 
     const { bytes, fallback = '' }: Props = $props()
+    // The inline `<Size>` component always renders the friendly dynamic form,
+    // independent of the user's `listing.sizeUnit` choice. The setting is for
+    // the file-list size column where apples-to-apples comparison matters;
+    // tooltips, dialogs, breadcrumbs, etc. read more clearly with the
+    // self-describing dynamic format.
     const parts = $derived(
-        bytes == null ? null : formatSizeForDisplay(bytes, { humanFriendly: true, format: getFileSizeFormat() }),
+        bytes == null ? null : formatSizeForDisplay(bytes, { unit: 'dynamic', format: getFileSizeFormat() }),
     )
 </script>
 

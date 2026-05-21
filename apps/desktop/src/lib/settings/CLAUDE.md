@@ -110,8 +110,9 @@ Section ↔ component map (`sections/`):
 - `AppearanceSection.svelte` → `Appearance > Colors and formats` (theme mode, app color, size/date colors, date/time
   format, striped rows)
 - `AppearanceZoomSection.svelte` → `Appearance > Zoom and density` (text size, UI density)
-- `AppearanceSizesSection.svelte` → `Appearance > File and folder sizes` (size display, human-friendly units, file size
-  format, size mismatch warning)
+- `AppearanceSizesSection.svelte` → `Appearance > File and folder sizes` (size display, size unit, file size format,
+  size mismatch warning). The size-unit toggle group's `kB` tile reflects the binary/SI base live (binary → `KB`, SI →
+  `kB`), via `SettingToggleGroup`'s `labelOverrides` prop.
 - `ListingSection.svelte` → `Appearance > Listing` (document icons, directory sort, brief column width)
 - `FileOperationsSection.svelte` → `Behavior > File operations` (extension changes only; `maxConflictsToShow` and
   `progressUpdateInterval` live in Advanced)

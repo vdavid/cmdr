@@ -78,6 +78,8 @@ export interface SettingDefinition {
 
 export type UiDensity = 'compact' | 'comfortable' | 'spacious'
 export type FileSizeFormat = 'binary' | 'si'
+/** How file sizes are displayed: `dynamic` picks the friendliest unit per file; the others force a fixed unit; `bytes` shows raw byte triads. */
+export type FileSizeUnit = 'dynamic' | 'bytes' | 'kB' | 'MB' | 'GB'
 export type DateTimeFormat = 'system' | 'iso' | 'short' | 'custom'
 export type NetworkTimeoutMode = 'normal' | 'slow' | 'custom'
 export type ThemeMode = 'light' | 'dark' | 'system'
@@ -138,7 +140,7 @@ export interface SettingsValues {
   // Listing
   'listing.directorySortMode': DirectorySortMode
   'listing.sizeDisplay': SizeDisplayMode
-  'listing.humanFriendlySizeUnits': boolean
+  'listing.sizeUnit': FileSizeUnit
   'listing.sizeMismatchWarning': boolean
   'listing.stripedRows': boolean
   'listing.briefColumnWidthMode': BriefColumnWidthMode

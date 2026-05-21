@@ -243,10 +243,11 @@ tier-color the numbers — for "free space" big-is-good, and red GB would falsel
 formatters from `disk-space-utils.ts` with `formatFileSizeWithFormat` for the inner formatter. The usage-bar itself
 stays color-coded (driven by `getDiskUsageLevel`, which is the right signal for free space).
 
-The `<Size>` component does NOT cover the raw-bytes triad mode used by the file-list size column (which is gated by
-`listing.humanFriendlySizeUnits`). That column renders `formatSizeForDisplay` directly because it also needs the
-mismatch-warning + cursor-row neutralization treatment. Outside the size column, the human-friendly form is always
-correct. David tested every site and confirmed the simplification.
+The `<Size>` component always renders the friendly dynamic form regardless of the user's `listing.sizeUnit` choice
+(bytes / dynamic / kB / MB / GB). That setting governs the file-list size column where apples-to-apples comparison
+matters; tooltips, dialogs, breadcrumbs, and inline `<Size>` callouts read more clearly with the self-describing dynamic
+format. The file-list column renders `formatSizeForDisplay` directly (passing the active unit) because it also needs the
+mismatch-warning + cursor-row neutralization treatment.
 
 ## Ark UI
 

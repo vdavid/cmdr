@@ -13,9 +13,17 @@
     interface Props {
         id: SettingId
         disabled?: boolean
+        /**
+         * Optional per-value label overrides. Use when a button label must
+         * reflect another reactive setting (for example, the kilobyte
+         * casing on `listing.sizeUnit` swapping `kB` ↔ `KB` with binary/SI).
+         * Keys are stringified option values; missing entries fall back to
+         * the definition label.
+         */
+        labelOverrides?: Record<string, string>
     }
 
-    const { id, disabled = false }: Props = $props()
+    const { id, disabled = false, labelOverrides }: Props = $props()
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -42,7 +50,7 @@
 <ToggleGroup.Root {value} onValueChange={handleValueChange} {disabled} aria-label={label}>
     {#each options as option (option.value)}
         <ToggleGroup.Item value={String(option.value)} class="toggle-item" {disabled}>
-            {option.label}
+            {labelOverrides?.[String(option.value)] ?? option.label}
         </ToggleGroup.Item>
     {/each}
 </ToggleGroup.Root>

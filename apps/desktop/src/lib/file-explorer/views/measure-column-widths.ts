@@ -11,7 +11,7 @@ import * as pretext from '@chenglou/pretext'
 
 import { formatSizeForDisplay } from '../selection/selection-info-utils'
 import type { FileEntry, SortColumn } from '../types'
-import type { FileSizeFormat } from '$lib/settings/types'
+import type { FileSizeFormat, FileSizeUnit } from '$lib/settings/types'
 import { joinSegments, type FormattedDate } from '$lib/settings/format-utils'
 import { createPretextMeasure } from '$lib/utils/shorten-middle'
 import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
@@ -156,7 +156,7 @@ export function _setMeasureForTests(fn: ((text: string) => number) | null): void
 }
 
 export interface SizeFormatOpts {
-  humanFriendly: boolean
+  unit: FileSizeUnit
   format: FileSizeFormat
 }
 

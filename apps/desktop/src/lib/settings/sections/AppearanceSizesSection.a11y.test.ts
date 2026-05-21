@@ -10,7 +10,7 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'listing.sizeDisplay') return 'smart'
-    if (key === 'listing.humanFriendlySizeUnits') return true
+    if (key === 'listing.sizeUnit') return 'dynamic'
     if (key === 'appearance.fileSizeFormat') return 'binary'
     if (key === 'listing.sizeMismatchWarning') return true
     return undefined

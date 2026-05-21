@@ -124,7 +124,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   }),
   formatFileSize: vi.fn().mockReturnValue('1.0 KB'),
   getFileSizeFormat: vi.fn().mockReturnValue('binary'),
-  getHumanFriendlySizeUnits: vi.fn().mockReturnValue(false),
+  getFileSizeUnit: vi.fn().mockReturnValue('bytes'),
   getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
   getSizeDisplayMode: vi.fn().mockReturnValue('smart'),
   getNetworkEnabled: vi.fn().mockReturnValue(true),

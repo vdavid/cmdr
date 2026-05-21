@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { formatDateForDisplay, formatFileSizeWithFormat, joinSegments, type DateSegment } from './format-utils'
+import {
+  formatDateForDisplay,
+  formatFileSizeWithFormat,
+  fixedUnitFor,
+  dynamicTierIndex,
+  joinSegments,
+  unitLabel,
+  type DateSegment,
+} from './format-utils'
 
 // Fixed timestamp: March 15, 2024 14:30:45 local (local date to avoid timezone flakiness).
 const fixedDate = new Date(2024, 2, 15, 14, 30, 45)
@@ -234,5 +242,103 @@ describe('formatFileSizeWithFormat', () => {
     it('1000 bytes is still bytes in binary', () => {
       expect(formatFileSizeWithFormat(1000, 'binary')).toBe('1000 bytes')
     })
+  })
+
+  describe('forced unit (kB / MB / GB)', () => {
+    it("'kB' under binary renders 'KB' uppercase with 1024-based math", () => {
+      expect(formatFileSizeWithFormat(2048, 'binary', 'kB')).toBe('2.00 KB')
+    })
+
+    it("'kB' under SI renders 'kB' lowercase k with 1000-based math", () => {
+      expect(formatFileSizeWithFormat(2000, 'si', 'kB')).toBe('2.00 kB')
+    })
+
+    it("'MB' under binary on 1 MiB returns '1.00 MB'", () => {
+      expect(formatFileSizeWithFormat(1024 ** 2, 'binary', 'MB')).toBe('1.00 MB')
+    })
+
+    it("'GB' under SI on 2 GB returns '2.00 GB'", () => {
+      expect(formatFileSizeWithFormat(2 * 1000 ** 3, 'si', 'GB')).toBe('2.00 GB')
+    })
+
+    it("forced kB on a sub-KB value renders fractional ('0.50 KB' binary)", () => {
+      expect(formatFileSizeWithFormat(512, 'binary', 'kB')).toBe('0.50 KB')
+    })
+
+    it("forced MB doesn't roll over to GB even on 10+ GB inputs", () => {
+      const tenGB = 10 * 1000 ** 3
+      expect(formatFileSizeWithFormat(tenGB, 'si', 'MB')).toBe('10000.00 MB')
+    })
+  })
+})
+
+describe('unitLabel', () => {
+  it("'kB' becomes 'KB' under binary", () => {
+    expect(unitLabel('kB', 'binary')).toBe('KB')
+  })
+
+  it("'kB' stays 'kB' under SI", () => {
+    expect(unitLabel('kB', 'si')).toBe('kB')
+  })
+
+  it("'MB' is the same in binary and SI", () => {
+    expect(unitLabel('MB', 'binary')).toBe('MB')
+    expect(unitLabel('MB', 'si')).toBe('MB')
+  })
+
+  it("'GB' is the same in binary and SI", () => {
+    expect(unitLabel('GB', 'binary')).toBe('GB')
+    expect(unitLabel('GB', 'si')).toBe('GB')
+  })
+})
+
+describe('dynamicTierIndex', () => {
+  it('returns 0 (bytes) for sub-base values', () => {
+    expect(dynamicTierIndex(0, 'binary')).toBe(0)
+    expect(dynamicTierIndex(999, 'si')).toBe(0)
+    expect(dynamicTierIndex(1023, 'binary')).toBe(0)
+  })
+
+  it('returns 1 (kB) for kilobyte range', () => {
+    expect(dynamicTierIndex(1024, 'binary')).toBe(1)
+    expect(dynamicTierIndex(1000, 'si')).toBe(1)
+    expect(dynamicTierIndex(500_000, 'si')).toBe(1)
+  })
+
+  it('returns 2 (MB) for megabyte range', () => {
+    expect(dynamicTierIndex(1024 ** 2, 'binary')).toBe(2)
+    expect(dynamicTierIndex(5_000_000, 'si')).toBe(2)
+  })
+
+  it('returns 3 (GB) for gigabyte range', () => {
+    expect(dynamicTierIndex(1024 ** 3, 'binary')).toBe(3)
+    expect(dynamicTierIndex(10 * 1000 ** 3, 'si')).toBe(3)
+  })
+
+  it('caps at 4 (TB-tier) for TB and beyond', () => {
+    expect(dynamicTierIndex(1024 ** 4, 'binary')).toBe(4)
+    expect(dynamicTierIndex(1024 ** 5, 'binary')).toBe(4)
+    expect(dynamicTierIndex(1024 ** 6, 'binary')).toBe(4)
+  })
+
+  it('respects the binary/SI base boundary (1000 bytes is sub-base in binary)', () => {
+    expect(dynamicTierIndex(1000, 'binary')).toBe(0)
+    expect(dynamicTierIndex(1000, 'si')).toBe(1)
+  })
+})
+
+describe('fixedUnitFor', () => {
+  it("returns null for 'dynamic'", () => {
+    expect(fixedUnitFor('dynamic')).toBeNull()
+  })
+
+  it("returns null for 'bytes' (raw-byte path is not a forced unit)", () => {
+    expect(fixedUnitFor('bytes')).toBeNull()
+  })
+
+  it('returns the same token for fixed unit values', () => {
+    expect(fixedUnitFor('kB')).toBe('kB')
+    expect(fixedUnitFor('MB')).toBe('MB')
+    expect(fixedUnitFor('GB')).toBe('GB')
   })
 })

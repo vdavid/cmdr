@@ -26,10 +26,14 @@ Exported functions:
 
 - `formatSizeTriads(bytes)`: splits byte count into digit triads, each tagged with a `tierClass`. Uses U+2009 thin-space
   as separator between triads.
-- `formatSizeForDisplay(bytes, { humanFriendly, format })`: single entry point used by views and the status bar to
-  render byte counts. In raw-bytes mode delegates to `formatSizeTriads`. In human-friendly mode returns one tier-tagged
-  span like `{ value: '1.02 MB', tierClass: 'size-mb' }`. The tier is picked from the chosen unit via
-  `tierClassForUnit`, so coloring stays consistent with the triad mode.
+- `formatSizeForDisplay(bytes, { unit, format })`: single entry point used by views and the status bar to render byte
+  counts. `unit: 'bytes'` delegates to `formatSizeTriads`. `unit: 'dynamic'` picks the friendliest unit per value ("1.02
+  MB"). `unit: 'kB' | 'MB' | 'GB'` forces a fixed unit so a directory of mixed sizes reads apples-to-apples. Returns one
+  tier-tagged span like `{ value: '1.02 MB', tierClass: 'size-mb' }` (or one per digit triad in bytes mode). **Tier
+  color tracks the underlying byte magnitude in every mode**, not the displayed unit: a 349-byte file shown as
+  `"0.00 MB"` (forced MB) still tiers as `size-bytes` (green) — same color a user gets from dynamic mode. Magnitude is
+  derived via `dynamicTierIndex(bytes, format)` from `format-utils.ts`. The kilobyte label casing (`kB` vs `KB`) follows
+  `format`.
 - `tierClassForUnit(unit)`: maps the unit suffix from `formatFileSizeWithFormat` (`bytes`, `KB`/`kB`, `MB`, `GB`, `TB`,
   `PB`) to one of `sizeTierClasses`. TB and PB cap at `size-tb`.
 - `formatDate(timestamp)`: Unix seconds → `"YYYY-MM-DD HH:MM:SS"` local time.
@@ -98,13 +102,17 @@ every unsorted header. Handles both `onclick` and `onkeydown` (Enter/Space).
 
 ## Key decisions
 
-**Decision**: Size column / status bar primary readout follows the `listing.humanFriendlySizeUnits` toggle. ON (default)
-shows "1.02 MB" via `formatFileSizeWithFormat`. OFF shows colored digit triads via `formatSizeTriads`. Both modes flow
-through the shared `formatSizeForDisplay` helper. **Why**: Human-readable is friendlier for most users, but power users
-(and David) want precise byte counts to compare similarly-sized files. The tier-based CSS coloring
-(`size-bytes`/`size-kb`/`size-mb`/`size-gb`/`size-tb`) is preserved in both modes. In human-friendly mode the entire
-formatted string takes the tier of its chosen unit. Tooltips on file/dir/selection size still always show both formats
-so the other one is always one hover away.
+**Decision**: Size column / status bar primary readout follows the `listing.sizeUnit` setting. `Dynamic` (default) shows
+"1.02 MB" via `formatFileSizeWithFormat`; `Bytes` shows colored digit triads via `formatSizeTriads`; `kB`/`MB`/`GB`
+force a single unit per row so a mixed-size directory reads apples-to-apples. All modes flow through the shared
+`formatSizeForDisplay` helper. **Why**: Dynamic is friendliest for most users, bytes lets power users compare
+similarly-sized files exactly, and the forced units cover users who want every row in the same scale (David's case). The
+tier-based CSS coloring (`size-bytes`/`size-kb`/`size-mb`/`size-gb`/`size-tb`) is preserved across all modes. In dynamic
+mode the displayed unit IS the magnitude so the tier matches the label. In forced-unit modes the tier still tracks the
+underlying byte magnitude (via `dynamicTierIndex`), not the displayed unit — a 349-byte file shown as `"0.00 MB"` keeps
+the bytes-tier color, so the at-a-glance size signal survives even when every row reads in MB. The kilobyte label casing
+(`kB` vs `KB`) follows the binary/SI setting and updates live in the settings UI's toggle group too. Tooltips on
+file/dir/selection size still always show both formats so the other one is always one hover away.
 
 **Decision**: Middle truncation in `file-info` mode uses the `useShortenMiddle` Svelte action (from `$lib/utils/`) with
 `preferBreakAt: '.'` and `startRatio: 0.7`, not CSS `text-overflow: ellipsis` **Why**: CSS ellipsis truncates from the

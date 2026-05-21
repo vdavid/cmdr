@@ -4,8 +4,14 @@
  */
 
 import type { FileEntry } from '../types'
-import type { FileSizeFormat } from '$lib/settings/types'
-import { formatFileSizeWithFormat, type DateSegment, type FormattedDate } from '$lib/settings/format-utils'
+import type { FileSizeFormat, FileSizeUnit } from '$lib/settings/types'
+import {
+  formatFileSizeWithFormat,
+  fixedUnitFor,
+  dynamicTierIndex,
+  type DateSegment,
+  type FormattedDate,
+} from '$lib/settings/format-utils'
 
 // Size tier colors for digit triads (indexed: 0=bytes, 1=kB, 2=MB, 3=GB, 4=TB+)
 export const sizeTierClasses = ['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']
@@ -54,19 +60,31 @@ export function tierClassForUnit(unit: string): string {
 
 /**
  * Formats a byte count for display in views/status bar based on the user's
- * "human-friendly size units" preference. Returns an array of tier-tagged
- * spans:
- * - In human-friendly mode, returns one element like `{ value: '1.02 MB', tierClass: 'size-mb' }`.
- * - In raw-bytes mode, delegates to {@link formatSizeTriads} which returns one element per digit triad.
+ * `listing.sizeUnit` preference. Returns an array of tier-tagged spans:
+ * - `'bytes'`: delegates to {@link formatSizeTriads} (one span per digit triad).
+ * - `'dynamic'`: picks the friendliest unit per file ("1.02 MB"), one span.
+ * - `'kB' | 'MB' | 'GB'`: forces that unit for display, one span. The kilobyte
+ *   label reflects binary (`KB`) vs SI (`kB`) via `opts.format`.
+ *
+ * Tier color in forced modes follows the **magnitude tier** of the underlying
+ * byte count (what dynamic mode would have picked), not the displayed unit.
+ * So a 349-byte file shown as `"0.00 MB"` still tier-colors as `size-bytes` —
+ * the user's at-a-glance "how big is this" signal stays meaningful even when
+ * every row uses the same fixed unit.
  */
 export function formatSizeForDisplay(
   bytes: number,
-  opts: { humanFriendly: boolean; format: FileSizeFormat },
+  opts: { unit: FileSizeUnit; format: FileSizeFormat },
 ): { value: string; tierClass: string }[] {
-  if (!opts.humanFriendly) {
+  if (opts.unit === 'bytes') {
     return formatSizeTriads(bytes)
   }
-  const formatted = formatFileSizeWithFormat(bytes, opts.format)
+  const forced = fixedUnitFor(opts.unit)
+  const formatted = formatFileSizeWithFormat(bytes, opts.format, forced ?? undefined)
+  if (forced) {
+    return [{ value: formatted, tierClass: sizeTierClasses[dynamicTierIndex(bytes, opts.format)] }]
+  }
+  // Dynamic mode: tier from the chosen unit (the rendered unit IS the magnitude).
   // The formatter returns "<value> <unit>"; the unit is the last whitespace-separated token.
   const spaceIndex = formatted.lastIndexOf(' ')
   const unit = spaceIndex >= 0 ? formatted.slice(spaceIndex + 1) : ''
@@ -148,10 +166,10 @@ export function getSizeDisplay(
   isBrokenSymlink: boolean,
   isPermissionDenied: boolean,
   displaySize?: number,
-  formatOpts?: { humanFriendly: boolean; format: FileSizeFormat },
+  formatOpts?: { unit: FileSizeUnit; format: FileSizeFormat },
 ): { value: string; tierClass: string }[] | 'DIR' | null {
   if (!entry || isBrokenSymlink || isPermissionDenied) return null
-  const opts = formatOpts ?? { humanFriendly: false, format: 'binary' as const }
+  const opts = formatOpts ?? { unit: 'bytes' as const, format: 'binary' as const }
   // `!= null` because the Rust wire format serializes Optional fields as `null`
   // (see Group A migration in `getDisplaySize` doc).
   if (entry.isDirectory) return displaySize != null ? formatSizeForDisplay(displaySize, opts) : 'DIR'

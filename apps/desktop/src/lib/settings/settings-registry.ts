@@ -232,14 +232,24 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
-    id: 'listing.humanFriendlySizeUnits',
+    id: 'listing.sizeUnit',
     section: ['Appearance', 'File and folder sizes'],
-    label: 'Human-friendly size units',
-    description: 'On: shows 1.02 MB. Off: shows raw bytes for precise comparison.',
-    keywords: ['size', 'human', 'bytes', 'unit', 'format', 'raw', 'precise'],
-    type: 'boolean',
-    default: true,
-    component: 'switch',
+    label: 'Size unit',
+    description:
+      'Dynamic picks the friendliest unit per file (1.02 MB). Fixed units make sizes apples-to-apples across the list. Bytes shows the exact count for precise comparison.',
+    keywords: ['size', 'human', 'bytes', 'unit', 'format', 'raw', 'precise', 'kb', 'mb', 'gb', 'dynamic'],
+    type: 'enum',
+    default: 'dynamic',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'dynamic', label: 'Dynamic' },
+        { value: 'bytes', label: 'Bytes' },
+        { value: 'kB', label: 'kB' },
+        { value: 'MB', label: 'MB' },
+        { value: 'GB', label: 'GB' },
+      ],
+    },
   },
   {
     id: 'appearance.fileSizeFormat',

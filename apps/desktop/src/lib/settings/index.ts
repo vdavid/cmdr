@@ -16,6 +16,7 @@ export type {
   BriefColumnWidthMode,
   ExtensionChangePolicy,
   FileSizeFormat,
+  FileSizeUnit,
   NetworkTimeoutMode,
   SettingConstraints,
   SettingDefinition,
