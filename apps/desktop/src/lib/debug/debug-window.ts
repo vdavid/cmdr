@@ -19,6 +19,7 @@ import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { Effect, EffectState } from '@tauri-apps/api/window'
 import { getAppLogger } from '$lib/logging/logger'
 import { decorateChildWindowTitle } from '$lib/app-mode'
+import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
 
 const log = getAppLogger('debug')
 
@@ -42,6 +43,11 @@ export async function openDebugWindow(): Promise<void> {
 
   log.debug('Creating new debug window')
 
+  const [main, monitors, saved] = await Promise.all([readMainRect(), readMonitors(), readSavedRect('debug')])
+  const rect = main
+    ? resolveChildPosition({ size: { width: DEBUG_WIDTH, height: DEBUG_HEIGHT }, main, monitors, saved })
+    : null
+
   const win = new WebviewWindow('debug', {
     url: '/debug',
     title: decorateChildWindowTitle('Debug'),
@@ -49,7 +55,7 @@ export async function openDebugWindow(): Promise<void> {
     height: DEBUG_HEIGHT,
     minWidth: DEBUG_MIN_WIDTH,
     minHeight: DEBUG_MIN_HEIGHT,
-    center: true,
+    ...(rect ? { x: rect.x, y: rect.y } : { center: true }),
     resizable: true,
     decorations: true,
     focus: true,

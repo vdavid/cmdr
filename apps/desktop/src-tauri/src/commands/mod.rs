@@ -1,5 +1,6 @@
 //! Tauri commands module.
 
+pub mod child_window_state;
 pub mod clipboard;
 pub mod crash_reporter;
 pub mod e2e;

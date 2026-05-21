@@ -238,6 +238,10 @@ row intentionally spans the full width.
   paths: (a) new-window: JSON-encoded array on the URL as `?section=...` (JSON because section names can contain `/`,
   e.g. "SMB/Network shares"); (b) already-open window: emits a `navigate-to-section` Tauri event the settings page
   listens for. The settings page also reads the URL param at mount, so reloads or fresh-opens land on the same section.
+  Position: opens centered on the main window on first open of the session (via `lib/window-positioning.ts`). After
+  that, the position+size persists in-memory (via the `get_child_window_rect` / `set_child_window_rect` Tauri commands)
+  so reopening lands in the same spot. On app start the cache is empty again. Saved rects that no longer fit any monitor
+  (display disconnected, etc.) are clamped to the nearest monitor.
 - **format-utils.ts**: Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time is
   covered in detail under § "Date display" above. `formatDateForDisplay` is the canonical entry point. Built-in `iso`
   and `short` formats include a `|` internally so the file-list renderer can split the date and time halves into two

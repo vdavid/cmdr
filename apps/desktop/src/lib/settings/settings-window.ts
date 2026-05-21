@@ -24,6 +24,7 @@ import { Effect, EffectState } from '@tauri-apps/api/window'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { decorateChildWindowTitle, getAppMode } from '$lib/app-mode'
+import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
 
 const log = getAppLogger('settings')
 
@@ -79,18 +80,25 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
   // JSON-encode the section path because section names can contain `/` (e.g.
   // "SMB/Network shares"). Plain `join('/')` would split incorrectly on the receiving end.
   const scale = getEffectiveScale()
+  const width = settingsMaxWidth(scale)
+  const height = SETTINGS_BASE_HEIGHT * scale
+
+  // Pick a position: saved-and-on-screen, else clamped, else centered on main.
+  // Falls back to Tauri's `center: true` only when main isn't open (rare).
+  const [main, monitors, saved] = await Promise.all([readMainRect(), readMonitors(), readSavedRect('settings')])
+  const rect = main ? resolveChildPosition({ size: { width, height }, main, monitors, saved }) : null
 
   const win = new WebviewWindow('settings', {
     url: section ? `/settings?section=${encodeURIComponent(JSON.stringify(section))}` : '/settings',
     title: decorateChildWindowTitle('Settings'),
     // Open at max width so the content-area starts at its scaled cap; user can
     // shrink down to `settingsMinWidth(scale)`.
-    width: settingsMaxWidth(scale),
-    height: SETTINGS_BASE_HEIGHT * scale,
+    width,
+    height,
     minWidth: settingsMinWidth(scale),
     minHeight: SETTINGS_BASE_MIN_HEIGHT * scale,
     maxWidth: settingsMaxWidth(scale),
-    center: true,
+    ...(rect ? { x: rect.x, y: rect.y } : { center: true }),
     resizable: true,
     decorations: true,
     focus: !isE2e,

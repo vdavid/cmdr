@@ -125,6 +125,10 @@
     "settings/sections/ViewerSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/settings-store.ts": { "reason": "Depends on Tauri store APIs" },
     "settings/settings-window.ts": { "reason": "Depends on Tauri window APIs" },
+    "window-positioning.ts": {
+      "reason": "Thin wrappers around `getCurrentWindow().outerPosition/outerSize/scaleFactor` + `availableMonitors`; pure math lives in window-positioning-utils.ts and is fully covered there"
+    },
+    "debug/debug-window.ts": { "reason": "Depends on Tauri WebviewWindow API; dev-only" },
     "shortcuts/mcp-shortcuts-listener.ts": { "reason": "MCP listener, depends on Tauri events" },
     "shortcuts/keyboard-handler.ts": { "reason": "DOM event handling, tested via integration" },
     "shortcuts/shortcuts-store.ts": { "reason": "Depends on Tauri store APIs" },

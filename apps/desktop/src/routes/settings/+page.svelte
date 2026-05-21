@@ -13,6 +13,7 @@
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
     import { getAppLogger } from '$lib/logging/logger'
+    import { trackOwnRect } from '$lib/window-positioning'
 
     const log = getAppLogger('settings')
 
@@ -44,6 +45,7 @@
     let unlistenFocusSelf: UnlistenFn | undefined
     let unlistenNavigate: UnlistenFn | undefined
     let unlistenMcpClose: UnlistenFn | undefined
+    let unlistenRectTracking: (() => void) | undefined
 
     function safeParseSectionParam(raw: string): string[] | null {
         try {
@@ -255,6 +257,11 @@
                 })
             })
 
+            // Persist position/size while this window is open so reopening
+            // within the session lands in the same spot. The cache is in-memory
+            // on the Rust side and reset on app start.
+            unlistenRectTracking = await trackOwnRect('settings')
+
             log.debug('Settings page ready')
         } catch (error) {
             log.error('Failed to initialize settings: {error}', { error })
@@ -270,6 +277,7 @@
         unlistenFocusSelf?.()
         unlistenNavigate?.()
         unlistenMcpClose?.()
+        unlistenRectTracking?.()
         cleanupAccentColor()
         cleanupTextSize()
     })

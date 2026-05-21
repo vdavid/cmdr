@@ -629,6 +629,23 @@ export const commands = {
   // Returns the current restricted-paths snapshot (sorted, absolute paths).
   getRestrictedPaths: () => __TAURI_INVOKE<string[]>('get_restricted_paths'),
   /**
+   *  Returns the saved rect for a child window label, or `None` if no entry
+   *  exists (first open in this session, or never opened).
+   */
+  getChildWindowRect: (label: string) =>
+    __TAURI_INVOKE<{
+      x: number
+      y: number
+      width: number
+      height: number
+    } | null>('get_child_window_rect', { label }),
+  /**
+   *  Saves the rect for a child window label. Called from the frontend's
+   *  move/resize listeners on Settings and Debug.
+   */
+  setChildWindowRect: (label: string, rect: ChildWindowRect) =>
+    __TAURI_INVOKE<void>('set_child_window_rect', { label, rect }),
+  /**
    *  Opens a viewer session for the given file.
    *  Returns session metadata + initial lines from the start of the file.
    */
@@ -1961,6 +1978,17 @@ export type BackendCapabilities = {
 
 // Which backend strategy is active for a session.
 export type BackendType = 'fullLoad' | 'byteSeek' | 'lineIndex'
+
+/**
+ *  Logical-pixel rectangle. `f64` mirrors what Tauri's `LogicalPosition` /
+ *  `LogicalSize` use on the wire.
+ */
+export type ChildWindowRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 export type ClientInfoDto = {
   primary_server: string

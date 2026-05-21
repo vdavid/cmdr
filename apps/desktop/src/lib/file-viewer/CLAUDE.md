@@ -77,7 +77,9 @@ and since `ON ratio * OFF ratio = 1.0`, there's zero cumulative drift across tog
 
 **Gotcha**: Window position isn't remembered across sessions. **Why**: `tauri-plugin-window-state` persists
 size/position per window label, but each viewer label is unique (timestamp-based). There's no stable identifier to key
-on since the same file can be opened multiple times.
+on since the same file can be opened multiple times. Within a session, viewers cascade from the main window's top-left
+(+24px per opened viewer, wrapping at 8) via `lib/window-positioning.ts` so successive opens don't pile on top of each
+other.
 
 **Gotcha**: Binary files shown with lossy UTF-8 (replacement chars for invalid bytes, no binary mode). **Why**: The
 viewer is designed for text/log files. Adding a hex/binary mode would require a completely different rendering pipeline.

@@ -79,6 +79,7 @@ mod accent_color;
 mod accent_color_linux;
 mod ai;
 pub mod benchmark;
+mod child_window_state;
 mod clipboard;
 mod commands;
 pub mod config;
@@ -201,9 +202,16 @@ pub fn run() {
     let specta_builder = ipc::builder();
     let builder = tauri::Builder::default();
 
-    // Window state plugin is only available on desktop platforms
+    // Window state plugin is only available on desktop platforms. The filter
+    // restricts persistence to the main window: Settings, Debug, and viewer
+    // windows are deliberately reset on every launch. Within a session they
+    // remember position via `child_window_state` (in-memory only).
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    let builder = builder.plugin(tauri_plugin_window_state::Builder::new().build());
+    let builder = builder.plugin(
+        tauri_plugin_window_state::Builder::new()
+            .with_filter(|label| label == "main")
+            .build(),
+    );
 
     // MCP Bridge plugin is only available in debug builds for security
     #[cfg(debug_assertions)]
@@ -577,6 +585,10 @@ pub fn run() {
             // on other platforms the type is `Mutex<()>` so this compiles
             // everywhere.
             app.manage(quick_look::init_state());
+
+            // In-session position cache for Settings + Debug windows. See
+            // `child_window_state.rs` for the why.
+            app.manage(child_window_state::ChildWindowRectStore::new());
 
             // Initialize pane state store for MCP context tools
             app.manage(mcp::PaneStateStore::new());

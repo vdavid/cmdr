@@ -67,6 +67,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::rename::rename_file,
         crate::commands::rename::move_to_trash,
         crate::commands::restricted_paths::get_restricted_paths,
+        crate::commands::child_window_state::get_child_window_rect,
+        crate::commands::child_window_state::set_child_window_rect,
         crate::commands::file_viewer::viewer_open,
         crate::commands::file_viewer::viewer_get_lines,
         crate::commands::file_viewer::viewer_get_status,
