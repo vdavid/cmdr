@@ -401,6 +401,8 @@ mod delete_volume_reuse_tests;
 #[cfg(test)]
 mod move_integration_test;
 #[cfg(test)]
+mod scan_preview_listing_progress_tests;
+#[cfg(test)]
 mod scan_preview_oracle_tests;
 #[cfg(test)]
 mod settle_event_tests;

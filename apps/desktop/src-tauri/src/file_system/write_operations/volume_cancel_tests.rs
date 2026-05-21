@@ -76,7 +76,7 @@ impl Volume for CancellingVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
     {
         // No-cancel path: fall through to inner. Tests don't hit this; the
@@ -89,7 +89,7 @@ impl Volume for CancellingVolume {
     fn list_directory_with_cancel<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
         cancel: Option<&'a Arc<AtomicBool>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
     {
@@ -108,7 +108,11 @@ impl Volume for CancellingVolume {
                 }
                 yielded.push(entry.clone());
                 if let Some(cb) = on_progress {
-                    cb(yielded.len());
+                    cb(crate::file_system::volume::ListingProgress {
+                        files: yielded.len(),
+                        dirs: 0,
+                        bytes: 0,
+                    });
                 }
                 // Simulate a slow USB roundtrip per handle. Each `GetObjectInfo`
                 // on a real MTP device is on the order of milliseconds; we use
@@ -528,7 +532,7 @@ async fn volume_error_emits_write_settled_event() {
         fn list_directory<'a>(
             &'a self,
             _path: &'a Path,
-            _on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+            _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
         ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
         {
             Box::pin(async move {
@@ -541,7 +545,7 @@ async fn volume_error_emits_write_settled_event() {
         fn list_directory_with_cancel<'a>(
             &'a self,
             _path: &'a Path,
-            _on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+            _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
             _cancel: Option<&'a Arc<AtomicBool>>,
         ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
         {

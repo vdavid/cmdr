@@ -1093,14 +1093,25 @@ impl Volume for SmbVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let entries = self.list_directory_impl(path).await?;
             // smb2's list_directory returns all entries at once, so report
-            // progress as a single batch after the call completes.
+            // progress as a single batch after the call completes. Tally files
+            // / dirs / bytes from the returned entries so the FE scan dialog
+            // doesn't see "0 bytes, 0 dirs" climbing on Direct SMB scans.
             if let Some(on_progress) = on_progress {
-                on_progress(entries.len());
+                let mut tally = crate::file_system::volume::ListingProgress::default();
+                for e in &entries {
+                    if e.is_directory {
+                        tally.dirs += 1;
+                    } else {
+                        tally.files += 1;
+                        tally.bytes += e.size.unwrap_or(0);
+                    }
+                }
+                on_progress(tally);
             }
             Ok(entries)
         })

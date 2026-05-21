@@ -249,7 +249,7 @@ async fn run_volume_scan_preview(
     let state_for_cb = Arc::clone(&state);
     let app_for_cb = app.clone();
     let preview_id_for_cb = preview_id.clone();
-    let on_progress = move |files_found: usize| {
+    let on_progress = move |p: crate::file_system::volume::ListingProgress| {
         if state_for_cb.cancelled.load(Ordering::Relaxed) {
             return;
         }
@@ -265,12 +265,9 @@ async fn run_volume_scan_preview(
             "scan-preview-progress",
             ScanPreviewProgressEvent {
                 preview_id: preview_id_for_cb.clone(),
-                files_found,
-                dirs_found: 0,
-                // Bytes aren't surfaced by `list_directory_with_progress` mid-stream
-                // (it only knows the count). The FE will show "0 bytes" climbing in
-                // count alongside, then the final size lands on scan-preview-complete.
-                bytes_found: 0,
+                files_found: p.files,
+                dirs_found: p.dirs,
+                bytes_found: p.bytes,
                 current_path: None,
                 current_dir: None,
                 expected_files_total: None,
@@ -367,9 +364,10 @@ pub(super) async fn run_oracle_aware_batch_scan(
     volume_id: &str,
     sources: &[PathBuf],
     is_cancelled: &(dyn Fn() -> bool + Sync),
-    on_progress: &(dyn Fn(usize) + Sync),
+    on_progress: &(dyn Fn(crate::file_system::volume::ListingProgress) + Sync),
 ) -> Result<BatchScanResult, crate::file_system::volume::VolumeError> {
     use crate::file_system::listing::FileEntry;
+    use crate::file_system::volume::ListingProgress;
     use std::collections::HashMap;
 
     // Group sources by parent dir, preserving the input order of paths within
@@ -442,17 +440,31 @@ pub(super) async fn run_oracle_aware_batch_scan(
                     aggregate.dir_count += scan.dir_count;
                     aggregate.total_bytes += scan.total_bytes;
                     per_path_unordered.insert(source.clone(), scan);
-                    on_progress(aggregate.file_count);
+                    on_progress(ListingProgress {
+                        files: aggregate.file_count,
+                        dirs: aggregate.dir_count,
+                        bytes: aggregate.total_bytes,
+                    });
                     continue;
                 };
 
                 if entry.is_directory && !entry.is_symlink {
-                    // `scan_subtree_with_oracle` emits a count local to this
-                    // subtree (starting at 1). Shift by `aggregate.file_count`
+                    // `scan_subtree_with_oracle` emits counts local to this
+                    // subtree (starting at 1). Shift by the current aggregate
                     // so the FE display stays cumulative across multiple
-                    // top-level dirs in this call.
-                    let baseline = aggregate.file_count;
-                    let shifted = |n: usize| on_progress(baseline + n);
+                    // top-level dirs in this call — files, dirs, AND bytes.
+                    let baseline = ListingProgress {
+                        files: aggregate.file_count,
+                        dirs: aggregate.dir_count,
+                        bytes: aggregate.total_bytes,
+                    };
+                    let shifted = |p: ListingProgress| {
+                        on_progress(ListingProgress {
+                            files: baseline.files + p.files,
+                            dirs: baseline.dirs + p.dirs,
+                            bytes: baseline.bytes + p.bytes,
+                        })
+                    };
                     let subtree: SubtreeTotals =
                         scan_subtree_with_oracle(volume, volume_id, source, is_cancelled, Some(&shifted)).await?;
                     aggregate.file_count += subtree.file_count;
@@ -483,7 +495,11 @@ pub(super) async fn run_oracle_aware_batch_scan(
                             top_level_is_directory: false,
                         },
                     );
-                    on_progress(aggregate.file_count);
+                    on_progress(ListingProgress {
+                        files: aggregate.file_count,
+                        dirs: aggregate.dir_count,
+                        bytes: aggregate.total_bytes,
+                    });
                 }
             }
         } else {
@@ -491,14 +507,25 @@ pub(super) async fn run_oracle_aware_batch_scan(
             // scan: it preserves the MTP parent-grouping and SMB pipelined-stat
             // optimizations for cold paths.
             //
-            // The volume's callback reports a count LOCAL to its current
-            // `list_directory` call (starts at 1). Shift by `aggregate.file_count`
+            // The volume's callback reports counts LOCAL to its current
+            // `list_directory` call (starts at 1 for files, 0 for dirs/bytes
+            // until entries are enumerated). Shift by the current aggregate
             // before forwarding so the FE display stays cumulative as we walk
             // multiple parent groups — without this, every new group's first
-            // entry drops the visible count back to 1, then climbs to the
-            // group's local total before the next group restarts.
-            let baseline = aggregate.file_count;
-            let shifted = |n: usize| on_progress(baseline + n);
+            // entry drops the visible counts back to local values, then climbs
+            // to the group's local totals before the next group restarts.
+            let baseline = ListingProgress {
+                files: aggregate.file_count,
+                dirs: aggregate.dir_count,
+                bytes: aggregate.total_bytes,
+            };
+            let shifted = |p: ListingProgress| {
+                on_progress(ListingProgress {
+                    files: baseline.files + p.files,
+                    dirs: baseline.dirs + p.dirs,
+                    bytes: baseline.bytes + p.bytes,
+                })
+            };
             let group_result = volume
                 .scan_for_copy_batch_with_progress(paths_in_group, Some(&shifted))
                 .await?;

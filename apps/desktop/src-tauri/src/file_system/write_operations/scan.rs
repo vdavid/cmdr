@@ -252,8 +252,10 @@ pub(super) async fn scan_subtree_with_oracle(
     volume_id: &str,
     path: &Path,
     is_cancelled: &(dyn Fn() -> bool + Sync),
-    on_progress: Option<&(dyn Fn(usize) + Sync)>,
+    on_progress: Option<&(dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
 ) -> Result<SubtreeTotals, VolumeError> {
+    use crate::file_system::volume::ListingProgress;
+
     if is_cancelled() {
         return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
     }
@@ -265,6 +267,12 @@ pub(super) async fn scan_subtree_with_oracle(
     };
 
     let mut totals = SubtreeTotals::default();
+    // Running tally for the on_progress callback so dirs/bytes climb alongside
+    // file count as we walk this subtree. `dir_count` on the SubtreeTotals
+    // counts descendant dirs only; this `tally.dirs` mirrors that semantic,
+    // but the callback's running count tells the FE "we've seen N dirs so far
+    // in this subtree" which is the intuitive display.
+    let mut tally = ListingProgress::default();
 
     for entry in entries {
         if is_cancelled() {
@@ -273,14 +281,19 @@ pub(super) async fn scan_subtree_with_oracle(
         let child_path = PathBuf::from(&entry.path);
         if entry.is_directory && !entry.is_symlink {
             // Recurse — oracle re-applies inside this call. The recursive
-            // emit reports counts local to the child subtree (starting at 1),
-            // so wrap `on_progress` with a baseline of the current
-            // `totals.file_count`; without this the FE display visibly drops
-            // back to 1 every time the walker descends into a new sibling dir.
-            let baseline = totals.file_count;
+            // emit reports counts local to the child subtree (starting fresh),
+            // so wrap `on_progress` with a baseline of the current `tally` so
+            // the FE display stays cumulative across sibling dirs.
+            let baseline = tally;
             let child_totals = match on_progress {
                 Some(cb) => {
-                    let shifted = move |n: usize| cb(baseline + n);
+                    let shifted = move |p: ListingProgress| {
+                        cb(ListingProgress {
+                            files: baseline.files + p.files,
+                            dirs: baseline.dirs + p.dirs,
+                            bytes: baseline.bytes + p.bytes,
+                        })
+                    };
                     Box::pin(scan_subtree_with_oracle(
                         volume,
                         volume_id,
@@ -305,6 +318,9 @@ pub(super) async fn scan_subtree_with_oracle(
             // The directory itself plus all its descendant dirs.
             totals.dir_count += 1 + child_totals.dir_count;
             totals.total_bytes += child_totals.total_bytes;
+            tally.files += child_totals.file_count;
+            tally.dirs += 1 + child_totals.dir_count;
+            tally.bytes += child_totals.total_bytes;
             totals.per_path.push((
                 child_path,
                 CopyScanResult {
@@ -315,12 +331,14 @@ pub(super) async fn scan_subtree_with_oracle(
                 },
             ));
             if let Some(cb) = on_progress {
-                cb(totals.file_count);
+                cb(tally);
             }
         } else {
             let size = entry.size.unwrap_or(0);
             totals.file_count += 1;
             totals.total_bytes += size;
+            tally.files += 1;
+            tally.bytes += size;
             totals.per_path.push((
                 child_path,
                 CopyScanResult {
@@ -331,7 +349,7 @@ pub(super) async fn scan_subtree_with_oracle(
                 },
             ));
             if let Some(cb) = on_progress {
-                cb(totals.file_count);
+                cb(tally);
             }
         }
     }

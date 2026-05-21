@@ -340,11 +340,15 @@ async fn scan_volume_recursive(
         let tracker_for_cb = Arc::clone(tracker);
         let state_for_cb = Arc::clone(state);
 
-        let on_progress = move |loaded_count: usize| {
+        let on_progress = move |p: crate::file_system::volume::ListingProgress| {
             if !tracker_for_cb.should_emit() {
                 return;
             }
-            let files_now = files_before + loaded_count;
+            // The delete scan tally tracks files + bytes from already-walked
+            // subdirs; the volume's per-listing callback adds the local
+            // (files, bytes) it's enumerating right now.
+            let files_now = files_before + p.files;
+            let bytes_now = bytes_before + p.bytes;
             state_for_cb.emit_progress_via_sink(
                 events,
                 WriteProgressEvent::new(
@@ -354,10 +358,10 @@ async fn scan_volume_recursive(
                     None,
                     files_now,
                     0,
-                    bytes_before,
+                    bytes_now,
                     0,
                 )
-                .with_scan_meta(Some(current_dir_str.clone()), dirs_before, None),
+                .with_scan_meta(Some(current_dir_str.clone()), dirs_before + p.dirs, None),
             );
             update_operation_status(
                 &op_id_for_cb,
@@ -365,7 +369,7 @@ async fn scan_volume_recursive(
                 None,
                 files_now,
                 0,
-                bytes_before,
+                bytes_now,
                 0,
             );
         };
@@ -377,9 +381,19 @@ async fn scan_volume_recursive(
         let children = match try_get_watched_listing(volume_id, path) {
             Some(cached) => {
                 // The cached listing is already complete, so synthesize a
-                // single end-of-listing progress tick to keep the FE counter
-                // climbing during the cache-fed pass too.
-                on_progress(cached.len());
+                // single end-of-listing progress tick (with the tally we'd
+                // have built incrementally) to keep the FE counter climbing
+                // during the cache-fed pass too.
+                let mut tally = crate::file_system::volume::ListingProgress::default();
+                for e in &cached {
+                    if e.is_directory {
+                        tally.dirs += 1;
+                    } else {
+                        tally.files += 1;
+                        tally.bytes += e.size.unwrap_or(0);
+                    }
+                }
+                on_progress(tally);
                 cached
             }
             None => volume

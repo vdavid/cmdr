@@ -738,7 +738,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
         fn list_directory<'a>(
             &'a self,
             path: &'a Path,
-            on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+            on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
         ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
         {
             self.inner.list_directory(path, on_progress)
@@ -1310,8 +1310,8 @@ async fn test_scan_for_copy_batch_with_progress_fires_callback() {
 
     let calls = Arc::new(Mutex::new(Vec::<usize>::new()));
     let calls_for_cb = Arc::clone(&calls);
-    let on_progress = move |count: usize| {
-        calls_for_cb.lock().unwrap().push(count);
+    let on_progress = move |p: crate::file_system::volume::ListingProgress| {
+        calls_for_cb.lock().unwrap().push(p.files);
     };
 
     let paths = vec![
@@ -1489,7 +1489,7 @@ impl Volume for PoisonedReadVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
     {
         self.inner.list_directory(path, on_progress)

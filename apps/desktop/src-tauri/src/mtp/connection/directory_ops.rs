@@ -108,7 +108,7 @@ impl MtpConnectionManager {
         device_id: &str,
         storage_id: u32,
         path: &str,
-        on_progress: &(dyn Fn(usize) + Sync),
+        on_progress: &(dyn Fn(crate::file_system::volume::ListingProgress) + Sync),
         cancel: Option<&CancelToken>,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         use std::sync::atomic::Ordering;
@@ -363,7 +363,7 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
         call_start: Instant,
-        on_progress: &(dyn Fn(usize) + Sync),
+        on_progress: &(dyn Fn(crate::file_system::volume::ListingProgress) + Sync),
         cancel: Option<&CancelToken>,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         let parent_path = normalize_mtp_path(path);
@@ -446,6 +446,11 @@ impl MtpConnectionManager {
         let metadata_start = Instant::now();
         let mut entries = Vec::with_capacity(total);
         let mut cache_updates: Vec<(PathBuf, ObjectHandle)> = Vec::new();
+        // Running tally for the progress callback. Tracked separately from
+        // `entries.len()` so dirs / file-bytes / file-count are all available
+        // to the FE mid-stream (the Volume trait progress callback takes a
+        // `ListingProgress` carrying all three).
+        let mut tally = crate::file_system::volume::ListingProgress::default();
 
         while let Some(result) = listing.next().await {
             let info = match result {
@@ -481,10 +486,17 @@ impl MtpConnectionManager {
                 )
             });
 
+            if is_dir {
+                tally.dirs += 1;
+            } else {
+                tally.files += 1;
+                tally.bytes += info.size;
+            }
+
             // Report progress periodically
             let fetched = listing.fetched();
             if fetched % PROGRESS_INTERVAL == 0 || fetched == total {
-                on_progress(entries.len());
+                on_progress(tally);
             }
         }
 

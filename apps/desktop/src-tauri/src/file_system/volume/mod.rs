@@ -47,6 +47,30 @@ pub enum SmbConnectionState {
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
 
+/// Running tally a `Volume`'s directory walk reports through its progress
+/// callback. Replaces the old `Fn(usize)` callback shape so backends can
+/// stream the bytes-and-dirs UI numbers alongside the file count.
+///
+/// Semantics: every field is the *cumulative* count for the current listing
+/// scope (a single `list_directory` call, or a single `scan_for_copy_batch`
+/// invocation). `files` excludes directories and `bytes` is the sum of file
+/// sizes only (directories contribute 0). Consumers that want the total
+/// entry count for "Loading N entries…" displays read `files + dirs`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ListingProgress {
+    pub files: usize,
+    pub dirs: usize,
+    pub bytes: u64,
+}
+
+impl ListingProgress {
+    /// Total entries enumerated so far (files + dirs). Convenience for the
+    /// streaming listing UI, which renders one "Loaded N entries…" line.
+    pub fn entries(&self) -> usize {
+        self.files + self.dirs
+    }
+}
+
 /// Convert a mount path to a safe ID string.
 ///
 /// **Don't use this for SMB mounts.** Use [`smb_volume_id`] instead: it keys by
@@ -361,12 +385,15 @@ pub trait Volume: Send + Sync {
     /// Lists directory contents at the given path (relative to volume root).
     ///
     /// Returns entries sorted with directories first, then files, both alphabetically.
-    /// Pass `on_progress` to receive incremental `loaded_count` updates during the stat loop
-    /// (used by the streaming listing UI). Pass `None` when progress isn't needed.
+    /// Pass `on_progress` to receive incremental `ListingProgress` updates during the stat
+    /// loop (used by the streaming listing UI and by the scan-preview/scan-for-copy paths
+    /// to surface running bytes + dirs in the dialog). Pass `None` when progress isn't
+    /// needed. Backends should call `on_progress` periodically, not per-entry, to avoid
+    /// flooding the IPC layer.
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>>;
 
     /// Cancel-aware version of [`list_directory`](Self::list_directory).
@@ -385,7 +412,7 @@ pub trait Volume: Send + Sync {
     fn list_directory_with_cancel<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
         cancel: Option<&'a std::sync::Arc<AtomicBool>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         let _ = cancel;
@@ -709,18 +736,15 @@ pub trait Volume: Send + Sync {
     /// (currently MTP) override this to thread the callback through to their
     /// underlying streaming listing primitive (`list_directory_with_progress`).
     ///
-    /// The callback receives only `files_found`, not byte counts: MTP's
-    /// streaming listing callback doesn't surface per-entry size yet (it only
-    /// knows entry count mid-stream), and adding it would mean a deeper change
-    /// to the MTP listing API. The FE shows `0 bytes` until the scan completes
-    /// and the final size lands on `scan-preview-complete`. That's a smaller
-    /// UX issue than the all-zero freeze and can be improved later if/when
-    /// list_directory_with_progress learns to surface bytes.
+    /// The callback receives a `ListingProgress` carrying running files / dirs
+    /// / bytes. Backends accumulate from the entries they've enumerated and
+    /// report the cumulative totals for the current scan call. The FE renders
+    /// all three counters climbing live during the scan dialog.
     #[allow(unused_variables, reason = "Default impl intentionally ignores `on_progress`")]
     fn scan_for_copy_batch_with_progress<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mut aggregate = CopyScanResult {
@@ -739,7 +763,11 @@ pub trait Volume: Send + Sync {
                 aggregate.total_bytes += scan.total_bytes;
                 per_path.push((path.clone(), scan));
                 if let Some(cb) = on_progress {
-                    cb(aggregate.file_count);
+                    cb(ListingProgress {
+                        files: aggregate.file_count,
+                        dirs: aggregate.dir_count,
+                        bytes: aggregate.total_bytes,
+                    });
                 }
             }
             Ok(BatchScanResult { aggregate, per_path })

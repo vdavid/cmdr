@@ -181,7 +181,7 @@ impl Volume for InMemoryVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        _on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             // Check for injected error (E2E testing). Cleared after one use to enable retry testing.

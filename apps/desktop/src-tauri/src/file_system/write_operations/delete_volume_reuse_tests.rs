@@ -82,7 +82,7 @@ impl Volume for CountingVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         self.list_dir_calls.fetch_add(1, Ordering::Relaxed);
         self.inner.list_directory(path, on_progress)
@@ -126,7 +126,7 @@ impl Volume for CountingVolume {
     fn scan_for_copy_batch_with_progress<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         let _ = on_progress;
         self.inner.scan_for_copy_batch(paths)

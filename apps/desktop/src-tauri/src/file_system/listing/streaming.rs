@@ -429,8 +429,11 @@ pub(crate) async fn read_directory_with_progress(
             listing_id_for_progress,
             path_for_task.display(),
         );
-        let on_progress = |loaded_count: usize| {
-            events_for_progress.emit_progress(&listing_id_for_progress, loaded_count);
+        let on_progress = |p: crate::file_system::volume::ListingProgress| {
+            // Streaming listing UI shows "Loaded N entries…", so it wants total
+            // entry count, not just files. `ListingProgress::entries()` sums
+            // files + dirs for that.
+            events_for_progress.emit_progress(&listing_id_for_progress, p.entries());
         };
         volume.list_directory(&path_for_task, Some(&on_progress)).await
     });

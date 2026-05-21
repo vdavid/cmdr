@@ -705,7 +705,7 @@ mod oracle_tests {
         fn list_directory<'a>(
             &'a self,
             path: &'a Path,
-            on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+            on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
         ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
             self.inner.list_directory(path, on_progress)
         }
