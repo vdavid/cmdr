@@ -1,4 +1,5 @@
 use super::bundle_builder::{PreparedFile, build_bundle_streaming, build_zip, load_and_filter_log_file, zip_dt};
+use super::bundle_capper::cap_bundle_to_bytes;
 use super::*;
 use crate::redact;
 use chrono::{DateTime, Utc};
@@ -261,11 +262,22 @@ fn synthetic_lines(file_idx: u32, count: u32) -> Vec<String> {
 /// 542-byte zip with only the manifest. Post-fix: capping trims old content from the
 /// head of the newest file, ships the tail under (or just over) the cap, and proves
 /// the LAST input line survives.
+///
+/// Uses the bytes-precision [`cap_bundle_to_bytes`] entry point (the prod API
+/// [`cap_bundle_to_mb`] is a wrapper for the same logic at MB granularity). The
+/// behavior under test is scale-invariant — pre-fix, the bug reproduced at any input
+/// size as long as the cap engaged. A 100 KB cap with a ~250 KB input exercises the
+/// same trim-from-head-keep-tail logic in ~50 ms instead of the ~2 s warm / >8 s
+/// contended that 200 000 synthetic lines + 1 MB cap used to cost. See the test
+/// commit for the previous shape if a future regression seems to need the bigger
+/// fixture.
 #[test]
 fn cap_bundle_keeps_newest_lines_and_manifest() {
     let now = SystemTime::now();
     let mut files: BTreeMap<String, PreparedFile> = BTreeMap::new();
-    let lines = synthetic_lines(0, 200_000);
+    // 4 000 synthetic high-entropy lines (~60 bytes each = ~240 KB raw,
+    // deflates to ~130 KB at level 1 — comfortably over the 100 KB cap below).
+    let lines = synthetic_lines(0, 4_000);
     let last_line = lines.last().cloned().expect("synthetic lines must exist");
     let lines_owned: Vec<String> = lines;
     files.insert(
@@ -278,23 +290,23 @@ fn cap_bundle_keeps_newest_lines_and_manifest() {
 
     let bytes = build_zip(&sample_manifest(), &files, now).unwrap();
     assert!(
-        bytes.len() > 5_000_000,
-        "test setup needs a bigger input zip (got {} bytes)",
+        bytes.len() > 110_000,
+        "test setup needs a bigger input zip than the cap (got {} bytes)",
         bytes.len()
     );
 
-    let cap_mb = 1;
-    let capped = cap_bundle_to_mb(bytes.clone(), cap_mb);
+    let cap_bytes_value = 100 * 1024;
+    let capped = cap_bundle_to_bytes(bytes.clone(), cap_bytes_value);
 
     // Tolerance: cap may exceed by ~10% to honor the minimum-tail floor on the newest
-    // file. 1.1 MB is the documented contract.
-    let upper = (cap_mb * 1024 * 1024) * 11 / 10;
+    // file. 1.1 × cap is the documented contract.
+    let upper = cap_bytes_value * 11 / 10;
     assert!(
         capped.len() <= upper,
-        "capped bundle is {} bytes, expected <= {} bytes (cap {} MB + 10% headroom)",
+        "capped bundle is {} bytes, expected <= {} bytes (cap {} bytes + 10% headroom)",
         capped.len(),
         upper,
-        cap_mb,
+        cap_bytes_value,
     );
     assert!(
         capped.len() < bytes.len(),
@@ -330,6 +342,11 @@ fn cap_bundle_keeps_newest_lines_and_manifest() {
 
 /// Newer files win the budget race over older files. Even with a tight cap, the
 /// newest file gets its tail in; older files may be dropped entirely.
+///
+/// Like the headline test, scale-invariant: pre-fix the newest-wins logic was
+/// broken at any size. Uses a 100 KB cap and ~3 000 lines per file to stay under
+/// the 8 s nextest cap with headroom (was 50 000 × 2 files = 5 s warm / >8 s
+/// contended).
 #[test]
 fn cap_bundle_prefers_newer_files() {
     let now = SystemTime::now();
@@ -338,19 +355,19 @@ fn cap_bundle_prefers_newer_files() {
     files.insert(
         "cmdr.log".to_string(),
         PreparedFile {
-            lines: synthetic_lines(0, 50_000),
+            lines: synthetic_lines(0, 3_000),
             mtime: now,
         },
     );
     files.insert(
         "cmdr.log.1".to_string(),
         PreparedFile {
-            lines: synthetic_lines(1, 50_000),
+            lines: synthetic_lines(1, 3_000),
             mtime: older,
         },
     );
     let bytes = build_zip(&sample_manifest(), &files, now).unwrap();
-    let capped = cap_bundle_to_mb(bytes, 1);
+    let capped = cap_bundle_to_bytes(bytes, 100 * 1024);
     let entries = read_zip_entries(&capped);
 
     assert!(

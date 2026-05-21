@@ -34,7 +34,18 @@ const MIN_TAIL_LINES_OF_NEWEST_FILE: usize = 50;
 ///
 /// If the input zip is already under the cap, returns it untouched.
 pub fn cap_bundle_to_mb(zip_bytes: Vec<u8>, cap_mb: usize) -> Vec<u8> {
-    let cap_bytes = cap_mb * 1024 * 1024;
+    cap_bundle_to_bytes(zip_bytes, cap_mb * 1024 * 1024)
+}
+
+/// Same as [`cap_bundle_to_mb`], but the cap is expressed in raw bytes.
+///
+/// `cap_bundle_to_mb` is the prod API and quantizes to whole MB, which is too coarse for
+/// unit tests: at MB granularity the smallest interesting cap is 1 MB, which forces every
+/// test that engages the cap path to build a multi-megabyte fixture and pay the
+/// deflate + decompress + re-deflate cost (~2 s warm, > 8 s under check.sh contention).
+/// Exposing the same logic at byte precision lets the tests use ~100 KB fixtures and the
+/// cap path runs in tens of milliseconds.
+pub(crate) fn cap_bundle_to_bytes(zip_bytes: Vec<u8>, cap_bytes: usize) -> Vec<u8> {
     if zip_bytes.len() <= cap_bytes {
         return zip_bytes;
     }

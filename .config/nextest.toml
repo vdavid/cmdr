@@ -47,18 +47,6 @@ test-group = 'virtual-mtp'
 filter = 'test(smb_integration_)'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
-[[profile.default.overrides]]
-# `error_reporter::tests::cap_bundle_*` builds a 5+ MB compressed zip from
-# 200 000 synthetic log lines, then trims it. The point of the input size is to
-# mirror a realistic full-rotation log dir; running the test on a smaller input
-# would stop covering the headline regression it pins (1-MB cap producing a
-# 542-byte zip with only the manifest — see the test doc-comment). Generation +
-# deflate + cap takes ~1–2 s on a quiet warm machine; under contention (50 other
-# checks running in parallel under `./scripts/check.sh`), it crosses 8 s.
-# 30 s headroom keeps the test honest without removing the "hung forever" net.
-filter = 'test(=error_reporter::tests::cap_bundle_keeps_newest_lines_and_manifest) + test(=error_reporter::tests::cap_bundle_prefers_newer_files)'
-slow-timeout = { period = "30s", terminate-after = 1 }
-
 [profile.default]
 # Show test output for failing tests only
 failure-output = "immediate"
