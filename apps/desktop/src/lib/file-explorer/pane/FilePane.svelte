@@ -2365,7 +2365,7 @@
     onkeydown={() => {}}
     role="region"
     aria-label="{paneId === 'left' ? 'Left' : 'Right'} file pane"
-    style={paneTintBg ? `background-color: ${paneTintBg}` : undefined}
+    style={paneTintBg ? `--color-pane-bg: ${paneTintBg}` : undefined}
     data-pane-tint={paneTintName ?? undefined}
 >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -2582,6 +2582,15 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        /* Pane bg propagation hook. The inline style on `.file-pane`
+           overrides this with the tinted color when the user picks a
+           tint for the volume's kind; otherwise it falls back to the
+           untinted base. `.content` reads it so the bg actually paints
+           where downstream views can see it (the file-pane itself sits
+           behind .content, so an inline `background-color` here was
+           invisible). Striped rows use a translucent overlay, so the
+           tint shows through them too. */
+        --color-pane-bg: var(--color-bg-primary);
     }
 
     .header {
@@ -2642,8 +2651,10 @@
            color leaks through. Downstream views (FullList / BriefList /
            ErrorPane / …) keep their interior elements transparent so this
            stays the single base layer. Highlights (selection, cursor) sit
-           on top intentionally. */
-        background-color: var(--color-bg-primary);
+           on top intentionally. `--color-pane-bg` tracks the user's per-volume
+           tint (set inline on `.file-pane`); without a tint it resolves
+           to `--color-bg-primary`. */
+        background-color: var(--color-pane-bg);
     }
 
     .error-message {

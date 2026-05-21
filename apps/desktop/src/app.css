@@ -145,11 +145,14 @@
   --color-toast-success-bg: #f0fdf4;
 
   /* === Striped rows (zebra striping for file lists) ===
-     A tiny 4 % mix of `--color-text-primary` into the pane bg. Defined
-     against an opaque `#ffffff` base (rather than `--color-bg-primary`)
-     so the value stays stable if `--color-bg-primary` is ever swapped
-     for a translucent token in the future. */
-  --color-bg-stripe: color-mix(in oklch, #ffffff, var(--color-text-primary) 4%);
+     A faint black overlay (~4% alpha) that composites over whatever
+     pane bg sits beneath. Translucent on purpose: when a pane is
+     tinted via `appearance.tint{Local,Smb,Mtp}`, the tint shows
+     through the stripe so the zebra pattern keeps the pane's hue
+     instead of falling back to a neutral gray. The `row_state_matrix`
+     a11y synthesizer composites this over the resolved pane bg per
+     tint, so the WCAG check covers every (tint × mode) combination. */
+  --color-bg-stripe: rgba(0, 0, 0, 0.04);
 
   /* === Volume tint palette (12 hues + none) ===
      The 100% saturated swatches shown in the Settings color picker for
@@ -452,7 +455,6 @@
     --color-warning-bg-solid: #f3e5dc;
     --color-disk-ok: #74a376;
     --color-disk-warning: #e47b42;
-    --color-bg-stripe: #f6f6f6;
     --color-git-portal-subtle: rgba(13, 124, 138, 0.15);
     --color-overlay: rgba(0, 0, 0, 0.5);
     --color-overlay-light: rgba(0, 0, 0, 0.4);
@@ -484,7 +486,6 @@
   --color-warning-bg-solid: #f3e5dc;
   --color-disk-ok: #74a376;
   --color-disk-warning: #e47b42;
-  --color-bg-stripe: #f6f6f6;
   --color-git-portal-subtle: rgba(13, 124, 138, 0.15);
   --color-overlay: rgba(0, 0, 0, 0.5);
   --color-overlay-light: rgba(0, 0, 0, 0.4);
@@ -614,10 +615,9 @@
     --color-git-portal-subtle: color-mix(in oklch, var(--color-git-portal), transparent 85%);
 
     /* === Striped rows (dark) ===
-       Same logic as light mode: opaque base so striped rows are a single
-       layer that replaces the pane's translucent backdrop, not a second
-       translucent layer that doubles its alpha. */
-    --color-bg-stripe: color-mix(in oklch, #1e1e1e, var(--color-text-primary) 4%);
+       Faint white overlay (~4% alpha). Same translucent-on-tint
+       rationale as light mode: lets the pane tint show through. */
+    --color-bg-stripe: rgba(255, 255, 255, 0.04);
 
     /* === Search Highlight === */
     --color-highlight: rgba(255, 213, 100, 0.9);
