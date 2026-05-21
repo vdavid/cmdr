@@ -5,10 +5,10 @@
      * Follows the command palette pattern (custom overlay, not ModalDialog).
      * Searches the in-memory index by filename (wildcards), size, and date.
      *
-     * Layout (post-M2):
+     * Layout (post-M3):
      *   1. SearchBar: one input drives all modes (AI, filename, regex).
      *   2. SearchModeChips: mode discriminator (chips below the bar).
-     *   3. SearchInputArea: scope row + filter row (M3 will turn these into chips).
+     *   3. SearchFilterChips: Size / Modified / Search in chips with popovers, plus Add filter.
      *   4. SearchResults: column headers + results + status bar.
      *
      * This is the orchestrator: overlay, mount/unmount, keyboard dispatch, search execution,
@@ -82,7 +82,7 @@
     } from './search-state.svelte'
     import SearchBar from './SearchBar.svelte'
     import SearchModeChips from './SearchModeChips.svelte'
-    import SearchInputArea from './SearchInputArea.svelte'
+    import SearchFilterChips from './SearchFilterChips.svelte'
     import SearchResults from './SearchResults.svelte'
 
     interface Props {
@@ -191,13 +191,22 @@
         queryInputElement?.focus()
     }
 
-    /** Capture-phase Escape handler. Fires before native elements (select, date picker) can consume the event. */
+    /**
+     * Capture-phase Escape handler. Fires before native elements (select, date picker) consume the
+     * event, AND before any descendant handler (like the filter-chip popover's). When a filter-chip
+     * popover is open, Escape belongs to the popover, not the whole dialog: we defer here and let
+     * the popover's own keydown handler close itself on the bubble. Without this guard, the
+     * dialog's capture-phase listener would always run first and close the entire dialog.
+     */
     function handleEscapeCapture(e: KeyboardEvent): void {
-        if (e.key === 'Escape') {
-            e.preventDefault()
-            e.stopPropagation()
-            onClose()
+        if (e.key !== 'Escape') return
+        if (dialogElement?.querySelector('.filter-chip-popover')) {
+            // Let the popover handle Escape on the bubble; it'll close itself and stopPropagation.
+            return
         }
+        e.preventDefault()
+        e.stopPropagation()
+        onClose()
     }
 
     onMount(async () => {
@@ -686,7 +695,7 @@
             <div class="ai-error">{aiError}</div>
         {/if}
 
-        <SearchInputArea
+        <SearchFilterChips
             {caseSensitive}
             {scope}
             {excludeSystemDirs}

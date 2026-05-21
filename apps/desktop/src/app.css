@@ -52,6 +52,14 @@
   --color-sidebar-border: rgba(255, 255, 255, 0.95);
   --shadow-sidebar: 6px 0 18px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.03);
 
+  /* === Frosted-glass material (tooltips, filter-chip popovers) ===
+     Shared values so every glass surface in the app reads as one material.
+     `--color-bg-glass` is the translucent fill (pre-blur); `--color-border-glass`
+     is the hairline that defines the surface against any wallpaper underneath.
+     The blur itself is applied per-component via `backdrop-filter: saturate(180%) blur(20px)`. */
+  --color-bg-glass: rgba(245, 245, 245, 0.72);
+  --color-border-glass: rgba(0, 0, 0, 0.12);
+
   /* === Borders === */
   --color-border-strong: #bbb;
   --color-border: #ddd;
@@ -530,6 +538,10 @@
        separates the card from the surrounding frame. */
     --color-sidebar-border: var(--color-border);
     --shadow-sidebar: none;
+
+    /* Frosted-glass material (dark). Pair with the light-mode defaults above. */
+    --color-bg-glass: rgba(42, 42, 42, 0.72);
+    --color-border-glass: rgba(255, 255, 255, 0.1);
 
     /* === Borders === */
     --color-border-strong: #555555;
@@ -1112,11 +1124,12 @@ body {
   white-space: pre-line;
   overflow-wrap: anywhere;
 
-  /* Apple-style frosted glass */
-  background: rgba(245, 245, 245, 0.72);
+  /* Apple-style frosted glass. Shared tokens with filter-chip popovers so both
+     surfaces stay visually identical. See `--color-bg-glass` definition above. */
+  background: var(--color-bg-glass);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
-  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  border: 0.5px solid var(--color-border-glass);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
 
@@ -1154,13 +1167,6 @@ body {
   padding: 1px 4px;
   border-radius: var(--radius-sm);
   margin-left: var(--spacing-sm);
-}
-
-@media (prefers-color-scheme: dark) {
-  .cmdr-tooltip {
-    background: rgba(42, 42, 42, 0.72);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

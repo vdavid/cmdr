@@ -11,21 +11,26 @@ chip row and path-pill column landing in later milestones.
 
 ## Files
 
-| File                             | Purpose                                                                                      |
-| -------------------------------- | -------------------------------------------------------------------------------------------- |
-| `SearchDialog.svelte`            | Orchestrator: overlay, mount/unmount, keyboard dispatch, search execution, state wiring      |
-| `SearchBar.svelte`               | Unified query input: one `<input>` for AI / filename / regex, placeholder updates per mode   |
-| `SearchModeChips.svelte`         | Mode chip row below the bar: AI / Filename / Content (disabled) / Regex, arrow-key navigable |
-| `SearchInputArea.svelte`         | Scope row + filter row. M3 will turn these into chips with popovers                          |
-| `SearchResults.svelte`           | Column headers + results list + all states (loading, empty, populated) + status bar          |
-| `search-state.svelte.ts`         | Module-level `$state` for query fields, results, index readiness, AI state                   |
-| `search-state.test.ts`           | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)                |
-| `SearchBar.svelte.test.ts`       | Per-mode placeholder, value mirror, `onInput` callback                                       |
-| `SearchModeChips.svelte.test.ts` | Chip set, active marker, click + keyboard activation, focus motion (skipping Content)        |
-| `SearchDialog.svelte.test.ts`    | `⌘N` clears, close+reopen preserves, `⌘1`/`⌘2`/`⌘3` mode switch, `⌘Enter` triggers AI        |
-| `SearchDialog.a11y.test.ts`      | Tier-3 axe-core audit across loading / index-ready / AI-on macro-states                      |
-| `SearchInputArea.a11y.test.ts`   | Tier-3 axe-core audit across scope + filter row variants                                     |
-| `SearchResults.a11y.test.ts`     | Tier-3 axe-core audit across result states                                                   |
+| File                               | Purpose                                                                                      |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- |
+| `SearchDialog.svelte`              | Orchestrator: overlay, mount/unmount, keyboard dispatch, search execution, state wiring      |
+| `SearchBar.svelte`                 | Unified query input: one `<input>` for AI / filename / regex, placeholder updates per mode   |
+| `SearchModeChips.svelte`           | Mode chip row below the bar: AI / Filename / Content (disabled) / Regex, arrow-key navigable |
+| `SearchFilterChips.svelte`         | Filter chip strip (Size, Modified, Search in) plus Add filter dropdown. Each opens a popover |
+| `FilterChip.svelte`                | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded            |
+| `FilterChipPopover.svelte`         | Generic popover: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog  |
+| `filter-chip-state.ts`             | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip` (testable in isolation)  |
+| `SearchResults.svelte`             | Column headers + results list + all states (loading, empty, populated) + status bar          |
+| `search-state.svelte.ts`           | Module-level `$state` for query fields, results, index readiness, AI state                   |
+| `search-state.test.ts`             | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)                |
+| `filter-chip-state.test.ts`        | Default → configured → cleared rules for each filter chip's display summary                  |
+| `SearchBar.svelte.test.ts`         | Per-mode placeholder, value mirror, `onInput` callback                                       |
+| `SearchModeChips.svelte.test.ts`   | Chip set, active marker, click + keyboard activation, focus motion (skipping Content)        |
+| `SearchFilterChips.svelte.test.ts` | Chip rendering, `×` and Backspace clear, popover open/close, Add filter list, scope behavior |
+| `SearchDialog.svelte.test.ts`      | `⌘N` clears, close+reopen preserves, `⌘1`/`⌘2`/`⌘3` mode switch, `⌘Enter` triggers AI        |
+| `SearchDialog.a11y.test.ts`        | Tier-3 axe-core audit across loading / index-ready / AI-on macro-states                      |
+| `SearchFilterChips.a11y.test.ts`   | Tier-3 axe-core audit across default, configured, disabled, and open-popover states          |
+| `SearchResults.a11y.test.ts`       | Tier-3 axe-core audit across result states                                                   |
 
 ## State shape (post-M2)
 
@@ -66,6 +71,18 @@ There is **no `aiPrompt` state and no `namePattern` state**. M2 deleted both. An
 The Content chip is visible-disabled with a "Coming soon" tooltip. It has **no** shortcut. Wiring a shortcut to a
 disabled control is hostile UX (either silent no-op or a popup on every press); reserving `⌘4` is the better contract.
 When Content ships, it claims `⌘3` and Regex moves to `⌘4`.
+
+**`⌥F` and `⌥D` work globally**, including when the scope popover is closed. They live on the dialog's
+`handleModifierShortcuts` and don't depend on focus being inside the scope textarea. The scope popover's footer mirrors
+the same two actions as "Use current folder" and "All folders" buttons so mouse users have first-class access. This is
+the explicit contract from search-redesign-plan §3.2.
+
+**Esc inside an open filter-chip popover closes only the popover.** The dialog's Escape handler runs in capture phase on
+`window`, which would otherwise fire before the popover's bubble handler. The dialog checks
+`dialogElement.querySelector('.filter-chip-popover')` and, when a popover is present, returns without closing the
+dialog. The popover's own keydown handler (on the popover element) then runs on the bubble, closes itself, and calls
+`stopPropagation` so nothing else fires. Without this guard, Escape inside a popover would close the whole dialog and
+lose the user's place. Pinned in `SearchFilterChips.svelte.test.ts`.
 
 ## Data flow
 
