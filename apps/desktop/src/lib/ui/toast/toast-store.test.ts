@@ -127,9 +127,9 @@ describe('closeTooltip and onDismiss', () => {
 })
 
 describe('default values', () => {
-  it('defaults level to info', () => {
+  it('defaults level to default', () => {
     addToast(dummyContent)
-    expect(getToasts()[0].level).toBe('info')
+    expect(getToasts()[0].level).toBe('default')
   })
 
   it('defaults dismissal to transient', () => {

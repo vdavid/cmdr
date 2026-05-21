@@ -1,6 +1,6 @@
 import type { Component } from 'svelte'
 
-export type ToastLevel = 'info' | 'success' | 'warn' | 'error'
+export type ToastLevel = 'default' | 'info' | 'success' | 'warn' | 'error'
 export type ToastDismissal = 'transient' | 'persistent'
 
 /** Content can be a plain string (rendered as text) or a Svelte component (mounted as-is). */
@@ -75,7 +75,7 @@ function makeRoomForNewToast(): boolean {
 }
 
 export function addToast(content: ToastContent, options?: ToastOptions): string {
-  const level = options?.level ?? 'info'
+  const level = options?.level ?? 'default'
   const dismissal = options?.dismissal ?? 'transient'
   const timeoutMs = dismissal === 'persistent' ? 0 : (options?.timeoutMs ?? 4000)
   const id = options?.id ?? crypto.randomUUID()

@@ -51,10 +51,11 @@
 
 <div
     class="toast"
+    class:info={level === 'info'}
     class:success={level === 'success'}
     class:warn={level === 'warn'}
     class:error={level === 'error'}
-    role={level === 'info' || level === 'success' ? 'status' : 'alert'}
+    role={level === 'default' || level === 'info' || level === 'success' ? 'status' : 'alert'}
 >
     <div class="toast-content">
         {#if typeof content === 'string'}
@@ -104,6 +105,11 @@
         display: flex;
         align-items: start;
         gap: var(--spacing-sm);
+    }
+
+    .toast.info {
+        border-left-color: var(--color-toast-info-stripe);
+        background: var(--color-toast-info-bg);
     }
 
     .toast.success {

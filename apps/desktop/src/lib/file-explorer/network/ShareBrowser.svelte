@@ -443,7 +443,7 @@
         try {
             await forgetCredentials(host.name)
             authenticatedCredentials = null
-            addToast(`Forgot saved password for ${host.name}`, { level: 'info' })
+            addToast(`Forgot saved password for ${host.name}`, { level: 'success' })
         } catch {
             addToast(`Couldn't delete saved password`, { level: 'error' })
         }

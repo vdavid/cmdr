@@ -24,8 +24,8 @@ describe('ToastContainer a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it('with a single info toast has no a11y violations', async () => {
-    addToast('Your file has been copied', { level: 'info' })
+  it('with a single default toast has no a11y violations', async () => {
+    addToast('Your file has been copied')
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(ToastContainer, { target, props: {} })
@@ -34,6 +34,7 @@ describe('ToastContainer a11y', () => {
   })
 
   it('with mixed toast levels has no a11y violations', async () => {
+    addToast('Restart Cmdr to apply', { level: 'info' })
     addToast('Saved', { level: 'success' })
     addToast('Watch out: slow mount', { level: 'warn' })
     addToast('Connection lost', { level: 'error' })

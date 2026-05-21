@@ -110,7 +110,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     pendingCursorName = newName
 
     if (wasHiddenRename) {
-      addToast("Your file disappeared from view because hidden files aren't shown.")
+      addToast("Your file disappeared from view because hidden files aren't shown.", { level: 'info' })
     }
   }
 

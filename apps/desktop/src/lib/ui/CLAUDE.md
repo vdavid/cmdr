@@ -175,8 +175,33 @@ Centralized toast notifications with stacking, levels, and two dismissal modes.
 - **Container** (`ToastContainer.svelte`): Mounted once in `(main)/+layout.svelte`. Fixed top-right, stacks vertically.
 - **Item** (`ToastItem.svelte`): Frame, close button, auto-dismiss timer for transient toasts.
 
-Levels: `info` (default), `success`, `warn`, `error`. Dismissal: `transient` (4s timeout + nav-dismiss, default) or
-`persistent`.
+Five levels. Pick by what kind of feedback the toast carries, not by how the message reads:
+
+- **`default`** (no color, the fallback): low-importance feedback that doesn't warrant a color flash. Tab/clipboard
+  limits, "nothing to do" messages (`No recently closed tabs`), copy/cut confirmations (`Copied N items`), persistent
+  in-progress indicators (`Connecting directly…`), repeated educational hints (Quick Look Space-press hint), soft
+  refusals (`Can't remove discovered hosts`).
+- **`info`** (blue): true notices the user should attend to. Restart hints (`Restart Cmdr to apply…`), instructional
+  cues triggered by a wrong move (`Use F5 to copy files from MTP devices`), soft explanations of unexpected UI state
+  (`Your file disappeared from view because hidden files aren't shown.`), background activity the user opted into
+  (`Error report sent`).
+- **`success`** (green): one-shot confirmations of user-initiated actions that aren't routine. Host removed, share
+  disconnected, password forgotten, direct SMB upgrade succeeded. NOT for frequent actions like clipboard copy.
+- **`warn`** (amber): something the user tried isn't quite working, but no operation failed and no data is at risk.
+  Examples: `Share 'X' not found on Y`, rename-conflict notices that don't abort the rename.
+- **`error`** (red): an attempted operation actually failed. Examples: `Couldn't remove ${host}`,
+  `Direct connection failed: …`, `Couldn't delete saved password`. Inline "Send error report…" button auto-attaches for
+  string-content errors.
+
+Tiebreaker: when unsure between two adjacent levels, pick the lower-intensity one. Frequent feedback should be quiet;
+the user can read the text. Color is for the few cases where attention is warranted.
+
+Common mistakes to avoid: don't pick `success` for every action confirmation (frequent ones like "copied N items" stay
+`default`); don't pick `info` for in-progress spinners or repeating hints (those are `default`); don't pick `error` for
+soft refusals like "tab limit reached" (that's `default`); don't pick `warn` when an op actually failed (that's
+`error`).
+
+Dismissal: `transient` (4s timeout + nav-dismiss, default) or `persistent`.
 
 Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 

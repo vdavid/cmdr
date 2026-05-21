@@ -1582,7 +1582,7 @@
         if (!state) return
 
         if (state.volumeId.startsWith('mtp-')) {
-            addToast('Use F5 to copy files from MTP devices')
+            addToast('Use F5 to copy files from MTP devices', { level: 'info' })
             return
         }
 
@@ -1606,7 +1606,7 @@
         if (!state) return
 
         if (state.volumeId.startsWith('mtp-')) {
-            addToast('Use F6 to move files from MTP devices')
+            addToast('Use F6 to move files from MTP devices', { level: 'info' })
             return
         }
 
@@ -1631,7 +1631,7 @@
             // no point reading the system clipboard just to reject it.
             const volumeId = getPaneVolumeId(focusedPane)
             if (volumeId.startsWith('mtp-')) {
-                addToast('Use F5 to copy files to MTP devices')
+                addToast('Use F5 to copy files to MTP devices', { level: 'info' })
                 return
             }
 

@@ -461,7 +461,7 @@
     /** Remove a manual host after confirmation. For discovered hosts, show a toast. */
     async function handleRemoveHost(host: NetworkHost) {
         if (host.source !== 'manual') {
-            addToast(`Can't remove discovered hosts`, { level: 'info' })
+            addToast(`Can't remove discovered hosts`)
             return
         }
 
@@ -470,7 +470,7 @@
 
         try {
             await removeManualServer(host.id)
-            addToast(`Removed ${host.name}`, { level: 'info' })
+            addToast(`Removed ${host.name}`, { level: 'success' })
         } catch {
             addToast(`Couldn't remove ${host.name}`, { level: 'error' })
         }
@@ -503,7 +503,7 @@
             case 'forget-password': {
                 try {
                     await forgetCredentials(payload.hostName)
-                    addToast(`Forgot saved password for ${payload.hostName}`, { level: 'info' })
+                    addToast(`Forgot saved password for ${payload.hostName}`, { level: 'success' })
                 } catch {
                     addToast(`Couldn't delete saved password`, { level: 'error' })
                 }
@@ -515,9 +515,9 @@
                 try {
                     const unmounted = await disconnectNetworkHost(host.id, host.name, host.ipAddress)
                     if (unmounted.length > 0) {
-                        addToast(`Disconnected from ${payload.hostName}`, { level: 'info' })
+                        addToast(`Disconnected from ${payload.hostName}`, { level: 'success' })
                     } else {
-                        addToast(`No mounted shares from ${payload.hostName}`, { level: 'info' })
+                        addToast(`No mounted shares from ${payload.hostName}`)
                     }
                 } catch (e) {
                     addToast(`Couldn't disconnect: ${String(e)}`, { level: 'error' })

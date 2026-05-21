@@ -135,7 +135,9 @@
   --color-disk-danger: var(--color-error);
   --color-disk-track: var(--color-border);
 
-  /* === Toast tints (tuned per scheme so warn reads amber, error reads red) === */
+  /* === Toast tints (tuned per scheme so info reads blue, warn reads amber, error reads red) === */
+  --color-toast-info-stripe: #2563eb;
+  --color-toast-info-bg: #eff6ff;
   --color-toast-warn-stripe: #d4a006;
   --color-toast-warn-bg: #fef9ee;
   --color-toast-error-bg: #fef2f2;
@@ -570,6 +572,8 @@
     --color-disk-track: var(--color-border);
 
     /* === Toast tints === */
+    --color-toast-info-stripe: #60a5fa;
+    --color-toast-info-bg: color-mix(in srgb, #60a5fa 8%, var(--color-bg-secondary));
     --color-toast-warn-stripe: var(--color-warning);
     --color-toast-warn-bg: color-mix(in srgb, var(--color-warning) 8%, var(--color-bg-secondary));
     --color-toast-error-bg: color-mix(in srgb, var(--color-error) 8%, var(--color-bg-secondary));
@@ -665,6 +669,7 @@
       --color-warning-bg-solid: #483d29;
       --color-disk-ok: #588b5b;
       --color-disk-warning: #bf892d;
+      --color-toast-info-bg: #1f2937;
       --color-toast-warn-bg: #3a3429;
       --color-toast-error-bg: #3a2c2b;
       --color-toast-success-bg: #29362e;
@@ -693,6 +698,7 @@
     --color-warning-bg-solid: #483d29;
     --color-disk-ok: #588b5b;
     --color-disk-warning: #bf892d;
+    --color-toast-info-bg: #1f2937;
     --color-toast-warn-bg: #3a3429;
     --color-toast-error-bg: #3a2c2b;
     --color-toast-success-bg: #29362e;

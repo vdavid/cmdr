@@ -14,7 +14,14 @@
                 class="index-button"
                 onclick={() => {
                     toastCounter++
-                    addToast(`Info toast #${String(toastCounter)}`)
+                    addToast(`Default toast #${String(toastCounter)}`)
+                }}>Default</button
+            >
+            <button
+                class="index-button"
+                onclick={() => {
+                    toastCounter++
+                    addToast(`Info toast #${String(toastCounter)}`, { level: 'info' })
                 }}>Info</button
             >
             <button
@@ -45,7 +52,17 @@
                 class="index-button"
                 onclick={() => {
                     toastCounter++
-                    addToast(`Persistent info #${String(toastCounter)}`, { dismissal: 'persistent' })
+                    addToast(`Persistent default #${String(toastCounter)}`, { dismissal: 'persistent' })
+                }}>Default</button
+            >
+            <button
+                class="index-button"
+                onclick={() => {
+                    toastCounter++
+                    addToast(`Persistent info #${String(toastCounter)}`, {
+                        dismissal: 'persistent',
+                        level: 'info',
+                    })
                 }}>Info</button
             >
             <button
