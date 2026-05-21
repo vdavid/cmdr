@@ -3,7 +3,7 @@ import {
   parseSizeToBytes,
   parseDateToTimestamp,
   buildSearchQuery,
-  resetSearchState,
+  clearSearchState,
   setNamePattern,
   setSizeFilter,
   setSizeValue,
@@ -72,7 +72,7 @@ describe('parseDateToTimestamp', () => {
 
 describe('buildSearchQuery', () => {
   it('builds default query with no filters', () => {
-    resetSearchState()
+    clearSearchState()
     const query = buildSearchQuery()
     expect(query.patternType).toBe('glob')
     expect(query.limit).toBe(30)
@@ -84,14 +84,14 @@ describe('buildSearchQuery', () => {
   })
 
   it('includes name pattern when set', () => {
-    resetSearchState()
+    clearSearchState()
     setNamePattern('*.pdf')
     const query = buildSearchQuery()
     expect(query.namePattern).toBe('*.pdf')
   })
 
   it('includes size gte filter', () => {
-    resetSearchState()
+    clearSearchState()
     setSizeFilter('gte')
     setSizeValue('10')
     setSizeUnit('MB')
@@ -101,7 +101,7 @@ describe('buildSearchQuery', () => {
   })
 
   it('includes size lte filter', () => {
-    resetSearchState()
+    clearSearchState()
     setSizeFilter('lte')
     setSizeValue('5')
     setSizeUnit('KB')
@@ -111,7 +111,7 @@ describe('buildSearchQuery', () => {
   })
 
   it('includes size between filter', () => {
-    resetSearchState()
+    clearSearchState()
     setSizeFilter('between')
     setSizeValue('1')
     setSizeUnit('MB')
@@ -123,7 +123,7 @@ describe('buildSearchQuery', () => {
   })
 
   it('treats size "0" as no filter', () => {
-    resetSearchState()
+    clearSearchState()
     setSizeFilter('between')
     setSizeValue('0')
     setSizeUnit('KB')
@@ -135,7 +135,7 @@ describe('buildSearchQuery', () => {
   })
 
   it('includes date after filter', () => {
-    resetSearchState()
+    clearSearchState()
     setDateFilter('after')
     setDateValue('2025-01-01')
     const query = buildSearchQuery()
@@ -144,7 +144,7 @@ describe('buildSearchQuery', () => {
   })
 
   it('includes date between filter', () => {
-    resetSearchState()
+    clearSearchState()
     setDateFilter('between')
     setDateValue('2025-01-01')
     setDateValueMax('2025-12-31')
@@ -154,12 +154,12 @@ describe('buildSearchQuery', () => {
   })
 })
 
-describe('resetSearchState', () => {
+describe('clearSearchState', () => {
   it('clears all state', () => {
     setNamePattern('test')
     setSizeFilter('gte')
     setDateFilter('after')
-    resetSearchState()
+    clearSearchState()
     const query = buildSearchQuery()
     expect(query.namePattern).toBeNull()
     expect(query.minSize).toBeNull()
@@ -167,15 +167,15 @@ describe('resetSearchState', () => {
   })
 
   it('uses regex pattern type when set', () => {
-    resetSearchState()
+    clearSearchState()
     setPatternType('regex')
     const query = buildSearchQuery()
     expect(query.patternType).toBe('regex')
   })
 
-  it('resets pattern type to glob on resetSearchState', () => {
+  it('resets pattern type to glob on clearSearchState', () => {
     setPatternType('regex')
-    resetSearchState()
+    clearSearchState()
     const query = buildSearchQuery()
     expect(query.patternType).toBe('glob')
   })
@@ -183,19 +183,19 @@ describe('resetSearchState', () => {
 
 describe('scope state', () => {
   it('defaults to empty string', () => {
-    resetSearchState()
+    clearSearchState()
     expect(getScope()).toBe('')
   })
 
   it('stores and retrieves scope', () => {
-    resetSearchState()
+    clearSearchState()
     setScope('~/projects, !node_modules')
     expect(getScope()).toBe('~/projects, !node_modules')
   })
 
-  it('resets scope on resetSearchState', () => {
+  it('resets scope on clearSearchState', () => {
     setScope('~/Documents')
-    resetSearchState()
+    clearSearchState()
     expect(getScope()).toBe('')
   })
 })

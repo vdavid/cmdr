@@ -6,6 +6,9 @@ include/exclude) filters. Optional AI mode translates natural language queries i
 Backend: `src-tauri/src/search/` (index, engine, query, AI pipeline), `src-tauri/src/commands/search.rs` (thin IPC
 wrappers).
 
+Dialog width: 1080 px (was 900 px). Internal layout is fluid; no fixed inner widths. The bump leaves room for the filter
+chip row and path-pill column landing in later milestones.
+
 ## Files
 
 | File                     | Purpose                                                                                 |
@@ -63,6 +66,15 @@ pass. The previous two-pass system caused ~15% regressions; deterministic struct
 triggered a search while the index is still loading. On initial open, the results area is empty (no loading message)
 since the user is still typing their query.
 
+**State preservation across close + reopen**: The module-level `$state` in `search-state.svelte.ts` survives dialog
+unmount. Closing the dialog (Escape or overlay click) does NOT wipe query, filters, scope, results, or cursor. Reopening
+the dialog lands the user back where they left off. The only reset path is `⌘N` ("new search") inside the dialog, which
+calls `clearSearchState()` and refocuses the active input.
+
+**`⌘N` shortcut**: Hard-coded in `SearchDialog.svelte`'s `handleModifierShortcuts`. Captured before the dialog's global
+`stopPropagation` would let it reach the route-level `⌘N` (new tab) handler. The choice of `⌘N` matches the macOS "new
+X" idiom (new tab, new document) for the same reason the user reads "fresh search" the same way.
+
 ## Key decisions
 
 **Decision**: Dialog, not a panel or sidebar. **Why**: Search is a focused, transient task. A command-palette-style
@@ -79,6 +91,11 @@ the dialog and trigger quick-search or navigation.
 **Gotcha**: `prepareSearchIndex()` failure means index unavailable. **Why**: The backend returns an error when
 `get_read_pool()` returns `None` (indexing disabled or not started). The dialog catches this and enters the disabled
 state.
+
+**Gotcha**: Don't call `clearSearchState()` from `onDestroy`. **Why**: The dialog's lifecycle (mount on open, unmount on
+close) doesn't match the user's mental model of "the search I was working on." Wiping state on unmount turned every
+close + reopen into a lost-work moment. The only sanctioned reset path is `⌘N`. If you find yourself wanting to wipe
+state from a lifecycle hook, you probably want a user-initiated action instead.
 
 ## References
 

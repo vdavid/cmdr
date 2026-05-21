@@ -73,13 +73,14 @@
     .input-row {
         display: flex;
         align-items: center;
-        padding: var(--spacing-sm) var(--spacing-md);
-        border-bottom: 1px solid var(--color-border-strong);
+        padding: var(--spacing-md) var(--spacing-lg);
         background: var(--color-bg-primary);
         gap: var(--spacing-sm);
     }
 
-    /* AI prompt row styling: subtle left accent border */
+    /* AI prompt row styling: subtle left accent border on a slightly elevated tonal surface.
+       The hairline below sits against the next .input-row in SearchInputArea, which carries
+       its own border-top via the adjacent-sibling rule there. */
     .ai-prompt-row {
         border-left: 2px solid var(--color-accent);
         background: var(--color-bg-secondary);
@@ -151,7 +152,7 @@
         flex-shrink: 0;
         padding: var(--spacing-xxs) var(--spacing-sm);
         font-size: var(--font-size-sm);
-        border: 1px solid var(--color-border-strong);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);

@@ -268,8 +268,12 @@ export function buildSearchQuery(): SearchQuery {
   return query
 }
 
-/** Resets all search state to defaults (for dialog close). */
-export function resetSearchState(): void {
+/**
+ * Clears all dialog state to defaults. Triggered explicitly by the user via `⌘N` ("new search")
+ * inside the dialog. The module-level `$state` survives dialog unmount/remount, so close-then-reopen
+ * never calls this. The only reset path is the user pressing `⌘N`.
+ */
+export function clearSearchState(): void {
   namePattern = ''
   sizeFilter = 'any'
   sizeValue = ''

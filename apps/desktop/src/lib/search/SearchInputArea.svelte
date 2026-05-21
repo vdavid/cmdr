@@ -318,13 +318,26 @@
 </div>
 
 <style>
+    /* Row surfaces tonal-separate from the dialog body via `--color-bg-primary` against the
+       dialog's `--color-bg-secondary`. No 1px line at the row boundary: the surface change
+       carries the separation. */
     .input-row {
         display: flex;
         align-items: center;
-        padding: var(--spacing-sm) var(--spacing-md);
-        border-bottom: 1px solid var(--color-border-strong);
+        padding: var(--spacing-md) var(--spacing-lg);
         background: var(--color-bg-primary);
         gap: var(--spacing-sm);
+    }
+
+    /* Pattern row (the first .input-row in this component) gets the taller search-bar feel. */
+    .input-row:first-of-type {
+        padding-top: var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
+    }
+
+    /* Hairline between rows, only where two same-surface regions abut. */
+    .input-row + .input-row {
+        border-top: 1px solid var(--color-border-subtle);
     }
 
     .search-icon {
@@ -340,6 +353,13 @@
         color: var(--color-text-primary);
         outline: none;
         min-width: 0;
+    }
+
+    /* Pattern row's input is the primary entry point: bump to the dialog-title scale so it
+       reads as the main affordance. The row's increased padding above gives it the taller
+       search-bar feel called out in the redesign plan. */
+    .input-row:first-of-type .name-input {
+        font-size: var(--font-size-lg);
     }
 
     .name-input:focus {
@@ -363,7 +383,7 @@
         flex-shrink: 0;
         padding: var(--spacing-xxs) var(--spacing-sm);
         font-size: var(--font-size-sm);
-        border: 1px solid var(--color-border-strong);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
@@ -383,7 +403,7 @@
         flex-shrink: 0;
         padding: var(--spacing-xxs) var(--spacing-xs);
         font-size: var(--font-size-xs);
-        border: 1px solid var(--color-border-strong);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-secondary);
         color: var(--color-text-tertiary);
@@ -446,13 +466,16 @@
         color: var(--color-text-secondary);
     }
 
-    /* Filter row */
+    /* Filter row sits on the dialog's secondary surface so it reads as auxiliary chrome
+       below the input rows. A hairline below separates it from the same-surface column header
+       in SearchResults; that's the only place two `--color-bg-secondary` regions abut. */
     .filter-row {
         display: flex;
         align-items: center;
-        padding: var(--spacing-xs) var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-lg);
         gap: var(--spacing-lg);
-        border-bottom: 1px solid var(--color-border-strong);
+        background: var(--color-bg-secondary);
+        border-bottom: 1px solid var(--color-border-subtle);
         flex-wrap: wrap;
     }
 
@@ -472,7 +495,7 @@
         font-size: var(--font-size-sm);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 4px;
-        border: 1px solid var(--color-border-strong);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
@@ -488,7 +511,7 @@
         font-size: var(--font-size-sm);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 4px;
-        border: 1px solid var(--color-border-strong);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);

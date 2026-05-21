@@ -77,7 +77,7 @@
         getCaveat,
         setCaveat,
         buildSearchQuery,
-        resetSearchState,
+        clearSearchState,
     } from './search-state.svelte'
     import AiSearchRow from './AiSearchRow.svelte'
     import SearchInputArea from './SearchInputArea.svelte'
@@ -246,7 +246,8 @@
         // Clean up any in-progress column drag
         document.removeEventListener('mousemove', handleColumnDragMove)
         document.removeEventListener('mouseup', handleColumnDragEnd)
-        resetSearchState()
+        // State is intentionally NOT cleared here. Close + reopen preserves the user's last
+        // query, filters, scope, results, and cursor. Explicit reset lives behind ⌘N.
     })
 
     function scheduleSearch(): void {
@@ -478,28 +479,52 @@
         return document.activeElement === patternInputElement
     }
 
-    /** Handles modifier-key shortcuts (⌥F, ⌥D, ⌘Enter). Returns true if handled. */
+    /** Matches a plain modifier-key combo (one of cmd/alt, no others, no shift). */
+    function matchKey(e: KeyboardEvent, key: string, mod: 'meta' | 'alt'): boolean {
+        if (e.key !== key || e.shiftKey) return false
+        return mod === 'meta' ? e.metaKey && !e.altKey : e.altKey && !e.metaKey
+    }
+
+    /** Clears all dialog state (⌘N "new search") and refocuses the active input. */
+    function clearAndRefocus(): void {
+        clearSearchState()
+        void tick().then(() => {
+            focusActiveInput()
+        })
+    }
+
+    /** Runs an AI search from the current prompt; no-op when AI is off or the prompt is empty. */
+    function runAiFromPrompt(): void {
+        if (!aiEnabled) return
+        const prompt = getAiPrompt().trim()
+        if (prompt) void executeAiSearch(prompt)
+    }
+
+    /** Handles modifier-key shortcuts (⌘N, ⌥F, ⌥D, ⌘Enter). Returns true if handled. */
     function handleModifierShortcuts(e: KeyboardEvent): boolean {
-        // ⌥F: set scope to current folder path
-        if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'f') {
+        // ⌘N: clear search state and start fresh. Captured here so the global ⌘N (new tab) doesn't
+        // fire while the dialog is open. The dialog already calls stopPropagation on every keydown,
+        // but this handler is also the source of truth for the in-dialog "new search" affordance.
+        if (matchKey(e, 'n', 'meta')) {
+            e.preventDefault()
+            clearAndRefocus()
+            return true
+        }
+        if (matchKey(e, 'f', 'alt')) {
             e.preventDefault()
             setScope(currentFolderPath)
             scheduleSearch()
             return true
         }
-        // ⌥D: clear scope (search entire drive)
-        if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'd') {
+        if (matchKey(e, 'd', 'alt')) {
             e.preventDefault()
             setScope('')
             scheduleSearch()
             return true
         }
-        // ⌘Enter triggers AI search
-        if (e.key === 'Enter' && e.metaKey && !e.shiftKey && !e.altKey) {
+        if (matchKey(e, 'Enter', 'meta')) {
             e.preventDefault()
-            if (!aiEnabled) return true
-            const prompt = getAiPrompt().trim()
-            if (prompt) void executeAiSearch(prompt)
+            runAiFromPrompt()
             return true
         }
         return false
@@ -670,9 +695,9 @@
 
     .search-dialog {
         background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-strong);
+        border: 1px solid var(--color-border-subtle);
         border-radius: var(--radius-lg);
-        width: 900px;
+        width: 1080px;
         display: flex;
         flex-direction: column;
         box-shadow: var(--shadow-lg);

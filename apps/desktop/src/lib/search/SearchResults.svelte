@@ -223,13 +223,15 @@
 </div>
 
 <style>
-    /* Column headers */
+    /* Column headers sit on the dialog's secondary surface (matching the FullList header in the
+       main pane), with a hairline below to land cleanly onto the results surface. */
     .column-header {
         display: grid;
         gap: var(--spacing-xs);
         align-items: center;
-        padding: var(--spacing-xxs) var(--spacing-md);
-        border-bottom: 1px solid var(--color-border-strong);
+        padding: var(--spacing-xs) var(--spacing-lg);
+        background: var(--color-bg-secondary);
+        border-bottom: 1px solid var(--color-border-subtle);
         user-select: none;
     }
 
@@ -318,7 +320,7 @@
         display: grid;
         gap: var(--spacing-xs);
         align-items: center;
-        padding: var(--spacing-xs) var(--spacing-md);
+        padding: var(--spacing-xs) var(--spacing-lg);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
     }
@@ -377,10 +379,12 @@
         text-align: right;
     }
 
-    /* Status bar */
+    /* Status bar uses the dialog's secondary surface; the surface change against the results
+       list is the separator. A hairline border-top reinforces the seam without shouting. */
     .status-bar {
-        padding: var(--spacing-xs) var(--spacing-md);
-        border-top: 1px solid var(--color-border-strong);
+        padding: var(--spacing-xs) var(--spacing-lg);
+        background: var(--color-bg-secondary);
+        border-top: 1px solid var(--color-border-subtle);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
     }
