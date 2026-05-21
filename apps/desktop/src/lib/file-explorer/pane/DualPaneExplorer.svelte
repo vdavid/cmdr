@@ -45,7 +45,7 @@
     } from '../types'
     import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
-    import { determineNavigationPath } from '../navigation/path-navigation'
+    import { determineNavigationPath, isPathOnVolume } from '../navigation/path-navigation'
     import { resolveValidPath } from '../navigation/path-resolution'
 
     import {
@@ -464,15 +464,26 @@
 
     /** Applies a path change to the active tab in-place (the normal non-pinned flow). */
     function applyPathChange(pane: 'left' | 'right', path: string) {
-        // Drop stale `onPathChange` events that arrive after the pane was
-        // switched to the virtual `network` volume. Without this gate, a
-        // listing-complete from the previous SMB folder lands after the user
-        // (or a command like "Copy path between panes") flips to Network, and
-        // `pushPath` inherits `volumeId='network'` while writing a real path
-        // — corrupting both `pane.path` and `lastUsedPathForVolume('network')`.
+        // Drop stale `onPathChange` events that arrive after the pane was switched
+        // to a different volume. Without this gate, a `listing-complete` from the
+        // previous folder lands after the user (or a command like "Copy path between
+        // panes") flips volumes, and `pushPath` / `saveLastUsedPathForVolume` end up
+        // writing a foreign path under the new `volumeId` — corrupting `pane.path`,
+        // navigation history, and persisted last-used-path state. Network is checked
+        // separately because its mount path is the `smb://` scheme, not a filesystem
+        // prefix that `isPathOnVolume` can match against.
         const currentVolumeId = getPaneVolumeId(pane)
-        if (currentVolumeId === 'network' && !path.startsWith('smb://')) {
-            log.debug('Dropping stale onPathChange on network pane: {path}', { path })
+        const currentVolumePath = getPaneVolumePath(pane)
+        if (currentVolumeId === 'network') {
+            if (!path.startsWith('smb://')) {
+                log.debug('Dropping stale onPathChange on network pane: {path}', { path })
+                return
+            }
+        } else if (!isPathOnVolume(path, currentVolumePath)) {
+            log.debug(
+                'Dropping stale onPathChange: {path} is not on volume {volumeId} ({volumePath})',
+                { path, volumeId: currentVolumeId, volumePath: currentVolumePath },
+            )
             return
         }
         setPanePath(pane, path)

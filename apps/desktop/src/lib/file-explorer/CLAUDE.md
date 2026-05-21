@@ -362,12 +362,17 @@ layout component re-evaluation). If sveltejs/kit#15287 gets fixed, the workaroun
 
 **Stale `onPathChange` from a slow listing can poison a pane after a volume switch.** `FilePane.onPathChange` fires on
 `listing-complete` for whatever path the pane was loading. If the user (or a command like "Copy path between panes")
-flips the pane to a different volume — especially the virtual `network` volume — between `listing-start` and
-`listing-complete`, the stale callback lands on a pane whose `volumeId` no longer matches the path it carries.
-`applyPathChange` in `DualPaneExplorer` guards against the `network` case (drops paths that don't start with `smb://`)
-because `pushPath` inherits the current `volumeId` and would otherwise write a malformed `{network, /Volumes/...}`
-history entry plus a corrupted `lastUsedPathForVolume('network')`. If you introduce another virtual-volume namespace
-with its own non-filesystem prefix, extend the guard.
+flips the pane to a different volume between `listing-start` and `listing-complete`, the stale callback lands on a pane
+whose `volumeId` no longer matches the path it carries. `applyPathChange` in `DualPaneExplorer` guards against this by
+dropping paths that don't belong on the current volume: `smb://`-prefixed for the virtual `network` volume, and via
+`isPathOnVolume(path, volumePath)` for every other (real) volume. Without the guard, `pushPath` and
+`saveLastUsedPathForVolume` would write a foreign path under the new `volumeId`, corrupting in-memory tab state, the nav
+history, and persisted last-used-path state — for example, persisting `/Users/.../project` as the "last used path" for
+an SMB share, which would then cause the next switch to that share to attempt a doomed `Create` against
+`Users\...\project` and surface as `STATUS_OBJECT_PATH_NOT_FOUND`. `determineNavigationPath` applies the same
+`isPathOnVolume` filter when reading back `lastUsedPath` so older corruption from before this guard existed can't
+re-trigger the bug. If you introduce another virtual-volume namespace with its own non-filesystem prefix (something
+`isPathOnVolume` can't match against), extend the explicit network-style branch.
 
 ## Views (`views/`)
 

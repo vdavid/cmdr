@@ -19,6 +19,18 @@ export interface OtherPaneState {
 }
 
 /**
+ * True when `path` equals `volumePath` or is a descendant of it. Used to drop
+ * stale or corrupted paths that don't belong on the given volume — for example
+ * a local `/Users/...` path that ended up persisted under an SMB volumeId from
+ * a previous bug.
+ */
+export function isPathOnVolume(path: string, volumePath: string): boolean {
+  if (path === volumePath) return true
+  const prefix = volumePath.endsWith('/') ? volumePath : volumePath + '/'
+  return path.startsWith(prefix)
+}
+
+/**
  * Determines which path to navigate to when switching volumes.
  * Runs checks in parallel with 500ms frontend timeouts per check.
  * Priority order:
@@ -46,7 +58,9 @@ export async function determineNavigationPath(
       ? withTimeout(pathExists(otherPane.otherPanePath), pathExistsTimeoutMs, false)
       : Promise.resolve(false),
     getLastUsedPathForVolume(volumeId).then((p) =>
-      p ? withTimeout(pathExists(p), pathExistsTimeoutMs, false).then((ok) => (ok ? p : null)) : null,
+      p && isPathOnVolume(p, volumePath)
+        ? withTimeout(pathExists(p), pathExistsTimeoutMs, false).then((ok) => (ok ? p : null))
+        : null,
     ),
   ])
 
