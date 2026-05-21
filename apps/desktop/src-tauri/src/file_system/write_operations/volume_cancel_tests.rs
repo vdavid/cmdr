@@ -69,6 +69,9 @@ impl Volume for CancellingVolume {
     fn root(&self) -> &Path {
         self.inner.root()
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     fn list_directory<'a>(
         &'a self,
@@ -518,6 +521,9 @@ async fn volume_error_emits_write_settled_event() {
         }
         fn root(&self) -> &Path {
             self.inner.root()
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
         }
         fn list_directory<'a>(
             &'a self,

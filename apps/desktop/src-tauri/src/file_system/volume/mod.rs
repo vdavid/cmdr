@@ -348,6 +348,12 @@ pub trait Volume: Send + Sync {
     /// Returns the root path of this volume.
     fn root(&self) -> &Path;
 
+    /// Returns this volume as `&dyn Any` for downcasting to a concrete
+    /// backend type. Used by debug/IPC paths (for example, the SMB
+    /// diagnostics dashboard) that need backend-specific state. Most
+    /// implementations are one line: `fn as_any(&self) -> &dyn std::any::Any { self }`.
+    fn as_any(&self) -> &dyn std::any::Any;
+
     // ========================================
     // Required: All volumes must implement
     // ========================================

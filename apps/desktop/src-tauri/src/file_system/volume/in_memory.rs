@@ -174,6 +174,10 @@ impl Volume for InMemoryVolume {
         &self.root
     }
 
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,

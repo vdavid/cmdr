@@ -796,6 +796,24 @@ export const commands = {
   getSyncStatus: (paths: string[]) =>
     __TAURI_INVOKE<TimedOut<{ [key in string]: SyncStatus }>>('get_sync_status', { paths }),
   /**
+   *  List every currently-registered SMB volume, with a one-line summary for
+   *  the dashboard's volume picker. Returns an empty vec if no SMB volumes
+   *  are mounted. A volume that's currently disconnected still shows up —
+   *  `disconnected: true` indicates that, and the dashboard renders it
+   *  distinctly so the user can see why diagnostics are stale.
+   */
+  listSmbVolumes: () => __TAURI_INVOKE<SmbVolumeRef[]>('list_smb_volumes'),
+  /**
+   *  Snapshot of the SMB client backing the given volume.
+   *
+   *  Returns `Err(message)` if the volume id is unknown, the volume isn't
+   *  an SMB volume, or the volume is currently disconnected (no client to
+   *  snapshot). Always cheap — internally a handful of atomic loads and
+   *  short-critical-section mutex copies; no network I/O.
+   */
+  getSmbDiagnostics: (volumeId: string) =>
+    typedError<SmbDiagnosticsDto, string>(__TAURI_INVOKE('get_smb_diagnostics', { volumeId })),
+  /**
    *  Tauri command: triggers a fresh `volumes-changed` broadcast.
    *  The result arrives via the event, not as a return value.
    *  Used by the frontend retry button when the initial listing timed out.
@@ -1944,9 +1962,28 @@ export type BackendCapabilities = {
 // Which backend strategy is active for a session.
 export type BackendType = 'fullLoad' | 'byteSeek' | 'lineIndex'
 
+export type ClientInfoDto = {
+  primary_server: string
+  timeout_ms: number
+  auto_reconnect: boolean
+  dfs_enabled: boolean
+  metrics: ClientMetricsDto
+}
+
+export type ClientMetricsDto = {
+  reconnects: number
+  dfs_referrals_resolved: number
+  dfs_cache_hits: number
+}
+
 export type ClipboardReadResult = {
   paths: string[]
   isCut: boolean
+}
+
+export type CompressionInfoDto = {
+  requested: boolean
+  negotiated: boolean
 }
 
 // Metadata about a conflicting sibling file.
@@ -1988,6 +2025,20 @@ export type ConnectedDeviceInfo = {
   storages: MtpStorageInfo[]
 }
 
+export type ConnectionDiagnosticsDto = {
+  server: string
+  negotiated: NegotiatedSummaryDto | null
+  credits: CreditInfoDto
+  signing: SigningInfoDto
+  encryption: EncryptionInfoDto
+  compression: CompressionInfoDto
+  rtt_estimate_ms: number | null
+  disconnected: boolean
+  dfs_trees: number[]
+  session: SessionDiagnosticsDto | null
+  metrics: MetricsSnapshotDto
+}
+
 // Connection mode used for the last successful connection.
 export type ConnectionMode = 'guest' | 'credentials'
 
@@ -2025,6 +2076,18 @@ export type CrashReport = {
   shortId?: string | null
 }
 
+export type CreditInfoDto = {
+  available: number
+  in_flight: number
+  next_message_id: number
+}
+
+export type DfsCacheEntryDto = {
+  path_prefix: string
+  target_count: number
+  expires_in_ms: number | null
+}
+
 /**
  *  Dir stats keyed by path string. Used at the IPC boundary and by
  *  the IPC boundary (frontend expects path-keyed dir stats).
@@ -2055,6 +2118,11 @@ export type DiscoveryState =
   | 'searching'
   // Initial burst is complete, still listening.
   | 'active'
+
+export type EncryptionInfoDto = {
+  active: boolean
+  cipher: string | null
+}
 
 // One status entry, surfaced to the frontend as `{ path, code }`.
 export type EntryStatus = {
@@ -2465,6 +2533,26 @@ export type ManualConnectResult = {
 
 export type Markdown = string & { readonly __markdown: unique symbol }
 
+export type MetricsSnapshotDto = {
+  requests_sent: number
+  compound_requests_sent: number
+  wire_bytes_sent: number
+  explicit_cancels_sent: number
+  responses_routed_ok: number
+  responses_routed_err: number
+  responses_late_after_drop: number
+  responses_stray: number
+  wire_bytes_received: number
+  status_pending_loops: number
+  unsolicited_notifications_received: number
+  signature_failures: number
+  decrypt_failures: number
+  decompress_failures: number
+  malformed_frames: number
+  session_expired_events: number
+  requests_returned_err: number
+}
+
 // Errors that can occur during mount operations.
 export type MountError =
   | { type: 'host_unreachable'; message: string }
@@ -2586,6 +2674,19 @@ export type MtpStorageInfo = {
   // For example, "FixedROM", "RemovableRAM".
   storageType: string | null
   isReadOnly: boolean
+}
+
+export type NegotiatedSummaryDto = {
+  dialect: string
+  max_read_size: number
+  max_write_size: number
+  max_transact_size: number
+  server_guid_hex: string
+  signing_required: boolean
+  capabilities_bits: number
+  gmac_negotiated: boolean
+  cipher: string | null
+  compression_supported: boolean
 }
 
 /**
@@ -2897,6 +2998,13 @@ export type SendResult = {
   id: string
 }
 
+export type SessionDiagnosticsDto = {
+  session_id_hex: string
+  should_sign: boolean
+  should_encrypt: boolean
+  signing_algorithm: string
+}
+
 /**
  *  Settings registry default values pushed from FE. The wire format matches JSON
  *  primitives via `#[serde(untagged)]`; TS sees `boolean | number | string`.
@@ -2939,6 +3047,11 @@ export type ShareListResult = {
   fromCache: boolean
 }
 
+export type SigningInfoDto = {
+  active: boolean
+  algorithm: string | null
+}
+
 /**
  *  SMB connection state for the frontend indicator and the reconnect UI.
  *
@@ -2968,6 +3081,20 @@ export type SmbCredentials = {
   username: string
   // Password for authentication
   password: string
+}
+
+export type SmbDiagnosticsDto = {
+  client: ClientInfoDto
+  primary: ConnectionDiagnosticsDto
+  extra_connections: ConnectionDiagnosticsDto[]
+  dfs_cache: DfsCacheEntryDto[]
+}
+
+export type SmbVolumeRef = {
+  volume_id: string
+  name: string
+  server: string
+  disconnected: boolean
 }
 
 // Column to sort files by.

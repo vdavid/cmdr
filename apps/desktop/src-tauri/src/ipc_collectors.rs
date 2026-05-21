@@ -104,6 +104,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::mcp::dialog_state::notify_dialog_closed,
         crate::mcp::dialog_state::register_known_dialogs,
         crate::commands::sync_status::get_sync_status,
+        crate::commands::smb_diagnostics::list_smb_volumes,
+        crate::commands::smb_diagnostics::get_smb_diagnostics,
         crate::volume_broadcast::refresh_volumes,
         crate::space_poller::watch_volume_space,
         crate::space_poller::unwatch_volume_space,

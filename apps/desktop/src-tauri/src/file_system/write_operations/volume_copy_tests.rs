@@ -732,6 +732,9 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
         fn root(&self) -> &Path {
             self.inner.root()
         }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
         fn list_directory<'a>(
             &'a self,
             path: &'a Path,
@@ -1479,6 +1482,9 @@ impl Volume for PoisonedReadVolume {
     }
     fn root(&self) -> &Path {
         self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
     fn list_directory<'a>(
         &'a self,

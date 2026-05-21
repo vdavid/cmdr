@@ -20,6 +20,7 @@ pub mod rename;
 pub mod restricted_paths;
 pub mod search;
 pub mod settings;
+pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod ui;
 mod util;

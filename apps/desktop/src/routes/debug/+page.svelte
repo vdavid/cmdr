@@ -2,6 +2,7 @@
     import { onMount, tick } from 'svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import DebugDriveIndexPanel from './DebugDriveIndexPanel.svelte'
+    import DebugSmbDiagnosticsPanel from './DebugSmbDiagnosticsPanel.svelte'
     import DebugToastPanel from './DebugToastPanel.svelte'
     import DebugHistoryPanel from './DebugHistoryPanel.svelte'
     import DebugClosedTabsPanel from './DebugClosedTabsPanel.svelte'
@@ -90,6 +91,7 @@
         </section>
 
         <DebugDriveIndexPanel />
+        <DebugSmbDiagnosticsPanel />
         <DebugToastPanel />
         <DebugHistoryPanel />
         <DebugClosedTabsPanel />

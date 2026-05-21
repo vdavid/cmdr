@@ -163,6 +163,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::mcp::dialog_state::notify_dialog_closed,
         crate::mcp::dialog_state::register_known_dialogs,
         crate::commands::sync_status::get_sync_status,
+        crate::commands::smb_diagnostics::list_smb_volumes,
+        crate::commands::smb_diagnostics::get_smb_diagnostics,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::mtp::set_mtp_enabled,
         #[cfg(any(target_os = "macos", target_os = "linux"))]

@@ -310,6 +310,21 @@ impl SmbVolume {
         ConnectionState::from_u8(self.state.load(Ordering::Relaxed))
     }
 
+    /// Snapshot the smb2 client's diagnostics tree.
+    ///
+    /// Returns `None` while the client is disconnected (no `SmbClient`
+    /// is held). Otherwise grabs the client mutex briefly, calls
+    /// `client.diagnostics()` (cheap atomic loads + short critical
+    /// sections inside smb2 — no I/O), and releases the lock before
+    /// returning.
+    ///
+    /// Used by the debug-window SMB diagnostics dashboard. Safe to call
+    /// at 1 Hz; cheap even at higher rates.
+    pub async fn diagnostics(&self) -> Option<smb2::Diagnostics> {
+        let guard = self.client.lock().await;
+        guard.as_ref().map(|c| c.diagnostics())
+    }
+
     /// Flips state to `Disconnected` and emits `smb-connection-changed` if the
     /// previous state was something else (silent if we were already Disconnected,
     /// to avoid event spam when several in-flight ops all see the same broken
@@ -1069,6 +1084,10 @@ impl Volume for SmbVolume {
 
     fn root(&self) -> &Path {
         &self.mount_path
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 
     fn list_directory<'a>(

@@ -57,6 +57,9 @@ impl Volume for CountingWatchedVolume {
     fn root(&self) -> &Path {
         self.inner.root()
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     fn list_directory<'a>(
         &'a self,
