@@ -23,6 +23,7 @@ import {
 } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { invoke } from '@tauri-apps/api/core'
 import { addToast } from '$lib/ui/toast'
+import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getSetting, setSetting } from '$lib/settings'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
@@ -89,6 +90,31 @@ function handleTextRegionShortcut(commandId: string): boolean {
   sel?.removeAllRanges()
   sel?.addRange(range)
   return true
+}
+
+/**
+ * Shows a transient toast confirming a zoom change. Surfaces the reset shortcut
+ * (or menu path if no shortcut is bound) so users who hit ⌘+/⌘- by accident
+ * know how to get back to 100%.
+ */
+function showZoomToast(oldSize: number, newSize: number): void {
+  if (oldSize === newSize) return
+
+  const resetShortcut = getEffectiveShortcuts('view.zoom.set100')[0]
+  const resetHint = resetShortcut
+    ? `You can reset the zoom level to 100% by ${resetShortcut}.`
+    : 'You can reset the zoom level to 100% at View > Zoom > 100%.'
+
+  let message: string
+  if (newSize === 100) {
+    message = 'Zoom reset to 100%.'
+  } else if (newSize > oldSize) {
+    message = `Zoom increased to ${newSize}%. ${resetHint}`
+  } else {
+    message = `Zoom decreased to ${newSize}%. ${resetHint}`
+  }
+
+  addToast(message, { level: 'info', id: 'zoom-change' })
 }
 
 // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
@@ -175,25 +201,32 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
     // Each writes `appearance.textSize`; the settings store cross-window-syncs
     // and `lib/text-size.svelte.ts` recomputes the effective scale.
     case 'view.zoom.set75':
-      setSetting('appearance.textSize', 75)
-      return
     case 'view.zoom.set100':
-      setSetting('appearance.textSize', 100)
-      return
     case 'view.zoom.set125':
-      setSetting('appearance.textSize', 125)
+    case 'view.zoom.set150': {
+      const preset = {
+        'view.zoom.set75': 75,
+        'view.zoom.set100': 100,
+        'view.zoom.set125': 125,
+        'view.zoom.set150': 150,
+      }[commandId]
+      const current = getSetting('appearance.textSize')
+      setSetting('appearance.textSize', preset)
+      showZoomToast(current, preset)
       return
-    case 'view.zoom.set150':
-      setSetting('appearance.textSize', 150)
-      return
+    }
     case 'view.zoom.in': {
       const current = getSetting('appearance.textSize')
-      setSetting('appearance.textSize', Math.min(150, current + 10))
+      const next = Math.min(150, current + 10)
+      setSetting('appearance.textSize', next)
+      showZoomToast(current, next)
       return
     }
     case 'view.zoom.out': {
       const current = getSetting('appearance.textSize')
-      setSetting('appearance.textSize', Math.max(75, current - 10))
+      const next = Math.max(75, current - 10)
+      setSetting('appearance.textSize', next)
+      showZoomToast(current, next)
       return
     }
 
