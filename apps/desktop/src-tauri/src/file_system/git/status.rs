@@ -464,14 +464,22 @@ mod cache_tests {
             "fresh repo had no untracked new.txt"
         );
 
-        // Stage a new file. `git add` rewrites `.git/index`, bumping the mtime.
+        // Stage a new file. `git add` rewrites `.git/index`, but on filesystems
+        // with second-resolution timestamps (CI overlayfs is the canary), the
+        // new mtime may equal the pre-add mtime and the cache stays warm.
+        // Instead of sleeping a full second to wait the FS out (the previous
+        // shape did `sleep(1100ms)`, ~1.3 s of pure wall-clock per run),
+        // forcibly bump the index mtime via `filetime`. This is the exact
+        // invariant `list_status`'s cache check keys off, so we're testing the
+        // same code path — minus the FS-resolution lottery.
         std::fs::write(dir.join("new.txt"), "x\n").unwrap();
         run(&dir, &["add", "new.txt"]);
 
-        // Sleep one filesystem tick so the mtime is guaranteed to change on
-        // filesystems with second-resolution timestamps. macOS APFS has
-        // sub-second resolution but CI's overlayfs sometimes doesn't.
-        std::thread::sleep(std::time::Duration::from_millis(1100));
+        let index_path = root.join(".git").join("index");
+        let cur_mtime = std::fs::metadata(&index_path).unwrap().modified().unwrap();
+        let bumped = cur_mtime + std::time::Duration::from_secs(2);
+        filetime::set_file_mtime(&index_path, filetime::FileTime::from_system_time(bumped))
+            .expect("bump .git/index mtime");
 
         let second = list_status(&handle, &dir).unwrap();
         let entries_second: Vec<&str> = second.iter().map(|e| e.relative_path.as_str()).collect();
