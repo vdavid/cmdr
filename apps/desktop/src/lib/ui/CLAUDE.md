@@ -177,29 +177,35 @@ Centralized toast notifications with stacking, levels, and two dismissal modes.
 
 Five levels. Pick by what kind of feedback the toast carries, not by how the message reads:
 
-- **`default`** (no color, the fallback): low-importance feedback that doesn't warrant a color flash. Tab/clipboard
-  limits, "nothing to do" messages (`No recently closed tabs`), copy/cut confirmations (`Copied N items`), persistent
-  in-progress indicators (`Connecting directly…`), repeated educational hints (Quick Look Space-press hint), soft
-  refusals (`Can't remove discovered hosts`).
-- **`info`** (blue): true notices the user should attend to. Restart hints (`Restart Cmdr to apply…`), instructional
-  cues triggered by a wrong move (`Use F5 to copy files from MTP devices`), soft explanations of unexpected UI state
-  (`Your file disappeared from view because hidden files aren't shown.`), background activity the user opted into
-  (`Error report sent`).
-- **`success`** (green): one-shot confirmations of user-initiated actions that aren't routine. Host removed, share
-  disconnected, password forgotten, direct SMB upgrade succeeded. NOT for frequent actions like clipboard copy.
-- **`warn`** (amber): something the user tried isn't quite working, but no operation failed and no data is at risk.
-  Examples: `Share 'X' not found on Y`, rename-conflict notices that don't abort the rename.
+- **`default`** (no color, the fallback): factual neutral status with no action needed and no value judgement.
+  In-progress indicators that get replaced on completion (`Connecting directly…`), "nothing happened" reports
+  (`No mounted shares from ${host}` after a disconnect that had nothing to disconnect). Rare in practice — most toasts
+  carry some signal.
+- **`info`** (blue): notices the user should attend to, including action confirmations. Restart hints
+  (`Restart Cmdr to apply…`), instructional cues triggered by a wrong move (`Use F5 to copy files from MTP devices`),
+  soft explanations of unexpected UI state (`Your file disappeared from view because hidden files aren't shown.`),
+  background activity the user opted into (`Error report sent`), routine action confirmations (`Copied N items`,
+  `N items ready to move`), the Quick Look Space-key educational hint, and "operation completed but nothing actually
+  changed" outcomes (`Copy complete: skipped all 5 files, nothing was copied`).
+- **`success`** (green): one-shot confirmations that something meaningful succeeded. Host removed, share disconnected,
+  password forgotten, direct SMB upgrade succeeded, transfer completed with at least one file actually transferred.
+- **`warn`** (amber): the user tried something that didn't go through, but no operation failed and no data is at risk.
+  Soft refusals and limits hit: `Tab limit reached`, `Can't remove discovered hosts`, `Share 'X' not found on Y`,
+  `No files on the clipboard. Copy files first with ⌘C.`, `No recently closed tabs in this pane.`, rename-conflict
+  notices that don't abort the rename.
 - **`error`** (red): an attempted operation actually failed. Examples: `Couldn't remove ${host}`,
   `Direct connection failed: …`, `Couldn't delete saved password`. Inline "Send error report…" button auto-attaches for
   string-content errors.
 
 Tiebreaker: when unsure between two adjacent levels, pick the lower-intensity one. Frequent feedback should be quiet;
-the user can read the text. Color is for the few cases where attention is warranted.
+the user can read the text. Color is for the few cases where attention is warranted. Note that `default` is rare on
+purpose — if the toast carries any meaning at all (an attempted action, a refusal, a completed operation), one of the
+other four levels usually fits.
 
-Common mistakes to avoid: don't pick `success` for every action confirmation (frequent ones like "copied N items" stay
-`default`); don't pick `info` for in-progress spinners or repeating hints (those are `default`); don't pick `error` for
-soft refusals like "tab limit reached" (that's `default`); don't pick `warn` when an op actually failed (that's
-`error`).
+Common mistakes to avoid: don't pick `default` for soft refusals (those are `warn`); don't pick `success` for "completed
+but nothing changed" outcomes (those are `info`); don't pick `info` for in-progress spinners (those are `default`);
+don't pick `warn` when an op actually failed (that's `error`); don't pick `error` for soft refusals like "tab limit
+reached" (that's `warn`).
 
 Dismissal: `transient` (4s timeout + nav-dismiss, default) or `persistent`.
 

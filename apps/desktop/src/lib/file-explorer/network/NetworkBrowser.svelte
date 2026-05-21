@@ -461,7 +461,7 @@
     /** Remove a manual host after confirmation. For discovered hosts, show a toast. */
     async function handleRemoveHost(host: NetworkHost) {
         if (host.source !== 'manual') {
-            addToast(`Can't remove discovered hosts`)
+            addToast(`Can't remove discovered hosts`, { level: 'warn' })
             return
         }
 

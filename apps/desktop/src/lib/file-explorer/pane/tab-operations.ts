@@ -390,7 +390,7 @@ export function handleNewTab(
   setFocusedPane(pane)
   const success = newTabFn()
   if (!success) {
-    addToast('Tab limit reached')
+    addToast('Tab limit reached', { level: 'warn' })
   }
   setFocusedPane(focusedPane === pane ? pane : focusedPane)
 }

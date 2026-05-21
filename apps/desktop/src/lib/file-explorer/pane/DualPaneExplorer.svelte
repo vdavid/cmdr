@@ -431,7 +431,7 @@
         // Pinned tab: open a new tab with the target path instead of navigating in-place
         if (activeTab.pinned && path !== activeTab.path) {
             if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-                addToast('Tab limit reached')
+                addToast('Tab limit reached', { level: 'warn' })
                 applyPathChange(pane, path)
                 return
             }
@@ -602,7 +602,7 @@
         // Pinned tab: open a new tab with the target volume instead of navigating in-place
         if (activeTab.pinned && (volumeId !== activeTab.volumeId || targetPath !== activeTab.path)) {
             if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-                addToast('Tab limit reached')
+                addToast('Tab limit reached', { level: 'warn' })
             } else {
                 const newTab: TabState = {
                     id: crypto.randomUUID(),
@@ -1594,7 +1594,7 @@
                 state.hasParent,
                 showHiddenFiles,
             )
-            addToast(`Copied ${formatNumber(count)} ${count === 1 ? 'item' : 'items'}`)
+            addToast(`Copied ${formatNumber(count)} ${count === 1 ? 'item' : 'items'}`, { level: 'info' })
         } catch (error) {
             log.error('Clipboard copy failed: {error}', { error })
         }
@@ -1618,7 +1618,7 @@
                 state.hasParent,
                 showHiddenFiles,
             )
-            addToast(`${formatNumber(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`)
+            addToast(`${formatNumber(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`, { level: 'info' })
         } catch (error) {
             log.error('Clipboard cut failed: {error}', { error })
         }
@@ -1638,7 +1638,7 @@
             const result = await readClipboardFiles()
 
             if (result.paths.length === 0) {
-                addToast('No files on the clipboard. Copy files first with \u2318C.')
+                addToast('No files on the clipboard. Copy files first with \u2318C.', { level: 'warn' })
                 return
             }
 

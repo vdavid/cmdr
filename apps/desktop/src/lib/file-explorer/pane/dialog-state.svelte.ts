@@ -351,10 +351,14 @@ export function createDialogState(deps: DialogStateDeps) {
         `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatBytes(bytesProcessed)})`,
       )
       const toastMessage = composeTransferCompleteToast({ operationType: op, filesProcessed, filesSkipped })
+      // `info` for the all-skipped case (nothing actually moved/copied — neutral
+      // outcome, not a success). `success` everywhere else, including mixed: the
+      // user's intent landed at the target.
+      const allSkipped = filesSkipped > 0 && filesSkipped === filesProcessed
       // Bump the timeout for the long mixed/all-skipped sentences (default 4s reads as
       // a flicker for users still parsing the second clause). 7s comfortably covers the
       // longest variant without staying around long enough to nag.
-      addToast(toastMessage, { timeoutMs: 7000 })
+      addToast(toastMessage, { level: allSkipped ? 'info' : 'success', timeoutMs: 7000 })
 
       refreshPanesAfterTransfer()
       getSourcePaneRef()?.clearOperationSnapshot()

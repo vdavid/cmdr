@@ -226,7 +226,7 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
     case 'tab.new': {
       const success = explorerRef?.newTab()
       if (success === false) {
-        addToast('Tab limit reached')
+        addToast('Tab limit reached', { level: 'warn' })
       }
       return
     }
@@ -243,9 +243,9 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
     case 'tab.reopen': {
       const result = explorerRef?.reopenLastClosedTab()
       if (result === 'empty') {
-        addToast('No recently closed tabs in this pane.')
+        addToast('No recently closed tabs in this pane.', { level: 'warn' })
       } else if (result === 'cap') {
-        addToast('Tab limit reached')
+        addToast('Tab limit reached', { level: 'warn' })
       }
       return
     }
