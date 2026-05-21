@@ -277,11 +277,12 @@ resilience, and common pitfalls.
 
 ## Worktrees
 
-When working in a linked git worktree under `.claude/worktrees/`, the gitignored `apps/desktop/src-tauri/resources/ai/`
+- When working in a linked git worktree under `.claude/worktrees/`, the gitignored `apps/desktop/src-tauri/resources/ai/`
 (llama-server binaries, ~30 MB) starts empty. You don't need to do anything: `apps/desktop/src-tauri/build.rs` invokes
 `apps/desktop/scripts/download-llama-server.go` on demand, which symlinks the dir from the main clone at
 `~/projects-git/vdavid/cmdr/` when its `.version` matches, and falls back to downloading otherwise. So raw `cargo check`
 Just Works in fresh worktrees. Don't paper over a missing `resources/ai/` with a placeholder file.
+- When using worktrees, always branch off from _local_ `main` (not `origin/main`) and rebase and FF _local_ main. 
 
 ## Workflow
 
@@ -295,3 +296,5 @@ Just Works in fresh worktrees. Don't paper over a missing `resources/ai/` with a
   rule `~/.claude/rules/no-external-actions.md` already covers this; restating it here so it's impossible to miss.
 
 Happy coding! 🦀✨
+
+Read docs/architecture.md next!
