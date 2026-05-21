@@ -335,14 +335,20 @@ async fn test_rename_nonexistent_source() {
 async fn test_concurrent_reads() {
     use std::sync::Arc;
 
+    // 10 concurrent tasks × 25 iterations each = 250 interleaved reads. The
+    // earlier shape (100 iters, ~1 M entry materialisations across threads)
+    // passed in ~2 s in isolation but timed out at 8 s under `check.sh`'s
+    // parallel-check load — per `.config/nextest.toml` we trim the workload
+    // rather than bump the cap. Concurrency races surface at much smaller
+    // scale than this; 250 interleavings is plenty of pressure on the
+    // `RwLock<HashMap>`.
     let volume = Arc::new(InMemoryVolume::with_file_count("Test", 1000));
     let mut handles = vec![];
 
-    // Spawn 10 tasks doing concurrent reads
     for _ in 0..10 {
         let vol = Arc::clone(&volume);
         handles.push(tokio::spawn(async move {
-            for _ in 0..100 {
+            for _ in 0..25 {
                 let _ = vol.list_directory(Path::new(""), None).await;
                 let _ = vol.exists(Path::new("/file_000001.txt")).await;
                 let _ = vol.get_metadata(Path::new("/file_000010.txt")).await;

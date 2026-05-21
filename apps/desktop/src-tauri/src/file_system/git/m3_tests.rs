@@ -129,7 +129,14 @@ fn commits_caps_listing_at_max() {
 #[test]
 fn commits_listing_cancellation_polls_atomic_flag() {
     use std::sync::atomic::Ordering;
-    let dir = build_simple_repo(20);
+    // 5 commits is enough to prove the walk got cut short: with the flag
+    // pre-set, even one returned entry would still be `< 5`. The earlier
+    // shape used 20 commits, which made the `build_simple_repo` shell-out
+    // chain (~31 `git` calls) the dominant cost and pushed the test to
+    // ~5 s warm / >8 s under `check.sh` parallel-check load (timing
+    // confirmed in three back-to-back runs). The 8 s cap is intentional
+    // (see `.config/nextest.toml`); trim the fixture instead.
+    let dir = build_simple_repo(5);
     let (handle, root) = discover_repo(&dir).unwrap();
 
     // Pre-set the cancel flag so the walk bails after 0 commits.
@@ -138,8 +145,8 @@ fn commits_listing_cancellation_polls_atomic_flag() {
     git_log::cancel_flag().store(false, Ordering::Relaxed);
 
     assert!(
-        entries.len() < 20,
-        "cancellation should stop the walk before all 20 commits arrive"
+        entries.len() < 5,
+        "cancellation should stop the walk before all 5 commits arrive"
     );
     cleanup(&dir);
 }
