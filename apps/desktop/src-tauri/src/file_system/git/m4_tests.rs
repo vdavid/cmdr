@@ -1,96 +1,24 @@
 //! Integration tests for Modified + Size column population on virtual
 //! git entries (the M4-era follow-up to the M1+M2+M3 portal).
 //!
-//! Builds tiny fixture repos with the `git` CLI (already a system
-//! requirement for M1), exercises each listing module, and asserts the
-//! `display_size`, `display_size_tooltip`, and `modified_at` fields land
-//! per the contract documented in `git/CLAUDE.md` § Columns.
+//! Fixtures go through `test_fixtures::Fixture` (in-process gix); stash,
+//! worktree-add, submodule-add operations stay on the [`git_cli`]
+//! shell-out because gix 0.81 doesn't expose those.
 
 #![cfg(test)]
 
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::os::unix::fs::PermissionsExt;
 
 use super::path::{Cat, VirtualGitPath, classify};
 use super::repo::discover_repo;
+use super::test_fixtures::{Fixture, build_repo_with_branches, build_simple_repo, cleanup, git_cli, temp_dir};
 use super::{log as git_log, stash, submodules, virtual_listing, worktrees};
-
-fn temp_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "cmdr_git_m4_{}_{}_{}",
-        name,
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or_default()
-    ));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("create temp dir");
-    dir
-}
-
-fn cleanup(dir: &Path) {
-    let _ = std::fs::remove_dir_all(dir);
-}
-
-fn git(dir: &Path, args: &[&str]) {
-    let status = Command::new("git")
-        .current_dir(dir)
-        .args(args)
-        .env("GIT_AUTHOR_NAME", "Cmdr Test")
-        .env("GIT_AUTHOR_EMAIL", "test@cmdr.local")
-        .env("GIT_COMMITTER_NAME", "Cmdr Test")
-        .env("GIT_COMMITTER_EMAIL", "test@cmdr.local")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("git command");
-    assert!(status.success(), "git {:?} failed in {}", args, dir.display());
-}
-
-fn build_repo_with_branches(branches: &[(&str, usize)]) -> PathBuf {
-    // First (main_commits, then per-branch extra_commits). Each extra
-    // commit on a branch makes it ahead-of-main by that many.
-    let dir = temp_dir("branches");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
-    std::fs::write(dir.join("README.md"), "main\n").unwrap();
-    git(&dir, &["add", "."]);
-    git(&dir, &["commit", "-q", "-m", "initial"]);
-
-    for (name, extra) in branches {
-        git(&dir, &["branch", name]);
-        git(&dir, &["checkout", "-q", name]);
-        for n in 0..*extra {
-            std::fs::write(dir.join(format!("{}-{}.txt", name, n)), "x\n").unwrap();
-            git(&dir, &["add", "."]);
-            git(&dir, &["commit", "-q", "-m", &format!("on {} #{}", name, n)]);
-        }
-        git(&dir, &["checkout", "-q", "main"]);
-    }
-    dir
-}
-
-fn build_simple_repo(commits: usize) -> PathBuf {
-    let dir = temp_dir("simple");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
-    for n in 0..commits {
-        std::fs::write(dir.join("README.md"), format!("step {}\n", n)).unwrap();
-        git(&dir, &["add", "."]);
-        git(&dir, &["commit", "-q", "-m", &format!("commit {}", n)]);
-    }
-    dir
-}
 
 // ── Root listing: counts and dates ──────────────────────────────────
 
 #[test]
 fn root_listing_populates_size_with_item_counts() {
-    let dir = build_repo_with_branches(&[("feature-a", 1), ("feature-b", 2)]);
+    let (dir, _f) = build_repo_with_branches("m4", &[("feature-a", 1), ("feature-b", 2)]);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_root(&handle, &root);
 
@@ -123,7 +51,7 @@ fn root_listing_populates_size_with_item_counts() {
 
 #[test]
 fn root_listing_pluralizes_singular_entries() {
-    let dir = build_simple_repo(1);
+    let (dir, _f) = build_simple_repo("m4", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_root(&handle, &root);
     let branches = entries.iter().find(|e| e.name == "branches").unwrap();
@@ -135,7 +63,7 @@ fn root_listing_pluralizes_singular_entries() {
 
 #[test]
 fn branches_listing_populates_ahead_behind() {
-    let dir = build_repo_with_branches(&[("feat", 3)]);
+    let (dir, _f) = build_repo_with_branches("m4", &[("feat", 3)]);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_branches(&handle, &root).unwrap();
 
@@ -152,7 +80,7 @@ fn branches_listing_populates_ahead_behind() {
 
 #[test]
 fn branches_listing_sorts_by_ahead_count_within_category() {
-    let dir = build_repo_with_branches(&[("a", 5), ("b", 1), ("c", 2)]);
+    let (dir, _f) = build_repo_with_branches("m4", &[("a", 5), ("b", 1), ("c", 2)]);
     let (handle, root) = discover_repo(&dir).unwrap();
     let mut entries = virtual_listing::list_branches(&handle, &root).unwrap();
     // Drop main (size==0 against itself = blank). Sort by `size` descending
@@ -168,7 +96,7 @@ fn branches_listing_sorts_by_ahead_count_within_category() {
 #[test]
 fn branches_default_branch_alone_has_blank_size() {
     // Single branch (main), no upstream, no fallback different from itself.
-    let dir = build_simple_repo(1);
+    let (dir, _f) = build_simple_repo("m4", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_branches(&handle, &root).unwrap();
     let main = entries.iter().find(|e| e.name == "main").unwrap();
@@ -180,8 +108,24 @@ fn branches_default_branch_alone_has_blank_size() {
 
 #[test]
 fn tags_listing_populates_short_sha() {
-    let dir = build_simple_repo(1);
-    git(&dir, &["tag", "v1.0"]);
+    let (dir, f) = build_simple_repo("m4", 1);
+    // Create a lightweight tag pointing at HEAD via gix.
+    let head_id = f
+        .repo
+        .find_reference("refs/heads/main")
+        .unwrap()
+        .peel_to_id()
+        .unwrap()
+        .detach();
+    f.repo
+        .reference(
+            "refs/tags/v1.0",
+            head_id,
+            gix::refs::transaction::PreviousValue::MustNotExist,
+            "test_fixtures: lightweight tag",
+        )
+        .expect("create tag ref");
+
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_tags(&handle, &root).unwrap();
     let v1 = entries.iter().find(|e| e.name == "v1.0").unwrap();
@@ -196,7 +140,7 @@ fn tags_listing_populates_short_sha() {
 
 #[test]
 fn commits_listing_populates_files_changed() {
-    let dir = build_simple_repo(2);
+    let (dir, _f) = build_simple_repo("m4", 2);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = git_log::list_commits(&handle, &root).unwrap();
     let top = &entries[0];
@@ -211,9 +155,10 @@ fn commits_listing_populates_files_changed() {
 
 #[test]
 fn stash_listing_extracts_branch_from_subject() {
-    let dir = build_simple_repo(1);
+    let (dir, _f) = build_simple_repo("m4", 1);
     std::fs::write(dir.join("scratch.txt"), "x\n").unwrap();
-    git(&dir, &["stash", "push", "-u", "-m", "scratch work"]);
+    // Stash creation has no gix-side API in 0.81; CLI is the only path.
+    git_cli(&dir, &["stash", "push", "-u", "-m", "scratch work"]);
 
     let (_, root) = discover_repo(&dir).unwrap();
     let entries = stash::list_stashes(&root).unwrap();
@@ -230,13 +175,14 @@ fn stash_listing_extracts_branch_from_subject() {
 
 #[test]
 fn worktree_listing_shows_branch() {
-    let dir = build_simple_repo(1);
+    let (dir, _f) = build_simple_repo("m4", 1);
     let wt = dir
         .parent()
         .unwrap()
         .join(format!("{}-wt", dir.file_name().unwrap().to_string_lossy()));
     let _ = std::fs::remove_dir_all(&wt);
-    git(&dir, &["worktree", "add", "-b", "wt-branch", wt.to_str().unwrap()]);
+    // `git worktree add` has no gix-side public API in 0.81; CLI is the only path.
+    git_cli(&dir, &["worktree", "add", "-b", "wt-branch", wt.to_str().unwrap()]);
 
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = worktrees::list_worktrees(&handle, &root).unwrap();
@@ -251,10 +197,12 @@ fn worktree_listing_shows_branch() {
 
 #[test]
 fn submodule_listing_shows_pinned_sha() {
-    let outer = build_simple_repo(1);
-    let inner = build_simple_repo(1);
+    let (outer, _of) = build_simple_repo("m4", 1);
+    let (inner, _if) = build_simple_repo("m4", 1);
     let inner_url = format!("file://{}", inner.display());
-    git(
+    // `git submodule add` has no gix-side public API in 0.81; CLI is
+    // the only path.
+    git_cli(
         &outer,
         &[
             "-c",
@@ -266,7 +214,7 @@ fn submodule_listing_shows_pinned_sha() {
             "vendor/inner",
         ],
     );
-    git(&outer, &["commit", "-q", "-m", "add submodule"]);
+    git_cli(&outer, &["commit", "-q", "-m", "add submodule"]);
 
     let (handle, root) = discover_repo(&outer).unwrap();
     let entries = submodules::list_submodules(&handle, &root).unwrap();
@@ -282,7 +230,7 @@ fn submodule_listing_shows_pinned_sha() {
 
 #[test]
 fn snapshot_files_borrow_commit_date() {
-    let dir = build_simple_repo(1);
+    let (dir, _f) = build_simple_repo("m4", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
     let p = root.join(".git").join("branches").join("main");
     let (virt, _, _) = classify(&p).expect("classify branch tip");
@@ -302,17 +250,23 @@ fn snapshot_files_borrow_commit_date() {
 
 #[test]
 fn snapshot_dirs_carry_recursive_bytes() {
-    use std::os::unix::fs::PermissionsExt;
-    let dir = temp_dir("snapshot-dirs");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
+    let dir = temp_dir("m4", "snapshot-dirs");
+    let mut f = Fixture::init(dir.clone());
+    // Create the directory on disk; commit_file will write the files
+    // inside it and `commit_files` carries the tree forward.
     std::fs::create_dir_all(dir.join("scripts")).unwrap();
     std::fs::write(dir.join("scripts").join("a.sh"), "#!/bin/sh\necho hi\n").unwrap();
     std::fs::set_permissions(dir.join("scripts").join("a.sh"), std::fs::Permissions::from_mode(0o755)).unwrap();
     std::fs::write(dir.join("scripts").join("b.sh"), "echo bye\n").unwrap();
-    git(&dir, &["add", "."]);
-    git(&dir, &["commit", "-q", "-m", "init"]);
+    // Two-file commit so `recursive_size` rolls up to non-zero.
+    f.commit_files(
+        &[
+            ("scripts/a.sh", b"#!/bin/sh\necho hi\n"),
+            ("scripts/b.sh", b"echo bye\n"),
+        ],
+        "init",
+        1_700_000_000,
+    );
 
     let (handle, root) = discover_repo(&dir).unwrap();
     let p = root.join(".git").join("branches").join("main");

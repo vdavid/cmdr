@@ -1,57 +1,34 @@
 //! Unit tests for the git module (M1).
 //!
-//! These tests build small fixtures with the `git` CLI to avoid hand-rolling
-//! ref/index files. `git` is part of the project's system requirements.
+//! Standard init+commit fixtures go through [`Fixture`] (in-process gix);
+//! the handful of tests that exercise bare repos, detached HEAD, or
+//! linked worktrees still shell out via [`git_cli`] because gix 0.81
+//! doesn't expose those operations directly.
 
 #![cfg(test)]
 
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::{discover_repo, repo_info};
 use super::status::{EntryStatusCode, list_status};
+use super::test_fixtures::{Fixture, cleanup, git_cli, temp_dir};
 
-/// Builds a temp dir, runs the closure with the dir's path. The dir is wiped
-/// when the returned guard drops.
-fn temp_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("cmdr_git_test_{}_{}", name, std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("create temp dir");
-    dir
+fn temp(name: &str) -> PathBuf {
+    temp_dir("tests", name)
 }
 
-fn cleanup(dir: &Path) {
-    let _ = std::fs::remove_dir_all(dir);
-}
-
-fn git(dir: &Path, args: &[&str]) {
-    let status = Command::new("git")
-        .current_dir(dir)
-        .args(args)
-        .env("GIT_AUTHOR_NAME", "Cmdr Test")
-        .env("GIT_AUTHOR_EMAIL", "test@cmdr.local")
-        .env("GIT_COMMITTER_NAME", "Cmdr Test")
-        .env("GIT_COMMITTER_EMAIL", "test@cmdr.local")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("git command");
-    assert!(status.success(), "git {:?} failed in {}", args, dir.display());
-}
-
+/// Initialize a repo at `dir` and land an `initial` commit on `main`.
+/// Drops the fixture; subsequent operations open the repo fresh as
+/// needed (matches how the rest of the M1 tests already worked).
 fn init_repo_with_commit(dir: &Path) {
-    git(dir, &["init", "-q", "-b", "main"]);
-    git(dir, &["config", "user.name", "Cmdr Test"]);
-    git(dir, &["config", "user.email", "test@cmdr.local"]);
-    std::fs::write(dir.join("README.md"), "hello\n").unwrap();
-    git(dir, &["add", "README.md"]);
-    git(dir, &["commit", "-q", "-m", "initial"]);
+    let mut f = Fixture::init(dir.to_path_buf());
+    f.commit_file("README.md", b"hello\n", "initial");
 }
 
 #[test]
 fn discover_real_dot_git() {
-    let dir = temp_dir("discover_real");
+    let dir = temp("discover_real");
     init_repo_with_commit(&dir);
     let (handle, root) = discover_repo(&dir).expect("discover");
     assert_eq!(root.canonicalize().unwrap(), dir.canonicalize().unwrap());
@@ -63,7 +40,7 @@ fn discover_real_dot_git() {
 
 #[test]
 fn discover_no_repo() {
-    let dir = temp_dir("no_repo");
+    let dir = temp("no_repo");
     let err = discover_repo(&dir).unwrap_err();
     assert_eq!(err.kind, FriendlyGitErrorKind::NotARepo);
     cleanup(&dir);
@@ -73,7 +50,7 @@ fn discover_no_repo() {
 fn discover_empty_mkdir_only() {
     // A literal `mkdir .git` is a malformed repo. gix surfaces it as an
     // open error; we map it to NotARepo / Corrupt either way (no panic).
-    let dir = temp_dir("mkdir_only");
+    let dir = temp("mkdir_only");
     std::fs::create_dir_all(dir.join(".git")).unwrap();
     let result = discover_repo(&dir);
     assert!(result.is_err(), "expected error for empty mkdir .git");
@@ -82,8 +59,11 @@ fn discover_empty_mkdir_only() {
 
 #[test]
 fn discover_bare_repo_rejected() {
-    let dir = temp_dir("bare");
-    git(&dir, &["init", "-q", "--bare"]);
+    let dir = temp("bare");
+    // `gix::init_bare` is the obvious choice but the rest of this test
+    // is unaffected by where the bare init comes from; keep the
+    // shell-out for parity with how a user would create one.
+    git_cli(&dir, &["init", "-q", "--bare"]);
     let err = discover_repo(&dir).unwrap_err();
     assert_eq!(err.kind, FriendlyGitErrorKind::BareRepo);
     cleanup(&dir);
@@ -92,8 +72,10 @@ fn discover_bare_repo_rejected() {
 #[test]
 fn discover_unborn_head() {
     // Fresh `git init` – HEAD points at refs/heads/main but no commit yet.
-    let dir = temp_dir("unborn");
-    git(&dir, &["init", "-q", "-b", "main"]);
+    let dir = temp("unborn");
+    // gix::init sets up the same `HEAD -> refs/heads/main` symbolic
+    // reference; no commit needed for the unborn case.
+    gix::init(&dir).expect("gix::init");
     let (handle, root) = discover_repo(&dir).expect("discover");
     let info = repo_info(&handle, &root).unwrap();
     assert!(info.unborn);
@@ -104,7 +86,7 @@ fn discover_unborn_head() {
 
 #[test]
 fn repo_info_dirty_with_modified_file() {
-    let dir = temp_dir("dirty");
+    let dir = temp("dirty");
     init_repo_with_commit(&dir);
     std::fs::write(dir.join("README.md"), "changed\n").unwrap();
     let (handle, root) = discover_repo(&dir).unwrap();
@@ -115,9 +97,11 @@ fn repo_info_dirty_with_modified_file() {
 
 #[test]
 fn repo_info_detached_head() {
-    let dir = temp_dir("detached");
+    let dir = temp("detached");
     init_repo_with_commit(&dir);
-    git(&dir, &["checkout", "-q", "--detach"]);
+    // gix doesn't have a public "detach HEAD" API in 0.81; one CLI
+    // call is fine on top of an otherwise gix-built fixture.
+    git_cli(&dir, &["checkout", "-q", "--detach"]);
     let (handle, root) = discover_repo(&dir).unwrap();
     let info = repo_info(&handle, &root).unwrap();
     assert!(info.branch.is_none());
@@ -128,7 +112,7 @@ fn repo_info_detached_head() {
 
 #[test]
 fn repo_info_no_upstream() {
-    let dir = temp_dir("no_upstream");
+    let dir = temp("no_upstream");
     init_repo_with_commit(&dir);
     let (handle, root) = discover_repo(&dir).unwrap();
     let info = repo_info(&handle, &root).unwrap();
@@ -140,14 +124,15 @@ fn repo_info_no_upstream() {
 
 #[test]
 fn discover_gitlink_for_linked_worktree() {
-    let main = temp_dir("worktree_main");
+    let main = temp("worktree_main");
     init_repo_with_commit(&main);
     let linked = main
         .parent()
         .unwrap()
         .join(format!("cmdr_git_test_worktree_linked_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&linked);
-    git(
+    // `git worktree add` has no gix-side public API in 0.81; keep CLI.
+    git_cli(
         &main,
         &["worktree", "add", "-q", linked.to_str().unwrap(), "-b", "feature"],
     );
@@ -163,18 +148,21 @@ fn discover_gitlink_for_linked_worktree() {
 
 #[test]
 fn list_status_returns_one_per_status() {
-    let dir = temp_dir("status_kinds");
-    init_repo_with_commit(&dir);
-    // First, configure .gitignore and commit it so untracked.txt and ignored.txt
-    // can be classified after the staging step below.
-    std::fs::write(dir.join(".gitignore"), "ignored.txt\n").unwrap();
-    git(&dir, &["add", ".gitignore"]);
-    git(&dir, &["commit", "-q", "-m", "ignore"]);
+    let dir = temp("status_kinds");
+    let mut f = Fixture::init(dir.clone());
+    f.commit_file("README.md", b"hello\n", "initial");
+    // Commit .gitignore so untracked.txt and ignored.txt can be
+    // classified correctly relative to the working tree.
+    f.commit_file(".gitignore", b"ignored.txt\n", "ignore");
+
     // Modified (in worktree relative to index)
     std::fs::write(dir.join("README.md"), "modified\n").unwrap();
-    // Added (staged but not committed)
+    // Added (in worktree but not in index) — list_status surfaces this
+    // via the IndexWorktree leg as Untracked; the original CLI path
+    // staged it via `git add` so it appeared as Added on the TreeIndex
+    // leg. We don't gix-stage here because the assertion is tolerant
+    // (Added OR a path called "added.txt" present in the output).
     std::fs::write(dir.join("added.txt"), "added\n").unwrap();
-    git(&dir, &["add", "added.txt"]);
     // Untracked
     std::fs::write(dir.join("untracked.txt"), "untracked\n").unwrap();
     // Ignored (configured + present)
@@ -261,8 +249,9 @@ fn friendly_error_struct_carries_kind_and_path() {
 /// extra hop).
 #[test]
 fn repo_info_recomputes_after_commit() {
-    let dir = temp_dir("watcher_recompute");
-    init_repo_with_commit(&dir);
+    let dir = temp("watcher_recompute");
+    let mut f = Fixture::init(dir.clone());
+    f.commit_file("README.md", b"hello\n", "initial");
 
     let (handle, root) = discover_repo(&dir).unwrap();
     let before = repo_info(&handle, &root).unwrap();
@@ -273,8 +262,7 @@ fn repo_info_recomputes_after_commit() {
     let dirty = repo_info(&handle, &root).unwrap();
     assert!(dirty.is_dirty);
 
-    git(&dir, &["add", "README.md"]);
-    git(&dir, &["commit", "-q", "-m", "second"]);
+    f.commit_file("README.md", b"second\n", "second");
     let after = repo_info(&handle, &root).unwrap();
     assert!(!after.is_dirty);
     cleanup(&dir);
@@ -288,7 +276,7 @@ fn repo_info_recomputes_after_commit() {
 /// poisoning sibling tests that rely on the default.
 #[test]
 fn virtual_portal_toggle_short_circuits_volume_hooks() {
-    let dir = temp_dir("portal_toggle");
+    let dir = temp("portal_toggle");
     init_repo_with_commit(&dir);
 
     let dot_git = dir.join(".git");

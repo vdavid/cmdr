@@ -68,6 +68,8 @@ mod m4_tests;
 #[cfg(test)]
 mod snapshot_dates_tests;
 #[cfg(test)]
+mod test_fixtures;
+#[cfg(test)]
 mod tests;
 
 #[allow(

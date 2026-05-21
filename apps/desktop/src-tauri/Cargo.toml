@@ -107,7 +107,13 @@ rand = "0.10"
 # Pinned at 0.81.0 (published 2026-03-22, ~5 weeks old at landing) per
 # project rule on avoiding 0-day vulns. Default features include `status`,
 # `basic`, and `extras` which cover discover + ahead/behind + status walk.
-gix = "0.81"
+# `tree-editor` opts into the in-memory `Repository::edit_tree()` API used
+# by `file_system/git/test_fixtures.rs` so test fixtures build via gix
+# instead of dozens of `git` CLI `fork+exec` calls (each ~50-150 ms on a
+# loaded machine; one fixture chain used to spawn ~31 of them and time
+# out the 8 s nextest cap under check.sh contention). Pure API addition,
+# no extra runtime cost on the prod read paths.
+gix = { version = "0.81", features = ["tree-editor"] }
 # Multi-provider LLM client. Normalizes OpenAI / OpenAI Responses / Anthropic / Gemini /
 # xAI / Groq / DeepSeek / Ollama / OpenRouter / etc. Auto-routes `gpt-5*` / `*-codex` /
 # `*-pro` to the Responses API; uses native protocols for Anthropic + Gemini. Replaces

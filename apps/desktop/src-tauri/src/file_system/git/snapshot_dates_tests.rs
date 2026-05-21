@@ -1,87 +1,31 @@
 //! Integration tests for `snapshot_dates`: the per-file Modified column
 //! inside virtual snapshot listings.
 //!
-//! Builds fixture repos with the `git` CLI and asserts that
-//! `decode_per_file_dates` returns the most-recent committer time per
-//! top-level entry.
+//! Fixtures go through `test_fixtures::Fixture` (in-process gix), which
+//! lets `commit_file_at` set a deterministic commit timestamp without
+//! shelling out for the `GIT_*_DATE` env-var ceremony.
 
 #![cfg(test)]
-
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 use super::path::Cat;
 use super::repo::discover_repo;
 use super::snapshot_dates::{self, MAX_COMMITS_PER_WALK};
+use super::test_fixtures::{Fixture, cleanup, temp_dir};
 use super::{tree, virtual_listing};
 
-fn temp_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "cmdr_git_snapshot_dates_{}_{}_{}",
-        name,
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or_default()
-    ));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("create temp dir");
-    dir
-}
-
-fn cleanup(dir: &Path) {
-    let _ = std::fs::remove_dir_all(dir);
-}
-
-fn git(dir: &Path, args: &[&str]) {
-    let status = Command::new("git")
-        .current_dir(dir)
-        .args(args)
-        .env("GIT_AUTHOR_NAME", "Cmdr Test")
-        .env("GIT_AUTHOR_EMAIL", "test@cmdr.local")
-        .env("GIT_COMMITTER_NAME", "Cmdr Test")
-        .env("GIT_COMMITTER_EMAIL", "test@cmdr.local")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("git command");
-    assert!(status.success(), "git {:?} failed in {}", args, dir.display());
-}
-
-/// Commits a single file change using a fixed `--date` so timestamps are
-/// deterministic across machines. `seconds_offset` is added to a base epoch.
-fn commit_with_date(dir: &Path, file: &str, content: &str, secs: u64) {
-    std::fs::write(dir.join(file), content).unwrap();
-    git(dir, &["add", "."]);
-    let date = format!("@{} +0000", secs);
-    let status = Command::new("git")
-        .current_dir(dir)
-        .args(["commit", "-q", "-m", &format!("touch {}", file)])
-        .env("GIT_AUTHOR_NAME", "Cmdr Test")
-        .env("GIT_AUTHOR_EMAIL", "test@cmdr.local")
-        .env("GIT_COMMITTER_NAME", "Cmdr Test")
-        .env("GIT_COMMITTER_EMAIL", "test@cmdr.local")
-        .env("GIT_AUTHOR_DATE", &date)
-        .env("GIT_COMMITTER_DATE", &date)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("git commit");
-    assert!(status.success(), "commit failed");
+fn temp(name: &str) -> std::path::PathBuf {
+    temp_dir("snapshot_dates", name)
 }
 
 #[test]
 fn three_files_get_three_distinct_dates() {
-    let dir = temp_dir("three-files");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
+    let dir = temp("three-files");
+    let mut f = Fixture::init(dir.clone());
 
     // Three commits, three different files, three distinct dates.
-    commit_with_date(&dir, "a.txt", "1\n", 1_000_000);
-    commit_with_date(&dir, "b.txt", "2\n", 2_000_000);
-    commit_with_date(&dir, "c.txt", "3\n", 3_000_000);
+    f.commit_file_at("a.txt", b"1\n", "touch a.txt", 1_000_000);
+    f.commit_file_at("b.txt", b"2\n", "touch b.txt", 2_000_000);
+    f.commit_file_at("c.txt", b"3\n", "touch c.txt", 3_000_000);
 
     let (handle, _root) = discover_repo(&dir).unwrap();
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
@@ -96,15 +40,13 @@ fn three_files_get_three_distinct_dates() {
 
 #[test]
 fn directory_borrows_newest_inner_change() {
-    let dir = temp_dir("dir-newest");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
+    let dir = temp("dir-newest");
+    let mut f = Fixture::init(dir.clone());
 
     std::fs::create_dir_all(dir.join("src")).unwrap();
-    commit_with_date(&dir, "src/old.txt", "x\n", 1_000_000);
-    commit_with_date(&dir, "src/new.txt", "y\n", 5_000_000);
-    commit_with_date(&dir, "README.md", "r\n", 2_500_000);
+    f.commit_file_at("src/old.txt", b"x\n", "src/old.txt", 1_000_000);
+    f.commit_file_at("src/new.txt", b"y\n", "src/new.txt", 5_000_000);
+    f.commit_file_at("README.md", b"r\n", "README.md", 2_500_000);
 
     let (handle, _root) = discover_repo(&dir).unwrap();
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
@@ -119,12 +61,10 @@ fn directory_borrows_newest_inner_change() {
 
 #[test]
 fn snapshot_listing_shows_distinct_dates_across_files() {
-    let dir = temp_dir("listing");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
-    commit_with_date(&dir, "older.txt", "old\n", 1_000_000);
-    commit_with_date(&dir, "newer.txt", "new\n", 2_000_000);
+    let dir = temp("listing");
+    let mut f = Fixture::init(dir.clone());
+    f.commit_file_at("older.txt", b"old\n", "older.txt", 1_000_000);
+    f.commit_file_at("newer.txt", b"new\n", "newer.txt", 2_000_000);
 
     let (handle, root) = discover_repo(&dir).unwrap();
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
@@ -152,13 +92,11 @@ fn cap_falls_back_to_snapshot_date() {
     // via `or(snapshot_secs)`, which is unit-tested separately by
     // `directory_borrows_newest_inner_change` above.
 
-    let dir = temp_dir("cap");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
-    commit_with_date(&dir, "keep.txt", "k\n", 100);
+    let dir = temp("cap");
+    let mut f = Fixture::init(dir.clone());
+    f.commit_file_at("keep.txt", b"k\n", "keep.txt", 100);
     for i in 0..5 {
-        commit_with_date(&dir, "noise.txt", &format!("{}\n", i), 1000 + i);
+        f.commit_file_at("noise.txt", format!("{}\n", i).as_bytes(), "noise.txt", 1000 + i);
     }
 
     let (handle, _root) = discover_repo(&dir).unwrap();
@@ -173,12 +111,10 @@ fn cap_falls_back_to_snapshot_date() {
 
 #[test]
 fn cache_hits_return_identical_results() {
-    let dir = temp_dir("cache");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
-    commit_with_date(&dir, "a.txt", "1\n", 1_000_000);
-    commit_with_date(&dir, "b.txt", "2\n", 2_000_000);
+    let dir = temp("cache");
+    let mut f = Fixture::init(dir.clone());
+    f.commit_file_at("a.txt", b"1\n", "a.txt", 1_000_000);
+    f.commit_file_at("b.txt", b"2\n", "b.txt", 2_000_000);
 
     let (handle, _root) = discover_repo(&dir).unwrap();
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
@@ -190,30 +126,14 @@ fn cache_hits_return_identical_results() {
 
 #[test]
 fn initial_commit_short_circuits() {
-    // Single-commit repo: every entry should get the initial commit's
-    // committer date.
-    let dir = temp_dir("initial");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
-    commit_with_date(&dir, "a.txt", "1\n", 7_777_777);
-    std::fs::write(dir.join("b.txt"), "2\n").unwrap();
-    git(&dir, &["add", "."]);
-    // Amend so we still have one commit, with two files.
-    let status = Command::new("git")
-        .current_dir(&dir)
-        .args(["commit", "--amend", "-q", "-m", "initial"])
-        .env("GIT_AUTHOR_NAME", "Cmdr Test")
-        .env("GIT_AUTHOR_EMAIL", "test@cmdr.local")
-        .env("GIT_COMMITTER_NAME", "Cmdr Test")
-        .env("GIT_COMMITTER_EMAIL", "test@cmdr.local")
-        .env("GIT_AUTHOR_DATE", "@7777777 +0000")
-        .env("GIT_COMMITTER_DATE", "@7777777 +0000")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .unwrap();
-    assert!(status.success());
+    // Single-commit repo with two files committed together: every entry
+    // should get the initial commit's committer date. (The original
+    // version used `git commit --amend` to coalesce two CLI commits;
+    // with `commit_files` we just stage both up-front in one shot —
+    // semantically equivalent for what this test exercises.)
+    let dir = temp("initial");
+    let mut f = Fixture::init(dir.clone());
+    f.commit_files(&[("a.txt", b"1\n"), ("b.txt", b"2\n")], "initial", 7_777_777);
 
     let (handle, _root) = discover_repo(&dir).unwrap();
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();

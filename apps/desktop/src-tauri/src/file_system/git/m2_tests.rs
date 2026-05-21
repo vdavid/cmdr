@@ -1,86 +1,71 @@
 //! Integration tests for M2 – virtual `.git/` portal.
 //!
-//! Builds tiny fixture repos with the `git` CLI (already a system requirement
-//! for M1) and exercises the volume hooks end-to-end.
+//! Fixtures go through `test_fixtures::Fixture` (in-process gix). The
+//! one test that asserts byte-for-byte parity with `git show` still
+//! shells out for that comparison (no gix-side equivalent that's
+//! cheaper than just opening the blob).
 
 #![cfg(test)]
 
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 use super::path::{Cat, VirtualGitPath, classify, is_virtual, to_path};
 use super::read_blob::GitBlobReadStream;
 use super::repo::discover_repo;
+use super::test_fixtures::{EntryKind, Fixture, cleanup, git_cli_capture, temp_dir};
 use super::{tree, virtual_listing};
 use crate::file_system::volume::VolumeReadStream;
 
-fn temp_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "cmdr_git_m2_{}_{}_{}",
-        name,
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or_default()
-    ));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("create temp dir");
-    dir
-}
-
-fn cleanup(dir: &Path) {
-    let _ = std::fs::remove_dir_all(dir);
-}
-
-fn git(dir: &Path, args: &[&str]) {
-    let status = Command::new("git")
-        .current_dir(dir)
-        .args(args)
-        .env("GIT_AUTHOR_NAME", "Cmdr Test")
-        .env("GIT_AUTHOR_EMAIL", "test@cmdr.local")
-        .env("GIT_COMMITTER_NAME", "Cmdr Test")
-        .env("GIT_COMMITTER_EMAIL", "test@cmdr.local")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("git command");
-    assert!(status.success(), "git {:?} failed in {}", args, dir.display());
-}
-
 fn git_show_bytes(dir: &Path, spec: &str) -> Vec<u8> {
-    Command::new("git")
-        .current_dir(dir)
-        .args(["show", spec])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .expect("git show")
-        .stdout
+    git_cli_capture(dir, &["show", spec])
 }
 
 fn build_fixture_repo() -> PathBuf {
-    let dir = temp_dir("portal");
-    git(&dir, &["init", "-q", "-b", "main"]);
-    git(&dir, &["config", "user.name", "Cmdr Test"]);
-    git(&dir, &["config", "user.email", "test@cmdr.local"]);
+    let dir = temp_dir("m2", "portal");
+    let mut f = Fixture::init(dir.clone());
 
+    // Set executable bit on `scripts/run.sh` before the commit so the
+    // tree records mode 0o755 (`BlobExecutable`). The on-disk perm
+    // assignment also matches what a user would see in a checked-out
+    // working tree.
     std::fs::create_dir_all(dir.join("scripts")).unwrap();
-    std::fs::write(dir.join("README.md"), "hello\n").unwrap();
     std::fs::write(dir.join("scripts").join("run.sh"), "#!/bin/sh\necho hi\n").unwrap();
-    let perm = std::fs::Permissions::from_mode(0o755);
-    std::fs::set_permissions(dir.join("scripts").join("run.sh"), perm).unwrap();
+    std::fs::set_permissions(
+        dir.join("scripts").join("run.sh"),
+        std::fs::Permissions::from_mode(0o755),
+    )
+    .unwrap();
 
-    git(&dir, &["add", "."]);
-    git(&dir, &["commit", "-q", "-m", "initial"]);
+    f.commit_files_with_modes(
+        &[
+            ("README.md", b"hello\n", EntryKind::Blob),
+            ("scripts/run.sh", b"#!/bin/sh\necho hi\n", EntryKind::BlobExecutable),
+        ],
+        "initial",
+        1_700_000_000,
+    );
 
-    // Create a branch with a slash in its name so the path classifier has
-    // a non-trivial case to handle.
-    git(&dir, &["branch", "feature/foo"]);
+    // Create a branch with a slash in its name so the path classifier
+    // has a non-trivial case to handle.
+    f.create_branch("feature/foo");
 
-    // Tag the initial commit (lightweight is enough for M2).
-    git(&dir, &["tag", "v1.0"]);
+    // Lightweight tag at HEAD.
+    let head_id = f
+        .repo
+        .find_reference("refs/heads/main")
+        .unwrap()
+        .peel_to_id()
+        .unwrap()
+        .detach();
+    f.repo
+        .reference(
+            "refs/tags/v1.0",
+            head_id,
+            gix::refs::transaction::PreviousValue::MustNotExist,
+            "test_fixtures: lightweight tag",
+        )
+        .expect("create tag ref");
 
     dir
 }
@@ -335,7 +320,7 @@ async fn cross_volume_copy_preserves_executable_bit() {
     let repo_dir = build_fixture_repo();
     let (_, root) = discover_repo(&repo_dir).unwrap();
 
-    let dest_dir = temp_dir("copy_dest");
+    let dest_dir = temp_dir("m2", "copy_dest");
 
     let src = LocalPosixVolume::new("src", root.clone());
     let dst = LocalPosixVolume::new("dst", dest_dir.clone());
@@ -426,11 +411,25 @@ fn watcher_invalidates_branches_listing_on_new_branch() {
         );
     }
 
-    // Make the watcher see a "ref change" by adding a new branch and
-    // calling the invalidation directly. We don't drive the notify-rs
-    // event loop here – the unit-level contract is "given a repo root,
-    // invalidate matching listings."
-    git(&dir, &["branch", "added-after-init"]);
+    // Make the watcher see a "ref change" by adding a new branch via
+    // gix, then run the invalidation entry point directly. The unit-
+    // level contract is "given a repo root, invalidate matching
+    // listings" — driving notify-rs isn't needed.
+    let new_handle = handle.to_thread_local();
+    let head_id = new_handle
+        .find_reference("refs/heads/main")
+        .unwrap()
+        .peel_to_id()
+        .unwrap()
+        .detach();
+    new_handle
+        .reference(
+            "refs/heads/added-after-init",
+            head_id,
+            gix::refs::transaction::PreviousValue::MustNotExist,
+            "m2_tests: new branch",
+        )
+        .expect("create branch ref");
     super::watcher::invalidate_for_test(&root);
 
     // Assert the listing is still in the cache (we full-refresh, not evict).
