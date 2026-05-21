@@ -36,6 +36,9 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **State**: `SvelteSet<number>` (from `svelte/reactivity`) in `FilePane.svelte`. O(1) add/remove/has
 - **Preserved on sort/filter**: `resort_listing` accepts `selectedIndices[]`, returns `newSelectedIndices[]`
 - **Write operations receive indices**: backend resolves to paths from cached listing
+- **Visible-index ascending order**: `selection-state.svelte.ts::getSelectedIndices()` sorts ascending before
+  returning, so write ops process selections top-to-bottom in pane sort order regardless of Cmd+click sequence. The
+  `SvelteSet` itself remains insertion-ordered; only the read-out for callers is sorted.
 - **Visual**: three-tier `--color-selection-fg` cascade (red, Total-Commander-style):
   - `--color-selection-fg-primary` (strong red — `#cc0000` light, `#ff4040` dark) applies on the selection bg.
   - `--color-selection-fg-cursor` (`#b80808` / `#ff8c8c`) takes over when the row is also under the cursor

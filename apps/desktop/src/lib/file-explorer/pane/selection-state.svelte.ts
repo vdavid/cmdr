@@ -180,7 +180,11 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
   }
 
   function getSelectedIndices(): number[] {
-    return Array.from(selectedIndices)
+    // Ascending visible-index order = pane sort order (the listing cache is
+    // sorted at fetch time). Write ops process this array top-to-bottom, so
+    // the user sees files copied/moved/deleted in the order they appear in
+    // the pane, regardless of the order they were Cmd+clicked in.
+    return Array.from(selectedIndices).sort((a, b) => a - b)
   }
 
   function setSelectedIndices(indices: number[]) {

@@ -135,6 +135,24 @@ describe('createSelectionState', () => {
       state.setSelectedIndices([1])
       expect(onChanged).toHaveBeenCalled()
     })
+
+    it('returns indices in ascending order regardless of selection sequence', () => {
+      // Visible-index ascending is pane-sort order (the listing cache is sorted
+      // at fetch time). Write ops process this Vec top-to-bottom, so the user
+      // sees the same files copied/moved/deleted first as the ones at the top
+      // of the pane, even when they Cmd+clicked them in a non-monotonic order.
+      const state = createSelectionState()
+      state.toggleAt(15, false)
+      state.toggleAt(5, false)
+      state.toggleAt(10, false)
+      expect(state.getSelectedIndices()).toEqual([5, 10, 15])
+    })
+
+    it('returns ascending order even when setSelectedIndices is given non-sorted input', () => {
+      const state = createSelectionState()
+      state.setSelectedIndices([12, 3, 8, 1])
+      expect(state.getSelectedIndices()).toEqual([1, 3, 8, 12])
+    })
   })
 
   describe('clearSelection', () => {
