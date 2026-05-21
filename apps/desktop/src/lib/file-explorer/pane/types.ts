@@ -29,6 +29,13 @@ export interface FilePaneAPI {
   getNetworkCursorEntry(): NetworkCursorEntry | null
   setCursorIndex(index: number): Promise<void>
   getCursorIndex(): number
+  /**
+   * Queues a "land the cursor on this filename once the next directory-diff
+   * applies" intent. Used by mkdir/mkfile/rename to defeat the structural
+   * cursor-shift the diff handler would otherwise apply when an entry is
+   * inserted at or above the cursor's index.
+   */
+  setPendingCursorName(name: string | null): void
   isInNetworkView(): boolean
   hasParentEntry(): boolean
   getCurrentPath(): string

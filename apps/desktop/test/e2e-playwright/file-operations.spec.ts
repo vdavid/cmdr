@@ -211,6 +211,43 @@ test.describe('Create folder round-trip', () => {
     expect(fs.existsSync(folderPath)).toBe(true)
     expect(fs.statSync(folderPath).isDirectory()).toBe(true)
   })
+
+  test('cursor lands on the newly created folder', async ({ tauriPage }) => {
+    // The synthetic directory-diff for the new entry is emitted with a 50 ms
+    // trailing-window coalesce (see listing/diff_emitter.rs). After mkdir, the
+    // optimistic setCursorIndex landed the cursor correctly, but the deferred
+    // diff then ran through the structural cursor-adjustment path and shifted
+    // it one row down. This assertion is the regression guard for that race.
+    await ensureAppReady(tauriPage)
+
+    // Pick a name that sorts in the middle of the existing dirs so an off-by-one
+    // cursor shift produces a different filename. Fixture dirs sorted Asc:
+    // bulk, sub-dir. "mid-..." sorts between them.
+    const folderName = `mid-cursor-folder-${String(Date.now())}`
+
+    await tauriPage.keyboard.press('F7')
+    await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
+    await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
+    await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
+    await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
+    await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
+
+    // Dialog closes and the listing renders the new folder. fileExistsInFocusedPane
+    // polls the DOM, so by the time it returns true the diff has been applied.
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, folderName), 5000)
+
+    // Cursor must be on the new folder and stay there. Five checks at 80 ms
+    // intervals cover both the immediate-post-diff window and any later
+    // re-render that might shift the cursor.
+    for (let i = 0; i < 5; i++) {
+      const cursorName = await tauriPage.evaluate<string>(
+        `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') || ''`,
+      )
+      expect(cursorName, `cursor moved off ${folderName} on iteration ${String(i)}`).toBe(folderName)
+      if (i < 4) await new Promise((r) => setTimeout(r, 80))
+    }
+  })
 })
 
 test.describe('View mode toggle', () => {

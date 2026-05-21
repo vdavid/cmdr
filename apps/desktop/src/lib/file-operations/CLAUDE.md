@@ -186,3 +186,11 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   `await`. Both paths converge on a local `kickOff()` helper guarded by a `started` flag, so `startOperation()`
   dispatches exactly once. The scan-error and scan-cancelled listeners also flip `started = true` as a terminal signal,
   so a late `scan-preview-complete` event can't dispatch an operation after we've errored or cancelled.
+- **mkdir/mkfile must set `paneRef.setPendingCursorName(name)` before the optimistic `setCursorIndex`**:
+  `create_directory` / `create_file` queue a synthetic `directory-diff` through `diff_emitter::enqueue_diff` (50 ms
+  trailing-window coalesce). The optimistic `setCursorIndex` in `moveCursorToNewFolder` lands the cursor correctly at
+  the moment, but when the deferred diff fires, `FilePane`'s diff handler runs the new entry's index through
+  `adjustSelectionIndices` and shifts the cursor +1 (an `add` at the cursor's index always pushes the cursor down).
+  `setPendingCursorName` writes to the same `pendingCursorName` field the diff handler already checks for the rename
+  flow: when the diff lands, it re-pins the cursor by name and `return`s before the structural shift runs. Regression
+  guard: `file-operations.spec.ts › Create folder round-trip › cursor lands on the newly created folder`.

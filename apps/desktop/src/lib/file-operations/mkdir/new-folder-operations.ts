@@ -38,6 +38,14 @@ export async function moveCursorToNewFolder(
   listen: ListenFn,
   findFileIndex: FindFileIndexFn,
 ): Promise<void> {
+  // Mark the new entry as the cursor target for the next directory-diff. When
+  // the diff lands (~50 ms later via diff_emitter's trailing-window coalesce),
+  // FilePane re-pins the cursor by name and skips the structural shift that
+  // `adjustSelectionIndices` would otherwise apply for an `add` at the cursor's
+  // index. Without this, the optimistic setCursorIndex below ends up shifted
+  // one row down by the time the diff arrives.
+  paneRef?.setPendingCursorName(folderName)
+
   // Try to find the folder immediately: the directory-diff event often fires
   // before this listener is set up (the folder is created before onCreated runs).
   const tryMoveCursor = async (): Promise<boolean> => {

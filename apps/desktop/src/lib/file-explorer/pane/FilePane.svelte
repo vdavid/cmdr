@@ -554,6 +554,17 @@
     }
 
     /**
+     * Sets the "land the cursor on this name when the next diff applies" marker.
+     * The diff handler already reads `renameFlow.pendingCursorName` for the rename
+     * flow; mkdir/mkfile reuse the same channel so a freshly-created entry can
+     * dodge the structural cursor shift `adjustSelectionIndices` would otherwise
+     * apply when an `add` lands at or above the cursor's index.
+     */
+    export function setPendingCursorName(name: string | null): void {
+        renameFlow.pendingCursorName = name
+    }
+
+    /**
      * Handles one keystroke for the type-to-jump feature. Appends to the buffer,
      * fires the IPC match, and (on the response) moves the cursor.
      *
