@@ -447,8 +447,14 @@ pub(super) async fn run_oracle_aware_batch_scan(
                 };
 
                 if entry.is_directory && !entry.is_symlink {
+                    // `scan_subtree_with_oracle` emits a count local to this
+                    // subtree (starting at 1). Shift by `aggregate.file_count`
+                    // so the FE display stays cumulative across multiple
+                    // top-level dirs in this call.
+                    let baseline = aggregate.file_count;
+                    let shifted = |n: usize| on_progress(baseline + n);
                     let subtree: SubtreeTotals =
-                        scan_subtree_with_oracle(volume, volume_id, source, is_cancelled, Some(on_progress)).await?;
+                        scan_subtree_with_oracle(volume, volume_id, source, is_cancelled, Some(&shifted)).await?;
                     aggregate.file_count += subtree.file_count;
                     // `scan_for_copy_batch`'s aggregate.dir_count counts descendants
                     // only, not the top-level path itself. Match that convention
@@ -484,8 +490,17 @@ pub(super) async fn run_oracle_aware_batch_scan(
             // Cold cache for this parent. Delegate to the volume's own batch
             // scan: it preserves the MTP parent-grouping and SMB pipelined-stat
             // optimizations for cold paths.
+            //
+            // The volume's callback reports a count LOCAL to its current
+            // `list_directory` call (starts at 1). Shift by `aggregate.file_count`
+            // before forwarding so the FE display stays cumulative as we walk
+            // multiple parent groups — without this, every new group's first
+            // entry drops the visible count back to 1, then climbs to the
+            // group's local total before the next group restarts.
+            let baseline = aggregate.file_count;
+            let shifted = |n: usize| on_progress(baseline + n);
             let group_result = volume
-                .scan_for_copy_batch_with_progress(paths_in_group, Some(on_progress))
+                .scan_for_copy_batch_with_progress(paths_in_group, Some(&shifted))
                 .await?;
             aggregate.file_count += group_result.aggregate.file_count;
             aggregate.dir_count += group_result.aggregate.dir_count;

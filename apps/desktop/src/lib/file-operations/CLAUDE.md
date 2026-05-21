@@ -43,10 +43,11 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
    - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move)
    - **Scanning-phase UI** (both `waitingForScan` and `phase === 'scanning'` paths): rendered via the
      `ScanPhaseBody.svelte` child component. Shows source path, running tallies (`bytesFound / filesFound / dirsFound`),
-     FE-computed throughput from `ScanThroughput` (`scan-throughput.ts`), and, when the backend supplies
-     `expectedFilesTotal` / `expectedBytesTotal` from the drive index, a `ProgressBar` capped at 100% with "X% of
-     estimated" text. Current directory (`event.currentDir`) renders above the filename so the user sees where in the
-     tree the walker is. Title is reframed per operation: "Verifying before copy…", "Counting items to delete…", etc.
+     FE-computed throughput from `ScanThroughput` (`scan-throughput.ts`), and a spinner. Current directory
+     (`event.currentDir`) renders above the filename so the user sees where in the tree the walker is. Title is reframed
+     per operation: "Verifying before copy…", "Counting items to delete…", etc. The backend still emits
+     `expectedFilesTotal` / `expectedBytesTotal` on scan events but the FE ignores them — the bar this used to drive was
+     visually indistinguishable from the destructive-phase bar and read as "already deleting".
    - Conflict resolution inline (if using `Stop` mode instead of dry-run). The per-file dialog has a 2-column grid: left
      column is the single-file action (`Skip` / `Rename` / `Overwrite`), right column is the apply-to-all variant
      (`Skip all` / `Rename all` / `Overwrite all`). A 4th row holds the two conditional bulk actions —

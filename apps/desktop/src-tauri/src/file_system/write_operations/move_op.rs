@@ -8,7 +8,7 @@ use std::time::Instant;
 
 use super::copy::copy_single_item;
 use super::helpers::{is_same_filesystem, remove_dir_all_in_background, resolve_conflict, spawn_async_sync};
-use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
+use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::state::{CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::types::{
     ConflictResolution, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
@@ -321,16 +321,47 @@ fn move_with_staging(
     destination: &Path,
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
-    // Phase 1: Scan (move uses default sorting - order doesn't matter much for move)
-    let scan_result = scan_sources(
-        sources,
-        state,
-        events,
-        operation_id,
-        WriteOperationType::Move,
-        config.sort_column,
-        config.sort_order,
-    )?;
+    // Phase 1: Scan (or reuse cached preview results)
+    let scan_result = if let Some(preview_id) = &config.preview_id {
+        // Volume scans cache aggregate stats with an empty `files` list; the
+        // per-file move loop needs the file list, so treat an empty-files
+        // cache hit the same as a miss and fall through to a fresh local scan.
+        if let Some(cached) = take_cached_scan_result(preview_id).filter(|c| !c.files.is_empty()) {
+            log::debug!(
+                "move_with_staging: reusing cached scan for operation_id={}, preview_id={}, files={}, bytes={}",
+                operation_id,
+                preview_id,
+                cached.file_count,
+                cached.total_bytes
+            );
+            cached
+        } else {
+            log::warn!(
+                "preview_id={} cache miss despite frontend coordination, starting fresh scan for operation_id={}",
+                preview_id,
+                operation_id
+            );
+            scan_sources(
+                sources,
+                state,
+                events,
+                operation_id,
+                WriteOperationType::Move,
+                config.sort_column,
+                config.sort_order,
+            )?
+        }
+    } else {
+        scan_sources(
+            sources,
+            state,
+            events,
+            operation_id,
+            WriteOperationType::Move,
+            config.sort_column,
+            config.sort_order,
+        )?
+    };
 
     // Create staging directory
     let staging_dir = destination.join(format!(".cmdr-staging-{}", operation_id));

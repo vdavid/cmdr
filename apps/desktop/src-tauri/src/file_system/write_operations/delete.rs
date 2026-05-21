@@ -39,16 +39,47 @@ pub(super) fn delete_files_with_progress_inner(
     sources: &[PathBuf],
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
-    // Phase 1: Scan to get file count (delete uses default sorting)
-    let scan_result = scan_sources(
-        sources,
-        state,
-        events,
-        operation_id,
-        WriteOperationType::Delete,
-        config.sort_column,
-        config.sort_order,
-    )?;
+    // Phase 1: Scan (or reuse cached preview results)
+    let scan_result = if let Some(preview_id) = &config.preview_id {
+        // Volume scans cache aggregate stats with an empty `files` list; the
+        // per-file delete loop needs the file list, so treat an empty-files
+        // cache hit the same as a miss and fall through to a fresh local scan.
+        if let Some(cached) = take_cached_scan_result(preview_id).filter(|c| !c.files.is_empty()) {
+            log::debug!(
+                "delete_files_with_progress: reusing cached scan for operation_id={}, preview_id={}, files={}, bytes={}",
+                operation_id,
+                preview_id,
+                cached.file_count,
+                cached.total_bytes
+            );
+            cached
+        } else {
+            log::warn!(
+                "preview_id={} cache miss despite frontend coordination, starting fresh scan for operation_id={}",
+                preview_id,
+                operation_id
+            );
+            scan_sources(
+                sources,
+                state,
+                events,
+                operation_id,
+                WriteOperationType::Delete,
+                config.sort_column,
+                config.sort_order,
+            )?
+        }
+    } else {
+        scan_sources(
+            sources,
+            state,
+            events,
+            operation_id,
+            WriteOperationType::Delete,
+            config.sort_column,
+            config.sort_order,
+        )?
+    };
 
     // Handle dry-run mode (delete has no conflicts)
     if config.dry_run {
@@ -68,6 +99,33 @@ pub(super) fn delete_files_with_progress_inner(
     let mut files_done = 0;
     let mut bytes_done = 0u64;
     let mut last_progress_time = Instant::now();
+
+    // Emit initial Deleting-phase event with totals. Important when reusing a
+    // cached preview: no scanning events were emitted by the BE, so the FE
+    // still has scan-phase tallies on screen. This event flips the FE to the
+    // active-phase UI with the correct denominator on file/byte progress.
+    state.emit_progress_via_sink(
+        events,
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Delete,
+            WriteOperationPhase::Deleting,
+            None,
+            0,
+            scan_result.file_count,
+            0,
+            scan_result.total_bytes,
+        ),
+    );
+    update_operation_status(
+        operation_id,
+        WriteOperationPhase::Deleting,
+        None,
+        0,
+        scan_result.file_count,
+        0,
+        scan_result.total_bytes,
+    );
 
     let mut tracker = SourceItemTracker::new(&scan_result.files);
 

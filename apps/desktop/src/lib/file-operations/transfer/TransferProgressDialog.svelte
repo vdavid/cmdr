@@ -180,26 +180,10 @@
     let scanDirsFound = $state(0)
     let scanBytesFound = $state(0)
     let scanCurrentDir = $state<string | null>(null)
-    /** Index-derived expected totals for the in-flight scan. Used as the progress-bar denominator. */
-    let scanExpectedFiles = $state<number | null>(null)
-    let scanExpectedBytes = $state<number | null>(null)
     let scanUnlisteners: UnlistenFn[] = []
     const scanThroughput = new ScanThroughput()
     let scanFilesPerSec = $state<number | null>(null)
     let scanBytesPerSec = $state<number | null>(null)
-
-    /** Fraction (0..1) for the scan-phase progress bar. Returns `null` when no
-     *  expected total is available (the FE falls back to running tallies only).
-     *  Picks whichever axis has the higher fraction; if the index estimate is
-     *  off (files added since the last index pass), the bar still tracks toward
-     *  100% via whichever axis advances faster. Capped at 1.0 visually. */
-    const scanProgressFraction = $derived.by<number | null>(() => {
-        const byFiles = scanExpectedFiles && scanExpectedFiles > 0 ? scanFilesFound / scanExpectedFiles : null
-        const byBytes = scanExpectedBytes && scanExpectedBytes > 0 ? scanBytesFound / scanExpectedBytes : null
-        if (byFiles === null && byBytes === null) return null
-        const best = Math.max(byFiles ?? 0, byBytes ?? 0)
-        return Math.min(1, best)
-    })
 
     // Operation state
     let operationId = $state<string | null>(null)
@@ -389,8 +373,6 @@
             scanDirsFound = event.dirsDone
             scanBytesFound = event.bytesDone
             scanCurrentDir = event.currentDir ?? null
-            if (event.expectedFilesTotal != null) scanExpectedFiles = event.expectedFilesTotal
-            if (event.expectedBytesTotal != null) scanExpectedBytes = event.expectedBytesTotal
             const r = scanThroughput.push({
                 timestampMs: Date.now(),
                 files: event.filesDone,
@@ -881,8 +863,6 @@
                 scanDirsFound = event.dirsFound
                 scanBytesFound = event.bytesFound
                 scanCurrentDir = event.currentDir ?? null
-                if (event.expectedFilesTotal != null) scanExpectedFiles = event.expectedFilesTotal
-                if (event.expectedBytesTotal != null) scanExpectedBytes = event.expectedBytesTotal
                 const r = scanThroughput.push({
                     timestampMs: Date.now(),
                     files: event.filesFound,
@@ -1015,8 +995,6 @@
                 {scanFilesFound}
                 {scanDirsFound}
                 {scanBytesFound}
-                {scanExpectedFiles}
-                {scanProgressFraction}
                 {scanFilesPerSec}
                 {scanBytesPerSec}
                 {scanCurrentDir}
@@ -1192,15 +1170,13 @@
         </div>
 
         {#if phase === 'scanning'}
-            <!-- Scanning phase: tallies, throughput, optional progress bar, current dir/file. -->
+            <!-- Scanning phase: tallies, throughput, current dir/file. -->
             <div class="scan-wait-section">
                 <ScanPhaseBody
                     {sourceFolderPath}
                     {scanFilesFound}
                     {scanDirsFound}
                     {scanBytesFound}
-                    {scanExpectedFiles}
-                    {scanProgressFraction}
                     {scanFilesPerSec}
                     {scanBytesPerSec}
                     {scanCurrentDir}

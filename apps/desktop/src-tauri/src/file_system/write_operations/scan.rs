@@ -272,15 +272,35 @@ pub(super) async fn scan_subtree_with_oracle(
         }
         let child_path = PathBuf::from(&entry.path);
         if entry.is_directory && !entry.is_symlink {
-            // Recurse — oracle re-applies inside this call.
-            let child_totals = Box::pin(scan_subtree_with_oracle(
-                volume,
-                volume_id,
-                &child_path,
-                is_cancelled,
-                on_progress,
-            ))
-            .await?;
+            // Recurse — oracle re-applies inside this call. The recursive
+            // emit reports counts local to the child subtree (starting at 1),
+            // so wrap `on_progress` with a baseline of the current
+            // `totals.file_count`; without this the FE display visibly drops
+            // back to 1 every time the walker descends into a new sibling dir.
+            let baseline = totals.file_count;
+            let child_totals = match on_progress {
+                Some(cb) => {
+                    let shifted = move |n: usize| cb(baseline + n);
+                    Box::pin(scan_subtree_with_oracle(
+                        volume,
+                        volume_id,
+                        &child_path,
+                        is_cancelled,
+                        Some(&shifted),
+                    ))
+                    .await?
+                }
+                None => {
+                    Box::pin(scan_subtree_with_oracle(
+                        volume,
+                        volume_id,
+                        &child_path,
+                        is_cancelled,
+                        None,
+                    ))
+                    .await?
+                }
+            };
             totals.file_count += child_totals.file_count;
             // The directory itself plus all its descendant dirs.
             totals.dir_count += 1 + child_totals.dir_count;

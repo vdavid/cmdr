@@ -1,6 +1,5 @@
 <script lang="ts">
     import Size from '$lib/ui/Size.svelte'
-    import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
 
@@ -9,8 +8,6 @@
         scanFilesFound: number
         scanDirsFound: number
         scanBytesFound: number
-        scanExpectedFiles: number | null
-        scanProgressFraction: number | null
         scanFilesPerSec: number | null
         scanBytesPerSec: number | null
         scanCurrentDir: string | null
@@ -22,8 +19,6 @@
         scanFilesFound,
         scanDirsFound,
         scanBytesFound,
-        scanExpectedFiles,
-        scanProgressFraction,
         scanFilesPerSec,
         scanBytesPerSec,
         scanCurrentDir,
@@ -52,18 +47,8 @@
         <span class="scan-value">{formatNumber(scanDirsFound)}</span>
         <span class="scan-label">{scanDirsFound === 1 ? 'dir' : 'dirs'}</span>
     </div>
-    {#if scanExpectedFiles === null}
-        <span class="scan-spinner"></span>
-    {/if}
+    <span class="scan-spinner"></span>
 </div>
-
-<!-- Progress bar against index-derived expected totals (if available) -->
-{#if scanProgressFraction !== null}
-    <div class="scan-progress-bar">
-        <ProgressBar value={scanProgressFraction} ariaLabel="Scan progress (estimated)" />
-        <span class="scan-progress-detail">{Math.round(scanProgressFraction * 100)}% of estimated</span>
-    </div>
-{/if}
 
 <!-- Throughput -->
 {#if scanFilesPerSec !== null && scanFilesPerSec > 0}
@@ -112,20 +97,6 @@
         justify-content: center;
         gap: var(--spacing-sm);
         font-size: var(--font-size-sm);
-    }
-
-    .scan-progress-bar {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-        padding: 0 var(--spacing-md);
-    }
-
-    .scan-progress-detail {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        text-align: right;
-        font-variant-numeric: tabular-nums;
     }
 
     .scan-throughput {

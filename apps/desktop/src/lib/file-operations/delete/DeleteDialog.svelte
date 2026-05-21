@@ -25,7 +25,6 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { ScanThroughput } from '../scan-throughput'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
-    import ProgressBar from '$lib/ui/ProgressBar.svelte'
 
     const log = getAppLogger('deleteDialog')
 
@@ -88,21 +87,10 @@
     let isScanning = $state(false)
     let scanComplete = $state(false)
     let currentDir = $state<string | null>(null)
-    let expectedFiles = $state<number | null>(null)
-    let expectedBytes = $state<number | null>(null)
     const throughput = new ScanThroughput()
     let filesPerSec = $state<number | null>(null)
     let bytesPerSec = $state<number | null>(null)
     let unlisteners: UnlistenFn[] = []
-
-    /** Fraction (0..1) for the scan progress bar, capped at 1. Returns null
-     *  when the index doesn't cover all sources so the bar can fall back. */
-    const scanProgressFraction = $derived.by<number | null>(() => {
-        const byFiles = expectedFiles && expectedFiles > 0 ? filesFound / expectedFiles : null
-        const byBytes = expectedBytes && expectedBytes > 0 ? bytesFound / expectedBytes : null
-        if (byFiles === null && byBytes === null) return null
-        return Math.min(1, Math.max(byFiles ?? 0, byBytes ?? 0))
-    })
 
     /** Accepts the event if it belongs to our scan, filtering stale events from previous scans. */
     function isOurScanEvent(eventPreviewId: string): boolean {
@@ -120,8 +108,6 @@
                 dirsFound = event.dirsFound
                 bytesFound = event.bytesFound
                 currentDir = event.currentDir ?? null
-                if (event.expectedFilesTotal != null) expectedFiles = event.expectedFilesTotal
-                if (event.expectedBytesTotal != null) expectedBytes = event.expectedBytesTotal
                 const r = throughput.push({
                     timestampMs: Date.now(),
                     files: event.filesFound,
@@ -345,14 +331,6 @@
         {/if}
     </div>
 
-    <!-- Progress bar against index-derived expected totals (if available) -->
-    {#if isScanning && scanProgressFraction !== null}
-        <div class="scan-progress-bar">
-            <ProgressBar value={scanProgressFraction} ariaLabel="Scan progress (estimated)" />
-            <span class="scan-progress-detail">{Math.round(scanProgressFraction * 100)}% of estimated</span>
-        </div>
-    {/if}
-
     <!-- Throughput -->
     {#if isScanning && filesPerSec !== null && filesPerSec > 0}
         <div class="scan-throughput">
@@ -530,21 +508,6 @@
         font-size: var(--font-size-md);
         font-weight: 600;
         margin-left: var(--spacing-xs);
-    }
-
-    .scan-progress-bar {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-        padding: 0 var(--spacing-xl);
-        margin-bottom: var(--spacing-md);
-    }
-
-    .scan-progress-detail {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        text-align: right;
-        font-variant-numeric: tabular-nums;
     }
 
     .scan-throughput {
