@@ -11,6 +11,8 @@
     import Size from '$lib/ui/Size.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
     import EmptyState from './EmptyState.svelte'
+    import PathPills from './PathPills.svelte'
+    import SearchRowMenu from './SearchRowMenu.svelte'
     import type { SearchMode } from './search-state.svelte'
 
     interface Props {
@@ -37,6 +39,16 @@
         onColumnDragStart: (col: string, e: MouseEvent) => void
         /** Called when the user clicks an example chip in the empty state. */
         onPickExample: (chip: { mode: SearchMode; query: string }) => void
+        /**
+         * Called when the user clicks a path-pill ancestor segment. Parent navigates the
+         * active pane to `ancestorPath` and closes the dialog (per §3.8).
+         */
+        onPickPath: (ancestorPath: string) => void
+        /**
+         * Called when the user opens the row context menu (right-click on a row, or click
+         * on the row's `…` button). Parent routes to the native context-menu factory.
+         */
+        onRowMenu: (entry: SearchResultEntry) => void
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
@@ -61,6 +73,8 @@
         onResultClick,
         onColumnDragStart,
         onPickExample,
+        onPickPath,
+        onRowMenu,
     }: Props = $props()
     /* eslint-enable prefer-const */
 
@@ -200,6 +214,10 @@
                 onclick={() => {
                     onResultClick(index)
                 }}
+                oncontextmenu={(e) => {
+                    e.preventDefault()
+                    onRowMenu(entry)
+                }}
                 onmouseenter={() => {
                     hoveredIndex = index
                 }}
@@ -222,13 +240,23 @@
                 <span class="result-name" title={entry.name}>
                     {entry.name}
                 </span>
-                <span class="result-path" title={entry.parentPath}>
-                    {entry.parentPath}
+                <span class="result-path">
+                    <PathPills path={entry.parentPath} onPick={onPickPath} />
                 </span>
                 <span class="result-size">
                     <Size bytes={entry.size} />
                 </span>
-                <span class="result-modified"><DateLabel modifiedAt={entry.modifiedAt} /></span>
+                <span class="result-modified">
+                    <DateLabel modifiedAt={entry.modifiedAt} />
+                    <span class="row-menu-slot">
+                        <SearchRowMenu
+                            isCursorRow={index === cursorIndex}
+                            onOpen={() => {
+                                onRowMenu(entry)
+                            }}
+                        />
+                    </span>
+                </span>
             </div>
         {/each}
     {/if}
@@ -380,8 +408,7 @@
     .result-path {
         color: var(--color-text-tertiary);
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        min-width: 0;
     }
 
     .result-size {
@@ -394,6 +421,23 @@
         color: var(--color-text-tertiary);
         white-space: nowrap;
         text-align: right;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--spacing-xs);
+    }
+
+    /* The row-menu button is hidden by default on every row; the cursor row's button
+       overrides this via its own `.is-cursor` rule (always visible). Hovering any row
+       reveals its button so mouse users can reach the menu without first arrowing to
+       the row. */
+    .row-menu-slot :global(.row-menu-btn) {
+        opacity: 0;
+    }
+
+    .result-row:hover .row-menu-slot :global(.row-menu-btn),
+    .result-row.is-under-cursor .row-menu-slot :global(.row-menu-btn) {
+        opacity: 1;
     }
 
     /* Status bar uses the dialog's secondary surface; the surface change against the results

@@ -26,7 +26,11 @@
         parseSearchScope,
         getSystemDirExcludes,
         onSearchIndexReady,
+        showFileContextMenu,
+        showInFinder,
     } from '$lib/tauri-commands'
+    import { addToast } from '$lib/ui/toast/toast-store.svelte'
+    import type { SearchResultEntry } from '$lib/tauri-commands'
     import { iconCacheVersion } from '$lib/icon-cache'
     import type { UnlistenFn } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -88,6 +92,7 @@
     import AiTransparencyStrip from './AiTransparencyStrip.svelte'
     import RecentSearchesFooter from './RecentSearchesFooter.svelte'
     import RecentSearchesPopover from './RecentSearchesPopover.svelte'
+    import SearchFooterActions from './SearchFooterActions.svelte'
     import {
         loadRecentSearches,
         getRecentSearchesList,
@@ -300,6 +305,95 @@
                 // Already fell back to the optimistic snapshot; nothing to do.
             }
         })
+    }
+
+    /**
+     * Path-pill click: navigate the active pane to `ancestorPath` and close the dialog.
+     * Reuses the dialog's existing `onNavigate` callback (the same exit path "navigate
+     * to a file" already uses), so the parent treats this identically to a result click.
+     */
+    function pickPath(ancestorPath: string): void {
+        onNavigate(ancestorPath)
+    }
+
+    /**
+     * Opens the native file context menu for a result row. Reuses the existing
+     * `showFileContextMenu` factory (the same one `FilePane` uses for its rows). Per
+     * search-redesign-plan §3.9, the menu's entries include Open, Reveal in Finder
+     * (Linux: Open in file manager), Copy path, Copy name — all of which the native
+     * menu already provides via the existing menu builder.
+     */
+    function openRowMenu(entry: SearchResultEntry): void {
+        void showFileContextMenu(entry.path, entry.name, entry.isDirectory, [entry.path]).catch(() => {
+            // Menu failures are silent: a missing menu is preferable to a stuck dialog.
+        })
+    }
+
+    /**
+     * Returns the parent directory of a POSIX path, or null if the path is root or empty.
+     * Cheap, sync, no IPC: paths are already strings carried by `SearchResultEntry`.
+     */
+    function parentOf(path: string): string | null {
+        if (!path || path === '/') return null
+        // Strip a trailing slash so `/a/b/` and `/a/b` behave identically.
+        const normalized = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path
+        const lastSlash = normalized.lastIndexOf('/')
+        if (lastSlash < 0) return null
+        if (lastSlash === 0) return '/'
+        return normalized.slice(0, lastSlash)
+    }
+
+    /**
+     * `⌥←`: navigate the active pane to the cursor row's parent folder, then close the
+     * dialog. The cursor row always exists when there are results (`cursorIndex` defaults
+     * to 0); we no-op silently when there are none.
+     */
+    function jumpToCursorParent(): void {
+        const idx = getCursorIndex()
+        if (idx < 0 || idx >= results.length) return
+        const target = parentOf(results[idx].path) ?? parentOf(results[idx].parentPath)
+        if (!target) return
+        onNavigate(target)
+    }
+
+    /**
+     * `⌥→`: descend back into the cursor row's path (one segment "into" the result).
+     * For a file result this means navigating to the file itself (Enter equivalent); for
+     * a directory result, it navigates into the directory. The asymmetry with ⌥← matches
+     * the spec's "descend back (one segment)" intent: ⌥← peels one segment off, ⌥→
+     * restores it.
+     */
+    function descendFromCursor(): void {
+        const idx = getCursorIndex()
+        if (idx < 0 || idx >= results.length) return
+        onNavigate(results[idx].path)
+    }
+
+    /**
+     * Footer action: "Open in Finder" (macOS) / "Open in file manager" (Linux). Reveals
+     * the cursor row in the system file manager via the existing `showInFinder` IPC,
+     * which on macOS calls `open -R` (parent folder with the file selected) and on Linux
+     * runs `xdg-open` on the parent. Does NOT close the dialog: the user may want to
+     * keep looking through results after peeking in Finder.
+     */
+    function openCursorRowInFileManager(): void {
+        const idx = getCursorIndex()
+        if (idx < 0 || idx >= results.length) return
+        void showInFinder(results[idx].path).catch(() => {
+            // Best-effort: a failure here means the OS file manager refused the open.
+            // The user can still keep searching; no toast needed.
+        })
+    }
+
+    /**
+     * Footer action STUB: "Open in pane". M8 wires the snapshot store + virtual-volume
+     * push. For M7 we close the dialog and show a "coming in M8" toast so the button is
+     * discoverable but obviously not-yet-real. Replace this body with the real handler
+     * in M8.
+     */
+    function openInPaneStub(): void {
+        onClose()
+        addToast('Open in pane: coming in M8', { level: 'info' })
     }
 
     /** Empty-state chip pick: load + run, mirroring the recent-search activation path. */
@@ -756,6 +850,19 @@
             scheduleSearch()
             return true
         }
+        // ⌥← / ⌥→: jump to the cursor row's parent (←) or descend into the cursor row (→).
+        // The cursor row is the keyboard target; pills aren't tabbable, so this is the
+        // keyboard equivalent of clicking a pill / row. Per search-redesign-plan §3.8.
+        if (matchKey(e, 'ArrowLeft', 'alt')) {
+            e.preventDefault()
+            jumpToCursorParent()
+            return true
+        }
+        if (matchKey(e, 'ArrowRight', 'alt')) {
+            e.preventDefault()
+            descendFromCursor()
+            return true
+        }
         if (matchKey(e, 'Enter', 'meta')) {
             e.preventDefault()
             runAiFromQuery()
@@ -931,16 +1038,28 @@
                 handleColumnDragStart(col as keyof typeof colWidths, e)
             }}
             onPickExample={pickExample}
+            onPickPath={pickPath}
+            onRowMenu={openRowMenu}
         />
 
-        <div bind:this={footerRef}>
-            <RecentSearchesFooter
-                entries={recentEntries}
-                disabled={inputsDisabled}
-                onPick={activateHistoryEntry}
-                onRemove={removeHistoryEntry}
-                onOpenAll={openRecentPopover}
-            />
+        <div class="dialog-footer" bind:this={footerRef}>
+            <div class="footer-left">
+                <RecentSearchesFooter
+                    entries={recentEntries}
+                    disabled={inputsDisabled}
+                    onPick={activateHistoryEntry}
+                    onRemove={removeHistoryEntry}
+                    onOpenAll={openRecentPopover}
+                />
+            </div>
+            <div class="footer-right">
+                <SearchFooterActions
+                    resultCount={results.length}
+                    disabled={inputsDisabled}
+                    onOpenInPane={openInPaneStub}
+                    onOpenInFileManager={openCursorRowInFileManager}
+                />
+            </div>
         </div>
 
         {#if footerRef}
@@ -977,6 +1096,26 @@
         flex-direction: column;
         box-shadow: var(--shadow-lg);
         overflow: hidden;
+    }
+
+    /* Footer is a single row: recent-search chips on the left, action buttons on the
+       right (Open in Finder / Open in pane). The two child components each carry their
+       own background + top border, so the wrapper itself stays unstyled. */
+    .dialog-footer {
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: var(--spacing-sm);
+    }
+
+    .footer-left {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .footer-right {
+        flex: 0 0 auto;
     }
 
     /* Visually hidden but accessible to screen readers */

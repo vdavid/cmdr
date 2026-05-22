@@ -583,3 +583,121 @@ describe('SearchDialog auto-apply (M6)', () => {
     cleanup()
   })
 })
+
+describe('SearchDialog M7 path-pill navigation shortcuts', () => {
+  beforeEach(() => {
+    clearSearchState()
+    aiProvider = 'off'
+    autoApplySetting = true
+    autoApplyListeners.clear()
+    searchFilesMock.mockReset()
+  })
+
+  function dispatchAltKey(target: Element, key: string): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', {
+      key,
+      altKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  async function seedResultsAndMount(): Promise<{ overlay: Element; navigated: string[]; cleanup: () => void }> {
+    // searchFilesMock's inferred resolved type is `{ entries: never[]; totalCount: number }`
+    // (since the default mock returns an empty array literal). Cast to the broader shape
+    // expected at runtime so the seeded row's fields type-check.
+    searchFilesMock.mockResolvedValueOnce({
+      entries: [
+        {
+          name: 'photo.jpg',
+          path: '/Users/test/pictures/photo.jpg',
+          parentPath: '/Users/test/pictures',
+          isDirectory: false,
+          size: 1000,
+          modifiedAt: 1_700_000_000,
+          iconId: 'ext:jpg',
+        },
+      ],
+      totalCount: 1,
+    } as Awaited<ReturnType<typeof searchFilesMock>>)
+
+    const navigated: string[] = []
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(SearchDialog, {
+      target,
+      props: {
+        onNavigate: (path: string) => {
+          navigated.push(path)
+        },
+        onClose: () => {},
+        currentFolderPath: '/Users/test',
+      },
+    })
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+
+    // Drive a search to populate results + set cursor to row 0.
+    setQuery('photo*')
+    setMode('filename')
+    const overlay = target.querySelector('.search-overlay') as Element
+    dispatchKey(overlay, 'Enter')
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    setCursorIndex(0)
+
+    return {
+      overlay,
+      navigated,
+      cleanup: () => {
+        void unmount(component)
+        target.remove()
+      },
+    }
+  }
+
+  it("⌥← navigates to the cursor row file's parent folder", async () => {
+    const { overlay, navigated, cleanup } = await seedResultsAndMount()
+    dispatchAltKey(overlay, 'ArrowLeft')
+    await tick()
+    expect(navigated).toEqual(['/Users/test/pictures'])
+    cleanup()
+  })
+
+  it("⌥→ navigates to the cursor row's own path (descend back)", async () => {
+    const { overlay, navigated, cleanup } = await seedResultsAndMount()
+    dispatchAltKey(overlay, 'ArrowRight')
+    await tick()
+    expect(navigated).toEqual(['/Users/test/pictures/photo.jpg'])
+    cleanup()
+  })
+
+  it('⌥← and ⌥→ are no-ops when there are no results', async () => {
+    const navigated: string[] = []
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(SearchDialog, {
+      target,
+      props: {
+        onNavigate: (p: string) => {
+          navigated.push(p)
+        },
+        onClose: () => {},
+        currentFolderPath: '/Users/test',
+      },
+    })
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    const overlay = target.querySelector('.search-overlay') as Element
+    dispatchAltKey(overlay, 'ArrowLeft')
+    dispatchAltKey(overlay, 'ArrowRight')
+    await tick()
+    expect(navigated).toEqual([])
+    void unmount(component)
+    target.remove()
+  })
+})
