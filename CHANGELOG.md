@@ -5,6 +5,90 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-05-23
+
+### Added
+
+- Redesign Search dialog: re-thought UX, better filters, recent-searches history, persistent state across close+reopen,
+  "Show all in main window", per-row context menu, clickable path pills, source-side copy/move/delete from snapshots
+  ([62aef440](https://github.com/vdavid/cmdr/commit/62aef440),
+  [ac4c6340](https://github.com/vdavid/cmdr/commit/ac4c6340),
+  [b9ca1e6f](https://github.com/vdavid/cmdr/commit/b9ca1e6f),
+  [2c10bba7](https://github.com/vdavid/cmdr/commit/2c10bba7),
+  [807e456e](https://github.com/vdavid/cmdr/commit/807e456e),
+  [1f03ff49](https://github.com/vdavid/cmdr/commit/1f03ff49),
+  [f4eea79d](https://github.com/vdavid/cmdr/commit/f4eea79d),
+  [e52c6dec](https://github.com/vdavid/cmdr/commit/e52c6dec),
+  [d94187bd](https://github.com/vdavid/cmdr/commit/d94187bd),
+  [c79c1112](https://github.com/vdavid/cmdr/commit/c79c1112),
+  [4770a93f](https://github.com/vdavid/cmdr/commit/4770a93f),
+  [e7afc8b3](https://github.com/vdavid/cmdr/commit/e7afc8b3),
+  [1b1fc5ab](https://github.com/vdavid/cmdr/commit/1b1fc5ab),
+  [71c9485b](https://github.com/vdavid/cmdr/commit/71c9485b),
+  [f3f45084](https://github.com/vdavid/cmdr/commit/f3f45084),
+  [3ea1b45e](https://github.com/vdavid/cmdr/commit/3ea1b45e),
+  [5c35d9ea](https://github.com/vdavid/cmdr/commit/5c35d9ea),
+  [9b8f9dd7](https://github.com/vdavid/cmdr/commit/9b8f9dd7))
+- Select and copy in the file viewer. Works with files until 100 MB. Goes around our virtual scrolling.
+  Double/triple-click for word/line, right-click menu ([6f717829](https://github.com/vdavid/cmdr/commit/6f717829),
+  [1e061820](https://github.com/vdavid/cmdr/commit/1e061820),
+  [8d6f85c0](https://github.com/vdavid/cmdr/commit/8d6f85c0),
+  [46f278bb](https://github.com/vdavid/cmdr/commit/46f278bb),
+  [e329bb39](https://github.com/vdavid/cmdr/commit/e329bb39),
+  [1445c2d7](https://github.com/vdavid/cmdr/commit/1445c2d7))
+- Eject ejectable volumes (USB, SMB, DMG) from the picker and the breadcrumb right-click menu
+  ([2a7e256f](https://github.com/vdavid/cmdr/commit/2a7e256f))
+- Replace the human-friendly size units toggle with a 5-way size unit picker (dynamic / bytes / kB / MB / GB)
+  ([78a7f367](https://github.com/vdavid/cmdr/commit/78a7f367))
+- Show climbing bytes and dirs during MTP/SMB scan previews (was "0 / N / 0" until done)
+  ([c2b5a040](https://github.com/vdavid/cmdr/commit/c2b5a040))
+- Reuse scan-preview cache for local delete and cross-FS move so the dialog skips straight to the active phase
+  ([9445e61a](https://github.com/vdavid/cmdr/commit/9445e61a))
+- Center child windows on the main window; file viewers cascade
+  ([8cd06bf4](https://github.com/vdavid/cmdr/commit/8cd06bf4))
+- Tint zebra stripes with the pane bg so per-volume tinting actually shows through
+  ([b84e761e](https://github.com/vdavid/cmdr/commit/b84e761e))
+- Toast confirms zoom changes and points at ⌘0 to reset ([37f94410](https://github.com/vdavid/cmdr/commit/37f94410))
+- Show a Space hint on "Toggle selection" in the right-click menu
+  ([a24613d9](https://github.com/vdavid/cmdr/commit/a24613d9))
+- Blue info toasts, new colorless `default` level for low-importance feedback, and reclassify routine confirmations and
+  soft refusals ([dabf0e3a](https://github.com/vdavid/cmdr/commit/dabf0e3a),
+  [51e30112](https://github.com/vdavid/cmdr/commit/51e30112))
+
+### Fixed
+
+- Fix SMB share mis-loading local paths after a volume switch (stale `onPathChange` poisoned the new volume)
+  ([3e613ca6](https://github.com/vdavid/cmdr/commit/3e613ca6))
+- Fix volume copy dialog wedging open after SMB/MTP cancel ([0fbafebb](https://github.com/vdavid/cmdr/commit/0fbafebb))
+- Process selected files in pane sort order, not Cmd+click order
+  ([39fc8d2e](https://github.com/vdavid/cmdr/commit/39fc8d2e))
+- Cursor lands on the new folder, not the row below ([38ebdc87](https://github.com/vdavid/cmdr/commit/38ebdc87))
+- Fix Full view ".." row hiding behind the header after PageDown/PageUp
+  ([6ddb4273](https://github.com/vdavid/cmdr/commit/6ddb4273))
+- Fix viewer ⌘A in ByteSeek-no-index mode freezing on a 9e15-iter loop
+  ([e29312bd](https://github.com/vdavid/cmdr/commit/e29312bd))
+- Land `range_read` cancellation within ~64 KB, not 16 MB ([0e758b46](https://github.com/vdavid/cmdr/commit/0e758b46))
+- Fix Escape on viewer context menu closing the whole window
+  ([4464f766](https://github.com/vdavid/cmdr/commit/4464f766))
+- Honor `prefers-reduced-motion` in viewer drag autoscroll ([aec327b8](https://github.com/vdavid/cmdr/commit/aec327b8))
+- Surface silent-band viewer copy failures as a warn toast ([41398aca](https://github.com/vdavid/cmdr/commit/41398aca))
+- Polish viewer copy dialogs: ⌘A routes to the right size tier, Enter triggers the primary action, Tab skips ×
+  ([b6542e7b](https://github.com/vdavid/cmdr/commit/b6542e7b))
+
+### Non-app
+
+- Build git test fixtures via `gix` instead of CLI shell-outs; 91 tests went from tens of seconds to ~1.7 s
+  ([532722c8](https://github.com/vdavid/cmdr/commit/532722c8))
+- Trim slow tests under the 8 s nextest cap, drop the 30 s `cap_bundle_*` exception, make
+  `index_mtime_change_invalidates_cache` deterministic ([f4c0b5ad](https://github.com/vdavid/cmdr/commit/f4c0b5ad),
+  [9e23ff2a](https://github.com/vdavid/cmdr/commit/9e23ff2a),
+  [44429405](https://github.com/vdavid/cmdr/commit/44429405))
+- Re-enable three previously-skipped E2E tests; the culprit was a Node fixture-helper dangling-symlink bug
+  ([915c5f33](https://github.com/vdavid/cmdr/commit/915c5f33))
+- Settings-style chrome and a live SMB diagnostics dashboard in the dev Debug window
+  ([6bd0f15c](https://github.com/vdavid/cmdr/commit/6bd0f15c),
+  [e7660b3a](https://github.com/vdavid/cmdr/commit/e7660b3a))
+
 ## [0.21.0] - 2026-05-21
 
 ### Added
