@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   compareLineOffset,
   estimateSelectionBytes,
+  extendSelection,
   getLineSegmentBounds,
   isEmpty,
   isLineInRange,
@@ -166,6 +167,40 @@ describe('getLineSegmentBounds', () => {
     const sel: Selection = { anchor: { line: 0, offset: 1 }, focus: { line: 0, offset: 3 } }
     // "👋hello".length === 7 (2 for the emoji + 5 for "hello").
     expect(getLineSegmentBounds(sel, 0, 7)).toEqual({ selStart: 1, selEnd: 3 })
+  })
+})
+
+describe('extendSelection (shift-click)', () => {
+  it('no current selection: anchor = focus = point', () => {
+    const point = { line: 5, offset: 2 }
+    expect(extendSelection(null, point)).toEqual({ anchor: point, focus: point })
+  })
+
+  it('preserves existing anchor, moves focus to the new point', () => {
+    const current: Selection = { anchor: { line: 2, offset: 3 }, focus: { line: 5, offset: 7 } }
+    const newPoint = { line: 8, offset: 1 }
+    expect(extendSelection(current, newPoint)).toEqual({
+      anchor: { line: 2, offset: 3 },
+      focus: { line: 8, offset: 1 },
+    })
+  })
+
+  it('can shrink the selection (new focus before the anchor)', () => {
+    const current: Selection = { anchor: { line: 5, offset: 0 }, focus: { line: 10, offset: 0 } }
+    const newPoint = { line: 7, offset: 2 }
+    expect(extendSelection(current, newPoint)).toEqual({
+      anchor: { line: 5, offset: 0 },
+      focus: { line: 7, offset: 2 },
+    })
+  })
+
+  it('can flip the selection direction (new focus before the original anchor)', () => {
+    const current: Selection = { anchor: { line: 5, offset: 0 }, focus: { line: 10, offset: 0 } }
+    const newPoint = { line: 2, offset: 0 }
+    expect(extendSelection(current, newPoint)).toEqual({
+      anchor: { line: 5, offset: 0 },
+      focus: { line: 2, offset: 0 },
+    })
   })
 })
 

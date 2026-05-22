@@ -139,6 +139,22 @@ export function makeSelectAll(totalLines: number, lastLineLength: number): Selec
 }
 
 /**
+ * Shift-click extension: returns a new selection that runs from the current selection's
+ * anchor (or `point` if there's no current selection) to `point`. Caller-owned
+ * `anchor` is preserved; only the focus changes. This is the gesture-correct shape:
+ * the user clicked a new endpoint; the anchor (where the original gesture started)
+ * stays put.
+ *
+ * Pure: no DOM, no state. The composable just sets `selection = extendSelection(...)`.
+ */
+export function extendSelection(current: Selection | null, point: LineOffset): Selection {
+  if (current === null) {
+    return { anchor: point, focus: point }
+  }
+  return { anchor: current.anchor, focus: point }
+}
+
+/**
  * Estimates the UTF-8 byte length of the selected range, given a per-line byte
  * length lookup and per-line UTF-16 length lookup. Used by the copy flow to
  * pick a size tier (silent / confirm / refuse) before paying for the backend

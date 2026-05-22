@@ -36,6 +36,7 @@
     import { caretFromPoint } from './viewer-pointer'
     import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
     import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
+    import ViewerContextMenu from './ViewerContextMenu.svelte'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
     import { formatBytes, type RangeEnd } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -205,6 +206,9 @@
      */
     let dragPointerId: number | null = null
 
+    /** Position of the in-app context menu while it's open, or `null`. */
+    let contextMenuPos = $state<{ x: number; y: number } | null>(null)
+
     /** The pointer's most-recent Y position, used by the autoscroll RAF loop. */
     let dragPointerY: number = 0
 
@@ -227,12 +231,20 @@
     })
 
     function handleContentPointerDown(e: PointerEvent): void {
-        // Left mouse button only (button 0). Right-click goes to the context menu (M4).
+        // Left mouse button only (button 0). Right-click goes to the context menu.
         if (e.button !== 0) return
         const caret = caretFromPoint(document, e.clientX, e.clientY)
         if (caret === null) return
         e.preventDefault()
-        selection.setAnchor(caret)
+
+        // Shift-click extends the existing selection from its anchor to the clicked
+        // position. If there's no current selection, treat shift-click as a plain click.
+        if (e.shiftKey && selection.selection !== null) {
+            selection.setFocus(caret)
+        } else {
+            selection.setAnchor(caret)
+        }
+
         dragPointerId = e.pointerId
         dragPointerY = e.clientY
         // Capture so we keep receiving pointer events even if the cursor leaves the
@@ -275,6 +287,16 @@
 
     function handleContentPointerCancel(e: PointerEvent): void {
         endDrag(e.pointerId)
+    }
+
+    function handleContentContextMenu(e: MouseEvent): void {
+        // Suppress the native OS context menu so our in-app one wins.
+        e.preventDefault()
+        contextMenuPos = { x: e.clientX, y: e.clientY }
+    }
+
+    function closeContextMenu(): void {
+        contextMenuPos = null
     }
 
     /**
@@ -902,6 +924,7 @@
             onpointermove={handleContentPointerMove}
             onpointerup={handleContentPointerUp}
             onpointercancel={handleContentPointerCancel}
+            oncontextmenu={handleContentContextMenu}
         >
             <div
                 class="scroll-spacer"
@@ -971,6 +994,19 @@
         <span class="shortcut-hint">W wrap &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span>
     </div>
 </main>
+
+{#if contextMenuPos !== null}
+    <ViewerContextMenu
+        x={contextMenuPos.x}
+        y={contextMenuPos.y}
+        hasSelection={selection.selection !== null}
+        onCopy={() => {
+            void handleCopyShortcut()
+        }}
+        onSelectAll={handleSelectAllShortcut}
+        onClose={closeContextMenu}
+    />
+{/if}
 
 {#if copyConfirmBytes !== null}
     {@const confirmBytes = copyConfirmBytes}

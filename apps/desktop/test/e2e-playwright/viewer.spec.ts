@@ -223,6 +223,59 @@ test.describe('File viewer selection and copy', () => {
     expect(clip.startsWith('AAAA')).toBe(true)
   })
 
+  test('right-click opens the viewer context menu, Copy copies the selection', async () => {
+    // Select everything first.
+    await viewer.evaluate(`
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', metaKey: true }))
+        `)
+
+    // Right-click in the content. The viewer suppresses the OS menu and shows its own.
+    await viewer.evaluate(`
+            (function() {
+                const target = document.querySelector('.file-content')
+                if (!target) throw new Error('file-content not found')
+                const rect = target.getBoundingClientRect()
+                target.dispatchEvent(new MouseEvent('contextmenu', {
+                    bubbles: true, cancelable: true,
+                    clientX: rect.left + 20, clientY: rect.top + 20,
+                    button: 2,
+                }))
+            })()
+        `)
+
+    await viewer.waitForSelector('.viewer-context-menu', 3000)
+    expect(await viewer.isVisible('.viewer-context-menu')).toBe(true)
+
+    // Click the first menu item (Copy). textContent-based dispatch keeps the test
+    // resilient to DOM reshuffles.
+    await viewer.evaluate(`
+            (function() {
+                const buttons = document.querySelectorAll('.viewer-context-menu .menu-item')
+                for (const btn of buttons) {
+                    if (btn.textContent && btn.textContent.includes('Copy')) {
+                        btn.click()
+                        return
+                    }
+                }
+                throw new Error('Copy item not found in viewer context menu')
+            })()
+        `)
+
+    await pollUntil(
+      viewer,
+      async () => {
+        const text = (await viewer.textContent('.toast-item')) ?? ''
+        return text.includes('on your clipboard')
+      },
+      5000,
+    )
+
+    const clip = await viewer.evaluate<string>(
+      `(async () => { try { return await navigator.clipboard.readText() } catch { return '' } })()`,
+    )
+    expect(clip.length).toBeGreaterThanOrEqual(1024)
+  })
+
   test('drag past the bottom edge does not throw', async () => {
     // Smoke test: a drag where the pointer leaves the viewport via the bottom should
     // engage the autoscroll RAF loop and then release cleanly on `pointerup`. The
