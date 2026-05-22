@@ -66,16 +66,16 @@
         setIsSearching,
         getIsIndexAvailable,
         setIsIndexAvailable,
-        getAiStatus,
-        setAiStatus,
         getCaseSensitive,
         setCaseSensitive,
         getScope,
         setScope,
         getExcludeSystemDirs,
         setExcludeSystemDirs,
-        getCaveat,
-        setCaveat,
+        getLastAiPrompt,
+        setLastAiPrompt,
+        getLastAiCaveat,
+        setLastAiCaveat,
         buildSearchQuery,
         clearSearchState,
         type SearchMode,
@@ -84,6 +84,7 @@
     import SearchModeChips from './SearchModeChips.svelte'
     import SearchFilterChips from './SearchFilterChips.svelte'
     import SearchResults from './SearchResults.svelte'
+    import AiTransparencyStrip from './AiTransparencyStrip.svelte'
 
     interface Props {
         /** Called when user selects a result: receives the full path */
@@ -154,11 +155,11 @@
     const indexEntryCount = $derived(getIndexEntryCount())
     const isSearching = $derived(getIsSearching())
     const isIndexAvailable = $derived(getIsIndexAvailable())
-    const aiStatus = $derived(getAiStatus())
     const caseSensitive = $derived(getCaseSensitive())
     const scope = $derived(getScope())
     const excludeSystemDirs = $derived(getExcludeSystemDirs())
-    const caveatText = $derived(getCaveat())
+    const lastAiPrompt = $derived(getLastAiPrompt())
+    const lastAiCaveat = $derived(getLastAiCaveat())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
 
@@ -167,7 +168,6 @@
     /** Whether inputs/filters should be disabled (index not available or still scanning with no index). */
     const inputsDisabled = $derived(!isIndexAvailable)
 
-    let aiError = $state('')
     let highlightedFields = new SvelteSet<string>()
     /** True once the user has triggered at least one search (so we can distinguish "no query yet" from "0 results"). */
     let hasSearched = $state(false)
@@ -280,7 +280,16 @@
         }, 200)
     }
 
-    async function executeSearch(): Promise<void> {
+    /**
+     * Runs a search using the current state.
+     *
+     * `fromAiTranslation` is true only when called from `executeAiSearch()` (after the AI translation
+     * has populated state). In that branch we keep the AI transparency strip's `lastAiPrompt` /
+     * `lastAiCaveat` intact (they were just set). In every other branch (the user typed and the
+     * debounce fired, the user pressed Enter in filename/regex mode, etc.) we clear the strip so it
+     * doesn't outlive the AI search it belongs to.
+     */
+    async function executeSearch(fromAiTranslation = false): Promise<void> {
         if (debounceTimer) clearTimeout(debounceTimer)
         hasSearched = true
         if (!getIsIndexReady()) return
@@ -300,6 +309,13 @@
             setTotalCount(result.totalCount)
             setCursorIndex(0)
             hoveredIndex = null
+            if (!fromAiTranslation) {
+                // A non-AI search completed cleanly. The AI transparency strip belongs to the
+                // previous AI search, so we drop it here. AI runs go through `executeAiSearch`,
+                // which sets the strip and then calls us with `fromAiTranslation = true`.
+                setLastAiPrompt(null)
+                setLastAiCaveat(null)
+            }
         } catch {
             // IPC error: ignore silently
         } finally {
@@ -424,29 +440,27 @@
         const trimmed = queryText.trim()
         if (!trimmed) return
 
-        aiError = ''
-        setCaveat('')
-        const provider = getSetting('ai.provider')
-        const providerLabel = provider === 'local' ? 'local LLM' : provider
+        // Capture the original natural-language prompt BEFORE the translation overwrites `query`
+        // and `mode`. This is what the transparency strip shows; without this line the prompt is
+        // unrecoverable after the AI fills in the bar with its translated pattern.
+        setLastAiPrompt(trimmed)
+        setLastAiCaveat(null)
 
-        // Translate query via LLM
-        setAiStatus(`Calling ${providerLabel}...`)
         let translateResult: Awaited<ReturnType<typeof translateSearchQuery>>
         try {
             translateResult = await translateSearchQuery(trimmed)
-        } catch (e: unknown) {
-            aiError = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e)
-            setAiStatus('')
+        } catch {
+            // AI translation failed; bail out silently. Surfacing the error to the user lands in M5
+            // alongside the empty state and example-query plumbing.
             return
         }
 
         applyAiFiltersWithHighlight(translateResult)
-        setCaveat(translateResult.caveat ?? '')
+        setLastAiCaveat(translateResult.caveat ?? null)
 
-        // Search using the translated query directly
-        setAiStatus('Searching...')
-        await executeSearch()
-        setAiStatus('')
+        // Search using the translated query directly. `fromAiTranslation` keeps the transparency
+        // strip alive across the subsequent searchFiles call.
+        await executeSearch(true)
         await focusFirstResult()
     }
 
@@ -685,14 +699,8 @@
 
         <SearchModeChips {mode} {aiEnabled} disabled={inputsDisabled} onSelect={handleModeChange} />
 
-        {#if caveatText}
-            <div class="caveat-row">{caveatText}</div>
-        {/if}
-        {#if aiStatus}
-            <div class="ai-status">{aiStatus}</div>
-        {/if}
-        {#if aiError}
-            <div class="ai-error">{aiError}</div>
+        {#if lastAiPrompt}
+            <AiTransparencyStrip aiPrompt={lastAiPrompt} caveat={lastAiCaveat ?? ''} />
         {/if}
 
         <SearchFilterChips
@@ -772,28 +780,6 @@
         flex-direction: column;
         box-shadow: var(--shadow-lg);
         overflow: hidden;
-    }
-
-    /* AI status / caveat / error: surface-matched strip below the chip row. M4 will replace this
-       with a dedicated transparency strip; for now we keep parity with the old AiSearchRow. */
-    .caveat-row,
-    .ai-status,
-    .ai-error {
-        padding: var(--spacing-xs) var(--spacing-lg);
-        background: var(--color-bg-primary);
-        font-size: var(--font-size-sm);
-    }
-
-    .caveat-row {
-        color: var(--color-text-tertiary);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .ai-status,
-    .ai-error {
-        color: var(--color-text-secondary);
     }
 
     /* Visually hidden but accessible to screen readers */

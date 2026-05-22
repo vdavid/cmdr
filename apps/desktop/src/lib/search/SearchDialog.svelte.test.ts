@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
 import SearchDialog from './SearchDialog.svelte'
+import type { TranslateResult } from '$lib/ipc/bindings'
 import {
   clearSearchState,
   getQuery,
@@ -23,13 +24,15 @@ import {
   setScope,
   getCursorIndex,
   setCursorIndex,
+  getLastAiPrompt,
+  getLastAiCaveat,
 } from './search-state.svelte'
 
 let aiProvider: 'off' | 'local' | 'cloud' = 'off'
 
 // vi.mock is hoisted above all top-level `const`s; use vi.hoisted for shared mock instances.
 const { translateSearchQueryMock } = vi.hoisted(() => ({
-  translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} })),
+  translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -242,6 +245,93 @@ describe('SearchDialog mode shortcuts (AI off)', () => {
     dispatchKey(overlay, 'Enter', true)
     await tick()
     expect(translateSearchQueryMock).not.toHaveBeenCalled()
+    cleanup()
+  })
+})
+
+describe('SearchDialog AI transparency strip', () => {
+  beforeEach(() => {
+    clearSearchState()
+    aiProvider = 'cloud'
+    translateSearchQueryMock.mockReset()
+  })
+
+  async function flushAi(): Promise<void> {
+    // The AI flow chains a few microtasks: translateSearchQuery -> applyAiFilters -> executeSearch.
+    // Resolve all of them so the strip stabilizes before we assert.
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+    await tick()
+  }
+
+  it('appears after an AI run and shows the prompt + caveat', async () => {
+    translateSearchQueryMock.mockResolvedValueOnce({
+      display: { namePattern: '*.png', patternType: 'glob' },
+      query: {},
+      caveat: "I treated 'big' as larger than 10 MB.",
+    } as unknown as TranslateResult)
+    const { overlay, cleanup } = await mountDialog()
+    setQuery('big screenshots')
+    setMode('ai')
+    dispatchKey(overlay, 'Enter')
+    await flushAi()
+
+    expect(getLastAiPrompt()).toBe('big screenshots')
+    expect(getLastAiCaveat()).toBe("I treated 'big' as larger than 10 MB.")
+
+    const strip = document.body.querySelector('.ai-transparency-strip')
+    expect(strip).not.toBeNull()
+    expect(strip?.querySelector('.ai-prompt')?.textContent).toBe('big screenshots')
+    expect(strip?.querySelector('.ai-caveat')?.textContent).toBe("I treated 'big' as larger than 10 MB.")
+
+    cleanup()
+  })
+
+  it('hides on ⌘N (clear search state)', async () => {
+    translateSearchQueryMock.mockResolvedValueOnce({
+      display: { namePattern: '*.pdf', patternType: 'glob' },
+      query: {},
+      caveat: null,
+    } as unknown as TranslateResult)
+    const { overlay, cleanup } = await mountDialog()
+    setQuery('pdfs from this week')
+    setMode('ai')
+    dispatchKey(overlay, 'Enter')
+    await flushAi()
+    expect(getLastAiPrompt()).toBe('pdfs from this week')
+
+    dispatchKey(overlay, 'n', true)
+    await tick()
+    expect(getLastAiPrompt()).toBeNull()
+    expect(document.body.querySelector('.ai-transparency-strip')).toBeNull()
+
+    cleanup()
+  })
+
+  it('hides when a non-AI search runs successfully', async () => {
+    translateSearchQueryMock.mockResolvedValueOnce({
+      display: { namePattern: '*.pdf', patternType: 'glob' },
+      query: {},
+      caveat: null,
+    } as unknown as TranslateResult)
+    const { overlay, cleanup } = await mountDialog()
+    setQuery('pdfs from this week')
+    setMode('ai')
+    dispatchKey(overlay, 'Enter')
+    await flushAi()
+    expect(getLastAiPrompt()).toBe('pdfs from this week')
+
+    // Switch to filename mode and run a manual search.
+    setMode('filename')
+    setQuery('*.txt')
+    dispatchKey(overlay, 'Enter')
+    await flushAi()
+
+    expect(getLastAiPrompt()).toBeNull()
+    expect(getLastAiCaveat()).toBeNull()
+    expect(document.body.querySelector('.ai-transparency-strip')).toBeNull()
+
     cleanup()
   })
 })

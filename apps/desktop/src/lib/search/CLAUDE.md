@@ -11,40 +11,47 @@ chip row and path-pill column landing in later milestones.
 
 ## Files
 
-| File                               | Purpose                                                                                      |
-| ---------------------------------- | -------------------------------------------------------------------------------------------- |
-| `SearchDialog.svelte`              | Orchestrator: overlay, mount/unmount, keyboard dispatch, search execution, state wiring      |
-| `SearchBar.svelte`                 | Unified query input: one `<input>` for AI / filename / regex, placeholder updates per mode   |
-| `SearchModeChips.svelte`           | Mode chip row below the bar: AI / Filename / Content (disabled) / Regex, arrow-key navigable |
-| `SearchFilterChips.svelte`         | Filter chip strip (Size, Modified, Search in) plus Add filter dropdown. Each opens a popover |
-| `FilterChip.svelte`                | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded            |
-| `FilterChipPopover.svelte`         | Generic popover: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog  |
-| `filter-chip-state.ts`             | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip` (testable in isolation)  |
-| `SearchResults.svelte`             | Column headers + results list + all states (loading, empty, populated) + status bar          |
-| `search-state.svelte.ts`           | Module-level `$state` for query fields, results, index readiness, AI state                   |
-| `search-state.test.ts`             | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)                |
-| `filter-chip-state.test.ts`        | Default → configured → cleared rules for each filter chip's display summary                  |
-| `SearchBar.svelte.test.ts`         | Per-mode placeholder, value mirror, `onInput` callback                                       |
-| `SearchModeChips.svelte.test.ts`   | Chip set, active marker, click + keyboard activation, focus motion (skipping Content)        |
-| `SearchFilterChips.svelte.test.ts` | Chip rendering, `×` and Backspace clear, popover open/close, Add filter list, scope behavior |
-| `SearchDialog.svelte.test.ts`      | `⌘N` clears, close+reopen preserves, `⌘1`/`⌘2`/`⌘3` mode switch, `⌘Enter` triggers AI        |
-| `SearchDialog.a11y.test.ts`        | Tier-3 axe-core audit across loading / index-ready / AI-on macro-states                      |
-| `SearchFilterChips.a11y.test.ts`   | Tier-3 axe-core audit across default, configured, disabled, and open-popover states          |
-| `SearchResults.a11y.test.ts`       | Tier-3 axe-core audit across result states                                                   |
+| File                                 | Purpose                                                                                                   |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `SearchDialog.svelte`                | Orchestrator: overlay, mount/unmount, keyboard dispatch, search execution, state wiring                   |
+| `SearchBar.svelte`                   | Unified query input: one `<input>` for AI / filename / regex, placeholder updates per mode                |
+| `SearchModeChips.svelte`             | Mode chip row below the bar: AI / Filename / Content (disabled) / Regex, arrow-key navigable              |
+| `AiTransparencyStrip.svelte`         | Strip below the chip row showing the original AI prompt, the caveat, and a disabled Refine button         |
+| `SearchFilterChips.svelte`           | Filter chip strip (Size, Modified, Search in) plus Add filter dropdown. Each opens a popover              |
+| `FilterChip.svelte`                  | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded                         |
+| `FilterChipPopover.svelte`           | Generic popover: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog               |
+| `filter-chip-state.ts`               | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip` (testable in isolation)               |
+| `SearchResults.svelte`               | Column headers + results list + all states (loading, empty, populated) + status bar                       |
+| `search-state.svelte.ts`             | Module-level `$state` for query fields, results, index readiness, AI state                                |
+| `search-state.test.ts`               | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)                             |
+| `filter-chip-state.test.ts`          | Default → configured → cleared rules for each filter chip's display summary                               |
+| `SearchBar.svelte.test.ts`           | Per-mode placeholder, value mirror, `onInput` callback                                                    |
+| `SearchModeChips.svelte.test.ts`     | Chip set, active marker, click + keyboard activation, focus motion (skipping Content)                     |
+| `SearchFilterChips.svelte.test.ts`   | Chip rendering, `×` and Backspace clear, popover open/close, Add filter list, scope behavior              |
+| `AiTransparencyStrip.svelte.test.ts` | Renders prompt, renders caveat when set, Refine button is disabled with Coming soon tooltip               |
+| `SearchDialog.svelte.test.ts`        | `⌘N` clears, close+reopen preserves, `⌘1`/`⌘2`/`⌘3` mode switch, `⌘Enter` triggers AI, AI strip lifecycle |
+| `SearchDialog.a11y.test.ts`          | Tier-3 axe-core audit across loading / index-ready / AI-on macro-states                                   |
+| `SearchFilterChips.a11y.test.ts`     | Tier-3 axe-core audit across default, configured, disabled, and open-popover states                       |
+| `AiTransparencyStrip.a11y.test.ts`   | Tier-3 axe-core audit for prompt-only and prompt-plus-caveat states                                       |
+| `SearchResults.a11y.test.ts`         | Tier-3 axe-core audit across result states                                                                |
 
-## State shape (post-M2)
+## State shape (post-M4)
 
 The user's typed text and the active mode are one model:
 
 ```ts
 let query = $state('') // The text in the bar
 let mode = $state<SearchMode>('filename') // 'ai' | 'filename' | 'regex'
+let lastAiPrompt = $state<string | null>(null) // The natural-language prompt before AI overwrites `query`
+let lastAiCaveat = $state<string | null>(null) // The AI translator's caveat (or null)
 ```
 
-`buildSearchQuery()` reads both: `mode === 'regex'` produces `patternType: 'regex'`, anything else produces
-`patternType: 'glob'`. AI mode is only ever invoked via `executeAiSearch()`, which calls `translateSearchQuery` and then
-overwrites `query` + `mode` with the AI's result (so the user sees what was searched). M4 will surface the original
-prompt in a transparency strip; for M2 it lives only in the user's memory.
+`buildSearchQuery()` reads `query` + `mode`: `mode === 'regex'` produces `patternType: 'regex'`, anything else produces
+`patternType: 'glob'`. AI mode is only ever invoked via `executeAiSearch()`, which (1) captures the user's prompt into
+`lastAiPrompt`, (2) calls `translateSearchQuery`, (3) overwrites `query` + `mode` with the AI's result so the user can
+see and iterate on the translated pattern, and (4) sets `lastAiCaveat` from the result. The `AiTransparencyStrip` is
+visible whenever `lastAiPrompt` is non-null; it clears on `⌘N` (via `clearSearchState`) and on any successful non-AI
+search (`executeSearch(fromAiTranslation = false)`).
 
 There is **no `aiPrompt` state and no `namePattern` state**. M2 deleted both. Anywhere the old code read `aiPrompt` or
 `namePattern`, the new code reads `query`. Anywhere the old code branched on `patternType`, the new code branches on
@@ -120,9 +127,20 @@ a message ("Drive index not ready...") with scan progress if available. Inputs a
 extracts keywords, Rust builds the query deterministically), then runs `executeSearch()`. No preflight, no refinement
 pass. The previous two-pass system caused ~15% regressions; deterministic structure means there's nothing to refine.
 
-**AI overwrites the bar**: After AI translates, the bar shows the AI's translated pattern (filename / regex), and `mode`
-flips accordingly. The user sees what was searched and can keep iterating. The original natural-language prompt is
-preserved only in the user's memory until M4 ships the transparency strip.
+**AI overwrites the bar; the strip preserves the prompt**: After AI translates, the bar shows the AI's translated
+pattern (filename / regex), and `mode` flips accordingly. The user sees what was searched and can keep iterating. The
+original natural-language prompt and the AI's caveat are surfaced in the `AiTransparencyStrip` below the chip row. The
+strip is the source of truth for "what did I ask the AI?" once the bar has been overwritten. Lifecycle:
+
+- `executeAiSearch(trimmed)` sets `lastAiPrompt = trimmed` BEFORE calling `translateSearchQuery`. The capture is
+  unconditional: even if the IPC fails, the user still sees what they asked.
+- After the translation succeeds, `lastAiCaveat = translateResult.caveat ?? null`.
+- `executeSearch(fromAiTranslation: boolean)` clears both fields when `fromAiTranslation` is false. `executeAiSearch`
+  passes `true`, so the AI flow's tail (`executeSearch(true)`) leaves the strip intact.
+- `clearSearchState()` (called by `⌘N`) clears both fields.
+
+The disabled "Refine…" button on the strip is the placeholder for the chat-back UX. No keyboard shortcut is wired (same
+contract as the Content mode chip: visible-disabled with an explanatory tooltip is fine; shortcut-but-no-op is hostile).
 
 **Auto mode fallback when AI gets disabled mid-session**: If the AI provider is switched off while the dialog is open
 and the active mode is `ai`, the dialog quietly flips to `filename`. The user wouldn't be able to run a search
@@ -175,9 +193,9 @@ close + reopen into a lost-work moment. The only sanctioned reset path is `⌘N`
 state from a lifecycle hook, you probably want a user-initiated action instead.
 
 **Gotcha**: The AI's translation overwrites `query` and `mode`. **Why**: We want the bar to show what was searched, not
-the natural-language prompt. Until M4 ships the transparency strip, the original prompt is only in the user's memory.
-Anyone building on top of this should not assume `query` still contains the user's natural-language input after an AI
-run.
+the natural-language prompt. The original prompt is preserved separately in `lastAiPrompt` (set by `executeAiSearch`
+before the IPC call) so the `AiTransparencyStrip` can render it. Anyone building on top of this should not assume
+`query` still contains the user's natural-language input after an AI run; use `getLastAiPrompt()` instead.
 
 ## References
 

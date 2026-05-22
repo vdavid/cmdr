@@ -45,10 +45,18 @@ let isIndexAvailable = $state(true)
 // Case sensitivity
 let caseSensitive = $state(false)
 
-// AI status text shown while a translation/search is in flight.
-let aiStatus = $state('')
-// Caveat returned by the AI translator (shown after a translation completes).
-let caveat = $state('')
+/**
+ * The original natural-language prompt the user typed before the AI translated it. Preserved so
+ * the AI transparency strip can show what was actually asked, even after the AI overwrites `query`
+ * with the translated pattern. Null when no AI search has run this session.
+ */
+let lastAiPrompt = $state<string | null>(null)
+/**
+ * The caveat returned alongside the last AI translation (for example "I ignored the file size you
+ * mentioned because the request didn't include a unit"). Null when no AI search has run, or when
+ * the AI returned no caveat. Shown by the transparency strip below the prompt.
+ */
+let lastAiCaveat = $state<string | null>(null)
 
 // Scope (folder filter)
 let scope = $state('')
@@ -110,20 +118,20 @@ export function getCursorIndex(): number {
 export function getIsIndexAvailable(): boolean {
   return isIndexAvailable
 }
-export function getAiStatus(): string {
-  return aiStatus
-}
 export function getCaseSensitive(): boolean {
   return caseSensitive
 }
 export function getScope(): string {
   return scope
 }
-export function getCaveat(): string {
-  return caveat
-}
 export function getExcludeSystemDirs(): boolean {
   return excludeSystemDirs
+}
+export function getLastAiPrompt(): string | null {
+  return lastAiPrompt
+}
+export function getLastAiCaveat(): string | null {
+  return lastAiCaveat
 }
 
 // Setters
@@ -178,20 +186,20 @@ export function setCursorIndex(value: number): void {
 export function setIsIndexAvailable(value: boolean): void {
   isIndexAvailable = value
 }
-export function setAiStatus(value: string): void {
-  aiStatus = value
-}
 export function setCaseSensitive(value: boolean): void {
   caseSensitive = value
 }
 export function setScope(value: string): void {
   scope = value
 }
-export function setCaveat(text: string): void {
-  caveat = text
-}
 export function setExcludeSystemDirs(value: boolean): void {
   excludeSystemDirs = value
+}
+export function setLastAiPrompt(value: string | null): void {
+  lastAiPrompt = value
+}
+export function setLastAiCaveat(value: string | null): void {
+  lastAiCaveat = value
 }
 
 /** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
@@ -296,9 +304,9 @@ export function clearSearchState(): void {
   cursorIndex = 0
   isIndexAvailable = true
   caseSensitive = false
-  aiStatus = ''
-  caveat = ''
   scope = ''
   excludeSystemDirs = true
   isSearching = false
+  lastAiPrompt = null
+  lastAiCaveat = null
 }
