@@ -147,9 +147,19 @@ pub fn read_range(
     // three backends (ByteSeek's `Line(N)` is approximate; its byte-offset seeks are
     // exact, just back-scan for the surrounding newline).
     const FETCH_CHUNK: usize = 4096;
+    // Cancellation budget inside the per-line loop. The plan's "every 64 KB" was the
+    // target; we check whichever lands first: 256 lines (cheap line counter) or 64 KB
+    // of emitted text (cheap byte counter). At typical 80-byte lines that's a check
+    // every 20 KB; at 4 KB-per-line files (which would dwarf the 256-line cap) we'd
+    // check every ~16 lines. Either way the worst-case latency between Escape and
+    // `Cancelled` returning is well under the 100 ms threshold for "feels responsive."
+    const CANCEL_CHECK_LINES: usize = 256;
+    const CANCEL_CHECK_BYTES: usize = 64 * 1024;
     let mut next_target = SeekTarget::Line(start_line);
     let mut lines_emitted: usize = 0;
     let mut first_chunk = true;
+    let mut lines_since_cancel_check: usize = 0;
+    let mut bytes_since_cancel_check: usize = 0;
 
     loop {
         if cancel.load(Ordering::Relaxed) {
@@ -161,9 +171,15 @@ pub fn read_range(
             break;
         }
 
-        // Compute the byte offset just past this chunk's last line. Each line in the
-        // chunk does NOT include a trailing newline (the backend strips them), so we
-        // add 1 per line for the delimiter. This is exact byte arithmetic.
+        // Compute the byte offset just past this chunk's last line.
+        //
+        // CRLF assumption: line readers in all three backends keep the `\r` AS PART of
+        // the line string (they only split on `\n`; `&data[pos..pos + nl_pos]` retains
+        // bytes before the newline byte). So `line.len()` already includes the `\r`
+        // for CRLF files, and the `+ 1` accounts for the single `\n` delimiter byte.
+        // No drift on either LF or CRLF files. See `byte_seek.rs:118`,
+        // `full_load.rs:43`, `line_index.rs:172` for the parallel patterns. Test
+        // fixture: `read_range_full_load_crlf_*` in `session_test.rs`.
         let mut chunk_end_offset = chunk.byte_offset;
         for line in &chunk.lines {
             chunk_end_offset += line.len() as u64 + 1;
@@ -172,6 +188,17 @@ pub fn read_range(
         let first_line_idx_in_chunk = chunk.first_line_number;
 
         for (i, line) in chunk.lines.iter().enumerate() {
+            // Check the cancel flag periodically inside the inner loop. Doing it only
+            // between chunks meant a single 4096-line chunk of 4 KB/line files (16 MB)
+            // was uninterruptible. Now Escape lands within ~64 KB of emitted output.
+            if lines_since_cancel_check >= CANCEL_CHECK_LINES || bytes_since_cancel_check >= CANCEL_CHECK_BYTES {
+                if cancel.load(Ordering::Relaxed) {
+                    return Err(ViewerError::Cancelled);
+                }
+                lines_since_cancel_check = 0;
+                bytes_since_cancel_check = 0;
+            }
+
             let line_number = first_line_idx_in_chunk + i;
             let is_first_overall = first_chunk && i == 0;
 
@@ -180,6 +207,7 @@ pub fn read_range(
                 return Ok(out);
             }
 
+            let bytes_before = out.len();
             if is_first_overall {
                 // First line of the whole selection: take from start_offset to end of line.
                 let start_byte = clamp_utf16_offset_to_byte(line, start_offset_utf16);
@@ -196,6 +224,8 @@ pub fn read_range(
                 out.push('\n');
             }
             lines_emitted += 1;
+            lines_since_cancel_check += 1;
+            bytes_since_cancel_check += out.len() - bytes_before;
         }
 
         first_chunk = false;

@@ -539,37 +539,92 @@ fn read_range_byte_seek_eof_selects_whole_file() {
 
 #[test]
 fn read_range_cancellation_returns_cancelled() {
-    let dir = create_test_dir("range_cancel");
-    // Build a big file so the read takes long enough to cancel.
-    let line_str = "x".repeat(1000) + "\n";
-    let line_count = (FULL_LOAD_THRESHOLD as usize / line_str.len()) + 1000;
-    let content: String = line_str.repeat(line_count);
-    let file = write_test_file(&dir, "big.txt", &content);
-    let open = session::open_session(file.to_str().unwrap()).unwrap();
-    let sid_arc = std::sync::Arc::new(open.session_id.clone());
+    use std::sync::atomic::AtomicBool;
 
-    // Spawn a thread that cancels after a short delay.
-    let sid_for_cancel = sid_arc.clone();
-    let cancel_handle = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(5));
-        session::cancel_read(&sid_for_cancel, 42)
+    // Direct test of the inner-loop cancel check: bypass the session and drive the
+    // pure `read_range` against a `FullLoad` backend, flipping the cancel flag BEFORE
+    // the call so the result is deterministic (no thread race). A file with ~512
+    // lines is plenty to exceed `CANCEL_CHECK_LINES = 256`, guaranteeing the in-loop
+    // check fires at least once.
+    use super::full_load::FullLoadBackend;
+    use super::range_read::read_range;
+
+    let line_str = "x".repeat(64) + "\n"; // 65 bytes per line.
+    let content: String = line_str.repeat(512);
+    let backend = FullLoadBackend::from_content(&content, "cancel.txt");
+
+    let cancel = AtomicBool::new(true);
+    let result = read_range(&backend, line(0, 0), RangeEnd::Eof, &cancel);
+
+    assert!(
+        matches!(result, Err(ViewerError::Cancelled)),
+        "expected ViewerError::Cancelled, got: {:?}",
+        result
+    );
+}
+
+#[test]
+fn read_range_session_cancellation_returns_cancelled_and_cleans_up() {
+    // End-to-end through the session: use a file big enough that the read can't
+    // complete before the canceller fires. 1 MB + 1024 lines pushes us into ByteSeek
+    // mode and the read takes long enough to interrupt deterministically.
+    let dir = create_test_dir("range_session_cancel");
+    // ~10 MB file with 4 KB lines: 4096 lines = ~16 MB → ByteSeek mode, and the read
+    // needs many fetch chunks. The in-loop check fires hundreds of times.
+    let line_str = "z".repeat(4096) + "\n";
+    let content: String = line_str.repeat(4096);
+    let file = write_test_file(&dir, "big.txt", &content);
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let sid_for_cancel = sid.clone();
+    let canceller = thread::spawn(move || {
+        // 2 ms is enough that the read has started but nowhere near done on a ~16 MB
+        // file. The in-loop check (every 64 KB or 256 lines) fires well before the
+        // read completes.
+        thread::sleep(Duration::from_millis(2));
+        session::cancel_read(&sid_for_cancel, 42).unwrap();
     });
 
-    // Read the whole file from another thread; expect Cancelled.
-    let result = session::read_range(&sid_arc, 42, line(0, 0), RangeEnd::Eof);
-    let _ = cancel_handle.join();
+    let result = session::read_range(&sid, 42, line(0, 0), RangeEnd::Eof);
+    let _ = canceller.join();
 
-    // The result is racy: if the read completed before cancel landed, we get Ok.
-    // To make the test deterministic, just assert that EITHER it returned Cancelled
-    // OR it returned Ok (didn't blow up). On at least one run we expect Cancelled.
-    // The important invariant: active_reads is empty after the call returns.
-    match result {
-        Ok(_) | Err(ViewerError::Cancelled) => {}
-        Err(other) => panic!("unexpected error: {:?}", other),
-    }
-    assert_eq!(session::active_read_count(&sid_arc), 0);
+    assert!(
+        matches!(result, Err(ViewerError::Cancelled)),
+        "expected ViewerError::Cancelled, got: {:?}",
+        result.map(|s| format!("Ok({} bytes)", s.len()))
+    );
+    assert_eq!(session::active_read_count(&sid), 0);
 
-    session::close_session(&sid_arc).unwrap();
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_full_load_crlf_preserves_carriage_returns() {
+    // CRLF files: the backend keeps the `\r` AS PART of the line text (it only splits
+    // on `\n`). So `read_range` returns lines with their `\r` intact, and the byte-
+    // offset arithmetic (`line.len() + 1`) correctly accounts for both bytes. This
+    // test pins both behaviours so a future "auto-strip \r" change doesn't silently
+    // drift `byte_offset`.
+    let dir = create_test_dir("range_crlf");
+    let content = "alpha\r\nbeta\r\ngamma\r\n";
+    let file = write_test_file(&dir, "crlf.txt", content);
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    // ⌘A-equivalent: read everything. The backend keeps `\r` as part of each line;
+    // `range_read` rejoins with `\n` between lines and trims exactly one trailing
+    // newline at EOF (the same half-open behaviour the LF test asserts). Net: the
+    // original CRLF bytes round-trip exactly.
+    let out = session::read_range(&sid, 1, line(0, 0), RangeEnd::Eof).unwrap();
+    assert_eq!(out, "alpha\r\nbeta\r\ngamma\r\n");
+
+    // Multi-line slice: from (0, 2) to (1, 3). On line 0 the text after offset 2 is
+    // "pha\r" (offset 2 in UTF-16 lands on byte 2 of "alpha\r"). Then the joining
+    // `\n`. Then on line 1 from offset 0 to 3 = "bet".
+    let slice = session::read_range(&sid, 2, line(0, 2), line(1, 3)).unwrap();
+    assert_eq!(slice, "pha\r\nbet");
+
+    session::close_session(&sid).unwrap();
     cleanup(&dir);
 }
 
