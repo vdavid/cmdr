@@ -57,7 +57,7 @@ describe('EmptyState', () => {
     })
     await tick()
     const tip = target.querySelector('.tip')?.textContent ?? ''
-    expect(tip).toContain('⌘K')
+    expect(tip).toContain('⌘F')
     expect(tip).toContain('⌘N')
     expect(tip).toContain('⌘H')
     target.remove()

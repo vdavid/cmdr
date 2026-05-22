@@ -389,6 +389,63 @@ popover" semantics as the filter chips. Reimplementing those would risk drift; r
 contract documented in the SearchDialog `CLAUDE.md` (Escape capture-phase guard) covers both popover kinds via the
 single `.filter-chip-popover` DOM selector.
 
+### Load-bearing decisions (M10 recap)
+
+These are the calls future agents should not silently reverse. Each one trades a smaller, narrower fix against a
+broader, more elegant model. The broader model won every time.
+
+**Decision**: Unified search bar with mode chips, not two separate input rows. **Why**: AI prompts and filename patterns
+are two ways to ask the same question. Keeping them in separate inputs made them feel like competing features and
+crowded the dialog's top. One `<input>` plus a mode-chip row mirrors Spotlight and Raycast, halves the visual weight,
+and lets `⌘1` / `⌘2` / `⌘3` and the placeholder copy carry the mode discriminator. The state-shape collapse (`aiPrompt`
+and `namePattern` gone; one `query` plus `mode`) is a permanent simplification, not a transient M2 refactor.
+
+**Decision**: Filter chips with popovers instead of inline labelled controls. **Why**: The previous filter row was
+form-shaped (label + select + value), three rows of it competing with the search bar and the results. Chips are calmer
+(default = name only, configured = "Size > 100 MB ×"), extensible (the trailing "+ Add filter" chip is the affordance
+for new filters), and keyboard-first (Tab cycles chips; Enter opens the popover; Esc closes only the popover via the
+capture-phase guard documented above). The popover surface is the right place for the dense single-filter UI that
+doesn't deserve permanent screen real estate.
+
+**Decision**: "Open in pane" promotes to the `search-results` virtual volume, not a special FilePane mode. **Why**: We
+already had the precedent: the `network` browser is a `volumeId` the FilePane special-cases, not a forked pane
+component. Following that pattern lets us reuse the entire file-explorer toolkit (selection, keyboard nav, copy / move
+source, history, Quick Look, drag-out) for free, and gives the user a real navigable pane with history-aware `⌘[` /
+`⌘]`. A "special mode" branch would have leaked into every pane-aware module forever; the virtual-volume namespace
+concentrates the special-casing into a small number of well-documented sites (FilePane gates,
+`DualPaneExplorer.applyPathChange`, the breadcrumb label resolver). The trade-off is two namespaces of opaque paths
+(`smb://` and `search-results://`); both are documented and `isPathOnVolume` skips them by design.
+
+**Decision**: Recent-search history is added only on "Open in pane", not on Enter / auto-apply. **Why**: David's
+explicit design call. The 1,000-entry budget is signal-rich when it tracks user intent (results worth acting on) instead
+of every keystroke-debounced filename search. Auto-apply fires on a 1 s debounce — adding every fire would turn the
+history into a high-frequency log of false starts. The Rust IPC accepts any entry; the gate is the frontend's single
+`addRecentSearch` call site in `SearchDialog.svelte::openInPane`. Don't add a second call site under the banner of
+"convenience".
+
+**Decision**: AI mode never auto-applies; only Enter / `⌘Enter` / the ⏎ button / chip clicks fire it. **Why**: AI calls
+cost money (cloud) or RAM + latency (local). Even a fast model has a per-call cost the user should opt into. The
+"explicit user trigger" rule applies to: typing Enter, pressing `⌘Enter`, clicking the ⏎ run button, clicking an AI
+example chip in the empty state, and clicking a recent-search AI entry. Filename and regex modes auto-apply behind the
+`search.autoApply` setting (default on, 1,000 ms debounce). The split lives in `scheduleSearch()`'s early-return chain
+(mode, setting, IME composition); future agents must not move the gate.
+
+**Decision**: Path pills inside result rows are mouse-only and not in the keyboard Tab order. **Why**: Making the pills
+tabbable inside virtualized rows would break the row's arrow-down keyboard flow: pressing Down at the end of a row would
+land on the next row's first pill instead of the next row's primary cell. Keyboard users navigate the list with arrow
+keys (cursor row is the keyboard target) and reach the same operations via `⌥←` (jump to the cursor row's parent) and
+`⌥→` (descend back). Axe's `nested-interactive` rule still flags the structural nesting on the populated-results audit;
+we disable that one rule explicitly with a comment pointing here (see `SearchResults.a11y.test.ts`).
+
+**Decision**: `MAX_HISTORY_PER_TAB = 100`. **Why**: Not search-specific, but landed in this redesign because the
+snapshot store needs an authoritative eviction signal. The cap applies to every volume (local, network, MTP,
+search-results) uniformly. 100 is enough for power users who navigate deeply and use `⌘[` for orientation; tightening
+below would start to hurt them. The cap is enforced inside `navigation-history.ts::push()`, which returns the dropped
+entries so callers (the tab-state manager) can release per-entry resources (snapshot refs in our case) in one step.
+Keeping `navigation-history.ts` pure (return the dropped entries; let the caller decide what to do with them) was the
+right shape: it lets the search-results refcount logic live next to the rest of the search-results code without
+polluting nav-history with a snapshot-store import.
+
 ## Gotchas
 
 **Gotcha**: `stopPropagation()` on every `keydown`. **Why**: Without this, keys propagate to the file explorer behind
@@ -408,11 +465,13 @@ the natural-language prompt. The original prompt is preserved separately in `las
 before the IPC call) so the `AiTransparencyStrip` can render it. Anyone building on top of this should not assume
 `query` still contains the user's natural-language input after an AI run; use `getLastAiPrompt()` instead.
 
-**Gotcha**: `nested-interactive` axe warning on the populated-results a11y test is skipped. **Why**: M7's row gains
-interactive children (path-pill buttons + the `…` menu button) inside the `role="option"` row. Tab order is suppressed
-via `tabindex="-1"` per spec (§3.8), but axe still flags the structural nesting. Cleanly fixing it means either dropping
-the row's `role="option"` (and surfacing the cursor via a custom mechanism) or hoisting the buttons out of the row's
-grid cell — both are out of M7 scope. The test stays `it.skip` with a TODO so the gap is visible to future work.
+**Gotcha**: `nested-interactive` axe rule is explicitly disabled on the populated-results a11y test. **Why**: M7's row
+gains interactive children (path-pill buttons + the `…` menu button) inside the `role="option"` row. Tab order is
+suppressed via `tabindex="-1"` per spec (§3.8 / §3.9), but axe still flags the structural nesting. Cleanly fixing it
+means either dropping the row's `role="option"` (and surfacing the cursor via a custom mechanism) or hoisting the
+buttons out of the row's grid cell — both are out of redesign scope. M10 turned the previous `it.skip` into a real test
+that disables `nested-interactive` (only that one rule), so any regression in label, name, contrast, or other semantics
+still trips the test. See the block comment in `SearchResults.a11y.test.ts` for the design pointer.
 
 **"Open in pane" (M8b)**: Click on the footer's "Open in pane" button promotes the current result set into a real pane
 view via the `search-results://<id>` virtual volume. The handler in `SearchDialog.svelte::openInPane`:

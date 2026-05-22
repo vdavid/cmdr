@@ -72,7 +72,7 @@
     </div>
     <p class="index-status">Index ready · {formattedCount} {pluralize(indexEntryCount, 'entry', 'entries')}</p>
     <p class="tip">
-        Tip: <kbd>⌘K</kbd> focuses search, <kbd>⌘N</kbd> starts fresh, <kbd>⌘H</kbd> shows recent searches.
+        Tip: <kbd>⌘F</kbd> opens search, <kbd>⌘N</kbd> starts fresh, <kbd>⌘H</kbd> shows recent searches.
     </p>
 </div>
 

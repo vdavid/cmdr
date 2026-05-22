@@ -421,3 +421,29 @@ Notes on the AI set:
 OpenAI `gpt-5.5` sanity-check passed at M5 (single curl call against `https://api.openai.com/v1/chat/completions` with
 the `OPENAI_API_KEY` keychain secret). If a future round of evals needs to re-check the model, use the recipe in
 `docs/specs/search-redesign-plan.md` §5.2.
+
+## M10: Empty-state eval (2026-05-22)
+
+Re-ran the three M5-canonical empty-state queries against `gpt-5.5` (full model id reported as `gpt-5.5-2026-04-23`)
+using the live `CLASSIFICATION_PROMPT` from `apps/desktop/src-tauri/src/search/ai/prompt.rs` with `Today: 2026-05-22`.
+Goal: confirm the canonical examples still produce defensible, reproducible structured outputs before merging the
+redesign.
+
+| #   | Query                            | LLM output                                                                                         | Looks good?                                                                                            |
+| --- | -------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1   | `large files modified this week` | `time: this_week` + `size: large`                                                                  | Yes. Exercises both the `time` and `size` enums; Rust derives the regex and the date range from there. |
+| 2   | `screenshots`                    | `type: screenshots`                                                                                | Yes. Single-type baseline; the simplest possible AI-shaped query.                                      |
+| 3   | `PDFs from the last 7 days`      | `type: documents` + `time: recent` + `note: "Exact last 7 days filter unsupported; using recent."` | Yes, with caveat surfaced via the transparency strip. See note below.                                  |
+
+Mechanics:
+
+- Bumped `max_completion_tokens` from 50 (sanity-check default) to 300; `gpt-5.5` reasoning tokens (~250) had been
+  swallowing the visible output on the smaller budget. The 300 cap is fine for the production prompt, which the parser
+  truncates to one field per line anyway.
+- Caveat on #3: the canonical time enum doesn't have a `last_7_days` variant. `recent` is the model's best
+  approximation, and the `note` field surfaces the limitation in the transparency strip; users can refine via filter
+  chips. The plan §3.4 / §3.5 already calls this out (the example was deliberately worded "last 7 days" instead of the
+  ambiguous "last week"). If we ever want exact 7-day windowing, add a `last_7_days` enum value and a regression query
+  here in the same commit.
+
+No prompt changes needed; the canonical empty-state examples ship as-is.
