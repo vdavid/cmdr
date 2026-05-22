@@ -33,6 +33,7 @@
         normaliseSelection,
     } from './selection.svelte'
     import { createViewerCopy } from './viewer-copy.svelte'
+    import { caretFromPoint } from './viewer-pointer'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
     import { formatBytes, type RangeEnd } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -193,6 +194,44 @@
     let copyConfirmProceed: (() => Promise<void>) | null = null
     /** Whether the > 100 MiB refuse dialog is showing. */
     let copyRefuseBytes = $state<number | null>(null)
+
+    /**
+     * Whether a pointer drag is currently in progress. Tracks `pointerId` so we only
+     * react to moves from the same pointer that started the gesture (multi-touch is a
+     * future concern; today the viewer is a mouse-only surface but the type is
+     * correct).
+     */
+    let dragPointerId: number | null = null
+
+    function handleContentPointerDown(e: PointerEvent): void {
+        // Left mouse button only (button 0). Right-click goes to the context menu (M4).
+        if (e.button !== 0) return
+        const caret = caretFromPoint(document, e.clientX, e.clientY)
+        if (caret === null) return
+        e.preventDefault()
+        selection.setAnchor(caret)
+        dragPointerId = e.pointerId
+    }
+
+    function handleContentPointerMove(e: PointerEvent): void {
+        if (dragPointerId === null || e.pointerId !== dragPointerId) return
+        const caret = caretFromPoint(document, e.clientX, e.clientY)
+        if (caret === null) return
+        selection.setFocus(caret)
+    }
+
+    function endDrag(pointerId: number): void {
+        if (dragPointerId !== pointerId) return
+        dragPointerId = null
+    }
+
+    function handleContentPointerUp(e: PointerEvent): void {
+        endDrag(e.pointerId)
+    }
+
+    function handleContentPointerCancel(e: PointerEvent): void {
+        endDrag(e.pointerId)
+    }
 
     // Fetch lines when visible range changes (debounced)
     $effect(() => {
@@ -803,6 +842,10 @@
             aria-label="File content: {fileName}"
             bind:this={scroll.contentRef}
             onscroll={scroll.handleScroll}
+            onpointerdown={handleContentPointerDown}
+            onpointermove={handleContentPointerMove}
+            onpointerup={handleContentPointerUp}
+            onpointercancel={handleContentPointerCancel}
         >
             <div
                 class="scroll-spacer"

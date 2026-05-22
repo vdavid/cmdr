@@ -15,6 +15,9 @@ The file viewer opens files in a separate Tauri window with virtual scrolling an
 | `viewer-keyboard.ts`            | Pure helpers `handleNavigationKey` / `handleToggleKey` mapping keys to scroll calls         |
 | `selection.svelte.ts`           | Selection model: state + pure helpers (normalise, in-range, segment bounds, byte estimator) |
 | `line-segments.ts`              | Pure shared segmenter: merges search matches + selection bounds into render spans           |
+| `viewer-pointer.ts`             | Pure caret-from-point math: `(x, y)` -> `LineOffset` with surrogate-safe sibling-offset sum |
+| `viewer-copy.ts`                | Pure three-band copy policy (silent / confirm / refuse) and threshold constants             |
+| `viewer-copy.svelte.ts`         | Copy composable: state + busy flag + per-call read_id + cancel plumbing                     |
 
 ## Architecture
 

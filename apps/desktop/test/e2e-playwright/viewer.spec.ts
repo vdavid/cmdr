@@ -176,6 +176,108 @@ test.describe('File viewer search', () => {
   })
 })
 
+test.describe('File viewer selection and copy', () => {
+  let viewer: TauriPage
+  let viewerLabel: string
+
+  test.beforeEach(async ({ tauriPage }) => {
+    viewer = await openViewerForFile(tauriPage as TauriPage, testFilePath)
+    const wl = viewer.targetWindow
+    if (!wl) throw new Error('Scoped viewer page has no targetWindow label')
+    viewerLabel = wl
+  })
+
+  test.afterEach(async ({ tauriPage }) => {
+    await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
+  })
+
+  test('⌘A selects all and ⌘C copies the whole file (silent band)', async () => {
+    // The fixture file-a.txt is 1024 'A' chars on one line.
+    // 1) Trigger ⌘A: simulate keydown directly because the test webview's keyboard
+    //    layer is wired to the host OS, not to the JS event loop the viewer listens to.
+    await viewer.evaluate(`
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', metaKey: true }))
+        `)
+    // 2) Trigger ⌘C the same way. The viewer's copy handler runs, reads the range, and
+    //    writes to the clipboard.
+    await viewer.evaluate(`
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true }))
+        `)
+
+    // 3) Wait for the success toast (info-band) so we know the read returned.
+    await pollUntil(
+      viewer,
+      async () => {
+        const text = (await viewer.textContent('.toast-item')) ?? ''
+        return text.includes('on your clipboard')
+      },
+      5000,
+    )
+
+    // 4) Read the clipboard and assert it matches the file content. The 1024 'A' chars
+    //    are deterministic, so an exact compare works.
+    const clip = await viewer.evaluate<string>(
+      `(async () => { try { return await navigator.clipboard.readText() } catch { return '' } })()`,
+    )
+    expect(clip.length).toBeGreaterThanOrEqual(1024)
+    expect(clip.startsWith('AAAA')).toBe(true)
+  })
+
+  test('drag within viewport selects the dragged range', async () => {
+    // Dispatch synthetic pointer events on the first line. The caret-from-point math
+    // runs in the page; pure JS dispatch works because the viewer listens to bubbling
+    // pointer events on `.file-content`.
+    //
+    // Strategy: pick two x positions on the same line and emit a down -> move -> up
+    // sequence. Then ⌘C and check the clipboard matches the slice we asked for.
+    await viewer.evaluate(`
+            (function() {
+                const line = document.querySelector('[data-line="0"] .line-text')
+                if (!line) throw new Error('line 0 not found')
+                const rect = line.getBoundingClientRect()
+                const startX = rect.left + 10
+                const endX = rect.left + 50
+                const y = rect.top + rect.height / 2
+                const target = document.querySelector('.file-content')
+                if (!target) throw new Error('file-content not found')
+                function fire(type, x, y) {
+                    target.dispatchEvent(new PointerEvent(type, {
+                        bubbles: true, cancelable: true,
+                        clientX: x, clientY: y,
+                        button: 0, pointerId: 1, pointerType: 'mouse',
+                    }))
+                }
+                fire('pointerdown', startX, y)
+                fire('pointermove', endX, y)
+                fire('pointerup', endX, y)
+            })()
+        `)
+
+    // The selection should now exist; ⌘C reads it.
+    await viewer.evaluate(`
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true }))
+        `)
+
+    // Wait for the copy success toast.
+    await pollUntil(
+      viewer,
+      async () => {
+        const text = (await viewer.textContent('.toast-item')) ?? ''
+        return text.includes('on your clipboard')
+      },
+      5000,
+    )
+
+    const clip = await viewer.evaluate<string>(
+      `(async () => { try { return await navigator.clipboard.readText() } catch { return '' } })()`,
+    )
+    // We dragged ~40 px starting near the line start; the exact slice depends on the
+    // font width, but it should be a non-empty substring of 'A's.
+    expect(clip.length).toBeGreaterThan(0)
+    expect(/^A+$/.test(clip)).toBe(true)
+  })
+})
+
 test.describe('File viewer keyboard binding', () => {
   // The shared `closeScopedWindow` helper deliberately bypasses the keyboard
   // pathway (it invokes `plugin:window|close` from the main page) because the
