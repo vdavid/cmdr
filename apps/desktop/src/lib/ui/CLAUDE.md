@@ -16,6 +16,7 @@ Reusable UI components used across the entire desktop app.
 | `ProgressBar.svelte`     | Reusable progress bar (just the bar, no labels or layout)                                      |
 | `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA                              |
 | `Size.svelte`            | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
+| `ToggleGroup.svelte`     | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
 | `toast/`                 | Centralized toast notification system: store, container, item                                  |
 
 ## ModalDialog
@@ -248,6 +249,50 @@ The `<Size>` component always renders the friendly dynamic form regardless of th
 matters; tooltips, dialogs, breadcrumbs, and inline `<Size>` callouts read more clearly with the self-describing dynamic
 format. The file-list column renders `formatSizeForDisplay` directly (passing the active unit) because it also needs the
 mismatch-warning + cursor-row neutralization treatment.
+
+## ToggleGroup
+
+Generic segmented-control primitive used by Settings (`SettingToggleGroup`) and, from M3 onwards, the search / selection
+mode chips. One visual contract, two ARIA shapes selected via the `semantics` prop.
+
+Pick the shape from the user's perspective, not the visual:
+
+- `semantics: 'tabs'` when the active option drives a UI mode (the user hears "tab 2 of 4, Filename, selected"). Renders
+  `<div role="tablist">` with `<button role="tab" aria-selected>` children. Arrow keys cycle through interactive options
+  skipping disabled ones; the active option carries `tabindex=0` and the rest `tabindex=-1`, so Tab from a sibling input
+  lands on the active option directly.
+- `semantics: 'toggles'` when the active option picks a stored value (the user hears "toggle button, kB, pressed").
+  Wraps Ark UI's `ToggleGroup.Root` + `ToggleGroup.Item` in single-select mode.
+
+Both shapes share visual chrome (`.tg-root`, `.tg-item`, `.tg-badge`, `.tg-label`, `.tg-hint`) so they render
+identically.
+
+Props:
+
+| Prop        | Type                      | Notes                                                                      |
+| ----------- | ------------------------- | -------------------------------------------------------------------------- |
+| `semantics` | `'tabs' \| 'toggles'`     | Picks the ARIA shape (see above)                                           |
+| `value`     | `string`                  | The currently active option's value                                        |
+| `options`   | `ToggleGroupOption[]`     | Per-option config (see below)                                              |
+| `onChange`  | `(value: string) => void` | Fires on activation; does not fire when clicking the already-active option |
+| `ariaLabel` | `string`                  | Accessible name for the tablist / toggle-group root                        |
+| `disabled`  | `boolean?`                | Default `false`. Short-circuits all clicks and disables every option       |
+
+`ToggleGroupOption` shape:
+
+| Field       | Type       | Notes                                                                                           |
+| ----------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| `value`     | `string`   | Identity                                                                                        |
+| `label`     | `string`   | Visible text                                                                                    |
+| `badge`     | `string?`  | Small uppercase pill rendered before the label (for example `AI`)                               |
+| `hint`      | `string?`  | Mono tertiary text after the label (for example `⌥A`); `aria-hidden`                            |
+| `disabled`  | `boolean?` | Per-option disable. Combine with `tooltip` for "visible-disabled" affordances                   |
+| `tooltip`   | `string?`  | Tooltip text; stays active on hover/focus even when `disabled` is set (the "Coming soon" idiom) |
+| `ariaLabel` | `string?`  | Override the accessible name when the visible label alone isn't enough                          |
+
+When to add a wrapper (like `SettingToggleGroup`) versus using `ToggleGroup` directly: wrap when the options come from a
+single source of truth that the consumer already owns (the settings registry, a config object). Otherwise, use the
+primitive directly.
 
 ## Ark UI
 

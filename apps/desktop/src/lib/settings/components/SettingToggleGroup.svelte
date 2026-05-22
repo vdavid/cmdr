@@ -1,5 +1,14 @@
 <script lang="ts">
-    import { ToggleGroup } from '@ark-ui/svelte/toggle-group'
+    /**
+     * `SettingToggleGroup` is a thin wrapper around the generic `lib/ui/ToggleGroup` primitive
+     * with `semantics="toggles"`. It reads the setting definition from the registry, builds the
+     * options array (applying optional per-value label overrides), and delegates rendering plus
+     * keyboard handling to the shared component so Settings and the future Query mode chips share
+     * one segmented-control look.
+     *
+     * Public API is unchanged: `{ id, disabled, labelOverrides }`.
+     */
+    import ToggleGroup, { type ToggleGroupOption } from '$lib/ui/ToggleGroup.svelte'
     import {
         getSetting,
         setSetting,
@@ -27,75 +36,37 @@
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
-    const options = definition?.constraints?.options ?? []
+    const definitionOptions = definition?.constraints?.options ?? []
 
-    let value = $state([String(getSetting(id))])
+    let value = $state(String(getSetting(id)))
 
-    // Subscribe to setting changes (for external resets)
     onMount(() => {
         return onSpecificSettingChange(id, (_id, newValue) => {
-            value = [String(newValue)]
+            value = String(newValue)
         })
     })
 
-    function handleValueChange(details: { value: string[] }) {
-        if (details.value.length === 0) return // Don't allow deselecting all
+    const options = $derived<ToggleGroupOption[]>(
+        definitionOptions.map((opt) => {
+            const key = String(opt.value)
+            return {
+                value: key,
+                label: labelOverrides?.[key] ?? opt.label,
+            }
+        }),
+    )
 
-        const newValue = details.value[0]
-        value = [newValue]
-        setSetting(id, newValue as SettingsValues[typeof id])
+    function handleChange(next: string): void {
+        value = next
+        setSetting(id, next as SettingsValues[typeof id])
     }
 </script>
 
-<ToggleGroup.Root {value} onValueChange={handleValueChange} {disabled} aria-label={label}>
-    {#each options as option (option.value)}
-        <ToggleGroup.Item value={String(option.value)} class="toggle-item" {disabled}>
-            {labelOverrides?.[String(option.value)] ?? option.label}
-        </ToggleGroup.Item>
-    {/each}
-</ToggleGroup.Root>
-
-<style>
-    :global([data-scope='toggle-group'][data-part='root']) {
-        display: inline-flex;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-    }
-
-    :global(.toggle-item) {
-        padding: var(--spacing-xs) var(--spacing-md);
-        border: none;
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        cursor: default;
-        transition: all var(--transition-base);
-        border-right: 1px solid var(--color-border);
-    }
-
-    :global(.toggle-item:last-child) {
-        border-right: none;
-    }
-
-    :global(.toggle-item[data-state='on']) {
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
-    }
-
-    :global(.toggle-item[data-state='on']:hover) {
-        background: var(--color-accent-hover);
-    }
-
-    :global(.toggle-item[data-disabled]) {
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-
-    :global(.toggle-item:focus-visible) {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
-        box-shadow: var(--shadow-focus);
-        z-index: 1;
-    }
-</style>
+<ToggleGroup
+    semantics="toggles"
+    {value}
+    {options}
+    onChange={handleChange}
+    ariaLabel={label}
+    {disabled}
+/>
