@@ -41,6 +41,10 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     onToggleExcludeSystemDirs: () => {},
     onSetScope: () => {},
     scheduleSearch: () => {},
+    mode: 'filename',
+    query: '',
+    aiPattern: null,
+    onFocusBar: () => {},
     ...overrides,
   }
 }

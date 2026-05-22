@@ -27,7 +27,6 @@
         getSystemDirExcludes,
         onSearchIndexReady,
         showFileContextMenu,
-        showInFinder,
     } from '$lib/tauri-commands'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import { iconCacheVersion } from '$lib/icon-cache'
@@ -37,8 +36,14 @@
     import {
         getQuery,
         setQuery,
+        setQueryFromUserInput,
         getMode,
         setMode,
+        switchMode,
+        recordAiTranslation,
+        getLastAiLabel,
+        getLastAiPattern,
+        getLastAiPatternKind,
         getSizeFilter,
         setSizeFilter,
         getSizeValue,
@@ -122,20 +127,19 @@
         /** Current directory path of the focused pane (for ⌥F scope shortcut) */
         currentFolderPath: string
         /**
-         * Called when the user clicks "Open in pane". Receives the freshly-created
-         * snapshot id; the host (`+page.svelte` → `DualPaneExplorer`) routes the
-         * active pane to `search-results://<id>`. The dialog closes itself; the
-         * handler doesn't need to.
+         * Called when the user activates "Show all in main window" (⌥A or footer click).
+         * Receives the freshly-created snapshot id; the host
+         * (`+page.svelte` → `DualPaneExplorer`) routes the active pane to
+         * `search-results://<id>`. The dialog closes itself; the handler doesn't need to.
          */
-        onOpenInPane?: (snapshotId: string) => void
+        onShowAllInMainWindow?: (snapshotId: string) => void
     }
 
-    const { onNavigate, onClose, currentFolderPath, onOpenInPane }: Props = $props()
+    const { onNavigate, onClose, currentFolderPath, onShowAllInMainWindow }: Props = $props()
 
     let queryInputElement: HTMLInputElement | undefined = $state()
     let dialogElement: HTMLDivElement | undefined = $state()
     let searchResultsComponent: SearchResults | undefined = $state()
-    let hoveredIndex = $state<number | null>(null)
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let unlistenReady: UnlistenFn | undefined
     let unlistenAutoApply: (() => void) | undefined
@@ -157,37 +161,9 @@
      */
     let lastRunQuery = $state<string | null>(null)
 
-    // Resizable column widths (px). Icon column is fixed at 24px.
-    const colWidths = $state({ name: 250, path: 350, size: 80, modified: 120 })
-    let dragCol: keyof typeof colWidths | null = null
-    let dragStartX = 0
-    let dragStartWidth = 0
-
-    const gridTemplate = $derived(
-        `24px ${String(colWidths.name)}px ${String(colWidths.path)}px ${String(colWidths.size)}px ${String(colWidths.modified)}px`,
-    )
-
-    function handleColumnDragStart(col: keyof typeof colWidths, e: MouseEvent): void {
-        e.preventDefault()
-        dragCol = col
-        dragStartX = e.clientX
-        dragStartWidth = colWidths[col]
-        document.addEventListener('mousemove', handleColumnDragMove)
-        document.addEventListener('mouseup', handleColumnDragEnd)
-    }
-
-    function handleColumnDragMove(e: MouseEvent): void {
-        if (!dragCol) return
-        const delta = e.clientX - dragStartX
-        const minWidth = dragCol === 'size' || dragCol === 'modified' ? 60 : 80
-        colWidths[dragCol] = Math.max(minWidth, dragStartWidth + delta)
-    }
-
-    function handleColumnDragEnd(): void {
-        dragCol = null
-        document.removeEventListener('mousemove', handleColumnDragMove)
-        document.removeEventListener('mouseup', handleColumnDragEnd)
-    }
+    /* Column widths are CSS-driven now (per search-fixup-brief item 3): the SearchResults
+       grid template has fixed/max-content tracks for everything except Path, which is
+       the single `1fr` flex column. No manual drag-resize. */
 
     // Reactive derived state (read from search-state module)
     const query = $derived(getQuery())
@@ -212,6 +188,7 @@
     const excludeSystemDirs = $derived(getExcludeSystemDirs())
     const lastAiPrompt = $derived(getLastAiPrompt())
     const lastAiCaveat = $derived(getLastAiCaveat())
+    const lastAiPatternValue = $derived(getLastAiPattern())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
 
@@ -414,23 +391,24 @@
     }
 
     /**
-     * Footer action: "Open in Finder" (macOS) / "Open in file manager" (Linux). Reveals
-     * the cursor row in the system file manager via the existing `showInFinder` IPC,
-     * which on macOS calls `open -R` (parent folder with the file selected) and on Linux
-     * runs `xdg-open` on the parent. Does NOT close the dialog: the user may want to
-     * keep looking through results after peeking in Finder.
+     * Footer action: "Go to file". Closes the dialog and navigates the active pane to
+     * the cursor row's containing folder, then focuses the file (pushing a new history
+     * entry). Per search-fixup-brief clarification 3: replaces the old "Open in Finder"
+     * affordance in the dialog footer; the `showInFinder` IPC stays around for other
+     * call sites (row context menu, etc.).
      */
-    function openCursorRowInFileManager(): void {
+    function goToCursorFile(): void {
         const idx = getCursorIndex()
         if (idx < 0 || idx >= results.length) return
-        void showInFinder(results[idx].path).catch(() => {
-            // Best-effort: a failure here means the OS file manager refused the open.
-            // The user can still keep searching; no toast needed.
-        })
+        // `onNavigate(path)` is the dialog's standard "navigate to a file" exit path:
+        // the host (`+page.svelte` → `DualPaneExplorer.handleSearchNavigate`) closes
+        // the dialog, navigates the active pane to the file's parent, and focuses the
+        // file. We reuse it so the focus / history-push behavior is uniform.
+        onNavigate(results[idx].path)
     }
 
     /**
-     * Footer action: "Open in pane" (M8b).
+     * Footer action: "Show all in main window" (⌥A).
      *
      * Promotes the current result set into a real pane view via the search-results
      * virtual volume. Steps in order:
@@ -440,23 +418,25 @@
      *   3. Update the snapshot store's "last attempt" strong ref so a refcount survives
      *      even before the pane history entry pushes.
      *   4. Build a `HistoryEntry` mirroring the dialog state and persist it via
-     *      `add_recent_search` (the single sanctioned add point per plan §3.5: only
-     *      "Open in pane" pushes to recent searches; auto-applies and Enter-runs don't).
-     *   5. Hand the snapshot id to the host (`onOpenInPane`) which routes the active
-     *      pane to `search-results://<id>`. The pane's `pushHistoryEntry` then increments
-     *      the snapshot's refcount via the M8a integration.
+     *      `add_recent_search` (the single sanctioned add point per plan §3.5: only this
+     *      action pushes to recent searches; auto-applies and Enter-runs don't).
+     *   5. Hand the snapshot id to the host (`onShowAllInMainWindow`) which routes the
+     *      active pane to `search-results://<id>`. The pane's `pushHistoryEntry` then
+     *      increments the snapshot's refcount via the M8a integration.
      *   6. Close the dialog. State is preserved (the module-level $state survives
      *      unmount), so reopening with ⌘F lands the user back on the same results.
      *
-     * No "Coming soon" toast anymore; the affordance is live.
+     * Renamed from "Open in pane" per search-fixup-brief item 10. The ⌥A shortcut wires
+     * the same action from anywhere in the dialog.
      */
-    function openInPane(): void {
+    function showAllInMainWindow(): void {
         if (results.length === 0) return
         const id = nextSnapshotId()
         const label = buildSnapshotLabel({
             mode: getMode(),
             query: getQuery(),
             aiPrompt: getLastAiPrompt(),
+            aiLabel: getLastAiLabel(),
         })
         // `HistoryFilters` (IPC type) uses `number | null` for absent fields; the
         // snapshot store uses `number | undefined`. Coerce so `null` doesn't sneak
@@ -506,7 +486,7 @@
             // Silent on history persistence failure: the snapshot still opens.
         })
 
-        onOpenInPane?.(id)
+        onShowAllInMainWindow?.(id)
         onClose()
     }
 
@@ -595,9 +575,6 @@
         unlistenAutoApply?.()
         window.removeEventListener('keydown', handleEscapeCapture, true)
         if (debounceTimer) clearTimeout(debounceTimer)
-        // Clean up any in-progress column drag
-        document.removeEventListener('mousemove', handleColumnDragMove)
-        document.removeEventListener('mouseup', handleColumnDragEnd)
         // State is intentionally NOT cleared here. Close + reopen preserves the user's last
         // query, filters, scope, results, and cursor. Explicit reset lives behind ⌘N.
     })
@@ -666,6 +643,16 @@
         setIsSearching(true)
         try {
             const query = buildSearchQuery()
+            // After an AI translation, the bar still shows the user's natural-language
+            // prompt (we don't overwrite the input — clarification 2). The actual search
+            // must run against the AI's produced pattern, not the prompt. Same for any
+            // AI-mode search where the user kept a pattern around (Pattern chip).
+            if (getMode() === 'ai') {
+                const aiPattern = getLastAiPattern()
+                const aiKind = getLastAiPatternKind()
+                query.namePattern = aiPattern && aiPattern.trim() ? aiPattern : null
+                query.patternType = aiKind === 'regex' ? 'regex' : 'glob'
+            }
             // Parse scope and merge into query if non-empty
             const scopeStr = getScope().trim()
             if (scopeStr) {
@@ -677,7 +664,6 @@
             setResults(result.entries)
             setTotalCount(result.totalCount)
             setCursorIndex(0)
-            hoveredIndex = null
             // Track what was actually run so the "Press Enter to search" hint can detect drift.
             lastRunQuery = getQuery()
             if (!fromAiTranslation) {
@@ -738,10 +724,35 @@
 
     /**
      * Populates filter fields from AI response. Returns the set of changed field names.
-     * Also flips `mode` and overwrites `query` to reflect the AI's translation, so the user sees
-     * exactly what was searched and can keep iterating on it. M4 will surface the original prompt
-     * separately in the transparency strip.
+     *
+     * Per the search-fixup brief (clarification 2): we DO NOT overwrite `query` or flip
+     * `mode` here. AI mode stays active and the bar keeps showing the user's natural-
+     * language prompt so they can re-translate via Enter. The AI's produced pattern
+     * lives in a separate slot (`lastAiPattern` / `lastAiPatternKind`); switching to
+     * filename or regex mode (⌘2 / ⌘3) is what hands the pattern to the matching
+     * input. The "Pattern" chip in the filter strip also surfaces the pattern across
+     * all modes.
      */
+    /** Recovers the structured pattern kind ('glob' | 'regex' | null) from the AI display string. */
+    function patternKindFromDisplay(patternType: string | null | undefined): 'glob' | 'regex' | null {
+        if (patternType === 'regex') return 'regex'
+        if (patternType === 'glob') return 'glob'
+        return null
+    }
+
+    /** Folds the AI's `includePaths` and `excludeDirNames` into a single scope expression. */
+    function applyAiScope(query: {
+        includePaths?: string[] | null
+        excludeDirNames?: string[] | null
+    }): boolean {
+        if (!query.includePaths?.length && !query.excludeDirNames?.length) return false
+        const parts: string[] = []
+        if (query.includePaths) parts.push(...query.includePaths)
+        if (query.excludeDirNames) parts.push(...query.excludeDirNames.map((d: string) => `!${d}`))
+        setScope(parts.join(', '))
+        return true
+    }
+
     function applyAiFilters(result: {
         display: {
             namePattern?: string | null
@@ -757,19 +768,16 @@
             caseSensitive?: boolean | null
             excludeSystemDirs?: boolean | null
         }
+        label?: string | null
     }): SvelteSet<string> {
         const changed = new SvelteSet<string>()
-        if (result.display.namePattern != null) {
-            setQuery(result.display.namePattern)
-            changed.add('query')
-        }
-        if (result.display.patternType === 'regex') {
-            setMode('regex')
-            changed.add('mode')
-        } else if (result.display.patternType === 'glob') {
-            setMode('filename')
-            changed.add('mode')
-        }
+        // Record the produced pattern in its own slot. The bar keeps the prompt.
+        recordAiTranslation({
+            pattern: result.display.namePattern ?? null,
+            kind: patternKindFromDisplay(result.display.patternType),
+            label: result.label ?? null,
+        })
+        if (result.display.namePattern != null) changed.add('pattern')
         if (result.query.caseSensitive != null) {
             setCaseSensitive(result.query.caseSensitive)
             changed.add('caseSensitive')
@@ -780,14 +788,7 @@
         }
         if (applySizeFilters(result.display)) changed.add('size')
         if (applyDateFilters(result.display)) changed.add('date')
-
-        if (result.query.includePaths?.length || result.query.excludeDirNames?.length) {
-            const parts: string[] = []
-            if (result.query.includePaths) parts.push(...result.query.includePaths)
-            if (result.query.excludeDirNames) parts.push(...result.query.excludeDirNames.map((d: string) => `!${d}`))
-            setScope(parts.join(', '))
-            changed.add('scope')
-        }
+        if (applyAiScope(result.query)) changed.add('scope')
         return changed
     }
 
@@ -811,9 +812,10 @@
         const trimmed = queryText.trim()
         if (!trimmed) return
 
-        // Capture the original natural-language prompt BEFORE the translation overwrites `query`
-        // and `mode`. This is what the transparency strip shows; without this line the prompt is
-        // unrecoverable after the AI fills in the bar with its translated pattern.
+        // Capture the original natural-language prompt; the transparency strip and the
+        // AI-mode bar both read from `lastAiPrompt`. The bar in AI mode stays on the
+        // prompt so the user can Enter-to-retranslate; the AI's produced pattern is
+        // stored separately via `recordAiTranslation` (called inside `applyAiFilters`).
         setLastAiPrompt(trimmed)
         setLastAiCaveat(null)
 
@@ -829,8 +831,9 @@
         applyAiFiltersWithHighlight(translateResult)
         setLastAiCaveat(translateResult.caveat ?? null)
 
-        // Search using the translated query directly. `fromAiTranslation` keeps the transparency
-        // strip alive across the subsequent searchFiles call.
+        // Search using the AI's produced pattern (read from `lastAiPattern` inside
+        // `executeSearch`). `fromAiTranslation` keeps the transparency strip alive across
+        // the subsequent searchFiles call.
         await executeSearch(true)
         await focusFirstResult()
     }
@@ -861,13 +864,17 @@
 
     function handleModeChange(newMode: SearchMode): void {
         if (getMode() === newMode) return
-        setMode(newMode)
+        // `switchMode` swaps the bar's contents into the target mode's hand-typed buffer
+        // (or restores the AI-produced pattern when its kind matches the target mode and
+        // the hand-typed buffer is empty). The AI-mode-side `query` is the prompt; the
+        // filename/regex side carries patterns. See `search-state.svelte.ts::switchMode`.
+        switchMode(newMode)
         // Switching mode preserves the typed query; only re-trigger auto-apply for non-AI modes.
         if (newMode !== 'ai') scheduleSearch()
     }
 
     function handleQueryInput(value: string): void {
-        setQuery(value)
+        setQueryFromUserInput(value)
         scheduleSearch()
     }
 
@@ -969,6 +976,14 @@
             scheduleSearch()
             return true
         }
+        // ⌥A: show all results in the main window. Promotes the current result set
+        // into a search-results pane. Equivalent to clicking the footer's "Show all
+        // in main window" button. Per search-fixup-brief item 10 + clarification 1.
+        if (matchKey(e, 'a', 'alt')) {
+            e.preventDefault()
+            if (results.length > 0) showAllInMainWindow()
+            return true
+        }
         // ⌥← / ⌥→: jump to the cursor row's parent (←) or descend into the cursor row (→).
         // The cursor row is the keyboard target; pills aren't tabbable, so this is the
         // keyboard equivalent of clicking a pill / row. Per search-redesign-plan §3.8.
@@ -1002,18 +1017,27 @@
         return false
     }
 
-    /** Handles arrow key navigation in the results list. */
+    /**
+     * Handles arrow key navigation in the results list. Per search-fixup-brief item 6,
+     * the cursor LOOPS at the boundaries: ↓ on the last row jumps to the first, ↑ on
+     * the first row jumps to the last. Mouse hover writes to the same cursor (see
+     * `handleHover` below); there's no separate hovered-row state.
+     */
     function handleArrowNav(e: KeyboardEvent): void {
-        if (results.length === 0) return
+        const len = results.length
+        if (len === 0) return
         e.preventDefault()
-        if (e.key === 'ArrowDown') {
-            setCursorIndex(Math.min(getCursorIndex() + 1, results.length - 1))
-        } else {
-            setCursorIndex(Math.max(getCursorIndex() - 1, 0))
-        }
-        hoveredIndex = null
+        const cur = getCursorIndex()
+        const next = e.key === 'ArrowDown' ? (cur + 1) % len : (cur - 1 + len) % len
+        setCursorIndex(next)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte 5 bind:this lacks type info for exports
         searchResultsComponent?.scrollCursorIntoView()
+    }
+
+    /** Mouse hover writes the cursor so mouse + keyboard share one cursor. */
+    function handleHover(index: number): void {
+        if (index < 0 || index >= results.length) return
+        if (getCursorIndex() !== index) setCursorIndex(index)
     }
 
     function handleKeyDown(e: KeyboardEvent): void {
@@ -1029,11 +1053,12 @@
                 break
             case 'ArrowDown':
             case 'ArrowUp':
-                // Ignore arrow keys when focus is on a mode chip; the chip row owns ←/→ for chip
-                // nav, and ArrowUp/Down shouldn't fight that.
-                if (isInQueryInput() || document.activeElement?.closest('.results-container')) {
-                    handleArrowNav(e)
-                }
+                // Per search-fixup-brief item 13: Up/Down moves the result cursor
+                // regardless of focus inside the dialog (search bar, mode chips, filter
+                // chips). Popovers (filter / recent searches) own their own focus and
+                // arrow-key handling and stop propagation before we see the event, so
+                // they're naturally excluded from this dispatch.
+                handleArrowNav(e)
                 break
             case 'Enter':
                 e.preventDefault()
@@ -1119,6 +1144,9 @@
             {systemDirExcludeTooltip}
             {highlightedFields}
             disabled={inputsDisabled}
+            {mode}
+            {query}
+            aiPattern={lastAiPatternValue}
             onInput={inputHandler}
             onSelect={selectHandler}
             onToggleCaseSensitive={() => {
@@ -1131,11 +1159,11 @@
             }}
             onSetScope={setScope}
             {scheduleSearch}
+            onFocusBar={focusInput}
         />
 
         <SearchResults
             bind:this={searchResultsComponent}
-            bind:hoveredIndex
             {results}
             {cursorIndex}
             {isIndexAvailable}
@@ -1149,13 +1177,10 @@
             {entriesScanned}
             {totalCount}
             {indexEntryCount}
-            {gridTemplate}
             iconCacheVersion={iconVersion}
             {aiEnabled}
             onResultClick={handleResultClick}
-            onColumnDragStart={(col: string, e: MouseEvent) => {
-                handleColumnDragStart(col as keyof typeof colWidths, e)
-            }}
+            onHover={handleHover}
             onPickExample={pickExample}
             onPickPath={pickPath}
             onRowMenu={openRowMenu}
@@ -1175,8 +1200,8 @@
                 <SearchFooterActions
                     resultCount={results.length}
                     disabled={inputsDisabled}
-                    onOpenInPane={openInPane}
-                    onOpenInFileManager={openCursorRowInFileManager}
+                    onShowAllInMainWindow={showAllInMainWindow}
+                    onGoToFile={goToCursorFile}
                 />
             </div>
         </div>
@@ -1206,11 +1231,19 @@
         z-index: var(--z-modal);
     }
 
+    /* Dialog dimensions: per search-fixup-brief items 7 + 8. The width
+       expands up to 1080 px but shrinks to 80vw on smaller windows so the
+       dialog never bumps the window edges. The height never exceeds 80vh;
+       the results container is the only shrinking child. The dialog itself
+       is a flex column so the results region absorbs whatever vertical room
+       is left after the bar + chips + filters + footer. */
     .search-dialog {
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border-subtle);
         border-radius: var(--radius-lg);
-        width: 1080px;
+        width: 100%;
+        max-width: min(1080px, 80vw);
+        max-height: 80vh;
         display: flex;
         flex-direction: column;
         box-shadow: var(--shadow-lg);
@@ -1218,13 +1251,17 @@
     }
 
     /* Footer is a single row: recent-search chips on the left, action buttons on the
-       right (Open in Finder / Open in pane). The two child components each carry their
-       own background + top border, so the wrapper itself stays unstyled. */
+       right. Both sides sit on the same darker surface so the entire bottom band
+       reads as one piece — the child components leave background to this wrapper.
+       Per search-fixup-brief item 1. */
     .dialog-footer {
         display: flex;
         align-items: stretch;
         justify-content: space-between;
         gap: var(--spacing-sm);
+        background: var(--color-bg-primary);
+        border-top: 1px solid var(--color-border-subtle);
+        flex-shrink: 0;
     }
 
     .footer-left {

@@ -23,7 +23,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import FilterChip from './FilterChip.svelte'
     import FilterChipPopover from './FilterChipPopover.svelte'
-    import { deriveSizeChip, deriveDateChip, deriveScopeChip } from './filter-chip-state'
+    import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
     import {
         setSizeFilter,
         setSizeValue,
@@ -34,6 +34,8 @@
         setDateValue,
         setDateValueMax,
         setScope,
+        setQueryFromUserInput,
+        clearAiPattern,
     } from './search-state.svelte'
     import type { SizeFilter, SizeUnit, DateFilter } from './search-state.svelte'
 
@@ -55,6 +57,12 @@
         systemDirExcludeTooltip: string
         highlightedFields: SvelteSet<string>
         disabled: boolean
+        /** Active search mode. Drives which input the Pattern chip reads from. */
+        mode: 'ai' | 'filename' | 'regex'
+        /** The bar's current contents (filename pattern or regex pattern). */
+        query: string
+        /** The AI-produced pattern (separate from the bar; AI bar holds the prompt). */
+        aiPattern: string | null
         onInput: (setter: (v: string) => void, search?: boolean) => (e: Event) => void
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T constrains the setter's param type to match the cast
         onSelect: <T extends string>(setter: (v: T) => void, search?: boolean) => (e: Event) => void
@@ -62,6 +70,12 @@
         onToggleExcludeSystemDirs: () => void
         onSetScope: (path: string) => void
         scheduleSearch: () => void
+        /**
+         * Called when the user activates the Pattern chip (click). The parent focuses
+         * the bar so the user can edit the pattern. The bar's contents in AI mode is
+         * the natural-language prompt, not the pattern; that's intentional.
+         */
+        onFocusBar: () => void
     }
 
     const {
@@ -80,16 +94,21 @@
         systemDirExcludeTooltip,
         highlightedFields,
         disabled,
+        mode,
+        query,
+        aiPattern,
         onInput,
         onSelect,
         onToggleCaseSensitive,
         onToggleExcludeSystemDirs,
         onSetScope,
         scheduleSearch,
+        onFocusBar,
     }: Props = $props()
 
     let openChip = $state<FilterKey | 'add' | null>(null)
 
+    let patternChipEl: HTMLButtonElement | undefined = $state()
     let sizeChipEl: HTMLButtonElement | undefined = $state()
     let dateChipEl: HTMLButtonElement | undefined = $state()
     let scopeChipEl: HTMLButtonElement | undefined = $state()
@@ -98,6 +117,23 @@
     const sizeState = $derived(deriveSizeChip(sizeFilter, sizeValue, sizeUnit, sizeValueMax, sizeUnitMax))
     const dateState = $derived(deriveDateChip(dateFilter, dateValue, dateValueMax))
     const scopeState = $derived(deriveScopeChip(scope, excludeSystemDirs))
+    const patternState = $derived(derivePatternChip({ mode, query, aiPattern }))
+
+    /**
+     * Clears the active pattern across all modes. Per search-fixup-brief
+     * clarification 5: clicking the Pattern chip's `×` clears the pattern but
+     * does NOT hide the AI transparency strip (that lives separately on
+     * `lastAiPrompt`). In filename / regex mode we clear the bar; in AI mode we
+     * clear the AI-produced pattern slot.
+     */
+    function clearPattern(): void {
+        if (mode === 'ai') {
+            clearAiPattern()
+        } else {
+            setQueryFromUserInput('')
+        }
+        scheduleSearch()
+    }
 
     /** Which filters should appear in the "Add filter" dropdown. Configured filters are absent. */
     const availableToAdd = $derived.by<FilterKey[]>(() => {
@@ -162,8 +198,25 @@
     }
 </script>
 
-<!-- Filter chip strip. Replaces the old `.filter-row` and `.input-row` (scope) sections. -->
+<!-- Filter chip strip. Replaces the old `.filter-row` and `.input-row` (scope) sections.
+     Per search-fixup-brief clarification 5, the Pattern chip is ALWAYS rendered ahead of
+     Size / Modified / Search in. Its value comes from the bar in filename / regex mode and
+     from the AI-produced pattern in AI mode, so the user sees the actual pattern being
+     applied across every mode. -->
 <div class="filter-chip-strip" role="toolbar" aria-label="Search filters">
+    <FilterChip
+        bind:chipElement={patternChipEl}
+        label="Pattern"
+        value={patternState.summary}
+        configured={patternState.configured}
+        isOpen={false}
+        {disabled}
+        highlighted={highlightedFields.has('pattern')}
+        onActivate={() => {
+            onFocusBar()
+        }}
+        onClear={clearPattern}
+    />
     {#each visibleChips as key (key)}
         {#if key === 'size'}
             <FilterChip

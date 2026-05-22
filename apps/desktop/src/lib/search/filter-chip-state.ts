@@ -68,6 +68,28 @@ export function deriveDateChip(dateFilter: DateFilter, dateValue: string, dateVa
   return { configured: true, summary: `${dateValue} – ${dateValueMax}` }
 }
 
+/**
+ * Returns the chip state for the cross-mode Pattern chip. Per search-fixup-brief
+ * clarification 5, this chip is ALWAYS rendered alongside Size / Modified / Search in
+ * and surfaces the active filename pattern, regex pattern, or AI-produced pattern.
+ * "Active" means: in filename / regex mode it's the bar contents; in AI mode it's
+ * the LLM-produced pattern (the bar holds the natural-language prompt). The chip
+ * is unconfigured (empty pill that the user can ignore) when no pattern is set.
+ */
+export function derivePatternChip(input: {
+  mode: 'ai' | 'filename' | 'regex'
+  query: string
+  aiPattern: string | null
+}): FilterChipState {
+  const value = input.mode === 'ai' ? (input.aiPattern ?? '').trim() : input.query.trim()
+  if (!value) return { configured: false, summary: '' }
+  // Truncate so the chip doesn't blow the row's width. Long patterns stay reachable
+  // via the bar (or, for AI mode, via the AI transparency strip's "Refine" path).
+  const MAX_LEN = 40
+  const display = value.length > MAX_LEN ? value.slice(0, MAX_LEN - 1) + '…' : value
+  return { configured: true, summary: display }
+}
+
 /** Returns the chip state for the Search in (scope) filter. */
 export function deriveScopeChip(scope: string, excludeSystemDirs: boolean): FilterChipState {
   const trimmed = scope.trim()

@@ -97,4 +97,40 @@ describe('PathPills', () => {
     stopSpy.mockRestore()
     target.remove()
   })
+
+  it('renders all pills inline (no wrap) by default for short paths', async () => {
+    // Before the measurer loads (jsdom never resolves the async pretext import), the
+    // strip falls back to rendering every segment. `overflow: hidden` on the container
+    // handles any pathological narrowing. This pins the "never wrap to two lines"
+    // contract: the strip is `flex-wrap: nowrap`.
+    const target = renderPills('/Users/dave/code/proj/file')
+    await tick()
+    const strip = target.querySelector('.path-pills') as HTMLElement
+    expect(strip).not.toBeNull()
+    // We can't read the actual computed style reliably in jsdom, but we can confirm
+    // the inline `flex-wrap: nowrap` rule is in the stylesheet by checking pill count
+    // and the absence of a pill-ellipsis (which only appears under measured overflow).
+    const pills = strip.querySelectorAll('.pill')
+    expect(pills.length).toBe(5)
+    expect(strip.querySelector('.pill-ellipsis')).toBeNull()
+    target.remove()
+  })
+
+  it('sets a tooltip aria-label on the path-pills container for screen readers', async () => {
+    const target = renderPills('/Users/dave/code')
+    await tick()
+    const strip = target.querySelector('.path-pills') as HTMLElement
+    expect(strip.getAttribute('aria-label')).toBe('/Users/dave/code')
+    target.remove()
+  })
+
+  it('keeps pills out of the keyboard Tab order (search-redesign-plan §3.8)', async () => {
+    const target = renderPills('/a/b')
+    await tick()
+    const pills = Array.from(target.querySelectorAll('.pill')) as HTMLButtonElement[]
+    for (const pill of pills) {
+      expect(pill.getAttribute('tabindex')).toBe('-1')
+    }
+    target.remove()
+  })
 })

@@ -48,4 +48,43 @@ describe('buildSnapshotLabel', () => {
     expect(out.endsWith('…')).toBe(true)
     expect(out).not.toMatch(/ …$/)
   })
+
+  it('prefers the LLM-produced label over the raw prompt in AI mode', () => {
+    expect(
+      buildSnapshotLabel({
+        mode: 'ai',
+        query: '*.pdf',
+        aiPrompt: 'find my pdf invoices from this week please',
+        aiLabel: 'Recent PDF invoices',
+      }),
+    ).toBe('Recent PDF invoices')
+  })
+
+  it('truncates a long LLM label to the same cap as the prompt', () => {
+    const long = 'A'.repeat(60)
+    const out = buildSnapshotLabel({ mode: 'ai', query: '', aiPrompt: 'whatever', aiLabel: long })
+    expect(out.length).toBe(40)
+    expect(out.endsWith('…')).toBe(true)
+  })
+
+  it('falls back to the AI prompt when the LLM label is blank', () => {
+    expect(
+      buildSnapshotLabel({
+        mode: 'ai',
+        query: '',
+        aiPrompt: 'big videos from last month',
+        aiLabel: '   ',
+      }),
+    ).toBe('big videos from last month')
+  })
+
+  it('ignores the LLM label in filename mode', () => {
+    expect(
+      buildSnapshotLabel({
+        mode: 'filename',
+        query: '*.pdf',
+        aiLabel: 'Recent PDFs',
+      }),
+    ).toBe('*.pdf')
+  })
 })

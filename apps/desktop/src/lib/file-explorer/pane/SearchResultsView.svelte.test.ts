@@ -115,7 +115,6 @@ describe('SearchResultsView', () => {
         sortBy: 'name',
         sortOrder: 'ascending',
         onNavigate: () => {},
-        onNavigateToAncestor: () => {},
         onSelect: () => {},
       },
     })
@@ -137,7 +136,6 @@ describe('SearchResultsView', () => {
         sortBy: 'name',
         sortOrder: 'ascending',
         onNavigate: () => {},
-        onNavigateToAncestor: () => {},
         onSelect: () => {},
       },
     })
@@ -166,7 +164,6 @@ describe('SearchResultsView', () => {
         // Pre-select the middle row; M8d wires this through to FullList.
         selectedIndices: new Set([1]),
         onNavigate: () => {},
-        onNavigateToAncestor: () => {},
         onSelect: (idx, shiftKey, metaKey) => {
           selectArgs = [idx, shiftKey, metaKey]
         },
@@ -185,7 +182,10 @@ describe('SearchResultsView', () => {
 
     const target = document.createElement('div')
     document.body.appendChild(target)
-    let navigatedName: string | null = null
+    // The `name` field on the adapted entry is now the friendly full path
+    // (`~/second.txt`), per search-fixup-brief item 15. We assert against
+    // `path` so the test pins navigation routing rather than the display string.
+    let navigatedPath: string | null = null
     const component = mount(SearchResultsView, {
       target,
       props: {
@@ -195,16 +195,16 @@ describe('SearchResultsView', () => {
         sortBy: 'name',
         sortOrder: 'ascending',
         onNavigate: (entry) => {
-          navigatedName = entry.name
+          navigatedPath = entry.path
         },
-        onNavigateToAncestor: () => {},
         onSelect: () => {},
       },
     })
     await tick()
 
     // The component's exported API is what FilePane reads via `bind:this`. We
-    // mirror that here.
+    // mirror that here. `findItemIndex` matches by basename (post-fixup); the
+    // adapted `name` field is the friendly full path.
     const api = component as unknown as {
       findItemIndex: (name: string) => number
       openCursorItem: () => void
@@ -215,7 +215,7 @@ describe('SearchResultsView', () => {
     expect(api.isMissing()).toBe(false)
 
     api.openCursorItem()
-    expect(navigatedName).toBe('second.txt')
+    expect(navigatedPath).toBe('/Users/test/second.txt')
 
     target.remove()
   })
@@ -232,7 +232,6 @@ describe('SearchResultsView', () => {
         sortBy: 'name',
         sortOrder: 'ascending',
         onNavigate: () => {},
-        onNavigateToAncestor: () => {},
         onSelect: () => {},
       },
     })
@@ -255,7 +254,6 @@ describe('SearchResultsView', () => {
         sortBy: 'name',
         sortOrder: 'ascending',
         onNavigate: () => {},
-        onNavigateToAncestor: () => {},
         onSelect: () => {},
       },
     })

@@ -109,6 +109,46 @@ pub fn build_translate_display(parsed: &ParsedLlmResponse, query: &SearchQuery) 
     }
 }
 
+// ── Label generation ─────────────────────────────────────────────────
+
+/// Maximum visible characters for a snapshot label. Anything longer gets
+/// truncated with a single-char ellipsis. Mirrors `AI_LABEL_MAX_CHARS` in
+/// `lib/search/snapshot-label.ts`; the two values are kept identical so
+/// truncation behaves the same regardless of whether the label came from the
+/// LLM (this helper) or the frontend fallback path.
+const LABEL_MAX_CHARS: usize = 40;
+
+/// Returns the LLM-produced snapshot label, trimmed and truncated to fit the
+/// breadcrumb. Returns `None` when the LLM omitted the field or the value is
+/// blank after trimming (the frontend then falls back to the original prompt).
+pub fn build_label(parsed: &ParsedLlmResponse) -> Option<String> {
+    let raw = parsed.label.as_deref()?.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    // Strip trailing punctuation the LLM might add despite the prompt rule.
+    let trimmed = raw.trim_end_matches(['.', '!', '?', ';', ':', ',']).trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(truncate_chars(trimmed, LABEL_MAX_CHARS))
+}
+
+/// Truncates `text` to at most `max` chars (Unicode scalars), appending a
+/// single-char ellipsis when a cut happens. Trailing whitespace before the
+/// ellipsis is removed so the visible label still reads cleanly.
+fn truncate_chars(text: &str, max: usize) -> String {
+    if text.chars().count() <= max {
+        return text.to_string();
+    }
+    // Reserve one char for the ellipsis so the visible width stays at `max`.
+    let keep = max.saturating_sub(1).max(1);
+    let kept: String = text.chars().take(keep).collect();
+    let mut trimmed = kept.trim_end().to_string();
+    trimmed.push('\u{2026}');
+    trimmed
+}
+
 /// Build a `TranslatedQuery` from a `SearchQuery` (for IPC serialization).
 pub fn build_translated_query(query: &SearchQuery) -> TranslatedQuery {
     TranslatedQuery {
@@ -148,6 +188,7 @@ mod tests {
             exclude: Some("node_modules .git".to_string()),
             folders: Some("no".to_string()),
             note: None,
+            label: Some("Recent rymd docs".to_string()),
         };
         let query = build_search_query(&parsed);
         assert!(query.name_pattern.is_some());
@@ -279,6 +320,72 @@ mod tests {
         assert!(query.modified_after.is_some());
         assert!(query.name_pattern.is_none());
         assert!(query.min_size.is_none());
+    }
+
+    // ── Label generation ─────────────────────────────────────────────
+
+    #[test]
+    fn label_passes_short_value() {
+        let parsed = ParsedLlmResponse {
+            label: Some("Big PDFs from this week".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(build_label(&parsed).as_deref(), Some("Big PDFs from this week"));
+    }
+
+    #[test]
+    fn label_truncates_long_value() {
+        let parsed = ParsedLlmResponse {
+            label: Some("a".repeat(80)),
+            ..Default::default()
+        };
+        let label = build_label(&parsed).unwrap();
+        assert_eq!(label.chars().count(), LABEL_MAX_CHARS);
+        assert!(label.ends_with('\u{2026}'));
+    }
+
+    #[test]
+    fn label_strips_trailing_punctuation() {
+        let parsed = ParsedLlmResponse {
+            label: Some("Recent invoices.".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(build_label(&parsed).as_deref(), Some("Recent invoices"));
+    }
+
+    #[test]
+    fn label_returns_none_when_missing() {
+        let parsed = ParsedLlmResponse::default();
+        assert!(build_label(&parsed).is_none());
+    }
+
+    #[test]
+    fn label_returns_none_when_blank() {
+        let parsed = ParsedLlmResponse {
+            label: Some("   ".to_string()),
+            ..Default::default()
+        };
+        assert!(build_label(&parsed).is_none());
+    }
+
+    #[test]
+    fn label_handles_unicode_width() {
+        // 40 emoji should pass through; 41 should truncate to 39 emoji + ellipsis.
+        let s40: String = "🦀".repeat(40);
+        let p = ParsedLlmResponse {
+            label: Some(s40.clone()),
+            ..Default::default()
+        };
+        assert_eq!(build_label(&p).unwrap().chars().count(), 40);
+
+        let s41: String = "🦀".repeat(41);
+        let p = ParsedLlmResponse {
+            label: Some(s41),
+            ..Default::default()
+        };
+        let out = build_label(&p).unwrap();
+        assert_eq!(out.chars().count(), LABEL_MAX_CHARS);
+        assert!(out.ends_with('\u{2026}'));
     }
 
     // ── ISO date conversion ──────────────────────────────────────────

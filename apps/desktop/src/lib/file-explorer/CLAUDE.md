@@ -170,17 +170,17 @@ already gates on `isNetworkView` (git lookups, listing watcher, dir-exists poll,
 `SearchResultsView` from the {#if/elseif} chain when active.
 
 `SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`
-via the new `staticEntries` + `showPathColumn` props. No backend listing exists, no IPC traffic. The view exports a
-small API (`setCursorIndex` / `findItemIndex` / `openCursorItem` / `isMissing`) used by FilePane's keyboard handler.
+via `staticEntries`. No backend listing exists, no IPC traffic. Per search-fixup-brief item 15, each adapted entry's
+`name` field is the friendly full path (home folder shown as `~`); the col-name cell mid-truncates via
+`useShortenMiddle` and surfaces the full path on hover. There's no separate Path column anymore. The view exports a
+small API (`setCursorIndex` / `findItemIndex` / `openCursorItem` / `isMissing`) used by FilePane's keyboard handler;
+`findItemIndex` matches on the basename of `path` so type-to-jump / MCP keep working with plain filenames.
 
 Navigation:
 
 - Enter / double-click on a row opens the real file (or navigates into the real folder), pushing a new history entry for
   the underlying path. ⌘[ returns to the snapshot view; the snapshot's still pinned by the history entry, so the view
   re-renders from memory with no re-query.
-- Click on a path-pill segment inside the Path column routes through FilePane's `onNavigateToAncestor`, which
-  DualPaneExplorer resolves via `resolvePathVolume` and routes through `handleVolumeChange` (giving the standard
-  pinned-tab fork, history push, focus). Leaves the snapshot view.
 
 DualPaneExplorer extensions:
 
@@ -191,8 +191,10 @@ DualPaneExplorer extensions:
   entries flow through `pushHistoryEntry`, which increments the snapshot refcount via the M8a integration.
 
 Breadcrumb: `VolumeBreadcrumb` recognises `volumeId === 'search-results'` and reads the friendly label from
-`getSnapshot(id).label` (with "Search" as fallback). FilePane suppresses the trailing path segments entirely for
-search-results panes — the label IS the breadcrumb.
+`getSnapshot(id).label` (with "Search" as fallback). The label itself is the snapshot's `label` field, which the search
+dialog builds via `snapshot-label.ts::buildSnapshotLabel`: AI mode prefers the LLM-produced label (from
+`TranslateResult.label`), filename mode shows the pattern (`*.pdf`), regex mode wraps it in slashes (`/pattern/`).
+FilePane suppresses the trailing path segments entirely for search-results panes — the label IS the breadcrumb.
 
 Source-side operations (M8d): selection works in the snapshot pane (Space, Insert, Shift+click range, Cmd+click toggle,
 Cmd+A / Cmd+Shift+A). `effectiveTotalCount` returns the snapshot's entry count so range selection spans the result set.

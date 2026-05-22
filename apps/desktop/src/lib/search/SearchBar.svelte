@@ -20,6 +20,7 @@
      *   - ⌘1/⌘2/⌘3 switch modes (numbering changes when AI is off).
      */
     import IconCornerDownLeft from '~icons/lucide/corner-down-left'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import type { SearchMode } from './search-state.svelte'
 
     interface Props {
@@ -69,7 +70,7 @@
     })
 
     /** AI mode runs only on explicit Enter / ⌘Enter / Run-button click. Show the hint title to match. */
-    const runTitle = $derived(mode === 'ai' ? 'Run AI search (Enter)' : 'Run search (Enter)')
+    const runTitle = $derived(mode === 'ai' ? 'Run AI search' : 'Run search')
 </script>
 
 <div class="search-bar" class:is-disabled={disabled}>
@@ -107,7 +108,7 @@
         class="run-button"
         {disabled}
         onclick={onRun}
-        title={runTitle}
+        use:tooltip={{ text: runTitle, shortcut: '⏎' }}
         aria-label={runTitle}
     >
         <IconCornerDownLeft />

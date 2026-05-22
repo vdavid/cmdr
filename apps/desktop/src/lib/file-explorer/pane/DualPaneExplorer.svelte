@@ -639,33 +639,6 @@
     })
 
     /**
-     * Search-results pane: the user clicked a path-pill ancestor segment. The
-     * ancestor is a real filesystem path (search snapshots store absolute
-     * `parentPath`s); we resolve its volume via `resolvePathVolume` and route
-     * through `handleVolumeChange`, which gives us the correct volume id and
-     * triggers a normal listing. Falls back to the root volume on resolution
-     * failure rather than leaving the pane stuck on the snapshot.
-     */
-    async function handleNavigateToAncestor(pane: 'left' | 'right', ancestorPath: string): Promise<void> {
-        try {
-            const { volume } = await resolvePathVolume(ancestorPath)
-            if (volume) {
-                handleVolumeChange(pane, volume.id, volume.path, ancestorPath)
-                return
-            }
-        } catch (e) {
-            log.warn('handleNavigateToAncestor: resolvePathVolume failed for {path}: {error}', {
-                path: ancestorPath,
-                error: String(e),
-            })
-        }
-        // Resolution failed: try the root volume as best-effort fallback.
-        const defaultVolumeId = await getDefaultVolumeId()
-        const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
-        handleVolumeChange(pane, defaultVolumeId, defaultVolume?.path ?? '/', ancestorPath)
-    }
-
-    /**
      * Open a search-results snapshot in the target pane (defaults to focused).
      * Called by the SearchDialog's "Open in pane" action. The caller has already
      * stored the snapshot in `snapshotStore` and set the `lastAttemptId` slot;
@@ -3077,9 +3050,6 @@
                 unreachable={getActiveTab(tabMgr).unreachable}
                 onRetryUnreachable={() => handleRetryUnreachable(paneId)}
                 onOpenHome={() => handleOpenHome(paneId)}
-                onNavigateToAncestor={(ancestorPath: string) => {
-                    handleNavigateToAncestor(paneId, ancestorPath)
-                }}
             />
         {/key}
     </div>

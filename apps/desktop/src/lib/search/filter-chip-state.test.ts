@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { deriveSizeChip, deriveDateChip, deriveScopeChip } from './filter-chip-state'
+import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
 
 describe('deriveSizeChip', () => {
   it('returns default (not configured) when filter is "any"', () => {
@@ -113,5 +113,47 @@ describe('deriveScopeChip', () => {
 
   it('trims surrounding whitespace before deciding configured', () => {
     expect(deriveScopeChip('   ', true)).toEqual({ configured: false, summary: '' })
+  })
+})
+
+describe('derivePatternChip (search-fixup-brief clarification 5)', () => {
+  it('reads from `query` in filename mode', () => {
+    expect(derivePatternChip({ mode: 'filename', query: '*.pdf', aiPattern: null })).toEqual({
+      configured: true,
+      summary: '*.pdf',
+    })
+  })
+
+  it('reads from `query` in regex mode', () => {
+    expect(derivePatternChip({ mode: 'regex', query: '^foo$', aiPattern: '*.pdf' })).toEqual({
+      configured: true,
+      summary: '^foo$',
+    })
+  })
+
+  it('reads from `aiPattern` in AI mode (the bar holds the prompt)', () => {
+    expect(derivePatternChip({ mode: 'ai', query: 'find my pdfs', aiPattern: '*.pdf' })).toEqual({
+      configured: true,
+      summary: '*.pdf',
+    })
+  })
+
+  it('is unconfigured when the chosen pattern slot is empty', () => {
+    expect(derivePatternChip({ mode: 'filename', query: '', aiPattern: null })).toEqual({
+      configured: false,
+      summary: '',
+    })
+    expect(derivePatternChip({ mode: 'ai', query: 'big pdfs', aiPattern: null })).toEqual({
+      configured: false,
+      summary: '',
+    })
+  })
+
+  it('truncates very long patterns to keep the chip tidy', () => {
+    const long = '*'.repeat(80)
+    const result = derivePatternChip({ mode: 'filename', query: long, aiPattern: null })
+    expect(result.configured).toBe(true)
+    expect(result.summary.length).toBeLessThanOrEqual(40)
+    expect(result.summary.endsWith('…')).toBe(true)
   })
 })

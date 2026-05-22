@@ -40,6 +40,12 @@ var allowedUnusedClasses = map[string]bool{
 	"cmdr-tooltip":     true,
 	"cmdr-tooltip-kbd": true,
 	"visible":          true,
+	// PathPills.svelte - hidden-pill markup is built as an HTML string and injected
+	// into the singleton tooltip DOM via the tooltip action. Static analysis only sees
+	// the `:global` rules in `PathPills.svelte`, not the matching markup.
+	"hidden-pills": true,
+	"hidden-pill":  true,
+	"hidden-sep":   true,
 	// VolumeBreadcrumb.svelte - USB-speed indicator tier classes applied dynamically via
 	// `usb-speed-indicator-{tier}` template string, where `tier` is the UsbSpeed enum value.
 	"usb-speed-indicator-low":        true,

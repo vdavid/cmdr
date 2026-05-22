@@ -101,7 +101,7 @@ function dispatchKey(target: Element, key: string, meta = false): KeyboardEvent 
 
 interface MountDialogOptions {
   onClose?: () => void
-  onOpenInPane?: (snapshotId: string) => void
+  onShowAllInMainWindow?: (snapshotId: string) => void
 }
 
 async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: Element; cleanup: () => void }> {
@@ -113,7 +113,7 @@ async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: El
       onNavigate: () => {},
       onClose: opts.onClose ?? (() => {}),
       currentFolderPath: '/Users/test',
-      onOpenInPane: opts.onOpenInPane,
+      onShowAllInMainWindow: opts.onShowAllInMainWindow,
     },
   })
   await tick()
@@ -215,14 +215,19 @@ describe('SearchDialog mode shortcuts (AI on)', () => {
     cleanup()
   })
 
-  it('switching mode preserves the typed query', async () => {
+  it("switching mode swaps the bar to the target mode's hand-typed buffer", async () => {
+    // Per search-fixup-brief clarification 2, each mode owns its own input
+    // buffer: switching from AI to filename restores filename's last hand-typed
+    // value (empty here), not the AI-mode contents. The AI bar's prompt stays
+    // available via `getLastAiPrompt()` for the transparency strip.
     const { overlay, cleanup } = await mountDialog()
-    setQuery('big files')
     setMode('ai')
+    setQuery('big files')
     dispatchKey(overlay, '2', true)
     await tick()
     expect(getMode()).toBe('filename')
-    expect(getQuery()).toBe('big files')
+    // Filename's hand-typed buffer was empty, so the bar is empty after switch.
+    expect(getQuery()).toBe('')
     cleanup()
   })
 
@@ -751,7 +756,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
       onClose: () => {
         closed = true
       },
-      onOpenInPane: (id) => {
+      onShowAllInMainWindow: (id) => {
         openedId = id
       },
     })
@@ -761,7 +766,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     await tick()
 
     // Find and click the "Open in pane" footer button.
-    const btn = document.body.querySelector('button[aria-label="Open in pane"]') as HTMLButtonElement
+    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement
     expect(btn).not.toBeNull()
     btn.click()
     // Let the (sync) handler run and any micro-tasks resolve.
@@ -784,7 +789,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
   it('stores the snapshot in the snapshot store under the returned id', async () => {
     let openedId: string | null = null
     const { cleanup } = await mountDialog({
-      onOpenInPane: (id) => {
+      onShowAllInMainWindow: (id) => {
         openedId = id
       },
     })
@@ -793,7 +798,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     await seedResults()
     await tick()
 
-    const btn = document.body.querySelector('button[aria-label="Open in pane"]') as HTMLButtonElement
+    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement
     btn.click()
     await tick()
 
@@ -814,7 +819,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     aiProvider = 'cloud'
     let openedId: string | null = null
     const { cleanup } = await mountDialog({
-      onOpenInPane: (id) => {
+      onShowAllInMainWindow: (id) => {
         openedId = id
       },
     })
@@ -825,7 +830,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     await seedResults()
     await tick()
 
-    const btn = document.body.querySelector('button[aria-label="Open in pane"]') as HTMLButtonElement
+    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement
     btn.click()
     await tick()
 
@@ -841,7 +846,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
   it('does nothing when there are no results', async () => {
     let opened = false
     const { cleanup } = await mountDialog({
-      onOpenInPane: () => {
+      onShowAllInMainWindow: () => {
         opened = true
       },
     })
@@ -849,7 +854,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     await tick()
     // The button is hidden when resultCount === 0, so we can't click it through the
     // DOM. Confirm visibility gate by checking the SearchFooterActions output.
-    const btn = document.body.querySelector('button[aria-label="Open in pane"]')
+    const btn = document.body.querySelector('button[aria-label="Show all in main window"]')
     expect(btn).toBeNull()
     expect(opened).toBe(false)
     cleanup()

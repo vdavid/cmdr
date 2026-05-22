@@ -29,8 +29,6 @@
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     import InfoIcon from '~icons/lucide/info'
-    import PathPills from '$lib/search/PathPills.svelte'
-
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
@@ -113,22 +111,6 @@
         /** Called when a drag actually initiates (threshold crossed) from this view. */
         onDragInitiate?: () => void
         /**
-         * Optional Path column between Name and Ext, populated from each row's
-         * `parentPath`. Designed for the search-results virtual volume so the user
-         * can see where each result lives without per-row formatting. Inactive in
-         * normal panes (default off) so layout and DOM remain identical.
-         * Per search-redesign-plan §3.7 / §3.8.
-         */
-        showPathColumn?: boolean
-        /**
-         * Click handler for individual path-pill segments inside the Path column.
-         * Only called when `showPathColumn` is true. The handler receives the
-         * absolute path of the ancestor segment the user clicked. The host pane
-         * is expected to navigate to that ancestor (which, for search-results,
-         * leaves the snapshot view).
-         */
-        onPathPillPick?: (ancestorPath: string) => void
-        /**
          * Static, frontend-owned entries to render instead of fetching from the
          * backend `LISTING_CACHE` by `listingId`. Used by the search-results
          * virtual volume (which has no backing backend listing, just an
@@ -172,8 +154,6 @@
         onRenameShakeEnd,
         onStartRename,
         onDragInitiate,
-        showPathColumn = false,
-        onPathPillPick,
         staticEntries,
     }: Props = $props()
 
@@ -220,10 +200,7 @@
     const indexing = $derived(isScanning() || isAggregating())
 
     // Column widths are declared after the virtual window, which gates parent-row inclusion.
-    // `path` stays at 0 unless `showPathColumn` is set and the measurer reports a value;
-    // the grid-template branches on it so omitted-prop callers render the exact same DOM
-    // as before (no inserted column, no extra cells).
-    let columnWidths = $state({ ext: 60, size: 115, date: 80, dateLeft: 0, path: 0 })
+    let columnWidths = $state({ ext: 60, size: 115, date: 80, dateLeft: 0 })
     let skipTransition = $state(false)
 
     /** Icon column width in the grid template, tracks density × text scale. */
@@ -266,25 +243,11 @@
      */
     const GIT_COLUMN_WIDTH = 28
 
-    /**
-     * Whether the optional Path column should appear in the grid template. We
-     * gate on `showPathColumn` AND a measured width so the column is genuinely
-     * "off" (zero cells in DOM) when the consumer opts out, AND when the
-     * measurer hasn't produced a width yet. Search-results + git-column would
-     * be a contradiction (the snapshot can mix repos), so when both flags fight
-     * Path wins — though in practice FilePane only sets one per pane.
-     */
-    const pathColumnVisible = $derived(showPathColumn && columnWidths.path > 0)
-
     const gridTemplate = $derived.by(() => {
         const icon = `${String(iconColWidth)}px`
         const ext = `${String(columnWidths.ext)}px`
         const size = `${String(columnWidths.size)}px`
         const date = `${String(columnWidths.date)}px`
-        if (pathColumnVisible) {
-            const path = `${String(columnWidths.path)}px`
-            return `${icon} 1fr ${path} ${ext} ${size} ${date}`
-        }
         if (gitColumnVisible) {
             return `${icon} 1fr ${String(GIT_COLUMN_WIDTH)}px ${ext} ${size} ${date}`
         }
@@ -366,13 +329,6 @@
         // listing is measured at scale 1 and then never re-measured after the
         // real scale lands.
         void getEffectiveScale()
-        // Path-column measurement: pass the parentPath of every visible row so
-        // the column shrink-wraps to the longest currently-on-screen path. Only
-        // active when the host pane opts in via `showPathColumn`; otherwise the
-        // measurer ignores the input and reports `path: 0`.
-        const parentPathsForPathColumn = showPathColumn
-            ? visible.filter((e) => e.parentPath != null && e.parentPath !== '').map((e) => e.parentPath as string)
-            : undefined
         columnWidths = computeFullListColumnWidths({
             entries: visible,
             parentDirStats: parentStats,
@@ -383,7 +339,6 @@
             sortBy,
             sizeFormatOpts,
             isRestricted,
-            parentPathsForPathColumn,
         })
     })
 
@@ -812,12 +767,7 @@
                 currentSortOrder={sortOrder}
                 onClick={onSortChange ?? (() => {})}
             />
-            {#if pathColumnVisible}
-                <!-- Static "Path" header. Path is not a sortable column on search-results
-                     (sort by Name / Ext / Size / Modified still applies via the snapshot order),
-                     so we render a plain label rather than a SortableHeader. -->
-                <span class="header-path">Path</span>
-            {:else if gitColumnVisible}
+            {#if gitColumnVisible}
                 <span class="header-git" title="Git status of each file">Git</span>
             {/if}
             <SortableHeader
@@ -908,30 +858,21 @@
                                 />
                             </div>
                         {:else}
-                            <span
-                                class="col-name"
-                                use:tooltip={{
-                                    text: file.redirectToPath ? `Opens ${file.redirectToPath}` : file.name,
-                                    overflowOnly: !file.redirectToPath,
-                                }}
-                            >{getDisplayName(file.name, file.isDirectory)}{#if fileIsRestricted}<span
+                            <span class="col-name">
+                                <span
+                                    class="col-name-text"
+                                    use:useShortenMiddle={{
+                                        text: getDisplayName(file.name, file.isDirectory),
+                                        preferBreakAt: file.name.includes('/') ? '/' : '.',
+                                        startRatio: 0.7,
+                                        tooltipWhenTruncated: true,
+                                    }}
+                                ></span>{#if fileIsRestricted}<span
                                     class="restricted-indicator"
                                     aria-hidden="true"
                                     use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
                                 ><InfoIcon /></span>{/if}</span>
-                            {#if pathColumnVisible}
-                                <!-- Path-pills cell. Click on a segment navigates the active pane
-                                     to that ancestor (and, in the search-results context, leaves
-                                     the snapshot view). Pills aren't in keyboard Tab order; the
-                                     row's primary interaction remains the keyboard target.
-                                     See search-redesign-plan §3.8. -->
-                                <span class="col-path">
-                                    <PathPills
-                                        path={file.parentPath ?? ''}
-                                        onPick={(p) => onPathPillPick?.(p)}
-                                    />
-                                </span>
-                            {:else if gitColumnVisible}
+                            {#if gitColumnVisible}
                                 {@const status = gitStatusFor(file)}
                                 <span
                                     class="col-git"
@@ -1260,8 +1201,21 @@
     }
 
     .col-name {
+        display: inline-flex;
+        align-items: center;
         overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    /* The truncating inner span lives inside `.col-name` so the optional restricted
+       indicator icon can sit alongside without being wiped by the
+       `useShortenMiddle` action's `textContent` writes. The inner span is the
+       flex item that takes the remaining width. */
+    .col-name-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
         white-space: nowrap;
     }
 
@@ -1284,28 +1238,6 @@
         align-self: center;
         white-space: nowrap;
         cursor: default;
-    }
-
-    /* Static "Path" header for the search-results pane. Same hairline-secondary
-       look as the Git header (no sort caret); the cell itself wraps content. */
-    .header-path {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-secondary);
-        text-align: left;
-        align-self: center;
-        white-space: nowrap;
-        cursor: default;
-        padding-left: var(--spacing-xxs);
-    }
-
-    /* Path cell holds the PathPills strip. min-width 0 so flex-wrap inside
-       still respects the column track width; overflow hidden so a long path
-       can't visually escape its column. */
-    .col-path {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        overflow: hidden;
     }
 
     .col-git {

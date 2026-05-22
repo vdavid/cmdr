@@ -22,6 +22,7 @@ scope:     downloads|documents|desktop|dotfiles|PATH
 exclude:   dirname1 dirname2
 folders:   yes|no
 note:      brief limitation caveat if query involves unfilterable concepts
+label:     short human-friendly title for this search, max 40 chars, sentence case, no trailing punctuation
 
 Rules:
 - \"keywords\" = words likely in FILENAMES. Not descriptions.
@@ -36,19 +37,19 @@ Rules:
 - For content/semantic queries (\"photos of my cat\"), set type + add a note
 
 Examples:
-\"recent invoices, I mark them rymd\" → keywords: rymd / type: documents / time: recent
-\"\u{5927}\u{304d}\u{306a}\u{52d5}\u{753b}\u{3092}\u{524a}\u{9664}\u{3057}\u{305f}\u{3044}\" → type: videos / size: large / note: can't determine safe to delete
-\"node_modules folders taking up space\" → keywords: node_modules / folders: yes / size: large
-\"screenshots from this week\" → type: screenshots / time: this_week
-\"package.json not in node_modules\" → keywords: package.json / exclude: node_modules
-\"empty folders\" → folders: yes / size: empty
-\"ssh keys\" → type: ssh-keys
-\"foton fr\u{00e5}n f\u{00f6}rra veckan\" → type: photos / time: last_week
-\"that rust file with the websocket server\" → keywords: websocket / type: rust
-\"old xcode projects\" → type: xcode / time: old
-\"contracts I signed in the last 6 months\" → keywords: contract / type: documents / time: last_6_months / note: \"signed\" is not filterable
-\"shell scripts in my dotfiles\" → type: shell-scripts / scope: dotfiles
-\"HEIC photos I haven't converted\" → keywords: .heic / note: can't determine conversion status
+\"recent invoices, I mark them rymd\" → keywords: rymd / type: documents / time: recent / label: Recent rymd invoices
+\"\u{5927}\u{304d}\u{306a}\u{52d5}\u{753b}\u{3092}\u{524a}\u{9664}\u{3057}\u{305f}\u{3044}\" → type: videos / size: large / note: can't determine safe to delete / label: Large videos
+\"node_modules folders taking up space\" → keywords: node_modules / folders: yes / size: large / label: Large node_modules folders
+\"screenshots from this week\" → type: screenshots / time: this_week / label: Screenshots from this week
+\"package.json not in node_modules\" → keywords: package.json / exclude: node_modules / label: package.json outside node_modules
+\"empty folders\" → folders: yes / size: empty / label: Empty folders
+\"ssh keys\" → type: ssh-keys / label: SSH keys
+\"foton fr\u{00e5}n f\u{00f6}rra veckan\" → type: photos / time: last_week / label: Photos from last week
+\"that rust file with the websocket server\" → keywords: websocket / type: rust / label: Rust files mentioning websocket
+\"old xcode projects\" → type: xcode / time: old / label: Old Xcode projects
+\"contracts I signed in the last 6 months\" → keywords: contract / type: documents / time: last_6_months / note: \"signed\" is not filterable / label: Recent contract documents
+\"shell scripts in my dotfiles\" → type: shell-scripts / scope: dotfiles / label: Shell scripts in dotfiles
+\"HEIC photos I haven't converted\" → keywords: .heic / note: can't determine conversion status / label: HEIC photos
 
 Today: {TODAY}.";
 

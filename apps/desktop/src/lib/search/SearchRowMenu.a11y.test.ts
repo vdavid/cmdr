@@ -3,8 +3,7 @@
  *
  * The button carries `aria-label="More actions"` and is `tabindex="-1"` (the row is the
  * keyboard target; the button is a mouse-and-explicit-keyboard affordance reached via
- * the row context-menu IPC). Verify axe-core is happy with the resting and cursor-row
- * variants.
+ * the row context-menu IPC). Verify axe-core stays happy.
  */
 import { describe, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
@@ -16,24 +15,12 @@ vi.mock('$lib/tooltip/tooltip', () => ({
 }))
 
 describe('SearchRowMenu a11y', () => {
-  it('cursor-row variant renders without axe violations', async () => {
+  it('renders without axe violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SearchRowMenu, {
       target,
-      props: { isCursorRow: true, onOpen: () => {} },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-    target.remove()
-  })
-
-  it('non-cursor variant renders without axe violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(SearchRowMenu, {
-      target,
-      props: { isCursorRow: false, onOpen: () => {} },
+      props: { onOpen: () => {} },
     })
     await tick()
     await expectNoA11yViolations(target)

@@ -290,6 +290,12 @@ pub struct TranslateResult {
     pub query: TranslatedQuery,
     pub display: TranslateDisplay,
     pub caveat: Option<String>,
+    /// Short, breadcrumb-friendly title for this search (max 40 chars, sentence
+    /// case). The LLM produces it; the frontend stores it on the snapshot and
+    /// renders it in the search-results pane breadcrumb. `None` when the LLM
+    /// omitted the label or the fallback path ran (raw-keywords retry); the
+    /// frontend falls back to the original natural-language prompt.
+    pub label: Option<String>,
 }
 
 /// The structured query with unix timestamps, ready for `search_files`.
@@ -398,12 +404,14 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
     let query = ai_query_builder::build_search_query(&parsed);
     let display = ai_query_builder::build_translate_display(&parsed, &query);
     let caveat = ai_query_builder::generate_caveat(&parsed, &query);
+    let label = ai_query_builder::build_label(&parsed);
     let translated_query = ai_query_builder::build_translated_query(&query);
 
     Ok(TranslateResult {
         query: translated_query,
         display,
         caveat,
+        label,
     })
 }
 
@@ -486,10 +494,12 @@ mod tests {
                 case_sensitive: None,
             },
             caveat: None,
+            label: Some("Big PDFs from 2025".to_string()),
         };
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("namePattern"));
         assert!(json.contains("patternType"));
         assert!(json.contains("2025-01-01"));
+        assert!(json.contains("\"label\":\"Big PDFs from 2025\""));
     }
 }

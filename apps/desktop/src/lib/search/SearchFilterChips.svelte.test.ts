@@ -68,6 +68,10 @@ function baseProps(overrides: Partial<Props> = {}): Props {
       setScope(path)
     },
     scheduleSearch: () => {},
+    mode: 'filename',
+    query: '',
+    aiPattern: null,
+    onFocusBar: () => {},
     ...overrides,
   }
 }

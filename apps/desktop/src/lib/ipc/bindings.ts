@@ -3280,6 +3280,14 @@ export type TranslateResult = {
   query: TranslatedQuery
   display: TranslateDisplay
   caveat: string | null
+  /**
+   *  Short, breadcrumb-friendly title for this search (max 40 chars, sentence
+   *  case). The LLM produces it; the frontend stores it on the snapshot and
+   *  renders it in the search-results pane breadcrumb. `None` when the LLM
+   *  omitted the label or the fallback path ran (raw-keywords retry); the
+   *  frontend falls back to the original natural-language prompt.
+   */
+  label: string | null
 }
 
 // The structured query with unix timestamps, ready for `search_files`.

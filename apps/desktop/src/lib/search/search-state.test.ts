@@ -344,3 +344,64 @@ describe('scope state', () => {
     expect(getScope()).toBe('')
   })
 })
+
+describe('per-mode buffer (search-fixup-brief clarification 2)', () => {
+  // These tests import lazily so they don't add to the static import surface
+  // at the top of the file (and so we don't have to repeat the long shared
+  // list of helpers).
+  it('switchMode swaps the bar between mode buffers', async () => {
+    const { switchMode, setQueryFromUserInput } = await import('./search-state.svelte')
+    clearSearchState()
+    setMode('filename')
+    setQueryFromUserInput('*.pdf')
+    switchMode('regex')
+    expect(getMode()).toBe('regex')
+    expect(getQuery()).toBe('')
+
+    setQueryFromUserInput('foo.*bar')
+    switchMode('filename')
+    expect(getMode()).toBe('filename')
+    expect(getQuery()).toBe('*.pdf')
+    switchMode('regex')
+    expect(getQuery()).toBe('foo.*bar')
+  })
+
+  it('handing AI -> filename loads the AI pattern when its kind matches and the target buffer is empty', async () => {
+    const { switchMode, recordAiTranslation } = await import('./search-state.svelte')
+    clearSearchState()
+    setMode('ai')
+    setQuery('find my pdfs') // The natural-language prompt the user typed.
+    recordAiTranslation({ pattern: '*.pdf', kind: 'glob', label: 'PDFs' })
+
+    switchMode('filename')
+    expect(getMode()).toBe('filename')
+    expect(getQuery()).toBe('*.pdf') // Glob → filename input.
+
+    switchMode('regex')
+    expect(getQuery()).toBe('') // Regex's hand-typed buffer is still empty.
+  })
+
+  it('switching to AI restores the original prompt the user typed', async () => {
+    const { switchMode, setQueryFromUserInput, recordAiTranslation } = await import('./search-state.svelte')
+    clearSearchState()
+    setMode('ai')
+    setQueryFromUserInput('find my pdfs')
+    recordAiTranslation({ pattern: '*.pdf', kind: 'glob', label: null })
+    switchMode('filename')
+    expect(getQuery()).toBe('*.pdf')
+    switchMode('ai')
+    expect(getQuery()).toBe('find my pdfs')
+  })
+
+  it('clearAiPattern wipes the AI pattern slot but leaves the prompt intact', async () => {
+    const { recordAiTranslation, clearAiPattern, getLastAiPattern, getLastAiPrompt, setLastAiPrompt } =
+      await import('./search-state.svelte')
+    clearSearchState()
+    setLastAiPrompt('find my pdfs')
+    recordAiTranslation({ pattern: '*.pdf', kind: 'glob', label: 'PDFs' })
+    expect(getLastAiPattern()).toBe('*.pdf')
+    clearAiPattern()
+    expect(getLastAiPattern()).toBeNull()
+    expect(getLastAiPrompt()).toBe('find my pdfs')
+  })
+})

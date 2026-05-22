@@ -122,7 +122,6 @@ describe('SearchResultsView a11y', () => {
         sortBy: 'name',
         sortOrder: 'ascending',
         onNavigate: () => {},
-        onNavigateToAncestor: () => {},
         onSelect: () => {},
       },
     })
@@ -146,7 +145,6 @@ describe('SearchResultsView a11y', () => {
         sortBy: 'name',
         sortOrder: 'ascending',
         onNavigate: () => {},
-        onNavigateToAncestor: () => {},
         onSelect: () => {},
       },
     })

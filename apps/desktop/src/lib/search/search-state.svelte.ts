@@ -66,6 +66,41 @@ let lastAiPrompt = $state<string | null>(null)
  */
 let lastAiCaveat = $state<string | null>(null)
 
+/**
+ * The LLM-produced label for the last AI translation (max ~40 chars). Read by the "Open in
+ * pane" snapshot builder so the pane breadcrumb reflects the AI's summary instead of the
+ * verbatim prompt. Null when no AI search has run or when the model omitted the field.
+ */
+let lastAiLabel = $state<string | null>(null)
+
+/**
+ * The pattern the last AI translation produced (the actual glob or regex string), separate
+ * from the prompt the user typed. We keep this so:
+ *   1. The "Pattern" chip in the filter strip can show the current pattern across all modes.
+ *   2. Switching out of AI mode hands the matching mode the AI's pattern, while leaving
+ *      the other mode's hand-typed buffer untouched.
+ * Null when no AI search has run or when the AI returned no pattern.
+ */
+let lastAiPattern = $state<string | null>(null)
+/**
+ * Discriminator for `lastAiPattern`: which input kind it fits ('glob' goes to filename mode,
+ * 'regex' to regex mode). Null when the AI hasn't run or returned no pattern.
+ */
+let lastAiPatternKind = $state<'glob' | 'regex' | null>(null)
+
+/**
+ * Per-mode hand-typed buffers. Switching modes (⌘1 / ⌘2 / ⌘3) restores the user's last
+ * hand-typed value for the target mode, instead of carrying the AI pattern (or another
+ * mode's pattern) across modes. AI translations don't write here; only direct user input
+ * does. The active-mode value is mirrored into `query` so the input reads/writes one
+ * field.
+ */
+const handTyped = $state<{ ai: string; filename: string; regex: string }>({
+  ai: '',
+  filename: '',
+  regex: '',
+})
+
 // Scope (folder filter)
 let scope = $state('')
 
@@ -149,6 +184,15 @@ export function getLastAiPrompt(): string | null {
 export function getLastAiCaveat(): string | null {
   return lastAiCaveat
 }
+export function getLastAiLabel(): string | null {
+  return lastAiLabel
+}
+export function getLastAiPattern(): string | null {
+  return lastAiPattern
+}
+export function getLastAiPatternKind(): 'glob' | 'regex' | null {
+  return lastAiPatternKind
+}
 export function getRunOnMount(): boolean {
   return runOnMount
 }
@@ -165,6 +209,16 @@ export function setIsSearching(value: boolean): void {
 }
 export function setQuery(value: string): void {
   query = value
+}
+/**
+ * Sets the query AND mirrors it into the active mode's hand-typed buffer. Used by the
+ * search bar's `oninput` so the user's typing per mode is preserved across mode switches
+ * (see `switchMode`). AI translations write to `query` directly via `setQuery`, not via
+ * this helper — the AI pattern lives in its own slot.
+ */
+export function setQueryFromUserInput(value: string): void {
+  query = value
+  handTyped[mode] = value
 }
 export function setMode(value: SearchMode): void {
   mode = value
@@ -220,8 +274,63 @@ export function setLastAiPrompt(value: string | null): void {
 export function setLastAiCaveat(value: string | null): void {
   lastAiCaveat = value
 }
+// Note: `setLastAiLabel` and `setLastAiPattern` aren't exported separately;
+// callers use `recordAiTranslation` (below) to update all three slots
+// atomically.
 export function setRunOnMount(value: boolean): void {
   runOnMount = value
+}
+
+/**
+ * Switches the active mode and swaps the displayed query (`query`) to match the new mode's
+ * buffer. The current mode's input value is preserved in its hand-typed buffer first (so a
+ * future switch back can restore it). When moving to filename/regex mode and that buffer is
+ * empty, the AI-produced pattern of matching kind is loaded in instead (per
+ * search-fixup-brief clarification 2).
+ *
+ * No-op when `targetMode === mode`.
+ */
+export function switchMode(targetMode: SearchMode): void {
+  if (mode === targetMode) return
+  // Preserve the user's current typing under the previous mode's slot before swapping.
+  handTyped[mode] = query
+  mode = targetMode
+  // Restore the target mode's hand-typed value, or fall back to the AI pattern when it
+  // matches the kind. The "other" mode's buffer stays whatever the user last typed.
+  let next = handTyped[targetMode]
+  if (!next && lastAiPattern) {
+    const wantKind = targetMode === 'regex' ? 'regex' : 'glob'
+    if (lastAiPatternKind === wantKind && targetMode !== 'ai') {
+      next = lastAiPattern
+    }
+  }
+  query = next
+}
+
+/**
+ * Records an AI translation's outputs: the LLM-produced pattern (`pattern` + `kind`, may be
+ * null) and the short LLM-friendly label. The caller is expected to set `lastAiPrompt`
+ * separately via `setLastAiPrompt`.
+ */
+export function recordAiTranslation(input: {
+  pattern: string | null
+  kind: 'glob' | 'regex' | null
+  label: string | null
+}): void {
+  lastAiPattern = input.pattern
+  lastAiPatternKind = input.pattern ? input.kind : null
+  lastAiLabel = input.label
+}
+
+/**
+ * Clears the AI pattern + label + caveat (but leaves `lastAiPrompt` and the transparency
+ * strip intact). Called when the user changes the pattern via the Pattern chip's clear
+ * button (per search-fixup-brief clarification 5: clearing the chip doesn't hide the
+ * strip).
+ */
+export function clearAiPattern(): void {
+  lastAiPattern = null
+  lastAiPatternKind = null
 }
 
 /** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
@@ -378,9 +487,17 @@ export function applyHistoryEntry(entry: HistoryEntry): void {
   caseSensitive = entry.caseSensitive
   excludeSystemDirs = entry.excludeSystemDirs
   applyHistoryFilters(entry.filters)
+  // Mirror into the per-mode buffer so a follow-up mode switch sees a sensible value.
+  handTyped.ai = ''
+  handTyped.filename = ''
+  handTyped.regex = ''
+  handTyped[entry.mode] = entry.query
   // Clear any prior AI transparency state; the next AI run will repopulate it.
   lastAiPrompt = null
   lastAiCaveat = null
+  lastAiLabel = null
+  lastAiPattern = null
+  lastAiPatternKind = null
   results = []
   totalCount = 0
   cursorIndex = 0
@@ -512,5 +629,11 @@ export function clearSearchState(): void {
   isSearching = false
   lastAiPrompt = null
   lastAiCaveat = null
+  lastAiLabel = null
+  lastAiPattern = null
+  lastAiPatternKind = null
+  handTyped.ai = ''
+  handTyped.filename = ''
+  handTyped.regex = ''
   runOnMount = false
 }

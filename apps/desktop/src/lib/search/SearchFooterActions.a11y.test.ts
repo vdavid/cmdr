@@ -23,7 +23,7 @@ describe('SearchFooterActions a11y', () => {
     document.body.appendChild(target)
     mount(SearchFooterActions, {
       target,
-      props: { resultCount: 3, disabled: false, onOpenInPane: () => {}, onOpenInFileManager: () => {} },
+      props: { resultCount: 3, disabled: false, onShowAllInMainWindow: () => {}, onGoToFile: () => {} },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -35,7 +35,7 @@ describe('SearchFooterActions a11y', () => {
     document.body.appendChild(target)
     mount(SearchFooterActions, {
       target,
-      props: { resultCount: 3, disabled: true, onOpenInPane: () => {}, onOpenInFileManager: () => {} },
+      props: { resultCount: 3, disabled: true, onShowAllInMainWindow: () => {}, onGoToFile: () => {} },
     })
     await tick()
     await expectNoA11yViolations(target)

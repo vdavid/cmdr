@@ -2,14 +2,25 @@
     /**
      * SearchResults: Column headers + results list + all states + status bar.
      *
-     * Displays search results with resizable columns, handles all result states
-     * (unavailable, loading, searching, empty, populated), and shows a status bar.
+     * Per the search-fixup brief, the table uses CSS grid with the Path column as the
+     * single flex track (`1fr`). Name has a measured max width and mid-truncates
+     * (`useShortenMiddle`); Path renders via `PathPills` with overflow-aware collapse;
+     * Size and Modified shrink-wrap to their content and sit comfortably apart (we
+     * give them a generous gap via the grid `column-gap` declaration). The Actions
+     * column holds the per-row `…` menu and the matching header label.
+     *
+     * Cursor model (single cursor): both mouse hover and keyboard arrows move the
+     * same accent-colored cursor (`cursorIndex`). There is NO separate "hovered"
+     * background — hovering a row writes to `cursorIndex` via `onHover`. The cursor
+     * loops top<->bottom on arrow nav (handled by the parent dialog). This mirrors
+     * the volume switcher's hover-syncs-cursor pattern.
      */
     import { tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import Size from '$lib/ui/Size.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
+    import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import EmptyState from './EmptyState.svelte'
     import PathPills from './PathPills.svelte'
     import SearchRowMenu from './SearchRowMenu.svelte'
@@ -18,7 +29,6 @@
     interface Props {
         results: SearchResultEntry[]
         cursorIndex: number
-        hoveredIndex: number | null
         isIndexAvailable: boolean
         isIndexReady: boolean
         isSearching: boolean
@@ -31,12 +41,15 @@
         entriesScanned: number
         totalCount: number
         indexEntryCount: number
-        gridTemplate: string
         iconCacheVersion: number
         /** True when AI mode is available (provider on + index ready). Drives the empty-state chip set. */
         aiEnabled: boolean
         onResultClick: (index: number) => void
-        onColumnDragStart: (col: string, e: MouseEvent) => void
+        /**
+         * Called when the user moves the mouse over a row. The dialog uses this to
+         * move the accent-colored cursor so mouse + keyboard share one cursor.
+         */
+        onHover: (index: number) => void
         /** Called when the user clicks an example chip in the empty state. */
         onPickExample: (chip: { mode: SearchMode; query: string }) => void
         /**
@@ -51,11 +64,9 @@
         onRowMenu: (entry: SearchResultEntry) => void
     }
 
-    /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
-    let {
+    const {
         results,
         cursorIndex,
-        hoveredIndex = $bindable(), // eslint-disable-line @typescript-eslint/no-useless-default-assignment -- $bindable() marker, not a default
         isIndexAvailable,
         isIndexReady,
         isSearching,
@@ -67,16 +78,14 @@
         entriesScanned,
         totalCount,
         indexEntryCount,
-        gridTemplate,
         iconCacheVersion: _iconVersionProp,
         aiEnabled,
         onResultClick,
-        onColumnDragStart,
+        onHover,
         onPickExample,
         onPickPath,
         onRowMenu,
     }: Props = $props()
-    /* eslint-enable prefer-const */
 
     let resultsContainer: HTMLDivElement | undefined = $state()
 
@@ -126,49 +135,16 @@
     }
 </script>
 
-<!-- Column headers -->
-<div class="column-header" style:grid-template-columns={gridTemplate}>
-    <span class="col-label col-icon"></span>
-    <span class="col-label">
-        Name
-        <span
-            class="col-resize-handle"
-            role="separator"
-            onmousedown={(e: MouseEvent) => {
-                onColumnDragStart('name', e)
-            }}
-        ></span>
-    </span>
-    <span class="col-label">
-        Path
-        <span
-            class="col-resize-handle"
-            role="separator"
-            onmousedown={(e: MouseEvent) => {
-                onColumnDragStart('path', e)
-            }}
-        ></span>
-    </span>
-    <span class="col-label col-right">
-        Size
-        <span
-            class="col-resize-handle"
-            role="separator"
-            onmousedown={(e: MouseEvent) => {
-                onColumnDragStart('size', e)
-            }}
-        ></span>
-    </span>
-    <span class="col-label col-right">
-        Modified
-        <span
-            class="col-resize-handle"
-            role="separator"
-            onmousedown={(e: MouseEvent) => {
-                onColumnDragStart('modified', e)
-            }}
-        ></span>
-    </span>
+<!-- Column headers. Path is the flex column (1fr); Size + Modified shrink-wrap.
+     The Actions column on the right matches the row's `…` button slot. Header
+     cells use the same grid template as the rows so columns line up. -->
+<div class="column-header">
+    <span class="col-label col-icon" aria-hidden="true"></span>
+    <span class="col-label">Name</span>
+    <span class="col-label">Path</span>
+    <span class="col-label col-right">Size</span>
+    <span class="col-label col-right">Modified</span>
+    <span class="col-label col-actions">Actions</span>
 </div>
 
 <!-- Results list. `role="listbox"` only applies when option rows are rendered; empty/loading/
@@ -209,8 +185,6 @@
             <div
                 class="result-row"
                 class:is-under-cursor={index === cursorIndex}
-                class:is-hovered={hoveredIndex === index && index !== cursorIndex}
-                style:grid-template-columns={gridTemplate}
                 onclick={() => {
                     onResultClick(index)
                 }}
@@ -219,10 +193,7 @@
                     onRowMenu(entry)
                 }}
                 onmouseenter={() => {
-                    hoveredIndex = index
-                }}
-                onmouseleave={() => {
-                    hoveredIndex = null
+                    onHover(index)
                 }}
                 role="option"
                 tabindex="-1"
@@ -237,9 +208,18 @@
                         <span class="icon-emoji">📄</span>
                     {/if}
                 </span>
-                <span class="result-name" title={entry.name}>
-                    {entry.name}
-                </span>
+                <!-- Mid-truncating name. `useShortenMiddle` measures with pretext
+                     and snaps to '.' so the extension stays visible. Tooltip
+                     shows the full name only when truncation actually happened. -->
+                <span
+                    class="result-name"
+                    use:useShortenMiddle={{
+                        text: entry.name,
+                        preferBreakAt: '.',
+                        startRatio: 0.7,
+                        tooltipWhenTruncated: true,
+                    }}
+                ></span>
                 <span class="result-path">
                     <PathPills path={entry.parentPath} onPick={onPickPath} />
                 </span>
@@ -248,14 +228,15 @@
                 </span>
                 <span class="result-modified">
                     <DateLabel modifiedAt={entry.modifiedAt} />
-                    <span class="row-menu-slot">
-                        <SearchRowMenu
-                            isCursorRow={index === cursorIndex}
-                            onOpen={() => {
-                                onRowMenu(entry)
-                            }}
-                        />
-                    </span>
+                </span>
+                <!-- Actions column: per-row `…` menu. Always visible on every row
+                     (search-fixup brief item 2). Header label aligns above. -->
+                <span class="result-actions">
+                    <SearchRowMenu
+                        onOpen={() => {
+                            onRowMenu(entry)
+                        }}
+                    />
                 </span>
             </div>
         {/each}
@@ -268,12 +249,28 @@
 </div>
 
 <style>
+    /* Shared grid template. Path (1fr) absorbs the remaining width; Name has a
+       hard ceiling so very long names don't squeeze the path column to nothing;
+       Size + Modified shrink-wrap; Actions matches the `…` button footprint.
+       The `column-gap` keeps Size and Modified visibly apart. */
+    .column-header,
+    .result-row {
+        display: grid;
+        grid-template-columns:
+            24px /* icon */
+            minmax(80px, 22ch) /* name (mid-truncates) */
+            minmax(120px, 1fr) /* path (flex) */
+            max-content /* size */
+            max-content /* modified */
+            max-content; /* actions */
+
+        column-gap: var(--spacing-md);
+        align-items: center;
+    }
+
     /* Column headers sit on the dialog's secondary surface (matching the FullList header in the
        main pane), with a hairline below to land cleanly onto the results surface. */
     .column-header {
-        display: grid;
-        gap: var(--spacing-xs);
-        align-items: center;
         padding: var(--spacing-xs) var(--spacing-lg);
         background: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-subtle);
@@ -283,7 +280,6 @@
     .col-label {
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
-        position: relative;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -297,23 +293,16 @@
         text-align: right;
     }
 
-    .col-resize-handle {
-        position: absolute;
-        top: 0;
-        right: -2px;
-        width: 5px;
-        height: 100%;
-        cursor: col-resize;
-    }
-
-    .col-resize-handle:hover {
-        background: var(--color-border-strong);
+    .col-label.col-actions {
+        text-align: right;
+        min-width: 28px;
     }
 
     /* Results list */
     .results-container {
+        flex: 1 1 auto;
+        min-height: 0;
         overflow-y: auto;
-        max-height: 400px;
     }
 
     .loading-state {
@@ -362,20 +351,17 @@
     }
 
     .result-row {
-        display: grid;
-        gap: var(--spacing-xs);
-        align-items: center;
         padding: var(--spacing-xs) var(--spacing-lg);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
     }
 
+    /* Single cursor: mouse hover and keyboard arrows both write to `cursorIndex`
+       (see `onHover` in the row's `onmouseenter`), so there's no separate
+       `.is-hovered` background. The accent-colored cursor follows whichever
+       input the user reaches for. Per search-fixup-brief item 6. */
     .result-row.is-under-cursor {
         background: var(--color-accent-subtle);
-    }
-
-    .result-row.is-hovered {
-        background: var(--color-tint-hover);
     }
 
     .result-icon {
@@ -398,11 +384,14 @@
         line-height: 1;
     }
 
+    /* Name column: mid-truncation handled by `useShortenMiddle`; we just keep
+       overflow hidden and the column track width capped (22ch) so very long
+       names don't push Path off the edge. */
     .result-name {
         overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
         font-weight: 500;
+        min-width: 0;
     }
 
     .result-path {
@@ -421,23 +410,15 @@
         color: var(--color-text-tertiary);
         white-space: nowrap;
         text-align: right;
+    }
+
+    /* Actions column. Per search-fixup-brief item 2, the `…` button is always
+       visible on every row (no hover-only fade). */
+    .result-actions {
         display: inline-flex;
         align-items: center;
         justify-content: flex-end;
-        gap: var(--spacing-xs);
-    }
-
-    /* The row-menu button is hidden by default on every row; the cursor row's button
-       overrides this via its own `.is-cursor` rule (always visible). Hovering any row
-       reveals its button so mouse users can reach the menu without first arrowing to
-       the row. */
-    .row-menu-slot :global(.row-menu-btn) {
-        opacity: 0;
-    }
-
-    .result-row:hover .row-menu-slot :global(.row-menu-btn),
-    .result-row.is-under-cursor .row-menu-slot :global(.row-menu-btn) {
-        opacity: 1;
+        min-width: 28px;
     }
 
     /* Status bar uses the dialog's secondary surface; the surface change against the results
@@ -448,6 +429,7 @@
         border-top: 1px solid var(--color-border-subtle);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
+        flex-shrink: 0;
     }
 
     .status-text {

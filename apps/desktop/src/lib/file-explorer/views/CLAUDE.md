@@ -20,16 +20,12 @@ without DOM performance issues.
   `buildFileSizeTooltip()`, `buildDirSizeTooltip()`, `buildSelectionSizeTooltip()`
 - **measure-column-widths.ts** – `computeFullListColumnWidths()`: pixel-accurate widths for the Ext / Size / Modified
   columns based on the currently loaded entries. Uses `@chenglou/pretext` for canvas-based measurement (no DOM reflow).
-  FullList transitions `grid-template-columns` over 300ms so widths refine smoothly as more entries stream in. Also
-  produces the optional Path column width when the caller passes `parentPathsForPathColumn` (M8b: search-results pane),
-  shrink-wrapping to the widest measured path within `[MIN_PATH_WIDTH, MAX_PATH_WIDTH]`. Returns `path: 0` when the prop
-  is absent so callers can cheaply branch on it.
-- **FullList.svelte** – Two opt-in M8b props let the search-results pane reuse the component without forking:
-  `showPathColumn?: boolean` inserts a "Path" column between Name and Ext (or replaces the Git column when both would
-  fight), rendered via `$lib/search/PathPills`. `staticEntries?: FileEntry[]` overrides the backend-listing path
-  entirely — the entries array is mirrored into `cachedEntries` and the cache fetch / soft-refresh / cache-generation
-  paths short-circuit. With both props unset, FullList renders identically to before (same grid template, same fetch
-  loop, same DOM). The `onPathPillPick?: (path) => void` callback receives the absolute path of the clicked ancestor.
+  FullList transitions `grid-template-columns` over 300ms so widths refine smoothly as more entries stream in.
+- **FullList.svelte** – `staticEntries?: FileEntry[]` overrides the backend-listing path entirely — the entries array is
+  mirrored into `cachedEntries` and the cache fetch / soft-refresh / cache-generation paths short-circuit. Used by the
+  search-results virtual volume, which feeds full paths as the entries' `name` field; the column-name cell mid-truncates
+  via `useShortenMiddle` (snapping to `/` when the name carries one, `.` otherwise). With the prop unset, FullList
+  renders identically to before (same grid template, same fetch loop, same DOM).
 - **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`), `listing.sizeMismatchWarning` (via
   `getSizeMismatchWarning()`), and `listing.sizeUnit` (via `getFileSizeUnit()`, paired with `getFileSizeFormat()`)
   settings. Size cells are rendered through `formatSizeForDisplay` from `selection/selection-info-utils.ts`, which

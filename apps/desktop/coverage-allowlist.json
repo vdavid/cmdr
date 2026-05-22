@@ -234,6 +234,9 @@
     "search/AiSearchRow.svelte": {
       "reason": "Search sub-component, UI only, depends on parent orchestration"
     },
+    "search/PathPills.svelte": {
+      "reason": "Pure split semantics are covered by PathPills.svelte.test.ts; the overflow-collapse layout depends on `@chenglou/pretext` canvas measurement + ResizeObserver, neither of which runs in jsdom. The visible layout is exercised via the MCP-driven manual verification in the search-fixup pass."
+    },
     "search/SearchDialog.svelte": {
       "reason": "Search dialog UI, depends on Tauri commands and event listeners"
     },

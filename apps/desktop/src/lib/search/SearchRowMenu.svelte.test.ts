@@ -12,26 +12,13 @@ describe('SearchRowMenu', () => {
     document.body.appendChild(target)
     mount(SearchRowMenu, {
       target,
-      props: { isCursorRow: false, onOpen: () => {} },
+      props: { onOpen: () => {} },
     })
     await tick()
     const btn = target.querySelector('.row-menu-btn') as HTMLButtonElement
     expect(btn).not.toBeNull()
     expect(btn.getAttribute('aria-label')).toBe('More actions')
     expect(btn.getAttribute('tabindex')).toBe('-1')
-    target.remove()
-  })
-
-  it('marks the cursor row variant with .is-cursor for the always-visible CSS rule', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(SearchRowMenu, {
-      target,
-      props: { isCursorRow: true, onOpen: () => {} },
-    })
-    await tick()
-    const btn = target.querySelector('.row-menu-btn') as HTMLButtonElement
-    expect(btn.classList.contains('is-cursor')).toBe(true)
     target.remove()
   })
 
@@ -46,7 +33,7 @@ describe('SearchRowMenu', () => {
     document.body.appendChild(target)
     mount(SearchRowMenu, {
       target,
-      props: { isCursorRow: true, onOpen },
+      props: { onOpen },
     })
     await tick()
     const btn = target.querySelector('.row-menu-btn') as HTMLButtonElement

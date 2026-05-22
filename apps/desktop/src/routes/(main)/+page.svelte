@@ -720,7 +720,7 @@
                 onNavigate={handleSearchNavigate}
                 onClose={handleSearchDialogClose}
                 currentFolderPath={explorerRef?.getFocusedPanePath() ?? '/'}
-                onOpenInPane={handleOpenSearchInPane}
+                onShowAllInMainWindow={handleOpenSearchInPane}
             />
         {/if}
 

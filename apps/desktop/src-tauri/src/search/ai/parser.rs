@@ -18,6 +18,12 @@ pub struct ParsedLlmResponse {
     pub exclude: Option<String>,
     pub folders: Option<String>,
     pub note: Option<String>,
+    /// Short, breadcrumb-friendly label describing the search (max ~40 chars
+    /// after truncation). Produced by the LLM so the user sees a meaningful
+    /// title in the pane breadcrumb when the search is opened in a pane. May
+    /// be missing when the LLM omits it; callers fall back to the original
+    /// prompt.
+    pub label: Option<String>,
 }
 
 impl ParsedLlmResponse {
@@ -31,6 +37,7 @@ impl ParsedLlmResponse {
             && self.exclude.is_none()
             && self.folders.is_none()
             && self.note.is_none()
+            && self.label.is_none()
     }
 }
 
@@ -59,6 +66,7 @@ pub fn parse_llm_response(response: &str) -> ParsedLlmResponse {
                 "exclude" => parsed.exclude = Some(value),
                 "folders" => parsed.folders = validate_folders(&value),
                 "note" => parsed.note = Some(value),
+                "label" => parsed.label = Some(value),
                 _ => {} // unknown field, skip
             }
         }
@@ -392,6 +400,13 @@ note: can't determine content";
         // Top 3 by length
         let words: Vec<&str> = result.split_whitespace().collect();
         assert_eq!(words.len(), 3);
+    }
+
+    #[test]
+    fn parse_label_field() {
+        let response = "keywords: test\nlabel: Big PDFs from this week";
+        let parsed = parse_llm_response(response);
+        assert_eq!(parsed.label.as_deref(), Some("Big PDFs from this week"));
     }
 
     #[test]

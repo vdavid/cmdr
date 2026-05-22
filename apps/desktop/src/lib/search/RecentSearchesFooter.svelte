@@ -63,23 +63,23 @@
             class="all-searches"
             {disabled}
             onclick={onOpenAll}
-            use:tooltip={'Show all recent searches (⌘H)'}
+            use:tooltip={{ text: 'Show all recent searches', shortcut: '⌘H' }}
             aria-label="All recent searches"
         >
-            All searches…
+            All searches…<span class="shortcut-hint" aria-hidden="true">⌘H</span>
         </button>
     </div>
 {/if}
 
 <style>
+    /* No background / border-top here either: the parent `.dialog-footer` owns
+       the single uniform footer surface and the hairline above it. */
     .recent-footer {
         display: flex;
         flex-wrap: nowrap;
         align-items: center;
         gap: var(--spacing-xs);
         padding: var(--spacing-sm) var(--spacing-lg);
-        background: var(--color-bg-primary);
-        border-top: 1px solid var(--color-border-subtle);
         overflow-x: auto;
         scrollbar-width: thin;
     }
@@ -140,5 +140,16 @@
     .all-searches {
         font-style: italic;
         color: var(--color-text-tertiary);
+    }
+
+    /* Inline ⌘H hint after the "All searches…" label. Tertiary color so it
+       reads as discoverability cue, not action label. */
+    .shortcut-hint {
+        margin-left: var(--spacing-xs);
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        opacity: 0.8;
+        font-style: normal;
     }
 </style>

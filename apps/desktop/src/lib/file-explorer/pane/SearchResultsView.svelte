@@ -11,9 +11,10 @@
      *
      * Click on a row opens the file or navigates into the directory via the host pane's
      * `onNavigate` callback (which routes through `FilePane.handleNavigate` and pushes a
-     * regular history entry for the underlying real path). Click on a path-pill segment
-     * navigates the active pane to that ancestor and leaves the snapshot view; the host
-     * pane's `onNavigateToAncestor` callback owns the volume / path switch.
+     * regular history entry for the underlying real path). The Path column was removed
+     * per search-fixup-brief item 15; the Name column shows the full path now, and the
+     * row-level "Reveal in Finder" / "Open" context menu items cover the ancestor-jump
+     * cases. The breadcrumb still shows the snapshot's label.
      *
      * Missing snapshot — shouldn't happen in practice (the dialog pins via the
      * last-attempt slot and the tab-state manager holds refs for history entries), but
@@ -43,8 +44,6 @@
         selectedIndices?: Set<number>
         /** Called when the user activates a row (Enter / double-click). */
         onNavigate: (entry: FileEntry) => void
-        /** Called when the user clicks a path-pill ancestor (leaves the snapshot view). */
-        onNavigateToAncestor: (ancestorPath: string) => void
         /**
          * Called when the user clicks / shift-clicks / cmd-clicks a row. Mirrors
          * `FullList`'s signature so the host pane can route to selection state.
@@ -62,7 +61,6 @@
         sortOrder,
         selectedIndices = new Set<number>(),
         onNavigate,
-        onNavigateToAncestor,
         onSelect,
         onVisibleRangeChange,
     }: Props = $props()
@@ -87,17 +85,23 @@
 
     /**
      * Adapt `SearchResultEntry` (the wire-typed search result) into `FileEntry` (the
-     * shape FullList expects). We carry `parentPath` through so the path-pills column
-     * has data, and we synthesize the metadata fields FullList reads (permissions /
-     * owner / group / extendedMetadataLoaded) with safe defaults. Recursive fields stay
+     * shape FullList expects). Per search-fixup-brief item 15: the Name column shows
+     * the FULL PATH for each entry (`~/Library/Dropbox/test.md`), so we synthesize
+     * the FileEntry with `name = friendly full path`. FullList's `col-name` mid-
+     * truncates via `useShortenMiddle` (snapping to `/` when the name contains one)
+     * and the tooltip surfaces the full string on hover. Recursive fields stay
      * absent: snapshots only carry per-file basics from the search engine. The Size
-     * column will render `<dir>` for directory results because `recursiveSize` is
-     * absent, which matches the user's expectation for a result set (we didn't recurse
-     * into them).
+     * column renders `<dir>` for directory results because `recursiveSize` is
+     * absent, which matches the user's expectation for a result set (we didn't
+     * recurse into them).
+     *
+     * The displayed name passes through `prettyPath` to replace the user's home
+     * prefix with `~` for compactness. The underlying `path` field (used for ops:
+     * Open, Reveal, Copy path, Move, Delete) stays absolute.
      */
     function adaptEntry(e: SearchResultEntry): FileEntry {
         return {
-            name: e.name,
+            name: prettyPath(e.path),
             path: e.path,
             isDirectory: e.isDirectory,
             isSymlink: false,
@@ -110,6 +114,19 @@
             extendedMetadataLoaded: true,
             parentPath: e.parentPath,
         }
+    }
+
+    /**
+     * Replaces the user's home prefix with `~` for compactness. Best-effort
+     * heuristic: the first `/Users/<name>/` (macOS) or `/home/<name>/` (Linux)
+     * segment becomes `~/`. Anything that doesn't match passes through unchanged.
+     */
+    function prettyPath(absolute: string): string {
+        const macMatch = /^\/Users\/[^/]+/.exec(absolute)
+        if (macMatch) return '~' + absolute.slice(macMatch[0].length)
+        const linuxMatch = /^\/home\/[^/]+/.exec(absolute)
+        if (linuxMatch) return '~' + absolute.slice(linuxMatch[0].length)
+        return absolute
     }
 
     /**
@@ -127,9 +144,19 @@
         fullListRef?.scrollToIndex(index)
     }
 
-    /** Find an entry by name; returns its global index or -1. */
+    /**
+     * Find an entry by basename; returns its global index or -1. The entry's
+     * `name` field is now a full path (post-search-fixup-brief item 15), so we
+     * compare against the basename derived from `path` instead. Callers (mostly
+     * type-to-jump and MCP) still pass plain filenames.
+     */
     export function findItemIndex(name: string): number {
-        return entries.findIndex((e) => e.name === name)
+        return entries.findIndex((e) => basename(e.path) === name)
+    }
+
+    function basename(path: string): string {
+        const idx = path.lastIndexOf('/')
+        return idx >= 0 ? path.slice(idx + 1) : path
     }
 
     /**
@@ -169,9 +196,7 @@
         {onSelect}
         {onNavigate}
         {onVisibleRangeChange}
-        showPathColumn={true}
         staticEntries={entries}
-        onPathPillPick={onNavigateToAncestor}
         onContextMenu={(entry: FileEntry) => {
             // Route through the standard native context menu but ask Rust to
             // suppress Rename and New folder for this virtual pane: the

@@ -57,6 +57,13 @@ types.rs defines  ->  query.rs prepares (resolve_include_paths)
 **Decision**: LLM classifies intent into enums, Rust computes values deterministically.
 **Why**: Even small (2B) LLMs understand natural language across languages and can map "last week" to the token `last_week`. But asking them to generate regex, compute ISO dates, or produce valid JSON fails ~60% of the time on local models. Separating classification (LLM) from computation (Rust) makes the pipeline reliable regardless of model size.
 
+**Decision**: The classification prompt also asks the LLM for a short `label:` (per search-fixup-brief item 16).
+**Why**: When the user opens a search-results snapshot in a pane, the breadcrumb wants a short, human-friendly title
+("Big PDFs from this week") rather than the verbatim natural-language prompt. The LLM is already summarizing intent for
+the rest of the prompt fields; asking it for one more compact title is cheap and reliable, no extra round trip. Rust
+truncates to 40 characters and trims trailing punctuation; the frontend falls back to the original prompt when the
+field is missing (`build_label` returns `None`).
+
 **Decision**: Single LLM pass, no refinement.
 **Why**: The previous two-pass system (translate + refine) caused regressions ~15% of the time (over-narrowing, flag dropping). With deterministic structure, there's nothing to refine. Also halves LLM latency.
 

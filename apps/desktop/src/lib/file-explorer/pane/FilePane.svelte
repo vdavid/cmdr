@@ -144,12 +144,6 @@
         onRetryUnreachable?: () => void
         /** Called when user clicks "Open home folder" on the unreachable banner */
         onOpenHome?: () => void
-        /**
-         * Called when the user clicks a path-pill ancestor segment inside the search-results
-         * pane. The host (`DualPaneExplorer`) resolves the path's volume and navigates the
-         * pane there, leaving the snapshot view. Unused for other pane kinds.
-         */
-        onNavigateToAncestor?: (ancestorPath: string) => void
     }
 
     const {
@@ -174,7 +168,6 @@
         unreachable = null,
         onRetryUnreachable,
         onOpenHome,
-        onNavigateToAncestor,
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
@@ -2600,7 +2593,6 @@
                 {sortOrder}
                 selectedIndices={selection.selectedIndices}
                 onNavigate={(entry) => { void handleNavigate(entry) }}
-                onNavigateToAncestor={(p) => onNavigateToAncestor?.(p)}
                 onSelect={(idx, shiftKey, metaKey) => {
                     // Reuse the regular pane's click semantics so shift-range
                     // and cmd-toggle behave identically. The snapshot pane has
