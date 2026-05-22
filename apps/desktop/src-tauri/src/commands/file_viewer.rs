@@ -3,12 +3,19 @@
 use tokio::time::Duration;
 
 use super::util::{IpcError, blocking_result_with_timeout};
-use crate::file_viewer::{self, LineChunk, SearchPollResult, SeekTarget, ViewerOpenResult, ViewerSessionStatus};
+use crate::file_viewer::{
+    self, LineChunk, RangeEnd, SearchPollResult, SeekTarget, ViewerError, ViewerOpenResult, ViewerSessionStatus,
+};
 use log::debug;
 use tauri::Manager;
 use tauri::menu::MenuItemKind;
 
 const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// Maximum read timeout for `viewer_read_range`. The 100 MiB hard ceiling (enforced
+/// at the FE) means even on a slow disk we shouldn't blow this. The backend's per-read
+/// cancel flag covers the actually-stuck case via Escape.
+const READ_RANGE_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Opens a viewer session for the given file.
 /// Returns session metadata + initial lines from the start of the file.
@@ -106,6 +113,46 @@ pub fn viewer_get_status(session_id: String) -> Result<ViewerSessionStatus, Stri
 #[specta::specta]
 pub fn viewer_close(session_id: String) -> Result<(), String> {
     file_viewer::close_session(&session_id).map_err(|e| e.to_string())
+}
+
+/// Reads a logical range of the file (`anchor` to `focus`) and returns the bytes as a
+/// UTF-8 string. Endpoints are normalised internally; either may be `Eof` (used by ⌘A
+/// in ByteSeek-no-index mode where the FE doesn't know `totalLines`). Offsets on the
+/// wire are UTF-16 code units; the backend clamps lone surrogates to the nearest
+/// codepoint boundary.
+///
+/// Errors come through the typed `ViewerError` enum. The FE matches on the variant tag
+/// (per the no-string-classification rule); `Cancelled` and `TimedOut` are the two the
+/// copy flow specifically handles.
+#[tauri::command]
+#[specta::specta]
+pub async fn viewer_read_range(
+    session_id: String,
+    read_id: u64,
+    anchor: RangeEnd,
+    focus: RangeEnd,
+) -> Result<String, ViewerError> {
+    match tokio::time::timeout(
+        READ_RANGE_TIMEOUT,
+        tokio::task::spawn_blocking(move || file_viewer::read_range(&session_id, read_id, anchor, focus)),
+    )
+    .await
+    {
+        Ok(Ok(result)) => result,
+        Ok(Err(join_err)) => Err(ViewerError::Io {
+            message: join_err.to_string(),
+        }),
+        Err(_) => Err(ViewerError::TimedOut),
+    }
+}
+
+/// Flips the cancel flag for an in-flight range read. The reader sees the flag at its
+/// next per-chunk check and returns `ViewerError::Cancelled`. If the read has already
+/// finished, this is a no-op.
+#[tauri::command]
+#[specta::specta]
+pub fn viewer_cancel_read(session_id: String, read_id: u64) -> Result<(), ViewerError> {
+    file_viewer::cancel_read(&session_id, read_id)
 }
 
 /// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).

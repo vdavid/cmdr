@@ -1,7 +1,9 @@
 // File viewer session commands (open, seek, search, close)
 
-import { commands } from '$lib/ipc/bindings'
+import { commands, type RangeEnd, type ViewerError } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
+
+export type { RangeEnd, ViewerError }
 
 /** A chunk of lines returned by the viewer backend. */
 export interface LineChunk {
@@ -125,4 +127,37 @@ export async function viewerSetupMenu(label: string): Promise<void> {
 export async function viewerSetWordWrap(label: string, checked: boolean): Promise<void> {
   const res = await commands.viewerSetWordWrap(label, checked)
   if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
+ * Reads a logical `(line, offset)` range of the file as a single UTF-8 string.
+ *
+ * Returns a typed result so the caller can match on the `ViewerError` variant tag
+ * (per the no-string-classification rule). Specifically, `kind: 'cancelled'` is the
+ * expected outcome after `viewerCancelRead` lands, and `kind: 'timedOut'` reports an
+ * IPC-level timeout (read continues if the per-read cancel flag isn't set).
+ */
+export async function viewerReadRange(
+  sessionId: string,
+  readId: number,
+  anchor: RangeEnd,
+  focus: RangeEnd,
+): Promise<{ ok: true; text: string } | { ok: false; error: ViewerError }> {
+  const res = await commands.viewerReadRange(sessionId, readId, anchor, focus)
+  if (res.status === 'ok') return { ok: true, text: res.data }
+  return { ok: false, error: res.error }
+}
+
+/**
+ * Flips the cancel flag for an in-flight range read. Returns the typed result; an
+ * unknown `readId` is treated as a no-op on the backend, so the caller can fire-and-
+ * forget without checking.
+ */
+export async function viewerCancelRead(
+  sessionId: string,
+  readId: number,
+): Promise<{ ok: true } | { ok: false; error: ViewerError }> {
+  const res = await commands.viewerCancelRead(sessionId, readId)
+  if (res.status === 'ok') return { ok: true }
+  return { ok: false, error: res.error }
 }

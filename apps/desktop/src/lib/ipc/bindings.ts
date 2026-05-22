@@ -678,6 +678,26 @@ export const commands = {
     typedError<null, string>(__TAURI_INVOKE('viewer_search_cancel', { sessionId })),
   // Closes a viewer session and frees resources.
   viewerClose: (sessionId: string) => typedError<null, string>(__TAURI_INVOKE('viewer_close', { sessionId })),
+  /**
+   *  Reads a logical range of the file (`anchor` to `focus`) and returns the bytes as a
+   *  UTF-8 string. Endpoints are normalised internally; either may be `Eof` (used by ⌘A
+   *  in ByteSeek-no-index mode where the FE doesn't know `totalLines`). Offsets on the
+   *  wire are UTF-16 code units; the backend clamps lone surrogates to the nearest
+   *  codepoint boundary.
+   *
+   *  Errors come through the typed `ViewerError` enum. The FE matches on the variant tag
+   *  (per the no-string-classification rule); `Cancelled` and `TimedOut` are the two the
+   *  copy flow specifically handles.
+   */
+  viewerReadRange: (sessionId: string, readId: number, anchor: RangeEnd, focus: RangeEnd) =>
+    typedError<string, ViewerError>(__TAURI_INVOKE('viewer_read_range', { sessionId, readId, anchor, focus })),
+  /**
+   *  Flips the cancel flag for an in-flight range read. The reader sees the flag at its
+   *  next per-chunk check and returns `ViewerError::Cancelled`. If the read has already
+   *  finished, this is a no-op.
+   */
+  viewerCancelRead: (sessionId: string, readId: number) =>
+    typedError<null, ViewerError>(__TAURI_INVOKE('viewer_cancel_read', { sessionId, readId })),
   // Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
   viewerSetupMenu: (label: string) => typedError<null, string>(__TAURI_INVOKE('viewer_setup_menu', { label })),
   // Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard).
@@ -2919,6 +2939,13 @@ export type PrepareResult = {
   entryCount: number
 }
 
+/**
+ *  One endpoint of a selection. Frontend uses `Line { line, offset }`; for the
+ *  "select all" path in ByteSeek-no-index mode (where `totalLines` is unknown),
+ *  it uses `Eof` so the backend can resolve the end without a fake line number.
+ */
+export type RangeEnd = { kind: 'line'; line: number; offset: number } | { kind: 'eof' }
+
 // Result of a rename validity check.
 export type RenameValidityResult = {
   // Whether the new name is valid (passes filename validation).
@@ -3405,6 +3432,28 @@ export type VerifyResult = {
   // The original short code, if the input was a short code.
   shortCode: string | null
 }
+
+/**
+ *  Errors from the viewer backends.
+ *
+ *  Variants carry the typed reason; the IPC layer maps these to user-facing strings.
+ *  The frontend matches on the variant tag (via `specta::Type`-generated bindings),
+ *  per the no-string-classification rule in AGENTS.md.
+ */
+export type ViewerError =
+  | { kind: 'io'; message: string }
+  | { kind: 'notFound'; path: string }
+  | { kind: 'isDirectory' }
+  | { kind: 'sessionNotFound'; sessionId: string }
+  // The read was cancelled via `viewer_cancel_read` (or session close).
+  | { kind: 'cancelled' }
+  // A requested line is past the file's last line.
+  | { kind: 'outOfRange' }
+  /**
+   *  The read exceeded the IPC timeout. The frontend can offer Retry; the underlying
+   *  backend read continues until it sees the per-read cancel flag or completes.
+   */
+  | { kind: 'timedOut' }
 
 // Result returned when opening a viewer session.
 export type ViewerOpenResult = {

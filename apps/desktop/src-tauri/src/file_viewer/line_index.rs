@@ -42,7 +42,9 @@ impl LineIndexBackend {
     /// in a background thread for large files. Checks `cancel` periodically.
     pub fn open(path: &Path, cancel: &AtomicBool) -> Result<Self, ViewerError> {
         let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
-            std::io::ErrorKind::NotFound => ViewerError::NotFound(path.display().to_string()),
+            std::io::ErrorKind::NotFound => ViewerError::NotFound {
+                path: path.display().to_string(),
+            },
             _ => ViewerError::from(e),
         })?;
         if metadata.is_dir() {
@@ -68,7 +70,7 @@ impl LineIndexBackend {
 
         loop {
             if cancel.load(Ordering::Relaxed) {
-                return Err(ViewerError::Io("Scan cancelled".to_string()));
+                return Err(ViewerError::Cancelled);
             }
 
             let bytes_read = file.read(&mut buf)?;

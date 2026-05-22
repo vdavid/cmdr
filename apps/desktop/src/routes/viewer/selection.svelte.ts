@@ -222,7 +222,6 @@ export function estimateSelectionBytes(
  * don't need the composable, which makes them trivially testable.
  */
 export function createViewerSelection() {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- $state initializer is reassigned via Svelte reactivity, not a const.
   let selection = $state<Selection | null>(null)
 
   function setAnchor(point: LineOffset): void {

@@ -44,6 +44,8 @@ export {
   viewerClose,
   viewerSetupMenu,
   viewerSetWordWrap,
+  viewerReadRange,
+  viewerCancelRead,
 } from './file-viewer'
 export type {
   LineChunk,
@@ -52,6 +54,8 @@ export type {
   ViewerSessionStatus,
   ViewerSearchMatch,
   SearchPollResult,
+  RangeEnd,
+  ViewerError,
 } from './file-viewer'
 
 // File actions (open, reveal, preview, context menu)

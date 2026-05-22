@@ -4,12 +4,17 @@ Provides three backend strategies for serving file content line-by-line with ins
 
 ## Key files
 
-- `mod.rs`: public API, constants (1MB threshold, 256-line checkpoints, 8KB backward scan limit)
-- `session.rs`: session orchestration, backend switching, search state
+- `mod.rs`: public API, constants (1MB threshold, 256-line checkpoints, 8KB backward scan limit), `ViewerError` typed
+  enum
+- `session.rs`: session orchestration, backend switching, search state, per-read cancel registry (`active_reads`),
+  `read_range` and `cancel_read` entry points
+- `range_read.rs`: backend-agnostic stitching of a `(line, offset) -> (line, offset)` range into one UTF-8 string,
+  UTF-16 -> UTF-8 offset clamp (surrogate-safe), streaming via byte-offset seeks to keep `ByteSeek` honest
 - `full_load.rs`: loads entire file into `String` (<1MB files)
 - `byte_seek.rs`: seeks by byte offset, scans backward for newline (instant open)
 - `line_index.rs`: sparse newline index (1 checkpoint per 256 lines), SIMD-accelerated via `memchr`
-- `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math
+- `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math, range reads,
+  cancellation
 
 ## Backend selection logic
 
@@ -28,10 +33,16 @@ if file_size < 1MB {
 
 - `viewer_open(path)` → `ViewerOpenResult` (session ID, metadata, initial lines, backend type)
 - `viewer_get_lines(session_id, target_type, target_value, count)` → `LineChunk`
+- `viewer_read_range(session_id, read_id, anchor, focus)` → `Result<String, ViewerError>`: reads a logical
+  `(line, offset)` range as one UTF-8 string. Endpoints are `RangeEnd::Line { line, offset }` (UTF-16 code unit offset)
+  or `RangeEnd::Eof` (used by ⌘A in ByteSeek-no-index mode). `read_id` is FE-allocated so cancel can land without an
+  extra round-trip. The function holds the SESSIONS lock only long enough to clone the backend `Arc` and register the
+  cancel flag; the read itself iterates outside the lock so other commands stay responsive.
+- `viewer_cancel_read(session_id, read_id)` → flips the per-read cancel flag. No-op if the read already finished.
 - `viewer_search_start(session_id, query)` → starts background search
 - `viewer_search_poll(session_id)` → `SearchPollResult` (matches, progress, status)
 - `viewer_search_cancel(session_id)` → cancels running search
-- `viewer_close(session_id)` → frees resources
+- `viewer_close(session_id)` → frees resources (also signals every in-flight read to cancel)
 - `viewer_setup_menu(label)`: builds viewer menu with word wrap item
 - `viewer_set_word_wrap(label, checked)`: syncs menu state
 
@@ -55,6 +66,13 @@ if file_size < 1MB {
 **Decision**: Sparse checkpoints every 256 lines instead of indexing every line.
 **Why**: Indexing every line in a 100M-line file would need ~800 MB of offset data (8 bytes each). At 256-line intervals, the same file needs ~3 MB. The trade-off is that seeking to a specific line requires reading forward up to 255 lines from the nearest checkpoint, which takes <1ms on any modern disk, well within the 16ms frame budget for 60fps scrolling.
 
+**Decision**: `ViewerError` is a `serde(tag = "kind")` enum exported through `specta::Type`, not stringified into
+`IpcError`. **Why**: the copy flow specifically needs to distinguish `Cancelled` (user pressed Escape, show nothing)
+from `TimedOut` (read exceeded 60 s, offer Retry) from `OutOfRange` / `Io` (real failure). String matching on the
+message would break the no-string-classification rule (AGENTS.md) and silently break when copy changes. The typed enum
+flows through `tauri-specta` to `bindings.ts` as a discriminated union; the frontend's `viewerReadRange` wrapper
+returns `{ ok, error }` and the page matches on `error.kind`.
+
 **Decision**: Session map (`SESSIONS`) is a global `LazyLock<Mutex<HashMap>>` rather than Tauri managed state.
 **Why**: Same reasoning as the AI manager. Viewer sessions need to be accessed from background threads (search, indexing) that don't have an `AppHandle`. A global makes the session cache accessible from any context without threading an `AppHandle` through every call chain.
 
@@ -72,6 +90,17 @@ if file_size < 1MB {
 - **UTF-16 offsets for JS compatibility**: `SearchMatch.column` and `.length` are in UTF-16 code units, matching JS `String.substring()`.
 - **ByteSeek backward scan limit**: 8KB max. If newline not found, line starts at scan boundary (truncated).
 - **LineIndex memory**: O(total_lines / 256) for checkpoints. For a 100M line file: ~390K checkpoints × 8 bytes = ~3MB.
+- **`read_range` cancellation is per-read, not session-wide**: each `read_range` call inserts an `Arc<AtomicBool>` into
+  `session.active_reads` keyed by the FE-allocated `read_id`. `cancel_read(session_id, read_id)` flips that one flag.
+  Per-read (not session-wide) for the same reason as `search_cancel`: a session-wide flag would race against concurrent
+  reads and against reads that complete just as the user starts a new one.
+- **`read_range` advances by byte offset after the first chunk, not by line number**: ByteSeek's `SeekTarget::Line(N)`
+  resolves to `N * 80` bytes (no line index), so a multi-chunk read keyed by line number would misalign as soon as line
+  lengths drift from the 80-byte estimate. `range_read.rs` keys the first chunk by line, then by `byte_offset = chunk
+  end` for every subsequent chunk. All three backends honour byte-offset seeks exactly.
+- **UTF-16 surrogate clamp at the IPC boundary**: `clamp_utf16_offset_to_byte` rounds offsets that land between the
+  high and low surrogate of an astral codepoint down to the codepoint start. This guarantees the returned slice is
+  always valid UTF-8.
 
 ## Performance targets
 

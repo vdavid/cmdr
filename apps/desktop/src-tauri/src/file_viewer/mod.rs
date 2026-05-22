@@ -8,6 +8,7 @@
 mod byte_seek;
 mod full_load;
 mod line_index;
+mod range_read;
 mod session;
 
 #[cfg(test)]
@@ -19,9 +20,10 @@ mod line_index_test;
 #[cfg(test)]
 mod session_test;
 
+pub use range_read::RangeEnd;
 pub use session::{
-    SearchPollResult, ViewerOpenResult, ViewerSessionStatus, close_session, get_lines, get_session_status,
-    open_session, search_cancel, search_poll, search_start,
+    SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session, get_lines, get_session_status,
+    open_session, read_range, search_cancel, search_poll, search_start,
 };
 
 use serde::Serialize;
@@ -91,28 +93,49 @@ pub struct BackendCapabilities {
 }
 
 /// Errors from the viewer backends.
-#[derive(Debug, Clone)]
+///
+/// Variants carry the typed reason; the IPC layer maps these to user-facing strings.
+/// The frontend matches on the variant tag (via `specta::Type`-generated bindings),
+/// per the no-string-classification rule in AGENTS.md.
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ViewerError {
-    Io(String),
-    NotFound(String),
+    Io {
+        message: String,
+    },
+    NotFound {
+        path: String,
+    },
     IsDirectory,
-    SessionNotFound(String),
+    SessionNotFound {
+        session_id: String,
+    },
+    /// The read was cancelled via `viewer_cancel_read` (or session close).
+    Cancelled,
+    /// A requested line is past the file's last line.
+    OutOfRange,
+    /// The read exceeded the IPC timeout. The frontend can offer Retry; the underlying
+    /// backend read continues until it sees the per-read cancel flag or completes.
+    TimedOut,
 }
 
 impl std::fmt::Display for ViewerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Io(msg) => write!(f, "{}", msg),
-            Self::NotFound(path) => write!(f, "File not found: {}", path),
+            Self::Io { message } => write!(f, "{}", message),
+            Self::NotFound { path } => write!(f, "File not found: {}", path),
             Self::IsDirectory => write!(f, "Cannot view a directory"),
-            Self::SessionNotFound(id) => write!(f, "Viewer session not found: {}", id),
+            Self::SessionNotFound { session_id } => write!(f, "Viewer session not found: {}", session_id),
+            Self::Cancelled => write!(f, "Read cancelled"),
+            Self::OutOfRange => write!(f, "Selection is past the end of the file"),
+            Self::TimedOut => write!(f, "Read timed out"),
         }
     }
 }
 
 impl From<std::io::Error> for ViewerError {
     fn from(e: std::io::Error) -> Self {
-        Self::Io(e.to_string())
+        Self::Io { message: e.to_string() }
     }
 }
 

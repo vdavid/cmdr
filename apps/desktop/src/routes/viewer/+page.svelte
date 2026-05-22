@@ -26,7 +26,17 @@
     import { createTextWidthTracker } from './viewer-text-width.svelte'
     import { createIndexingPoll } from './viewer-indexing-poll'
     import { handleNavigationKey, handleToggleKey } from './viewer-keyboard'
-    import { createViewerSelection, getLineSegmentBounds } from './selection.svelte'
+    import {
+        createViewerSelection,
+        estimateSelectionBytes,
+        getLineSegmentBounds,
+        normaliseSelection,
+    } from './selection.svelte'
+    import { createViewerCopy } from './viewer-copy.svelte'
+    import { addToast } from '$lib/ui/toast/toast-store.svelte'
+    import { formatBytes, type RangeEnd } from '$lib/tauri-commands'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import Size from '$lib/ui/Size.svelte'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
@@ -130,6 +140,60 @@
 
     const selection = createViewerSelection()
 
+    /**
+     * Converts a `Selection` to the `(anchor, focus)` `RangeEnd`s the IPC layer accepts.
+     * For ⌘A in ByteSeek-no-index mode we emit `Eof` so the backend can resolve the
+     * end of the file without a fake line number; everywhere else we emit `Line { ... }`.
+     */
+    function getRangeEndsForCurrentSelection(): { anchor: RangeEnd; focus: RangeEnd } | null {
+        const sel = selection.selection
+        if (sel === null) return null
+        const { start, end } = normaliseSelection(sel)
+        const startEnd: RangeEnd = { kind: 'line', line: start.line, offset: start.offset }
+        // In ByteSeek-no-index mode, the FE used `Infinity` (or a fake totalLines) for ⌘A.
+        // Translate "selection extends past every line we know about" into RangeEnd::Eof.
+        const knownTotal = totalLines
+        const usesEof = knownTotal === null && end.line === Number.MAX_SAFE_INTEGER
+        const endEnd: RangeEnd = usesEof
+            ? { kind: 'eof' }
+            : { kind: 'line', line: end.line, offset: end.offset }
+        return { anchor: startEnd, focus: endEnd }
+    }
+
+    /**
+     * Estimates the UTF-8 byte length of the current selection using cached line lengths.
+     * Returns `null` if any required line isn't in the cache (the copy flow will route to
+     * the "unknown size" branch and confirm before reading).
+     */
+    function estimateCurrentSelectionBytes(): number | null {
+        return estimateSelectionBytes(
+            selection.selection,
+            (n) => {
+                const txt = scroll.lineCache.get(n)
+                if (txt === undefined) return null
+                // +1 for the trailing newline (the cache stores line text without newlines).
+                return new TextEncoder().encode(txt).length + 1
+            },
+            (n) => {
+                const txt = scroll.lineCache.get(n)
+                if (txt === undefined) return null
+                return txt.length
+            },
+        )
+    }
+
+    const copy = createViewerCopy({
+        getSessionId: () => sessionId,
+        getSelectionBytes: estimateCurrentSelectionBytes,
+        getRangeEnds: getRangeEndsForCurrentSelection,
+    })
+
+    /** Whether a copy confirm dialog (10 to 100 MiB band) is showing. */
+    let copyConfirmBytes = $state<number | null>(null)
+    let copyConfirmProceed: (() => Promise<void>) | null = null
+    /** Whether the > 100 MiB refuse dialog is showing. */
+    let copyRefuseBytes = $state<number | null>(null)
+
     // Fetch lines when visible range changes (debounced)
     $effect(() => {
         scroll.runFetchEffect()
@@ -215,10 +279,88 @@
     }
 
     function handleSelectAllShortcut(): void {
-        if (totalLines === null || totalLines <= 0) return
-        // ByteSeek-no-index ⌘A is handled in M2 via the `RangeEnd::Eof` IPC variant.
-        const lastLineText = scroll.lineCache.get(totalLines - 1) ?? ''
-        selection.selectAll(totalLines, lastLineText.length)
+        if (totalLines !== null && totalLines > 0) {
+            const lastLineText = scroll.lineCache.get(totalLines - 1) ?? ''
+            selection.selectAll(totalLines, lastLineText.length)
+            return
+        }
+        // ByteSeek-no-index ⌘A: we don't know `totalLines`. Use a sentinel that the
+        // RangeEnd mapper translates to `RangeEnd::Eof` at the IPC boundary.
+        if (totalBytes > 0) {
+            selection.selectAll(Number.MAX_SAFE_INTEGER, 0)
+        }
+    }
+
+    async function writeToClipboard(text: string): Promise<boolean> {
+        try {
+            await navigator.clipboard.writeText(text)
+            return true
+        } catch (e) {
+            log.warn('Clipboard write rejected: {error}', { error: String(e) })
+            return false
+        }
+    }
+
+    async function handleSilentCopy(text: string, bytes: number): Promise<void> {
+        const ok = await writeToClipboard(text)
+        if (!ok) {
+            addToast("Couldn't reach the clipboard. Try again?", { level: 'warn' })
+            return
+        }
+        addToast(`${formatBytes(bytes)} on your clipboard`, { level: 'info' })
+    }
+
+    async function handleCopyShortcut(): Promise<void> {
+        const outcome = await copy.runCopy()
+        switch (outcome.kind) {
+            case 'empty':
+            case 'busy':
+                return
+            case 'silent':
+                await handleSilentCopy(outcome.text, outcome.bytes)
+                return
+            case 'confirm':
+                copyConfirmBytes = outcome.bytes
+                copyConfirmProceed = async () => {
+                    copyConfirmBytes = null
+                    const res = await outcome.proceed()
+                    if (res.ok) {
+                        await handleSilentCopy(res.text, outcome.bytes)
+                    } else if (res.reason === 'cancelled') {
+                        // User pressed Escape; no toast.
+                    } else if (res.reason === 'timedOut') {
+                        addToast('The read took too long. Try a smaller selection?', { level: 'warn' })
+                    } else {
+                        addToast("Couldn't read the selection. Try again?", { level: 'warn' })
+                    }
+                }
+                return
+            case 'unknown-size':
+                // ByteSeek-no-index range we never scrolled through. Same UX as confirm,
+                // but with a hint that we don't know the size yet.
+                copyConfirmBytes = -1
+                copyConfirmProceed = async () => {
+                    copyConfirmBytes = null
+                    const res = await outcome.proceed()
+                    if (res.ok) {
+                        const bytes = new TextEncoder().encode(res.text).length
+                        await handleSilentCopy(res.text, bytes)
+                    }
+                }
+                return
+            case 'refuse':
+                copyRefuseBytes = outcome.bytes
+                return
+        }
+    }
+
+    function cancelCopyConfirm(): void {
+        copyConfirmBytes = null
+        copyConfirmProceed = null
+    }
+
+    function dismissCopyRefuse(): void {
+        copyRefuseBytes = null
     }
 
     function handleEscapeKey(): void {
@@ -237,27 +379,68 @@
         }
     }
 
-    function handleKeyDown(e: KeyboardEvent) {
-        const metaOrCtrl = e.metaKey || e.ctrlKey
-        const searchInputFocused = search.searchVisible && document.activeElement === search.searchInputRef
+    /**
+     * Routes Escape to the right cancel surface in priority order: in-flight copy read
+     * first (cancellable IPC), then any open copy dialog, then the search bar logic.
+     * Returns `true` if Escape was consumed here.
+     */
+    function tryConsumeEscapeForCopy(): boolean {
+        if (copy.busy) {
+            void copy.cancelInFlight()
+            return true
+        }
+        if (copyConfirmBytes !== null) {
+            cancelCopyConfirm()
+            return true
+        }
+        if (copyRefuseBytes !== null) {
+            dismissCopyRefuse()
+            return true
+        }
+        return false
+    }
 
-        // ⌘A selects the whole file (independent of the DOM, so it works regardless of
-        // how many lines the virtual scroller has rendered). If the search input is
-        // focused, defer to its native ⌘A so it can select the query text.
-        if (metaOrCtrl && e.key === 'a' && !searchInputFocused) {
+    /**
+     * Handles ⌘/Ctrl-prefixed shortcuts inside the viewer. Returns `true` if the key
+     * was consumed; the caller falls through to other handlers when it returns `false`.
+     * Defers to the browser's native ⌘A / ⌘C when the search input is focused.
+     */
+    function handleModifierShortcut(e: KeyboardEvent, searchInputFocused: boolean): boolean {
+        if (searchInputFocused) {
+            // Only ⌘F here; ⌘A / ⌘C go to the input's native handler.
+            if (e.key === 'f') {
+                e.preventDefault()
+                search.openSearch()
+                return true
+            }
+            return false
+        }
+        if (e.key === 'a') {
             e.preventDefault()
             handleSelectAllShortcut()
-            return
+            return true
         }
-
-        if (metaOrCtrl && e.key === 'f') {
+        if (e.key === 'c') {
+            e.preventDefault()
+            void handleCopyShortcut()
+            return true
+        }
+        if (e.key === 'f') {
             e.preventDefault()
             search.openSearch()
-            return
+            return true
         }
+        return false
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+        const searchInputFocused = search.searchVisible && document.activeElement === search.searchInputRef
+
+        if ((e.metaKey || e.ctrlKey) && handleModifierShortcut(e, searchInputFocused)) return
 
         if (e.key === 'Escape') {
             e.preventDefault()
+            if (tryConsumeEscapeForCopy()) return
             handleEscapeKey()
             return
         }
@@ -480,7 +663,22 @@
 
 <svelte:window on:keydown={handleKeyDown} />
 
-<main class="viewer-container" bind:this={scroll.containerRef} tabindex={-1}>
+<main
+    class="viewer-container"
+    bind:this={scroll.containerRef}
+    tabindex={-1}
+    oncopy={(e: ClipboardEvent) => {
+        // Intercept any copy gesture (menu Edit > Copy, ⌘C from anywhere inside the
+        // viewer) so the custom selection model wins over the browser's native one.
+        const target = e.target as HTMLElement | null
+        if (target && (target.closest('.search-bar') || target.closest('.status-bar'))) {
+            // Search input and status bar use the native selection; let it through.
+            return
+        }
+        e.preventDefault()
+        void handleCopyShortcut()
+    }}
+>
     <h1 class="sr-only">File viewer</h1>
     {#if showWarningBanner}
         <!--
@@ -674,6 +872,59 @@
         <span class="shortcut-hint">W wrap &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span>
     </div>
 </main>
+
+{#if copyConfirmBytes !== null}
+    {@const confirmBytes = copyConfirmBytes}
+    <ModalDialog
+        dialogId="viewer-copy-confirm"
+        titleId="viewer-copy-confirm-title"
+        onclose={cancelCopyConfirm}
+    >
+        {#snippet title()}
+            <h2 id="viewer-copy-confirm-title" class="copy-dialog-title">
+                {#if confirmBytes === -1}
+                    Copy this selection to the clipboard?
+                {:else}
+                    Copy {formatBytes(confirmBytes)} to the clipboard?
+                {/if}
+            </h2>
+        {/snippet}
+        <p class="copy-dialog-body">
+            Large pastes can slow down other apps. Try search (⌘F) to narrow it down.
+        </p>
+        <div class="copy-dialog-actions">
+            <Button variant="secondary" onclick={cancelCopyConfirm}>Cancel</Button>
+            <Button
+                variant="primary"
+                onclick={() => {
+                    if (copyConfirmProceed) void copyConfirmProceed()
+                }}>Copy</Button
+            >
+        </div>
+    </ModalDialog>
+{/if}
+
+{#if copyRefuseBytes !== null}
+    {@const refuseBytes = copyRefuseBytes}
+    <ModalDialog
+        dialogId="viewer-copy-refuse"
+        titleId="viewer-copy-refuse-title"
+        onclose={dismissCopyRefuse}
+    >
+        {#snippet title()}
+            <h2 id="viewer-copy-refuse-title" class="copy-dialog-title">
+                Copy {formatBytes(refuseBytes)} to the clipboard?
+            </h2>
+        {/snippet}
+        <p class="copy-dialog-body">
+            That's larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the
+            selection as a file.
+        </p>
+        <div class="copy-dialog-actions">
+            <Button variant="primary" onclick={dismissCopyRefuse}>Got it</Button>
+        </div>
+    </ModalDialog>
+{/if}
 
 <style>
     .viewer-container {
@@ -1038,5 +1289,26 @@
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
         filter: none;
+    }
+
+    .copy-dialog-title {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        text-align: center;
+        margin: 0;
+    }
+
+    .copy-dialog-body {
+        font-size: var(--font-size-md);
+        line-height: 1.4;
+        color: var(--color-text-secondary);
+        margin-top: var(--spacing-md);
+    }
+
+    .copy-dialog-actions {
+        display: flex;
+        gap: var(--spacing-md);
+        justify-content: flex-end;
+        margin-top: var(--spacing-xl);
     }
 </style>

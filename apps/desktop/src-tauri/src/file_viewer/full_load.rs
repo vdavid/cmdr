@@ -23,7 +23,9 @@ pub struct FullLoadBackend {
 impl FullLoadBackend {
     pub fn open(path: &Path) -> Result<Self, ViewerError> {
         let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
-            std::io::ErrorKind::NotFound => ViewerError::NotFound(path.display().to_string()),
+            std::io::ErrorKind::NotFound => ViewerError::NotFound {
+                path: path.display().to_string(),
+            },
             _ => ViewerError::from(e),
         })?;
         if metadata.is_dir() {

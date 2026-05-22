@@ -171,3 +171,98 @@ describe('commands.viewerClose', () => {
     }
   })
 })
+
+describe('commands.viewerReadRange', () => {
+  it('forwards sessionId, readId, anchor, focus as camelCase payload keys', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_read_range', () => 'hello world')
+
+    const sessionId = 'sess-4'
+    const readId = 17
+    const anchor = { kind: 'line', line: 0, offset: 0 } as const
+    const focus = { kind: 'line', line: 0, offset: 11 } as const
+
+    const result = await commands.viewerReadRange(sessionId, readId, anchor, focus)
+
+    expect(result).toEqual({ status: 'ok', data: 'hello world' })
+    expect(ipc.lastCall('viewer_read_range')?.payload).toEqual({
+      sessionId,
+      readId,
+      anchor,
+      focus,
+    })
+  })
+
+  it('passes through RangeEnd::Eof as a tagged variant', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_read_range', () => 'whole file content')
+
+    const sessionId = 'sess-5'
+    const readId = 0
+    const anchor = { kind: 'line', line: 0, offset: 0 } as const
+    const focus = { kind: 'eof' } as const
+
+    await commands.viewerReadRange(sessionId, readId, anchor, focus)
+
+    expect(ipc.lastCall('viewer_read_range')?.payload).toEqual({
+      sessionId,
+      readId,
+      anchor,
+      focus,
+    })
+  })
+
+  it('surfaces a typed `Cancelled` error on the error branch', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_read_range', () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw ViewerError shape
+      throw { kind: 'cancelled' }
+    })
+
+    const sessionId = 'sess-6'
+    const readId = 1
+    const anchor = { kind: 'line', line: 0, offset: 0 } as const
+    const focus = { kind: 'line', line: 100, offset: 0 } as const
+
+    const result = await commands.viewerReadRange(sessionId, readId, anchor, focus)
+
+    expect(result.status).toBe('error')
+    if (result.status === 'error') {
+      expect(result.error).toEqual({ kind: 'cancelled' })
+    }
+  })
+
+  it('surfaces a typed `TimedOut` error on the error branch', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_read_range', () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- mockIPC requires throwing the raw ViewerError shape
+      throw { kind: 'timedOut' }
+    })
+
+    const sessionId = 'sess-7'
+    const readId = 1
+    const anchor = { kind: 'line', line: 0, offset: 0 } as const
+    const focus = { kind: 'eof' } as const
+
+    const result = await commands.viewerReadRange(sessionId, readId, anchor, focus)
+
+    expect(result.status).toBe('error')
+    if (result.status === 'error') {
+      expect(result.error).toEqual({ kind: 'timedOut' })
+    }
+  })
+})
+
+describe('commands.viewerCancelRead', () => {
+  it('takes sessionId and readId as camelCase payload keys', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_cancel_read', () => null)
+
+    const sessionId = 'sess-8'
+    const readId = 99
+    const result = await commands.viewerCancelRead(sessionId, readId)
+
+    expect(result).toEqual({ status: 'ok', data: null })
+    expect(ipc.lastCall('viewer_cancel_read')?.payload).toEqual({ sessionId, readId })
+  })
+})

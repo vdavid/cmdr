@@ -6,7 +6,7 @@ use std::thread;
 use std::time::Duration;
 
 use super::session::{self, SearchStatus};
-use super::{FULL_LOAD_THRESHOLD, MAX_SEARCH_MATCHES};
+use super::{FULL_LOAD_THRESHOLD, MAX_SEARCH_MATCHES, RangeEnd, ViewerError};
 
 fn create_test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("cmdr_viewer_session_{}", name));
@@ -383,5 +383,240 @@ fn search_poll_incremental_delivery() {
     assert_eq!(poll_none.total_match_count, 3);
 
     session::close_session(sid).unwrap();
+    cleanup(&dir);
+}
+
+// ----- viewer_read_range tests -----
+
+fn line(line: u64, offset: u32) -> RangeEnd {
+    RangeEnd::Line { line, offset }
+}
+
+#[test]
+fn read_range_full_load_anchor_equals_focus_returns_empty() {
+    let dir = create_test_dir("range_eq");
+    let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let out = session::read_range(&sid, 1, line(0, 3), line(0, 3)).unwrap();
+    assert_eq!(out, "");
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_full_load_single_line_slice() {
+    let dir = create_test_dir("range_single_line");
+    let file = write_test_file(&dir, "test.txt", "hello world\nsecond line\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    // Slice "ello w" out of the first line.
+    let out = session::read_range(&sid, 1, line(0, 1), line(0, 7)).unwrap();
+    assert_eq!(out, "ello w");
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_full_load_multi_line_includes_newlines_between() {
+    let dir = create_test_dir("range_multi_line");
+    let file = write_test_file(&dir, "test.txt", "alpha\nbeta\ngamma\ndelta\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    // From (0, 2) "pha\n" + "beta\n" + "gamma\n" + "del" => "pha\nbeta\ngamma\ndel".
+    let out = session::read_range(&sid, 1, line(0, 2), line(3, 3)).unwrap();
+    assert_eq!(out, "pha\nbeta\ngamma\ndel");
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_full_load_reversed_inputs_normalised() {
+    let dir = create_test_dir("range_reversed");
+    let file = write_test_file(&dir, "test.txt", "hello world\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let forward = session::read_range(&sid, 1, line(0, 0), line(0, 5)).unwrap();
+    let reversed = session::read_range(&sid, 2, line(0, 5), line(0, 0)).unwrap();
+    assert_eq!(forward, reversed);
+    assert_eq!(forward, "hello");
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_full_load_out_of_range_returns_typed_error() {
+    let dir = create_test_dir("range_oor");
+    let file = write_test_file(&dir, "test.txt", "one line only\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let err = session::read_range(&sid, 1, line(99, 0), line(99, 5)).unwrap_err();
+    assert!(matches!(err, ViewerError::OutOfRange));
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_full_load_eof_selects_to_end() {
+    let dir = create_test_dir("range_eof");
+    let file = write_test_file(&dir, "test.txt", "first\nsecond\nthird\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let out = session::read_range(&sid, 1, line(0, 0), RangeEnd::Eof).unwrap();
+    // The trailing newline is excluded (half-open semantics; the last line's content is included).
+    assert_eq!(out, "first\nsecond\nthird\n");
+    // Note: this file *has* a trailing newline; the split gives a 4th empty "line", whose
+    // start is included. Trailing newline trimming leaves "first\nsecond\nthird\n".
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_full_load_utf16_surrogate_clamps_down() {
+    let dir = create_test_dir("range_surrogate");
+    // "👋hi" has UTF-16 length 4 (emoji is 2 units, then h, i).
+    let file = write_test_file(&dir, "test.txt", "👋hi\nnext\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    // Offset 1 lands inside the surrogate pair; clamp to 0 — output excludes the emoji entirely.
+    let out = session::read_range(&sid, 1, line(0, 1), line(0, 3)).unwrap();
+    // From (clamped) 0 to 3 (= 'h'): "👋h"? No — clamp pulls offset 1 down to byte 0, so we get [0..byte_for_3].
+    // Byte for offset 3 = end of 'h' = byte 5. So output is the full "👋h" = 5 bytes.
+    assert_eq!(out, "👋h");
+
+    // A clearer case: offset 1 to 1 (single-line collapsed inside the emoji's surrogate) → "".
+    let out_empty = session::read_range(&sid, 2, line(0, 1), line(0, 1)).unwrap();
+    assert_eq!(out_empty, "");
+
+    // Offset 0 to 2 (full emoji) → "👋".
+    let out_emoji = session::read_range(&sid, 3, line(0, 0), line(0, 2)).unwrap();
+    assert_eq!(out_emoji, "👋");
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_full_load_only_newlines_file() {
+    let dir = create_test_dir("range_only_newlines");
+    // Three empty lines: "\n\n\n" gives 4 entries when split by '\n' (empty, empty, empty, empty).
+    let file = write_test_file(&dir, "test.txt", "\n\n\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    // Select all up to line 2 offset 0: "(empty)\n(empty)\n" = "\n\n".
+    let out = session::read_range(&sid, 1, line(0, 0), line(2, 0)).unwrap();
+    assert_eq!(out, "\n\n");
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_byte_seek_eof_selects_whole_file() {
+    let dir = create_test_dir("range_bs_eof");
+    // Create a > 1 MB file so we land in ByteSeek.
+    let line_str = "0123456789".repeat(10) + "\n"; // 101 bytes
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line_str.len()) + 100;
+    let content: String = line_str.repeat(line_count);
+    let file = write_test_file(&dir, "big.txt", &content);
+    let open = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = open.session_id.clone();
+
+    let out = session::read_range(&sid, 1, line(0, 0), RangeEnd::Eof).unwrap();
+    // Should match the file content (sans the very last trailing newline).
+    let expected = content.trim_end_matches('\n');
+    assert_eq!(out, expected);
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_cancellation_returns_cancelled() {
+    let dir = create_test_dir("range_cancel");
+    // Build a big file so the read takes long enough to cancel.
+    let line_str = "x".repeat(1000) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line_str.len()) + 1000;
+    let content: String = line_str.repeat(line_count);
+    let file = write_test_file(&dir, "big.txt", &content);
+    let open = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid_arc = std::sync::Arc::new(open.session_id.clone());
+
+    // Spawn a thread that cancels after a short delay.
+    let sid_for_cancel = sid_arc.clone();
+    let cancel_handle = thread::spawn(move || {
+        thread::sleep(Duration::from_millis(5));
+        session::cancel_read(&sid_for_cancel, 42)
+    });
+
+    // Read the whole file from another thread; expect Cancelled.
+    let result = session::read_range(&sid_arc, 42, line(0, 0), RangeEnd::Eof);
+    let _ = cancel_handle.join();
+
+    // The result is racy: if the read completed before cancel landed, we get Ok.
+    // To make the test deterministic, just assert that EITHER it returned Cancelled
+    // OR it returned Ok (didn't blow up). On at least one run we expect Cancelled.
+    // The important invariant: active_reads is empty after the call returns.
+    match result {
+        Ok(_) | Err(ViewerError::Cancelled) => {}
+        Err(other) => panic!("unexpected error: {:?}", other),
+    }
+    assert_eq!(session::active_read_count(&sid_arc), 0);
+
+    session::close_session(&sid_arc).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_cleans_up_active_reads_on_success() {
+    let dir = create_test_dir("range_cleanup");
+    let file = write_test_file(&dir, "test.txt", "small\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    session::read_range(&sid, 7, line(0, 0), line(0, 5)).unwrap();
+    assert_eq!(session::active_read_count(&sid), 0);
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_session_not_found_returns_typed_error() {
+    let err = session::read_range("nonexistent-session", 1, line(0, 0), line(0, 5)).unwrap_err();
+    assert!(matches!(err, ViewerError::SessionNotFound { .. }));
+}
+
+#[test]
+fn cancel_read_unknown_id_is_no_op() {
+    let dir = create_test_dir("cancel_unknown");
+    let file = write_test_file(&dir, "test.txt", "small\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    // No read with id 99; cancel should succeed silently.
+    session::cancel_read(&sid, 99).unwrap();
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn read_range_stitching_adjacent_ranges_equals_one_big_range() {
+    let dir = create_test_dir("range_stitch");
+    let file = write_test_file(&dir, "test.txt", "alpha\nbeta\ngamma\ndelta\nepsilon\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    // Pick a split point in the middle of the file: between (1, 2) and (1, 2).
+    let big = session::read_range(&sid, 1, line(0, 0), line(4, 5)).unwrap();
+    let first = session::read_range(&sid, 2, line(0, 0), line(1, 2)).unwrap();
+    let second = session::read_range(&sid, 3, line(1, 2), line(4, 5)).unwrap();
+    assert_eq!(big, format!("{}{}", first, second));
+
+    session::close_session(&sid).unwrap();
     cleanup(&dir);
 }

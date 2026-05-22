@@ -76,6 +76,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::file_viewer::viewer_search_poll,
         crate::commands::file_viewer::viewer_search_cancel,
         crate::commands::file_viewer::viewer_close,
+        crate::commands::file_viewer::viewer_read_range,
+        crate::commands::file_viewer::viewer_cancel_read,
         crate::commands::file_viewer::viewer_setup_menu,
         crate::commands::file_viewer::viewer_set_word_wrap,
         // store_font_metrics is generic (<R: tauri::Runtime>): excluded from specta collection

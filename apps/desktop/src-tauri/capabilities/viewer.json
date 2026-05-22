@@ -11,6 +11,7 @@
         "core:window:allow-set-focus",
         "core:window:allow-get-all-windows",
         "core:event:default",
-        "store:default"
+        "store:default",
+        "clipboard-manager:allow-write-text"
     ]
 }

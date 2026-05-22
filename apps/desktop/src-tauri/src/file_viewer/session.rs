@@ -18,6 +18,7 @@ use serde::Serialize;
 use super::byte_seek::ByteSeekBackend;
 use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
+use super::range_read::{RangeEnd, read_range as do_read_range};
 use super::{
     BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch,
     SeekTarget, ViewerError,
@@ -95,11 +96,20 @@ struct SearchState {
 
 /// A viewer session wraps a backend and tracks search state.
 struct ViewerSession {
-    backend: Box<dyn FileViewerBackend>,
+    /// `Arc` so a long-running range read can clone the pointer and drop the SESSIONS
+    /// lock while the read iterates lines (which can take seconds for 100 MB selections).
+    /// The upgrade thread replaces the Arc when ByteSeek -> LineIndex completes.
+    backend: Arc<dyn FileViewerBackend>,
     backend_type: BackendType,
     search: Option<SearchState>,
     /// Set when upgrading from ByteSeek to LineIndex in the background.
     upgrading: Option<Arc<AtomicBool>>,
+    /// Per-read cancel flags. Each `read_range` call inserts an entry keyed by the FE's
+    /// `read_id`, removes it on completion (cancelled or not). The FE generates fresh
+    /// ids per call (a monotonic counter is fine; uniqueness within a session is all
+    /// that's needed). Per-read (not session-wide) so a cancel for one read doesn't
+    /// affect a follow-up read that started in the same gesture.
+    active_reads: Mutex<HashMap<u64, Arc<AtomicBool>>>,
     path: PathBuf,
 }
 
@@ -128,7 +138,7 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
     let file_path = PathBuf::from(&expanded);
 
     if !file_path.exists() {
-        return Err(ViewerError::NotFound(path.to_string()));
+        return Err(ViewerError::NotFound { path: path.to_string() });
     }
     if file_path.is_dir() {
         return Err(ViewerError::IsDirectory);
@@ -137,15 +147,15 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
     let metadata = std::fs::metadata(&file_path)?;
     let file_size = metadata.len();
 
-    let (backend, backend_type, upgrading): (Box<dyn FileViewerBackend>, BackendType, Option<Arc<AtomicBool>>) =
+    let (backend, backend_type, upgrading): (Arc<dyn FileViewerBackend>, BackendType, Option<Arc<AtomicBool>>) =
         if file_size <= FULL_LOAD_THRESHOLD {
             let b = FullLoadBackend::open(&file_path)?;
-            (Box::new(b), BackendType::FullLoad, None)
+            (Arc::new(b), BackendType::FullLoad, None)
         } else {
             // Start with ByteSeek (instant), then upgrade to LineIndex in background
             let b = ByteSeekBackend::open(&file_path)?;
             let cancel = Arc::new(AtomicBool::new(false));
-            (Box::new(b), BackendType::ByteSeek, Some(cancel))
+            (Arc::new(b), BackendType::ByteSeek, Some(cancel))
         };
 
     // Get initial lines
@@ -197,7 +207,7 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
                                 "Indexing completed for session {}, upgrading to LineIndex",
                                 session_id_clone
                             );
-                            session.backend = Box::new(new_backend);
+                            session.backend = Arc::new(new_backend);
                             session.backend_type = BackendType::LineIndex;
                             session.upgrading = None;
                         }
@@ -221,6 +231,7 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         backend_type: backend_type.clone(),
         search: None,
         upgrading: upgrade_cancel,
+        active_reads: Mutex::new(HashMap::new()),
         path: file_path,
     };
 
@@ -259,9 +270,9 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
 /// Gets the current status of a session (backend type, indexing state).
 pub fn get_session_status(session_id: &str) -> Result<ViewerSessionStatus, ViewerError> {
     let sessions = SESSIONS.lock_ignore_poison();
-    let session = sessions
-        .get(session_id)
-        .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
+    let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+        session_id: session_id.to_string(),
+    })?;
 
     Ok(ViewerSessionStatus {
         backend_type: session.backend_type.clone(),
@@ -273,9 +284,9 @@ pub fn get_session_status(session_id: &str) -> Result<ViewerSessionStatus, Viewe
 /// Gets a range of lines from a session.
 pub fn get_lines(session_id: &str, target: SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
     let sessions = SESSIONS.lock_ignore_poison();
-    let session = sessions
-        .get(session_id)
-        .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
+    let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+        session_id: session_id.to_string(),
+    })?;
 
     debug!(
         "get_lines: session={}, backend_type={:?}, target={:?}, count={}",
@@ -308,7 +319,9 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
         let mut sessions = SESSIONS.lock_ignore_poison();
         let session = sessions
             .get_mut(session_id)
-            .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
+            .ok_or_else(|| ViewerError::SessionNotFound {
+                session_id: session_id.to_string(),
+            })?;
         session.search = Some(search_state);
         session.path.clone()
     };
@@ -350,9 +363,9 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
 /// that index are returned, so each poll transfers only the delta.
 pub fn search_poll(session_id: &str, since_index: usize) -> Result<SearchPollResult, ViewerError> {
     let sessions = SESSIONS.lock_ignore_poison();
-    let session = sessions
-        .get(session_id)
-        .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
+    let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+        session_id: session_id.to_string(),
+    })?;
 
     let total_bytes = session.backend.total_bytes();
 
@@ -401,13 +414,73 @@ pub fn search_cancel(session_id: &str) -> Result<(), ViewerError> {
     let mut sessions = SESSIONS.lock_ignore_poison();
     let session = sessions
         .get_mut(session_id)
-        .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
+        .ok_or_else(|| ViewerError::SessionNotFound {
+            session_id: session_id.to_string(),
+        })?;
 
     if let Some(search) = &session.search {
         search.cancel.store(true, Ordering::Relaxed);
     }
 
     Ok(())
+}
+
+/// Reads a logical range of the file as a single UTF-8 string.
+///
+/// `read_id` is caller-provided so the FE can call `cancel_read(session_id, read_id)`
+/// from a separate gesture (Escape) without an extra round-trip to learn the id. The id
+/// only has to be unique within the session's active reads; the FE uses a monotonic
+/// counter.
+///
+/// Holds the global SESSIONS lock only long enough to clone the backend `Arc` and to
+/// register the cancel flag. The actual read iterates lines outside the lock, so other
+/// commands (`cancel_read`, `get_session_status`, line fetches) stay responsive while a
+/// large copy is in flight.
+pub fn read_range(session_id: &str, read_id: u64, anchor: RangeEnd, focus: RangeEnd) -> Result<String, ViewerError> {
+    let (backend, cancel_flag) = {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+            session_id: session_id.to_string(),
+        })?;
+        let flag = Arc::new(AtomicBool::new(false));
+        session.active_reads.lock_ignore_poison().insert(read_id, flag.clone());
+        (session.backend.clone(), flag)
+    };
+
+    let result = do_read_range(backend.as_ref(), anchor, focus, &cancel_flag);
+
+    // Always unregister, whether the read succeeded, failed, or was cancelled.
+    if let Ok(sessions) = SESSIONS.lock()
+        && let Some(session) = sessions.get(session_id)
+    {
+        session.active_reads.lock_ignore_poison().remove(&read_id);
+    }
+
+    result
+}
+
+/// Flips the cancel flag for an in-flight read. No-op if the read has already finished
+/// (the entry was removed from `active_reads` when the read returned).
+pub fn cancel_read(session_id: &str, read_id: u64) -> Result<(), ViewerError> {
+    let sessions = SESSIONS.lock_ignore_poison();
+    let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+        session_id: session_id.to_string(),
+    })?;
+    if let Some(flag) = session.active_reads.lock_ignore_poison().get(&read_id) {
+        flag.store(true, Ordering::Relaxed);
+    }
+    Ok(())
+}
+
+/// Returns the count of currently-active reads. Test-only helper for asserting that
+/// a cancelled or completed read cleaned up its `active_reads` entry.
+#[cfg(test)]
+pub fn active_read_count(session_id: &str) -> usize {
+    let sessions = SESSIONS.lock_ignore_poison();
+    let Some(session) = sessions.get(session_id) else {
+        return 0;
+    };
+    session.active_reads.lock_ignore_poison().len()
 }
 
 /// Closes a viewer session and frees resources.
@@ -421,6 +494,10 @@ pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
         // Cancel any ongoing upgrade
         if let Some(upgrade_cancel) = &session.upgrading {
             upgrade_cancel.store(true, Ordering::Relaxed);
+        }
+        // Cancel any in-flight range reads so they exit promptly with `Cancelled`.
+        for flag in session.active_reads.lock_ignore_poison().values() {
+            flag.store(true, Ordering::Relaxed);
         }
     }
     Ok(())
