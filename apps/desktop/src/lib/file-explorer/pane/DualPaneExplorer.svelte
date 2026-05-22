@@ -50,7 +50,6 @@
 
     import {
         createHistory,
-        push,
         pushPath,
         back,
         forward,
@@ -67,6 +66,7 @@
         getTabCount,
         closeTabRecording,
         closeOtherTabsRecording,
+        pushHistoryEntry,
         trimClosedStack,
         getClosedStackSize,
         MAX_TABS_PER_PANE,
@@ -510,7 +510,7 @@
     function handleNetworkHostChange(pane: 'left' | 'right', host: NetworkHost | null) {
         setPaneHistory(
             pane,
-            push(getPaneHistory(pane), {
+            pushHistoryEntry(getPaneHistory(pane), {
                 volumeId: 'network',
                 path: 'smb://',
                 networkHost: host ?? undefined,
@@ -648,7 +648,7 @@
         // In-place navigation (normal flow or pinned tab at cap)
         setPaneVolumeId(pane, volumeId)
         setPanePath(pane, targetPath)
-        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: targetPath }))
+        setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId, path: targetPath }))
         focusedPane = pane
 
         saveAppStatus({
@@ -677,7 +677,7 @@
             if (generation !== volumeChangeGeneration) return
             if (betterPath !== targetPath && betterPath !== getPanePath(pane)) {
                 setPanePath(pane, betterPath)
-                setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: betterPath }))
+                setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId, path: betterPath }))
                 saveAppStatus({ [paneKey(pane, 'path')]: betterPath })
                 saveTabsForPaneSide(pane)
             }
@@ -758,7 +758,7 @@
 
         setPaneVolumeId(pane, defaultVolumeId)
         setPanePath(pane, defaultPath)
-        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId: defaultVolumeId, path: defaultPath }))
+        setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId: defaultVolumeId, path: defaultPath }))
         saveAppStatus({ [paneKey(pane, 'volumeId')]: defaultVolumeId, [paneKey(pane, 'path')]: defaultPath })
         saveTabsForPaneSide(pane)
     }
@@ -780,7 +780,7 @@
         tab.unreachable = null
         setPaneVolumeId(pane, volumeId)
         setPanePath(pane, originalPath)
-        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: originalPath }))
+        setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId, path: originalPath }))
         saveTabsForPaneSide(pane)
 
         // Sync the volume selector; retry may have fixed a mount that was stale
@@ -800,7 +800,7 @@
         const homePath = '~'
         setPaneVolumeId(pane, defaultId)
         setPanePath(pane, homePath)
-        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId: defaultId, path: homePath }))
+        setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId: defaultId, path: homePath }))
         saveTabsForPaneSide(pane)
         log.info('Unreachable tab opened home folder for {pane} pane', { pane })
     }
@@ -2478,7 +2478,7 @@
         targetPaneRef?.setNetworkHost(host)
         setPaneHistory(
             target,
-            push(getPaneHistory(target), {
+            pushHistoryEntry(getPaneHistory(target), {
                 volumeId: 'network',
                 path: 'smb://',
                 networkHost: host ?? undefined,

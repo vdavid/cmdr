@@ -20,7 +20,16 @@ import {
   getAllTabs,
   getTabCount,
   MAX_TABS_PER_PANE,
+  pushHistoryEntry,
 } from './tab-state-manager.svelte'
+import {
+  _resetForTesting as resetSnapshotStore,
+  getOrCreate as createSnapshot,
+  getRefCount,
+  getSnapshot,
+  incrementRef,
+  type SearchSnapshot,
+} from '$lib/search/snapshot-store.svelte'
 
 function makeTab(overrides: Partial<TabState> = {}): TabState {
   return {
@@ -42,6 +51,7 @@ describe('tab-state-manager', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     resetCycleDebounce()
+    resetSnapshotStore()
   })
 
   afterEach(() => {
@@ -596,6 +606,182 @@ describe('tab-state-manager', () => {
       closeOtherTabs(mgr, 'tab-1')
 
       expect(getClosedStackSize(mgr)).toBe(0)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Snapshot ref integration (M8a)
+  // ---------------------------------------------------------------------------
+
+  describe('search-results snapshot refcounting', () => {
+    function makeSnap(id: string): SearchSnapshot {
+      return {
+        id,
+        query: 'pdfs',
+        mode: 'filename',
+        filters: {},
+        scope: '',
+        caseSensitive: false,
+        excludeSystemDirs: true,
+        entries: [],
+        totalCount: 0,
+        createdAt: 0,
+        label: `Search: ${id}`,
+      }
+    }
+
+    /** Builds a tab whose initial history holds 1 ref on the given snapshot. */
+    function makeTabWithSnapshotRef(tabId: string, snapshotId: string): TabState {
+      createSnapshot(snapshotId, makeSnap(snapshotId))
+      incrementRef(snapshotId) // model: pane history holds the ref
+      return makeTab({
+        id: tabId,
+        path: `search-results://${snapshotId}`,
+        volumeId: 'search-results',
+        history: {
+          stack: [{ volumeId: 'search-results', path: `search-results://${snapshotId}` }],
+          currentIndex: 0,
+        },
+      })
+    }
+
+    it('pushHistoryEntry decrements refs for dropped search-results entries on cap overflow', () => {
+      // Setup: history with a search-results entry at the front; fill to cap so the
+      // next push evicts it.
+      createSnapshot('sr-1', makeSnap('sr-1'))
+      incrementRef('sr-1')
+      expect(getRefCount('sr-1')).toBe(1)
+
+      let history = createHistory('search-results', 'search-results://sr-1')
+      // Push 99 more local entries to reach the cap (1 + 99 = 100).
+      for (let i = 1; i < 100; i++) {
+        history = pushHistoryEntry(history, { volumeId: 'root', path: `/p${String(i)}` })
+      }
+      // sr-1 still alive (held by initial entry).
+      expect(getRefCount('sr-1')).toBe(1)
+      // One more push evicts the oldest (sr-1). We only care about the side-effect
+      // on the snapshot store; the new history value isn't read below.
+      void pushHistoryEntry(history, { volumeId: 'root', path: '/overflow' })
+      expect(getRefCount('sr-1')).toBe(0)
+      expect(getSnapshot('sr-1')).toBeUndefined()
+    })
+
+    it('pushHistoryEntry decrements refs for truncated-forward search-results entries', () => {
+      // /a (root) -> search-results://sr-1, back, push /b — sr-1 entry gets truncated
+      // forward and its ref is released.
+      createSnapshot('sr-1', makeSnap('sr-1'))
+      incrementRef('sr-1')
+
+      let history = createHistory('root', '/a')
+      history = pushHistoryEntry(history, { volumeId: 'search-results', path: 'search-results://sr-1' })
+      // currentIndex = 1. Go back to /a, then push /b — drops the search-results entry.
+      const back1 = { ...history, currentIndex: 0 }
+      const after = pushHistoryEntry(back1, { volumeId: 'root', path: '/b' })
+      expect(after.stack.map((e) => e.path)).toEqual(['/a', '/b'])
+      expect(getRefCount('sr-1')).toBe(0)
+    })
+
+    it('closeTabRecording transfers refs (no release until eviction)', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      const tab2 = makeTabWithSnapshotRef('tab-2', 'sr-1')
+      addTab(mgr, 'tab-1', tab2)
+      expect(getRefCount('sr-1')).toBe(1)
+
+      closeTabRecording(mgr, 'tab-2', 10)
+
+      // Snapshot still alive; the closed-tab stack holds the obligation.
+      expect(getRefCount('sr-1')).toBe(1)
+      expect(getSnapshot('sr-1')).toBeDefined()
+      expect(getClosedStackSize(mgr)).toBe(1)
+    })
+
+    it('reopenLastClosedTab keeps refs alive (no double-count)', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      const tab2 = makeTabWithSnapshotRef('tab-2', 'sr-1')
+      addTab(mgr, 'tab-1', tab2)
+      expect(getRefCount('sr-1')).toBe(1)
+
+      closeTabRecording(mgr, 'tab-2', 10)
+      // sr-1 still has the 1 ref the closed-stack carries.
+      expect(getRefCount('sr-1')).toBe(1)
+
+      const result = reopenLastClosedTab(mgr, MAX_TABS_PER_PANE)
+      expect('reopened' in result).toBe(true)
+      // After reopen, ref count is still exactly 1 (no double-count, no leak).
+      expect(getRefCount('sr-1')).toBe(1)
+    })
+
+    it('closed-tab stack eviction at cap decrements refs for the dropped entry', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      // Build 3 tabs each pointing at a distinct snapshot.
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-a', 'sr-a'))
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-b', 'sr-b'))
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-c', 'sr-c'))
+      expect(getRefCount('sr-a')).toBe(1)
+      expect(getRefCount('sr-b')).toBe(1)
+      expect(getRefCount('sr-c')).toBe(1)
+
+      // Close all three with cap 2 — oldest (sr-a) evicts.
+      closeTabRecording(mgr, 'tab-a', 2)
+      closeTabRecording(mgr, 'tab-b', 2)
+      closeTabRecording(mgr, 'tab-c', 2)
+
+      expect(getClosedStackSize(mgr)).toBe(2)
+      // sr-a was evicted from the closed-tab stack -> ref released.
+      expect(getRefCount('sr-a')).toBe(0)
+      expect(getSnapshot('sr-a')).toBeUndefined()
+      // sr-b and sr-c still on the stack -> still alive.
+      expect(getRefCount('sr-b')).toBe(1)
+      expect(getRefCount('sr-c')).toBe(1)
+    })
+
+    it('trimClosedStack decrements refs for all evicted entries', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-a', 'sr-a'))
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-b', 'sr-b'))
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-c', 'sr-c'))
+
+      closeTabRecording(mgr, 'tab-a', 10)
+      closeTabRecording(mgr, 'tab-b', 10)
+      closeTabRecording(mgr, 'tab-c', 10)
+      expect(getClosedStackSize(mgr)).toBe(3)
+
+      trimClosedStack(mgr, 1)
+
+      expect(getClosedStackSize(mgr)).toBe(1)
+      // sr-a and sr-b were evicted (oldest first) -> released.
+      expect(getRefCount('sr-a')).toBe(0)
+      expect(getRefCount('sr-b')).toBe(0)
+      // sr-c stays.
+      expect(getRefCount('sr-c')).toBe(1)
+    })
+
+    it('non-recording closeTab releases refs immediately', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-2', 'sr-1'))
+      expect(getRefCount('sr-1')).toBe(1)
+
+      closeTab(mgr, 'tab-2')
+
+      expect(getRefCount('sr-1')).toBe(0)
+      expect(getSnapshot('sr-1')).toBeUndefined()
+    })
+
+    it('non-recording closeOtherTabs releases refs immediately for closed tabs', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-2', 'sr-a'))
+      addTab(mgr, 'tab-1', makeTabWithSnapshotRef('tab-3', 'sr-b'))
+
+      closeOtherTabs(mgr, 'tab-1')
+
+      expect(getRefCount('sr-a')).toBe(0)
+      expect(getRefCount('sr-b')).toBe(0)
     })
   })
 })

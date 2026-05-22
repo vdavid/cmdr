@@ -11,43 +11,45 @@ chip row and path-pill column landing in later milestones.
 
 ## Files
 
-| File                                 | Purpose                                                                                                   |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `SearchDialog.svelte`                | Orchestrator: overlay, mount/unmount, keyboard dispatch, search execution, state wiring                   |
-| `SearchBar.svelte`                   | Unified query input: one `<input>` for AI / filename / regex, placeholder updates per mode                |
-| `SearchModeChips.svelte`             | Mode chip row below the bar: AI / Filename / Content (disabled) / Regex, arrow-key navigable              |
-| `AiTransparencyStrip.svelte`         | Strip below the chip row showing the original AI prompt, the caveat, and a disabled Refine button         |
-| `SearchFilterChips.svelte`           | Filter chip strip (Size, Modified, Search in) plus Add filter dropdown. Each opens a popover              |
-| `FilterChip.svelte`                  | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded                         |
-| `FilterChipPopover.svelte`           | Generic popover: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog               |
-| `filter-chip-state.ts`               | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip` (testable in isolation)               |
-| `SearchResults.svelte`               | Column headers + results list + all states (loading, empty, populated) + status bar                       |
-| `EmptyState.svelte`                  | Pre-search "Try…" block: three example chips (AI prompts or filename patterns), index size, keyboard tip  |
-| `RecentSearchesFooter.svelte`        | Chip strip at the bottom of the dialog, up to 6 most recent entries plus an "All searches…" trailing chip |
-| `RecentSearchesPopover.svelte`       | Fuzzy-searchable popover over the full recent-searches history (`⌘H` opens, ufuzzy under the hood)        |
-| `SearchFooterActions.svelte`         | Right-edge footer buttons: "Open in pane" (STUB in M7) and "Open in Finder" / "Open in file manager"      |
-| `PathPills.svelte`                   | Clickable path-pill strip rendered inside each result row's path column (replaces flat `parentPath`)      |
-| `SearchRowMenu.svelte`               | Per-row `…` button: always visible on cursor row, hover-revealed on other rows; opens native context menu |
-| `recent-searches-state.svelte.ts`    | Module-level reactive store for the loaded recent-searches list; loads from backend once per session      |
-| `recent-searches-utils.ts`           | Pure helpers: `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip`                        |
-| `search-state.svelte.ts`             | Module-level `$state` for query fields, results, index readiness, AI state                                |
-| `search-state.test.ts`               | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)                             |
-| `filter-chip-state.test.ts`          | Default → configured → cleared rules for each filter chip's display summary                               |
-| `SearchBar.svelte.test.ts`           | Per-mode placeholder, value mirror, `onInput` callback                                                    |
-| `SearchModeChips.svelte.test.ts`     | Chip set, active marker, click + keyboard activation, focus motion (skipping Content)                     |
-| `SearchFilterChips.svelte.test.ts`   | Chip rendering, `×` and Backspace clear, popover open/close, Add filter list, scope behavior              |
-| `AiTransparencyStrip.svelte.test.ts` | Renders prompt, renders caveat when set, Refine button is disabled with Coming soon tooltip               |
-| `SearchDialog.svelte.test.ts`        | `⌘N` clears, close+reopen preserves, `⌘1`/`⌘2`/`⌘3` mode switch, `⌘Enter` triggers AI, AI strip lifecycle |
-| `SearchDialog.a11y.test.ts`          | Tier-3 axe-core audit across loading / index-ready / AI-on macro-states                                   |
-| `SearchFilterChips.a11y.test.ts`     | Tier-3 axe-core audit across default, configured, disabled, and open-popover states                       |
-| `AiTransparencyStrip.a11y.test.ts`   | Tier-3 axe-core audit for prompt-only and prompt-plus-caveat states                                       |
-| `SearchResults.a11y.test.ts`         | Tier-3 axe-core audit across result states                                                                |
-| `PathPills.svelte.test.ts`           | Path-pill split semantics (`/` only), click → onPick wiring, stopPropagation contract                     |
-| `PathPills.a11y.test.ts`             | Pins `tabindex="-1"` per pill (not in Tab order); axe-core audit                                          |
-| `SearchRowMenu.svelte.test.ts`       | Button rendering, `is-cursor` marker, onOpen + stopPropagation on click                                   |
-| `SearchRowMenu.a11y.test.ts`         | Tier-3 axe-core audit for cursor-row and non-cursor variants                                              |
-| `SearchFooterActions.svelte.test.ts` | Visibility per `resultCount`, macOS/Linux label fork, disabled state, click handlers                      |
-| `SearchFooterActions.a11y.test.ts`   | Tier-3 axe-core audit for enabled and disabled states                                                     |
+| File                                 | Purpose                                                                                                           |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `SearchDialog.svelte`                | Orchestrator: overlay, mount/unmount, keyboard dispatch, search execution, state wiring                           |
+| `SearchBar.svelte`                   | Unified query input: one `<input>` for AI / filename / regex, placeholder updates per mode                        |
+| `SearchModeChips.svelte`             | Mode chip row below the bar: AI / Filename / Content (disabled) / Regex, arrow-key navigable                      |
+| `AiTransparencyStrip.svelte`         | Strip below the chip row showing the original AI prompt, the caveat, and a disabled Refine button                 |
+| `SearchFilterChips.svelte`           | Filter chip strip (Size, Modified, Search in) plus Add filter dropdown. Each opens a popover                      |
+| `FilterChip.svelte`                  | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded                                 |
+| `FilterChipPopover.svelte`           | Generic popover: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog                       |
+| `filter-chip-state.ts`               | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip` (testable in isolation)                       |
+| `SearchResults.svelte`               | Column headers + results list + all states (loading, empty, populated) + status bar                               |
+| `EmptyState.svelte`                  | Pre-search "Try…" block: three example chips (AI prompts or filename patterns), index size, keyboard tip          |
+| `RecentSearchesFooter.svelte`        | Chip strip at the bottom of the dialog, up to 6 most recent entries plus an "All searches…" trailing chip         |
+| `RecentSearchesPopover.svelte`       | Fuzzy-searchable popover over the full recent-searches history (`⌘H` opens, ufuzzy under the hood)                |
+| `SearchFooterActions.svelte`         | Right-edge footer buttons: "Open in pane" (STUB in M7) and "Open in Finder" / "Open in file manager"              |
+| `PathPills.svelte`                   | Clickable path-pill strip rendered inside each result row's path column (replaces flat `parentPath`)              |
+| `SearchRowMenu.svelte`               | Per-row `…` button: always visible on cursor row, hover-revealed on other rows; opens native context menu         |
+| `recent-searches-state.svelte.ts`    | Module-level reactive store for the loaded recent-searches list; loads from backend once per session              |
+| `recent-searches-utils.ts`           | Pure helpers: `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip`                                |
+| `search-state.svelte.ts`             | Module-level `$state` for query fields, results, index readiness, AI state                                        |
+| `search-state.test.ts`               | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)                                     |
+| `filter-chip-state.test.ts`          | Default → configured → cleared rules for each filter chip's display summary                                       |
+| `SearchBar.svelte.test.ts`           | Per-mode placeholder, value mirror, `onInput` callback                                                            |
+| `SearchModeChips.svelte.test.ts`     | Chip set, active marker, click + keyboard activation, focus motion (skipping Content)                             |
+| `SearchFilterChips.svelte.test.ts`   | Chip rendering, `×` and Backspace clear, popover open/close, Add filter list, scope behavior                      |
+| `AiTransparencyStrip.svelte.test.ts` | Renders prompt, renders caveat when set, Refine button is disabled with Coming soon tooltip                       |
+| `SearchDialog.svelte.test.ts`        | `⌘N` clears, close+reopen preserves, `⌘1`/`⌘2`/`⌘3` mode switch, `⌘Enter` triggers AI, AI strip lifecycle         |
+| `SearchDialog.a11y.test.ts`          | Tier-3 axe-core audit across loading / index-ready / AI-on macro-states                                           |
+| `SearchFilterChips.a11y.test.ts`     | Tier-3 axe-core audit across default, configured, disabled, and open-popover states                               |
+| `AiTransparencyStrip.a11y.test.ts`   | Tier-3 axe-core audit for prompt-only and prompt-plus-caveat states                                               |
+| `SearchResults.a11y.test.ts`         | Tier-3 axe-core audit across result states                                                                        |
+| `PathPills.svelte.test.ts`           | Path-pill split semantics (`/` only), click → onPick wiring, stopPropagation contract                             |
+| `PathPills.a11y.test.ts`             | Pins `tabindex="-1"` per pill (not in Tab order); axe-core audit                                                  |
+| `SearchRowMenu.svelte.test.ts`       | Button rendering, `is-cursor` marker, onOpen + stopPropagation on click                                           |
+| `SearchRowMenu.a11y.test.ts`         | Tier-3 axe-core audit for cursor-row and non-cursor variants                                                      |
+| `SearchFooterActions.svelte.test.ts` | Visibility per `resultCount`, macOS/Linux label fork, disabled state, click handlers                              |
+| `SearchFooterActions.a11y.test.ts`   | Tier-3 axe-core audit for enabled and disabled states                                                             |
+| `snapshot-store.svelte.ts`           | Frontend-only in-memory map of search-result snapshots, refcounted (M8a). Pure module state, no Svelte reactivity |
+| `snapshot-store.svelte.ts.test.ts`   | Create/read/no-overwrite, refcount inc/dec/delete, last-attempt slot swaps, entries-cap truncation, debug stats   |
 
 ## State shape (post-M4)
 
@@ -236,6 +238,32 @@ the recent-searches strip. It renders two buttons whenever `results.length > 0`:
 
 Both buttons are hidden (not just disabled) on empty/idle state, because they have nothing to act on. Empty + idle
 inputs disable both (index not ready). The platform branch uses `isMacOS()` from `$lib/shortcuts/key-capture`.
+
+**Snapshot store (M8a, §3.7)**: `snapshot-store.svelte.ts` holds `SearchSnapshot` records (query, mode, filters, scope,
+capped 10,000 entries, totalCount, createdAt, friendly label) under monotonic `sr-N` ids, plus a per-record refcount.
+M8a only wires the store and the bookkeeping; M8b connects it to the pane view. The store has no hard cap on its own —
+**refcount is the only authority**. Refs come from two sources:
+
+- **Pane history entries** whose `path` starts with `search-results://<id>` hold +1 per occurrence. The tab-state
+  manager (`pushHistoryEntry` and the closed-tab lifecycle) drives inc/dec — `navigation-history.ts` itself stays pure
+  (no snapshot-store import). Pushing past `MAX_HISTORY_PER_TAB = 100` evicts the oldest entry, and truncating forward
+  on a new push after `back()` evicts the discarded tail. Both kinds of eviction surface via `push()`'s `droppedEntries`
+  return field, and `pushHistoryEntry` releases the matching refs in one step.
+- **The "last dialog attempt" slot** (`setLastAttemptId`) holds +1 for the most-recent dialog search regardless of
+  whether any pane references it. Swaps decrement the old id and increment the new one atomically. M8b wires the dialog
+  to call this on each new search.
+
+**Closed-tab lifecycle and refs**: tab close via `closeTabRecording` does NOT release refs; ownership transfers to the
+`ClosedTab` entry on the pane's closed-tab stack (cap default 10). Reopen (`⌘⇧T`) just pops the entry back — no
+double-count. The refs only release when the closed-tab stack evicts the entry (cap overflow in `pushClosed`, or manual
+`trimClosedStack`). Implemented via the `transferSnapshotRefs(closedTab, 'transfer' | 'release')` helper in
+`tab-state-manager.svelte.ts`. The non-recording `closeTab` / `closeOtherTabs` (used in tests and programmatic flows)
+release refs immediately, since nothing else holds them.
+
+**`{#key activeTabId}` recreation is safe**: history lives on `TabState`, not on the pane. The dual-pane explorer
+destroys and recreates `FilePane` on tab switch (cold load), but `TabManager` survives, and the per-tab `history` field
+is untouched. Snapshot refs therefore persist across pane recreation. Documented inline in `snapshot-store.svelte.ts`'s
+header comment so the next agent doesn't need to re-verify.
 
 ## Key decisions
 

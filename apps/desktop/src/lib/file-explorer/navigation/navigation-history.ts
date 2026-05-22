@@ -13,6 +13,19 @@
 
 import type { NetworkHost } from '../types'
 
+/**
+ * Per-tab cap on the navigation stack. When `push()` would grow the stack past this
+ * count, the oldest entries are dropped (FIFO) and returned in `droppedEntries` so
+ * the caller can release any per-entry resources (search-results snapshot refs, in
+ * the M8a wiring).
+ *
+ * 100 keeps a few sessions of casual browsing in reach while bounding memory: each
+ * `HistoryEntry` is ~3 string fields, so even 100 entries per tab × 10 tabs × 2
+ * panes is negligible. Tightening below 100 would start to hurt power users who
+ * navigate deeply and rely on `⌘[` for orientation.
+ */
+export const MAX_HISTORY_PER_TAB = 100
+
 /** A single entry in the navigation history */
 export interface HistoryEntry {
   /** The volume ID (like 'root', 'network', '/Volumes/MyDrive') */
@@ -28,6 +41,22 @@ export interface NavigationHistory {
   stack: HistoryEntry[]
   /** Current position in the stack (0 = oldest entry) */
   currentIndex: number
+}
+
+/**
+ * Result of `push()`. `history` is the new stack; `droppedEntries` aggregates
+ * everything `push()` removed in service of the call:
+ *   - forward entries truncated when pushing after a `back()`
+ *   - oldest entries evicted to honor `MAX_HISTORY_PER_TAB`
+ *
+ * Callers that don't care about released resources can ignore `droppedEntries`
+ * (and most do; the search-results snapshot store is the only consumer today).
+ * `pushPath` is one such caller — it discards the field and returns just the
+ * history for backwards compatibility.
+ */
+export interface PushResult {
+  history: NavigationHistory
+  droppedEntries: HistoryEntry[]
 }
 
 /**
@@ -55,29 +84,53 @@ function entriesEqual(a: HistoryEntry, b: HistoryEntry): boolean {
 
 /**
  * Pushes a new entry to the history stack.
- * Truncates any forward history (entries after currentIndex).
- * If the new entry is the same as the current entry, returns unchanged history.
+ *
+ * - Truncates any forward history (entries after currentIndex) and reports the
+ *   removed entries in `droppedEntries`.
+ * - If the new entry equals the current entry, returns the unchanged history with
+ *   an empty `droppedEntries` (reference-equal on `history` so callers using `===`
+ *   dedup still work).
+ * - Caps the stack at `MAX_HISTORY_PER_TAB`. Overflow evicts the **oldest** entries
+ *   (front of the stack); evicted entries are included in `droppedEntries` and the
+ *   `currentIndex` is adjusted so it still points at the same logical position.
+ *
+ * `droppedEntries` covers both kinds of removals; callers that care about released
+ * resources (the search-results snapshot store, today) iterate the array once.
  */
-export function push(history: NavigationHistory, entry: HistoryEntry): NavigationHistory {
+export function push(history: NavigationHistory, entry: HistoryEntry): PushResult {
   const currentEntry = history.stack[history.currentIndex]
   if (entriesEqual(entry, currentEntry)) {
-    return history
+    return { history, droppedEntries: [] }
   }
 
-  // Truncate forward history and add the new entry
-  const newStack = [...history.stack.slice(0, history.currentIndex + 1), entry]
+  // 1. Truncate forward history (entries after currentIndex are dropped).
+  const truncated = history.stack.slice(history.currentIndex + 1)
+  // 2. Append the new entry.
+  let newStack = [...history.stack.slice(0, history.currentIndex + 1), entry]
+  // 3. Evict the oldest entries if the cap was exceeded.
+  let evictedFromFront: HistoryEntry[] = []
+  if (newStack.length > MAX_HISTORY_PER_TAB) {
+    const overflow = newStack.length - MAX_HISTORY_PER_TAB
+    evictedFromFront = newStack.slice(0, overflow)
+    newStack = newStack.slice(overflow)
+  }
   return {
-    stack: newStack,
-    currentIndex: newStack.length - 1,
+    history: {
+      stack: newStack,
+      currentIndex: newStack.length - 1,
+    },
+    droppedEntries: [...evictedFromFront, ...truncated],
   }
 }
 
 /**
  * Convenience function to push just a path change (same volume).
+ * Delegates to `push()` and returns only the new history (discards `droppedEntries`).
+ * Callers that need to release per-entry resources should use `push()` directly.
  */
 export function pushPath(history: NavigationHistory, path: string): NavigationHistory {
   const currentEntry = history.stack[history.currentIndex]
-  return push(history, { volumeId: currentEntry.volumeId, path })
+  return push(history, { volumeId: currentEntry.volumeId, path }).history
 }
 
 /**

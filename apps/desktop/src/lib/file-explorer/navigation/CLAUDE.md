@@ -27,13 +27,28 @@ Purely functional: all operations return new objects, never mutate.
 ```
 NavigationHistory = { stack: HistoryEntry[], currentIndex: number }
 HistoryEntry = { volumeId: string, path: string, networkHost?: NetworkHost }
+PushResult = { history: NavigationHistory, droppedEntries: HistoryEntry[] }
 ```
 
 Key functions: `createHistory`, `push`, `pushPath`, `back`, `forward`, `getCurrentEntry`, `getCurrentPath`, `canGoBack`,
-`canGoForward`, `setCurrentIndex`, `getEntryAt`.
+`canGoForward`, `setCurrentIndex`, `getEntryAt`. Plus the constant `MAX_HISTORY_PER_TAB = 100`.
 
-`push` returns the **same reference** when the new entry equals the current one (deduplication). Callers can use
-reference equality to skip re-renders.
+`push` returns `{ history, droppedEntries }`. `history` is the new stack; `droppedEntries` aggregates every entry the
+push removed: the truncated-forward tail (when pushing after `back()`) and the oldest entries evicted to honor
+`MAX_HISTORY_PER_TAB`. Callers that need to release per-entry resources iterate `droppedEntries`; the search-results
+snapshot store (`lib/search/snapshot-store.svelte.ts`) is the only consumer today. When the new entry equals the current
+entry, `push()` returns the **same `history` reference** with an empty `droppedEntries`, so callers using `===`
+deduplication still work.
+
+`pushPath` is a thin delegate that calls `push` and returns just the new history (discarding `droppedEntries`). It's
+backwards-compatible for callers that don't care about released resources. Callers that need refcount-decrements (the
+tab-state manager) must use `push()` directly — or, more conveniently, the `pushHistoryEntry` helper exposed by
+`lib/file-explorer/tabs/tab-state-manager.svelte.ts`, which wraps the `push()` call and releases search-results snapshot
+refs in one step.
+
+The cap (100) applies to every volume — local, network, MTP, search-results — uniformly. Tightening below 100 would
+start to hurt power users who navigate deeply and rely on `⌘[` for orientation. Bumping above 100 isn't necessary; each
+`HistoryEntry` is three string fields, so the memory headroom is comfortable.
 
 Entries carry full `volumeId` (navigating back can cross volume boundaries, for example from an external drive back to
 `root`).
