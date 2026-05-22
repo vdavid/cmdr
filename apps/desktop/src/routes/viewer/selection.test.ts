@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   compareLineOffset,
+  describeSelectionForAt,
   estimateSelectionBytes,
   extendSelection,
   getLineSegmentBounds,
@@ -9,6 +10,7 @@ import {
   isLineInRange,
   lineOffsetEquals,
   makeSelectAll,
+  MAX_ANNOUNCE_LINES,
   normaliseSelection,
   type Selection,
 } from './selection.svelte'
@@ -322,5 +324,73 @@ describe('estimateSelectionBytes', () => {
     expect(estimateSelectionBytes(forward, getBytes, getUtf16)).toBe(
       estimateSelectionBytes(reversed, getBytes, getUtf16),
     )
+  })
+})
+
+describe('describeSelectionForAt', () => {
+  // Test-local lookups for the line-length argument.
+  const allOnes = (): number | null => 1
+  const empty = (): number | null => null
+
+  it('null selection returns empty string', () => {
+    expect(describeSelectionForAt(null, empty)).toBe('')
+  })
+
+  it('caret-only (start == end) returns empty string', () => {
+    const sel: Selection = { anchor: { line: 3, offset: 4 }, focus: { line: 3, offset: 4 } }
+    expect(describeSelectionForAt(sel, empty)).toBe('')
+  })
+
+  it('single-line selection: announces character count and line number (1-indexed)', () => {
+    const sel: Selection = { anchor: { line: 4, offset: 2 }, focus: { line: 4, offset: 7 } }
+    expect(describeSelectionForAt(sel, allOnes)).toBe('Selected 5 characters on line 5')
+  })
+
+  it('multi-line selection: announces line range and total chars', () => {
+    // Lines 0..3, each "hello" (5 chars). Select from (0,2) to (3,3):
+    //   line 0 contributes "llo" (3), line 1 + 2 each contribute 5, line 3 contributes 3. Total 16.
+    const sel: Selection = { anchor: { line: 0, offset: 2 }, focus: { line: 3, offset: 3 } }
+    const getLen = (n: number) => (n >= 0 && n < 4 ? 5 : null)
+    expect(describeSelectionForAt(sel, getLen)).toBe('Selected lines 1 to 4, 16 characters')
+  })
+
+  it('ByteSeek-no-index ⌘A sentinel: line span > MAX_ANNOUNCE_LINES falls back to generic message', () => {
+    // The ⌘A path sets focus.line = Number.MAX_SAFE_INTEGER when totalLines is null.
+    // The pure function must not iterate 9e15 times.
+    const sel: Selection = {
+      anchor: { line: 0, offset: 0 },
+      focus: { line: Number.MAX_SAFE_INTEGER, offset: 0 },
+    }
+    let calls = 0
+    const counting = () => {
+      calls++
+      return 1
+    }
+    expect(describeSelectionForAt(sel, counting)).toBe('Selected from line 1 to the end of the file')
+    // The fallback path must not invoke the line-length lookup at all.
+    expect(calls).toBe(0)
+  })
+
+  it('line span exactly at the cap (MAX_ANNOUNCE_LINES) still itemises', () => {
+    const sel: Selection = {
+      anchor: { line: 0, offset: 0 },
+      focus: { line: MAX_ANNOUNCE_LINES, offset: 0 },
+    }
+    // Just verify we don't fall back; the exact char count isn't the point.
+    const result = describeSelectionForAt(sel, allOnes)
+    expect(result.startsWith('Selected lines')).toBe(true)
+  })
+
+  it('reversed selection: same result as the normalised version', () => {
+    const forward: Selection = { anchor: { line: 1, offset: 0 }, focus: { line: 3, offset: 2 } }
+    const reversed: Selection = { anchor: { line: 3, offset: 2 }, focus: { line: 1, offset: 0 } }
+    expect(describeSelectionForAt(forward, allOnes)).toBe(describeSelectionForAt(reversed, allOnes))
+  })
+
+  it('missing line length in lookup contributes 0 to the count (degrades gracefully)', () => {
+    const sel: Selection = { anchor: { line: 0, offset: 0 }, focus: { line: 2, offset: 0 } }
+    const result = describeSelectionForAt(sel, empty)
+    // line 0 contributes (0 - 0) = 0, intermediate line 1 contributes 0, line 2 contributes 0.
+    expect(result).toBe('Selected lines 1 to 3, 0 characters')
   })
 })

@@ -139,6 +139,52 @@ export function makeSelectAll(totalLines: number, lastLineLength: number): Selec
 }
 
 /**
+ * Maximum number of intermediate lines the AT (VoiceOver) announcement loop walks
+ * before falling back to a generic "extends past visible content" message. Caps the
+ * 9e15-line worst case from ⌘A in ByteSeek-no-index mode (where `focus.line` is set
+ * to `Number.MAX_SAFE_INTEGER`).
+ */
+export const MAX_ANNOUNCE_LINES = 10_000
+
+/**
+ * Builds the live-region announcement string for the current selection. Pure: takes
+ * a selection and a per-line length lookup, returns the string the screen reader will
+ * speak. Empty string means "nothing to announce".
+ *
+ * Caps the line-span at `MAX_ANNOUNCE_LINES`; past that, returns a generic message
+ * so the announcement work stays bounded (the alternative would freeze the UI on
+ * ⌘A in ByteSeek-no-index mode where the focus line is `Number.MAX_SAFE_INTEGER`).
+ */
+export function describeSelectionForAt(sel: Selection | null, getLineLength: (line: number) => number | null): string {
+  if (sel === null) return ''
+  const { start, end } = normaliseSelection(sel)
+  if (start.line === end.line && start.offset === end.offset) return ''
+
+  const lineSpan = end.line - start.line
+  if (lineSpan > MAX_ANNOUNCE_LINES) {
+    return `Selected from line ${String(start.line + 1)} to the end of the file`
+  }
+
+  let totalChars: number
+  if (start.line === end.line) {
+    totalChars = end.offset - start.offset
+  } else {
+    const startLineLen = getLineLength(start.line) ?? 0
+    let chars = startLineLen - start.offset
+    for (let i = start.line + 1; i < end.line; i++) {
+      chars += getLineLength(i) ?? 0
+    }
+    chars += end.offset
+    totalChars = chars
+  }
+
+  if (start.line === end.line) {
+    return `Selected ${String(totalChars)} characters on line ${String(start.line + 1)}`
+  }
+  return `Selected lines ${String(start.line + 1)} to ${String(end.line + 1)}, ${String(totalChars)} characters`
+}
+
+/**
  * Shift-click extension: returns a new selection that runs from the current selection's
  * anchor (or `point` if there's no current selection) to `point`. Caller-owned
  * `anchor` is preserved; only the focus changes. This is the gesture-correct shape:

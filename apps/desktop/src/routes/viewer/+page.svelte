@@ -28,6 +28,7 @@
     import { handleNavigationKey, handleToggleKey } from './viewer-keyboard'
     import {
         createViewerSelection,
+        describeSelectionForAt,
         estimateSelectionBytes,
         getLineSegmentBounds,
         normaliseSelection,
@@ -151,28 +152,9 @@
      * there's nothing selected (the live region stays silent). The format names the
      * selected line range and a UTF-16 character count for orientation.
      */
-    const selectionAnnouncement = $derived.by((): string => {
-        const sel = selection.selection
-        if (sel === null) return ''
-        const { start, end } = normaliseSelection(sel)
-        if (start.line === end.line && start.offset === end.offset) return ''
-
-        const totalChars = (() => {
-            if (start.line === end.line) return end.offset - start.offset
-            const startLineLen = scroll.lineCache.get(start.line)?.length ?? 0
-            let chars = startLineLen - start.offset
-            for (let i = start.line + 1; i < end.line; i++) {
-                chars += scroll.lineCache.get(i)?.length ?? 0
-            }
-            chars += end.offset
-            return chars
-        })()
-
-        if (start.line === end.line) {
-            return `Selected ${String(totalChars)} characters on line ${String(start.line + 1)}`
-        }
-        return `Selected lines ${String(start.line + 1)} to ${String(end.line + 1)}, ${String(totalChars)} characters`
-    })
+    const selectionAnnouncement = $derived(
+        describeSelectionForAt(selection.selection, (line) => scroll.lineCache.get(line)?.length ?? null),
+    )
 
     /**
      * Converts a `Selection` to the `(anchor, focus)` `RangeEnd`s the IPC layer accepts.
