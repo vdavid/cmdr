@@ -156,4 +156,61 @@ describe('createViewerAutoscroll', () => {
     // No more frames will fire.
     expect(scheduledTick).toBeNull()
   })
+
+  describe('prefers-reduced-motion', () => {
+    it('snaps once per `start()` instead of running a RAF loop', () => {
+      const { el } = makeContent(0, 400)
+      const onStep = vi.fn()
+      const ctrl = createViewerAutoscroll({
+        getContentRef: () => el,
+        getPointerY: () => 395, // 5 px from bottom; would scroll down.
+        onScrollStep: onStep,
+        prefersReducedMotion: () => true,
+      })
+
+      ctrl.start()
+      // The single snap step ran synchronously inside `start()` — no RAF queued.
+      expect(el.scrollTop).toBeGreaterThan(0)
+      expect(onStep).toHaveBeenCalledTimes(1)
+      expect(scheduledTick).toBeNull()
+      expect(ctrl.isRunning()).toBe(false)
+    })
+
+    it('each subsequent `start()` snaps again (the page calls it on every pointermove)', () => {
+      const { el } = makeContent(0, 400)
+      const onStep = vi.fn()
+      const ctrl = createViewerAutoscroll({
+        getContentRef: () => el,
+        getPointerY: () => 395,
+        onScrollStep: onStep,
+        prefersReducedMotion: () => true,
+      })
+
+      ctrl.start()
+      const after1 = el.scrollTop
+      ctrl.start()
+      const after2 = el.scrollTop
+      ctrl.start()
+      const after3 = el.scrollTop
+
+      expect(after2).toBeGreaterThan(after1)
+      expect(after3).toBeGreaterThan(after2)
+      expect(onStep).toHaveBeenCalledTimes(3)
+    })
+
+    it('safe-band pointer does not move scrollTop even under reduced motion', () => {
+      const { el } = makeContent(0, 400)
+      const onStep = vi.fn()
+      const ctrl = createViewerAutoscroll({
+        getContentRef: () => el,
+        getPointerY: () => 200, // middle of viewport, no autoscroll.
+        onScrollStep: onStep,
+        prefersReducedMotion: () => true,
+      })
+
+      ctrl.start()
+      expect(el.scrollTop).toBe(0)
+      expect(onStep).not.toHaveBeenCalled()
+    })
+  })
 })
