@@ -164,7 +164,7 @@ impl Fixture {
         let config_path = dir.join(".git").join("config");
         let existing = std::fs::read_to_string(&config_path).unwrap_or_default();
         if existing.contains("[user]") {
-            return
+            return;
         }
         let mut next = existing;
         if !next.is_empty() && !next.ends_with('\n') {

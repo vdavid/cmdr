@@ -1,12 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreBinaries": ["only-allow", "rustc", "oxfmt"],
-  "ignore": [
-    "src/app.d.ts",
-    "src/lib/tauri-commands/**",
-    "src/lib/ipc/bindings.ts",
-    "src/lib/debug/debug-window.ts"
-  ],
+  "ignore": ["src/app.d.ts", "src/lib/tauri-commands/**", "src/lib/ipc/bindings.ts", "src/lib/debug/debug-window.ts"],
   "ignoreUnresolved": ["~icons/.+"],
   "ignoreDependencies": [
     "oxlint",
