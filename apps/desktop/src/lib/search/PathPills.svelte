@@ -21,6 +21,12 @@
     import { onDestroy, tick } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { createPretextMeasure } from '$lib/utils/shorten-middle'
+    import {
+        computePathPillsLayout,
+        scheduleStableWidthMeasure,
+        type Layout,
+        type Segment,
+    } from './path-pills-layout'
 
     interface Props {
         /** Path to render (typically `entry.parentPath`; may also be the entry's own path). */
@@ -33,11 +39,6 @@
     }
 
     const { path, onPick }: Props = $props()
-
-    interface Segment {
-        label: string
-        fullPath: string
-    }
 
     /**
      * Splits a POSIX-style path into `{ label, fullPath }` segments. Returns one segment
@@ -93,82 +94,30 @@
         return `${style.fontSize} ${style.fontFamily}`
     }
 
-    /** Approximate width contribution of a pill rendering `label`. */
-    function pillWidth(label: string): number {
-        if (!measureWidth) return 0
-        // Pill chrome: 4 px horizontal padding × 2 = ~8 px. We measure the text
-        // and pad by 16 px total to cover the chrome plus a safety margin. The
-        // estimate doesn't need to be perfect; overshooting just hides one more
-        // pill than strictly necessary, never undershooting (no wrap).
-        return measureWidth(label) + 16
-    }
-
-    /** Width of the `/` separator span (text width + gap on each side). */
-    function sepWidth(): number {
-        if (!measureWidth) return 0
-        return measureWidth('/') + 4
-    }
-
-    interface Layout {
-        leading: Segment[]
-        collapsed: Segment[]
-        trailing: Segment[]
-    }
+    /**
+     * Per-pill chrome budget added on top of the measured text width. Round 2 R2:
+     * the round-1 budget of 16 px massively overshot the actual chrome (`--spacing-xxs` /
+     * 2 px each side ≈ 4 px) and made the strip collapse even when there was free space.
+     * 4 px matches the rendered CSS; if a measurement undershoots by a pixel or two the
+     * outer `overflow: hidden` clips cleanly, never wrapping.
+     */
+    const PILL_CHROME_PX = 4
+    /** Gap between consecutive pills (`--spacing-xxs` ≈ 2 px on each side of the separator). */
+    const PILL_SEPARATOR_GAP_PX = 4
 
     /**
-     * Decide which segments stay visible. We always keep the first and last
-     * segments pinned (root/anchor and the immediate parent are the most useful
-     * signals), then add middle pills back from the trailing edge inward until
-     * the strip stops fitting.
+     * Decide which segments stay visible. Delegates to the pure `computePathPillsLayout`
+     * helper (see `path-pills-layout.ts`) so the algorithm stays unit-testable with mocked
+     * widths instead of forcing a real DOM canvas measurement at test time.
      */
-    const layout = $derived.by<Layout>(() => {
-        const segs = segments
-        if (segs.length <= 2 || !measureWidth || containerWidth <= 0) {
-            return { leading: segs, collapsed: [], trailing: [] }
-        }
-        const sep = sepWidth()
-        function totalWidth(visible: string[]): number {
-            let w = 0
-            for (let i = 0; i < visible.length; i++) {
-                w += pillWidth(visible[i])
-                if (i < visible.length - 1) w += sep
-            }
-            return w
-        }
-        // Try the no-collapse case first.
-        const allLabels = segs.map((s) => s.label)
-        if (totalWidth(allLabels) <= containerWidth) {
-            return { leading: segs, collapsed: [], trailing: [] }
-        }
-        // Otherwise pin first + last, ellipsis in the middle, and re-add as many
-        // trailing-side ancestors as fit.
-        const first = segs[0]
-        const last = segs[segs.length - 1]
-        const middle = segs.slice(1, -1)
-        const trailing = [last]
-        const collapsed = [...middle]
-        for (let i = middle.length - 1; i >= 0; i--) {
-            const candidate = middle[i]
-            const newTrailing = [candidate, ...trailing]
-            const labels = [first.label, '…', ...newTrailing.map((s) => s.label)]
-            if (totalWidth(labels) > containerWidth) break
-            trailing.unshift(candidate)
-            collapsed.pop() // remove the last entry, which is `candidate`
-        }
-        const finalLabels = [first.label, '…', ...trailing.map((s) => s.label)]
-        if (totalWidth(finalLabels) > containerWidth) {
-            // Even first + ellipsis + last doesn't fit. Drop the first too. The
-            // ellipsis stays so we still signal "more here".
-            const labelsNoFirst = ['…', ...trailing.map((s) => s.label)]
-            if (totalWidth(labelsNoFirst) > containerWidth) {
-                // Still doesn't fit. Drop the ellipsis too; keep only `last`. CSS
-                // `overflow: hidden` will handle anything pathologically narrow.
-                return { leading: [], collapsed: [first, ...collapsed], trailing }
-            }
-            return { leading: [], collapsed: [first, ...collapsed], trailing }
-        }
-        return { leading: [first], collapsed, trailing }
-    })
+    const layout = $derived.by<Layout>(() =>
+        computePathPillsLayout(segments, {
+            containerWidth,
+            measureWidth,
+            separatorWidth: measureWidth ? measureWidth('/') + PILL_SEPARATOR_GAP_PX : 0,
+            pillChrome: PILL_CHROME_PX,
+        }),
+    )
 
     /**
      * HTML for the `…` pill's tooltip. Hidden pills render as clickable buttons; a
@@ -211,6 +160,7 @@
     }
 
     let resizeObserver: ResizeObserver | undefined
+    let cancelStableMeasure: (() => void) | undefined
     let mounted = false
     $effect(() => {
         if (!container || mounted) return
@@ -226,12 +176,26 @@
             if (!pretext) return
             measureWidth = createPretextMeasure(readFont(el), pretext)
             containerWidth = el.clientWidth
+            // R3 B4: the initial `el.clientWidth` read above can land BEFORE
+            // the parent CSS grid track resolves to its final width. That
+            // produces the bug David hit: the strip first renders the full
+            // path (uncollapsed fallback while measureWidth was null), then
+            // collapses back to ellipses once `measureWidth` lands but
+            // `containerWidth` is still stale-small. Re-read on the next
+            // animation frame (when the grid layout has settled) and again
+            // ~80ms later (when fonts and any late style recalculations have
+            // settled too). Both reads are cheap; the layout `$derived`
+            // re-runs only when `containerWidth` actually changes.
+            cancelStableMeasure = scheduleStableWidthMeasure(() => {
+                containerWidth = el.clientWidth
+            })
         })
         document.addEventListener('mousedown', handleTooltipMouseDown, true)
     })
 
     onDestroy(() => {
         resizeObserver?.disconnect()
+        cancelStableMeasure?.()
         document.removeEventListener('mousedown', handleTooltipMouseDown, true)
     })
 </script>
@@ -305,16 +269,23 @@
 
     .sep {
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
+        /* R3 U7: path text reads at --font-size-sm (matching Name) instead
+           of --font-size-xs. The eye reads the path as quickly as the
+           filename, not as a footnote. */
+        font-size: var(--font-size-sm);
         user-select: none;
     }
 
     .pill {
         background: transparent;
         border: 0;
-        padding: var(--spacing-xxs) var(--spacing-xs);
+        /* R3 U7: cut horizontal padding so the larger font doesn't blow
+           the column; vertical padding stays at 0 since the row padding
+           handles vertical rhythm. */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        padding: 0 var(--spacing-xxs);
         border-radius: var(--radius-sm);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         font-family: inherit;
         color: var(--color-text-tertiary);
         line-height: 1.2;

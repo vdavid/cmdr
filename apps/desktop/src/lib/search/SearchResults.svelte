@@ -124,8 +124,9 @@
             if (totalCount === 0) return ''
             return `${String(results.length)} of ${totalCount.toLocaleString()} results`
         }
-        // Index loading: only show status if user has triggered a search
-        if (hasSearched) return 'Loading index...'
+        // Index loading: the content area shows the "Loading drive index..." spinner,
+        // so the status bar stays empty to avoid duplication. (R4: same rule as D3 / D4
+        // for the searching / no-results states — content is the source of truth.)
         return ''
     }
 
@@ -202,7 +203,7 @@
         <div class="no-results">
             <p class="no-results-heading">No files match these criteria:</p>
             <ul class="no-results-criteria">
-                {#each buildCriteria() as item}
+                {#each buildCriteria() as item (item)}
                     <li>{item}</li>
                 {/each}
             </ul>
@@ -279,9 +280,14 @@
 
 <style>
     /* Shared grid template. Path (1fr) absorbs the remaining width; Name has a
-       hard ceiling so very long names don't squeeze the path column to nothing;
-       Size + Modified shrink-wrap; Actions matches the `…` button footprint.
-       The `column-gap` keeps Size and Modified visibly apart. */
+       hard ceiling so very long names don't squeeze the path column to nothing.
+       Round 2 R1: Size / Modified / Actions used to be `max-content`, which made
+       each row's grid resolve its own column widths from its own data — the
+       header row's "Size" / "Modified" labels are narrower than typical row
+       data (`1.2 MB`, `Jan 12, 2026`), so the header text drifted left of the
+       row content. Pinning them to fixed `ch` widths makes the header row and
+       data rows resolve the SAME widths, aligning the column boundary perfectly
+       across rows. */
     .column-header,
     .result-row {
         display: grid;
@@ -289,9 +295,9 @@
             24px /* icon */
             minmax(80px, 22ch) /* name (mid-truncates) */
             minmax(120px, 1fr) /* path (flex) */
-            max-content /* size */
-            max-content /* modified */
-            max-content; /* actions */
+            10ch /* size (right-aligned, fits "999.9 MB") */
+            16ch /* modified (right-aligned, fits short and long date formats) */
+            32px; /* actions (… button footprint) */
 
         column-gap: var(--spacing-md);
         align-items: center;
@@ -384,7 +390,13 @@
     }
 
     .result-row {
-        padding: var(--spacing-xs) var(--spacing-lg);
+        /* R3 U7: vertical padding cut from --spacing-xs (~8 px) to
+           --spacing-xxs (~4 px) so the Path column can bump its font from
+           --font-size-xs to --font-size-sm without growing the row. All
+           cells vertically center via the grid's `align-items: center`
+           rule above, so the look stays clean even with the tighter
+           padding. */
+        padding: var(--spacing-xxs) var(--spacing-lg);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
     }

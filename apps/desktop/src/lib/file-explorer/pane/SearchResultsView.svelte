@@ -204,13 +204,17 @@
             // Show in Finder all still make sense, but the snapshot view
             // isn't a destination for "rename inside this folder" or
             // "make a new folder here". `caps` is the capability flag set
-            // (`searchResultsVolumeCapabilities`) that gates this. The flag
-            // is intentionally read at call time — referencing it here keeps
-            // the wiring discoverable if the per-pane capabilities ever
-            // grow a runtime branch (right now the flags are static for
-            // search-results panes).
+            // (`searchResultsVolumeCapabilities`) that gates this.
+            //
+            // Round 2 P10: the menu's `Copy {filename}` label uses the
+            // `filename` arg as-is. Our adapted `entry.name` is the friendly
+            // full path (`~/Library/.../test.md`) so the menu would otherwise
+            // read `Copy ~/Library/.../test.md`. Hand the Rust side the
+            // basename instead so it reads `Copy test.md` and the underlying
+            // command-dispatch (which uses `entryUnderCursor.name`, also a
+            // basename) copies the same string.
             const restrict = !caps.canRename
-            void showFileContextMenu(entry.path, entry.name, entry.isDirectory, [entry.path], restrict)
+            void showFileContextMenu(entry.path, basename(entry.path), entry.isDirectory, [entry.path], restrict)
         }}
     />
 {:else}

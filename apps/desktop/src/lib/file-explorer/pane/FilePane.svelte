@@ -34,6 +34,7 @@
         onMtpDeviceDisconnected,
         openFile,
         refreshListingIndexSizes,
+        resolvePathVolume,
         showFileContextMenu,
         type UnlistenFn,
         updateMenuContext,
@@ -42,6 +43,7 @@
         type PaneState,
         type PaneFileEntry,
     } from '$lib/tauri-commands'
+    import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
     import { createTypeToJumpState } from './type-to-jump-state.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
@@ -96,6 +98,10 @@
     import { getPaneTintBg, getPaneTintName } from './volume-tint.svelte'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
+    import { computeSearchPaneKeyAction } from './search-results-keys'
+    import { computeHasParent } from './has-parent'
+    import { openFileViewer } from '$lib/file-viewer/open-viewer'
+    import { openInEditor } from '$lib/tauri-commands'
     import { resolveValidPath } from '../navigation/path-resolution'
     import { homeDir } from '@tauri-apps/api/path'
     import {
@@ -349,10 +355,15 @@
     // For the root volume: replaces the home dir prefix with "~", otherwise shows absolute path.
     // For other volumes: shows path relative to the volume root.
     const breadcrumbDisplayPath = $derived.by(() => {
-        // Search-results pane: the URL (`search-results://<id>`) isn't useful to
-        // surface; the snapshot's label is already rendered as the volume name
-        // by VolumeBreadcrumb. Suppress the trailing path segments entirely.
-        if (isSearchResultsView) return ''
+        // R3 B6: the search-results pane shows the snapshot's friendly label
+        // (the AI title / filename pattern / regex pattern) AS the path. The
+        // volume selector itself now reads the generic "Search results" so
+        // the slots map cleanly: volume-kind on the left, query-specific
+        // label on the right. Round 2 inverted these (label on the left, no
+        // path on the right); David flagged it in the round 3 brief.
+        if (isSearchResultsView) {
+            return searchSnapshot?.label ?? 'Search'
+        }
         if (isMtpVolumeId(volumeId)) return getMtpDisplayPath(currentPath)
 
         // For non-root volumes, strip the volume path prefix
@@ -376,7 +387,16 @@
     // Segmented form of the breadcrumb path so we can color anything inside
     // a `.git/...` portal with the git-portal token. Pure derivation; the
     // helper is unit-tested in `path-segments.test.ts`.
-    const breadcrumbSegments = $derived(splitPathSegments(breadcrumbDisplayPath))
+    //
+    // R3 B6: for search-results panes the displayPath is the snapshot label
+    // (e.g. `*.pdf` or `/some/regex/`), not a real filesystem path. We render
+    // it as a single segment so a regex label containing `/` doesn't get
+    // broken up into path-style segments with separator glyphs.
+    const breadcrumbSegments = $derived(
+        isSearchResultsView
+            ? [{ text: breadcrumbDisplayPath, gitPortal: false }]
+            : splitPathSegments(breadcrumbDisplayPath),
+    )
 
     // Check if we're viewing an MTP device
     const isMtpView = $derived(isMtpVolumeId(volumeId))
@@ -1154,7 +1174,19 @@
     // Check if current directory has a parent (not at filesystem root AND not at volume root)
     // Prefer volumeRoot from the listing event (accurate for MTP), fall back to prop (for initial state)
     const effectiveVolumeRoot = $derived(volumeRootFromEvent ?? volumePath)
-    const hasParent = $derived(currentPath !== '/' && currentPath !== effectiveVolumeRoot)
+    // Search-results panes have NO `..` row: the snapshot is a flat result set, not a directory.
+    // Without this gate, the path comparison was true (search-results://sr-N never matches a real
+    // volume root), causing `hasParent` to be `true`, which made `selectAll` skip index 0 (P6).
+    // R3 T1: the derivation lives in `has-parent.ts` so the regression test
+    // (`has-parent.test.ts`) can pin the integration with `selection.selectAll`
+    // without spinning up the whole `FilePane` component.
+    const hasParent = $derived(
+        computeHasParent({
+            isSearchResultsView,
+            currentPath,
+            effectiveVolumeRoot,
+        }),
+    )
 
     // Effective total count includes ".." entry if not at root.
     // For search-results panes, the snapshot owns the count (the backend
@@ -1583,11 +1615,30 @@
         // `redirectToPath` is set by the backend on virtual entries that
         // should open elsewhere (worktree and submodule working dirs).
         if (entry.redirectToPath) {
+            // R4: same cross-volume bug as the main directory branch below. If a
+            // redirect from a snapshot pane lands on a real path, switch volume
+            // first; don't leave `volumeId === 'search-results'` with a real path.
+            if (isCrossVolumeNavigation(volumeId, entry.redirectToPath)) {
+                await switchVolumeForRealPath(entry.redirectToPath)
+                return
+            }
             currentPath = entry.redirectToPath
             await loadDirectory(entry.redirectToPath)
             return
         }
         if (entry.isDirectory) {
+            // R4: if we're on the snapshot volume and the user opens a real
+            // directory from the result rows, route through the volume-change
+            // machinery so the pane switches to the directory's real volume
+            // FIRST. Without this, the pane ends up `volumeId === 'search-results'`
+            // with a real `path`, and `SearchResultsView` shows
+            // "Search results no longer available" (because the path doesn't
+            // start with `search-results://` so the snapshot id resolution
+            // returns null).
+            if (isCrossVolumeNavigation(volumeId, entry.path)) {
+                await switchVolumeForRealPath(entry.path)
+                return
+            }
             // When navigating to parent (..), remember current folder name to select it
             const isGoingUp = entry.name === '..'
             const currentFolderName = isGoingUp ? currentPath.split('/').pop() : undefined
@@ -1602,6 +1653,26 @@
             } catch {
                 // Silently fail - file open errors are expected sometimes
             }
+        }
+    }
+
+    /**
+     * R4: resolve the real volume for `realPath` and route through the
+     * `onVolumeChange` callback so the pane is reconfigured BEFORE it tries
+     * to load a real path. Used only when transitioning out of a snapshot
+     * pane (`isCrossVolumeNavigation` returned true).
+     */
+    async function switchVolumeForRealPath(realPath: string): Promise<void> {
+        try {
+            const result = await resolvePathVolume(realPath)
+            const volume = result.volume
+            if (!volume) {
+                log.warn(`switchVolumeForRealPath: no volume resolved for ${realPath}; aborting`)
+                return
+            }
+            onVolumeChange?.(volume.id, volume.path, realPath)
+        } catch (err) {
+            log.error(`switchVolumeForRealPath: resolvePathVolume failed for ${realPath}: ${String(err)}`)
         }
     }
 
@@ -1807,46 +1878,83 @@
     }
 
     /**
-     * Keyboard handler for the search-results pane. Extracted from `handleKeyDown` to
-     * keep the latter under the cyclomatic complexity cap. Enter activates the cursor
-     * row; ArrowUp/Down move the cursor; Space toggles selection (M8d); everything
-     * else is intentionally ignored (no rename, no Backspace-to-parent — those don't
-     * apply to a virtual snapshot).
+     * Keyboard handler for the search-results pane. Routes the keydown through the pure
+     * `computeSearchPaneKeyAction` helper (see `search-results-keys.ts`) and then mutates
+     * pane state for whichever action it returns. Splitting the dispatch from the side
+     * effects keeps the keyboard contract unit-testable without spinning up `FilePane`.
      *
-     * The snapshot pane has no `..` row, so `hasParent` is always false for the
-     * selection helpers. Cmd+A / Cmd+Shift+A still flow through the regular
-     * pane shortcuts (handled in `command-dispatch.ts`).
+     * Round 2 P-series coverage:
+     *   - P1 PgUp/PgDn, P2 Home/End, P3 Left/Right (intentional no-op), P4 Space,
+     *     P5 ⇧Up/⇧Dn, P7 F3 / F4.
+     *
+     * The snapshot pane has no `..` row, so the selection helpers run with
+     * `hasParent = false`. Cmd+A keeps flowing through the unified command
+     * dispatch (see `command-dispatch.ts`).
      */
+    /**
+     * Hand the cursor's file to the in-app viewer (F3) or the default editor (F4). Used for
+     * the snapshot pane only — directories are no-ops here.
+     */
+    function openSnapshotFileWith(kind: 'viewer' | 'editor'): void {
+        const entry = searchSnapshot?.entries[cursorIndex]
+        if (!entry || entry.isDirectory) return
+        if (kind === 'viewer') {
+            void openFileViewer(entry.path)
+        } else {
+            void openInEditor(entry.path)
+        }
+    }
+
+    /** Apply a `move-cursor` action from the search-pane key dispatcher. */
+    function applySearchPaneMove(index: number, overflow: boolean, shiftKey: boolean): void {
+        if (shiftKey) {
+            // Round 2 P5: extend selection across the jump via the same toggle-and-fill helper
+            // the regular pane uses. `hasParent = false` because the snapshot pane never
+            // carries a synthetic `..` row.
+            selection.handleShiftKeyboardNavigation(cursorIndex, index, overflow, false)
+        }
+        void setCursorIndex(index)
+    }
+
     function handleSearchResultsKeyDown(e: KeyboardEvent): void {
-        if (e.key === 'Enter') {
-            e.preventDefault()
-            void openCursorItem()
-            return
-        }
-        if (e.key === 'ArrowDown') {
-            e.preventDefault()
-            void setCursorIndex(Math.min(cursorIndex + 1, Math.max(0, searchResultsCount - 1)))
-            return
-        }
-        if (e.key === 'ArrowUp') {
-            e.preventDefault()
-            void setCursorIndex(Math.max(0, cursorIndex - 1))
-            return
-        }
-        // Space: toggle selection at cursor. Shift+Space is reserved for Quick
-        // Look in the rest of the app; mirror that contract here by leaving
-        // it untouched (no Quick Look in snapshot panes yet, so it's a no-op).
-        if (e.key === ' ' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
-            e.preventDefault()
-            selection.toggleAt(cursorIndex, false)
-            return
-        }
-        // Insert: toggle selection at cursor and move down (Total Commander style).
-        // PC-keyboard convenience — Apple keyboards can rebind via Karabiner.
-        if (e.key === 'Insert') {
-            e.preventDefault()
-            selection.toggleAt(cursorIndex, false)
-            void setCursorIndex(Math.min(cursorIndex + 1, Math.max(0, searchResultsCount - 1)))
+        const visibleItems: number = fullListRef?.getVisibleItemsCount?.() ?? 20
+        const action = computeSearchPaneKeyAction(e, {
+            cursorIndex,
+            count: searchResultsCount,
+            visibleItems,
+        })
+        if (action === null) return
+
+        // Every action below "handles" the key. Prevent default + stop propagation so the
+        // outer document-level dispatch doesn't double-fire (notably Space, which the global
+        // selection.toggle case in `command-dispatch.ts` also listens for).
+        e.preventDefault()
+        e.stopPropagation()
+
+        switch (action.kind) {
+            case 'noop':
+                return
+            case 'open-cursor':
+                void openCursorItem()
+                return
+            case 'view-file':
+                openSnapshotFileWith('viewer')
+                return
+            case 'edit-file':
+                openSnapshotFileWith('editor')
+                return
+            case 'toggle-selection-at-cursor':
+                if (searchResultsCount > 0) selection.toggleAt(cursorIndex, false)
+                return
+            case 'toggle-selection-and-advance':
+                if (searchResultsCount > 0) {
+                    selection.toggleAt(cursorIndex, false)
+                    void setCursorIndex(Math.min(cursorIndex + 1, Math.max(0, searchResultsCount - 1)))
+                }
+                return
+            case 'move-cursor':
+                applySearchPaneMove(action.index, action.overflow, action.shiftKey)
+                return
         }
     }
 

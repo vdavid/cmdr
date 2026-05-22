@@ -64,7 +64,7 @@ describe('SearchDialog a11y', () => {
       props: {
         onNavigate: () => {},
         onClose: () => {},
-        currentFolderPath: '/Users/test',
+        searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       },
     })
     await tick()
@@ -80,7 +80,7 @@ describe('SearchDialog a11y', () => {
       props: {
         onNavigate: () => {},
         onClose: () => {},
-        currentFolderPath: '/Users/test',
+        searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       },
     })
     // Flush microtasks so prepareSearchIndex resolves and isIndexReady flips.
@@ -98,7 +98,7 @@ describe('SearchDialog a11y', () => {
       props: {
         onNavigate: () => {},
         onClose: () => {},
-        currentFolderPath: '/Users/test',
+        searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       },
     })
     await new Promise((r) => setTimeout(r, 0))

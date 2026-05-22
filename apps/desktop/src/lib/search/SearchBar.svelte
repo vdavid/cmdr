@@ -19,7 +19,6 @@
      *   - ⌘Enter runs an AI search regardless (only when AI is enabled).
      *   - ⌘1/⌘2/⌘3 switch modes (numbering changes when AI is off).
      */
-    import IconCornerDownLeft from '~icons/lucide/corner-down-left'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { SearchMode } from './search-state.svelte'
 
@@ -111,7 +110,11 @@
         <span class="run-hint" aria-hidden="true">Press Enter to search</span>
     {/if}
     <!-- D8: button reads "Search ⏎" when ⏎ owns the run action; just "Search" when
-         the footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint. -->
+         the footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint.
+         R3 B1: dropped the leading corner-down-left icon. Round 2 put the icon at
+         the start AND the "⏎" suffix at the end, producing a "⏎Search⏎" double-hint.
+         The shortcut belongs in the suffix slot (matching "Go to file ⏎" and
+         "All searches… ⌘H"); the icon was visual noise on top. -->
     <button
         type="button"
         class="run-button"
@@ -120,7 +123,6 @@
         use:tooltip={{ text: runTitle, shortcut: '⏎' }}
         aria-label={runTitle}
     >
-        <IconCornerDownLeft />
         <span class="run-label">Search</span>
         {#if showEnterHint}<span class="run-enter-hint" aria-hidden="true">⏎</span>{/if}
     </button>
@@ -177,7 +179,10 @@
         flex-shrink: 0;
         display: inline-flex;
         align-items: center;
-        gap: var(--spacing-xxs);
+        /* R3 B1: bumped from --spacing-xxs to --spacing-xs so the gap between
+           "Search" and "⏎" reads cleanly. Matches the visual rhythm of
+           "All searches… ⌘H" and "Go to file ⏎" elsewhere in the dialog. */
+        gap: var(--spacing-xs);
         justify-content: center;
         padding: var(--spacing-xxs) var(--spacing-sm);
         background: transparent;

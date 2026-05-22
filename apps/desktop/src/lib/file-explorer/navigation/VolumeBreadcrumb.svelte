@@ -35,7 +35,6 @@
         requestVolumeRefresh,
     } from '$lib/stores/volume-store.svelte'
     import { groupByCategory, getIconForVolume } from './volume-grouping'
-    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import {
         createBreadcrumbPopupController,
@@ -99,8 +98,12 @@
             ? { id: 'network', name: 'Network', path: 'smb://', category: 'network' as const, isEjectable: false }
             : volumeId === 'search-results'
               ? {
+                    // R3 B6: the volume selector reads "Search results", a
+                    // generic noun matching every other volume's slot. The
+                    // search-specific label (the AI title / pattern) moved to
+                    // the path slot in `FilePane.svelte::breadcrumbDisplayPath`.
                     id: 'search-results',
-                    name: 'Search',
+                    name: 'Search results',
                     path: 'search-results://',
                     category: 'network' as const,
                     isEjectable: false,
@@ -110,20 +113,16 @@
     )
 
     /**
-     * Search-results breadcrumb label: extract the snapshot id from `currentPath`
-     * (`search-results://<id>`) and look up the snapshot's friendly label. Falls
-     * back to "Search" when the snapshot is missing — same defensive posture as
-     * the SearchResultsView itself. Re-derives reactively on path / volume changes.
+     * R3 B6: the snapshot's friendly label is now rendered as the trailing
+     * path text (in `FilePane.svelte`'s `breadcrumbDisplayPath`). The volume
+     * selector here reads the static "Search results" label so the
+     * volume-selector slot describes the KIND of volume (matching every
+     * other volume: "Network", "Macintosh HD", an MTP device name) and the
+     * path slot carries the QUERY-specific label. Round 2 had these
+     * inverted, which David flagged in the round 3 brief (the snapshot
+     * label was the volume name and the path was empty).
      */
-    const searchResultsLabel = $derived.by(() => {
-        if (volumeId !== 'search-results') return null
-        const prefix = 'search-results://'
-        if (!currentPath.startsWith(prefix)) return null
-        const id = currentPath.slice(prefix.length)
-        return getSnapshot(id)?.label ?? 'Search'
-    })
-
-    const currentVolumeName = $derived(searchResultsLabel ?? currentVolume?.name ?? 'Volume')
+    const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
 
     // Generic macOS folder icon used as fallback when a volume has no icon (for example,

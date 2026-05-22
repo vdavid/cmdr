@@ -127,8 +127,18 @@
         onNavigate: (path: string) => void
         /** Called when dialog is closed */
         onClose: () => void
-        /** Current directory path of the focused pane (for ⌥F scope shortcut) */
-        currentFolderPath: string
+        /**
+         * Smart "current folder" for the Search-in popover's `Use current folder` button.
+         * Round-2 D12: when the focused pane is a `search-results://` snapshot, the host
+         * walks the pane's history back to the most recent real folder; when none is
+         * available, this surfaces `disabled: true` plus a tooltip so the dialog can
+         * render the button visibly disabled. See `lib/search/searchable-folder.ts`.
+         */
+        searchableFolder: {
+            path: string | null
+            disabled: boolean
+            disabledReason: string
+        }
         /**
          * Called when the user activates "Show all in main window" (⌥A or footer click).
          * Receives the freshly-created snapshot id; the host
@@ -138,7 +148,7 @@
         onShowAllInMainWindow?: (snapshotId: string) => void
     }
 
-    const { onNavigate, onClose, currentFolderPath, onShowAllInMainWindow }: Props = $props()
+    const { onNavigate, onClose, searchableFolder, onShowAllInMainWindow }: Props = $props()
 
     let queryInputElement: HTMLInputElement | undefined = $state()
     let dialogElement: HTMLDivElement | undefined = $state()
@@ -566,16 +576,32 @@
         // so closing + reopening the dialog doesn't refetch unless we explicitly invalidate.
         void loadRecentSearches()
 
-        // Load system dir exclude list for tooltip display
+        // R3 U6: load the full system-dir exclude list for the tooltip. Round 2
+        // truncated to the first 8 with a "+30 more" suffix; the brief asks for
+        // the full list ("How would the user know what that 30 are?"). Each
+        // folder renders on its own line with a mono font for legibility. The
+        // checkbox label itself reads "Hide boring folders" (matching the
+        // friendlier copy David asked for).
+        function escapeHtml(s: string): string {
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+        }
         getSystemDirExcludes()
             .then((dirs) => {
-                const shown = dirs.slice(0, 8)
-                const rest = dirs.length - shown.length
-                const list = shown.join(', ') + (rest > 0 ? `, +${String(rest)} more` : '')
+                const items = dirs
+                    .map(
+                        (d) =>
+                            `<div style="font-family:var(--font-mono);font-size:var(--font-size-xs);color:var(--color-text-secondary);">${escapeHtml(d)}</div>`,
+                    )
+                    .join('')
                 systemDirExcludeTooltip =
-                    '<div style="max-width:360px">' +
-                    '<div style="font-weight:600;margin-bottom:4px">Exclude system and build folders</div>' +
-                    `<div style="color:var(--color-text-secondary)">${list}</div>` +
+                    '<div style="max-width:360px;max-height:60vh;overflow-y:auto;">' +
+                    '<div style="font-weight:600;margin-bottom:4px">These folders are hidden:</div>' +
+                    items +
                     '</div>'
             })
             .catch(() => {})
@@ -907,16 +933,6 @@
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T constrains the setter's param type to match the cast
-    function selectHandler<T extends string>(setter: (v: T) => void, search = true) {
-        return (e: Event) => {
-            setter((e.target as HTMLSelectElement).value as T)
-            // D8: comparator changes are filter edits.
-            setLastDialogEvent('filter-edited')
-            if (search) scheduleSearch()
-        }
-    }
-
     /** Traps Tab focus within the dialog. Returns true if the event was handled. */
     function handleTabFocusTrap(e: KeyboardEvent): boolean {
         if (e.key !== 'Tab' || !dialogElement) return false
@@ -937,15 +953,25 @@
         return true
     }
 
-    /** Returns true if the active element is the unified query input. */
-    function isInQueryInput(): boolean {
-        return document.activeElement === queryInputElement
-    }
-
-    /** Matches a plain modifier-key combo (one of cmd/alt, no others, no shift). */
+    /**
+     * Matches a plain modifier-key combo (one of cmd/alt, no others, no shift).
+     *
+     * On macOS, Option+<letter> remaps `event.key` to a typographic glyph (Option+F → "ƒ",
+     * Option+R → "®"). For Alt combos we therefore also match on `event.code` (which stays
+     * layout-stable as `KeyF`, `KeyR`, etc.). For named keys (`Enter`, `ArrowLeft`, ...) and
+     * Meta combos the plain `e.key` check remains the contract.
+     */
     function matchKey(e: KeyboardEvent, key: string, mod: 'meta' | 'alt'): boolean {
-        if (e.key !== key || e.shiftKey) return false
-        return mod === 'meta' ? e.metaKey && !e.altKey : e.altKey && !e.metaKey
+        if (e.shiftKey) return false
+        const modMatches = mod === 'meta' ? e.metaKey && !e.altKey : e.altKey && !e.metaKey
+        if (!modMatches) return false
+        if (e.key === key) return true
+        // Single-letter Alt fallback: macOS Option key delivers typographic glyphs, so accept
+        // a `KeyX` match on `e.code` when the requested key is a single ASCII letter.
+        if (mod === 'alt' && key.length === 1 && /[a-zA-Z]/.test(key)) {
+            return e.code === `Key${key.toUpperCase()}`
+        }
+        return false
     }
 
     /** Clears all dialog state (⌘N "new search") and refocuses the query input. */
@@ -996,9 +1022,43 @@
             clearAndRefocus()
             return true
         }
-        // D13: mode chip shortcuts. Wired globally inside the dialog (focus need
-        // not be on the chip). ⌥A AI, ⌥F Filename, ⌥R Regex. The disabled
-        // Content chip has no shortcut by design (see CLAUDE.md decision).
+        if (handleModeChipShortcut(e)) return true
+        if (handleAltArrowShortcut(e)) return true
+        // R3 + D8 (other half): ⌥⏎ shows all results in the main window. The bare ⏎ key is
+        // owned by `handleEnterKey`, which dispatches via `enterAction` (see D8).
+        if (e.key === 'Enter' && e.altKey && !e.metaKey && !e.shiftKey) {
+            e.preventDefault()
+            if (results.length > 0) showAllInMainWindow()
+            return true
+        }
+        // R4: ⌘⏎ and ⇧⏎ are explicit no-ops. We swallow them here so the bare-Enter
+        // handler below (run-search / go-to-file via `enterAction`) never sees a
+        // modified Enter. David's rule: bare ⏎ is the only path that does anything.
+        if (e.key === 'Enter' && (e.metaKey || e.shiftKey)) {
+            e.preventDefault()
+            return true
+        }
+        // ⌘H toggles the recent-searches popover. The popover owns its own Esc, so users can
+        // dismiss it without closing the dialog.
+        if (matchKey(e, 'h', 'meta')) {
+            e.preventDefault()
+            if (recentPopoverOpen) {
+                closeRecentPopover()
+            } else {
+                openRecentPopover()
+            }
+            return true
+        }
+        if (handleModeShortcut(e)) return true
+        return false
+    }
+
+    /**
+     * D13: mode chip shortcuts (⌥A AI / ⌥F Filename / ⌥R Regex). Wired globally inside the
+     * dialog (focus need not be on the chip). The disabled Content chip has no shortcut by
+     * design — silently no-opping a key is hostile UX.
+     */
+    function handleModeChipShortcut(e: KeyboardEvent): boolean {
         if (matchKey(e, 'a', 'alt') && aiEnabled) {
             e.preventDefault()
             handleModeChange('ai')
@@ -1014,18 +1074,15 @@
             handleModeChange('regex')
             return true
         }
-        // R3 + D8 (other half): ⌥⏎ shows all results in the main window. Replaces
-        // round-1's ⌥A (which was reallocated to mode chip AI per round-2's resolved
-        // shortcut allocation). The bare ⏎ key is owned by `handleEnterKey`, which
-        // dispatches via `enterAction` (see D8).
-        if (e.key === 'Enter' && e.altKey && !e.metaKey && !e.shiftKey) {
-            e.preventDefault()
-            if (results.length > 0) showAllInMainWindow()
-            return true
-        }
-        // ⌥← / ⌥→: jump to the cursor row's parent (←) or descend into the cursor row (→).
-        // The cursor row is the keyboard target; pills aren't tabbable, so this is the
-        // keyboard equivalent of clicking a pill / row. Per search-redesign-plan §3.8.
+        return false
+    }
+
+    /**
+     * ⌥← / ⌥→: jump to the cursor row's parent (←) or descend into the cursor row (→).
+     * Keyboard equivalents of clicking the path pills or the row itself (per
+     * search-redesign-plan §3.8).
+     */
+    function handleAltArrowShortcut(e: KeyboardEvent): boolean {
         if (matchKey(e, 'ArrowLeft', 'alt')) {
             e.preventDefault()
             jumpToCursorParent()
@@ -1036,23 +1093,6 @@
             descendFromCursor()
             return true
         }
-        if (matchKey(e, 'Enter', 'meta')) {
-            e.preventDefault()
-            runAiFromQuery()
-            return true
-        }
-        // ⌘H toggles the recent-searches popover. The popover owns its own Esc, so users can
-        // dismiss it without closing the dialog.
-        if (matchKey(e, 'h', 'meta')) {
-            e.preventDefault()
-            if (recentPopoverOpen) {
-                closeRecentPopover()
-            } else {
-                openRecentPopover()
-            }
-            return true
-        }
-        if (handleModeShortcut(e)) return true
         return false
     }
 
@@ -1179,7 +1219,7 @@
             {caseSensitive}
             {scope}
             {excludeSystemDirs}
-            {currentFolderPath}
+            {searchableFolder}
             {sizeFilter}
             {sizeValue}
             {sizeUnit}
@@ -1195,7 +1235,6 @@
             {query}
             aiPattern={lastAiPatternValue}
             onInput={inputHandler}
-            onSelect={selectHandler}
             onToggleCaseSensitive={() => {
                 setCaseSensitive(!getCaseSensitive())
                 scheduleSearch()

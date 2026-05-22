@@ -35,7 +35,7 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     caseSensitive: false,
     scope: '',
     excludeSystemDirs: true,
-    currentFolderPath: '/Users/test',
+    searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
     sizeFilter: 'any',
     sizeValue: '',
     sizeUnit: 'MB',
@@ -52,12 +52,6 @@ function baseProps(overrides: Partial<Props> = {}): Props {
       (e: Event): void => {
         setter((e.target as HTMLInputElement).value)
       },
-    onSelect:
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T constrains the setter's param type
-      <T extends string>(setter: (v: T) => void) =>
-        (e: Event): void => {
-          setter((e.target as HTMLSelectElement).value as T)
-        },
     onToggleCaseSensitive: () => {
       setCaseSensitive(true)
     },
@@ -363,7 +357,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const onScheduleSearch = vi.fn()
     const { target, cleanup } = mountChips(
       baseProps({
-        currentFolderPath: '/Users/test/work',
+        searchableFolder: { path: '/Users/test/work', disabled: false, disabledReason: '' },
         onSetScope,
         scheduleSearch: onScheduleSearch,
       }),
@@ -376,6 +370,290 @@ describe('SearchFilterChips: scope popover behavior', () => {
     buttons[0].click()
     expect(onSetScope).toHaveBeenCalledWith('/Users/test/work')
     expect(onScheduleSearch).toHaveBeenCalled()
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('D10: Size popover renders the list-style grid with comparator + preset + unit columns', async () => {
+    const { target, cleanup } = mountChips(baseProps({ sizeFilter: 'gte', sizeValue: '5', sizeUnit: 'MB' }))
+    await tick()
+    const sizeChip = findChip(target, 'Size')
+    sizeChip?.click()
+    await tick()
+    const grid = document.querySelector('.list-grid')
+    expect(grid).not.toBeNull()
+    const cols = grid?.querySelectorAll('.list-col')
+    expect(cols?.length).toBe(3) // comparator, lower value, lower unit
+    // Comparator col exposes all 4 options.
+    const compCells = cols?.[0].querySelectorAll('.list-cell')
+    expect(compCells?.length).toBe(4)
+    // Selected comparator is `>=`.
+    const selected = grid?.querySelectorAll('.list-cell.is-selected')
+    expect(selected?.length).toBeGreaterThanOrEqual(2) // gte + value '5' + unit 'MB'
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('D10: Size popover adds upper-bound cols only for `between`', async () => {
+    const { target, cleanup } = mountChips(baseProps({ sizeFilter: 'between' }))
+    await tick()
+    const sizeChip = findChip(target, 'Size')
+    sizeChip?.click()
+    await tick()
+    const grid = document.querySelector('.list-grid')
+    expect(grid?.classList.contains('has-upper')).toBe(true)
+    const cols = grid?.querySelectorAll('.list-col')
+    expect(cols?.length).toBe(5)
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  // R3 U5 update: value + unit cells stay clickable when comparator is `any`;
+  // they just look dimmed via `.is-disabled-look`. Clicking them auto-promotes
+  // the comparator (round 2 D10 → round 3 U5).
+  it('R3 U5: Size popover value + unit cells render dimmed (not disabled) when comparator is `any`', async () => {
+    const { target, cleanup } = mountChips(baseProps({ sizeFilter: 'any' }))
+    await tick()
+    const sizeChip = findChip(target, 'Size')
+    sizeChip?.click()
+    await tick()
+    const grid = document.querySelector('.list-grid')
+    const valueCells = grid?.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
+    const unitCells = grid?.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(3) .list-cell')
+    // None of the cells are HTML-disabled (the click must reach our handler).
+    expect([...(valueCells ?? [])].some((b) => b.disabled)).toBe(false)
+    expect([...(unitCells ?? [])].some((b) => b.disabled)).toBe(false)
+    // But they all carry the dimmed look.
+    expect([...(valueCells ?? [])].every((b) => b.classList.contains('is-disabled-look'))).toBe(true)
+    expect([...(unitCells ?? [])].every((b) => b.classList.contains('is-disabled-look'))).toBe(true)
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('R3 U5: clicking a Size value cell while `any` auto-promotes the comparator to `gte`', async () => {
+    clearSearchState()
+    const { target, cleanup } = mountChips(baseProps({ sizeFilter: 'any' }))
+    await tick()
+    const sizeChip = findChip(target, 'Size')
+    sizeChip?.click()
+    await tick()
+    // Click "100" in the value column.
+    const valueCells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
+    const hundred = [...valueCells].find((b) => b.textContent?.trim() === '100')
+    expect(hundred).not.toBeUndefined()
+    hundred?.click()
+    await tick()
+    // The comparator promoted to gte, and the value column landed on "100".
+    const { getSizeFilter, getSizeValue } = await import('./search-state.svelte')
+    expect(getSizeFilter()).toBe('gte')
+    expect(getSizeValue()).toBe('100')
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('R3 U5: clicking a Modified preset while `any` auto-promotes the comparator to `after`', async () => {
+    clearSearchState()
+    const { target, cleanup } = mountChips(baseProps({ dateFilter: 'any' }))
+    await tick()
+    const dateChip = findChip(target, 'Modified')
+    dateChip?.click()
+    await tick()
+    const valueCells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
+    const today = [...valueCells].find((b) => /^today/.test(b.textContent?.trim() ?? ''))
+    expect(today).not.toBeUndefined()
+    today?.click()
+    await tick()
+    const { getDateFilter, getDateValue } = await import('./search-state.svelte')
+    expect(getDateFilter()).toBe('after')
+    // dateValue is now an ISO date matching "today"; we just check non-empty.
+    expect(getDateValue()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('R3 B5: Modified popover with a preset selected does NOT also light up Custom', async () => {
+    clearSearchState()
+    setDateFilter('after')
+    // Mimic clicking "today" → dateValue is today's ISO. This is the bug:
+    // round-2 code left `dateIsCustomLower` true from a prior interaction.
+    const { resolveDatePreset } = await import('./filter-popover-helpers')
+    const today = resolveDatePreset('today')
+    setDateValue(today ?? '2026-05-22')
+    const { target, cleanup } = mountChips(baseProps({ dateFilter: 'after', dateValue: today ?? '2026-05-22' }))
+    await tick()
+    const dateChip = findChip(target, 'Modified')
+    dateChip?.click()
+    await tick()
+    const cells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
+    const selected = [...cells].filter((b) => b.classList.contains('is-selected'))
+    // Exactly one selected cell. Without the fix, both the matching preset
+    // and the Custom cell would carry `is-selected`.
+    expect(selected.length).toBe(1)
+    const customCell = [...cells].find((b) => b.classList.contains('list-cell-custom'))
+    expect(customCell?.classList.contains('is-selected')).toBe(false)
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('R3 U3: Size Custom cell holds the input inline (not below) so one click focuses it', async () => {
+    clearSearchState()
+    setSizeFilter('gte')
+    setSizeValue('')
+    const { target, cleanup } = mountChips(baseProps({ sizeFilter: 'gte', sizeValue: '' }))
+    await tick()
+    const sizeChip = findChip(target, 'Size')
+    sizeChip?.click()
+    await tick()
+    // Click the Custom cell.
+    const cells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
+    const customCell = [...cells].find((b) => b.classList.contains('list-cell-custom'))
+    expect(customCell).not.toBeUndefined()
+    customCell?.click()
+    await tick()
+    // The input now lives INSIDE the same cell, not as a sibling below it.
+    const innerInput = customCell?.querySelector<HTMLInputElement>('input[type="number"]')
+    expect(innerInput).not.toBeNull()
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('R3 U4: Modified popover preset labels include the "0:00" suffix and a "1st of" month label', async () => {
+    clearSearchState()
+    setDateFilter('after')
+    const { target, cleanup } = mountChips(baseProps({ dateFilter: 'after' }))
+    await tick()
+    const dateChip = findChip(target, 'Modified')
+    dateChip?.click()
+    await tick()
+    const cells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
+    const labels = [...cells].map((c) => c.textContent?.trim() ?? '')
+    // First two: today / yesterday.
+    expect(labels[0]).toMatch(/^today 0:00$/)
+    expect(labels[1]).toMatch(/^yesterday 0:00$/)
+    // Next two: this / last weekday (Monday on Monday-start locales, Sunday
+    // on US locales). The exact weekday is locale-dependent, so we just pin
+    // the shape.
+    expect(labels[2]).toMatch(/^this \w+ 0:00$/)
+    expect(labels[3]).toMatch(/^last \w+ 0:00$/)
+    // Next: "1st of <Month> 0:00" (current month, no year) and
+    // "1st of <Month>, <Year>, 0:00" (last month, with year).
+    expect(labels[4]).toMatch(/^1st of \w+ 0:00$/)
+    expect(labels[5]).toMatch(/^1st of \w+, \d{4}, 0:00$/)
+    // The custom cell label (in lowercase, last in the column).
+    expect(labels.some((l) => /^custom…$/.test(l))).toBe(true)
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it("D10: Size popover unit cell reads 'byte' when the selected value is exactly '1'", async () => {
+    const { target, cleanup } = mountChips(baseProps({ sizeFilter: 'gte', sizeValue: '1', sizeUnit: 'B' }))
+    await tick()
+    const sizeChip = findChip(target, 'Size')
+    sizeChip?.click()
+    await tick()
+    const grid = document.querySelector('.list-grid')
+    const firstUnitCell = grid?.querySelector('.list-col:nth-child(3) .list-cell')
+    expect(firstUnitCell?.textContent?.trim()).toBe('byte')
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it("D10: Size popover unit cell reads 'bytes' for values other than 1", async () => {
+    const { target, cleanup } = mountChips(baseProps({ sizeFilter: 'gte', sizeValue: '5', sizeUnit: 'B' }))
+    await tick()
+    const sizeChip = findChip(target, 'Size')
+    sizeChip?.click()
+    await tick()
+    const grid = document.querySelector('.list-grid')
+    const firstUnitCell = grid?.querySelector('.list-col:nth-child(3) .list-cell')
+    expect(firstUnitCell?.textContent?.trim()).toBe('bytes')
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('D11: Modified popover renders comparator + preset columns; adds upper-bound col on `between`', async () => {
+    const { target, cleanup } = mountChips(baseProps({ dateFilter: 'between' }))
+    await tick()
+    const dateChip = findChip(target, 'Modified')
+    dateChip?.click()
+    await tick()
+    const grid = document.querySelector('.list-grid')
+    expect(grid).not.toBeNull()
+    const cols = grid?.querySelectorAll('.list-col')
+    expect(cols?.length).toBe(3) // comparator + lower preset + upper preset
+    // No unit column on Modified.
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('D12: Use current folder is disabled with tooltip when searchableFolder.disabled is true', async () => {
+    const onSetScope = vi.fn()
+    const { target, cleanup } = mountChips(
+      baseProps({
+        searchableFolder: {
+          path: null,
+          disabled: true,
+          disabledReason: "Current folder is search results, which isn't searchable. Open a real folder first.",
+        },
+        onSetScope,
+      }),
+    )
+    await tick()
+    const scopeChip = findChip(target, 'Search in')
+    scopeChip?.click()
+    await tick()
+    const buttons = document.querySelectorAll<HTMLButtonElement>('.footer-button')
+    expect(buttons[0].disabled).toBe(true)
+    buttons[0].click()
+    // Disabled button doesn't fire onclick in real DOM; ensure we didn't reach the setter.
+    expect(onSetScope).not.toHaveBeenCalled()
+    cleanup()
+    document.querySelectorAll('.filter-chip-popover').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  it('D12: Use current folder uses the fallback path when on a snapshot pane with history', async () => {
+    const onSetScope = vi.fn()
+    const { target, cleanup } = mountChips(
+      baseProps({
+        // The dialog's parent passes the most-recent real-folder history path here.
+        searchableFolder: { path: '/Users/me/projects', disabled: false, disabledReason: '' },
+        onSetScope,
+      }),
+    )
+    await tick()
+    const scopeChip = findChip(target, 'Search in')
+    scopeChip?.click()
+    await tick()
+    const buttons = document.querySelectorAll<HTMLButtonElement>('.footer-button')
+    expect(buttons[0].disabled).toBe(false)
+    buttons[0].click()
+    expect(onSetScope).toHaveBeenCalledWith('/Users/me/projects')
     cleanup()
     document.querySelectorAll('.filter-chip-popover').forEach((el) => {
       el.remove()

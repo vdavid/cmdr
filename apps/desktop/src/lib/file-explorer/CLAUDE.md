@@ -182,6 +182,17 @@ Navigation:
   the underlying path. ⌘[ returns to the snapshot view; the snapshot's still pinned by the history entry, so the view
   re-renders from memory with no re-query.
 
+R4 cross-volume bug fix (`pane/snapshot-pane-navigation.ts::isCrossVolumeNavigation`): when the user activates a real
+folder from a snapshot pane (or the search dialog's "Go to file" exit lands on a real path while the active pane is
+still on the snapshot volume), the navigation MUST route through the volume-change machinery. Two call sites:
+`FilePane.handleNavigate` (Enter / double-click on a row) calls `resolvePathVolume` and then `onVolumeChange`;
+`DualPaneExplorer.navigateToPath` (the dialog's exit + MCP `nav_to_path`) does the same via the internal
+`handleVolumeChange`. Without this, the pane ends up with `volumeId === 'search-results'` while `path` points at a real
+filesystem location, and `SearchResultsView` shows "Search results no longer available" (the snapshot-id extractor
+returns null because the path doesn't start with `search-results://`). The fresh-logs symptom was
+`read_directory_with_progress: …, volume_id=search-results, path=/Library/…` followed by
+`Dropping stale onPathChange on search-results pane: /Library/…`.
+
 DualPaneExplorer extensions:
 
 - `applyPathChange` extends its virtual-volume branch from `currentVolumeId === 'network'` to also accept
@@ -198,12 +209,48 @@ FilePane suppresses the trailing path segments entirely for search-results panes
 
 Source-side operations (M8d): selection works in the snapshot pane (Space, Insert, Shift+click range, Cmd+click toggle,
 Cmd+A / Cmd+Shift+A). `effectiveTotalCount` returns the snapshot's entry count so range selection spans the result set.
-Cmd+C / Cmd+X call the paths-by-value clipboard IPCs (`copy_paths_to_clipboard` / `cut_paths_to_clipboard`) instead of
-the listing-id-keyed family. F5 / F6 (the unified transfer dialog) detect `volumeId === 'search-results'` and call
-`transfer-operations::buildTransferPropsFromSnapshot` with paths resolved from `snapshot-store::resolveSnapshotPaths`;
-the existing `copy_files` / `move_files` IPCs already accept paths-by-value, so no IPC change was needed for the
-transfer path. Drag-out uses the new `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
-`start_drag_paths`. Post-move snapshot cleanup is the M8c hook in `dialog-state::handleTransferComplete`.
+
+Round 2 P-series keyboard contract: `FilePane.handleSearchResultsKeyDown` routes through the pure
+`pane/search-results-keys.ts::computeSearchPaneKeyAction` helper, which translates each keypress into an action enum
+(`move-cursor`, `open-cursor`, `toggle-selection-at-cursor`, `toggle-selection-and-advance`, `view-file`, `edit-file`,
+`noop`). Splitting dispatch from side effects keeps the keyboard contract unit-testable without spinning up the whole
+pane. Covered: PgUp / PgDn (visible-page step), Home / End, Shift+Up / Shift+Down (extends selection via the same
+toggle-and-fill helper the regular pane uses), Space (toggle), Insert (toggle + advance), F3 (view), F4 (edit). Left /
+Right return `noop` (no parent-folder semantics in a flat snapshot; the caller still calls `preventDefault` so the
+regular full-pane handler can't jump to first / last row underneath). Cmd+A flows through the unified command dispatch
+in `command-dispatch.ts` as before.
+
+Round 2 P6 fix: `hasParent` now `false` for `search-results` panes. Previously the path comparison
+`currentPath !== effectiveVolumeRoot` was true (a `search-results://sr-N` URL never matches a real volume root), so
+`selection.selectAll(hasParent=true, ...)` skipped index 0. Setting `hasParent = false` for snapshot panes restores the
+off-by-one and keeps `..` row handling untouched for real panes.
+
+R3 T1: the round-2 fix was correct but had no test. The derivation now lives in `pane/has-parent.ts` as
+`computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })` and is pinned by
+`pane/has-parent.test.ts`, which also covers the integration with `selection.selectAll` (snapshot pane → all 5 indices
+selected; non-snapshot pane with hasParent → indices 1..4, skipping the `..` row at 0).
+
+R3 B6: the search-results breadcrumb shape changed. The volume selector reads the static "Search results" label (set by
+`VolumeBreadcrumb.svelte::currentVolume`) and `FilePane.svelte::breadcrumbDisplayPath` renders the snapshot's friendly
+label (`*.svelte`, the AI title, ...) as the path. The `breadcrumbSegments` derived produces a single-segment list for
+search-results panes so a label containing `/` (regex mode like `/foo\/bar/`) doesn't get broken into path-style
+segments. Round 2 had these inverted (label in the volume slot, empty path).
+
+Round 2 P8 / P9 / P10 (context-menu wiring):
+
+- `DualPaneExplorer.getFileAndPathUnderCursor()` now prefers the pane-reported `getPathUnderCursor()` over the round-1
+  `${currentPath}/${filename}` concatenation. Without this fix, `file.showInFinder` / `file.copyPath` / `file.edit` on a
+  snapshot pane built a `search-results://sr-N/<name>` path that downstream IPCs couldn't act on.
+- `SearchResultsView.svelte::onContextMenu` now hands the Rust menu builder the path's basename, not the adapted entry's
+  `name` (which is the friendly full path like `~/Library/.../test.md`). Without this, the menu label read
+  `Copy ~/Library/.../test.md` instead of `Copy test.md`. The action itself was already correct because
+  `entryUnderCursor.name` on a snapshot pane mirrors the raw `SearchResultEntry.name` (a basename). Cmd+C / Cmd+X call
+  the paths-by-value clipboard IPCs (`copy_paths_to_clipboard` / `cut_paths_to_clipboard`) instead of the
+  listing-id-keyed family. F5 / F6 (the unified transfer dialog) detect `volumeId === 'search-results'` and call
+  `transfer-operations::buildTransferPropsFromSnapshot` with paths resolved from `snapshot-store::resolveSnapshotPaths`;
+  the existing `copy_files` / `move_files` IPCs already accept paths-by-value, so no IPC change was needed for the
+  transfer path. Drag-out uses the new `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
+  `start_drag_paths`. Post-move snapshot cleanup is the M8c hook in `dialog-state::handleTransferComplete`.
 
 For the dialog-side wiring see [`apps/desktop/src/lib/search/CLAUDE.md`](../../search/CLAUDE.md).
 

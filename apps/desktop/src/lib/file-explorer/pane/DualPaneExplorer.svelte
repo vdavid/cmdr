@@ -3,6 +3,7 @@
     import { pluralize } from '$lib/utils/pluralize'
     import FilePane from './FilePane.svelte'
     import type { FilePaneAPI } from './types'
+    import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
@@ -51,6 +52,7 @@
     import { resolveValidPath } from '../navigation/path-resolution'
     import { getSnapshot, resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
     import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
+    import { resolveSearchableFolder } from '$lib/search/searchable-folder'
 
     import {
         createHistory,
@@ -2293,14 +2295,24 @@
 
     /**
      * Get the path and filename of the file under the cursor in the focused pane.
+     *
+     * For the search-results virtual pane the underlying entries carry their own absolute
+     * `path`, and `currentPath` is the opaque `search-results://<id>` URL — concatenating
+     * the two would produce `search-results://sr-1/test.md`, which downstream commands
+     * (`showInFinder`, `openInEditor`, `copyToClipboard`) can't act on. Round-2 P8 / P9.
+     * We prefer the pane-reported path under the cursor when present and fall back to the
+     * legacy `${currentPath}/${filename}` form for regular panes.
      */
     export function getFileAndPathUnderCursor(): { path: string; filename: string } | null {
         const paneRef = getPaneRef(focusedPane)
-        const currentPath = getPanePath(focusedPane)
         const filename = paneRef?.getFilenameUnderCursor()
         if (!filename || filename === '..') return null
-        const path = `${currentPath}/${filename}`
-        return { path, filename }
+        const cursorPath = paneRef?.getPathUnderCursor()
+        if (cursorPath) {
+            return { path: cursorPath, filename }
+        }
+        const currentPath = getPanePath(focusedPane)
+        return { path: `${currentPath}/${filename}`, filename }
     }
 
     /**
@@ -2396,6 +2408,26 @@
     /** Returns the current directory path of the focused pane. */
     export function getFocusedPanePath(): string {
         return getPanePath(focusedPane)
+    }
+
+    /**
+     * Returns the "current folder" the Search dialog's `Search in → Use current folder`
+     * action should act on. Round-2 D12: when the focused pane is a `search-results://`
+     * snapshot, walks back through history for the most recent real folder; when none is
+     * available, surfaces a disabled state with a tooltip. See
+     * `lib/search/searchable-folder.ts` for the pure helper this delegates to.
+     */
+    // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte via explorerRef
+    export function getFocusedPaneSearchableFolder(): {
+        path: string | null
+        disabled: boolean
+        disabledReason: string
+    } {
+        const history = getPaneHistory(focusedPane)
+        return resolveSearchableFolder({
+            currentPath: getPanePath(focusedPane),
+            history: history.stack.map((e) => e.path),
+        })
     }
 
     /** Volume id of the focused pane's active tab. Used by Quick Look's IPC gate. */
@@ -2569,6 +2601,30 @@
 
         if (volumeId === 'network') {
             return `Pane is on the ${volumeName ?? volumeId} volume. Use select_volume to switch to a local volume first.`
+        }
+
+        // R4: when the pane is on the snapshot volume and the caller asks us to navigate
+        // to a real path (the search dialog's "Go to file" exit path is the common
+        // case: `+page.svelte::handleSearchNavigate` calls us with the file's parent
+        // directory). Resolve the real volume and route through `handleVolumeChange`
+        // so the pane reconfigures BEFORE it tries to load a real path. Without this,
+        // the FilePane would loadDirectory the real path while volumeId stays as
+        // `search-results`, leaving `SearchResultsView` rendering "Search results no
+        // longer available" against a path that isn't a snapshot URL.
+        if (isCrossVolumeNavigation(volumeId, path)) {
+            return (async () => {
+                try {
+                    const result = await resolvePathVolume(path)
+                    const volume = result.volume
+                    if (!volume) {
+                        log.warn(`navigateToPath: no volume resolved for ${path}; cannot leave snapshot pane`)
+                        return
+                    }
+                    handleVolumeChange(pane, volume.id, volume.path, path)
+                } catch (err) {
+                    log.error(`navigateToPath: resolvePathVolume failed for ${path}: ${String(err)}`)
+                }
+            })()
         }
 
         const mtpError = validateMtpNavigation(path, volumeId, volumeName)

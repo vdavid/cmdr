@@ -78,6 +78,121 @@ There is **no `aiPrompt` state and no `namePattern` state**. M2 deleted both. An
 `namePattern`, the new code reads `query`. Anywhere the old code branched on `patternType`, the new code branches on
 `mode` (with the mapping `regex => regex`, everything else => glob).
 
+## Round 3 polish (R3)
+
+The round 3 brief drove a handful of UX fixes on top of round 2:
+
+- **B1**: `SearchBar.svelte` run button used to lead with a corner-down-left icon AND surface the shortcut as a suffix,
+  producing `⏎Search⏎`. Dropped the icon; gap between "Search" and `⏎` is now `--spacing-xs` to match the other shortcut
+  suffixes.
+- **B2**: `search-state.svelte.ts::recordAiTranslation` now overwrites the matching hand-typed buffer
+  (`handTyped.filename` for a glob, `handTyped.regex` for a regex) so a fresh AI run clobbers the user's earlier
+  hand-typed pattern in the same kind. Round 2 only loaded the AI pattern lazily via `switchMode`, which left stale
+  hand-typed values behind.
+- **B3**: `filter-chip-state.ts::deriveSizeChip` accepts a `FileSizeFormat` argument; the chip follows the popover's
+  `kB`/`KB` mapping instead of always printing the raw enum value.
+- **B4**: `path-pills-layout.ts::scheduleStableWidthMeasure` runs a follow-up re-measure on the next animation frame and
+  again ~80ms later. Catches the CSS grid race where `el.clientWidth` reads stale before the parent track settles, which
+  used to cause "render full path, then collapse to ellipsis".
+- **B5**: `SearchFilterChips.svelte` now keeps `dateIsCustomLower` / `dateIsCustomUpper` in sync via an `$effect` that
+  flips them OFF when `dateValue` matches a preset (mirrors the size flow). The Modified popover never shows both a
+  preset AND Custom as selected.
+- **B6**: `VolumeBreadcrumb.svelte` reports the static "Search results" name for the `search-results` volume;
+  `FilePane.svelte::breadcrumbDisplayPath` renders the snapshot label (`*.svelte`, the AI title, etc.) as the path.
+  Round 2 had these inverted.
+- **U1**: `RecentSearchesFooter.svelte` + `recent-chips-layout.ts` switch the footer chip strip to a greedy-fit layout:
+  leading "Recent searches:" label and trailing "All searches… ⌘H" are always rendered; the middle slot packs as many
+  chips as fit, dropping the rest silently. No horizontal scrolling, no ellipsis chip.
+- **U2**: each chip's tooltip now leads with the full query text so a CSS-ellipsis-truncated chip stays readable on
+  hover.
+- **U3**: Size > Custom input lives INSIDE the Custom cell (one click selects + focuses), not as a sibling below the
+  cell.
+- **U4**: Modified presets are dynamic: `today 0:00`, `yesterday 0:00`, `this Monday 0:00` (or `this Sunday 0:00` per
+  `Intl.Locale(navigator.language).weekInfo?.firstDay`), `last Monday 0:00`, `1st of May 0:00` (current month),
+  `1st of April, 2026, 0:00` (last month, always with year), `1st of January, 2026, 0:00` (year start, OMITTED when
+  current month or last month is January). Implementation: `filter-popover-helpers.ts::buildDatePresets`.
+- **U5**: value + unit cells in the Size and Modified popovers stay clickable while comparator = `any`; they render with
+  `.is-disabled-look` (dimmed) and clicking auto-promotes the comparator to `gte` / `after` plus applies the clicked
+  value.
+- **U6**: "Hide system folders" → "Hide boring folders"; the tooltip lists ALL excluded directory names (one per line,
+  mono font), no "+30 more" truncation.
+- **U7**: path column font bumped from `--font-size-xs` to `--font-size-sm` (matching the filename column); row vertical
+  padding cut from `--spacing-xs` to `--spacing-xxs` so the row height stays the same.
+- **U8**: `+page.svelte::handleOpenSearchInPane` calls `explorerRef.refocus()` after opening the snapshot so the user
+  can immediately navigate/select in the pane without an extra click.
+- **T1**: `pane/has-parent.ts` extracts the `hasParent` derivation that round 2 added inline (the P6 fix) and
+  `pane/has-parent.test.ts` pins the regression: `selectAll` in a snapshot pane covers index 0, not 1.
+
+## Round 2 grid-style filter popovers (D10 / D11)
+
+The Size and Modified popovers are rendered as a multi-column list selector instead of the old `<select>` + number-input
+chain. Tested via `filter-popover-helpers.test.ts` (pure helpers) and `SearchFilterChips.svelte.test.ts` (grid
+rendering + cell semantics).
+
+**Size popover** (`SearchFilterChips.svelte`):
+
+- Col 1: `any`, `≥`, `≤`, `between` (one selected at a time).
+- Col 2: `0`, `1`, `5`, `10`, `20`, `50`, `100`, `200`, `500`, `Custom…`. Disabled when col 1 = `any`. Selecting
+  `Custom…` reveals an inline `<input type="number">`.
+- Col 3: unit. The "byte(s)" cell label flips based on the selected value (`'1'` → "byte", else "bytes"). The "kB/KB"
+  cell follows `appearance.fileSizeFormat` (SI → `kB`, binary → `KB`). `MB` and `GB` are constant. Disabled when col 1 =
+  `any`.
+- When col 1 = `between`: cols 4 + 5 mirror cols 2 + 3 for the upper bound.
+
+**Modified popover** (same component):
+
+- Col 1: `any`, `after`, `before`, `between`.
+- Col 2: presets `today`, `yesterday`, `this week`, `last week`, `this month`, `last month`, `this year`, `Custom…`
+  (Custom reveals `<input type="date">`). Resolved by `resolveDatePreset(key)` in `filter-popover-helpers.ts` into a
+  YYYY-MM-DD string.
+- When col 1 = `between`: col 3 mirrors col 2 for the upper bound. No unit column.
+
+**Cells are buttons**, not radios; they carry `role="radio"` plus `aria-checked` so AT users read the cell set as a
+radio group while the click target stays generous. Disabled cells get `disabled={true}` rather than `aria-disabled`, so
+the keyboard skip and the mouse not-allowed cursor are both correct without extra handling.
+
+**Shortcut openers** (`SearchFilterChips.svelte::handleDialogPopoverOpener`):
+
+- `⌥S` opens the Size popover.
+- `⌥M` opens the Modified popover.
+- `⌥I` opens the Search-in popover.
+
+On macOS the Option key remaps `event.key` to typographic glyphs (Option+S → `ß`, Option+M → `µ`), so `altLetter()`
+matches on `event.code` (`KeyS`, `KeyM`, …) first and falls back to `event.key` for synthesized test events. Same trick
+lives in `SearchDialog.svelte::matchKey` for the mode-chip ⌥A / ⌥F / ⌥R shortcuts.
+
+**Gotcha: `parseSizeToBytes('0', unit)` is now 0, not `undefined`.** Round 1 returned undefined for `0`, which silently
+dropped a `0`-byte preset. The list-style grid lets the user explicitly pick 0 as a lower or upper bound, so the helper
+now honors it.
+
+**Gotcha: Size unit is `'B' | 'KB' | 'MB' | 'GB'`.** Round 1 had no byte unit; round 2 adds it for the "byte(s)" cell.
+The AI translator's `bytesToDisplaySize` still produces `KB | MB | GB` (it never recommends bytes); the user can still
+pick "bytes" from the unit column manually.
+
+## Round 2 D12: "Use current folder" smart fallback
+
+When the focused pane's path starts with `search-results://`, naively reusing it as the scope seed produces an
+unsearchable `search-results://sr-N` URL. `lib/search/searchable-folder.ts` walks the pane's history backward for the
+most recent non-snapshot path; if none is reachable, the dialog surfaces a `disabled: true` result with the canonical
+tooltip ("Current folder is search results, which isn't searchable. Open a real folder first.").
+
+The plumbing:
+
+- `DualPaneExplorer.svelte` exposes `getFocusedPaneSearchableFolder()`.
+- `+page.svelte` calls it once per dialog mount and passes the result as the `searchableFolder` prop.
+- `SearchFilterChips.svelte` renders the "Use current folder" footer button disabled (with tooltip) when
+  `searchableFolder.disabled === true`; otherwise it uses `searchableFolder.path`.
+- `⌥C` inside the popover honors the same fallback so the keyboard shortcut never seeds a snapshot URL into the scope.
+
+The pure helper (`resolveSearchableFolder`) is unit-tested in `searchable-folder.test.ts`.
+
+## Round 2 R2: PathPills measurement
+
+The fitting algorithm now lives in `path-pills-layout.ts::computePathPillsLayout` (pure, deterministic, unit-tested with
+mocked widths). The chrome budget per pill dropped from 16 px to 4 px (matching the real CSS padding) so the strip no
+longer collapses when there's free space. The container width comes from a `ResizeObserver` on the strip element, and
+`createPretextMeasure` provides pixel-accurate text widths.
+
 ## Keyboard shortcuts (in-dialog, hard-coded)
 
 Final round-2 allocation. ⏎ has dynamic ownership (see D8 below).
@@ -86,7 +201,8 @@ Final round-2 allocation. ⏎ has dynamic ownership (see D8 below).
 | --------- | ----------------------------------------------------------------- |
 | `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)   |
 | `⌥⏎`      | Show all results in the main window (replaces round-1's ⌥A)       |
-| `⌘Enter`  | Run AI search regardless of active mode (only when AI is enabled) |
+| `⌘Enter`  | No-op (R4). Bare Enter is the only path that runs a search or opens the cursor row. |
+| `⇧Enter`  | No-op (R4). Same rule as ⌘Enter.                                  |
 | `⌘N`      | Clear all dialog state ("new search")                             |
 | `⌘H`      | Toggle the recent-searches popover (fuzzy over the full history)  |
 | `⌘1`      | Switch to AI (AI on) or Filename (AI off)                         |
@@ -520,6 +636,16 @@ state.
 close) doesn't match the user's mental model of "the search I was working on." Wiping state on unmount turned every
 close + reopen into a lost-work moment. The only sanctioned reset path is `⌘N`. If you find yourself wanting to wipe
 state from a lifecycle hook, you probably want a user-initiated action instead.
+
+**Gotcha**: status bar stays empty whenever the content area is showing a state message (Searching, No files match,
+Loading drive index). The rule from David's R2/R4 feedback: content is the source of truth; duplicating the same string
+in the status bar reads as broken. When you add a new content-area state in `SearchResults.svelte`, make sure
+`getStatusText()` returns `''` for that state.
+
+**Gotcha**: ⌘⏎ and ⇧⏎ are explicit no-ops in the dialog (R4). The earlier "⌘Enter runs AI" shortcut is gone; bare Enter
+is the only key that runs a search or opens the cursor row (dispatched via `enterAction` per D8). The dialog's
+`handleModifierShortcuts` swallows both modifier combinations with `preventDefault` so the bare-Enter handler never sees
+a modified Enter.
 
 **Gotcha**: The AI's translation overwrites `query` and `mode`. **Why**: We want the bar to show what was searched, not
 the natural-language prompt. The original prompt is preserved separately in `lastAiPrompt` (set by `executeAiSearch`

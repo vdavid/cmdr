@@ -616,6 +616,15 @@
     function handleOpenSearchInPane(snapshotId: string) {
         const pane = explorerRef?.getFocusedPane() ?? 'left'
         explorerRef?.openSearchSnapshotInPane(snapshotId, pane)
+        // R3 U8: pull keyboard focus back to the pane so the user can
+        // immediately navigate / select / press F4 etc. without an extra
+        // click. The dialog closes itself, but the OS's focus-restore lands
+        // on the previously-focused element (often the dialog overlay
+        // wrapper), not the pane. Calling `refocus()` puts the cursor where
+        // the user expects it: on the pane that just got the snapshot.
+        void Promise.resolve().then(() => {
+            explorerRef?.refocus()
+        })
     }
 
     function handleFnView() {
@@ -719,7 +728,11 @@
             <SearchDialog
                 onNavigate={handleSearchNavigate}
                 onClose={handleSearchDialogClose}
-                currentFolderPath={explorerRef?.getFocusedPanePath() ?? '/'}
+                searchableFolder={explorerRef?.getFocusedPaneSearchableFolder() ?? {
+                    path: explorerRef?.getFocusedPanePath() ?? '/',
+                    disabled: false,
+                    disabledReason: '',
+                }}
                 onShowAllInMainWindow={handleOpenSearchInPane}
             />
         {/if}

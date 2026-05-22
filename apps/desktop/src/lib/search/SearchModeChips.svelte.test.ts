@@ -50,10 +50,13 @@ describe('SearchModeChips', () => {
     await tick()
     expect(chips).toHaveLength(4)
     const labels = chips.map((c) => c.textContent?.trim())
-    expect(labels[0]).toMatch(/AI\s*Ask anything/)
-    expect(labels[1]).toBe('Filename')
+    // D13: AI / Filename / Regex carry an inline ⌥-shortcut hint; Content doesn't
+    // (decision: no hostile-disabled shortcut). Match on the leading label so
+    // the test pins the order without coupling to the hint text.
+    expect(labels[0]).toMatch(/AI\s*Ask anything\s*⌥A/)
+    expect(labels[1]).toMatch(/^Filename\s*⌥F$/)
     expect(labels[2]).toBe('Content')
-    expect(labels[3]).toBe('Regex')
+    expect(labels[3]).toMatch(/^Regex\s*⌥R$/)
     cleanup()
   })
 
@@ -62,9 +65,9 @@ describe('SearchModeChips', () => {
     await tick()
     expect(chips).toHaveLength(3)
     const labels = chips.map((c) => c.textContent?.trim())
-    expect(labels[0]).toBe('Filename')
+    expect(labels[0]).toMatch(/^Filename\s*⌥F$/)
     expect(labels[1]).toBe('Content')
-    expect(labels[2]).toBe('Regex')
+    expect(labels[2]).toMatch(/^Regex\s*⌥R$/)
     cleanup()
   })
 
@@ -147,6 +150,29 @@ describe('SearchModeChips', () => {
     await tick()
     expect(chips[3].getAttribute('tabindex')).toBe('0')
     expect(chips[1].getAttribute('tabindex')).toBe('-1')
+    cleanup()
+  })
+
+  it('D13: AI / Filename / Regex chips render their inline ⌥-shortcut hint', async () => {
+    const { chips, cleanup } = setup({ aiEnabled: true })
+    await tick()
+    const hints = chips.map((c) => c.querySelector('.chip-hint')?.textContent ?? null)
+    expect(hints[0]).toBe('⌥A') // AI
+    expect(hints[1]).toBe('⌥F') // Filename
+    expect(hints[2]).toBeNull() // Content (no shortcut by design)
+    expect(hints[3]).toBe('⌥R') // Regex
+    cleanup()
+  })
+
+  it('D13: AI chip drops the ⌥A hint when AI is disabled (chip not rendered)', async () => {
+    const { chips, cleanup } = setup({ aiEnabled: false })
+    await tick()
+    // Three chips: Filename, Content, Regex.
+    expect(chips).toHaveLength(3)
+    const hints = chips.map((c) => c.querySelector('.chip-hint')?.textContent ?? null)
+    expect(hints[0]).toBe('⌥F')
+    expect(hints[1]).toBeNull()
+    expect(hints[2]).toBe('⌥R')
     cleanup()
   })
 })

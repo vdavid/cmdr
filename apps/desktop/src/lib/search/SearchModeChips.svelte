@@ -41,17 +41,29 @@
         ariaLabel: string
     }
 
-    const chips = $derived.by<Chip[]>(() => {
-        const list: Chip[] = []
+    /**
+     * Per-mode keyboard hint surfaced inline on the chip label. Round-2 D13: the global
+     * dialog-level ⌥A / ⌥F / ⌥R shortcuts deserve a visible discoverable hint, consistent
+     * with the rest of the dialog (`Search ⏎`, `⌥⏎`, recent searches `⌘H`). The disabled
+     * Content chip has NO shortcut (decision: hostile-disabled controls are worse than no
+     * shortcut), so its `hint` stays absent.
+     */
+    interface ChipWithHint extends Chip {
+        hint?: string
+    }
+
+    const chips = $derived.by<ChipWithHint[]>(() => {
+        const list: ChipWithHint[] = []
         if (aiEnabled) {
             list.push({
                 key: 'ai',
                 label: 'Ask anything',
                 badge: 'AI',
-                ariaLabel: 'AI mode: ask anything',
+                hint: '⌥A',
+                ariaLabel: 'AI mode: ask anything (Alt+A)',
             })
         }
-        list.push({ key: 'filename', label: 'Filename', ariaLabel: 'Filename mode' })
+        list.push({ key: 'filename', label: 'Filename', hint: '⌥F', ariaLabel: 'Filename mode (Alt+F)' })
         list.push({
             key: 'content',
             label: 'Content',
@@ -59,7 +71,7 @@
             tooltipText: 'Coming soon: full-text search inside files',
             ariaLabel: 'Content mode (coming soon)',
         })
-        list.push({ key: 'regex', label: 'Regex', ariaLabel: 'Regex mode' })
+        list.push({ key: 'regex', label: 'Regex', hint: '⌥R', ariaLabel: 'Regex mode (Alt+R)' })
         return list
     })
 
@@ -141,6 +153,9 @@
                 <span class="chip-badge">{chip.badge}</span>
             {/if}
             <span class="chip-label">{chip.label}</span>
+            {#if chip.hint}
+                <span class="chip-hint" aria-hidden="true">{chip.hint}</span>
+            {/if}
         </button>
     {/each}
 </div>
@@ -215,5 +230,17 @@
 
     .chip-label {
         line-height: 1;
+    }
+
+    /* D13: inline keyboard-shortcut hint on the chip. Stays quiet in tertiary
+       text so the mode name leads the eye. Matches the recent-searches
+       footer's `⌘H` hint and `Show all in main window ⌥⏎` style. */
+    .chip-hint {
+        margin-left: var(--spacing-xs);
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        line-height: 1;
+        opacity: 0.7;
     }
 </style>

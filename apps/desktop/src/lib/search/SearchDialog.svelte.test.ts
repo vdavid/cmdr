@@ -88,10 +88,11 @@ vi.mock('$lib/icon-cache', () => ({
   getCachedIcon: vi.fn(() => undefined),
 }))
 
-function dispatchKey(target: Element, key: string, meta = false): KeyboardEvent {
+function dispatchKey(target: Element, key: string, meta = false, shift = false): KeyboardEvent {
   const event = new KeyboardEvent('keydown', {
     key,
     metaKey: meta,
+    shiftKey: shift,
     bubbles: true,
     cancelable: true,
   })
@@ -112,7 +113,7 @@ async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: El
     props: {
       onNavigate: () => {},
       onClose: opts.onClose ?? (() => {}),
-      currentFolderPath: '/Users/test',
+      searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       onShowAllInMainWindow: opts.onShowAllInMainWindow,
     },
   })
@@ -231,13 +232,37 @@ describe('SearchDialog mode shortcuts (AI on)', () => {
     cleanup()
   })
 
-  it('⌘Enter triggers AI search regardless of active mode', async () => {
+  // R4: ⌘⏎ and ⇧⏎ are no-ops in the search dialog. Bare Enter is the only path
+  // that runs a search or opens the cursor row. The earlier "⌘Enter triggers AI"
+  // shortcut is gone per David's request.
+  it('R4: ⌘Enter is a no-op (does not run AI even when AI is enabled)', async () => {
     const { overlay, cleanup } = await mountDialog()
     setMode('filename')
     setQuery('large screenshots')
     dispatchKey(overlay, 'Enter', true)
     await tick()
-    expect(translateSearchQueryMock).toHaveBeenCalledWith('large screenshots')
+    expect(translateSearchQueryMock).not.toHaveBeenCalled()
+    expect(searchFilesMock).not.toHaveBeenCalled()
+    cleanup()
+  })
+
+  it('R4: ⇧Enter is a no-op (does not run a search)', async () => {
+    const { overlay, cleanup } = await mountDialog()
+    setMode('filename')
+    setQuery('foo')
+    dispatchKey(overlay, 'Enter', false, true)
+    await tick()
+    expect(searchFilesMock).not.toHaveBeenCalled()
+    cleanup()
+  })
+
+  it('R4: bare Enter still runs the search', async () => {
+    const { overlay, cleanup } = await mountDialog()
+    setMode('filename')
+    setQuery('foo')
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    expect(searchFilesMock).toHaveBeenCalled()
     cleanup()
   })
 })
@@ -652,7 +677,7 @@ describe('SearchDialog M7 path-pill navigation shortcuts', () => {
           navigated.push(path)
         },
         onClose: () => {},
-        currentFolderPath: '/Users/test',
+        searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       },
     })
     await tick()
@@ -705,7 +730,7 @@ describe('SearchDialog M7 path-pill navigation shortcuts', () => {
           navigated.push(p)
         },
         onClose: () => {},
-        currentFolderPath: '/Users/test',
+        searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       },
     })
     await tick()

@@ -164,4 +164,23 @@ describe('SearchResults round 2 states', () => {
     const text = target.querySelector('.no-results-criteria')?.textContent ?? ''
     expect(text.toLowerCase()).toContain('size')
   })
+
+  // R4 status-bar dedup: when the result list area shows "Loading drive index...",
+  // the status bar must NOT also say "Loading index...". David flagged the duplication
+  // and asked that this become the general pattern (content area is the source of truth;
+  // status bar stays empty when it would duplicate).
+  it('R4: status bar is empty while the content shows "Loading drive index..."', async () => {
+    const target = mountWith({
+      isIndexAvailable: true,
+      isIndexReady: false,
+      hasSearched: true,
+      query: '*.jpg',
+    })
+    await tick()
+    // Content must show the loading message (sanity check the precondition).
+    expect(target.textContent ?? '').toContain('Loading drive index')
+    // Status bar must be empty.
+    const status = target.querySelector('.status-bar .status-text')
+    expect(status?.textContent ?? '').toBe('')
+  })
 })

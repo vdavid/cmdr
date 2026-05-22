@@ -104,6 +104,31 @@ describe('SearchBar', () => {
     cleanup()
   })
 
+  // R3 B1: the run button renders "Search ⏎" exactly once, not "⏎Search⏎".
+  // Today the button leads with a corner-down-left icon AND surfaces "⏎" as a
+  // text suffix, so the visible label reads as "⏎Search⏎". This test pins:
+  //   1. There is no leading icon (the corner-down-left SVG is gone).
+  //   2. The "Search" label is followed by exactly one "⏎" hint.
+  //   3. The hint is separated from "Search" with a visible space (rendered via
+  //      a spacing gap on the inline-flex parent, so we just assert the textContent
+  //      reads "Search ⏎" with a space between them).
+  it('R3 B1: renders the run label as "Search ⏎" once, no leading icon', async () => {
+    const { target, cleanup } = mountBar({})
+    await tick()
+    const button = target.querySelector('button.run-button') as HTMLButtonElement | null
+    expect(button).not.toBeNull()
+    // No leading icon. The corner-down-left lucide icon used to live here.
+    const svgs = button?.querySelectorAll('svg') ?? []
+    expect(svgs.length).toBe(0)
+    // Exactly one "⏎" hint inside the button.
+    const enterHints = button?.querySelectorAll('.run-enter-hint') ?? []
+    expect(enterHints.length).toBe(1)
+    // The visible label reads "Search ⏎" (a single space between "Search" and "⏎").
+    const text = button?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+    expect(text).toBe('Search ⏎')
+    cleanup()
+  })
+
   it('shows the "Press Enter to search" hint only when showRunHint is true', async () => {
     const { target, cleanup } = mountBar({ showRunHint: true })
     await tick()

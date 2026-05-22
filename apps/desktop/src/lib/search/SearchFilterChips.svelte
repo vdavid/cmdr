@@ -38,6 +38,18 @@
         clearAiPattern,
     } from './search-state.svelte'
     import type { SizeFilter, SizeUnit, DateFilter } from './search-state.svelte'
+    import {
+        SIZE_PRESETS,
+        byteUnitLabel,
+        kiloByteLabel,
+        isSizeRangeDisabled,
+        showsUpperBound,
+        isDateRangeDisabled,
+        showsDateUpperBound,
+        buildDatePresets,
+        type DynamicDatePreset,
+    } from './filter-popover-helpers'
+    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
 
     type FilterKey = 'size' | 'date' | 'scope'
 
@@ -45,7 +57,21 @@
         caseSensitive: boolean
         scope: string
         excludeSystemDirs: boolean
-        currentFolderPath: string
+        /**
+         * D12: smart "current folder" the Search-in popover's "Use current folder"
+         * button acts on. When the focused pane is a search-results snapshot, this
+         * walks back to the most recent real folder; when none exists, the button
+         * renders disabled with `disabledReason` as its tooltip.
+         *
+         * Replaces the round-1 `currentFolderPath` prop entirely: the dialog's host
+         * already computes the smart fallback (`getFocusedPaneSearchableFolder()`),
+         * and there's no reason to also pass the raw path through.
+         */
+        searchableFolder: {
+            path: string | null
+            disabled: boolean
+            disabledReason: string
+        }
         sizeFilter: SizeFilter
         sizeValue: string
         sizeUnit: SizeUnit
@@ -64,8 +90,6 @@
         /** The AI-produced pattern (separate from the bar; AI bar holds the prompt). */
         aiPattern: string | null
         onInput: (setter: (v: string) => void, search?: boolean) => (e: Event) => void
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T constrains the setter's param type to match the cast
-        onSelect: <T extends string>(setter: (v: T) => void, search?: boolean) => (e: Event) => void
         onToggleCaseSensitive: () => void
         onToggleExcludeSystemDirs: () => void
         onSetScope: (path: string) => void
@@ -82,7 +106,7 @@
         caseSensitive,
         scope,
         excludeSystemDirs,
-        currentFolderPath,
+        searchableFolder,
         sizeFilter,
         sizeValue,
         sizeUnit,
@@ -98,7 +122,6 @@
         query,
         aiPattern,
         onInput,
-        onSelect,
         onToggleCaseSensitive,
         onToggleExcludeSystemDirs,
         onSetScope,
@@ -108,13 +131,230 @@
 
     let openChip = $state<FilterKey | 'add' | null>(null)
 
+    /**
+     * Round 2 D10 grid: the comparator column (col 1) of the Size popover. The
+     * `>=` and `<=` use HTML entities so the rendered cell reads as the math
+     * glyph rather than the ASCII soup.
+     */
+    const SIZE_COMPARATORS: ReadonlyArray<{ value: SizeFilter; label: string }> = [
+        { value: 'any', label: 'any' },
+        { value: 'gte', label: '≥' },
+        { value: 'lte', label: '≤' },
+        { value: 'between', label: 'between' },
+    ]
+
+    /**
+     * Round 2 D11 grid: the comparator column of the Modified popover.
+     */
+    const DATE_COMPARATORS: ReadonlyArray<{ value: DateFilter; label: string }> = [
+        { value: 'any', label: 'any' },
+        { value: 'after', label: 'after' },
+        { value: 'before', label: 'before' },
+        { value: 'between', label: 'between' },
+    ]
+
+    /**
+     * Whether the user has flipped the value column into "Custom…" mode for the
+     * lower / upper bound. The free-form `<input>` only appears while these are
+     * `true`; the inline `setSizeValue('')` zaps the existing preset selection
+     * so the radio-set goes back to "no preset highlighted".
+     */
+    let sizeIsCustomLower = $state(false)
+    let sizeIsCustomUpper = $state(false)
+    let dateIsCustomLower = $state(false)
+    let dateIsCustomUpper = $state(false)
+
+    /**
+     * R3 B5: rebuild the Modified preset list each time the popover renders.
+     * Labels are date-relative ("1st of May 0:00"), so a stale cached list
+     * from yesterday would mislead the user. The dynamic list is cheap to
+     * compute (one Date plus a few format calls); the only reason to memoize
+     * would be benchmarks, which haven't surfaced as a concern.
+     */
+    const datePresets = $derived<DynamicDatePreset[]>(buildDatePresets())
+    /** Set of ISO date strings that match a preset. Used for the custom-isolation rule. */
+    const datePresetSet = $derived(new Set<string>(datePresets.map((p) => p.resolved)))
+
+    /** Re-sync the "custom" flag against an externally-set value (AI mode, MCP prefill). */
+    $effect(() => {
+        // If the dialog or AI lands a value that exactly matches a preset, drop out of custom mode
+        // so the preset row lights up; otherwise stay in custom (the input drives the value).
+        if (sizeValue && !SIZE_PRESETS.includes(sizeValue)) {
+            sizeIsCustomLower = true
+        } else if (sizeValue) {
+            sizeIsCustomLower = false
+        }
+    })
+    $effect(() => {
+        if (sizeValueMax && !SIZE_PRESETS.includes(sizeValueMax)) {
+            sizeIsCustomUpper = true
+        } else if (sizeValueMax) {
+            sizeIsCustomUpper = false
+        }
+    })
+
+    /**
+     * R3 B5: mirror the size effect for the Modified popover. The bug was
+     * that selecting any preset wrote the resolved ISO date into `dateValue`,
+     * which the popover then displayed as both the preset's `is-selected`
+     * cell AND the Custom cell (because `dateIsCustomLower` was set true at
+     * some earlier point and never reset). Selection model now:
+     *   - dateValue matches a preset → dateIsCustomLower = false.
+     *   - dateValue is non-empty and does NOT match any preset → user picked
+     *     Custom (or the AI / history set a custom value) → keep
+     *     dateIsCustomLower = true.
+     *   - dateValue empty → keep whatever the flag was (don't reset on clear).
+     */
+    $effect(() => {
+        if (dateValue && !datePresetSet.has(dateValue)) {
+            dateIsCustomLower = true
+        } else if (dateValue) {
+            dateIsCustomLower = false
+        }
+    })
+    $effect(() => {
+        if (dateValueMax && !datePresetSet.has(dateValueMax)) {
+            dateIsCustomUpper = true
+        } else if (dateValueMax) {
+            dateIsCustomUpper = false
+        }
+    })
+
+    /**
+     * When the user picks a new comparator we clear the value if it's currently empty AND the
+     * comparator demands one. Without this nudge the popover would stay disabled-looking with
+     * `value === ''` until the user clicks a preset. Schedules a search at the end so the chip
+     * label updates immediately.
+     */
+    function onSizeComparatorEdit(): void {
+        scheduleSearch()
+    }
+
+    function onDateComparatorEdit(): void {
+        scheduleSearch()
+    }
+
+    /**
+     * R3 U5: helpers for the "click on disabled cell auto-promotes the
+     * comparator" behaviour. When the user clicks a value in the value
+     * column (or a unit in the unit column) while the comparator is `any`,
+     * promote the comparator (Size → `gte`, Modified → `after`) AND apply
+     * the clicked value. The user can still tweak the comparator before
+     * hitting Enter; we don't fire the search until they explicitly do.
+     *
+     * These helpers are wrappers around the existing setters so the cell
+     * click handlers can stay compact in the template.
+     */
+    function pickSizeValue(value: string): void {
+        if (sizeFilter === 'any') setSizeFilter('gte')
+        setSizeValue(value)
+        scheduleSearch()
+    }
+    function pickSizeUnit(unit: SizeUnit): void {
+        if (sizeFilter === 'any') setSizeFilter('gte')
+        setSizeUnit(unit)
+        scheduleSearch()
+    }
+    function pickSizeCustomLower(): void {
+        if (sizeFilter === 'any') setSizeFilter('gte')
+        sizeIsCustomLower = true
+        setSizeValue('')
+        scheduleSearch()
+    }
+    function pickDateValue(resolved: string): void {
+        if (dateFilter === 'any') setDateFilter('after')
+        setDateValue(resolved)
+        scheduleSearch()
+    }
+    function pickDateValueMax(resolved: string): void {
+        if (dateFilter === 'any') setDateFilter('after')
+        setDateValueMax(resolved)
+        scheduleSearch()
+    }
+    function pickDateCustomLower(): void {
+        if (dateFilter === 'any') setDateFilter('after')
+        dateIsCustomLower = true
+        setDateValue('')
+        scheduleSearch()
+    }
+
+    /**
+     * Match a plain `Alt+<letter>` key (lowercased), with no other modifiers. Centralized to
+     * keep the `svelte:window` keydown handler under the cyclomatic-complexity cap.
+     *
+     * On macOS, Option+<letter> remaps `event.key` to a typographic glyph (Option+S → "ß",
+     * Option+M → "µ"), so we'd miss the shortcut if we only checked `e.key`. `event.code` is
+     * the layout-stable physical-key identifier (always `KeyS`, `KeyM`, etc.) and is the
+     * right thing to match against for these chords. We still check `e.key` as a fallback so
+     * synthesized events from tests (which carry `e.key` but no `e.code`) still work.
+     */
+    function altLetter(e: KeyboardEvent, letter: string): boolean {
+        if (!e.altKey || e.metaKey || e.shiftKey || e.ctrlKey) return false
+        const upper = letter.toUpperCase()
+        if (e.code === `Key${upper}`) return true
+        return e.key === letter || e.key === upper
+    }
+
+    /**
+     * Dialog-wide ⌥S / ⌥M / ⌥I openers. Returns `true` if the key matched. Bail-out is done
+     * by the caller; we just translate keys into popover openings.
+     */
+    function handleDialogPopoverOpener(e: KeyboardEvent): boolean {
+        if (altLetter(e, 's')) {
+            e.preventDefault()
+            openPopover('size')
+            return true
+        }
+        if (altLetter(e, 'm')) {
+            e.preventDefault()
+            openPopover('date')
+            return true
+        }
+        if (altLetter(e, 'i')) {
+            e.preventDefault()
+            openPopover('scope')
+            return true
+        }
+        return false
+    }
+
+    /**
+     * Scope-popover-only ⌥C / ⌥V. Active only while `openChip === 'scope'`. The caller (the
+     * `svelte:window` handler) gates on the open chip; here we only translate keys into
+     * actions. Returns `true` if matched.
+     */
+    function handleScopePopoverShortcut(e: KeyboardEvent): boolean {
+        if (altLetter(e, 'c')) {
+            e.preventDefault()
+            // D12: respect the dialog's smart current-folder fallback so ⌥C does NOT seed an
+            // unsearchable `search-results://...` URL into the scope.
+            if (!searchableFolder.disabled && searchableFolder.path) {
+                onSetScope(searchableFolder.path)
+                scheduleSearch()
+            }
+            return true
+        }
+        if (altLetter(e, 'v')) {
+            e.preventDefault()
+            onSetScope('')
+            scheduleSearch()
+            return true
+        }
+        return false
+    }
+
     let patternChipEl: HTMLButtonElement | undefined = $state()
     let sizeChipEl: HTMLButtonElement | undefined = $state()
     let dateChipEl: HTMLButtonElement | undefined = $state()
     let scopeChipEl: HTMLButtonElement | undefined = $state()
     let addChipEl: HTMLButtonElement | undefined = $state()
 
-    const sizeState = $derived(deriveSizeChip(sizeFilter, sizeValue, sizeUnit, sizeValueMax, sizeUnitMax))
+    // R3 B3: pipe the user's file-size format through so the chip's KB/kB label
+    // matches the popover. Today the popover renders `kB` for SI but the chip
+    // bypassed the setting and always printed `KB`.
+    const sizeState = $derived(
+        deriveSizeChip(sizeFilter, sizeValue, sizeUnit, sizeValueMax, sizeUnitMax, getFileSizeFormat()),
+    )
     const dateState = $derived(deriveDateChip(dateFilter, dateValue, dateValueMax))
     const scopeState = $derived(deriveScopeChip(scope, excludeSystemDirs))
     const patternState = $derived(derivePatternChip({ mode, query, aiPattern }))
@@ -283,7 +523,12 @@
     {/if}
 </div>
 
-<!-- Size popover -->
+<!-- Size popover. Round 2 D10: replaces the old `<select>` triplet with a
+     multi-column list-style grid. Col 1 = comparator (`any` / `>=` / `<=` /
+     `between`). Col 2 = numeric preset (`0` / `1` / `5` / ... / `Custom...`).
+     Col 3 = unit (`bytes` / `KB` / `MB` / `GB`). When col 1 = `between`, cols
+     4 + 5 mirror cols 2 + 3 for the upper bound. Cols 2-5 render disabled when
+     col 1 = `any` (no range to apply). -->
 {#if sizeChipEl}
     <FilterChipPopover
         anchor={sizeChipEl}
@@ -291,72 +536,250 @@
         onClose={closePopover}
         ariaLabel="Size filter options"
     >
-        <div class="popover-section">
-            <label class="popover-label" for="popover-size-filter">Size</label>
-            <div class="popover-row">
-                <select
-                    id="popover-size-filter"
-                    class="popover-select"
-                    value={sizeFilter}
-                    onchange={onSelect<SizeFilter>(setSizeFilter)}
-                    aria-label="Size comparator"
-                >
-                    <option value="any">any</option>
-                    <option value="gte">&ge;</option>
-                    <option value="lte">&le;</option>
-                    <option value="between">between</option>
-                </select>
-                {#if sizeFilter !== 'any'}
-                    <input
-                        type="number"
-                        class="popover-input size-input"
-                        value={sizeValue}
-                        oninput={onInput(setSizeValue)}
-                        aria-label="Minimum size value"
-                        min="0"
-                        step="any"
-                    />
-                    <select
-                        class="popover-select unit-select"
-                        value={sizeUnit}
-                        onchange={onSelect<SizeUnit>(setSizeUnit)}
-                        aria-label="Size unit"
+        <div class="popover-section size-grid-section">
+            <span class="popover-label">Size</span>
+            <div
+                class="list-grid"
+                class:has-upper={showsUpperBound(sizeFilter)}
+                role="group"
+                aria-label="Size filter options"
+            >
+                <!-- Col 1: comparator -->
+                <div class="list-col" role="radiogroup" aria-label="Comparator">
+                    {#each SIZE_COMPARATORS as opt (opt.value)}
+                        <button
+                            type="button"
+                            class="list-cell"
+                            class:is-selected={sizeFilter === opt.value}
+                            role="radio"
+                            aria-checked={sizeFilter === opt.value}
+                            onclick={() => {
+                                setSizeFilter(opt.value)
+                                onSizeComparatorEdit()
+                            }}
+                        >
+                            {opt.label}
+                        </button>
+                    {/each}
+                </div>
+
+                <!-- Col 2: lower-bound value. R3 U5: cells stay clickable when
+                     the comparator is `any`. Clicking promotes the comparator
+                     to `gte` and applies the chosen value. R3 U3: the Custom
+                     <input> renders INSIDE the Custom cell so one click both
+                     selects it AND focuses the input. -->
+                <div class="list-col" role="radiogroup" aria-label="Minimum size value">
+                    {#each SIZE_PRESETS as preset (preset)}
+                        <button
+                            type="button"
+                            class="list-cell"
+                            class:is-selected={sizeValue === preset && !sizeIsCustomLower}
+                            class:is-disabled-look={isSizeRangeDisabled(sizeFilter)}
+                            role="radio"
+                            aria-checked={sizeValue === preset && !sizeIsCustomLower}
+                            onclick={() => {
+                                pickSizeValue(preset)
+                            }}
+                        >
+                            {preset}
+                        </button>
+                    {/each}
+                    <!-- R3 U3 + B5: Custom cell holds the inline number input.
+                         Selected only when the user explicitly clicked Custom
+                         (or the AI / history set a custom value via the
+                         `dateIsCustomLower`-style effect above). -->
+                    <button
+                        type="button"
+                        class="list-cell list-cell-custom"
+                        class:is-selected={sizeIsCustomLower}
+                        class:is-disabled-look={isSizeRangeDisabled(sizeFilter)}
+                        onclick={(e) => {
+                            // Don't re-pick if the click is on the inner input
+                            // (it bubbles up through the button).
+                            if ((e.target as HTMLElement).tagName === 'INPUT') return
+                            pickSizeCustomLower()
+                            // Focus the inner input on the next tick so the
+                            // user can type immediately.
+                            void Promise.resolve().then(() => {
+                                ;(
+                                    e.currentTarget as HTMLElement | null
+                                )?.querySelector<HTMLInputElement>('input')?.focus()
+                            })
+                        }}
                     >
-                        <option value="KB">KB</option>
-                        <option value="MB">MB</option>
-                        <option value="GB">GB</option>
-                    </select>
+                        {#if sizeIsCustomLower}
+                            <input
+                                type="number"
+                                class="popover-input size-input custom-input-inline"
+                                value={sizeValue}
+                                oninput={onInput(setSizeValue)}
+                                onclick={(e) => {
+                                    e.stopPropagation()
+                                }}
+                                aria-label="Custom minimum size value"
+                                min="0"
+                                step="any"
+                                placeholder="custom"
+                            />
+                        {:else}
+                            custom…
+                        {/if}
+                    </button>
+                </div>
+
+                <!-- Col 3: lower-bound unit -->
+                <div class="list-col" role="radiogroup" aria-label="Minimum size unit">
+                    <button
+                        type="button"
+                        class="list-cell"
+                        class:is-selected={sizeUnit === 'B'}
+                        class:is-disabled-look={isSizeRangeDisabled(sizeFilter)}
+                        role="radio"
+                        aria-checked={sizeUnit === 'B'}
+                        onclick={() => {
+                            pickSizeUnit('B')
+                        }}
+                    >
+                        {byteUnitLabel(sizeValue)}
+                    </button>
+                    <button
+                        type="button"
+                        class="list-cell"
+                        class:is-selected={sizeUnit === 'KB'}
+                        class:is-disabled-look={isSizeRangeDisabled(sizeFilter)}
+                        role="radio"
+                        aria-checked={sizeUnit === 'KB'}
+                        onclick={() => {
+                            pickSizeUnit('KB')
+                        }}
+                    >
+                        {kiloByteLabel(getFileSizeFormat())}
+                    </button>
+                    {#each ['MB', 'GB'] as larger (larger)}
+                        <button
+                            type="button"
+                            class="list-cell"
+                            class:is-selected={sizeUnit === larger}
+                            class:is-disabled-look={isSizeRangeDisabled(sizeFilter)}
+                            role="radio"
+                            aria-checked={sizeUnit === larger}
+                            onclick={() => {
+                                pickSizeUnit(larger as SizeUnit)
+                            }}
+                        >
+                            {larger}
+                        </button>
+                    {/each}
+                </div>
+
+                {#if showsUpperBound(sizeFilter)}
+                    <!-- Col 4: upper-bound value. R3 U3: Custom input inline. -->
+                    <div class="list-col" role="radiogroup" aria-label="Maximum size value">
+                        {#each SIZE_PRESETS as preset (preset)}
+                            <button
+                                type="button"
+                                class="list-cell"
+                                class:is-selected={sizeValueMax === preset && !sizeIsCustomUpper}
+                                role="radio"
+                                aria-checked={sizeValueMax === preset && !sizeIsCustomUpper}
+                                onclick={() => {
+                                    setSizeValueMax(preset)
+                                    scheduleSearch()
+                                }}
+                            >
+                                {preset}
+                            </button>
+                        {/each}
+                        <button
+                            type="button"
+                            class="list-cell list-cell-custom"
+                            class:is-selected={sizeIsCustomUpper}
+                            onclick={(e) => {
+                                if ((e.target as HTMLElement).tagName === 'INPUT') return
+                                sizeIsCustomUpper = true
+                                setSizeValueMax('')
+                                scheduleSearch()
+                                void Promise.resolve().then(() => {
+                                    ;(
+                                        e.currentTarget as HTMLElement | null
+                                    )?.querySelector<HTMLInputElement>('input')?.focus()
+                                })
+                            }}
+                        >
+                            {#if sizeIsCustomUpper}
+                                <input
+                                    type="number"
+                                    class="popover-input size-input custom-input-inline"
+                                    value={sizeValueMax}
+                                    oninput={onInput(setSizeValueMax)}
+                                    onclick={(e) => {
+                                        e.stopPropagation()
+                                    }}
+                                    aria-label="Custom maximum size value"
+                                    min="0"
+                                    step="any"
+                                    placeholder="custom"
+                                />
+                            {:else}
+                                custom…
+                            {/if}
+                        </button>
+                    </div>
+
+                    <!-- Col 5: upper-bound unit -->
+                    <div class="list-col" role="radiogroup" aria-label="Maximum size unit">
+                        <button
+                            type="button"
+                            class="list-cell"
+                            class:is-selected={sizeUnitMax === 'B'}
+                            role="radio"
+                            aria-checked={sizeUnitMax === 'B'}
+                            onclick={() => {
+                                setSizeUnitMax('B')
+                                scheduleSearch()
+                            }}
+                        >
+                            {byteUnitLabel(sizeValueMax)}
+                        </button>
+                        <button
+                            type="button"
+                            class="list-cell"
+                            class:is-selected={sizeUnitMax === 'KB'}
+                            role="radio"
+                            aria-checked={sizeUnitMax === 'KB'}
+                            onclick={() => {
+                                setSizeUnitMax('KB')
+                                scheduleSearch()
+                            }}
+                        >
+                            {kiloByteLabel(getFileSizeFormat())}
+                        </button>
+                        {#each ['MB', 'GB'] as larger (larger)}
+                            <button
+                                type="button"
+                                class="list-cell"
+                                class:is-selected={sizeUnitMax === larger}
+                                role="radio"
+                                aria-checked={sizeUnitMax === larger}
+                                onclick={() => {
+                                    setSizeUnitMax(larger as SizeUnit)
+                                    scheduleSearch()
+                                }}
+                            >
+                                {larger}
+                            </button>
+                        {/each}
+                    </div>
                 {/if}
             </div>
-            {#if sizeFilter === 'between'}
-                <div class="popover-row">
-                    <span class="popover-separator">to</span>
-                    <input
-                        type="number"
-                        class="popover-input size-input"
-                        value={sizeValueMax}
-                        oninput={onInput(setSizeValueMax)}
-                        aria-label="Maximum size value"
-                        min="0"
-                        step="any"
-                    />
-                    <select
-                        class="popover-select unit-select"
-                        value={sizeUnitMax}
-                        onchange={onSelect<SizeUnit>(setSizeUnitMax)}
-                        aria-label="Maximum size unit"
-                    >
-                        <option value="KB">KB</option>
-                        <option value="MB">MB</option>
-                        <option value="GB">GB</option>
-                    </select>
-                </div>
-            {/if}
         </div>
     </FilterChipPopover>
 {/if}
 
-<!-- Modified popover -->
+<!-- Modified popover. Round 2 D11: list-style grid mirroring the Size popover.
+     Col 1 = comparator (`any` / `after` / `before` / `between`). Col 2 = preset
+     dates (`today`, `yesterday`, `this week`, ..., `Custom…`). Cols 3 + 4
+     appear when col 1 = `between` for the upper bound. No unit column. -->
 {#if dateChipEl}
     <FilterChipPopover
         anchor={dateChipEl}
@@ -364,60 +787,159 @@
         onClose={closePopover}
         ariaLabel="Modified filter options"
     >
-        <div class="popover-section">
-            <label class="popover-label" for="popover-date-filter">Modified</label>
-            <div class="popover-row">
-                <select
-                    id="popover-date-filter"
-                    class="popover-select"
-                    value={dateFilter}
-                    onchange={onSelect<DateFilter>(setDateFilter)}
-                    aria-label="Date comparator"
-                >
-                    <option value="any">any</option>
-                    <option value="after">after</option>
-                    <option value="before">before</option>
-                    <option value="between">between</option>
-                </select>
-                {#if dateFilter !== 'any'}
-                    <input
-                        type="date"
-                        class="popover-input date-input"
-                        value={dateValue}
-                        oninput={onInput(setDateValue)}
-                        aria-label="Date value"
-                    />
+        <div class="popover-section size-grid-section">
+            <span class="popover-label">Modified</span>
+            <div
+                class="list-grid date-grid"
+                class:has-upper={showsDateUpperBound(dateFilter)}
+                role="group"
+                aria-label="Modified filter options"
+            >
+                <!-- Col 1: comparator -->
+                <div class="list-col" role="radiogroup" aria-label="Comparator">
+                    {#each DATE_COMPARATORS as opt (opt.value)}
+                        <button
+                            type="button"
+                            class="list-cell"
+                            class:is-selected={dateFilter === opt.value}
+                            role="radio"
+                            aria-checked={dateFilter === opt.value}
+                            onclick={() => {
+                                setDateFilter(opt.value)
+                                onDateComparatorEdit()
+                            }}
+                        >
+                            {opt.label}
+                        </button>
+                    {/each}
+                </div>
+
+                <!-- Col 2: lower-bound preset. R3 U4: dynamic labels
+                     ("today 0:00", "1st of May 0:00", "1st of April, 2026,
+                     0:00", ...) computed at popover render. R3 U5: cells
+                     remain clickable while comparator = `any`; clicking
+                     promotes the comparator to `after`. R3 B5: Custom is
+                     selected only when the user explicitly clicked it (or
+                     the AI / history loaded a custom value); the `$effect`
+                     above keeps `dateIsCustomLower` in sync. -->
+                <div class="list-col" role="radiogroup" aria-label="Date value">
+                    {#each datePresets as preset (preset.key)}
+                        <button
+                            type="button"
+                            class="list-cell"
+                            class:is-selected={dateValue === preset.resolved && !dateIsCustomLower}
+                            class:is-disabled-look={isDateRangeDisabled(dateFilter)}
+                            role="radio"
+                            aria-checked={dateValue === preset.resolved && !dateIsCustomLower}
+                            onclick={() => {
+                                pickDateValue(preset.resolved)
+                            }}
+                        >
+                            {preset.label}
+                        </button>
+                    {/each}
+                    <button
+                        type="button"
+                        class="list-cell list-cell-custom"
+                        class:is-selected={dateIsCustomLower}
+                        class:is-disabled-look={isDateRangeDisabled(dateFilter)}
+                        onclick={(e) => {
+                            if ((e.target as HTMLElement).tagName === 'INPUT') return
+                            pickDateCustomLower()
+                            void Promise.resolve().then(() => {
+                                ;(
+                                    e.currentTarget as HTMLElement | null
+                                )?.querySelector<HTMLInputElement>('input')?.focus()
+                            })
+                        }}
+                    >
+                        {#if dateIsCustomLower}
+                            <input
+                                type="date"
+                                class="popover-input date-input custom-input-inline"
+                                value={dateValue}
+                                oninput={onInput(setDateValue)}
+                                onclick={(e) => {
+                                    e.stopPropagation()
+                                }}
+                                aria-label="Custom date value"
+                            />
+                        {:else}
+                            custom…
+                        {/if}
+                    </button>
+                </div>
+
+                {#if showsDateUpperBound(dateFilter)}
+                    <!-- Col 3: upper-bound preset (same shape as col 2). -->
+                    <div class="list-col" role="radiogroup" aria-label="Maximum date value">
+                        {#each datePresets as preset (preset.key)}
+                            <button
+                                type="button"
+                                class="list-cell"
+                                class:is-selected={dateValueMax === preset.resolved && !dateIsCustomUpper}
+                                role="radio"
+                                aria-checked={dateValueMax === preset.resolved && !dateIsCustomUpper}
+                                onclick={() => {
+                                    pickDateValueMax(preset.resolved)
+                                }}
+                            >
+                                {preset.label}
+                            </button>
+                        {/each}
+                        <button
+                            type="button"
+                            class="list-cell list-cell-custom"
+                            class:is-selected={dateIsCustomUpper}
+                            onclick={(e) => {
+                                if ((e.target as HTMLElement).tagName === 'INPUT') return
+                                dateIsCustomUpper = true
+                                setDateValueMax('')
+                                scheduleSearch()
+                                void Promise.resolve().then(() => {
+                                    ;(
+                                        e.currentTarget as HTMLElement | null
+                                    )?.querySelector<HTMLInputElement>('input')?.focus()
+                                })
+                            }}
+                        >
+                            {#if dateIsCustomUpper}
+                                <input
+                                    type="date"
+                                    class="popover-input date-input custom-input-inline"
+                                    value={dateValueMax}
+                                    oninput={onInput(setDateValueMax)}
+                                    onclick={(e) => {
+                                        e.stopPropagation()
+                                    }}
+                                    aria-label="Custom maximum date value"
+                                />
+                            {:else}
+                                custom…
+                            {/if}
+                        </button>
+                    </div>
                 {/if}
             </div>
-            {#if dateFilter === 'between'}
-                <div class="popover-row">
-                    <span class="popover-separator">to</span>
-                    <input
-                        type="date"
-                        class="popover-input date-input"
-                        value={dateValueMax}
-                        oninput={onInput(setDateValueMax)}
-                        aria-label="Maximum date value"
-                    />
-                </div>
-            {/if}
         </div>
     </FilterChipPopover>
 {/if}
 
-<!-- D9: ⌥C / ⌥V active ONLY while the scope popover is open. svelte:window
-     must live at the top level of the template, so we keep the keydown handler
-     here and gate on `openChip === 'scope'` inside. -->
+<!-- D9 + round-2 popover shortcuts. All of the following live on a single
+     window listener so we keep the dialog-level keymap close to where the
+     popovers it targets are defined.
+     - ⌥C / ⌥V (only while the Scope popover is open) — Use current folder /
+       All folders. D9 contract.
+     - ⌥S / ⌥M / ⌥I (any time, while the dialog is mounted) — open the Size /
+       Modified / Search-in popover. D10 / D11 brief calls for these as global
+       (in-dialog) shortcuts that focus the first column. -->
 <svelte:window onkeydown={(e) => {
-    if (openChip !== 'scope') return
-    if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'c') {
-        e.preventDefault()
-        onSetScope(currentFolderPath)
-        scheduleSearch()
-    } else if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'v') {
-        e.preventDefault()
-        onSetScope('')
-        scheduleSearch()
+    // Bail when the chip strip is disabled (index not ready); shortcuts target controls that
+    // aren't usable yet, and we don't want to swallow keys the rest of the dialog wants.
+    if (disabled) return
+    if (handleDialogPopoverOpener(e)) return
+    if (openChip === 'scope') {
+        handleScopePopoverShortcut(e)
     }
 }} />
 
@@ -455,9 +977,12 @@
                         onchange={() => {
                             onToggleExcludeSystemDirs()
                         }}
-                        aria-label="Hide system folders"
+                        aria-label="Hide boring folders"
                     />
-                    <span use:tooltip={{ html: systemDirExcludeTooltip }}>Hide system folders</span>
+                    <!-- R3 U6: copy renamed "Hide system folders" -> "Hide boring folders".
+                         Tooltip lists EVERY exclude (built by the parent from the
+                         `get_system_dir_excludes` IPC); no "+30 more" truncation. -->
+                    <span use:tooltip={{ html: systemDirExcludeTooltip }}>Hide boring folders</span>
                 </label>
                 <label class="popover-checkbox">
                     <input
@@ -476,11 +1001,18 @@
                  (matching the round-2 resolved shortcut allocation: the global
                  ⌥F now drives the Filename mode chip instead). -->
             <div class="popover-footer">
+                <!-- D12: "Use current folder" renders disabled when the focused
+                     pane is a search-results snapshot AND no real-folder history
+                     entry is reachable. The button still shows so the user sees
+                     the option exists; the tooltip explains why it's off. -->
                 <button
                     type="button"
                     class="footer-button"
+                    disabled={searchableFolder.disabled}
+                    use:tooltip={searchableFolder.disabled ? searchableFolder.disabledReason : ''}
                     onclick={() => {
-                        onSetScope(currentFolderPath)
+                        if (searchableFolder.disabled || !searchableFolder.path) return
+                        onSetScope(searchableFolder.path)
                         scheduleSearch()
                     }}
                 >
@@ -586,6 +1118,117 @@
         gap: var(--spacing-xs);
     }
 
+    /* ===== Round 2 D10 / D11: list-style grid popover ===== */
+
+    .size-grid-section {
+        min-width: 320px;
+    }
+
+    /* Auto-sized columns so each `Custom…` text width drives the col width and
+       the upper bound (rendered conditionally) inherits the same widths via
+       the parent grid. Gap pulls the columns visually apart so the eye reads
+       them as separate axes. */
+    .list-grid {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        gap: var(--spacing-sm);
+    }
+
+    .list-grid.has-upper {
+        grid-template-columns: repeat(5, auto);
+    }
+
+    .date-grid {
+        grid-template-columns: repeat(2, auto);
+    }
+
+    .date-grid.has-upper {
+        grid-template-columns: repeat(3, auto);
+    }
+
+    .list-col {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
+        min-width: 0;
+    }
+
+    .list-cell {
+        display: block;
+        text-align: left;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        padding: 4px 10px;
+        font-size: var(--font-size-sm);
+        line-height: 1.3;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        color: var(--color-text-primary);
+        white-space: nowrap;
+        text-decoration: none;
+    }
+
+    .list-cell:not(:disabled):hover {
+        background: var(--color-bg-tertiary);
+    }
+
+    .list-cell.is-selected {
+        background: var(--color-accent-subtle);
+        border-color: var(--color-accent);
+        color: var(--color-text-primary);
+        font-weight: 500;
+    }
+
+    .list-cell:not(:disabled):focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -1px;
+    }
+
+    .list-cell:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /* R3 U5: cells in the value / unit columns stay clickable while the
+       comparator is `any`. The dimmed look mirrors `:disabled` but the cell
+       is still a real button: clicking promotes the comparator and applies
+       the value. */
+    .list-cell.is-disabled-look {
+        opacity: 0.5;
+    }
+
+    .list-cell.is-disabled-look:not(.is-selected):hover {
+        background: var(--color-bg-tertiary);
+        opacity: 0.7;
+    }
+
+    /* R3 U3: the Custom cell holds the inline input. The cell itself stays
+       sized for the longest preset label so the column doesn't reflow when
+       Custom expands; the input fills the remaining cell width. */
+    .list-cell.list-cell-custom {
+        /* Reserve enough vertical room for the inner input. */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        min-height: 22px;
+        display: flex;
+        align-items: center;
+    }
+
+    .list-cell.list-cell-custom .custom-input-inline {
+        font-size: var(--font-size-sm);
+        background: transparent;
+        border: 0;
+        outline: none;
+        color: var(--color-text-primary);
+        width: 100%;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        padding: 0;
+        line-height: 1.3;
+    }
+
+    /* R3 U3: dropped the round-2 `.custom-input` rule (the input lived as a
+       sibling under the Custom cell). The new layout puts the input INSIDE
+       the cell, styled via `.custom-input-inline` above. */
+
     .popover-label {
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
@@ -600,7 +1243,9 @@
         gap: var(--spacing-xs);
     }
 
-    .popover-select,
+    /* Free-form number / date input used under each "Custom…" cell in the
+       Size + Modified popovers. The list-style grid is the primary surface;
+       these are the escape hatches. */
     .popover-input {
         font-size: var(--font-size-sm);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
@@ -612,27 +1257,17 @@
         outline: none;
     }
 
-    .popover-select:focus,
     .popover-input:focus {
         border-color: var(--color-accent);
         box-shadow: var(--shadow-focus);
     }
 
     .size-input {
-        width: 70px;
+        width: 80px;
     }
 
     .date-input {
         width: 130px;
-    }
-
-    .unit-select {
-        width: auto;
-    }
-
-    .popover-separator {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
     }
 
     /* ===== Scope popover ===== */
@@ -710,9 +1345,14 @@
         line-height: 1;
     }
 
-    .footer-button:hover {
+    .footer-button:not(:disabled):hover {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
+    }
+
+    .footer-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     .footer-kbd {

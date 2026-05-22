@@ -44,6 +44,17 @@ export interface ExplorerAPI {
   ) => Promise<void>
   getFocusedPane: () => 'left' | 'right'
   getFocusedPanePath: () => string
+  /**
+   * Round 2 D12: "smart current folder" for the Search-in popover. When the focused
+   * pane is a `search-results://` snapshot the host walks back through history to find
+   * the most recent real folder; when none is reachable it surfaces a disabled state
+   * with `disabledReason` as the tooltip. See `lib/search/searchable-folder.ts`.
+   */
+  getFocusedPaneSearchableFolder: () => {
+    path: string | null
+    disabled: boolean
+    disabledReason: string
+  }
   getVolumes: () => { id: string; name: string; path: string }[]
   selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>

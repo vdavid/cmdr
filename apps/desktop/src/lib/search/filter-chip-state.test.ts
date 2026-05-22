@@ -54,6 +54,32 @@ describe('deriveSizeChip', () => {
   it('between with only max behaves like lte', () => {
     expect(deriveSizeChip('between', '', 'MB', '500', 'MB').summary).toBe('< 500 MB')
   })
+
+  // R3 B3: the chip should respect the user's appearance.fileSizeFormat
+  // setting. Today the popover correctly renders "kB" for SI and "KB" for
+  // binary, but the chip text bypasses the setting and always renders "KB"
+  // (the raw enum string for the `SizeUnit` type). Fix: pipe a `format`
+  // argument through and use the same `kiloByteLabel` mapping.
+  it('R3 B3: renders kB (lowercase k) when format is SI', () => {
+    expect(deriveSizeChip('gte', '100', 'KB', '', 'KB', 'si').summary).toBe('> 100 kB')
+    expect(deriveSizeChip('lte', '5', 'KB', '', 'KB', 'si').summary).toBe('< 5 kB')
+    expect(deriveSizeChip('between', '10', 'KB', '500', 'KB', 'si').summary).toBe('10 kB – 500 kB')
+  })
+
+  it('R3 B3: renders KB (uppercase K) when format is binary', () => {
+    expect(deriveSizeChip('gte', '100', 'KB', '', 'KB', 'binary').summary).toBe('> 100 KB')
+    expect(deriveSizeChip('between', '10', 'KB', '500', 'KB', 'binary').summary).toBe('10 KB – 500 KB')
+  })
+
+  it('R3 B3: format only affects KB; MB / GB / B remain stable', () => {
+    expect(deriveSizeChip('gte', '5', 'MB', '', 'MB', 'si').summary).toBe('> 5 MB')
+    expect(deriveSizeChip('gte', '5', 'GB', '', 'GB', 'si').summary).toBe('> 5 GB')
+    expect(deriveSizeChip('gte', '500', 'B', '', 'B', 'si').summary).toBe('> 500 B')
+  })
+
+  it('R3 B3: format defaults to binary when omitted (back-compat)', () => {
+    expect(deriveSizeChip('gte', '100', 'KB', '', 'KB').summary).toBe('> 100 KB')
+  })
 })
 
 describe('deriveDateChip', () => {

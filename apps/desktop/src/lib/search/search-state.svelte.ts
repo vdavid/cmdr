@@ -6,7 +6,13 @@ export type { PatternType }
 
 export type SizeFilter = 'any' | 'gte' | 'lte' | 'between'
 export type DateFilter = 'any' | 'after' | 'before' | 'between'
-export type SizeUnit = 'KB' | 'MB' | 'GB'
+/**
+ * Size unit. `B` (bytes) was added in round 2 (D10) so the list-style popover can let the
+ * user pick a byte-level filter without leaving the popover. The byte unit's label varies
+ * between `byte` / `bytes` depending on the selected count (see `byteUnitLabel`); KB/kB
+ * follows the user's binary-vs-SI setting (`kiloByteLabel`).
+ */
+export type SizeUnit = 'B' | 'KB' | 'MB' | 'GB'
 
 /**
  * Unified search mode. M2 collapses the previous split (AI prompt row vs filename pattern row)
@@ -350,6 +356,14 @@ export function switchMode(targetMode: SearchMode): void {
  * Records an AI translation's outputs: the LLM-produced pattern (`pattern` + `kind`, may be
  * null) and the short LLM-friendly label. The caller is expected to set `lastAiPrompt`
  * separately via `setLastAiPrompt`.
+ *
+ * R3 B2: the AI's pattern OVERWRITES the matching hand-typed buffer. The user
+ * just asked the AI to take over: if it produces a glob, that's the new filename
+ * pattern; if it produces a regex, that's the new regex pattern. Round 2 kept
+ * the old hand-typed buffer untouched and only loaded the AI pattern when the
+ * target buffer was empty (via `switchMode`); David hit cases where a stale
+ * `*.foo` survived a fresh AI request for `*.pdf`. Per the brief, the takeover
+ * is opinionated: AI's output is the new truth for the matching mode.
  */
 export function recordAiTranslation(input: {
   pattern: string | null
@@ -359,6 +373,17 @@ export function recordAiTranslation(input: {
   lastAiPattern = input.pattern
   lastAiPatternKind = input.pattern ? input.kind : null
   lastAiLabel = input.label
+  // Mirror the produced pattern into the matching mode's hand-typed buffer.
+  // (The "other" buffer stays whatever the user typed; the AI only speaks to
+  // one of filename / regex per translation.) Empty patterns leave the buffers
+  // alone so a no-op translation doesn't wipe the user's typed-by-hand value.
+  if (input.pattern && input.pattern.trim()) {
+    if (input.kind === 'regex') {
+      handTyped.regex = input.pattern
+    } else if (input.kind === 'glob') {
+      handTyped.filename = input.pattern
+    }
+  }
 }
 
 /**
@@ -372,11 +397,21 @@ export function clearAiPattern(): void {
   lastAiPatternKind = null
 }
 
-/** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
+/**
+ * Converts size input + unit to bytes. Returns `undefined` if empty or invalid. A value of
+ * exactly `0` is honored (the user explicitly picked 0 bytes from the D10 grid preset and
+ * the engine should pin the lower / upper bound to zero rather than silently skip the
+ * filter).
+ */
 export function parseSizeToBytes(value: string, unit: SizeUnit): number | undefined {
   const num = parseFloat(value)
-  if (isNaN(num) || num <= 0) return undefined
-  const multipliers: Record<SizeUnit, number> = { KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 }
+  if (isNaN(num) || num < 0) return undefined
+  const multipliers: Record<SizeUnit, number> = {
+    B: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+  }
   return Math.round(num * multipliers[unit])
 }
 

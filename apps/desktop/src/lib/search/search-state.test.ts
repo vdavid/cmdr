@@ -58,10 +58,14 @@ describe('parseSizeToBytes', () => {
     expect(parseSizeToBytes('-5', 'MB')).toBeUndefined()
   })
 
-  it('returns undefined for zero (not a useful filter)', () => {
-    expect(parseSizeToBytes('0', 'KB')).toBeUndefined()
-    expect(parseSizeToBytes('0', 'MB')).toBeUndefined()
-    expect(parseSizeToBytes('0', 'GB')).toBeUndefined()
+  it('returns 0 for zero (round 2 D10: the user can explicitly pick 0 from the preset grid)', () => {
+    // Previously this returned `undefined` so a "0" selection silently became "any". The
+    // round-2 list-style popover lets the user explicitly pick 0 bytes as the lower bound of
+    // a between range, so honoring 0 is now correct.
+    expect(parseSizeToBytes('0', 'KB')).toBe(0)
+    expect(parseSizeToBytes('0', 'MB')).toBe(0)
+    expect(parseSizeToBytes('0', 'GB')).toBe(0)
+    expect(parseSizeToBytes('0', 'B')).toBe(0)
   })
 })
 
@@ -133,7 +137,7 @@ describe('buildSearchQuery', () => {
     expect(query.maxSize).toBe(10 * 1024 * 1024)
   })
 
-  it('treats size "0" as no filter', () => {
+  it('honors size "0" as a literal 0-byte bound (round 2 D10)', () => {
     clearSearchState()
     setSizeFilter('between')
     setSizeValue('0')
@@ -141,8 +145,8 @@ describe('buildSearchQuery', () => {
     setSizeValueMax('0')
     setSizeUnitMax('KB')
     const query = buildSearchQuery()
-    expect(query.minSize).toBeNull()
-    expect(query.maxSize).toBeNull()
+    expect(query.minSize).toBe(0)
+    expect(query.maxSize).toBe(0)
   })
 
   it('includes date after filter', () => {
@@ -391,6 +395,57 @@ describe('per-mode buffer (search-fixup-brief clarification 2)', () => {
     expect(getQuery()).toBe('*.pdf')
     switchMode('ai')
     expect(getQuery()).toBe('find my pdfs')
+  })
+
+  // R3 B2: when AI produces a glob, it overwrites the filename buffer; when it
+  // produces a regex, it overwrites the regex buffer. Round 2 stored the AI
+  // pattern in a separate slot and used `switchMode` to lazily hand it to the
+  // matching mode ONLY when that mode's hand-typed buffer was empty. David hit
+  // a case where he typed `*.foo` in filename mode, then asked the AI for PDFs,
+  // then ⌘2'd to filename mode and saw `*.foo` instead of `*.pdf`. Fix: the AI
+  // takeover is opinionated. Overwrite the matching buffer on translation.
+  it('R3 B2: AI translation overwrites the matching hand-typed buffer (glob -> filename)', async () => {
+    const { switchMode, setQueryFromUserInput, recordAiTranslation } = await import('./search-state.svelte')
+    clearSearchState()
+    // User typed *.foo in filename mode by hand, then jumped to AI to refine.
+    setMode('filename')
+    setQueryFromUserInput('*.foo')
+    setMode('ai')
+    setQueryFromUserInput('find my pdfs')
+    // AI runs and produces a *.pdf glob. This should clobber the filename buffer.
+    recordAiTranslation({ pattern: '*.pdf', kind: 'glob', label: 'PDFs' })
+    switchMode('filename')
+    expect(getQuery()).toBe('*.pdf')
+  })
+
+  it('R3 B2: AI translation overwrites the matching hand-typed buffer (regex -> regex)', async () => {
+    const { switchMode, setQueryFromUserInput, recordAiTranslation } = await import('./search-state.svelte')
+    clearSearchState()
+    setMode('regex')
+    setQueryFromUserInput('old.*pattern')
+    setMode('ai')
+    setQueryFromUserInput('find files matching new regex')
+    recordAiTranslation({ pattern: 'new.*pattern', kind: 'regex', label: 'New regex' })
+    switchMode('regex')
+    expect(getQuery()).toBe('new.*pattern')
+  })
+
+  it('R3 B2: AI glob does NOT touch the regex buffer, and vice versa', async () => {
+    const { switchMode, setQueryFromUserInput, recordAiTranslation } = await import('./search-state.svelte')
+    clearSearchState()
+    // Type in both modes by hand, then have AI produce a glob.
+    setMode('filename')
+    setQueryFromUserInput('*.foo')
+    setMode('regex')
+    setQueryFromUserInput('untouched.*')
+    setMode('ai')
+    setQueryFromUserInput('pdfs please')
+    recordAiTranslation({ pattern: '*.pdf', kind: 'glob', label: 'PDFs' })
+    // Filename gets overwritten, regex stays put.
+    switchMode('filename')
+    expect(getQuery()).toBe('*.pdf')
+    switchMode('regex')
+    expect(getQuery()).toBe('untouched.*')
   })
 
   it('clearAiPattern wipes the AI pattern slot but leaves the prompt intact', async () => {
