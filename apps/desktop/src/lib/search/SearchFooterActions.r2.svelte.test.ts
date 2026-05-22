@@ -60,7 +60,7 @@ describe('SearchFooterActions round 2', () => {
     // The ⌥A label belonged to round 1; the new owner is mode chip AI.
     // It must not appear on this button anymore.
     const showAllBtn = target.querySelectorAll('button')[1]
-    expect((showAllBtn.textContent).includes('⌥A')).toBe(false)
+    expect(showAllBtn.textContent.includes('⌥A')).toBe(false)
   })
 
   it('D8: "Go to file" surfaces the ⏎ hint when enterAction is "go-to-file"', async () => {

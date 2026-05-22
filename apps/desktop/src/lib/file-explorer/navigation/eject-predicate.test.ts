@@ -31,7 +31,7 @@ describe('isVolumeEjectable', () => {
     // The bindings type only allows `SmbConnectionState | undefined`. We need
     // to inject the actual wire shape (null), so we widen to a writable index
     // signature for this one assignment.
-    ;(v as { smbConnectionState: null }).smbConnectionState = null
+    ;(v as unknown as { smbConnectionState: null }).smbConnectionState = null
     expect(isVolumeEjectable(v)).toBe(false)
   })
 

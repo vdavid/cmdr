@@ -117,8 +117,9 @@ describe('SearchFilterChips: default rendering', () => {
     const { target, cleanup } = mountChips(baseProps())
     await tick()
     const sizeChip = findChip(target, 'Size')
+    if (!sizeChip) throw new Error('Size chip not found')
     expect(sizeChip.textContent.trim()).toBe('Size')
-    expect(sizeChip?.querySelector('.chip-clear')).toBeNull()
+    expect(sizeChip.querySelector('.chip-clear')).toBeNull()
     cleanup()
   })
 })
@@ -571,6 +572,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     await tick()
     const grid = document.querySelector('.list-grid')
     const firstUnitCell = grid?.querySelector('.list-col:nth-child(3) .list-cell')
+    if (!firstUnitCell) throw new Error('first unit cell not found')
     expect(firstUnitCell.textContent.trim()).toBe('byte')
     cleanup()
     document.querySelectorAll('.filter-chip-popover').forEach((el) => {
@@ -586,6 +588,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     await tick()
     const grid = document.querySelector('.list-grid')
     const firstUnitCell = grid?.querySelector('.list-col:nth-child(3) .list-cell')
+    if (!firstUnitCell) throw new Error('first unit cell not found')
     expect(firstUnitCell.textContent.trim()).toBe('bytes')
     cleanup()
     document.querySelectorAll('.filter-chip-popover').forEach((el) => {

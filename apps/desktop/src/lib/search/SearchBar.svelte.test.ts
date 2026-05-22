@@ -41,7 +41,7 @@ function mountBar(overrides: Partial<{ query: string; mode: SearchMode; showRunH
       onCompositionEnd,
     },
   })
-  const input = target.querySelector('input.query-input')
+  const input = target.querySelector<HTMLInputElement>('input.query-input')
   if (!input) throw new Error('input not found')
   return {
     target,

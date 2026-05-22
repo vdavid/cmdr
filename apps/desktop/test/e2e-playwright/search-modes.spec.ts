@@ -35,7 +35,7 @@ test.describe('Search dialog: mode shortcuts', () => {
   // test asserted the shared-buffer contract; updated below to pin the
   // per-mode behavior plus the round-trip ("buffer for mode X survives a
   // detour through modes Y and Z").
-  test('⌘1/⌘2/⌘3 switch modes and preserve each mode\'s own typed query', async ({ tauriPage }) => {
+  test("⌘1/⌘2/⌘3 switch modes and preserve each mode's own typed query", async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     await openSearchDialog(tauriPage)

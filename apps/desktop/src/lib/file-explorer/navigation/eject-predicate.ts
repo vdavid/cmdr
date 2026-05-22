@@ -14,6 +14,6 @@ export function isVolumeEjectable(volume: VolumeInfo | undefined): boolean {
   // `smbConnectionState` is typed `SmbConnectionState | undefined` but Rust's
   // `Option::None` serializes to `null`, so use `!= null` (covers both undefined
   // and null) rather than `!== undefined`.
-   
+
   return volume.isEjectable || volume.smbConnectionState != null
 }

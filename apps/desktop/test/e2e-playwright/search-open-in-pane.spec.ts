@@ -32,13 +32,16 @@ const SEARCH_INPUT = '.search-overlay input'
 const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]:not([disabled])'
 /**
  * The right pane's content area when it's showing a search-results snapshot.
- * `FilePane.svelte` renders `SearchResultsView` (rooted in a `.full-list`
- * container with the path column) inside `.content` only when
- * `volumeId === 'search-results'`. We match on the Path column header
- * (`.header-path`, set in `FullList.svelte` when `showPathColumn` is true)
- * because it's unique to the snapshot view and stable across results.
+ * `FilePane.svelte` renders `SearchResultsView` inside `.content` when
+ * `volumeId === 'search-results'`. The snapshot's entries are handed to
+ * `FullList` via `staticEntries`. We match on the right pane's `.full-list
+ * .header-row` because once `pollRightPaneVolumeId('search-results')` confirms
+ * the pane is on the snapshot, a present `.header-row` means `FullList`
+ * rendered (the alternative would be `.snapshot-missing`, the defensive
+ * placeholder for an evicted snapshot). The Path column header was removed
+ * per search-fixup-brief item 15; the Name column now shows the full path.
  */
-const SNAPSHOT_PANE_PATH_HEADER = '.file-pane .full-list .header-path'
+const SNAPSHOT_PANE_PATH_HEADER = '[aria-label="Right file pane"] .full-list .header-row'
 
 async function openSearchDialog(tauriPage: PageLike): Promise<void> {
   await dispatchMenuCommand(tauriPage, 'search.open')

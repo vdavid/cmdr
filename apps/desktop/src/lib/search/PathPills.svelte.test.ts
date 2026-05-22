@@ -55,7 +55,7 @@ describe('PathPills', () => {
   it('handles a relative path without a leading slash', async () => {
     const target = renderPills('docs/notes')
     await tick()
-    const pills = Array.from(target.querySelectorAll('.pill'))
+    const pills = Array.from(target.querySelectorAll<HTMLButtonElement>('.pill'))
     expect(pills.map((p) => p.textContent.trim())).toEqual(['docs', 'notes'])
     expect(pills[0].title).toBe('docs')
     expect(pills[1].title).toBe('docs/notes')

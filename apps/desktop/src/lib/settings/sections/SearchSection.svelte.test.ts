@@ -32,7 +32,7 @@ describe('SearchSection', () => {
     document.body.appendChild(target)
     mount(SearchSection, { target, props: { searchQuery: '' } })
     await tick()
-    const labels = Array.from(target.querySelectorAll('.setting-label')).map((el) => (el.textContent).trim())
+    const labels = Array.from(target.querySelectorAll('.setting-label')).map((el) => el.textContent.trim())
     expect(labels).toContain('Auto-apply searches')
     expect(labels).toContain('Recent searches to remember')
     target.remove()
@@ -45,7 +45,7 @@ describe('SearchSection', () => {
     // first row should render.
     mount(SearchSection, { target, props: { searchQuery: 'debounce' } })
     await tick()
-    const labels = Array.from(target.querySelectorAll('.setting-label')).map((el) => (el.textContent).trim())
+    const labels = Array.from(target.querySelectorAll('.setting-label')).map((el) => el.textContent.trim())
     expect(labels).toContain('Auto-apply searches')
     expect(labels).not.toContain('Recent searches to remember')
     target.remove()
