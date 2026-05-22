@@ -6,16 +6,28 @@ vi.mock('$lib/tooltip/tooltip', () => ({
   tooltip: () => ({ destroy() {} }),
 }))
 
+const baseProps = {
+  resultCount: 1,
+  disabled: false,
+  onShowAllInMainWindow: () => {},
+  onGoToFile: () => {},
+  enterAction: 'go-to-file' as const,
+}
+
 describe('SearchFooterActions', () => {
-  it('renders nothing when there are zero results', async () => {
+  it('renders both buttons disabled when there are zero results (per round-2 D6)', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SearchFooterActions, {
       target,
-      props: { resultCount: 0, disabled: false, onShowAllInMainWindow: () => {}, onGoToFile: () => {} },
+      props: { ...baseProps, resultCount: 0 },
     })
     await tick()
-    expect(target.querySelector('.footer-actions')).toBeNull()
+    const buttons = Array.from(target.querySelectorAll('button')) as HTMLButtonElement[]
+    expect(buttons).toHaveLength(2)
+    for (const b of buttons) {
+      expect(b.disabled).toBe(true)
+    }
     target.remove()
   })
 
@@ -24,7 +36,7 @@ describe('SearchFooterActions', () => {
     document.body.appendChild(target)
     mount(SearchFooterActions, {
       target,
-      props: { resultCount: 7, disabled: false, onShowAllInMainWindow: () => {}, onGoToFile: () => {} },
+      props: { ...baseProps, resultCount: 7, enterAction: 'go-to-file' },
     })
     await tick()
     const buttons = Array.from(target.querySelectorAll('button')) as HTMLButtonElement[]
@@ -35,7 +47,8 @@ describe('SearchFooterActions', () => {
     expect(labels[0]).toContain('Go to file')
     expect(labels[0]).toContain('⏎')
     expect(labels[1]).toContain('Show all in main window')
-    expect(labels[1]).toContain('⌥A')
+    // Per round-2 R3: ⌥⏎, not ⌥A (which now belongs to mode chip AI).
+    expect(labels[1]).toContain('⌥⏎')
     target.remove()
   })
 
@@ -46,7 +59,7 @@ describe('SearchFooterActions', () => {
     document.body.appendChild(target)
     mount(SearchFooterActions, {
       target,
-      props: { resultCount: 1, disabled: false, onShowAllInMainWindow, onGoToFile },
+      props: { ...baseProps, resultCount: 1, onShowAllInMainWindow, onGoToFile },
     })
     await tick()
     const [goBtn, mainBtn] = Array.from(target.querySelectorAll('button')) as HTMLButtonElement[]
@@ -62,7 +75,7 @@ describe('SearchFooterActions', () => {
     document.body.appendChild(target)
     mount(SearchFooterActions, {
       target,
-      props: { resultCount: 1, disabled: true, onShowAllInMainWindow: () => {}, onGoToFile: () => {} },
+      props: { ...baseProps, resultCount: 1, disabled: true },
     })
     await tick()
     const buttons = Array.from(target.querySelectorAll('button')) as HTMLButtonElement[]

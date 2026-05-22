@@ -89,6 +89,9 @@
         buildSearchQuery,
         clearSearchState,
         SEARCH_AUTO_APPLY_DEBOUNCE_MS,
+        getLastDialogEvent,
+        setLastDialogEvent,
+        deriveEnterAction,
         type SearchMode,
     } from './search-state.svelte'
     import SearchBar from './SearchBar.svelte'
@@ -191,6 +194,16 @@
     const lastAiPatternValue = $derived(getLastAiPattern())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
+    /**
+     * D8: which action `⏎` currently owns. Derived from the last dialog event
+     * and the result count via the pure helper `deriveEnterAction`. The footer
+     * "Go to file" button reads `Go to file ⏎` when this is `'go-to-file'`; the
+     * bar's Search button reads `Search ⏎` when this is `'run-search'`. Exactly
+     * one of them surfaces the hint at any time.
+     */
+    const enterAction = $derived(
+        deriveEnterAction({ lastEvent: getLastDialogEvent(), resultsCount: results.length }),
+    )
 
     /** Whether AI search is enabled (provider configured and index available). */
     const aiEnabled = $derived(getSetting('ai.provider') !== 'off' && isIndexAvailable)
@@ -506,6 +519,9 @@
     onMount(async () => {
         notifyDialogOpened('search').catch(() => {})
         window.addEventListener('keydown', handleEscapeCapture, true)
+        // D8: mark the dialog as freshly opened so ⏎ owns "Search ⏎" by default
+        // (until the user edits the query/filters or results arrive).
+        setLastDialogEvent('opened')
 
         // Live-mirror `search.autoApply`. The setting drives `scheduleSearch` and the run-hint
         // visibility; the dialog reads it reactively so toggling in the settings window takes
@@ -664,6 +680,8 @@
             setResults(result.entries)
             setTotalCount(result.totalCount)
             setCursorIndex(0)
+            // D8: results just landed. ⏎ now owns "Go to file" (when results are present).
+            setLastDialogEvent('results-arrived')
             // Track what was actually run so the "Press Enter to search" hint can detect drift.
             lastRunQuery = getQuery()
             if (!fromAiTranslation) {
@@ -875,12 +893,16 @@
 
     function handleQueryInput(value: string): void {
         setQueryFromUserInput(value)
+        // D8: query edits hand ⏎ back to the bar's Search button.
+        setLastDialogEvent('query-edited')
         scheduleSearch()
     }
 
     function inputHandler(setter: (v: string) => void, search = true) {
         return (e: Event) => {
             setter((e.target as HTMLInputElement).value)
+            // D8: filter inputs (size / date / scope textarea) count as filter edits.
+            setLastDialogEvent('filter-edited')
             if (search) scheduleSearch()
         }
     }
@@ -889,6 +911,8 @@
     function selectHandler<T extends string>(setter: (v: T) => void, search = true) {
         return (e: Event) => {
             setter((e.target as HTMLSelectElement).value as T)
+            // D8: comparator changes are filter edits.
+            setLastDialogEvent('filter-edited')
             if (search) scheduleSearch()
         }
     }
@@ -954,7 +978,15 @@
         return true
     }
 
-    /** Handles modifier-key shortcuts (⌘N, ⌥F, ⌥D, ⌘Enter, ⌘1-⌘3). Returns true if handled. */
+    /**
+     * Handles modifier-key shortcuts (⌘N, ⌘Enter, ⌘1-⌘3, mode chip ⌥A/⌥F/⌥R,
+     * ⌥⏎ for "Show all in main window"). Returns true if handled.
+     *
+     * D9: the stale global ⌥F / ⌥D scope handlers from round 1 are gone. ⌥F is
+     * now mode chip Filename; the scope shortcuts (⌥C "Use current folder",
+     * ⌥V "All folders") live INSIDE the Search-in popover, scoped to its open
+     * lifetime in `SearchFilterChips.svelte`.
+     */
     function handleModifierShortcuts(e: KeyboardEvent): boolean {
         // ⌘N: clear search state and start fresh. Captured here so the global ⌘N (new tab) doesn't
         // fire while the dialog is open. The dialog already calls stopPropagation on every keydown,
@@ -964,22 +996,29 @@
             clearAndRefocus()
             return true
         }
+        // D13: mode chip shortcuts. Wired globally inside the dialog (focus need
+        // not be on the chip). ⌥A AI, ⌥F Filename, ⌥R Regex. The disabled
+        // Content chip has no shortcut by design (see CLAUDE.md decision).
+        if (matchKey(e, 'a', 'alt') && aiEnabled) {
+            e.preventDefault()
+            handleModeChange('ai')
+            return true
+        }
         if (matchKey(e, 'f', 'alt')) {
             e.preventDefault()
-            setScope(currentFolderPath)
-            scheduleSearch()
+            handleModeChange('filename')
             return true
         }
-        if (matchKey(e, 'd', 'alt')) {
+        if (matchKey(e, 'r', 'alt')) {
             e.preventDefault()
-            setScope('')
-            scheduleSearch()
+            handleModeChange('regex')
             return true
         }
-        // ⌥A: show all results in the main window. Promotes the current result set
-        // into a search-results pane. Equivalent to clicking the footer's "Show all
-        // in main window" button. Per search-fixup-brief item 10 + clarification 1.
-        if (matchKey(e, 'a', 'alt')) {
+        // R3 + D8 (other half): ⌥⏎ shows all results in the main window. Replaces
+        // round-1's ⌥A (which was reallocated to mode chip AI per round-2's resolved
+        // shortcut allocation). The bare ⏎ key is owned by `handleEnterKey`, which
+        // dispatches via `enterAction` (see D8).
+        if (e.key === 'Enter' && e.altKey && !e.metaKey && !e.shiftKey) {
             e.preventDefault()
             if (results.length > 0) showAllInMainWindow()
             return true
@@ -1030,6 +1069,8 @@
         const cur = getCursorIndex()
         const next = e.key === 'ArrowDown' ? (cur + 1) % len : (cur - 1 + len) % len
         setCursorIndex(next)
+        // D8: cursor moves keep ⏎ on "Go to file" as the user browses the list.
+        setLastDialogEvent('cursor-moved')
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte 5 bind:this lacks type info for exports
         searchResultsComponent?.scrollCursorIntoView()
     }
@@ -1037,7 +1078,11 @@
     /** Mouse hover writes the cursor so mouse + keyboard share one cursor. */
     function handleHover(index: number): void {
         if (index < 0 || index >= results.length) return
-        if (getCursorIndex() !== index) setCursorIndex(index)
+        if (getCursorIndex() !== index) {
+            setCursorIndex(index)
+            // D8: mouse hover counts as a cursor move for ⏎ ownership.
+            setLastDialogEvent('cursor-moved')
+        }
     }
 
     function handleKeyDown(e: KeyboardEvent): void {
@@ -1067,21 +1112,22 @@
         }
     }
 
-    /** Handles plain Enter key based on the active mode and what's focused. */
+    /**
+     * Handles plain Enter key per D8: dispatches on `enterAction`.
+     *   - 'go-to-file': open the cursor row's file in the active pane.
+     *   - 'run-search': run the active mode's search (AI / filename / regex).
+     */
     function handleEnterKey(): void {
-        if (isInQueryInput()) {
-            if (getMode() === 'ai') {
-                runAiFromQuery()
-            } else {
-                void executeSearch()
-            }
+        if (enterAction === 'go-to-file') {
+            goToCursorFile()
             return
         }
-        if (cursorIndex < results.length) {
-            onNavigate(results[cursorIndex].path)
-            return
+        // run-search: dispatch to the active mode's runner.
+        if (getMode() === 'ai') {
+            runAiFromQuery()
+        } else {
+            void executeSearch()
         }
-        void executeSearch()
     }
 
     function handleResultClick(index: number): void {
@@ -1116,6 +1162,7 @@
             disabled={inputsDisabled}
             aiHighlight={highlightedFields.has('query')}
             {showRunHint}
+            showEnterHint={enterAction === 'run-search'}
             onInput={handleQueryInput}
             onRun={runFromButton}
             onCompositionStart={handleCompositionStart}
@@ -1200,6 +1247,7 @@
                 <SearchFooterActions
                     resultCount={results.length}
                     disabled={inputsDisabled}
+                    {enterAction}
                     onShowAllInMainWindow={showAllInMainWindow}
                     onGoToFile={goToCursorFile}
                 />

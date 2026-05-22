@@ -28,6 +28,21 @@ let isIndexReady = $state(false)
 let indexEntryCount = $state(0)
 let isSearching = $state(false)
 
+/**
+ * Last interaction the dialog observed. Drives the `⏎` ownership swap per round-2 D8:
+ *
+ *   - 'results-arrived' or 'cursor-moved' (with results present): ⏎ activates "Go to file"
+ *     on the cursor row.
+ *   - 'opened', 'query-edited', 'filter-edited' (or no results yet): ⏎ runs the search.
+ *
+ * The discriminator lives in state (not derived) because "what the user did last" isn't
+ * recoverable from the other fields alone (a cursor move and a results-arrived both leave
+ * `results.length > 0` and `cursorIndex` in the same shape; only the temporal order
+ * distinguishes them). Updated at the call sites that actually own each transition.
+ */
+export type LastDialogEvent = 'opened' | 'results-arrived' | 'cursor-moved' | 'query-edited' | 'filter-edited'
+let lastDialogEvent = $state<LastDialogEvent>('opened')
+
 // Unified query field. M2: replaces the separate `namePattern` and `aiPrompt` fields.
 let query = $state('')
 // Active search mode. Drives placeholder, chip styling, and how Enter dispatches.
@@ -195,6 +210,30 @@ export function getLastAiPatternKind(): 'glob' | 'regex' | null {
 }
 export function getRunOnMount(): boolean {
   return runOnMount
+}
+export function getLastDialogEvent(): LastDialogEvent {
+  return lastDialogEvent
+}
+export function setLastDialogEvent(value: LastDialogEvent): void {
+  lastDialogEvent = value
+}
+
+/**
+ * Pure helper for D8: derives which action `⏎` owns right now.
+ *
+ *   - `'go-to-file'` when results are present AND the last event was either
+ *     `results-arrived` (the user just landed on a populated list) or
+ *     `cursor-moved` (the user is browsing the list).
+ *   - `'run-search'` otherwise (empty results, freshly opened, query / filter just
+ *     edited): pressing ⏎ runs the search instead.
+ */
+export type EnterAction = 'go-to-file' | 'run-search'
+export function deriveEnterAction(input: { lastEvent: LastDialogEvent; resultsCount: number }): EnterAction {
+  if (input.resultsCount <= 0) return 'run-search'
+  if (input.lastEvent === 'results-arrived' || input.lastEvent === 'cursor-moved') {
+    return 'go-to-file'
+  }
+  return 'run-search'
 }
 
 // Setters

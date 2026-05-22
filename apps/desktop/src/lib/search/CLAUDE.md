@@ -80,25 +80,55 @@ There is **no `aiPrompt` state and no `namePattern` state**. M2 deleted both. An
 
 ## Keyboard shortcuts (in-dialog, hard-coded)
 
-| Shortcut  | Action                                                              |
-| --------- | ------------------------------------------------------------------- |
-| `Enter`   | Run search in the active mode (AI in AI mode, manual otherwise)     |
-| `⌘Enter`  | Run AI search regardless of active mode (only when AI is enabled)   |
-| `⌘N`      | Clear all dialog state ("new search")                               |
-| `⌘H`      | Toggle the recent-searches popover (fuzzy over the full history)    |
-| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                           |
-| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                        |
-| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                       |
-| `⌘4`      | Reserved for Content when it ships; not wired now                   |
-| `⌥F`      | Set scope to the focused pane's current directory                   |
-| `⌥D`      | Clear the scope (search the whole drive)                            |
-| `⌥A`      | Show all results in the main window (snapshot opens in active pane) |
-| `⌥←`      | Navigate the active pane to the cursor row's parent folder          |
-| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)    |
-| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)       |
-| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)     |
-| `Tab`     | Trapped within the dialog; cycles through interactive elements      |
-| `Escape`  | Close the dialog                                                    |
+Final round-2 allocation. ⏎ has dynamic ownership (see D8 below).
+
+| Shortcut  | Action                                                            |
+| --------- | ----------------------------------------------------------------- |
+| `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)   |
+| `⌥⏎`      | Show all results in the main window (replaces round-1's ⌥A)       |
+| `⌘Enter`  | Run AI search regardless of active mode (only when AI is enabled) |
+| `⌘N`      | Clear all dialog state ("new search")                             |
+| `⌘H`      | Toggle the recent-searches popover (fuzzy over the full history)  |
+| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                         |
+| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                      |
+| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                     |
+| `⌘4`      | Reserved for Content when it ships; not wired now                 |
+| `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled) |
+| `⌥F`      | Mode chip: Filename (global)                                      |
+| `⌥R`      | Mode chip: Regex (global)                                         |
+| `⌥C`      | Inside Search-in popover only: Use current folder                 |
+| `⌥V`      | Inside Search-in popover only: All folders                        |
+| `⌥←`      | Navigate the active pane to the cursor row's parent folder        |
+| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)  |
+| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)     |
+| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)   |
+| `Tab`     | Trapped within the dialog; cycles through interactive elements    |
+| `Escape`  | Close the dialog                                                  |
+
+### Round 2 D8: `⏎` ownership swap
+
+`search-state.svelte.ts` carries `lastDialogEvent: LastDialogEvent` (one of `opened`, `results-arrived`, `cursor-moved`,
+`query-edited`, `filter-edited`). The pure helper `deriveEnterAction({ lastEvent, resultsCount })` returns
+`'go-to-file' | 'run-search'`:
+
+- `'go-to-file'` when there are results AND the last event was `results-arrived` or `cursor-moved` (the user just got a
+  list back or is browsing it). Pressing ⏎ opens the cursor row in the active pane.
+- `'run-search'` otherwise (zero results, freshly opened, query/filter just edited). Pressing ⏎ runs the search.
+
+The bar's Search button reads `Search ⏎` only when `enterAction === 'run-search'`; the footer's `Go to file` button
+reads `Go to file ⏎` only when `enterAction === 'go-to-file'`. Exactly one of them surfaces the hint at any time. Tests
+in `enter-action.test.ts` pin the eight-permutation table.
+
+### Round 2 D9: scope shortcuts moved inside the popover
+
+Round 1's global `⌥F` / `⌥D` are gone. `⌥F` is now the Filename mode chip globally. The scope actions live as `⌥C` (Use
+current folder) and `⌥V` (All folders), active ONLY while the Search-in popover is open. They're wired via a top-level
+`<svelte:window>` in `SearchFilterChips.svelte` that gates on `openChip === 'scope'`.
+
+### Round 2 D6: footer buttons always visible
+
+Both `Go to file` and `Show all in main window` render unconditionally; when there are no results (or the index isn't
+ready) they render disabled instead of hidden, so the layout stays still while the user types.
 
 The Content chip is visible-disabled with a "Coming soon" tooltip. It has **no** shortcut. Wiring a shortcut to a
 disabled control is hostile UX (either silent no-op or a popup on every press); reserving `⌘4` is the better contract.

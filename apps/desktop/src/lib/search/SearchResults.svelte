@@ -114,16 +114,33 @@
             return 'Drive index not available'
         }
         if (isIndexReady) {
-            if (isSearching) return 'Searching...'
+            // D3: status bar stays empty while the content area shows the spinner.
+            // D4: status bar stays empty while the content area shows the criteria list.
+            // Both states surface their info in the content; no duplication here.
+            if (isSearching) return ''
             if (!hasSearched || (!query.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
                 return `Index ready (${formatEntryCount(indexEntryCount)} entries)`
             }
-            if (totalCount === 0) return 'No results'
+            if (totalCount === 0) return ''
             return `${String(results.length)} of ${totalCount.toLocaleString()} results`
         }
         // Index loading: only show status if user has triggered a search
         if (hasSearched) return 'Loading index...'
         return ''
+    }
+
+    /**
+     * Per D4: the no-results content area lists the active criteria as a bulleted
+     * list under "No files match these criteria:". Pure derivation from the
+     * already-passed-in props so it stays trivially testable.
+     */
+    function buildCriteria(): string[] {
+        const out: string[] = []
+        const q = query.trim()
+        if (q) out.push(`Query: ${q}`)
+        if (sizeFilter !== 'any') out.push(`Size filter active`)
+        if (dateFilter !== 'any') out.push(`Modified filter active`)
+        return out
     }
 
     /** Scrolls the cursor row into view. Called by the parent after cursor changes. */
@@ -168,16 +185,28 @@
         </div>
     {:else if !isIndexReady && hasSearched}
         <div class="loading-state">
-            <span class="loading-pulse" aria-hidden="true"></span>
-            Loading drive index...
+            <div class="spinner spinner-md" aria-hidden="true"></div>
+            <div class="loading-label">Loading drive index...</div>
         </div>
-    {:else if isSearching && results.length === 0}
+    {:else if isSearching}
+        <!-- D1/D2: full result list area is replaced by the standard spinner +
+             "Searching..." label. No rows render while the fetch is in-flight,
+             since the previous result set is now stale relative to the new
+             query/filter state. -->
         <div class="loading-state">
-            <span class="loading-pulse" aria-hidden="true"></span>
-            Searching...
+            <div class="spinner spinner-md" aria-hidden="true"></div>
+            <div class="loading-label">Searching...</div>
         </div>
     {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
-        <div class="no-results">No files found</div>
+        <!-- D4: structured no-results state. Heading + bulleted criteria list. -->
+        <div class="no-results">
+            <p class="no-results-heading">No files match these criteria:</p>
+            <ul class="no-results-criteria">
+                {#each buildCriteria() as item}
+                    <li>{item}</li>
+                {/each}
+            </ul>
+        </div>
     {:else if !hasSearched && !query.trim() && isIndexReady && sizeFilter === 'any' && dateFilter === 'any'}
         <EmptyState {aiEnabled} {indexEntryCount} onPick={onPickExample} />
     {:else}
@@ -305,49 +334,53 @@
         overflow-y: auto;
     }
 
+    /* Vertical stack so the spinner sits above the label, matching the rest of
+       the app's loading affordance (LoadingIcon). */
     .loading-state {
-        padding: var(--spacing-lg);
+        padding: var(--spacing-xl) var(--spacing-lg);
         text-align: center;
-        color: var(--color-text-tertiary);
+        color: var(--color-text-secondary);
         font-size: var(--font-size-md);
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: var(--spacing-md);
+    }
+
+    .loading-label {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-md);
+    }
+
+    /* No-results state: heading + bulleted criteria list. Compact left-aligned
+       block centered horizontally so the bullets line up readably. */
+    .no-results {
+        padding: var(--spacing-lg);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-md);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         gap: var(--spacing-sm);
     }
 
-    .loading-pulse {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--color-text-tertiary);
-        animation: pulse 1.2s ease-in-out infinite;
+    .no-results-heading {
+        margin: 0;
+        color: var(--color-text-primary);
     }
 
-    @keyframes pulse {
-        0%,
-        100% {
-            opacity: 0.3;
-        }
-
-        50% {
-            opacity: 1;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .loading-pulse {
-            animation: none;
-            opacity: 0.6;
-        }
-    }
-
-    .no-results {
-        padding: var(--spacing-lg);
-        text-align: center;
+    .no-results-criteria {
+        margin: 0;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        padding: 0 0 0 1.25em;
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-md);
+        font-size: var(--font-size-sm);
+        text-align: left;
+    }
+
+    .no-results-criteria li {
+        margin: 0;
     }
 
     .result-row {

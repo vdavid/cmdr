@@ -32,6 +32,12 @@
         aiHighlight: boolean
         /** True when the bar should show the "Press Enter to search" hint. Owned by the parent. */
         showRunHint?: boolean
+        /**
+         * D8: when true, the Search button surfaces the `⏎` shortcut hint. The dialog
+         * owns the ⏎ ownership swap; when this is false, the hint moves to the
+         * footer's "Go to file" button.
+         */
+        showEnterHint?: boolean
         onInput: (value: string) => void
         /** Click handler for the ⏎ run button. Equivalent to pressing Enter in the input. */
         onRun: () => void
@@ -49,6 +55,7 @@
         disabled,
         aiHighlight,
         showRunHint = false,
+        showEnterHint = true,
         onInput,
         onRun,
         onCompositionStart,
@@ -103,6 +110,8 @@
     {#if showRunHint}
         <span class="run-hint" aria-hidden="true">Press Enter to search</span>
     {/if}
+    <!-- D8: button reads "Search ⏎" when ⏎ owns the run action; just "Search" when
+         the footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint. -->
     <button
         type="button"
         class="run-button"
@@ -112,6 +121,8 @@
         aria-label={runTitle}
     >
         <IconCornerDownLeft />
+        <span class="run-label">Search</span>
+        {#if showEnterHint}<span class="run-enter-hint" aria-hidden="true">⏎</span>{/if}
     </button>
 </div>
 
@@ -166,14 +177,27 @@
         flex-shrink: 0;
         display: inline-flex;
         align-items: center;
+        gap: var(--spacing-xxs);
         justify-content: center;
-        padding: var(--spacing-xxs) var(--spacing-xs);
+        padding: var(--spacing-xxs) var(--spacing-sm);
         background: transparent;
         border: 1px solid var(--color-border-subtle);
         border-radius: var(--radius-sm);
         color: var(--color-text-secondary);
         cursor: default;
         line-height: 1;
+        font-size: var(--font-size-sm);
+    }
+
+    .run-label {
+        line-height: 1;
+    }
+
+    .run-enter-hint {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        opacity: 0.8;
     }
 
     .run-button:hover:not(:disabled) {

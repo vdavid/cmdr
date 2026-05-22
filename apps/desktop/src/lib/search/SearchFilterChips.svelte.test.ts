@@ -326,11 +326,12 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect(checkboxes?.length).toBe(2)
     const footerButtons = popover?.querySelectorAll('.footer-button')
     expect(footerButtons?.length).toBe(2)
-    // Footer buttons surface the shortcuts so mouse users have parity with ⌥F / ⌥D.
+    // Round 2 D9: footer buttons surface ⌥C / ⌥V, scoped to the open popover.
+    // ⌥F / ⌥D are gone (⌥F is now the global Filename mode chip).
     expect(footerButtons?.[0].textContent).toContain('Use current folder')
-    expect(footerButtons?.[0].textContent).toContain('⌥F')
+    expect(footerButtons?.[0].textContent).toContain('⌥C')
     expect(footerButtons?.[1].textContent).toContain('All folders')
-    expect(footerButtons?.[1].textContent).toContain('⌥D')
+    expect(footerButtons?.[1].textContent).toContain('⌥V')
     cleanup()
     document.querySelectorAll('.filter-chip-popover').forEach((el) => {
       el.remove()

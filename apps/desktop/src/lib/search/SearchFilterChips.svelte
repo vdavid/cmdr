@@ -405,6 +405,22 @@
     </FilterChipPopover>
 {/if}
 
+<!-- D9: ⌥C / ⌥V active ONLY while the scope popover is open. svelte:window
+     must live at the top level of the template, so we keep the keydown handler
+     here and gate on `openChip === 'scope'` inside. -->
+<svelte:window onkeydown={(e) => {
+    if (openChip !== 'scope') return
+    if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'c') {
+        e.preventDefault()
+        onSetScope(currentFolderPath)
+        scheduleSearch()
+    } else if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'v') {
+        e.preventDefault()
+        onSetScope('')
+        scheduleSearch()
+    }
+}} />
+
 <!-- Scope ("Search in") popover -->
 {#if scopeChipEl}
     <FilterChipPopover
@@ -455,6 +471,10 @@
                     <span>Case-sensitive</span>
                 </label>
             </div>
+            <!-- D9: scope shortcuts moved inside the popover. ⌥C "Use current
+                 folder", ⌥V "All folders". Only active while the popover is open
+                 (matching the round-2 resolved shortcut allocation: the global
+                 ⌥F now drives the Filename mode chip instead). -->
             <div class="popover-footer">
                 <button
                     type="button"
@@ -465,7 +485,7 @@
                     }}
                 >
                     Use current folder
-                    <kbd class="footer-kbd">⌥F</kbd>
+                    <kbd class="footer-kbd">⌥C</kbd>
                 </button>
                 <button
                     type="button"
@@ -476,7 +496,7 @@
                     }}
                 >
                     All folders
-                    <kbd class="footer-kbd">⌥D</kbd>
+                    <kbd class="footer-kbd">⌥V</kbd>
                 </button>
             </div>
         </div>

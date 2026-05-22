@@ -23,7 +23,13 @@ describe('SearchFooterActions a11y', () => {
     document.body.appendChild(target)
     mount(SearchFooterActions, {
       target,
-      props: { resultCount: 3, disabled: false, onShowAllInMainWindow: () => {}, onGoToFile: () => {} },
+      props: {
+        resultCount: 3,
+        disabled: false,
+        onShowAllInMainWindow: () => {},
+        onGoToFile: () => {},
+        enterAction: 'go-to-file' as const,
+      },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -35,7 +41,13 @@ describe('SearchFooterActions a11y', () => {
     document.body.appendChild(target)
     mount(SearchFooterActions, {
       target,
-      props: { resultCount: 3, disabled: true, onShowAllInMainWindow: () => {}, onGoToFile: () => {} },
+      props: {
+        resultCount: 3,
+        disabled: true,
+        onShowAllInMainWindow: () => {},
+        onGoToFile: () => {},
+        enterAction: 'run-search' as const,
+      },
     })
     await tick()
     await expectNoA11yViolations(target)

@@ -843,7 +843,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     cleanup()
   })
 
-  it('does nothing when there are no results', async () => {
+  it('renders the Show all button disabled and does nothing when there are no results', async () => {
     let opened = false
     const { cleanup } = await mountDialog({
       onShowAllInMainWindow: () => {
@@ -852,10 +852,12 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     })
     // No results seeded.
     await tick()
-    // The button is hidden when resultCount === 0, so we can't click it through the
-    // DOM. Confirm visibility gate by checking the SearchFooterActions output.
-    const btn = document.body.querySelector('button[aria-label="Show all in main window"]')
-    expect(btn).toBeNull()
+    // Round 2 D6: the button stays VISIBLE when resultCount === 0, just rendered
+    // disabled. Yanking it would jump the layout while the user is mid-thought.
+    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement | null
+    expect(btn).not.toBeNull()
+    expect(btn?.disabled).toBe(true)
+    btn?.click()
     expect(opened).toBe(false)
     cleanup()
   })

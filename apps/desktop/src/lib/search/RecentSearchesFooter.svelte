@@ -40,6 +40,8 @@
 
 {#if visible.length > 0}
     <div class="recent-footer" role="region" aria-label="Recent searches">
+        <!-- D5: explicit label so the user can read what these chips are. -->
+        <span class="recent-label">Recent searches:</span>
         {#each visible as entry (entry.id)}
             <button
                 type="button"
@@ -82,6 +84,14 @@
         padding: var(--spacing-sm) var(--spacing-lg);
         overflow-x: auto;
         scrollbar-width: thin;
+    }
+
+    /* D5: leading label so the user reads the strip as "Recent searches: …". */
+    .recent-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
+        margin-right: var(--spacing-xxs);
     }
 
     .recent-chip,
