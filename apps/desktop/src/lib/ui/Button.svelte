@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Snippet } from 'svelte'
+    import { onMount, type Snippet } from 'svelte'
 
     type Variant = 'primary' | 'secondary' | 'danger'
     type Size = 'regular' | 'mini'
@@ -11,6 +11,12 @@
         type?: 'button' | 'submit'
         onclick?: (e: MouseEvent) => void
         'aria-label'?: string
+        /**
+         * Focus this button after mount. Uses `requestAnimationFrame` so it lands
+         * after a parent `ModalDialog`'s post-`tick()` overlay focus, which would
+         * otherwise win and steal focus to the scrim.
+         */
+        autoFocus?: boolean
         children: Snippet
     }
 
@@ -21,11 +27,27 @@
         type = 'button',
         onclick,
         'aria-label': ariaLabel,
+        autoFocus = false,
         children,
     }: Props = $props()
+
+    let buttonEl: HTMLButtonElement | undefined
+    onMount(() => {
+        if (!autoFocus) return
+        requestAnimationFrame(() => {
+            buttonEl?.focus()
+        })
+    })
 </script>
 
-<button {type} class="btn btn-{variant} btn-{size}" {disabled} {onclick} aria-label={ariaLabel}>
+<button
+    bind:this={buttonEl}
+    {type}
+    class="btn btn-{variant} btn-{size}"
+    {disabled}
+    {onclick}
+    aria-label={ariaLabel}
+>
     {@render children()}
 </button>
 

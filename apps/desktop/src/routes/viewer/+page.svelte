@@ -31,6 +31,7 @@
         describeSelectionForAt,
         estimateSelectionBytes,
         getLineSegmentBounds,
+        isWholeFileSelection,
         normaliseSelection,
     } from './selection.svelte'
     import { createViewerCopy } from './viewer-copy.svelte'
@@ -182,8 +183,18 @@
      * the "unknown size" branch and confirm before reading).
      */
     function estimateCurrentSelectionBytes(): number | null {
+        const sel = selection.selection
+        if (sel === null) return 0
+        // Whole-file shortcut: ⌘A on a multi-MB file selects lines the user never scrolled
+        // through, so the line cache can't service the per-line walk. `totalBytes` is the
+        // exact answer (it's the file size from `viewer_open`) and avoids the bail-to-null
+        // that would otherwise route to the "unknown size" confirm dialog instead of the
+        // correct refuse / confirm tier.
+        if (isWholeFileSelection(sel, totalLines)) {
+            return totalBytes
+        }
         return estimateSelectionBytes(
-            selection.selection,
+            sel,
             (n) => {
                 const txt = scroll.lineCache.get(n)
                 if (txt === undefined) return null
@@ -1111,6 +1122,7 @@
         dialogId="viewer-copy-confirm"
         titleId="viewer-copy-confirm-title"
         onclose={cancelCopyConfirm}
+        containerStyle="max-width: 480px"
     >
         {#snippet title()}
             <h2 id="viewer-copy-confirm-title" class="copy-dialog-title">
@@ -1121,23 +1133,26 @@
                 {/if}
             </h2>
         {/snippet}
-        <p class="copy-dialog-body">
-            Large pastes can slow down other apps. Try search (⌘F) to narrow it down.
-        </p>
-        <div class="copy-dialog-actions">
-            <Button variant="secondary" onclick={cancelCopyConfirm}>Cancel</Button>
-            <Button
-                variant="secondary"
-                onclick={() => {
-                    void handleSaveAs()
-                }}>Save as file…</Button
-            >
-            <Button
-                variant="primary"
-                onclick={() => {
-                    if (copyConfirmProceed) void copyConfirmProceed()
-                }}>Copy</Button
-            >
+        <div class="copy-dialog-body-wrap">
+            <p class="copy-dialog-body">
+                Large pastes can slow down other apps. Try search (⌘F) to narrow it down.
+            </p>
+            <div class="copy-dialog-actions">
+                <Button variant="secondary" onclick={cancelCopyConfirm}>Cancel</Button>
+                <Button
+                    variant="secondary"
+                    onclick={() => {
+                        void handleSaveAs()
+                    }}>Save as file…</Button
+                >
+                <Button
+                    variant="primary"
+                    autoFocus
+                    onclick={() => {
+                        if (copyConfirmProceed) void copyConfirmProceed()
+                    }}>Copy</Button
+                >
+            </div>
         </div>
     </ModalDialog>
 {/if}
@@ -1148,24 +1163,28 @@
         dialogId="viewer-copy-refuse"
         titleId="viewer-copy-refuse-title"
         onclose={dismissCopyRefuse}
+        containerStyle="max-width: 480px"
     >
         {#snippet title()}
             <h2 id="viewer-copy-refuse-title" class="copy-dialog-title">
                 Copy {formatBytes(refuseBytes)} to the clipboard?
             </h2>
         {/snippet}
-        <p class="copy-dialog-body">
-            That's larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the
-            selection as a file.
-        </p>
-        <div class="copy-dialog-actions">
-            <Button variant="secondary" onclick={dismissCopyRefuse}>Cancel</Button>
-            <Button
-                variant="primary"
-                onclick={() => {
-                    void handleSaveAs()
-                }}>Save as file…</Button
-            >
+        <div class="copy-dialog-body-wrap">
+            <p class="copy-dialog-body">
+                That's larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the
+                selection as a file.
+            </p>
+            <div class="copy-dialog-actions">
+                <Button variant="secondary" onclick={dismissCopyRefuse}>Cancel</Button>
+                <Button
+                    variant="primary"
+                    autoFocus
+                    onclick={() => {
+                        void handleSaveAs()
+                    }}>Save as file…</Button
+                >
+            </div>
         </div>
     </ModalDialog>
 {/if}
@@ -1542,17 +1561,21 @@
         margin: 0;
     }
 
+    /* Matches the AlertDialog body wrapper: design-system § Dialogs body padding 0 24px 24px. */
+    .copy-dialog-body-wrap {
+        padding: 0 var(--spacing-xl) var(--spacing-xl);
+    }
+
     .copy-dialog-body {
         font-size: var(--font-size-md);
         line-height: 1.4;
         color: var(--color-text-secondary);
-        margin-top: var(--spacing-md);
+        margin: 0 0 var(--spacing-xl);
     }
 
     .copy-dialog-actions {
         display: flex;
         gap: var(--spacing-md);
         justify-content: flex-end;
-        margin-top: var(--spacing-xl);
     }
 </style>

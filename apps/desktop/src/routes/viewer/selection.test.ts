@@ -8,6 +8,7 @@ import {
   getLineSegmentBounds,
   isEmpty,
   isLineInRange,
+  isWholeFileSelection,
   lineOffsetEquals,
   makeSelectAll,
   MAX_ANNOUNCE_LINES,
@@ -230,6 +231,55 @@ describe('makeSelectAll', () => {
       anchor: { line: 0, offset: 0 },
       focus: { line: 2, offset: 0 },
     })
+  })
+})
+
+describe('isWholeFileSelection', () => {
+  it('matches the output of makeSelectAll', () => {
+    expect(isWholeFileSelection(makeSelectAll(100, 50), 100)).toBe(true)
+  })
+
+  it('matches the ByteSeek-no-index sentinel (focus.line = MAX_SAFE_INTEGER)', () => {
+    const sel: Selection = {
+      anchor: { line: 0, offset: 0 },
+      focus: { line: Number.MAX_SAFE_INTEGER, offset: 0 },
+    }
+    expect(isWholeFileSelection(sel, null)).toBe(true)
+    expect(isWholeFileSelection(sel, 50)).toBe(true)
+  })
+
+  it('rejects non-zero start line', () => {
+    const sel: Selection = { anchor: { line: 1, offset: 0 }, focus: { line: 99, offset: 0 } }
+    expect(isWholeFileSelection(sel, 100)).toBe(false)
+  })
+
+  it('rejects non-zero start offset', () => {
+    const sel: Selection = { anchor: { line: 0, offset: 1 }, focus: { line: 99, offset: 5 } }
+    expect(isWholeFileSelection(sel, 100)).toBe(false)
+  })
+
+  it('rejects end before the last line', () => {
+    const sel: Selection = { anchor: { line: 0, offset: 0 }, focus: { line: 50, offset: 0 } }
+    expect(isWholeFileSelection(sel, 100)).toBe(false)
+  })
+
+  it('treats end at last-line-start as whole-file (over-include is fine for tier classification)', () => {
+    const sel: Selection = { anchor: { line: 0, offset: 0 }, focus: { line: 99, offset: 0 } }
+    expect(isWholeFileSelection(sel, 100)).toBe(true)
+  })
+
+  it('normalises reversed selections', () => {
+    const reversed: Selection = { anchor: { line: 99, offset: 50 }, focus: { line: 0, offset: 0 } }
+    expect(isWholeFileSelection(reversed, 100)).toBe(true)
+  })
+
+  it('returns false for null selection', () => {
+    expect(isWholeFileSelection(null, 100)).toBe(false)
+  })
+
+  it('without totalLines and without sentinel, never matches', () => {
+    const sel: Selection = { anchor: { line: 0, offset: 0 }, focus: { line: 99, offset: 5 } }
+    expect(isWholeFileSelection(sel, null)).toBe(false)
   })
 })
 

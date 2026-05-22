@@ -131,7 +131,13 @@
 >
     <div class="modal-dialog" class:dragging={isDragging} style={dialogStyle}>
         {#if onclose}
-            <button class="modal-close-button" onclick={onclose} aria-label="Close">×</button>
+            <!--
+                tabindex=-1 keeps the × out of the tab cycle. The dialog's action buttons
+                should be the only tab stops; × is a mouse / Escape-key affordance. Without
+                this, Tab from the overlay lands on × first, which surprises keyboard users
+                expecting the primary or first action to be the entry point.
+            -->
+            <button class="modal-close-button" onclick={onclose} aria-label="Close" tabindex="-1">×</button>
         {/if}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="dialog-title-bar" class:draggable onmousedown={handleTitleMouseDown}>

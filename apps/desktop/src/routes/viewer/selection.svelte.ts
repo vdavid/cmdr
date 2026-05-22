@@ -139,6 +139,28 @@ export function makeSelectAll(totalLines: number, lastLineLength: number): Selec
 }
 
 /**
+ * Returns `true` if the selection covers the whole file. Used by the copy flow to
+ * short-circuit the per-line byte estimator with the known file size: walking lines
+ * fails for ⌘A on large files because the line cache only contains lines the user
+ * has scrolled past, but the file size is known at viewer-open time.
+ *
+ * Matches three cases:
+ * 1. ByteSeek-no-index sentinel: `end.line === Number.MAX_SAFE_INTEGER`.
+ * 2. Known total lines: `end.line >= totalLines - 1` (the last line is included).
+ * 3. `start === (0, 0)` is required in all cases.
+ *
+ * Reversed selections (anchor below focus) normalise first.
+ */
+export function isWholeFileSelection(sel: Selection | null, totalLines: number | null): boolean {
+  if (sel === null) return false
+  const { start, end } = normaliseSelection(sel)
+  if (start.line !== 0 || start.offset !== 0) return false
+  if (end.line === Number.MAX_SAFE_INTEGER) return true
+  if (totalLines !== null && end.line >= totalLines - 1) return true
+  return false
+}
+
+/**
  * Maximum number of intermediate lines the AT (VoiceOver) announcement loop walks
  * before falling back to a generic "extends past visible content" message. Caps the
  * 9e15-line worst case from ⌘A in ByteSeek-no-index mode (where `focus.line` is set
