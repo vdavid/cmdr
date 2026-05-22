@@ -24,7 +24,9 @@ type PageLike = TauriPage | BrowserPageAdapter
 
 const SEARCH_OVERLAY = '.search-overlay'
 const SEARCH_INPUT = '.search-overlay input'
-const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Open in pane"]'
+// Round 3 renamed the "Open in pane" footer button to "Show all in main window".
+// The handler and the snapshot-pane promotion is the same; only the label changed.
+const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]'
 /**
  * The right pane's content area when it's showing a search-results snapshot.
  * `FilePane.svelte` renders `SearchResultsView` (rooted in a `.full-list`

@@ -22,7 +22,12 @@ const SIZE_CHIP_DEFAULT = '.search-overlay .filter-chip[aria-label="Size"]'
 const SIZE_CHIP_CONFIGURED = '.search-overlay .filter-chip.is-configured'
 const SIZE_CHIP_CLEAR = '.search-overlay .filter-chip.is-configured .chip-clear'
 const FILTER_POPOVER = '.search-overlay .filter-chip-popover'
-const SIZE_MIN_INPUT = '.search-overlay .filter-chip-popover input[aria-label="Minimum size value"]'
+// Round 3 D10 replaced the `<select>` + number input chain with a list-style
+// grid. Each comparator / preset / unit is a `role="radio"` button inside a
+// labeled `role="radiogroup"` column. The "≥" cell sits in the Comparator
+// column; the "100" cell sits in the "Minimum size value" column.
+const SIZE_COMPARATOR_GTE = `${FILTER_POPOVER} [role="radiogroup"][aria-label="Comparator"] button[role="radio"]:nth-child(2)`
+const SIZE_VALUE_100 = `${FILTER_POPOVER} [role="radiogroup"][aria-label="Minimum size value"] button[role="radio"]:nth-child(8)`
 
 test.describe('Search dialog: filter chips', () => {
   test('Size chip: open popover, set min, confirm, clear via ×', async ({ tauriPage }) => {
@@ -34,27 +39,17 @@ test.describe('Search dialog: filter chips', () => {
     expect(await tauriPage.count(SIZE_CHIP_DEFAULT)).toBe(1)
     expect(await tauriPage.count(SIZE_CHIP_CONFIGURED)).toBe(0)
 
-    // Click the Size chip → popover opens. The popover renders the comparator
-    // select; setting it to `gte` from default `any` exposes the value input.
+    // Click the Size chip → popover opens.
     await tauriPage.click(SIZE_CHIP_DEFAULT)
     await tauriPage.waitForSelector(FILTER_POPOVER, 2000)
-    await tauriPage.evaluate(`(function(){
-        var sel = document.querySelector('.search-overlay .filter-chip-popover select[aria-label="Size comparator"]');
-        if (!sel) return;
-        sel.value = 'gte';
-        sel.dispatchEvent(new Event('change', { bubbles: true }));
-    })()`)
 
-    // Fill the min-size input. The chip's configured summary reads back from
-    // the same state, so we poll the chip class once the input lands.
-    await tauriPage.waitForSelector(SIZE_MIN_INPUT, 2000)
-    await tauriPage.evaluate(`(function(){
-        var el = document.querySelector(${JSON.stringify(SIZE_MIN_INPUT)});
-        if (!el) return;
-        el.focus();
-        el.value = '100';
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-    })()`)
+    // Pick the ≥ comparator from the first list column.
+    await tauriPage.waitForSelector(SIZE_COMPARATOR_GTE, 2000)
+    await tauriPage.click(SIZE_COMPARATOR_GTE)
+
+    // Pick the "100" preset from the second list column. The chip's configured
+    // summary reads back from the same state, so we poll the chip class.
+    await tauriPage.click(SIZE_VALUE_100)
     const configured = await pollUntil(tauriPage, async () => (await tauriPage.count(SIZE_CHIP_CONFIGURED)) === 1, 2000)
     expect(configured).toBe(true)
 

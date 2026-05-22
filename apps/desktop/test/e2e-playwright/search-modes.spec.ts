@@ -29,41 +29,66 @@ import {
 } from './search-helpers.js'
 
 test.describe('Search dialog: mode shortcuts', () => {
-  test('⌘1/⌘2/⌘3 switch modes and preserve the typed query', async ({ tauriPage }) => {
+  // Round 2 part B introduced per-mode hand-typed buffers (`handTyped.ai`,
+  // `handTyped.filename`, `handTyped.regex`). Switching modes now SWAPS the
+  // bar to the target mode's buffer, not the same shared string. The original
+  // test asserted the shared-buffer contract; updated below to pin the
+  // per-mode behavior plus the round-trip ("buffer for mode X survives a
+  // detour through modes Y and Z").
+  test('⌘1/⌘2/⌘3 switch modes and preserve each mode\'s own typed query', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     await openSearchDialog(tauriPage)
 
-    // Seed a query that has no chance of matching anything (we don't care about
-    // results here; we only care that the value sticks across mode switches).
-    await setSearchInputValue(tauriPage, 'zzz-xyz-marker')
-    expect(await getSearchInputValue(tauriPage)).toBe('zzz-xyz-marker')
-
     const aiOn = await hasAiChip(tauriPage)
     if (aiOn) {
+      // Open lands on AI. Seed an AI-mode query.
+      expect(await getActiveMode(tauriPage)).toBe('ai')
+      await setSearchInputValue(tauriPage, 'ai-prompt-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('ai-prompt-marker')
+
+      // ⌘2 → filename. Buffer is empty (never typed in filename mode here).
       await pressMetaDigit(tauriPage, 2)
       expect(await pollActiveMode(tauriPage, 'filename')).toBe(true)
-      expect(await getSearchInputValue(tauriPage)).toBe('zzz-xyz-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('')
 
+      // Seed a filename buffer.
+      await setSearchInputValue(tauriPage, 'filename-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
+
+      // ⌘3 → regex. Empty again.
       await pressMetaDigit(tauriPage, 3)
       expect(await pollActiveMode(tauriPage, 'regex')).toBe(true)
-      expect(await getSearchInputValue(tauriPage)).toBe('zzz-xyz-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('')
 
+      // ⌘1 → AI. The original AI prompt is back.
       await pressMetaDigit(tauriPage, 1)
       expect(await pollActiveMode(tauriPage, 'ai')).toBe(true)
-      expect(await getSearchInputValue(tauriPage)).toBe('zzz-xyz-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('ai-prompt-marker')
+
+      // ⌘2 → filename again. The filename buffer survived the detour.
+      await pressMetaDigit(tauriPage, 2)
+      expect(await pollActiveMode(tauriPage, 'filename')).toBe(true)
+      expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
     } else {
-      // AI off: ⌘1 = Filename, ⌘2 = Regex, ⌘3 no-op. The dialog opens on
-      // Filename by default in this lane.
+      // AI off: ⌘1 = Filename, ⌘2 = Regex, ⌘3 no-op.
       expect(await getActiveMode(tauriPage)).toBe('filename')
 
+      await setSearchInputValue(tauriPage, 'filename-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
+
+      // ⌘2 → regex. Empty buffer.
       await pressMetaDigit(tauriPage, 2)
       expect(await pollActiveMode(tauriPage, 'regex')).toBe(true)
-      expect(await getSearchInputValue(tauriPage)).toBe('zzz-xyz-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('')
 
+      await setSearchInputValue(tauriPage, 'regex-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('regex-marker')
+
+      // ⌘1 → filename. The filename buffer survived the detour.
       await pressMetaDigit(tauriPage, 1)
       expect(await pollActiveMode(tauriPage, 'filename')).toBe(true)
-      expect(await getSearchInputValue(tauriPage)).toBe('zzz-xyz-marker')
+      expect(await getSearchInputValue(tauriPage)).toBe('filename-marker')
     }
 
     await closeSearchDialog(tauriPage)

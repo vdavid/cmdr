@@ -141,15 +141,21 @@ impl Fixture {
     /// from upstream git), so no `init.defaultBranch` ceremony.
     ///
     /// We also write `user.name` / `user.email` into the repo's local
-    /// `.git/config`. gix's `Repository::reference(...)` writes a reflog
-    /// entry for the new branch and needs a committer signature for it;
-    /// without explicit config it falls back to the user's global git
-    /// config, which doesn't exist inside the Linux test container.
+    /// `.git/config` AND re-open the repo so the cached config snapshot
+    /// reflects the new values. `gix::Repository::reference(...)` writes
+    /// a reflog entry for the new branch and needs a committer signature
+    /// for it; without explicit config it falls back to the user's global
+    /// git config, which doesn't exist inside the Linux test container.
     /// Writing the local config is the cleanest fix: no env-var mutation
     /// (thread-unsafe under cargo nextest's parallel tests), no shell-out.
+    /// The re-open is essential: gix snapshots the config at handle
+    /// creation, so a write after `gix::init` is invisible to the original
+    /// handle. macOS dev machines tend to have global config set so the
+    /// fallback worked there; Docker images don't, which surfaced the bug.
     pub(super) fn init(dir: PathBuf) -> Self {
-        let repo = gix::init(&dir).expect("gix::init");
+        let _initial = gix::init(&dir).expect("gix::init");
         Self::seed_committer_config(&dir);
+        let repo = gix::open(&dir).expect("gix::open (post-config)");
         Self {
             dir,
             repo,

@@ -21,7 +21,8 @@ import { test, expect } from './fixtures.js'
 import { ensureAppReady, pollUntil } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 
-const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Open in pane"]'
+// Round 3 renamed the "Open in pane" footer button to "Show all in main window".
+const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]'
 
 test.describe('Search dialog: recent searches', () => {
   test('Open-in-pane persists the query to the backend recent-search store', async ({ tauriPage }) => {

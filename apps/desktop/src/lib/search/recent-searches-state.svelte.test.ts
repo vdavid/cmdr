@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { HistoryEntry } from '$lib/tauri-commands'
 
 vi.mock('$lib/tauri-commands', async (orig) => {
-  const actual = (await orig()) as Record<string, unknown>
+  const actual = (await orig())
   return {
     ...actual,
     getRecentSearches: vi.fn(),
