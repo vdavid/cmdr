@@ -3,6 +3,20 @@
 Spec for adding "Select files…" / "Deselect files…" to Cmdr, by unifying it with the existing whole-drive Search
 dialog under a shared `QueryDialog` primitive.
 
+## Plan history
+
+- **Round 1 review** (Opus, fresh-eyes): 8 blockers, 17 important gaps, 12 nice-to-haves. Verdict: REVISE.
+- **Round 1 revisions** (in this file): all blockers and important gaps addressed. Key corrections:
+  ToggleGroup primitive now carries a `semantics: 'tabs' | 'toggles'` prop so Query gets tablist a11y and Settings
+  keeps toggle-group a11y while sharing one component (B1, B2). Snapshot panes match against `entry.name` (which is
+  already the displayed friendly path), not `entry.path` (B3). Model name is "the configured cloud model"; no
+  `gpt-5.5` hard-codes (B4). Keystroke binding is Total Commander parity: `event.key === '+'` and
+  `event.key === '-'` (B5). M4 drops the line-count target; the wrapper is sized by responsibility, not lines (B6).
+  M2 splits the state factory into a cross-consumer core plus a Search-specific extras module (B7, G6). Selection's
+  mode set is locked: AI / Filename / Regex (B8). Capability files, CommandScope value, platform menu files, AI
+  provider gating, and the CLAUDE.md split sheet are now explicit (G1, G3, G4, G7, G10). `QueryModeToggleGroup`
+  renamed to `ModeChips` (N1).
+
 ## Why
 
 Cmdr's selection model is rich (Space, Insert, Shift+arrow toggle-and-fill, ⌘A, ⌘⇧A), but power users have no way to
@@ -116,12 +130,15 @@ sanity check that we're not over-engineering.
 - `lib/query-ui/` is the home of the shared primitives.
 - `lib/query-ui/QueryDialog.svelte` is the orchestrator.
 - `lib/query-ui/QueryBar.svelte` (renamed from `SearchBar`).
-- `lib/query-ui/QueryModeToggleGroup.svelte` (renamed from `SearchModeChips`; built on top of
-  `lib/ui/ToggleGroup.svelte`).
+- `lib/query-ui/ModeChips.svelte` (renamed from `SearchModeChips`; built on top of `lib/ui/ToggleGroup.svelte` with
+  `semantics="tabs"`).
 - `lib/query-ui/AiPromptStrip.svelte` (renamed from `AiTransparencyStrip`).
 - `lib/query-ui/FilterChips.svelte` (renamed from `SearchFilterChips`; scope chip and Pattern chip become props).
 - `lib/query-ui/recent-items/` for the recent-items footer, popover, and factory store.
-- `lib/query-ui/query-filter-state.svelte.ts` (factory replacing the module-singleton `search-state.svelte.ts`).
+- `lib/query-ui/query-filter-state.svelte.ts` (factory replacing the module-singleton `search-state.svelte.ts`; ONLY
+  cross-consumer fields, see M2 for the split).
+- `lib/search/search-extras-state.svelte.ts` (Search-only fields: `scope`, `excludeSystemDirs`, `lastAiLabel`,
+  `lastAiPattern`, `lastAiPatternKind`; composed alongside the core factory instance, not merged into it).
 - `lib/search/` keeps Search-specific code: `SearchDialog.svelte` wrapper (thin) that wires Search's config; snapshot
   store; `search-results://` machinery; MCP listener wiring; index lifecycle.
 - `lib/selection-dialog/` is the new feature: `SelectionDialog.svelte` (thin wrapper), `selection-matching.ts` (pure
@@ -136,9 +153,18 @@ query, not for what the query searches over.
 
 The matcher is a pure function `match(name: string, pattern: string, opts: { mode: 'glob' | 'regex'; caseSensitive: boolean }): boolean`.
 
-For Selection, it takes a `getNameFor(index: number) → string` accessor passed by the dialog: regular panes return
-`entry.name`, `search-results://` panes return `entry.path` (which is what the user sees in those panes' list, per the
-M8 fixup). Same matcher, different accessor.
+For Selection, it takes a `getNameFor(index: number) → string` accessor passed by the dialog. In both pane kinds, the
+accessor returns the string the user sees in the list:
+
+- **Regular pane**: returns `entry.name` (the basename, what the file is called).
+- **`search-results://` pane**: returns `entry.name` too. Per `lib/file-explorer/CLAUDE.md` § "Search-results virtual
+  volume" and search-fixup item 15: in `SearchResultsView`, the adapted entry's `name` IS the friendly full path
+  (home folder shown as `~`, mid-truncated for display). That's what `findItemIndex` matches on, and that's what
+  type-to-jump operates on. Selection follows the same rule: what the user sees is what the matcher matches.
+
+Same matcher, single accessor rule across pane kinds. No special-casing in the matcher itself; the dialog passes the
+right accessor. A unit test in `selection-matching.test.ts` pins the snapshot-pane accessor returning the friendly
+name (with `~`), not the raw `entry.path`.
 
 Glob mode reuses the same translation as Search's filename mode: `*` and `?` only, anchored. Regex mode uses
 JavaScript's `RegExp` directly (Search currently delegates to Rust for regex; Selection doesn't need to round-trip
@@ -229,7 +255,8 @@ respective IPCs through the same store shape.
 ### Title bar
 
 A new minimal title bar at the top of the dialog: 32 px tall, `--font-size-md` weight 500, centered. Only the title
-text and (optional) a close button on the right. Both Search and Selection render it. Spec:
+text. **No close button** (Escape closes the dialog; that's the only close path). The title bar is **not in the Tab
+order**: text-only header, no interactive elements. Both Search and Selection render it. Spec:
 
 ```svelte
 <header class="query-dialog__title">
@@ -254,18 +281,60 @@ text and (optional) a close button on the right. Both Search and Selection rende
 (We will NOT use `ModalDialog`. The search dialog explicitly avoids it because the custom keyboard handling fights
 `ModalDialog`'s focus management. The new title bar is a thin addition to the existing custom overlay.)
 
-### Mode chips: `lib/ui/ToggleGroup.svelte`
+### Mode chips: shared visual primitive, two ARIA shapes
 
-A new generic primitive in `lib/ui/ToggleGroup.svelte` with props
-`{ value: string; options: ToggleOption[]; onChange: (value: string) => void; ariaLabel: string; disabled?: boolean }`
-where `ToggleOption = { value: string; label: string; badge?: string; hint?: string; disabled?: boolean; tooltip?: string; ariaLabel?: string }`.
+Today's `SearchModeChips.svelte` is a bespoke `role="tablist"` (246 lines, hand-rolled arrow-key motion, AI badge,
+⌥A/F/R hints, the visible-disabled Content chip with "Coming soon" tooltip). Today's `SettingToggleGroup.svelte` is
+an Ark UI `ToggleGroup` (101 lines, single-value toggle). The two have genuinely different a11y semantics:
+- Search mode chips drive a UI mode (active = "this is the current mode"). `role="tablist"` + `aria-selected` is
+  correct; AT users hear "tab 1 of 4, AI mode, selected".
+- Settings toggle groups pick a stored value (active = "this is the chosen setting value"). Ark's `ToggleGroup` with
+  single-select is correct; AT users hear "toggle button, kB, pressed".
 
-`SettingToggleGroup.svelte` becomes a thin wrapper that reads a setting definition and builds the options array.
-`QueryModeToggleGroup.svelte` (the new home of the AI / Filename / Regex chips) is another thin wrapper.
+Forcing both onto Ark's `ToggleGroup` would push the Search mode chips into the wrong a11y model. Splitting into
+two primitives would diverge visually. The right answer: one component with one visual contract, two ARIA shapes.
 
-The ToggleGroup uses Ark UI's `ToggleGroup` primitive under the hood (same as today's SettingToggleGroup) so a11y and
-keyboard navigation come for free. CSS uses the same scoped tokens already in SettingToggleGroup.svelte; the new
-features (badge, hint, disabled-with-tooltip) extend the option-cell template.
+**`lib/ui/ToggleGroup.svelte`** (new):
+
+```ts
+interface Props {
+  semantics: 'tabs' | 'toggles'        // 'tabs' → role="tablist", 'toggles' → Ark ToggleGroup
+  value: string
+  options: Array<{
+    value: string
+    label: string
+    badge?: string                      // "AI" pill before the label
+    hint?: string                       // "⌥A" inline shortcut hint
+    disabled?: boolean
+    tooltip?: string                    // shown when disabled or always; opt-in
+    ariaLabel?: string                  // overrides the computed accessible name
+  }>
+  onChange: (value: string) => void
+  ariaLabel: string                     // tablist/toggle-group accessible name
+  disabled?: boolean
+}
+```
+
+Implementation:
+
+- **`semantics: 'tabs'`**: renders as `<div role="tablist">` with each option as `<button role="tab" aria-selected>`.
+  Arrow-key motion skips disabled options. Active option is `tabindex=0`; the rest are `tabindex=-1`. Matches
+  today's `SearchModeChips` behavior verbatim.
+- **`semantics: 'toggles'`**: wraps Ark UI's `ToggleGroup.Root` + `ToggleGroup.Item`. Single-select. Matches today's
+  `SettingToggleGroup` behavior verbatim. (We import Ark and use it under the hood for this branch only.)
+- Shared CSS: visual chrome (border, radius, hover, active background, focus ring) lives at the component level so
+  both ARIA shapes render identically. Badge and hint slots render the same way in both modes.
+
+Two consumer wrappers:
+
+- **`lib/ui/ToggleGroup.svelte`** itself is generic. Both Settings and Query import it.
+- **`lib/settings/components/SettingToggleGroup.svelte`** becomes a thin wrapper that reads the setting definition,
+  builds the options, and renders `<ToggleGroup semantics="toggles" … />`. Public API unchanged.
+- **`lib/query-ui/ModeChips.svelte`** is the Query mode chip row. Renders `<ToggleGroup semantics="tabs" … />`.
+  Same external props as today's `SearchModeChips` (mode, aiEnabled, disabled, onSelect). The disabled Content chip
+  (option entry with `disabled: true, tooltip: "Coming soon: full-text search inside files"`) carries over.
+
+Tests cover both semantics modes (tier-3 axe-core audit) so the a11y contract is pinned in CI.
 
 ### Where this all goes
 
@@ -284,9 +353,9 @@ apps/desktop/src/lib/
     QueryBar.svelte                 ← was SearchBar.svelte
     QueryBar.svelte.test.ts
     QueryBar.a11y.test.ts
-    QueryModeToggleGroup.svelte     ← was SearchModeChips.svelte
-    QueryModeToggleGroup.svelte.test.ts
-    QueryModeToggleGroup.a11y.test.ts
+    ModeChips.svelte                ← was SearchModeChips.svelte
+    ModeChips.svelte.test.ts
+    ModeChips.a11y.test.ts
     AiPromptStrip.svelte            ← was AiTransparencyStrip.svelte
     AiPromptStrip.svelte.test.ts
     AiPromptStrip.a11y.test.ts
@@ -363,14 +432,27 @@ apps/desktop/src-tauri/src/
 Per `lib/search/CLAUDE.md` (the existing table), all shortcuts stay as they are in Search. Selection inherits all of
 them. Two new globals route through the existing dispatch in `command-dispatch.ts`:
 
-| Shortcut | Where | Action |
-|----------|-------|--------|
-| `=` (Shift+=, key `'+'`) | focused pane | Opens Selection dialog in `add` mode |
-| `-` | focused pane | Opens Selection dialog in `remove` mode |
+| Shortcut                     | Where         | Action                                       |
+|------------------------------|---------------|----------------------------------------------|
+| `+` (Shift+= on US QWERTY)   | focused pane  | Opens Selection dialog in `add` mode         |
+| `-` (bare)                   | focused pane  | Opens Selection dialog in `remove` mode      |
 
-Both bind via `event.key === '+'` / `event.key === '-'` so non-QWERTY layouts that produce the same key event also
-work. Must NOT trigger if any modifier (⌘ / ⌥ / ⌃ / ⇧ other than the implicit shift inside `+`) is held. The dispatch
-guard checks `!e.metaKey && !e.altKey && !e.ctrlKey` and that the focus is on the pane (not in an input).
+Total Commander parity. Implementation: bind `event.key === '+'` for the add path, `event.key === '-'` for the remove
+path. On US QWERTY, the user perceives the add shortcut as "Shift+=" (which fires `event.key === '+'`); on layouts
+where `+` is unshifted, plain `+` fires the same event. Either way, the dialog opens.
+
+Constraint: the dispatch guard MUST reject if `event.metaKey || event.altKey || event.ctrlKey` is true. The bare key
+itself can carry the shift modifier (since `event.key === '+'` is produced by Shift+= on US), so the guard does NOT
+test `event.shiftKey`. We test:
+
+```ts
+if (e.metaKey || e.altKey || e.ctrlKey) return false
+if (e.key !== '+' && e.key !== '-') return false
+if (focusIsInInputElement) return false
+// dispatch
+```
+
+A unit test pins this exact event filter. M7 adds it.
 
 `⏎` inside the Selection dialog dispatches via the same `deriveEnterAction` state machine. The two outcomes map to
 `'run-query'` (run the matcher and refresh the preview) and `'apply-selection'` (apply to focused pane and close).
@@ -397,19 +479,22 @@ two new items. Update `menu_id_to_command` and `command_id_to_menu_id` according
 ### Empty state copy
 
 Selection's `EmptyState` uses the same three-example block as Search, with different example chips and no
-"Index ready" line. The implementing agent picks final copy in M5; here's the seed:
+"Index ready" line. AI examples pair with non-AI examples that match the same intent so the user sees the parity.
+Seed (the implementing agent refines in M10):
 
 ```
 Try…
 
-[ ✨ all image files ]     [ ✨ logs newer than a week ]     [ ✨ files bigger than 5 MB ]
+[ ✨ all image files ]            [ ✨ logs newer than a week ]     [ ✨ files bigger than 5 MB ]
 or
-[ *.pdf ]                   [ *report* ]                       [ /^\d{4}-/ ]
+[ *.{jpg,png,gif} ]               [ *.log ]                          [ (use Size > 5 MB) ]
 
-Press ↓ to navigate matches • ⌘N to start over
+Press ↓ to navigate matches  •  ⌘N to start over
 ```
 
-(Match the existing Search EmptyState's structure exactly; we're just swapping the examples and dropping one line.)
+The third non-AI slot points at the size filter chip rather than offering a pattern, because size isn't a pattern.
+Match the existing Search EmptyState's structure exactly; we're just swapping the examples and dropping the
+"Index ready" line.
 
 ## Decision log
 
@@ -419,7 +504,7 @@ Press ↓ to navigate matches • ⌘N to start over
 - **One `QueryDialog` over two dialogs with shared subcomponents.** The orchestrator carries 90% of the polish; sharing
   only subcomponents wouldn't share the polish.
 - **Factory `createQueryFilterState()` over module-singleton state.** Two consumers need two state instances. The
-  refactor is mechanical (~100 call sites) but unblocks everything else.
+  refactor is mechanical (15 files, ~471 identifier usages per a fresh grep) but unblocks everything else.
 - **Move `SearchModeChips` into a generic `ToggleGroup` even though Settings's version is narrower.** Both Settings and
   Query benefit from a single segmented-control primitive. The generic carries the union of features (badge, hint,
   per-option disabled with tooltip); Settings just doesn't use the extras.
@@ -449,6 +534,36 @@ Press ↓ to navigate matches • ⌘N to start over
   is free).
 - **No "Open in pane" for Selection.** Selection's terminal action is "apply to the pane". There's no equivalent of
   Search's snapshot promotion. The footer's secondary slot stays empty.
+- **Select all / Deselect all move to the new Select menu, not Edit.** macOS convention puts them in Edit. We move
+  them because Cmdr's `selectAll` operates on files, not text; the Select menu is the more honest home. Edit retains
+  Cut/Copy/Paste for text operations. Implementation: remove the items from Edit in both `menu/macos.rs` and
+  `menu/linux.rs`; register them under the new Select submenu.
+- **Selection's ToggleGroup uses tablist semantics (`semantics="tabs"`); Settings uses toggle-group semantics
+  (`semantics="toggles"`).** Different a11y contracts. One visual primitive. See § "Mode chips" for the rationale.
+- **State factory splits into core and Search-extras.** `lib/query-ui/query-filter-state.svelte.ts`
+  (`createQueryFilterState`) owns ONLY cross-consumer fields: `query`, `mode`, `sizeFilter` + value/unit/max,
+  `dateFilter` + value/max, `caseSensitive`, `lastAiPrompt`, `lastAiCaveat`, hand-typed buffers (per mode),
+  `results`, `totalCount`, `cursorIndex`, `imeComposing`, `lastDialogEvent`, `runOnMount`. Search-only fields
+  (`scope`, `excludeSystemDirs`, `lastAiLabel`, `lastAiPattern`, `lastAiPatternKind`) live in a separate
+  `lib/search/search-extras-state.svelte.ts` module the Search wrapper instantiates next to its core instance. The
+  search-only `buildSearchQuery()` helper also lives next to that module. Selection's wrapper uses the core factory
+  only; no extras. (Resolves B7. Rationale: keeps the shared factory clean and prevents Selection's instance from
+  carrying unused fields that confuse readers.)
+- **`recordAiTranslation` is on the core factory.** Both consumers' AI translations populate `handTyped.{filename|regex}`
+  based on `kind` so switching out of AI to refine works the same way. Selection's wrapper does NOT call any
+  Search-extras setters from `recordAiTranslation`; the AI label and the AI pattern (for Search's Pattern chip) are
+  the wrapper's job to populate via its extras module. (Resolves B8.)
+- **Selection has three modes: AI / Filename / Regex. No Content.** Selection's ModeChips renders the same chip set
+  as Search minus the visible-disabled Content chip. The shared `ModeChips` component takes a `modes` option array;
+  Search passes `[ai?, filename, content(disabled), regex]`; Selection passes `[ai?, filename, regex]`. The "ai?"
+  entry is conditional on `aiEnabled` per the shared rule.
+- **Selection AI requires a cloud provider.** Local models (llama-server, 4K-8K context) can't reliably fit a
+  200+-name folder sample plus the prompt and response. When `ai.provider === 'local'`, Selection's AI chip stays
+  hidden (same gate as Search's AI chip when AI is off entirely, just with a different reason). The implementing
+  agent surfaces a tooltip on the gate: "AI selection needs a cloud provider. Set one in Settings > AI." (Resolves
+  G7.)
+- **`event.key === '+'` and `event.key === '-'`, no modifiers other than the implicit Shift on `+`.** Total Commander
+  parity. See § "Keyboard contract" for the exact filter.
 
 ## Milestones
 
@@ -461,23 +576,49 @@ Each milestone:
 
 ### M1: Generic `ToggleGroup` in `lib/ui/`
 
-**Why.** Phase 0 of the design: one segmented-control primitive used by Settings and the mode chips. Lets us replace
-`SearchModeChips`'s bespoke button row in a later milestone without rebuilding the keyboard / a11y story.
+**Why.** Phase 0 of the design: one visual primitive used by Settings and the mode chips. Lets us replace
+`SearchModeChips`'s bespoke button row in M3 without rebuilding the keyboard / a11y story. The two consumers
+have different a11y semantics (tab strip vs toggle group), so the primitive supports both via a `semantics` prop;
+see § "Mode chips" in Design summary for the rationale.
 
 **What.**
 
-- Create `lib/ui/ToggleGroup.svelte` with the option shape `{ value, label, badge?, hint?, disabled?, tooltip?, ariaLabel? }`.
-- Built on Ark UI's `ToggleGroup` (same as today's SettingToggleGroup, so a11y and keyboard nav come for free).
-- Same scoped CSS tokens as today's SettingToggleGroup. Visual diff: zero unless the option carries a badge or hint.
-- Refactor `lib/settings/components/SettingToggleGroup.svelte` to be a thin wrapper that builds the options array from
-  the setting definition and delegates to `lib/ui/ToggleGroup`. Its public API (`{ id, disabled, labelOverrides }`)
-  doesn't change.
-- Add `ToggleGroup.test.ts` and `ToggleGroup.a11y.test.ts` (tier 3) covering: option rendering, badge rendering, hint
-  rendering, disabled cell with tooltip, click activation, arrow-key motion, focus order.
+- Create `lib/ui/ToggleGroup.svelte` with props per § "Mode chips":
+  `{ semantics: 'tabs' | 'toggles'; value; options; onChange; ariaLabel; disabled? }`.
+- For `semantics: 'toggles'`: wraps `@ark-ui/svelte/toggle-group`'s `ToggleGroup.Root` + `ToggleGroup.Item`. Mirrors
+  today's `SettingToggleGroup`'s Ark usage. Single-select.
+- For `semantics: 'tabs'`: renders `<div role="tablist">` + `<button role="tab" aria-selected>`. Arrow keys skip
+  disabled options. Active option is `tabindex=0`; others `tabindex=-1`. Mirrors today's `SearchModeChips`
+  behavior; the implementing agent ports the existing arrow-key motion and `chipButtons[]` ref pattern from
+  `SearchModeChips.svelte` verbatim (don't rewrite the algorithm; keep it).
+- Option cells support `badge` (small uppercase pill, mono font, accent subtle background), `hint` (mono tertiary
+  text, e.g. `⌥A`), `disabled`, and `tooltip`. The disabled-with-tooltip case is "visible-disabled with tooltip" per
+  the search redesign's "Coming soon" idiom: `disabled={true}` on the button, but the tooltip on hover/focus is
+  still active. Verify Ark's `ToggleGroup.Item` honors tooltip on disabled state for the toggles branch (it does;
+  the disabled attribute doesn't block hover events on the parent).
+- Shared visual CSS at the component level so both ARIA shapes render identically. Use the existing CSS tokens that
+  `SettingToggleGroup.svelte` already defines (border, radius, hover, active background); promote them to
+  `lib/ui/ToggleGroup.svelte` and import them from there.
+- Refactor `lib/settings/components/SettingToggleGroup.svelte` to be a thin wrapper that builds the options array
+  from the setting definition and delegates to `<ToggleGroup semantics="toggles" … />`. Public API
+  (`{ id, disabled, labelOverrides }`) unchanged.
+
+**Tests.**
+
+- `ToggleGroup.test.ts`: option rendering (with and without badge/hint), click activation in both semantics, arrow-key
+  motion in `semantics="tabs"` skipping disabled options, value update on click in both semantics, disabled root
+  short-circuits clicks.
+- `ToggleGroup.a11y.test.ts` (tier 3 axe-core): one audit per semantics. Confirms `role="tablist"` shape in tabs
+  mode, ToggleGroup.Root attributes in toggles mode, badge + hint don't break the accessible name (axe rule
+  `accessible-name-computation`), disabled-with-tooltip passes contrast (tooltip is rendered to body via the
+  singleton; only the disabled-button label is in the cell).
+- Existing `SettingToggleGroup.a11y.test.ts` MUST stay green.
+- Existing `SettingToggleGroup` rendering tests stay green.
 
 **Docs.**
 
-- Add a short section to `lib/ui/CLAUDE.md` documenting the new primitive and how to use it.
+- Add a section to `lib/ui/CLAUDE.md` documenting the primitive, the two semantics modes, and when to use each
+  (tabs = drives a UI mode, toggles = picks a stored value).
 
 **Checks.**
 
@@ -486,38 +627,64 @@ Each milestone:
 
 **Definition of done.**
 
-- New primitive in place, settings ToggleGroup migrated, all existing settings tests green, new tests green, no visual
-  regression to Settings (verify by running the app, opening Settings > Appearance > File and folder sizes which uses
-  the size-unit toggle group).
+- Primitive lands, settings ToggleGroup migrated, all existing settings tests green, new tests green, no visual
+  regression to Settings (verify by running the app and opening Settings > Appearance > File and folder sizes which
+  uses the size-unit toggle group). `SearchModeChips` is NOT yet migrated in this milestone (it migrates in M3 as
+  part of the rename); M1 only ships the primitive.
 
-**Risk.** None significant. Settings has tests; if Ark's behavior shifts, those tests will catch it.
+**Risk.** Low. The Ark dependency is already in the tree (`@ark-ui/svelte/toggle-group`). The bespoke tabs branch
+ports existing working code.
 
-### M2: Factory `createQueryFilterState()` in `lib/query-ui/`
+### M2: Factory `createQueryFilterState()` plus Search-extras split
 
 **Why.** Today's `lib/search/search-state.svelte.ts` is a 713-line module-singleton. Two consumers need two state
-instances. We convert it to a factory and Search becomes a consumer of one instance. Without this, none of the
-following milestones work.
+instances. We convert it to a factory AND split out the Search-only fields so Selection's instance doesn't carry
+unused state. Without this, none of the following milestones work.
 
 **What.**
 
 - Create `lib/query-ui/query-filter-state.svelte.ts` exporting `createQueryFilterState(options): QueryFilterState`.
-  Options carry consumer-specific defaults (e.g. `defaultMode: 'filename'`, the auto-apply debounce constant,
-  initial state).
-- `QueryFilterState` exposes the same shape as today's named exports from `search-state.svelte.ts`, but as instance
-  methods / getters. Naming follows the existing public API (`getQuery`, `setQuery`, `setQueryFromUserInput`, etc.).
-- `lib/search/search-state.svelte.ts` becomes a thin file: `export const searchQueryState = createQueryFilterState({...search-defaults...})` plus
-  re-exports of helper functions and types for backward compat during transition.
-- Update Search's call sites to import from `searchQueryState` (e.g. `searchQueryState.getQuery()`). About 100 sites.
-- Move the pure helpers (`enter-action.ts`, `filter-chip-state.ts`, `filter-popover-helpers.ts`, `recent-chips-layout.ts`,
-  `snapshot-label.ts`, `searchable-folder.ts`) out of `lib/search/` and into `lib/query-ui/` (except `snapshot-label.ts`
-  and `searchable-folder.ts` and `capabilities.ts` which stay in `lib/search/`).
-- All existing Search tests stay verbatim, just with import paths updated. Add `query-filter-state.test.ts` mirroring
-  the existing `search-state.test.ts` against a factory instance.
+  Cross-consumer fields ONLY (per the Decision log entry):
+
+  ```
+  query, mode, sizeFilter, sizeValue, sizeUnit, sizeValueMax, sizeUnitMax,
+  dateFilter, dateValue, dateValueMax, caseSensitive,
+  lastAiPrompt, lastAiCaveat, handTyped (per-mode buffers),
+  results, totalCount, cursorIndex, isSearching,
+  imeComposing, lastDialogEvent, runOnMount, lastRunQuery
+  ```
+
+  Methods mirror today's public API but become instance methods: `state.getQuery()`, `state.setQuery(s)`,
+  `state.setQueryFromUserInput(s)`, `state.switchMode(m)`, `state.recordAiTranslation({pattern, kind, label})`,
+  `state.deriveEnterAction()`, etc. The `recordAiTranslation({label})` argument is preserved but the LABEL is
+  stored in the consumer's extras module, not on the core state. The core state writes pattern → `handTyped.X`
+  per the existing M2/R3 contract (see `lib/search/CLAUDE.md` § "Round 3 polish").
+- Create `lib/search/search-extras-state.svelte.ts` exporting `createSearchExtrasState(): SearchExtrasState` for
+  Search-only fields: `scope`, `excludeSystemDirs`, `lastAiLabel`, `lastAiPattern`, `lastAiPatternKind`. Search's
+  wrapper calls both factories and composes them. No coupling.
+- Move `buildSearchQuery()` (search-only; returns the IPC payload for `searchFiles`) to a `lib/search/build-search-query.ts`
+  module next to the extras. Selection has its own `buildSelectionMatchQuery()` helper that the matcher
+  consumes (declared in M7).
+- `lib/search/search-state.svelte.ts` becomes a thin façade: instantiates the core factory + extras, re-exports
+  the instances for backward-compat during the transition (so Search's existing call sites work via re-export
+  while M3 renames them). Drop the façade in M3.
+- Update Search's call sites to import from the new instances. Real scope: 15 files importing from `search-state.svelte`,
+  ~471 identifier usages. Most usages are inside `SearchDialog.svelte` and `SearchFilterChips.svelte`. TypeScript
+  catches every missed rename.
+- Move the relocated pure helpers (`enter-action.ts`, `recent-chips-layout.ts`) out of `lib/search/` and into
+  `lib/query-ui/`. STAY in `lib/search/`: `snapshot-label.ts`, `searchable-folder.ts`, `capabilities.ts`,
+  `snapshot-store.svelte.ts`, the new `search-extras-state.svelte.ts`, the new `build-search-query.ts`.
+  STAY but RELOCATE only in M3: `filter-chip-state.ts`, `filter-popover-helpers.ts`, `recent-searches-utils.ts`.
+- All existing Search tests stay verbatim, just with import paths updated. Add
+  `query-filter-state.test.ts` (mirrors existing `search-state.test.ts`) and `search-extras-state.test.ts` (covers
+  the Search-only state shape).
 
 **Docs.**
 
-- New `lib/query-ui/CLAUDE.md` documenting the factory's contract and how to instantiate it.
-- Update `lib/search/CLAUDE.md` to reflect the new state location and import pattern.
+- New `lib/query-ui/CLAUDE.md` documenting the factory's contract, the field list, and the "extras live next to
+  the consumer" pattern.
+- Update `lib/search/CLAUDE.md` to reflect the new state location and the extras-module split. See § "CLAUDE.md
+  split sheet" below the milestones for which decisions go where.
 
 **Checks.**
 
@@ -525,18 +692,18 @@ following milestones work.
 - `./scripts/check.sh` before commit.
 - Run all of Search's existing Vitest tests (`pnpm vitest run --testPathPattern='lib/search'`) and the new
   query-ui tests.
-- Run `pnpm vitest run --testPathPattern='enter-action|filter-chip-state|filter-popover-helpers|snapshot-label|searchable-folder|recent-chips-layout'`
-  to confirm relocated pure-helper tests still pass.
 
 **Definition of done.**
 
-- Search's behavior unchanged (verified by full Vitest run and a manual smoke test of the search dialog through MCP).
-- All ~100 call sites use the factory instance.
+- Search's behavior unchanged (verified by full Vitest run and a manual smoke test of the search dialog through
+  MCP).
+- All identifier call sites use the factory or extras instance.
 - New tests for the factory shape pass.
 
-**Risk.** This is the riskiest milestone. ~100 call sites is a lot of mechanical change; one missed rename produces a
-runtime error. Mitigation: TypeScript's compiler catches all of them; after the rename, `tsc --noEmit` must be clean
-before the commit. Search's own test suite is the safety net for behavior.
+**Risk.** This is the riskiest milestone. ~471 identifier usages is a lot of mechanical change; one missed rename
+produces a runtime error. Mitigation: TypeScript's compiler catches all of them. The façade trick (re-export
+instances from `lib/search/search-state.svelte.ts`) lets us land the factory + extras split first, then rename
+call sites in M3 batch. After M3, drop the façade. Search's existing test suite is the behavior safety net.
 
 ### M3: Rename and extract the shared components into `lib/query-ui/`
 
@@ -546,9 +713,10 @@ changes.
 **What.**
 
 - Rename `SearchBar.svelte` → `QueryBar.svelte` in `lib/query-ui/`. Same props, same behavior.
-- Rename `SearchModeChips.svelte` → `QueryModeToggleGroup.svelte` in `lib/query-ui/`. Reimplement on top of
-  `lib/ui/ToggleGroup.svelte` (uses the new badge and hint slots for `AI` badge + `⌥A`/`⌥F`/`⌥R` hints). Same
-  external props; "Content" stays visible-disabled with tooltip.
+- Rename `SearchModeChips.svelte` → `ModeChips.svelte` in `lib/query-ui/`. Reimplement on top of
+  `lib/ui/ToggleGroup.svelte` with `semantics="tabs"` (uses the new badge and hint slots for `AI` badge +
+  `⌥A`/`⌥F`/`⌥R` hints). Same external props; "Content" stays visible-disabled with tooltip in Search; absent
+  entirely in Selection.
 - Rename `AiTransparencyStrip.svelte` → `AiPromptStrip.svelte` in `lib/query-ui/`. Verbatim move.
 - Rename `SearchFilterChips.svelte` → `FilterChips.svelte` in `lib/query-ui/`. New visibility props:
   `scopeChipVisible: boolean`, `patternChipVisible: boolean`. Defaults match Search's current behavior. Selection will
@@ -562,9 +730,23 @@ changes.
   into `lib/query-ui/`. Verbatim moves. (Yes, `SearchRowMenu` keeps the name; it's still a row-menu component, and
   renaming everything labeled "search" hurts grep more than helps.)
 - Rename `RecentSearchesFooter.svelte` → `RecentItemsFooter.svelte`, `RecentSearchesPopover.svelte` →
-  `RecentItemsPopover.svelte`, in `lib/query-ui/recent-items/`. Wire props for an entry adapter
-  `(entry: HistoryEntry) → { label: string; tooltip: string; mode: SearchMode; age: string }` so Search and Selection
-  can drive copy and tooltip text from their own history shapes.
+  `RecentItemsPopover.svelte`, in `lib/query-ui/recent-items/`. Both components become generic over an `Entry`
+  type via an adapter callback. Adapter signature:
+
+  ```ts
+  type RecentItemsAdapter<E> = (entry: E) => {
+    label: string         // primary text on the chip (the query, truncated)
+    tooltip: string       // full text on hover (the full query)
+    mode: SearchMode      // for the mode badge ("AI"/"FN"/"RX") on the chip
+    ageLabel: string      // "now" / "5m" / "2h" / "yesterday"
+    ariaLabel: string     // full accessible name for the chip button
+  }
+  ```
+
+  Search instantiates with `Entry = SearchHistoryEntry`; Selection with `Entry = SelectionHistoryEntry`. The
+  adapter lives next to each consumer's `*-history-state.svelte.ts` file. `recent-chips-layout.ts` (the greedy-fit
+  packing helper) only sees the adapted `{label, tooltip}` so packing is the same for both. Tests:
+  `RecentItemsFooter.svelte.test.ts` runs against both consumer instantiations.
 - Convert `recent-searches-state.svelte.ts` into a factory `recent-items-state.svelte.ts` that takes the IPC funcs
   (`{ getRecent, addRecent, removeRecent, clearRecent, applyMaxCount }`) and returns the same reactive store shape.
   `lib/search/recent-searches-state.svelte.ts` becomes a thin file that constructs the factory with the
@@ -609,11 +791,12 @@ behavior expressed as a config.
   interface QueryDialogConfig {
     title: string
     maxWidth: string                                          // e.g. 'min(1080px, 80vw)'
-    state: QueryFilterState                                   // the factory instance
+    state: QueryFilterState                                   // the factory instance from M2
     aiEnabled: boolean
     visibleChips: { size: boolean; date: boolean; scope: boolean; pattern: boolean }
     showPathColumn: boolean
-    historyStore: RecentItemsStore                            // from the factory
+    runHintCopy: string                                        // "Press Enter to search" / "Press Enter to filter"
+    historyStore: RecentItemsStore                            // from the recent-items factory
     emptyState: {
       examples: Array<{ kind: 'ai' | 'pattern' | 'regex'; label: string }>
       indexHint?: string                                      // only Search uses this
@@ -633,6 +816,20 @@ behavior expressed as a config.
     /* Plus accessibility / aria labels per consumer */
   }
   ```
+
+  **`runHintCopy`**: Search passes `"Press Enter to search"`; Selection passes `"Press Enter to filter"`. The
+  `QueryBar`'s right-gutter hint reads this string when shown. Locked in M4. (Resolves G14.)
+
+  **`aiContext`**: called once per AI translation, immediately before the IPC call. NOT called on every keystroke.
+  Selection snapshots the focused pane's listing at dialog open and calls `aiContext` to return the sample on each
+  AI run. If the focused pane changes mid-dialog (rare; mouse-click on the other pane), the snapshot does NOT
+  refresh; the user opened the dialog on a folder, they're filtering that folder. Locked in M4. (Resolves G15.)
+
+  **`lastDialogEvent` ownership**: `QueryDialog` writes to `state.lastDialogEvent` on these events: dialog opened
+  (`'opened'`), user typed in the bar (`'query-edited'`), filter chip changed (`'filter-edited'`), `runQuery`
+  promise resolved with results (`'results-arrived'`), cursor moved via ↑/↓ (`'cursor-moved'`). The consumer's
+  `runQuery` callback DOES NOT write to `lastDialogEvent`; only `QueryDialog` does, after the promise resolves.
+  This keeps the Enter ownership swap (`deriveEnterAction`) deterministic.
 
 - Add a title bar to the top of the dialog (the new chrome from Design summary § Title bar). Both consumers render it.
 - Move the route-level wiring in `routes/(main)/+page.svelte` to consume `QueryDialog` for Search via the
@@ -663,13 +860,17 @@ behavior expressed as a config.
 
 - Search behaves identically end-to-end (manual MCP smoke + automated tests).
 - `QueryDialog` exists, is documented, and Search is a consumer of it.
-- `SearchDialog.svelte` is ~150 lines (down from 1377), almost all config-building and Search-specific glue (index
-  lifecycle, snapshot promotion, MCP).
+- The Search wrapper (`lib/search/SearchDialog.svelte`) builds the `QueryDialogConfig` and registers Search-specific
+  lifecycle hooks (`onMount` calling `prepareSearchIndex`, `onDestroy` calling `releaseSearchIndex`, the MCP
+  `mcp-open-search-dialog` listener, `runOnMount` consumer for MCP prefill, `primaryAction.handler` doing the
+  snapshot promotion, `secondaryAction.handler` doing "Go to file"). No orchestration logic lives in the wrapper.
+  The wrapper's size is whatever Search-specific glue costs; no line-count target.
 
 **Risk.** Highest. The orchestrator carries most of the behavior. Mitigation: the existing Search test suite runs
 verbatim; if any of those fail, we know what broke. Add a focused integration test for the config-driven paths
 (`secondaryAction` callback fires on Enter when `deriveEnterAction === 'go-to-file'`; `primaryAction` callback fires
-on ⌥⏎; etc.) so regressions in either consumer surface quickly.
+on ⌥⏎; etc.) so regressions in either consumer surface quickly. Add a unit test pinning the
+`lastDialogEvent` ownership contract (QueryDialog writes; consumer's runQuery does not).
 
 ### M5: Selection backend (Rust): history store, AI translation IPC
 
@@ -688,27 +889,49 @@ M6 land cleanly without backend churn.
   - `translate_selection_query(prompt: String, sample_names: Vec<String>) -> Result<SelectionTranslateResult, String>`.
 - `selection/ai/prompt.rs` defines the classification prompt. Same key-value response style as
   `search/ai/prompt.rs` (no JSON). The implementing agent writes the prompt and runs at least 6 manual evaluations
-  via the OpenAI API (David's $2.5k credits) on representative folder samples to confirm output quality. Pin the
-  prompt with a docstring describing what the evaluations covered.
+  via the OpenAI API on representative folder samples to confirm output quality. Use the model configured in
+  Settings > AI > Cloud > OpenAI (David's account). The agent reads the model name from the running app's settings,
+  not from this plan. Pin the prompt with a docstring describing what the evaluations covered.
 - `selection/ai/parser.rs` parses key-value response into `ParsedSelectionLlmResponse`. Reuses
   `search/ai/parser.rs::parse_key_value_line` if exported, or re-implements lightly.
 - `selection/ai/query_builder.rs` assembles `SelectionTranslateResult { pattern, kind, size_filter?, date_filter?, caveat?, label? }`.
 - Add `selection.recentSelections.maxCount` to the settings registry (default 1000). Wire `settings-applier.ts` and
   the matching Rust live-apply hook.
-- Register the new commands in `ipc.rs` and `ipc_collectors.rs` for specta.
+- Register the new commands in `ipc.rs` and `ipc_collectors.rs` for specta. The selection commands are NOT debug
+  commands and should NOT be added to the specta exclusion list. After regen, they appear in `bindings.ts` and are
+  callable via `commands.translateSelectionQuery(...)`, etc. from `$lib/tauri-commands`.
 - Run `pnpm bindings:regen`. Commit the regenerated `bindings.ts` separately or in the same commit (per repo style).
+- **Update capability files.** Per `AGENTS.md`: Tauri APIs fail silently without permissions. The six new commands
+  must be allowed:
+  - `apps/desktop/src-tauri/capabilities/default.json`: add `translate_selection_query`, `get_recent_selections`,
+    `add_recent_selection`, `remove_recent_selection`, `clear_recent_selections` for the main window (the Selection
+    dialog calls these from the main window).
+  - `apps/desktop/src-tauri/capabilities/settings.json`: add `apply_recent_selections_max_count` for the settings
+    window (live-apply from the Settings UI).
+  - Verify by opening Cmdr's settings window after the change and confirming `apply_recent_selections_max_count`
+    works without the "not allowed" error.
+- **AI provider gate.** The frontend hides the AI chip when `ai.provider !== 'cloud'`. Surface a tooltip on the gate
+  itself when missing ("AI selection needs a cloud provider. Set one in Settings > AI."). The IPC
+  `translate_selection_query` returns an error if the cloud provider isn't configured (mirror Search's
+  `resolve_ai_backend` error path).
 
 **Tests.**
 
 - Unit: `selection/history.rs` mirror-tests for the search history tests (atomic write, schema migration, dedupe,
-  cap eviction, schema-version quarantine).
-- Unit: `selection/ai/parser.rs` round-trip tests for representative model responses (`pattern: *.png\nkind: glob\nsize_min: 1048576`).
+  cap eviction, schema-version quarantine, cap=0 disables persistence).
+- Unit: `selection/ai/parser.rs` round-trip tests for representative model responses
+  (`pattern: *.png\nkind: glob\nsize_min: 1048576`). Mirror `search/ai/parser.rs`'s table-driven test style.
 - Unit: `selection/ai/query_builder.rs` tests covering the three filter combinations (pattern only, pattern + size,
-  pattern + date).
+  pattern + date) and the broken-LLM-response path (returns caveat, not a half-built query).
 - Integration: an offline test that fakes the LLM IPC and verifies `translate_selection_query` end-to-end.
+- IPC contract tests (`lib/ipc/*.test.ts` via `installIpcMock()`): per `docs/testing.md` § "When you add X, also add
+  Y", destructive and >2-arg commands need contract tests. Cover `clear_recent_selections` (destructive) and
+  `apply_recent_selections_max_count` (cross-window live-apply).
 - Real-LLM eval: a `tests/selection_ai_eval.rs` integration test that uses the OpenAI API with David's credentials.
-  Behind `#[cfg(feature = "ai-eval")]` so CI doesn't run it. Run manually with `cargo test --features ai-eval -- selection_ai_eval`
-  during this milestone to validate the prompt design on the real model.
+  Behind a feature flag. **Reuse the existing AI eval feature flag if one exists.** Check `Cargo.toml` for any
+  `ai-eval` / `ai-evaluation` / similar feature; if it doesn't exist yet, add `selection-ai-eval`. Run manually
+  with `cargo test --features <flag> -- selection_ai_eval` during this milestone to validate the prompt design on
+  the real model. **No `cargo deny` re-run needed**: no new Cargo deps in this milestone.
 
 **Docs.**
 
@@ -726,7 +949,9 @@ M6 land cleanly without backend churn.
 
 - All new Rust unit tests pass.
 - `bindings-fresh` is green.
-- Manual API call against `gpt-5.5` returns a parseable response for a sample prompt and a sample folder of ~50 names.
+- Manual API call against the configured cloud model returns a parseable response for a sample prompt and a sample
+  folder of ~50 names. (The agent configures the cloud provider via Cmdr's running Settings UI through MCP first;
+  see Risk register R3 for the configuration flow.)
 
 **Risk.** Low for history (it's a mirror of an existing module). Medium for AI prompt (may need iteration). Mitigation:
 the real-LLM eval test in this milestone catches prompt drift before the dialog wraps around it.
@@ -789,16 +1014,36 @@ milestone is the actual feature. Mostly assembly.
   builds the matcher, builds the `QueryDialogConfig`, mounts `QueryDialog`. Calls
   `explorerRef.applyIndices(matchedIndices, mode)` on commit.
 - Add `selection.selectFiles` and `selection.deselectFiles` to `command-registry.ts` with scope
-  `'Main window/Selection dialog'` (or similar; align with the existing naming) and shortcuts `=` and `-`.
+  `'Main window/File list'` (matches existing `selection.selectAll` / `selection.deselectAll`). Do NOT add a new
+  scope literal to `CommandScope` in `lib/commands/types.ts`. Shortcuts: `+` (the add command) and `-` (the remove
+  command) per the keystroke binding in § "Keyboard contract".
 - Add the dispatch cases to `handleCommandExecute` in `routes/(main)/command-dispatch.ts`. The handler flips a route
   state flag `showSelectionDialog: 'add' | 'remove' | null` similar to how `showSearchDialog` works.
 - `routes/(main)/+page.svelte`: mount `SelectionDialog` when the flag is set; pass the focused pane handle.
 - `lib/shortcuts/shortcuts-store.ts`: register the new commands in `menuCommands` (if menu-bound, which they will be
   per M8).
-- `lib/file-explorer/pane/FilePane.svelte`: in the keydown handler, if `event.key === '+' || event.key === '-'` AND
-  no modifier AND focus is on the pane (not an input), preventDefault and dispatch the matching command. This is a
-  unique key-binding because `event.key === '+'` covers Shift+= for QWERTY and most other Latin layouts. Bare `-`
-  binds the same way.
+- `lib/file-explorer/pane/FilePane.svelte`: in the keydown handler, if (`event.key === '+'` OR `event.key === '-'`)
+  AND `!e.metaKey && !e.altKey && !e.ctrlKey` AND focus is on the pane (not an input element), preventDefault and
+  dispatch `selection.selectFiles` or `selection.deselectFiles`. Note we do NOT test `event.shiftKey`: Shift+= IS
+  the way US QWERTY users produce `event.key === '+'`. Add a unit test pinning the exact filter logic in a new
+  `file-pane-keyboard.test.ts` case (or extend the existing test file).
+- **Selection's modes are AI / Filename / Regex.** No Content. The `ModeChips` instance in `SelectionDialog.svelte`
+  receives a modes array without Content. Same external behavior as Search's mode chips otherwise (⌘1/⌘2/⌘3, ⌥A/F/R,
+  arrow-key motion).
+- **AI provider gate.** Hide the AI chip when `getSetting('ai.provider') !== 'cloud'`. Surface a tooltip on the
+  chip-row gate (or, if the chip is absent entirely, no tooltip needed; the mode just doesn't appear). Subscribe via
+  `onSpecificSettingChange('ai.provider', ...)` so the chip appears/disappears live without reopening the dialog.
+- **Recent-selection chip apply.** Clicking a recent-selection chip restores `query`, `mode`, `caseSensitive`,
+  `sizeFilter`/value/unit, `dateFilter`/value to the entry. No scope, no excludeSystemDirs (Selection doesn't have
+  them). Implement as `applySelectionHistoryEntry(state, entry)` in `lib/selection-dialog/selection-history-state.svelte.ts`.
+  Add a unit test that confirms state matches the entry after apply.
+- **Snapshot-pane interaction with mid-dialog mutation.** Selection's matcher runs at COMMIT time, not at preview
+  time. The preview shows live results as the user types; on Enter, the dialog re-runs the matcher against the
+  snapshot's CURRENT entries (which may have shrunk via `removeEntryFromAllSnapshots` during the dialog) and applies
+  indices to the current shape. Document this in `lib/selection-dialog/CLAUDE.md` with a "Why: snapshot can mutate
+  mid-dialog because cross-snapshot delete may fire while the dialog is open." Add an integration test:
+  open dialog on a snapshot pane, synthesize a `removeEntryFromAllSnapshots` mutation, commit, confirm the matched
+  indices are computed against the post-mutation snapshot shape.
 
 **Tests.**
 
@@ -809,9 +1054,15 @@ milestone is the actual feature. Mostly assembly.
 - Component: `SelectionDialog.svelte.test.ts` covering: mounts with the right title per mode; pressing ⏎ applies and
   closes; switching modes preserves the query; Cmd+N clears state; recent selections appear in the footer.
 - A11y: `SelectionDialog.a11y.test.ts` mirroring `SearchDialog.a11y.test.ts` (tier 3).
-- E2E: a single Playwright spec `selection-dialog.spec.ts` covering the happy path: focus a pane, press `=`, type
-  `*.txt`, press Enter, confirm three rows became selected. Must run in <1 s per `AGENTS.md`'s testing rules. Use
-  `dispatchMenuCommand` for the dialog open since the test is about the dialog, not the keyboard pathway.
+- E2E (macOS Playwright): a single spec `selection-dialog.spec.ts` covering the Filename mode happy path: focus a
+  pane, dispatch `selection.selectFiles` via `dispatchMenuCommand`, type `*.txt`, press Enter, confirm the matching
+  rows became selected. Must run in <1 s per `AGENTS.md`'s testing rules. Do NOT cover AI mode in this spec; the
+  cloud round-trip is 1-5 s and would flake CI. AI is exercised in M11's manual MCP smoke.
+- E2E (Linux Docker, `e2e-linux/`): a separate minimal spec that opens the Selection dialog via the same
+  `dispatchMenuCommand` and confirms it renders. Don't test the `+`/`-` keystroke binding on Linux; the Docker
+  keyboard model is limited and the macOS Playwright spec covers the keyboard path.
+- Proptest on `selection-matching.ts::matchEntries`: returns ≤ totalCount indices, no duplicates, all in
+  `[0, totalCount)`, matches a deterministic glob/regex. Cheap insurance for a pure matcher.
 
 **Docs.**
 
@@ -843,13 +1094,19 @@ docs.
 
 **What.**
 
-- Create the new `Select` submenu between `Edit` and `View` in `src-tauri/src/menu/menu_structure.rs` (and the macOS
-  builder; check the existing layout). Add the four items: Select all (⌘A), Deselect all (⌘⇧A), Select files… (`=`),
-  Deselect files… (`-`).
-- Remove the same Select all / Deselect all items from the Edit menu (where they live today).
-- Update `menu_id_to_command` / `command_id_to_menu_id` in `menu.rs` for the four items.
-- Update `shortcuts-store.ts::menuCommands` accordingly.
-- Verify macOS shows the menu correctly via the running app + MCP.
+- Create the new `Select` submenu between `Edit` and `View` in BOTH platform menu builders:
+  - `apps/desktop/src-tauri/src/menu/macos.rs::build_menu_macos`: add the new submenu between the existing Edit
+    and View submenu blocks, registering Select all (⌘A), Deselect all (⌘⇧A), Select files… (no accelerator on
+    macOS; see R9), Deselect files… (no accelerator).
+  - `apps/desktop/src-tauri/src/menu/linux.rs::build_menu_linux`: same structural change.
+- Remove the Select all / Deselect all items from the Edit menu in both files.
+- Register the new menu item IDs in `apps/desktop/src-tauri/src/menu/menu_items.rs` (constants for the IDs).
+- Update `apps/desktop/src-tauri/src/menu/mod.rs::menu_id_to_command` and `command_id_to_menu_id` with the four
+  IDs (`select_all`, `deselect_all`, `select_files`, `deselect_files` map to `selection.selectAll`,
+  `selection.deselectAll`, `selection.selectFiles`, `selection.deselectFiles`).
+- Update `apps/desktop/src/lib/shortcuts/shortcuts-store.ts::menuCommands` to include all four command IDs.
+- Verify macOS shows the menu correctly via the running app + MCP screenshot. Verify Linux via the e2e-linux suite
+  and a manual Docker run if needed.
 
 **Tests.**
 
@@ -913,8 +1170,8 @@ docs.
 **What.**
 
 - Run the full Vitest suite, the Playwright suite, and the e2e-linux suite.
-- Run `cargo mutants --file src-tauri/src/selection/history.rs --file src-tauri/src/selection/ai/parser.rs` and
-  triage survivors.
+- Run `cargo mutants --file src-tauri/src/selection/history.rs --file src-tauri/src/selection/ai/parser.rs --file src-tauri/src/selection/ai/query_builder.rs`
+  and triage survivors.
 - Run `pnpm exec stryker run` on the new TS files (`selection-matching.ts`, `folder-sampler.ts`).
 - Review `EmptyState` examples on Selection with a 10-second usability check via the running app.
 - Verify the title bar visual on both Search and Selection in light and dark mode. Check `a11y-contrast`.
@@ -922,8 +1179,8 @@ docs.
   works.
 - Verify that the search-results-pane Selection path works (focus a snapshot pane, hit `=`, match against full
   paths, apply, confirm the right rows became selected).
-- Verify that the AI mode in Selection uses `gpt-5.5` end-to-end and that the AI transparency strip renders the
-  prompt and caveat.
+- Verify that the AI mode in Selection works end-to-end against the configured cloud model and that the AI
+  transparency strip renders the prompt and caveat.
 
 **Tests.**
 
@@ -974,6 +1231,38 @@ docs.
 
 **Risk.** Low; the milestones above already ran the default suite.
 
+## CLAUDE.md split sheet (used by M3)
+
+`lib/search/CLAUDE.md` is 703 lines of decisions and gotchas. M3 splits the load-bearing content between
+`lib/query-ui/CLAUDE.md` (new) and `lib/search/CLAUDE.md` (slimmed). To prevent duplication or accidental loss,
+here is the tag for every load-bearing item currently in `lib/search/CLAUDE.md`. The implementing agent moves
+verbatim with the tag; M10 verifies, not reconstructs.
+
+| Section / decision in current `lib/search/CLAUDE.md` | Tag |
+|---|---|
+| § "Files" (the big component table) | SPLIT — move shared rows to query-ui, keep search-only rows in search |
+| § "State shape (post-M4)" | both — query-ui owns the core fields, search owns the extras (B7) |
+| § "Round 3 polish (R3)" B1–B6, U1–U8, T1 | tag per item: B1/B5/U1/U2/U3/U4/U5/U7 → query-ui; B2/B3/B4/B6/U6/U8/T1 → search |
+| § "Round 2 grid-style filter popovers" | query-ui (filter chips are shared) |
+| § "Round 2 D12: Use current folder smart fallback" | search (scope is search-only) |
+| § "Round 2 R2: PathPills measurement" | query-ui (PathPills is shared) |
+| § "Keyboard shortcuts (in-dialog, hard-coded)" table | query-ui (all consumers inherit) |
+| § "Round 2 D8: ⏎ ownership swap" | query-ui |
+| § "Round 2 D9: scope shortcuts" | search |
+| § "Round 2 D6: footer buttons always visible" | query-ui (the policy); search (the specific Search footer buttons) |
+| § "Data flow" diagram | search (index lifecycle is search-only); also add a query-ui diagram for the shared flow |
+| § "Key patterns" / Command palette pattern, two-cursor hover, live search debounce, auto-apply gates, ⏎ run button, "Press Enter" hint, scope row, index not available, AI single-pass flow, IME composition, deferred loading, state preservation, ⌘N, MCP open path, runOnMount, path pills with overflow, per-row … menu, footer right-edge actions | tag per pattern: command-palette / two-cursor / debounce / auto-apply / run-button / Press-Enter / IME / deferred-loading / state-preservation / ⌘N / runOnMount / path-pills / row-menu → query-ui; scope-row / AI-single-pass / index-not-available / MCP-open-path / footer-right-edge (because the SPECIFIC buttons are search-specific) → search |
+| § "Snapshot store M8a", "Closed-tab lifecycle and refs", "{#key activeTabId} recreation", "Capability flags M8c", "Cross-snapshot delete sync M8c", "Source-side ops from the snapshot pane M8d" | search (all about the snapshot machinery) |
+| § "Key decisions" — all M10 load-bearing decisions | tag per decision: Unified bar+chips, Filter chips with popovers, MAX_HISTORY_PER_TAB → query-ui; Open-in-pane promotes to virtual volume, Recent-search history added on Open-in-pane only, AI mode never auto-applies → search; AI mode chips re-run on click → query-ui (general); RecentSearchesPopover reuses FilterChipPopover → query-ui; Pattern chip always rendered → query-ui (both consumers use it); Path pills mouse-only / not in Tab order → query-ui |
+| § "Gotchas" — stopPropagation, prepareSearchIndex failure, clearSearchState in onDestroy, status bar empty, ⌘⏎ no-op, AI translation overwrite, nested-interactive a11y disable | tag per gotcha: stopPropagation, ⌘⏎ no-op, status-bar-empty, clearSearchState-in-onDestroy, AI-translation-overwrite, nested-interactive → query-ui; prepareSearchIndex failure, "Open in pane" M8b flow → search |
+| § "References" (ai-search-eval-history.md) | search |
+| § "Dependencies" | SPLIT — query-ui inherits the shared deps; search keeps its specific commands |
+
+Process for M3: the implementing agent prints the current `lib/search/CLAUDE.md` in full, reads each section, and
+moves chunks into the new file per the tags. Cross-links between the two files where a topic touches both
+(e.g. the Pattern chip's general design vs. Search's specific use). M10's sweep VERIFIES the split; it doesn't
+reconstruct it. If the agent finds a section not on this sheet, they add a tag in this plan and proceed.
+
 ## Risk register
 
 - **R1: M2 factory refactor breaks Search.** ~100 import sites; one missed rewrite is a runtime error. Mitigation:
@@ -981,10 +1270,13 @@ docs.
 - **R2: M4 orchestration extraction subtly changes Search behavior.** Risky because the orchestrator has the most
   state. Mitigation: Search's existing test suite (tier-3 a11y + dialog tests + Playwright e2e). Add new integration
   tests for the `primaryAction` / `secondaryAction` callback paths so the config-driven contract is pinned.
-- **R3: OpenAI API key handling for testing.** David has the key in Keychain. We need to configure Cmdr in dev mode to
-  use OpenAI as the cloud AI provider. The implementing agent does this once via the Settings UI through MCP: open
-  Settings, select AI → Cloud → OpenAI, paste the key from `security find-generic-password -s OPENAI_API_KEY -a veszelovszki -w`
-  output, set the model to `gpt-5.5`. No keys in any committed file.
+- **R3: OpenAI API key handling for testing.** David has the key in Keychain. We need to configure Cmdr in dev mode
+  to use OpenAI as the cloud AI provider. The implementing agent does this once via the Settings UI through MCP:
+  open Settings, select AI → Cloud → OpenAI, paste the key retrieved via
+  `security find-generic-password -s OPENAI_API_KEY -a veszelovszki -w`, set the model to whichever OpenAI model
+  David has access to. (David's curl example used `gpt-5.5`; the agent uses whichever model is shown in his cloud
+  provider's `/models` listing.) The key is persisted in macOS Keychain via the existing `saveAiApiKey` IPC. No
+  keys in any committed file.
 - **R4: Selection's `QueryResults` view has an empty path column for current-folder entries.** It's fine but visually
   it's a wasted column. Mitigation: a `showPathColumn: boolean` prop on `QueryResults`; Selection passes `false`.
   Search keeps it `true`. (Already in the design.)
@@ -996,9 +1288,12 @@ docs.
   Mitigation: the parser validates the response; on parse failure, surface a caveat in the AI strip ("Couldn't
   translate; try again or use Filename mode") and don't apply a broken pattern. The frontend matcher already handles
   the empty-pattern case gracefully (returns `[]`).
-- **R7: Selection in `search-results://` panes matches against full paths.** Users might expect basename matching.
-  Mitigation: the dialog shows a small hint near the bar when the focused pane is a snapshot: "Matching full paths in
-  search results". Place in `QueryDialog` as a conditional banner driven by the consumer's config.
+- **R7: Selection in `search-results://` panes matches against the displayed friendly path.** Per B3 resolution,
+  the accessor returns `entry.name` (which IS the friendly full path in snapshot panes, with `~` for home) so
+  "what the user sees is what they match". Risk is users expecting basename matching. Mitigation: the dialog
+  shows a small hint near the bar when the focused pane is a snapshot: "Matching what's shown in the list (the
+  full path)". Place in `QueryDialog` as a conditional banner driven by the consumer's config (a new field
+  `noticeBanner?: string` on `QueryDialogConfig`).
 - **R8: `selection-history.json` corruption on crash.** Mirrors `search-history.json`'s atomic-write story. Same
   schema-version quarantine on parse failure.
 - **R9: The new `Select` menu accelerators `=` and `-` show up in the macOS menu bar with the wrong glyphs.** On
@@ -1042,22 +1337,19 @@ that genuinely don't touch each other's files.
 These don't block the plan; the executing agents resolve them as they go:
 
 - The exact wording of the AI prompt in `selection/ai/prompt.rs`. Seed in M5; refine via the eval test.
-- Final copy on the EmptyState examples. Seed in the design summary; refine in M10 with the real running app.
+- Final copy on the EmptyState examples. Seed in § "Empty state copy" above; refine in M10 with the real
+  running app.
 - Whether the title bar in Search should say "Search" or "Search files…" for parity with Selection's "Select
   files…". I (the planner) lean "Search" since it's a verb and reads cleanly; the executing agent confirms when
   building M4.
-- Whether the Pattern chip should show in AI mode in Selection. (Decision: yes, same as Search. See Decision log.)
-- Whether to keep the "Press Enter to search" hint string as-is in Selection or change it to "Press Enter to
-  filter". Decision: change to "Press Enter to filter" only when the dialog is in Selection mode; pass via the
-  consumer's config (`runHintCopy: string`). M7.
 
 ## Definition of done (whole plan)
 
 - [ ] All 11 milestones committed to `worktree-selection-dialog` and ready to FF-merge.
 - [ ] `./scripts/check.sh --include-slow` is green.
 - [ ] `bindings-fresh` is green.
-- [ ] Manual smoke via MCP: both Search and Selection work end-to-end, including AI mode with `gpt-5.5`, in both
-      light and dark mode.
+- [ ] Manual smoke via MCP: both Search and Selection work end-to-end, including AI mode against the configured
+      cloud model, in both light and dark mode.
 - [ ] No CLAUDE.md is stale.
 - [ ] `docs/architecture.md` reflects the new `lib/query-ui/` directory and the new `selection/` Rust module.
 - [ ] The `Select` menu shows correctly on macOS.
