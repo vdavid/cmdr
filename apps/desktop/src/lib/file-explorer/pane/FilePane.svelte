@@ -2248,7 +2248,12 @@
             entryUnderCursor = null
             return
         }
+        // TS doesn't model array bounds (no `noUncheckedIndexedAccess`), but the
+        // cursor can briefly point past the snapshot's entries after a delete-
+        // sync mutation. Keep the guard at runtime.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard, TS can't model it
         const e = snap.entries[cursorIndex]
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (!e) {
             entryUnderCursor = null
             return
@@ -2711,7 +2716,7 @@
                 {sortBy}
                 {sortOrder}
                 selectedIndices={selection.selectedIndices}
-                onNavigate={(entry) => { void handleNavigate(entry) }}
+                onNavigate={(entry: FileEntry) => { void handleNavigate(entry) }}
                 onSelect={(idx, shiftKey, metaKey) => {
                     // Reuse the regular pane's click semantics so shift-range
                     // and cmd-toggle behave identically. The snapshot pane has

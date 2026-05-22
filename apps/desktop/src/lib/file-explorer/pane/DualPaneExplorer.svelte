@@ -1604,7 +1604,15 @@
         const sourcePaths: string[] = []
         const isDirectoryFlags: boolean[] = []
         for (const idx of useIndices) {
+            // TS doesn't model array bounds (no `noUncheckedIndexedAccess`), so
+            // `snapshot.entries[idx]` is typed as non-undefined. The guard is
+            // still load-bearing at runtime: `selectedIndices` can carry stale
+            // indices after a snapshot mutation (the M8c delete-sync rewrites
+            // the entries array, but in-flight selections may briefly point
+            // past the new end).
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard, TS can't model it
             const entry = snapshot.entries[idx]
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             if (!entry) continue
             sourcePaths.push(entry.path)
             isDirectoryFlags.push(entry.isDirectory)

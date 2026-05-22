@@ -28,8 +28,10 @@ describe('isVolumeEjectable', () => {
     // bindings type says `SmbConnectionState | undefined` but the wire value is
     // null. The predicate must reject both.
     const v = makeVolume({ id: 'root', category: 'main_volume' })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- intentionally simulate the wire shape
-    ;(v as any).smbConnectionState = null
+    // The bindings type only allows `SmbConnectionState | undefined`. We need
+    // to inject the actual wire shape (null), so we widen to a writable index
+    // signature for this one assignment.
+    ;(v as { smbConnectionState: null }).smbConnectionState = null
     expect(isVolumeEjectable(v)).toBe(false)
   })
 
