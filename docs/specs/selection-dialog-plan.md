@@ -121,7 +121,7 @@ because:
 3. The set of things that genuinely differs (data source, AI context, apply verb, history file, title, width) is small
    and easy to express as injected behavior. The leaky-abstraction risk is low.
 
-A third consumer would slot in cleanly: e.g. a future "Filter visible" dialog that applies a temporary filter to the
+A third consumer would slot in cleanly: for example, a future "Filter visible" dialog that applies a temporary filter to the
 focused pane's list. Two consumers don't justify the abstraction on their own; this third future consumer is the
 sanity check that we're not over-engineering.
 
@@ -592,7 +592,7 @@ see § "Mode chips" in Design summary for the rationale.
   behavior; the implementing agent ports the existing arrow-key motion and `chipButtons[]` ref pattern from
   `SearchModeChips.svelte` verbatim (don't rewrite the algorithm; keep it).
 - Option cells support `badge` (small uppercase pill, mono font, accent subtle background), `hint` (mono tertiary
-  text, e.g. `⌥A`), `disabled`, and `tooltip`. The disabled-with-tooltip case is "visible-disabled with tooltip" per
+  text, for example `⌥A`), `disabled`, and `tooltip`. The disabled-with-tooltip case is "visible-disabled with tooltip" per
   the search redesign's "Coming soon" idiom: `disabled={true}` on the button, but the tooltip on hover/focus is
   still active. Verify Ark's `ToggleGroup.Item` honors tooltip on disabled state for the toggles branch (it does;
   the disabled attribute doesn't block hover events on the parent).
@@ -665,6 +665,12 @@ unused state. Without this, none of the following milestones work.
 - Move `buildSearchQuery()` (search-only; returns the IPC payload for `searchFiles`) to a `lib/search/build-search-query.ts`
   module next to the extras. Selection has its own `buildSelectionMatchQuery()` helper that the matcher
   consumes (declared in M7).
+- **Split `recordAiTranslation`.** Today's function in `search-state.svelte.ts` writes `lastAiPattern`,
+  `lastAiPatternKind`, `lastAiLabel`, AND the `handTyped[mode]` buffer in one call. For the core/extras split to
+  work, M2 splits this function: the core factory's version updates ONLY `handTyped[mode]` (so Selection's wrapper
+  reuses it as-is); Search's extras module exposes `recordAiPatternAndLabel({ pattern, kind, label })` that
+  Search's wrapper calls right after the core call. Two calls in sequence from Search's wrapper; one core call
+  from Selection's wrapper. Pin this contract with a unit test on each side.
 - `lib/search/search-state.svelte.ts` becomes a thin façade: instantiates the core factory + extras, re-exports
   the instances for backward-compat during the transition (so Search's existing call sites work via re-export
   while M3 renames them). Drop the façade in M3.
@@ -790,7 +796,7 @@ behavior expressed as a config.
   ```ts
   interface QueryDialogConfig {
     title: string
-    maxWidth: string                                          // e.g. 'min(1080px, 80vw)'
+    maxWidth: string                                          // for example 'min(1080px, 80vw)'
     state: QueryFilterState                                   // the factory instance from M2
     aiEnabled: boolean
     visibleChips: { size: boolean; date: boolean; scope: boolean; pattern: boolean }
@@ -807,7 +813,7 @@ behavior expressed as a config.
     aiContext?: () => string[]                                // Selection passes folder sample
     primaryAction: {
       label: string
-      shortcutHint: string                                     // e.g. '⌥⏎' or '⏎'
+      shortcutHint: string                                     // for example '⌥⏎' or '⏎'
       handler: (entries: ResultEntry[]) => void | Promise<void>
     }
     secondaryAction?: { label: string; shortcutHint: string; handler: (entry: ResultEntry) => void }
@@ -970,9 +976,10 @@ the real-LLM eval test in this milestone catches prompt drift before the dialog 
   `applyIndices(idxs: number[], mode: 'add' | 'remove')` calling into selection state. Skip `..` per hasParent.
 - In `DualPaneExplorer.svelte`, expose `applyIndicesToFocusedPane(idxs, mode)` that resolves the focused pane and
   forwards.
-- For `search-results://` panes: the dialog's match runs against `entry.path`, but `applyIndices` still operates on
-  indices into the snapshot's `entries[]`. The dialog has to map matched results back to snapshot indices for
-  search-results panes. Document this in `lib/selection-dialog/CLAUDE.md` (M7 milestone).
+- For `search-results://` panes: the dialog's match runs against `entry.name` (which is the displayed friendly
+  path on snapshot panes per § Match semantics; NOT `entry.path`). `applyIndices` operates on indices into the
+  snapshot's `entries[]` exactly as for regular panes. Document this in `lib/selection-dialog/CLAUDE.md` (M7
+  milestone).
 
 **Tests.**
 
@@ -1033,6 +1040,12 @@ milestone is the actual feature. Mostly assembly.
 - **AI provider gate.** Hide the AI chip when `getSetting('ai.provider') !== 'cloud'`. Surface a tooltip on the
   chip-row gate (or, if the chip is absent entirely, no tooltip needed; the mode just doesn't appear). Subscribe via
   `onSpecificSettingChange('ai.provider', ...)` so the chip appears/disappears live without reopening the dialog.
+- **Mid-dialog provider switch.** If the user has Selection open in AI mode and the provider gets switched off in
+  another window, mirror Search's existing "auto-mode fallback" gotcha (`lib/search/CLAUDE.md` § Gotchas, "Auto
+  mode fallback when AI gets disabled mid-session"): flip `state.mode` to `'filename'`, hand the AI prompt to the
+  `handTyped.filename` buffer if Selection's AI just translated something, so the user keeps their work. The AI
+  prompt strip clears on the next non-AI search (same lifecycle as Search). Add a Vitest test that pins the
+  fall-back.
 - **Recent-selection chip apply.** Clicking a recent-selection chip restores `query`, `mode`, `caseSensitive`,
   `sizeFilter`/value/unit, `dateFilter`/value to the entry. No scope, no excludeSystemDirs (Selection doesn't have
   them). Implement as `applySelectionHistoryEntry(state, entry)` in `lib/selection-dialog/selection-history-state.svelte.ts`.
@@ -1240,8 +1253,8 @@ verbatim with the tag; M10 verifies, not reconstructs.
 
 | Section / decision in current `lib/search/CLAUDE.md` | Tag |
 |---|---|
-| § "Files" (the big component table) | SPLIT — move shared rows to query-ui, keep search-only rows in search |
-| § "State shape (post-M4)" | both — query-ui owns the core fields, search owns the extras (B7) |
+| § "Files" (the big component table) | SPLIT: move shared rows to query-ui, keep search-only rows in search |
+| § "State shape (post-M4)" | both: query-ui owns the core fields, search owns the extras (B7) |
 | § "Round 3 polish (R3)" B1–B6, U1–U8, T1 | tag per item: B1/B5/U1/U2/U3/U4/U5/U7 → query-ui; B2/B3/B4/B6/U6/U8/T1 → search |
 | § "Round 2 grid-style filter popovers" | query-ui (filter chips are shared) |
 | § "Round 2 D12: Use current folder smart fallback" | search (scope is search-only) |
@@ -1253,19 +1266,37 @@ verbatim with the tag; M10 verifies, not reconstructs.
 | § "Data flow" diagram | search (index lifecycle is search-only); also add a query-ui diagram for the shared flow |
 | § "Key patterns" / Command palette pattern, two-cursor hover, live search debounce, auto-apply gates, ⏎ run button, "Press Enter" hint, scope row, index not available, AI single-pass flow, IME composition, deferred loading, state preservation, ⌘N, MCP open path, runOnMount, path pills with overflow, per-row … menu, footer right-edge actions | tag per pattern: command-palette / two-cursor / debounce / auto-apply / run-button / Press-Enter / IME / deferred-loading / state-preservation / ⌘N / runOnMount / path-pills / row-menu → query-ui; scope-row / AI-single-pass / index-not-available / MCP-open-path / footer-right-edge (because the SPECIFIC buttons are search-specific) → search |
 | § "Snapshot store M8a", "Closed-tab lifecycle and refs", "{#key activeTabId} recreation", "Capability flags M8c", "Cross-snapshot delete sync M8c", "Source-side ops from the snapshot pane M8d" | search (all about the snapshot machinery) |
-| § "Key decisions" — all M10 load-bearing decisions | tag per decision: Unified bar+chips, Filter chips with popovers, MAX_HISTORY_PER_TAB → query-ui; Open-in-pane promotes to virtual volume, Recent-search history added on Open-in-pane only, AI mode never auto-applies → search; AI mode chips re-run on click → query-ui (general); RecentSearchesPopover reuses FilterChipPopover → query-ui; Pattern chip always rendered → query-ui (both consumers use it); Path pills mouse-only / not in Tab order → query-ui |
-| § "Gotchas" — stopPropagation, prepareSearchIndex failure, clearSearchState in onDestroy, status bar empty, ⌘⏎ no-op, AI translation overwrite, nested-interactive a11y disable | tag per gotcha: stopPropagation, ⌘⏎ no-op, status-bar-empty, clearSearchState-in-onDestroy, AI-translation-overwrite, nested-interactive → query-ui; prepareSearchIndex failure, "Open in pane" M8b flow → search |
+| § "Key decisions" (all M10 load-bearing decisions) | tag per decision: Unified bar+chips, Filter chips with popovers, MAX_HISTORY_PER_TAB → query-ui; Open-in-pane promotes to virtual volume, Recent-search history added on Open-in-pane only, AI mode never auto-applies → search; AI mode chips re-run on click → query-ui (general); RecentSearchesPopover reuses FilterChipPopover → query-ui; Pattern chip always rendered → query-ui (both consumers use it); Path pills mouse-only / not in Tab order → query-ui |
+| § "Gotchas" (stopPropagation, prepareSearchIndex failure, clearSearchState in onDestroy, status bar empty, ⌘⏎ no-op, AI translation overwrite, nested-interactive a11y disable) | tag per gotcha: stopPropagation, ⌘⏎ no-op, status-bar-empty, clearSearchState-in-onDestroy, AI-translation-overwrite, nested-interactive → query-ui; prepareSearchIndex failure, "Open in pane" M8b flow → search |
 | § "References" (ai-search-eval-history.md) | search |
-| § "Dependencies" | SPLIT — query-ui inherits the shared deps; search keeps its specific commands |
+| § "Dependencies" | SPLIT: query-ui inherits the shared deps; search keeps its specific commands |
 
 Process for M3: the implementing agent prints the current `lib/search/CLAUDE.md` in full, reads each section, and
 moves chunks into the new file per the tags. Cross-links between the two files where a topic touches both
-(e.g. the Pattern chip's general design vs. Search's specific use). M10's sweep VERIFIES the split; it doesn't
-reconstruct it. If the agent finds a section not on this sheet, they add a tag in this plan and proceed.
+(for example, the Pattern chip's general design vs. Search's specific use). If the agent finds a section not on
+this sheet, they add a tag in this plan and proceed.
+
+**M3 also produces a content-loss check artifact.** Before committing M3, the agent runs:
+
+```bash
+# Capture pre-M3 baseline (from the worktree's parent branch / main)
+git show main:apps/desktop/src/lib/search/CLAUDE.md > /tmp/search-claude-before.md
+
+# Concatenate post-M3 result
+cat apps/desktop/src/lib/search/CLAUDE.md apps/desktop/src/lib/query-ui/CLAUDE.md > /tmp/search-claude-after.md
+
+# Word-count both
+wc -w /tmp/search-claude-before.md /tmp/search-claude-after.md
+```
+
+The post-M3 combined word count must be ≥95% of the pre-M3 baseline (small reductions are acceptable for genuinely
+redundant prose; substantial drops mean something got dropped, not moved). M10 verifies this artifact, not
+reconstructs the split.
 
 ## Risk register
 
-- **R1: M2 factory refactor breaks Search.** ~100 import sites; one missed rewrite is a runtime error. Mitigation:
+- **R1: M2 factory refactor breaks Search.** 15 files, ~471 identifier usages; one missed rewrite is a runtime
+  error. Mitigation:
   TypeScript catches all missed imports; full Vitest run + manual MCP smoke before the commit.
 - **R2: M4 orchestration extraction subtly changes Search behavior.** Risky because the orchestrator has the most
   state. Mitigation: Search's existing test suite (tier-3 a11y + dialog tests + Playwright e2e). Add new integration
