@@ -10,128 +10,134 @@ export type { PatternType }
 export type SizeFilter = 'any' | 'gte' | 'lte' | 'between'
 export type DateFilter = 'any' | 'after' | 'before' | 'between'
 /**
- * Size unit. `B` (bytes) was added in round 2 (D10) so the list-style popover can let the
- * user pick a byte-level filter without leaving the popover. The byte unit's label varies
- * between `byte` / `bytes` depending on the selected count (see `byteUnitLabel`); KB/kB
- * follows the user's binary-vs-SI setting (`kiloByteLabel`).
- */
-export type SizeUnit = 'B' | 'KB' | 'MB' | 'GB'
-
-/**
- * Unified search mode. M2 collapses the previous split (AI prompt row vs filename pattern row)
- * into a single `query` input with a `mode` discriminator. The chip row below the bar drives
- * `mode`; the input below it drives `query`. AI mode is hidden when the AI provider is off.
- */
-export type SearchMode = 'ai' | 'filename' | 'regex'
-
-/**
- * Debounce window for auto-applied filename/regex searches. The previous 200 ms felt twitchy on a
- * 10M-entry index: every typed character paid for a search round-trip. 1 s matches Spotlight's feel
- * and gives the user space to finish a word before we react. AI mode never auto-applies (see
- * `SearchDialog.svelte#scheduleSearch`), so this constant is filename/regex-only.
- */
-export const SEARCH_AUTO_APPLY_DEBOUNCE_MS = 1000
-
-// Module-level reactive state
-let isIndexReady = $state(false)
-let indexEntryCount = $state(0)
-let isSearching = $state(false)
-
-/**
- * Last interaction the dialog observed. Drives the `⏎` ownership swap per round-2 D8:
+ * Façade over the M2 core/extras split.
  *
- *   - 'results-arrived' or 'cursor-moved' (with results present): ⏎ activates "Go to file"
- *     on the cursor row.
- *   - 'opened', 'query-edited', 'filter-edited' (or no results yet): ⏎ runs the search.
+ * Before M2 this file was a 713-line module-singleton. M2 carved it into:
+ *   - `lib/query-ui/query-filter-state.svelte.ts`: the cross-consumer core
+ *     (factory `createQueryFilterState`).
+ *   - `lib/search/search-extras-state.svelte.ts`: Search-only fields
+ *     (factory `createSearchExtrasState`).
+ *   - `lib/search/build-search-query.ts`: the `SearchQuery` IPC payload builder.
  *
- * The discriminator lives in state (not derived) because "what the user did last" isn't
- * recoverable from the other fields alone (a cursor move and a results-arrived both leave
- * `results.length > 0` and `cursorIndex` in the same shape; only the temporal order
- * distinguishes them). Updated at the call sites that actually own each transition.
+ * This file instantiates one of each and re-exports the legacy named-function API
+ * so the ~15 Search call sites work unchanged during the rest of the milestones.
+ * The intention is a transparent passthrough: no branching, no shape adaptation,
+ * just delegation. M3 will rename the call sites to use the instances directly.
+ *
+ * The `recordAiTranslation({pattern, kind, label})` shape is preserved here as a
+ * convenience that fans out to `core.recordAiTranslation({pattern, kind})` and
+ * `extras.recordAiPatternAndLabel({pattern, kind, label})`. The Selection wrapper
+ * calls only the core directly and never reaches this file.
  */
-export type LastDialogEvent = 'opened' | 'results-arrived' | 'cursor-moved' | 'query-edited' | 'filter-edited'
-let lastDialogEvent = $state<LastDialogEvent>('opened')
 
-// Unified query field. M2: replaces the separate `namePattern` and `aiPrompt` fields.
-let query = $state('')
-// Active search mode. Drives placeholder, chip styling, and how Enter dispatches.
-let mode = $state<SearchMode>('filename')
+import type { SearchResultEntry, SearchQuery, HistoryEntry, HistoryFilters } from '$lib/tauri-commands'
+import { createQueryFilterState } from '$lib/query-ui/query-filter-state.svelte'
+import { createSearchExtrasState } from './search-extras-state.svelte'
+import { buildSearchQuery as buildSearchQueryImpl } from './build-search-query'
 
-let sizeFilter = $state<SizeFilter>('any')
-let sizeValue = $state('')
-let sizeUnit = $state<SizeUnit>('MB')
-let sizeValueMax = $state('')
-let sizeUnitMax = $state<SizeUnit>('MB')
-let dateFilter = $state<DateFilter>('any')
-let dateValue = $state('')
-let dateValueMax = $state('')
+// Re-export the core's pure helpers + types so the call sites stay stable.
+export {
+  parseSizeToBytes,
+  parseDateToTimestamp,
+  deriveEnterAction,
+  SEARCH_AUTO_APPLY_DEBOUNCE_MS,
+} from '$lib/query-ui/query-filter-state.svelte'
+export type {
+  SearchMode,
+  SizeFilter,
+  SizeUnit,
+  DateFilter,
+  PatternType,
+  LastDialogEvent,
+  EnterAction,
+} from '$lib/query-ui/query-filter-state.svelte'
 
-// Results
-let results = $state<SearchResultEntry[]>([])
-let totalCount = $state(0)
-let cursorIndex = $state(0)
+const core = createQueryFilterState({ defaultMode: 'filename' })
+const extras = createSearchExtrasState()
 
-// Index availability: false when indexing is disabled or not started
-let isIndexAvailable = $state(true)
-
-// Case sensitivity
-let caseSensitive = $state(false)
-
-/**
- * The original natural-language prompt the user typed before the AI translated it. Preserved so
- * the AI transparency strip can show what was actually asked, even after the AI overwrites `query`
- * with the translated pattern. Null when no AI search has run this session.
- */
-let lastAiPrompt = $state<string | null>(null)
-/**
- * The caveat returned alongside the last AI translation (for example "I ignored the file size you
- * mentioned because the request didn't include a unit"). Null when no AI search has run, or when
- * the AI returned no caveat. Shown by the transparency strip below the prompt.
- */
-let lastAiCaveat = $state<string | null>(null)
-
-/**
- * The LLM-produced label for the last AI translation (max ~40 chars). Read by the "Open in
- * pane" snapshot builder so the pane breadcrumb reflects the AI's summary instead of the
- * verbatim prompt. Null when no AI search has run or when the model omitted the field.
- */
-let lastAiLabel = $state<string | null>(null)
-
-/**
- * The pattern the last AI translation produced (the actual glob or regex string), separate
- * from the prompt the user typed. We keep this so:
- *   1. The "Pattern" chip in the filter strip can show the current pattern across all modes.
- *   2. Switching out of AI mode hands the matching mode the AI's pattern, while leaving
- *      the other mode's hand-typed buffer untouched.
- * Null when no AI search has run or when the AI returned no pattern.
- */
-let lastAiPattern = $state<string | null>(null)
-/**
- * Discriminator for `lastAiPattern`: which input kind it fits ('glob' goes to filename mode,
- * 'regex' to regex mode). Null when the AI hasn't run or returned no pattern.
- */
-let lastAiPatternKind = $state<'glob' | 'regex' | null>(null)
-
-/**
- * Per-mode hand-typed buffers. Switching modes (⌘1 / ⌘2 / ⌘3) restores the user's last
- * hand-typed value for the target mode, instead of carrying the AI pattern (or another
- * mode's pattern) across modes. AI translations don't write here; only direct user input
- * does. The active-mode value is mirrored into `query` so the input reads/writes one
- * field.
- */
-const handTyped = $state<{ ai: string; filename: string; regex: string }>({
-  ai: '',
-  filename: '',
-  regex: '',
+// Wire the core's AI-pattern probe to the extras module. The probe seeds the
+// matching mode's hand-typed buffer on switchMode when (a) that buffer is empty
+// and (b) the AI's last pattern kind matches.
+core.setAiPatternProbe((forMode) => {
+  const pattern = extras.getLastAiPattern()
+  if (!pattern) return null
+  const wantKind = forMode === 'regex' ? 'regex' : 'glob'
+  return extras.getLastAiPatternKind() === wantKind ? pattern : null
 })
 
-// Scope (folder filter)
-let scope = $state('')
+// Query + mode
+export const getQuery = (): string => core.getQuery()
+export const setQuery = (value: string): void => core.setQuery(value)
+export const setQueryFromUserInput = (value: string): void => core.setQueryFromUserInput(value)
+export const getMode = (): ReturnType<typeof core.getMode> => core.getMode()
+export const setMode = (value: Parameters<typeof core.setMode>[0]): void => core.setMode(value)
+export const switchMode = (target: Parameters<typeof core.switchMode>[0]): void => core.switchMode(target)
 
-// System/build directory exclusion toggle (on by default).
-// The actual exclude list lives in Rust: `SYSTEM_DIR_EXCLUDES` in `search/query.rs`.
-// The frontend only controls the boolean; Rust does the filtering.
-let excludeSystemDirs = $state(true)
+// Size
+export const getSizeFilter = (): ReturnType<typeof core.getSizeFilter> => core.getSizeFilter()
+export const setSizeFilter = (v: Parameters<typeof core.setSizeFilter>[0]): void => core.setSizeFilter(v)
+export const getSizeValue = (): string => core.getSizeValue()
+export const setSizeValue = (v: string): void => core.setSizeValue(v)
+export const getSizeUnit = (): ReturnType<typeof core.getSizeUnit> => core.getSizeUnit()
+export const setSizeUnit = (v: Parameters<typeof core.setSizeUnit>[0]): void => core.setSizeUnit(v)
+export const getSizeValueMax = (): string => core.getSizeValueMax()
+export const setSizeValueMax = (v: string): void => core.setSizeValueMax(v)
+export const getSizeUnitMax = (): ReturnType<typeof core.getSizeUnitMax> => core.getSizeUnitMax()
+export const setSizeUnitMax = (v: Parameters<typeof core.setSizeUnitMax>[0]): void => core.setSizeUnitMax(v)
+
+// Date
+export const getDateFilter = (): ReturnType<typeof core.getDateFilter> => core.getDateFilter()
+export const setDateFilter = (v: Parameters<typeof core.setDateFilter>[0]): void => core.setDateFilter(v)
+export const getDateValue = (): string => core.getDateValue()
+export const setDateValue = (v: string): void => core.setDateValue(v)
+export const getDateValueMax = (): string => core.getDateValueMax()
+export const setDateValueMax = (v: string): void => core.setDateValueMax(v)
+
+// Case sensitivity
+export const getCaseSensitive = (): boolean => core.getCaseSensitive()
+export const setCaseSensitive = (v: boolean): void => core.setCaseSensitive(v)
+
+// AI prompt + caveat (core)
+export const getLastAiPrompt = (): string | null => core.getLastAiPrompt()
+export const setLastAiPrompt = (v: string | null): void => core.setLastAiPrompt(v)
+export const getLastAiCaveat = (): string | null => core.getLastAiCaveat()
+export const setLastAiCaveat = (v: string | null): void => core.setLastAiCaveat(v)
+
+// AI pattern + label (extras)
+export const getLastAiLabel = (): string | null => extras.getLastAiLabel()
+export const getLastAiPattern = (): string | null => extras.getLastAiPattern()
+export const getLastAiPatternKind = (): 'glob' | 'regex' | null => extras.getLastAiPatternKind()
+export const clearAiPattern = (): void => extras.clearAiPattern()
+
+// Results + cursor
+export const getResults = (): SearchResultEntry[] => core.getResults()
+export const setResults = (v: SearchResultEntry[]): void => core.setResults(v)
+export const getTotalCount = (): number => core.getTotalCount()
+export const setTotalCount = (v: number): void => core.setTotalCount(v)
+export const getCursorIndex = (): number => core.getCursorIndex()
+export const setCursorIndex = (v: number): void => core.setCursorIndex(v)
+export const getIsSearching = (): boolean => core.getIsSearching()
+export const setIsSearching = (v: boolean): void => core.setIsSearching(v)
+
+// Index availability (extras; Selection has no index)
+export const getIsIndexReady = (): boolean => extras.getIsIndexReady()
+export const setIsIndexReady = (v: boolean): void => extras.setIsIndexReady(v)
+export const getIndexEntryCount = (): number => extras.getIndexEntryCount()
+export const setIndexEntryCount = (v: number): void => extras.setIndexEntryCount(v)
+export const getIsIndexAvailable = (): boolean => extras.getIsIndexAvailable()
+export const setIsIndexAvailable = (v: boolean): void => extras.setIsIndexAvailable(v)
+
+// Scope + system-dirs (extras)
+export const getScope = (): string => extras.getScope()
+export const setScope = (v: string): void => extras.setScope(v)
+export const getExcludeSystemDirs = (): boolean => extras.getExcludeSystemDirs()
+export const setExcludeSystemDirs = (v: boolean): void => extras.setExcludeSystemDirs(v)
+
+// Dialog lifecycle (core)
+export const getLastDialogEvent = (): ReturnType<typeof core.getLastDialogEvent> => core.getLastDialogEvent()
+export const setLastDialogEvent = (v: Parameters<typeof core.setLastDialogEvent>[0]): void => core.setLastDialogEvent(v)
+export const getRunOnMount = (): boolean => core.getRunOnMount()
+export const setRunOnMount = (v: boolean): void => core.setRunOnMount(v)
 
 /**
  * One-shot flag set by external openers (MCP `open_search_dialog`) to ask the dialog to run a
@@ -390,254 +396,54 @@ export function recordAiTranslation(input: {
   kind: 'glob' | 'regex' | null
   label: string | null
 }): void {
-  lastAiPattern = input.pattern
-  lastAiPatternKind = input.pattern ? input.kind : null
-  lastAiLabel = input.label
-  // Mirror the produced pattern into the matching mode's hand-typed buffer.
-  // (The "other" buffer stays whatever the user typed; the AI only speaks to
-  // one of filename / regex per translation.) Empty patterns leave the buffers
-  // alone so a no-op translation doesn't wipe the user's typed-by-hand value.
-  if (input.pattern && input.pattern.trim()) {
-    if (input.kind === 'regex') {
-      handTyped.regex = input.pattern
-    } else if (input.kind === 'glob') {
-      handTyped.filename = input.pattern
-    }
-  }
+  core.recordAiTranslation({ pattern: input.pattern, kind: input.kind })
+  extras.recordAiPatternAndLabel(input)
 }
 
 /**
- * Clears the AI pattern + label + caveat (but leaves `lastAiPrompt` and the transparency
- * strip intact). Called when the user changes the pattern via the Pattern chip's clear
- * button (per search-fixup-brief clarification 5: clearing the chip doesn't hide the
- * strip).
- */
-export function clearAiPattern(): void {
-  lastAiPattern = null
-  lastAiPatternKind = null
-}
-
-/**
- * Converts size input + unit to bytes. Returns `undefined` if empty or invalid. A value of
- * exactly `0` is honored (the user explicitly picked 0 bytes from the D10 grid preset and
- * the engine should pin the lower / upper bound to zero rather than silently skip the
- * filter).
- */
-export function parseSizeToBytes(value: string, unit: SizeUnit): number | undefined {
-  const num = parseFloat(value)
-  if (isNaN(num) || num < 0) return undefined
-  const multipliers: Record<SizeUnit, number> = {
-    B: 1,
-    KB: 1024,
-    MB: 1024 * 1024,
-    GB: 1024 * 1024 * 1024,
-  }
-  return Math.round(num * multipliers[unit])
-}
-
-/** Converts ISO date string to unix timestamp (seconds). Returns undefined if empty/invalid. */
-export function parseDateToTimestamp(value: string): number | undefined {
-  if (!value) return undefined
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just parsing a timestamp
-  const date = new Date(value)
-  if (isNaN(date.getTime())) return undefined
-  return Math.floor(date.getTime() / 1000)
-}
-
-/** Applies the current size filter state to the query. */
-function applySizeQuery(q: SearchQuery): void {
-  if (sizeFilter === 'any') return
-  const minBytes = parseSizeToBytes(sizeValue, sizeUnit)
-  if (sizeFilter === 'gte' && minBytes !== undefined) {
-    q.minSize = minBytes
-  } else if (sizeFilter === 'lte' && minBytes !== undefined) {
-    q.maxSize = minBytes
-  } else if (sizeFilter === 'between') {
-    if (minBytes !== undefined) q.minSize = minBytes
-    const maxBytes = parseSizeToBytes(sizeValueMax, sizeUnitMax)
-    if (maxBytes !== undefined) q.maxSize = maxBytes
-  }
-}
-
-/** Applies the current date filter state to the query. */
-function applyDateQuery(q: SearchQuery): void {
-  if (dateFilter === 'any') return
-  const ts = parseDateToTimestamp(dateValue)
-  if (dateFilter === 'after' && ts !== undefined) {
-    q.modifiedAfter = ts
-  } else if (dateFilter === 'before' && ts !== undefined) {
-    q.modifiedBefore = ts
-  } else if (dateFilter === 'between') {
-    if (ts !== undefined) q.modifiedAfter = ts
-    const tsMax = parseDateToTimestamp(dateValueMax)
-    if (tsMax !== undefined) q.modifiedBefore = tsMax
-  }
-}
-
-/**
- * Builds a `SearchQuery` from the current state. Used by filename and regex modes; AI mode goes
- * through `translateSearchQuery` first and then populates state before this is called. The backend
- * `patternType` is derived from `mode`: filename maps to glob, regex to regex. AI mode (which only
- * reaches here after AI translation flipped the mode) maps to glob as a safe default.
+ * Builds the SearchQuery IPC payload. Pass-through to `build-search-query.ts`.
  */
 export function buildSearchQuery(): SearchQuery {
-  const patternType: PatternType = mode === 'regex' ? 'regex' : 'glob'
-  const q: SearchQuery = {
-    namePattern: query.trim() || null,
-    patternType,
-    minSize: null,
-    maxSize: null,
-    modifiedAfter: null,
-    modifiedBefore: null,
-    isDirectory: null,
-    limit: 30,
-  }
-
-  // Only include caseSensitive when explicitly set, so Rust uses the platform default (None)
-  if (caseSensitive) {
-    q.caseSensitive = true
-  }
-
-  if (!excludeSystemDirs) {
-    q.excludeSystemDirs = false
-  }
-
-  applySizeQuery(q)
-  applyDateQuery(q)
-
-  return q
+  return buildSearchQueryImpl(core, extras)
 }
 
 /**
- * Picks the friendliest size unit + value pair for a given byte count. Mirrors the helper in
- * `SearchDialog.svelte` so callers outside the dialog (history loader) can reuse it.
- */
-function bytesToSize(bytes: number): { value: string; unit: SizeUnit } {
-  if (bytes >= 1024 * 1024 * 1024) {
-    return { value: String(Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100), unit: 'GB' }
-  }
-  if (bytes >= 1024 * 1024) {
-    return { value: String(Math.round((bytes / (1024 * 1024)) * 100) / 100), unit: 'MB' }
-  }
-  return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
-}
-
-function applyHistoryFilters(filters: HistoryFilters | undefined): void {
-  // Reset to "any" first; we'll set the chip below if the history actually carries a filter.
-  sizeFilter = 'any'
-  sizeValue = ''
-  sizeUnit = 'MB'
-  sizeValueMax = ''
-  sizeUnitMax = 'MB'
-  dateFilter = 'any'
-  dateValue = ''
-  dateValueMax = ''
-
-  if (!filters) return
-
-  if (filters.sizeMin != null && filters.sizeMax != null) {
-    sizeFilter = 'between'
-    const min = bytesToSize(filters.sizeMin)
-    const max = bytesToSize(filters.sizeMax)
-    sizeValue = min.value
-    sizeUnit = min.unit
-    sizeValueMax = max.value
-    sizeUnitMax = max.unit
-  } else if (filters.sizeMin != null) {
-    sizeFilter = 'gte'
-    const min = bytesToSize(filters.sizeMin)
-    sizeValue = min.value
-    sizeUnit = min.unit
-  } else if (filters.sizeMax != null) {
-    sizeFilter = 'lte'
-    const max = bytesToSize(filters.sizeMax)
-    sizeValue = max.value
-    sizeUnit = max.unit
-  }
-
-  if (filters.modifiedAfter != null && filters.modifiedBefore != null) {
-    dateFilter = 'between'
-    dateValue = filters.modifiedAfter
-    dateValueMax = filters.modifiedBefore
-  } else if (filters.modifiedAfter != null) {
-    dateFilter = 'after'
-    dateValue = filters.modifiedAfter
-  } else if (filters.modifiedBefore != null) {
-    dateFilter = 'before'
-    dateValue = filters.modifiedBefore
-  }
-}
-
-/**
- * Loads a persisted history entry into the dialog's live state. Used by the recent-searches
- * footer (chip click) and popover (item activation). Resets the AI transparency strip; if the
- * caller wants to run an AI search from this entry, they can re-trigger it via the dialog's
- * AI path (which captures the prompt into `lastAiPrompt` itself).
- */
-export function applyHistoryEntry(entry: HistoryEntry): void {
-  query = entry.query
-  mode = entry.mode
-  scope = entry.scope
-  caseSensitive = entry.caseSensitive
-  excludeSystemDirs = entry.excludeSystemDirs
-  applyHistoryFilters(entry.filters)
-  // Mirror into the per-mode buffer so a follow-up mode switch sees a sensible value.
-  handTyped.ai = ''
-  handTyped.filename = ''
-  handTyped.regex = ''
-  handTyped[entry.mode] = entry.query
-  // Clear any prior AI transparency state; the next AI run will repopulate it.
-  lastAiPrompt = null
-  lastAiCaveat = null
-  lastAiLabel = null
-  lastAiPattern = null
-  lastAiPatternKind = null
-  results = []
-  totalCount = 0
-  cursorIndex = 0
-}
-
-function readSizeFilters(): { sizeMin?: number; sizeMax?: number } {
-  if (sizeFilter === 'any') return {}
-  const minBytes = parseSizeToBytes(sizeValue, sizeUnit)
-  if (sizeFilter === 'gte') return minBytes !== undefined ? { sizeMin: minBytes } : {}
-  if (sizeFilter === 'lte') return minBytes !== undefined ? { sizeMax: minBytes } : {}
-  // between
-  const maxBytes = parseSizeToBytes(sizeValueMax, sizeUnitMax)
-  const out: { sizeMin?: number; sizeMax?: number } = {}
-  if (minBytes !== undefined) out.sizeMin = minBytes
-  if (maxBytes !== undefined) out.sizeMax = maxBytes
-  return out
-}
-
-function readDateFilters(): { modifiedAfter?: string; modifiedBefore?: string } {
-  if (dateFilter === 'after') return dateValue ? { modifiedAfter: dateValue } : {}
-  if (dateFilter === 'before') return dateValue ? { modifiedBefore: dateValue } : {}
-  if (dateFilter === 'between') {
-    const out: { modifiedAfter?: string; modifiedBefore?: string } = {}
-    if (dateValue) out.modifiedAfter = dateValue
-    if (dateValueMax) out.modifiedBefore = dateValueMax
-    return out
-  }
-  return {}
-}
-
-/**
- * Builds a `HistoryEntry`-ready filter object from the current state. Pure helper for the
- * "Open in pane" call site that will land in M8.
+ * Builds a `HistoryEntry`-ready filter object from the current state.
  */
 export function buildHistoryFilters(): HistoryFilters {
-  return { ...readSizeFilters(), ...readDateFilters() }
+  return core.readHistoryFilters()
 }
 
 /**
- * Prefill payload coming from the MCP `open_search_dialog` tool. Mirrors the shape of the tool
- * schema in `src-tauri/src/mcp/tools.rs`. All fields optional; the listener strips nulls before
- * forwarding here so an absent field stays absent.
+ * Loads a persisted history entry into the dialog's live state. Used by the
+ * recent-searches footer and popover.
+ */
+export function applyHistoryEntry(entry: HistoryEntry): void {
+  core.setQuery(entry.query)
+  core.setMode(entry.mode)
+  extras.setScope(entry.scope)
+  core.setCaseSensitive(entry.caseSensitive)
+  extras.setExcludeSystemDirs(entry.excludeSystemDirs)
+  core.applyHistoryFilters(entry.filters)
+  // Reset per-mode buffers; mirror the entry into its own mode slot so a
+  // follow-up mode switch sees a sensible value.
+  core.clearHandTypedBuffers()
+  core.setHandTypedBuffer(entry.mode, entry.query)
+  // Clear any prior AI transparency state; the next AI run will repopulate it.
+  core.setLastAiPrompt(null)
+  core.setLastAiCaveat(null)
+  extras.recordAiPatternAndLabel({ pattern: null, kind: null, label: null })
+  core.setResults([])
+  core.setTotalCount(0)
+  core.setCursorIndex(0)
+}
+
+/**
+ * Prefill payload coming from the MCP `open_search_dialog` tool.
  */
 export interface SearchPrefill {
   query?: string
-  mode?: SearchMode
+  mode?: ReturnType<typeof core.getMode>
   sizeMin?: number
   sizeMax?: number
   modifiedAfter?: string
@@ -649,28 +455,17 @@ export interface SearchPrefill {
 }
 
 /**
- * Applies an MCP prefill payload onto the live search state. Called BEFORE the dialog mounts
- * (the listener flips `showSearchDialog = true` after running this). The dialog's `onMount`
- * reads `runOnMount` and dispatches the right run path (AI or filename/regex) based on `mode`.
- *
- * Behavior notes:
- *   - Missing fields are left at their current value (no implicit reset). Callers that want a
- *     clean slate should call `clearSearchState()` first.
- *   - `mode` falls back to current state if absent; the listener decides the default based on
- *     whether AI is enabled (mirrors the tool docs: "default 'ai' if AI on, else 'filename'").
- *   - `runOnMount` defaults to true when the caller didn't pass `autoRun` (matches the tool
- *     schema's default-true contract).
+ * Applies an MCP prefill payload onto the live search state. Called BEFORE the
+ * dialog mounts.
  */
 export function applySearchPrefill(prefill: SearchPrefill): void {
-  if (prefill.query !== undefined) query = prefill.query
-  if (prefill.mode !== undefined) mode = prefill.mode
-  if (prefill.scope !== undefined) scope = prefill.scope
-  if (prefill.caseSensitive !== undefined) caseSensitive = prefill.caseSensitive
-  if (prefill.excludeSystemDirs !== undefined) excludeSystemDirs = prefill.excludeSystemDirs
+  if (prefill.query !== undefined) core.setQuery(prefill.query)
+  if (prefill.mode !== undefined) core.setMode(prefill.mode)
+  if (prefill.scope !== undefined) extras.setScope(prefill.scope)
+  if (prefill.caseSensitive !== undefined) core.setCaseSensitive(prefill.caseSensitive)
+  if (prefill.excludeSystemDirs !== undefined) extras.setExcludeSystemDirs(prefill.excludeSystemDirs)
 
-  // `applyHistoryFilters` resets both size and date, so we batch them into one call. Only set
-  // when the caller passed at least one size or date field; otherwise leave the current filters
-  // alone (matches "missing fields preserve current state").
+  // `applyHistoryFilters` resets both size and date, so we batch them into one call.
   const touchesSize = prefill.sizeMin !== undefined || prefill.sizeMax !== undefined
   const touchesDate = prefill.modifiedAfter !== undefined || prefill.modifiedBefore !== undefined
   if (touchesSize || touchesDate) {
@@ -680,54 +475,27 @@ export function applySearchPrefill(prefill: SearchPrefill): void {
       modifiedAfter: prefill.modifiedAfter,
       modifiedBefore: prefill.modifiedBefore,
     }
-    applyHistoryFilters(combined)
+    core.applyHistoryFilters(combined)
   }
 
   // Clear any prior AI transparency strip; a new AI run from prefill will repopulate it.
   if (prefill.mode === 'ai' || prefill.query !== undefined) {
-    lastAiPrompt = null
-    lastAiCaveat = null
+    core.setLastAiPrompt(null)
+    core.setLastAiCaveat(null)
   }
 
-  // Reset cursor + results so the dialog opens with a clean slate visually.
-  results = []
-  totalCount = 0
-  cursorIndex = 0
+  core.setResults([])
+  core.setTotalCount(0)
+  core.setCursorIndex(0)
 
-  runOnMount = prefill.autoRun ?? true
+  core.setRunOnMount(prefill.autoRun ?? true)
 }
 
 /**
- * Clears all dialog state to defaults. Triggered explicitly by the user via `⌘N` ("new search")
- * inside the dialog. The module-level `$state` survives dialog unmount/remount, so close-then-reopen
- * never calls this. The only reset path is the user pressing `⌘N`.
+ * Clears all dialog state to defaults. Triggered explicitly by the user via `⌘N`
+ * ("new search") inside the dialog.
  */
 export function clearSearchState(): void {
-  query = ''
-  mode = 'filename'
-  sizeFilter = 'any'
-  sizeValue = ''
-  sizeUnit = 'MB'
-  sizeValueMax = ''
-  sizeUnitMax = 'MB'
-  dateFilter = 'any'
-  dateValue = ''
-  dateValueMax = ''
-  results = []
-  totalCount = 0
-  cursorIndex = 0
-  isIndexAvailable = true
-  caseSensitive = false
-  scope = ''
-  excludeSystemDirs = true
-  isSearching = false
-  lastAiPrompt = null
-  lastAiCaveat = null
-  lastAiLabel = null
-  lastAiPattern = null
-  lastAiPatternKind = null
-  handTyped.ai = ''
-  handTyped.filename = ''
-  handTyped.regex = ''
-  runOnMount = false
+  core.clearCore()
+  extras.clearExtras()
 }

@@ -15,7 +15,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { HistoryEntry } from '$lib/tauri-commands'
     import { chipTooltip, modeBadge } from './recent-searches-utils'
-    import { computeRecentChipsLayout } from './recent-chips-layout'
+    import { computeRecentChipsLayout } from '$lib/query-ui/recent-chips-layout'
 
     interface Props {
         entries: HistoryEntry[]

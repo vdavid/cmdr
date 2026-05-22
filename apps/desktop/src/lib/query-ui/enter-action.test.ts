@@ -4,7 +4,7 @@
  * `lastDialogEvent` × `resultsCount > 0`.
  */
 import { describe, expect, it } from 'vitest'
-import { deriveEnterAction, type LastDialogEvent } from './search-state.svelte'
+import { deriveEnterAction, type LastDialogEvent } from './enter-action'
 
 const events: LastDialogEvent[] = ['opened', 'results-arrived', 'cursor-moved', 'query-edited', 'filter-edited']
 

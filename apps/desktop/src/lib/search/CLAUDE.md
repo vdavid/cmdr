@@ -31,8 +31,11 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 | `SearchRowMenu.svelte`               | Per-row `…` button: always visible on every row (post-fixup); opens the native context menu via the parent. Column header reads "Actions"                                      |
 | `recent-searches-state.svelte.ts`    | Module-level reactive store for the loaded recent-searches list; loads from backend once per session                                                                           |
 | `recent-searches-utils.ts`           | Pure helpers: `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip`                                                                                             |
-| `search-state.svelte.ts`             | Module-level `$state` for query fields, results, index readiness, AI state                                                                                                     |
-| `search-state.test.ts`               | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)                                                                                                  |
+| `search-state.svelte.ts`             | Thin façade re-exporting the legacy named API; routes calls through the M2 core + extras factory instances                                                                     |
+| `search-state.test.ts`               | Legacy Vitest tests (now exercise the façade); passes verbatim post-M2                                                                                                         |
+| `search-extras-state.svelte.ts`      | Factory `createSearchExtrasState()` for Search-only fields (`scope`, `excludeSystemDirs`, AI label/pattern/kind)                                                               |
+| `search-extras-state.test.ts`        | Pins the extras shape and the M2 NG3 split contract (core writes `handTyped`, extras writes its own fields)                                                                    |
+| `build-search-query.ts`              | Pure helper layering `excludeSystemDirs` onto the core's `buildBaseSearchQuery()` for the `searchFiles` IPC payload                                                            |
 | `filter-chip-state.test.ts`          | Default → configured → cleared rules for each filter chip's display summary                                                                                                    |
 | `SearchBar.svelte.test.ts`           | Per-mode placeholder, value mirror, `onInput` callback                                                                                                                         |
 | `SearchModeChips.svelte.test.ts`     | Chip set, active marker, click + keyboard activation, focus motion (skipping Content)                                                                                          |
@@ -56,7 +59,7 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 | `capabilities.ts`                    | `searchResultsVolumeCapabilities()` returns the per-pane flag set (M8c) and the shortcut toast text                                                                            |
 | `capabilities.test.ts`               | Pins the flag shape, the purity contract, and the toast string                                                                                                                 |
 
-## State shape (post-M4)
+## State shape (post-M4, M2-split)
 
 The user's typed text and the active mode are one model:
 
@@ -77,6 +80,29 @@ search (`executeSearch(fromAiTranslation = false)`).
 There is **no `aiPrompt` state and no `namePattern` state**. M2 deleted both. Anywhere the old code read `aiPrompt` or
 `namePattern`, the new code reads `query`. Anywhere the old code branched on `patternType`, the new code branches on
 `mode` (with the mapping `regex => regex`, everything else => glob).
+
+### Where the state actually lives (M2)
+
+Selection-dialog M2 split the previous module-singleton in two so two consumers can each own an instance:
+
+- **Cross-consumer core**: [`lib/query-ui/query-filter-state.svelte.ts`](../query-ui/query-filter-state.svelte.ts) —
+  factory `createQueryFilterState()`. Owns `query`, `mode`, size + date filters, `caseSensitive`, `lastAiPrompt`,
+  `lastAiCaveat`, per-mode `handTyped` buffers, `results`, `totalCount`, `cursorIndex`, `isSearching`,
+  `lastDialogEvent`, `runOnMount`, `lastRunQuery`. See [`lib/query-ui/CLAUDE.md`](../query-ui/CLAUDE.md).
+- **Search-only extras**: [`search-extras-state.svelte.ts`](search-extras-state.svelte.ts) — factory
+  `createSearchExtrasState()`. Owns `scope`, `excludeSystemDirs`, `isIndexReady`, `indexEntryCount`, `isIndexAvailable`,
+  `lastAiLabel`, `lastAiPattern`, `lastAiPatternKind`. Selection doesn't carry these (no whole-drive index, no
+  Search-style scope row, no snapshot breadcrumb, no Pattern chip).
+- **`buildSearchQuery()`** lives in [`build-search-query.ts`](build-search-query.ts) and layers `excludeSystemDirs` onto
+  `core.buildBaseSearchQuery()`.
+- **`recordAiTranslation` is split**: the core writes ONLY to `handTyped[mode]`; the extras' `recordAiPatternAndLabel`
+  writes the Pattern chip + label slots. The Search wrapper calls both in sequence; the legacy
+  `recordAiTranslation({pattern, kind, label})` façade in this directory's `search-state.svelte.ts` fans out for
+  call-site compatibility through M3. See `lib/query-ui/CLAUDE.md` § "`recordAiTranslation` is split".
+
+`lib/search/search-state.svelte.ts` is now a transparent façade re-exporting the legacy named functions. ~15 call sites
+use it unchanged through M2; M3 renames them to use the instances directly. This section is the bridge to that M3 split
+sheet.
 
 ## Round 3 polish (R3)
 
