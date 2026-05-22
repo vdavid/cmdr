@@ -4,16 +4,48 @@
  */
 
 import type { ViewMode } from '$lib/app-status-store'
+import { applySearchPrefill, type SearchPrefill, type SearchMode } from '$lib/search/search-state.svelte'
 import type { ExplorerAPI } from './explorer-api'
 
 export interface McpListenerContext {
   getExplorer: () => ExplorerAPI | undefined
   listenTauri: (event: string, handler: (event: { payload: unknown }) => void) => Promise<void>
+  /** Opens the search dialog. Called by the `mcp-open-search-dialog` listener after prefill is applied. */
+  openSearchDialog: () => void
+  /** Whether AI mode is currently available (provider configured). Drives the default mode. */
+  isAiEnabled: () => boolean
 }
 
 /** Register all MCP event listeners. Call from onMount after listenTauri is ready. */
 export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> {
-  const { listenTauri, getExplorer } = ctx
+  const { listenTauri, getExplorer, openSearchDialog, isAiEnabled } = ctx
+
+  await listenTauri('mcp-open-search-dialog', (event) => {
+    // The backend strips nulls before emitting, but treat the payload defensively: anything not
+    // matching the expected shape collapses to "no prefill", which still opens the dialog with
+    // whatever state already lives in the module-level $state.
+    const raw = (event.payload ?? {}) as Record<string, unknown>
+    const validModes: SearchMode[] = ['ai', 'filename', 'regex']
+    const requestedMode =
+      typeof raw.mode === 'string' && validModes.includes(raw.mode as SearchMode) ? (raw.mode as SearchMode) : undefined
+    // Default mode per plan §3.11 tool docs: 'ai' if AI on, else 'filename'.
+    const defaultedMode: SearchMode = requestedMode ?? (isAiEnabled() ? 'ai' : 'filename')
+
+    const prefill: SearchPrefill = {
+      query: typeof raw.query === 'string' ? raw.query : undefined,
+      mode: defaultedMode,
+      sizeMin: typeof raw.sizeMin === 'number' ? raw.sizeMin : undefined,
+      sizeMax: typeof raw.sizeMax === 'number' ? raw.sizeMax : undefined,
+      modifiedAfter: typeof raw.modifiedAfter === 'string' ? raw.modifiedAfter : undefined,
+      modifiedBefore: typeof raw.modifiedBefore === 'string' ? raw.modifiedBefore : undefined,
+      scope: typeof raw.scope === 'string' ? raw.scope : undefined,
+      caseSensitive: typeof raw.caseSensitive === 'boolean' ? raw.caseSensitive : undefined,
+      excludeSystemDirs: typeof raw.excludeSystemDirs === 'boolean' ? raw.excludeSystemDirs : undefined,
+      autoRun: typeof raw.autoRun === 'boolean' ? raw.autoRun : undefined,
+    }
+    applySearchPrefill(prefill)
+    openSearchDialog()
+  })
 
   await listenTauri('mcp-key', (event) => {
     const { key } = event.payload as { key: string }

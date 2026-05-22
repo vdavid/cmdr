@@ -16,6 +16,10 @@
 //!   dialog).
 //! - `confirm <transfer|delete>` → pane generation advances (the FE accepted the confirmation and
 //!   the underlying copy/move/delete started, producing a state push).
+//! - `open_search_dialog` → soft dialog `search` appears in `SoftDialogTracker`. The frontend
+//!   already calls `notifyDialogOpened('search')` from `SearchDialog.svelte::onMount`. If the
+//!   dialog is mid-close when the event arrives, the new mount may race; the ack times out within
+//!   the 1500 ms budget and the tool surfaces a clean failure. See plan §5.7 risk register.
 
 use std::path::Path;
 
@@ -287,6 +291,54 @@ async fn execute_dialog_confirm<R: Runtime>(
             dialog_type
         ))),
     }
+}
+
+/// Execute the `open_search_dialog` tool.
+///
+/// Emits `mcp-open-search-dialog` with the prefill payload. The main window's
+/// `+page.svelte` listener routes prefill values into `search-state.svelte.ts` and
+/// flips `showSearchDialog = true`. The dialog mounts and calls
+/// `notifyDialogOpened('search')`; we ack on the resulting `SoftDialogAppeared("search")`.
+///
+/// Per plan §3.11: the result confirms the dialog mounted (not that the search ran).
+/// If the dialog is mid-close when the event arrives, the new mount may race; we surface
+/// a clean failure from `wait_for_ack` within the 1500 ms budget.
+pub async fn execute_open_search_dialog<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    // Strip nulls so the FE sees `undefined` (omitted properties), not `null`.
+    // Most JSON-RPC clients serialize missing optional params as `null`, but our
+    // FE state setters expect either a real value or "field not present".
+    let mut payload = serde_json::Map::new();
+    for key in [
+        "query",
+        "mode",
+        "sizeMin",
+        "sizeMax",
+        "modifiedAfter",
+        "modifiedBefore",
+        "scope",
+        "caseSensitive",
+        "excludeSystemDirs",
+        "autoRun",
+    ] {
+        if let Some(v) = params.get(key)
+            && !v.is_null()
+        {
+            payload.insert(key.to_string(), v.clone());
+        }
+    }
+
+    // Validate `mode` if present.
+    if let Some(mode) = payload.get("mode").and_then(|v| v.as_str())
+        && !["ai", "filename", "regex"].contains(&mode)
+    {
+        return Err(ToolError::invalid_params(format!(
+            "Invalid mode: '{mode}'. Expected 'ai', 'filename', or 'regex'."
+        )));
+    }
+
+    app.emit("mcp-open-search-dialog", Value::Object(payload))?;
+    wait_for_ack(app, AckSignal::SoftDialogAppeared("search"), DEFAULT_ACK_TIMEOUT).await?;
+    Ok(json!("OK: Opened search dialog"))
 }
 
 /// Map an MCP confirmation `dialog_type` to its `SoftDialogTracker` ID. The IDs are

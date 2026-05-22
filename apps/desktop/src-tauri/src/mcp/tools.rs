@@ -331,39 +331,92 @@ fn get_selection_tools() -> Vec<Tool> {
 
 /// Get dialog tool.
 fn get_dialog_tools() -> Vec<Tool> {
-    vec![Tool {
-        name: "dialog".to_string(),
-        description: "Open, focus, close, or confirm dialogs".to_string(),
-        input_schema: json!({
-            "type": "object",
-            "properties": {
-                "action": {
-                    "type": "string",
-                    "enum": ["open", "focus", "close", "confirm"],
-                    "description": "Action to perform. 'confirm' triggers the confirm button on an already-open dialog."
+    vec![
+        Tool {
+            name: "dialog".to_string(),
+            description: "Open, focus, close, or confirm dialogs".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["open", "focus", "close", "confirm"],
+                        "description": "Action to perform. 'confirm' triggers the confirm button on an already-open dialog."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": ["settings", "file-viewer", "about", "transfer-confirmation", "copy-confirmation", "mkdir-confirmation", "new-file-confirmation", "delete-confirmation"],
+                        "description": "Dialog type. 'transfer-confirmation' covers both copy and move dialogs (preferred over 'copy-confirmation')."
+                    },
+                    "section": {
+                        "type": "string",
+                        "description": "For settings: which section to open (e.g., 'shortcuts')"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "For file-viewer: file path. On open without path, uses cursor file. On close without path, closes all."
+                    },
+                    "onConflict": {
+                        "type": "string",
+                        "enum": ["skip_all", "overwrite_all", "rename_all"],
+                        "description": "For confirm action on transfer-confirmation: conflict resolution policy. Default: skip_all"
+                    }
                 },
-                "type": {
-                    "type": "string",
-                    "enum": ["settings", "file-viewer", "about", "transfer-confirmation", "copy-confirmation", "mkdir-confirmation", "new-file-confirmation", "delete-confirmation"],
-                    "description": "Dialog type. 'transfer-confirmation' covers both copy and move dialogs (preferred over 'copy-confirmation')."
+                "required": ["action", "type"]
+            }),
+        },
+        Tool {
+            name: "open_search_dialog".to_string(),
+            description: "Open the search dialog with optional pre-filled query and filters. If autoRun (default true), runs the search immediately. Acks once the dialog has mounted; does not wait for results to render.".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query to pre-fill in the search bar"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["ai", "filename", "regex"],
+                        "description": "Search mode. Defaults to 'ai' if AI is enabled, otherwise 'filename'."
+                    },
+                    "sizeMin": {
+                        "type": "integer",
+                        "description": "Minimum file size in bytes"
+                    },
+                    "sizeMax": {
+                        "type": "integer",
+                        "description": "Maximum file size in bytes"
+                    },
+                    "modifiedAfter": {
+                        "type": "string",
+                        "description": "ISO date string (for example, '2025-01-01')"
+                    },
+                    "modifiedBefore": {
+                        "type": "string",
+                        "description": "ISO date string"
+                    },
+                    "scope": {
+                        "type": "string",
+                        "description": "Scope string, same syntax as the scope chip: comma-separated paths, ! prefix for excludes"
+                    },
+                    "caseSensitive": {
+                        "type": "boolean",
+                        "description": "Case-sensitive matching"
+                    },
+                    "excludeSystemDirs": {
+                        "type": "boolean",
+                        "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc.)"
+                    },
+                    "autoRun": {
+                        "type": "boolean",
+                        "description": "Default true: open and run the search. False: open and prefill without running."
+                    }
                 },
-                "section": {
-                    "type": "string",
-                    "description": "For settings: which section to open (e.g., 'shortcuts')"
-                },
-                "path": {
-                    "type": "string",
-                    "description": "For file-viewer: file path. On open without path, uses cursor file. On close without path, closes all."
-                },
-                "onConflict": {
-                    "type": "string",
-                    "enum": ["skip_all", "overwrite_all", "rename_all"],
-                    "description": "For confirm action on transfer-confirmation: conflict resolution policy. Default: skip_all"
-                }
-            },
-            "required": ["action", "type"]
-        }),
-    }]
+                "required": []
+            }),
+        },
+    ]
 }
 
 /// Get search tools.
@@ -695,15 +748,52 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1
-        // settings + 3 network + 1 await = 30
-        assert_eq!(tools.len(), 30);
+        // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2 search + 1
+        // settings + 3 network + 1 await = 31
+        assert_eq!(tools.len(), 31);
     }
 
     #[test]
     fn test_dialog_tools_count() {
         let tools = get_dialog_tools();
-        assert_eq!(tools.len(), 1);
+        // dialog (unified), open_search_dialog
+        assert_eq!(tools.len(), 2);
+    }
+
+    #[test]
+    fn test_open_search_dialog_schema() {
+        let tools = get_dialog_tools();
+        let tool = tools
+            .iter()
+            .find(|t| t.name == "open_search_dialog")
+            .expect("open_search_dialog");
+
+        let schema = &tool.input_schema;
+        let props = schema.get("properties").unwrap();
+
+        // All listed properties are optional (schema requires none)
+        for key in [
+            "query",
+            "mode",
+            "sizeMin",
+            "sizeMax",
+            "modifiedAfter",
+            "modifiedBefore",
+            "scope",
+            "caseSensitive",
+            "excludeSystemDirs",
+            "autoRun",
+        ] {
+            assert!(props.get(key).is_some(), "open_search_dialog schema missing '{key}'");
+        }
+
+        let mode_enum = props.get("mode").unwrap().get("enum").unwrap().as_array().unwrap();
+        assert!(mode_enum.contains(&json!("ai")));
+        assert!(mode_enum.contains(&json!("filename")));
+        assert!(mode_enum.contains(&json!("regex")));
+
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert!(required.is_empty(), "open_search_dialog should have no required fields");
     }
 
     #[test]

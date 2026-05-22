@@ -31,6 +31,7 @@
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { notifyAiOnboardingComplete } from '$lib/ai/ai-state.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
+    import { getSetting } from '$lib/settings'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import {
         handleCommandExecute as dispatchCommand,
@@ -492,7 +493,14 @@
     async function setupTauriEventListeners() {
         await setupMenuListeners()
         await setupDialogListeners()
-        await setupMcpListeners({ getExplorer: () => explorerRef, listenTauri })
+        await setupMcpListeners({
+            getExplorer: () => explorerRef,
+            listenTauri,
+            openSearchDialog: () => {
+                showSearchDialog = true
+            },
+            isAiEnabled: () => getSetting('ai.provider') !== 'off',
+        })
         await initIndexState()
         await setupWindowFocusListener()
         // Native Quick Look (macOS) event wiring: `quick-look-closed` flips

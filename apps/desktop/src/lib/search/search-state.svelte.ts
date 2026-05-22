@@ -74,6 +74,14 @@ let scope = $state('')
 // The frontend only controls the boolean; Rust does the filtering.
 let excludeSystemDirs = $state(true)
 
+/**
+ * One-shot flag set by external openers (MCP `open_search_dialog`) to ask the dialog to run a
+ * search after mount. The dialog reads + clears this in `onMount` so a manual reopen doesn't
+ * re-run an old query. The flag is independent of `autoApplyEnabled`: even when auto-apply is
+ * off, an explicit MCP `autoRun: true` honors the caller's intent.
+ */
+let runOnMount = $state(false)
+
 // Getters
 export function getIsIndexReady(): boolean {
   return isIndexReady
@@ -140,6 +148,9 @@ export function getLastAiPrompt(): string | null {
 }
 export function getLastAiCaveat(): string | null {
   return lastAiCaveat
+}
+export function getRunOnMount(): boolean {
+  return runOnMount
 }
 
 // Setters
@@ -208,6 +219,9 @@ export function setLastAiPrompt(value: string | null): void {
 }
 export function setLastAiCaveat(value: string | null): void {
   lastAiCaveat = value
+}
+export function setRunOnMount(value: boolean): void {
+  runOnMount = value
 }
 
 /** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
@@ -406,6 +420,73 @@ export function buildHistoryFilters(): HistoryFilters {
 }
 
 /**
+ * Prefill payload coming from the MCP `open_search_dialog` tool. Mirrors the shape of the tool
+ * schema in `src-tauri/src/mcp/tools.rs`. All fields optional; the listener strips nulls before
+ * forwarding here so an absent field stays absent.
+ */
+export interface SearchPrefill {
+  query?: string
+  mode?: SearchMode
+  sizeMin?: number
+  sizeMax?: number
+  modifiedAfter?: string
+  modifiedBefore?: string
+  scope?: string
+  caseSensitive?: boolean
+  excludeSystemDirs?: boolean
+  autoRun?: boolean
+}
+
+/**
+ * Applies an MCP prefill payload onto the live search state. Called BEFORE the dialog mounts
+ * (the listener flips `showSearchDialog = true` after running this). The dialog's `onMount`
+ * reads `runOnMount` and dispatches the right run path (AI or filename/regex) based on `mode`.
+ *
+ * Behavior notes:
+ *   - Missing fields are left at their current value (no implicit reset). Callers that want a
+ *     clean slate should call `clearSearchState()` first.
+ *   - `mode` falls back to current state if absent; the listener decides the default based on
+ *     whether AI is enabled (mirrors the tool docs: "default 'ai' if AI on, else 'filename'").
+ *   - `runOnMount` defaults to true when the caller didn't pass `autoRun` (matches the tool
+ *     schema's default-true contract).
+ */
+export function applySearchPrefill(prefill: SearchPrefill): void {
+  if (prefill.query !== undefined) query = prefill.query
+  if (prefill.mode !== undefined) mode = prefill.mode
+  if (prefill.scope !== undefined) scope = prefill.scope
+  if (prefill.caseSensitive !== undefined) caseSensitive = prefill.caseSensitive
+  if (prefill.excludeSystemDirs !== undefined) excludeSystemDirs = prefill.excludeSystemDirs
+
+  // `applyHistoryFilters` resets both size and date, so we batch them into one call. Only set
+  // when the caller passed at least one size or date field; otherwise leave the current filters
+  // alone (matches "missing fields preserve current state").
+  const touchesSize = prefill.sizeMin !== undefined || prefill.sizeMax !== undefined
+  const touchesDate = prefill.modifiedAfter !== undefined || prefill.modifiedBefore !== undefined
+  if (touchesSize || touchesDate) {
+    const combined: HistoryFilters = {
+      sizeMin: prefill.sizeMin,
+      sizeMax: prefill.sizeMax,
+      modifiedAfter: prefill.modifiedAfter,
+      modifiedBefore: prefill.modifiedBefore,
+    }
+    applyHistoryFilters(combined)
+  }
+
+  // Clear any prior AI transparency strip; a new AI run from prefill will repopulate it.
+  if (prefill.mode === 'ai' || prefill.query !== undefined) {
+    lastAiPrompt = null
+    lastAiCaveat = null
+  }
+
+  // Reset cursor + results so the dialog opens with a clean slate visually.
+  results = []
+  totalCount = 0
+  cursorIndex = 0
+
+  runOnMount = prefill.autoRun ?? true
+}
+
+/**
  * Clears all dialog state to defaults. Triggered explicitly by the user via `⌘N` ("new search")
  * inside the dialog. The module-level `$state` survives dialog unmount/remount, so close-then-reopen
  * never calls this. The only reset path is the user pressing `⌘N`.
@@ -431,4 +512,5 @@ export function clearSearchState(): void {
   isSearching = false
   lastAiPrompt = null
   lastAiCaveat = null
+  runOnMount = false
 }

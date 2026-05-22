@@ -213,6 +213,20 @@ dialog, which calls `clearSearchState()` and refocuses the bar.
 `stopPropagation` would let it reach the route-level `⌘N` (new tab) handler. The choice of `⌘N` matches the macOS "new
 X" idiom (new tab, new document) for the same reason the user reads "fresh search" the same way.
 
+**MCP `open_search_dialog` (M9, §3.11)**: External openers (the MCP tool) write to the same module-level `$state` and
+flip `runOnMount` via `applySearchPrefill()` in `search-state.svelte.ts`. The route's `mcp-listeners.ts` handles the
+`mcp-open-search-dialog` Tauri event: it sanitizes the payload, defaults `mode` to `'ai'` when AI is enabled (else
+`'filename'`), calls `applySearchPrefill`, then flips `showSearchDialog = true` on the route. The dialog's `$effect`
+consumer for `runOnMount` fires for both cold-open and hot-prefill paths (one source of truth, two arrival modes), then
+dispatches to `executeAiSearch` or `executeSearch` based on mode. The flag is cleared before the search call so the
+downstream state writes can't re-trigger the effect. AI mode honors the explicit-trigger contract because the MCP
+caller's `autoRun: true` (or the default) counts as the explicit trigger — same rule as recent-search AI clicks.
+
+**`runOnMount` flag**: A one-shot boolean in `search-state.svelte.ts`. Cleared in `clearSearchState` (so `⌘N` doesn't
+leave a stale flag). Set by `applySearchPrefill(prefill)` to `prefill.autoRun ?? true`. Consumed by the `$effect` block
+in `SearchDialog.svelte` that fires when the flag is true and the dialog is mounted. Idempotent: the effect clears the
+flag first, so multiple state writes that happen to arrive together collapse to one search.
+
 **Path pills (M7, §3.8)**: Each result row's path column renders as a strip of clickable ancestor pills produced by
 `PathPills.svelte`. Clicking a pill calls the dialog's existing `onNavigate(ancestorPath)` callback, which closes the
 dialog and navigates the active pane to that ancestor — the same exit path "navigate to a file" already uses. Pills are

@@ -21,13 +21,13 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-30 semantic tools grouped by category:
+31 semantic tools grouped by category:
 - Navigation (6): `select_volume` (also accepts MTP volume names), `nav_to_path` (supports `mtp://` paths, skips filesystem existence check), `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (6): `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`. `copy`/`move` accept optional `autoConfirm` (bool) and `onConflict` (`skip_all`|`overwrite_all`|`rename_all`). `delete` accepts optional `autoConfirm`. When `autoConfirm` is true, the dialog opens and immediately confirms.
 - View (3): `sort`, `toggle_hidden`, `set_view_mode`
 - Tabs (1): `tab` (unified: `action` = `new` | `close` | `close_others` | `activate` | `set_pinned`; `tab_id` defaults to active tab for close/close_others/set_pinned, required for activate; `pinned` boolean for set_pinned)
-- Dialogs (1): `dialog` (unified open/focus/close/confirm). `action: "confirm"` programmatically confirms an open dialog. For `transfer-confirmation`: accepts optional `onConflict`. For `delete-confirmation`: just confirms. `type: "transfer-confirmation"` is the primary name (covers copy and move); `"copy-confirmation"` is accepted as an alias.
+- Dialogs (2): `dialog` (unified open/focus/close/confirm). `action: "confirm"` programmatically confirms an open dialog. For `transfer-confirmation`: accepts optional `onConflict`. For `delete-confirmation`: just confirms. `type: "transfer-confirmation"` is the primary name (covers copy and move); `"copy-confirmation"` is accepted as an alias. `open_search_dialog` opens the whole-drive search overlay with optional pre-filled `query`, `mode` (`ai`/`filename`/`regex`), `sizeMin`/`sizeMax` (bytes), `modifiedAfter`/`modifiedBefore` (ISO date), `scope` (chip syntax), `caseSensitive`, `excludeSystemDirs`, and `autoRun` (default true: runs the search after open). Acks on `SoftDialogAppeared("search")` within the 1500 ms budget. **Race-with-close caveat**: if the dialog is mid-close when the event lands, the new mount may race; the ack times out and the tool surfaces a clean failure rather than a false-positive OK (per plan §5.7 risk register).
 - App (3): `switch_pane`, `swap_panes`, `quit`
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
 - Settings (1): `set_setting` (change a setting value via round-trip to frontend)

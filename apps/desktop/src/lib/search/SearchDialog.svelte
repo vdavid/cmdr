@@ -79,6 +79,8 @@
         setLastAiPrompt,
         getLastAiCaveat,
         setLastAiCaveat,
+        getRunOnMount,
+        setRunOnMount,
         buildSearchQuery,
         clearSearchState,
         SEARCH_AUTO_APPLY_DEBOUNCE_MS,
@@ -255,6 +257,34 @@
         if (!aiEnabled && getMode() === 'ai') {
             setMode('filename')
         }
+    })
+
+    /**
+     * Single consumer for the `runOnMount` flag set by external openers (MCP `open_search_dialog`).
+     * Fires for both cold-open (dialog just mounted with the flag pre-set) and hot-prefill
+     * (dialog already open when MCP lands new prefill). Always clears the flag first so the
+     * downstream search call can't re-trigger this effect via state writes.
+     *
+     * AI mode requires the explicit-trigger contract; this effect honors it because the MCP
+     * caller passed `autoRun: true` (or accepted the default-true) — that counts as the
+     * explicit trigger, matching the same rule that lets recent-search AI clicks run.
+     */
+    $effect(() => {
+        if (!getRunOnMount()) return
+        setRunOnMount(false)
+        // Prefill cleared `results` and `cursorIndex` already. A previous-run `hasSearched = true`
+        // would render "No files found" against the cleared list; reset so the user sees the
+        // empty state (example chips, index size, keyboard tip) until the prefilled search runs.
+        hasSearched = false
+        const trimmed = getQuery().trim()
+        const hasFilters = getSizeFilter() !== 'any' || getDateFilter() !== 'any'
+        if (trimmed && getMode() === 'ai' && aiEnabled) {
+            void executeAiSearch(trimmed)
+        } else if (getIsIndexReady() && (trimmed || hasFilters)) {
+            void executeSearch()
+        }
+        // Otherwise: prefill arrived but nothing to run (autoRun false, or empty query and no
+        // filters). The dialog rests on the empty state; the user hits Enter to fire when ready.
     })
 
     /** Focuses the unified query input. */
@@ -530,6 +560,11 @@
             // Index not available: indexing disabled, not started, or backend unavailable
             setIsIndexAvailable(false)
         }
+
+        // `runOnMount` consumption lives in the `$effect` block above. It auto-fires on first
+        // mount when the flag is true (cold-open from MCP `open_search_dialog`) and also fires
+        // when an MCP event lands while the dialog is already open (hot-prefill). One source of
+        // truth, two arrival modes.
 
         // Load persisted recent searches (newest first) into the in-memory store. Idempotent,
         // so closing + reopening the dialog doesn't refetch unless we explicitly invalidate.

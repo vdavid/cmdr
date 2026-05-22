@@ -154,6 +154,7 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         "select" => file_ops::execute_select_command(app, params).await,
         // Dialog command
         "dialog" => dialogs::execute_dialog_command(app, params).await,
+        "open_search_dialog" => dialogs::execute_open_search_dialog(app, params).await,
         // Search commands
         "search" => search::execute_search(params).await,
         "ai_search" => search::execute_ai_search(params).await,
