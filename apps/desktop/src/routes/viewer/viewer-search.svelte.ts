@@ -1,6 +1,7 @@
 import { tick } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
 import { viewerSearchStart, viewerSearchPoll, viewerSearchCancel, type ViewerSearchMatch } from '$lib/tauri-commands'
+import { segmentLine, type LineSegment, type SegmentMatchInput, type SelectionBoundsInput } from './line-segments'
 
 const SEARCH_POLL_INTERVAL = 100
 
@@ -161,45 +162,41 @@ export function createViewerSearch(deps: SearchDeps) {
     scrollToMatch(searchMatches[currentMatchIndex])
   }
 
-  function getHighlightedSegments(lineNumber: number, lineText: string) {
-    if (!searchQuery || !searchVisible) {
-      return [{ text: lineText, highlight: false, active: false }]
-    }
+  /**
+   * Computes the search-match spans for a single line. Pure helper used by
+   * `getHighlightedSegments` and exposed so callers (the page component) can
+   * pass the matches through the shared segmenter together with selection
+   * bounds.
+   */
+  function getLineMatches(lineNumber: number, lineText: string): SegmentMatchInput[] {
+    if (!searchQuery || !searchVisible) return []
 
     const queryLower = searchQuery.toLowerCase()
     const lineLower = lineText.toLowerCase()
-    const localMatches: Array<{ column: number; length: number }> = []
+    const result: SegmentMatchInput[] = []
+    const activeEntry = matchesByLine.get(lineNumber)?.find((e) => e.globalIndex === currentMatchIndex)
     let searchStart = 0
     for (;;) {
       const idx = lineLower.indexOf(queryLower, searchStart)
       if (idx === -1) break
-      localMatches.push({ column: idx, length: queryLower.length })
+      const isActive = activeEntry !== undefined && activeEntry.match.column === idx
+      result.push({ column: idx, length: queryLower.length, active: isActive })
       searchStart = idx + queryLower.length
     }
+    return result
+  }
 
-    if (localMatches.length === 0) {
-      return [{ text: lineText, highlight: false, active: false }]
-    }
-
-    const activeEntry = matchesByLine.get(lineNumber)?.find((e) => e.globalIndex === currentMatchIndex)
-
-    const segments: Array<{ text: string; highlight: boolean; active: boolean }> = []
-    let pos = 0
-    for (const m of localMatches) {
-      if (m.column > pos) {
-        segments.push({ text: lineText.slice(pos, m.column), highlight: false, active: false })
-      }
-      segments.push({
-        text: lineText.slice(m.column, m.column + m.length),
-        highlight: true,
-        active: activeEntry !== undefined && activeEntry.match.column === m.column,
-      })
-      pos = m.column + m.length
-    }
-    if (pos < lineText.length) {
-      segments.push({ text: lineText.slice(pos), highlight: false, active: false })
-    }
-    return segments
+  /**
+   * Returns the rendered segments for a line, combining search-match
+   * highlights with optional selection bounds.
+   */
+  function getHighlightedSegments(
+    lineNumber: number,
+    lineText: string,
+    selectionBounds: SelectionBoundsInput | null = null,
+  ): LineSegment[] {
+    const matches = getLineMatches(lineNumber, lineText)
+    return segmentLine(lineText, matches, selectionBounds)
   }
 
   function runDebounceEffect() {

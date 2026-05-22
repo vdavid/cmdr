@@ -26,6 +26,7 @@
     import { createTextWidthTracker } from './viewer-text-width.svelte'
     import { createIndexingPoll } from './viewer-indexing-poll'
     import { handleNavigationKey, handleToggleKey } from './viewer-keyboard'
+    import { createViewerSelection, getLineSegmentBounds } from './selection.svelte'
     import Size from '$lib/ui/Size.svelte'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
@@ -127,6 +128,8 @@
         getContentRef: () => scroll.contentRef,
     })
 
+    const selection = createViewerSelection()
+
     // Fetch lines when visible range changes (debounced)
     $effect(() => {
         scroll.runFetchEffect()
@@ -211,8 +214,43 @@
         setSetting('viewer.wordWrap', scroll.wordWrap)
     }
 
+    function handleSelectAllShortcut(): void {
+        if (totalLines === null || totalLines <= 0) return
+        // ByteSeek-no-index ⌘A is handled in M2 via the `RangeEnd::Eof` IPC variant.
+        const lastLineText = scroll.lineCache.get(totalLines - 1) ?? ''
+        selection.selectAll(totalLines, lastLineText.length)
+    }
+
+    function handleEscapeKey(): void {
+        log.debug('ESC pressed, searchVisible={searchVisible}, windowReady={windowReady}', {
+            searchVisible: search.searchVisible,
+            windowReady,
+        })
+        if (!search.searchVisible) {
+            closeWindow()
+            return
+        }
+        if (search.searchStatus === 'running') {
+            search.stopSearch()
+        } else {
+            search.closeSearch()
+        }
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
-        if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        const metaOrCtrl = e.metaKey || e.ctrlKey
+        const searchInputFocused = search.searchVisible && document.activeElement === search.searchInputRef
+
+        // ⌘A selects the whole file (independent of the DOM, so it works regardless of
+        // how many lines the virtual scroller has rendered). If the search input is
+        // focused, defer to its native ⌘A so it can select the query text.
+        if (metaOrCtrl && e.key === 'a' && !searchInputFocused) {
+            e.preventDefault()
+            handleSelectAllShortcut()
+            return
+        }
+
+        if (metaOrCtrl && e.key === 'f') {
             e.preventDefault()
             search.openSearch()
             return
@@ -220,33 +258,18 @@
 
         if (e.key === 'Escape') {
             e.preventDefault()
-            log.debug('ESC pressed, searchVisible={searchVisible}, windowReady={windowReady}', {
-                searchVisible: search.searchVisible,
-                windowReady,
-            })
-            if (search.searchVisible) {
-                if (search.searchStatus === 'running') {
-                    search.stopSearch()
-                } else {
-                    search.closeSearch()
-                }
-            } else {
-                closeWindow()
-            }
+            handleEscapeKey()
             return
         }
 
         if (e.key === 'Enter' && search.searchVisible) {
             e.preventDefault()
-            if (e.shiftKey) {
-                search.findPrev()
-            } else {
-                search.findNext()
-            }
+            if (e.shiftKey) search.findPrev()
+            else search.findNext()
             return
         }
 
-        if (search.searchVisible && document.activeElement === search.searchInputRef) return
+        if (searchInputFocused) return
 
         if (handleToggleKey(e, toggleWordWrap) || handleNavigationKey(e.key, scroll)) {
             e.preventDefault()
@@ -600,9 +623,10 @@
                                 >{lineNumber + 1}</span
                             >
                             <span class="line-text"
-                                >{#each search.getHighlightedSegments(lineNumber, text) as seg, segIdx (segIdx)}{#if seg.highlight}<mark
-                                            class:active={seg.active}>{seg.text}</mark
-                                        >{:else}{seg.text}{/if}{/each}</span
+                                >{#each search.getHighlightedSegments(lineNumber, text, getLineSegmentBounds(selection.selection, lineNumber, text.length)) as seg, segIdx (segIdx)}{#if seg.highlight}<mark
+                                            class:active={seg.active}
+                                            class:selected={seg.selected}>{seg.text}</mark
+                                        >{:else if seg.selected}<span class="selected">{seg.text}</span>{:else}{seg.text}{/if}{/each}</span
                             >
                         </div>
                     {/each}
@@ -647,7 +671,7 @@
                 >wrap</span
             >
         {/if}
-        <span class="shortcut-hint">W wrap &middot; Ctrl+F search &middot; Esc close</span>
+        <span class="shortcut-hint">W wrap &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span>
     </div>
 </main>
 
@@ -826,9 +850,27 @@
         font-family: var(--font-mono);
         font-size: var(--font-size-sm);
         line-height: 1.5;
-        user-select: text;
-        -webkit-user-select: text;
+        /* The viewer owns its own selection model (see selection.svelte.ts). We
+         * suppress the browser's native selection because it can't render a
+         * selection that survives DOM recycling under virtual scroll. The custom
+         * `.selected` class below paints the visible portion. */
+        user-select: none;
+        -webkit-user-select: none;
         cursor: text;
+    }
+
+    /* Selected text: gold foreground matches the file-list "selected = gold" language
+     * (see design-system.md § File list). Background uses the accent-subtle token, the
+     * same tint the cursor highlight uses. Both work in light and dark. */
+    .line-text :global(.selected) {
+        background: var(--color-accent-subtle);
+        color: var(--color-selection-fg);
+    }
+
+    /* Search hit + selection on the same span: keep the highlight background (so search
+     * remains the dominant signal) and apply the selection foreground colour. */
+    .line-text :global(mark.selected) {
+        color: var(--color-selection-fg);
     }
 
     .scroll-spacer {
@@ -911,6 +953,11 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         flex-shrink: 0;
+        /* Opt back in to native selection here so users can copy the file name or line
+         * count. The global reset is `user-select: none`, and `.file-content` keeps
+         * that for its custom selection model; the status bar is plain chrome. */
+        user-select: text;
+        -webkit-user-select: text;
     }
 
     .backend-badge {
