@@ -24,6 +24,7 @@ import { selectCopyAction, type CopyAction } from './viewer-copy'
 
 export type CopyOutcome =
   | { kind: 'silent'; text: string; bytes: number }
+  | { kind: 'silent-error'; bytes: number; reason: 'cancelled' | 'timedOut' | 'other'; error?: ViewerError }
   | { kind: 'confirm'; bytes: number; proceed: () => Promise<CopyResult> }
   | { kind: 'refuse'; bytes: number }
   | { kind: 'unknown-size'; proceed: () => Promise<CopyResult>; bytes: null }
@@ -108,9 +109,11 @@ export function createViewerCopy(deps: CopyDeps) {
     if (action === 'silent') {
       const result = await performRead()
       if (result.ok) return { kind: 'silent', text: result.text, bytes }
-      // Silent reads can still fail (cancelled by close, IO error). Caller treats
-      // failure as a no-op toast, no big-dialog escalation.
-      return { kind: 'empty' }
+      // Surface the failure to the caller. Per design-principles top-5 §3
+      // ("communicate what's actually happening"), a silent-band IO error gets a
+      // brief toast instead of pretending nothing happened. The caller suppresses
+      // the toast for `cancelled` (the user pressed Escape, intentional).
+      return { kind: 'silent-error', bytes, reason: result.reason, error: result.error }
     }
     if (action === 'refuse') return { kind: 'refuse', bytes }
     return { kind: 'confirm', bytes, proceed: performRead }

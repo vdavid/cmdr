@@ -471,6 +471,18 @@
             case 'silent':
                 await handleSilentCopy(outcome.text, outcome.bytes)
                 return
+            case 'silent-error':
+                if (outcome.reason === 'cancelled') return // user pressed Escape, intentional
+                log.warn('Silent-band copy read failed: reason={reason}, error={error}', {
+                    reason: outcome.reason,
+                    error: outcome.error ? JSON.stringify(outcome.error) : 'none',
+                })
+                if (outcome.reason === 'timedOut') {
+                    addToast('The read took too long. Try a smaller selection?', { level: 'warn' })
+                } else {
+                    addToast("Couldn't copy the selection. Try again?", { level: 'warn' })
+                }
+                return
             case 'confirm':
                 copyConfirmBytes = outcome.bytes
                 copyConfirmProceed = async () => {

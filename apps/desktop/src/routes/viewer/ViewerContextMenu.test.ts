@@ -37,7 +37,7 @@ describe('ViewerContextMenu keyboard', () => {
     await tick()
 
     expect(onClose).toHaveBeenCalledTimes(1)
-    unmount(instance)
+    void unmount(instance)
   })
 
   it('Escape calls stopImmediatePropagation so a later sibling listener does not fire', async () => {
@@ -55,7 +55,7 @@ describe('ViewerContextMenu keyboard', () => {
     await tick()
 
     expect(laterListener).not.toHaveBeenCalled()
-    unmount(instance)
+    void unmount(instance)
   })
 
   it('ArrowUp moves focus to the previous item, wrapping at the start', async () => {
@@ -73,7 +73,7 @@ describe('ViewerContextMenu keyboard', () => {
     await tick()
     expect(document.activeElement).toBe(items[0])
 
-    unmount(instance)
+    void unmount(instance)
   })
 
   it('ArrowDown moves focus to the next item, wrapping at the end', async () => {
@@ -89,6 +89,6 @@ describe('ViewerContextMenu keyboard', () => {
     await tick()
     expect(document.activeElement).toBe(items[0])
 
-    unmount(instance)
+    void unmount(instance)
   })
 })
