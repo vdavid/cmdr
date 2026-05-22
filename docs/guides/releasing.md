@@ -112,6 +112,32 @@ main, and triggers a website deploy. If it fails:
 - **Website deploy webhook failed**: re-trigger manually by pushing any commit to main, or SSH into the server and run
   the deploy script.
 
+### `bundle_dmg.sh` hangs ~2 minutes then fails on every matrix job
+
+The `actions-runner` auto-updated to a new version and its bundled `node` at
+`~/actions-runner/externals.<version>/node20/bin/node` is a TCC client macOS has never seen. The first `osascript` call
+in `bundle_dmg.sh` pops a "control Finder" prompt; if no one's at the keyboard, the prompt times out after ~2 minutes
+and TCC records `auth_value=0` (denied) for that node path in `~/Library/Application Support/com.apple.TCC/TCC.db`.
+Every subsequent DMG build hangs the same way until you flip the bit.
+
+Recovery: trigger the prompt while you're at the keyboard and click Allow. Run this once:
+
+```bash
+NODE=~/actions-runner/externals/node20/bin/node
+"$NODE" -e "require('child_process').execFileSync('/usr/bin/osascript', ['-e', 'tell application \"Finder\" to return name of startup disk'], { stdio: 'inherit' })"
+```
+
+A macOS dialog should appear within a second or two. Click Allow. From then on, every `osascript` call from this
+runner-node path is authorized and `bundle_dmg.sh` runs cleanly until the runner auto-updates again.
+
+`auth_value` codes in `TCC.db`: 0=denied, 1=ask, 2=allowed. Don't try to fix a stuck `auth_value=0` by `UPDATE`-ing the
+row to 2 directly: tccd re-validates each row's `csreq` against the live binary's code signature on use, plus there's an
+integrity layer on Sonoma+. A hand-edited row reads back fine via `SELECT` but tccd treats it as untrusted and
+re-prompts. The only reliable path is to make the prompt fire.
+
+Prevention: the `/release` agent prompt fires an `osascript`-via-runner-node canary right after the CHANGELOG draft so
+the prompt lands while the user is at the keyboard. See step 3 of `.claude/commands/release.md`.
+
 ### `bundle_dmg.sh` fails fast (~3 s) on the universal/aarch64/x86_64 build
 
 A leftover `/Volumes/Cmdr` mount (typically from a Finder double-click on an old DMG) makes the new bundle fail because

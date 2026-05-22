@@ -66,14 +66,42 @@ Prepare a release based on docs/guides/releasing.md.
    >   file icons via freedesktop-icons, accent color via XDG Desktop Portal, encrypted credential fallback when no
    >   system keyring, distro-specific install hints, USB permission handling ([13 SHAs]).
 
-3. Suggest updates to the roadmap.
+3. **Pre-warm the runner's Finder Automation permission** so `bundle_dmg.sh` doesn't hang for ~2 minutes per matrix job.
+   When `actions-runner` auto-updates, its bundled `node` binary lands at a new path
+   (`~/actions-runner/externals.<version>/node20/bin/node`) that macOS TCC has never seen. The first `osascript` call
+   from that node pops an "Allow … to control Finder" prompt; if the user isn't at the keyboard, the prompt times out
+   after ~2 minutes and TCC records auth_value=0 (denied) for that node, breaking every subsequent DMG bundle.
+
+   Run the canary AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway). If a macOS
+   dialog appears asking to allow control of Finder, tell the user to click Allow.
+
+   ```bash
+   NODE=$(readlink ~/actions-runner/externals 2>/dev/null)
+   [ -n "$NODE" ] && NODE=~/actions-runner/externals/node20/bin/node
+   if [ -x "$NODE" ]; then
+     CURRENT=$(sqlite3 ~/Library/Application\ Support/com.apple.TCC/TCC.db \
+       "SELECT auth_value FROM access WHERE client='$NODE' AND service='kTCCServiceAppleEvents' AND indirect_object_identifier='com.apple.finder';")
+     if [ "$CURRENT" != "2" ]; then
+       echo "Triggering Finder permission prompt for $NODE — click Allow if macOS asks."
+       "$NODE" -e "require('child_process').execFileSync('/usr/bin/osascript', ['-e', 'tell application \"Finder\" to return name of startup disk'], { stdio: 'inherit' })" || echo "Canary failed; user may have denied or TCC entry stuck at 0."
+     fi
+   fi
+   ```
+
+   - `auth_value` codes: 0=denied, 1=ask, 2=allowed. Anything other than 2 means the next bundle_dmg will hang.
+   - Don't try to fix a stuck `auth_value=0` by `UPDATE`-ing TCC.db directly. tccd re-validates each row's `csreq`
+     against the live binary's signature on use, plus there's an integrity layer on Sonoma+; a hand-edited row reads
+     back fine via `SELECT` but tccd treats it as untrusted and re-prompts. The only reliable path is to make the prompt
+     fire, which is what the canary above does.
+
+4. Suggest updates to the roadmap.
    - Read @apps/website/src/pages/roadmap.astro as well. Is there anything to tick off (with a date!) or a major
      development worth mentioning?
-4. Based on the changes, advise what the next version should be (patch: bug fixes, minor: new features, major: major
+5. Based on the changes, advise what the next version should be (patch: bug fixes, minor: new features, major: major
    launches), and give the user the `./scripts/release.sh x.x.x` command to run.
-5. **Offer to run the release script** for the user. Wait for confirmation before running.
-6. **Offer to push** with `git push origin main --tags`. Wait for confirmation before pushing.
-7. **After pushing**, confirm the self-hosted runner picked up the build:
+6. **Offer to run the release script** for the user. Wait for confirmation before running.
+7. **Offer to push** with `git push origin main --tags`. Wait for confirmation before pushing.
+8. **After pushing**, confirm the self-hosted runner picked up the build:
    - Wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the `Build (...)` jobs.
    - At least one `Build (...)` job should be `in_progress` (the self-hosted runner serializes the three matrix jobs, so
      the others stay `queued`, which is normal).
@@ -82,25 +110,26 @@ Prepare a release based on docs/guides/releasing.md.
      `cd ~/actions-runner-cmdr && ./svc.sh start` (fall back to `launchctl bootout` + `bootstrap` if `svc.sh` errors
      with "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically once
      the runner reports in. No need to re-trigger or re-tag.
-8. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build. The self-hosted runner lives on this
+9. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build. The self-hosted runner lives on this
    Mac; any sleep (display or system) drops the runner connection and fails every in-flight matrix job with
    `The self-hosted runner lost communication with the server`. See `docs/guides/releasing.md` § "Keep the Mac awake
    during the build".
    - Run `caffeinate -dimsu` as a Bash `run_in_background` call. Capture the background task id so you can stop it.
    - Disarm it once the release workflow reports `completed` (success or failure, not just when the matrix is done).
    - If the user requests a re-run of failed jobs, re-arm caffeinate first.
-9. **Monitor the CI build**:
-   - Remind the user not to close their laptop for ~15 minutes while the self-hosted runner builds.
-   - Poll `gh run view` every few minutes in the background and report progress (which jobs are done, which are still
-     running). aarch64 and x86_64 builds took about 5min 10sec each, universal takes about 7 min.
-   - Report when all jobs complete (success or failure). If a job fails, show the failure details, and advise how to
-     fix.
-   - Suggest the user to also track the build at https://github.com/vdavid/cmdr/actions.
-10. **In parallel, watch the standalone CI run** (the non-release `CI` workflow that fires on the same push):
+10. **Monitor the CI build**:
+
+- Remind the user not to close their laptop for ~15 minutes while the self-hosted runner builds.
+- Poll `gh run view` every few minutes in the background and report progress (which jobs are done, which are still
+  running). aarch64 and x86_64 builds took about 5min 10sec each, universal takes about 7 min.
+- Report when all jobs complete (success or failure). If a job fails, show the failure details, and advise how to fix.
+- Suggest the user to also track the build at https://github.com/vdavid/cmdr/actions.
+
+11. **In parallel, watch the standalone CI run** (the non-release `CI` workflow that fires on the same push):
     - It's not a blocker for the release. If it goes red, fix it in the background while the release builds. Small
       things like lint regressions are common.
     - Surface the failure to the user when convenient; don't interrupt release-build progress reporting for it.
-11. **After the release run succeeds, verify the public surface**:
+12. **After the release run succeeds, verify the public surface**:
     - `gh release view vX.Y.Z --json assets,tagName,publishedAt`: confirm the expected DMGs are attached
       (`Cmdr_X.Y.Z_aarch64.dmg`, `_x64.dmg`, `_universal.dmg`) and sizes look reasonable.
     - Wait ~30 seconds for the website auto-deploy (the release workflow commits an updated `latest.json` and fires a
