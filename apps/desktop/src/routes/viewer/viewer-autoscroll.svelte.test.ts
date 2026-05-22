@@ -11,11 +11,13 @@ let scheduledTick: (() => void) | null = null
 let nextRafId = 1
 
 function rafStub(cb: FrameRequestCallback): number {
-  scheduledTick = () => cb(performance.now())
+  scheduledTick = () => {
+    cb(performance.now())
+  }
   return nextRafId++
 }
 
-function cancelStub(_id: number): void {
+function cancelStub(): void {
   scheduledTick = null
 }
 
@@ -31,8 +33,8 @@ let originalCaf: typeof cancelAnimationFrame
 beforeEach(() => {
   originalRaf = globalThis.requestAnimationFrame
   originalCaf = globalThis.cancelAnimationFrame
-  globalThis.requestAnimationFrame = rafStub as unknown as typeof requestAnimationFrame
-  globalThis.cancelAnimationFrame = cancelStub as unknown as typeof cancelAnimationFrame
+  globalThis.requestAnimationFrame = rafStub
+  globalThis.cancelAnimationFrame = cancelStub
   scheduledTick = null
   nextRafId = 1
 })
@@ -45,18 +47,17 @@ afterEach(() => {
 function makeContent(rectTop: number, rectBottom: number): { el: HTMLElement; getScrollTop: () => number } {
   const el = document.createElement('div')
   // jsdom doesn't lay anything out, so stub getBoundingClientRect.
-  el.getBoundingClientRect = () =>
-    ({
-      top: rectTop,
-      bottom: rectBottom,
-      left: 0,
-      right: 100,
-      width: 100,
-      height: rectBottom - rectTop,
-      x: 0,
-      y: rectTop,
-      toJSON: () => ({}),
-    }) as DOMRect
+  el.getBoundingClientRect = () => ({
+    top: rectTop,
+    bottom: rectBottom,
+    left: 0,
+    right: 100,
+    width: 100,
+    height: rectBottom - rectTop,
+    x: 0,
+    y: rectTop,
+    toJSON: () => ({}),
+  })
   return { el, getScrollTop: () => el.scrollTop }
 }
 

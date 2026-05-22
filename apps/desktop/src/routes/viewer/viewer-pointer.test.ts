@@ -2,6 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest'
 
 import { caretFromPoint, findLineAncestor, findLineTextNode, sumOffsetWithin } from './viewer-pointer'
 
+/** Test-local helper: asserts that a node lookup succeeded and returns the value. */
+function nn<T>(value: T | null | undefined, what: string): T {
+  if (value === null || value === undefined) throw new Error(`Expected ${what} to be non-null in test fixture`)
+  return value
+}
+
 /**
  * Sets up a viewer-shaped DOM fragment with one or more lines. Each line gets a
  * `[data-line]` element with `.line-text` inside. Returns the root element and a
@@ -33,18 +39,16 @@ beforeEach(() => {
 describe('findLineAncestor', () => {
   it('finds the [data-line] ancestor when started from a text node', () => {
     const { root } = buildLineDom(['hello world'])
-    const textNode = root.querySelector('.line-text')!.firstChild!
-    const line = findLineAncestor(textNode)
-    expect(line).not.toBeNull()
-    expect(line!.getAttribute('data-line')).toBe('0')
+    const textNode = nn(nn(root.querySelector('.line-text'), '.line-text').firstChild, 'text node')
+    const line = nn(findLineAncestor(textNode), 'line ancestor')
+    expect(line.getAttribute('data-line')).toBe('0')
   })
 
   it('finds the [data-line] when started from a nested mark', () => {
     const { root } = buildLineDom(['hel<mark>lo</mark> world'])
-    const markText = root.querySelector('mark')!.firstChild!
-    const line = findLineAncestor(markText)
-    expect(line).not.toBeNull()
-    expect(line!.getAttribute('data-line')).toBe('0')
+    const markText = nn(nn(root.querySelector('mark'), 'mark').firstChild, 'mark text')
+    const line = nn(findLineAncestor(markText), 'line ancestor')
+    expect(line.getAttribute('data-line')).toBe('0')
   })
 
   it('returns null for nodes outside any [data-line]', () => {
@@ -66,7 +70,7 @@ describe('sumOffsetWithin', () => {
   it('plain text node: returns the caretOffset directly', () => {
     const { getLineText } = buildLineDom(['hello world'])
     const lineText = getLineText(0)
-    const text = lineText.firstChild!
+    const text = nn(lineText.firstChild, 'first child')
     expect(sumOffsetWithin(lineText, text, 6)).toBe(6)
   })
 
@@ -74,7 +78,7 @@ describe('sumOffsetWithin', () => {
     // "hello <mark>world</mark>"
     const { getLineText } = buildLineDom(['hello <mark>world</mark>'])
     const lineText = getLineText(0)
-    const markText = lineText.querySelector('mark')!.firstChild!
+    const markText = nn(nn(lineText.querySelector('mark'), 'mark').firstChild, 'mark text')
     expect(sumOffsetWithin(lineText, markText, 2)).toBe(6 + 2) // "hello " (6) + "wo" (2)
   })
 
@@ -90,18 +94,19 @@ describe('sumOffsetWithin', () => {
       last = n
       n = walker.nextNode()
     }
-    expect(last!.nodeValue).toBe(' baz')
+    const trailing = nn(last, 'trailing text node')
+    expect(trailing.nodeValue).toBe(' baz')
     // Offset 2 in " baz": "foo " (4) + "bar" (3) + " b" (2) = 9
-    expect(sumOffsetWithin(lineText, last!, 2)).toBe(9)
+    expect(sumOffsetWithin(lineText, trailing, 2)).toBe(9)
   })
 
   it('multiple marks in a row: sums correctly', () => {
     const { getLineText } = buildLineDom(['<mark>aaa</mark><mark>bbb</mark>ccc'])
     const lineText = getLineText(0)
     const walker = document.createTreeWalker(lineText, NodeFilter.SHOW_TEXT)
-    const firstMark = walker.nextNode()! // "aaa"
-    const secondMark = walker.nextNode()! // "bbb"
-    const trailing = walker.nextNode()! // "ccc"
+    const firstMark = nn(walker.nextNode(), 'first mark text') // "aaa"
+    const secondMark = nn(walker.nextNode(), 'second mark text') // "bbb"
+    const trailing = nn(walker.nextNode(), 'trailing text') // "ccc"
     expect(sumOffsetWithin(lineText, firstMark, 2)).toBe(2)
     expect(sumOffsetWithin(lineText, secondMark, 0)).toBe(3)
     expect(sumOffsetWithin(lineText, secondMark, 2)).toBe(5)
@@ -112,7 +117,7 @@ describe('sumOffsetWithin', () => {
     // "👋hi" - emoji is 2 UTF-16 units in the text node's nodeValue.
     const { getLineText } = buildLineDom(['👋hi'])
     const lineText = getLineText(0)
-    const text = lineText.firstChild!
+    const text = nn(lineText.firstChild, 'first child')
     expect(sumOffsetWithin(lineText, text, 2)).toBe(2) // end of emoji, before 'h'
     expect(sumOffsetWithin(lineText, text, 3)).toBe(3) // end of 'h'
   })
@@ -146,7 +151,7 @@ describe('caretFromPoint', () => {
 
   it('integrates: finds line + offset from a caret inside a nested mark', () => {
     const { root } = buildLineDom(['<mark>foo</mark>bar'])
-    const markText = root.querySelector('mark')!.firstChild!
+    const markText = nn(nn(root.querySelector('mark'), 'mark').firstChild, 'mark text')
     const fakeDoc = {
       caretPositionFromPoint: () => ({ offsetNode: markText, offset: 1 }),
     } as unknown as Document
@@ -155,7 +160,7 @@ describe('caretFromPoint', () => {
 
   it('uses caretRangeFromPoint fallback when caretPositionFromPoint is unavailable', () => {
     const { root } = buildLineDom(['hello'])
-    const text = root.querySelector('.line-text')!.firstChild!
+    const text = nn(nn(root.querySelector('.line-text'), '.line-text').firstChild, 'first child')
     const fakeDoc = {
       caretRangeFromPoint: () => ({ startContainer: text, startOffset: 3 }),
     } as unknown as Document
@@ -167,7 +172,9 @@ describe('caretFromPoint', () => {
     const lines: string[] = []
     for (let i = 0; i < 43; i++) lines.push(`line ${String(i)}`)
     const { root } = buildLineDom(lines)
-    const line42 = root.querySelector('[data-line="42"]')!.querySelector('.line-text')!.firstChild!
+    const lineNode = nn(root.querySelector('[data-line="42"]'), 'line 42 node')
+    const lineText = nn(lineNode.querySelector('.line-text'), '.line-text in line 42')
+    const line42 = nn(lineText.firstChild, 'first child of line 42 text')
     const fakeDoc = {
       caretPositionFromPoint: () => ({ offsetNode: line42, offset: 2 }),
     } as unknown as Document

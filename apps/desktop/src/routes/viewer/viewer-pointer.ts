@@ -106,50 +106,56 @@ function parseLineNumber(lineNode: HTMLElement): number | null {
  * this detail.
  */
 export function sumOffsetWithin(lineTextRoot: HTMLElement, caretNode: Node, caretOffset: number): number | null {
-  // Two cases:
-  //   a) `caretNode` is a Text node: traverse all text nodes inside `lineTextRoot` in
-  //      document order, sum lengths up to (but not including) `caretNode`, then add
-  //      `caretOffset` (which is a UTF-16 index inside that text node).
-  //   b) `caretNode` is an element node: same traversal, but stop at the first text
-  //      node inside `caretNode` or right before `caretNode` itself. `caretOffset` is
-  //      a child index in this case, not a UTF-16 offset.
-
-  if (!lineTextRoot.contains(caretNode) && caretNode !== lineTextRoot) {
-    return null
-  }
+  if (!lineTextRoot.contains(caretNode) && caretNode !== lineTextRoot) return null
 
   if (caretNode.nodeType === Node.TEXT_NODE) {
-    let total = 0
-    let found = false
-    const walker = lineTextRoot.ownerDocument.createTreeWalker(lineTextRoot, NodeFilter.SHOW_TEXT)
-    let node = walker.nextNode()
-    while (node !== null) {
-      if (node === caretNode) {
-        total += caretOffset
-        found = true
-        break
-      }
-      total += (node.nodeValue ?? '').length
-      node = walker.nextNode()
-    }
-    return found ? total : null
+    return sumUpToTextNode(lineTextRoot, caretNode, caretOffset)
   }
+  return sumUpToElementBoundary(lineTextRoot, caretNode, caretOffset)
+}
 
-  // Element-node caret: caretOffset is a child index inside caretNode. Walk text nodes
-  // up to the child at `caretOffset`, then sum lengths inside the subtrees we cross.
+/**
+ * Sums text-node lengths until reaching `caretNode`, then adds `caretOffset` (which is
+ * a UTF-16 index inside that text node). Returns `null` if `caretNode` isn't reached
+ * (shouldn't happen given the upstream `contains` check, but defensive).
+ */
+function sumUpToTextNode(lineTextRoot: HTMLElement, caretNode: Node, caretOffset: number): number | null {
   let total = 0
   const walker = lineTextRoot.ownerDocument.createTreeWalker(lineTextRoot, NodeFilter.SHOW_TEXT)
   let node = walker.nextNode()
-  // Build the boundary node: either the child at `caretOffset` or null (after last child).
-  const childrenArray = Array.from(caretNode.childNodes)
-  const boundary: Node | null = childrenArray[caretOffset] ?? null
-
   while (node !== null) {
-    if (boundary !== null && (node === boundary || (boundary.contains?.(node) ?? false))) {
-      break
-    }
+    if (node === caretNode) return total + caretOffset
+    total += (node.nodeValue ?? '').length
+    node = walker.nextNode()
+  }
+  return null
+}
+
+/**
+ * Element-node caret: `caretOffset` is a child index. Walks text nodes inside
+ * `lineTextRoot` and sums lengths up to (but not including) the boundary node, which is
+ * either the child at index `caretOffset` or `null` (past the last child).
+ */
+function sumUpToElementBoundary(lineTextRoot: HTMLElement, caretNode: Node, caretOffset: number): number {
+  const childrenArray = Array.from(caretNode.childNodes)
+  // `caretOffset` >= childrenArray.length means "past the last child"; in that case we
+  // walk every text node (no early break needed). `boundaryAfterEnd` carries that.
+  const boundary = childrenArray[caretOffset]
+  const boundaryAfterEnd = caretOffset >= childrenArray.length
+
+  let total = 0
+  const walker = lineTextRoot.ownerDocument.createTreeWalker(lineTextRoot, NodeFilter.SHOW_TEXT)
+  let node = walker.nextNode()
+  while (node !== null) {
+    if (!boundaryAfterEnd && nodeIsAtOrInside(node, boundary)) break
     total += (node.nodeValue ?? '').length
     node = walker.nextNode()
   }
   return total
+}
+
+/** Returns `true` if `inner` equals `boundary` or sits inside `boundary`'s subtree. */
+function nodeIsAtOrInside(inner: Node, boundary: Node): boolean {
+  if (inner === boundary) return true
+  return boundary.contains(inner)
 }
