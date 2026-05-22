@@ -80,13 +80,21 @@ not as a sibling above. **Why**: when the user has "Always show scrollbars" set 
 non-overlay scrollbars steal a ~15 px gutter from the scroll container. A sibling header rendering at the wrapper's full
 width then misaligned with the data rows below. Moving the header inside makes it share the row content width
 automatically (and therefore the scrollbar gutter), so columns line up at every scrollbar mode without JS measurement.
-The trade-off is virtual-scroll math: row positions are now `headerHeight` pixels into the scrollable content, so
-`FullList` derives `spacerScrollTop = max(0, scrollTop - headerHeight)` and
-`rowAreaHeight = containerHeight - headerHeight` and feeds those into `calculateVirtualWindow` / `getScrollToPosition` /
-`firstVisibleGlobalIndex` / `lastVisibleGlobalIndex` / `getVisibleItemsCountUtil`. `scrollToIndex` adds `headerHeight`
-back when writing to `scrollContainer.scrollTop`. A11y: the listbox role moves off `.full-list` (now a generic scroll
-container) onto a `.listbox-region` inner wrapper around `.virtual-spacer` so the sticky header isn't a direct child of
-the listbox (would violate `aria-required-children`).
+Virtual-scroll math: the spacer follows the header in natural flow, so the spacer's content origin (row 0) sits
+`headerHeight` pixels into the unscrolled document. The sticky header always covers the first `headerHeight` pixels of
+the viewport once any scroll has happened, so the effective row area is `containerHeight - headerHeight`. Critically,
+`scrollTop` and the spacer's scroll offset are the same number — no translation needed. `FullList` therefore derives
+`spacerScrollTop = scrollTop` and `rowAreaHeight = containerHeight - headerHeight` and feeds those into
+`calculateVirtualWindow` / `getScrollToPosition` / `firstVisibleGlobalIndex` / `lastVisibleGlobalIndex` /
+`getVisibleItemsCountUtil`. `scrollToIndex` writes `getScrollToPosition`'s result straight to
+`scrollContainer.scrollTop`. A11y: the listbox role moves off `.full-list` (now a generic scroll container) onto a
+`.listbox-region` inner wrapper around `.virtual-spacer` so the sticky header isn't a direct child of the listbox (would
+violate `aria-required-children`).
+
+The earlier version of this model shifted scrollTop by `headerHeight` and lossy-clamped at zero, which made
+`scrollTop ∈ [0, headerHeight]` collapse to the same spacer state. PageDown × 2 → PageUp × 2 then landed at
+`scrollTop === headerHeight`, hiding row 0 (including the `..` cursor) under the sticky header. See
+`test/e2e-playwright/full-cursor-page-nav.spec.ts` for the pinned regression.
 
 **Decision**: Virtual scroll in frontend, data in backend **Why**: Sending 50k entries over IPC = 17.4MB, ~4s transfer.
 Virtual scroll fetches only visible ~50 items on demand. Backend-driven caching eliminates serialization overhead.

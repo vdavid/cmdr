@@ -295,13 +295,18 @@
     let scrollContainer: HTMLDivElement | undefined = $state()
     let containerHeight = $state(0)
     let scrollTop = $state(0)
-    // The header is a `position: sticky` element inside the scroll container,
-    // so the row area starts `headerHeight` pixels into the scrollable content.
-    // All virtual-scroll math operates in row-area-local coords: subtract the
-    // header offset from `scrollTop` / `containerHeight` before passing through.
+    // The header is `position: sticky; top: 0` and always covers the first
+    // `headerHeight` pixels of the viewport once any scroll has happened, so
+    // the effective row area is shorter than the container by that much. The
+    // spacer is the header's next-sibling in natural flow, so `scrollTop`
+    // already IS the spacer's scroll offset — no `- headerHeight` shift.
+    // (The previous model shifted then clamped at 0, which collapsed
+    // `scrollTop ∈ [0, headerHeight]` to a single spacer state and let the
+    // "top of list" canonical scrollTop land at `headerHeight`, hiding row 0
+    // under the sticky header.)
     let headerHeight = $state(0)
     const rowAreaHeight = $derived(Math.max(0, containerHeight - headerHeight))
-    const spacerScrollTop = $derived(Math.max(0, scrollTop - headerHeight))
+    const spacerScrollTop = $derived(scrollTop)
 
     // ==== Virtual scrolling derived calculations ====
     const virtualWindow = $derived(
@@ -598,11 +603,12 @@
     // Exported for parent to call when arrow keys change cursor position
     export function scrollToIndex(index: number) {
         if (!scrollContainer) return
-        // `getScrollToPosition` works in row-area coords. Translate back to the
-        // scroll container's coordinate space by adding the sticky-header offset.
+        // `getScrollToPosition` returns the spacer's required scroll offset in
+        // row-area coords. Since `scrollTop === spacerScrollTop` (see the
+        // sticky-header model note above), it's also the container's scrollTop.
         const spacerPos = getScrollToPosition(index, rowHeight, spacerScrollTop, rowAreaHeight)
         if (spacerPos !== undefined) {
-            const newScrollTop = spacerPos + headerHeight
+            const newScrollTop = spacerPos
             scrollContainer.scrollTop = newScrollTop
             // Also update state directly to trigger reactive chain immediately
             // (scroll events may be batched or delayed by the browser)
