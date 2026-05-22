@@ -1,7 +1,10 @@
 // Reactive search state for the search dialog.
 // Uses Svelte 5 runes ($state, $derived) following existing codebase patterns.
 
+import { getAppLogger } from '$lib/logging/logger'
 import type { SearchResultEntry, PatternType, SearchQuery, HistoryEntry, HistoryFilters } from '$lib/tauri-commands'
+
+const log = getAppLogger('search-state')
 export type { PatternType }
 
 export type SizeFilter = 'any' | 'gte' | 'lte' | 'between'
@@ -336,7 +339,23 @@ export function setRunOnMount(value: boolean): void {
  * No-op when `targetMode === mode`.
  */
 export function switchMode(targetMode: SearchMode): void {
-  if (mode === targetMode) return
+  log.debug(
+    'switchMode: from={from} to={to} query={query} handTyped.ai={ai} handTyped.filename={filename} handTyped.regex={regex} lastAiPattern={lastAiPattern} lastAiPatternKind={lastAiPatternKind}',
+    {
+      from: mode,
+      to: targetMode,
+      query,
+      ai: handTyped.ai,
+      filename: handTyped.filename,
+      regex: handTyped.regex,
+      lastAiPattern: lastAiPattern ?? '(null)',
+      lastAiPatternKind: lastAiPatternKind ?? '(null)',
+    },
+  )
+  if (mode === targetMode) {
+    log.debug('switchMode: no-op (same mode)')
+    return
+  }
   // Preserve the user's current typing under the previous mode's slot before swapping.
   handTyped[mode] = query
   mode = targetMode
@@ -350,6 +369,7 @@ export function switchMode(targetMode: SearchMode): void {
     }
   }
   query = next
+  log.debug('switchMode: done, mode={mode} query={query}', { mode, query })
 }
 
 /**

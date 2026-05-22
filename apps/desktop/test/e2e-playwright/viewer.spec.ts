@@ -40,6 +40,14 @@ async function openViewerForFile(mainPage: TauriPage, filePath: string): Promise
     }
     throw new Error('Viewer did not load file content and no status message found')
   }
+  // The `.file-content` element renders as soon as `loading` flips to `false`, but
+  // `windowReady` (and the `totalLines` / `totalBytes` state it gates) flips one
+  // requestAnimationFrame later in the `onMount` `finally` block. Tests that fire
+  // ⌘A or Escape against the viewer race that gap otherwise: ⌘A no-ops if
+  // `totalLines` and `totalBytes` are both 0/null, and `closeWindow()` queues the
+  // close behind `closeRequested` until ready. Waiting for the `data-window-ready`
+  // attribute on the container closes both races at once.
+  await viewer.waitForSelector('.viewer-container[data-window-ready="true"]', 3000)
   return viewer
 }
 

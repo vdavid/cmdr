@@ -884,6 +884,7 @@
     class="viewer-container"
     bind:this={scroll.containerRef}
     tabindex={-1}
+    data-window-ready={windowReady ? 'true' : 'false'}
     oncopy={(e: ClipboardEvent) => {
         // Intercept any copy gesture (menu Edit > Copy, ⌘C from anywhere inside the
         // viewer) so the custom selection model wins over the browser's native one.

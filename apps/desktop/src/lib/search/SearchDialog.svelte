@@ -16,6 +16,9 @@
      */
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
+    import { getAppLogger } from '$lib/logging/logger'
+
+    const log = getAppLogger('search-dialog')
     import {
         notifyDialogOpened,
         notifyDialogClosed,
@@ -907,7 +910,14 @@
     }
 
     function handleModeChange(newMode: SearchMode): void {
-        if (getMode() === newMode) return
+        log.debug('handleModeChange: requested newMode={newMode} currentMode={currentMode}', {
+            newMode,
+            currentMode: getMode(),
+        })
+        if (getMode() === newMode) {
+            log.debug('handleModeChange: no-op (already in target mode)')
+            return
+        }
         // `switchMode` swaps the bar's contents into the target mode's hand-typed buffer
         // (or restores the AI-produced pattern when its kind matches the target mode and
         // the hand-typed buffer is empty). The AI-mode-side `query` is the prompt; the
