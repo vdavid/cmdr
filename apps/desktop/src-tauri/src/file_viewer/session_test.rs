@@ -606,6 +606,43 @@ fn cancel_read_unknown_id_is_no_op() {
 }
 
 #[test]
+fn write_range_to_file_writes_atomically() {
+    let dir = create_test_dir("write_range");
+    let file = write_test_file(&dir, "test.txt", "alpha\nbeta\ngamma\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let dest = dir.join("out.txt");
+    session::write_range_to_file(&sid, 1, line(0, 0), line(2, 5), &dest).unwrap();
+    let written = fs::read_to_string(&dest).unwrap();
+    assert_eq!(written, "alpha\nbeta\ngamma");
+
+    // No leftover temp file in the dir.
+    let leftover = fs::read_dir(&dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .any(|e| e.file_name().to_string_lossy().contains("cmdr-tmp"));
+    assert!(!leftover, "temp file leaked after successful write");
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn write_range_to_file_propagates_out_of_range_error() {
+    let dir = create_test_dir("write_range_oor");
+    let file = write_test_file(&dir, "test.txt", "one line\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let dest = dir.join("out.txt");
+    let err = session::write_range_to_file(&sid, 1, line(99, 0), line(99, 5), &dest).unwrap_err();
+    assert!(matches!(err, ViewerError::OutOfRange));
+    assert!(!dest.exists());
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
 fn read_range_stitching_adjacent_ranges_equals_one_big_range() {
     let dir = create_test_dir("range_stitch");
     let file = write_test_file(&dir, "test.txt", "alpha\nbeta\ngamma\ndelta\nepsilon\n");

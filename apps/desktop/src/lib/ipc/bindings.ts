@@ -698,6 +698,15 @@ export const commands = {
    */
   viewerCancelRead: (sessionId: string, readId: number) =>
     typedError<null, ViewerError>(__TAURI_INVOKE('viewer_cancel_read', { sessionId, readId })),
+  /**
+   *  Reads a logical range and writes it to `dest_path` atomically (temp+rename). Used
+   *  by the "Save as file…" action in the > 100 MB refuse dialog and the 10 to 100 MB
+   *  confirm dialog. Cancellation works the same as `viewer_read_range`.
+   */
+  viewerWriteRangeToFile: (sessionId: string, readId: number, anchor: RangeEnd, focus: RangeEnd, destPath: string) =>
+    typedError<null, ViewerError>(
+      __TAURI_INVOKE('viewer_write_range_to_file', { sessionId, readId, anchor, focus, destPath }),
+    ),
   // Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
   viewerSetupMenu: (label: string) => typedError<null, string>(__TAURI_INVOKE('viewer_setup_menu', { label })),
   // Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard).

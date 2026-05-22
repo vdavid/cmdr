@@ -12,7 +12,13 @@
  * to keep this module independent of UI primitives.
  */
 
-import { viewerCancelRead, viewerReadRange, type RangeEnd, type ViewerError } from '$lib/tauri-commands'
+import {
+  viewerCancelRead,
+  viewerReadRange,
+  viewerWriteRangeToFile,
+  type RangeEnd,
+  type ViewerError,
+} from '$lib/tauri-commands'
 
 import { selectCopyAction, type CopyAction } from './viewer-copy'
 
@@ -122,6 +128,32 @@ export function createViewerCopy(deps: CopyDeps) {
     await viewerCancelRead(sessionId, readId)
   }
 
+  /**
+   * Writes the selection to a file at `destPath`. Same band-agnostic API as `runCopy`,
+   * but the result is the typed write outcome rather than the read text. Uses the
+   * same busy / cancel plumbing.
+   */
+  async function saveAs(destPath: string): Promise<CopyResult> {
+    const sessionId = deps.getSessionId()
+    const ends = deps.getRangeEnds()
+    if (!sessionId || ends === null) {
+      return { ok: false, reason: 'other' }
+    }
+    const readId = allocateReadId()
+    inFlightReadId = readId
+    busy = true
+    try {
+      const res = await viewerWriteRangeToFile(sessionId, readId, ends.anchor, ends.focus, destPath)
+      if (res.ok) return { ok: true, text: '' }
+      if (res.error.kind === 'cancelled') return { ok: false, reason: 'cancelled', error: res.error }
+      if (res.error.kind === 'timedOut') return { ok: false, reason: 'timedOut', error: res.error }
+      return { ok: false, reason: 'other', error: res.error }
+    } finally {
+      busy = false
+      inFlightReadId = null
+    }
+  }
+
   return {
     get busy() {
       return busy
@@ -131,5 +163,6 @@ export function createViewerCopy(deps: CopyDeps) {
     },
     runCopy,
     cancelInFlight,
+    saveAs,
   }
 }

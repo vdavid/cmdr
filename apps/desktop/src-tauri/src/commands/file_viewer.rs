@@ -155,6 +155,34 @@ pub fn viewer_cancel_read(session_id: String, read_id: u64) -> Result<(), Viewer
     file_viewer::cancel_read(&session_id, read_id)
 }
 
+/// Reads a logical range and writes it to `dest_path` atomically (temp+rename). Used
+/// by the "Save as file…" action in the > 100 MB refuse dialog and the 10 to 100 MB
+/// confirm dialog. Cancellation works the same as `viewer_read_range`.
+#[tauri::command]
+#[specta::specta]
+pub async fn viewer_write_range_to_file(
+    session_id: String,
+    read_id: u64,
+    anchor: RangeEnd,
+    focus: RangeEnd,
+    dest_path: String,
+) -> Result<(), ViewerError> {
+    match tokio::time::timeout(
+        READ_RANGE_TIMEOUT,
+        tokio::task::spawn_blocking(move || {
+            file_viewer::write_range_to_file(&session_id, read_id, anchor, focus, std::path::Path::new(&dest_path))
+        }),
+    )
+    .await
+    {
+        Ok(Ok(result)) => result,
+        Ok(Err(join_err)) => Err(ViewerError::Io {
+            message: join_err.to_string(),
+        }),
+        Err(_) => Err(ViewerError::TimedOut),
+    }
+}
+
 /// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
 #[tauri::command]
 #[specta::specta]

@@ -23,7 +23,7 @@ mod session_test;
 pub use range_read::RangeEnd;
 pub use session::{
     SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session, get_lines, get_session_status,
-    open_session, read_range, search_cancel, search_poll, search_start,
+    open_session, read_range, search_cancel, search_poll, search_start, write_range_to_file,
 };
 
 use serde::Serialize;

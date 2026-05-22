@@ -161,3 +161,20 @@ export async function viewerCancelRead(
   if (res.status === 'ok') return { ok: true }
   return { ok: false, error: res.error }
 }
+
+/**
+ * Reads a range and writes it to `destPath` atomically. Used by the "Save as file..."
+ * action in the copy-confirm and copy-refuse dialogs. Returns a typed result; the same
+ * `Cancelled` / `TimedOut` / other variants surface as for `viewerReadRange`.
+ */
+export async function viewerWriteRangeToFile(
+  sessionId: string,
+  readId: number,
+  anchor: RangeEnd,
+  focus: RangeEnd,
+  destPath: string,
+): Promise<{ ok: true } | { ok: false; error: ViewerError }> {
+  const res = await commands.viewerWriteRangeToFile(sessionId, readId, anchor, focus, destPath)
+  if (res.status === 'ok') return { ok: true }
+  return { ok: false, error: res.error }
+}

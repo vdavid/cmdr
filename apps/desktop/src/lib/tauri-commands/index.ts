@@ -46,6 +46,7 @@ export {
   viewerSetWordWrap,
   viewerReadRange,
   viewerCancelRead,
+  viewerWriteRangeToFile,
 } from './file-viewer'
 export type {
   LineChunk,

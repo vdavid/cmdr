@@ -37,6 +37,8 @@
     import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
     import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
     import ViewerContextMenu from './ViewerContextMenu.svelte'
+    import { findWordBoundsAt } from './viewer-word'
+    import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
     import { formatBytes, type RangeEnd } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -143,6 +145,34 @@
     })
 
     const selection = createViewerSelection()
+
+    /**
+     * Screen-reader-friendly announcement of the current selection. Empty string when
+     * there's nothing selected (the live region stays silent). The format names the
+     * selected line range and a UTF-16 character count for orientation.
+     */
+    const selectionAnnouncement = $derived.by((): string => {
+        const sel = selection.selection
+        if (sel === null) return ''
+        const { start, end } = normaliseSelection(sel)
+        if (start.line === end.line && start.offset === end.offset) return ''
+
+        const totalChars = (() => {
+            if (start.line === end.line) return end.offset - start.offset
+            const startLineLen = scroll.lineCache.get(start.line)?.length ?? 0
+            let chars = startLineLen - start.offset
+            for (let i = start.line + 1; i < end.line; i++) {
+                chars += scroll.lineCache.get(i)?.length ?? 0
+            }
+            chars += end.offset
+            return chars
+        })()
+
+        if (start.line === end.line) {
+            return `Selected ${String(totalChars)} characters on line ${String(start.line + 1)}`
+        }
+        return `Selected lines ${String(start.line + 1)} to ${String(end.line + 1)}, ${String(totalChars)} characters`
+    })
 
     /**
      * Converts a `Selection` to the `(anchor, focus)` `RangeEnd`s the IPC layer accepts.
@@ -293,6 +323,29 @@
         // Suppress the native OS context menu so our in-app one wins.
         e.preventDefault()
         contextMenuPos = { x: e.clientX, y: e.clientY }
+    }
+
+    /**
+     * Selects the word under the pointer on double-click, or the whole line on
+     * triple-click. The browser delivers consecutive clicks with `detail = 2` and
+     * `detail = 3`; we read the click count from there.
+     */
+    function handleContentClick(e: MouseEvent): void {
+        if (e.detail !== 2 && e.detail !== 3) return
+        const caret = caretFromPoint(document, e.clientX, e.clientY)
+        if (caret === null) return
+        const lineText = scroll.lineCache.get(caret.line) ?? ''
+
+        if (e.detail === 2) {
+            const { start, end } = findWordBoundsAt(lineText, caret.offset)
+            selection.setAnchor({ line: caret.line, offset: start })
+            selection.setFocus({ line: caret.line, offset: end })
+            return
+        }
+
+        // Triple-click: select the whole line.
+        selection.setAnchor({ line: caret.line, offset: 0 })
+        selection.setFocus({ line: caret.line, offset: lineText.length })
     }
 
     function closeContextMenu(): void {
@@ -478,6 +531,41 @@
 
     function dismissCopyRefuse(): void {
         copyRefuseBytes = null
+    }
+
+    /**
+     * Save as file flow: opens the native macOS save panel via the Tauri dialog plugin
+     * with a sensible default name (the open file's stem + ".selection.txt"), then
+     * streams the selection to the chosen path via `viewer_write_range_to_file`.
+     * Dismisses the open copy dialog and shows a success toast on completion.
+     */
+    async function handleSaveAs(): Promise<void> {
+        const defaultName = `${fileName.replace(/\.[^.]*$/, '') || 'selection'}.selection.txt`
+        let chosen: string | null
+        try {
+            chosen = await showSavePanel({ defaultPath: defaultName, title: 'Save selection' })
+        } catch (e) {
+            log.warn('Save panel rejected: {error}', { error: String(e) })
+            addToast("Couldn't open the save panel. Try again?", { level: 'warn' })
+            return
+        }
+        if (chosen === null) return // user cancelled
+
+        // Close the open copy dialog so the user can see progress.
+        copyConfirmBytes = null
+        copyConfirmProceed = null
+        copyRefuseBytes = null
+
+        const res = await copy.saveAs(chosen)
+        if (res.ok) {
+            addToast(`Selection saved to ${chosen.split('/').pop() ?? chosen}`, { level: 'info' })
+        } else if (res.reason === 'cancelled') {
+            // No toast; the user pressed Escape.
+        } else if (res.reason === 'timedOut') {
+            addToast('Saving took too long. Try a smaller selection?', { level: 'warn' })
+        } else {
+            addToast("Couldn't save the selection. Try again?", { level: 'warn' })
+        }
     }
 
     function handleEscapeKey(): void {
@@ -797,6 +885,13 @@
     }}
 >
     <h1 class="sr-only">File viewer</h1>
+    <!--
+        ARIA live region: announces selection state to assistive tech. Updates whenever
+        the selection changes via any gesture (⌘A, drag, shift-click, double / triple-
+        click, programmatic). Uses `polite` so it doesn't interrupt other speech;
+        VoiceOver reads the new value after the user lands on a result.
+    -->
+    <div class="sr-only" aria-live="polite" aria-atomic="true">{selectionAnnouncement}</div>
     {#if showWarningBanner}
         <!--
             Banner explaining that the file viewer shows raw bytes; the user
@@ -925,6 +1020,7 @@
             onpointerup={handleContentPointerUp}
             onpointercancel={handleContentPointerCancel}
             oncontextmenu={handleContentContextMenu}
+            onclick={handleContentClick}
         >
             <div
                 class="scroll-spacer"
@@ -1030,6 +1126,12 @@
         <div class="copy-dialog-actions">
             <Button variant="secondary" onclick={cancelCopyConfirm}>Cancel</Button>
             <Button
+                variant="secondary"
+                onclick={() => {
+                    void handleSaveAs()
+                }}>Save as file…</Button
+            >
+            <Button
                 variant="primary"
                 onclick={() => {
                     if (copyConfirmProceed) void copyConfirmProceed()
@@ -1056,7 +1158,13 @@
             selection as a file.
         </p>
         <div class="copy-dialog-actions">
-            <Button variant="primary" onclick={dismissCopyRefuse}>Got it</Button>
+            <Button variant="secondary" onclick={dismissCopyRefuse}>Cancel</Button>
+            <Button
+                variant="primary"
+                onclick={() => {
+                    void handleSaveAs()
+                }}>Save as file…</Button
+            >
         </div>
     </ModalDialog>
 {/if}

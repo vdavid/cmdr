@@ -12,6 +12,7 @@
         "core:window:allow-get-all-windows",
         "core:event:default",
         "store:default",
-        "clipboard-manager:allow-write-text"
+        "clipboard-manager:allow-write-text",
+        "dialog:allow-save"
     ]
 }

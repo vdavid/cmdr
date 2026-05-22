@@ -17,7 +17,11 @@ The file viewer opens files in a separate Tauri window with virtual scrolling an
 | `line-segments.ts`              | Pure shared segmenter: merges search matches + selection bounds into render spans           |
 | `viewer-pointer.ts`             | Pure caret-from-point math: `(x, y)` -> `LineOffset` with surrogate-safe sibling-offset sum |
 | `viewer-copy.ts`                | Pure three-band copy policy (silent / confirm / refuse) and threshold constants             |
-| `viewer-copy.svelte.ts`         | Copy composable: state + busy flag + per-call read_id + cancel plumbing                     |
+| `viewer-copy.svelte.ts`         | Copy composable: state + busy flag + per-call read_id + cancel plumbing + saveAs            |
+| `viewer-autoscroll.ts`          | Pure speed curve for drag-past-edge autoscroll                                              |
+| `viewer-autoscroll.svelte.ts`   | Autoscroll RAF controller: start / stop / self-terminate                                    |
+| `viewer-word.ts`                | Pure word-boundary finder via `Intl.Segmenter` for double-click selection                   |
+| `ViewerContextMenu.svelte`      | Minimal in-app right-click menu (Copy, Select all)                                          |
 
 ## Architecture
 
@@ -78,6 +82,14 @@ logical coordinates, independent of which lines happen to be rendered.
   offsets from a click position (M3a's caret math) or accept them across the IPC boundary (M2's `viewer_read_range`),
   preserve the UTF-16 convention. The backend handles the conversion to UTF-8 bytes, clamping lone surrogates to the
   nearest codepoint boundary.
+- **Drag autoscroll uses `setPointerCapture` + window `blur` fallback** because the Tauri webview can lose `pointerup`
+  events to other macOS windows. Without capture, dragging past the webview's edge leaves the RAF loop running forever
+  with no way to stop. Capture is wrapped in try/catch because some webviews refuse it on non-focusable targets; the
+  blur listener is the safety net for the "no pointer event but focus left" case.
+- **`viewer_read_range` cancel id is FE-allocated, not BE-allocated**. The frontend's `createViewerCopy()` composable
+  uses a monotonic per-session counter. This avoids an extra round-trip (call to "start read", await `read_id`, then
+  another call to "wait for read"); the FE just sends the id with the read request, and the backend keys the cancel flag
+  off that id. Uniqueness within the session is the only invariant.
 - `getLineHeight()` (returns `18px × effective scale`) and the CSS rule
   `.line { height: calc(18px * var(--font-scale)) }` in `+page.svelte` must stay paired. Both read the same scale: the
   JS function for virtualization math, the CSS rule for layout. If you change the 18 base, change both.

@@ -39,6 +39,9 @@ if file_size < 1MB {
   extra round-trip. The function holds the SESSIONS lock only long enough to clone the backend `Arc` and register the
   cancel flag; the read itself iterates outside the lock so other commands stay responsive.
 - `viewer_cancel_read(session_id, read_id)` → flips the per-read cancel flag. No-op if the read already finished.
+- `viewer_write_range_to_file(session_id, read_id, anchor, focus, dest_path)` → reads a logical range and writes it
+  atomically to `dest_path` (temp+rename). Used by "Save as file…" in the copy dialogs. Same cancellation plumbing as
+  `viewer_read_range`. Temp suffix includes the `read_id` for crash isolation.
 - `viewer_search_start(session_id, query)` → starts background search
 - `viewer_search_poll(session_id)` → `SearchPollResult` (matches, progress, status)
 - `viewer_search_cancel(session_id)` → cancels running search

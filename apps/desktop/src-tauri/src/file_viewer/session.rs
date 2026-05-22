@@ -459,6 +459,43 @@ pub fn read_range(session_id: &str, read_id: u64, anchor: RangeEnd, focus: Range
     result
 }
 
+/// Reads a range and writes it atomically to `dest_path`. Uses the same `read_id`
+/// cancellation plumbing as `read_range`. Write is temp+rename for crash-safety: if
+/// the process dies mid-write, the user keeps their original file (if any) instead of
+/// a half-written one.
+///
+/// On success, returns `Ok(())`. On `Cancelled`, the temp file is cleaned up. On
+/// any other error, the temp file is best-effort cleaned up and the error is returned
+/// typed.
+pub fn write_range_to_file(
+    session_id: &str,
+    read_id: u64,
+    anchor: RangeEnd,
+    focus: RangeEnd,
+    dest_path: &std::path::Path,
+) -> Result<(), ViewerError> {
+    let text = read_range(session_id, read_id, anchor, focus)?;
+
+    // Atomic write: write to `<dest>.cmdr-tmp.<read_id>`, then rename. The same-FS
+    // rename gives us atomicity on local volumes (and is best-effort elsewhere).
+    let tmp_path = dest_path.with_extension(format!(
+        "{}cmdr-tmp.{}",
+        dest_path
+            .extension()
+            .map(|e| format!("{}.", e.to_string_lossy()))
+            .unwrap_or_default(),
+        read_id
+    ));
+
+    std::fs::write(&tmp_path, &text)?;
+    if let Err(e) = std::fs::rename(&tmp_path, dest_path) {
+        // Best-effort cleanup; ignore secondary errors.
+        let _ = std::fs::remove_file(&tmp_path);
+        return Err(ViewerError::Io { message: e.to_string() });
+    }
+    Ok(())
+}
+
 /// Flips the cancel flag for an in-flight read. No-op if the read has already finished
 /// (the entry was removed from `active_reads` when the read returned).
 pub fn cancel_read(session_id: &str, read_id: u64) -> Result<(), ViewerError> {
