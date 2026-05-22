@@ -214,7 +214,7 @@ describe('RecentSearchesPopover', () => {
     await tick()
     const remount = mount(RecentSearchesPopover, { target, props: { ...props, open: true } })
     await tick()
-    const freshInput = document.querySelector('.search-field')
+    const freshInput = document.querySelector('.search-field') as HTMLInputElement | null
     expect(freshInput?.value).toBe('')
     unmount(remount)
     target.remove()
