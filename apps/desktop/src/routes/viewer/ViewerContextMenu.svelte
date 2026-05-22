@@ -28,33 +28,43 @@
     let menuRef: HTMLDivElement | undefined = $state()
     /** Which item the keyboard has focused (0 = Copy, 1 = Select all). */
     let focusedIndex = $state(0)
-    let firstItemRef: HTMLButtonElement | undefined = $state()
-    let secondItemRef: HTMLButtonElement | undefined = $state()
+    /** Per-item refs in display order. The arrow-key logic indexes into this array so
+     *  adding a third menu item later doesn't reintroduce the `% 2` bug. */
+    const itemRefs: (HTMLButtonElement | undefined)[] = $state([])
 
     onMount(() => {
         // Move focus into the menu so Escape/Enter/arrows route here without the user
         // having to mouse over an item first.
         void tick().then(() => {
-            firstItemRef?.focus()
+            itemRefs[0]?.focus()
         })
     })
+
+    function focusItem(index: number): void {
+        focusedIndex = index
+        itemRefs[index]?.focus()
+    }
 
     function handleKey(e: KeyboardEvent): void {
         if (e.key === 'Escape') {
             e.preventDefault()
+            // Stop propagation so the page's `<svelte:window>` keydown listener doesn't
+            // also see this Escape and treat it as "close the whole viewer window". The
+            // menu is the foreground UI; Escape here only dismisses the menu.
+            e.stopImmediatePropagation()
             onClose()
             return
         }
+        const n = itemRefs.length
+        if (n === 0) return
         if (e.key === 'ArrowDown') {
             e.preventDefault()
-            focusedIndex = (focusedIndex + 1) % 2
-            ;(focusedIndex === 0 ? firstItemRef : secondItemRef)?.focus()
+            focusItem((focusedIndex + 1) % n)
             return
         }
         if (e.key === 'ArrowUp') {
             e.preventDefault()
-            focusedIndex = (focusedIndex + 1) % 2
-            ;(focusedIndex === 0 ? firstItemRef : secondItemRef)?.focus()
+            focusItem((focusedIndex - 1 + n) % n)
         }
     }
 
@@ -85,7 +95,7 @@
     style="left: {x}px; top: {y}px"
 >
     <button
-        bind:this={firstItemRef}
+        bind:this={itemRefs[0]}
         type="button"
         role="menuitem"
         class="menu-item"
@@ -96,7 +106,7 @@
         <span class="shortcut">⌘C</span>
     </button>
     <button
-        bind:this={secondItemRef}
+        bind:this={itemRefs[1]}
         type="button"
         role="menuitem"
         class="menu-item"

@@ -585,11 +585,18 @@
     }
 
     /**
-     * Routes Escape to the right cancel surface in priority order: in-flight copy read
-     * first (cancellable IPC), then any open copy dialog, then the search bar logic.
+     * Routes Escape to the right cancel surface in priority order: open context menu
+     * (the menu owns its own Escape too, but we short-circuit here so the page's
+     * `closeWindow()` path doesn't fire after the menu closes itself), then in-flight
+     * copy read, then any open copy dialog, then the search bar logic.
+     *
      * Returns `true` if Escape was consumed here.
      */
     function tryConsumeEscapeForCopy(): boolean {
+        if (contextMenuPos !== null) {
+            closeContextMenu()
+            return true
+        }
         if (copy.busy) {
             void copy.cancelInFlight()
             return true
