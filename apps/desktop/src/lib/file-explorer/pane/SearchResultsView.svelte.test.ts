@@ -3,6 +3,7 @@ import { mount, tick } from 'svelte'
 import SearchResultsView from './SearchResultsView.svelte'
 import { _resetForTesting, getOrCreate, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
 import type { SearchResultEntry } from '$lib/ipc/bindings'
+import type { FileEntry } from '../types'
 
 // FullList depends on a lot of platform-y machinery (canvas measurer, tauri commands).
 // We're not exercising its internals here — we just need the wrapper to render and
@@ -194,7 +195,7 @@ describe('SearchResultsView', () => {
         isFocused: true,
         sortBy: 'name',
         sortOrder: 'ascending',
-        onNavigate: (entry) => {
+        onNavigate: (entry: FileEntry) => {
           navigatedPath = entry.path
         },
         onSelect: () => {},

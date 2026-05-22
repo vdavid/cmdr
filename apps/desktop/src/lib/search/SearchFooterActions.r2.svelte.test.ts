@@ -54,26 +54,26 @@ describe('SearchFooterActions round 2', () => {
   it('R3: "Show all in main window" surfaces the ⌥⏎ shortcut, not ⌥A', async () => {
     const target = mountFooter({ resultCount: 5 })
     await tick()
-    const text = target.textContent ?? ''
+    const text = target.textContent
     expect(text).toContain('Show all in main window')
     expect(text).toContain('⌥⏎')
     // The ⌥A label belonged to round 1; the new owner is mode chip AI.
     // It must not appear on this button anymore.
     const showAllBtn = target.querySelectorAll('button')[1]
-    expect((showAllBtn.textContent ?? '').includes('⌥A')).toBe(false)
+    expect((showAllBtn.textContent).includes('⌥A')).toBe(false)
   })
 
   it('D8: "Go to file" surfaces the ⏎ hint when enterAction is "go-to-file"', async () => {
     const target = mountFooter({ resultCount: 5, enterAction: 'go-to-file' })
     await tick()
     const goToFileBtn = target.querySelectorAll('button')[0]
-    expect(goToFileBtn.textContent ?? '').toContain('⏎')
+    expect(goToFileBtn.textContent).toContain('⏎')
   })
 
   it('D8: "Go to file" does NOT surface the ⏎ hint when enterAction is "run-search"', async () => {
     const target = mountFooter({ resultCount: 5, enterAction: 'run-search' })
     await tick()
     const goToFileBtn = target.querySelectorAll('button')[0]
-    expect(goToFileBtn.textContent ?? '').not.toContain('⏎')
+    expect(goToFileBtn.textContent).not.toContain('⏎')
   })
 })

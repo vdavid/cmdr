@@ -933,7 +933,7 @@
      - ⌥S / ⌥M / ⌥I (any time, while the dialog is mounted) — open the Size /
        Modified / Search-in popover. D10 / D11 brief calls for these as global
        (in-dialog) shortcuts that focus the first column. -->
-<svelte:window onkeydown={(e) => {
+<svelte:window onkeydown={(e: KeyboardEvent) => {
     // Bail when the chip strip is disabled (index not ready); shortcuts target controls that
     // aren't usable yet, and we don't want to swallow keys the rest of the dialog wants.
     if (disabled) return

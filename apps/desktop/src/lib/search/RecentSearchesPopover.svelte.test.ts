@@ -103,7 +103,7 @@ describe('RecentSearchesPopover', () => {
 
     const rows = document.querySelectorAll('.result-row')
     expect(rows.length).toBeGreaterThanOrEqual(1)
-    const queries = Array.from(rows).map((r) => r.textContent ?? '')
+    const queries = Array.from(rows).map((r) => r.textContent)
     expect(queries.some((q) => q.includes('*.pdf'))).toBe(true)
 
     target.remove()
@@ -207,7 +207,7 @@ describe('RecentSearchesPopover', () => {
     input.value = 'zzz'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     await tick()
-    unmount(component)
+    void unmount(component)
 
     // Fresh mount = closed → opened → clean filter.
     mount(RecentSearchesPopover, { target, props: { ...props, open: false } })
@@ -216,7 +216,7 @@ describe('RecentSearchesPopover', () => {
     await tick()
     const freshInput = document.querySelector('.search-field')
     expect(freshInput?.value).toBe('')
-    unmount(remount)
+    void unmount(remount)
     target.remove()
     anchor.remove()
   })

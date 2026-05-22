@@ -139,9 +139,9 @@ function showZoomToast(oldSize: number, newSize: number): void {
   if (newSize === 100) {
     message = 'Zoom reset to 100%.'
   } else if (newSize > oldSize) {
-    message = `Zoom increased to ${newSize}%. ${resetHint}`
+    message = `Zoom increased to ${String(newSize)}%. ${resetHint}`
   } else {
-    message = `Zoom decreased to ${newSize}%. ${resetHint}`
+    message = `Zoom decreased to ${String(newSize)}%. ${resetHint}`
   }
 
   addToast(message, { level: 'info', id: 'zoom-change' })

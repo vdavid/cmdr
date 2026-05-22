@@ -65,8 +65,9 @@
         loadState = loadState === 'ready' ? 'ready' : 'loading'
         try {
             const result = await commands.getSmbDiagnostics(selectedVolumeId)
-            // tauri-specta wraps Result<T, E> as { status: "ok" | "error", data | error }
-            if (result && typeof result === 'object' && 'status' in result) {
+            // tauri-specta wraps Result<T, E> as { status: "ok" | "error", data | error }.
+            // The typed binding already narrows this, so the type-cast check is unnecessary.
+            if (typeof result === 'object' && 'status' in result) {
                 if (result.status === 'ok') {
                     diag = result.data
                     loadState = 'ready'
@@ -74,7 +75,7 @@
                 } else {
                     diag = null
                     loadState = 'error'
-                    errorMessage = String(result.error)
+                    errorMessage = result.error
                 }
             } else {
                 // Some specta versions return the value directly on Ok and throw on Err.
@@ -98,7 +99,7 @@
     }
 
     function fmtBytes(n: number): string {
-        if (n < 1024) return `${n} B`
+        if (n < 1024) return `${String(n)} B`
         const units = ['KiB', 'MiB', 'GiB', 'TiB']
         let v = n / 1024
         let i = 0
@@ -106,7 +107,7 @@
             v /= 1024
             i++
         }
-        return `${v.toFixed(1)} ${units[i]}`
+        return `${v.toFixed(1)} ${units[i] ?? 'TiB'}`
     }
 
     function fmtNum(n: number): string {
@@ -122,8 +123,8 @@
         if (!ts) return ''
         const dt = Date.now() - ts
         if (dt < 1000) return 'just now'
-        if (dt < 60000) return `${Math.floor(dt / 1000)}s ago`
-        return `${Math.floor(dt / 60000)}m ago`
+        if (dt < 60000) return `${String(Math.floor(dt / 1000))}s ago`
+        return `${String(Math.floor(dt / 60000))}m ago`
     }
 
     // Tick once a second so "Updated Xs ago" stays fresh between polls.
@@ -212,7 +213,7 @@
                         class="smb-summary-mode"
                         use:tooltip={{
                             text: p.signing.active
-                                ? `Outgoing requests are signed with ${p.signing.algorithm}. Server can detect tampering. Signing is required when the server sets SMB2_NEGOTIATE_SIGNING_REQUIRED — otherwise it activates when the session isn't guest/null.`
+                                ? `Outgoing requests are signed with ${p.signing.algorithm ?? 'unknown'}. Server can detect tampering. Signing is required when the server sets SMB2_NEGOTIATE_SIGNING_REQUIRED — otherwise it activates when the session isn't guest/null.`
                                 : 'Signing is off. Either guest session, or the server doesn’t require it.',
                         }}
                     >sig {p.signing.active ? 'on' : 'off'}</span>
@@ -221,7 +222,7 @@
                         class="smb-summary-mode"
                         use:tooltip={{
                             text: p.encryption.active
-                                ? `End-to-end SMB encryption with ${p.encryption.cipher}. Each request/response is wrapped in a TRANSFORM_HEADER with an AEAD-authenticated payload. Signing is skipped when encrypting (AEAD handles authentication).`
+                                ? `End-to-end SMB encryption with ${p.encryption.cipher ?? 'unknown'}. Each request/response is wrapped in a TRANSFORM_HEADER with an AEAD-authenticated payload. Signing is skipped when encrypting (AEAD handles authentication).`
                                 : 'Encryption is off. Activated when the session flag or share flag carries SMB2_SHAREFLAG_ENCRYPT_DATA.',
                         }}
                     >enc {p.encryption.active ? 'on' : 'off'}</span>
@@ -585,7 +586,7 @@
                                     <span class="smb-list-meta"
                                         >{entry.target_count} target{entry.target_count === 1 ? '' : 's'}
                                         ·
-                                        {#if entry.expires_in_ms === null || entry.expires_in_ms === undefined}
+                                        {#if entry.expires_in_ms === null}
                                             <span class="smb-expired">expired</span>
                                         {:else}
                                             expires in {(entry.expires_in_ms / 1000).toFixed(0)} s

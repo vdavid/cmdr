@@ -263,7 +263,11 @@ export function resolveSnapshotPaths(snapshotId: string, selectedIndices: number
   const indices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
   const paths: string[] = []
   for (const idx of indices) {
+    // Runtime bounds guard: callers can pass stale indices (the M8c delete-sync
+    // shortens `entries` while in-flight selections still reference the old
+    // length).
     const entry = snapshot.entries[idx]
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard
     if (entry) paths.push(entry.path)
   }
   return paths

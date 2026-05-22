@@ -829,13 +829,14 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
 
     const { getSnapshot, getLastAttemptId } = await import('./snapshot-store.svelte')
     expect(openedId).not.toBeNull()
-    if (openedId === null) throw new Error('openedId is null')
-    const snap = getSnapshot(openedId)
+    // `openedId` is mutated through the onShowAllInMainWindow callback above; TS
+    // narrowing doesn't follow that, so we assert non-null after the expect.
+    const snap = getSnapshot(openedId as unknown as string)
     expect(snap).toBeDefined()
     expect(snap?.mode).toBe('filename')
     expect(snap?.entries.length).toBe(1)
     // The "last attempt" slot is pinned to the new id (refcount-wise).
-    expect(getLastAttemptId()).toBe(openedId)
+    expect(getLastAttemptId()).toBe(openedId as unknown as string)
 
     cleanup()
   })
@@ -861,8 +862,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
 
     const { getSnapshot } = await import('./snapshot-store.svelte')
     expect(openedId).not.toBeNull()
-    if (openedId === null) throw new Error('openedId is null')
-    const snap = getSnapshot(openedId)
+    const snap = getSnapshot(openedId as unknown as string)
     expect(snap?.label).toBe('find my pdf invoices')
 
     cleanup()
@@ -879,7 +879,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     await tick()
     // Round 2 D6: the button stays VISIBLE when resultCount === 0, just rendered
     // disabled. Yanking it would jump the layout while the user is mid-thought.
-    const btn = document.body.querySelector('button[aria-label="Show all in main window"]')
+    const btn = document.body.querySelector<HTMLButtonElement>('button[aria-label="Show all in main window"]')
     expect(btn).not.toBeNull()
     expect(btn?.disabled).toBe(true)
     btn?.click()

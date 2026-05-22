@@ -71,7 +71,7 @@ describe('SearchResults round 2 states', () => {
   it('D1: searching state shows the "Searching..." label underneath the spinner', async () => {
     const target = mountWith({ isSearching: true, hasSearched: true, query: '*.jpg' })
     await tick()
-    expect(target.textContent ?? '').toContain('Searching...')
+    expect(target.textContent).toContain('Searching...')
   })
 
   it('D2: while isSearching the result rows are NOT rendered', async () => {
@@ -119,7 +119,7 @@ describe('SearchResults round 2 states', () => {
       totalCount: 0,
     })
     await tick()
-    expect(target.textContent ?? '').toContain('No files match these criteria')
+    expect(target.textContent).toContain('No files match these criteria')
     // Should render a bulleted list (one <li> per active criterion).
     const items = target.querySelectorAll('.no-results-criteria li')
     expect(items.length).toBeGreaterThan(0)
@@ -178,7 +178,7 @@ describe('SearchResults round 2 states', () => {
     })
     await tick()
     // Content must show the loading message (sanity check the precondition).
-    expect(target.textContent ?? '').toContain('Loading drive index')
+    expect(target.textContent).toContain('Loading drive index')
     // Status bar must be empty.
     const status = target.querySelector('.status-bar .status-text')
     expect(status?.textContent ?? '').toBe('')

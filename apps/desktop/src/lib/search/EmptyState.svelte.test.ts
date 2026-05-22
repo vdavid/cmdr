@@ -13,7 +13,7 @@ describe('EmptyState', () => {
     await tick()
     const chips = target.querySelectorAll('.example-chip')
     expect(chips).toHaveLength(3)
-    const labels = Array.from(chips).map((c) => c.textContent?.trim() ?? '')
+    const labels = Array.from(chips).map((c) => c.textContent.trim())
     expect(labels.some((l) => l.includes('large files modified this week'))).toBe(true)
     expect(labels.some((l) => l.includes('screenshots'))).toBe(true)
     expect(labels.some((l) => l.includes('PDFs from the last 7 days'))).toBe(true)
@@ -28,7 +28,7 @@ describe('EmptyState', () => {
       props: { aiEnabled: false, indexEntryCount: 100, onPick: () => {} },
     })
     await tick()
-    const labels = Array.from(target.querySelectorAll('.example-chip')).map((c) => c.textContent?.trim() ?? '')
+    const labels = Array.from(target.querySelectorAll('.example-chip')).map((c) => c.textContent.trim())
     expect(labels.some((l) => l.includes('*.pdf'))).toBe(true)
     expect(labels.some((l) => l.includes('*.dmg'))).toBe(true)
     expect(labels.some((l) => l.includes('screenshot*'))).toBe(true)
@@ -95,8 +95,9 @@ describe('EmptyState', () => {
     const firstChip = target.querySelector('.example-chip') as HTMLButtonElement
     firstChip.click()
     expect(onPick).toHaveBeenCalledTimes(1)
-    expect(onPick.mock.calls[0][0].mode).toBe('ai')
-    expect(onPick.mock.calls[0][0].query).toBe('large files modified this week')
+    const picked = onPick.mock.calls[0]?.[0] as { mode: string; query: string }
+    expect(picked.mode).toBe('ai')
+    expect(picked.query).toBe('large files modified this week')
     target.remove()
   })
 })

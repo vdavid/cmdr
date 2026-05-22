@@ -188,7 +188,7 @@ describe('RecentSearchesFooter', () => {
       props: { entries, disabled: false, onPick: () => {}, onRemove: () => {}, onOpenAll: () => {} },
     })
     await tick()
-    const badges = Array.from(target.querySelectorAll('.chip-badge')).map((b) => b.textContent?.trim() ?? '')
+    const badges = Array.from(target.querySelectorAll('.chip-badge')).map((b) => b.textContent.trim())
     expect(badges).toEqual(['AI', 'Aa', '.*'])
     target.remove()
   })

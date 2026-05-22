@@ -101,7 +101,10 @@
             cursor = Math.max(0, cursor - 1)
         } else if (e.key === 'Enter') {
             e.preventDefault()
+            // `cursor` is clamped against `matches.length` above; runtime bounds
+            // guard for the empty-matches case (no row to activate).
             const m = matches[cursor]
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for empty matches
             if (m) {
                 onPick(m.entry)
             }

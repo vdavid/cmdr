@@ -1610,7 +1610,7 @@
             // indices after a snapshot mutation (the M8c delete-sync rewrites
             // the entries array, but in-flight selections may briefly point
             // past the new end).
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard, TS can't model it
+             
             const entry = snapshot.entries[idx]
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             if (!entry) continue

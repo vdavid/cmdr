@@ -82,7 +82,7 @@ function mountChips(props: Props): {
     target,
     component,
     cleanup: () => {
-      unmount(component)
+      void unmount(component)
       target.remove()
     },
   }
@@ -90,7 +90,7 @@ function mountChips(props: Props): {
 
 function findChip(target: Element, label: string): HTMLButtonElement | null {
   const chips = Array.from(target.querySelectorAll<HTMLButtonElement>('.filter-chip'))
-  return chips.find((c) => c.textContent?.trim().startsWith(label)) ?? null
+  return chips.find((c) => c.textContent.trim().startsWith(label)) ?? null
 }
 
 beforeEach(() => {
@@ -117,7 +117,7 @@ describe('SearchFilterChips: default rendering', () => {
     const { target, cleanup } = mountChips(baseProps())
     await tick()
     const sizeChip = findChip(target, 'Size')
-    expect(sizeChip?.textContent?.trim()).toBe('Size')
+    expect(sizeChip.textContent.trim()).toBe('Size')
     expect(sizeChip?.querySelector('.chip-clear')).toBeNull()
     cleanup()
   })
@@ -295,7 +295,7 @@ describe('SearchFilterChips: Add filter chip', () => {
     const menu = document.querySelector('.add-filter-menu')
     const items = menu?.querySelectorAll('.add-filter-item')
     expect(items?.length).toBe(2)
-    const labels = Array.from(items ?? []).map((el) => el.textContent?.trim())
+    const labels = Array.from(items ?? []).map((el) => el.textContent.trim())
     expect(labels).toContain('Modified')
     expect(labels).toContain('Search in')
     expect(labels).not.toContain('Size')
@@ -447,7 +447,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     await tick()
     // Click "100" in the value column.
     const valueCells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
-    const hundred = [...valueCells].find((b) => b.textContent?.trim() === '100')
+    const hundred = [...valueCells].find((b) => b.textContent.trim() === '100')
     expect(hundred).not.toBeUndefined()
     hundred?.click()
     await tick()
@@ -469,7 +469,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     dateChip?.click()
     await tick()
     const valueCells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
-    const today = [...valueCells].find((b) => /^today/.test(b.textContent?.trim() ?? ''))
+    const today = [...valueCells].find((b) => /^today/.test(b.textContent.trim()))
     expect(today).not.toBeUndefined()
     today?.click()
     await tick()
@@ -542,7 +542,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     dateChip?.click()
     await tick()
     const cells = document.querySelectorAll<HTMLButtonElement>('.list-col:nth-child(2) .list-cell')
-    const labels = [...cells].map((c) => c.textContent?.trim() ?? '')
+    const labels = [...cells].map((c) => c.textContent.trim())
     // First two: today / yesterday.
     expect(labels[0]).toMatch(/^today 0:00$/)
     expect(labels[1]).toMatch(/^yesterday 0:00$/)
@@ -571,7 +571,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     await tick()
     const grid = document.querySelector('.list-grid')
     const firstUnitCell = grid?.querySelector('.list-col:nth-child(3) .list-cell')
-    expect(firstUnitCell?.textContent?.trim()).toBe('byte')
+    expect(firstUnitCell.textContent.trim()).toBe('byte')
     cleanup()
     document.querySelectorAll('.filter-chip-popover').forEach((el) => {
       el.remove()
@@ -586,7 +586,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     await tick()
     const grid = document.querySelector('.list-grid')
     const firstUnitCell = grid?.querySelector('.list-col:nth-child(3) .list-cell')
-    expect(firstUnitCell?.textContent?.trim()).toBe('bytes')
+    expect(firstUnitCell.textContent.trim()).toBe('bytes')
     cleanup()
     document.querySelectorAll('.filter-chip-popover').forEach((el) => {
       el.remove()

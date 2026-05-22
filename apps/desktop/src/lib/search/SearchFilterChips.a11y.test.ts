@@ -95,7 +95,7 @@ describe('SearchFilterChips a11y', () => {
     mount(SearchFilterChips, { target, props: baseProps({ sizeFilter: 'gte', sizeValue: '100' }) })
     await tick()
     const sizeChip = Array.from(target.querySelectorAll<HTMLButtonElement>('.filter-chip')).find((c) =>
-      c.textContent?.trim().startsWith('Size'),
+      c.textContent.trim().startsWith('Size'),
     )
     sizeChip?.click()
     await tick()
@@ -113,7 +113,7 @@ describe('SearchFilterChips a11y', () => {
     mount(SearchFilterChips, { target, props: baseProps() })
     await tick()
     const scopeChip = Array.from(target.querySelectorAll<HTMLButtonElement>('.filter-chip')).find((c) =>
-      c.textContent?.trim().startsWith('Search in'),
+      c.textContent.trim().startsWith('Search in'),
     )
     scopeChip?.click()
     await tick()

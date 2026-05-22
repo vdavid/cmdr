@@ -43,7 +43,7 @@ describe('SearchFooterActions', () => {
     expect(buttons).toHaveLength(2)
     expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Go to file', 'Show all in main window'])
     // Discoverable shortcuts: each button surfaces its key hint inline.
-    const labels = buttons.map((b) => b.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+    const labels = buttons.map((b) => b.textContent.replace(/\s+/g, ' ').trim())
     expect(labels[0]).toContain('Go to file')
     expect(labels[0]).toContain('⏎')
     expect(labels[1]).toContain('Show all in main window')

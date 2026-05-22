@@ -36,6 +36,6 @@ describe('RecentSearchesFooter D5: label', () => {
       },
     })
     await tick()
-    expect(target.textContent ?? '').toContain('Recent searches:')
+    expect(target.textContent).toContain('Recent searches:')
   })
 })

@@ -38,7 +38,7 @@ describe('FilterChipPopover behavior', () => {
     })
     await tick()
     expect(document.querySelector('.filter-chip-popover')).toBeNull()
-    unmount(component)
+    void unmount(component)
   })
 
   it('renders the dialog with the role and aria-label when open', async () => {
@@ -54,7 +54,7 @@ describe('FilterChipPopover behavior', () => {
     expect(popover).not.toBeNull()
     expect(popover?.getAttribute('role')).toBe('dialog')
     expect(popover?.getAttribute('aria-label')).toBe('Test popover')
-    unmount(component)
+    void unmount(component)
   })
 
   it('Esc fires onClose, stops propagation, and returns focus to the anchor', async () => {
@@ -78,7 +78,7 @@ describe('FilterChipPopover behavior', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
     expect(docHandler).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(anchor)
-    unmount(component)
+    void unmount(component)
   })
 
   it('Tab inside the popover (with no internal focusables) prevents default, never escapes', async () => {
@@ -94,7 +94,7 @@ describe('FilterChipPopover behavior', () => {
     const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
     popover.dispatchEvent(tab)
     expect(tab.defaultPrevented).toBe(true)
-    unmount(component)
+    void unmount(component)
   })
 
   it('clicking outside the popover and anchor fires onClose', async () => {
@@ -111,7 +111,7 @@ describe('FilterChipPopover behavior', () => {
     await tick()
     outside.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     expect(onClose).toHaveBeenCalledTimes(1)
-    unmount(component)
+    void unmount(component)
   })
 
   it('clicking inside the popover does NOT fire onClose', async () => {
@@ -127,7 +127,7 @@ describe('FilterChipPopover behavior', () => {
     const popover = document.querySelector('.filter-chip-popover') as HTMLElement
     popover.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     expect(onClose).not.toHaveBeenCalled()
-    unmount(component)
+    void unmount(component)
   })
 
   it('clicking the anchor does NOT fire onClose', async () => {
@@ -142,7 +142,7 @@ describe('FilterChipPopover behavior', () => {
     await tick()
     anchor.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     expect(onClose).not.toHaveBeenCalled()
-    unmount(component)
+    void unmount(component)
   })
 
   it('handles a closed-then-opened transition (effect re-runs)', async () => {
@@ -166,7 +166,7 @@ describe('FilterChipPopover behavior', () => {
     open = true
     await tick()
     expect(document.querySelector('.filter-chip-popover')).not.toBeNull()
-    unmount(component)
+    void unmount(component)
   })
 
   it('non-modifier keys are passed through (no preventDefault)', async () => {
@@ -182,7 +182,7 @@ describe('FilterChipPopover behavior', () => {
     const ev = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true })
     popover.dispatchEvent(ev)
     expect(ev.defaultPrevented).toBe(false)
-    unmount(component)
+    void unmount(component)
   })
 
   it('window resize repositions the popover (best-effort coverage; jsdom rects are zero)', async () => {
@@ -197,6 +197,6 @@ describe('FilterChipPopover behavior', () => {
     window.dispatchEvent(new Event('resize'))
     // No assertion: jsdom returns zero bounding rects, so we can't pin layout. This test exists
     // for coverage of the resize listener wiring.
-    unmount(component)
+    void unmount(component)
   })
 })

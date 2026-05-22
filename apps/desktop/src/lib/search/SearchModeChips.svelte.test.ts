@@ -49,7 +49,7 @@ describe('SearchModeChips', () => {
     const { chips, cleanup } = setup({ aiEnabled: true })
     await tick()
     expect(chips).toHaveLength(4)
-    const labels = chips.map((c) => c.textContent?.trim())
+    const labels = chips.map((c) => c.textContent.trim())
     // D13: AI / Filename / Regex carry an inline ⌥-shortcut hint; Content doesn't
     // (decision: no hostile-disabled shortcut). Match on the leading label so
     // the test pins the order without coupling to the hint text.
@@ -64,7 +64,7 @@ describe('SearchModeChips', () => {
     const { chips, cleanup } = setup({ aiEnabled: false, mode: 'filename' })
     await tick()
     expect(chips).toHaveLength(3)
-    const labels = chips.map((c) => c.textContent?.trim())
+    const labels = chips.map((c) => c.textContent.trim())
     expect(labels[0]).toMatch(/^Filename\s*⌥F$/)
     expect(labels[1]).toBe('Content')
     expect(labels[2]).toMatch(/^Regex\s*⌥R$/)

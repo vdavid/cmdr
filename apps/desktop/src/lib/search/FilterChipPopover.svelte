@@ -43,7 +43,8 @@
 
     /** Repositions the popover relative to its anchor. Auto-flips above when needed. */
     function reposition(): void {
-        if (!popoverEl || !anchor) return
+        // anchor is a required prop (HTMLElement), so no anchor-null check.
+        if (!popoverEl) return
         const anchorRect = anchor.getBoundingClientRect()
         const popRect = popoverEl.getBoundingClientRect()
 

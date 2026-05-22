@@ -97,7 +97,7 @@ describe('SearchBar', () => {
   it('renders the ⏎ run button and calls onRun when clicked', async () => {
     const { target, onRun, cleanup } = mountBar({})
     await tick()
-    const button = target.querySelector('button.run-button')
+    const button = target.querySelector<HTMLButtonElement>('button.run-button')
     expect(button).not.toBeNull()
     button?.click()
     expect(onRun).toHaveBeenCalledTimes(1)
@@ -124,7 +124,7 @@ describe('SearchBar', () => {
     const enterHints = button?.querySelectorAll('.run-enter-hint') ?? []
     expect(enterHints.length).toBe(1)
     // The visible label reads "Search ⏎" (a single space between "Search" and "⏎").
-    const text = button?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+    const text = button?.textContent.replace(/\s+/g, ' ').trim()
     expect(text).toBe('Search ⏎')
     cleanup()
   })
