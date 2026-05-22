@@ -243,6 +243,33 @@ export function getDebugStats(): {
 }
 
 /**
+ * Resolves a list of cursor / selected indices into absolute paths from a
+ * snapshot. Used by the search-results pane source-side ops (M8d) to feed the
+ * paths-based clipboard / transfer IPCs.
+ *
+ * - `selectedIndices`: frontend indices into `snapshot.entries`. Out-of-range
+ *   indices are skipped (defensive — the snapshot is immutable from the store's
+ *   perspective but the caller may have a stale index after a cross-snapshot
+ *   delete).
+ * - `cursorIndex` is used as a fallback when `selectedIndices` is empty.
+ *
+ * Returns an empty array if the snapshot doesn't exist or the resolved set is
+ * empty. The snapshot pane never has a `..` row, so there's no `hasParent`
+ * adjustment.
+ */
+export function resolveSnapshotPaths(snapshotId: string, selectedIndices: number[], cursorIndex: number): string[] {
+  const snapshot = store.get(snapshotId)
+  if (!snapshot) return []
+  const indices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
+  const paths: string[] = []
+  for (const idx of indices) {
+    const entry = snapshot.entries[idx]
+    if (entry) paths.push(entry.path)
+  }
+  return paths
+}
+
+/**
  * Test-only reset. Clears the store and resets the id counter and last-attempt slot.
  * Not exported for production use; tests import via the file path.
  */

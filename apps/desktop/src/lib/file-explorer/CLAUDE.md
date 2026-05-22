@@ -194,6 +194,15 @@ Breadcrumb: `VolumeBreadcrumb` recognises `volumeId === 'search-results'` and re
 `getSnapshot(id).label` (with "Search" as fallback). FilePane suppresses the trailing path segments entirely for
 search-results panes — the label IS the breadcrumb.
 
+Source-side operations (M8d): selection works in the snapshot pane (Space, Insert, Shift+click range, Cmd+click toggle,
+Cmd+A / Cmd+Shift+A). `effectiveTotalCount` returns the snapshot's entry count so range selection spans the result set.
+Cmd+C / Cmd+X call the paths-by-value clipboard IPCs (`copy_paths_to_clipboard` / `cut_paths_to_clipboard`) instead of
+the listing-id-keyed family. F5 / F6 (the unified transfer dialog) detect `volumeId === 'search-results'` and call
+`transfer-operations::buildTransferPropsFromSnapshot` with paths resolved from `snapshot-store::resolveSnapshotPaths`;
+the existing `copy_files` / `move_files` IPCs already accept paths-by-value, so no IPC change was needed for the
+transfer path. Drag-out uses the new `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
+`start_drag_paths`. Post-move snapshot cleanup is the M8c hook in `dialog-state::handleTransferComplete`.
+
 For the dialog-side wiring see [`apps/desktop/src/lib/search/CLAUDE.md`](../../search/CLAUDE.md).
 
 ## Operations (`operations/`)

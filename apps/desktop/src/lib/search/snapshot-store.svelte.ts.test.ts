@@ -12,6 +12,7 @@ import {
   incrementRef,
   nextSnapshotId,
   removeEntryFromAllSnapshots,
+  resolveSnapshotPaths,
   setLastAttemptId,
   SNAPSHOT_ENTRIES_CAP,
   type SearchSnapshot,
@@ -289,6 +290,32 @@ describe('snapshot-store', () => {
       const snap = getSnapshot('sr-1')
       expect(snap?.totalCount).toBe(42)
       expect(snap?.entries).toEqual([])
+    })
+  })
+
+  describe('resolveSnapshotPaths (M8d source-side ops)', () => {
+    it('resolves selected indices into absolute paths in input order', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotPaths('sr-1', [0, 1], 0)).toEqual(['/Users/test/a.txt', '/Users/test/b.txt'])
+    })
+
+    it('falls back to cursor index when selection is empty', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotPaths('sr-1', [], 1)).toEqual(['/Users/test/b.txt'])
+    })
+
+    it('skips out-of-range indices instead of crashing', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotPaths('sr-1', [0, 99, 1], 0)).toEqual(['/Users/test/a.txt', '/Users/test/b.txt'])
+    })
+
+    it('returns an empty array for a missing snapshot id', () => {
+      expect(resolveSnapshotPaths('sr-999', [0], 0)).toEqual([])
+    })
+
+    it('returns an empty array when the snapshot is empty and the cursor is out of range', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1', { entries: [] }))
+      expect(resolveSnapshotPaths('sr-1', [], 0)).toEqual([])
     })
   })
 })

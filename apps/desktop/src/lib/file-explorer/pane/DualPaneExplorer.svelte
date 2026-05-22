@@ -30,6 +30,8 @@
         findFileIndex,
         copyFilesToClipboard,
         cutFilesToClipboard,
+        copyPathsToClipboard,
+        cutPathsToClipboard,
         readClipboardFiles,
         clearClipboardCutState,
         updateViewModeMenu,
@@ -47,7 +49,8 @@
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath, isPathOnVolume } from '../navigation/path-navigation'
     import { resolveValidPath } from '../navigation/path-resolution'
-    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
+    import { getSnapshot, resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
+    import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 
     import {
         createHistory,
@@ -113,6 +116,7 @@
         buildTransferPropsFromSelection,
         buildTransferPropsFromCursor,
         buildTransferPropsFromDroppedPaths,
+        buildTransferPropsFromSnapshot,
         getDestinationVolumeInfo,
         getCommonParentPath,
     } from './transfer-operations'
@@ -1574,7 +1578,59 @@
         }
     }
 
-    /** Opens the unified transfer dialog for all volume types (local, MTP, etc.). */
+    /**
+     * Builds transfer dialog props for a search-results source pane (M8d).
+     * The snapshot view has no backend listing, so the listing-id-driven
+     * builders don't apply; we read the snapshot directly and feed
+     * absolute paths into `buildTransferPropsFromSnapshot`. Returns `null`
+     * when there's no snapshot or nothing under the cursor / selection.
+     *
+     * `isSourceOK: true` per `searchResultsVolumeCapabilities()`: source-side
+     * operations always run against the real underlying files. After a move
+     * completes, `dialog-state::handleTransferComplete` already purges moved
+     * paths from every snapshot via `removeEntryFromAllSnapshots`.
+     */
+    function buildSnapshotTransferProps(
+        operationType: TransferOperationType,
+        sourcePaneRef: FilePaneAPI | undefined,
+        pane: 'left' | 'right',
+    ) {
+        const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
+        const SEARCH_RESULTS_PREFIX = 'search-results://'
+        if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
+        const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
+        const snapshot = getSnapshot(snapshotId)
+        if (!snapshot) return null
+
+        const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
+        const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
+        const useIndices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
+
+        const sourcePaths: string[] = []
+        const isDirectoryFlags: boolean[] = []
+        for (const idx of useIndices) {
+            const entry = snapshot.entries[idx]
+            if (!entry) continue
+            sourcePaths.push(entry.path)
+            isDirectoryFlags.push(entry.isDirectory)
+        }
+        if (sourcePaths.length === 0) return null
+
+        const other = otherPane(pane)
+        const { sortBy, sortOrder } = getPaneSort(pane)
+        return buildTransferPropsFromSnapshot(
+            operationType,
+            sourcePaths,
+            isDirectoryFlags,
+            pane === 'left',
+            getPanePath(other),
+            getPaneVolumeId(other),
+            sortBy,
+            sortOrder,
+        )
+    }
+
+    /** Opens the unified transfer dialog for all volume types (local, MTP, search-results, etc.). */
     async function openUnifiedTransferDialog(
         operationType: TransferOperationType,
         sourcePaneRef: FilePaneAPI | undefined,
@@ -1582,6 +1638,20 @@
         autoConfirm?: boolean,
         onConflict?: string,
     ) {
+        // Search-results pane: the source has no backend listing. Build the
+        // transfer props from the snapshot's selected (or cursor) entries.
+        if (getPaneVolumeId(pane) === 'search-results') {
+            const snapshotProps = buildSnapshotTransferProps(operationType, sourcePaneRef, pane)
+            if (snapshotProps) {
+                if (autoConfirm) {
+                    snapshotProps.autoConfirm = true
+                    snapshotProps.autoConfirmOnConflict = onConflict
+                }
+                dialogs.showTransfer(snapshotProps)
+            }
+            return
+        }
+
         const listingId = sourcePaneRef?.getListingId()
         if (!listingId) return
 
@@ -1628,6 +1698,16 @@
         const sourcePaneRef = getPaneRef(focusedPane)
         const destVolId = getPaneVolumeId(otherPane(focusedPane))
 
+        // Search-results destination panes can't accept incoming files (the
+        // snapshot is a synthetic view, not a folder). The F-key bar already
+        // disables F5/F6 when the OPPOSITE pane is a snapshot, so this is a
+        // belt-and-braces guard for the shortcut path. M8c shipped the toast
+        // string in `lib/search/capabilities`; reuse it for consistency.
+        if (destVolId === 'search-results') {
+            addToast(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'warn' })
+            return
+        }
+
         const destVolume = getDestinationVolumeInfo(destVolId, volumes)
         if (destVolume?.isReadOnly) {
             dialogs.showAlert(
@@ -1664,8 +1744,43 @@
         return { listingId, hasParent, selectedIndices, cursorIndex, volumeId }
     }
 
+    /**
+     * Search-results pane copy/cut path (M8d): resolve the focused pane's
+     * cursor + selection into snapshot paths and feed the paths-by-value
+     * clipboard IPCs. Returns the resolved paths and snapshot id so the caller
+     * can write a friendly toast, or `null` if the pane isn't a snapshot pane
+     * or the snapshot is missing / empty.
+     */
+    function getSnapshotClipboardPaths(): { paths: string[]; snapshotId: string } | null {
+        const focusedVolId = getPaneVolumeId(focusedPane)
+        if (focusedVolId !== 'search-results') return null
+        const sourcePaneRef = getPaneRef(focusedPane)
+        const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
+        const SEARCH_RESULTS_PREFIX = 'search-results://'
+        if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
+        const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
+        const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
+        const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
+        const paths = resolveSnapshotPaths(snapshotId, selectedIndices, cursorIndex)
+        if (paths.length === 0) return null
+        return { paths, snapshotId }
+    }
+
     /** Copies selected files (or cursor file) to the system clipboard. */
     export async function copyToClipboard() {
+        // Search-results pane: paths are already absolute on the snapshot. The
+        // regular listing-id path can't apply because there's no backend listing.
+        const snapshotClip = getSnapshotClipboardPaths()
+        if (snapshotClip) {
+            try {
+                const count = await copyPathsToClipboard(snapshotClip.paths)
+                addToast(`Copied ${formatNumber(count)} ${count === 1 ? 'item' : 'items'}`, { level: 'info' })
+            } catch (error) {
+                log.error('Clipboard copy from snapshot failed: {error}', { error })
+            }
+            return
+        }
+
         const state = getClipboardPaneState()
         if (!state) return
 
@@ -1690,6 +1805,17 @@
 
     /** Cuts selected files (or cursor file) to the system clipboard. */
     export async function cutToClipboard() {
+        const snapshotClip = getSnapshotClipboardPaths()
+        if (snapshotClip) {
+            try {
+                const count = await cutPathsToClipboard(snapshotClip.paths)
+                addToast(`${formatNumber(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`, { level: 'info' })
+            } catch (error) {
+                log.error('Clipboard cut from snapshot failed: {error}', { error })
+            }
+            return
+        }
+
         const state = getClipboardPaneState()
         if (!state) return
 

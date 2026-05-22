@@ -357,6 +357,8 @@ export { showTabContextMenu, onTabContextAction } from './tab'
 export {
   copyFilesToClipboard,
   cutFilesToClipboard,
+  copyPathsToClipboard,
+  cutPathsToClipboard,
   readClipboardFiles,
   readClipboardText,
   clearClipboardCutState,

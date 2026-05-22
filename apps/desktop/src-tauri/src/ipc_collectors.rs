@@ -191,6 +191,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::e2e::is_e2e_mode,
         crate::commands::clipboard::copy_files_to_clipboard,
         crate::commands::clipboard::cut_files_to_clipboard,
+        crate::commands::clipboard::copy_paths_to_clipboard,
+        crate::commands::clipboard::cut_paths_to_clipboard,
         crate::commands::clipboard::read_clipboard_files,
         crate::commands::clipboard::read_clipboard_text,
         crate::commands::clipboard::clear_clipboard_cut_state,

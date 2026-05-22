@@ -148,6 +148,100 @@ describe('SearchResultsView', () => {
     target.remove()
   })
 
+  it('forwards `selectedIndices` to FullList without crashing (M8d)', async () => {
+    const id = 'sr-sel'
+    getOrCreate(id, makeSnapshot(id, [makeEntry('a.txt'), makeEntry('b.txt'), makeEntry('c.txt')]))
+
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    let selectArgs: [number, boolean | undefined, boolean | undefined] | null = null
+    mount(SearchResultsView, {
+      target,
+      props: {
+        path: `search-results://${id}`,
+        cursorIndex: 1,
+        isFocused: true,
+        sortBy: 'name',
+        sortOrder: 'ascending',
+        // Pre-select the middle row; M8d wires this through to FullList.
+        selectedIndices: new Set([1]),
+        onNavigate: () => {},
+        onNavigateToAncestor: () => {},
+        onSelect: (idx, shiftKey, metaKey) => {
+          selectArgs = [idx, shiftKey, metaKey]
+        },
+      },
+    })
+    await tick()
+    expect(target.querySelector('.snapshot-missing')).toBeNull()
+    // Callback wiring sanity: the prop is the same shape FullList already accepts.
+    expect(selectArgs).toBeNull()
+    target.remove()
+  })
+
+  it('exposes findItemIndex, openCursorItem, and isMissing on the public API', async () => {
+    const id = 'sr-api'
+    getOrCreate(id, makeSnapshot(id, [makeEntry('first.txt'), makeEntry('second.txt')]))
+
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    let navigatedName: string | null = null
+    const component = mount(SearchResultsView, {
+      target,
+      props: {
+        path: `search-results://${id}`,
+        cursorIndex: 1,
+        isFocused: true,
+        sortBy: 'name',
+        sortOrder: 'ascending',
+        onNavigate: (entry) => {
+          navigatedName = entry.name
+        },
+        onNavigateToAncestor: () => {},
+        onSelect: () => {},
+      },
+    })
+    await tick()
+
+    // The component's exported API is what FilePane reads via `bind:this`. We
+    // mirror that here.
+    const api = component as unknown as {
+      findItemIndex: (name: string) => number
+      openCursorItem: () => void
+      isMissing: () => boolean
+    }
+    expect(api.findItemIndex('second.txt')).toBe(1)
+    expect(api.findItemIndex('missing.txt')).toBe(-1)
+    expect(api.isMissing()).toBe(false)
+
+    api.openCursorItem()
+    expect(navigatedName).toBe('second.txt')
+
+    target.remove()
+  })
+
+  it('reports isMissing() === true when the snapshot lookup fails', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(SearchResultsView, {
+      target,
+      props: {
+        path: 'search-results://not-there',
+        cursorIndex: 0,
+        isFocused: false,
+        sortBy: 'name',
+        sortOrder: 'ascending',
+        onNavigate: () => {},
+        onNavigateToAncestor: () => {},
+        onSelect: () => {},
+      },
+    })
+    await tick()
+    const api = component as unknown as { isMissing: () => boolean }
+    expect(api.isMissing()).toBe(true)
+    target.remove()
+  })
+
   it('renders nothing usable when the path is malformed (no prefix)', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)

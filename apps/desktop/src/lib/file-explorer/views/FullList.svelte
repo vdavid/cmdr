@@ -549,6 +549,30 @@
                 if (e) fileInfos.push({ name: e.name, isDirectory: e.isDirectory, iconId: e.iconId })
             }
 
+            // Search-results / static-entries panes have no backend listing,
+            // so `start_selection_drag` (which resolves indices against
+            // LISTING_CACHE) would fail. The entries already carry absolute
+            // paths, so we route through the paths-by-value drag flavour.
+            // M8d.
+            if (usingStaticEntries) {
+                const paths: string[] = []
+                for (const idx of selectedIndices) {
+                    const e = getEntryAt(idx)
+                    if (e) paths.push(e.path)
+                }
+                startSelectionDragTracking(
+                    event,
+                    {
+                        type: 'paths',
+                        paths,
+                        iconId,
+                        fileInfos,
+                    },
+                    { onDragInitiate },
+                )
+                return
+            }
+
             startSelectionDragTracking(
                 event,
                 {

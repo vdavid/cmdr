@@ -35,12 +35,21 @@
         isFocused?: boolean
         sortBy: SortColumn
         sortOrder: SortOrder
+        /**
+         * Selected indices within the snapshot's entries. The snapshot pane shares
+         * `FilePane.selection` state with normal panes; indices are 0-based (no `..`
+         * row). M8d: drives source-side copy/move/cut behaviour.
+         */
+        selectedIndices?: Set<number>
         /** Called when the user activates a row (Enter / double-click). */
         onNavigate: (entry: FileEntry) => void
         /** Called when the user clicks a path-pill ancestor (leaves the snapshot view). */
         onNavigateToAncestor: (ancestorPath: string) => void
-        /** Called when the user moves the cursor via mouse. */
-        onSelect: (index: number) => void
+        /**
+         * Called when the user clicks / shift-clicks / cmd-clicks a row. Mirrors
+         * `FullList`'s signature so the host pane can route to selection state.
+         */
+        onSelect: (index: number, shiftKey?: boolean, metaKey?: boolean) => void
         /** Called by FullList when the visible window changes (passed through). */
         onVisibleRangeChange?: (start: number, end: number) => void
     }
@@ -51,6 +60,7 @@
         isFocused = false,
         sortBy,
         sortOrder,
+        selectedIndices = new Set<number>(),
         onNavigate,
         onNavigateToAncestor,
         onSelect,
@@ -150,6 +160,7 @@
         includeHidden={true}
         {cursorIndex}
         {isFocused}
+        {selectedIndices}
         hasParent={false}
         parentPath=""
         currentPath={path}

@@ -103,6 +103,61 @@ export async function buildTransferPropsFromCursor(
   }
 }
 
+/**
+ * Builds transfer dialog props from a search-results snapshot's selection.
+ * The snapshot pane has no backend listing, so the listing-id-keyed builders
+ * don't apply: each entry already carries an absolute `path`. We compute the
+ * common parent for display ("From …"), count files vs. folders so the
+ * confirmation dialog shows accurate totals, and route everything else through
+ * the same `TransferDialogPropsData` shape used by normal panes. See plan §3.7
+ * (`isSourceOK: true`) and `search/CLAUDE.md` § "Snapshot store".
+ *
+ * `sourceVolumeId` is `'root'` because snapshot entries are always real local
+ * files (the indexer doesn't index remote volumes today). The transfer pipeline
+ * uses this to choose the local-filesystem path; if we ever index SMB / MTP,
+ * the per-entry volume needs to be resolved here.
+ */
+export function buildTransferPropsFromSnapshot(
+  operationType: TransferOperationType,
+  sourcePaths: string[],
+  isDirectoryFlags: boolean[],
+  isLeft: boolean,
+  destPath: string,
+  destVolumeId: string,
+  sortColumn: SortColumn,
+  sortOrder: SortOrder,
+): TransferDialogPropsData | null {
+  if (sourcePaths.length === 0) return null
+  if (sourcePaths.length !== isDirectoryFlags.length) {
+    // Defensive: a length mismatch means the caller resolved paths and flags
+    // independently and one of them is stale. Bail rather than reporting wrong
+    // counts on the confirmation dialog.
+    return null
+  }
+
+  let fileCount = 0
+  let folderCount = 0
+  for (const isDir of isDirectoryFlags) {
+    if (isDir) folderCount += 1
+    else fileCount += 1
+  }
+
+  return {
+    operationType,
+    sourcePaths,
+    destinationPath: destPath,
+    direction: isLeft ? 'right' : 'left',
+    currentVolumeId: destVolumeId,
+    fileCount,
+    folderCount,
+    sourceFolderPath: getCommonParentPath(sourcePaths),
+    sortColumn,
+    sortOrder,
+    sourceVolumeId: 'root',
+    destVolumeId,
+  }
+}
+
 /** Derives the common parent directory from a list of absolute paths. */
 export function getCommonParentPath(paths: string[]): string {
   if (paths.length === 0) return '/'

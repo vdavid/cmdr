@@ -1163,8 +1163,14 @@
     const effectiveVolumeRoot = $derived(volumeRootFromEvent ?? volumePath)
     const hasParent = $derived(currentPath !== '/' && currentPath !== effectiveVolumeRoot)
 
-    // Effective total count includes ".." entry if not at root
-    const effectiveTotalCount = $derived(hasParent ? totalCount + 1 : totalCount)
+    // Effective total count includes ".." entry if not at root.
+    // For search-results panes, the snapshot owns the count (the backend
+    // `totalCount` state stays at 0 because no listing IPC ran). M8d depends on
+    // this so Cmd+A / range-select span the snapshot's entries.
+    const effectiveTotalCount = $derived.by(() => {
+        if (isSearchResultsView) return searchResultsCount
+        return hasParent ? totalCount + 1 : totalCount
+    })
 
     // Track the visible range for MCP state sync
     // This is updated by the list components when they scroll
@@ -1810,8 +1816,13 @@
     /**
      * Keyboard handler for the search-results pane. Extracted from `handleKeyDown` to
      * keep the latter under the cyclomatic complexity cap. Enter activates the cursor
-     * row; ArrowUp/Down move the cursor; everything else is intentionally ignored
-     * (no rename, no Backspace-to-parent — those don't apply to a virtual snapshot).
+     * row; ArrowUp/Down move the cursor; Space toggles selection (M8d); everything
+     * else is intentionally ignored (no rename, no Backspace-to-parent — those don't
+     * apply to a virtual snapshot).
+     *
+     * The snapshot pane has no `..` row, so `hasParent` is always false for the
+     * selection helpers. Cmd+A / Cmd+Shift+A still flow through the regular
+     * pane shortcuts (handled in `command-dispatch.ts`).
      */
     function handleSearchResultsKeyDown(e: KeyboardEvent): void {
         if (e.key === 'Enter') {
@@ -1827,6 +1838,22 @@
         if (e.key === 'ArrowUp') {
             e.preventDefault()
             void setCursorIndex(Math.max(0, cursorIndex - 1))
+            return
+        }
+        // Space: toggle selection at cursor. Shift+Space is reserved for Quick
+        // Look in the rest of the app; mirror that contract here by leaving
+        // it untouched (no Quick Look in snapshot panes yet, so it's a no-op).
+        if (e.key === ' ' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
+            e.preventDefault()
+            selection.toggleAt(cursorIndex, false)
+            return
+        }
+        // Insert: toggle selection at cursor and move down (Total Commander style).
+        // PC-keyboard convenience — Apple keyboards can rebind via Karabiner.
+        if (e.key === 'Insert') {
+            e.preventDefault()
+            selection.toggleAt(cursorIndex, false)
+            void setCursorIndex(Math.min(cursorIndex + 1, Math.max(0, searchResultsCount - 1)))
         }
     }
 
@@ -2571,11 +2598,15 @@
                 {isFocused}
                 {sortBy}
                 {sortOrder}
+                selectedIndices={selection.selectedIndices}
                 onNavigate={(entry) => { void handleNavigate(entry) }}
                 onNavigateToAncestor={(p) => onNavigateToAncestor?.(p)}
-                onSelect={(idx) => {
-                    cursorIndex = idx
-                    onRequestFocus?.()
+                onSelect={(idx, shiftKey, metaKey) => {
+                    // Reuse the regular pane's click semantics so shift-range
+                    // and cmd-toggle behave identically. The snapshot pane has
+                    // no `..` row, so `hasParent` is always false; `handleSelect`
+                    // honours it via the bound `hasParent` state. M8d.
+                    handleSelect(idx, shiftKey ?? false, metaKey ?? false)
                 }}
                 onVisibleRangeChange={handleVisibleRangeChange}
             />

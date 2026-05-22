@@ -4,6 +4,7 @@ import {
   getSelectedFilePaths,
   buildTransferPropsFromSelection,
   buildTransferPropsFromDroppedPaths,
+  buildTransferPropsFromSnapshot,
   getCommonParentPath,
   type TransferContext,
 } from './transfer-operations'
@@ -255,5 +256,88 @@ describe('buildTransferPropsFromDroppedPaths', () => {
     expect(result.sourceVolumeId).toBe('vol-dest')
     expect(result.destVolumeId).toBe('vol-dest')
     expect(result.operationType).toBe('move')
+  })
+})
+
+describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
+  it('returns null when no source paths are supplied', () => {
+    expect(buildTransferPropsFromSnapshot('copy', [], [], true, '/dest', 'vol-dest', 'name', 'ascending')).toBeNull()
+  })
+
+  it('returns null when paths and flags lengths disagree', () => {
+    // Defensive: would otherwise misreport file/folder counts.
+    expect(
+      buildTransferPropsFromSnapshot('copy', ['/a/x', '/a/y'], [false], true, '/dest', 'vol-dest', 'name', 'ascending'),
+    ).toBeNull()
+  })
+
+  it('counts files and folders separately and derives the common parent', () => {
+    const props = buildTransferPropsFromSnapshot(
+      'copy',
+      ['/Users/a/photos/img1.jpg', '/Users/a/photos/img2.jpg', '/Users/a/photos/subdir'],
+      [false, false, true],
+      true,
+      '/Users/a/desktop',
+      'vol-dest',
+      'name',
+      'ascending',
+    )
+
+    if (!props) throw new Error('expected non-null props')
+    expect(props.fileCount).toBe(2)
+    expect(props.folderCount).toBe(1)
+    expect(props.sourceFolderPath).toBe('/Users/a/photos')
+    expect(props.sourcePaths).toEqual([
+      '/Users/a/photos/img1.jpg',
+      '/Users/a/photos/img2.jpg',
+      '/Users/a/photos/subdir',
+    ])
+    expect(props.destinationPath).toBe('/Users/a/desktop')
+    expect(props.destVolumeId).toBe('vol-dest')
+    // Source is always 'root' for snapshot panes (entries live on the local FS).
+    expect(props.sourceVolumeId).toBe('root')
+  })
+
+  it('sets direction based on which pane is the source (isLeft=true → direction "right")', () => {
+    const left = buildTransferPropsFromSnapshot(
+      'move',
+      ['/a/x'],
+      [false],
+      true, // source is the left pane → files travel right
+      '/dest',
+      'vol-dest',
+      'name',
+      'ascending',
+    )
+    if (!left) throw new Error('expected non-null left')
+    expect(left.direction).toBe('right')
+
+    const right = buildTransferPropsFromSnapshot(
+      'move',
+      ['/a/x'],
+      [false],
+      false, // source is the right pane → files travel left
+      '/dest',
+      'vol-dest',
+      'name',
+      'ascending',
+    )
+    if (!right) throw new Error('expected non-null right')
+    expect(right.direction).toBe('left')
+  })
+
+  it('passes the operation type through unchanged', () => {
+    const props = buildTransferPropsFromSnapshot(
+      'move',
+      ['/a/x'],
+      [false],
+      true,
+      '/dest',
+      'vol-dest',
+      'name',
+      'ascending',
+    )
+    if (!props) throw new Error('expected non-null props')
+    expect(props.operationType).toBe('move')
   })
 })

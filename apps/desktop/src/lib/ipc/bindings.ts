@@ -1261,6 +1261,21 @@ export const commands = {
       __TAURI_INVOKE('cut_files_to_clipboard', { listingId, selectedIndices, cursorIndex, hasParent, includeHidden }),
     ),
   /**
+   *  Writes the given paths directly to the system clipboard. Used when the
+   *  caller already has the absolute paths (search-results pane, where there's
+   *  no backend listing to resolve indices against). Clears any cut state.
+   *
+   *  Mirrors `copy_files_to_clipboard` but bypasses the listing-cache lookup.
+   */
+  copyPathsToClipboard: (paths: string[]) =>
+    typedError<number, string>(__TAURI_INVOKE('copy_paths_to_clipboard', { paths })),
+  /**
+   *  Writes the given paths directly to the system clipboard and marks them as cut.
+   *  Sibling of `cut_files_to_clipboard` for paths-by-value callers.
+   */
+  cutPathsToClipboard: (paths: string[]) =>
+    typedError<number, string>(__TAURI_INVOKE('cut_paths_to_clipboard', { paths })),
+  /**
    *  Reads file URLs from the system clipboard and checks whether they were cut.
    *
    *  If the clipboard contents no longer match the recorded cut state (the user copied

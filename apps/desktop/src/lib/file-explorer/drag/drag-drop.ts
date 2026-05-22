@@ -70,6 +70,21 @@ interface SelectionDragContext {
   fileInfos?: DragFileInfo[]
 }
 
+/**
+ * Context for a multi-path drag where the frontend already has resolved
+ * absolute paths. Used by the search-results pane (M8d), which has no backend
+ * listing for `start_selection_drag` to resolve indices against. Routes
+ * through `start_drag_paths` instead.
+ */
+interface PathsDragContext {
+  type: 'paths'
+  paths: string[]
+  /** Icon ID to use for the drag preview (first file in `paths`). */
+  iconId: string
+  /** File info for the drag image renderer (first N files). */
+  fileInfos?: DragFileInfo[]
+}
+
 /** Callbacks for drag lifecycle events */
 interface DragCallbacks {
   /** Called when drag threshold is crossed (for single-file case, to trigger selection) */
@@ -160,7 +175,7 @@ export async function endSelfDragSession(): Promise<void> {
 let activeDrag: {
   startX: number
   startY: number
-  context: SingleFileDragContext | SelectionDragContext
+  context: SingleFileDragContext | SelectionDragContext | PathsDragContext
   callbacks: DragCallbacks
   cleanup: () => void
 } | null = null
@@ -278,7 +293,7 @@ async function resolveDragIconPath(
  */
 export function startSelectionDragTracking(
   event: MouseEvent,
-  context: SingleFileDragContext | SelectionDragContext,
+  context: SingleFileDragContext | SelectionDragContext | PathsDragContext,
   callbacks: DragCallbacks = {},
 ): void {
   // Cancel any existing drag
@@ -313,8 +328,13 @@ export function startSelectionDragTracking(
       // Cmd → Move, Ctrl-Alt → Link), so we no longer pass mode here.
       if (ctx.type === 'single') {
         void performSingleFileDrag(ctx.path, ctx.iconId, ctx.fileInfo)
-      } else {
+      } else if (ctx.type === 'selection') {
         void performSelectionDrag(ctx)
+      } else {
+        // `paths` context: the FE already has resolved paths (search-results
+        // pane via the snapshot store). Route through `start_drag_paths` so
+        // the backend doesn't need a listing-cache lookup. M8d.
+        void performPathsDrag(ctx)
       }
 
       cancelDragTracking()
@@ -416,4 +436,25 @@ async function performSelectionDrag(context: SelectionDragContext): Promise<void
   // Don't reset draggingFromSelf after startDrag; see performSingleFileDrag comment.
   draggingFromSelf = true
   await startSelectionDrag(context.listingId, context.indices, context.includeHidden, context.hasParent, resolved.path)
+}
+
+/**
+ * Performs a paths-by-value drag. The search-results pane uses this because
+ * it has no backend listing for `start_selection_drag` to resolve indices
+ * against. `start_drag_paths` is the same Tauri command used for single-file
+ * drags; it just accepts >1 path. M8d.
+ */
+async function performPathsDrag(context: PathsDragContext): Promise<void> {
+  if (context.paths.length === 0) return
+
+  const resolved = await resolveDragIconPath(context.iconId, context.fileInfos)
+  if (!resolved) return
+
+  pendingImageCleanup = resolved.usedCanvas ? cleanupTempDragImage : cleanupTempIcon
+
+  await prepareSelfDragOverlay(resolved.path)
+  await setSelfDragResolvedOperation('move')
+
+  draggingFromSelf = true
+  await startDragPaths(context.paths, resolved.path)
 }
