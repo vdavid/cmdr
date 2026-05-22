@@ -98,20 +98,44 @@ export function createTypeMismatchFixture(fixtureRoot: string): void {
   writeFile(fixtureRoot, 'right/config', 'dest-config')
 }
 
+/**
+ * Removes a single fixture entry, including the dangling-symlink edge case.
+ *
+ * `fs.rmSync(p, { recursive: true, force: true })` silently no-ops on a dangling
+ * symlink (target missing), because `force: true` swallows the underlying
+ * ENOENT. Iterating siblings can produce exactly that state: removing
+ * `link-target.txt` BEFORE `my-link` (a symlink to it) leaves `my-link`
+ * dangling, then `rmSync` on `my-link` does nothing. We `lstat` first and call
+ * `unlinkSync` directly on symlinks so they always get removed.
+ */
+function removeFixtureEntry(entry: string): void {
+  let stat: fs.Stats | undefined
+  try {
+    stat = fs.lstatSync(entry)
+  } catch {
+    return
+  }
+  if (stat.isSymbolicLink()) {
+    fs.unlinkSync(entry)
+    return
+  }
+  fs.rmSync(entry, { recursive: true, force: true })
+}
+
 /** Removes all contents of left/ (except bulk/) and right/. */
 export function clearFixtureDirs(fixtureRoot: string): void {
   const leftDir = path.join(fixtureRoot, 'left')
   if (fs.existsSync(leftDir)) {
     for (const entry of fs.readdirSync(leftDir)) {
       if (entry === 'bulk') continue
-      fs.rmSync(path.join(leftDir, entry), { recursive: true, force: true })
+      removeFixtureEntry(path.join(leftDir, entry))
     }
   }
 
   const rightDir = path.join(fixtureRoot, 'right')
   if (fs.existsSync(rightDir)) {
     for (const entry of fs.readdirSync(rightDir)) {
-      fs.rmSync(path.join(rightDir, entry), { recursive: true, force: true })
+      removeFixtureEntry(path.join(rightDir, entry))
     }
   }
 
@@ -119,10 +143,25 @@ export function clearFixtureDirs(fixtureRoot: string): void {
   fs.mkdirSync(rightDir, { recursive: true })
 }
 
-/** Creates a file with the given content, creating parent dirs as needed. */
+/**
+ * Creates a file with the given content, creating parent dirs as needed.
+ *
+ * Defensively unlinks the target first if it's a stale symlink. Without this,
+ * `fs.writeFileSync` follows the link and writes to the target path instead —
+ * which can resurrect a previously-deleted sibling and break subsequent
+ * conflict-scan expectations.
+ */
 export function writeFile(fixtureRoot: string, relPath: string, content: string): void {
   const fullPath = path.join(fixtureRoot, relPath)
   fs.mkdirSync(path.dirname(fullPath), { recursive: true })
+  try {
+    const stat = fs.lstatSync(fullPath)
+    if (stat.isSymbolicLink()) {
+      fs.unlinkSync(fullPath)
+    }
+  } catch {
+    // Path doesn't exist yet; writeFileSync will create it.
+  }
   fs.writeFileSync(fullPath, content)
 }
 

@@ -161,14 +161,11 @@ test.describe('File watching', () => {
     await pollUntil(tauriPage, async () => (await countEntriesWithPrefix(tauriPage, prefix)) === 25, 2000)
   })
 
-  // macOS FSEvents is ~8x slower than Linux inotify. With flush_file_watcher
-  // we now bypass the OS watcher entirely (it just calls handle_directory_change
-  // synchronously), so even macOS should keep up. Kept conditional in case
-  // there's a hidden cost we didn't account for; revisit if both platforms
-  // are reliably green after enough green runs.
-  // eslint-disable-next-line @typescript-eslint/unbound-method -- conditional skip
-  const fullRereadTest = process.platform === 'darwin' ? test.skip : test
-  fullRereadTest('handles 600+ files crossing the full-reread threshold', async ({ tauriPage }) => {
+  // `flush_file_watcher` bypasses the OS watcher entirely (it calls
+  // `handle_directory_change` synchronously), so macOS's slower FSEvents path
+  // no longer matters for this test. Previously gated on `process.platform !==
+  // 'darwin'`; flipped to unconditional now that the flush path is mature.
+  test('handles 600+ files crossing the full-reread threshold', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
     const leftDir = path.join(fixtureRoot, 'left')

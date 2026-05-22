@@ -10,10 +10,18 @@
  * 1. Navigate into `.git` and see the virtual portal entries.
  * 2. Navigate into `.git/branches/` and see the branch ref.
  * 3. Navigate into a branch and see the working-tree files at HEAD.
- * 4. Copy a file from the history pane to the working-tree pane and verify
- *    byte-equal AND executable bit preserved.
- * 5. Toggle `fileExplorer.git.showVirtualGitPortal` off and verify navigating
- *    into `.git` shows the raw on-disk contents instead.
+ *
+ * Cross-volume copy with executable-bit preservation lives in the Rust
+ * integration test `file_system::git::m2_tests::cross_volume_copy_preserves_executable_bit`,
+ * which drives the real `LocalPosixVolume::open_read_stream` and
+ * `write_from_stream` round-trip. Driving the full copy UI from Playwright
+ * would need dialog automation we don't have, and the Rust test exercises the
+ * load-bearing code path (the volume hook + write stream).
+ *
+ * Portal-toggle behavior is covered by Rust unit tests on
+ * `git::try_route_listing` (volume-hook level, drives the AtomicBool the
+ * toggle flips) and `git::watcher::refresh_all_virtual_listings_after_toggle`
+ * (IPC + watcher invalidation), plus manual smoke per release.
  */
 
 import fs from 'fs'
@@ -159,40 +167,5 @@ test.describe('Git portal', () => {
       5000,
     )
     expect(found).toBe(true)
-  })
-
-  // Cross-volume copy + executable-bit preservation is covered honestly by
-  // the Rust integration test
-  // `file_system::git::m2_tests::cross_volume_copy_preserves_executable_bit`.
-  // That test drives the real `LocalPosixVolume::open_read_stream` and
-  // `write_from_stream` round-trip from a virtual `.git/branches/main/...`
-  // path to a real tmp dir, asserting byte parity against `git show` and
-  // that the destination's `0o755` bit is preserved.
-  //
-  // We skip the Playwright variant because the previous implementation
-  // never invoked an actual copy: it shelled out to `git show` and stat'd
-  // the working tree's pre-existing mode bits. That was a green-but-fake
-  // test. Driving the full copy UI from Playwright would require dialog
-  // automation we don't have here, and the Rust test already exercises
-  // the load-bearing code path (the volume hook + write stream).
-  test.skip('copies a file from history to working tree, preserving executable bit (covered by Rust integration test)', () => {
-    // Intentionally empty. See note above and `m2_tests.rs` →
-    // `cross_volume_copy_preserves_executable_bit`.
-  })
-
-  // Portal toggle is exercised by:
-  //  - The Rust unit tests on `git::try_route_listing` (volume-hook level,
-  //    drives the AtomicBool the toggle flips).
-  //  - The `set_show_virtual_git_portal` IPC + watcher invalidation (covered by
-  //    `git::watcher::refresh_all_virtual_listings_after_toggle`).
-  //  - Manual smoke testing on each release.
-  //
-  // The Playwright variant is too flaky to be useful: we have to sequence a
-  // setting write + IPC poke + new navigation through the listing pipeline
-  // and a watcher debounce, and the 30 s wall-clock budget keeps eating the
-  // toggle-on-then-navigate handshake. Skipping until we have a cleaner
-  // "wait for portal state to settle" hook to lean on.
-  test.skip('toggling the portal off shows raw .git contents (covered by Rust unit tests)', () => {
-    // Intentionally empty. See note above.
   })
 })

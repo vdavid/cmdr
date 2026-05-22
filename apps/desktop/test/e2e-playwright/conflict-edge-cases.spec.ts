@@ -229,12 +229,7 @@ test.describe('Symlink conflicts', () => {
     expect(fs.readFileSync(myLinkPath, 'utf-8')).toBe('link-target-content')
   })
 
-  // FIXME(macOS): On macOS, the non-conflicting link-target.txt is not copied
-  // when the conflicting symlink my-link is skipped. This appears to be a bug
-  // in the copy operation's symlink handling with Skip policy. Works on Linux.
-  // eslint-disable-next-line @typescript-eslint/unbound-method -- conditional skip
-  const skipOrTest = process.platform === 'darwin' ? test.skip : test
-  skipOrTest('Copy with Skip All preserves dest file, copies non-conflicting', async ({ tauriPage }) => {
+  test('Copy with Skip All preserves dest file, copies non-conflicting', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
     createSymlinkFixture(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['link-target.txt'] })

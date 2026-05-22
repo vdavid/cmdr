@@ -35,6 +35,30 @@ function generateDatFile(filePath: string, sizeMb: number): void {
   execSync(`dd if=/dev/zero bs=1048576 count=${String(sizeMb)} of="${filePath}" 2>/dev/null`)
 }
 
+/**
+ * Removes a single fixture entry, including the dangling-symlink edge case.
+ *
+ * `fs.rmSync(p, { recursive: true, force: true })` silently no-ops on a dangling
+ * symlink (target missing), because `force: true` swallows the underlying
+ * ENOENT. Iterating siblings can produce exactly that state: removing
+ * `link-target.txt` BEFORE a sibling `my-link` symlink that points to it leaves
+ * `my-link` dangling, then `rmSync` on `my-link` does nothing. We `lstat`
+ * first and call `unlinkSync` directly on symlinks so they always get removed.
+ */
+function removeFixtureEntry(entry: string): void {
+  let stat: fs.Stats | undefined
+  try {
+    stat = fs.lstatSync(entry)
+  } catch {
+    return
+  }
+  if (stat.isSymbolicLink()) {
+    fs.unlinkSync(entry)
+    return
+  }
+  fs.rmSync(entry, { recursive: true, force: true })
+}
+
 export function createFixtures(): string {
   const timestamp = Date.now()
   const rootPath = `/tmp/cmdr-e2e-${String(timestamp)}`
@@ -98,7 +122,7 @@ export function recreateFixtures(rootPath: string): void {
   if (fs.existsSync(leftDir)) {
     for (const entry of fs.readdirSync(leftDir)) {
       if (entry === 'bulk') continue // preserve bulk .dat files
-      fs.rmSync(path.join(leftDir, entry), { recursive: true, force: true })
+      removeFixtureEntry(path.join(leftDir, entry))
     }
   }
 
@@ -108,7 +132,7 @@ export function recreateFixtures(rootPath: string): void {
   const rightDir = path.join(rootPath, 'right')
   if (fs.existsSync(rightDir)) {
     for (const entry of fs.readdirSync(rightDir)) {
-      fs.rmSync(path.join(rightDir, entry), { recursive: true, force: true })
+      removeFixtureEntry(path.join(rightDir, entry))
     }
   }
 
