@@ -23,7 +23,7 @@ describe('PathPills a11y', () => {
       props: { path: '/Users/dave/code', onPick: () => {} },
     })
     await tick()
-    const pills = Array.from(target.querySelectorAll('.pill')) as HTMLButtonElement[]
+    const pills = Array.from(target.querySelectorAll('.pill'))
     expect(pills.length).toBeGreaterThan(0)
     for (const p of pills) {
       expect(p.getAttribute('tabindex')).toBe('-1')

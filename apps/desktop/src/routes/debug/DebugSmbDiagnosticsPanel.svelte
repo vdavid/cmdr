@@ -20,7 +20,7 @@
         startPolling()
     })
 
-    onDestroy(() => stopPolling())
+    onDestroy(() => { stopPolling(); })
 
     function startPolling() {
         stopPolling()
@@ -36,9 +36,11 @@
     }
 
     $effect(() => {
-        // Restart polling when toggle or interval changes.
-        autoRefresh
-        intervalMs
+        // Restart polling when toggle or interval changes. The bare reads
+        // register reactive dependencies for Svelte 5's $effect; the `void`
+        // tells ESLint they're intentional, not orphan expressions.
+        void autoRefresh
+        void intervalMs
         startPolling()
     })
 
@@ -76,7 +78,7 @@
                 }
             } else {
                 // Some specta versions return the value directly on Ok and throw on Err.
-                diag = result as unknown as SmbDiagnosticsDto
+                diag = result
                 loadState = 'ready'
                 errorMessage = ''
             }
@@ -134,8 +136,9 @@
         if (tickInterval) clearInterval(tickInterval)
     })
     // Reference nowTick so the $effect recomputes "Updated Xs ago" each tick.
+    // `void` documents the intentional reactive-dependency read for ESLint.
     $effect(() => {
-        nowTick
+        void nowTick
     })
 </script>
 

@@ -41,7 +41,7 @@ function mountBar(overrides: Partial<{ query: string; mode: SearchMode; showRunH
       onCompositionEnd,
     },
   })
-  const input = target.querySelector('input.query-input') as HTMLInputElement | null
+  const input = target.querySelector('input.query-input')
   if (!input) throw new Error('input not found')
   return {
     target,
@@ -97,7 +97,7 @@ describe('SearchBar', () => {
   it('renders the ⏎ run button and calls onRun when clicked', async () => {
     const { target, onRun, cleanup } = mountBar({})
     await tick()
-    const button = target.querySelector('button.run-button') as HTMLButtonElement | null
+    const button = target.querySelector('button.run-button')
     expect(button).not.toBeNull()
     button?.click()
     expect(onRun).toHaveBeenCalledTimes(1)
@@ -115,7 +115,7 @@ describe('SearchBar', () => {
   it('R3 B1: renders the run label as "Search ⏎" once, no leading icon', async () => {
     const { target, cleanup } = mountBar({})
     await tick()
-    const button = target.querySelector('button.run-button') as HTMLButtonElement | null
+    const button = target.querySelector('button.run-button')
     expect(button).not.toBeNull()
     // No leading icon. The corner-down-left lucide icon used to live here.
     const svgs = button?.querySelectorAll('svg') ?? []

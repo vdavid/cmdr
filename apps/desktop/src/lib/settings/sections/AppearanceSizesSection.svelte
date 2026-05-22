@@ -39,7 +39,7 @@
     // emits on every write.
     let fileSizeFormat = $state<FileSizeFormat>(getSetting('appearance.fileSizeFormat'))
     onMount(() => onSpecificSettingChange('appearance.fileSizeFormat', (_id, v) => {
-        fileSizeFormat = v as FileSizeFormat
+        fileSizeFormat = v
     }))
     const sizeUnitLabelOverrides = $derived({
         kB: fileSizeFormat === 'binary' ? 'KB' : 'kB',

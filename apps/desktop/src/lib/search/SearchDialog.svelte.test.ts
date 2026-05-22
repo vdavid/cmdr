@@ -879,7 +879,7 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     await tick()
     // Round 2 D6: the button stays VISIBLE when resultCount === 0, just rendered
     // disabled. Yanking it would jump the layout while the user is mid-thought.
-    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement | null
+    const btn = document.body.querySelector('button[aria-label="Show all in main window"]')
     expect(btn).not.toBeNull()
     expect(btn?.disabled).toBe(true)
     btn?.click()

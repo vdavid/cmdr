@@ -139,13 +139,41 @@ impl Fixture {
     /// Initialize an empty gix repo at `dir`. Equivalent to `git init
     /// -b main`. gix's default branch is already `main` (deviation
     /// from upstream git), so no `init.defaultBranch` ceremony.
+    ///
+    /// We also write `user.name` / `user.email` into the repo's local
+    /// `.git/config`. gix's `Repository::reference(...)` writes a reflog
+    /// entry for the new branch and needs a committer signature for it;
+    /// without explicit config it falls back to the user's global git
+    /// config, which doesn't exist inside the Linux test container.
+    /// Writing the local config is the cleanest fix: no env-var mutation
+    /// (thread-unsafe under cargo nextest's parallel tests), no shell-out.
     pub(super) fn init(dir: PathBuf) -> Self {
         let repo = gix::init(&dir).expect("gix::init");
+        Self::seed_committer_config(&dir);
         Self {
             dir,
             repo,
             current_branch: "main".to_string(),
         }
+    }
+
+    /// Writes `[user] name = ..., email = ...` into the local `.git/config`
+    /// so gix's reflog writers can synthesize a committer signature even
+    /// when the host has no global git config (Docker, CI images).
+    fn seed_committer_config(dir: &Path) {
+        let config_path = dir.join(".git").join("config");
+        let existing = std::fs::read_to_string(&config_path).unwrap_or_default();
+        if existing.contains("[user]") {
+            return
+        }
+        let mut next = existing;
+        if !next.is_empty() && !next.ends_with('\n') {
+            next.push('\n');
+        }
+        next.push_str(&format!(
+            "[user]\n\tname = {TEST_AUTHOR_NAME}\n\temail = {TEST_AUTHOR_EMAIL}\n"
+        ));
+        std::fs::write(&config_path, next).expect("write .git/config user section");
     }
 
     /// Write `content` to `<dir>/<file>` and commit it on the current

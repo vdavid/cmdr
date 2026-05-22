@@ -294,25 +294,33 @@
         color: var(--color-text-primary);
     }
 
-    :global(.status-idle) {
+    /* DebugDriveIndexPanel.svelte: status-badge variants applied via `phaseStyle`
+       which returns 'active' | 'ready' | 'neutral', plus a literal 'ready' /
+       'neutral' on the watcher badge. */
+    :global(.status-badge.active) {
+        background: var(--color-accent);
+        color: var(--color-accent-fg);
+    }
+
+    :global(.status-badge.ready) {
+        background: var(--color-accent-subtle);
+        color: var(--color-text-primary);
+    }
+
+    :global(.status-badge.neutral) {
         background: var(--color-bg-tertiary);
         color: var(--color-text-tertiary);
     }
 
-    :global(.status-active) {
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
+    :global(.phase-duration) {
+        margin-left: var(--spacing-xs);
+        color: var(--color-text-tertiary);
+        font-variant-numeric: tabular-nums;
     }
 
-    :global(.status-live) {
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
-    }
-
-    :global(.status-watcher) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border);
+    :global(.phase-live-stat) {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
     }
 
     :global(.phase-timeline) {
@@ -323,15 +331,6 @@
         padding: var(--spacing-sm);
         max-height: 240px;
         overflow-y: auto;
-    }
-
-    :global(.phase-header) {
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--color-text-tertiary);
-        margin-bottom: var(--spacing-xs);
     }
 
     :global(.phase-timeline-row) {
@@ -534,10 +533,26 @@
     }
 
     :global(.history-path),
-    :global(.closed-tabs-path) {
+    :global(.closed-tab-path) {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* DebugClosedTabsPanel: row marker prefix (↑ for the top entry, · otherwise)
+       and the empty-state message. */
+    :global(.closed-tab-marker) {
+        flex-shrink: 0;
+        width: 12px;
+        text-align: center;
+        color: var(--color-text-tertiary);
+    }
+
+    :global(.no-closed-tabs) {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        font-style: italic;
     }
 
     /* ── Toast debug panel ───────────────────────────────────────────── */

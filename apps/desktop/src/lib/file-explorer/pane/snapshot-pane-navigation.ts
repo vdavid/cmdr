@@ -43,5 +43,5 @@ export const SEARCH_RESULTS_PATH_PREFIX = 'search-results://'
  * volume switch).
  */
 export function isCrossVolumeNavigation(currentVolumeId: string, targetPath: string): boolean {
-    return currentVolumeId === SEARCH_RESULTS_VOLUME_ID && !targetPath.startsWith(SEARCH_RESULTS_PATH_PREFIX)
+  return currentVolumeId === SEARCH_RESULTS_VOLUME_ID && !targetPath.startsWith(SEARCH_RESULTS_PATH_PREFIX)
 }

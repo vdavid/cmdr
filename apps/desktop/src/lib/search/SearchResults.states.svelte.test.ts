@@ -85,7 +85,7 @@ describe('SearchResults round 2 states', () => {
         size: 1,
         modifiedAt: 0,
         iconId: 'ext:txt',
-      } as SearchResultEntry,
+      },
     ]
     const target = mountWith({
       isSearching: true,

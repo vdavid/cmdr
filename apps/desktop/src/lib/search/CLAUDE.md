@@ -197,29 +197,29 @@ longer collapses when there's free space. The container width comes from a `Resi
 
 Final round-2 allocation. ⏎ has dynamic ownership (see D8 below).
 
-| Shortcut  | Action                                                            |
-| --------- | ----------------------------------------------------------------- |
-| `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)   |
-| `⌥⏎`      | Show all results in the main window (replaces round-1's ⌥A)       |
+| Shortcut  | Action                                                                              |
+| --------- | ----------------------------------------------------------------------------------- |
+| `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)                     |
+| `⌥⏎`      | Show all results in the main window (replaces round-1's ⌥A)                         |
 | `⌘Enter`  | No-op (R4). Bare Enter is the only path that runs a search or opens the cursor row. |
-| `⇧Enter`  | No-op (R4). Same rule as ⌘Enter.                                  |
-| `⌘N`      | Clear all dialog state ("new search")                             |
-| `⌘H`      | Toggle the recent-searches popover (fuzzy over the full history)  |
-| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                         |
-| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                      |
-| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                     |
-| `⌘4`      | Reserved for Content when it ships; not wired now                 |
-| `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled) |
-| `⌥F`      | Mode chip: Filename (global)                                      |
-| `⌥R`      | Mode chip: Regex (global)                                         |
-| `⌥C`      | Inside Search-in popover only: Use current folder                 |
-| `⌥V`      | Inside Search-in popover only: All folders                        |
-| `⌥←`      | Navigate the active pane to the cursor row's parent folder        |
-| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)  |
-| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)     |
-| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)   |
-| `Tab`     | Trapped within the dialog; cycles through interactive elements    |
-| `Escape`  | Close the dialog                                                  |
+| `⇧Enter`  | No-op (R4). Same rule as ⌘Enter.                                                    |
+| `⌘N`      | Clear all dialog state ("new search")                                               |
+| `⌘H`      | Toggle the recent-searches popover (fuzzy over the full history)                    |
+| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                                           |
+| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                                        |
+| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                                       |
+| `⌘4`      | Reserved for Content when it ships; not wired now                                   |
+| `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled)                   |
+| `⌥F`      | Mode chip: Filename (global)                                                        |
+| `⌥R`      | Mode chip: Regex (global)                                                           |
+| `⌥C`      | Inside Search-in popover only: Use current folder                                   |
+| `⌥V`      | Inside Search-in popover only: All folders                                          |
+| `⌥←`      | Navigate the active pane to the cursor row's parent folder                          |
+| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)                    |
+| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)                       |
+| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)                     |
+| `Tab`     | Trapped within the dialog; cycles through interactive elements                      |
+| `Escape`  | Close the dialog                                                                    |
 
 ### Round 2 D8: `⏎` ownership swap
 

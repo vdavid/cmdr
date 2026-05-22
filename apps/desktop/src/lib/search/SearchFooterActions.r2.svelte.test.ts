@@ -37,7 +37,7 @@ describe('SearchFooterActions round 2', () => {
     const buttons = target.querySelectorAll('button')
     expect(buttons.length).toBe(2)
     for (const b of buttons) {
-      expect((b as HTMLButtonElement).disabled).toBe(true)
+      expect((b).disabled).toBe(true)
     }
   })
 
@@ -47,7 +47,7 @@ describe('SearchFooterActions round 2', () => {
     const buttons = target.querySelectorAll('button')
     expect(buttons.length).toBe(2)
     for (const b of buttons) {
-      expect((b as HTMLButtonElement).disabled).toBe(false)
+      expect((b).disabled).toBe(false)
     }
   })
 

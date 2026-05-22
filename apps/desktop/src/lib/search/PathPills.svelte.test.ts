@@ -55,7 +55,7 @@ describe('PathPills', () => {
   it('handles a relative path without a leading slash', async () => {
     const target = renderPills('docs/notes')
     await tick()
-    const pills = Array.from(target.querySelectorAll('.pill')) as HTMLButtonElement[]
+    const pills = Array.from(target.querySelectorAll('.pill'))
     expect(pills.map((p) => p.textContent?.trim())).toEqual(['docs', 'notes'])
     expect(pills[0].title).toBe('docs')
     expect(pills[1].title).toBe('docs/notes')
@@ -66,7 +66,7 @@ describe('PathPills', () => {
     const onPick = vi.fn()
     const target = renderPills('/Users/dave/code', onPick)
     await tick()
-    const pills = Array.from(target.querySelectorAll('.pill')) as HTMLButtonElement[]
+    const pills = Array.from(target.querySelectorAll('.pill'))
     pills[0].click()
     pills[1].click()
     pills[2].click()
@@ -127,7 +127,7 @@ describe('PathPills', () => {
   it('keeps pills out of the keyboard Tab order (search-redesign-plan §3.8)', async () => {
     const target = renderPills('/a/b')
     await tick()
-    const pills = Array.from(target.querySelectorAll('.pill')) as HTMLButtonElement[]
+    const pills = Array.from(target.querySelectorAll('.pill'))
     for (const pill of pills) {
       expect(pill.getAttribute('tabindex')).toBe('-1')
     }

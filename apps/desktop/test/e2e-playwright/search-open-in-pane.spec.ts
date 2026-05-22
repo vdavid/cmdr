@@ -125,17 +125,19 @@ async function pollFocusedPane(tauriPage: PageLike, expected: 'left' | 'right', 
 }
 
 /**
- * Idempotently focuses the right pane. Reads `cmdr://state.focused`; presses
- * Tab if it isn't already on the right, up to two attempts. A blind `Tab`
- * press is brittle — prior tests in the same session leave focus on either
- * side, so a single Tab from a right-focused state would land on the left.
- * Two attempts cover the rare case where Tab is consumed by a focus guard
- * mid-recovery (see `ensureAppReady` § focus contract).
+ * Idempotently focuses the right pane. Reads `cmdr://state.focused`; dispatches
+ * `pane.switch` via the command system if it isn't already on the right.
+ *
+ * Previously this pressed `Tab`, but a bare Tab keypress is brittle: it only
+ * dispatches `pane.switch` when `document.activeElement` is inside the file
+ * explorer, and prior tests can leave focus on a dialog overlay or an input.
+ * Routing through `dispatchMenuCommand` is the same command path the F-key bar
+ * and the menu use; it works regardless of where DOM focus currently is.
  */
 async function focusRightPane(tauriPage: PageLike): Promise<void> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (await pollFocusedPane(tauriPage, 'right', 500)) return
-    await pressKey(tauriPage, 'Tab')
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (await pollFocusedPane(tauriPage, 'right', 1000)) return
+    await dispatchMenuCommand(tauriPage, 'pane.switch')
   }
   throw new Error('Failed to focus right pane after retries')
 }

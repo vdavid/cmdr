@@ -23,7 +23,7 @@ describe('SearchFooterActions', () => {
       props: { ...baseProps, resultCount: 0 },
     })
     await tick()
-    const buttons = Array.from(target.querySelectorAll('button')) as HTMLButtonElement[]
+    const buttons = Array.from(target.querySelectorAll('button'))
     expect(buttons).toHaveLength(2)
     for (const b of buttons) {
       expect(b.disabled).toBe(true)
@@ -39,7 +39,7 @@ describe('SearchFooterActions', () => {
       props: { ...baseProps, resultCount: 7, enterAction: 'go-to-file' },
     })
     await tick()
-    const buttons = Array.from(target.querySelectorAll('button')) as HTMLButtonElement[]
+    const buttons = Array.from(target.querySelectorAll('button'))
     expect(buttons).toHaveLength(2)
     expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Go to file', 'Show all in main window'])
     // Discoverable shortcuts: each button surfaces its key hint inline.
@@ -62,7 +62,7 @@ describe('SearchFooterActions', () => {
       props: { ...baseProps, resultCount: 1, onShowAllInMainWindow, onGoToFile },
     })
     await tick()
-    const [goBtn, mainBtn] = Array.from(target.querySelectorAll('button')) as HTMLButtonElement[]
+    const [goBtn, mainBtn] = Array.from(target.querySelectorAll('button'))
     goBtn.click()
     mainBtn.click()
     expect(onGoToFile).toHaveBeenCalledTimes(1)
@@ -78,7 +78,7 @@ describe('SearchFooterActions', () => {
       props: { ...baseProps, resultCount: 1, disabled: true },
     })
     await tick()
-    const buttons = Array.from(target.querySelectorAll('button')) as HTMLButtonElement[]
+    const buttons = Array.from(target.querySelectorAll('button'))
     for (const b of buttons) {
       expect(b.disabled).toBe(true)
     }

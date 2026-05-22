@@ -18,7 +18,7 @@ function entry(query: string): HistoryEntry {
     caseSensitive: false,
     excludeSystemDirs: true,
     resultCount: 0,
-  } as HistoryEntry
+  }
 }
 
 describe('RecentSearchesFooter D5: label', () => {
