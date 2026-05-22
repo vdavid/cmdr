@@ -1201,6 +1201,24 @@ export const commands = {
    *  for display in the UI tooltip.
    */
   getSystemDirExcludes: () => __TAURI_INVOKE<string[]>('get_system_dir_excludes'),
+  // Reads the latest persisted recent-searches entries. `limit = None` returns all.
+  getRecentSearches: (limit: number | null) => __TAURI_INVOKE<HistoryEntry[]>('get_recent_searches', { limit }),
+  /**
+   *  Adds a recent-search entry. Dedupes against existing entries by canonical key,
+   *  moves the matching one to the top, and trims to `max_count`.
+   */
+  addRecentSearch: (entry: HistoryEntry, maxCount: number | null) =>
+    typedError<null, string>(__TAURI_INVOKE('add_recent_search', { entry, maxCount })),
+  // Removes a recent-search entry by id. No-op when the id isn't present.
+  removeRecentSearch: (id: string) => typedError<null, string>(__TAURI_INVOKE('remove_recent_search', { id })),
+  // Clears every recent-search entry.
+  clearRecentSearches: () => typedError<null, string>(__TAURI_INVOKE('clear_recent_searches')),
+  /**
+   *  Live-applies a new `search.recentSearches.maxCount` value. Trims the in-memory
+   *  store and rewrites disk only when entries actually drop.
+   */
+  applyRecentSearchesMaxCount: (maxCount: number) =>
+    typedError<null, string>(__TAURI_INVOKE('apply_recent_searches_max_count', { maxCount })),
   /**
    *  Returns the `CMDR_E2E_START_PATH` env var if set.
    *  The frontend uses this to override startup paths for E2E tests.
@@ -2299,6 +2317,31 @@ export type FrontendLogEntry = {
   category: string
   message: string
 }
+
+// A single recent-search entry, persisted verbatim.
+export type HistoryEntry = {
+  id: string
+  // Unix epoch milliseconds.
+  timestamp: number
+  mode: HistoryMode
+  query: string
+  filters?: HistoryFilters
+  scope: string
+  caseSensitive: boolean
+  excludeSystemDirs: boolean
+  resultCount: number
+}
+
+// Filter slice of a history entry. Mirrors what the dialog carries on the wire.
+export type HistoryFilters = {
+  sizeMin?: number | null
+  sizeMax?: number | null
+  modifiedAfter?: string | null
+  modifiedBefore?: string | null
+}
+
+// Search modes recorded in history. Mirrors the frontend `SearchMode` union.
+export type HistoryMode = 'ai' | 'filename' | 'regex'
 
 // Whether a host was discovered via mDNS or added manually by the user.
 export type HostSource = 'discovered' | 'manual'

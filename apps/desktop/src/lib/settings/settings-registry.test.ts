@@ -139,6 +139,48 @@ describe('validateSettingValue', () => {
   })
 })
 
+describe('search.recentSearches.maxCount', () => {
+  it('registers the Advanced entry with the documented defaults and bounds', () => {
+    const def = getSettingDefinition('search.recentSearches.maxCount')
+    expect(def).toBeDefined()
+    expect(def?.type).toBe('number')
+    expect(def?.default).toBe(1000)
+    expect(def?.showInAdvanced).toBe(true)
+    expect(def?.component).toBe('number-input')
+    expect(def?.constraints?.min).toBe(0)
+    expect(def?.constraints?.max).toBe(10000)
+  })
+
+  it('mentions that 0 disables history so users find it via search', () => {
+    const def = getSettingDefinition('search.recentSearches.maxCount')
+    expect(def?.description).toContain('0 disables history')
+  })
+
+  it('validates the documented range', () => {
+    expect(() => {
+      validateSettingValue('search.recentSearches.maxCount', 0)
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('search.recentSearches.maxCount', 1000)
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('search.recentSearches.maxCount', 10_000)
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('search.recentSearches.maxCount', -1)
+    }).toThrow()
+    expect(() => {
+      validateSettingValue('search.recentSearches.maxCount', 10_001)
+    }).toThrow()
+  })
+
+  it('surfaces in the Advanced settings list', () => {
+    const advanced = getAdvancedSettings()
+    const ids = advanced.map((s) => s.id)
+    expect(ids).toContain('search.recentSearches.maxCount')
+  })
+})
+
 describe('buildSectionTree', () => {
   it('should build a tree from settings', () => {
     const tree = buildSectionTree()

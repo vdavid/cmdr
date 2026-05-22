@@ -391,3 +391,33 @@ R7-local confirmed the architecture is sound. Remaining work is capability gaps 
 8. **Evaluate adding `csv` to documents type**: currently only in config via the generic extension list.
 9. **Consider cloud fallback for ambiguous queries**: the 3 "keyword dumping" failures (#3, #14, #29) are a 2B model
    quality limit. A heuristic (e.g., >3 keywords emitted) could trigger cloud fallback for these cases.
+
+## M5: Empty-state example queries (canonical inputs)
+
+The search dialog's empty state surfaces three "Try…" example queries the user can click to learn what the system is
+good at. Locked here so a future agent can't drift the spec, the eval bed, and the UI out of sync. If any of these
+breaks in a new round, swap the prompt here AND in `apps/desktop/src/lib/search/EmptyState.svelte` in the same commit.
+
+When AI is enabled (cloud or local provider), the chip strip shows:
+
+1. `large files modified this week`
+2. `screenshots`
+3. `PDFs from the last 7 days`
+
+When AI is disabled, the strip shows filename patterns instead:
+
+1. `*.pdf`
+2. `*.dmg`
+3. `screenshot*`
+
+Notes on the AI set:
+
+- "large files modified this week" exercises `size: large` + `time: this_week` (covered by query #2 / #6 / #16 above).
+- "screenshots" is the simplest possible AI-shaped query: a single type with no time or size (matches the empty-state
+  test in `interface-design` UX: clicking it should produce a comprehensible result within a second).
+- "PDFs from the last 7 days" deliberately uses "last 7 days" instead of "last week" because "last week" is ambiguous
+  (rolling 7-day vs. previous calendar week). Mirrors the same lesson as queries #19 / #5 in the catalog above.
+
+OpenAI `gpt-5.5` sanity-check passed at M5 (single curl call against `https://api.openai.com/v1/chat/completions` with
+the `OPENAI_API_KEY` keychain secret). If a future round of evals needs to re-check the model, use the recipe in
+`docs/specs/search-redesign-plan.md` §5.2.

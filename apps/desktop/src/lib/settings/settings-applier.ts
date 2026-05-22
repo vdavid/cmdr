@@ -26,6 +26,7 @@ import {
   setErrorReportsEnabled,
   setShowVirtualGitPortal,
   setNetworkEnabled,
+  applyRecentSearchesMaxCount,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 
@@ -160,6 +161,7 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'updates.errorReports': (v) => void setErrorReportsEnabled(v as boolean),
   'fileExplorer.git.showVirtualGitPortal': (v) => void setShowVirtualGitPortal(v as boolean),
   'network.enabled': (v) => void setNetworkEnabled(v as boolean),
+  'search.recentSearches.maxCount': (v) => void applyRecentSearchesMaxCount(v as number),
 }
 
 /**

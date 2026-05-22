@@ -9,6 +9,7 @@ In-memory search index and AI-powered query translation for whole-drive file sea
 | `mod.rs` | Re-exports from submodules. Flat API: `use crate::search::{SearchQuery, search, ...}` |
 | `index.rs` | `SearchIndex` (arena-allocated filename storage), `SearchEntry`, global `SEARCH_INDEX` state with idle/backstop timers and load cancellation |
 | `engine.rs` | `search()` pure function (no I/O): compiles glob/regex, parallel-filters entries with rayon, sorts by recency. Scope filtering via `include_path_ids` and `exclude_dir_names` |
+| `history.rs` | Persistent recent-searches store (`HistoryStore`, `HistoryEntry`). Atomic JSON read/write, canonical dedupe key, cap eviction, schema-version quarantine. Used by `commands::search::{get,add,remove,clear}_recent_search` and `apply_recent_searches_max_count`. |
 | `types.rs` | Pure data definitions: `SearchQuery`, `SearchResult`, `SearchResultEntry`, `ParsedScope`, `PatternType`, `default_limit`. No logic |
 | `query.rs` | Operations on the types: `parse_scope()`, `resolve_include_paths()` (DB pre-query), `fill_directory_sizes()` (DB post-query), `format_size()`, `format_timestamp()`, `summarize_query()`, `SYSTEM_DIR_EXCLUDES` |
 | `ai/mod.rs` | Re-exports from AI submodules |
@@ -70,6 +71,36 @@ types.rs defines  ->  query.rs prepares (resolve_include_paths)
 ## IPC layer
 
 IPC commands live in `commands/search.rs` -- thin wrappers. `translate_search_query` orchestrates the AI pipeline: calls LLM with classification prompt, parses response via `ai::parse_llm_response`, builds query via `ai::query_builder`. `resolve_ai_backend` stays in `commands/search.rs` since it touches `crate::ai` and `crate::settings` (Tauri-app concerns).
+
+## Recent-searches history (`history.rs`)
+
+Persistent store for the dialog's recent-searches footer and popover (`search-redesign-plan.md` §3.5).
+
+- **Persistence path**: `{app_data_dir}/search-history.json`. Schema-versioned via the `_schemaVersion` key (currently 1).
+- **In-memory cache** + **disk lock**: in-memory `Mutex<HistoryStore>` mirrors `network::known_shares`; a separate
+  `OnceLock<Mutex<()>>` (`DISK_LOCK`) serializes the read-modify-write cycle so concurrent IPC commands can't lose
+  writes. The cache guard is always dropped before any `fs` call (no `.await` while holding a `MutexGuard`, no fs I/O
+  while holding either guard).
+- **Canonical dedupe key**: built at runtime from `mode | normalized_query | filters | scope | case_sensitive |
+  exclude_system_dirs`. Filters serialize as alphabetically-keyed `k=v,k=v` pairs with undefined fields omitted. The
+  key is never persisted; it only exists at compare time. Same canonical key = same search; the most recent copy wins
+  (move-to-top), older copies dropped.
+- **Recovery**: parse failure or schema-version mismatch → rename file to `.broken`, start fresh. The user keeps using
+  the dialog; the corrupted file is preserved for one more rotation in case we want to debug.
+- **Add-on-write hook**: history entries are added ONLY from the frontend "Open in pane" action (search-redesign-plan
+  §3.5). The Rust side doesn't enforce this — the IPC commands accept any entry — but the frontend's only call site for
+  `addRecentSearch` is the Open-in-pane handler (M8 wires it).
+- **Cap**: configurable via `search.recentSearches.maxCount` (default 1000). `apply_max_count` trims the in-memory store
+  on live-apply; `0` clears everything and short-circuits future adds.
+
+**Decision**: add only on "Open in pane", not on Enter / auto-apply.
+**Why**: David's explicit design call. The 1000-entry budget is signal-rich when it tracks user intent (results worth
+acting on) instead of every keystroke-debounced filename search. The Rust side doesn't enforce this gate — it's a
+frontend convention. Don't paper over this with a "convenience" add-on-search call site.
+
+**Decision**: `_schemaVersion` mismatch quarantines instead of migrating in-place.
+**Why**: M5 ships schema v1. There's no v2 yet, so a migrator would be speculative code. When v2 lands, replace the
+quarantine branch with a `match` on the version that calls a `migrate_v1_to_v2` helper.
 
 ## Gotchas
 

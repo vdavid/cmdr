@@ -1005,6 +1005,23 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
+    id: 'search.recentSearches.maxCount',
+    section: ['Advanced'],
+    label: 'Recent searches to remember',
+    description:
+      'How many recent searches to keep for the in-dialog footer and history popover. Older entries roll off as new ones land. 0 disables history (the footer and popover hide and no new entries are recorded).',
+    keywords: ['search', 'recent', 'history', 'cap', 'limit', 'max', 'count'],
+    type: 'number',
+    default: 1000,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 0,
+      max: 10000,
+      step: 1,
+    },
+  },
+  {
     id: 'advanced.updateCheckInterval',
     section: ['Advanced'],
     label: 'Update check interval',

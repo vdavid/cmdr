@@ -22,6 +22,11 @@ chip row and path-pill column landing in later milestones.
 | `FilterChipPopover.svelte`           | Generic popover: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog               |
 | `filter-chip-state.ts`               | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip` (testable in isolation)               |
 | `SearchResults.svelte`               | Column headers + results list + all states (loading, empty, populated) + status bar                       |
+| `EmptyState.svelte`                  | Pre-search "Try…" block: three example chips (AI prompts or filename patterns), index size, keyboard tip  |
+| `RecentSearchesFooter.svelte`        | Chip strip at the bottom of the dialog, up to 6 most recent entries plus an "All searches…" trailing chip |
+| `RecentSearchesPopover.svelte`       | Fuzzy-searchable popover over the full recent-searches history (`⌘H` opens, ufuzzy under the hood)        |
+| `recent-searches-state.svelte.ts`    | Module-level reactive store for the loaded recent-searches list; loads from backend once per session      |
+| `recent-searches-utils.ts`           | Pure helpers: `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip`                        |
 | `search-state.svelte.ts`             | Module-level `$state` for query fields, results, index readiness, AI state                                |
 | `search-state.test.ts`               | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)                             |
 | `filter-chip-state.test.ts`          | Default → configured → cleared rules for each filter chip's display summary                               |
@@ -64,6 +69,7 @@ There is **no `aiPrompt` state and no `namePattern` state**. M2 deleted both. An
 | `Enter`   | Run search in the active mode (AI in AI mode, manual otherwise)   |
 | `⌘Enter`  | Run AI search regardless of active mode (only when AI is enabled) |
 | `⌘N`      | Clear all dialog state ("new search")                             |
+| `⌘H`      | Toggle the recent-searches popover (fuzzy over the full history)  |
 | `⌘1`      | Switch to AI (AI on) or Filename (AI off)                         |
 | `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                      |
 | `⌘3`      | Switch to Regex (AI on); no-op when AI is off                     |
@@ -178,6 +184,23 @@ overlay matches this usage pattern and doesn't consume permanent screen real est
 line) and makes the query model transparent. Users see exactly what's being searched. M3 will move them into chips with
 popovers, but they stay always-on.
 
+**Decision**: Recent-search entries are added only on "Open in pane", not on Enter / auto-apply. **Why**: David's
+explicit design call (search-redesign-plan §3.5). The 1000-entry budget stays signal-rich (results worth acting on)
+instead of polluted with every keystroke-debounced auto-apply. The IPC commands don't enforce this — the gate is the
+frontend `addRecentSearch` call site (which M8 wires to the Open-in-pane handler). For M5 the IPC + footer + popover
+ship; for local testing you can seed `{app_data_dir}/search-history.json` by hand.
+
+**Decision**: AI mode example chips re-run on click. **Why**: AI mode's "explicit user trigger" rule (the user must
+press Enter / ⌘Enter to spend an LLM call) counts a click as a trigger. The same applies to recent-search AI entries
+(footer chip click + popover Enter both run). The user-friendliness call from the plan §3.4 is that anything they
+deliberately picked from the dialog is the same kind of "yes, please" as pressing Enter.
+
+**Decision**: `RecentSearchesPopover` reuses `FilterChipPopover` for positioning + focus trap + Esc-scoped close.
+**Why**: The plan calls for a sub-overlay-of-an-overlay with the same auto-flip, focus-trap, and "Esc closes only the
+popover" semantics as the filter chips. Reimplementing those would risk drift; reusing the primitive guarantees the
+contract documented in the SearchDialog `CLAUDE.md` (Escape capture-phase guard) covers both popover kinds via the
+single `.filter-chip-popover` DOM selector.
+
 ## Gotchas
 
 **Gotcha**: `stopPropagation()` on every `keydown`. **Why**: Without this, keys propagate to the file explorer behind
@@ -205,7 +228,9 @@ before the IPC call) so the `AiTransparencyStrip` can render it. Anyone building
 ## Dependencies
 
 - `$lib/tauri-commands` -- `prepareSearchIndex`, `searchFiles`, `releaseSearchIndex`, `translateSearchQuery`,
-  `parseSearchScope`
+  `parseSearchScope`, `getRecentSearches`, `addRecentSearch`, `removeRecentSearch`, `clearRecentSearches`,
+  `applyRecentSearchesMaxCount`
+- `@leeoniya/ufuzzy` -- fuzzy filtering inside `RecentSearchesPopover`
 - `$lib/indexing` -- `isScanning`, `getEntriesScanned` (scan progress for unavailable state)
 - `$lib/settings` -- `getSetting('ai.provider')` (AI chip visibility, ⌘ shortcut numbering)
 - `$lib/tooltip/tooltip` -- chip tooltips (Content chip's "Coming soon" copy)

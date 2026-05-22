@@ -485,6 +485,11 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::search::translate_search_query,
         crate::commands::search::parse_search_scope,
         crate::commands::search::get_system_dir_excludes,
+        crate::commands::search::get_recent_searches,
+        crate::commands::search::add_recent_search,
+        crate::commands::search::remove_recent_search,
+        crate::commands::search::clear_recent_searches,
+        crate::commands::search::apply_recent_searches_max_count,
         crate::commands::e2e::get_e2e_start_path,
         crate::commands::e2e::is_e2e_mode,
         #[cfg(feature = "playwright-e2e")]

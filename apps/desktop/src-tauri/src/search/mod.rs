@@ -6,6 +6,7 @@
 
 pub mod ai;
 pub(crate) mod engine;
+pub mod history;
 pub(crate) mod index;
 pub(crate) mod query;
 pub(crate) mod types;

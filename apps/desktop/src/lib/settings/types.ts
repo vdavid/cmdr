@@ -212,6 +212,9 @@ export interface SettingsValues {
   'advanced.diskSpaceChangeThreshold': number
   'advanced.maxLogStorageMb': number
   'fileExplorer.tabs.closedTabHistorySize': number
+
+  // Search
+  'search.recentSearches.maxCount': number
 }
 
 export type SettingId = keyof SettingsValues

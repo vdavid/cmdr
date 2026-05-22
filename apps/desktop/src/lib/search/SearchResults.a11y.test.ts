@@ -42,8 +42,10 @@ const defaultProps = {
   indexEntryCount: 1000,
   gridTemplate: '24px 1fr 2fr 80px 100px',
   iconCacheVersion: 0,
+  aiEnabled: false,
   onResultClick: () => {},
   onColumnDragStart: () => {},
+  onPickExample: () => {},
 }
 
 describe('SearchResults a11y', () => {

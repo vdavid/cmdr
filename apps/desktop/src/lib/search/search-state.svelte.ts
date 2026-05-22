@@ -1,7 +1,7 @@
 // Reactive search state for the search dialog.
 // Uses Svelte 5 runes ($state, $derived) following existing codebase patterns.
 
-import type { SearchResultEntry, PatternType, SearchQuery } from '$lib/tauri-commands'
+import type { SearchResultEntry, PatternType, SearchQuery, HistoryEntry, HistoryFilters } from '$lib/tauri-commands'
 export type { PatternType }
 
 export type SizeFilter = 'any' | 'gte' | 'lte' | 'between'
@@ -281,6 +281,120 @@ export function buildSearchQuery(): SearchQuery {
   applyDateQuery(q)
 
   return q
+}
+
+/**
+ * Picks the friendliest size unit + value pair for a given byte count. Mirrors the helper in
+ * `SearchDialog.svelte` so callers outside the dialog (history loader) can reuse it.
+ */
+function bytesToSize(bytes: number): { value: string; unit: SizeUnit } {
+  if (bytes >= 1024 * 1024 * 1024) {
+    return { value: String(Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100), unit: 'GB' }
+  }
+  if (bytes >= 1024 * 1024) {
+    return { value: String(Math.round((bytes / (1024 * 1024)) * 100) / 100), unit: 'MB' }
+  }
+  return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
+}
+
+function applyHistoryFilters(filters: HistoryFilters | undefined): void {
+  // Reset to "any" first; we'll set the chip below if the history actually carries a filter.
+  sizeFilter = 'any'
+  sizeValue = ''
+  sizeUnit = 'MB'
+  sizeValueMax = ''
+  sizeUnitMax = 'MB'
+  dateFilter = 'any'
+  dateValue = ''
+  dateValueMax = ''
+
+  if (!filters) return
+
+  if (filters.sizeMin != null && filters.sizeMax != null) {
+    sizeFilter = 'between'
+    const min = bytesToSize(filters.sizeMin)
+    const max = bytesToSize(filters.sizeMax)
+    sizeValue = min.value
+    sizeUnit = min.unit
+    sizeValueMax = max.value
+    sizeUnitMax = max.unit
+  } else if (filters.sizeMin != null) {
+    sizeFilter = 'gte'
+    const min = bytesToSize(filters.sizeMin)
+    sizeValue = min.value
+    sizeUnit = min.unit
+  } else if (filters.sizeMax != null) {
+    sizeFilter = 'lte'
+    const max = bytesToSize(filters.sizeMax)
+    sizeValue = max.value
+    sizeUnit = max.unit
+  }
+
+  if (filters.modifiedAfter != null && filters.modifiedBefore != null) {
+    dateFilter = 'between'
+    dateValue = filters.modifiedAfter
+    dateValueMax = filters.modifiedBefore
+  } else if (filters.modifiedAfter != null) {
+    dateFilter = 'after'
+    dateValue = filters.modifiedAfter
+  } else if (filters.modifiedBefore != null) {
+    dateFilter = 'before'
+    dateValue = filters.modifiedBefore
+  }
+}
+
+/**
+ * Loads a persisted history entry into the dialog's live state. Used by the recent-searches
+ * footer (chip click) and popover (item activation). Resets the AI transparency strip; if the
+ * caller wants to run an AI search from this entry, they can re-trigger it via the dialog's
+ * AI path (which captures the prompt into `lastAiPrompt` itself).
+ */
+export function applyHistoryEntry(entry: HistoryEntry): void {
+  query = entry.query
+  mode = entry.mode
+  scope = entry.scope
+  caseSensitive = entry.caseSensitive
+  excludeSystemDirs = entry.excludeSystemDirs
+  applyHistoryFilters(entry.filters)
+  // Clear any prior AI transparency state; the next AI run will repopulate it.
+  lastAiPrompt = null
+  lastAiCaveat = null
+  results = []
+  totalCount = 0
+  cursorIndex = 0
+}
+
+function readSizeFilters(): { sizeMin?: number; sizeMax?: number } {
+  if (sizeFilter === 'any') return {}
+  const minBytes = parseSizeToBytes(sizeValue, sizeUnit)
+  if (sizeFilter === 'gte') return minBytes !== undefined ? { sizeMin: minBytes } : {}
+  if (sizeFilter === 'lte') return minBytes !== undefined ? { sizeMax: minBytes } : {}
+  // between
+  const maxBytes = parseSizeToBytes(sizeValueMax, sizeUnitMax)
+  const out: { sizeMin?: number; sizeMax?: number } = {}
+  if (minBytes !== undefined) out.sizeMin = minBytes
+  if (maxBytes !== undefined) out.sizeMax = maxBytes
+  return out
+}
+
+function readDateFilters(): { modifiedAfter?: string; modifiedBefore?: string } {
+  if (dateFilter === 'after') return dateValue ? { modifiedAfter: dateValue } : {}
+  if (dateFilter === 'before') return dateValue ? { modifiedBefore: dateValue } : {}
+  if (dateFilter === 'between') {
+    const out: { modifiedAfter?: string; modifiedBefore?: string } = {}
+    if (dateValue) out.modifiedAfter = dateValue
+    if (dateValueMax) out.modifiedBefore = dateValueMax
+    return out
+  }
+  return {}
+}
+
+/**
+ * Builds a `HistoryEntry`-ready filter object from the current state. Pure helper for the
+ * "Open in pane" call site that will land in M8.
+ */
+export function buildHistoryFilters(): HistoryFilters {
+  return { ...readSizeFilters(), ...readDateFilters() }
 }
 
 /**

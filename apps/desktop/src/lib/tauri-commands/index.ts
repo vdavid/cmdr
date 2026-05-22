@@ -372,6 +372,19 @@ export {
   parseSearchScope,
   getSystemDirExcludes,
   onSearchIndexReady,
+  getRecentSearches,
+  addRecentSearch,
+  removeRecentSearch,
+  clearRecentSearches,
+  applyRecentSearchesMaxCount,
 } from './search'
 export type { PatternType, SearchResult, SearchResultEntry, PrepareResult, ParsedScope } from './ipc-types'
-export type { SearchQuery, TranslateResult, TranslatedQuery, TranslateDisplay } from '$lib/ipc/bindings'
+export type {
+  SearchQuery,
+  TranslateResult,
+  TranslatedQuery,
+  TranslateDisplay,
+  HistoryEntry,
+  HistoryFilters,
+  HistoryMode,
+} from '$lib/ipc/bindings'

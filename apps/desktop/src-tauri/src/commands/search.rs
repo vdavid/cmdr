@@ -20,6 +20,7 @@ use crate::search::{
 use crate::indexing::writer::WRITER_GENERATION;
 use crate::pluralize::pluralize_with;
 use crate::search::ai::{self, query_builder as ai_query_builder};
+use crate::search::history::{self, HistoryEntry};
 
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -404,6 +405,52 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
         display,
         caveat,
     })
+}
+
+// ============================================================================
+// Recent searches (history) IPC
+// ============================================================================
+
+/// Reads the latest persisted recent-searches entries. `limit = None` returns all.
+#[tauri::command]
+#[specta::specta]
+pub fn get_recent_searches(limit: Option<u32>) -> Vec<HistoryEntry> {
+    history::list_entries(limit.map(|n| n as usize))
+}
+
+/// Adds a recent-search entry. Dedupes against existing entries by canonical key,
+/// moves the matching one to the top, and trims to `max_count`.
+#[tauri::command]
+#[specta::specta]
+pub fn add_recent_search(app: tauri::AppHandle, entry: HistoryEntry, max_count: Option<u32>) -> Result<(), String> {
+    let cap = max_count.map(|n| n as usize).unwrap_or_else(history::default_max_count);
+    history::add_entry(&app, entry, cap);
+    Ok(())
+}
+
+/// Removes a recent-search entry by id. No-op when the id isn't present.
+#[tauri::command]
+#[specta::specta]
+pub fn remove_recent_search(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    history::remove_entry(&app, &id);
+    Ok(())
+}
+
+/// Clears every recent-search entry.
+#[tauri::command]
+#[specta::specta]
+pub fn clear_recent_searches(app: tauri::AppHandle) -> Result<(), String> {
+    history::clear_entries(&app);
+    Ok(())
+}
+
+/// Live-applies a new `search.recentSearches.maxCount` value. Trims the in-memory
+/// store and rewrites disk only when entries actually drop.
+#[tauri::command]
+#[specta::specta]
+pub fn apply_recent_searches_max_count(app: tauri::AppHandle, max_count: u32) -> Result<(), String> {
+    history::apply_max_count(&app, max_count as usize);
+    Ok(())
 }
 
 #[cfg(test)]

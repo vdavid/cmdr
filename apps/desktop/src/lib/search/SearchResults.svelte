@@ -10,6 +10,8 @@
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import Size from '$lib/ui/Size.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
+    import EmptyState from './EmptyState.svelte'
+    import type { SearchMode } from './search-state.svelte'
 
     interface Props {
         results: SearchResultEntry[]
@@ -29,8 +31,12 @@
         indexEntryCount: number
         gridTemplate: string
         iconCacheVersion: number
+        /** True when AI mode is available (provider on + index ready). Drives the empty-state chip set. */
+        aiEnabled: boolean
         onResultClick: (index: number) => void
         onColumnDragStart: (col: string, e: MouseEvent) => void
+        /** Called when the user clicks an example chip in the empty state. */
+        onPickExample: (chip: { mode: SearchMode; query: string }) => void
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
@@ -51,8 +57,10 @@
         indexEntryCount,
         gridTemplate,
         iconCacheVersion: _iconVersionProp,
+        aiEnabled,
         onResultClick,
         onColumnDragStart,
+        onPickExample,
     }: Props = $props()
     /* eslint-enable prefer-const */
 
@@ -149,8 +157,14 @@
     </span>
 </div>
 
-<!-- Results list -->
-<div class="results-container" bind:this={resultsContainer} role="listbox" aria-label="Search results">
+<!-- Results list. `role="listbox"` only applies when option rows are rendered; empty/loading/
+     unavailable states are bare text containers so axe doesn't flag aria-required-children. -->
+<div
+    class="results-container"
+    bind:this={resultsContainer}
+    role={results.length > 0 ? 'listbox' : undefined}
+    aria-label={results.length > 0 ? 'Search results' : undefined}
+>
     {#if !isIndexAvailable}
         <div class="index-unavailable">
             <p class="unavailable-message">
@@ -174,6 +188,8 @@
         </div>
     {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
         <div class="no-results">No files found</div>
+    {:else if !hasSearched && !query.trim() && isIndexReady && sizeFilter === 'any' && dateFilter === 'any'}
+        <EmptyState {aiEnabled} {indexEntryCount} onPick={onPickExample} />
     {:else}
         {#each results as entry, index (entry.path)}
             <div

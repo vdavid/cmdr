@@ -452,6 +452,9 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::known_shares::load_known_shares(app.handle());
 
+            // Load persisted recent search history into the in-memory cache.
+            search::history::load_history(app.handle());
+
             // Load manually-added servers and inject into discovery state
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::manual_servers::load_manual_servers(app.handle());

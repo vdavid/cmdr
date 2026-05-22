@@ -85,6 +85,19 @@
     import SearchFilterChips from './SearchFilterChips.svelte'
     import SearchResults from './SearchResults.svelte'
     import AiTransparencyStrip from './AiTransparencyStrip.svelte'
+    import RecentSearchesFooter from './RecentSearchesFooter.svelte'
+    import RecentSearchesPopover from './RecentSearchesPopover.svelte'
+    import {
+        loadRecentSearches,
+        getRecentSearchesList,
+        setRecentSearchesList,
+    } from './recent-searches-state.svelte'
+    import { applyHistoryEntry } from './search-state.svelte'
+    import {
+        getRecentSearches as fetchRecentSearches,
+        removeRecentSearch as removeRecentSearchIpc,
+        type HistoryEntry,
+    } from '$lib/tauri-commands'
 
     interface Props {
         /** Called when user selects a result: receives the full path */
@@ -172,6 +185,12 @@
     /** True once the user has triggered at least one search (so we can distinguish "no query yet" from "0 results"). */
     let hasSearched = $state(false)
 
+    // Recent searches: the footer anchor doubles as the popover anchor when the user opens the
+    // popover via the trailing chip. ⌘H anchors to the search input as a fallback.
+    let footerRef: HTMLDivElement | undefined = $state()
+    let recentPopoverOpen = $state(false)
+    const recentEntries = $derived(getRecentSearchesList())
+
     // Subscribe to icon cache version for reactivity
     const iconVersion = $derived($iconCacheVersion)
 
@@ -202,11 +221,65 @@
         if (e.key !== 'Escape') return
         if (dialogElement?.querySelector('.filter-chip-popover')) {
             // Let the popover handle Escape on the bubble; it'll close itself and stopPropagation.
+            // This covers both the filter chips and the recent-searches popover (both reuse the
+            // same `FilterChipPopover` primitive, so the DOM selector matches).
             return
         }
         e.preventDefault()
         e.stopPropagation()
         onClose()
+    }
+
+    /** Opens the recent-searches popover, anchored to the footer (or the input as fallback). */
+    function openRecentPopover(): void {
+        recentPopoverOpen = true
+    }
+
+    function closeRecentPopover(): void {
+        recentPopoverOpen = false
+    }
+
+    /** Loads + runs a history entry. AI entries get the same explicit-trigger treatment as Enter. */
+    function activateHistoryEntry(entry: HistoryEntry): void {
+        applyHistoryEntry(entry)
+        closeRecentPopover()
+        void tick().then(() => {
+            focusInput()
+        })
+        if (entry.mode === 'ai') {
+            if (aiEnabled) {
+                void executeAiSearch(entry.query)
+            }
+        } else {
+            void executeSearch()
+        }
+    }
+
+    /** Removes a recent search entry. Backend write is async; we update the cache eagerly. */
+    function removeHistoryEntry(entry: HistoryEntry): void {
+        // Optimistic UI: drop locally first so the chip animates out without waiting.
+        setRecentSearchesList(getRecentSearchesList().filter((e) => e.id !== entry.id))
+        void removeRecentSearchIpc(entry.id).then(async () => {
+            // Re-fetch to stay consistent if the backend evicted other entries since last load.
+            try {
+                setRecentSearchesList(await fetchRecentSearches())
+            } catch {
+                // Already fell back to the optimistic snapshot; nothing to do.
+            }
+        })
+    }
+
+    /** Empty-state chip pick: load + run, mirroring the recent-search activation path. */
+    function pickExample(chip: { mode: SearchMode; query: string }): void {
+        setQuery(chip.query)
+        setMode(chip.mode)
+        if (chip.mode === 'ai') {
+            if (aiEnabled) {
+                void executeAiSearch(chip.query)
+            }
+        } else {
+            void executeSearch()
+        }
     }
 
     onMount(async () => {
@@ -239,6 +312,10 @@
             // Index not available: indexing disabled, not started, or backend unavailable
             setIsIndexAvailable(false)
         }
+
+        // Load persisted recent searches (newest first) into the in-memory store. Idempotent,
+        // so closing + reopening the dialog doesn't refetch unless we explicitly invalidate.
+        void loadRecentSearches()
 
         // Load system dir exclude list for tooltip display
         getSystemDirExcludes()
@@ -602,6 +679,17 @@
             runAiFromQuery()
             return true
         }
+        // ⌘H toggles the recent-searches popover. The popover owns its own Esc, so users can
+        // dismiss it without closing the dialog.
+        if (matchKey(e, 'h', 'meta')) {
+            e.preventDefault()
+            if (recentPopoverOpen) {
+                closeRecentPopover()
+            } else {
+                openRecentPopover()
+            }
+            return true
+        }
         if (handleModeShortcut(e)) return true
         return false
     }
@@ -751,11 +839,34 @@
             {indexEntryCount}
             {gridTemplate}
             iconCacheVersion={iconVersion}
+            {aiEnabled}
             onResultClick={handleResultClick}
             onColumnDragStart={(col: string, e: MouseEvent) => {
                 handleColumnDragStart(col as keyof typeof colWidths, e)
             }}
+            onPickExample={pickExample}
         />
+
+        <div bind:this={footerRef}>
+            <RecentSearchesFooter
+                entries={recentEntries}
+                disabled={inputsDisabled}
+                onPick={activateHistoryEntry}
+                onRemove={removeHistoryEntry}
+                onOpenAll={openRecentPopover}
+            />
+        </div>
+
+        {#if footerRef}
+            <RecentSearchesPopover
+                anchor={footerRef}
+                open={recentPopoverOpen}
+                entries={recentEntries}
+                onClose={closeRecentPopover}
+                onPick={activateHistoryEntry}
+                onRemove={removeHistoryEntry}
+            />
+        {/if}
     </div>
 </div>
 
