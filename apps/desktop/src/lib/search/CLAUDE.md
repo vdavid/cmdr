@@ -52,6 +52,8 @@ chip row and path-pill column landing in later milestones.
 | `snapshot-store.svelte.ts.test.ts`   | Create/read/no-overwrite, refcount inc/dec/delete, last-attempt slot swaps, entries-cap truncation, debug stats   |
 | `snapshot-label.ts`                  | Pure helper: `buildSnapshotLabel({ mode, query, aiPrompt? })` for breadcrumb + tab title (M8b)                    |
 | `snapshot-label.test.ts`             | Filename/regex/AI label shapes, AI prompt priority, truncation cap, fallbacks                                     |
+| `capabilities.ts`                    | `searchResultsVolumeCapabilities()` returns the per-pane flag set (M8c) and the shortcut toast text               |
+| `capabilities.test.ts`               | Pins the flag shape, the purity contract, and the toast string                                                    |
 
 ## State shape (post-M4)
 
@@ -266,6 +268,49 @@ release refs immediately, since nothing else holds them.
 destroys and recreates `FilePane` on tab switch (cold load), but `TabManager` survives, and the per-tab `history` field
 is untouched. Snapshot refs therefore persist across pane recreation. Documented inline in `snapshot-store.svelte.ts`'s
 header comment so the next agent doesn't need to re-verify.
+
+**Capability flags (M8c, §3.7)**: `capabilities.ts::searchResultsVolumeCapabilities()` returns the per-pane flag set
+`{ canPasteInto: false, canMkdir: false, canMkfile: false, canRename: false, isSourceOK: true }`. Consumers:
+
+- **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): the bar takes
+  `canMkdir` / `canMkfile` / `canRename` / `canSourceOps` / `canPasteInto` props. When the focused pane is on
+  `volumeId === 'search-results'`, F2 (Rename), F7 (New folder), and Shift+F4 (New file) render visibly disabled. F5 /
+  F6 / F8 (Copy / Move / Delete) stay enabled because the snapshot row is source-OK. The page reads the focused volume
+  via the new `onFocusedVolumeChange` callback `DualPaneExplorer` fires whenever `focusedPane` or the active tab's
+  `volumeId` on the focused side changes.
+- **Right-click context menu** (`lib/file-explorer/pane/SearchResultsView.svelte` → `showFileContextMenu` →
+  `src-tauri/src/menu/menu_structure.rs::build_context_menu`): the IPC now takes a `restrictDestinationActions` flag.
+  When `true`, the Rust menu builder omits Rename and New folder. Source-side items (Open, Copy, Move, Delete, Show in
+  Finder, Copy filename, Copy path) stay. Capabilities flow from `searchResultsVolumeCapabilities()` to the IPC; the
+  flag is set when `!canRename && !canMkdir`.
+- **Keyboard shortcut dispatch** (`routes/(main)/command-dispatch.ts::blockedBySearchResultsPane`): catches `⌘V`
+  (`edit.paste`), `⌘⌥V` (`edit.pasteAsMove`), `F7` (`file.newFolder`), Shift+F4 (`file.newFile`), and `F2` /
+  `file.rename` when the focused pane is `search-results`. Surfaces the friendly toast
+  `"Search results aren't a folder. Paste into a real folder instead."` (the canonical string lives in `capabilities.ts`
+  as `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`). Toasts are the LAST RESORT here — the F-bar and the native context menu
+  disable the same actions at the source, so the toast only fires when a shortcut bypasses the visible UI. (Per
+  `docs/design-principles.md`: "disabled is better than 'you did the wrong thing' toasts.")
+
+**Cross-snapshot delete sync (M8c, §3.7)**: When the user deletes a row from a search-results pane, the delete dialog
+runs against the real file path (the snapshot stores absolute paths). On `handleTransferComplete` for
+`op === 'delete' | 'trash' | 'move'`, `dialog-state.svelte.ts` calls `removeEntryFromAllSnapshots(sourcePath)` once per
+deleted path. That helper:
+
+1. Walks every stored snapshot and replaces its `entries` array with one that excludes the deleted path (preserves
+   reference identity on the unchanged entries; only the array changes).
+2. Bumps a module-level `mutationTick` `$state` whenever at least one snapshot was mutated.
+3. Leaves `totalCount` alone — the existing `entries.length` vs `totalCount` mismatch is the truncation signal.
+
+`SearchResultsView.svelte`'s snapshot lookup reads `getMutationTick()` inside its `$derived` so the view re-renders
+after a delete. Without the tick, the `Map` mutation would be invisible to Svelte reactivity (snapshots aren't `$state`
+themselves, by design — see the store's header).
+
+The search-results pane's own `openDeleteDialog` path is plumbed in
+`DualPaneExplorer.svelte::openDeleteFromSearchResults`: it reads the cursor row's entry from the snapshot, builds a
+one-item `DeleteSourceItem`, and routes through the same `showDeleteConfirmation` dialog every other delete uses.
+`supportsTrash = true` (the underlying file is on the local volume) and `sourceVolumeId = DEFAULT_VOLUME_ID`. Today only
+the cursor row is deletable from the snapshot pane: the view doesn't expose its own multi-selection yet. The full-pane
+selection model is a follow-up if the snapshot pane ever grows it.
 
 ## Key decisions
 

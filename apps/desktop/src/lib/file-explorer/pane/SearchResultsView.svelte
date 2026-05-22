@@ -22,7 +22,9 @@
 
     import type { FileEntry, SortColumn, SortOrder } from '../types'
     import FullList from '../views/FullList.svelte'
-    import { getSnapshot, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
+    import { getSnapshot, getMutationTick, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
+    import { searchResultsVolumeCapabilities } from '$lib/search/capabilities'
+    import { showFileContextMenu } from '$lib/tauri-commands'
     import type { SearchResultEntry } from '$lib/ipc/bindings'
     import type { ListViewAPI } from './types'
 
@@ -59,8 +61,19 @@
     const SEARCH_RESULTS_PREFIX = 'search-results://'
     const snapshotId = $derived(path.startsWith(SEARCH_RESULTS_PREFIX) ? path.slice(SEARCH_RESULTS_PREFIX.length) : null)
 
-    /** Live snapshot lookup. Re-derives if the id changes (which happens on pane history navigation). */
-    const snapshot = $derived<SearchSnapshot | undefined>(snapshotId ? getSnapshot(snapshotId) : undefined)
+    /**
+     * Live snapshot lookup. Re-derives if the id changes (which happens on pane
+     * history navigation) AND whenever the snapshot store's mutation tick bumps
+     * (cross-snapshot delete sync, see `snapshot-store::removeEntryFromAllSnapshots`).
+     * Reading `getMutationTick()` registers a Svelte dependency on the underlying
+     * `$state` so the entries column re-derives after a delete.
+     */
+    const snapshot = $derived<SearchSnapshot | undefined>(
+        snapshotId ? (void getMutationTick(), getSnapshot(snapshotId)) : undefined,
+    )
+
+    /** Capability flags driving the row context menu (M8c). */
+    const caps = searchResultsVolumeCapabilities()
 
     /**
      * Adapt `SearchResultEntry` (the wire-typed search result) into `FileEntry` (the
@@ -109,9 +122,13 @@
         return entries.findIndex((e) => e.name === name)
     }
 
-    /** Activate the cursor's row, identical to pressing Enter or double-clicking. */
+    /**
+     * Activate the cursor's row, identical to pressing Enter or double-clicking.
+     * The cursor index is clamped by the caller (FilePane's keyboard handler) so
+     * we can assume `entries[cursorIndex]` is valid when this fires.
+     */
     export function openCursorItem(): void {
-        const entry = entries[cursorIndex]
+        const entry = entries[cursorIndex] as FileEntry | undefined
         if (entry) onNavigate(entry)
     }
 
@@ -144,6 +161,21 @@
         showPathColumn={true}
         staticEntries={entries}
         onPathPillPick={onNavigateToAncestor}
+        onContextMenu={(entry: FileEntry) => {
+            // Route through the standard native context menu but ask Rust to
+            // suppress Rename and New folder for this virtual pane: the
+            // underlying paths are real, so Open / Copy / Move / Delete /
+            // Show in Finder all still make sense, but the snapshot view
+            // isn't a destination for "rename inside this folder" or
+            // "make a new folder here". `caps` is the capability flag set
+            // (`searchResultsVolumeCapabilities`) that gates this. The flag
+            // is intentionally read at call time — referencing it here keeps
+            // the wiring discoverable if the per-pane capabilities ever
+            // grow a runtime branch (right now the flags are static for
+            // search-results panes).
+            const restrict = !caps.canRename
+            void showFileContextMenu(entry.path, entry.name, entry.isDirectory, [entry.path], restrict)
+        }}
     />
 {:else}
     <!-- Defensive empty state. Reaching this means the snapshot was evicted out from

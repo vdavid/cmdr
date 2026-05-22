@@ -5,11 +5,13 @@ import {
   decrementRef,
   getDebugStats,
   getLastAttemptId,
+  getMutationTick,
   getOrCreate,
   getRefCount,
   getSnapshot,
   incrementRef,
   nextSnapshotId,
+  removeEntryFromAllSnapshots,
   setLastAttemptId,
   SNAPSHOT_ENTRIES_CAP,
   type SearchSnapshot,
@@ -249,6 +251,44 @@ describe('snapshot-store', () => {
       const map = new Map(stats.idsWithRefCount)
       expect(map.get('sr-1')).toBe(1)
       expect(map.get('sr-2')).toBe(3)
+    })
+  })
+
+  describe('removeEntryFromAllSnapshots (M8c delete sync)', () => {
+    it('removes a path from every snapshot that contains it and bumps the mutation tick', () => {
+      const sharedEntry = makeEntry('shared.txt')
+      const otherEntry = makeEntry('other.txt')
+
+      // Snapshot A: [shared, other]. Snapshot B: [shared].
+      getOrCreate('sr-1', makeSnapshot('sr-1', { entries: [sharedEntry, otherEntry], totalCount: 2 }))
+      getOrCreate('sr-2', makeSnapshot('sr-2', { entries: [sharedEntry], totalCount: 1 }))
+
+      const tickBefore = getMutationTick()
+      const mutated = removeEntryFromAllSnapshots(sharedEntry.path)
+
+      expect(mutated.sort()).toEqual(['sr-1', 'sr-2'])
+      expect(getSnapshot('sr-1')?.entries.map((e) => e.name)).toEqual(['other.txt'])
+      expect(getSnapshot('sr-2')?.entries).toEqual([])
+      expect(getMutationTick()).toBe(tickBefore + 1)
+    })
+
+    it('is a no-op when no snapshot contains the path and leaves the mutation tick untouched', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      const tickBefore = getMutationTick()
+      const mutated = removeEntryFromAllSnapshots('/not/in/any/snapshot.txt')
+
+      expect(mutated).toEqual([])
+      expect(getSnapshot('sr-1')?.entries.map((e) => e.name)).toEqual(['a.txt', 'b.txt'])
+      expect(getMutationTick()).toBe(tickBefore)
+    })
+
+    it('keeps totalCount unchanged (entries vs totalCount mismatch is the existing truncation signal)', () => {
+      const entry = makeEntry('zap.txt')
+      getOrCreate('sr-1', makeSnapshot('sr-1', { entries: [entry], totalCount: 42 }))
+      removeEntryFromAllSnapshots(entry.path)
+      const snap = getSnapshot('sr-1')
+      expect(snap?.totalCount).toBe(42)
+      expect(snap?.entries).toEqual([])
     })
   })
 })

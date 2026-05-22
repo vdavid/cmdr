@@ -82,6 +82,12 @@ pub fn build_menu<R: Runtime>(
 }
 
 /// Builds a context menu for a specific file.
+///
+/// `restrict_destination_actions = true` is used by the search-results virtual
+/// pane (`volumeId == "search-results"`, see `apps/desktop/src/lib/search/capabilities.ts`):
+/// it suppresses Rename and New folder, which only make sense on a real directory.
+/// Source-side actions (Open, Copy, Move, Delete, Show in Finder, Copy filename,
+/// Copy path) stay because the underlying paths are real.
 pub fn build_context_menu<R: Runtime>(
     app: &AppHandle<R>,
     filename: &str,
@@ -91,6 +97,7 @@ pub fn build_context_menu<R: Runtime>(
         allow(unused_variables, reason = "all reads of `info` sit inside macOS-gated branches")
     )]
     info: &FileContextInfo,
+    restrict_destination_actions: bool,
 ) -> tauri::Result<ContextMenuResult<R>> {
     let menu = Menu::new(app)?;
 
@@ -123,19 +130,27 @@ pub fn build_context_menu<R: Runtime>(
     menu.append(&toggle_selection_item)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
 
-    // Copy / Move / Rename group
+    // Copy / Move / Rename group. Rename is omitted on the search-results virtual
+    // pane: the underlying file CAN be renamed, but doing it from the snapshot view
+    // splits the file (snapshot keeps the old name, disk has the new) which is
+    // confusing. The user can navigate to the real folder and rename there.
     let copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy", true, Some("F5"))?;
     let move_item = MenuItem::with_id(app, FILE_MOVE_ID, "Move", true, Some("F6"))?;
-    let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
     menu.append(&copy_item)?;
     menu.append(&move_item)?;
-    menu.append(&rename_item)?;
+    if !restrict_destination_actions {
+        let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
+        menu.append(&rename_item)?;
+    }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
 
-    // New folder
-    let new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "New folder", true, Some("F7"))?;
-    menu.append(&new_folder_item)?;
-    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    // New folder — also omitted on search-results panes (no destination folder
+    // to create into; the pane IS the snapshot, not a directory).
+    if !restrict_destination_actions {
+        let new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "New folder", true, Some("F7"))?;
+        menu.append(&new_folder_item)?;
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+    }
 
     // Delete
     let delete_item = MenuItem::with_id(app, FILE_DELETE_ID, "Delete", true, Some("F8"))?;

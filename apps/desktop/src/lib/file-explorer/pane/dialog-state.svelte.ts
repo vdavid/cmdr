@@ -4,6 +4,7 @@ import { addToast } from '$lib/ui/toast'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
+import { removeEntryFromAllSnapshots } from '$lib/search/snapshot-store.svelte'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type {
@@ -347,6 +348,20 @@ export function createDialogState(deps: DialogStateDeps) {
     handleTransferComplete(filesProcessed: number, filesSkipped: number, bytesProcessed: number) {
       const op = transferProgressProps?.operationType ?? 'copy'
       const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
+
+      // Cross-snapshot delete sync (M8c, plan §3.7): when files are removed from
+      // disk via Delete or Trash (or moved away via Move — the source path no
+      // longer resolves), purge each source path from every stored
+      // search-results snapshot. This is the one and only authority on the
+      // "the row disappears from this snapshot AND from any other snapshot
+      // containing it" rule. The snapshot store bumps its mutation tick so
+      // `SearchResultsView`'s `$derived` re-evaluates and the row vanishes
+      // without a manual refresh. No-op when no snapshot contains the path.
+      if ((op === 'delete' || op === 'trash' || op === 'move') && transferProgressProps?.sourcePaths) {
+        for (const sourcePath of transferProgressProps.sourcePaths) {
+          removeEntryFromAllSnapshots(sourcePath)
+        }
+      }
       log.info(
         `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatBytes(bytesProcessed)})`,
       )

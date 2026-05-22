@@ -77,6 +77,26 @@ const store = new Map<string, StoreEntry>()
 let nextId = 1
 let lastAttemptId: string | null = null
 
+/**
+ * Monotonic mutation tick bumped whenever a stored snapshot's `entries` array is
+ * mutated in place (currently only `removeEntryFromAllSnapshots`). Components
+ * that render a snapshot's entries can subscribe to this via `getMutationTick()`
+ * to re-derive after a cross-snapshot delete. We don't push reactivity into the
+ * `Map` itself — keeping snapshots non-reactive is part of the design (see
+ * module header) — but `mutationTick` IS a `$state` cell because it's the one
+ * place where consumers need to subscribe.
+ *
+ * The tick is bumped at most once per `removeEntryFromAllSnapshots` call,
+ * regardless of how many snapshots changed: consumers should re-derive in
+ * full, not per-snapshot.
+ */
+let mutationTick = $state(0)
+
+/** Returns the current mutation-tick value. Subscribe to drive re-renders after a cross-snapshot mutation. */
+export function getMutationTick(): number {
+  return mutationTick
+}
+
 /** Returns a fresh monotonic snapshot id (`sr-1`, `sr-2`, …). Per-session only. */
 export function nextSnapshotId(): string {
   return `sr-${String(nextId++)}`
@@ -145,6 +165,39 @@ export function getRefCount(id: string): number {
 }
 
 /**
+ * Removes the entry with the given `path` from every stored snapshot. Called
+ * after a successful delete from a search-results pane so the row disappears
+ * from this snapshot AND from any other snapshot that happened to contain the
+ * same file. Returns the list of snapshot ids that were mutated (useful for
+ * tests and debugging; production callers can ignore it).
+ *
+ * The `entries` array on each affected snapshot is replaced with a fresh
+ * filtered array so reactive consumers (Svelte `$derived` over
+ * `getSnapshot(id).entries`) see the change. We do NOT touch `totalCount` —
+ * it still reports what the backend originally found; mismatch between
+ * `entries.length` and `totalCount` is the existing "truncated-to-cap"
+ * signal, so reusing it here is consistent.
+ *
+ * Per plan §3.7: "delete from search-results pane: confirms with the real
+ * path. On success, the row is removed from this snapshot AND from any
+ * other snapshot it appears in."
+ */
+export function removeEntryFromAllSnapshots(path: string): string[] {
+  const mutatedIds: string[] = []
+  for (const [id, entry] of store.entries()) {
+    const filtered = entry.entries.filter((e) => e.path !== path)
+    if (filtered.length !== entry.entries.length) {
+      entry.entries = filtered
+      mutatedIds.push(id)
+    }
+  }
+  if (mutatedIds.length > 0) {
+    mutationTick += 1
+  }
+  return mutatedIds
+}
+
+/**
  * Swaps the "last dialog attempt" strong ref: decrements the previously-pinned id
  * (if any) and increments the new one (if any). The dialog calls this whenever it
  * runs a fresh search so the most-recent attempt stays alive even when no pane
@@ -197,4 +250,5 @@ export function _resetForTesting(): void {
   store.clear()
   nextId = 1
   lastAttemptId = null
+  mutationTick = 0
 }

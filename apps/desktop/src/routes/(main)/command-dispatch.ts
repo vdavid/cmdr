@@ -23,6 +23,7 @@ import {
 } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { invoke } from '@tauri-apps/api/core'
 import { addToast } from '$lib/ui/toast'
+import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getSetting, setSetting } from '$lib/settings'
 import { openSettingsWindow } from '$lib/settings/settings-window'
@@ -58,6 +59,35 @@ function activeTextRegion(): Element | null {
   if (!anchor) return null
   const el = anchor.nodeType === Node.ELEMENT_NODE ? (anchor as Element) : anchor.parentElement
   return el?.closest('.error-pane, [data-text-region]') ?? null
+}
+
+/**
+ * Returns `true` (and surfaces a toast) when `commandId` is a destination-side
+ * action that the focused pane's volume can't satisfy because it's a
+ * `search-results://` virtual pane. The capability flag set is documented in
+ * `lib/search/capabilities.ts`. Source-side actions (copy/move/delete with the
+ * snapshot as the source) stay enabled.
+ *
+ * Per the M8c plan: menu paths are disabled at the source (F-bar buttons,
+ * context-menu items), so this guard exists for the shortcut-driven path
+ * (⌘V paste, F7 mkdir, etc.) that bypasses the UI entirely. The toast is
+ * the LAST RESORT — it's there so the user isn't left wondering whether
+ * the keystroke registered.
+ */
+function blockedBySearchResultsPane(commandId: string, explorer: ExplorerAPI | undefined): boolean {
+  if (!explorer) return false
+  if (explorer.getFocusedPaneVolumeId() !== 'search-results') return false
+
+  const isBlocked =
+    commandId === 'edit.paste' ||
+    commandId === 'edit.pasteAsMove' ||
+    commandId === 'file.newFolder' ||
+    commandId === 'file.newFile' ||
+    commandId === 'file.rename'
+  if (!isBlocked) return false
+
+  addToast(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'info' })
+  return true
 }
 
 /**
@@ -139,6 +169,11 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
   })
 
   ctx.dialogs.showCommandPalette(false)
+
+  // Block destination-side actions on a search-results pane with a friendly toast
+  // (M8c). Menu paths are visibly disabled at the source; this catches the
+  // shortcut-driven path that bypasses the UI.
+  if (blockedBySearchResultsPane(commandId, explorerRef)) return
 
   // Handle known commands by category
   switch (commandId) {

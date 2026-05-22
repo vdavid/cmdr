@@ -19,6 +19,12 @@ pub fn update_menu_context<R: Runtime>(app: AppHandle<R>, path: String, filename
     context.filename = filename;
 }
 
+/// Shows the file context menu.
+///
+/// `restrict_destination_actions` is a frontend opt-in: when true, the Rust
+/// menu builder omits Rename and New folder. The flag is `false` by default
+/// for existing local-pane callers; the search-results virtual pane passes
+/// `true`. See `apps/desktop/src/lib/search/capabilities.ts` for the flag set.
 #[tauri::command]
 #[specta::specta]
 pub fn show_file_context_menu<R: Runtime>(
@@ -27,6 +33,7 @@ pub fn show_file_context_menu<R: Runtime>(
     filename: String,
     is_directory: bool,
     paths: Vec<String>,
+    restrict_destination_actions: bool,
 ) -> Result<(), String> {
     let app = window.app_handle();
 
@@ -59,7 +66,8 @@ pub fn show_file_context_menu<R: Runtime>(
         }
     }
 
-    let result = build_context_menu(app, &filename, is_directory, &info).map_err(|e| e.to_string())?;
+    let result = build_context_menu(app, &filename, is_directory, &info, restrict_destination_actions)
+        .map_err(|e| e.to_string())?;
 
     // Stash the bundle_id → app_path map so on_menu_event can resolve clicks on
     // `open-with:<bundle-id>` items back to a real app URL.

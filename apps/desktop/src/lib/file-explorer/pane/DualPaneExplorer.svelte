@@ -47,6 +47,7 @@
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath, isPathOnVolume } from '../navigation/path-navigation'
     import { resolveValidPath } from '../navigation/path-resolution'
+    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
 
     import {
         createHistory,
@@ -187,6 +188,20 @@
     const rightSortOrder = $derived(getActiveTab(rightTabMgr).sortOrder)
     const leftHistory = $derived(getActiveTab(leftTabMgr).history)
     const rightHistory = $derived(getActiveTab(rightTabMgr).history)
+
+    interface Props {
+        /**
+         * Fires whenever the focused pane changes OR the focused pane's
+         * volumeId changes. The parent (`+page.svelte`) uses this to drive
+         * the F-key bar's capability flags reactively. Plain method calls
+         * on `explorerRef` (like `getFocusedPaneVolumeId()`) aren't reactive
+         * because they don't track Svelte runes; this callback closes the
+         * gap without exposing the runtime state map directly.
+         */
+        onFocusedVolumeChange?: (volumeId: string) => void
+    }
+
+    const { onFocusedVolumeChange }: Props = $props()
 
     let focusedPane = $state<'left' | 'right'>('left')
     let showHiddenFiles = $state(true)
@@ -591,6 +606,18 @@
             void resortPaneWithCurrentSort('left')
             void resortPaneWithCurrentSort('right')
         })
+    })
+
+    /**
+     * Surface the focused pane's `volumeId` to the parent (`+page.svelte`) so the
+     * F-key bar's capability flags update reactively. Fires whenever `focusedPane`
+     * flips or the active tab's `volumeId` on the focused side changes (the latter
+     * matters: a tab switch on the focused side can land on a `search-results://`
+     * pane and the F-bar should disable mkdir / rename etc. immediately).
+     */
+    $effect(() => {
+        const vid = focusedPane === 'left' ? leftVolumeId : rightVolumeId
+        onFocusedVolumeChange?.(vid)
     })
 
     // Trim both panes' closed-tab stacks when the cap setting decreases.
@@ -1733,10 +1760,98 @@
         }
     }
 
+    /**
+     * Search-results pane delete path (M8c). The focused pane is on the
+     * `search-results://<id>` virtual volume, so there's no backend listing to
+     * fetch entries from; we read the snapshot directly. Today the snapshot
+     * pane doesn't expose a multi-selection of its own, so we delete the
+     * single cursor row. The volume id we report to the dialog is `'root'`:
+     * the actual file lives on the local filesystem, and the existing
+     * permanent-delete / move-to-trash IPC routes through the local path.
+     * `supportsTrash = true` because the underlying file is on a trash-capable
+     * volume (we don't have per-snapshot-row volume detection yet; if the
+     * search ever indexes external read-only volumes we'd need to look that
+     * up per entry).
+     */
+    function openDeleteFromSearchResults(permanent: boolean, autoConfirm?: boolean) {
+        const sourcePaneRef = getPaneRef(focusedPane)
+        const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
+        const SEARCH_RESULTS_PREFIX = 'search-results://'
+        if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) {
+            log.warn(
+                'openDeleteFromSearchResults: focused pane volume is search-results but path is not. Bailing.',
+            )
+            return
+        }
+        const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
+        const snapshot = getSnapshot(snapshotId)
+        if (!snapshot) {
+            log.warn('openDeleteFromSearchResults: snapshot {id} not found, bailing', { id: snapshotId })
+            return
+        }
+        const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
+        // Cursor might be out of range (clamping is best-effort in the search-
+        // results keyboard path); the cast lets us handle the empty case
+        // explicitly instead of crashing later in `entry.path`.
+        const entry = snapshot.entries[cursorIndex] as
+            | (typeof snapshot.entries)[number]
+            | undefined
+        if (!entry) {
+            log.warn('openDeleteFromSearchResults: no entry at cursor {idx}, bailing', { idx: cursorIndex })
+            return
+        }
+
+        const sourceItems: DeleteSourceItem[] = [
+            {
+                name: entry.name,
+                size: entry.size ?? undefined,
+                isDirectory: entry.isDirectory,
+                isSymlink: false,
+                recursiveSize: undefined,
+                recursiveFileCount: undefined,
+            },
+        ]
+        const sourcePaths = [entry.path]
+
+        const { sortBy, sortOrder } = getPaneSort(focusedPane)
+
+        // Snapshot entries are guaranteed to have parentPath set by the search
+        // backend (`SearchResultEntry::parentPath` is required, see bindings).
+        // The fallback isn't hit in practice, but `'/'` is a safe display
+        // value if the field is ever absent.
+        const sourceFolderPath = entry.parentPath !== '' ? entry.parentPath : '/'
+
+        dialogs.showDeleteConfirmation({
+            sourceItems,
+            sourcePaths,
+            sourceFolderPath,
+            isPermanent: permanent,
+            supportsTrash: true,
+            isFromCursor: true,
+            sortColumn: sortBy,
+            sortOrder,
+            sourceVolumeId: DEFAULT_VOLUME_ID,
+            autoConfirm,
+        })
+    }
+
     /** Opens the delete confirmation dialog for the current selection or cursor item. */
     // eslint-disable-next-line complexity -- Guard chain: each early-return is an independent precondition; splitting wouldn't add clarity.
     export async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean) {
         const sourcePaneRef = getPaneRef(focusedPane)
+        const focusedVolId = getPaneVolumeId(focusedPane)
+
+        // Search-results pane: no backend listing exists, so the listingId-driven
+        // path can't fetch entries. Build the dialog directly from the snapshot's
+        // cursor entry. Per M8c, source-side delete is allowed (`isSourceOK: true`):
+        // the underlying file IS real, the confirmation dialog shows the real path,
+        // and on success the entry is also removed from every other snapshot that
+        // contained it (see `dialog-state::handleTransferComplete`).
+        if (focusedVolId === 'search-results') {
+            openDeleteFromSearchResults(permanent, autoConfirm)
+            return
+        }
+
         const listingId = sourcePaneRef?.getListingId()
         if (!listingId) {
             log.warn('openDeleteDialog: no listingId, bailing')

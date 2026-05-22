@@ -29,15 +29,26 @@ export async function openExternalUrl(url: string): Promise<void> {
  * @param paths - All paths the menu's actions should affect. For a right-click on a non-selected
  *                file, pass `[path]`. For a right-click on a file that's part of a multi-selection,
  *                pass the full selection so "Open with" launches all files at once.
+ * @param restrictDestinationActions - Optional. When `true`, hides Rename and New folder
+ *                from the menu. Pass `true` for right-clicks inside a virtual pane that
+ *                isn't a real directory (currently: the search-results snapshot pane;
+ *                see `apps/desktop/src/lib/search/capabilities.ts`).
  */
 export async function showFileContextMenu(
   path: string,
   filename: string,
   isDirectory: boolean,
   paths: string[],
+  restrictDestinationActions = false,
 ): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
-  await invoke('show_file_context_menu', { path, filename, isDirectory, paths })
+  await invoke('show_file_context_menu', {
+    path,
+    filename,
+    isDirectory,
+    paths,
+    restrictDestinationActions,
+  })
 }
 
 /**
