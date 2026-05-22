@@ -64,6 +64,14 @@ export interface ExplorerAPI {
   isRenaming: () => boolean
   openViewerForCursor: () => Promise<void>
   navigateToPath: (pane: 'left' | 'right', path: string) => string | Promise<void>
+  /**
+   * Open a search-results snapshot in the target pane (defaults to focused).
+   * The snapshot must already exist in `$lib/search/snapshot-store.svelte`; the
+   * caller is responsible for `getOrCreate` + `setLastAttemptId` (the
+   * SearchDialog's "Open in pane" handler does both). Routes through
+   * `handleVolumeChange` so pinned-tab fork, focus, and history push all apply.
+   */
+  openSearchSnapshotInPane: (snapshotId: string, pane?: 'left' | 'right') => void
   moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
   scrollTo: (pane: 'left' | 'right', index: number) => void
   refreshPane: () => void

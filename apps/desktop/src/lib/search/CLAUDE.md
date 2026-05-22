@@ -50,6 +50,8 @@ chip row and path-pill column landing in later milestones.
 | `SearchFooterActions.a11y.test.ts`   | Tier-3 axe-core audit for enabled and disabled states                                                             |
 | `snapshot-store.svelte.ts`           | Frontend-only in-memory map of search-result snapshots, refcounted (M8a). Pure module state, no Svelte reactivity |
 | `snapshot-store.svelte.ts.test.ts`   | Create/read/no-overwrite, refcount inc/dec/delete, last-attempt slot swaps, entries-cap truncation, debug stats   |
+| `snapshot-label.ts`                  | Pure helper: `buildSnapshotLabel({ mode, query, aiPrompt? })` for breadcrumb + tab title (M8b)                    |
+| `snapshot-label.test.ts`             | Filename/regex/AI label shapes, AI prompt priority, truncation cap, fallbacks                                     |
 
 ## State shape (post-M4)
 
@@ -326,9 +328,25 @@ via `tabindex="-1"` per spec (§3.8), but axe still flags the structural nesting
 the row's `role="option"` (and surfacing the cursor via a custom mechanism) or hoisting the buttons out of the row's
 grid cell — both are out of M7 scope. The test stays `it.skip` with a TODO so the gap is visible to future work.
 
-**Gotcha**: "Open in pane" is a STUB in M7. **Why**: The plan splits the work: M7 ships the visible affordance (button
-in the footer + click-to-toast), M8 wires the real snapshot store + virtual-volume handoff. The stub's body is two lines
-in `SearchDialog.svelte::openInPaneStub` and is the single edit point M8 needs.
+**"Open in pane" (M8b)**: Click on the footer's "Open in pane" button promotes the current result set into a real pane
+view via the `search-results://<id>` virtual volume. The handler in `SearchDialog.svelte::openInPane`:
+
+1. Builds a `SearchSnapshot` from live state (`getResults()` / `getMode()` / `getQuery()` / filters / scope / flags).
+2. Mints a fresh id via `nextSnapshotId()` and stores via `getOrCreate(id, snapshot)`.
+3. Pins the snapshot via `setLastAttemptId(id)` so refcount stays ≥1 even before history pushes.
+4. Calls `addRecentSearch(historyEntry)`. **This is the one and only call site that adds to recent searches** (per plan
+   §3.5: auto-applies and Enter-runs don't pollute the history). For AI mode, the entry's `query` carries the original
+   natural-language prompt (via `getLastAiPrompt()`), not the AI's translated pattern.
+5. Calls `onOpenInPane?.(id)` to hand off to the host (`+page.svelte` → `DualPaneExplorer.openSearchSnapshotInPane`),
+   which routes through `handleVolumeChange` so pinned-tab fork / focus / history-push all apply uniformly.
+6. Closes the dialog. State is preserved (module-level `$state` survives unmount); ⌘F reopens to the same place.
+
+The label shown in the pane breadcrumb (and the snapshot's `label` field) is built by
+`snapshot-label.ts::buildSnapshotLabel`:
+
+- AI mode: the original prompt, truncated to ~40 chars with a `…` suffix.
+- Filename mode: the pattern as-is (`*.pdf`).
+- Regex mode: the pattern wrapped in slashes (`/pattern/`).
 
 ## References
 

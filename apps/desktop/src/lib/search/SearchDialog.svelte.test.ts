@@ -33,9 +33,10 @@ let autoApplySetting = true
 const autoApplyListeners = new Set<(id: string, value: boolean) => void>()
 
 // vi.mock is hoisted above all top-level `const`s; use vi.hoisted for shared mock instances.
-const { translateSearchQueryMock, searchFilesMock } = vi.hoisted(() => ({
+const { translateSearchQueryMock, searchFilesMock, addRecentSearchMock } = vi.hoisted(() => ({
   translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
   searchFilesMock: vi.fn(() => Promise.resolve({ entries: [], totalCount: 0 })),
+  addRecentSearchMock: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -49,6 +50,13 @@ vi.mock('$lib/tauri-commands', () => ({
   getSystemDirExcludes: vi.fn(() => Promise.resolve([])),
   onSearchIndexReady: vi.fn(() => Promise.resolve(() => {})),
   formatBytes: vi.fn((n: number) => `${String(n)} B`),
+  getRecentSearches: vi.fn(() => Promise.resolve([])),
+  addRecentSearch: addRecentSearchMock,
+  removeRecentSearch: vi.fn(() => Promise.resolve()),
+  clearRecentSearches: vi.fn(() => Promise.resolve()),
+  applyRecentSearchesMaxCount: vi.fn(() => Promise.resolve()),
+  showFileContextMenu: vi.fn(() => Promise.resolve()),
+  showInFinder: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('$lib/settings', () => ({
@@ -91,15 +99,21 @@ function dispatchKey(target: Element, key: string, meta = false): KeyboardEvent 
   return event
 }
 
-async function mountDialog(): Promise<{ overlay: Element; cleanup: () => void }> {
+interface MountDialogOptions {
+  onClose?: () => void
+  onOpenInPane?: (snapshotId: string) => void
+}
+
+async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: Element; cleanup: () => void }> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   const component = mount(SearchDialog, {
     target,
     props: {
       onNavigate: () => {},
-      onClose: () => {},
+      onClose: opts.onClose ?? (() => {}),
       currentFolderPath: '/Users/test',
+      onOpenInPane: opts.onOpenInPane,
     },
   })
   await tick()
@@ -699,5 +713,145 @@ describe('SearchDialog M7 path-pill navigation shortcuts', () => {
     expect(navigated).toEqual([])
     void unmount(component)
     target.remove()
+  })
+})
+
+describe('SearchDialog "Open in pane" (M8b)', () => {
+  beforeEach(async () => {
+    clearSearchState()
+    aiProvider = 'off'
+    autoApplySetting = true
+    autoApplyListeners.clear()
+    addRecentSearchMock.mockClear()
+    // Reset the snapshot store so each test sees a fresh `sr-1` id.
+    const { _resetForTesting } = await import('./snapshot-store.svelte')
+    _resetForTesting()
+  })
+
+  async function seedResults(): Promise<void> {
+    const { setResults, setTotalCount } = await import('./search-state.svelte')
+    setResults([
+      {
+        name: 'doc.pdf',
+        path: '/Users/test/docs/doc.pdf',
+        parentPath: '/Users/test/docs',
+        isDirectory: false,
+        size: 1024,
+        modifiedAt: 1_700_000_000,
+        iconId: 'ext:pdf',
+      },
+    ])
+    setTotalCount(1)
+  }
+
+  it('calls onOpenInPane with the new snapshot id, persists to recent searches, and closes the dialog', async () => {
+    let openedId: string | null = null
+    let closed = false
+    const { cleanup } = await mountDialog({
+      onClose: () => {
+        closed = true
+      },
+      onOpenInPane: (id) => {
+        openedId = id
+      },
+    })
+    setQuery('*.pdf')
+    setMode('filename')
+    await seedResults()
+    await tick()
+
+    // Find and click the "Open in pane" footer button.
+    const btn = document.body.querySelector('button[aria-label="Open in pane"]') as HTMLButtonElement
+    expect(btn).not.toBeNull()
+    btn.click()
+    // Let the (sync) handler run and any micro-tasks resolve.
+    await tick()
+    await Promise.resolve()
+
+    expect(openedId).toMatch(/^sr-\d+$/)
+    expect(closed).toBe(true)
+    expect(addRecentSearchMock).toHaveBeenCalledTimes(1)
+    const firstCall = addRecentSearchMock.mock.calls[0] as unknown[] | undefined
+    expect(firstCall).toBeDefined()
+    const entry = firstCall?.[0] as { mode: string; query: string; resultCount: number }
+    expect(entry.mode).toBe('filename')
+    expect(entry.query).toBe('*.pdf')
+    expect(entry.resultCount).toBe(1)
+
+    cleanup()
+  })
+
+  it('stores the snapshot in the snapshot store under the returned id', async () => {
+    let openedId: string | null = null
+    const { cleanup } = await mountDialog({
+      onOpenInPane: (id) => {
+        openedId = id
+      },
+    })
+    setQuery('foo')
+    setMode('filename')
+    await seedResults()
+    await tick()
+
+    const btn = document.body.querySelector('button[aria-label="Open in pane"]') as HTMLButtonElement
+    btn.click()
+    await tick()
+
+    const { getSnapshot, getLastAttemptId } = await import('./snapshot-store.svelte')
+    expect(openedId).not.toBeNull()
+    if (openedId === null) throw new Error('openedId is null')
+    const snap = getSnapshot(openedId)
+    expect(snap).toBeDefined()
+    expect(snap?.mode).toBe('filename')
+    expect(snap?.entries.length).toBe(1)
+    // The "last attempt" slot is pinned to the new id (refcount-wise).
+    expect(getLastAttemptId()).toBe(openedId)
+
+    cleanup()
+  })
+
+  it('uses the original AI prompt for the snapshot label when in AI mode', async () => {
+    aiProvider = 'cloud'
+    let openedId: string | null = null
+    const { cleanup } = await mountDialog({
+      onOpenInPane: (id) => {
+        openedId = id
+      },
+    })
+    const { setLastAiPrompt } = await import('./search-state.svelte')
+    setMode('ai')
+    setQuery('*.pdf') // AI translation overwrote the natural-language query
+    setLastAiPrompt('find my pdf invoices')
+    await seedResults()
+    await tick()
+
+    const btn = document.body.querySelector('button[aria-label="Open in pane"]') as HTMLButtonElement
+    btn.click()
+    await tick()
+
+    const { getSnapshot } = await import('./snapshot-store.svelte')
+    expect(openedId).not.toBeNull()
+    if (openedId === null) throw new Error('openedId is null')
+    const snap = getSnapshot(openedId)
+    expect(snap?.label).toBe('find my pdf invoices')
+
+    cleanup()
+  })
+
+  it('does nothing when there are no results', async () => {
+    let opened = false
+    const { cleanup } = await mountDialog({
+      onOpenInPane: () => {
+        opened = true
+      },
+    })
+    // No results seeded.
+    await tick()
+    // The button is hidden when resultCount === 0, so we can't click it through the
+    // DOM. Confirm visibility gate by checking the SearchFooterActions output.
+    const btn = document.body.querySelector('button[aria-label="Open in pane"]')
+    expect(btn).toBeNull()
+    expect(opened).toBe(false)
+    cleanup()
   })
 })

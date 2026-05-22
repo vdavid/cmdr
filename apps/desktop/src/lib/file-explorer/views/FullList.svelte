@@ -29,6 +29,7 @@
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     import InfoIcon from '~icons/lucide/info'
+    import PathPills from '$lib/search/PathPills.svelte'
 
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
     import {
@@ -111,6 +112,34 @@
         onStartRename?: () => void
         /** Called when a drag actually initiates (threshold crossed) from this view. */
         onDragInitiate?: () => void
+        /**
+         * Optional Path column between Name and Ext, populated from each row's
+         * `parentPath`. Designed for the search-results virtual volume so the user
+         * can see where each result lives without per-row formatting. Inactive in
+         * normal panes (default off) so layout and DOM remain identical.
+         * Per search-redesign-plan §3.7 / §3.8.
+         */
+        showPathColumn?: boolean
+        /**
+         * Click handler for individual path-pill segments inside the Path column.
+         * Only called when `showPathColumn` is true. The handler receives the
+         * absolute path of the ancestor segment the user clicked. The host pane
+         * is expected to navigate to that ancestor (which, for search-results,
+         * leaves the snapshot view).
+         */
+        onPathPillPick?: (ancestorPath: string) => void
+        /**
+         * Static, frontend-owned entries to render instead of fetching from the
+         * backend `LISTING_CACHE` by `listingId`. Used by the search-results
+         * virtual volume (which has no backing backend listing, just an
+         * in-memory snapshot). When set, `listingId` is ignored, no IPC calls
+         * are made for cached fetches, soft-refresh / cache-generation are
+         * inert, and `totalCount` is derived from the array length. The host
+         * pane is responsible for forcing a re-render when the array changes
+         * (Svelte tracks the prop reference for that). Normal panes leave this
+         * unset — the listing-cache path remains the default.
+         */
+        staticEntries?: FileEntry[]
     }
 
     const {
@@ -143,7 +172,19 @@
         onRenameShakeEnd,
         onStartRename,
         onDragInitiate,
+        showPathColumn = false,
+        onPathPillPick,
+        staticEntries,
     }: Props = $props()
+
+    /**
+     * True when the host pane has supplied a static entries array (search-results
+     * virtual volume). In that branch we bypass the backend listing cache entirely:
+     * `cachedEntries` is mirrored from the prop, fetches no-op, soft-refresh /
+     * cacheGeneration bumps are ignored. Normal panes leave the prop unset and
+     * the original cache path runs unchanged.
+     */
+    const usingStaticEntries = $derived(staticEntries !== undefined)
 
     // ==== Cached entries (prefetch buffer) ====
     let cachedEntries = $state<FileEntry[]>([])
@@ -179,7 +220,10 @@
     const indexing = $derived(isScanning() || isAggregating())
 
     // Column widths are declared after the virtual window, which gates parent-row inclusion.
-    let columnWidths = $state({ ext: 60, size: 115, date: 80, dateLeft: 0 })
+    // `path` stays at 0 unless `showPathColumn` is set and the measurer reports a value;
+    // the grid-template branches on it so omitted-prop callers render the exact same DOM
+    // as before (no inserted column, no extra cells).
+    let columnWidths = $state({ ext: 60, size: 115, date: 80, dateLeft: 0, path: 0 })
     let skipTransition = $state(false)
 
     /** Icon column width in the grid template, tracks density × text scale. */
@@ -222,11 +266,30 @@
      */
     const GIT_COLUMN_WIDTH = 28
 
-    const gridTemplate = $derived(
-        gitColumnVisible
-            ? `${String(iconColWidth)}px 1fr ${String(GIT_COLUMN_WIDTH)}px ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`
-            : `${String(iconColWidth)}px 1fr ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`,
-    )
+    /**
+     * Whether the optional Path column should appear in the grid template. We
+     * gate on `showPathColumn` AND a measured width so the column is genuinely
+     * "off" (zero cells in DOM) when the consumer opts out, AND when the
+     * measurer hasn't produced a width yet. Search-results + git-column would
+     * be a contradiction (the snapshot can mix repos), so when both flags fight
+     * Path wins — though in practice FilePane only sets one per pane.
+     */
+    const pathColumnVisible = $derived(showPathColumn && columnWidths.path > 0)
+
+    const gridTemplate = $derived.by(() => {
+        const icon = `${String(iconColWidth)}px`
+        const ext = `${String(columnWidths.ext)}px`
+        const size = `${String(columnWidths.size)}px`
+        const date = `${String(columnWidths.date)}px`
+        if (pathColumnVisible) {
+            const path = `${String(columnWidths.path)}px`
+            return `${icon} 1fr ${path} ${ext} ${size} ${date}`
+        }
+        if (gitColumnVisible) {
+            return `${icon} 1fr ${String(GIT_COLUMN_WIDTH)}px ${ext} ${size} ${date}`
+        }
+        return `${icon} 1fr ${ext} ${size} ${date}`
+    })
 
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -298,6 +361,13 @@
         // listing is measured at scale 1 and then never re-measured after the
         // real scale lands.
         void getEffectiveScale()
+        // Path-column measurement: pass the parentPath of every visible row so
+        // the column shrink-wraps to the longest currently-on-screen path. Only
+        // active when the host pane opts in via `showPathColumn`; otherwise the
+        // measurer ignores the input and reports `path: 0`.
+        const parentPathsForPathColumn = showPathColumn
+            ? visible.filter((e) => e.parentPath != null && e.parentPath !== '').map((e) => e.parentPath as string)
+            : undefined
         columnWidths = computeFullListColumnWidths({
             entries: visible,
             parentDirStats: parentStats,
@@ -308,6 +378,7 @@
             sortBy,
             sizeFormatOpts,
             isRestricted,
+            parentPathsForPathColumn,
         })
     })
 
@@ -334,6 +405,10 @@
     // Fetch entries for the visible range
     // `force=true` skips the "already cached" short-circuit; see BriefList for the rationale.
     async function fetchVisibleRange(force = false) {
+        // Static-entries branch (search-results pane): the array is already in
+        // memory, no IPC needed. The $effect below mirrors `staticEntries` into
+        // `cachedEntries` directly.
+        if (usingStaticEntries) return
         if (!listingId || isFetching) return
 
         const startItem = virtualWindow.startIndex
@@ -518,12 +593,29 @@
     let prevTotalCount = 0
     let prevSoftTick = 0
 
+    // Static-entries sync: when the host pane supplies `staticEntries` (the
+    // search-results virtual volume), mirror the array into `cachedEntries` so
+    // the same rendering pipeline downstream works without backend round-trips.
+    // We treat the full prop array as the cache; virtual-scroll math then
+    // slices the visible window from it.
+    $effect(() => {
+        if (!usingStaticEntries) return
+        const src = staticEntries ?? []
+        cachedEntries = src
+        cachedRange = { start: 0, end: src.length }
+    })
+
     // Hard reset on cold context changes (nav, sort, hidden toggle): wipe
     // entries, refetch from scratch.
     // Soft refresh on totalCount or softRefreshTick changes (`directory-diff`
     // bursts, in-place renames): refetch in background and atomically replace,
     // keeping existing rows visible — no empty-pane flicker mid-bulk-op.
     $effect(() => {
+        // Static-entries branch handles its own sync above. Skip the cache /
+        // diff machinery here entirely so a search-results pane never tries to
+        // call backend fetches (which would no-op anyway but log a $effect
+        // dependency churn).
+        if (usingStaticEntries) return
         const currentProps = { listingId, includeHidden, cacheGeneration }
         const currentTotal = totalCount
         const currentTick = softRefreshTick
@@ -574,7 +666,13 @@
 
     // Fetch the current folder's recursive stats so the ".." row can show the total.
     // Re-runs when the directory changes; cleared when we're at a volume root.
+    // Skipped for static-entries panes: the "directory" is synthetic (no real
+    // path to stat) and the ".." row isn't rendered for search-results anyway.
     $effect(() => {
+        if (usingStaticEntries) {
+            parentDirStats = null
+            return
+        }
         if (!hasParent || !currentPath) {
             parentDirStats = null
             return
@@ -684,7 +782,12 @@
                 currentSortOrder={sortOrder}
                 onClick={onSortChange ?? (() => {})}
             />
-            {#if gitColumnVisible}
+            {#if pathColumnVisible}
+                <!-- Static "Path" header. Path is not a sortable column on search-results
+                     (sort by Name / Ext / Size / Modified still applies via the snapshot order),
+                     so we render a plain label rather than a SortableHeader. -->
+                <span class="header-path">Path</span>
+            {:else if gitColumnVisible}
                 <span class="header-git" title="Git status of each file">Git</span>
             {/if}
             <SortableHeader
@@ -786,7 +889,19 @@
                                     aria-hidden="true"
                                     use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
                                 ><InfoIcon /></span>{/if}</span>
-                            {#if gitColumnVisible}
+                            {#if pathColumnVisible}
+                                <!-- Path-pills cell. Click on a segment navigates the active pane
+                                     to that ancestor (and, in the search-results context, leaves
+                                     the snapshot view). Pills aren't in keyboard Tab order; the
+                                     row's primary interaction remains the keyboard target.
+                                     See search-redesign-plan §3.8. -->
+                                <span class="col-path">
+                                    <PathPills
+                                        path={file.parentPath ?? ''}
+                                        onPick={(p) => onPathPillPick?.(p)}
+                                    />
+                                </span>
+                            {:else if gitColumnVisible}
                                 {@const status = gitStatusFor(file)}
                                 <span
                                     class="col-git"
@@ -1139,6 +1254,28 @@
         align-self: center;
         white-space: nowrap;
         cursor: default;
+    }
+
+    /* Static "Path" header for the search-results pane. Same hairline-secondary
+       look as the Git header (no sort caret); the cell itself wraps content. */
+    .header-path {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        text-align: left;
+        align-self: center;
+        white-space: nowrap;
+        cursor: default;
+        padding-left: var(--spacing-xxs);
+    }
+
+    /* Path cell holds the PathPills strip. min-width 0 so flex-wrap inside
+       still respects the column track width; overflow hidden so a long path
+       can't visually escape its column. */
+    .col-path {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        overflow: hidden;
     }
 
     .col-git {

@@ -35,6 +35,7 @@
         requestVolumeRefresh,
     } from '$lib/stores/volume-store.svelte'
     import { groupByCategory, getIconForVolume } from './volume-grouping'
+    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import {
         createBreadcrumbPopupController,
@@ -96,10 +97,33 @@
     const currentVolume = $derived(
         volumeId === 'network'
             ? { id: 'network', name: 'Network', path: 'smb://', category: 'network' as const, isEjectable: false }
-            : volumes.find((v) => v.id === volumeId && v.category === 'mobile_device')
-              ?? volumes.find((v) => v.id === containingVolumeId),
+            : volumeId === 'search-results'
+              ? {
+                    id: 'search-results',
+                    name: 'Search',
+                    path: 'search-results://',
+                    category: 'network' as const,
+                    isEjectable: false,
+                }
+              : volumes.find((v) => v.id === volumeId && v.category === 'mobile_device')
+                ?? volumes.find((v) => v.id === containingVolumeId),
     )
-    const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
+
+    /**
+     * Search-results breadcrumb label: extract the snapshot id from `currentPath`
+     * (`search-results://<id>`) and look up the snapshot's friendly label. Falls
+     * back to "Search" when the snapshot is missing — same defensive posture as
+     * the SearchResultsView itself. Re-derives reactively on path / volume changes.
+     */
+    const searchResultsLabel = $derived.by(() => {
+        if (volumeId !== 'search-results') return null
+        const prefix = 'search-results://'
+        if (!currentPath.startsWith(prefix)) return null
+        const id = currentPath.slice(prefix.length)
+        return getSnapshot(id)?.label ?? 'Search'
+    })
+
+    const currentVolumeName = $derived(searchResultsLabel ?? currentVolume?.name ?? 'Volume')
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
 
     // Generic macOS folder icon used as fallback when a volume has no icon (for example,

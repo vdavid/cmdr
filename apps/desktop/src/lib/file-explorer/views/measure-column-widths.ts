@@ -30,6 +30,15 @@ export interface ColumnWidths {
    * across rows. Zero when no visible row produces a `|` split.
    */
   dateLeft: number
+  /**
+   * Optional Path column width, populated only when the caller passes
+   * `parentPathsForPathColumn` (the search-results pane via FullList's
+   * `showPathColumn` prop). Mid-truncated path rendering via `PathPills`
+   * shrinks gracefully inside this budget, but the budget itself caps at
+   * `MAX_PATH_WIDTH` so a single deep path can't push the Name column off
+   * screen. Zero when the Path column isn't requested.
+   */
+  path: number
 }
 
 /** Base font size of the file-list columns at scale 1, in CSS pixels. */
@@ -86,6 +95,13 @@ const SIZE_ICON_WIDTH = 14
 const MIN_EXT_WIDTH = 28
 const MIN_SIZE_WIDTH = 40
 const MIN_DATE_WIDTH = 70
+/** Floor for the optional Path column. Wide enough for a couple of segments. */
+const MIN_PATH_WIDTH = 120
+/**
+ * Cap for the optional Path column. A single deep path could otherwise eat the
+ * Name column. The path-pills renderer wraps gracefully below this width.
+ */
+const MAX_PATH_WIDTH = 360
 
 /**
  * Visual gap between the date and time halves of a split date cell.
@@ -253,6 +269,13 @@ export function computeFullListColumnWidths(args: {
   /** Returns `true` for paths in the TCC-restricted set so the size cell
    * widths account for the `<no perms>` override. Defaults to never-restricted. */
   isRestricted?: (path: string) => boolean
+  /**
+   * Parent paths to measure for the optional Path column (search-results pane).
+   * When omitted or empty, the Path column width returns 0 and the FullList
+   * layout omits it entirely. Measured per visible row so the column tracks
+   * the longest path currently on screen and stays shrink-wrapped.
+   */
+  parentPathsForPathColumn?: string[]
 }): ColumnWidths {
   const {
     entries,
@@ -264,11 +287,18 @@ export function computeFullListColumnWidths(args: {
     sortBy,
     sizeFormatOpts,
     isRestricted,
+    parentPathsForPathColumn,
   } = args
 
   const measure = getMeasure()
   if (!measure) {
-    return { ext: MIN_EXT_WIDTH, size: MIN_SIZE_WIDTH, date: MIN_DATE_WIDTH, dateLeft: 0 }
+    return {
+      ext: MIN_EXT_WIDTH,
+      size: MIN_SIZE_WIDTH,
+      date: MIN_DATE_WIDTH,
+      dateLeft: 0,
+      path: parentPathsForPathColumn && parentPathsForPathColumn.length > 0 ? MIN_PATH_WIDTH : 0,
+    }
   }
 
   const chromeFor = (column: SortColumn): number => (sortBy === column ? HEADER_CHROME_ACTIVE : HEADER_CHROME_INACTIVE)
@@ -293,33 +323,24 @@ export function computeFullListColumnWidths(args: {
   // unless at least one row has a `|` split.
   let date: DateMaxima = { total: dateMax, splitLeft: 0, splitRight: 0 }
 
-  for (const entry of entries) {
-    const ext = getDisplayExtension(entry.name, entry.isDirectory)
-    if (ext) {
-      const w = Math.min(measure(ext), extCap)
-      if (w > extMax) extMax = w
-    }
-
-    const sizeText = sizeTextForEntry(
-      entry,
-      sizeDisplayMode,
-      indexing,
-      sizeFormatOpts,
-      isRestricted?.(entry.path) ?? false,
-    )
-    const iconSuffix = sizeIconSuffixForEntry(entry, indexing, showSizeMismatchWarning)
-    const rowSize = (sizeText ? measure(sizeText) : 0) + iconSuffix
-    if (rowSize > sizeMax) sizeMax = rowSize
-    if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix
-
-    // `!= null` (not `!== undefined`): IPC payloads serialize `Option::None` as
-    // explicit `null`, and `formattedDate(null)` returns an empty record but the
-    // upstream call sites used to throw on this case; keep the guard to match
-    // the historical safety net (this was the F8-after-volume-switch killer).
-    if (entry.modifiedAt != null) {
-      date = foldDate(date, formattedDate(entry.modifiedAt), measure)
-    }
-  }
+  const rowResult = foldEntries(entries, {
+    measure,
+    extMax,
+    extCap,
+    sizeMax,
+    sizeIconSuffixMax,
+    date,
+    sizeDisplayMode,
+    indexing,
+    showSizeMismatchWarning,
+    sizeFormatOpts,
+    isRestricted,
+    formattedDate,
+  })
+  extMax = rowResult.extMax
+  sizeMax = rowResult.sizeMax
+  sizeIconSuffixMax = rowResult.sizeIconSuffixMax
+  date = rowResult.date
   dateMax = date.total
 
   // The ".." row borrows the current folder's recursive size, often the largest
@@ -334,12 +355,92 @@ export function computeFullListColumnWidths(args: {
 
   const dateOut = finalizeDate(date, dateMax)
 
+  const pathWidth = computePathColumnWidth(parentPathsForPathColumn, measure)
+
   return {
     ext: Math.max(MIN_EXT_WIDTH, Math.ceil(extMax + MEASUREMENT_SAFETY_PAD)),
     size: Math.max(MIN_SIZE_WIDTH, Math.ceil(sizeMax + MEASUREMENT_SAFETY_PAD)),
     date: dateOut.date,
     dateLeft: dateOut.dateLeft,
+    path: pathWidth,
   }
+}
+
+/**
+ * Per-entry fold: walks the visible entries and accumulates the max ext width,
+ * max size-cell width (text + icon suffix), and the date-cell maxima. Extracted
+ * from `computeFullListColumnWidths` to keep the latter under the cyclomatic
+ * complexity cap; the math itself is unchanged.
+ */
+interface FoldEntriesContext {
+  measure: (text: string) => number
+  extMax: number
+  extCap: number
+  sizeMax: number
+  sizeIconSuffixMax: number
+  date: DateMaxima
+  sizeDisplayMode: 'smart' | 'logical' | 'physical'
+  indexing: boolean
+  showSizeMismatchWarning: boolean
+  sizeFormatOpts: SizeFormatOpts
+  isRestricted?: (path: string) => boolean
+  formattedDate: (timestamp: number) => FormattedDate
+}
+
+function foldEntries(
+  entries: FileEntry[],
+  ctx: FoldEntriesContext,
+): { extMax: number; sizeMax: number; sizeIconSuffixMax: number; date: DateMaxima } {
+  let { extMax, sizeMax, sizeIconSuffixMax, date } = ctx
+  for (const entry of entries) {
+    const ext = getDisplayExtension(entry.name, entry.isDirectory)
+    if (ext) {
+      const w = Math.min(ctx.measure(ext), ctx.extCap)
+      if (w > extMax) extMax = w
+    }
+
+    const sizeText = sizeTextForEntry(
+      entry,
+      ctx.sizeDisplayMode,
+      ctx.indexing,
+      ctx.sizeFormatOpts,
+      ctx.isRestricted?.(entry.path) ?? false,
+    )
+    const iconSuffix = sizeIconSuffixForEntry(entry, ctx.indexing, ctx.showSizeMismatchWarning)
+    const rowSize = (sizeText ? ctx.measure(sizeText) : 0) + iconSuffix
+    if (rowSize > sizeMax) sizeMax = rowSize
+    if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix
+
+    // `!= null` (not `!== undefined`): IPC payloads serialize `Option::None` as
+    // explicit `null`, and `formattedDate(null)` returns an empty record but the
+    // upstream call sites used to throw on this case; keep the guard to match
+    // the historical safety net (this was the F8-after-volume-switch killer).
+    if (entry.modifiedAt != null) {
+      date = foldDate(date, ctx.formattedDate(entry.modifiedAt), ctx.measure)
+    }
+  }
+  return { extMax, sizeMax, sizeIconSuffixMax, date }
+}
+
+/**
+ * Path column (optional): shrink-wrap to the widest measured parent path within
+ * sane bounds. The header is a static "Path" label (no sort caret, since Path
+ * isn't a sortable column on search-results), so no chrome overhead applies.
+ * Path-pills render the path as small pill chrome plus separators, slightly
+ * wider than the raw text; MIN/MAX floor + safety pad absorbs that drift
+ * without per-segment pixel math (cheaper than measuring every pill).
+ *
+ * Returns 0 when the caller didn't opt into the Path column, so the consumer
+ * can branch cheaply on truthiness without inspecting the props that built it.
+ */
+function computePathColumnWidth(paths: string[] | undefined, measure: (text: string) => number): number {
+  if (!paths || paths.length === 0) return 0
+  let pathMax = measure('Path')
+  for (const p of paths) {
+    const w = measure(p)
+    if (w > pathMax) pathMax = w
+  }
+  return Math.min(MAX_PATH_WIDTH, Math.max(MIN_PATH_WIDTH, Math.ceil(pathMax + MEASUREMENT_SAFETY_PAD)))
 }
 
 /**

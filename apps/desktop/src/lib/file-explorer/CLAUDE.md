@@ -162,6 +162,40 @@ For the full module map, decisions, and gotchas, see `git/CLAUDE.md`.
 - **NetworkLoginForm.svelte**: Credential entry for authenticated SMB connections
 - **network-store.svelte.ts**: Reactive state for discovered servers, selected server/share, and auth mode
 
+## Search-results virtual volume (`pane/SearchResultsView.svelte`)
+
+Second virtual-volume namespace alongside `network`. `volumeId === 'search-results'` and the pane path is
+`search-results://<snapshot-id>` (opaque to filesystem APIs). FilePane gates on `isSearchResultsView` everywhere it
+already gates on `isNetworkView` (git lookups, listing watcher, dir-exists poll, MCP file sync), and renders
+`SearchResultsView` from the {#if/elseif} chain when active.
+
+`SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`
+via the new `staticEntries` + `showPathColumn` props. No backend listing exists, no IPC traffic. The view exports a
+small API (`setCursorIndex` / `findItemIndex` / `openCursorItem` / `isMissing`) used by FilePane's keyboard handler.
+
+Navigation:
+
+- Enter / double-click on a row opens the real file (or navigates into the real folder), pushing a new history entry for
+  the underlying path. ⌘[ returns to the snapshot view; the snapshot's still pinned by the history entry, so the view
+  re-renders from memory with no re-query.
+- Click on a path-pill segment inside the Path column routes through FilePane's `onNavigateToAncestor`, which
+  DualPaneExplorer resolves via `resolvePathVolume` and routes through `handleVolumeChange` (giving the standard
+  pinned-tab fork, history push, focus). Leaves the snapshot view.
+
+DualPaneExplorer extensions:
+
+- `applyPathChange` extends its virtual-volume branch from `currentVolumeId === 'network'` to also accept
+  `'search-results'` (with prefix `search-results://`). The two namespaces are uniformly opaque to `isPathOnVolume`.
+- `openSearchSnapshotInPane(snapshotId, pane?)` is the public entry point the SearchDialog calls (via +page.svelte's
+  `handleOpenSearchInPane`). It routes through `handleVolumeChange(pane, 'search-results', url, url)` so pushed history
+  entries flow through `pushHistoryEntry`, which increments the snapshot refcount via the M8a integration.
+
+Breadcrumb: `VolumeBreadcrumb` recognises `volumeId === 'search-results'` and reads the friendly label from
+`getSnapshot(id).label` (with "Search" as fallback). FilePane suppresses the trailing path segments entirely for
+search-results panes — the label IS the breadcrumb.
+
+For the dialog-side wiring see [`apps/desktop/src/lib/search/CLAUDE.md`](../../search/CLAUDE.md).
+
 ## Operations (`operations/`)
 
 - **apply-diff.ts**: applies file-watcher diffs (add/remove/modify events) to a cached listing in-place

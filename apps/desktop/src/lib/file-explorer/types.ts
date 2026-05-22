@@ -46,6 +46,15 @@ export interface FileEntry {
    * Doubles as the aria-label for screen readers.
    */
   displaySizeTooltip?: string
+  /**
+   * Parent directory path. Optional on FileEntry because normal directory
+   * listings derive it implicitly from the containing folder, but search-results
+   * snapshots carry it per row so the optional Path column in FullList can
+   * shrink-wrap and the path-pills renderer has data to display. Always set
+   * when `SearchResultEntry` is adapted into a FileEntry for the search-results
+   * pane; absent for entries fetched from the backend listing cache.
+   */
+  parentPath?: string
 }
 
 /** Cloud sync status for files in Dropbox/iCloud/etc. folders */

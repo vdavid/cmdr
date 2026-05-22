@@ -133,6 +133,14 @@ export interface ShareBrowserAPI extends BrowserAPI {
   getShareUnderCursor(): ShareInfo | null
 }
 
+/** Typed interface for SearchResultsView's exported methods. */
+export interface SearchResultsViewAPI {
+  setCursorIndex(index: number): void
+  findItemIndex(name: string): number
+  openCursorItem(): void
+  isMissing(): boolean
+}
+
 /** Typed interface for NetworkMountView's exported methods. */
 export interface NetworkMountViewAPI {
   handleKeyDown(e: KeyboardEvent): void

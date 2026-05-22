@@ -590,6 +590,19 @@
         }
     }
 
+    /**
+     * "Open in pane" handler from SearchDialog (M8b). The dialog has already stored
+     * the snapshot and pinned the "last attempt" ref; we route the focused pane to
+     * the search-results virtual volume. `openSearchSnapshotInPane` flows through
+     * the standard `handleVolumeChange` so new-tab-on-pinned, focus, and history
+     * push all apply uniformly — and `pushHistoryEntry` increments the snapshot
+     * refcount via the M8a integration.
+     */
+    function handleOpenSearchInPane(snapshotId: string) {
+        const pane = explorerRef?.getFocusedPane() ?? 'left'
+        explorerRef?.openSearchSnapshotInPane(snapshotId, pane)
+    }
+
     function handleFnView() {
         void explorerRef?.openViewerForCursor()
     }
@@ -692,6 +705,7 @@
                 onNavigate={handleSearchNavigate}
                 onClose={handleSearchDialogClose}
                 currentFolderPath={explorerRef?.getFocusedPanePath() ?? '/'}
+                onOpenInPane={handleOpenSearchInPane}
             />
         {/if}
 

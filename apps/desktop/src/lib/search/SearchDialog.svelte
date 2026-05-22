@@ -29,7 +29,6 @@
         showFileContextMenu,
         showInFinder,
     } from '$lib/tauri-commands'
-    import { addToast } from '$lib/ui/toast/toast-store.svelte'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import { iconCacheVersion } from '$lib/icon-cache'
     import type { UnlistenFn } from '$lib/tauri-commands'
@@ -98,12 +97,20 @@
         getRecentSearchesList,
         setRecentSearchesList,
     } from './recent-searches-state.svelte'
-    import { applyHistoryEntry } from './search-state.svelte'
+    import { applyHistoryEntry, buildHistoryFilters } from './search-state.svelte'
     import {
         getRecentSearches as fetchRecentSearches,
         removeRecentSearch as removeRecentSearchIpc,
+        addRecentSearch as addRecentSearchIpc,
         type HistoryEntry,
     } from '$lib/tauri-commands'
+    import {
+        getOrCreate as createSnapshot,
+        nextSnapshotId,
+        setLastAttemptId,
+        type SearchSnapshot,
+    } from './snapshot-store.svelte'
+    import { buildSnapshotLabel } from './snapshot-label'
 
     interface Props {
         /** Called when user selects a result: receives the full path */
@@ -112,9 +119,16 @@
         onClose: () => void
         /** Current directory path of the focused pane (for ⌥F scope shortcut) */
         currentFolderPath: string
+        /**
+         * Called when the user clicks "Open in pane". Receives the freshly-created
+         * snapshot id; the host (`+page.svelte` → `DualPaneExplorer`) routes the
+         * active pane to `search-results://<id>`. The dialog closes itself; the
+         * handler doesn't need to.
+         */
+        onOpenInPane?: (snapshotId: string) => void
     }
 
-    const { onNavigate, onClose, currentFolderPath }: Props = $props()
+    const { onNavigate, onClose, currentFolderPath, onOpenInPane }: Props = $props()
 
     let queryInputElement: HTMLInputElement | undefined = $state()
     let dialogElement: HTMLDivElement | undefined = $state()
@@ -386,14 +400,84 @@
     }
 
     /**
-     * Footer action STUB: "Open in pane". M8 wires the snapshot store + virtual-volume
-     * push. For M7 we close the dialog and show a "coming in M8" toast so the button is
-     * discoverable but obviously not-yet-real. Replace this body with the real handler
-     * in M8.
+     * Footer action: "Open in pane" (M8b).
+     *
+     * Promotes the current result set into a real pane view via the search-results
+     * virtual volume. Steps in order:
+     *
+     *   1. Build a `SearchSnapshot` from the live dialog state (results, mode, filters).
+     *   2. Mint a fresh snapshot id (`sr-1`, `sr-2`, …) and store the snapshot.
+     *   3. Update the snapshot store's "last attempt" strong ref so a refcount survives
+     *      even before the pane history entry pushes.
+     *   4. Build a `HistoryEntry` mirroring the dialog state and persist it via
+     *      `add_recent_search` (the single sanctioned add point per plan §3.5: only
+     *      "Open in pane" pushes to recent searches; auto-applies and Enter-runs don't).
+     *   5. Hand the snapshot id to the host (`onOpenInPane`) which routes the active
+     *      pane to `search-results://<id>`. The pane's `pushHistoryEntry` then increments
+     *      the snapshot's refcount via the M8a integration.
+     *   6. Close the dialog. State is preserved (the module-level $state survives
+     *      unmount), so reopening with ⌘F lands the user back on the same results.
+     *
+     * No "Coming soon" toast anymore; the affordance is live.
      */
-    function openInPaneStub(): void {
+    function openInPane(): void {
+        if (results.length === 0) return
+        const id = nextSnapshotId()
+        const label = buildSnapshotLabel({
+            mode: getMode(),
+            query: getQuery(),
+            aiPrompt: getLastAiPrompt(),
+        })
+        // `HistoryFilters` (IPC type) uses `number | null` for absent fields; the
+        // snapshot store uses `number | undefined`. Coerce so `null` doesn't sneak
+        // into the snapshot's runtime shape.
+        const hf = buildHistoryFilters()
+        const snapshotFilters = {
+            ...(hf.sizeMin != null ? { sizeMin: hf.sizeMin } : {}),
+            ...(hf.sizeMax != null ? { sizeMax: hf.sizeMax } : {}),
+            // Snapshot filters carry numeric epoch-seconds (consistent with FileEntry.modifiedAt).
+            // HistoryFilters carry ISO strings (what the dialog UI uses). For now we just drop
+            // dates from the snapshot since the search-results pane doesn't need them post-run;
+            // future work could parse `hf.modifiedAfter`/`hf.modifiedBefore` if a snapshot
+            // consumer needs them.
+        }
+        const snapshot: SearchSnapshot = {
+            id,
+            query: getQuery(),
+            mode: getMode(),
+            filters: snapshotFilters,
+            scope: getScope(),
+            caseSensitive: getCaseSensitive(),
+            excludeSystemDirs: getExcludeSystemDirs(),
+            entries: getResults(),
+            totalCount: getTotalCount(),
+            createdAt: Date.now(),
+            label,
+        }
+        createSnapshot(id, snapshot)
+        setLastAttemptId(id)
+
+        // Persist to recent searches (the only call site that does this; see plan §3.5).
+        // Fire-and-forget: backend write is async and we don't need to block the
+        // dialog-close on it. The footer chip will pick up the new entry on next mount /
+        // explicit reload, not eagerly mid-session — matches recent-search semantics.
+        const historyEntry: HistoryEntry = {
+            id: crypto.randomUUID(),
+            timestamp: Date.now(),
+            mode: getMode(),
+            query: getMode() === 'ai' ? (getLastAiPrompt() ?? getQuery()) : getQuery(),
+            filters: buildHistoryFilters(),
+            scope: getScope(),
+            caseSensitive: getCaseSensitive(),
+            excludeSystemDirs: getExcludeSystemDirs(),
+            resultCount: getTotalCount(),
+        }
+        void addRecentSearchIpc(historyEntry).catch(() => {
+            // Silent on history persistence failure: the snapshot still opens.
+        })
+
+        onOpenInPane?.(id)
         onClose()
-        addToast('Open in pane: coming in M8', { level: 'info' })
     }
 
     /** Empty-state chip pick: load + run, mirroring the recent-search activation path. */
@@ -1056,7 +1140,7 @@
                 <SearchFooterActions
                     resultCount={results.length}
                     disabled={inputsDisabled}
-                    onOpenInPane={openInPaneStub}
+                    onOpenInPane={openInPane}
                     onOpenInFileManager={openCursorRowInFileManager}
                 />
             </div>

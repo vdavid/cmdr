@@ -234,4 +234,60 @@ describe('computeFullListColumnWidths', () => {
     // With our deterministic length*7 measurer the human-friendly cell is narrower.
     expect(human.size).toBeLessThan(raw.size)
   })
+
+  it('omits the path column unless parentPathsForPathColumn is supplied', () => {
+    _setMeasureForTests(fakeMeasure)
+    // No prop: path width must be 0 so callers can branch on it cleanly.
+    const off = computeFullListColumnWidths({ ...baseArgs, entries: [entry({ name: 'a' })] })
+    expect(off.path).toBe(0)
+    // Empty array: still no column.
+    const empty = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [entry({ name: 'a' })],
+      parentPathsForPathColumn: [],
+    })
+    expect(empty.path).toBe(0)
+  })
+
+  it('shrink-wraps the path column to the widest measured parent path', () => {
+    _setMeasureForTests(fakeMeasure)
+    const short = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [entry({ name: 'a' })],
+      parentPathsForPathColumn: ['/x', '/y/z'],
+    })
+    const long = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [entry({ name: 'a' })],
+      parentPathsForPathColumn: ['/x', '/Users/dave/code/some/quite/long/parent/path'],
+    })
+    // Both clear the MIN floor; long should be measurably wider unless capped.
+    expect(long.path).toBeGreaterThan(short.path)
+  })
+
+  it('caps the path column so a single deep path cannot eat the Name column', () => {
+    _setMeasureForTests(fakeMeasure)
+    const enormous = '/' + 'segment/'.repeat(100) + 'tail'
+    const w = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [entry({ name: 'a' })],
+      parentPathsForPathColumn: [enormous],
+    })
+    // MAX_PATH_WIDTH is the upper bound. Exact value is implementation-private, but
+    // verify the cap kicks in: the raw measured width (~800 × 7 px) would otherwise
+    // be far larger than the chosen cap.
+    expect(w.path).toBeLessThan(enormous.length * 7)
+    expect(w.path).toBeLessThanOrEqual(360)
+  })
+
+  it('does not change the other column widths when the path column is enabled', () => {
+    _setMeasureForTests(fakeMeasure)
+    const args = { ...baseArgs, entries: [entry({ name: 'doc.pdf', size: 1024 })] }
+    const off = computeFullListColumnWidths(args)
+    const on = computeFullListColumnWidths({ ...args, parentPathsForPathColumn: ['/Users/test'] })
+    expect(on.ext).toBe(off.ext)
+    expect(on.size).toBe(off.size)
+    expect(on.date).toBe(off.date)
+    expect(on.dateLeft).toBe(off.dateLeft)
+  })
 })

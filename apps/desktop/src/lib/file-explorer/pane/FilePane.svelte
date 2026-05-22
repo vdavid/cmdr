@@ -72,6 +72,9 @@
     import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
+    import SearchResultsView from './SearchResultsView.svelte'
+    import type { SearchResultsViewAPI } from './types'
+    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
     import SmbReconnectingView from './SmbReconnectingView.svelte'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
@@ -141,6 +144,12 @@
         onRetryUnreachable?: () => void
         /** Called when user clicks "Open home folder" on the unreachable banner */
         onOpenHome?: () => void
+        /**
+         * Called when the user clicks a path-pill ancestor segment inside the search-results
+         * pane. The host (`DualPaneExplorer`) resolves the path's volume and navigates the
+         * pane there, leaving the snapshot view. Unused for other pane kinds.
+         */
+        onNavigateToAncestor?: (ancestorPath: string) => void
     }
 
     const {
@@ -165,6 +174,7 @@
         unreachable = null,
         onRetryUnreachable,
         onOpenHome,
+        onNavigateToAncestor,
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
@@ -246,9 +256,37 @@
     let briefListRef: ListViewAPI | undefined = $state()
     let volumeBreadcrumbRef: VolumeBreadcrumbAPI | undefined = $state()
     let networkMountViewRef: NetworkMountViewAPI | undefined = $state()
+    let searchResultsViewRef: SearchResultsViewAPI | undefined = $state()
 
     // Check if we're viewing the network (special virtual volume)
     const isNetworkView = $derived(volumeId === 'network')
+
+    /**
+     * Check if we're viewing a search-results snapshot (the other virtual volume,
+     * `search-results://<id>`). Behaves like the network view: no backend listing,
+     * no file watcher, no git lookups, no pane-state-to-MCP sync. The pane renders
+     * `SearchResultsView` which pulls the snapshot from the in-memory store.
+     * Most code paths that gate on `isNetworkView` also gate on this; the few
+     * exceptions are noted at each call site.
+     */
+    const isSearchResultsView = $derived(volumeId === 'search-results')
+
+    /**
+     * Snapshot id encoded in `currentPath` for the search-results pane (`search-results://<id>`),
+     * or `null` for any other pane / unparseable path. Drives the breadcrumb label, the
+     * row-count for keyboard cursor clamping, and the view's snapshot lookup.
+     */
+    const searchSnapshotId = $derived(
+        isSearchResultsView && currentPath.startsWith('search-results://')
+            ? currentPath.slice('search-results://'.length)
+            : null,
+    )
+
+    /** Live snapshot lookup. Re-derives on path/id change. */
+    const searchSnapshot = $derived(searchSnapshotId ? getSnapshot(searchSnapshotId) : undefined)
+
+    /** Number of result rows in the active snapshot, or 0 when not on a search-results pane. */
+    const searchResultsCount = $derived(searchSnapshot?.entries.length ?? 0)
 
     // User's home directory path (e.g. "/Users/veszelovszki"), fetched once on mount
     let userHomePath = $state('')
@@ -281,7 +319,7 @@
      */
     async function syncGitState(path: string): Promise<void> {
         const gitFeaturesNeeded = showRepoChip || showGitStatusColumn
-        if (!gitFeaturesNeeded || isMtpVolumeId(volumeId) || isNetworkView) {
+        if (!gitFeaturesNeeded || isMtpVolumeId(volumeId) || isNetworkView || isSearchResultsView) {
             if (activeRepoRoot) {
                 await unsubscribeFromRepo(activeRepoRoot)
                 activeRepoRoot = null
@@ -318,6 +356,10 @@
     // For the root volume: replaces the home dir prefix with "~", otherwise shows absolute path.
     // For other volumes: shows path relative to the volume root.
     const breadcrumbDisplayPath = $derived.by(() => {
+        // Search-results pane: the URL (`search-results://<id>`) isn't useful to
+        // surface; the snapshot's label is already rendered as the volume name
+        // by VolumeBreadcrumb. Suppress the trailing path segments entirely.
+        if (isSearchResultsView) return ''
         if (isMtpVolumeId(volumeId)) return getMtpDisplayPath(currentPath)
 
         // For non-root volumes, strip the volume path prefix
@@ -538,6 +580,12 @@
             networkMountViewRef?.setCursorIndex(index)
             return
         }
+        if (isSearchResultsView) {
+            cursorIndex = index
+            searchResultsViewRef?.setCursorIndex(index)
+            await tick()
+            return
+        }
         cursorIndex = index
         // fetchEntryUnderCursor is handled by the $effect tracking cursorIndex
         // Scroll to make cursor visible
@@ -573,7 +621,7 @@
      * cache as it stands at that moment.
      */
     export function handleJumpKeystroke(char: string): void {
-        if (!listingId || loading || isNetworkView || isMtpDeviceOnly) return
+        if (!listingId || loading || isNetworkView || isMtpDeviceOnly || isSearchResultsView) return
         typeToJump.appendChar(char)
         // Surface the buffer change to MCP (`runJumpMatch` syncs again on
         // success, but a no-match keystroke would otherwise leave MCP stale).
@@ -957,12 +1005,20 @@
         created: 'created',
     }
 
+    /**
+     * Returns true when MCP shouldn't carry a file list for this pane. Either it's
+     * a virtual-volume pane (network / search-results — the snapshot or NetworkBrowser
+     * owns that pane state) or there's no listing yet. Extracted from `buildMcpFileList`
+     * to keep that function under the cyclomatic complexity cap.
+     */
+    function skipMcpFileSync(): boolean {
+        return isNetworkView || isSearchResultsView || !listingId || totalCount === 0
+    }
+
     /** Build file list for MCP state sync */
     async function buildMcpFileList(): Promise<PaneFileEntry[]> {
         const files: PaneFileEntry[] = []
-
-        // For network views, we don't sync files
-        if (isNetworkView || !listingId || totalCount === 0) return files
+        if (skipMcpFileSync()) return files
 
         // Calculate backend indices from visible range (frontend indices include "..")
         const backendStart = hasParent ? Math.max(0, visibleRangeStart - 1) : visibleRangeStart
@@ -1019,7 +1075,9 @@
      * source of truth there.
      */
     async function syncPaneStateToMcp() {
-        if (isNetworkView) return
+        // Search-results panes don't sync to MCP either: the snapshot is local
+        // dialog state, not a directory MCP agents are expected to query.
+        if (isNetworkView || isSearchResultsView) return
         try {
             const files = await buildMcpFileList()
             const effectiveTotal = hasParent ? totalCount + 1 : totalCount
@@ -1738,11 +1796,38 @@
             networkMountViewRef?.openCursorItem()
             return
         }
+        if (isSearchResultsView) {
+            searchResultsViewRef?.openCursorItem()
+            return
+        }
         const entry = getEntryUnderCursor()
         if (!entry) {
             throw new Error('No entry under cursor')
         }
         await handleNavigate(entry)
+    }
+
+    /**
+     * Keyboard handler for the search-results pane. Extracted from `handleKeyDown` to
+     * keep the latter under the cyclomatic complexity cap. Enter activates the cursor
+     * row; ArrowUp/Down move the cursor; everything else is intentionally ignored
+     * (no rename, no Backspace-to-parent — those don't apply to a virtual snapshot).
+     */
+    function handleSearchResultsKeyDown(e: KeyboardEvent): void {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            void openCursorItem()
+            return
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            void setCursorIndex(Math.min(cursorIndex + 1, Math.max(0, searchResultsCount - 1)))
+            return
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            void setCursorIndex(Math.max(0, cursorIndex - 1))
+        }
     }
 
     // Exported so DualPaneExplorer can forward keyboard events
@@ -1758,6 +1843,15 @@
 
         if (isNetworkView) {
             networkMountViewRef?.handleKeyDown(e)
+            return
+        }
+
+        // Search-results pane: route Enter to the cursor row's activation, arrow keys
+        // through the SearchResultsView's setCursorIndex. The view embeds FullList but
+        // owns its own bind ref; FilePane's `fullListRef` doesn't apply here. The
+        // cursor state itself still lives on `cursorIndex` so we can clamp uniformly.
+        if (isSearchResultsView) {
+            handleSearchResultsKeyDown(e)
             return
         }
 
@@ -1944,7 +2038,13 @@
 
         prevVolumeId = currentVolumeId
 
-        // Case 2: initialPath changed for a loadable view (local volumes, connected MTP)
+        // Case 2: initialPath changed for a loadable view (local volumes, connected MTP).
+        // Search-results panes get their data from the snapshot store, not a real listing,
+        // so we only sync `currentPath` without triggering a backend `list_directory`.
+        if (isSearchResultsView) {
+            if (newPath !== curPath) currentPath = newPath
+            return
+        }
         if (!isNetworkView && !isMtpDeviceOnly && newPath !== curPath) {
             log.debug(
                 '[FilePane] initialPath effect: triggering loadDirectory, paneId={paneId}, newPath={newPath}, curPath={curPath}',
@@ -1991,6 +2091,42 @@
         if (listingId && !loading) {
             debouncedFetchEntry.call()
             debouncedSyncMcp.call()
+        }
+    })
+
+    /**
+     * Search-results pane: mirror the snapshot row under the cursor into
+     * `entryUnderCursor` so SelectionInfo (if ever surfaced) and other consumers
+     * see a real `FileEntry`. The cursor index changes via FilePane's keyboard
+     * handler, and the snapshot itself is immutable, so the read here is cheap
+     * and synchronous. No-op for non-search panes; the regular effect above
+     * handles those.
+     */
+    $effect(() => {
+        if (!isSearchResultsView) return
+        const snap = searchSnapshot
+        if (!snap) {
+            entryUnderCursor = null
+            return
+        }
+        const e = snap.entries[cursorIndex]
+        if (!e) {
+            entryUnderCursor = null
+            return
+        }
+        entryUnderCursor = {
+            name: e.name,
+            path: e.path,
+            isDirectory: e.isDirectory,
+            isSymlink: false,
+            size: e.size ?? undefined,
+            modifiedAt: e.modifiedAt ?? undefined,
+            permissions: 0o644,
+            owner: '',
+            group: '',
+            iconId: e.iconId,
+            extendedMetadataLoaded: true,
+            parentPath: e.parentPath,
         }
     })
 
@@ -2253,7 +2389,7 @@
         if (unreachable) {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for unreachable tab, paneId={paneId}', { paneId })
             loading = false
-        } else if (!isNetworkView && !isMtpDeviceOnly) {
+        } else if (!isNetworkView && !isMtpDeviceOnly && !isSearchResultsView) {
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
             void loadDirectory(currentPath)
             void refreshVolumeSpace()
@@ -2261,6 +2397,11 @@
             void watchVolumeSpace(paneId, volumeId, currentPath)
         } else {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })
+            // Clear the initial `loading = true` for virtual-volume panes (network /
+            // search-results) — they don't go through the loadDirectory pipeline that
+            // would otherwise flip it false. Without this clear, the LoadingIcon stays
+            // up forever and the virtual view never renders.
+            loading = false
         }
 
         // Poll sync status so iCloud/Dropbox icons update while idle
@@ -2272,7 +2413,8 @@
 
         // Poll to detect externally deleted directories (macOS FSEvents doesn't notify)
         dirExistsPollInterval = setInterval(() => {
-            if (!listingId || loading || isNetworkView || isMtpView) return
+            // Search-results panes have no real `currentPath` on disk to poll.
+            if (!listingId || loading || isNetworkView || isMtpView || isSearchResultsView) return
             // Virtual `.git/<category>/...` paths don't exist on disk, so
             // `pathExists` always returns false and the poll would evict
             // the user back to `.git/`. The git watcher keeps these
@@ -2421,6 +2563,22 @@
                 {onVolumeChange}
                 onNetworkHostChange={handleNetworkHostChange}
             />
+        {:else if isSearchResultsView}
+            <SearchResultsView
+                bind:this={searchResultsViewRef}
+                path={currentPath}
+                {cursorIndex}
+                {isFocused}
+                {sortBy}
+                {sortOrder}
+                onNavigate={(entry) => { void handleNavigate(entry) }}
+                onNavigateToAncestor={(p) => onNavigateToAncestor?.(p)}
+                onSelect={(idx) => {
+                    cursorIndex = idx
+                    onRequestFocus?.()
+                }}
+                onVisibleRangeChange={handleVisibleRangeChange}
+            />
         {:else if isMtpDeviceOnly}
             <MtpConnectionView {volumeId} {onVolumeChange} />
         {:else if smbUpgradeLogin}
@@ -2515,7 +2673,7 @@
         {/if}
     </div>
     <!-- SelectionInfo shown in both modes (not in network view, MTP connecting state, or error states) -->
-    {#if !isNetworkView && !isMtpDeviceOnly && !friendlyError && !error && !unreachable}
+    {#if !isNetworkView && !isMtpDeviceOnly && !isSearchResultsView && !friendlyError && !error && !unreachable}
         <SelectionInfo
             {viewMode}
             entry={entryUnderCursor}
