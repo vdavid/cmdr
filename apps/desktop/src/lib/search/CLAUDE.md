@@ -118,9 +118,35 @@ for results, Tab between filters) that would fight `ModalDialog`'s focus managem
 **Two-cursor hover model**: Same as command palette. `cursorIndex` (keyboard) and `hoveredIndex` (mouse) are
 independent.
 
-**Live search with debounce**: 200ms debounce on filename/regex modes only. AI mode never auto-applies: the AI call
-costs money and the user must explicitly opt in via Enter / `⌘Enter` / the chip's Run action. Enter bypasses debounce
-for immediate search.
+**Live search with debounce**: 1 s debounce on filename/regex modes only, gated by the `search.autoApply` setting
+(default on, in `Settings > Behavior > Search`). AI mode never auto-applies regardless of the setting: AI calls cost
+money and the user must explicitly opt in via Enter / `⌘Enter` / the `⏎` run button on the right of the bar.
+
+The debounce constant lives in `search-state.svelte.ts` as `SEARCH_AUTO_APPLY_DEBOUNCE_MS = 1000`. All auto-apply
+callsites read it from there so changing the value is one edit. The bump from 200 ms to 1 s in M6 matches Spotlight's
+feel on a 10M-entry index: the user gets to finish a word before we react. Enter / ⌘Enter / the ⏎ button bypass the
+debounce for immediate search.
+
+**Auto-apply gates (M6)**: `scheduleSearch()` returns early in three cases:
+
+1. `mode === 'ai'`: AI never auto-applies.
+2. `search.autoApply === false`: the user runs every search explicitly.
+3. IME composition is in progress: we don't fire mid-character on Chinese / Japanese / Korean input. On
+   `compositionend`, the parent calls `scheduleSearch` again so the user gets one fire after the composed character
+   lands.
+
+The setting is mirrored into the dialog's local `autoApplyEnabled` state via
+`onSpecificSettingChange('search.autoApply', ...)`. Live-applied: toggling in the settings window updates the dialog
+immediately without reopening.
+
+**`⏎` run button**: Always visible on the right end of the bar. Clicking it is equivalent to pressing Enter in the
+input: AI mode runs `runAiFromQuery()`, every other mode runs `executeSearch()`. The button is the mouse-first path; the
+keyboard-first path is Enter.
+
+**"Press Enter to search" hint**: Appears in the right gutter of the bar in `--color-text-tertiary` when (a) the query
+is non-empty and (b) it has changed since the last actually-issued search and (c) auto-apply won't pick it up
+(`mode === 'ai'` OR `search.autoApply === false`). Tracked by `lastRunQuery`, set by `executeSearch()` after a
+successful backend call. `⌘N` resets `lastRunQuery` to `null` along with the rest of state.
 
 **Scope row**: Below the chips. Comma-separated folder paths with `!` prefix for exclusions. Parsed via
 `parseSearchScope()` IPC call in `executeSearch()` (async, so not part of `buildSearchQuery()`). ⌥F sets scope to the
@@ -151,6 +177,11 @@ contract as the Content mode chip: visible-disabled with an explanatory tooltip 
 **Auto mode fallback when AI gets disabled mid-session**: If the AI provider is switched off while the dialog is open
 and the active mode is `ai`, the dialog quietly flips to `filename`. The user wouldn't be able to run a search
 otherwise.
+
+**IME composition guard**: The dialog tracks `imeComposing` via `oncompositionstart` / `oncompositionend` on the search
+bar input. While composing, `scheduleSearch()` is a no-op so we don't fire mid-character on Chinese / Japanese / Korean
+input. On `compositionend` the dialog calls `scheduleSearch()` once so the user gets exactly one auto-apply fire after
+the composed character lands. Non-negotiable for IME users: see search-redesign-plan §3.6.
 
 **Deferred loading indicator**: The "Loading drive index..." message in the results area only appears when the user has
 triggered a search while the index is still loading. On initial open, the results area is empty (no loading message)

@@ -6,11 +6,20 @@
      * so the user can see at a glance what kind of input the bar expects. Switching mode preserves
      * the typed query; this component is presentational, the parent owns `query` and `mode`.
      *
+     * The right gutter shows two things, both managed by the parent dialog:
+     *   - A subtle "Press Enter to search" hint when auto-apply is off (or AI mode) and the query
+     *     has changed since the last run. Visible state, not interactive.
+     *   - A small ⏎ run button. Always present; clicking it is equivalent to pressing Enter.
+     *
+     * IME composition is also surfaced: `oncompositionstart` and `oncompositionend` let the parent
+     * suppress auto-apply mid-composition and fire exactly once on completion (M6 addition).
+     *
      * Keyboard contract (handled by the parent dialog, not here):
      *   - Enter runs the search in the active mode.
      *   - ⌘Enter runs an AI search regardless (only when AI is enabled).
      *   - ⌘1/⌘2/⌘3 switch modes (numbering changes when AI is off).
      */
+    import IconCornerDownLeft from '~icons/lucide/corner-down-left'
     import type { SearchMode } from './search-state.svelte'
 
     interface Props {
@@ -20,11 +29,30 @@
         mode: SearchMode
         disabled: boolean
         aiHighlight: boolean
+        /** True when the bar should show the "Press Enter to search" hint. Owned by the parent. */
+        showRunHint?: boolean
         onInput: (value: string) => void
+        /** Click handler for the ⏎ run button. Equivalent to pressing Enter in the input. */
+        onRun: () => void
+        /** IME composition entry: parent suppresses auto-apply between start and end. */
+        onCompositionStart?: () => void
+        /** IME composition exit: parent fires exactly one debounced search after this. */
+        onCompositionEnd?: () => void
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
-    let { inputElement = $bindable(), query, mode, disabled, aiHighlight, onInput }: Props = $props()
+    let {
+        inputElement = $bindable(),
+        query,
+        mode,
+        disabled,
+        aiHighlight,
+        showRunHint = false,
+        onInput,
+        onRun,
+        onCompositionStart,
+        onCompositionEnd,
+    }: Props = $props()
     /* eslint-enable prefer-const */
 
     /** Placeholder text per mode. Filenames are the workhorse, so we name the wildcards there. */
@@ -39,6 +67,9 @@
         if (mode === 'regex') return 'Regex search pattern'
         return 'Filename search pattern'
     })
+
+    /** AI mode runs only on explicit Enter / ⌘Enter / Run-button click. Show the hint title to match. */
+    const runTitle = $derived(mode === 'ai' ? 'Run AI search (Enter)' : 'Run search (Enter)')
 </script>
 
 <div class="search-bar" class:is-disabled={disabled}>
@@ -56,12 +87,31 @@
         oninput={(e: Event) => {
             onInput((e.target as HTMLInputElement).value)
         }}
+        oncompositionstart={() => {
+            onCompositionStart?.()
+        }}
+        oncompositionend={() => {
+            onCompositionEnd?.()
+        }}
         {disabled}
         aria-label={ariaLabel}
         spellcheck="false"
         autocomplete="off"
         autocapitalize="off"
     />
+    {#if showRunHint}
+        <span class="run-hint" aria-hidden="true">Press Enter to search</span>
+    {/if}
+    <button
+        type="button"
+        class="run-button"
+        {disabled}
+        onclick={onRun}
+        title={runTitle}
+        aria-label={runTitle}
+    >
+        <IconCornerDownLeft />
+    </button>
 </div>
 
 <style>
@@ -102,5 +152,41 @@
         background: var(--color-accent-subtle);
         border-radius: var(--radius-sm);
         transition: background 1.5s ease-out;
+    }
+
+    .run-hint {
+        flex-shrink: 0;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        white-space: nowrap;
+    }
+
+    .run-button {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-xxs) var(--spacing-xs);
+        background: transparent;
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-sm);
+        color: var(--color-text-secondary);
+        cursor: default;
+        line-height: 1;
+    }
+
+    .run-button:hover:not(:disabled) {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+    }
+
+    .run-button:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
+    .run-button:disabled {
+        opacity: 0.5;
+        cursor: default;
     }
 </style>

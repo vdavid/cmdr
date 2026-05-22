@@ -29,7 +29,7 @@
     } from '$lib/tauri-commands'
     import { iconCacheVersion } from '$lib/icon-cache'
     import type { UnlistenFn } from '$lib/tauri-commands'
-    import { getSetting } from '$lib/settings'
+    import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { isScanning, getEntriesScanned } from '$lib/indexing'
     import {
         getQuery,
@@ -78,6 +78,7 @@
         setLastAiCaveat,
         buildSearchQuery,
         clearSearchState,
+        SEARCH_AUTO_APPLY_DEBOUNCE_MS,
         type SearchMode,
     } from './search-state.svelte'
     import SearchBar from './SearchBar.svelte'
@@ -116,7 +117,24 @@
     let hoveredIndex = $state<number | null>(null)
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let unlistenReady: UnlistenFn | undefined
+    let unlistenAutoApply: (() => void) | undefined
     let systemDirExcludeTooltip = $state('Excludes common system and build folders')
+
+    // Auto-apply toggle. Reactively mirrored from the `search.autoApply` setting so changes in the
+    // settings window take effect without reopening the dialog (live-apply contract).
+    let autoApplyEnabled = $state<boolean>(getSetting('search.autoApply'))
+
+    // True while an IME composition is in progress. We don't schedule auto-apply during composition
+    // (would fire mid-character on Chinese/Japanese/Korean input); on compositionend we reset the
+    // debounce timer so the user gets exactly one fire after composition completes.
+    let imeComposing = false
+
+    /**
+     * Query string at the time of the last actually-issued search (auto-applied or manual). Used by
+     * the "Press Enter to search" hint to detect "the user has typed since the last run". `null`
+     * means no search has been run yet this session/state.
+     */
+    let lastRunQuery = $state<string | null>(null)
 
     // Resizable column widths (px). Icon column is fixed at 24px.
     const colWidths = $state({ name: 250, path: 350, size: 80, modified: 120 })
@@ -180,6 +198,21 @@
     const aiEnabled = $derived(getSetting('ai.provider') !== 'off' && isIndexAvailable)
     /** Whether inputs/filters should be disabled (index not available or still scanning with no index). */
     const inputsDisabled = $derived(!isIndexAvailable)
+
+    /**
+     * True when the bar should show the "Press Enter to search" hint. Two cases:
+     *   1. Auto-apply is off (any mode), and the query has changed since the last run.
+     *   2. Mode is AI (which never auto-applies), and the query has changed since the last run.
+     * Trimmed-empty queries hide the hint; there's nothing to run.
+     */
+    const showRunHint = $derived.by(() => {
+        if (inputsDisabled) return false
+        const trimmed = query.trim()
+        if (!trimmed) return false
+        const changed = trimmed !== (lastRunQuery ?? '').trim()
+        if (!changed) return false
+        return mode === 'ai' || !autoApplyEnabled
+    })
 
     let highlightedFields = new SvelteSet<string>()
     /** True once the user has triggered at least one search (so we can distinguish "no query yet" from "0 results"). */
@@ -286,6 +319,13 @@
         notifyDialogOpened('search').catch(() => {})
         window.addEventListener('keydown', handleEscapeCapture, true)
 
+        // Live-mirror `search.autoApply`. The setting drives `scheduleSearch` and the run-hint
+        // visibility; the dialog reads it reactively so toggling in the settings window takes
+        // effect immediately, no reopen needed.
+        unlistenAutoApply = onSpecificSettingChange('search.autoApply', (_id, value) => {
+            autoApplyEnabled = value
+        })
+
         // Listen for index ready event
         unlistenReady = await onSearchIndexReady((entryCount: number) => {
             setIsIndexReady(true)
@@ -339,6 +379,7 @@
         notifyDialogClosed('search').catch(() => {})
         releaseSearchIndex().catch(() => {})
         unlistenReady?.()
+        unlistenAutoApply?.()
         window.removeEventListener('keydown', handleEscapeCapture, true)
         if (debounceTimer) clearTimeout(debounceTimer)
         // Clean up any in-progress column drag
@@ -348,13 +389,51 @@
         // query, filters, scope, results, and cursor. Explicit reset lives behind ⌘N.
     })
 
+    /**
+     * Schedules a debounced auto-apply search. Three gates layered on top of the timer:
+     *   1. AI mode never auto-applies. AI calls cost money; the user must press Enter / ⌘Enter /
+     *      click the ⏎ run button.
+     *   2. `search.autoApply` (live-mirrored): when off, the user runs every search explicitly. The
+     *      bar shows "Press Enter to search" so the contract is visible.
+     *   3. IME composition: while a composition is in progress, we don't schedule. On
+     *      `compositionend` the parent calls `scheduleSearch` again so the user gets one fire after
+     *      composition completes, not multiple fires mid-character.
+     * Constant: `SEARCH_AUTO_APPLY_DEBOUNCE_MS` (1 s) — bumped from the legacy 200 ms in M6.
+     */
     function scheduleSearch(): void {
         if (debounceTimer) clearTimeout(debounceTimer)
-        // AI mode never auto-applies: the AI call costs money and must be explicit.
         if (getMode() === 'ai') return
+        if (!autoApplyEnabled) return
+        if (imeComposing) return
         debounceTimer = setTimeout(() => {
             void executeSearch()
-        }, 200)
+        }, SEARCH_AUTO_APPLY_DEBOUNCE_MS)
+    }
+
+    /** Marks the start of an IME composition. Auto-apply is suppressed until `compositionend`. */
+    function handleCompositionStart(): void {
+        imeComposing = true
+        if (debounceTimer) clearTimeout(debounceTimer)
+    }
+
+    /**
+     * Marks the end of an IME composition. Resets the debounce timer so the user gets exactly one
+     * auto-apply fire after the full composed character lands (when the gates from `scheduleSearch`
+     * allow it).
+     */
+    function handleCompositionEnd(): void {
+        imeComposing = false
+        scheduleSearch()
+    }
+
+    /** Runs a search from the ⏎ button or Enter, dispatching to AI or non-AI based on mode. */
+    function runFromButton(): void {
+        if (inputsDisabled) return
+        if (getMode() === 'ai') {
+            runAiFromQuery()
+        } else {
+            void executeSearch()
+        }
     }
 
     /**
@@ -386,6 +465,8 @@
             setTotalCount(result.totalCount)
             setCursorIndex(0)
             hoveredIndex = null
+            // Track what was actually run so the "Press Enter to search" hint can detect drift.
+            lastRunQuery = getQuery()
             if (!fromAiTranslation) {
                 // A non-AI search completed cleanly. The AI transparency strip belongs to the
                 // previous AI search, so we drop it here. AI runs go through `executeAiSearch`,
@@ -626,6 +707,7 @@
     /** Clears all dialog state (⌘N "new search") and refocuses the query input. */
     function clearAndRefocus(): void {
         clearSearchState()
+        lastRunQuery = null
         void tick().then(() => {
             focusInput()
         })
@@ -782,7 +864,11 @@
             {mode}
             disabled={inputsDisabled}
             aiHighlight={highlightedFields.has('query')}
+            {showRunHint}
             onInput={handleQueryInput}
+            onRun={runFromButton}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
         />
 
         <SearchModeChips {mode} {aiEnabled} disabled={inputsDisabled} onSelect={handleModeChange} />

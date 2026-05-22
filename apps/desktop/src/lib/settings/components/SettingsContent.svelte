@@ -5,6 +5,7 @@
     import ListingSection from '$lib/settings/sections/ListingSection.svelte'
     import FileOperationsSection from '$lib/settings/sections/FileOperationsSection.svelte'
     import DriveIndexingSection from '$lib/settings/sections/DriveIndexingSection.svelte'
+    import SearchSection from '$lib/settings/sections/SearchSection.svelte'
     import AiSection from '$lib/settings/sections/AiSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
     import MtpSection from '$lib/settings/sections/MtpSection.svelte'
@@ -104,6 +105,11 @@
         {#if shouldShowSection(['Behavior', 'Drive indexing'])}
             <section data-section-id="behavior-drive-indexing">
                 <DriveIndexingSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['Behavior', 'Search'])}
+            <section data-section-id="behavior-search">
+                <SearchSection {searchQuery} />
             </section>
         {/if}
 

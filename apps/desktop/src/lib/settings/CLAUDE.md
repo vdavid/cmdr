@@ -95,7 +95,7 @@ Top-level sidebar order (declared in `SettingsSidebar.svelte`'s `TOP_LEVEL_ORDER
 `settings.spec.ts`):
 
 1. **Appearance** — `Colors and formats`, `Zoom and density`, `File and folder sizes`, `Listing`
-2. **Behavior** — `File operations`, `Drive indexing`
+2. **Behavior** — `File operations`, `Drive indexing`, `Search`
 3. **AI** (no subsections)
 4. **File systems** — `SMB/Network shares`, `MTP (Android/Kindle/cameras)`, `Git`
 5. **Viewer** (no subsections)
@@ -117,6 +117,8 @@ Section ↔ component map (`sections/`):
 - `FileOperationsSection.svelte` → `Behavior > File operations` (extension changes only; `maxConflictsToShow` and
   `progressUpdateInterval` live in Advanced)
 - `DriveIndexingSection.svelte` → `Behavior > Drive indexing` (toggle + clear-index action)
+- `SearchSection.svelte` → `Behavior > Search` (auto-apply switch; mirrors the `search.recentSearches.maxCount` row from
+  Advanced so users hunting under "search" find it)
 - `AiSection.svelte` (+ `AiCloudSection.svelte`, `AiLocalSection.svelte`) → `AI`
 - `NetworkSection.svelte` → `File systems > SMB/Network shares`
 - `MtpSection.svelte` → `File systems > MTP (Android/Kindle/cameras)`

@@ -139,6 +139,49 @@ describe('validateSettingValue', () => {
   })
 })
 
+describe('search.autoApply', () => {
+  it('registers a boolean setting in Behavior > Search, defaulting to on', () => {
+    const def = getSettingDefinition('search.autoApply')
+    expect(def).toBeDefined()
+    expect(def?.type).toBe('boolean')
+    expect(def?.default).toBe(true)
+    expect(def?.section).toEqual(['Behavior', 'Search'])
+    expect(def?.component).toBe('switch')
+  })
+
+  it('is reachable via canonical search keywords', () => {
+    const def = getSettingDefinition('search.autoApply')
+    const keywords = def?.keywords ?? []
+    // The plan's keyword set covers the natural lookup terms (search, auto, apply, debounce,
+    // filename, regex). One assertion per term so a typo failure points right at the gap.
+    for (const term of ['search', 'auto', 'apply', 'debounce', 'filename', 'regex']) {
+      expect(keywords).toContain(term)
+    }
+  })
+
+  it('validates booleans only', () => {
+    expect(() => {
+      validateSettingValue('search.autoApply', true)
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('search.autoApply', false)
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('search.autoApply', 'yes')
+    }).toThrow()
+  })
+
+  it('lives under Behavior > Search in the section tree', () => {
+    const tree = buildSectionTree()
+    const behavior = tree.find((s) => s.name === 'Behavior')
+    expect(behavior).toBeDefined()
+    const search = behavior?.subsections.find((s) => s.name === 'Search')
+    expect(search).toBeDefined()
+    const ids = (search?.settings ?? []).map((s) => s.id)
+    expect(ids).toContain('search.autoApply')
+  })
+})
+
 describe('search.recentSearches.maxCount', () => {
   it('registers the Advanced entry with the documented defaults and bounds', () => {
     const def = getSettingDefinition('search.recentSearches.maxCount')

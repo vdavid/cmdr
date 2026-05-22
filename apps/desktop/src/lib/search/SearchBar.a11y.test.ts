@@ -19,7 +19,11 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     mode: 'filename',
     disabled: false,
     aiHighlight: false,
+    showRunHint: false,
     onInput: () => {},
+    onRun: () => {},
+    onCompositionStart: () => {},
+    onCompositionEnd: () => {},
     ...overrides,
   }
 }

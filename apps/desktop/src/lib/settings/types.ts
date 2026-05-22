@@ -214,6 +214,7 @@ export interface SettingsValues {
   'fileExplorer.tabs.closedTabHistorySize': number
 
   // Search
+  'search.autoApply': boolean
   'search.recentSearches.maxCount': number
 }
 

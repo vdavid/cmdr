@@ -58,6 +58,7 @@ test.describe('Settings page', () => {
       'Behavior',
       'File operations',
       'Drive indexing',
+      'Search',
       'AI',
       'File systems',
       'SMB/Network shares',

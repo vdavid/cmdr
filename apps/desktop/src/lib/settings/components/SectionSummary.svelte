@@ -25,6 +25,7 @@
             Listing: 'Document icons, directory sorting, and Brief mode column width.',
             'File operations': 'Behavior when renaming files (e.g. extension changes).',
             'Drive indexing': 'Background indexing for directory sizes. Manage index storage.',
+            Search: 'Live-applied filename and regex searches, and the recent-searches cap.',
             'SMB/Network shares': 'Enable networking, direct SMB connections, share cache, and timeouts.',
             'MTP (Android/Kindle/cameras)': 'Detect Android, Kindle, and camera devices over USB.',
             Git: 'Repository chip, per-file status column, and the virtual `.git` portal.',

@@ -378,6 +378,21 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   // ========================================================================
+  // Behavior › Search
+  // ========================================================================
+  {
+    id: 'search.autoApply',
+    section: ['Behavior', 'Search'],
+    label: 'Auto-apply searches',
+    description:
+      'Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter — they cost money. When off, press Enter or click the run button to search.',
+    keywords: ['search', 'auto', 'apply', 'live', 'debounce', 'filename', 'regex', 'instant'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+
+  // ========================================================================
   // AI
   // ========================================================================
   {

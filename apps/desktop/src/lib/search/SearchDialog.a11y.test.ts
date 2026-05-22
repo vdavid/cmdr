@@ -34,8 +34,12 @@ let aiProvider: 'off' | 'local' | 'cloud' = 'off'
 vi.mock('$lib/settings', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'ai.provider') return aiProvider
+    if (key === 'search.autoApply') return true
     return undefined
   }),
+  // SearchDialog subscribes to `search.autoApply` changes; the a11y suite doesn't toggle it, so a
+  // no-op unsubscribe is enough.
+  onSpecificSettingChange: vi.fn(() => () => {}),
 }))
 
 vi.mock('$lib/indexing', () => ({

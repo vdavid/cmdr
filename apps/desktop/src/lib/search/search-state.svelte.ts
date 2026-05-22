@@ -15,6 +15,14 @@ export type SizeUnit = 'KB' | 'MB' | 'GB'
  */
 export type SearchMode = 'ai' | 'filename' | 'regex'
 
+/**
+ * Debounce window for auto-applied filename/regex searches. The previous 200 ms felt twitchy on a
+ * 10M-entry index: every typed character paid for a search round-trip. 1 s matches Spotlight's feel
+ * and gives the user space to finish a word before we react. AI mode never auto-applies (see
+ * `SearchDialog.svelte#scheduleSearch`), so this constant is filename/regex-only.
+ */
+export const SEARCH_AUTO_APPLY_DEBOUNCE_MS = 1000
+
 // Module-level reactive state
 let isIndexReady = $state(false)
 let indexEntryCount = $state(0)
