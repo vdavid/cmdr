@@ -66,4 +66,7 @@ apps/desktop/src-tauri/resources/ai
 .cargo-docker/
 
 # Entire.io
-.entire/docs/specs/file-viewer-selection-progress.md
+.entire/
+
+# Per-milestone progress tracker for in-flight feature work (transient, recovery aid)
+docs/specs/file-viewer-selection-progress.md

@@ -223,6 +223,35 @@ test.describe('File viewer selection and copy', () => {
     expect(clip.startsWith('AAAA')).toBe(true)
   })
 
+  test('drag past the bottom edge does not throw', async () => {
+    // Smoke test: a drag where the pointer leaves the viewport via the bottom should
+    // engage the autoscroll RAF loop and then release cleanly on `pointerup`. The
+    // fixture is one short line so there's no overflow to scroll into, but the gesture
+    // itself must not throw and the listeners must release. A full "drag-past-edge
+    // reads bytes beyond the buffer" test needs a large fixture; the autoscroll math
+    // is unit-tested in `viewer-autoscroll.test.ts`, and `viewer-autoscroll.svelte.test.ts`
+    // covers the controller's start/stop transitions.
+    await viewer.evaluate(`
+            (function() {
+                const target = document.querySelector('.file-content')
+                if (!target) throw new Error('file-content not found')
+                const rect = target.getBoundingClientRect()
+                function fire(type, x, y) {
+                    target.dispatchEvent(new PointerEvent(type, {
+                        bubbles: true, cancelable: true,
+                        clientX: x, clientY: y,
+                        button: 0, pointerId: 7, pointerType: 'mouse',
+                    }))
+                }
+                fire('pointerdown', rect.left + 10, rect.top + 20)
+                fire('pointermove', rect.left + 10, rect.bottom + 50)
+                fire('pointerup', rect.left + 10, rect.bottom + 50)
+            })()
+        `)
+    // If we got here, the page didn't crash; assert the container still responds.
+    expect(await viewer.isVisible('.file-content')).toBe(true)
+  })
+
   test('drag within viewport selects the dragged range', async () => {
     // Dispatch synthetic pointer events on the first line. The caret-from-point math
     // runs in the page; pure JS dispatch works because the viewer listens to bubbling

@@ -34,6 +34,8 @@
     } from './selection.svelte'
     import { createViewerCopy } from './viewer-copy.svelte'
     import { caretFromPoint } from './viewer-pointer'
+    import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
+    import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
     import { formatBytes, type RangeEnd } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -203,6 +205,27 @@
      */
     let dragPointerId: number | null = null
 
+    /** The pointer's most-recent Y position, used by the autoscroll RAF loop. */
+    let dragPointerY: number = 0
+
+    /**
+     * Re-resolves the caret after each autoscroll step. Uses the X position one px
+     * past the left edge of `.file-content` so the caret lands inside the line text
+     * (not the line-number gutter, which sits flush to the left edge).
+     */
+    function reAimAfterAutoscroll(pointerY: number): void {
+        if (!scroll.contentRef) return
+        const rect = scroll.contentRef.getBoundingClientRect()
+        const caret = caretFromPoint(document, rect.left + 1, pointerY)
+        if (caret !== null) selection.setFocus(caret)
+    }
+
+    const autoscroll = createViewerAutoscroll({
+        getContentRef: () => scroll.contentRef,
+        getPointerY: () => dragPointerY,
+        onScrollStep: reAimAfterAutoscroll,
+    })
+
     function handleContentPointerDown(e: PointerEvent): void {
         // Left mouse button only (button 0). Right-click goes to the context menu (M4).
         if (e.button !== 0) return
@@ -211,18 +234,39 @@
         e.preventDefault()
         selection.setAnchor(caret)
         dragPointerId = e.pointerId
+        dragPointerY = e.clientY
+        // Capture so we keep receiving pointer events even if the cursor leaves the
+        // webview (the user dragged past the edge into another macOS window or the
+        // desktop). Without capture, autoscroll would never see a `pointerup` to stop.
+        try {
+            ;(e.currentTarget as Element | null)?.setPointerCapture(e.pointerId)
+        } catch {
+            // Capture can throw on some webviews if the target isn't focusable; ignoring
+            // is safe (the drag still works, just without the safety net).
+        }
     }
 
     function handleContentPointerMove(e: PointerEvent): void {
         if (dragPointerId === null || e.pointerId !== dragPointerId) return
+        dragPointerY = e.clientY
         const caret = caretFromPoint(document, e.clientX, e.clientY)
-        if (caret === null) return
-        selection.setFocus(caret)
+        if (caret !== null) selection.setFocus(caret)
+
+        // Check whether the pointer is near a viewport edge; start/stop autoscroll as needed.
+        if (!scroll.contentRef) return
+        const rect = scroll.contentRef.getBoundingClientRect()
+        const delta = computeAutoscrollPxPerFrame(e.clientY, rect.top, rect.bottom)
+        if (delta !== 0) {
+            autoscroll.start()
+        } else {
+            autoscroll.stop()
+        }
     }
 
     function endDrag(pointerId: number): void {
         if (dragPointerId !== pointerId) return
         dragPointerId = null
+        autoscroll.stop()
     }
 
     function handleContentPointerUp(e: PointerEvent): void {
@@ -231,6 +275,18 @@
 
     function handleContentPointerCancel(e: PointerEvent): void {
         endDrag(e.pointerId)
+    }
+
+    /**
+     * Window `blur` safety net: macOS may hand focus to another app mid-drag without
+     * firing a `pointerup` or `pointercancel`. Without this, the autoscroll RAF loop
+     * would keep running indefinitely.
+     */
+    function handleWindowBlur(): void {
+        if (dragPointerId !== null) {
+            dragPointerId = null
+        }
+        autoscroll.stop()
     }
 
     // Fetch lines when visible range changes (debounced)
@@ -700,7 +756,7 @@
     })
 </script>
 
-<svelte:window on:keydown={handleKeyDown} />
+<svelte:window on:keydown={handleKeyDown} on:blur={handleWindowBlur} />
 
 <main
     class="viewer-container"
