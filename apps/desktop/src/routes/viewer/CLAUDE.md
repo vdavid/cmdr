@@ -90,6 +90,20 @@ logical coordinates, independent of which lines happen to be rendered.
   uses a monotonic per-session counter. This avoids an extra round-trip (call to "start read", await `read_id`, then
   another call to "wait for read"); the FE just sends the id with the read request, and the backend keys the cancel flag
   off that id. Uniqueness within the session is the only invariant.
+- **`ViewerContextMenu` Escape stops propagation AND the page checks `contextMenuPos`.** The page's
+  `<svelte:window on:keydown>` listener is registered first (the menu mounts later), so the page's handler runs before
+  the menu's. If the page didn't gate on `contextMenuPos !== null` first, Escape would fall through to `closeWindow()`
+  and shut the whole viewer window. The menu's `stopImmediatePropagation()` is defense-in-depth for any future
+  listener-order change. See `tryConsumeEscapeForCopy` in `+page.svelte` and `handleKey` in `ViewerContextMenu.svelte`.
+- **AT announcement caps line iteration.** `describeSelectionForAt` in `selection.svelte.ts` walks per-line lengths to
+  build the screen-reader announcement. ⌘A in ByteSeek-no-index mode sets `focus.line = Number.MAX_SAFE_INTEGER` (the
+  sentinel that maps to `RangeEnd::Eof` at the IPC boundary), so an uncapped loop would iterate 9e15 times. The
+  `MAX_ANNOUNCE_LINES = 10_000` cap short-circuits to "Selected from line N to the end of the file" without touching the
+  line-length lookup at all.
+- **Drag autoscroll honours `prefers-reduced-motion`.** Under reduced motion, `createViewerAutoscroll().start()` does a
+  single synchronous snap step and exits without queuing a RAF. The page's `pointermove` calls `start()` on every move,
+  so the user still progresses through the file in discrete jumps. Override via the `prefersReducedMotion` dep for
+  tests.
 - `getLineHeight()` (returns `18px × effective scale`) and the CSS rule
   `.line { height: calc(18px * var(--font-scale)) }` in `+page.svelte` must stay paired. Both read the same scale: the
   JS function for virtualization math, the CSS rule for layout. If you change the 18 base, change both.

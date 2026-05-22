@@ -104,6 +104,15 @@ returns `{ ok, error }` and the page matches on `error.kind`.
 - **UTF-16 surrogate clamp at the IPC boundary**: `clamp_utf16_offset_to_byte` rounds offsets that land between the
   high and low surrogate of an astral codepoint down to the codepoint start. This guarantees the returned slice is
   always valid UTF-8.
+- **`range_read` checks the cancel flag inside the per-line loop, not just between chunks**: the inner check fires
+  every 256 lines OR every 64 KB of emitted output, whichever first. Without the inner check, a 4096-line chunk of
+  4 KB/line files (16 MB) would be uninterruptible. Same lesson as `search_cancel`'s per-chunk progress reporting.
+- **CRLF: line readers keep `\r` AS PART of the returned line string.** All three backends (`byte_seek.rs:118`,
+  `full_load.rs:43`, `line_index.rs:172`) split only on `\n` and slice up to the `\n` byte; the `\r` stays with the
+  line. So `line.len()` already includes the `\r` for CRLF files, and `range_read`'s `chunk_end_offset += line.len()
+  + 1` accounts only for the single `\n` delimiter byte. No drift on LF or CRLF. Pinned by
+  `read_range_full_load_crlf_preserves_carriage_returns` in `session_test.rs`. If a future change makes line readers
+  strip `\r`, the byte-offset arithmetic in `range_read.rs` needs the same change.
 
 ## Performance targets
 
