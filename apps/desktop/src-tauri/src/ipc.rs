@@ -306,6 +306,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::disconnect_smb_volume,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
+        crate::commands::eject::eject_volume,
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::connect_to_server,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::remove_manual_server,

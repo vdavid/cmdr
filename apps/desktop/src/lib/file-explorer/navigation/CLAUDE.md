@@ -15,6 +15,7 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 | `volume-grouping.ts`                   | Pure logic: group volumes by category, get volume icons                                                                                                            |
 | `volume-space-manager.svelte.ts`       | Reactive state machine for disk space fetch/retry/timeout                                                                                                          |
 | `volume-breadcrumb-handlers.svelte.ts` | Submenu/breadcrumb-popup controllers, keyboard-mode tracker, and pure key-dispatch helpers for `VolumeBreadcrumb.svelte`                                           |
+| `eject-predicate.ts`                   | Pure `isVolumeEjectable(volume)` used by the eject button gate. Returns true when NSURL says ejectable OR the volume has any SMB connection state                  |
 | `navigation-history.test.ts`           | Full unit test coverage of history functions                                                                                                                       |
 | `path-navigation.test.ts`              | Unit tests for path resolution and timeouts                                                                                                                        |
 | `keyboard-shortcuts.test.ts`           | Unit tests for shortcut calculations                                                                                                                               |
@@ -173,6 +174,17 @@ in the breadcrumb, both opening a "Connect directly for faster access" menu item
 which tries stored credentials first; if none found or they fail, the backend returns `credentialsNeeded` and the
 `onSmbUpgradeLogin` callback triggers `FilePane` to show `NetworkLoginForm` inline (same pattern as `ShareBrowser`).
 Submenu supports full keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
+
+### Eject button + context-menu item
+
+Ejectable volumes (USB, SD, DMG, MTP, SMB — see `eject-predicate.ts`) show a small `⏏`-shaped icon button on the right
+of each dropdown row and on the right of the closed/header chip. Clicking it calls `ejectVolume(id)` which dispatches in
+the backend: SMB → `diskutil unmount`, MTP → connection manager disconnect, physical / DMG → `diskutil eject`.
+Right-clicking a dropdown row opens a small Svelte popup with a single `Eject ({name})` item; right-clicking the closed
+header opens the native breadcrumb context menu that, when the pane's volume is ejectable, adds an `Eject ({name})` item
+alongside "Copy path". The native item routes back via the `volume-context-action` Tauri event (subscribed in
+`DualPaneExplorer.svelte`); the Svelte popups call `ejectVolume` directly. The volume disappears via the existing
+`volume-unmounted` / `mtp-device-disconnected` flow — no extra success toast.
 
 ### USB link-speed indicator (MTP)
 

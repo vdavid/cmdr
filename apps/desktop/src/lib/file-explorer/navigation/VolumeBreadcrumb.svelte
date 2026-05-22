@@ -1,6 +1,12 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { resolvePathVolume, upgradeToSmbVolume, type UpgradeResult } from '$lib/tauri-commands'
+    import {
+        ejectVolume,
+        getIpcErrorMessage,
+        resolvePathVolume,
+        upgradeToSmbVolume,
+        type UpgradeResult,
+    } from '$lib/tauri-commands'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
@@ -16,6 +22,7 @@
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import InfoIcon from '~icons/lucide/info'
     import { describeUsbSpeed, type VolumeInfo } from '../types'
+    import { isVolumeEjectable } from './eject-predicate'
 
     /** "USB 3.2 Gen 1 (Max. 625 MB/s)" - shared between the chip tooltip and the dropdown subline. */
     function usbSpeedDisplay(volume: VolumeInfo | undefined): string {
@@ -346,8 +353,10 @@
         // Close on click outside
         document.addEventListener('click', handleClickOutside)
         document.addEventListener('click', handleBreadcrumbPopupClickOutside)
+        document.addEventListener('click', handleRowMenuClickOutside)
         document.addEventListener('keydown', handleDocumentKeyDown)
         document.addEventListener('keydown', handleBreadcrumbPopupKeyDown)
+        document.addEventListener('keydown', handleRowMenuKeyDown)
         window.addEventListener('resize', handleResize)
     })
 
@@ -355,8 +364,10 @@
         spaceManager.destroy()
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('click', handleBreadcrumbPopupClickOutside)
+        document.removeEventListener('click', handleRowMenuClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
         document.removeEventListener('keydown', handleBreadcrumbPopupKeyDown)
+        document.removeEventListener('keydown', handleRowMenuKeyDown)
         window.removeEventListener('resize', handleResize)
     })
 
@@ -388,6 +399,54 @@
         } catch (e) {
             dismissToast(connectingToastId)
             addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })
+        }
+    }
+
+    // Per-volume right-click popup (the small "Eject (name)" menu shown when
+    // the user right-clicks a row in the dropdown). Mirrors the breadcrumb-popup
+    // pattern used for "Connect directly", but each invocation targets a specific
+    // volume rather than the currently-selected one.
+    let rowMenuVolumeId: string | null = $state(null)
+    let rowMenuPosition: { left: number; top: number } | null = $state(null)
+    let rowMenuRef: HTMLDivElement | undefined = $state()
+
+    function openRowMenu(volume: VolumeInfo, event: MouseEvent) {
+        event.preventDefault()
+        event.stopPropagation()
+        if (!isVolumeEjectable(volume)) return
+        rowMenuVolumeId = volume.id
+        rowMenuPosition = { left: event.clientX, top: event.clientY }
+    }
+
+    function closeRowMenu() {
+        rowMenuVolumeId = null
+        rowMenuPosition = null
+    }
+
+    async function handleEjectClick(volume: VolumeInfo, event?: MouseEvent) {
+        event?.stopPropagation()
+        closeRowMenu()
+        breadcrumbPopup.close()
+        isOpen = false
+        try {
+            await ejectVolume(volume.id)
+            // Success: the volume disappears via `volume-unmounted` (disk) or
+            // `mtp-device-disconnected` (MTP). No toast needed — the change is
+            // visible. Panes redirect to root via the existing listeners.
+        } catch (e) {
+            addToast(`Couldn't eject ${volume.name}: ${getIpcErrorMessage(e)}`, { level: 'error' })
+        }
+    }
+
+    function handleRowMenuClickOutside(event: MouseEvent) {
+        if (rowMenuRef && !rowMenuRef.contains(event.target as Node)) {
+            closeRowMenu()
+        }
+    }
+
+    function handleRowMenuKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Escape' && rowMenuVolumeId) {
+            closeRowMenu()
         }
     }
 
@@ -475,6 +534,32 @@
             </div>
         {/if}
     {/if}
+    {#if currentVolume && isVolumeEjectable(currentVolume)}
+        <button
+            type="button"
+            class="eject-button breadcrumb-eject-button"
+            aria-label={`Eject ${currentVolume.name}`}
+            use:tooltip={`Eject ${currentVolume.name}`}
+            onclick={(e: MouseEvent) => { void handleEjectClick(currentVolume, e) }}
+        >
+            <!-- Inline SVG: Lucide doesn't ship an `eject` icon (as of v0.477).
+                 Shape matches the macOS menu-bar eject glyph: filled triangle
+                 above a short bar. -->
+            <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+            >
+                <path d="M5 14 L12 5 L19 14 Z" />
+                <line x1="5" y1="19" x2="19" y2="19" />
+            </svg>
+        </button>
+    {/if}
 
     {#if isOpen && (groupedVolumes.length > 0 || volumesTimedOut)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -500,6 +585,7 @@
                         onclick={() => {
                             void handleVolumeSelect(volume)
                         }}
+                        oncontextmenu={(e: MouseEvent) => { openRowMenu(volume, e); }}
                         onmouseover={(e: MouseEvent) => {
                             handleVolumeHover(volume)
                             if (volume.smbConnectionState === 'os_mount') {
@@ -554,6 +640,32 @@
                                 class="usb-speed-indicator usb-speed-indicator-{describeUsbSpeed(volume.usbSpeed).tier}"
                                 use:tooltip={`${usbSpeedDisplay(volume)}\nNegotiated for this cable, port, and device`}
                             ></span>
+                        {/if}
+                        {#if isVolumeEjectable(volume)}
+                            <button
+                                type="button"
+                                class="eject-button"
+                                aria-label={`Eject ${volume.name}`}
+                                use:tooltip={`Eject ${volume.name}`}
+                                onclick={(e: MouseEvent) => { void handleEjectClick(volume, e) }}
+                            >
+                                <!-- Inline SVG: Lucide doesn't ship an `eject` icon (as of v0.477).
+                 Shape matches the macOS menu-bar eject glyph: filled triangle
+                 above a short bar. -->
+            <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+            >
+                <path d="M5 14 L12 5 L19 14 Z" />
+                <line x1="5" y1="19" x2="19" y2="19" />
+            </svg>
+                            </button>
                         {/if}
                     </div>
                     {#if volumeSpaceMap.has(volume.id)}
@@ -658,6 +770,27 @@
                     }}
                 >
                     Connect directly for faster access
+                </div>
+            </div>
+        {/if}
+    {/if}
+
+    {#if rowMenuVolumeId && rowMenuPosition}
+        {@const rowMenuVolume = volumes.find((v) => v.id === rowMenuVolumeId)}
+        {#if rowMenuVolume}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+                class="row-menu"
+                bind:this={rowMenuRef}
+                style:left="{rowMenuPosition.left}px"
+                style:top="{rowMenuPosition.top}px"
+            >
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <div
+                    class="row-menu-item"
+                    onclick={(e: MouseEvent) => { void handleEjectClick(rowMenuVolume, e) }}
+                >
+                    Eject ({rowMenuVolume.name})
                 </div>
             </div>
         {/if}
@@ -1168,6 +1301,89 @@
     }
 
     .breadcrumb-popup-item:hover {
+        background-color: var(--color-accent-subtle);
+    }
+
+    /* ── Eject button ────────────────────────────────────────────────
+       Right-aligned next to the SMB / USB badges. Same flex-shrink and
+       margin rules as the other right-aligned indicators so the badges
+       and the button line up cleanly when both are present. */
+
+    .eject-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        padding: var(--spacing-xxs);
+        margin: 0;
+        cursor: default;
+        color: var(--color-text-secondary);
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+        font: inherit;
+        line-height: 1;
+        transition: background-color var(--transition-base), color var(--transition-base);
+    }
+
+    .eject-button:hover {
+        background-color: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+    }
+
+    .eject-button:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
+    /* In the dropdown row, push the button to the far right when it's the only
+       right-aligned element; otherwise sit next to whatever badge precedes it. */
+    .volume-item .eject-button {
+        margin-left: auto;
+    }
+
+    /* If a badge (smb / usb / submenu / read-only) is right before us, the
+       badge already carries the auto margin — we just need a small gap. */
+    .volume-item .smb-indicator + .eject-button,
+    .volume-item .usb-speed-indicator + .eject-button,
+    .volume-item .submenu-trigger + .eject-button,
+    .volume-item .read-only-indicator + .eject-button {
+        margin-left: var(--spacing-xs);
+    }
+
+    /* Closed-state (header) eject button: small left margin so it sits next
+       to the SMB / USB badges instead of jamming against them. */
+    .breadcrumb-eject-button {
+        margin-left: var(--spacing-xs);
+    }
+
+    /* The inline eject glyph inside the button: sized to match the row height. */
+    .eject-button svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* ── Per-volume right-click menu (dropdown rows) ──────────────── */
+
+    .row-menu {
+        position: fixed;
+        min-width: 180px;
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        /* Above the dropdown (--z-overlay: 200) and its submenu. */
+        z-index: calc(var(--z-overlay) + 2);
+        padding: var(--spacing-xs) 0;
+    }
+
+    .row-menu-item {
+        padding: var(--spacing-sm) var(--spacing-md);
+        cursor: default;
+        white-space: nowrap;
+    }
+
+    .row-menu-item:hover {
         background-color: var(--color-accent-subtle);
     }
 </style>

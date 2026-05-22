@@ -13,24 +13,24 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 
 ## Files
 
-| File                  | Contents                                                                                                                                                                            |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ipc-types.ts`        | `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()`: shared timeout-aware types                                                                                       |
-| `index.ts`            | Barrel re-export of everything below                                                                                                                                                |
-| `file-listing.ts`     | Virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`), drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics     |
-| `file-viewer.ts`      | Viewer session only: open, seek, search, close, word wrap menu                                                                                                                      |
-| `file-actions.ts`     | Open file/URL, Finder reveal, Quick Look, Get Info, context menu, clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` / `cloudRemoveDownload`, iCloud Drive only) |
-| `icons.ts`            | Icon fetching (`getIcons`, `refreshDirectoryIcons`) and cache invalidation                                                                                                          |
-| `app-state.ts`        | MCP pane state, dialog open/close tracking, menu context, view settings, `showMainWindow`                                                                                           |
-| `write-operations.ts` | Copy/move/delete, conflict resolution, scan preview, `formatBytes`/`formatDuration`                                                                                                 |
-| `rename.ts`           | `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`                                                                                                         |
-| `storage.ts`          | `listVolumes`, `getVolumeSpace`, `watchVolumeSpace`/`unwatchVolumeSpace`, `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`, `openSystemSettingsUrl`             |
-| `networking.ts`       | SMB host discovery, share listing, Keychain credential ops, mounting, direct-connection upgrade, in-place `reconnectSmbVolume` and per-volume `disconnectSmbVolume`                 |
-| `mtp.ts`              | Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy                                                                                           |
-| `licensing.ts`        | License status, activation, expiry, server validation                                                                                                                               |
-| `settings.ts`         | Port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands                                                                                    |
-| `tab.ts`              | Tab context menu: `showTabContextMenu`, `onTabContextAction`                                                                                                                        |
-| `clipboard-files.ts`  | Clipboard file operations: copy/cut files to system clipboard, read/paste, clear cut state                                                                                          |
+| File                  | Contents                                                                                                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ipc-types.ts`        | `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()`: shared timeout-aware types                                                                                                                   |
+| `index.ts`            | Barrel re-export of everything below                                                                                                                                                                            |
+| `file-listing.ts`     | Virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`), drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics                                 |
+| `file-viewer.ts`      | Viewer session only: open, seek, search, close, word wrap menu                                                                                                                                                  |
+| `file-actions.ts`     | Open file/URL, Finder reveal, Quick Look, Get Info, context menu, clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` / `cloudRemoveDownload`, iCloud Drive only)                             |
+| `icons.ts`            | Icon fetching (`getIcons`, `refreshDirectoryIcons`) and cache invalidation                                                                                                                                      |
+| `app-state.ts`        | MCP pane state, dialog open/close tracking, menu context, view settings, `showMainWindow`                                                                                                                       |
+| `write-operations.ts` | Copy/move/delete, conflict resolution, scan preview, `formatBytes`/`formatDuration`                                                                                                                             |
+| `rename.ts`           | `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`                                                                                                                                     |
+| `storage.ts`          | `listVolumes`, `getVolumeSpace`, `watchVolumeSpace`/`unwatchVolumeSpace`, `ejectVolume`, `onVolumeContextAction`, `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`, `openSystemSettingsUrl` |
+| `networking.ts`       | SMB host discovery, share listing, Keychain credential ops, mounting, direct-connection upgrade, in-place `reconnectSmbVolume` and per-volume `disconnectSmbVolume`                                             |
+| `mtp.ts`              | Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy                                                                                                                       |
+| `licensing.ts`        | License status, activation, expiry, server validation                                                                                                                                                           |
+| `settings.ts`         | Port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands                                                                                                                |
+| `tab.ts`              | Tab context menu: `showTabContextMenu`, `onTabContextAction`                                                                                                                                                    |
+| `clipboard-files.ts`  | Clipboard file operations: copy/cut files to system clipboard, read/paste, clear cut state                                                                                                                      |
 
 ## Where to put new commands
 

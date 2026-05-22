@@ -1772,6 +1772,15 @@ export const commands = {
    */
   disconnectSmbVolume: (volumeId: string) =>
     typedError<null, IpcError>(__TAURI_INVOKE('disconnect_smb_volume', { volumeId })),
+  /**
+   *  Ejects a volume. Picks the right teardown for the volume's kind.
+   *
+   *  Returns `Ok(())` once the unmount or disconnect is initiated. The frontend
+   *  shouldn't wait for the volume to fully disappear — `volume-unmounted` (for
+   *  disk volumes) or `mtp-device-disconnected` (for MTP) will fire shortly
+   *  after and panes rooted at the volume redirect to root.
+   */
+  ejectVolume: (volumeId: string) => typedError<null, IpcError>(__TAURI_INVOKE('eject_volume', { volumeId })),
   // Removes a manually-added server by ID.
   removeManualServer: (serverId: string) =>
     typedError<null, string>(__TAURI_INVOKE('remove_manual_server', { serverId })),

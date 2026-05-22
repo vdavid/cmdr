@@ -144,6 +144,9 @@ pub const NETWORK_HOST_FORGET_SERVER_ID: &str = "network_host_forget_server";
 pub const NETWORK_HOST_FORGET_PASSWORD_ID: &str = "network_host_forget_password";
 pub const NETWORK_HOST_DISCONNECT_ID: &str = "network_host_disconnect";
 
+/// Menu item ID for "Eject (name)" in the breadcrumb / volume context menus.
+pub const EJECT_VOLUME_ID: &str = "eject_volume";
+
 /// Menu item ID for About window.
 pub const ABOUT_ID: &str = "about";
 
@@ -352,6 +355,14 @@ pub struct NetworkHostMenuContext {
     pub host_name: String,
 }
 
+/// Context for the volume-eject menu item (stored so on_menu_event can emit it).
+/// Populated by `show_breadcrumb_context_menu` when an ejectable volume is in scope.
+#[derive(Clone, Default)]
+pub struct VolumeEjectMenuContext {
+    pub volume_id: String,
+    pub volume_name: String,
+}
+
 /// A menu item tracked for accelerator updates, with its parent submenu and position.
 pub struct MenuItemEntry<R: Runtime> {
     pub item: MenuItem<R>,
@@ -394,6 +405,9 @@ pub struct MenuState<R: Runtime> {
     pub sort_submenu: Mutex<Option<Submenu<R>>>,
     /// Context for the most recent network host context menu (host_id + host_name)
     pub network_host_context: Mutex<NetworkHostMenuContext>,
+    /// Context for the most recent breadcrumb / volume context menu's eject item.
+    /// Cleared (volume_id empty) when the menu was built without an ejectable target.
+    pub volume_eject_context: Mutex<VolumeEjectMenuContext>,
 }
 
 impl<R: Runtime> Default for MenuState<R> {
@@ -417,6 +431,7 @@ impl<R: Runtime> Default for MenuState<R> {
             items: Mutex::new(HashMap::new()),
             sort_submenu: Mutex::new(None),
             network_host_context: Mutex::new(NetworkHostMenuContext::default()),
+            volume_eject_context: Mutex::new(VolumeEjectMenuContext::default()),
         }
     }
 }

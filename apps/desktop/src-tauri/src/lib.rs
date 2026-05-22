@@ -144,9 +144,9 @@ mod volumes_linux;
 mod stubs;
 
 use menu::{
-    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, MenuState, NETWORK_HOST_DISCONNECT_ID,
-    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID,
-    SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
+    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, MenuState,
+    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, SHOW_HIDDEN_FILES_ID,
+    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
     SORT_DESCENDING_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
     VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode,
     menu_id_to_command,
@@ -765,6 +765,26 @@ pub fn run() {
             // === Tab context menu actions: emit tab-context-action directly ===
             if id == TAB_PIN_ID || id == TAB_CLOSE_OTHERS_ID || id == TAB_CLOSE_ID {
                 let _ = app.emit_to("main", "tab-context-action", serde_json::json!({ "action": id }));
+                return;
+            }
+
+            // === Eject volume action (from breadcrumb / dropdown row context menu) ===
+            if id == EJECT_VOLUME_ID {
+                let menu_state = app.state::<MenuState<tauri::Wry>>();
+                let ctx = menu_state.volume_eject_context.lock_ignore_poison();
+                if ctx.volume_id.is_empty() {
+                    log::warn!(target: "eject", "EJECT_VOLUME_ID clicked with no volume_id stashed");
+                    return;
+                }
+                let _ = app.emit_to(
+                    "main",
+                    "volume-context-action",
+                    serde_json::json!({
+                        "action": "eject",
+                        "volumeId": ctx.volume_id,
+                        "volumeName": ctx.volume_name,
+                    }),
+                );
                 return;
             }
 

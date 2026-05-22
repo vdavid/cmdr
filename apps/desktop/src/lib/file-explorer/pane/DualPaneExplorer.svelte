@@ -36,6 +36,9 @@
         readClipboardFiles,
         clearClipboardCutState,
         updateViewModeMenu,
+        ejectVolume,
+        onVolumeContextAction,
+        getIpcErrorMessage,
     } from '$lib/tauri-commands'
     import type {
         VolumeInfo,
@@ -221,6 +224,7 @@
     let unlistenSettings: UnlistenFn | undefined
     let unlistenViewMode: UnlistenFn | undefined
     let unlistenVolumeUnmount: UnlistenFn | undefined
+    let unlistenVolumeContextAction: UnlistenFn | undefined
     let unlistenDragDrop: UnlistenFn | undefined
     let unlistenDragImageSize: UnlistenFn | undefined
     let unlistenDragModifiers: UnlistenFn | undefined
@@ -1231,6 +1235,21 @@
             }
         })
 
+        // Native breadcrumb context menu's "Eject (name)" item routes back via this
+        // event (see `on_menu_event` in `lib.rs`). The Svelte popup paths in
+        // VolumeBreadcrumb call `ejectVolume` directly; this listener only handles
+        // the native-menu case.
+        unlistenVolumeContextAction = await onVolumeContextAction((payload) => {
+            if (payload.action !== 'eject') return
+            void (async () => {
+                try {
+                    await ejectVolume(payload.volumeId)
+                } catch (e) {
+                    addToast(`Couldn't eject ${payload.volumeName}: ${getIpcErrorMessage(e)}`, { level: 'error' })
+                }
+            })()
+        })
+
         // Listen for drag image size from native swizzle (macOS).
         // Fires before the Tauri drag enter event, so the flag is ready when handleDragEnter runs.
         unlistenDragImageSize = await listen<{ width: number; height: number }>('drag-image-size', (event) => {
@@ -1395,6 +1414,7 @@
         unlistenSettings?.()
         unlistenViewMode?.()
         unlistenVolumeUnmount?.()
+        unlistenVolumeContextAction?.()
         unlistenDragImageSize?.()
         unlistenDragModifiers?.()
         unlistenDragDrop?.()

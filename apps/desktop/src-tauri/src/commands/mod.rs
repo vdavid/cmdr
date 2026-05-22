@@ -4,6 +4,8 @@ pub mod child_window_state;
 pub mod clipboard;
 pub mod crash_reporter;
 pub mod e2e;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod eject;
 pub mod error_reporter;
 pub mod file_system;
 pub mod file_viewer;

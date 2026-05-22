@@ -106,6 +106,8 @@ export {
   getDefaultVolumeId,
   resolvePathVolume,
   getVolumeSpace,
+  ejectVolume,
+  onVolumeContextAction,
   watchVolumeSpace,
   unwatchVolumeSpace,
   setDiskSpaceThreshold,

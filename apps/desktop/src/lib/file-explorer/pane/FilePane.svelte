@@ -103,6 +103,7 @@
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { openInEditor } from '$lib/tauri-commands'
     import { resolveValidPath } from '../navigation/path-resolution'
+    import { isVolumeEjectable } from '../navigation/eject-predicate'
     import { homeDir } from '@tauri-apps/api/path'
     import {
         getVolumeSpace,
@@ -1684,7 +1685,17 @@
         e.preventDefault()
         onRequestFocus?.()
         const shortcuts = getEffectiveShortcuts('file.copyCurrentDirectoryPath')
-        void showBreadcrumbContextMenu(shortcuts[0] ?? '')
+        // Pass eject info when the pane's volume is ejectable so the menu can
+        // include an "Eject ({name})" item. Same gate as the row/header eject
+        // buttons; the volume-context-action listener in DualPaneExplorer
+        // dispatches the click to `ejectVolume`.
+        const v = currentVolumeInfo
+        const ejectable = v && isVolumeEjectable(v)
+        void showBreadcrumbContextMenu(
+            shortcuts[0] ?? '',
+            ejectable ? v.id : undefined,
+            ejectable ? v.name : undefined,
+        )
     }
 
     function handleVolumeChangeFromBreadcrumb(newVolumeId: string, newVolumePath: string, targetPath: string) {

@@ -108,6 +108,10 @@ vi.mock('$lib/tauri-commands', () => ({
   updateViewModeMenu: vi.fn().mockResolvedValue(undefined),
   // Volume space polling
   watchVolumeSpace: vi.fn().mockResolvedValue(undefined),
+  // Eject
+  ejectVolume: vi.fn().mockResolvedValue(undefined),
+  onVolumeContextAction: vi.fn().mockResolvedValue(() => {}),
+  getIpcErrorMessage: (e: unknown) => String(e),
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests

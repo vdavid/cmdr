@@ -1,5 +1,6 @@
 // Volume management, space, and permissions
 
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { VolumeInfo } from '../file-explorer/types'
 import type { TimedOut } from './ipc-types'
 import { getAppLogger } from '$lib/logging/logger'
@@ -90,6 +91,35 @@ export async function getVolumeSpace(path: string): Promise<TimedOut<VolumeSpace
     // Command not available (non-macOS) - return null
     return { data: null, timedOut: false }
   }
+}
+
+/**
+ * Ejects a mounted volume. Dispatches by kind: MTP devices close their USB
+ * session, SMB shares run `diskutil unmount` (FSEvents handles the smb2
+ * teardown), and physical or disk-image volumes run `diskutil eject` (powers
+ * down USB devices, detaches DMGs).
+ *
+ * Resolves once the unmount or disconnect is initiated. The volume disappears
+ * from the picker shortly after, via `volume-unmounted` or
+ * `mtp-device-disconnected`. Throws an `IpcError`-shaped exception on failure
+ * (e.g. "Resource busy" if Finder still has the volume open).
+ */
+export async function ejectVolume(volumeId: string): Promise<void> {
+  const res = await commands.ejectVolume(volumeId)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
+ * Subscribes to volume-context-menu actions (currently just "eject") emitted by the
+ * native breadcrumb context menu. The handler receives `{ action, volumeId, volumeName }`.
+ * Returns an `UnlistenFn` — call it on component destroy to avoid leaks.
+ */
+export function onVolumeContextAction(
+  handler: (event: { action: string; volumeId: string; volumeName: string }) => void,
+): Promise<UnlistenFn> {
+  return listen<{ action: string; volumeId: string; volumeName: string }>('volume-context-action', (event) => {
+    handler(event.payload)
+  })
 }
 
 // ============================================================================

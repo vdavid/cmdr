@@ -27,10 +27,10 @@ use super::menu_items::{
 #[cfg(target_os = "macos")]
 use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, QUICK_LOOK_ID};
 use super::{
-    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID,
-    FILE_NEW_FOLDER_ID, FILE_VIEW_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
-    NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
-    TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FILE_COPY_ID, FILE_DELETE_ID,
+    FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID,
+    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID,
+    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -227,9 +227,18 @@ pub fn build_context_menu<R: Runtime>(
 }
 
 /// Builds a context menu for the breadcrumb path bar.
-/// The `accelerator` parameter is the user's configured shortcut for this command
-/// (in Tauri accelerator format, e.g. "Ctrl+Shift+C"), or empty if none is set.
-pub fn build_breadcrumb_context_menu<R: Runtime>(app: &AppHandle<R>, accelerator: &str) -> tauri::Result<Menu<R>> {
+///
+/// `accelerator` is the user's configured shortcut for the "Copy path" command (in
+/// Tauri accelerator format, e.g. "Ctrl+Shift+C"), or empty if none is set.
+/// `eject_volume_name`, when present, appends an `Eject ({name})` item that lets
+/// the user eject the volume the breadcrumb represents. The caller is responsible
+/// for stashing the matching `volume_id` in `MenuState.volume_eject_context` so
+/// `on_menu_event` can dispatch the click.
+pub fn build_breadcrumb_context_menu<R: Runtime>(
+    app: &AppHandle<R>,
+    accelerator: &str,
+    eject_volume_name: Option<&str>,
+) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
     let accel: Option<&str> = if accelerator.is_empty() {
         None
@@ -238,6 +247,11 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(app: &AppHandle<R>, accelerator
     };
     let copy_path_item = MenuItem::with_id(app, COPY_CURRENT_DIR_PATH_ID, "Copy path", true, accel)?;
     menu.append(&copy_path_item)?;
+    if let Some(name) = eject_volume_name {
+        let label = format!("Eject ({})", name);
+        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, &label, true, None::<&str>)?;
+        menu.append(&eject_item)?;
+    }
     Ok(menu)
 }
 

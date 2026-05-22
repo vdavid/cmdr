@@ -71,11 +71,27 @@ export async function cloudRemoveDownload(path: string): Promise<void> {
 
 /**
  * Shows a native context menu for the breadcrumb path bar.
- * @param shortcut - Frontend shortcut string (e.g. "⌃⌘C"), or empty string if no shortcut is configured.
+ *
+ * Pass `ejectVolumeId` + `ejectVolumeName` when the breadcrumb represents an
+ * ejectable volume — the menu will include an "Eject ({name})" item that emits
+ * a `volume-context-action` event on click (subscribe via `onVolumeContextAction`).
+ * Pass both or neither; one without the other is treated as no eject target.
+ *
+ * @param shortcut - Frontend shortcut string for "Copy path" (e.g. "⌃⌘C"), or empty.
+ * @param ejectVolumeId - Volume to eject when the user clicks the eject item.
+ * @param ejectVolumeName - Display name for the "Eject ({name})" label.
  */
-export async function showBreadcrumbContextMenu(shortcut: string): Promise<void> {
+export async function showBreadcrumbContextMenu(
+  shortcut: string,
+  ejectVolumeId?: string,
+  ejectVolumeName?: string,
+): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
-  await invoke('show_breadcrumb_context_menu', { shortcut })
+  await invoke('show_breadcrumb_context_menu', {
+    shortcut,
+    ejectVolumeId: ejectVolumeId ?? null,
+    ejectVolumeName: ejectVolumeName ?? null,
+  })
 }
 
 /**

@@ -111,14 +111,40 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
 }
 
 /// Shows a native context menu for the breadcrumb path bar.
-/// The `shortcut` is the user's configured shortcut in frontend format (e.g. "⌃⌘C"),
-/// or empty string if no shortcut is configured.
+///
+/// `shortcut` is the user's configured shortcut for "Copy path" in frontend format
+/// (e.g. "⌃⌘C"), or empty string if no shortcut is configured.
+/// `eject_volume_id` + `eject_volume_name` are set when the breadcrumb represents an
+/// ejectable volume; both must be present (or both absent) — the command stashes the
+/// id in `MenuState.volume_eject_context` so `on_menu_event` can dispatch the click.
 #[tauri::command]
 #[specta::specta]
-pub fn show_breadcrumb_context_menu<R: Runtime>(window: Window<R>, shortcut: String) -> Result<(), String> {
+pub fn show_breadcrumb_context_menu<R: Runtime>(
+    window: Window<R>,
+    shortcut: String,
+    eject_volume_id: Option<String>,
+    eject_volume_name: Option<String>,
+) -> Result<(), String> {
     let app = window.app_handle();
     let accelerator = frontend_shortcut_to_accelerator(&shortcut).unwrap_or_default();
-    let menu = build_breadcrumb_context_menu(app, &accelerator).map_err(|e| e.to_string())?;
+    let menu =
+        build_breadcrumb_context_menu(app, &accelerator, eject_volume_name.as_deref()).map_err(|e| e.to_string())?;
+
+    // Stash eject target so on_menu_event can read it back when the user clicks
+    // the "Eject (name)" item. If only one of the two args is present, treat as no
+    // eject target — the builder also won't render the item.
+    {
+        let state = app.state::<MenuState<R>>();
+        let mut ctx = state.volume_eject_context.lock_ignore_poison();
+        if let (Some(id), Some(name)) = (eject_volume_id, eject_volume_name) {
+            ctx.volume_id = id;
+            ctx.volume_name = name;
+        } else {
+            ctx.volume_id.clear();
+            ctx.volume_name.clear();
+        }
+    }
+
     menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
 }
