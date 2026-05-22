@@ -3,10 +3,11 @@
      * SearchFooterActions: the right-edge action buttons in the dialog footer.
      *
      * Per search-redesign-plan §3.9:
-     *   - "Open in pane" (primary): visible whenever results exist. M7 ships this button
-     *     as a STUB — clicking closes the dialog and shows a "coming in M8" toast. M8
-     *     wires the snapshot store + virtual-volume push, at which point the toast goes
-     *     away and the handler does the real navigation.
+     *   - "Open in pane" (primary): visible whenever results exist. The handler in
+     *     `SearchDialog.svelte::openInPane` creates a `SearchSnapshot`, pins it via
+     *     `setLastAttemptId`, adds the query to recent searches, navigates the active
+     *     pane to `search-results://<id>`, and closes the dialog. State is preserved
+     *     so reopening (`⌘F`) lands back on the same results.
      *   - "Open in Finder" (macOS) / "Open in file manager" (Linux): opens the parent
      *     folder of the cursor row in the platform's file manager. Wired here via the
      *     existing `showInFinder` IPC (which already calls `open -R` on macOS and
@@ -27,7 +28,8 @@
          * would otherwise jump the layout while the user is mid-thought.
          */
         disabled: boolean
-        /** Click handler for "Open in pane". Parent owns the (currently stub) navigation. */
+        /** Click handler for "Open in pane". Parent creates the snapshot, navigates the
+         *  active pane to `search-results://<id>`, and closes the dialog. */
         onOpenInPane: () => void
         /** Click handler for "Open in Finder / file manager". Parent owns the IPC. */
         onOpenInFileManager: () => void
@@ -57,7 +59,7 @@
             onclick={onOpenInPane}
             aria-label="Open in pane"
         >
-            <span use:tooltip={'Open the results in a pane (coming soon)'}>Open in pane</span>
+            <span use:tooltip={'Open the results in a pane'}>Open in pane</span>
         </Button>
     </div>
 {/if}

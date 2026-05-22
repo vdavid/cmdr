@@ -25,7 +25,7 @@ chip row and path-pill column landing in later milestones.
 | `EmptyState.svelte`                  | Pre-search "Try…" block: three example chips (AI prompts or filename patterns), index size, keyboard tip                                                                      |
 | `RecentSearchesFooter.svelte`        | Chip strip at the bottom of the dialog, up to 6 most recent entries plus an "All searches…" trailing chip                                                                     |
 | `RecentSearchesPopover.svelte`       | Fuzzy-searchable popover over the full recent-searches history (`⌘H` opens, ufuzzy under the hood)                                                                            |
-| `SearchFooterActions.svelte`         | Right-edge footer buttons: "Open in pane" (STUB in M7) and "Open in Finder" / "Open in file manager"                                                                          |
+| `SearchFooterActions.svelte`         | Right-edge footer buttons: "Open in pane" (live, M8b) and "Open in Finder" / "Open in file manager"                                                                           |
 | `PathPills.svelte`                   | Clickable path-pill strip rendered inside each result row's path column (replaces flat `parentPath`)                                                                          |
 | `SearchRowMenu.svelte`               | Per-row `…` button: always visible on cursor row, hover-revealed on other rows; opens native context menu                                                                     |
 | `recent-searches-state.svelte.ts`    | Module-level reactive store for the loaded recent-searches list; loads from backend once per session                                                                          |
@@ -250,9 +250,10 @@ the recent-searches strip. It renders two buttons whenever `results.length > 0`:
 - **"Open in Finder" (macOS)** / **"Open in file manager" (Linux)**: reveals the cursor row in the platform's file
   manager via the existing `showInFinder` IPC (`open -R` on macOS, `xdg-open` on the parent on Linux). The dialog stays
   open so the user can keep browsing results.
-- **"Open in pane"**: the primary action. M7 ships this as a **STUB**: clicking closes the dialog and shows a "coming in
-  M8" toast. M8 wires the real handoff (snapshot store + virtual-volume push). The stub keeps the affordance
-  discoverable without overpromising.
+- **"Open in pane"**: the primary action. Wired live in M8b — the handler in `SearchDialog.svelte::openInPane` builds a
+  `SearchSnapshot`, pins it via `setLastAttemptId`, adds the query to recent searches (the sole call site for that),
+  hands the snapshot id to the host (`onOpenInPane`), and closes the dialog. The host routes the active pane to
+  `search-results://<id>`. State is preserved across close + reopen, so `⌘F` lands back on the same results.
 
 Both buttons are hidden (not just disabled) on empty/idle state, because they have nothing to act on. Empty + idle
 inputs disable both (index not ready). The platform branch uses `isMacOS()` from `$lib/shortcuts/key-capture`.
@@ -504,7 +505,6 @@ The label shown in the pane breadcrumb (and the snapshot's `label` field) is bui
   `parseSearchScope`, `getRecentSearches`, `addRecentSearch`, `removeRecentSearch`, `clearRecentSearches`,
   `applyRecentSearchesMaxCount`, `showFileContextMenu` (row context menu), `showInFinder` (footer Open in Finder / file
   manager)
-- `$lib/ui/toast/toast-store.svelte` -- `addToast` for the M7 "Open in pane: coming in M8" stub
 - `$lib/shortcuts/key-capture` -- `isMacOS()` for the footer action's macOS/Linux label fork
 - `@leeoniya/ufuzzy` -- fuzzy filtering inside `RecentSearchesPopover`
 - `$lib/indexing` -- `isScanning`, `getEntriesScanned` (scan progress for unavailable state)

@@ -48,7 +48,7 @@ describe('EmptyState', () => {
     target.remove()
   })
 
-  it('shows the keyboard tip line with the three documented shortcuts', async () => {
+  it('shows the in-dialog keyboard tip line (AI off: ⌘N and ⌘H, no ⌘Enter)', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(EmptyState, {
@@ -57,9 +57,29 @@ describe('EmptyState', () => {
     })
     await tick()
     const tip = target.querySelector('.tip')?.textContent ?? ''
-    expect(tip).toContain('⌘F')
     expect(tip).toContain('⌘N')
     expect(tip).toContain('⌘H')
+    // ⌘Enter is AI-gated and AI is off here.
+    expect(tip).not.toContain('⌘Enter')
+    // ⌘F opens the dialog from the explorer; once the dialog is open the
+    // shortcut is moot, so we explicitly do NOT advertise it inside the
+    // empty state.
+    expect(tip).not.toContain('⌘F')
+    target.remove()
+  })
+
+  it('adds the ⌘Enter AI hint when AI is enabled', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(EmptyState, {
+      target,
+      props: { aiEnabled: true, indexEntryCount: 1, onPick: () => {} },
+    })
+    await tick()
+    const tip = target.querySelector('.tip')?.textContent ?? ''
+    expect(tip).toContain('⌘N')
+    expect(tip).toContain('⌘H')
+    expect(tip).toContain('⌘Enter')
     target.remove()
   })
 

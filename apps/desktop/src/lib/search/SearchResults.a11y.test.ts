@@ -51,12 +51,12 @@ const defaultProps = {
 }
 
 describe('SearchResults a11y', () => {
-  // TODO: `.results-container` is always `role="listbox"`, but every
-  // non-populated state (index-unavailable message, loading, searching,
-  // no-results) replaces the option rows with a plain `<div>` message.
-  // Axe flags `aria-required-children` (listbox requires option/group).
-  // Fix: either drop `role="listbox"` when results aren't rendered, or
-  // render the empty-state messages outside the listbox container.
+  // `.results-container` only gets `role="listbox"` when there are option rows
+  // to host. Every non-populated state (index-unavailable message, loading,
+  // searching, no-results, empty-state) renders a plain message container with
+  // no role — sidestepping `aria-required-children` cleanly. The tests below
+  // exercise each of those states so any regression in the role-gating logic
+  // (e.g. someone forcing `role="listbox"` back on) trips immediately.
   it('index ready, no search yet has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -65,7 +65,7 @@ describe('SearchResults a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it.skip('index unavailable (not scanning) has no a11y violations (BLOCKED: aria-required-children)', async () => {
+  it('index unavailable (not scanning) has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SearchResults, {
@@ -76,7 +76,7 @@ describe('SearchResults a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it.skip('index unavailable with scan in progress has no a11y violations (BLOCKED: aria-required-children)', async () => {
+  it('index unavailable with scan in progress has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SearchResults, {
@@ -93,7 +93,7 @@ describe('SearchResults a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it.skip('index loading after search has no a11y violations (BLOCKED: aria-required-children)', async () => {
+  it('index loading after search has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SearchResults, {
@@ -109,7 +109,7 @@ describe('SearchResults a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it.skip('searching (no results yet) has no a11y violations (BLOCKED: aria-required-children)', async () => {
+  it('searching (no results yet) has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SearchResults, {
@@ -125,7 +125,7 @@ describe('SearchResults a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it.skip('no results (search finished, empty) has no a11y violations (BLOCKED: aria-required-children)', async () => {
+  it('no results (search finished, empty) has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SearchResults, {
