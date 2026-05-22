@@ -24,7 +24,7 @@
     import EmptyState from './EmptyState.svelte'
     import PathPills from './PathPills.svelte'
     import SearchRowMenu from './SearchRowMenu.svelte'
-    import type { SearchMode } from './search-state.svelte'
+    import type { SearchMode } from './query-filter-state.svelte'
 
     interface Props {
         results: SearchResultEntry[]
@@ -44,6 +44,13 @@
         iconCacheVersion: number
         /** True when AI mode is available (provider on + index ready). Drives the empty-state chip set. */
         aiEnabled: boolean
+        /**
+         * Whether to render the Path column (header + cell). Search renders this `true` so the
+         * cross-folder results table can show each row's parent folder. Selection renders it
+         * `false` because Selection operates on a single folder; the path column would always
+         * be empty. Defaults to `true` for backward compatibility with existing Search usage.
+         */
+        showPathColumn?: boolean
         onResultClick: (index: number) => void
         /**
          * Called when the user moves the mouse over a row. The dialog uses this to
@@ -80,6 +87,7 @@
         indexEntryCount,
         iconCacheVersion: _iconVersionProp,
         aiEnabled,
+        showPathColumn = true,
         onResultClick,
         onHover,
         onPickExample,
@@ -156,10 +164,10 @@
 <!-- Column headers. Path is the flex column (1fr); Size + Modified shrink-wrap.
      The Actions column on the right matches the row's `…` button slot. Header
      cells use the same grid template as the rows so columns line up. -->
-<div class="column-header">
+<div class="column-header" class:no-path={!showPathColumn}>
     <span class="col-label col-icon" aria-hidden="true"></span>
     <span class="col-label">Name</span>
-    <span class="col-label">Path</span>
+    {#if showPathColumn}<span class="col-label">Path</span>{/if}
     <span class="col-label col-right">Size</span>
     <span class="col-label col-right">Modified</span>
     <span class="col-label col-actions">Actions</span>
@@ -214,6 +222,7 @@
         {#each results as entry, index (entry.path)}
             <div
                 class="result-row"
+                class:no-path={!showPathColumn}
                 class:is-under-cursor={index === cursorIndex}
                 onclick={() => {
                     onResultClick(index)
@@ -250,9 +259,11 @@
                         tooltipWhenTruncated: true,
                     }}
                 ></span>
-                <span class="result-path">
-                    <PathPills path={entry.parentPath} onPick={onPickPath} />
-                </span>
+                {#if showPathColumn}
+                    <span class="result-path">
+                        <PathPills path={entry.parentPath} onPick={onPickPath} />
+                    </span>
+                {/if}
                 <span class="result-size">
                     <Size bytes={entry.size} />
                 </span>
@@ -301,6 +312,18 @@
 
         column-gap: var(--spacing-md);
         align-items: center;
+    }
+
+    /* Selection (or any consumer that hides the Path column) drops the path track
+       entirely; name absorbs the freed horizontal space via 1fr. */
+    .column-header.no-path,
+    .result-row.no-path {
+        grid-template-columns:
+            24px
+            minmax(80px, 1fr)
+            10ch
+            16ch
+            32px;
     }
 
     /* Column headers sit on the dialog's secondary surface (matching the FullList header in the

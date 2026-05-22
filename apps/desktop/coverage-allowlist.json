@@ -231,20 +231,14 @@
     "settings/sections/AiLocalSection.svelte": {
       "reason": "UI section, depends on Tauri commands and event listeners"
     },
-    "search/AiSearchRow.svelte": {
-      "reason": "Search sub-component, UI only, depends on parent orchestration"
-    },
-    "search/PathPills.svelte": {
+    "query-ui/PathPills.svelte": {
       "reason": "Pure split semantics are covered by PathPills.svelte.test.ts; the overflow-collapse layout depends on `@chenglou/pretext` canvas measurement + ResizeObserver, neither of which runs in jsdom. The visible layout is exercised via the MCP-driven manual verification in the search-fixup pass."
     },
     "search/SearchDialog.svelte": {
       "reason": "Search dialog UI, depends on Tauri commands and event listeners"
     },
-    "search/SearchInputArea.svelte": {
-      "reason": "Search sub-component, UI only, depends on parent orchestration and Tauri tooltip action"
-    },
-    "search/SearchResults.svelte": {
-      "reason": "Search sub-component, UI only, display and formatting"
+    "query-ui/QueryResults.svelte": {
+      "reason": "Query results sub-component, UI only, display and formatting. Renamed from search/SearchResults.svelte in the M3 query-ui split."
     },
     "tauri-commands/search.ts": {
       "reason": "Tauri command wrappers, tested via integration"

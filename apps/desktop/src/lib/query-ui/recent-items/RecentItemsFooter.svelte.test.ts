@@ -1,7 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
-import RecentSearchesFooter from './RecentSearchesFooter.svelte'
-import type { HistoryEntry } from '$lib/tauri-commands'
+import RecentSearchesFooterRaw from './RecentItemsFooter.svelte'
+import type { HistoryEntry, HistoryMode } from '$lib/tauri-commands'
+import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
+import { chipTooltip, modeName, formatAge } from './recent-items-utils'
+
+// Svelte 5's `generics="E"` declaration doesn't survive the `mount()` type roundtrip: the
+// declared `Component<unknown>` shape rejects a typed `RecentItemAdapter<HistoryEntry>`. The
+// runtime contract is fine; we cast the component reference to the typed variant so the
+// test's adapter binding type-checks. This is the same trick the toast suite uses for its
+// component-content toasts.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const RecentSearchesFooter = RecentSearchesFooterRaw as any
 
 function makeEntry(overrides: Partial<HistoryEntry>): HistoryEntry {
   return {
@@ -18,6 +28,16 @@ function makeEntry(overrides: Partial<HistoryEntry>): HistoryEntry {
   }
 }
 
+// Search-shaped adapter: the wrapping the Search dialog ships in M3.
+const searchAdapter: RecentItemAdapter<HistoryEntry> = (entry) => ({
+  label: entry.query,
+  tooltip: chipTooltip(entry),
+  mode: entry.mode,
+  ageLabel: formatAge(entry.timestamp),
+  ariaLabel: `Run recent ${modeName(entry.mode)} search: ${entry.query}`,
+})
+const searchKey: RecentItemKey<HistoryEntry> = (entry) => entry.id
+
 describe('RecentSearchesFooter', () => {
   it('renders nothing when there are no entries', async () => {
     const target = document.createElement('div')
@@ -26,6 +46,8 @@ describe('RecentSearchesFooter', () => {
       target,
       props: {
         entries: [],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         disabled: false,
         onPick: () => {},
         onRemove: () => {},
@@ -51,7 +73,15 @@ describe('RecentSearchesFooter', () => {
     document.body.appendChild(target)
     mount(RecentSearchesFooter, {
       target,
-      props: { entries, disabled: false, onPick: () => {}, onRemove: () => {}, onOpenAll: () => {} },
+      props: {
+        entries,
+        adapter: searchAdapter,
+        keyFn: searchKey,
+        disabled: false,
+        onPick: () => {},
+        onRemove: () => {},
+        onOpenAll: () => {},
+      },
     })
     await tick()
     expect(target.querySelector('.recent-label')).not.toBeNull()
@@ -72,7 +102,15 @@ describe('RecentSearchesFooter', () => {
     document.body.appendChild(target)
     mount(RecentSearchesFooter, {
       target,
-      props: { entries: [entry], disabled: false, onPick, onRemove: () => {}, onOpenAll: () => {} },
+      props: {
+        entries: [entry],
+        adapter: searchAdapter,
+        keyFn: searchKey,
+        disabled: false,
+        onPick,
+        onRemove: () => {},
+        onOpenAll: () => {},
+      },
     })
     await tick()
     const chip = target.querySelector('.recent-chip') as HTMLButtonElement
@@ -88,7 +126,15 @@ describe('RecentSearchesFooter', () => {
     document.body.appendChild(target)
     mount(RecentSearchesFooter, {
       target,
-      props: { entries: [entry], disabled: false, onPick: () => {}, onRemove, onOpenAll: () => {} },
+      props: {
+        entries: [entry],
+        adapter: searchAdapter,
+        keyFn: searchKey,
+        disabled: false,
+        onPick: () => {},
+        onRemove,
+        onOpenAll: () => {},
+      },
     })
     await tick()
     const chip = target.querySelector('.recent-chip') as HTMLButtonElement
@@ -111,6 +157,8 @@ describe('RecentSearchesFooter', () => {
       target,
       props: {
         entries: [makeEntry({ query: longQuery })],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         disabled: false,
         onPick: () => {},
         onRemove: () => {},
@@ -141,6 +189,8 @@ describe('RecentSearchesFooter', () => {
       target,
       props: {
         entries: [makeEntry({ query: 'one' })],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         disabled: false,
         onPick: () => {},
         onRemove: () => {},
@@ -161,6 +211,8 @@ describe('RecentSearchesFooter', () => {
       target,
       props: {
         entries: [makeEntry({ query: 'one' })],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         disabled: true,
         onPick: () => {},
         onRemove: () => {},
@@ -185,11 +237,73 @@ describe('RecentSearchesFooter', () => {
     document.body.appendChild(target)
     mount(RecentSearchesFooter, {
       target,
-      props: { entries, disabled: false, onPick: () => {}, onRemove: () => {}, onOpenAll: () => {} },
+      props: {
+        entries,
+        adapter: searchAdapter,
+        keyFn: searchKey,
+        disabled: false,
+        onPick: () => {},
+        onRemove: () => {},
+        onOpenAll: () => {},
+      },
     })
     await tick()
     const badges = Array.from(target.querySelectorAll('.chip-badge')).map((b) => b.textContent.trim())
     expect(badges).toEqual(['AI', 'Aa', '.*'])
+    target.remove()
+  })
+
+  // M3: the adapter pattern is the only seam between consumer-specific entries and the
+  // generic footer. We pin both wrappings: Search's full HistoryEntry (above) and a hypothetical
+  // Selection-shaped entry (below). Selection's actual wrapping ships in M7; this test ensures
+  // the contract holds against any narrower entry shape.
+  it('renders against a Selection-shaped adapter', async () => {
+    interface SelectionEntry {
+      id: string
+      query: string
+      mode: HistoryMode
+    }
+    const selectionEntries: SelectionEntry[] = [
+      { id: 's-1', query: '*.png', mode: 'filename' },
+      { id: 's-2', query: 'all image files', mode: 'ai' },
+    ]
+    const selectionAdapter: RecentItemAdapter<SelectionEntry> = (entry) => ({
+      label: entry.query,
+      tooltip: `${modeName(entry.mode)} selection`,
+      mode: entry.mode,
+      ageLabel: 'just now',
+      ariaLabel: `Reapply recent ${modeName(entry.mode)} selection: ${entry.query}`,
+    })
+    const selectionKey: RecentItemKey<SelectionEntry> = (entry) => entry.id
+
+    const onPick = vi.fn()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(RecentSearchesFooter, {
+      target,
+      props: {
+        entries: selectionEntries,
+        adapter: selectionAdapter,
+        keyFn: selectionKey,
+        disabled: false,
+        onPick,
+        onRemove: () => {},
+        onOpenAll: () => {},
+        leadingLabel: 'Recent selections:',
+        trailingLabel: 'All selections…',
+        trailingTooltipText: 'Show all recent selections',
+        ariaRegionLabel: 'Recent selections',
+        ariaAllButtonLabel: 'All recent selections',
+      },
+    })
+    await tick()
+    expect(target.querySelector('.recent-label')?.textContent).toContain('Recent selections:')
+    const chips = target.querySelectorAll<HTMLButtonElement>('.recent-chip')
+    expect(chips.length).toBe(2)
+    expect(chips[0].textContent).toContain('*.png')
+    expect(chips[1].textContent).toContain('all image files')
+    chips[0].click()
+    expect(onPick).toHaveBeenCalledWith(selectionEntries[0])
     target.remove()
   })
 })

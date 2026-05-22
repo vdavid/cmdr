@@ -1,7 +1,11 @@
-<script lang="ts">
+<script lang="ts" generics="E">
     /**
-     * RecentSearchesFooter: chip strip at the bottom of the dialog showing the latest 6
-     * recent searches plus an "All searches…" trailing chip that opens the popover.
+     * RecentItemsFooter: chip strip at the bottom of the Query dialog showing the latest
+     * recent entries plus an "All …" trailing chip that opens the popover.
+     *
+     * Generic over the entry shape `E`. Search instantiates it with `E = HistoryEntry` and
+     * a Search-flavoured adapter; Selection (M7+) instantiates it with its own entry shape
+     * and adapter. The adapter is the only thing that knows about the entry's internals.
      *
      * Each chip carries a small mode badge (`AI` / `Aa` / `.*`). Clicking a chip loads the
      * entry into the dialog's state and runs it. For AI entries, the click counts as the
@@ -13,23 +17,52 @@
      */
     import { onDestroy, tick } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { HistoryEntry } from '$lib/tauri-commands'
-    import { chipTooltip, modeBadge } from './recent-searches-utils'
     import { computeRecentChipsLayout } from '$lib/query-ui/recent-chips-layout'
+    import { modeBadge } from './recent-items-utils'
+    import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
 
     interface Props {
-        entries: HistoryEntry[]
+        entries: E[]
+        /** Adapts an entry into the shape the component displays. */
+        adapter: RecentItemAdapter<E>
+        /** Stable identity for `{#each}` keying. */
+        keyFn: RecentItemKey<E>
         /** True when the index isn't ready; chips render disabled to avoid no-op clicks. */
         disabled: boolean
         /** Called when a chip is activated. Parent loads + runs the entry. */
-        onPick: (entry: HistoryEntry) => void
+        onPick: (entry: E) => void
         /** Called when the user wants to remove an entry via right-click. */
-        onRemove: (entry: HistoryEntry) => void
-        /** Called when the user clicks "All searches…" or activates it via keyboard. */
+        onRemove: (entry: E) => void
+        /** Called when the user clicks "All …" or activates it via keyboard. */
         onOpenAll: () => void
+        /**
+         * Strip-leading label and trailing-button label / tooltip. Default to Search's
+         * existing copy so the M3 rename is visually a no-op for Search; Selection (M7+)
+         * passes its own copy ("Recent selections:" / "All selections…").
+         */
+        leadingLabel?: string
+        trailingLabel?: string
+        trailingTooltipText?: string
+        trailingShortcut?: string
+        ariaRegionLabel?: string
+        ariaAllButtonLabel?: string
     }
 
-    const { entries, disabled, onPick, onRemove, onOpenAll }: Props = $props()
+    const {
+        entries,
+        adapter,
+        keyFn,
+        disabled,
+        onPick,
+        onRemove,
+        onOpenAll,
+        leadingLabel = 'Recent searches:',
+        trailingLabel = 'All searches…',
+        trailingTooltipText = 'Show all recent searches',
+        trailingShortcut = '⌘H',
+        ariaRegionLabel = 'Recent searches',
+        ariaAllButtonLabel = 'All recent searches',
+    }: Props = $props()
 
     /**
      * R3 U1: dynamic strip layout. The leading "Recent searches:" label and
@@ -72,7 +105,7 @@
     })
     const visible = $derived(candidates.slice(0, visibleCount))
 
-    function handleContextMenu(e: MouseEvent, entry: HistoryEntry): void {
+    function handleContextMenu(e: MouseEvent, entry: E): void {
         e.preventDefault()
         onRemove(entry)
     }
@@ -129,7 +162,7 @@
     $effect(() => {
         // Track the candidate identities so this effect re-fires on real
         // changes (not just metadata refresh).
-        const _key = candidates.map((c) => c.id).join('|')
+        const _key = candidates.map((c) => keyFn(c)).join('|')
         void _key
         if (mounted) void remeasure()
     })
@@ -140,20 +173,17 @@
 </script>
 
 {#if entries.length > 0}
-    <!-- R3 U1: label + "All searches…" button always rendered. The middle
-         slot packs as many chips as fit; the rest drop silently. -->
-    <div class="recent-footer" bind:this={stripEl} role="region" aria-label="Recent searches">
-        <span class="recent-label">Recent searches:</span>
+    <!-- R3 U1: label + trailing button always rendered. The middle slot packs as many chips
+         as fit; the rest drop silently. The adapter pre-builds each chip's label and tooltip
+         so the component never reads entry internals. -->
+    <div class="recent-footer" bind:this={stripEl} role="region" aria-label={ariaRegionLabel}>
+        <span class="recent-label">{leadingLabel}</span>
         <span class="chip-row">
-            {#each visible as entry (entry.id)}
-                <!-- R3 U2: the chip's query text is truncated via CSS
-                     (`text-overflow: ellipsis` on `.chip-query`). To make the
-                     full string accessible to the user we put the FULL query
-                     on the first line of the tooltip text, followed by the
-                     existing mode + age + filter summary lines. The tooltip
-                     primitive renders multi-line `\n`-separated strings as
-                     stacked lines, so this works without any tooltip-side
-                     changes. -->
+            {#each visible as entry (keyFn(entry))}
+                {@const view = adapter(entry)}
+                <!-- R3 U2: the chip's text is truncated via CSS (`text-overflow: ellipsis`
+                     on `.chip-query`). The tooltip stacks the full label + the adapter-built
+                     multi-line tooltip so the truncated chip stays readable on hover. -->
                 <button
                     type="button"
                     class="recent-chip"
@@ -164,11 +194,11 @@
                     oncontextmenu={(e) => {
                         handleContextMenu(e, entry)
                     }}
-                    use:tooltip={`${entry.query}\n${chipTooltip(entry)}`}
-                    aria-label={`Run recent search: ${entry.query}`}
+                    use:tooltip={`${view.label}\n${view.tooltip}`}
+                    aria-label={view.ariaLabel}
                 >
-                    <span class="chip-badge">{modeBadge(entry.mode)}</span>
-                    <span class="chip-query">{entry.query}</span>
+                    <span class="chip-badge">{modeBadge(view.mode)}</span>
+                    <span class="chip-query">{view.label}</span>
                 </button>
             {/each}
         </span>
@@ -177,10 +207,10 @@
             class="all-searches"
             {disabled}
             onclick={onOpenAll}
-            use:tooltip={{ text: 'Show all recent searches', shortcut: '⌘H' }}
-            aria-label="All recent searches"
+            use:tooltip={{ text: trailingTooltipText, shortcut: trailingShortcut }}
+            aria-label={ariaAllButtonLabel}
         >
-            All searches…<span class="shortcut-hint" aria-hidden="true">⌘H</span>
+            {trailingLabel}<span class="shortcut-hint" aria-hidden="true">{trailingShortcut}</span>
         </button>
     </div>
 {/if}

@@ -91,20 +91,27 @@
         setRunOnMount,
         buildSearchQuery,
         clearSearchState,
+        clearAiPattern,
+        searchQueryState,
         SEARCH_AUTO_APPLY_DEBOUNCE_MS,
         getLastDialogEvent,
         setLastDialogEvent,
         deriveEnterAction,
         type SearchMode,
     } from './search-state.svelte'
-    import SearchBar from './SearchBar.svelte'
-    import SearchModeChips from './SearchModeChips.svelte'
-    import SearchFilterChips from './SearchFilterChips.svelte'
-    import SearchResults from './SearchResults.svelte'
-    import AiTransparencyStrip from './AiTransparencyStrip.svelte'
-    import RecentSearchesFooter from './RecentSearchesFooter.svelte'
-    import RecentSearchesPopover from './RecentSearchesPopover.svelte'
+    import SearchBar from '$lib/query-ui/QueryBar.svelte'
+    import SearchModeChips from '$lib/query-ui/ModeChips.svelte'
+    import SearchFilterChips from '$lib/query-ui/FilterChips.svelte'
+    import SearchResults from '$lib/query-ui/QueryResults.svelte'
+    import AiTransparencyStrip from '$lib/query-ui/AiPromptStrip.svelte'
+    import RecentSearchesFooter from '$lib/query-ui/recent-items/RecentItemsFooter.svelte'
+    import RecentSearchesPopover from '$lib/query-ui/recent-items/RecentItemsPopover.svelte'
     import SearchFooterActions from './SearchFooterActions.svelte'
+    import { chipTooltip, modeName, formatAge } from '$lib/query-ui/recent-items/recent-items-utils'
+    import type {
+        RecentItemAdapter,
+        RecentItemKey,
+    } from '$lib/query-ui/recent-items/recent-items-types'
     import {
         loadRecentSearches,
         getRecentSearchesList,
@@ -247,6 +254,22 @@
     let footerRef: HTMLDivElement | undefined = $state()
     let recentPopoverOpen = $state(false)
     const recentEntries = $derived(getRecentSearchesList())
+
+    /**
+     * Adapter from Search's `HistoryEntry` shape into the generic `RecentItemView` the
+     * `RecentItemsFooter` / `RecentItemsPopover` consume. The adapter is the only seam where
+     * Search-specific fields (`scope`, `excludeSystemDirs`, `caseSensitive`, etc.) leak into
+     * the chip's tooltip. Selection's wrapper (M7+) will pass its own adapter against its
+     * narrower entry shape.
+     */
+    const searchRecentAdapter: RecentItemAdapter<HistoryEntry> = (entry) => ({
+        label: entry.query,
+        tooltip: chipTooltip(entry),
+        mode: entry.mode,
+        ageLabel: formatAge(entry.timestamp),
+        ariaLabel: `Run recent ${modeName(entry.mode)} search: ${entry.query}`,
+    })
+    const searchRecentKey: RecentItemKey<HistoryEntry> = (entry) => entry.id
 
     // Subscribe to icon cache version for reactivity
     const iconVersion = $derived($iconCacheVersion)
@@ -1226,6 +1249,7 @@
         {/if}
 
         <SearchFilterChips
+            filterState={searchQueryState}
             {caseSensitive}
             {scope}
             {excludeSystemDirs}
@@ -1254,6 +1278,7 @@
                 scheduleSearch()
             }}
             onSetScope={setScope}
+            onClearAiPattern={clearAiPattern}
             {scheduleSearch}
             onFocusBar={focusInput}
         />
@@ -1286,6 +1311,8 @@
             <div class="footer-left">
                 <RecentSearchesFooter
                     entries={recentEntries}
+                    adapter={searchRecentAdapter}
+                    keyFn={searchRecentKey}
                     disabled={inputsDisabled}
                     onPick={activateHistoryEntry}
                     onRemove={removeHistoryEntry}
@@ -1308,6 +1335,8 @@
                 anchor={footerRef}
                 open={recentPopoverOpen}
                 entries={recentEntries}
+                adapter={searchRecentAdapter}
+                keyFn={searchRecentKey}
                 onClose={closeRecentPopover}
                 onPick={activateHistoryEntry}
                 onRemove={removeHistoryEntry}

@@ -8,8 +8,8 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
-import SearchBar from './SearchBar.svelte'
-import type { SearchMode } from './search-state.svelte'
+import SearchBar from './QueryBar.svelte'
+import type { SearchMode } from './query-filter-state.svelte'
 
 function mountBar(overrides: Partial<{ query: string; mode: SearchMode; showRunHint: boolean }>): {
   target: HTMLDivElement

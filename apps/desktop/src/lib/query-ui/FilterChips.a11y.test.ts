@@ -13,13 +13,19 @@
 import { describe, it } from 'vitest'
 import { mount, tick, type ComponentProps } from 'svelte'
 import { SvelteSet } from 'svelte/reactivity'
-import SearchFilterChips from './SearchFilterChips.svelte'
+import SearchFilterChips from './FilterChips.svelte'
+import { searchQueryState } from '$lib/search/search-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 type Props = ComponentProps<typeof SearchFilterChips>
 
+// Reuse Search's own core state instance so the a11y rendering matches what Search ships
+// (no separate test-only state to drift from the real wiring).
+const testState = searchQueryState
+
 function baseProps(overrides: Partial<Props> = {}): Props {
   return {
+    filterState: testState,
     caseSensitive: false,
     scope: '',
     excludeSystemDirs: true,
@@ -39,6 +45,7 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     onToggleCaseSensitive: () => {},
     onToggleExcludeSystemDirs: () => {},
     onSetScope: () => {},
+    onClearAiPattern: () => {},
     scheduleSearch: () => {},
     mode: 'filename',
     query: '',

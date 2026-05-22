@@ -15,7 +15,7 @@
      */
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { pluralize } from '$lib/utils/pluralize'
-    import type { SearchMode } from './search-state.svelte'
+    import type { SearchMode } from './query-filter-state.svelte'
 
     interface ExampleChip {
         label: string

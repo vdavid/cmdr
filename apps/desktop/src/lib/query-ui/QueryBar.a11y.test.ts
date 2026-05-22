@@ -7,7 +7,7 @@
 
 import { describe, it } from 'vitest'
 import { mount, tick, type ComponentProps } from 'svelte'
-import SearchBar from './SearchBar.svelte'
+import SearchBar from './QueryBar.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 type Props = ComponentProps<typeof SearchBar>

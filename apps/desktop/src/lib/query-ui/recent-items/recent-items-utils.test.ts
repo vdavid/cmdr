@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { HistoryEntry } from '$lib/tauri-commands'
-import { chipTooltip, filterSummary, formatAge, modeBadge, modeName } from './recent-searches-utils'
+import { chipTooltip, filterSummary, formatAge, modeBadge, modeName } from './recent-items-utils'
 
 function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
   return {

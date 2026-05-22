@@ -9,9 +9,15 @@
 
 import { describe, it } from 'vitest'
 import { mount, tick } from 'svelte'
-import RecentSearchesFooter from './RecentSearchesFooter.svelte'
+import RecentSearchesFooterRaw from './RecentItemsFooter.svelte'
 import type { HistoryEntry } from '$lib/tauri-commands'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
+import { chipTooltip, modeName, formatAge } from './recent-items-utils'
+
+// Svelte 5 generics+mount type roundtrip workaround — see `RecentItemsFooter.svelte.test.ts`.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const RecentSearchesFooter = RecentSearchesFooterRaw as any
 
 function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
   return {
@@ -28,6 +34,15 @@ function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
   }
 }
 
+const searchAdapter: RecentItemAdapter<HistoryEntry> = (entry) => ({
+  label: entry.query,
+  tooltip: chipTooltip(entry),
+  mode: entry.mode,
+  ageLabel: formatAge(entry.timestamp),
+  ariaLabel: `Run recent ${modeName(entry.mode)} search: ${entry.query}`,
+})
+const searchKey: RecentItemKey<HistoryEntry> = (entry) => entry.id
+
 describe('RecentSearchesFooter a11y', () => {
   it('zero entries (no DOM) has no a11y violations', async () => {
     const target = document.createElement('div')
@@ -36,6 +51,8 @@ describe('RecentSearchesFooter a11y', () => {
       target,
       props: {
         entries: [],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         disabled: false,
         onPick: () => {},
         onRemove: () => {},
@@ -54,6 +71,8 @@ describe('RecentSearchesFooter a11y', () => {
       target,
       props: {
         entries: [makeEntry({ query: 'screenshots', mode: 'ai', id: 'a' })],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         disabled: false,
         onPick: () => {},
         onRemove: () => {},
@@ -79,7 +98,15 @@ describe('RecentSearchesFooter a11y', () => {
     document.body.appendChild(target)
     mount(RecentSearchesFooter, {
       target,
-      props: { entries, disabled: false, onPick: () => {}, onRemove: () => {}, onOpenAll: () => {} },
+      props: {
+        entries,
+        adapter: searchAdapter,
+        keyFn: searchKey,
+        disabled: false,
+        onPick: () => {},
+        onRemove: () => {},
+        onOpenAll: () => {},
+      },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -93,6 +120,8 @@ describe('RecentSearchesFooter a11y', () => {
       target,
       props: {
         entries: [makeEntry({ query: 'one', id: 'd' })],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         disabled: true,
         onPick: () => {},
         onRemove: () => {},

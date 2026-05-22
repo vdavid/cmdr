@@ -55,6 +55,15 @@ export type {
 const core = createQueryFilterState({ defaultMode: 'filename' })
 const extras = createSearchExtrasState()
 
+/**
+ * The underlying core state instance. Exposed so components that take a
+ * `QueryFilterState` prop (like `FilterChips.svelte`) can be wired to Search's instance
+ * without going through the per-setter façade. Use this only at the consumer-wrapper
+ * boundary; the named getters/setters below are the long-term API the rest of Search
+ * already speaks.
+ */
+export const searchQueryState = core
+
 // Wire the core's AI-pattern probe to the extras module. The probe seeds the
 // matching mode's hand-typed buffer on switchMode when (a) that buffer is empty
 // and (b) the AI's last pattern kind matches.

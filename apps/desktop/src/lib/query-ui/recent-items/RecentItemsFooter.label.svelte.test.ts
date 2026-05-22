@@ -4,8 +4,23 @@
  */
 import { describe, expect, it } from 'vitest'
 import { mount, tick } from 'svelte'
-import RecentSearchesFooter from './RecentSearchesFooter.svelte'
+import RecentSearchesFooterRaw from './RecentItemsFooter.svelte'
 import type { HistoryEntry } from '$lib/tauri-commands'
+import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
+import { chipTooltip, modeName, formatAge } from './recent-items-utils'
+
+// Svelte 5 generics+mount type roundtrip workaround — see `RecentItemsFooter.svelte.test.ts`.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const RecentSearchesFooter = RecentSearchesFooterRaw as any
+
+const searchAdapter: RecentItemAdapter<HistoryEntry> = (e) => ({
+  label: e.query,
+  tooltip: chipTooltip(e),
+  mode: e.mode,
+  ageLabel: formatAge(e.timestamp),
+  ariaLabel: `Run recent ${modeName(e.mode)} search: ${e.query}`,
+})
+const searchKey: RecentItemKey<HistoryEntry> = (e) => e.id
 
 function entry(query: string): HistoryEntry {
   return {
@@ -29,6 +44,8 @@ describe('RecentSearchesFooter D5: label', () => {
       target,
       props: {
         entries: [entry('*.pdf'), entry('*.jpg')],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         disabled: false,
         onPick: () => {},
         onRemove: () => {},

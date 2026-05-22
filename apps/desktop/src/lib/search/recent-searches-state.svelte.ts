@@ -1,43 +1,44 @@
-// Module-level reactive store for the recent-searches footer and popover.
+// Search-side instantiation of the recent-items factory store.
 //
-// Both the footer (6 most recent) and the popover (fuzzy over the full set) read the same
-// in-memory list. Loading is owned here so multiple consumers don't double-fetch from the
-// backend on mount.
+// M3 converted the previous module-singleton into a factory (see
+// `lib/query-ui/recent-items/recent-items-state.svelte.ts`). Search wires the factory with
+// the search-history IPC family; Selection (M5+) will wire its own.
+//
+// We keep the same named exports the rest of `lib/search/` already imports
+// (`getRecentSearchesList`, `loadRecentSearches`, …) so the Search dialog's call sites stay
+// stable through M3.
 
 import { getRecentSearches, type HistoryEntry } from '$lib/tauri-commands'
-import { getAppLogger } from '$lib/logging/logger'
+import { createRecentItemsState } from '$lib/query-ui/recent-items/recent-items-state.svelte'
 
-const log = getAppLogger('search')
-
-// Newest first. Source of truth for the dialog while it's open.
-let entries = $state<HistoryEntry[]>([])
-let loaded = $state(false)
-let loading = $state(false)
+// Wrap the IPC binding in a thunk so the factory doesn't deref the binding at module-init
+// time. Test mocks (`vi.mock('$lib/tauri-commands', ...)`) that omit `getRecentSearches`
+// would otherwise throw at import time; the thunk pushes the lookup to first call.
+const store = createRecentItemsState<HistoryEntry>({
+  getRecent: () => getRecentSearches(),
+})
 
 /** Returns the in-memory recent-search list, newest first. */
 export function getRecentSearchesList(): HistoryEntry[] {
-  return entries
+  return store.getList()
 }
 
 /** Whether `loadRecentSearches()` has completed at least once this session. */
 export function getRecentSearchesLoaded(): boolean {
-  return loaded
+  return store.getLoaded()
 }
 
 /**
- * Test-only reset hook. Restores the module to its post-construction state so each test
- * starts from a clean slate (the module is a singleton).
+ * Test-only reset hook. Restores the underlying store to its post-construction state so each
+ * test starts from a clean slate (the module is a singleton).
  */
 export function resetRecentSearchesForTests(): void {
-  entries = []
-  loaded = false
-  loading = false
+  store.resetForTests()
 }
 
 /** Replaces the in-memory list, for example after a remove/clear hand-off from the IPC. */
 export function setRecentSearchesList(next: HistoryEntry[]): void {
-  entries = next
-  loaded = true
+  store.setList(next)
 }
 
 /**
@@ -46,15 +47,5 @@ export function setRecentSearchesList(next: HistoryEntry[]): void {
  * footer renders immediately.
  */
 export async function loadRecentSearches(force = false): Promise<void> {
-  if (loaded && !force) return
-  if (loading) return
-  loading = true
-  try {
-    entries = await getRecentSearches()
-    loaded = true
-  } catch (error) {
-    log.warn('Failed to load recent searches: {error}', { error })
-  } finally {
-    loading = false
-  }
+  await store.load(force)
 }

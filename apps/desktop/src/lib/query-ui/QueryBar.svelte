@@ -20,7 +20,7 @@
      *   - ⌘1/⌘2/⌘3 switch modes (numbering changes when AI is off).
      */
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { SearchMode } from './search-state.svelte'
+    import type { SearchMode } from './query-filter-state.svelte'
 
     interface Props {
         /** Bindable ref to the input element so the parent can manage focus. */

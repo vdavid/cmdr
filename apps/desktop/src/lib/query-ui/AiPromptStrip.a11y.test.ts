@@ -7,7 +7,7 @@
 
 import { describe, it } from 'vitest'
 import { mount, tick, type ComponentProps } from 'svelte'
-import AiTransparencyStrip from './AiTransparencyStrip.svelte'
+import AiTransparencyStrip from './AiPromptStrip.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 type Props = ComponentProps<typeof AiTransparencyStrip>

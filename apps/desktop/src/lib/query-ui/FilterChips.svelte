@@ -24,20 +24,7 @@
     import FilterChip from './FilterChip.svelte'
     import FilterChipPopover from './FilterChipPopover.svelte'
     import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
-    import {
-        setSizeFilter,
-        setSizeValue,
-        setSizeUnit,
-        setSizeValueMax,
-        setSizeUnitMax,
-        setDateFilter,
-        setDateValue,
-        setDateValueMax,
-        setScope,
-        setQueryFromUserInput,
-        clearAiPattern,
-    } from './search-state.svelte'
-    import type { SizeFilter, SizeUnit, DateFilter } from './search-state.svelte'
+    import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter } from './query-filter-state.svelte'
     import {
         SIZE_PRESETS,
         byteUnitLabel,
@@ -54,6 +41,13 @@
     type FilterKey = 'size' | 'date' | 'scope'
 
     interface Props {
+        /**
+         * The query-filter state instance owning size/date/case/setQuery setters. Passed by
+         * the consumer wrapper (Search wires the search instance; Selection wires its own
+         * Selection instance in M7). Replaces the M2-era module-singleton setter imports.
+         * Named `filterState` (not `state`) to avoid shadowing Svelte's `$state` rune.
+         */
+        filterState: QueryFilterState
         caseSensitive: boolean
         scope: string
         excludeSystemDirs: boolean
@@ -89,10 +83,30 @@
         query: string
         /** The AI-produced pattern (separate from the bar; AI bar holds the prompt). */
         aiPattern: string | null
+        /**
+         * Whether to render the "Search in" (scope) chip and its popover. Search renders this
+         * `true` (scope is core to whole-drive search); Selection (M7+) passes `false`
+         * because selection runs against a single in-memory folder. Default `true` keeps
+         * Search's existing behavior.
+         */
+        scopeChipVisible?: boolean
+        /**
+         * Whether to render the Pattern chip. Both Search and Selection render it (the chip
+         * surfaces the AI-translated pattern in AI mode), so the default is `true`. The prop
+         * exists for future consumers that don't surface a pattern at all.
+         */
+        patternChipVisible?: boolean
         onInput: (setter: (v: string) => void, search?: boolean) => (e: Event) => void
         onToggleCaseSensitive: () => void
         onToggleExcludeSystemDirs: () => void
         onSetScope: (path: string) => void
+        /**
+         * Called when the user clicks the Pattern chip's `×` while in AI mode. Search clears
+         * its AI-extras `lastAiPattern`. Selection's M7 wrapper will clear its own AI-pattern
+         * slot (Selection has no Pattern chip per the M3 plan, but the callback is wired so
+         * the same component can be reused if Selection later opts in).
+         */
+        onClearAiPattern: () => void
         scheduleSearch: () => void
         /**
          * Called when the user activates the Pattern chip (click). The parent focuses
@@ -103,6 +117,7 @@
     }
 
     const {
+        filterState,
         caseSensitive,
         scope,
         excludeSystemDirs,
@@ -121,13 +136,29 @@
         mode,
         query,
         aiPattern,
+        scopeChipVisible = true,
+        patternChipVisible = true,
         onInput,
         onToggleCaseSensitive,
         onToggleExcludeSystemDirs,
         onSetScope,
+        onClearAiPattern,
         scheduleSearch,
         onFocusBar,
     }: Props = $props()
+
+    // Pull the setters from the injected state instance so the template reads
+    // `setSizeFilter(...)` like before. Local consts (not re-exports) so the component stays
+    // self-contained; the underlying writes still go through the instance the consumer owns.
+    const setSizeFilter = filterState.setSizeFilter
+    const setSizeValue = filterState.setSizeValue
+    const setSizeUnit = filterState.setSizeUnit
+    const setSizeValueMax = filterState.setSizeValueMax
+    const setSizeUnitMax = filterState.setSizeUnitMax
+    const setDateFilter = filterState.setDateFilter
+    const setDateValue = filterState.setDateValue
+    const setDateValueMax = filterState.setDateValueMax
+    const setQueryFromUserInput = filterState.setQueryFromUserInput
 
     let openChip = $state<FilterKey | 'add' | null>(null)
 
@@ -310,7 +341,7 @@
             openPopover('date')
             return true
         }
-        if (altLetter(e, 'i')) {
+        if (scopeChipVisible && altLetter(e, 'i')) {
             e.preventDefault()
             openPopover('scope')
             return true
@@ -368,7 +399,7 @@
      */
     function clearPattern(): void {
         if (mode === 'ai') {
-            clearAiPattern()
+            onClearAiPattern()
         } else {
             setQueryFromUserInput('')
         }
@@ -380,7 +411,7 @@
         const list: FilterKey[] = []
         if (!sizeState.configured) list.push('size')
         if (!dateState.configured) list.push('date')
-        if (!scopeState.configured) list.push('scope')
+        if (scopeChipVisible && !scopeState.configured) list.push('scope')
         return list
     })
 
@@ -392,7 +423,11 @@
         // Default behavior: show all three filters always, since they're so few. The Add filter
         // chip is the discoverability hint, not a gate. This matches §3.2's intent ("the affordance
         // the user reads as 'I can add filters'") while keeping the existing filters one click away.
-        return ['size', 'date', 'scope']
+        // Selection (and any consumer with `scopeChipVisible: false`) drops the scope chip from
+        // the always-on set.
+        const list: FilterKey[] = ['size', 'date']
+        if (scopeChipVisible) list.push('scope')
+        return list
     })
 
     function openPopover(key: FilterKey | 'add'): void {
@@ -419,7 +454,7 @@
     }
 
     function clearScope(): void {
-        setScope('')
+        onSetScope('')
         if (!excludeSystemDirs) onToggleExcludeSystemDirs()
         scheduleSearch()
     }
@@ -444,19 +479,21 @@
      from the AI-produced pattern in AI mode, so the user sees the actual pattern being
      applied across every mode. -->
 <div class="filter-chip-strip" role="toolbar" aria-label="Search filters">
-    <FilterChip
-        bind:chipElement={patternChipEl}
-        label="Pattern"
-        value={patternState.summary}
-        configured={patternState.configured}
-        isOpen={false}
-        {disabled}
-        highlighted={highlightedFields.has('pattern')}
-        onActivate={() => {
-            onFocusBar()
-        }}
-        onClear={clearPattern}
-    />
+    {#if patternChipVisible}
+        <FilterChip
+            bind:chipElement={patternChipEl}
+            label="Pattern"
+            value={patternState.summary}
+            configured={patternState.configured}
+            isOpen={false}
+            {disabled}
+            highlighted={highlightedFields.has('pattern')}
+            onActivate={() => {
+                onFocusBar()
+            }}
+            onClear={clearPattern}
+        />
+    {/if}
     {#each visibleChips as key (key)}
         {#if key === 'size'}
             <FilterChip
@@ -958,7 +995,7 @@
                 class="popover-textarea"
                 placeholder="All folders"
                 value={scope}
-                oninput={onInput(setScope)}
+                oninput={onInput(onSetScope)}
                 aria-label="Scope folders"
                 spellcheck="false"
                 autocomplete="off"

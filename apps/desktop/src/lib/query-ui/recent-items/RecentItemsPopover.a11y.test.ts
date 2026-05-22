@@ -9,9 +9,24 @@
 
 import { describe, it } from 'vitest'
 import { mount, tick } from 'svelte'
-import RecentSearchesPopover from './RecentSearchesPopover.svelte'
+import RecentSearchesPopoverRaw from './RecentItemsPopover.svelte'
 import type { HistoryEntry } from '$lib/tauri-commands'
 import { expectNoA11yViolations } from '$lib/test-a11y'
+import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
+import { chipTooltip, modeName, formatAge } from './recent-items-utils'
+
+// Svelte 5 generics+mount type roundtrip workaround — see `RecentItemsFooter.svelte.test.ts`.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const RecentSearchesPopover = RecentSearchesPopoverRaw as any
+
+const searchAdapter: RecentItemAdapter<HistoryEntry> = (e) => ({
+  label: e.query,
+  tooltip: chipTooltip(e),
+  mode: e.mode,
+  ageLabel: formatAge(e.timestamp),
+  ariaLabel: `Run recent ${modeName(e.mode)} search: ${e.query}`,
+})
+const searchKey: RecentItemKey<HistoryEntry> = (e) => e.id
 
 function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
   return {
@@ -46,6 +61,8 @@ describe('RecentSearchesPopover a11y', () => {
         anchor,
         open: false,
         entries: [makeEntry({ query: 'one' })],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         onClose: () => {},
         onPick: () => {},
         onRemove: () => {},
@@ -72,6 +89,8 @@ describe('RecentSearchesPopover a11y', () => {
           makeEntry({ query: 'beta', id: 'b', mode: 'ai' }),
           makeEntry({ query: 'gamma', id: 'c', mode: 'regex' }),
         ],
+        adapter: searchAdapter,
+        keyFn: searchKey,
         onClose: () => {},
         onPick: () => {},
         onRemove: () => {},

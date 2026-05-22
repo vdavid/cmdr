@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
-import SearchResults from './SearchResults.svelte'
+import SearchResults from './QueryResults.svelte'
 import { axe, expectNoA11yViolations } from '$lib/test-a11y'
 import type { SearchResultEntry } from '$lib/tauri-commands'
 

@@ -7,7 +7,7 @@
 
 import { describe, it } from 'vitest'
 import { mount, tick, type ComponentProps } from 'svelte'
-import SearchModeChips from './SearchModeChips.svelte'
+import SearchModeChips from './ModeChips.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 type Props = ComponentProps<typeof SearchModeChips>

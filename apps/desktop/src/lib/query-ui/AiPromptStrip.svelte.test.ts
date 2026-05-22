@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
-import AiTransparencyStrip from './AiTransparencyStrip.svelte'
+import AiTransparencyStrip from './AiPromptStrip.svelte'
 
 function setup(props: { aiPrompt: string; caveat: string }): { target: HTMLDivElement; cleanup: () => void } {
   const target = document.createElement('div')

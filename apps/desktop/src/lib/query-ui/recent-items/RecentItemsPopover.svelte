@@ -1,33 +1,59 @@
-<script lang="ts">
+<script lang="ts" generics="E">
     /**
-     * RecentSearchesPopover: fuzzy-searchable list over the full recent-searches history.
+     * RecentItemsPopover: fuzzy-searchable list over the full recent-items history.
      *
-     * Opens via `⌘H` or the "All searches…" footer chip. Reuses `FilterChipPopover` for
-     * positioning, focus trap, and Esc-only-closes-the-popover behavior — same contract as
-     * the filter chips (so the dialog's capture-phase Escape never closes the whole dialog
-     * while this is open).
+     * Opens via `⌘H` or the "All …" footer chip. Reuses `FilterChipPopover` for positioning,
+     * focus trap, and Esc-only-closes-the-popover behavior — same contract as the filter
+     * chips (so the dialog's capture-phase Escape never closes the whole dialog while this
+     * is open).
+     *
+     * Generic over the entry shape `E`. Search instantiates it with `E = HistoryEntry`;
+     * Selection (M7+) instantiates it with its own narrower entry. The adapter is the only
+     * thing that knows about the entry's internals.
      *
      * The list is fuzzy-searched via `@leeoniya/ufuzzy`, the same library the command palette
-     * uses. The haystack is `"{mode-badge} {query}"` per entry, so users can also filter by
-     * mode (`"AI screenshots"`, `".*temp"`).
+     * uses. The haystack is `"{mode-badge} {label}"` per entry (label comes from the adapter),
+     * so users can also filter by mode (`"AI screenshots"`, `".*temp"`).
      *
      * Keyboard: ↑/↓ moves the cursor, Enter activates, Esc closes (via the popover wrapper).
      */
     import uFuzzy from '@leeoniya/ufuzzy'
-    import FilterChipPopover from './FilterChipPopover.svelte'
-    import type { HistoryEntry } from '$lib/tauri-commands'
-    import { chipTooltip, modeBadge } from './recent-searches-utils'
+    import FilterChipPopover from '../FilterChipPopover.svelte'
+    import { modeBadge } from './recent-items-utils'
+    import type { RecentItemAdapter, RecentItemKey, RecentItemView } from './recent-items-types'
 
     interface Props {
         anchor: HTMLElement
         open: boolean
-        entries: HistoryEntry[]
+        entries: E[]
+        /** Adapts an entry into the shape the row UI displays. */
+        adapter: RecentItemAdapter<E>
+        /** Stable identity for keying. */
+        keyFn: RecentItemKey<E>
         onClose: () => void
-        onPick: (entry: HistoryEntry) => void
-        onRemove: (entry: HistoryEntry) => void
+        onPick: (entry: E) => void
+        onRemove: (entry: E) => void
+        /** Header / filter-input / empty-state copy. Defaults match Search. */
+        filterPlaceholder?: string
+        emptyMessage?: string
+        ariaLabel?: string
+        ariaListboxLabel?: string
     }
 
-    const { anchor, open, entries, onClose, onPick, onRemove }: Props = $props()
+    const {
+        anchor,
+        open,
+        entries,
+        adapter,
+        keyFn,
+        onClose,
+        onPick,
+        onRemove,
+        filterPlaceholder = 'Filter recent searches',
+        emptyMessage = 'No recent searches match that filter.',
+        ariaLabel = 'All recent searches',
+        ariaListboxLabel = 'Recent searches',
+    }: Props = $props()
 
     // Tuned the same way as the command palette's fuzzy search.
     const fuzzy = new uFuzzy({ intraMode: 1, interIns: 3 })
@@ -44,11 +70,14 @@
         }
     })
 
-    // Build the haystack lazily; cheap relative to the user's typing speed.
-    const haystack = $derived(entries.map((e) => `${modeBadge(e.mode)} ${e.query}`))
+    // Pre-build adapter views once per `entries` change; cheap relative to the user's typing
+    // speed and lets the haystack + row UI share one source of truth.
+    const views = $derived<RecentItemView[]>(entries.map((e) => adapter(e)))
+    const haystack = $derived(views.map((v) => `${modeBadge(v.mode)} ${v.label}`))
 
     interface Match {
-        entry: HistoryEntry
+        entry: E
+        view: RecentItemView
         indices: number[]
         haystackText: string
     }
@@ -59,6 +88,7 @@
             // Empty query: show everything in original order (newest first).
             return entries.map((entry, i) => ({
                 entry,
+                view: views[i],
                 indices: [],
                 haystackText: haystack[i],
             }))
@@ -75,7 +105,7 @@
                 const end = ranges[i + 1]
                 for (let j = start; j < end; j++) indices.push(j)
             }
-            return { entry, indices, haystackText: haystack[haystackIdx] }
+            return { entry, view: views[haystackIdx], indices, haystackText: haystack[haystackIdx] }
         })
     })
 
@@ -111,34 +141,36 @@
         }
     }
 
-    function handleContextMenu(e: MouseEvent, entry: HistoryEntry): void {
+    function handleContextMenu(e: MouseEvent, entry: E): void {
         e.preventDefault()
         onRemove(entry)
     }
 </script>
 
-<FilterChipPopover {anchor} {open} {onClose} ariaLabel="All recent searches">
+<FilterChipPopover {anchor} {open} {onClose} {ariaLabel}>
     <div class="recent-popover" onkeydown={handleKeydown} role="search">
         <input
             bind:this={inputEl}
             type="text"
             class="search-field"
-            placeholder="Filter recent searches"
+            placeholder={filterPlaceholder}
             bind:value={query}
-            aria-label="Filter recent searches"
+            aria-label={filterPlaceholder}
         />
-        <div class="results" role="listbox" aria-label="Recent searches">
+        <div class="results" role="listbox" aria-label={ariaListboxLabel}>
             {#if matches.length === 0}
-                <div class="empty">No recent searches match that filter.</div>
+                <div class="empty">{emptyMessage}</div>
             {:else}
-                {#each matches as match, index (match.entry.id)}
+                {#each matches as match, index (keyFn(match.entry))}
+                    {@const badge = modeBadge(match.view.mode)}
+                    {@const badgeLen = badge.length + 1}
                     <button
                         type="button"
                         class="result-row"
                         class:is-cursor={index === cursor}
                         role="option"
                         aria-selected={index === cursor}
-                        title={chipTooltip(match.entry)}
+                        title={match.view.tooltip}
                         onclick={() => {
                             onPick(match.entry)
                         }}
@@ -149,9 +181,9 @@
                             cursor = index
                         }}
                     >
-                        <span class="row-mode">{modeBadge(match.entry.mode)}</span>
+                        <span class="row-mode">{badge}</span>
                         <span class="row-query">
-                            {#each renderHighlights(match.haystackText.slice(modeBadge(match.entry.mode).length + 1), match.indices.filter((i) => i >= modeBadge(match.entry.mode).length + 1).map((i) => i - modeBadge(match.entry.mode).length - 1)) as part, i (i)}
+                            {#each renderHighlights(match.haystackText.slice(badgeLen), match.indices.filter((i) => i >= badgeLen).map((i) => i - badgeLen)) as part, i (i)}
                                 {#if part.matched}
                                     <strong>{part.ch}</strong>
                                 {:else}

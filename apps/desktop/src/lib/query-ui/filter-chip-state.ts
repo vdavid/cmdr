@@ -6,7 +6,7 @@
  * the Svelte component. See `SearchFilterChips.svelte` for the markup consumer.
  */
 
-import type { SizeFilter, SizeUnit, DateFilter } from './search-state.svelte'
+import type { SizeFilter, SizeUnit, DateFilter } from './query-filter-state.svelte'
 import type { FileSizeFormat } from '$lib/settings/types'
 
 /** Display state of a single filter chip. */

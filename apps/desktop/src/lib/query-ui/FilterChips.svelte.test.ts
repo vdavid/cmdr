@@ -16,7 +16,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, unmount, type ComponentProps } from 'svelte'
 import { SvelteSet } from 'svelte/reactivity'
-import SearchFilterChips from './SearchFilterChips.svelte'
+import SearchFilterChips from './FilterChips.svelte'
 import {
   setSizeFilter,
   setSizeValue,
@@ -26,12 +26,20 @@ import {
   setExcludeSystemDirs,
   setCaseSensitive,
   clearSearchState,
-} from './search-state.svelte'
+  searchQueryState,
+} from '$lib/search/search-state.svelte'
 
 type Props = ComponentProps<typeof SearchFilterChips>
 
+// Wire the component to Search's actual core state instance so the existing assertions
+// against the named getters (`getSizeFilter()`, etc.) still see the writes the component
+// makes via its `filterState` prop. The selection-dialog factory split made the state
+// per-consumer; the Search façade exposes its instance as `searchQueryState`.
+const testState = searchQueryState
+
 function baseProps(overrides: Partial<Props> = {}): Props {
   return {
+    filterState: testState,
     caseSensitive: false,
     scope: '',
     excludeSystemDirs: true,
@@ -61,6 +69,7 @@ function baseProps(overrides: Partial<Props> = {}): Props {
     onSetScope: (path: string): void => {
       setScope(path)
     },
+    onClearAiPattern: () => {},
     scheduleSearch: () => {},
     mode: 'filename',
     query: '',
@@ -337,7 +346,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     // The textarea's `oninput` is wired through the `onInput` prop, which writes directly into
     // the search-state module (the same path the dialog's `inputHandler` takes in production).
     // We assert against the module state rather than a prop spy, mirroring the real wiring.
-    const { getScope } = await import('./search-state.svelte')
+    const { getScope } = await import('$lib/search/search-state.svelte')
     const { target, cleanup } = mountChips(baseProps())
     await tick()
     const scopeChip = findChip(target, 'Search in')
@@ -453,7 +462,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     hundred?.click()
     await tick()
     // The comparator promoted to gte, and the value column landed on "100".
-    const { getSizeFilter, getSizeValue } = await import('./search-state.svelte')
+    const { getSizeFilter, getSizeValue } = await import('$lib/search/search-state.svelte')
     expect(getSizeFilter()).toBe('gte')
     expect(getSizeValue()).toBe('100')
     cleanup()
@@ -474,7 +483,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect(today).not.toBeUndefined()
     today?.click()
     await tick()
-    const { getDateFilter, getDateValue } = await import('./search-state.svelte')
+    const { getDateFilter, getDateValue } = await import('$lib/search/search-state.svelte')
     expect(getDateFilter()).toBe('after')
     // dateValue is now an ISO date matching "today"; we just check non-empty.
     expect(getDateValue()).toMatch(/^\d{4}-\d{2}-\d{2}$/)

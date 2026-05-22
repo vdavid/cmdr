@@ -12,8 +12,8 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
-import SearchModeChips from './SearchModeChips.svelte'
-import type { SearchMode } from './search-state.svelte'
+import SearchModeChips from './ModeChips.svelte'
+import type { SearchMode } from './query-filter-state.svelte'
 
 function setup(overrides: Partial<{ mode: SearchMode; aiEnabled: boolean; disabled: boolean }> = {}): {
   target: HTMLDivElement
@@ -33,7 +33,10 @@ function setup(overrides: Partial<{ mode: SearchMode; aiEnabled: boolean; disabl
       onSelect,
     },
   })
-  const chips = Array.from(target.querySelectorAll<HTMLButtonElement>('.mode-chip'))
+  // The chip buttons live inside the underlying `ToggleGroup` primitive (semantics="tabs").
+  // We filter on `role="tab"` so the ToggleGroup's `data-state="on"` / data-attr query patterns
+  // don't accidentally match siblings.
+  const chips = Array.from(target.querySelectorAll<HTMLButtonElement>('button[role="tab"]'))
   return {
     target,
     chips,
@@ -156,7 +159,7 @@ describe('SearchModeChips', () => {
   it('D13: AI / Filename / Regex chips render their inline ⌥-shortcut hint', async () => {
     const { chips, cleanup } = setup({ aiEnabled: true })
     await tick()
-    const hints = chips.map((c) => c.querySelector('.chip-hint')?.textContent ?? null)
+    const hints = chips.map((c) => c.querySelector('.tg-hint')?.textContent ?? null)
     expect(hints[0]).toBe('⌥A') // AI
     expect(hints[1]).toBe('⌥F') // Filename
     expect(hints[2]).toBeNull() // Content (no shortcut by design)
@@ -169,10 +172,45 @@ describe('SearchModeChips', () => {
     await tick()
     // Three chips: Filename, Content, Regex.
     expect(chips).toHaveLength(3)
-    const hints = chips.map((c) => c.querySelector('.chip-hint')?.textContent ?? null)
+    const hints = chips.map((c) => c.querySelector('.tg-hint')?.textContent ?? null)
     expect(hints[0]).toBe('⌥F')
     expect(hints[1]).toBeNull()
     expect(hints[2]).toBe('⌥R')
     cleanup()
+  })
+
+  // M3: ModeChips is now a thin wrapper over `lib/ui/ToggleGroup.svelte` with
+  // `semantics="tabs"`. These pins confirm the underlying primitive is wired correctly so a
+  // future refactor of ToggleGroup doesn't silently drop the tablist contract.
+  describe('M3: built on ToggleGroup with semantics="tabs"', () => {
+    it('renders a role="tablist" with role="tab" children', async () => {
+      const { target, cleanup } = setup({ aiEnabled: true })
+      await tick()
+      const tablist = target.querySelector('[role="tablist"]')
+      expect(tablist).not.toBeNull()
+      expect(tablist?.getAttribute('aria-label')).toBe('Search mode')
+      const tabs = target.querySelectorAll('button[role="tab"]')
+      expect(tabs.length).toBe(4)
+      cleanup()
+    })
+
+    it("AI chip renders its `AI` badge via ToggleGroup's badge slot", async () => {
+      const { chips, cleanup } = setup({ aiEnabled: true })
+      await tick()
+      const aiBadge = chips[0].querySelector('.tg-badge')?.textContent?.trim()
+      expect(aiBadge).toBe('AI')
+      cleanup()
+    })
+
+    it('Content chip stays visible-disabled with the "Coming soon" aria-label wired', async () => {
+      const { chips, cleanup } = setup({ aiEnabled: true })
+      await tick()
+      const content = chips[2]
+      expect(content.disabled).toBe(true)
+      // The Coming-soon copy lives on the aria-label (jsdom-stable; the tooltip directive
+      // only renders into the body on a real hover/focus event we can't reliably synthesize).
+      expect(content.getAttribute('aria-label')).toMatch(/coming soon/i)
+      cleanup()
+    })
   })
 })

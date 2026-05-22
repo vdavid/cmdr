@@ -13,7 +13,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
-import SearchResults from './SearchResults.svelte'
+import SearchResults from './QueryResults.svelte'
 import type { SearchResultEntry } from '$lib/tauri-commands'
 
 vi.mock('$lib/icon-cache', async () => {
