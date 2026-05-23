@@ -83,6 +83,44 @@ describe('EmptyState', () => {
     target.remove()
   })
 
+  it('renders consumer-provided examples when passed (M10)', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(EmptyState, {
+      target,
+      props: {
+        aiEnabled: true,
+        indexEntryCount: 0,
+        examples: [
+          { label: 'all image files', mode: 'ai', query: 'all image files' },
+          { label: 'logs newer than a week', mode: 'ai', query: 'logs newer than a week' },
+          { label: 'files bigger than 5 MB', mode: 'ai', query: 'files bigger than 5 MB' },
+        ],
+        onPick: () => {},
+      },
+    })
+    await tick()
+    const labels = Array.from(target.querySelectorAll('.example-chip')).map((c) => c.textContent.trim())
+    expect(labels.some((l) => l.includes('all image files'))).toBe(true)
+    expect(labels.some((l) => l.includes('logs newer than a week'))).toBe(true)
+    expect(labels.some((l) => l.includes('files bigger than 5 MB'))).toBe(true)
+    // None of the Search-flavoured defaults should show.
+    expect(labels.some((l) => l.includes('PDFs from the last 7 days'))).toBe(false)
+    target.remove()
+  })
+
+  it('hides the index-status line when indexEntryCount is 0 (M10, Selection)', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(EmptyState, {
+      target,
+      props: { aiEnabled: false, indexEntryCount: 0, onPick: () => {} },
+    })
+    await tick()
+    expect(target.querySelector('.index-status')).toBeNull()
+    target.remove()
+  })
+
   it('calls onPick with the chosen chip', async () => {
     const onPick = vi.fn()
     const target = document.createElement('div')

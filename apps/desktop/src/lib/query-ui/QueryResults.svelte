@@ -60,6 +60,12 @@
         /** Called when the user clicks an example chip in the empty state. */
         onPickExample: (chip: { mode: SearchMode; query: string }) => void
         /**
+         * Consumer-provided example chips for the empty state. Forwarded to
+         * `EmptyState`. When omitted, EmptyState renders Search-flavoured defaults.
+         * Selection passes its own set ("all image files", etc.) here.
+         */
+        emptyExamples?: Array<{ label: string; mode: SearchMode; query: string }>
+        /**
          * Called when the user clicks a path-pill ancestor segment. Parent navigates the
          * active pane to `ancestorPath` and closes the dialog (per §3.8).
          */
@@ -91,6 +97,7 @@
         onResultClick,
         onHover,
         onPickExample,
+        emptyExamples,
         onPickPath,
         onRowMenu,
     }: Props = $props()
@@ -217,7 +224,7 @@
             </ul>
         </div>
     {:else if !hasSearched && !query.trim() && isIndexReady && sizeFilter === 'any' && dateFilter === 'any'}
-        <EmptyState {aiEnabled} {indexEntryCount} onPick={onPickExample} />
+        <EmptyState {aiEnabled} {indexEntryCount} examples={emptyExamples} onPick={onPickExample} />
     {:else}
         {#each results as entry, index (entry.path)}
             <div

@@ -792,6 +792,7 @@
             onResultClick={handleResultClick}
             onHover={handleHover}
             onPickExample={pickExample}
+            emptyExamples={config.emptyState.examples}
             onPickPath={config.onPickPath}
             onRowMenu={openRowMenu}
         />

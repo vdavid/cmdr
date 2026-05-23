@@ -26,17 +26,26 @@
     interface Props {
         /** True when AI mode is available (provider set and index ready). */
         aiEnabled: boolean
-        /** Total entries in the loaded search index (status line). */
+        /** Total entries in the loaded search index (status line). 0 hides the line (Selection). */
         indexEntryCount: number
+        /**
+         * Consumer-provided example chips. When omitted (or empty), the component
+         * falls back to the Search-flavoured defaults below so existing call sites
+         * keep working. Selection passes its own examples via
+         * `config.emptyState.examples` so users see "all image files" instead of
+         * Search's "PDFs from the last 7 days".
+         */
+        examples?: ExampleChip[]
         /** Fired when the user activates a chip. The parent loads + runs the query. */
         onPick: (chip: ExampleChip) => void
     }
 
-    const { aiEnabled, indexEntryCount, onPick }: Props = $props()
+    const { aiEnabled, indexEntryCount, examples: providedExamples, onPick }: Props = $props()
 
     /**
-     * Example queries. Locked in `docs/notes/ai-search-eval-history.md` so the spec, the
-     * eval catalog, and this component stay in lockstep.
+     * Search-flavoured fallback examples. Locked in `docs/notes/ai-search-eval-history.md`
+     * so the spec, the eval catalog, and this component stay in lockstep. Consumers
+     * that want a different set pass `examples` explicitly.
      */
     const AI_EXAMPLES: ExampleChip[] = [
         { label: 'large files modified this week', mode: 'ai', query: 'large files modified this week' },
@@ -50,7 +59,13 @@
         { label: 'screenshot*', mode: 'filename', query: 'screenshot*' },
     ]
 
-    const examples = $derived(aiEnabled ? AI_EXAMPLES : FILENAME_EXAMPLES)
+    const examples = $derived(
+        providedExamples && providedExamples.length > 0
+            ? providedExamples
+            : aiEnabled
+              ? AI_EXAMPLES
+              : FILENAME_EXAMPLES,
+    )
     const formattedCount = $derived(formatNumber(indexEntryCount))
 </script>
 
@@ -70,7 +85,9 @@
             </button>
         {/each}
     </div>
-    <p class="index-status">Index ready · {formattedCount} {pluralize(indexEntryCount, 'entry', 'entries')}</p>
+    {#if indexEntryCount > 0}
+        <p class="index-status">Index ready · {formattedCount} {pluralize(indexEntryCount, 'entry', 'entries')}</p>
+    {/if}
     <p class="tip">
         Tip: <kbd>⌘N</kbd> starts fresh, <kbd>⌘H</kbd> shows recent searches{#if aiEnabled}, <kbd
                 >⌘Enter</kbd
