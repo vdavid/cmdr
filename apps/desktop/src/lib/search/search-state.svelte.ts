@@ -89,9 +89,7 @@ export const getSizeValue = (): string => core.getSizeValue()
 export const setSizeValue = (v: string): void => core.setSizeValue(v)
 export const getSizeUnit = (): ReturnType<typeof core.getSizeUnit> => core.getSizeUnit()
 export const setSizeUnit = (v: Parameters<typeof core.setSizeUnit>[0]): void => core.setSizeUnit(v)
-export const getSizeValueMax = (): string => core.getSizeValueMax()
 export const setSizeValueMax = (v: string): void => core.setSizeValueMax(v)
-export const getSizeUnitMax = (): ReturnType<typeof core.getSizeUnitMax> => core.getSizeUnitMax()
 export const setSizeUnitMax = (v: Parameters<typeof core.setSizeUnitMax>[0]): void => core.setSizeUnitMax(v)
 
 // Date
@@ -99,7 +97,6 @@ export const getDateFilter = (): ReturnType<typeof core.getDateFilter> => core.g
 export const setDateFilter = (v: Parameters<typeof core.setDateFilter>[0]): void => core.setDateFilter(v)
 export const getDateValue = (): string => core.getDateValue()
 export const setDateValue = (v: string): void => core.setDateValue(v)
-export const getDateValueMax = (): string => core.getDateValueMax()
 export const setDateValueMax = (v: string): void => core.setDateValueMax(v)
 
 // Case sensitivity
@@ -110,7 +107,6 @@ export const setCaseSensitive = (v: boolean): void => core.setCaseSensitive(v)
 export const getLastAiPrompt = (): string | null => core.getLastAiPrompt()
 export const setLastAiPrompt = (v: string | null): void => core.setLastAiPrompt(v)
 export const getLastAiCaveat = (): string | null => core.getLastAiCaveat()
-export const setLastAiCaveat = (v: string | null): void => core.setLastAiCaveat(v)
 
 // AI pattern + label (extras)
 export const getLastAiLabel = (): string | null => extras.getLastAiLabel()
@@ -125,8 +121,6 @@ export const getTotalCount = (): number => core.getTotalCount()
 export const setTotalCount = (v: number): void => core.setTotalCount(v)
 export const getCursorIndex = (): number => core.getCursorIndex()
 export const setCursorIndex = (v: number): void => core.setCursorIndex(v)
-export const getIsSearching = (): boolean => core.getIsSearching()
-export const setIsSearching = (v: boolean): void => core.setIsSearching(v)
 
 // Index availability (extras; Selection has no index)
 export const getIsIndexReady = (): boolean => extras.getIsIndexReady()
@@ -142,11 +136,9 @@ export const setScope = (v: string): void => extras.setScope(v)
 export const getExcludeSystemDirs = (): boolean => extras.getExcludeSystemDirs()
 export const setExcludeSystemDirs = (v: boolean): void => extras.setExcludeSystemDirs(v)
 
-// Dialog lifecycle (core)
-export const getLastDialogEvent = (): ReturnType<typeof core.getLastDialogEvent> => core.getLastDialogEvent()
-export const setLastDialogEvent = (v: Parameters<typeof core.setLastDialogEvent>[0]): void => core.setLastDialogEvent(v)
-export const getRunOnMount = (): boolean => core.getRunOnMount()
-export const setRunOnMount = (v: boolean): void => core.setRunOnMount(v)
+// Dialog lifecycle (core) — note: SearchDialog reaches `searchQueryState` directly for
+// `setRunOnMount` etc. since M4. The legacy named exports are gone; the few call sites
+// that still need lastDialogEvent / runOnMount go through the underlying core instance.
 
 /**
  * One-shot flag set by external openers (MCP `open_search_dialog`) to ask the dialog to run a

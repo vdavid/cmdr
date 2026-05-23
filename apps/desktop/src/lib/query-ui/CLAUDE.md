@@ -9,10 +9,76 @@ See [`docs/specs/selection-dialog-plan.md`](../../../../../docs/specs/selection-
 `lib/search/CLAUDE.md` keeps Search-specific decisions (snapshot store, virtual volume, MCP open path, "Open in pane",
 index lifecycle, "Use current folder" smart fallback).
 
+## QueryDialog orchestrator (M4)
+
+`QueryDialog.svelte` is the shared overlay every consumer mounts. It owns the overlay chrome, the keyboard contract, IME
+guard, auto-apply gates, the `⏎` ownership swap, the `lastDialogEvent` lifecycle, the title bar, the chip strip, the AI
+prompt strip, the results table, the recent-items footer + popover, the empty state, and the optional notice banner.
+Consumers wire everything Search-or-Selection-specific through a single [`QueryDialogConfig`](query-dialog-config.ts)
+prop.
+
+The config carries the title + max width, the cross-consumer state instance (the M2 factory output), an `aiEnabled`
+flag, the per-chip visibility set, a `showPathColumn` flag, the run-hint copy, the history store + adapter + key, the
+empty-state hints, the filter-chips extras, the index lifecycle flags, an optional `noticeBanner` (R7), the async
+`runQuery` + optional `translateAi` callbacks, primary + secondary action descriptors, callbacks for path-pill / example
+/ row-menu / recent-activate / recent-remove / close events, optional `onMount` / `onDestroy` / `onClearState` hooks.
+
+### Ownership contracts
+
+Three pieces of state are QueryDialog's alone; the consumer's callbacks MUST NOT write to them:
+
+1. **`state.lastDialogEvent`** is QueryDialog's. The orchestrator writes `'opened'` on mount, `'query-edited'` on bar
+   input, `'filter-edited'` on FilterChips edits, `'cursor-moved'` on ↑/↓ and hover, and `'results-arrived'` after
+   `runQuery` resolves. Writing it from a consumer callback breaks `deriveEnterAction` and the `⏎` ownership swap.
+2. **`state.lastAiPrompt` / `state.lastAiCaveat`** are QueryDialog's. The orchestrator sets the prompt to the trimmed
+   user input BEFORE invoking `translateAi`, and sets the caveat to whatever the consumer's callback returns. The
+   consumer's `translateAi` returns `{ caveat, highlightedFields }` only.
+3. **`state.results` / `state.totalCount` / `state.cursorIndex`** are QueryDialog's after `runQuery` resolves. The
+   consumer's `runQuery` returns `{ entries, totalCount }` and never touches the state.
+
+The split keeps the `⏎` ownership swap deterministic and lets the orchestrator drive the AI strip lifecycle (clear on
+the next non-AI run, etc.) without each consumer re-implementing the rule.
+
+### Title bar (M4)
+
+The top of the dialog renders the consumer's `config.title` in a 32 px strip with no close button (Escape is the only
+close path). The strip is an `<h2>` semantically (the dialog's `aria-labelledby` points at it) styled to look like a
+thin centered bar; it's NOT a `<header>` landmark, which would collide with the app's existing banner per
+`landmark-no-duplicate-banner`. Not in the Tab order: text only.
+
+### Lifecycle hooks
+
+- **`onMount`**: invoked once after the orchestrator has wired its own listeners (Esc capture, autoApply setting
+  subscription). Search wires `prepareSearchIndex` and the `search-index-ready` listener here; Selection's wrapper (M7)
+  snapshots the focused pane's listing here.
+- **`onDestroy`**: invoked at unmount, before the orchestrator tears down its own listeners. Search wires
+  `releaseSearchIndex` here.
+- **`onClearState`**: invoked by ⌘N. Consumers wire their full-reset path here (Search's facade clears core + extras
+  together; Selection can omit and inherit the core's `clearCore`). The orchestrator also resets its own `lastRunQuery`
+  and `hasSearched` flags after the consumer's hook runs.
+
+### `runOnMount` consumer
+
+The orchestrator's `$effect` block on `state.getRunOnMount()` consumes the one-shot prefill flag. It clears the flag
+BEFORE dispatching so downstream state writes can't re-trigger the effect. Cold-open (dialog mounts with the flag
+pre-set, e.g. MCP `open_search_dialog`) and hot-prefill (the flag flips while the dialog is already open, e.g. a
+recent-search activation) flow through the same path. AI mode honors the explicit-trigger contract because the prefill
+caller's `autoRun: true` IS the explicit trigger.
+
+### Test coverage
+
+`QueryDialog.svelte.test.ts` (orchestrator) pins the title rendering, primary + secondary action callbacks, ⌘N / ⌘H, the
+IME guard, and the `lastDialogEvent` ownership. `QueryDialog.a11y.test.ts` runs axe-core across loading / index-ready /
+AI-on against a minimal Search-shaped config. Search's full integration tests live in
+`lib/search/SearchDialog.svelte.test.ts` and `lib/search/SearchDialog.a11y.test.ts` and they mount QueryDialog through
+the Search wrapper.
+
 ## Files (M3)
 
 | File                                        | Purpose                                                                                                                                                                                                 |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `QueryDialog.svelte`                        | Shared orchestrator (M4): overlay, title bar, keyboard contract, IME guard, auto-apply gates, `lastDialogEvent` ownership. Consumer-driven via `QueryDialogConfig`                                      |
+| `query-dialog-config.ts`                    | `QueryDialogConfig<E>` shape every consumer builds + ownership contract comments                                                                                                                        |
 | `QueryBar.svelte`                           | Unified query input: one `<input>` for AI / filename / regex; placeholder updates per mode; right-gutter run hint + ⏎ button                                                                            |
 | `ModeChips.svelte`                          | Mode chip row below the bar. Thin wrapper over `lib/ui/ToggleGroup.svelte` with `semantics="tabs"`. AI / Filename / Content (disabled) / Regex. Search renders all four; Selection (M7+) drops Content. |
 | `AiPromptStrip.svelte`                      | Strip below the chip row showing the AI prompt, optional caveat, disabled Refine button                                                                                                                 |
@@ -40,6 +106,8 @@ companion test catalog (mirrors the file table above):
 
 | Test                                     | Coverage                                                                                                                              |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `QueryDialog.svelte.test.ts`             | M4 orchestrator: title bar, primary / secondary action handlers, ⌘N / ⌘H, IME guard, `lastDialogEvent` writes after `runQuery`        |
+| `QueryDialog.a11y.test.ts`               | Tier-3 axe-core audit across loading, index-ready, and AI-on macro-states                                                             |
 | `QueryBar.svelte.test.ts`                | Per-mode placeholder, value mirror, `onInput` callback                                                                                |
 | `ModeChips.svelte.test.ts`               | Chip set, active marker, click + keyboard activation, focus motion (skipping Content), AI-on/off cardinality, ToggleGroup wiring      |
 | `FilterChips.svelte.test.ts`             | Chip rendering, `×` and Backspace clear, popover open/close, Add filter list, scope behavior, ⌥S/⌥M/⌥I openers, ⌥C/⌥V scope shortcuts |

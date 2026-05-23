@@ -1,27 +1,34 @@
 <script lang="ts">
     /**
-     * SearchDialog - Whole-drive file search overlay.
+     * SearchDialog: thin Search-specific wrapper around the shared `QueryDialog`.
      *
-     * Follows the command palette pattern (custom overlay, not ModalDialog).
-     * Searches the in-memory index by filename (wildcards), size, and date.
+     * M4 extracted all dialog orchestration into
+     * [`lib/query-ui/QueryDialog.svelte`](../query-ui/QueryDialog.svelte). This file owns
+     * only the Search-specific glue:
      *
-     * Layout (post-M3):
-     *   1. SearchBar: one input drives all modes (AI, filename, regex).
-     *   2. SearchModeChips: mode discriminator (chips below the bar).
-     *   3. SearchFilterChips: Size / Modified / Search in chips with popovers, plus Add filter.
-     *   4. SearchResults: column headers + results + status bar.
+     *   - Builds the `QueryDialogConfig` for Search (title, max width, history store,
+     *     filter chips extras, primary "Show all in main window" + secondary "Go to file"
+     *     actions, AI translation IPC + filter writes, snapshot promotion).
+     *   - Wires the whole-drive index lifecycle (`prepareSearchIndex` on mount,
+     *     `releaseSearchIndex` on destroy, plus the `search-index-ready` listener).
+     *   - Owns the "Open in pane" snapshot promotion path: minting an id, populating the
+     *     snapshot store, pinning the last-attempt ref, persisting to recent searches,
+     *     handing the id to the host.
+     *   - Loads the system-dir exclude tooltip.
+     *   - Provides recent-searches activate + remove handlers, including the IPC
+     *     write-back on removal.
      *
-     * This is the orchestrator: overlay, mount/unmount, keyboard dispatch, search execution,
-     * state wiring to child components via props/callbacks.
+     * QueryDialog owns everything else: overlay, keyboard contract, IME guard, auto-apply
+     * gates, `deriveEnterAction` ownership, `lastDialogEvent` lifecycle, title bar, the
+     * chip strip, the AI prompt strip, the results table, the recent-items footer +
+     * popover, and the empty state.
      */
-    import { onMount, onDestroy, tick } from 'svelte'
+    import { onMount, onDestroy } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('search-dialog')
     import {
-        notifyDialogOpened,
-        notifyDialogClosed,
         prepareSearchIndex,
         searchFiles,
         releaseSearchIndex,
@@ -30,100 +37,75 @@
         getSystemDirExcludes,
         onSearchIndexReady,
         showFileContextMenu,
+        getRecentSearches as fetchRecentSearches,
+        removeRecentSearch as removeRecentSearchIpc,
+        addRecentSearch as addRecentSearchIpc,
+        type HistoryEntry,
+        type SearchResultEntry,
+        type UnlistenFn,
     } from '$lib/tauri-commands'
-    import type { SearchResultEntry } from '$lib/tauri-commands'
-    import { iconCacheVersion } from '$lib/icon-cache'
-    import type { UnlistenFn } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { isScanning, getEntriesScanned } from '$lib/indexing'
     import {
-        getQuery,
-        setQuery,
-        setQueryFromUserInput,
-        getMode,
-        setMode,
-        switchMode,
+        searchQueryState,
+        clearSearchState,
+        clearAiPattern,
+        buildSearchQuery,
+        buildHistoryFilters,
         recordAiTranslation,
-        getLastAiLabel,
-        getLastAiPattern,
-        getLastAiPatternKind,
-        getSizeFilter,
-        setSizeFilter,
-        getSizeValue,
-        setSizeValue,
-        getSizeUnit,
-        setSizeUnit,
-        getSizeValueMax,
-        setSizeValueMax,
-        getSizeUnitMax,
-        setSizeUnitMax,
-        getDateFilter,
-        setDateFilter,
-        getDateValue,
-        setDateValue,
-        getDateValueMax,
-        setDateValueMax,
-        getResults,
-        setResults,
-        getTotalCount,
-        setTotalCount,
-        getCursorIndex,
-        setCursorIndex,
-        getIsIndexReady,
-        setIsIndexReady,
-        getIndexEntryCount,
-        setIndexEntryCount,
-        getIsSearching,
-        setIsSearching,
-        getIsIndexAvailable,
-        setIsIndexAvailable,
+        applyHistoryEntry,
+        getQuery,
+        getMode,
         getCaseSensitive,
         setCaseSensitive,
         getScope,
         setScope,
         getExcludeSystemDirs,
         setExcludeSystemDirs,
+        getResults,
+        getTotalCount,
         getLastAiPrompt,
-        setLastAiPrompt,
-        getLastAiCaveat,
-        setLastAiCaveat,
-        getRunOnMount,
-        setRunOnMount,
-        buildSearchQuery,
-        clearSearchState,
-        clearAiPattern,
-        searchQueryState,
-        SEARCH_AUTO_APPLY_DEBOUNCE_MS,
-        getLastDialogEvent,
-        setLastDialogEvent,
-        deriveEnterAction,
-        type SearchMode,
+        getLastAiLabel,
+        getLastAiPattern,
+        getLastAiPatternKind,
+        getSizeFilter,
+        setSizeFilter,
+        setSizeValue,
+        setSizeUnit,
+        setSizeValueMax,
+        setSizeUnitMax,
+        getDateFilter,
+        setDateFilter,
+        setDateValue,
+        setDateValueMax,
+        getIsIndexReady,
+        setIsIndexReady,
+        getIndexEntryCount,
+        setIndexEntryCount,
+        getIsIndexAvailable,
+        setIsIndexAvailable,
     } from './search-state.svelte'
-    import SearchBar from '$lib/query-ui/QueryBar.svelte'
-    import SearchModeChips from '$lib/query-ui/ModeChips.svelte'
-    import SearchFilterChips from '$lib/query-ui/FilterChips.svelte'
-    import SearchResults from '$lib/query-ui/QueryResults.svelte'
-    import AiTransparencyStrip from '$lib/query-ui/AiPromptStrip.svelte'
-    import RecentSearchesFooter from '$lib/query-ui/recent-items/RecentItemsFooter.svelte'
-    import RecentSearchesPopover from '$lib/query-ui/recent-items/RecentItemsPopover.svelte'
-    import SearchFooterActions from './SearchFooterActions.svelte'
-    import { chipTooltip, modeName, formatAge } from '$lib/query-ui/recent-items/recent-items-utils'
+    import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
     import type {
-        RecentItemAdapter,
-        RecentItemKey,
-    } from '$lib/query-ui/recent-items/recent-items-types'
+        QueryDialogConfig,
+        QueryDialogFilterChipsExtras,
+        AiTranslateResult,
+    } from '$lib/query-ui/query-dialog-config'
     import {
         loadRecentSearches,
         getRecentSearchesList,
         setRecentSearchesList,
+        recentSearchesStore,
     } from './recent-searches-state.svelte'
-    import { applyHistoryEntry, buildHistoryFilters } from './search-state.svelte'
     import {
-        getRecentSearches as fetchRecentSearches,
-        removeRecentSearch as removeRecentSearchIpc,
-        addRecentSearch as addRecentSearchIpc,
-        type HistoryEntry,
-    } from '$lib/tauri-commands'
+        chipTooltip,
+        modeName,
+        formatAge,
+    } from '$lib/query-ui/recent-items/recent-items-utils'
+    import type {
+        RecentItemAdapter,
+        RecentItemKey,
+    } from '$lib/query-ui/recent-items/recent-items-types'
     import {
         getOrCreate as createSnapshot,
         nextSnapshotId,
@@ -133,9 +115,9 @@
     import { buildSnapshotLabel } from './snapshot-label'
 
     interface Props {
-        /** Called when user selects a result: receives the full path */
+        /** Called when user selects a result: receives the full path. */
         onNavigate: (path: string) => void
-        /** Called when dialog is closed */
+        /** Called when dialog is closed. */
         onClose: () => void
         /**
          * Smart "current folder" for the Search-in popover's `Use current folder` button.
@@ -150,117 +132,44 @@
             disabledReason: string
         }
         /**
-         * Called when the user activates "Show all in main window" (⌥A or footer click).
+         * Called when the user activates "Show all in main window" (⌥⏎ or footer click).
          * Receives the freshly-created snapshot id; the host
          * (`+page.svelte` → `DualPaneExplorer`) routes the active pane to
-         * `search-results://<id>`. The dialog closes itself; the handler doesn't need to.
+         * `search-results://<id>`. The wrapper closes itself; the handler doesn't need to.
          */
         onShowAllInMainWindow?: (snapshotId: string) => void
     }
 
     const { onNavigate, onClose, searchableFolder, onShowAllInMainWindow }: Props = $props()
 
-    let queryInputElement: HTMLInputElement | undefined = $state()
-    let dialogElement: HTMLDivElement | undefined = $state()
-    let searchResultsComponent: SearchResults | undefined = $state()
-    let debounceTimer: ReturnType<typeof setTimeout> | undefined
+    // Index-readiness listener cleanup. Lives on the wrapper because the listener is
+    // Search-specific (Selection has no whole-drive index).
     let unlistenReady: UnlistenFn | undefined
-    let unlistenAutoApply: (() => void) | undefined
+
+    // System-dir exclude tooltip (populated async on mount; renders the full exclude list).
     let systemDirExcludeTooltip = $state('Excludes common system and build folders')
 
-    // Auto-apply toggle. Reactively mirrored from the `search.autoApply` setting so changes in the
-    // settings window take effect without reopening the dialog (live-apply contract).
-    let autoApplyEnabled = $state<boolean>(getSetting('search.autoApply'))
+    // Live mirror of the AI provider setting. Drives `aiEnabled` reactively so toggling
+    // in the settings window flips the AI chip in real time without reopening the dialog.
+    let aiProvider = $state<string>(getSetting('ai.provider') ?? 'off')
+    let unlistenAiProvider: (() => void) | undefined
 
-    // True while an IME composition is in progress. We don't schedule auto-apply during composition
-    // (would fire mid-character on Chinese/Japanese/Korean input); on compositionend we reset the
-    // debounce timer so the user gets exactly one fire after composition completes.
-    let imeComposing = false
-
-    /**
-     * Query string at the time of the last actually-issued search (auto-applied or manual). Used by
-     * the "Press Enter to search" hint to detect "the user has typed since the last run". `null`
-     * means no search has been run yet this session/state.
-     */
-    let lastRunQuery = $state<string | null>(null)
-
-    /* Column widths are CSS-driven now (per search-fixup-brief item 3): the SearchResults
-       grid template has fixed/max-content tracks for everything except Path, which is
-       the single `1fr` flex column. No manual drag-resize. */
-
-    // Reactive derived state (read from search-state module)
-    const query = $derived(getQuery())
-    const mode = $derived(getMode())
-    const sizeFilter = $derived(getSizeFilter())
-    const sizeValue = $derived(getSizeValue())
-    const sizeUnit = $derived(getSizeUnit())
-    const sizeValueMax = $derived(getSizeValueMax())
-    const sizeUnitMax = $derived(getSizeUnitMax())
-    const dateFilter = $derived(getDateFilter())
-    const dateValue = $derived(getDateValue())
-    const dateValueMax = $derived(getDateValueMax())
-    const results = $derived(getResults())
-    const totalCount = $derived(getTotalCount())
-    const cursorIndex = $derived(getCursorIndex())
+    // Reactive readers off the Search state instance. Used by the derived config below.
     const isIndexReady = $derived(getIsIndexReady())
     const indexEntryCount = $derived(getIndexEntryCount())
-    const isSearching = $derived(getIsSearching())
     const isIndexAvailable = $derived(getIsIndexAvailable())
-    const caseSensitive = $derived(getCaseSensitive())
-    const scope = $derived(getScope())
-    const excludeSystemDirs = $derived(getExcludeSystemDirs())
-    const lastAiPrompt = $derived(getLastAiPrompt())
-    const lastAiCaveat = $derived(getLastAiCaveat())
-    const lastAiPatternValue = $derived(getLastAiPattern())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
-    /**
-     * D8: which action `⏎` currently owns. Derived from the last dialog event
-     * and the result count via the pure helper `deriveEnterAction`. The footer
-     * "Go to file" button reads `Go to file ⏎` when this is `'go-to-file'`; the
-     * bar's Search button reads `Search ⏎` when this is `'run-search'`. Exactly
-     * one of them surfaces the hint at any time.
-     */
-    const enterAction = $derived(
-        deriveEnterAction({ lastEvent: getLastDialogEvent(), resultsCount: results.length }),
-    )
-
-    /** Whether AI search is enabled (provider configured and index available). */
-    const aiEnabled = $derived(getSetting('ai.provider') !== 'off' && isIndexAvailable)
-    /** Whether inputs/filters should be disabled (index not available or still scanning with no index). */
+    const aiEnabled = $derived(aiProvider !== 'off' && isIndexAvailable)
     const inputsDisabled = $derived(!isIndexAvailable)
-
-    /**
-     * True when the bar should show the "Press Enter to search" hint. Two cases:
-     *   1. Auto-apply is off (any mode), and the query has changed since the last run.
-     *   2. Mode is AI (which never auto-applies), and the query has changed since the last run.
-     * Trimmed-empty queries hide the hint; there's nothing to run.
-     */
-    const showRunHint = $derived.by(() => {
-        if (inputsDisabled) return false
-        const trimmed = query.trim()
-        if (!trimmed) return false
-        const changed = trimmed !== (lastRunQuery ?? '').trim()
-        if (!changed) return false
-        return mode === 'ai' || !autoApplyEnabled
-    })
-
-    let highlightedFields = new SvelteSet<string>()
-    /** True once the user has triggered at least one search (so we can distinguish "no query yet" from "0 results"). */
-    let hasSearched = $state(false)
-
-    // Recent searches: the footer anchor doubles as the popover anchor when the user opens the
-    // popover via the trailing chip. ⌘H anchors to the search input as a fallback.
-    let footerRef: HTMLDivElement | undefined = $state()
-    let recentPopoverOpen = $state(false)
-    const recentEntries = $derived(getRecentSearchesList())
+    const lastAiPattern = $derived(getLastAiPattern())
 
     /**
      * Adapter from Search's `HistoryEntry` shape into the generic `RecentItemView` the
      * `RecentItemsFooter` / `RecentItemsPopover` consume. The adapter is the only seam where
      * Search-specific fields (`scope`, `excludeSystemDirs`, `caseSensitive`, etc.) leak into
-     * the chip's tooltip. Selection's wrapper (M7+) will pass its own adapter against its
-     * narrower entry shape.
+     * the chip's tooltip. Selection's wrapper passes its own adapter against its narrower
+     * entry shape.
      */
     const searchRecentAdapter: RecentItemAdapter<HistoryEntry> = (entry) => ({
         label: entry.query,
@@ -271,486 +180,12 @@
     })
     const searchRecentKey: RecentItemKey<HistoryEntry> = (entry) => entry.id
 
-    // Subscribe to icon cache version for reactivity
-    const iconVersion = $derived($iconCacheVersion)
+    // ─────────────────────────────────────────────────────────────────────────
+    // AI translation: applies the AI's filter writes (size / date / scope /
+    // caseSensitive / excludeSystemDirs / Pattern + label). QueryDialog owns the
+    // prompt + caveat writes; this returns just `{ caveat, highlightedFields }`.
+    // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * When AI gets disabled mid-session (provider switched off), make sure we're not stuck on
-     * the AI mode. Filename is the fallback. Doesn't run on the AI-on side because we want the
-     * user's explicit pick (filename or regex) to stick when AI comes back on.
-     */
-    $effect(() => {
-        if (!aiEnabled && getMode() === 'ai') {
-            setMode('filename')
-        }
-    })
-
-    /**
-     * Single consumer for the `runOnMount` flag set by external openers (MCP `open_search_dialog`).
-     * Fires for both cold-open (dialog just mounted with the flag pre-set) and hot-prefill
-     * (dialog already open when MCP lands new prefill). Always clears the flag first so the
-     * downstream search call can't re-trigger this effect via state writes.
-     *
-     * AI mode requires the explicit-trigger contract; this effect honors it because the MCP
-     * caller passed `autoRun: true` (or accepted the default-true) — that counts as the
-     * explicit trigger, matching the same rule that lets recent-search AI clicks run.
-     */
-    $effect(() => {
-        if (!getRunOnMount()) return
-        setRunOnMount(false)
-        // Prefill cleared `results` and `cursorIndex` already. A previous-run `hasSearched = true`
-        // would render "No files found" against the cleared list; reset so the user sees the
-        // empty state (example chips, index size, keyboard tip) until the prefilled search runs.
-        hasSearched = false
-        const trimmed = getQuery().trim()
-        const hasFilters = getSizeFilter() !== 'any' || getDateFilter() !== 'any'
-        if (trimmed && getMode() === 'ai' && aiEnabled) {
-            void executeAiSearch(trimmed)
-        } else if (getIsIndexReady() && (trimmed || hasFilters)) {
-            void executeSearch()
-        }
-        // Otherwise: prefill arrived but nothing to run (autoRun false, or empty query and no
-        // filters). The dialog rests on the empty state; the user hits Enter to fire when ready.
-    })
-
-    /** Focuses the unified query input. */
-    function focusInput(): void {
-        queryInputElement?.focus()
-    }
-
-    /**
-     * Capture-phase Escape handler. Fires before native elements (select, date picker) consume the
-     * event, AND before any descendant handler (like the filter-chip popover's). When a filter-chip
-     * popover is open, Escape belongs to the popover, not the whole dialog: we defer here and let
-     * the popover's own keydown handler close itself on the bubble. Without this guard, the
-     * dialog's capture-phase listener would always run first and close the entire dialog.
-     */
-    function handleEscapeCapture(e: KeyboardEvent): void {
-        if (e.key !== 'Escape') return
-        if (dialogElement?.querySelector('.filter-chip-popover')) {
-            // Let the popover handle Escape on the bubble; it'll close itself and stopPropagation.
-            // This covers both the filter chips and the recent-searches popover (both reuse the
-            // same `FilterChipPopover` primitive, so the DOM selector matches).
-            return
-        }
-        e.preventDefault()
-        e.stopPropagation()
-        onClose()
-    }
-
-    /** Opens the recent-searches popover, anchored to the footer (or the input as fallback). */
-    function openRecentPopover(): void {
-        recentPopoverOpen = true
-    }
-
-    function closeRecentPopover(): void {
-        recentPopoverOpen = false
-    }
-
-    /** Loads + runs a history entry. AI entries get the same explicit-trigger treatment as Enter. */
-    function activateHistoryEntry(entry: HistoryEntry): void {
-        applyHistoryEntry(entry)
-        closeRecentPopover()
-        void tick().then(() => {
-            focusInput()
-        })
-        if (entry.mode === 'ai') {
-            if (aiEnabled) {
-                void executeAiSearch(entry.query)
-            }
-        } else {
-            void executeSearch()
-        }
-    }
-
-    /** Removes a recent search entry. Backend write is async; we update the cache eagerly. */
-    function removeHistoryEntry(entry: HistoryEntry): void {
-        // Optimistic UI: drop locally first so the chip animates out without waiting.
-        setRecentSearchesList(getRecentSearchesList().filter((e) => e.id !== entry.id))
-        void removeRecentSearchIpc(entry.id).then(async () => {
-            // Re-fetch to stay consistent if the backend evicted other entries since last load.
-            try {
-                setRecentSearchesList(await fetchRecentSearches())
-            } catch {
-                // Already fell back to the optimistic snapshot; nothing to do.
-            }
-        })
-    }
-
-    /**
-     * Path-pill click: navigate the active pane to `ancestorPath` and close the dialog.
-     * Reuses the dialog's existing `onNavigate` callback (the same exit path "navigate
-     * to a file" already uses), so the parent treats this identically to a result click.
-     */
-    function pickPath(ancestorPath: string): void {
-        onNavigate(ancestorPath)
-    }
-
-    /**
-     * Opens the native file context menu for a result row. Reuses the existing
-     * `showFileContextMenu` factory (the same one `FilePane` uses for its rows). Per
-     * search-redesign-plan §3.9, the menu's entries include Open, Reveal in Finder
-     * (Linux: Open in file manager), Copy path, Copy name — all of which the native
-     * menu already provides via the existing menu builder.
-     */
-    function openRowMenu(entry: SearchResultEntry): void {
-        void showFileContextMenu(entry.path, entry.name, entry.isDirectory, [entry.path]).catch(() => {
-            // Menu failures are silent: a missing menu is preferable to a stuck dialog.
-        })
-    }
-
-    /**
-     * Returns the parent directory of a POSIX path, or null if the path is root or empty.
-     * Cheap, sync, no IPC: paths are already strings carried by `SearchResultEntry`.
-     */
-    function parentOf(path: string): string | null {
-        if (!path || path === '/') return null
-        // Strip a trailing slash so `/a/b/` and `/a/b` behave identically.
-        const normalized = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path
-        const lastSlash = normalized.lastIndexOf('/')
-        if (lastSlash < 0) return null
-        if (lastSlash === 0) return '/'
-        return normalized.slice(0, lastSlash)
-    }
-
-    /**
-     * `⌥←`: navigate the active pane to the cursor row's parent folder, then close the
-     * dialog. The cursor row always exists when there are results (`cursorIndex` defaults
-     * to 0); we no-op silently when there are none.
-     */
-    function jumpToCursorParent(): void {
-        const idx = getCursorIndex()
-        if (idx < 0 || idx >= results.length) return
-        const target = parentOf(results[idx].path) ?? parentOf(results[idx].parentPath)
-        if (!target) return
-        onNavigate(target)
-    }
-
-    /**
-     * `⌥→`: descend back into the cursor row's path (one segment "into" the result).
-     * For a file result this means navigating to the file itself (Enter equivalent); for
-     * a directory result, it navigates into the directory. The asymmetry with ⌥← matches
-     * the spec's "descend back (one segment)" intent: ⌥← peels one segment off, ⌥→
-     * restores it.
-     */
-    function descendFromCursor(): void {
-        const idx = getCursorIndex()
-        if (idx < 0 || idx >= results.length) return
-        onNavigate(results[idx].path)
-    }
-
-    /**
-     * Footer action: "Go to file". Closes the dialog and navigates the active pane to
-     * the cursor row's containing folder, then focuses the file (pushing a new history
-     * entry). Per search-fixup-brief clarification 3: replaces the old "Open in Finder"
-     * affordance in the dialog footer; the `showInFinder` IPC stays around for other
-     * call sites (row context menu, etc.).
-     */
-    function goToCursorFile(): void {
-        const idx = getCursorIndex()
-        if (idx < 0 || idx >= results.length) return
-        // `onNavigate(path)` is the dialog's standard "navigate to a file" exit path:
-        // the host (`+page.svelte` → `DualPaneExplorer.handleSearchNavigate`) closes
-        // the dialog, navigates the active pane to the file's parent, and focuses the
-        // file. We reuse it so the focus / history-push behavior is uniform.
-        onNavigate(results[idx].path)
-    }
-
-    /**
-     * Footer action: "Show all in main window" (⌥A).
-     *
-     * Promotes the current result set into a real pane view via the search-results
-     * virtual volume. Steps in order:
-     *
-     *   1. Build a `SearchSnapshot` from the live dialog state (results, mode, filters).
-     *   2. Mint a fresh snapshot id (`sr-1`, `sr-2`, …) and store the snapshot.
-     *   3. Update the snapshot store's "last attempt" strong ref so a refcount survives
-     *      even before the pane history entry pushes.
-     *   4. Build a `HistoryEntry` mirroring the dialog state and persist it via
-     *      `add_recent_search` (the single sanctioned add point per plan §3.5: only this
-     *      action pushes to recent searches; auto-applies and Enter-runs don't).
-     *   5. Hand the snapshot id to the host (`onShowAllInMainWindow`) which routes the
-     *      active pane to `search-results://<id>`. The pane's `pushHistoryEntry` then
-     *      increments the snapshot's refcount via the M8a integration.
-     *   6. Close the dialog. State is preserved (the module-level $state survives
-     *      unmount), so reopening with ⌘F lands the user back on the same results.
-     *
-     * Renamed from "Open in pane" per search-fixup-brief item 10. The ⌥A shortcut wires
-     * the same action from anywhere in the dialog.
-     */
-    function showAllInMainWindow(): void {
-        if (results.length === 0) return
-        const id = nextSnapshotId()
-        const label = buildSnapshotLabel({
-            mode: getMode(),
-            query: getQuery(),
-            aiPrompt: getLastAiPrompt(),
-            aiLabel: getLastAiLabel(),
-        })
-        // `HistoryFilters` (IPC type) uses `number | null` for absent fields; the
-        // snapshot store uses `number | undefined`. Coerce so `null` doesn't sneak
-        // into the snapshot's runtime shape.
-        const hf = buildHistoryFilters()
-        const snapshotFilters = {
-            ...(hf.sizeMin != null ? { sizeMin: hf.sizeMin } : {}),
-            ...(hf.sizeMax != null ? { sizeMax: hf.sizeMax } : {}),
-            // Snapshot filters carry numeric epoch-seconds (consistent with FileEntry.modifiedAt).
-            // HistoryFilters carry ISO strings (what the dialog UI uses). For now we just drop
-            // dates from the snapshot since the search-results pane doesn't need them post-run;
-            // future work could parse `hf.modifiedAfter`/`hf.modifiedBefore` if a snapshot
-            // consumer needs them.
-        }
-        const snapshot: SearchSnapshot = {
-            id,
-            query: getQuery(),
-            mode: getMode(),
-            filters: snapshotFilters,
-            scope: getScope(),
-            caseSensitive: getCaseSensitive(),
-            excludeSystemDirs: getExcludeSystemDirs(),
-            entries: getResults(),
-            totalCount: getTotalCount(),
-            createdAt: Date.now(),
-            label,
-        }
-        createSnapshot(id, snapshot)
-        setLastAttemptId(id)
-
-        // Persist to recent searches (the only call site that does this; see plan §3.5).
-        // Fire-and-forget: backend write is async and we don't need to block the
-        // dialog-close on it. The footer chip will pick up the new entry on next mount /
-        // explicit reload, not eagerly mid-session — matches recent-search semantics.
-        const historyEntry: HistoryEntry = {
-            id: crypto.randomUUID(),
-            timestamp: Date.now(),
-            mode: getMode(),
-            query: getMode() === 'ai' ? (getLastAiPrompt() ?? getQuery()) : getQuery(),
-            filters: buildHistoryFilters(),
-            scope: getScope(),
-            caseSensitive: getCaseSensitive(),
-            excludeSystemDirs: getExcludeSystemDirs(),
-            resultCount: getTotalCount(),
-        }
-        void addRecentSearchIpc(historyEntry).catch(() => {
-            // Silent on history persistence failure: the snapshot still opens.
-        })
-
-        onShowAllInMainWindow?.(id)
-        onClose()
-    }
-
-    /** Empty-state chip pick: load + run, mirroring the recent-search activation path. */
-    function pickExample(chip: { mode: SearchMode; query: string }): void {
-        setQuery(chip.query)
-        setMode(chip.mode)
-        if (chip.mode === 'ai') {
-            if (aiEnabled) {
-                void executeAiSearch(chip.query)
-            }
-        } else {
-            void executeSearch()
-        }
-    }
-
-    onMount(async () => {
-        notifyDialogOpened('search').catch(() => {})
-        window.addEventListener('keydown', handleEscapeCapture, true)
-        // D8: mark the dialog as freshly opened so ⏎ owns "Search ⏎" by default
-        // (until the user edits the query/filters or results arrive).
-        setLastDialogEvent('opened')
-
-        // Live-mirror `search.autoApply`. The setting drives `scheduleSearch` and the run-hint
-        // visibility; the dialog reads it reactively so toggling in the settings window takes
-        // effect immediately, no reopen needed.
-        unlistenAutoApply = onSpecificSettingChange('search.autoApply', (_id, value) => {
-            autoApplyEnabled = value
-        })
-
-        // Listen for index ready event
-        unlistenReady = await onSearchIndexReady((entryCount: number) => {
-            setIsIndexReady(true)
-            setIndexEntryCount(entryCount)
-            // Auto-run pending search if user already typed something (filename/regex only;
-            // AI mode always waits for explicit Enter / ⌘Enter).
-            const pendingMode = getMode()
-            if (
-                pendingMode !== 'ai' &&
-                (getQuery().trim() || getSizeFilter() !== 'any' || getDateFilter() !== 'any')
-            ) {
-                void executeSearch()
-            }
-        })
-
-        // Start loading the index
-        try {
-            const result = await prepareSearchIndex()
-            if (result.ready) {
-                setIsIndexReady(true)
-                setIndexEntryCount(result.entryCount)
-            }
-        } catch {
-            // Index not available: indexing disabled, not started, or backend unavailable
-            setIsIndexAvailable(false)
-        }
-
-        // `runOnMount` consumption lives in the `$effect` block above. It auto-fires on first
-        // mount when the flag is true (cold-open from MCP `open_search_dialog`) and also fires
-        // when an MCP event lands while the dialog is already open (hot-prefill). One source of
-        // truth, two arrival modes.
-
-        // Load persisted recent searches (newest first) into the in-memory store. Idempotent,
-        // so closing + reopening the dialog doesn't refetch unless we explicitly invalidate.
-        void loadRecentSearches()
-
-        // R3 U6: load the full system-dir exclude list for the tooltip. Round 2
-        // truncated to the first 8 with a "+30 more" suffix; the brief asks for
-        // the full list ("How would the user know what that 30 are?"). Each
-        // folder renders on its own line with a mono font for legibility. The
-        // checkbox label itself reads "Hide boring folders" (matching the
-        // friendlier copy David asked for).
-        function escapeHtml(s: string): string {
-            return s
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;')
-        }
-        getSystemDirExcludes()
-            .then((dirs) => {
-                const items = dirs
-                    .map(
-                        (d) =>
-                            `<div style="font-family:var(--font-mono);font-size:var(--font-size-xs);color:var(--color-text-secondary);">${escapeHtml(d)}</div>`,
-                    )
-                    .join('')
-                systemDirExcludeTooltip =
-                    '<div style="max-width:360px;max-height:60vh;overflow-y:auto;">' +
-                    '<div style="font-weight:600;margin-bottom:4px">These folders are hidden:</div>' +
-                    items +
-                    '</div>'
-            })
-            .catch(() => {})
-
-        await tick()
-        focusInput()
-    })
-
-    onDestroy(() => {
-        notifyDialogClosed('search').catch(() => {})
-        releaseSearchIndex().catch(() => {})
-        unlistenReady?.()
-        unlistenAutoApply?.()
-        window.removeEventListener('keydown', handleEscapeCapture, true)
-        if (debounceTimer) clearTimeout(debounceTimer)
-        // State is intentionally NOT cleared here. Close + reopen preserves the user's last
-        // query, filters, scope, results, and cursor. Explicit reset lives behind ⌘N.
-    })
-
-    /**
-     * Schedules a debounced auto-apply search. Three gates layered on top of the timer:
-     *   1. AI mode never auto-applies. AI calls cost money; the user must press Enter / ⌘Enter /
-     *      click the ⏎ run button.
-     *   2. `search.autoApply` (live-mirrored): when off, the user runs every search explicitly. The
-     *      bar shows "Press Enter to search" so the contract is visible.
-     *   3. IME composition: while a composition is in progress, we don't schedule. On
-     *      `compositionend` the parent calls `scheduleSearch` again so the user gets one fire after
-     *      composition completes, not multiple fires mid-character.
-     * Constant: `SEARCH_AUTO_APPLY_DEBOUNCE_MS` (1 s) — bumped from the legacy 200 ms in M6.
-     */
-    function scheduleSearch(): void {
-        if (debounceTimer) clearTimeout(debounceTimer)
-        if (getMode() === 'ai') return
-        if (!autoApplyEnabled) return
-        if (imeComposing) return
-        debounceTimer = setTimeout(() => {
-            void executeSearch()
-        }, SEARCH_AUTO_APPLY_DEBOUNCE_MS)
-    }
-
-    /** Marks the start of an IME composition. Auto-apply is suppressed until `compositionend`. */
-    function handleCompositionStart(): void {
-        imeComposing = true
-        if (debounceTimer) clearTimeout(debounceTimer)
-    }
-
-    /**
-     * Marks the end of an IME composition. Resets the debounce timer so the user gets exactly one
-     * auto-apply fire after the full composed character lands (when the gates from `scheduleSearch`
-     * allow it).
-     */
-    function handleCompositionEnd(): void {
-        imeComposing = false
-        scheduleSearch()
-    }
-
-    /** Runs a search from the ⏎ button or Enter, dispatching to AI or non-AI based on mode. */
-    function runFromButton(): void {
-        if (inputsDisabled) return
-        if (getMode() === 'ai') {
-            runAiFromQuery()
-        } else {
-            void executeSearch()
-        }
-    }
-
-    /**
-     * Runs a search using the current state.
-     *
-     * `fromAiTranslation` is true only when called from `executeAiSearch()` (after the AI translation
-     * has populated state). In that branch we keep the AI transparency strip's `lastAiPrompt` /
-     * `lastAiCaveat` intact (they were just set). In every other branch (the user typed and the
-     * debounce fired, the user pressed Enter in filename/regex mode, etc.) we clear the strip so it
-     * doesn't outlive the AI search it belongs to.
-     */
-    async function executeSearch(fromAiTranslation = false): Promise<void> {
-        if (debounceTimer) clearTimeout(debounceTimer)
-        hasSearched = true
-        if (!getIsIndexReady()) return
-
-        setIsSearching(true)
-        try {
-            const query = buildSearchQuery()
-            // After an AI translation, the bar still shows the user's natural-language
-            // prompt (we don't overwrite the input — clarification 2). The actual search
-            // must run against the AI's produced pattern, not the prompt. Same for any
-            // AI-mode search where the user kept a pattern around (Pattern chip).
-            if (getMode() === 'ai') {
-                const aiPattern = getLastAiPattern()
-                const aiKind = getLastAiPatternKind()
-                query.namePattern = aiPattern && aiPattern.trim() ? aiPattern : null
-                query.patternType = aiKind === 'regex' ? 'regex' : 'glob'
-            }
-            // Parse scope and merge into query if non-empty
-            const scopeStr = getScope().trim()
-            if (scopeStr) {
-                const parsed = await parseSearchScope(scopeStr)
-                if (parsed.includePaths.length > 0) query.includePaths = parsed.includePaths
-                if (parsed.excludePatterns.length > 0) query.excludeDirNames = parsed.excludePatterns
-            }
-            const result = await searchFiles(query)
-            setResults(result.entries)
-            setTotalCount(result.totalCount)
-            setCursorIndex(0)
-            // D8: results just landed. ⏎ now owns "Go to file" (when results are present).
-            setLastDialogEvent('results-arrived')
-            // Track what was actually run so the "Press Enter to search" hint can detect drift.
-            lastRunQuery = getQuery()
-            if (!fromAiTranslation) {
-                // A non-AI search completed cleanly. The AI transparency strip belongs to the
-                // previous AI search, so we drop it here. AI runs go through `executeAiSearch`,
-                // which sets the strip and then calls us with `fromAiTranslation = true`.
-                setLastAiPrompt(null)
-                setLastAiCaveat(null)
-            }
-        } catch {
-            // IPC error: ignore silently
-        } finally {
-            setIsSearching(false)
-        }
-    }
-
-    /** Applies AI-returned size filters to the UI state. Returns true if any were applied. */
     function applySizeFilters(display: { minSize?: number | null; maxSize?: number | null }): boolean {
         if (display.minSize == null && display.maxSize == null) return false
         if (display.minSize != null && display.maxSize != null) {
@@ -775,8 +210,10 @@
         return true
     }
 
-    /** Applies AI-returned date filters to the UI state. Returns true if any were applied. */
-    function applyDateFilters(display: { modifiedAfter?: string | null; modifiedBefore?: string | null }): boolean {
+    function applyDateFilters(display: {
+        modifiedAfter?: string | null
+        modifiedBefore?: string | null
+    }): boolean {
         if (display.modifiedAfter == null && display.modifiedBefore == null) return false
         if (display.modifiedAfter != null && display.modifiedBefore != null) {
             setDateFilter('between')
@@ -792,25 +229,12 @@
         return true
     }
 
-    /**
-     * Populates filter fields from AI response. Returns the set of changed field names.
-     *
-     * Per the search-fixup brief (clarification 2): we DO NOT overwrite `query` or flip
-     * `mode` here. AI mode stays active and the bar keeps showing the user's natural-
-     * language prompt so they can re-translate via Enter. The AI's produced pattern
-     * lives in a separate slot (`lastAiPattern` / `lastAiPatternKind`); switching to
-     * filename or regex mode (⌘2 / ⌘3) is what hands the pattern to the matching
-     * input. The "Pattern" chip in the filter strip also surfaces the pattern across
-     * all modes.
-     */
-    /** Recovers the structured pattern kind ('glob' | 'regex' | null) from the AI display string. */
     function patternKindFromDisplay(patternType: string | null | undefined): 'glob' | 'regex' | null {
         if (patternType === 'regex') return 'regex'
         if (patternType === 'glob') return 'glob'
         return null
     }
 
-    /** Folds the AI's `includePaths` and `excludeDirNames` into a single scope expression. */
     function applyAiScope(query: {
         includePaths?: string[] | null
         excludeDirNames?: string[] | null
@@ -823,111 +247,34 @@
         return true
     }
 
-    function applyAiFilters(result: {
-        display: {
-            namePattern?: string | null
-            patternType?: string | null
-            minSize?: number | null
-            maxSize?: number | null
-            modifiedAfter?: string | null
-            modifiedBefore?: string | null
-        }
-        query: {
-            includePaths?: string[] | null
-            excludeDirNames?: string[] | null
-            caseSensitive?: boolean | null
-            excludeSystemDirs?: boolean | null
-        }
-        label?: string | null
-    }): SvelteSet<string> {
-        const changed = new SvelteSet<string>()
-        // Record the produced pattern in its own slot. The bar keeps the prompt.
-        recordAiTranslation({
-            pattern: result.display.namePattern ?? null,
-            kind: patternKindFromDisplay(result.display.patternType),
-            label: result.label ?? null,
-        })
-        if (result.display.namePattern != null) changed.add('pattern')
-        if (result.query.caseSensitive != null) {
-            setCaseSensitive(result.query.caseSensitive)
-            changed.add('caseSensitive')
-        }
-        if (result.query.excludeSystemDirs === false) {
-            setExcludeSystemDirs(false)
-            changed.add('excludeSystemDirs')
-        }
-        if (applySizeFilters(result.display)) changed.add('size')
-        if (applyDateFilters(result.display)) changed.add('date')
-        if (applyAiScope(result.query)) changed.add('scope')
-        return changed
-    }
-
-    /** Applies AI filters and briefly highlights the changed fields. */
-    function applyAiFiltersWithHighlight(result: Parameters<typeof applyAiFilters>[0]): void {
-        highlightedFields = applyAiFilters(result)
-        setTimeout(() => {
-            highlightedFields = new SvelteSet()
-        }, 1500)
-    }
-
-    /** Focuses the first result row for keyboard navigation. */
-    async function focusFirstResult(): Promise<void> {
-        await tick()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte 5 bind:this lacks type info for exports
-        searchResultsComponent?.scrollCursorIntoView()
-    }
-
-    /** Runs AI translation for a given query text, populates filters, and searches. */
-    async function executeAiSearch(queryText: string): Promise<void> {
-        const trimmed = queryText.trim()
-        if (!trimmed) return
-
-        // Capture the original natural-language prompt; the transparency strip and the
-        // AI-mode bar both read from `lastAiPrompt`. The bar in AI mode stays on the
-        // prompt so the user can Enter-to-retranslate; the AI's produced pattern is
-        // stored separately via `recordAiTranslation` (called inside `applyAiFilters`).
-        setLastAiPrompt(trimmed)
-        setLastAiCaveat(null)
-
-        let translateResult: Awaited<ReturnType<typeof translateSearchQuery>>
-        try {
-            translateResult = await translateSearchQuery(trimmed)
-        } catch {
-            // AI translation failed; bail out silently. Surfacing the error to the user lands in M5
-            // alongside the empty state and example-query plumbing.
-            return
-        }
-
-        applyAiFiltersWithHighlight(translateResult)
-        setLastAiCaveat(translateResult.caveat ?? null)
-
-        // Search using the AI's produced pattern (read from `lastAiPattern` inside
-        // `executeSearch`). `fromAiTranslation` keeps the transparency strip alive across
-        // the subsequent searchFiles call.
-        await executeSearch(true)
-        await focusFirstResult()
-    }
-
     function bytesToDisplaySize(bytes: number): { value: string; unit: 'KB' | 'MB' | 'GB' } {
         if (bytes >= 1024 * 1024 * 1024) {
-            return { value: String(Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100), unit: 'GB' }
+            return {
+                value: String(Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100),
+                unit: 'GB',
+            }
         }
         if (bytes >= 1024 * 1024) {
-            return { value: String(Math.round((bytes / (1024 * 1024)) * 100) / 100), unit: 'MB' }
+            return {
+                value: String(Math.round((bytes / (1024 * 1024)) * 100) / 100),
+                unit: 'MB',
+            }
         }
         return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
     }
 
-    /** Returns the chip slot for a given keyboard shortcut number (⌘1 / ⌘2 / ⌘3), or null. */
-    function modeForShortcutNumber(n: number): SearchMode | null {
-        // ⌘4 is reserved for Content when it ships; do not wire it now.
-        if (aiEnabled) {
-            if (n === 1) return 'ai'
-            if (n === 2) return 'filename'
-            if (n === 3) return 'regex'
-        } else {
-            if (n === 1) return 'filename'
-            if (n === 2) return 'regex'
+    /**
+     * Translates a natural-language prompt and applies the AI's filter writes. Returns
+     * the caveat + highlighted-field list for QueryDialog to surface in the AI strip
+     * and flash effect. Per the M4 ownership contract, this does NOT write to
+     * `state.lastAiPrompt` / `state.lastAiCaveat` — QueryDialog handles both.
+     */
+    async function translateAi(prompt: string): Promise<AiTranslateResult | null> {
+        let translateResult: Awaited<ReturnType<typeof translateSearchQuery>>
+        try {
+            translateResult = await translateSearchQuery(prompt)
+        } catch {
+            return null
         }
         return null
     }
@@ -964,453 +311,357 @@
             setLastDialogEvent('filter-edited')
             if (search) scheduleSearch()
         }
-    }
-
-    /** Traps Tab focus within the dialog. Returns true if the event was handled. */
-    function handleTabFocusTrap(e: KeyboardEvent): boolean {
-        if (e.key !== 'Tab' || !dialogElement) return false
-        const focusable = dialogElement.querySelectorAll<HTMLElement>(
-            'input:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        )
-        if (focusable.length > 0) {
-            const first = focusable[0]
-            const last = focusable[focusable.length - 1]
-            if (e.shiftKey && document.activeElement === first) {
-                e.preventDefault()
-                last.focus()
-            } else if (!e.shiftKey && document.activeElement === last) {
-                e.preventDefault()
-                first.focus()
-            }
+        if (translateResult.query.excludeSystemDirs === false) {
+            setExcludeSystemDirs(false)
+            changed.add('excludeSystemDirs')
         }
-        return true
+        if (applySizeFilters(translateResult.display)) changed.add('size')
+        if (applyDateFilters(translateResult.display)) changed.add('date')
+        if (applyAiScope(translateResult.query)) changed.add('scope')
+        return {
+            caveat: translateResult.caveat ?? null,
+            highlightedFields: Array.from(changed),
+        }
     }
 
     /**
-     * Matches a plain modifier-key combo (one of cmd/alt, no others, no shift).
-     *
-     * On macOS, Option+<letter> remaps `event.key` to a typographic glyph (Option+F → "ƒ",
-     * Option+R → "®"). For Alt combos we therefore also match on `event.code` (which stays
-     * layout-stable as `KeyF`, `KeyR`, etc.). For named keys (`Enter`, `ArrowLeft`, ...) and
-     * Meta combos the plain `e.key` check remains the contract.
+     * Runs the Search query against the backend index. Reads the bar + filters + AI
+     * pattern off the Search state; builds the payload via `buildSearchQuery()`; parses
+     * the scope expression via `parseSearchScope` (async, so not part of buildSearchQuery);
+     * and returns the result. QueryDialog owns the `results` / `totalCount` / `cursorIndex`
+     * writes.
      */
-    function matchKey(e: KeyboardEvent, key: string, mod: 'meta' | 'alt'): boolean {
-        if (e.shiftKey) return false
-        const modMatches = mod === 'meta' ? e.metaKey && !e.altKey : e.altKey && !e.metaKey
-        if (!modMatches) return false
-        if (e.key === key) return true
-        // Single-letter Alt fallback: macOS Option key delivers typographic glyphs, so accept
-        // a `KeyX` match on `e.code` when the requested key is a single ASCII letter.
-        if (mod === 'alt' && key.length === 1 && /[a-zA-Z]/.test(key)) {
-            return e.code === `Key${key.toUpperCase()}`
+    async function runSearch(): Promise<{ entries: SearchResultEntry[]; totalCount: number }> {
+        const query = buildSearchQuery()
+        // After an AI translation, the bar still shows the user's natural-language
+        // prompt. The actual search must run against the AI's produced pattern, not
+        // the prompt. Same for any AI-mode search where the user kept a pattern around.
+        if (getMode() === 'ai') {
+            const aiPattern = getLastAiPattern()
+            const aiKind = getLastAiPatternKind()
+            query.namePattern = aiPattern && aiPattern.trim() ? aiPattern : null
+            query.patternType = aiKind === 'regex' ? 'regex' : 'glob'
         }
-        return false
+        // Parse scope and merge into query if non-empty.
+        const scopeStr = getScope().trim()
+        if (scopeStr) {
+            const parsed = await parseSearchScope(scopeStr)
+            if (parsed.includePaths.length > 0) query.includePaths = parsed.includePaths
+            if (parsed.excludePatterns.length > 0)
+                query.excludeDirNames = parsed.excludePatterns
+        }
+        const result = await searchFiles(query)
+        return { entries: result.entries, totalCount: result.totalCount }
     }
 
-    /** Clears all dialog state (⌘N "new search") and refocuses the query input. */
-    function clearAndRefocus(): void {
-        clearSearchState()
-        lastRunQuery = null
-        void tick().then(() => {
-            focusInput()
+    /**
+     * "Show all in main window" (⌥⏎).
+     *
+     * Promotes the current result set into a real pane view via the search-results
+     * virtual volume. Steps:
+     *
+     *   1. Build a `SearchSnapshot` from the live dialog state.
+     *   2. Mint a fresh snapshot id and store it.
+     *   3. Pin the snapshot's refcount via `setLastAttemptId`.
+     *   4. Persist a `HistoryEntry` via `add_recent_search` (the single sanctioned add
+     *      point — auto-applies and Enter-runs don't push to recent searches).
+     *   5. Hand the id to the host; the host routes the active pane to
+     *      `search-results://<id>` and the pane's history push bumps the refcount.
+     *   6. Close the dialog. State is preserved (the module-level $state survives
+     *      unmount), so reopening with ⌘F lands the user back on the same results.
+     */
+    function showAllInMainWindow(): void {
+        if (getResults().length === 0) return
+        const id = nextSnapshotId()
+        const label = buildSnapshotLabel({
+            mode: getMode(),
+            query: getQuery(),
+            aiPrompt: getLastAiPrompt(),
+            aiLabel: getLastAiLabel(),
+        })
+        // `HistoryFilters` (IPC type) uses `number | null` for absent fields; the
+        // snapshot store uses `number | undefined`. Coerce so `null` doesn't sneak
+        // into the snapshot's runtime shape.
+        const hf = buildHistoryFilters()
+        const snapshotFilters = {
+            ...(hf.sizeMin != null ? { sizeMin: hf.sizeMin } : {}),
+            ...(hf.sizeMax != null ? { sizeMax: hf.sizeMax } : {}),
+            // Snapshot date filters omitted on purpose; see the pre-M4 comment in the
+            // legacy wrapper for the reasoning (the search-results pane doesn't need
+            // them post-run).
+        }
+        const snapshot: SearchSnapshot = {
+            id,
+            query: getQuery(),
+            mode: getMode(),
+            filters: snapshotFilters,
+            scope: getScope(),
+            caseSensitive: getCaseSensitive(),
+            excludeSystemDirs: getExcludeSystemDirs(),
+            entries: getResults(),
+            totalCount: getTotalCount(),
+            createdAt: Date.now(),
+            label,
+        }
+        createSnapshot(id, snapshot)
+        setLastAttemptId(id)
+
+        // Persist to recent searches (the only call site that does this).
+        const historyEntry: HistoryEntry = {
+            id: crypto.randomUUID(),
+            timestamp: Date.now(),
+            mode: getMode(),
+            query: getMode() === 'ai' ? (getLastAiPrompt() ?? getQuery()) : getQuery(),
+            filters: buildHistoryFilters(),
+            scope: getScope(),
+            caseSensitive: getCaseSensitive(),
+            excludeSystemDirs: getExcludeSystemDirs(),
+            resultCount: getTotalCount(),
+        }
+        void addRecentSearchIpc(historyEntry).catch(() => {
+            // Silent on history persistence failure: the snapshot still opens.
+        })
+
+        onShowAllInMainWindow?.(id)
+        onClose()
+    }
+
+    /**
+     * "Go to file" (⏎ when results are present): close the dialog and route the active
+     * pane to the cursor row. The host's `onNavigate(path)` handles closing the dialog,
+     * navigating to the parent folder, and focusing the file (pushing a history entry).
+     */
+    function goToCursorFile(entry: SearchResultEntry): void {
+        onNavigate(entry.path)
+    }
+
+    /**
+     * Per-row context menu: routes to the native menu factory. Reuses the same
+     * `showFileContextMenu` IPC the file panes use.
+     */
+    function openRowMenu(entry: SearchResultEntry): void {
+        void showFileContextMenu(entry.path, entry.name, entry.isDirectory, [entry.path]).catch(
+            () => {
+                // Silent: a missing menu is preferable to a stuck dialog.
+            },
+        )
+    }
+
+    /**
+     * Path-pill click: route the active pane to the ancestor path and close the dialog.
+     * Reuses the same `onNavigate` exit path as a result click so close + history-push
+     * are handled uniformly.
+     */
+    function pickPath(ancestorPath: string): void {
+        onNavigate(ancestorPath)
+    }
+
+    /**
+     * Recent-search activation: applies the history entry's state into the live dialog,
+     * then triggers a run. AI entries count the click as the explicit-trigger so they
+     * re-translate.
+     */
+    function activateHistoryEntry(entry: HistoryEntry): void {
+        applyHistoryEntry(entry)
+        // QueryDialog drives the run via the `runOnMount` consumer in its $effect.
+        // To trigger a fresh run from history, set runOnMount; QueryDialog will pick
+        // it up and dispatch to AI or non-AI based on mode.
+        searchQueryState.setRunOnMount(true)
+    }
+
+    /** Removes a recent search entry; backend write is async, we update the cache eagerly. */
+    function removeHistoryEntry(entry: HistoryEntry): void {
+        setRecentSearchesList(getRecentSearchesList().filter((e) => e.id !== entry.id))
+        void removeRecentSearchIpc(entry.id).then(async () => {
+            try {
+                setRecentSearchesList(await fetchRecentSearches())
+            } catch {
+                // Already fell back to the optimistic snapshot; nothing to do.
+            }
         })
     }
 
-    /** Runs an AI search from the current query; no-op when AI is off or the query is empty. */
-    function runAiFromQuery(): void {
-        if (!aiEnabled) return
-        const trimmed = getQuery().trim()
-        if (trimmed) void executeAiSearch(trimmed)
-    }
+    // QueryDialog already wrote the chip's query + mode into state and triggered the
+    // run. Search has no per-chip side effects, so this hook is a no-op for now.
+    const pickExample = (): void => {}
 
-    /** Handles ⌘1 / ⌘2 / ⌘3 mode switches. Returns true if handled. */
-    function handleModeShortcut(e: KeyboardEvent): boolean {
-        if (!e.metaKey || e.altKey || e.shiftKey) return false
-        if (e.key < '1' || e.key > '9') return false
-        const n = parseInt(e.key, 10)
-        const target = modeForShortcutNumber(n)
-        if (!target) return false
-        e.preventDefault()
-        handleModeChange(target)
-        // Keep the input focused so the user can keep typing.
-        focusInput()
-        return true
-    }
+    // ─────────────────────────────────────────────────────────────────────────
+    // Search-specific lifecycle: index prepare / release, ready listener,
+    // system-dir tooltip, AI-provider live subscription.
+    // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Handles modifier-key shortcuts (⌘N, ⌘Enter, ⌘1-⌘3, mode chip ⌥A/⌥F/⌥R,
-     * ⌥⏎ for "Show all in main window"). Returns true if handled.
-     *
-     * D9: the stale global ⌥F / ⌥D scope handlers from round 1 are gone. ⌥F is
-     * now mode chip Filename; the scope shortcuts (⌥C "Use current folder",
-     * ⌥V "All folders") live INSIDE the Search-in popover, scoped to its open
-     * lifetime in `SearchFilterChips.svelte`.
-     */
-    function handleModifierShortcuts(e: KeyboardEvent): boolean {
-        // ⌘N: clear search state and start fresh. Captured here so the global ⌘N (new tab) doesn't
-        // fire while the dialog is open. The dialog already calls stopPropagation on every keydown,
-        // but this handler is also the source of truth for the in-dialog "new search" affordance.
-        if (matchKey(e, 'n', 'meta')) {
-            e.preventDefault()
-            clearAndRefocus()
-            return true
-        }
-        if (handleModeChipShortcut(e)) return true
-        if (handleAltArrowShortcut(e)) return true
-        // R3 + D8 (other half): ⌥⏎ shows all results in the main window. The bare ⏎ key is
-        // owned by `handleEnterKey`, which dispatches via `enterAction` (see D8).
-        if (e.key === 'Enter' && e.altKey && !e.metaKey && !e.shiftKey) {
-            e.preventDefault()
-            if (results.length > 0) showAllInMainWindow()
-            return true
-        }
-        // R4: ⌘⏎ and ⇧⏎ are explicit no-ops. We swallow them here so the bare-Enter
-        // handler below (run-search / go-to-file via `enterAction`) never sees a
-        // modified Enter. David's rule: bare ⏎ is the only path that does anything.
-        if (e.key === 'Enter' && (e.metaKey || e.shiftKey)) {
-            e.preventDefault()
-            return true
-        }
-        // ⌘H toggles the recent-searches popover. The popover owns its own Esc, so users can
-        // dismiss it without closing the dialog.
-        if (matchKey(e, 'h', 'meta')) {
-            e.preventDefault()
-            if (recentPopoverOpen) {
-                closeRecentPopover()
-            } else {
-                openRecentPopover()
+    async function setupSearchLifecycle(): Promise<void> {
+        // Listen for index ready event.
+        unlistenReady = await onSearchIndexReady((entryCount: number) => {
+            setIsIndexReady(true)
+            setIndexEntryCount(entryCount)
+            // Auto-run pending search if user already typed something (filename/regex
+            // only; AI mode always waits for explicit Enter / ⌘Enter).
+            const pendingMode = getMode()
+            if (
+                pendingMode !== 'ai' &&
+                (getQuery().trim() || getSizeFilter() !== 'any' || getDateFilter() !== 'any')
+            ) {
+                // Trigger via the runOnMount flag; QueryDialog's effect dispatches to
+                // the non-AI runner since mode !== 'ai'.
+                searchQueryState.setRunOnMount(true)
             }
-            return true
+        })
+
+        try {
+            const result = await prepareSearchIndex()
+            if (result.ready) {
+                setIsIndexReady(true)
+                setIndexEntryCount(result.entryCount)
+            }
+        } catch {
+            // Index not available: indexing disabled, not started, or backend unavailable.
+            setIsIndexAvailable(false)
         }
-        if (handleModeShortcut(e)) return true
-        return false
+
+        // Persisted recent searches load (idempotent across the session).
+        void loadRecentSearches()
+
+        // R3 U6: load the full system-dir exclude list for the tooltip.
+        function escapeHtml(s: string): string {
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+        }
+        getSystemDirExcludes()
+            .then((dirs) => {
+                const items = dirs
+                    .map(
+                        (d) =>
+                            `<div style="font-family:var(--font-mono);font-size:var(--font-size-xs);color:var(--color-text-secondary);">${escapeHtml(d)}</div>`,
+                    )
+                    .join('')
+                systemDirExcludeTooltip =
+                    '<div style="max-width:360px;max-height:60vh;overflow-y:auto;">' +
+                    '<div style="font-weight:600;margin-bottom:4px">These folders are hidden:</div>' +
+                    items +
+                    '</div>'
+            })
+            .catch(() => {})
     }
 
-    /**
-     * D13: mode chip shortcuts (⌥A AI / ⌥F Filename / ⌥R Regex). Wired globally inside the
-     * dialog (focus need not be on the chip). The disabled Content chip has no shortcut by
-     * design — silently no-opping a key is hostile UX.
-     */
-    function handleModeChipShortcut(e: KeyboardEvent): boolean {
-        if (matchKey(e, 'a', 'alt') && aiEnabled) {
-            e.preventDefault()
-            handleModeChange('ai')
-            return true
-        }
-        if (matchKey(e, 'f', 'alt')) {
-            e.preventDefault()
-            handleModeChange('filename')
-            return true
-        }
-        if (matchKey(e, 'r', 'alt')) {
-            e.preventDefault()
-            handleModeChange('regex')
-            return true
-        }
-        return false
+    function teardownSearchLifecycle(): void {
+        releaseSearchIndex().catch(() => {})
+        unlistenReady?.()
+        unlistenReady = undefined
     }
 
-    /**
-     * ⌥← / ⌥→: jump to the cursor row's parent (←) or descend into the cursor row (→).
-     * Keyboard equivalents of clicking the path pills or the row itself (per
-     * search-redesign-plan §3.8).
-     */
-    function handleAltArrowShortcut(e: KeyboardEvent): boolean {
-        if (matchKey(e, 'ArrowLeft', 'alt')) {
-            e.preventDefault()
-            jumpToCursorParent()
-            return true
-        }
-        if (matchKey(e, 'ArrowRight', 'alt')) {
-            e.preventDefault()
-            descendFromCursor()
-            return true
-        }
-        return false
-    }
+    onMount(() => {
+        // Live-mirror `ai.provider` so the AI chip appears / disappears in real time when
+        // the user changes the provider in the settings window.
+        unlistenAiProvider = onSpecificSettingChange('ai.provider', (_id, value: unknown) => {
+            aiProvider = typeof value === 'string' ? value : 'off'
+        })
+    })
 
-    /**
-     * Handles arrow key navigation in the results list. Per search-fixup-brief item 6,
-     * the cursor LOOPS at the boundaries: ↓ on the last row jumps to the first, ↑ on
-     * the first row jumps to the last. Mouse hover writes to the same cursor (see
-     * `handleHover` below); there's no separate hovered-row state.
-     */
-    function handleArrowNav(e: KeyboardEvent): void {
-        const len = results.length
-        if (len === 0) return
-        e.preventDefault()
-        const cur = getCursorIndex()
-        const next = e.key === 'ArrowDown' ? (cur + 1) % len : (cur - 1 + len) % len
-        setCursorIndex(next)
-        // D8: cursor moves keep ⏎ on "Go to file" as the user browses the list.
-        setLastDialogEvent('cursor-moved')
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte 5 bind:this lacks type info for exports
-        searchResultsComponent?.scrollCursorIntoView()
-    }
+    onDestroy(() => {
+        unlistenAiProvider?.()
+        unlistenAiProvider = undefined
+    })
 
-    /** Mouse hover writes the cursor so mouse + keyboard share one cursor. */
-    function handleHover(index: number): void {
-        if (index < 0 || index >= results.length) return
-        if (getCursorIndex() !== index) {
-            setCursorIndex(index)
-            // D8: mouse hover counts as a cursor move for ⏎ ownership.
-            setLastDialogEvent('cursor-moved')
-        }
-    }
+    // ─────────────────────────────────────────────────────────────────────────
+    // The QueryDialogConfig. Rebuilt reactively so live changes in the inputs
+    // (search state, settings, focused-pane changes) propagate to QueryDialog.
+    // ─────────────────────────────────────────────────────────────────────────
 
-    function handleKeyDown(e: KeyboardEvent): void {
-        e.stopPropagation()
+    const filterChipsExtras: QueryDialogFilterChipsExtras = $derived({
+        caseSensitive: getCaseSensitive(),
+        scope: getScope(),
+        excludeSystemDirs: getExcludeSystemDirs(),
+        searchableFolder,
+        systemDirExcludeTooltip,
+        aiPattern: lastAiPattern,
+        onToggleCaseSensitive: () => {
+            setCaseSensitive(!getCaseSensitive())
+        },
+        onToggleExcludeSystemDirs: () => {
+            setExcludeSystemDirs(!getExcludeSystemDirs())
+        },
+        onSetScope: setScope,
+        onClearAiPattern: clearAiPattern,
+    })
 
-        if (handleTabFocusTrap(e)) return
-        if (handleModifierShortcuts(e)) return
+    const config: QueryDialogConfig<HistoryEntry> = $derived({
+        title: 'Search',
+        dialogType: 'search',
+        maxWidth: 'min(1080px, 80vw)',
 
-        switch (e.key) {
-            case 'Escape':
-                e.preventDefault()
-                onClose()
-                break
-            case 'ArrowDown':
-            case 'ArrowUp':
-                // Per search-fixup-brief item 13: Up/Down moves the result cursor
-                // regardless of focus inside the dialog (search bar, mode chips, filter
-                // chips). Popovers (filter / recent searches) own their own focus and
-                // arrow-key handling and stop propagation before we see the event, so
-                // they're naturally excluded from this dispatch.
-                handleArrowNav(e)
-                break
-            case 'Enter':
-                e.preventDefault()
-                handleEnterKey()
-                break
-        }
-    }
+        state: searchQueryState,
 
-    /**
-     * Handles plain Enter key per D8: dispatches on `enterAction`.
-     *   - 'go-to-file': open the cursor row's file in the active pane.
-     *   - 'run-search': run the active mode's search (AI / filename / regex).
-     */
-    function handleEnterKey(): void {
-        if (enterAction === 'go-to-file') {
-            goToCursorFile()
-            return
-        }
-        // run-search: dispatch to the active mode's runner.
-        if (getMode() === 'ai') {
-            runAiFromQuery()
-        } else {
-            void executeSearch()
-        }
-    }
+        aiEnabled,
+        inputsDisabled,
 
-    function handleResultClick(index: number): void {
-        if (index < results.length) {
-            onNavigate(results[index].path)
-        }
-    }
+        visibleChips: { size: true, date: true, scope: true, pattern: true },
+        showPathColumn: true,
 
-    function handleOverlayClick(e: MouseEvent): void {
-        if (e.target === e.currentTarget) {
-            onClose()
-        }
-    }
+        runHintCopy: 'Press Enter to search',
+
+        historyStore: recentSearchesStore,
+        recentItems: {
+            adapter: searchRecentAdapter,
+            keyFn: searchRecentKey,
+        },
+        onLoadHistory: async () => {
+            await loadRecentSearches()
+        },
+
+        emptyState: {
+            // Examples + indexHint shapes are reserved for M7 (Selection consumes them);
+            // Search reads its examples + index count off QueryDialog's defaults today.
+            examples: [],
+            indexEntryCount,
+        },
+
+        filterChipsExtras,
+
+        scanning,
+        entriesScanned,
+        indexEntryCount,
+        isIndexAvailable,
+        isIndexReady,
+
+        runQuery: runSearch,
+        translateAi,
+
+        primaryAction: {
+            label: 'Show all in main window',
+            shortcutHint: '⌥⏎',
+            tooltip: 'Open the search results in the active pane',
+            ariaLabel: 'Show all in main window',
+            handler: showAllInMainWindow,
+        },
+        secondaryAction: {
+            label: 'Go to file',
+            shortcutHint: '⏎',
+            tooltip: 'Open the file in the active pane',
+            ariaLabel: 'Go to file',
+            handler: goToCursorFile,
+        },
+
+        onPickPath: pickPath,
+        onPickExample: pickExample,
+        onRowMenu: openRowMenu,
+        onActivateRecent: activateHistoryEntry,
+        onRemoveRecent: removeHistoryEntry,
+
+        onClose,
+
+        onMount: setupSearchLifecycle,
+        onDestroy: teardownSearchLifecycle,
+
+        // ⌘N clears core + extras together (the Search facade). Search's facade is
+        // the canonical reset surface; using `state.clearCore()` alone would leave
+        // scope / excludeSystemDirs / AI label dangling.
+        onClearState: clearSearchState,
+    })
 </script>
 
-<div
-    class="search-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="search-dialog-title"
-    tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={handleKeyDown}
->
-    <div class="search-dialog" bind:this={dialogElement}>
-        <h2 id="search-dialog-title" class="sr-only">Search files</h2>
-
-        <SearchBar
-            bind:inputElement={queryInputElement}
-            {query}
-            {mode}
-            disabled={inputsDisabled}
-            aiHighlight={highlightedFields.has('query')}
-            {showRunHint}
-            showEnterHint={enterAction === 'run-search'}
-            onInput={handleQueryInput}
-            onRun={runFromButton}
-            onCompositionStart={handleCompositionStart}
-            onCompositionEnd={handleCompositionEnd}
-        />
-
-        <SearchModeChips {mode} {aiEnabled} disabled={inputsDisabled} onSelect={handleModeChange} />
-
-        {#if lastAiPrompt}
-            <AiTransparencyStrip aiPrompt={lastAiPrompt} caveat={lastAiCaveat ?? ''} />
-        {/if}
-
-        <SearchFilterChips
-            filterState={searchQueryState}
-            {caseSensitive}
-            {scope}
-            {excludeSystemDirs}
-            {searchableFolder}
-            {sizeFilter}
-            {sizeValue}
-            {sizeUnit}
-            {sizeValueMax}
-            {sizeUnitMax}
-            {dateFilter}
-            {dateValue}
-            {dateValueMax}
-            {systemDirExcludeTooltip}
-            {highlightedFields}
-            disabled={inputsDisabled}
-            {mode}
-            {query}
-            aiPattern={lastAiPatternValue}
-            onInput={inputHandler}
-            onToggleCaseSensitive={() => {
-                setCaseSensitive(!getCaseSensitive())
-                scheduleSearch()
-            }}
-            onToggleExcludeSystemDirs={() => {
-                setExcludeSystemDirs(!getExcludeSystemDirs())
-                scheduleSearch()
-            }}
-            onSetScope={setScope}
-            onClearAiPattern={clearAiPattern}
-            {scheduleSearch}
-            onFocusBar={focusInput}
-        />
-
-        <SearchResults
-            bind:this={searchResultsComponent}
-            {results}
-            {cursorIndex}
-            {isIndexAvailable}
-            {isIndexReady}
-            {isSearching}
-            {hasSearched}
-            {query}
-            {sizeFilter}
-            {dateFilter}
-            {scanning}
-            {entriesScanned}
-            {totalCount}
-            {indexEntryCount}
-            iconCacheVersion={iconVersion}
-            {aiEnabled}
-            onResultClick={handleResultClick}
-            onHover={handleHover}
-            onPickExample={pickExample}
-            onPickPath={pickPath}
-            onRowMenu={openRowMenu}
-        />
-
-        <div class="dialog-footer" bind:this={footerRef}>
-            <div class="footer-left">
-                <RecentSearchesFooter
-                    entries={recentEntries}
-                    adapter={searchRecentAdapter}
-                    keyFn={searchRecentKey}
-                    disabled={inputsDisabled}
-                    onPick={activateHistoryEntry}
-                    onRemove={removeHistoryEntry}
-                    onOpenAll={openRecentPopover}
-                />
-            </div>
-            <div class="footer-right">
-                <SearchFooterActions
-                    resultCount={results.length}
-                    disabled={inputsDisabled}
-                    {enterAction}
-                    onShowAllInMainWindow={showAllInMainWindow}
-                    onGoToFile={goToCursorFile}
-                />
-            </div>
-        </div>
-
-        {#if footerRef}
-            <RecentSearchesPopover
-                anchor={footerRef}
-                open={recentPopoverOpen}
-                entries={recentEntries}
-                adapter={searchRecentAdapter}
-                keyFn={searchRecentKey}
-                onClose={closeRecentPopover}
-                onPick={activateHistoryEntry}
-                onRemove={removeHistoryEntry}
-            />
-        {/if}
-    </div>
-</div>
-
-<style>
-    .search-overlay {
-        position: fixed;
-        inset: 0;
-        background: var(--color-overlay-light);
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding-top: 10vh;
-        z-index: var(--z-modal);
-    }
-
-    /* Dialog dimensions: per search-fixup-brief items 7 + 8. The width
-       expands up to 1080 px but shrinks to 80vw on smaller windows so the
-       dialog never bumps the window edges. The height never exceeds 80vh;
-       the results container is the only shrinking child. The dialog itself
-       is a flex column so the results region absorbs whatever vertical room
-       is left after the bar + chips + filters + footer. */
-    .search-dialog {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-lg);
-        width: 100%;
-        max-width: min(1080px, 80vw);
-        max-height: 80vh;
-        display: flex;
-        flex-direction: column;
-        box-shadow: var(--shadow-lg);
-        overflow: hidden;
-    }
-
-    /* Footer is a single row: recent-search chips on the left, action buttons on the
-       right. Both sides sit on the same darker surface so the entire bottom band
-       reads as one piece — the child components leave background to this wrapper.
-       Per search-fixup-brief item 1. */
-    .dialog-footer {
-        display: flex;
-        align-items: stretch;
-        justify-content: space-between;
-        gap: var(--spacing-sm);
-        background: var(--color-bg-primary);
-        border-top: 1px solid var(--color-border-subtle);
-        flex-shrink: 0;
-    }
-
-    .footer-left {
-        flex: 1 1 auto;
-        min-width: 0;
-        overflow: hidden;
-    }
-
-    .footer-right {
-        flex: 0 0 auto;
-    }
-
-    /* Visually hidden but accessible to screen readers */
-    .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        margin: -1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
-        border: 0;
-    }
-</style>
+<QueryDialog {config} />

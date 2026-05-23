@@ -14,9 +14,15 @@ import { createRecentItemsState } from '$lib/query-ui/recent-items/recent-items-
 // Wrap the IPC binding in a thunk so the factory doesn't deref the binding at module-init
 // time. Test mocks (`vi.mock('$lib/tauri-commands', ...)`) that omit `getRecentSearches`
 // would otherwise throw at import time; the thunk pushes the lookup to first call.
-const store = createRecentItemsState<HistoryEntry>({
+//
+// Exported as `recentSearchesStore` so `SearchDialog.svelte` (M4) can hand the underlying
+// reactive store straight to `QueryDialog`'s `historyStore` prop without re-wrapping the
+// getter/setter surface. The named helpers below stay around because the rest of `lib/search/`
+// still imports them through the legacy API.
+export const recentSearchesStore = createRecentItemsState<HistoryEntry>({
   getRecent: () => getRecentSearches(),
 })
+const store = recentSearchesStore
 
 /** Returns the in-memory recent-search list, newest first. */
 export function getRecentSearchesList(): HistoryEntry[] {
