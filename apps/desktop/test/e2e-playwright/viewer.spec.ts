@@ -26,28 +26,41 @@ const testFilePath = path.join(fixtureRoot, 'left', 'file-a.txt')
  */
 async function openViewerForFile(mainPage: TauriPage, filePath: string): Promise<TauriPage> {
   const viewer = await openViewerWindow(mainPage, filePath)
-  // 3 s: the viewer window mounts and renders content well under 1 s on a
-  // healthy machine. The previous 15 s / 10 s budgets exceeded the suite's 8 s
-  // per-test ceiling and just hid failures behind the outer timeout.
-  await viewer.waitForSelector('.viewer-container', 3000)
+  // `data-window-ready` is the single readiness signal exposed by `+page.svelte`'s
+  // `<main class="viewer-container">`. It's a tri-state derived from `windowReady`
+  // and `error`:
+  //   - "loading" — onMount hasn't finished (initial setup, file open, line fetch)
+  //   - "loaded" — `windowReady = true` AND no error: the viewer is interactive
+  //                AND `totalLines` / `totalBytes` are populated AND `.file-content`
+  //                is rendered. This is the only state tests should drive against.
+  //   - "error" — `windowReady = true` AND an error was set: `.status-message` is
+  //               rendered instead of `.file-content`. Tests asserting the error
+  //               path should wait for this state explicitly.
+  //
+  // 8 s budget so a fully-loaded shard (many viewer windows in sequence, IPCs
+  // queued behind earlier work) can drain without spurious timeouts; the wait
+  // exits early as soon as the attribute flips, so happy-path runs stay sub-second.
   try {
-    await viewer.waitForSelector('.file-content', 3000)
-  } catch {
-    const hasStatusMsg = await viewer.isVisible('.status-message')
-    if (hasStatusMsg) {
-      const text = await viewer.textContent('.status-message')
-      throw new Error(`Viewer did not load file content. Status: "${text ?? ''}"`)
-    }
-    throw new Error('Viewer did not load file content and no status message found')
+    await viewer.waitForSelector('.viewer-container[data-window-ready="loaded"]', 8000)
+  } catch (waitErr) {
+    // Probe state so the failure message points at the real problem instead of
+    // a generic "selector did not appear". Catches errored loads, stalled mounts,
+    // and the case where the viewer window itself never showed up.
+    const probe = await viewer
+      .evaluate<string>(
+        `(function(){
+            var c = document.querySelector('.viewer-container');
+            var sm = document.querySelector('.status-message');
+            return JSON.stringify({
+                hasContainer: !!c,
+                windowReady: c ? c.getAttribute('data-window-ready') : null,
+                statusMessage: sm ? (sm.textContent || '').trim() : null,
+            });
+        })()`,
+      )
+      .catch((e: unknown) => `probe failed: ${e instanceof Error ? e.message : String(e)}`)
+    throw new Error(`openViewerForFile: viewer not loaded within 8s. State: ${probe}. Original: ${String(waitErr)}`)
   }
-  // The `.file-content` element renders as soon as `loading` flips to `false`, but
-  // `windowReady` (and the `totalLines` / `totalBytes` state it gates) flips one
-  // requestAnimationFrame later in the `onMount` `finally` block. Tests that fire
-  // ⌘A or Escape against the viewer race that gap otherwise: ⌘A no-ops if
-  // `totalLines` and `totalBytes` are both 0/null, and `closeWindow()` queues the
-  // close behind `closeRequested` until ready. Waiting for the `data-window-ready`
-  // attribute on the container closes both races at once.
-  await viewer.waitForSelector('.viewer-container[data-window-ready="true"]', 3000)
   return viewer
 }
 
