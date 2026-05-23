@@ -113,7 +113,10 @@ export interface ListViewAPI {
   getVisibleItemsCount?(): number
 }
 
-/** Typed interface for VolumeBreadcrumb's exported methods. */
+/**
+ * Typed interface for VolumeBreadcrumb's exported methods.
+ * @public consumed via `import type` from FilePane.svelte; knip's Svelte parser misses type-only imports
+ */
 export interface VolumeBreadcrumbAPI {
   toggle(): void
   getIsOpen(): boolean
@@ -151,7 +154,10 @@ export interface SearchResultsViewAPI {
   isMissing(): boolean
 }
 
-/** Typed interface for NetworkMountView's exported methods. */
+/**
+ * Typed interface for NetworkMountView's exported methods.
+ * @public consumed via `import type` from FilePane.svelte; knip's Svelte parser misses type-only imports
+ */
 export interface NetworkMountViewAPI {
   handleKeyDown(e: KeyboardEvent): void
   setCursorIndex(index: number): void
