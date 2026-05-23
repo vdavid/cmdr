@@ -15,7 +15,7 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady } from './helpers.js'
+import { ensureAppReady, pressKey } from './helpers.js'
 import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
 import {
   closeSearchDialog,
@@ -25,6 +25,7 @@ import {
   openSearchDialog,
   pollActiveMode,
   pressMetaDigit,
+  SEARCH_INPUT,
   setSearchInputValue,
 } from './search-helpers.js'
 
@@ -40,10 +41,34 @@ test.describe('Search dialog: mode shortcuts', () => {
     await ensureMcpClient(tauriPage)
     await openSearchDialog(tauriPage)
 
+    // Focus the search input deterministically: `openSearchDialog` only waits
+    // for the overlay to mount, and the dialog's own `focusInput` runs after an
+    // async `tick`. If we race that with key presses (the OS keystroke targets
+    // `document.activeElement`, which falls back to the previous focus owner),
+    // ⌘N / ⌘1 / etc. land outside the dialog and never reach `handleKeyDown`.
+    await tauriPage.evaluate(`(function(){
+        var el = document.querySelector(${JSON.stringify(SEARCH_INPUT)});
+        if (el && typeof el.focus === 'function') el.focus();
+    })()`)
+    await tauriPage.waitForFunction(
+      `(function(){ var i = document.querySelector(${JSON.stringify(SEARCH_INPUT)}); return i !== null && document.activeElement === i; })()`,
+      3000,
+    )
+
+    // The dialog's module-level state survives close+reopen by design (see
+    // `search/CLAUDE.md` § State preservation), so prior tests in the shard
+    // can leave the dialog in any mode + any per-mode buffer. ⌘N clears
+    // everything (query, mode -> filename, all `handTyped` buffers, AI
+    // remembered fields) so the rest of this test starts from a known state.
+    await pressKey(tauriPage, 'Meta+n')
+    expect(await pollActiveMode(tauriPage, 'filename')).toBe(true)
+
     const aiOn = await hasAiChip(tauriPage)
     if (aiOn) {
-      // Open lands on AI. Seed an AI-mode query.
-      expect(await getActiveMode(tauriPage)).toBe('ai')
+      // Switch to AI mode explicitly. ⌘N resets mode to filename regardless of
+      // whether AI is enabled, so this hop is the only way to seed an AI prompt.
+      await pressMetaDigit(tauriPage, 1)
+      expect(await pollActiveMode(tauriPage, 'ai')).toBe(true)
       await setSearchInputValue(tauriPage, 'ai-prompt-marker')
       expect(await getSearchInputValue(tauriPage)).toBe('ai-prompt-marker')
 
