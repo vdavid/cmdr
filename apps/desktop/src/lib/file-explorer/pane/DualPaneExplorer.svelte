@@ -48,6 +48,7 @@
         ConflictResolution,
         WriteOperationError,
         FriendlyError,
+        FileEntry,
     } from '../types'
     import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
@@ -208,9 +209,15 @@
          * gap without exposing the runtime state map directly.
          */
         onFocusedVolumeChange?: (volumeId: string) => void
+        /**
+         * Bubbles a high-level command id from a pane up to the route, which
+         * routes it through `handleCommandExecute` (the unified dispatcher).
+         * Used by the Selection dialog's bare `+` / `-` shortcuts (M7).
+         */
+        onCommand?: (commandId: string) => void
     }
 
-    const { onFocusedVolumeChange }: Props = $props()
+    const { onFocusedVolumeChange, onCommand }: Props = $props()
 
     let focusedPane = $state<'left' | 'right'>('left')
     let showHiddenFiles = $state(true)
@@ -2611,6 +2618,32 @@
         getPaneRef(focusedPane)?.applyIndices(idxs, mode)
     }
 
+    /**
+     * Returns a snapshot of the focused pane's entries + cursor index, for the
+     * Selection dialog (M7). The dialog uses this once at open-time; we
+     * intentionally don't refresh on focused-pane change mid-dialog (G15).
+     * `isSnapshotPane` flags `search-results://` panes so the dialog renders
+     * the R7 banner ("Matching what is shown in the list…").
+     */
+    // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte for Selection dialog
+    export async function getFocusedPaneEntries(): Promise<{
+        entries: FileEntry[]
+        cursorIndex: number
+        isSnapshotPane: boolean
+    }> {
+        const pane = getPaneRef(focusedPane)
+        if (!pane) return { entries: [], cursorIndex: 0, isSnapshotPane: false }
+        const [entries, cursorIndex] = await Promise.all([
+            pane.getEntriesSnapshot(),
+            Promise.resolve(pane.getEntriesCursorIndex()),
+        ])
+        return {
+            entries,
+            cursorIndex,
+            isSnapshotPane: pane.getVolumeId() === 'search-results',
+        }
+    }
+
     /** Check if an MTP path matches the pane's current volume. Returns an error string if not. */
     function validateMtpNavigation(path: string, volumeId: string, volumeName: string | undefined): string | null {
         if (path.startsWith('mtp://')) {
@@ -3143,6 +3176,7 @@
                 unreachable={getActiveTab(tabMgr).unreachable}
                 onRetryUnreachable={() => handleRetryUnreachable(paneId)}
                 onOpenHome={() => handleOpenHome(paneId)}
+                onCommand={(commandId: string) => onCommand?.(commandId)}
             />
         {/key}
     </div>

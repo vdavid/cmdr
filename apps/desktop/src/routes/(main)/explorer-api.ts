@@ -5,7 +5,7 @@
 
 import type { ViewMode } from '$lib/app-status-store'
 import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
-import type { FriendlyError } from '$lib/file-explorer/types'
+import type { FileEntry, FriendlyError } from '$lib/file-explorer/types'
 
 export interface ExplorerAPI {
   refocus: () => void
@@ -97,4 +97,19 @@ export interface ExplorerAPI {
   cycleTab: (direction: 'next' | 'prev') => void
   togglePinActiveTab: () => void
   closeOtherTabs: () => void
+  /**
+   * Bulk-applies matched indices to the focused pane's selection set. Used by
+   * the Selection dialog (M7) on commit.
+   */
+  applyIndicesToFocusedPane: (idxs: number[], mode: 'add' | 'remove') => void
+  /**
+   * Returns a snapshot of the focused pane's entries + cursor index for the
+   * Selection dialog (M7). Captured ONCE at dialog open per the plan's G15
+   * contract; the dialog does not refresh on mid-dialog focused-pane change.
+   */
+  getFocusedPaneEntries: () => Promise<{
+    entries: FileEntry[]
+    cursorIndex: number
+    isSnapshotPane: boolean
+  }>
 }

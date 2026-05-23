@@ -22,6 +22,7 @@
         findFileIndex,
         findFileIndices,
         findFirstFuzzyMatch,
+        getFileRange,
         pathExistsChecked,
         getFileAt,
         getListingStats,
@@ -44,6 +45,7 @@
         type PaneFileEntry,
     } from '$lib/tauri-commands'
     import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
+    import { classifySelectionDialogKey } from './selection-dialog-keys'
     import { createTypeToJumpState } from './type-to-jump-state.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
@@ -151,6 +153,13 @@
         onRetryUnreachable?: () => void
         /** Called when user clicks "Open home folder" on the unreachable banner */
         onOpenHome?: () => void
+        /**
+         * Bubbles a high-level command id out of the pane. Used by the Selection
+         * dialog's `+` / `-` shortcuts (M7) so the parent route can dispatch via
+         * the unified command-dispatch path without FilePane importing it. Receives
+         * the command id (`'selection.selectFiles'` / `'selection.deselectFiles'`).
+         */
+        onCommand?: (commandId: string) => void
     }
 
     const {
@@ -175,6 +184,7 @@
         unreachable = null,
         onRetryUnreachable,
         onOpenHome,
+        onCommand,
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
@@ -756,6 +766,67 @@
      */
     export function applyIndices(idxs: number[], mode: 'add' | 'remove'): void {
         selection.applyIndices(idxs, mode, hasParent)
+    }
+
+    /**
+     * Returns a snapshot of the pane's entries for the Selection dialog (M7). The
+     * dialog needs the full list at open-time to run its matcher; this method
+     * fetches all entries via `getFileRange` for normal panes, or reads them
+     * directly from the search-results snapshot.
+     *
+     * Indices in the returned array match the pane's selection-state indices,
+     * so the `..` parent row (when present) is INCLUDED at index 0 as a synthetic
+     * entry. Selection's matcher will skip index 0 via the existing `hasParent`
+     * rule in `selection-state::applyIndices`.
+     */
+    // noinspection JSUnusedGlobalSymbols -- consumed by DualPaneExplorer.getFocusedPaneEntries
+    export async function getEntriesSnapshot(): Promise<FileEntry[]> {
+        if (isSearchResultsView) {
+            // Adapt SearchResultEntry → FileEntry. The snapshot's entry.name is the
+            // friendly full path (per the search-results virtual volume contract);
+            // we preserve that so the Selection matcher's accessor sees what the
+            // user sees in the pane.
+            const sn = searchSnapshot
+            if (!sn) return []
+            return sn.entries.map(
+                (e): FileEntry => ({
+                    name: e.name,
+                    path: e.path,
+                    parentPath: e.parentPath,
+                    isDirectory: e.isDirectory,
+                    isSymlink: false,
+                    size: e.size ?? undefined,
+                    modifiedAt: e.modifiedAt ?? undefined,
+                    permissions: 0,
+                    owner: '',
+                    group: '',
+                    iconId: e.iconId,
+                    extendedMetadataLoaded: true,
+                }),
+            )
+        }
+        const parentDir = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/'
+        if (!listingId || totalCount === 0) {
+            // Synthetic `..` entry (when present) keeps the index alignment.
+            const synthetic = createParentEntry(parentDir)
+            return hasParent && synthetic ? [synthetic] : []
+        }
+        try {
+            const fetched = await getFileRange(listingId, 0, totalCount, showHiddenFiles)
+            if (hasParent) {
+                const synthetic = createParentEntry(parentDir)
+                return synthetic ? [synthetic, ...fetched] : fetched
+            }
+            return fetched
+        } catch {
+            return []
+        }
+    }
+
+    /** Cursor index inside the entries-snapshot returned by `getEntriesSnapshot()`. */
+    // noinspection JSUnusedGlobalSymbols -- consumed by DualPaneExplorer.getFocusedPaneEntries
+    export function getEntriesCursorIndex(): number {
+        return cursorIndex
     }
 
     /** Snapshots the current selection as file names for diff-driven adjustment during operations. */
@@ -1820,6 +1891,22 @@
         return false
     }
 
+    /**
+     * M7: bare `+` / `-` open the Selection dialog. Dispatch lives at the FilePane
+     * keyboard level (not menu-driven on macOS, since menu accelerators always carry
+     * ⌘). The pure classifier in `selection-dialog-keys.ts` pins the exact event
+     * filter: no `metaKey` / `altKey` / `ctrlKey`; `shiftKey` is intentionally NOT
+     * filtered (Shift+= on US QWERTY produces `event.key === '+'`).
+     */
+    function handleSelectionDialogKey(e: KeyboardEvent): boolean {
+        const action = classifySelectionDialogKey(e)
+        if (!action) return false
+        e.preventDefault()
+        e.stopPropagation()
+        onCommand?.(action === 'open-add' ? 'selection.selectFiles' : 'selection.deselectFiles')
+        return true
+    }
+
     // Helper: Handle selection-related key events
     function handleSelectionKeys(e: KeyboardEvent): boolean {
         // Space - toggle selection at cursor. `Shift+Space` is the Quick Look
@@ -2019,6 +2106,9 @@
             void navigateToParent()
             return
         }
+
+        // M7: bare `+` / `-` open the Selection dialog (Total Commander parity).
+        if (handleSelectionDialogKey(e)) return
 
         // Handle selection keys
         if (handleSelectionKeys(e)) return

@@ -40,6 +40,11 @@ export interface CommandDispatchDialogs {
   showSearchDialog: (show: boolean) => void
   showAboutWindow: (show: boolean) => void
   showLicenseKeyDialog: (show: boolean) => void
+  /**
+   * Opens or closes the Selection dialog. `'add'` opens "Select files…",
+   * `'remove'` opens "Deselect files…", `null` closes.
+   */
+  showSelectionDialog: (mode: 'add' | 'remove' | null) => void
 }
 
 export interface CommandDispatchContext {
@@ -566,6 +571,14 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
 
     case 'selection.deselectAll':
       explorerRef?.handleSelectionAction('deselectAll')
+      return
+
+    case 'selection.selectFiles':
+      ctx.dialogs.showSelectionDialog('add')
+      return
+
+    case 'selection.deselectFiles':
+      ctx.dialogs.showSelectionDialog('remove')
       return
 
     // === Edit commands (clipboard) ===

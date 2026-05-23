@@ -60,6 +60,14 @@ export interface FilePaneAPI {
   selectRange(startIndex: number, endIndex: number): void
   /** Bulk-add or bulk-remove indices (used by the Selection dialog at commit time). */
   applyIndices(idxs: number[], mode: 'add' | 'remove'): void
+  /**
+   * Snapshot of the pane's entries for the Selection dialog (M7). Indices in the
+   * returned array match the pane's selection-state indices (`..` row included
+   * at index 0 when `hasParent`).
+   */
+  getEntriesSnapshot(): Promise<import('../types').FileEntry[]>
+  /** Cursor index inside the entries-snapshot returned by `getEntriesSnapshot()`. */
+  getEntriesCursorIndex(): number
   snapshotSelectionForOperation(): Promise<void>
   clearOperationSnapshot(): string[] | 'all' | null
 

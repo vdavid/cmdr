@@ -466,6 +466,22 @@ export const commands: Command[] = [
     showInPalette: true,
     shortcuts: ['⌘⇧A'],
   },
+  {
+    id: 'selection.selectFiles',
+    name: 'Select files…',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['+'],
+    description: 'Opens the Select files dialog to add matching files to the selection',
+  },
+  {
+    id: 'selection.deselectFiles',
+    name: 'Deselect files…',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['-'],
+    description: 'Opens the Deselect files dialog to remove matching files from the selection',
+  },
 
   // ============================================================================
   // Network browser

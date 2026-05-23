@@ -28,8 +28,21 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
   model is intentionally asymmetric: Shift+Down 3× then Shift+Up 3× does NOT restore the start state — each press
   independently toggles the cursor's item.
 - **Cmd+A / Cmd+Shift+A**: select all / deselect all
+- **`+` / `-`**: open the Selection dialog ("Select files…" / "Deselect files…", Total Commander parity). Bare keys, no
+  modifier required. On US QWERTY, `Shift+=` IS the `event.key === '+'` event so `Shift` is intentionally NOT filtered.
+  See [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md) for the dialog itself; the pane-side classifier
+  lives in [`pane/selection-dialog-keys.ts`](pane/selection-dialog-keys.ts).
 - **".." entry can't be selected**: keyboard fills from `..` default to "select" (so Shift+End from `..` selects).
 - **Cleared on navigation**: selection is per-directory
+
+### Select files / Deselect files dialog (M7)
+
+A modal that lets the user select by a glob, regex, or natural-language prompt against the focused pane's listing.
+Mounts via `+page.svelte`. Snapshot of entries + cursor is captured ONCE at open via
+`explorerRef.getFocusedPaneEntries()`; mid-dialog focused-pane changes do NOT re-snapshot. The dialog hands matched
+indices to `explorerRef.applyIndicesToFocusedPane(indices, mode)` on commit (`mode === 'add'` for select, `'remove'` for
+deselect). See [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md) for the wiring, match semantics, AI
+fallback contract, and the snapshot-pane note (R7).
 
 ### Implementation
 

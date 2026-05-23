@@ -9,6 +9,8 @@
     import LicenseKeyDialog from '$lib/licensing/LicenseKeyDialog.svelte'
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
     import SearchDialog from '$lib/search/SearchDialog.svelte'
+    import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
+    import type { FileEntry } from '$lib/file-explorer/types'
     import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
     import ReplayStatusOverlay from '$lib/indexing/ReplayStatusOverlay.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
@@ -60,6 +62,17 @@
     let showLicenseKeyDialog = $state(false)
     let showCommandPalette = $state(false)
     let showSearchDialog = $state(false)
+    /**
+     * Selection dialog state (M7). `'add'` opens "Select files…", `'remove'` opens
+     * "Deselect files…", `null` closes. The entries + cursor snapshot is captured
+     * once when we flip from `null` to a non-null value.
+     */
+    let showSelectionDialog = $state<'add' | 'remove' | null>(null)
+    let selectionDialogSnapshot = $state<{
+        entries: FileEntry[]
+        cursorIndex: number
+        isSnapshotPane: boolean
+    } | null>(null)
     let explorerRef: ExplorerAPI | undefined = $state()
     let windowTitle = $state('Cmdr')
     let appMode = $state<AppMode>(getAppMode())
@@ -592,6 +605,37 @@
         showSearchDialog = false
     }
 
+    /**
+     * Opens or closes the Selection dialog. On open, snapshot the focused pane's
+     * entries + cursor so the dialog has a stable list to match against per the
+     * plan's G15 contract.
+     */
+    async function setSelectionDialog(mode: 'add' | 'remove' | null): Promise<void> {
+        if (mode === null) {
+            showSelectionDialog = null
+            selectionDialogSnapshot = null
+            return
+        }
+        if (showSelectionDialog === mode) return // Already open.
+        if (!explorerRef) return
+        const snap = await explorerRef.getFocusedPaneEntries()
+        selectionDialogSnapshot = snap
+        showSelectionDialog = mode
+    }
+
+    function handleSelectionDialogClose() {
+        showSelectionDialog = null
+        selectionDialogSnapshot = null
+        // Return focus to the pane so subsequent keystrokes land there.
+        void Promise.resolve().then(() => {
+            explorerRef?.refocus()
+        })
+    }
+
+    function handleSelectionCommit(indices: number[], mode: 'add' | 'remove') {
+        explorerRef?.applyIndicesToFocusedPane(indices, mode)
+    }
+
     function handleSearchNavigate(path: string) {
         showSearchDialog = false
         // Navigate the focused pane to the file's parent directory, then move cursor to the file
@@ -683,6 +727,9 @@
             showLicenseKeyDialog: (show: boolean) => {
                 showLicenseKeyDialog = show
             },
+            showSelectionDialog: (mode: 'add' | 'remove' | null) => {
+                void setSelectionDialog(mode)
+            },
         },
     }
 
@@ -737,6 +784,17 @@
             />
         {/if}
 
+        {#if showSelectionDialog && selectionDialogSnapshot}
+            <SelectionDialog
+                mode={showSelectionDialog}
+                entries={selectionDialogSnapshot.entries}
+                cursorIndex={selectionDialogSnapshot.cursorIndex}
+                isSnapshotPane={selectionDialogSnapshot.isSnapshotPane}
+                onCommit={handleSelectionCommit}
+                onClose={handleSelectionDialogClose}
+            />
+        {/if}
+
         {#if showExpiredModal}
             <ExpirationModal organizationName={expiredOrgName} {expiredAt} onClose={handleExpirationModalClose} />
         {/if}
@@ -752,6 +810,9 @@
                 bind:this={explorerRef}
                 onFocusedVolumeChange={(vid: string) => {
                     focusedPaneVolumeId = vid
+                }}
+                onCommand={(commandId: string) => {
+                    void handleCommandExecute(commandId)
                 }}
             />
             <ScanStatusOverlay />
