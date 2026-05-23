@@ -720,15 +720,22 @@ export async function countEntriesWithPrefix(tauriPage: PageLike, prefix: string
  */
 export async function isStateClean(tauriPage: PageLike, localVolumeName: string): Promise<boolean> {
   try {
-    const state = await mcpReadResource('cmdr://state')
-    const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
-      line.replace(/^\n {2}volume: /, ''),
+    // Combined DOM read: pane volume labels + modal-overlay presence in one
+    // tauri-playwright evaluate. Skips the MCP `cmdr://state` HTTP roundtrip
+    // (~30–50 ms per call), which used to dominate the beforeEach time on
+    // every MTP test even though the DOM already had the answer.
+    return await tauriPage.evaluate<boolean>(
+      `(function(){
+        var els = document.querySelectorAll('.volume-breadcrumb .volume-name');
+        var name = ${JSON.stringify(localVolumeName)};
+        if (els.length < 2) return false;
+        for (var i = 0; i < 2; i++) {
+          var t = (els[i].textContent || '').trim();
+          if (t !== name) return false;
+        }
+        return !document.querySelector('.modal-overlay');
+      })()`,
     )
-    if (volumeLines.length < 2 || volumeLines[0] !== localVolumeName || volumeLines[1] !== localVolumeName) {
-      return false
-    }
-    if (await tauriPage.isVisible('.modal-overlay')) return false
-    return true
   } catch {
     return false
   }

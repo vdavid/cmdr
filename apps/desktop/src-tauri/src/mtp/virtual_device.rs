@@ -126,10 +126,28 @@ pub fn pause_virtual_watcher() -> bool {
     paused
 }
 
-/// Resumes the virtual device's filesystem watcher by dropping the guard.
+/// Resumes the virtual device's filesystem watcher by dropping the guard. The
+/// underlying mtp-rs pause is refcounted so this only flips the watcher back
+/// on when no other concurrent drain still holds a guard.
 pub fn resume_virtual_watcher() {
     let had_guard = WATCHER_GUARD.lock().unwrap().take().is_some();
     if had_guard {
         info!("Virtual MTP watcher resumed");
     }
+}
+
+/// Returns `true` if the watcher dropped (and recorded) any path ending with
+/// `suffix` since the pause began. Used by the test-only sentinel-drain flow:
+/// the test writes a uniquely-named file after recreating fixtures and polls
+/// this until it returns `true`, at which point per-directory FS-event
+/// ordering guarantees all earlier writes have been observed (and dropped) by
+/// the watcher too.
+pub fn was_path_dropped(suffix: &str) -> bool {
+    mtp_rs::was_path_dropped(VIRTUAL_DEVICE_SERIAL, suffix)
+}
+
+/// Clears the ring buffer of dropped paths. Called after a successful drain so
+/// the buffer stays scoped to in-flight pauses across long test runs.
+pub fn clear_dropped_paths() {
+    mtp_rs::clear_dropped_paths(VIRTUAL_DEVICE_SERIAL);
 }

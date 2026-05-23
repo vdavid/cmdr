@@ -13,7 +13,7 @@ import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
+import { recreateMtpFixtures, writeMtpDrainSentinel, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
   initMcpClient,
   mcpCall,
@@ -75,7 +75,10 @@ test.beforeEach(async ({ tauriPage }) => {
   // `resync_virtual_mtp_after_disk_change` in commands/mtp.rs.
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
   recreateMtpFixtures()
-  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change')`)
+  const sentinel = writeMtpDrainSentinel()
+  await tauriPage.evaluate(
+    `window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change', { sentinelSuffix: ${JSON.stringify(sentinel)} })`,
+  )
 
   // Reset both panes to local volume; short-circuit when already clean.
   if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {

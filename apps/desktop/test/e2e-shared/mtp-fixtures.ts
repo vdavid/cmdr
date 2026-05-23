@@ -6,6 +6,7 @@
  * browser/webview.
  */
 
+import { randomUUID } from 'crypto'
 import fs from 'fs'
 import path from 'path'
 
@@ -39,12 +40,25 @@ const fixtureLayout = {
 } as const
 
 /**
+ * Filename prefix for drain-sentinel files (see `writeMtpDrainSentinel`). The
+ * Rust IPC `resync_virtual_mtp_after_disk_change` polls the watcher for any
+ * dropped path ending with the unique full sentinel name.
+ */
+export const MTP_SENTINEL_PREFIX = '.cmdr-drain-'
+
+/**
  * Recreates the MTP fixture directory tree from scratch.
  *
  * Deletes ALL contents of `internal/` and `readonly/` (tests like F7 mkdir
  * create artifacts), preserves the root directories themselves (to keep the
  * virtual device's backing dir inodes stable), then recreates the fixture
  * file tree.
+ *
+ * **Pair with `writeMtpDrainSentinel()` as the very last step before calling
+ * the resync IPC**, so the backend can wait for the sentinel's FS event to
+ * land. Per-directory ordering on every supported `notify` backend means all
+ * earlier writes will already have arrived by then — replacing the previous
+ * fixed-duration FSEvents-latency sleeps with actual observed quiescence.
  */
 export function recreateMtpFixtures(): void {
   const root = MTP_FIXTURE_ROOT
@@ -75,6 +89,26 @@ export function recreateMtpFixtures(): void {
 
   // eslint-disable-next-line no-console
   console.log(`MTP fixtures created at ${root}`)
+}
+
+/**
+ * Writes a unique sentinel file inside the MTP backing dir's `internal/` and
+ * returns its filename. Pass the returned name to
+ * `resync_virtual_mtp_after_disk_change`'s `sentinelSuffix` parameter: the
+ * backend polls the watcher's dropped-paths ring until it sees this exact
+ * filename, then rescans and resumes. Per-directory FS-event ordering means
+ * every write that happened before this sentinel has been observed by the
+ * watcher by then — so no fixed FSEvents-latency sleep is needed.
+ *
+ * **Always call this AFTER all other fixture mutations** (recreate + any
+ * additional seeding). Calling it earlier and then writing more files would
+ * race: the backend would see the sentinel, declare the queue drained, and
+ * resume the watcher while later events were still in flight.
+ */
+export function writeMtpDrainSentinel(): string {
+  const sentinelName = `${MTP_SENTINEL_PREFIX}${randomUUID()}`
+  fs.writeFileSync(path.join(MTP_FIXTURE_ROOT, 'internal', sentinelName), '')
+  return sentinelName
 }
 
 /**

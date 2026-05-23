@@ -14,7 +14,7 @@ import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
+import { recreateMtpFixtures, writeMtpDrainSentinel, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
   initMcpClient,
   mcpCall,
@@ -90,13 +90,26 @@ function safeFileSize(p: string): number {
 }
 
 /**
- * Reads cmdr://state and returns true when both panes show the local volume.
- * The state YAML has `left:` and `right:` blocks each containing a `  volume: NAME` line.
+ * Returns true when both panes show the local volume. Reads the DOM directly
+ * via a single tauri-playwright `evaluate` instead of going through MCP's
+ * `cmdr://state` resource: the latter is one HTTP roundtrip per poll
+ * iteration, which on a paranoid 100 ms poll loop dominates the wait time
+ * even after the panes have already flipped. The breadcrumb's
+ * `.volume-breadcrumb .volume-name` element holds the current label.
  */
-async function bothPanesOnLocalVolume(): Promise<boolean> {
-  const state = await mcpReadResource('cmdr://state')
-  const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) => line.replace(/^\n {2}volume: /, ''))
-  return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+async function bothPanesOnLocalVolume(tauriPage: PageLike): Promise<boolean> {
+  return tauriPage.evaluate<boolean>(
+    `(function(){
+      var els = document.querySelectorAll('.volume-breadcrumb .volume-name');
+      var name = ${JSON.stringify(LOCAL_VOLUME_NAME)};
+      if (els.length < 2) return false;
+      for (var i = 0; i < 2; i++) {
+        var t = (els[i].textContent || '').trim();
+        if (t !== name) return false;
+      }
+      return true;
+    })()`,
+  )
 }
 
 /**
@@ -155,13 +168,17 @@ test.beforeEach(async ({ tauriPage }) => {
   // the watcher may process stale deletion events after the rescan, removing
   // objects that were just re-added.
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
-  recreateMtpFixtures() // MTP backing dir
 
-  // Settle FSEvents, rescan, settle again, rescan, then resume, all in one
-  // IPC call. See `resync_virtual_mtp_after_disk_change` in commands/mtp.rs
-  // for the rationale (FSEvents has ~200-500 ms latency on macOS, so a naive
-  // rescan + resume races with late events).
-  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change')`)
+  // Recreate fixtures, then write a unique sentinel file as the LAST disk
+  // write. The backend's `resync_virtual_mtp_after_disk_change` polls the
+  // watcher for that sentinel's drop event; per-directory FS-event ordering
+  // means seeing the sentinel proves every preceding write to the same dir
+  // already drained — no fixed FSEvents-latency sleep needed.
+  recreateMtpFixtures()
+  const sentinel = writeMtpDrainSentinel()
+  await tauriPage.evaluate(
+    `window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change', { sentinelSuffix: ${JSON.stringify(sentinel)} })`,
+  )
 
   // Force both panes back to a local volume. Previous tests may have left a pane
   // on MTP, and ensureAppReady's mcp-nav-to-path events get rejected by
@@ -177,8 +194,12 @@ test.beforeEach(async ({ tauriPage }) => {
           invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
           invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
       })()`)
-    // Wait for both panes to show the local volume.
-    await expect.poll(async () => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
+    // Wait for both panes to show the local volume. Tight 25 ms poll interval
+    // since the DOM read is sub-ms; the wait then exits ~one frame after the
+    // panes flip, instead of 50–100 ms of poll latency.
+    await expect
+      .poll(async () => bothPanesOnLocalVolume(tauriPage), { timeout: 5000, intervals: [10, 25, 50, 100] })
+      .toBeTruthy()
 
     // Dismiss any lingering dialogs/overlays from previous tests
     await tauriPage.keyboard.press('Escape')

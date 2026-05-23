@@ -387,49 +387,65 @@ pub fn resume_virtual_mtp_watcher() {
 /// fixtures, then resumes the filesystem watcher.
 ///
 /// Solves the race where macOS FSEvents / Linux inotify deliver events from
-/// the delete + recreate sequence ~200-500 ms after the disk writes. If the
-/// watcher is resumed before those late events drain, stale REMOVE events
-/// arrive after the rescan and incorrectly remove the freshly re-added
-/// objects (the path is reused, so the new handle is what gets removed).
+/// the delete + recreate sequence after the disk writes. If the watcher is
+/// resumed before those late events drain, stale REMOVE events arrive after
+/// the rescan and incorrectly remove the freshly re-added objects (the path
+/// is reused, so the new handle is what gets removed).
+///
+/// Uses a sentinel-file drain instead of a fixed sleep: the test writes a
+/// uniquely-named file (`sentinel_suffix`) after recreating fixtures, and this
+/// command polls the watcher's recorded-drops ring buffer until the sentinel's
+/// event lands. Per-directory ordering on every supported `notify` backend
+/// guarantees that when we see the sentinel, every earlier write to the same
+/// directory already drained too. Tight 2 ms poll loop; in practice this
+/// returns ~1 inotify roundtrip on Linux and ~1 FSEvents-latency window on
+/// macOS, no fixed-magnitude waste.
 ///
 /// Expected caller flow:
 ///
 /// ```ignore
 /// invoke('pause_virtual_mtp_watcher')        // existing
-/// recreateMtpFixtures()                      // disk I/O (TS side)
-/// invoke('resync_virtual_mtp_after_disk_change')  // settle + rescan + resume
+/// const sentinel = recreateMtpFixtures()     // writes sentinel as last step
+/// invoke('resync_virtual_mtp_after_disk_change', { sentinelSuffix: sentinel })
 /// ```
 ///
-/// The settle windows below are sized for macOS FSEvents' worst-case latency
-/// plus a safety margin. With the watcher paused, late events that arrive
-/// during these sleeps are silently dropped (see
-/// `mtp_rs::transport::virtual_device::watcher::handle_notify_event`).
+/// Returns `Ok((added, removed))` from the rescan, or `Err` if no virtual
+/// device is registered. The drain falls through after a generous max-wait
+/// (`MAX_DRAIN_WAIT_MS`) even if the sentinel never appears, so a missing
+/// sentinel degrades to the old "rescan a maybe-stale state" behaviour
+/// instead of hanging the test.
 #[cfg(feature = "virtual-mtp")]
 #[tauri::command]
 #[specta::specta]
-pub async fn resync_virtual_mtp_after_disk_change() -> Result<(usize, usize), String> {
-    use tokio::time::{Duration, sleep};
+pub async fn resync_virtual_mtp_after_disk_change(sentinel_suffix: String) -> Result<(usize, usize), String> {
+    use tokio::time::{Duration, Instant, sleep};
 
-    // Phase 1: drain pending FSEvents from the recreate-fixtures disk I/O.
-    // macOS FSEvents latency: ~200-500 ms in practice. 600 ms gives margin
-    // even under parallel-shard CPU/IO pressure.
-    sleep(Duration::from_millis(600)).await;
+    /// Hard cap on the drain wait. Sized for the worst plausible macOS
+    /// FSEvents latency under heavy CPU contention. Past this we proceed
+    /// without confirmation so a flaky sentinel never wedges the suite.
+    const MAX_DRAIN_WAIT_MS: u64 = 2_000;
+    /// Poll cadence while waiting for the sentinel event. Small enough that
+    /// the average added latency on fast filesystems is ~1 ms.
+    const POLL_INTERVAL_MS: u64 = 2;
+
+    // Phase 1: wait until the watcher reports it dropped the sentinel. Per-dir
+    // ordering guarantees all preceding writes have drained by then.
+    let deadline = Instant::now() + Duration::from_millis(MAX_DRAIN_WAIT_MS);
+    while Instant::now() < deadline && !mtp::virtual_device::was_path_dropped(&sentinel_suffix) {
+        sleep(Duration::from_millis(POLL_INTERVAL_MS)).await;
+    }
 
     // Phase 2: sync the in-memory object tree to the on-disk state.
     let result =
         mtp::virtual_device::rescan_virtual_device().ok_or_else(|| "Virtual MTP device not found".to_string())?;
     mtp::connection_manager().clear_all_listing_caches().await;
 
-    // Phase 3: brief secondary drain to absorb any straggler events the OS
-    // emitted between phase 1 and the rescan. Watcher is still paused.
-    sleep(Duration::from_millis(150)).await;
+    // Phase 3: clear the dropped-paths ring so it stays scoped to in-flight
+    // pauses (the watcher pushes into a bounded ring; clearing here is cheap
+    // and keeps the search fast for the next drain).
+    mtp::virtual_device::clear_dropped_paths();
 
-    // Phase 4: resync once more in case any rescan-window writes landed.
-    // Cheap (just a directory diff against the in-memory tree).
-    let _ = mtp::virtual_device::rescan_virtual_device();
-    mtp::connection_manager().clear_all_listing_caches().await;
-
-    // Phase 5: resume (past this point the watcher is live again).
+    // Phase 4: resume (past this point the watcher is live again).
     mtp::virtual_device::resume_virtual_watcher();
 
     Ok(result)
