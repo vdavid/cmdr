@@ -219,6 +219,9 @@ export interface SettingsValues {
 
   // Selection
   'selection.recentSelections.maxCount': number
+
+  // Onboarding (internal state, hidden from UI)
+  'onboarding.upgradeNudgeShown': boolean
 }
 
 export type SettingId = keyof SettingsValues

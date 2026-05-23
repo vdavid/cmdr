@@ -3,7 +3,7 @@
  *
  * The "update ready, restart now" toast must be suppressed during onboarding (the user just downloaded
  * the app, they'd be confused) and while the FDA-revoked re-prompt is showing. These tests cover the
- * pure predicate plus the two trigger paths (`notifyOnboardingComplete` and `setFdaPromptShowing`).
+ * pure predicate plus the two trigger paths (`notifyOnboardingComplete` and `setOnboardingShowing`).
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -80,7 +80,7 @@ import {
   _setUpdateStatusForTest,
   notifyOnboardingComplete,
   runMenuTriggeredCheck,
-  setFdaPromptShowing,
+  setOnboardingShowing,
   shouldShowUpdateToast,
   updateState,
 } from './updater.svelte'
@@ -88,28 +88,28 @@ import { formatUpdateStatus } from './update-status-text'
 
 describe('shouldShowUpdateToast', () => {
   it('returns true only when onboarded, FDA prompt closed, and status is ready', () => {
-    expect(shouldShowUpdateToast({ onboarded: true, fdaPromptShowing: false, status: 'ready' })).toBe(true)
+    expect(shouldShowUpdateToast({ onboarded: true, onboardingShowing: false, status: 'ready' })).toBe(true)
   })
 
   it('returns false while not onboarded', () => {
-    expect(shouldShowUpdateToast({ onboarded: false, fdaPromptShowing: false, status: 'ready' })).toBe(false)
+    expect(shouldShowUpdateToast({ onboarded: false, onboardingShowing: false, status: 'ready' })).toBe(false)
   })
 
   it('returns false while the FDA prompt is showing', () => {
-    expect(shouldShowUpdateToast({ onboarded: true, fdaPromptShowing: true, status: 'ready' })).toBe(false)
+    expect(shouldShowUpdateToast({ onboarded: true, onboardingShowing: true, status: 'ready' })).toBe(false)
   })
 
   it.each(['idle', 'checking', 'downloading'] as const)('returns false when status is %s', (status) => {
-    expect(shouldShowUpdateToast({ onboarded: true, fdaPromptShowing: false, status })).toBe(false)
+    expect(shouldShowUpdateToast({ onboarded: true, onboardingShowing: false, status })).toBe(false)
   })
 
   it('handles every cell of the truth table', () => {
     const statuses = ['idle', 'checking', 'downloading', 'ready'] as const
     for (const onboarded of [false, true]) {
-      for (const fdaPromptShowing of [false, true]) {
+      for (const onboardingShowing of [false, true]) {
         for (const status of statuses) {
-          const expected = onboarded && !fdaPromptShowing && status === 'ready'
-          expect(shouldShowUpdateToast({ onboarded, fdaPromptShowing, status })).toBe(expected)
+          const expected = onboarded && !onboardingShowing && status === 'ready'
+          expect(shouldShowUpdateToast({ onboarded, onboardingShowing, status })).toBe(expected)
         }
       }
     }
@@ -152,7 +152,7 @@ describe('notifyOnboardingComplete', () => {
   })
 })
 
-describe('setFdaPromptShowing', () => {
+describe('setOnboardingShowing', () => {
   beforeEach(() => {
     _resetUpdaterStateForTest()
     addToastMock.mockClear()
@@ -164,7 +164,7 @@ describe('setFdaPromptShowing', () => {
 
   it('does not show the toast on its own when flipped to true', () => {
     _setUpdateStatusForTest('ready')
-    setFdaPromptShowing(true)
+    setOnboardingShowing(true)
     expect(addToastMock).not.toHaveBeenCalled()
   })
 
@@ -173,18 +173,18 @@ describe('setFdaPromptShowing', () => {
     await notifyOnboardingComplete()
     addToastMock.mockClear()
 
-    setFdaPromptShowing(true)
+    setOnboardingShowing(true)
     expect(addToastMock).not.toHaveBeenCalled()
 
-    setFdaPromptShowing(false)
+    setOnboardingShowing(false)
     expect(addToastMock).toHaveBeenCalledTimes(1)
     expect(addToastMock.mock.calls[0][1]).toMatchObject({ id: 'update', dismissal: 'persistent' })
   })
 
   it('does not show the toast on flip-to-false when not onboarded', () => {
     _setUpdateStatusForTest('ready')
-    setFdaPromptShowing(true)
-    setFdaPromptShowing(false)
+    setOnboardingShowing(true)
+    setOnboardingShowing(false)
     expect(addToastMock).not.toHaveBeenCalled()
   })
 
@@ -192,8 +192,8 @@ describe('setFdaPromptShowing', () => {
     await notifyOnboardingComplete() // onboarded=true, status=idle
     addToastMock.mockClear()
 
-    setFdaPromptShowing(true)
-    setFdaPromptShowing(false)
+    setOnboardingShowing(true)
+    setOnboardingShowing(false)
     expect(addToastMock).not.toHaveBeenCalled()
   })
 })

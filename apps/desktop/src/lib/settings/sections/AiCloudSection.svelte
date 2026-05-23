@@ -13,7 +13,7 @@
         cloudProviderPresets,
     } from '$lib/settings'
     import { checkAiConnection, getAiApiKey, saveAiApiKey } from '$lib/tauri-commands'
-    import { pushConfigToBackend } from './ai-settings-utils'
+    import { pushConfigToBackend } from '$lib/settings/ai-config'
     import { describeSecretError, type SecretErrorMessage } from './ai-secret-error'
     import { addToast, dismissToast } from '$lib/ui/toast'
 

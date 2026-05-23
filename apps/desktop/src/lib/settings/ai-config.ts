@@ -1,8 +1,33 @@
+/**
+ * AI provider configuration plumbing shared by the settings UI, the onboarding wizard,
+ * and the live-apply listener.
+ *
+ * Two responsibilities:
+ *
+ * 1. **`pushConfigToBackend()`** — read-fresh push of the current AI provider config to
+ *    Rust. Re-reads `ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` /
+ *    `ai.localContextSize` from `getSetting(...)` on every call, fetches the matching
+ *    API key from the OS secret store, calls `configureAi(...)`. Surfaces secret-store
+ *    failures via a deduped persistent toast so a silently-broken keyring isn't invisible.
+ *    Callers MUST NOT pass cached values: the helper has read-fresh semantics so that the
+ *    "user flips provider mid-flight" race resolves to whichever provider is current at
+ *    the actual IPC moment (see `settings-applier.ts` for the listener wiring).
+ *
+ * 2. **`migrateApiKeysFromSettings()`** — one-time migration that lifts pre-launch
+ *    `apiKey` strings out of `ai.cloudProviderConfigs` (in `settings.json`) into the OS
+ *    secret store. Idempotent; once the JSON blob no longer carries an `apiKey` field
+ *    for any provider, this is a near-zero-cost no-op.
+ *
+ * Lives in `lib/settings/` (not `lib/settings/sections/`) because the function isn't
+ * UI-component-coupled — it's a service the wizard, the applier listener, and the
+ * settings UI all reach for. `sections/` is reserved for UI subcomponents.
+ */
+
 import { getSetting, setSetting, resolveCloudConfig } from '$lib/settings'
 import { configureAi, getAiApiKey, saveAiApiKey } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { addToast } from '$lib/ui/toast'
-import { describeSecretError } from './ai-secret-error'
+import { describeSecretError } from './sections/ai-secret-error'
 
 const logger = getAppLogger('ai-settings')
 
@@ -60,10 +85,17 @@ export async function migrateApiKeysFromSettings(): Promise<void> {
   }
 }
 
-/** Push current AI config (provider, context size, cloud credentials) to the Rust backend. The API
- *  key is fetched from the OS secret store; the rest comes from `settings.json`. Surfaces secret
- *  store failures as a persistent toast (deduped) so a silently-broken keyring isn't invisible to
- *  the user. */
+/**
+ * Push current AI config (provider, context size, cloud credentials) to the Rust backend. The API
+ * key is fetched from the OS secret store; the rest comes from `settings.json`. Surfaces secret
+ * store failures as a persistent toast (deduped) so a silently-broken keyring isn't invisible to
+ * the user.
+ *
+ * **Read-fresh contract (load-bearing).** Every relevant setting is re-read from `getSetting(...)`
+ * at call time. Callers MUST NOT pass cached values. The applier listener may fire while the user
+ * is still toggling things in the wizard; reading fresh means whichever provider is current at the
+ * actual IPC moment wins, which matches user expectations.
+ */
 export async function pushConfigToBackend(): Promise<void> {
   try {
     const providerId = getSetting('ai.cloudProvider')

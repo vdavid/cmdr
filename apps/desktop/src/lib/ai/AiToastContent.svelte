@@ -1,31 +1,11 @@
 <script lang="ts">
     import Button from '$lib/ui/Button.svelte'
-    import {
-        getAiState,
-        handleCancel,
-        handleDismiss,
-        handleDownload,
-        handleGotIt,
-        handleOptOut,
-    } from './ai-state.svelte'
+    import { getAiState, handleCancel, handleGotIt } from './ai-state.svelte'
 
     const aiState = getAiState()
 </script>
 
-{#if aiState.notificationState === 'offer'}
-    <div class="ai-content">
-        <span class="ai-title">AI features available</span>
-        <span class="ai-description"
-            >Download the AI model ({aiState.modelInfo?.sizeFormatted ?? '~4 GB'}) to enable smart suggestions.</span
-        >
-        <span class="ai-hint">You can add or remove AI later in settings.</span>
-    </div>
-    <div class="ai-actions">
-        <Button variant="primary" size="mini" onclick={() => void handleDownload()}>Download</Button>
-        <Button variant="secondary" size="mini" onclick={() => void handleDismiss()}>Not now</Button>
-        <button class="tertiary-link" onclick={() => void handleOptOut()}>I don't want AI</button>
-    </div>
-{:else if aiState.notificationState === 'downloading'}
+{#if aiState.notificationState === 'downloading'}
     <div class="ai-content">
         <span class="ai-title">Downloading AI model...</span>
         {#if aiState.downloadProgress && aiState.downloadProgress.totalBytes > 0}
@@ -93,12 +73,6 @@
         line-height: 1.4;
     }
 
-    .ai-hint {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        margin-top: var(--spacing-xs);
-    }
-
     .ai-progress-text {
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
@@ -126,23 +100,5 @@
         gap: var(--spacing-xs);
         justify-content: flex-end;
         margin-top: var(--spacing-xs);
-    }
-
-    .tertiary-link {
-        background: transparent;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
-        border: none;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        transition: all var(--transition-base);
-    }
-
-    .tertiary-link:hover {
-        color: var(--color-text-secondary);
-    }
-
-    .tertiary-link:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 1px;
     }
 </style>

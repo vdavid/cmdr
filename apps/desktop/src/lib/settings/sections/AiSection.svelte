@@ -16,7 +16,7 @@
     } from '$lib/tauri-commands'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
-    import { pushConfigToBackend } from './ai-settings-utils'
+    import { pushConfigToBackend } from '$lib/settings/ai-config'
     import AiCloudSection from './AiCloudSection.svelte'
     import AiLocalSection from './AiLocalSection.svelte'
 

@@ -1,17 +1,14 @@
 # Onboarding revamp — context bundle
 
-Frozen record of every decision David made before the plan was written. The plan
-lives in `onboarding-revamp-plan.md`; this file is the "why" the plan refers
-back to. Don't edit this once the plan is approved — re-open the discussion in
+Frozen record of every decision David made before the plan was written. The plan lives in `onboarding-revamp-plan.md`;
+this file is the "why" the plan refers back to. Don't edit this once the plan is approved — re-open the discussion in
 the plan instead.
 
 ## The change in one sentence
 
-Replace the single Full Disk Access (FDA) modal with a multi-step, soft-sheet
-onboarding wizard that covers ~90% of the viewport over the main UI, with two
-required steps (FDA decision, AI provider) and one optional step (Networking /
-Indexing / Updates / MTP), plus the ability to re-open from the menu and
-command palette.
+Replace the single Full Disk Access (FDA) modal with a multi-step, soft-sheet onboarding wizard that covers ~90% of the
+viewport over the main UI, with two required steps (FDA decision, AI provider) and one optional step (Networking /
+Indexing / Updates / MTP), plus the ability to re-open from the menu and command palette.
 
 ## David's draft copy (verbatim — do not paraphrase in implementation)
 
@@ -46,17 +43,9 @@ Three branches depending on FDA outcome:
 - **FDA granted (detected via `checkFullDiskAccess()` on step transition):**
   `Thanks for granting Full Disk Access! Now, the app can access your disk. Great!`
 - **FDA denied:**
-  `You chose not to enable Full Disk Access. We respect that. You'll then shortly
-  get a few permission requests from macOS for Cmdr to access your Desktop,
-  Downloads, and similar folders. Accept/reject these at will. You can change
-  all of this later in your System Settings.`
-- **User clicked "Allow" but FDA still not granted (e.g. didn't toggle in
-  Settings, or didn't restart):**
-  `You said you wanted to enable Full Disk Access, but Cmdr doesn't seem to
-  have gotten it. You might need to restart the app (do it now! We'll continue
-  from here!) or go to your System Settings > Privacy & Security > [Full Disk
-  Access](deep-link via openPrivacySettings) and find Cmdr or manually add it
-  with the little "+" button at the bottom.`
+  `You chose not to enable Full Disk Access. We respect that. You'll then shortly get a few permission requests from macOS for Cmdr to access your Desktop, Downloads, and similar folders. Accept/reject these at will. You can change all of this later in your System Settings.`
+- **User clicked "Allow" but FDA still not granted (e.g. didn't toggle in Settings, or didn't restart):**
+  `You said you wanted to enable Full Disk Access, but Cmdr doesn't seem to have gotten it. You might need to restart the app (do it now! We'll continue from here!) or go to your System Settings > Privacy & Security > [Full Disk Access](deep-link via openPrivacySettings) and find Cmdr or manually add it with the little "+" button at the bottom.`
 
 Then:
 
@@ -155,101 +144,76 @@ Button: [Start using Cmdr]
 
 ### Pre-questions round 1
 
-1. **AI default**: change from `'local'` to `'off'`. The existing post-FDA AI
-   offer toast goes away — the wizard becomes the only path to enable AI on
-   first launch.
-2. **Cloud providers in step 2**: show all 15 from `cloud-providers.ts`,
-   scrollable list. Not a curated subset.
-3. **"Bring a Claude Code / ChatGPT subscription"**: out of scope for now.
-   API key only.
-4. **FDA "allow but didn't grant" detection**: one-shot `checkFullDiskAccess()`
-   call on step 2 entry, choose copy branch from the result. No polling.
+1. **AI default**: change from `'local'` to `'off'`. The existing post-FDA AI offer toast goes away — the wizard becomes
+   the only path to enable AI on first launch.
+2. **Cloud providers in step 2**: show all 15 from `cloud-providers.ts`, scrollable list. Not a curated subset.
+3. **"Bring a Claude Code / ChatGPT subscription"**: out of scope for now. API key only.
+4. **FDA "allow but didn't grant" detection**: one-shot `checkFullDiskAccess()` call on step 2 entry, choose copy branch
+   from the result. No polling.
 5. **Step 3 settings**:
-   - Networking on/off: set `network.enabled`. Don't proactively trigger the
-     macOS Local Network prompt (it fires on first SMB action via the existing
-     `network.firstTriggerDone` flow).
-   - Drive indexing on/off: set `indexing.enabled`. Settings-applier already
-     starts/stops the runtime. Cache cleanup behaviour is out of scope here.
+   - Networking on/off: set `network.enabled`. Don't proactively trigger the macOS Local Network prompt (it fires on
+     first SMB action via the existing `network.firstTriggerDone` flow).
+   - Drive indexing on/off: set `indexing.enabled`. Settings-applier already starts/stops the runtime. Cache cleanup
+     behaviour is out of scope here.
    - Auto updates: set `updates.autoCheck`.
-   - MTP: set `fileOperations.mtpEnabled`.
-   Step 3 is mostly about giving users a chance to turn things OFF with full
-   context. Defaults stay on.
-6. **Soft dialog component**: new component `OnboardingWizard.svelte` (not a
-   variant of `ModalDialog`). Own backdrop blur, no drag, no Escape, no ×
-   button, full-bleed rounded panel sized to ~90% of viewport. Adds
-   `'onboarding'` to `SOFT_DIALOG_REGISTRY`.
-7. **Existing users on upgrade**: silent skip of the wizard (they have
-   `isOnboarded: true`) PLUS a one-time `info` toast nudging them that the
-   `Cmdr > Onboarding…` menu item now exists, so they can review the new
-   options if curious. Toast fires once and never again (gated by a new hidden
-   setting, e.g. `onboarding.upgradeNudgeShown`).
-8. **App behind wizard**: render the full app behind the wizard backdrop
-   normally (no "white screen until wizard done"). First-launch lands on `~`,
-   so what peeks through the edges is friendly.
-9. **Keyboard contract**: Tab cycles within step; Enter on primary advances;
-   Escape disabled (no accidental dismiss); provider list supports arrows +
-   type-to-jump.
-10. **Mount point**: `routes/(main)/+page.svelte`. Replace `showFdaPrompt` with
-    `showOnboarding`, replace `handleFdaComplete` with the wizard's overall
-    `onComplete`.
+   - MTP: set `fileOperations.mtpEnabled`. Step 3 is mostly about giving users a chance to turn things OFF with full
+     context. Defaults stay on.
+6. **Soft dialog component**: new component `OnboardingWizard.svelte` (not a variant of `ModalDialog`). Own backdrop
+   blur, no drag, no Escape, no × button, full-bleed rounded panel sized to ~90% of viewport. Adds `'onboarding'` to
+   `SOFT_DIALOG_REGISTRY`.
+7. **Existing users on upgrade**: silent skip of the wizard (they have `isOnboarded: true`) PLUS a one-time `info` toast
+   nudging them that the `Cmdr > Onboarding…` menu item now exists, so they can review the new options if curious. Toast
+   fires once and never again (gated by a new hidden setting, e.g. `onboarding.upgradeNudgeShown`).
+8. **App behind wizard**: render the full app behind the wizard backdrop normally (no "white screen until wizard done").
+   First-launch lands on `~`, so what peeks through the edges is friendly.
+9. **Keyboard contract**: Tab cycles within step; Enter on primary advances; Escape disabled (no accidental dismiss);
+   provider list supports arrows + type-to-jump.
+10. **Mount point**: `routes/(main)/+page.svelte`. Replace `showFdaPrompt` with `showOnboarding`, replace
+    `handleFdaComplete` with the wizard's overall `onComplete`.
 
 ### Pre-questions round 2
 
-1. **Re-invocation from menu / palette**: always start at step 1. If FDA is
-   already granted, step 1 copy reflects that ("Cmdr currently has Full Disk
-   Access. You can revoke any time in System Settings.") with a single "Next"
-   button.
-2. **Back button + FDA**: leave the FDA buttons live on step 1. User can change
-   their mind any time. "Allow" still requires the real macOS grant + restart;
-   the wizard cannot fake it.
-3. **Step 3 indexing cache cleanup**: out of scope. Step 3 only flips
-   `indexing.enabled`; existing settings-applier handles the runtime stop.
-4. **Subscription auth placeholder**: leave out entirely. No "Coming soon"
-   affordance.
+1. **Re-invocation from menu / palette**: always start at step 1. If FDA is already granted, step 1 copy reflects that
+   ("Cmdr currently has Full Disk Access. You can revoke any time in System Settings.") with a single "Next" button.
+2. **Back button + FDA**: leave the FDA buttons live on step 1. User can change their mind any time. "Allow" still
+   requires the real macOS grant + restart; the wizard cannot fake it.
+3. **Step 3 indexing cache cleanup**: out of scope. Step 3 only flips `indexing.enabled`; existing settings-applier
+   handles the runtime stop.
+4. **Subscription auth placeholder**: leave out entirely. No "Coming soon" affordance.
 
 ### Pre-questions round 3
 
-1. **Local-model download timing**: kick off download in the **background as
-   soon as the user picks the private/local option in step 2**, with no
-   in-wizard progress UI. If they switch away, cancel; if they switch back,
-   re-`startAiDownload()` and let the existing HTTP-Range resume pick up. The
-   existing toast can show in the corner if it does — fine either way; do NOT
-   add suppression logic for it.
-2. **Mid-flow crash recovery**: each step persists its decision on advance.
-   `isOnboarded` only flips on full completion. Next launch starts at the
-   first not-yet-decided step. After step 1 + restart, the user lands directly
-   on step 2 (which is the dominant "Allow + restart" flow).
-3. **Linux**: skip step 1 entirely. Step 2 leads with `Welcome to Cmdr!` and
-   no FDA-related copy.
-4. **Step indicator**: subtle dot row at the top, with the optional step's
-   dot styled distinctly (open / muted) so users see "2 mandatory + 1
-   optional", not endless.
-5. **Back button**: `←` button bottom-left with tooltip `Back`. Always lets the
-   user return to a previous step.
-6. **Re-entry points**: add `Cmdr > Onboarding…` menu item (place under "Check
-   for updates" in the app menu) and add a command-palette command for the
-   same. Both routes call the same trigger.
+1. **Local-model download timing**: kick off download in the **background as soon as the user picks the private/local
+   option in step 2**, with no in-wizard progress UI. If they switch away, cancel; if they switch back,
+   re-`startAiDownload()` and let the existing HTTP-Range resume pick up. The existing toast can show in the corner if
+   it does — fine either way; do NOT add suppression logic for it.
+2. **Mid-flow crash recovery**: each step persists its decision on advance. `isOnboarded` only flips on full completion.
+   Next launch starts at the first not-yet-decided step. After step 1 + restart, the user lands directly on step 2
+   (which is the dominant "Allow + restart" flow).
+3. **Linux**: skip step 1 entirely. Step 2 leads with `Welcome to Cmdr!` and no FDA-related copy.
+4. **Step indicator**: subtle dot row at the top, with the optional step's dot styled distinctly (open / muted) so users
+   see "2 mandatory + 1 optional", not endless.
+5. **Back button**: `←` button bottom-left with tooltip `Back`. Always lets the user return to a previous step.
+6. **Re-entry points**: add `Cmdr > Onboarding…` menu item (place under "Check for updates" in the app menu) and add a
+   command-palette command for the same. Both routes call the same trigger.
 
 ### Pre-questions round 4
 
 1. **Menu re-invocation lands on step 1.**
-2. **Back from step 2 leaves FDA buttons live** (the test for FDA-already-granted
-   collapses step 1 to a single-Next variant, see round 2 #1).
+2. **Back from step 2 leaves FDA buttons live** (the test for FDA-already-granted collapses step 1 to a single-Next
+   variant, see round 2 #1).
 3. **Step 3 indexing-cache cleanup out of scope** (confirmed twice).
 4. **Subscription placeholder excluded** (confirmed twice).
-5. **Design shift sanctioned**: lift cues from the recently redesigned Settings
-   (more rounded, macOS-sheet vibe, frosted backdrop). Any new tokens or
-   patterns introduced for the wizard go into `docs/design-system.md`. Don't
-   leave them stranded in the wizard's scoped styles.
+5. **Design shift sanctioned**: lift cues from the recently redesigned Settings (more rounded, macOS-sheet vibe, frosted
+   backdrop). Any new tokens or patterns introduced for the wizard go into `docs/design-system.md`. Don't leave them
+   stranded in the wizard's scoped styles.
 
 ## Things to preserve from `FullDiskAccessPrompt.svelte`
 
-- The TCC re-probe before `openPrivacySettings()` (without it Cmdr doesn't
-  appear in the FDA list — critical).
+- The TCC re-probe before `openPrivacySettings()` (without it Cmdr doesn't appear in the FDA list — critical).
 - Ventura vs older copy switch via `getMacosMajorVersion()`.
-- The "Tip: click '+' button at the bottom" fallback for the macOS 26 Tahoe
-  regression. Lives in step 1's instructions and the "didn't get FDA" branch
-  copy on step 2.
+- The "Tip: click '+' button at the bottom" fallback for the macOS 26 Tahoe regression. Lives in step 1's instructions
+  and the "didn't get FDA" branch copy on step 2.
 - `systemStrings.systemSettings` for the localized System Settings pane name.
 - `startIndexingAfterFdaDecision()` on Deny.
 - The "Cmdr is source-available" GitHub link in the Con bullet.
@@ -259,67 +223,51 @@ Button: [Start using Cmdr]
 The post-FDA "Download AI?" offer toast must go away:
 
 - Delete the `'offer'` state in `AiToastContent.svelte` (and its switch case).
-- Delete the `pendingOffer` field and `notifyAiOnboardingComplete()` from
-  `ai-state.svelte.ts`.
-- Delete the `onboarded` gate that suppresses Offer at startup (the wizard now
-  owns first-launch AI consent).
+- Delete the `pendingOffer` field and `notifyAiOnboardingComplete()` from `ai-state.svelte.ts`.
+- Delete the `onboarded` gate that suppresses Offer at startup (the wizard now owns first-launch AI consent).
 - Stop calling `notifyAiOnboardingComplete()` from `routes/(main)/+page.svelte`.
-- Keep the runtime toast states (`downloading`, `installing`, `ready`,
-  `starting`) — they're useful while the local model downloads after a wizard
-  pick.
-- The `dismissAiOffer` and `optOutAi` Tauri commands may have no callers after
-  this cleanup. Decide per-call-site whether to delete them or keep them for
-  future settings-side use.
+- Keep the runtime toast states (`downloading`, `installing`, `ready`, `starting`) — they're useful while the local
+  model downloads after a wizard pick.
+- The `dismissAiOffer` and `optOutAi` Tauri commands may have no callers after this cleanup. Decide per-call-site
+  whether to delete them or keep them for future settings-side use.
 
 ## Testing strategy
 
 - **Env vars** (mirror the `CMDR_MOCK_LICENSE` pattern):
-  - `CMDR_FORCE_ONBOARDING=1` (frontend, in `routes/(main)/+page.svelte`) —
-    override the `isOnboarded` gate so the wizard always shows.
-  - `CMDR_MOCK_FDA=granted|denied|notgranted` (backend, in
-    `permissions.rs::check_full_disk_access`) — override the TCC probe so all
-    four step-2 branches can be tested without ever opening real System
-    Settings.
-- **Tier 3 Vitest** (component a11y + behaviour): one file per step. Mount,
-  walk keyboard, assert.
-- **Tier 2 Playwright**: one spec walking the full happy path (Allow + grant,
-  pick cloud → enter mock API key → pick model → step 3 → finish) and the
-  edge-case branches (Allow + didn't grant, Deny, Linux skip-step-1,
-  re-entry from menu).
+  - `CMDR_FORCE_ONBOARDING=1` (frontend, in `routes/(main)/+page.svelte`) — override the `isOnboarded` gate so the
+    wizard always shows.
+  - `CMDR_MOCK_FDA=granted|denied|notgranted` (backend, in `permissions.rs::check_full_disk_access`) — override the TCC
+    probe so all four step-2 branches can be tested without ever opening real System Settings.
+- **Tier 3 Vitest** (component a11y + behaviour): one file per step. Mount, walk keyboard, assert.
+- **Tier 2 Playwright**: one spec walking the full happy path (Allow + grant, pick cloud → enter mock API key → pick
+  model → step 3 → finish) and the edge-case branches (Allow + didn't grant, Deny, Linux skip-step-1, re-entry from
+  menu).
 - **Real-API smoke**: David's OpenAI key lives in macOS Keychain:
-  `security find-generic-password -s OPENAI_API_KEY -a veszelovszki -w`.
-  Use `gpt-5.5` model. He has $2500 credits expiring in a week — go wild.
-  Use this to verify the cloud connection-check pipeline ends-to-ends with a
-  real provider, at least once per milestone that touches AI.
+  `security find-generic-password -s OPENAI_API_KEY -a veszelovszki -w`. Use `gpt-5.5` model. He has $2500 credits
+  expiring in a week — go wild. Use this to verify the cloud connection-check pipeline ends-to-ends with a real
+  provider, at least once per milestone that touches AI.
 - **Each E2E test ≤ 1–2 s**. If a wizard spec takes longer, restructure.
-- Don't fix the pre-existing failing test `File viewer selection and copy ›
-  drag within viewport selects the dragged range` — another agent has it.
+- Don't fix the pre-existing failing test
+  `File viewer selection and copy › drag within viewport selects the dragged range` — another agent has it.
 
 ## Notes for the planning agent
 
 - The plan goes in `docs/specs/onboarding-revamp-plan.md` (sibling of this file).
-- Reference this file with relative links; don't restate David's copy verbatim
-  in the plan, just point back here.
-- Use milestones. Each milestone must end with a committable state, full
-  `./scripts/check.sh` green, and `--only-slow` green (per the user's
-  workflow). Suggested milestones (the planner is free to refactor):
-  1. Foundations: context bundle (done), wizard skeleton component, dialog
-     registry entry, mount point swap, env-var mocks, settings registry
-     additions, AI default flip, AI toast cleanup. End state: wizard renders an
-     empty 90% sheet with step dots and Back button.
-  2. Step 1 (FDA): port and adapt `FullDiskAccessPrompt.svelte` content into
-     the new step. Re-entry variant when FDA already granted. Linux skip.
-  3. Step 2 (AI): the meaty one. Provider list (left), per-provider
-     instructions with embedded API-key flow (right), three radio choices,
-     three FDA-state copy branches, local-model background download
-     orchestration.
+- Reference this file with relative links; don't restate David's copy verbatim in the plan, just point back here.
+- Use milestones. Each milestone must end with a committable state, full `./scripts/check.sh` green, and `--only-slow`
+  green (per the user's workflow). Suggested milestones (the planner is free to refactor):
+  1. Foundations: context bundle (done), wizard skeleton component, dialog registry entry, mount point swap, env-var
+     mocks, settings registry additions, AI default flip, AI toast cleanup. End state: wizard renders an empty 90% sheet
+     with step dots and Back button.
+  2. Step 1 (FDA): port and adapt `FullDiskAccessPrompt.svelte` content into the new step. Re-entry variant when FDA
+     already granted. Linux skip.
+  3. Step 2 (AI): the meaty one. Provider list (left), per-provider instructions with embedded API-key flow (right),
+     three radio choices, three FDA-state copy branches, local-model background download orchestration.
   4. Step 3 (optional): four toggles with the long-form explanations.
-  5. Re-entry: menu item, command palette command, upgrade-nudge toast for
-     legacy users. Plus `--only-slow` and a real-API smoke run.
-  6. Polish: design-system updates, docs sweep (architecture.md,
-     onboarding/CLAUDE.md, ai/CLAUDE.md, ui/CLAUDE.md as applicable),
-     a11y audits (tier 3 per component, tier 2 wizard spec), final
-     `./scripts/check.sh --include-slow`.
+  5. Re-entry: menu item, command palette command, upgrade-nudge toast for legacy users. Plus `--only-slow` and a
+     real-API smoke run.
+  6. Polish: design-system updates, docs sweep (architecture.md, onboarding/CLAUDE.md, ai/CLAUDE.md, ui/CLAUDE.md as
+     applicable), a11y audits (tier 3 per component, tier 2 wizard spec), final `./scripts/check.sh --include-slow`.
 - Read these in full before drafting:
   - `AGENTS.md`
   - `docs/architecture.md`
@@ -341,5 +289,4 @@ The post-FDA "Download AI?" offer toast must go away:
   - `apps/desktop/src/lib/settings/settings-registry.ts`
   - `apps/desktop/src/lib/ui/ModalDialog.svelte`
   - `apps/desktop/src/lib/ui/dialog-registry.ts`
-  - `apps/desktop/src/routes/(main)/+page.svelte` (FDA orchestration around
-    lines 420–570)
+  - `apps/desktop/src/routes/(main)/+page.svelte` (FDA orchestration around lines 420–570)

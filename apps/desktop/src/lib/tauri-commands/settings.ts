@@ -277,19 +277,9 @@ export async function cancelAiDownload(): Promise<void> {
   await commands.cancelAiDownload()
 }
 
-/** Dismisses the AI offer notification for 7 days. */
-export async function dismissAiOffer(): Promise<void> {
-  await commands.dismissAiOffer()
-}
-
 /** Uninstalls the AI model and binary, resets state. */
 export async function uninstallAi(): Promise<void> {
   await commands.uninstallAi()
-}
-
-/** Permanently opts out of AI features. Can be re-enabled in settings. */
-export async function optOutAi(): Promise<void> {
-  await commands.optOutAi()
 }
 
 /** Re-enables AI features after opting out. */
@@ -395,6 +385,20 @@ export async function getE2eStartPath(): Promise<string | null> {
 export async function isE2eMode(): Promise<boolean> {
   try {
     return await commands.isE2eMode()
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Returns true when `CMDR_FORCE_ONBOARDING` is set in the running binary's environment.
+ * The frontend uses this to bypass the `isOnboarded` gate and surface the onboarding wizard
+ * regardless of persisted state. Returns false when not set, or when the backend isn't
+ * reachable (non-Tauri context, like a Vitest run).
+ */
+export async function isForceOnboarding(): Promise<boolean> {
+  try {
+    return await commands.isForceOnboarding()
   } catch {
     return false
   }

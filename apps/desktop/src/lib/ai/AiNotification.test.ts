@@ -3,17 +3,14 @@ import { mount, flushSync } from 'svelte'
 
 vi.mock('./ai-state.svelte', () => ({
   getAiState: vi.fn(),
-  handleDownload: vi.fn(),
   handleCancel: vi.fn(),
-  handleDismiss: vi.fn(),
-  handleOptOut: vi.fn(),
   handleGotIt: vi.fn(),
 }))
 
-import { getAiState, handleDownload, handleCancel, handleDismiss, handleOptOut, handleGotIt } from './ai-state.svelte'
+import { getAiState, handleCancel, handleGotIt } from './ai-state.svelte'
 import AiToastContent from './AiToastContent.svelte'
 
-type AiNotificationState = 'hidden' | 'offer' | 'downloading' | 'installing' | 'ready' | 'starting'
+type AiNotificationState = 'hidden' | 'downloading' | 'installing' | 'ready' | 'starting'
 
 let mockState = {
   notificationState: 'hidden' as AiNotificationState,
@@ -28,8 +25,6 @@ let mockState = {
     baseOverheadBytes: 3500000000,
   },
   downloadToastUserDismissed: false,
-  onboarded: true,
-  pendingOffer: false,
 }
 
 function mountToast() {
@@ -54,73 +49,13 @@ describe('AiToastContent', () => {
         baseOverheadBytes: 3500000000,
       },
       downloadToastUserDismissed: false,
-      onboarded: true,
-      pendingOffer: false,
     }
     vi.mocked(getAiState).mockReturnValue(mockState)
-  })
-
-  it('renders offer notification with download size and settings hint', () => {
-    mockState.notificationState = 'offer'
-    const target = mountToast()
-
-    const description = target.querySelector('.ai-description')
-    expect(description?.textContent).toContain('2.1 GB')
-
-    const hint = target.querySelector('.ai-hint')
-    expect(hint?.textContent).toContain('settings')
   })
 
   it('renders nothing when state is hidden', () => {
     const target = mountToast()
     expect(target.querySelector('.ai-content')).toBeNull()
-  })
-
-  it("renders offer notification with Download, Not now, and I don't want AI buttons", () => {
-    mockState.notificationState = 'offer'
-    const target = mountToast()
-
-    const title = target.querySelector('.ai-title')
-    expect(title?.textContent).toBe('AI features available')
-
-    const buttons = target.querySelectorAll('.ai-actions button')
-    expect(buttons).toHaveLength(3)
-    expect(buttons[0].textContent).toBe('Download')
-    expect(buttons[1].textContent).toBe('Not now')
-    expect(buttons[2].textContent).toBe("I don't want AI")
-  })
-
-  it('calls handleDownload when Download is clicked', () => {
-    mockState.notificationState = 'offer'
-    const target = mountToast()
-
-    const downloadButton = target.querySelector('.btn-primary') as HTMLButtonElement
-    downloadButton.click()
-    flushSync()
-
-    expect(handleDownload).toHaveBeenCalledOnce()
-  })
-
-  it('calls handleDismiss when Not now is clicked', () => {
-    mockState.notificationState = 'offer'
-    const target = mountToast()
-
-    const dismissButton = target.querySelector('.btn-secondary') as HTMLButtonElement
-    dismissButton.click()
-    flushSync()
-
-    expect(handleDismiss).toHaveBeenCalledOnce()
-  })
-
-  it("calls handleOptOut when I don't want AI is clicked", () => {
-    mockState.notificationState = 'offer'
-    const target = mountToast()
-
-    const optOutButton = target.querySelector('.tertiary-link') as HTMLButtonElement
-    optOutButton.click()
-    flushSync()
-
-    expect(handleOptOut).toHaveBeenCalledOnce()
   })
 
   it('renders downloading state with progress text', () => {

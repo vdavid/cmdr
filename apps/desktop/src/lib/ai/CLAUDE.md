@@ -31,25 +31,17 @@ Settings `ai.provider`, `ai.openaiApiKey`, `ai.openaiBaseUrl`, `ai.openaiModel`,
 `settings-registry.ts`. The main layout calls `configureAi(...)` after `initSettingsApplier()` to push config to
 backend.
 
-### Onboarding gate suppresses the offer toast
+### The wizard owns AI consent
 
-While first-launch onboarding (the FDA prompt) is on screen, the AI offer toast is suppressed so it doesn't pile on top
-of the modal. `initAiState()` seeds `aiState.onboarded` from `loadSettings().isOnboarded`. When the backend reports
-`Offer` and `onboarded === false`, `updateNotificationFromStatus()` keeps `notificationState = 'hidden'` and sets
-`aiState.pendingOffer = true`.
+First-launch AI consent moved out of this module: `OnboardingWizard.svelte` (in `$lib/onboarding/`) step 2 is the only
+path that flips `ai.provider` from `'off'` (the new default) to `'cloud'` or `'local'` on a fresh install. There is no
+`offer` toast anymore. `ai-state.svelte.ts` only tracks runtime states (`downloading`, `installing`, `ready`,
+`starting`) — the toast surfaces those when the wizard's local-pick kicks off a model download or when the server boots
+on a returning launch. `pendingOffer` / `onboarded` / `notifyAiOnboardingComplete` are gone with the offer.
 
-`notifyAiOnboardingComplete()` is called from `routes/(main)/+page.svelte` whenever the FDA prompt closes (Allow or Deny
-path) or for legacy users who never saw the prompt. It flips `onboarded` and, if `pendingOffer` is true, surfaces the
-offer right then. The Allow path also restarts the app; on next launch `isOnboarded` is already true so the gate doesn't
-engage at all.
-
-This mirrors the updater module's pattern in `$lib/updates/updater.svelte.ts` (`onboarded` + `notifyOnboardingComplete`)
-Same gate, same opening event, two independent toasts.
-
-### 7-day dismissal, permanent opt-out
-
-"Not now" hides offer for 7 days (`dismissedUntil` timestamp in state). "I don't want AI" sets `opted_out: true`
-(permanent). Re-enable via Settings.
+The settings-applier listens for `ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` changes and pushes the
+fresh config to Rust via `lib/settings/ai-config.ts::pushConfigToBackend()`. Same helper, same read-fresh semantics —
+this means the wizard's step 2 doesn't need to know about backend wiring beyond `setSetting(...)`.
 
 ### Model registry is extensible
 
@@ -76,8 +68,8 @@ provide checksums); file size check only.
   the downloading toast. While true, `ai-toast-sync.svelte.ts` won't re-add the toast even if the effect re-runs. The X
   only hides the toast; the Rust download loop in `manager.rs` (`do_download`) keeps going because nothing sets
   `cancel_requested`. Only the inline "Cancel" button calls `cancelAiDownload()` and aborts the actual download. The
-  flag resets in `handleDownload()` so the next download run shows the toast again. Other state transitions (offer,
-  installing, ready, starting) ignore the flag and always render; they're fresh signals.
+  flag resets when a new download run starts (the wizard's local-pick triggers `startAiDownload()` again). Other state
+  transitions (installing, ready, starting) ignore the flag and always render; they're fresh signals.
 - **Status transitions are frontend-driven**: Backend emits `ai-download-progress` and `ai-install-complete` events.
   Frontend interprets these to update `aiStatus`. Backend has no "status" concept; just `AiState` (installed/port/pid).
 - **llama-server is NOT auto-restarted**: Health monitoring (periodic restart on crash) is deferred. If server crashes,

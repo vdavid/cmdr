@@ -22,10 +22,12 @@ function getCheckIntervalMs(): number {
   return getSetting('advanced.updateCheckInterval')
 }
 
-// Module-level gating flags. The toast for "update ready, restart now" must NOT show during onboarding
-// (the user just downloaded the app, so they'd be confused) nor while the FDA-revoked re-prompt is on screen.
+// Module-level gating flags. The toast for "update ready, restart now" must NOT show during
+// onboarding (the user just downloaded the app, so they'd be confused) nor while any of the
+// onboarding wizard's steps are on screen. `onboardingShowing` covers the legacy FDA modal AND
+// the new wizard's full lifecycle (all three steps); the renamed setter reflects that.
 let onboarded = $state(false)
-let fdaPromptShowing = $state(false)
+let onboardingShowing = $state(false)
 
 /**
  * Pure predicate for whether the "update ready" toast should show right now.
@@ -33,10 +35,10 @@ let fdaPromptShowing = $state(false)
  */
 export function shouldShowUpdateToast(args: {
   onboarded: boolean
-  fdaPromptShowing: boolean
+  onboardingShowing: boolean
   status: UpdateState['status']
 }): boolean {
-  return args.onboarded && !args.fdaPromptShowing && args.status === 'ready'
+  return args.onboarded && !args.onboardingShowing && args.status === 'ready'
 }
 
 /**
@@ -45,7 +47,7 @@ export function shouldShowUpdateToast(args: {
  * so the download stays applied; the toast just doesn't render until the gate opens.
  */
 function showUpdateToast(): void {
-  if (!shouldShowUpdateToast({ onboarded, fdaPromptShowing, status: updateState.status })) {
+  if (!shouldShowUpdateToast({ onboarded, onboardingShowing, status: updateState.status })) {
     return
   }
   addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })
@@ -63,12 +65,15 @@ export async function notifyOnboardingComplete(): Promise<void> {
 }
 
 /**
- * Track whether the FDA prompt is on screen. While it's up, suppress the update toast so we don't
- * pile two modals on top of each other. When it closes and an update is ready, re-attempt the toast.
+ * Track whether the onboarding wizard (or legacy FDA modal) is on screen. While it's up, suppress
+ * the update toast so we don't pile two modals on top of each other. When it closes and an update
+ * is ready, re-attempt the toast. The flag spans all three wizard steps, not just step 1: the
+ * user is still onboarding while picking an AI provider or flipping optional toggles, and the
+ * "restart to update" toast would be just as confusing landing on step 2 as on step 1.
  */
-export function setFdaPromptShowing(value: boolean): void {
-  const wasShowing = fdaPromptShowing
-  fdaPromptShowing = value
+export function setOnboardingShowing(value: boolean): void {
+  const wasShowing = onboardingShowing
+  onboardingShowing = value
   if (wasShowing && !value) {
     showUpdateToast()
   }
@@ -263,7 +268,7 @@ export function startUpdateChecker(): () => void {
  */
 export function _resetUpdaterStateForTest(): void {
   onboarded = false
-  fdaPromptShowing = false
+  onboardingShowing = false
   updateState.status = 'idle'
   updateState.update = null
   updateState.error = null

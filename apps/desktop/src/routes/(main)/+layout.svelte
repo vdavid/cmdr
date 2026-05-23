@@ -30,7 +30,7 @@
         type CrashReport,
     } from '$lib/tauri-commands'
     import { getSetting, resolveCloudConfig } from '$lib/settings'
-    import { migrateApiKeysFromSettings } from '$lib/settings/sections/ai-settings-utils'
+    import { migrateApiKeysFromSettings } from '$lib/settings/ai-config'
     import { initAiState } from '$lib/ai/ai-state.svelte'
     import { initAiToastSync } from '$lib/ai/ai-toast-sync.svelte'
     import { addToast } from '$lib/ui/toast'

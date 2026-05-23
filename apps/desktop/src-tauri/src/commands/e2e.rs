@@ -19,6 +19,20 @@ pub fn is_e2e_mode() -> bool {
     crate::test_mode::is_e2e_mode()
 }
 
+/// Returns `true` when `CMDR_FORCE_ONBOARDING` is set, regardless of value.
+///
+/// The frontend uses this to bypass the `isOnboarded` gate and force the
+/// onboarding wizard open on every launch (mirrors `CMDR_MOCK_LICENSE` /
+/// `CMDR_E2E_MODE`). Pair with `CMDR_MOCK_FDA` (in `permissions.rs`) to
+/// drive each step's variants without ever touching real System Settings.
+///
+/// Synchronous + no filesystem access, so no `blocking_with_timeout` needed.
+#[tauri::command]
+#[specta::specta]
+pub fn is_force_onboarding() -> bool {
+    std::env::var("CMDR_FORCE_ONBOARDING").is_ok()
+}
+
 /// Sets the per-file copy throttle (milliseconds) for the next write operation.
 ///
 /// `None` clears the override. Tests use this to slow down the copy loop by a

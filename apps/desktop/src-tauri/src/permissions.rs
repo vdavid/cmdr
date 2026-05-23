@@ -110,9 +110,32 @@ fn try_read_dir_parent(path: &Path) -> std::io::Result<()> {
 /// maximize the chance one of the access paths threads the needle, on a
 /// denial we fire all three: raw `read`, `mmap`, `NSData`, plus a
 /// `read_dir` of the parent directory.
+///
+/// `CMDR_MOCK_FDA` test override (macOS-only short-circuit, mirrors
+/// `CMDR_MOCK_LICENSE`): set to `granted` to force `true`, or `denied` /
+/// `notgranted` to force `false`. The wizard distinguishes "denied" (user
+/// clicked Deny last step) vs "notgranted" (user clicked Allow but TCC
+/// still says no) via the persisted `fullDiskAccessChoice` setting; this
+/// mock only controls the OS-level signal so all four step-2 banner
+/// branches can be tested without ever opening real System Settings.
 #[tauri::command]
 #[specta::specta]
 pub fn check_full_disk_access() -> bool {
+    if let Ok(mock) = std::env::var("CMDR_MOCK_FDA") {
+        match mock.as_str() {
+            "granted" => {
+                log::debug!(target: "fda_probe", "CMDR_MOCK_FDA=granted → returning true (test override)");
+                return true;
+            }
+            "denied" | "notgranted" => {
+                log::debug!(target: "fda_probe", "CMDR_MOCK_FDA={} → returning false (test override)", mock);
+                return false;
+            }
+            other => {
+                log::warn!(target: "fda_probe", "CMDR_MOCK_FDA={:?} not recognized; falling through to real probe", other);
+            }
+        }
+    }
     for path in fda_probe_files() {
         match try_read_byte(&path) {
             Ok(()) => {

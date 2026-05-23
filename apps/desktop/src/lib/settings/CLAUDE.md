@@ -234,7 +234,16 @@ row intentionally spans the full width.
   `+layout.svelte` to resolve the effective base URL and model. The API key is fetched separately from the OS secret
   store via `getAiApiKey(providerId)` before calling `configureAi`.
 - **settings-search.ts**: Fuzzy search over setting definitions; returns ranked matches with highlight ranges
-- **settings-applier.ts**: Listens for setting changes and applies side effects (CSS vars, backend config sync)
+- **settings-applier.ts**: Listens for setting changes and applies side effects (CSS vars, backend config sync). The
+  `passthroughBackendHandlers` table includes three entries for `ai.provider` / `ai.cloudProvider` /
+  `ai.cloudProviderConfigs` that all call `ai-config.ts::pushConfigToBackend()`. The helper re-reads every relevant
+  setting fresh at call time, so callers MUST NOT pass cached values — whichever provider/key/model is current at the
+  IPC moment wins. This is the wiring that makes Settings AI-provider changes hot-apply without restart, and that lets
+  the onboarding wizard's step 2 just call `setSetting(...)` and have the backend reconfigure automatically.
+- **ai-config.ts**: AI configuration plumbing shared by Settings, the onboarding wizard, and the applier listener.
+  Exports `pushConfigToBackend()` (read-fresh push of the current AI config to Rust) and `migrateApiKeysFromSettings()`
+  (one-time lift of pre-launch `apiKey` strings from `settings.json` into the OS secret store). Relocated here from
+  `sections/ai-settings-utils.ts` so the function isn't tied to a UI subcomponent path.
 - **network-settings.ts**: Network-specific setting helpers (proxy config, SMB auth defaults)
 - **settings-window.ts**: Logic for opening/focusing/closing the settings window (Tauri window management). Accepts an
   optional `section` array (e.g. `['File systems', 'SMB/Network shares']`) to deep-link a specific section. Two delivery

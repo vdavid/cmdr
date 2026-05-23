@@ -1,12 +1,25 @@
 # Onboarding module
 
-Handles the first-launch full disk access permission prompt.
+Handles first-launch onboarding: the legacy Full Disk Access modal (production path until M2 of the onboarding revamp)
+plus the new multi-step `OnboardingWizard` (reachable via `CMDR_FORCE_ONBOARDING=1` in M1; takes over production in M2).
 
 ## Key files
 
-| File                          | Purpose                                                           |
-| ----------------------------- | ----------------------------------------------------------------- |
-| `FullDiskAccessPrompt.svelte` | Modal shown when FDA is not yet granted or was previously revoked |
+| File                          | Purpose                                                                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `FullDiskAccessPrompt.svelte` | Legacy modal shown when FDA is not yet granted or was previously revoked. Replaced by `OnboardingWizard` in M2 of the revamp.       |
+| `OnboardingWizard.svelte`     | Soft-sheet wizard (~90% viewport) that owns first-launch FDA + AI consent + optional setup. M1: skeleton only, env-var gated.       |
+| `OnboardingStepShell.svelte`  | Per-step inner frame (padding, scroll container, footer row). Steps render their body inside.                                       |
+| `StepFda.svelte`              | Step 1: Full Disk Access. M1 stub; M2 ports the FDA copy + actions.                                                                 |
+| `StepAi.svelte`               | Step 2: AI provider picker. M1 stub; M3 ships the provider list + per-provider setup.                                               |
+| `StepOptional.svelte`         | Step 3 (optional): networking, indexing, updates, MTP toggles. M1 stub; M4 wires the toggles.                                       |
+| `onboarding-state.svelte.ts`  | Wizard state machine: `openWizard()` / `closeWizard()` / `currentStep`. Owns the step-resume rule (lands on first not-yet-decided). |
+
+## M1 status
+
+Only the wizard skeleton + state machine are in place. The wizard is reachable via `CMDR_FORCE_ONBOARDING=1 pnpm dev`
+for development; production users still see the legacy `FullDiskAccessPrompt`. M2 swaps the mount and deletes the legacy
+modal.
 
 ## Behavior
 
@@ -76,8 +89,10 @@ confused) nor stack on top of the FDA-revoked re-prompt.
   the helper so they get unblocked too.
 
 Around the same place where `showFdaPrompt = true` is set (both first-run and `wasRevoked`), `+page.svelte` also calls
-`setFdaPromptShowing(true)` so the updater suppresses the toast while the modal is up. `handleFdaComplete()` flips it
-back with `setFdaPromptShowing(false)`. See `$lib/updates/CLAUDE.md` § "Onboarding gating" for the updater side.
+`setOnboardingShowing(true)` so the updater suppresses the toast while the modal is up. `handleFdaComplete()` flips it
+back with `setOnboardingShowing(false)`. The same flag covers the new wizard's full lifecycle (all three steps), so the
+rename in M1 was a 1:1 swap with broader semantics. See `$lib/updates/CLAUDE.md` § "Onboarding gating" for the updater
+side.
 
 ## Key decisions
 

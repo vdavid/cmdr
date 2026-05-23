@@ -30,6 +30,7 @@ import {
   applyRecentSelectionsMaxCount,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
+import { pushConfigToBackend } from './ai-config'
 
 const log = getAppLogger('settings-applier')
 
@@ -164,6 +165,14 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'network.enabled': (v) => void setNetworkEnabled(v as boolean),
   'search.recentSearches.maxCount': (v) => void applyRecentSearchesMaxCount(v as number),
   'selection.recentSelections.maxCount': (v) => void applyRecentSelectionsMaxCount(v as number),
+  // AI provider triplet: any change re-pushes the full config to Rust. The helper re-reads
+  // every relevant setting fresh at call time, so we never pass the changed value through —
+  // whichever provider/key/model is current at the actual IPC moment wins (handles the race
+  // where the user toggles things mid-flight). Three entries instead of one because each
+  // setting fires independently; one shared handler keeps them in lockstep.
+  'ai.provider': () => void pushConfigToBackend(),
+  'ai.cloudProvider': () => void pushConfigToBackend(),
+  'ai.cloudProviderConfigs': () => void pushConfigToBackend(),
 }
 
 /**

@@ -1013,19 +1013,11 @@ export const commands = {
   getLocalizedSystemStrings: () => __TAURI_INVOKE<LocalizedSystemStrings>('get_localized_system_strings'),
   // Cancels an in-progress download.
   cancelAiDownload: () => __TAURI_INVOKE<void>('cancel_ai_download'),
-  // Dismisses the AI offer notification for 7 days.
-  dismissAiOffer: () => __TAURI_INVOKE<void>('dismiss_ai_offer'),
   /**
    *  Uninstalls the AI model and binary, resets state.
    *  Async because file deletion may block briefly.
    */
   uninstallAi: () => __TAURI_INVOKE<void>('uninstall_ai'),
-  /**
-   *  Permanently opts out of AI features.
-   *  Can be re-enabled later via settings.
-   *  Also cleans up any partial downloads to avoid wasting disk space.
-   */
-  optOutAi: () => __TAURI_INVOKE<void>('opt_out_ai'),
   // Re-enables AI features after opting out.
   optInAi: () => __TAURI_INVOKE<void>('opt_in_ai'),
   // Returns whether the user has opted out of AI features.
@@ -1293,6 +1285,17 @@ export const commands = {
    *  dev. Always compiled in; reading an unset env var is a no-op in production.
    */
   isE2eMode: () => __TAURI_INVOKE<boolean>('is_e2e_mode'),
+  /**
+   *  Returns `true` when `CMDR_FORCE_ONBOARDING` is set, regardless of value.
+   *
+   *  The frontend uses this to bypass the `isOnboarded` gate and force the
+   *  onboarding wizard open on every launch (mirrors `CMDR_MOCK_LICENSE` /
+   *  `CMDR_E2E_MODE`). Pair with `CMDR_MOCK_FDA` (in `permissions.rs`) to
+   *  drive each step's variants without ever touching real System Settings.
+   *
+   *  Synchronous + no filesystem access, so no `blocking_with_timeout` needed.
+   */
+  isForceOnboarding: () => __TAURI_INVOKE<boolean>('is_force_onboarding'),
   /**
    *  Resolves selected file paths and writes them to the system clipboard.
    *  Clears any existing cut state (this is a copy, not a cut).
@@ -1889,6 +1892,14 @@ export const commands = {
    *  maximize the chance one of the access paths threads the needle, on a
    *  denial we fire all three: raw `read`, `mmap`, `NSData`, plus a
    *  `read_dir` of the parent directory.
+   *
+   *  `CMDR_MOCK_FDA` test override (macOS-only short-circuit, mirrors
+   *  `CMDR_MOCK_LICENSE`): set to `granted` to force `true`, or `denied` /
+   *  `notgranted` to force `false`. The wizard distinguishes "denied" (user
+   *  clicked Deny last step) vs "notgranted" (user clicked Allow but TCC
+   *  still says no) via the persisted `fullDiskAccessChoice` setting; this
+   *  mock only controls the OS-level signal so all four step-2 banner
+   *  branches can be tested without ever opening real System Settings.
    */
   checkFullDiskAccess: () => __TAURI_INVOKE<boolean>('check_full_disk_access'),
   /**

@@ -444,9 +444,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::system_strings::get_localized_system_strings,
         crate::ai::manager::start_ai_download,
         crate::ai::manager::cancel_ai_download,
-        crate::ai::manager::dismiss_ai_offer,
         crate::ai::manager::uninstall_ai,
-        crate::ai::manager::opt_out_ai,
         crate::ai::manager::opt_in_ai,
         crate::ai::manager::is_ai_opted_out,
         crate::ai::api_keys::save_ai_api_key,
@@ -503,6 +501,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::selection::apply_recent_selections_max_count,
         crate::commands::e2e::get_e2e_start_path,
         crate::commands::e2e::is_e2e_mode,
+        crate::commands::e2e::is_force_onboarding,
         #[cfg(feature = "playwright-e2e")]
         crate::commands::e2e::set_test_throttle,
         #[cfg(feature = "playwright-e2e")]

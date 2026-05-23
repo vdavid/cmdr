@@ -362,6 +362,18 @@
   --z-notification: 400;
   /* Tooltips (above all other layers) */
   --z-tooltip: 500;
+
+  /* === Sheet (onboarding wizard and other ~90% viewport overlays) ===
+     The wizard uses a soft sheet over the running app: frosted backdrop,
+     rounded corners, lifted off the canvas. Tokens live here so future
+     full-viewport sheets share the same proportions and feel. */
+  --sheet-width-fraction: 90vw;
+  --sheet-height-fraction: 90vh;
+  --sheet-max-width: 1200px;
+  --sheet-max-height: 900px;
+  --sheet-radius: var(--radius-lg);
+  --sheet-backdrop-blur: 10px;
+  --sheet-backdrop-color: var(--color-overlay-heavy);
 }
 
 /* === Size tier palette: App ===

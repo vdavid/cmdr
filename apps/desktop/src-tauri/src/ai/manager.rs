@@ -50,7 +50,6 @@ struct ManagerState {
 }
 
 const STATE_FILENAME: &str = "ai-state.json";
-const DISMISS_SECONDS: u64 = 7 * 24 * 60 * 60; // 7 days in seconds
 /// Stale partial downloads older than this are cleaned up at app start.
 const STALE_PARTIAL_SECONDS: u64 = 24 * 60 * 60; // 24 hours
 
@@ -341,44 +340,6 @@ fn uninstall_ai_sync() {
         m.state.port = None;
         m.state.pid = None;
         m.state.model_download_complete = false;
-        save_state(&m.ai_dir, &m.state);
-    }
-}
-
-/// Dismisses the AI offer notification for 7 days.
-#[tauri::command]
-#[specta::specta]
-pub fn dismiss_ai_offer() {
-    let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        m.state.dismissed_until = Some(now + DISMISS_SECONDS);
-        save_state(&m.ai_dir, &m.state);
-    }
-}
-
-/// Permanently opts out of AI features.
-/// Can be re-enabled later via settings.
-/// Also cleans up any partial downloads to avoid wasting disk space.
-#[tauri::command]
-#[specta::specta]
-pub fn opt_out_ai() {
-    let mut manager = MANAGER.lock_ignore_poison();
-    if let Some(ref mut m) = *manager {
-        // Clean up partial model download if exists
-        let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
-        let model_path = m.ai_dir.join(model.filename);
-        if model_path.exists() && !m.state.model_download_complete {
-            log::info!("AI opt-out: removing partial model download");
-            let _ = fs::remove_file(&model_path);
-        }
-
-        m.state.opted_out = true;
-        m.state.dismissed_until = None; // Clear temporary dismiss
-        m.state.partial_download_started = None;
         save_state(&m.ai_dir, &m.state);
     }
 }

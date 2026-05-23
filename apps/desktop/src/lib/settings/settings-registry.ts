@@ -402,7 +402,7 @@ export const settingsRegistry: SettingDefinition[] = [
     description: 'Choose how AI features are powered.',
     keywords: ['ai', 'provider', 'cloud', 'openai', 'anthropic', 'claude', 'gemini', 'local', 'llm', 'off', 'model'],
     type: 'enum',
-    default: 'local',
+    default: 'off',
     component: 'toggle-group',
     constraints: {
       options: [
@@ -1052,6 +1052,18 @@ export const settingsRegistry: SettingDefinition[] = [
       max: 10000,
       step: 1,
     },
+  },
+  {
+    id: 'onboarding.upgradeNudgeShown',
+    section: ['Advanced'],
+    label: 'Onboarding upgrade nudge shown',
+    description:
+      'Internal: tracks whether the one-time "the Onboarding menu item now exists" toast has fired for an existing user after the wizard revamp. Hidden from the UI.',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
   },
   {
     id: 'advanced.updateCheckInterval',

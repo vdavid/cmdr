@@ -1,11 +1,12 @@
 /**
  * Tier 3 a11y tests for `AiToastContent.svelte`.
  *
- * The component renders one of five notification states driven by the
- * module-level `aiState` in `./ai-state.svelte`. Each state shows a
- * different combination of title, description, progress bar, and
- * actions. We mutate the state directly via `resetForTesting` plus the
- * exported `getAiState()` reference and remount for each case.
+ * The component renders one of four runtime notification states driven by the module-level
+ * `aiState` in `./ai-state.svelte`. The historic `'offer'` state moved out: the onboarding
+ * wizard owns first-launch AI consent end-to-end now. Each remaining state shows a
+ * different combination of title, description, progress bar, and actions. We mutate the
+ * state directly via `resetForTesting` plus the exported `getAiState()` reference and
+ * remount for each case.
  */
 
 import { describe, it, vi, beforeEach } from 'vitest'
@@ -16,12 +17,10 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/tauri-commands', () => ({
   cancelAiDownload: vi.fn(() => Promise.resolve()),
-  dismissAiOffer: vi.fn(() => Promise.resolve()),
   formatBytes: vi.fn((n: number) => `${String(n)} B`),
   formatDuration: vi.fn((s: number) => `${String(s)}s`),
   getAiModelInfo: vi.fn(() => Promise.resolve({ sizeFormatted: '~2 GB' })),
-  getAiStatus: vi.fn(() => Promise.resolve('offer')),
-  optOutAi: vi.fn(() => Promise.resolve()),
+  getAiStatus: vi.fn(() => Promise.resolve('available')),
   startAiDownload: vi.fn(() => Promise.resolve()),
 }))
 
@@ -33,18 +32,6 @@ vi.mock('$lib/settings', () => ({
 describe('AiToastContent a11y', () => {
   beforeEach(() => {
     resetForTesting()
-  })
-
-  it('offer state has no a11y violations', async () => {
-    const state = getAiState()
-    state.notificationState = 'offer'
-    state.modelInfo = { sizeFormatted: '~2 GB' } as unknown as typeof state.modelInfo
-
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(AiToastContent, { target, props: {} })
-    await tick()
-    await expectNoA11yViolations(target)
   })
 
   it('downloading state with progress has no a11y violations', async () => {

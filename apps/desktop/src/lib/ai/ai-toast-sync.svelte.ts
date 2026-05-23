@@ -13,7 +13,8 @@ export function initAiToastSync(): void {
     if (state.notificationState === 'downloading') {
       // Once the user closes the downloading toast with X, keep it dismissed for the rest of this
       // run. The download itself keeps going: only the toast is hidden. The flag resets on the
-      // next download run (see `handleDownload`) and other state transitions still surface fresh.
+      // next download run (kicked off by the wizard's step 2 when the user picks the local
+      // provider) and other state transitions still surface fresh.
       if (state.downloadToastUserDismissed) {
         return
       }
