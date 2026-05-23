@@ -12,6 +12,7 @@ vi.mock('$lib/tauri-commands', async () => {
     cancelAiDownload: vi.fn(),
     dismissAiOffer: vi.fn(),
     optOutAi: vi.fn(),
+    isE2eMode: vi.fn().mockResolvedValue(false),
   }
 })
 
@@ -381,6 +382,13 @@ describe('ai-state', () => {
       vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
 
       const initPromise = initAiState()
+      // Let initAiState progress past its initial `await isE2eMode()` so it
+      // reaches the `await loadSettings()` call and captures `resolveSettings`.
+      // Without this flush, the test resolves a promise that hasn't been
+      // constructed yet and initAiState hangs forever.
+      await vi.waitFor(() => {
+        expect(resolveSettings).toBeDefined()
+      })
 
       // Simulate the legacy fallback firing the hook before loadSettings resolves.
       notifyAiOnboardingComplete()

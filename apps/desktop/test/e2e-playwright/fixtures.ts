@@ -88,9 +88,14 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
   // Auto-clean (Escape on each overlay, click each toast's close button)
   // runs AFTER the failure decision so the next test starts from a clean
   // slate even when this hook fails. Leaks don't cascade.
-  let leaked: string[]
+  // `tauriPage.evaluate<T>()`'s generic asserts the return type, but the call
+  // actually resolves to null when the focused window was destroyed mid-test
+  // (e.g. the production-binding Escape tests in viewer.spec.ts and
+  // settings.spec.ts). Widen via cast so the `!leaked` null-guard below stays
+  // legibly necessary instead of being stripped by `no-unnecessary-condition`.
+  let leaked: string[] | null
   try {
-    leaked = await tauriPage.evaluate<string[]>(`(function(){
+    leaked = (await tauriPage.evaluate<string[]>(`(function(){
             var overlays = ['.filter-chip-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
             var found = overlays.filter(function(s){ return document.querySelector(s) !== null; });
             // Include each toast's first-100-char text in the leak label so
@@ -102,14 +107,14 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
                 found.push('.toast["' + text + '"]');
             }
             return found;
-        })()`)
+        })()`)) as string[] | null
   } catch {
     // If the probe itself fails (e.g. the app crashed mid-test), don't
     // mask the original failure with a probe error.
     return
   }
 
-  if (leaked.length === 0) return
+  if (!leaked || leaked.length === 0) return
 
   // Auto-clean: dispatch Escape on each leaked overlay (target-phase fires
   // the overlay-bound handler in ModalDialog, bubble-phase fires

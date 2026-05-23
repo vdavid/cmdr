@@ -6,6 +6,7 @@ import {
   formatDuration,
   getAiModelInfo,
   getAiStatus,
+  isE2eMode,
   optOutAi,
   startAiDownload,
   type AiDownloadProgress,
@@ -75,6 +76,15 @@ export function markDownloadToastDismissed(): void {
 }
 
 export async function initAiState(): Promise<() => void> {
+  // Suppress the AI offer toast in E2E. The leak-detector safety net in
+  // fixtures.ts fails any test that leaves a toast open, and ~160 specs would
+  // otherwise need to dismiss it. Skipping init means `notificationState`
+  // stays 'hidden' and `pendingOffer` stays false, so `notifyAiOnboardingComplete`
+  // is also a no-op.
+  if (await isE2eMode()) {
+    return () => {}
+  }
+
   // Don't show toast when provider is off or cloud
   const aiProvider = getSetting('ai.provider')
   if (aiProvider === 'off' || aiProvider === 'cloud') {
