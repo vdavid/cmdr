@@ -58,6 +58,8 @@ export interface FilePaneAPI {
   toggleSelectionAtCursor(): void
   toggleSelectionAndMoveDownAtCursor(): void
   selectRange(startIndex: number, endIndex: number): void
+  /** Bulk-add or bulk-remove indices (used by the Selection dialog at commit time). */
+  applyIndices(idxs: number[], mode: 'add' | 'remove'): void
   snapshotSelectionForOperation(): Promise<void>
   clearOperationSnapshot(): string[] | 'all' | null
 

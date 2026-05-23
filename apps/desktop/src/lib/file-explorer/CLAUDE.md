@@ -39,6 +39,10 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **Visible-index ascending order**: `selection-state.svelte.ts::getSelectedIndices()` sorts ascending before returning,
   so write ops process selections top-to-bottom in pane sort order regardless of Cmd+click sequence. The `SvelteSet`
   itself remains insertion-ordered; only the read-out for callers is sorted.
+- **`applyIndices(idxs, mode, hasParent)`**: bulk add/remove without disturbing the range anchor/end state. Skips `..`
+  per `hasParent`, same rule as `selectAll`. Fires `onChanged?.()` exactly once per call. Exposed on `FilePane` as
+  `applyIndices(idxs, mode)` and on `DualPaneExplorer` as `applyIndicesToFocusedPane(idxs, mode)`, which the Selection
+  dialog (M7, see [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md)) calls at commit time.
 - **Visual**: three-tier `--color-selection-fg` cascade (red, Total-Commander-style):
   - `--color-selection-fg-primary` (strong red — `#cc0000` light, `#ff4040` dark) applies on the selection bg.
   - `--color-selection-fg-cursor` (`#b80808` / `#ff8c8c`) takes over when the row is also under the cursor

@@ -2602,6 +2602,15 @@
         }
     }
 
+    /**
+     * Bulk-apply matched indices to the focused pane's selection set. Called by
+     * the Selection dialog (M7) on commit. Mode is `'add'` for "Select files…"
+     * and `'remove'` for "Deselect files…". No-op when no pane is focused.
+     */
+    export function applyIndicesToFocusedPane(idxs: number[], mode: 'add' | 'remove') {
+        getPaneRef(focusedPane)?.applyIndices(idxs, mode)
+    }
+
     /** Check if an MTP path matches the pane's current volume. Returns an error string if not. */
     function validateMtpNavigation(path: string, volumeId: string, volumeName: string | undefined): string | null {
         if (path.startsWith('mtp://')) {

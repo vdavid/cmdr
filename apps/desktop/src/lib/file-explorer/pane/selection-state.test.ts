@@ -226,6 +226,90 @@ describe('createSelectionState', () => {
     })
   })
 
+  describe('applyIndices', () => {
+    // Bulk-apply used by the Selection dialog at commit time. Skips ".." per
+    // hasParent (same rule as selectAll). Does NOT touch the range anchor/end
+    // state — the user's prior keyboard/mouse range anchor isn't ours to clear.
+    // Fires onChanged once per call.
+
+    it('add: skips index 0 when hasParent', () => {
+      const state = createSelectionState()
+      state.applyIndices([0, 1, 2], 'add', true)
+      expect(state.selectedIndices.has(0)).toBe(false)
+      expect(state.getSelectedIndices()).toEqual([1, 2])
+    })
+
+    it('add: includes index 0 when no parent', () => {
+      const state = createSelectionState()
+      state.applyIndices([0, 1, 2], 'add', false)
+      expect(state.getSelectedIndices()).toEqual([0, 1, 2])
+    })
+
+    it('remove: subtracts the given indices from the existing selection', () => {
+      const state = createSelectionState()
+      state.setSelectedIndices([1, 2, 3])
+      state.applyIndices([1, 2], 'remove', false)
+      expect(state.getSelectedIndices()).toEqual([3])
+    })
+
+    it('remove: skips index 0 when hasParent (parent slot is never selected anyway)', () => {
+      const state = createSelectionState()
+      state.setSelectedIndices([1, 2, 3])
+      state.applyIndices([0, 1], 'remove', true)
+      expect(state.getSelectedIndices()).toEqual([2, 3])
+    })
+
+    it('add: idempotent on already-selected indices', () => {
+      const state = createSelectionState()
+      state.setSelectedIndices([1, 2, 3])
+      state.applyIndices([2, 3], 'add', false)
+      expect(state.getSelectedIndices()).toEqual([1, 2, 3])
+    })
+
+    it('remove: idempotent on not-selected indices', () => {
+      const state = createSelectionState()
+      state.setSelectedIndices([1, 2])
+      state.applyIndices([5, 6], 'remove', false)
+      expect(state.getSelectedIndices()).toEqual([1, 2])
+    })
+
+    it('handles an empty index list as a no-op (but still fires onChanged)', () => {
+      const onChanged = vi.fn()
+      const state = createSelectionState({ onChanged })
+      state.setSelectedIndices([1, 2])
+      onChanged.mockClear()
+      state.applyIndices([], 'add', false)
+      expect(state.getSelectedIndices()).toEqual([1, 2])
+      expect(onChanged).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves the range anchor / end state untouched', () => {
+      const state = createSelectionState()
+      // Drop a range anchor at 2 (Shift-click from cursor #2 to #4).
+      state.handleShiftMouseNavigation(4, 2, false)
+      expect(state.anchorIndex).toBe(2)
+
+      state.applyIndices([7, 8], 'add', false)
+      // Anchor preserved.
+      expect(state.anchorIndex).toBe(2)
+      // Range items still selected, new items added on top.
+      expect(state.selectedIndices.has(2)).toBe(true)
+      expect(state.selectedIndices.has(3)).toBe(true)
+      expect(state.selectedIndices.has(4)).toBe(true)
+      expect(state.selectedIndices.has(7)).toBe(true)
+      expect(state.selectedIndices.has(8)).toBe(true)
+    })
+
+    it('fires onChanged exactly once per call, regardless of index count', () => {
+      const onChanged = vi.fn()
+      const state = createSelectionState({ onChanged })
+      state.applyIndices([1, 2, 3, 4, 5], 'add', false)
+      expect(onChanged).toHaveBeenCalledTimes(1)
+      state.applyIndices([1, 2], 'remove', false)
+      expect(onChanged).toHaveBeenCalledTimes(2)
+    })
+  })
+
   describe('handleShiftMouseNavigation', () => {
     it('sets anchor on first shift-navigation and selects range', () => {
       const state = createSelectionState()

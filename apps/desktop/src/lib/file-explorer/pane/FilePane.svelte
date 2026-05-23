@@ -749,6 +749,15 @@
         selection.selectRange(startIndex, endIndex, hasParent)
     }
 
+    /**
+     * Bulk-apply indices to the selection (add or remove). Used by the Selection
+     * dialog at commit time. Skips `..` per `hasParent`. Range anchor/end state
+     * is untouched so the user's prior keyboard/mouse anchor survives.
+     */
+    export function applyIndices(idxs: number[], mode: 'add' | 'remove'): void {
+        selection.applyIndices(idxs, mode, hasParent)
+    }
+
     /** Snapshots the current selection as file names for diff-driven adjustment during operations. */
     export async function snapshotSelectionForOperation(): Promise<void> {
         if (selection.isAllSelected(hasParent, effectiveTotalCount)) {

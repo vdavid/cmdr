@@ -165,6 +165,26 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
     onChanged?.()
   }
 
+  // Apply a set of indices (typically from the Selection dialog's matcher) to
+  // the selection set without touching the range anchor / end state. The dialog
+  // commits matched indices in bulk; the user's existing keyboard/mouse range
+  // anchor isn't theirs to disturb.
+  //
+  // `mode === 'add'`: union the indices into the set.
+  // `mode === 'remove'`: subtract them.
+  // `..` (index 0 when `hasParent`) is never touched, mirroring `selectAll`.
+  //
+  // `onChanged?.()` fires exactly once per call, regardless of how many indices
+  // change, so the MCP state sync and `selectedCount`-driven UI tick once.
+  function applyIndices(idxs: number[], mode: 'add' | 'remove', hasParent: boolean): void {
+    for (const i of idxs) {
+      if (hasParent && i === 0) continue
+      if (mode === 'add') selectedIndices.add(i)
+      else selectedIndices.delete(i)
+    }
+    onChanged?.()
+  }
+
   function selectRange(startIndex: number, endIndex: number, hasParent: boolean) {
     const indices = getIndicesInRange(startIndex, endIndex, hasParent)
     for (const i of indices) {
@@ -213,6 +233,7 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
     selectAll,
     deselectAll,
     selectRange,
+    applyIndices,
     isAllSelected,
     getSelectedIndices,
     setSelectedIndices,
