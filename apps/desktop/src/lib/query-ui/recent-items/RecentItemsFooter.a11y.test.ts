@@ -8,16 +8,17 @@
  */
 
 import { describe, it } from 'vitest'
-import { mount, tick } from 'svelte'
+import { mount, tick, type Component } from 'svelte'
 import RecentSearchesFooterRaw from './RecentItemsFooter.svelte'
 import type { HistoryEntry } from '$lib/tauri-commands'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
 import { chipTooltip, modeName, formatAge } from './recent-items-utils'
 
-// Svelte 5 generics+mount type roundtrip workaround — see `RecentItemsFooter.svelte.test.ts`.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const RecentSearchesFooter = RecentSearchesFooterRaw as any
+// Svelte 5 generics+mount type roundtrip: the declared Component<unknown> shape rejects typed
+// adapters. Cast through unknown to a permissive component shape so the mount() call type-checks
+// without unsafe-argument errors. The runtime contract is correct.
+const RecentSearchesFooter = RecentSearchesFooterRaw as unknown as Component<Record<string, unknown>>
 
 function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
   return {

@@ -197,7 +197,7 @@ describe('SearchModeChips', () => {
     it("AI chip renders its `AI` badge via ToggleGroup's badge slot", async () => {
       const { chips, cleanup } = setup({ aiEnabled: true })
       await tick()
-      const aiBadge = chips[0].querySelector('.tg-badge')?.textContent?.trim()
+      const aiBadge = chips[0].querySelector('.tg-badge')?.textContent.trim()
       expect(aiBadge).toBe('AI')
       cleanup()
     })

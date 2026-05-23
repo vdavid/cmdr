@@ -46,6 +46,7 @@
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
 
     interface Props {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments -- E is the Svelte component generic; the explicit <E> binds the inference for callers like SearchDialog/SelectionDialog
         config: QueryDialogConfig<E>
     }
 
@@ -53,10 +54,14 @@
     let { config }: Props = $props()
     /* eslint-enable prefer-const */
 
+    /** Shape of the `bind:this` ref for `QueryResults.svelte` — only the exported method we call. */
+    interface QueryResultsAPI {
+        scrollCursorIntoView(): void
+    }
+
     let queryInputElement: HTMLInputElement | undefined = $state()
     let dialogElement: HTMLDivElement | undefined = $state()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Svelte 5 bind:this lacks type info
-    let queryResultsComponent: any = $state()
+    let queryResultsComponent: QueryResultsAPI | undefined = $state()
     let footerRef: HTMLDivElement | undefined = $state()
     let recentPopoverOpen = $state(false)
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
@@ -345,7 +350,6 @@
 
     async function focusFirstResult(): Promise<void> {
         await tick()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte 5 bind:this lacks type info for exports
         queryResultsComponent?.scrollCursorIntoView()
     }
 
@@ -597,7 +601,6 @@
         config.state.setCursorIndex(next)
         // D8: cursor moves keep ⏎ on "go-to-file" as the user browses the list.
         config.state.setLastDialogEvent('cursor-moved')
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte 5 bind:this lacks type info for exports
         queryResultsComponent?.scrollCursorIntoView()
     }
 

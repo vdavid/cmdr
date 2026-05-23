@@ -56,8 +56,8 @@ vi.mock('$lib/settings', () => ({
   }),
   onSpecificSettingChange: vi.fn((id: string, listener: (id: string, value: unknown) => void) => {
     if (id === 'search.autoApply') {
-      autoApplyListeners.add(listener as (id: string, value: boolean) => void)
-      return () => autoApplyListeners.delete(listener as (id: string, value: boolean) => void)
+      autoApplyListeners.add(listener)
+      return () => autoApplyListeners.delete(listener)
     }
     if (id === 'ai.provider') {
       aiProviderListeners.add(listener)
@@ -143,7 +143,7 @@ async function mountDialog(
       void unmount(component)
       target.remove()
     },
-    getTitle: () => target.querySelector('#query-dialog-title')?.textContent?.trim() ?? '',
+    getTitle: () => target.querySelector('#query-dialog-title')?.textContent.trim() ?? '',
   }
 }
 
@@ -235,7 +235,7 @@ describe('SelectionDialog', () => {
     await tick()
 
     // Bar input now shows the prompt in filename mode; AI chip is gone.
-    expect((input as HTMLInputElement).value).toBe('all images')
+    expect(input.value).toBe('all images')
 
     cleanup()
   })
@@ -248,7 +248,7 @@ describe('SelectionDialog', () => {
     await tick()
     dispatchKey(overlay, 'n', true)
     await tick()
-    expect((input as HTMLInputElement).value).toBe('')
+    expect(input.value).toBe('')
     cleanup()
   })
 
@@ -264,7 +264,7 @@ describe('SelectionDialog', () => {
     dispatchKey(overlay, '3', true)
     await tick()
     // Regex buffer is empty.
-    expect((input as HTMLInputElement).value).toBe('')
+    expect(input.value).toBe('')
     // Type in regex.
     input.value = '\\.txt$'
     input.dispatchEvent(new Event('input', { bubbles: true }))
@@ -272,7 +272,7 @@ describe('SelectionDialog', () => {
     // Switch back to filename.
     dispatchKey(overlay, '2', true)
     await tick()
-    expect((input as HTMLInputElement).value).toBe('*.svelte')
+    expect(input.value).toBe('*.svelte')
     cleanup()
   })
 
@@ -287,7 +287,7 @@ describe('SelectionDialog', () => {
       modifiedBefore: null,
       caveat: null,
       label: null,
-    } as SelectionTranslateResult)
+    })
     const { overlay, cleanup } = await mountDialog()
     dispatchKey(overlay, '1', true) // ⌘1 → AI
     await tick()
@@ -337,7 +337,7 @@ describe('SelectionDialog', () => {
       modifiedBefore: '2026-05-01',
       caveat: 'Best guess; refine if needed.',
       label: null,
-    } as SelectionTranslateResult)
+    })
     const { overlay, cleanup } = await mountDialog()
     dispatchKey(overlay, '1', true) // AI mode
     await tick()
@@ -374,7 +374,7 @@ describe('SelectionDialog', () => {
       modifiedBefore: null,
       caveat: null,
       label: null,
-    } as SelectionTranslateResult)
+    })
     // Second call: glob result. Must overwrite, and the prior regex must be
     // gone or `buildMatchQuery` would still pick the regex (it checks first).
     // Also: the prior size filter must NOT leak through.
@@ -387,7 +387,7 @@ describe('SelectionDialog', () => {
       modifiedBefore: null,
       caveat: null,
       label: null,
-    } as SelectionTranslateResult)
+    })
 
     const matched: number[][] = []
     const { overlay, cleanup } = await mountDialog({
@@ -465,7 +465,7 @@ describe('SelectionDialog', () => {
     // depends on FilterChips internals — we look for any button with case-sensitive in
     // its accessible label.
     const chipButtons = Array.from(overlay.querySelectorAll('button'))
-    const caseButton = chipButtons.find((b) => /case[\s-]sensitive/i.test(b.textContent ?? ''))
+    const caseButton = chipButtons.find((b) => /case[\s-]sensitive/i.test(b.textContent))
     if (caseButton) {
       caseButton.click()
       await tick()

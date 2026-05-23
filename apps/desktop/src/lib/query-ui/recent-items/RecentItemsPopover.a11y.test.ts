@@ -8,16 +8,16 @@
  */
 
 import { describe, it } from 'vitest'
-import { mount, tick } from 'svelte'
+import { mount, tick, type Component } from 'svelte'
 import RecentSearchesPopoverRaw from './RecentItemsPopover.svelte'
 import type { HistoryEntry } from '$lib/tauri-commands'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
 import { chipTooltip, modeName, formatAge } from './recent-items-utils'
 
-// Svelte 5 generics+mount type roundtrip workaround — see `RecentItemsFooter.svelte.test.ts`.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const RecentSearchesPopover = RecentSearchesPopoverRaw as any
+// Svelte 5 generics+mount type roundtrip: cast through unknown to avoid unsafe-argument errors.
+// See `RecentItemsFooter.svelte.test.ts` for the full explanation.
+const RecentSearchesPopover = RecentSearchesPopoverRaw as unknown as Component<Record<string, unknown>>
 
 const searchAdapter: RecentItemAdapter<HistoryEntry> = (e) => ({
   label: e.query,

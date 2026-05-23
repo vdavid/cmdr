@@ -148,17 +148,18 @@
     }: Props = $props()
 
     // Pull the setters from the injected state instance so the template reads
-    // `setSizeFilter(...)` like before. Local consts (not re-exports) so the component stays
-    // self-contained; the underlying writes still go through the instance the consumer owns.
-    const setSizeFilter = filterState.setSizeFilter
-    const setSizeValue = filterState.setSizeValue
-    const setSizeUnit = filterState.setSizeUnit
-    const setSizeValueMax = filterState.setSizeValueMax
-    const setSizeUnitMax = filterState.setSizeUnitMax
-    const setDateFilter = filterState.setDateFilter
-    const setDateValue = filterState.setDateValue
-    const setDateValueMax = filterState.setDateValueMax
-    const setQueryFromUserInput = filterState.setQueryFromUserInput
+    // `setSizeFilter(...)` like before. Arrow-function wrappers (not raw method refs) keep
+    // `this` binding intact and silence `@typescript-eslint/unbound-method` since the
+    // factory's setters don't read `this` but the type system can't prove it.
+    const setSizeFilter: typeof filterState.setSizeFilter = (v) => { filterState.setSizeFilter(v); }
+    const setSizeValue: typeof filterState.setSizeValue = (v) => { filterState.setSizeValue(v); }
+    const setSizeUnit: typeof filterState.setSizeUnit = (v) => { filterState.setSizeUnit(v); }
+    const setSizeValueMax: typeof filterState.setSizeValueMax = (v) => { filterState.setSizeValueMax(v); }
+    const setSizeUnitMax: typeof filterState.setSizeUnitMax = (v) => { filterState.setSizeUnitMax(v); }
+    const setDateFilter: typeof filterState.setDateFilter = (v) => { filterState.setDateFilter(v); }
+    const setDateValue: typeof filterState.setDateValue = (v) => { filterState.setDateValue(v); }
+    const setDateValueMax: typeof filterState.setDateValueMax = (v) => { filterState.setDateValueMax(v); }
+    const setQueryFromUserInput: typeof filterState.setQueryFromUserInput = (v) => { filterState.setQueryFromUserInput(v); }
 
     let openChip = $state<FilterKey | 'add' | null>(null)
 

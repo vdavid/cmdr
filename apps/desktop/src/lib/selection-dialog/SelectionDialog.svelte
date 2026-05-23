@@ -95,7 +95,7 @@
 
     // Live AI-provider mirror. Selection's AI is cloud-only (small local models can't
     // reliably handle a 200+-name folder sample). Hide the AI chip unless cloud is set.
-    let aiProvider = $state<string>(getSetting('ai.provider') ?? 'off')
+    let aiProvider = $state<string>(getSetting('ai.provider'))
     let unlistenAiProvider: (() => void) | undefined
     const aiEnabled = $derived(aiProvider === 'cloud')
 

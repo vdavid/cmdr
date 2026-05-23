@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mount, tick } from 'svelte'
+import { mount, tick, type Component } from 'svelte'
 import RecentSearchesFooterRaw from './RecentItemsFooter.svelte'
 import type { HistoryEntry, HistoryMode } from '$lib/tauri-commands'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
@@ -7,11 +7,9 @@ import { chipTooltip, modeName, formatAge } from './recent-items-utils'
 
 // Svelte 5's `generics="E"` declaration doesn't survive the `mount()` type roundtrip: the
 // declared `Component<unknown>` shape rejects a typed `RecentItemAdapter<HistoryEntry>`. The
-// runtime contract is fine; we cast the component reference to the typed variant so the
-// test's adapter binding type-checks. This is the same trick the toast suite uses for its
-// component-content toasts.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const RecentSearchesFooter = RecentSearchesFooterRaw as any
+// runtime contract is fine; we cast through unknown to a permissive Component shape so the
+// mount() call type-checks without unsafe-argument errors.
+const RecentSearchesFooter = RecentSearchesFooterRaw as unknown as Component<Record<string, unknown>>
 
 function makeEntry(overrides: Partial<HistoryEntry>): HistoryEntry {
   return {

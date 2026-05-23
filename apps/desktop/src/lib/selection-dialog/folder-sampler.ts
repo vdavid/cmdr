@@ -52,7 +52,6 @@ export function sampleFolderNames(names: string[], cursorIndex: number, max: num
 }
 
 function dedup(arr: string[]): string[] {
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- pure helper, not reactive state
   const seen = new Set<string>()
   const out: string[] = []
   for (const s of arr) {

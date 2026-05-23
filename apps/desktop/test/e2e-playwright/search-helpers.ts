@@ -15,10 +15,16 @@ export type PageLike = TauriPage | BrowserPageAdapter
 
 export const SEARCH_OVERLAY = '.search-overlay'
 export const SEARCH_INPUT = '.search-overlay input.query-input'
-/** Active mode chip in the dialog's `role="tablist"`. */
-export const ACTIVE_MODE_CHIP = '.search-overlay .mode-chip.is-active'
+/**
+ * Active mode chip in the dialog's `role="tablist"`. Selectors changed in M3:
+ * `ModeChips.svelte` is now backed by `lib/ui/ToggleGroup.svelte` (semantics='tabs'),
+ * which renders `.tg-item` cells with `aria-selected="true"` for the active one and
+ * `.tg-label` for the inner label. The `.mode-chip` / `.chip-label` / `.is-active`
+ * classes are gone.
+ */
+export const ACTIVE_MODE_CHIP = '.search-overlay .tg-item[aria-selected="true"]'
 /** All mode chips in the dialog. Used to confirm the chip set (and indirectly, whether AI is on). */
-export const MODE_CHIPS = '.search-overlay .mode-chip'
+export const MODE_CHIPS = '.search-overlay .tg-item'
 
 /** Opens the search dialog via the `search.open` registry command and waits for it to mount. */
 export async function openSearchDialog(tauriPage: PageLike): Promise<void> {
@@ -62,17 +68,17 @@ export async function getSearchInputValue(tauriPage: PageLike): Promise<string> 
 /**
  * Returns the active mode chip's label as one of `'ai' | 'filename' | 'regex' | null`.
  *
- * Reads `data-` is not exposed, so we infer from the chip's label text (which
- * is the same string `SearchModeChips.svelte` renders into `.chip-label`).
- * `'ai'` corresponds to "Ask anything" (AI chip's label); `'filename'` /
- * `'regex'` match the chip labels verbatim. Returns null when no chip is
- * active (shouldn't happen for an open dialog; treat as a test bug).
+ * Infers from the chip's label text (`.tg-label`, rendered by
+ * `lib/ui/ToggleGroup.svelte` via `ModeChips.svelte`). `'ai'` corresponds to
+ * "Ask anything" (AI chip's label); `'filename'` / `'regex'` match the chip
+ * labels verbatim. Returns null when no chip is active (shouldn't happen for
+ * an open dialog; treat as a test bug).
  */
 export async function getActiveMode(tauriPage: PageLike): Promise<'ai' | 'filename' | 'regex' | null> {
   const label = await tauriPage.evaluate<string>(`(function(){
         var chip = document.querySelector(${JSON.stringify(ACTIVE_MODE_CHIP)});
         if (!chip) return '';
-        var labelEl = chip.querySelector('.chip-label');
+        var labelEl = chip.querySelector('.tg-label');
         return (labelEl ? labelEl.textContent : '').trim();
     })()`)
   if (label === 'Ask anything') return 'ai'
@@ -91,7 +97,7 @@ export async function hasAiChip(tauriPage: PageLike): Promise<boolean> {
   return tauriPage.evaluate<boolean>(`(function(){
         var chips = document.querySelectorAll(${JSON.stringify(MODE_CHIPS)});
         for (var i = 0; i < chips.length; i++) {
-            var labelEl = chips[i].querySelector('.chip-label');
+            var labelEl = chips[i].querySelector('.tg-label');
             if (labelEl && (labelEl.textContent || '').trim() === 'Ask anything') return true;
         }
         return false;

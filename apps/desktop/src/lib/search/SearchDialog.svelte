@@ -151,7 +151,7 @@
 
     // Live mirror of the AI provider setting. Drives `aiEnabled` reactively so toggling
     // in the settings window flips the AI chip in real time without reopening the dialog.
-    let aiProvider = $state<string>(getSetting('ai.provider') ?? 'off')
+    let aiProvider = $state<string>(getSetting('ai.provider'))
     let unlistenAiProvider: (() => void) | undefined
 
     // Reactive readers off the Search state instance. Used by the derived config below.

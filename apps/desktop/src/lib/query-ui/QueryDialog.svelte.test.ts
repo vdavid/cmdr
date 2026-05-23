@@ -126,7 +126,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
           const fn = opts.translateAi
           return async (prompt: string) => {
             calls.translateAi.push(prompt)
-            return fn ? fn(prompt) : null
+            return fn(prompt)
           }
         })()
       : undefined,
@@ -162,7 +162,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
   // Svelte's `mount()` typing of a generic component pins the type parameter at the
   // call site; we widen via `unknown` so the test's `HistoryEntry`-typed config still
   // passes the type check without losing inference on the rest of the file.
-  const component = mount(QueryDialog, { target, props: { config: config as unknown as QueryDialogConfig<unknown> } })
+  const component = mount(QueryDialog, { target, props: { config: config } })
 
   const overlay = target.querySelector('.search-overlay')
   if (!overlay) throw new Error('overlay not found')

@@ -35,7 +35,7 @@
      * `SearchMode` counterpart on purpose: it's a placeholder for the future full-text
      * search feature and lives only in the visual chip set so users see it on the horizon.
      */
-    const options = $derived.by<ToggleGroupOption[]>(() => {
+    const options = $derived.by<ToggleGroupOption[]>((): ToggleGroupOption[] => {
         const list: ToggleGroupOption[] = []
         if (aiEnabled) {
             list.push({
