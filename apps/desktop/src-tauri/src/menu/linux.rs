@@ -11,13 +11,14 @@ use super::menu_items::{
 };
 use super::{
     ABOUT_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID,
-    COPY_PATH_ID, DESELECT_ALL_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID,
-    ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
-    FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems,
-    NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID,
-    SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID,
-    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID,
-    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
+    COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID,
+    EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID,
+    FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID,
+    MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID,
+    REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
+    SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID,
+    SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
+    ViewMode,
 };
 
 /// Linux menu: builds all menus from scratch, matching the macOS menu structure.
@@ -91,8 +92,6 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     let edit_copy_item = MenuItem::with_id(app, EDIT_COPY_ID, "&Copy", true, Some("Ctrl+C"))?;
     let edit_paste_item = MenuItem::with_id(app, EDIT_PASTE_ID, "&Paste", true, Some("Ctrl+V"))?;
     let edit_paste_move_item = MenuItem::with_id(app, EDIT_PASTE_MOVE_ID, "&Move here", true, Some("Ctrl+Alt+V"))?;
-    let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, "Select &all", true, Some("Cmd+A"))?;
-    let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, "D&eselect all", true, Some("Cmd+Shift+A"))?;
     let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Cop&y path", true, Some(copy_path_accelerator()))?;
     let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy file&name", true, None::<&str>)?;
     let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, "&Search files", true, Some("Cmd+F"))?;
@@ -121,9 +120,6 @@ pub(crate) fn build_menu_linux<R: Runtime>(
             &edit_paste_item,
             &edit_paste_move_item,
             &PredefinedMenuItem::separator(app)?,
-            &select_all_item,
-            &deselect_all_item,
-            &PredefinedMenuItem::separator(app)?,
             &copy_path_item,
             &copy_filename_item,
             &PredefinedMenuItem::separator(app)?,
@@ -135,6 +131,29 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         ],
     )?;
     menu.append(&edit_menu)?;
+
+    // --- Select menu ---
+    // Lives between Edit and View, matching the macOS layout. Holds the four selection
+    // commands. The two `…` dialog openers carry no accelerator: the keystroke binding
+    // (bare `+` / `-`) lives in FilePane's keydown handler.
+    let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, "Select &all", true, Some("Cmd+A"))?;
+    let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, "D&eselect all", true, Some("Cmd+Shift+A"))?;
+    let select_files_item = MenuItem::with_id(app, SELECT_FILES_ID, "Select &files\u{2026}", true, None::<&str>)?;
+    let deselect_files_item = MenuItem::with_id(app, DESELECT_FILES_ID, "Dese&lect files\u{2026}", true, None::<&str>)?;
+
+    let select_menu = Submenu::with_items(
+        app,
+        "&Select",
+        true,
+        &[
+            &select_all_item,
+            &deselect_all_item,
+            &PredefinedMenuItem::separator(app)?,
+            &select_files_item,
+            &deselect_files_item,
+        ],
+    )?;
+    menu.append(&select_menu)?;
 
     // --- View menu ---
     // View > Left pane > {Full, Brief} and View > Right pane > {Full, Brief}.
@@ -340,25 +359,32 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 14);
 
     // Edit menu positions: cut(0), copy(1), paste(2), move_here(3), sep(4),
-    // select_all(5), deselect_all(6), sep(7), copy_path(8), copy_filename(9),
-    // sep(10), search_files(11), sep(12), settings(13), license(14), check_for_updates(15)
+    // copy_path(5), copy_filename(6), sep(7), search_files(8), sep(9), settings(10),
+    // license(11), check_for_updates(12)
     register_item(&mut items, EDIT_CUT_ID, &edit_cut_item, &edit_menu, 0);
     register_item(&mut items, EDIT_COPY_ID, &edit_copy_item, &edit_menu, 1);
     register_item(&mut items, EDIT_PASTE_ID, &edit_paste_item, &edit_menu, 2);
     register_item(&mut items, EDIT_PASTE_MOVE_ID, &edit_paste_move_item, &edit_menu, 3);
-    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &edit_menu, 5);
-    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 6);
-    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 8);
-    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 9);
-    register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 11);
-    register_item(&mut items, SETTINGS_ID, &settings_item, &edit_menu, 13);
+    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 5);
+    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 6);
+    register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 8);
+    register_item(&mut items, SETTINGS_ID, &settings_item, &edit_menu, 10);
     register_item(
         &mut items,
         CHECK_FOR_UPDATES_ID,
         &check_for_updates_item,
         &edit_menu,
-        15,
+        12,
     );
+
+    // Select menu positions: select_all(0), deselect_all(1), sep(2), select_files(3),
+    // deselect_files(4). The two dialog openers carry no accelerator; bare `+` / `-` are
+    // bound in FilePane's keydown handler. The items are still registered so a future
+    // user-customized shortcut could flow into the menu via the generic update path.
+    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &select_menu, 0);
+    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &select_menu, 1);
+    register_item(&mut items, SELECT_FILES_ID, &select_files_item, &select_menu, 3);
+    register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 4);
 
     // View menu positions: left_pane_submenu(0), right_pane_submenu(1), sep(2), hidden(3),
     // sort(4), zoom(5), sep(6), switch(7), swap(8), sep(9), palette(10)

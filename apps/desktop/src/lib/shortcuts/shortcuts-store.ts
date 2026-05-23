@@ -90,8 +90,15 @@ export async function initializeShortcuts(): Promise<void> {
   await syncMenuAccelerators()
 }
 
-/** Commands that have corresponding native menu items with accelerators. */
-const menuCommands = [
+/**
+ * Commands that have corresponding native menu items with accelerators.
+ *
+ * Exported so tests can verify the list matches the items the platform menu builders register
+ * in `src-tauri/src/menu/{macos,linux}.rs`. Any command listed here without a matching menu
+ * item silently drops the `updateMenuAccelerator` call on the Rust side (no-op lookup), and
+ * any menu item not listed here misses out on accelerator sync from custom shortcuts.
+ */
+export const menuCommands = [
   // View modes (CheckMenuItems, special handling in Rust)
   'view.fullMode',
   'view.briefMode',
@@ -126,6 +133,8 @@ const menuCommands = [
   // Selection
   'selection.selectAll',
   'selection.deselectAll',
+  'selection.selectFiles',
+  'selection.deselectFiles',
   // Panes
   'pane.switch',
   'pane.swap',

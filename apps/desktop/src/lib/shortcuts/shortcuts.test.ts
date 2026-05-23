@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest'
 import { getActiveScopes, scopesOverlap, getAllScopes } from './scope-hierarchy'
 import { formatKeyCombo, normalizeKeyName, isModifierKey, matchesShortcut, isCompleteCombo } from './key-capture'
+import { menuCommands } from './shortcuts-store'
 
 // ============================================================================
 // Scope hierarchy tests
@@ -198,5 +199,25 @@ describe('key-capture', () => {
       expect(isCompleteCombo(createKeyEvent('Meta'))).toBe(false)
       expect(isCompleteCombo(createKeyEvent('Shift'))).toBe(false)
     })
+  })
+})
+
+// ============================================================================
+// menuCommands list (kept in sync with src-tauri/src/menu/{macos,linux}.rs)
+// ============================================================================
+
+describe('menuCommands', () => {
+  it('includes the four Select menu commands so accelerator sync covers them', () => {
+    // The Select menu landed in M8 (selection-dialog plan). Both Select all / Deselect all
+    // (moved from Edit) and the new Select files… / Deselect files… items live there.
+    expect(menuCommands).toContain('selection.selectAll')
+    expect(menuCommands).toContain('selection.deselectAll')
+    expect(menuCommands).toContain('selection.selectFiles')
+    expect(menuCommands).toContain('selection.deselectFiles')
+  })
+
+  it('has no duplicate command IDs', () => {
+    const unique = new Set(menuCommands)
+    expect(unique.size).toBe(menuCommands.length)
   })
 })

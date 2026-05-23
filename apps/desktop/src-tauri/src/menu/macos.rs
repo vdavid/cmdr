@@ -14,13 +14,14 @@ use super::menu_items::{
 };
 use super::{
     ABOUT_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID,
-    COPY_PATH_ID, DESELECT_ALL_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID,
-    ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
-    FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems,
-    NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID,
-    SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID,
-    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID,
-    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
+    COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID,
+    EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID,
+    FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID,
+    MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID,
+    REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
+    SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID,
+    SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
+    ViewMode,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -136,8 +137,6 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let edit_copy_item = MenuItem::with_id(app, EDIT_COPY_ID, "Copy", true, Some("Cmd+C"))?;
     let edit_paste_item = MenuItem::with_id(app, EDIT_PASTE_ID, "Paste", true, Some("Cmd+V"))?;
     let edit_paste_move_item = MenuItem::with_id(app, EDIT_PASTE_MOVE_ID, "Move here", true, Some("Alt+Cmd+V"))?;
-    let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, "Select all", true, Some("Cmd+A"))?;
-    let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, "Deselect all", true, Some("Cmd+Shift+A"))?;
     let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path", true, Some(copy_path_accelerator()))?;
     let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy filename", true, None::<&str>)?;
     let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, "Search files", true, Some("Cmd+F"))?;
@@ -155,9 +154,6 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &edit_paste_item,
             &edit_paste_move_item,
             &PredefinedMenuItem::separator(app)?,
-            &select_all_item,
-            &deselect_all_item,
-            &PredefinedMenuItem::separator(app)?,
             &copy_path_item,
             &copy_filename_item,
             &PredefinedMenuItem::separator(app)?,
@@ -165,6 +161,31 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         ],
     )?;
     menu.append(&edit_menu)?;
+
+    // --- Select menu ---
+    // Lives between Edit and View. Holds the selection commands: Select all / Deselect all
+    // (formerly in Edit), and the two new pattern-based dialog openers.
+    // The dialog openers carry no menu accelerator: macOS menu accelerators always carry
+    // a modifier (Cmd), and the bare `+` / `-` keystrokes are bound in FilePane's keydown
+    // handler instead. The labels show no accelerator badge as a result.
+    let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, "Select all", true, Some("Cmd+A"))?;
+    let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, "Deselect all", true, Some("Cmd+Shift+A"))?;
+    let select_files_item = MenuItem::with_id(app, SELECT_FILES_ID, "Select files\u{2026}", true, None::<&str>)?;
+    let deselect_files_item = MenuItem::with_id(app, DESELECT_FILES_ID, "Deselect files\u{2026}", true, None::<&str>)?;
+
+    let select_menu = Submenu::with_items(
+        app,
+        "Select",
+        true,
+        &[
+            &select_all_item,
+            &deselect_all_item,
+            &PredefinedMenuItem::separator(app)?,
+            &select_files_item,
+            &deselect_files_item,
+        ],
+    )?;
+    menu.append(&select_menu)?;
 
     // --- View menu ---
     // View > Left pane > {Full, Brief} and View > Right pane > {Full, Brief}.
@@ -364,17 +385,24 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 14);
 
     // Edit menu positions: undo(0), redo(1), sep(2), cut(3), copy(4), paste(5), move_here(6),
-    // sep(7), select_all(8), deselect_all(9), sep(10), copy_path(11), copy_filename(12),
-    // sep(13), search_files(14)
+    // sep(7), copy_path(8), copy_filename(9), sep(10), search_files(11)
     register_item(&mut items, EDIT_CUT_ID, &edit_cut_item, &edit_menu, 3);
     register_item(&mut items, EDIT_COPY_ID, &edit_copy_item, &edit_menu, 4);
     register_item(&mut items, EDIT_PASTE_ID, &edit_paste_item, &edit_menu, 5);
     register_item(&mut items, EDIT_PASTE_MOVE_ID, &edit_paste_move_item, &edit_menu, 6);
-    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &edit_menu, 8);
-    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 9);
-    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 11);
-    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 12);
-    register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 14);
+    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 8);
+    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 9);
+    register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 11);
+
+    // Select menu positions: select_all(0), deselect_all(1), sep(2), select_files(3),
+    // deselect_files(4). The two `…` items carry no accelerator: bare `+`/`-` aren't valid
+    // macOS menu accelerators (those always carry Cmd), so the keystroke binding lives in
+    // FilePane's keydown handler. The items are still registered so a future user-customized
+    // shortcut could flow into the menu via the generic update path.
+    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &select_menu, 0);
+    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &select_menu, 1);
+    register_item(&mut items, SELECT_FILES_ID, &select_files_item, &select_menu, 3);
+    register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 4);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6),
     // switch(7), swap(8), sep(9), command(10)
@@ -572,11 +600,15 @@ fn set_macos_menu_icons_inner() {
                 ("Copy", "document.on.document"),
                 ("Paste", "clipboard"),
                 ("Move here", "document.on.clipboard"),
-                ("Select all", "checkmark.circle"),
-                ("Deselect all", "circle"),
                 ("Copy path", "link"),
                 ("Copy filename", "textformat"),
                 ("Search files", "magnifyingglass"),
+            ],
+            "Select" => &[
+                ("Select all", "checkmark.circle"),
+                ("Deselect all", "circle"),
+                ("Select files\u{2026}", "plus.circle"),
+                ("Deselect files\u{2026}", "minus.circle"),
             ],
             "View" => {
                 // Also apply icons to the "Sort by" submenu items

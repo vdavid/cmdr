@@ -84,6 +84,8 @@ pub const QUICK_LOOK_ID: &str = "quick_look";
 pub const RENAME_ID: &str = "rename";
 pub const SELECT_ALL_ID: &str = "select_all_files";
 pub const DESELECT_ALL_ID: &str = "deselect_all";
+pub const SELECT_FILES_ID: &str = "select_files";
+pub const DESELECT_FILES_ID: &str = "deselect_files";
 pub const TOGGLE_SELECTION_ID: &str = "toggle_selection";
 
 /// Menu item IDs for cloud actions (macOS File Provider).
@@ -237,6 +239,8 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         QUICK_LOOK_ID => Some(("file.quickLook", CommandScope::FileScoped)),
         SELECT_ALL_ID => Some(("selection.selectAll", CommandScope::FileScoped)),
         DESELECT_ALL_ID => Some(("selection.deselectAll", CommandScope::FileScoped)),
+        SELECT_FILES_ID => Some(("selection.selectFiles", CommandScope::FileScoped)),
+        DESELECT_FILES_ID => Some(("selection.deselectFiles", CommandScope::FileScoped)),
         TOGGLE_SELECTION_ID => Some(("selection.toggle", CommandScope::FileScoped)),
 
         // Cloud actions (macOS File Provider)
@@ -307,6 +311,8 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "file.quickLook" => Some(QUICK_LOOK_ID),
         "selection.selectAll" => Some(SELECT_ALL_ID),
         "selection.deselectAll" => Some(DESELECT_ALL_ID),
+        "selection.selectFiles" => Some(SELECT_FILES_ID),
+        "selection.deselectFiles" => Some(DESELECT_FILES_ID),
         "selection.toggle" => Some(TOGGLE_SELECTION_ID),
         "view.zoom.set75" => Some(VIEW_ZOOM_75_ID),
         "view.zoom.set100" => Some(VIEW_ZOOM_100_ID),
@@ -588,6 +594,8 @@ mod tests {
             "file.quickLook",
             "selection.selectAll",
             "selection.deselectAll",
+            "selection.selectFiles",
+            "selection.deselectFiles",
             "help.sendErrorReport",
             "app.checkForUpdates",
             "cloud.makeOffline",
