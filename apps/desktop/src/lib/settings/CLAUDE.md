@@ -117,8 +117,8 @@ Section ↔ component map (`sections/`):
 - `FileOperationsSection.svelte` → `Behavior > File operations` (extension changes only; `maxConflictsToShow` and
   `progressUpdateInterval` live in Advanced)
 - `DriveIndexingSection.svelte` → `Behavior > Drive indexing` (toggle + clear-index action)
-- `SearchSection.svelte` → `Behavior > Search` (auto-apply switch; mirrors the `search.recentSearches.maxCount` row from
-  Advanced so users hunting under "search" find it)
+- `SearchSection.svelte` → `Behavior > Search` (auto-apply switch; mirrors the `search.recentSearches.maxCount` and
+  `selection.recentSelections.maxCount` rows from Advanced so users hunting under "search" find them)
 - `AiSection.svelte` (+ `AiCloudSection.svelte`, `AiLocalSection.svelte`) → `AI`
 - `NetworkSection.svelte` → `File systems > SMB/Network shares`
 - `MtpSection.svelte` → `File systems > MTP (Android/Kindle/cameras)`

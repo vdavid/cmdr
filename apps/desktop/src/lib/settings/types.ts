@@ -216,6 +216,9 @@ export interface SettingsValues {
   // Search
   'search.autoApply': boolean
   'search.recentSearches.maxCount': number
+
+  // Selection
+  'selection.recentSelections.maxCount': number
 }
 
 export type SettingId = keyof SettingsValues
