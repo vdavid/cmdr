@@ -107,6 +107,7 @@
     import { resolveValidPath } from '../navigation/path-resolution'
     import { isVolumeEjectable } from '../navigation/eject-predicate'
     import { homeDir } from '@tauri-apps/api/path'
+    import { basenameOf, type CanonicalPath, parentOf, toCanonical } from '$lib/path/canonical'
     import {
         getVolumeSpace,
         watchVolumeSpace,
@@ -300,6 +301,18 @@
 
     // User's home directory path (e.g. "/Users/veszelovszki"), fetched once on mount
     let userHomePath = $state('')
+
+    // Canonical form of `currentPath` (`~` expanded). Null until `userHomePath`
+    // resolves on mount, or when `currentPath` is not absolute / ~-rooted
+    // (e.g. transient values during volume switches).
+    const canonicalPath = $derived.by((): CanonicalPath | null => {
+        if (!userHomePath) return null
+        try {
+            return toCanonical(currentPath, userHomePath)
+        } catch {
+            return null
+        }
+    })
 
     // ── Git browser (M1) ────────────────────────────────────────────────
     // Reactive RepoInfo for the breadcrumb chip. We subscribe lazily on path
@@ -832,16 +845,16 @@
                 }),
             )
         }
-        const parentDir = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/'
+        const canonical = canonicalPath
         if (!listingId || totalCount === 0) {
             // Synthetic `..` entry (when present) keeps the index alignment.
-            const synthetic = createParentEntry(parentDir)
+            const synthetic = canonical ? createParentEntry(canonical) : null
             return hasParent && synthetic ? [synthetic] : []
         }
         try {
             const fetched = await getFileRange(listingId, 0, totalCount, showHiddenFiles)
             if (hasParent) {
-                const synthetic = createParentEntry(parentDir)
+                const synthetic = canonical ? createParentEntry(canonical) : null
                 return synthetic ? [synthetic, ...fetched] : fetched
             }
             return fetched
@@ -1057,9 +1070,10 @@
         if (currentPath === '/' || currentPath === volumePath) {
             return false // Already at root
         }
-        const currentFolderName = currentPath.split('/').pop()
-        const lastSlash = currentPath.lastIndexOf('/')
-        const parentPath = lastSlash > 0 ? currentPath.substring(0, lastSlash) : '/'
+        const canonical = canonicalPath
+        if (!canonical) return false // userHomePath not resolved yet
+        const currentFolderName = basenameOf(canonical)
+        const parentPath = parentOf(canonical)
 
         currentPath = parentPath
         // Note: onPathChange is called in listing-complete handler after successful load
@@ -1146,8 +1160,8 @@
         const backendEnd = hasParent ? Math.max(0, visibleRangeEnd - 1) : visibleRangeEnd
 
         // Include ".." entry if it's in the visible range
-        if (hasParent && visibleRangeStart === 0) {
-            const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/'
+        if (hasParent && visibleRangeStart === 0 && canonicalPath) {
+            const parentPath = parentOf(canonicalPath)
             files.push({ name: '..', path: parentPath, isDirectory: true, size: null, recursiveSize: null, modified: null })
         }
 
@@ -1263,12 +1277,11 @@
     }
 
     // Create ".." entry for parent navigation
-    function createParentEntry(path: string): FileEntry | null {
+    function createParentEntry(path: CanonicalPath): FileEntry | null {
         if (path === '/') return null
-        const parentPath = path.substring(0, path.lastIndexOf('/')) || '/'
         return {
             name: '..',
-            path: parentPath,
+            path: parentOf(path),
             isDirectory: true,
             isSymlink: false,
             permissions: 0o755,
@@ -1611,7 +1624,7 @@
 
         // Handle ".." entry specially
         if (hasParent && cursorIndex === 0) {
-            entryUnderCursor = createParentEntry(currentPath)
+            entryUnderCursor = canonicalPath ? createParentEntry(canonicalPath) : null
             return
         }
 
@@ -1749,7 +1762,7 @@
             }
             // When navigating to parent (..), remember current folder name to select it
             const isGoingUp = entry.name === '..'
-            const currentFolderName = isGoingUp ? currentPath.split('/').pop() : undefined
+            const currentFolderName = isGoingUp && canonicalPath ? basenameOf(canonicalPath) : undefined
 
             currentPath = entry.path
             // Note: onPathChange is called in listing-complete handler after successful load
@@ -2887,7 +2900,7 @@
                 {sortBy}
                 {sortOrder}
                 renameState={rename.active ? rename : null}
-                parentPath={hasParent ? currentPath.substring(0, currentPath.lastIndexOf('/')) || '/' : ''}
+                parentPath={hasParent && canonicalPath ? parentOf(canonicalPath) : ''}
                 {currentPath}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
@@ -2924,7 +2937,7 @@
                 gitRepoRoot={gitRepoInfo?.repoRoot ?? null}
                 showGitColumn={showGitStatusColumn}
                 renameState={rename.active ? rename : null}
-                parentPath={hasParent ? currentPath.substring(0, currentPath.lastIndexOf('/')) || '/' : ''}
+                parentPath={hasParent && canonicalPath ? parentOf(canonicalPath) : ''}
                 {currentPath}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
