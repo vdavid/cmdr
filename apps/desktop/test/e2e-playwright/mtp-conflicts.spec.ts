@@ -21,12 +21,12 @@ import {
   mcpSelectVolume,
   mcpNavToPath,
   mcpAwaitItem,
-  mcpSwitchPane,
 } from '../e2e-shared/mcp-client.js'
 import {
   CTRL_OR_META,
   dispatchMenuCommand,
   ensureAppReady,
+  focusPane,
   getFixtureRoot,
   pollUntil,
   isStateClean,
@@ -237,19 +237,7 @@ test.describe('MTP same-volume move conflicts', () => {
     await mcpSelectVolume('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'report.txt')
 
-    // Ensure left pane is focused: toggle twice and poll for the visual focus
-    // class to land on the left pane.
-    await mcpSwitchPane()
-    await mcpSwitchPane()
-    await expect
-      .poll(
-        async () =>
-          tauriPage.evaluate<boolean>(
-            `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
-          ),
-        { timeout: 3000 },
-      )
-      .toBeTruthy()
+    await focusPane(tauriPage, 0)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
     await dispatchMenuCommand(tauriPage, 'file.move')
@@ -299,18 +287,7 @@ test.describe('MTP same-volume move conflicts', () => {
     await mcpSelectVolume('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'report.txt')
 
-    // Toggle twice and poll for the visual focus class to land on the left pane.
-    await mcpSwitchPane()
-    await mcpSwitchPane()
-    await expect
-      .poll(
-        async () =>
-          tauriPage.evaluate<boolean>(
-            `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
-          ),
-        { timeout: 3000 },
-      )
-      .toBeTruthy()
+    await focusPane(tauriPage, 0)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
     await dispatchMenuCommand(tauriPage, 'file.move')

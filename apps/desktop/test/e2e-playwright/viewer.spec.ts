@@ -217,7 +217,7 @@ test.describe('File viewer selection and copy', () => {
     await expect
       .poll(
         async () => {
-          const text = (await viewer.textContent('.toast-item')) ?? ''
+          const text = (await viewer.textContent('.toast')) ?? ''
           return text.includes('on your clipboard')
         },
         { timeout: 5000 },
@@ -274,7 +274,7 @@ test.describe('File viewer selection and copy', () => {
     await expect
       .poll(
         async () => {
-          const text = (await viewer.textContent('.toast-item')) ?? ''
+          const text = (await viewer.textContent('.toast')) ?? ''
           return text.includes('on your clipboard')
         },
         { timeout: 5000 },
@@ -355,7 +355,7 @@ test.describe('File viewer selection and copy', () => {
     await expect
       .poll(
         async () => {
-          const text = (await viewer.textContent('.toast-item')) ?? ''
+          const text = (await viewer.textContent('.toast')) ?? ''
           return text.includes('on your clipboard')
         },
         { timeout: 5000 },

@@ -27,6 +27,7 @@ import {
 } from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
+  focusPane,
   getFixtureRoot,
   pollUntil,
   moveCursorToFile,
@@ -400,20 +401,9 @@ test.describe('MTP file operations', () => {
     await mcpAwaitItem('right', 'Documents')
     await mcpNavToPath('right', `${mtpPath}/Music`)
 
-    // Toggle twice and poll for the visual focus class to land on the left pane.
-    await mcpSwitchPane()
-    await mcpSwitchPane()
-    await expect
-      .poll(
-        async () =>
-          tauriPage.evaluate<boolean>(
-            `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
-          ),
-        { timeout: 3000 },
-      )
-      .toBeTruthy()
+    await focusPane(tauriPage, 0)
 
-    // Confirm left pane is still showing Documents content after the toggle.
+    // Confirm left pane is still showing Documents content after the focus.
     await mcpAwaitItem('left', 'notes.txt')
 
     // Move cursor to notes.txt and move it
@@ -692,7 +682,23 @@ test.describe('MTP rename', () => {
     expect(dialogText).toContain('already exists')
 
     // Cancel the dialog. Both files should remain unchanged.
-    await tauriPage.keyboard.press('Escape')
+    //
+    // We click the dialog's Cancel button explicitly rather than pressing
+    // Escape via the OS keyboard: Escape on the conflict dialog routes through
+    // `onclose` -> `onResolve('continue')`, which keeps the rename input alive
+    // for re-edit (the "continue editing" path). 'cancel' is the only resolution
+    // that closes the whole rename flow, and the Cancel button is the only path
+    // that dispatches it. Clicking it sidesteps the focus-state ambiguity that
+    // `tauriPage.keyboard.press` introduces after Enter on the rename input.
+    await tauriPage.evaluate(
+      `(function(){
+        var dlg = document.querySelector('[data-dialog-id="rename-conflict"]');
+        if (!dlg) throw new Error('rename-conflict dialog not present');
+        var btn = Array.from(dlg.querySelectorAll('button')).find(b => b.textContent && b.textContent.trim() === 'Cancel');
+        if (!btn) throw new Error('Cancel button not found in rename-conflict dialog');
+        btn.click();
+      })()`,
+    )
     await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
 
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
