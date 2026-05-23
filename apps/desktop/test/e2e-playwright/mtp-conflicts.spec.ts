@@ -29,7 +29,6 @@ import {
   expectAndDismissToast,
   focusPane,
   getFixtureRoot,
-  pollUntil,
   isStateClean,
   TRANSFER_DIALOG,
 } from './helpers.js'

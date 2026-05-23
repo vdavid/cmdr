@@ -59,7 +59,9 @@ async function openViewerForFile(mainPage: TauriPage, filePath: string): Promise
         })()`,
       )
       .catch((e: unknown) => `probe failed: ${e instanceof Error ? e.message : String(e)}`)
-    throw new Error(`openViewerForFile: viewer not loaded within 8s. State: ${probe}. Original: ${String(waitErr)}`)
+    throw new Error(`openViewerForFile: viewer not loaded within 8s. State: ${probe}. Original: ${String(waitErr)}`, {
+      cause: waitErr,
+    })
   }
   return viewer
 }

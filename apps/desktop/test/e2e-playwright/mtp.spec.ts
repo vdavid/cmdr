@@ -31,7 +31,6 @@ import {
   expectAndDismissToast,
   focusPane,
   getFixtureRoot,
-  pollUntil,
   moveCursorToFile,
   pressKey,
   fileExistsInPane,
@@ -42,38 +41,6 @@ import {
 
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 type PageLike = TauriPage | BrowserPageAdapter
-
-/**
- * Polls until a function returns a non-empty string, then returns that string.
- * Useful for waiting for toast messages or dynamic text to appear.
- */
-async function pollUntilValue(
-  page: PageLike,
-  getValue: () => Promise<string>,
-  timeout: number,
-  interval = 200,
-): Promise<string> {
-  const captured = { value: '' }
-  // allowed-bare-poll: helper implementation — captures result via closure side-effect, not return value
-  await pollUntil(
-    page,
-    async () => {
-      try {
-        const val = await getValue()
-        if (val.length > 0) {
-          captured.value = val
-          return true
-        }
-      } catch {
-        // Element might not exist yet
-      }
-      return false
-    },
-    timeout,
-    interval,
-  )
-  return captured.value
-}
 
 // Volume names (verified from manual testing against the virtual device)
 const INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'

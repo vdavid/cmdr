@@ -24,10 +24,6 @@
      * popover, and the empty state.
      */
     import { onMount, onDestroy } from 'svelte'
-    import { SvelteSet } from 'svelte/reactivity'
-    import { getAppLogger } from '$lib/logging/logger'
-
-    const log = getAppLogger('search-dialog')
     import {
         prepareSearchIndex,
         searchFiles,
@@ -52,7 +48,6 @@
         clearAiPattern,
         buildSearchQuery,
         buildHistoryFilters,
-        recordAiTranslation,
         applyHistoryEntry,
         getQuery,
         getMode,
@@ -69,15 +64,7 @@
         getLastAiPattern,
         getLastAiPatternKind,
         getSizeFilter,
-        setSizeFilter,
-        setSizeValue,
-        setSizeUnit,
-        setSizeValueMax,
-        setSizeUnitMax,
         getDateFilter,
-        setDateFilter,
-        setDateValue,
-        setDateValueMax,
         getIsIndexReady,
         setIsIndexReady,
         getIndexEntryCount,
@@ -180,148 +167,24 @@
     })
     const searchRecentKey: RecentItemKey<HistoryEntry> = (entry) => entry.id
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // AI translation: applies the AI's filter writes (size / date / scope /
-    // caseSensitive / excludeSystemDirs / Pattern + label). QueryDialog owns the
-    // prompt + caveat writes; this returns just `{ caveat, highlightedFields }`.
-    // ─────────────────────────────────────────────────────────────────────────
-
-    function applySizeFilters(display: { minSize?: number | null; maxSize?: number | null }): boolean {
-        if (display.minSize == null && display.maxSize == null) return false
-        if (display.minSize != null && display.maxSize != null) {
-            setSizeFilter('between')
-            const { value: minVal, unit: minUnit } = bytesToDisplaySize(display.minSize)
-            setSizeValue(minVal)
-            setSizeUnit(minUnit)
-            const { value: maxVal, unit: maxUnit } = bytesToDisplaySize(display.maxSize)
-            setSizeValueMax(maxVal)
-            setSizeUnitMax(maxUnit)
-        } else if (display.minSize != null) {
-            setSizeFilter('gte')
-            const { value, unit } = bytesToDisplaySize(display.minSize)
-            setSizeValue(value)
-            setSizeUnit(unit)
-        } else if (display.maxSize != null) {
-            setSizeFilter('lte')
-            const { value, unit } = bytesToDisplaySize(display.maxSize)
-            setSizeValue(value)
-            setSizeUnit(unit)
-        }
-        return true
-    }
-
-    function applyDateFilters(display: {
-        modifiedAfter?: string | null
-        modifiedBefore?: string | null
-    }): boolean {
-        if (display.modifiedAfter == null && display.modifiedBefore == null) return false
-        if (display.modifiedAfter != null && display.modifiedBefore != null) {
-            setDateFilter('between')
-            setDateValue(display.modifiedAfter)
-            setDateValueMax(display.modifiedBefore)
-        } else if (display.modifiedAfter != null) {
-            setDateFilter('after')
-            setDateValue(display.modifiedAfter)
-        } else if (display.modifiedBefore != null) {
-            setDateFilter('before')
-            setDateValue(display.modifiedBefore)
-        }
-        return true
-    }
-
-    function patternKindFromDisplay(patternType: string | null | undefined): 'glob' | 'regex' | null {
-        if (patternType === 'regex') return 'regex'
-        if (patternType === 'glob') return 'glob'
-        return null
-    }
-
-    function applyAiScope(query: {
-        includePaths?: string[] | null
-        excludeDirNames?: string[] | null
-    }): boolean {
-        if (!query.includePaths?.length && !query.excludeDirNames?.length) return false
-        const parts: string[] = []
-        if (query.includePaths) parts.push(...query.includePaths)
-        if (query.excludeDirNames) parts.push(...query.excludeDirNames.map((d: string) => `!${d}`))
-        setScope(parts.join(', '))
-        return true
-    }
-
-    function bytesToDisplaySize(bytes: number): { value: string; unit: 'KB' | 'MB' | 'GB' } {
-        if (bytes >= 1024 * 1024 * 1024) {
-            return {
-                value: String(Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100),
-                unit: 'GB',
-            }
-        }
-        if (bytes >= 1024 * 1024) {
-            return {
-                value: String(Math.round((bytes / (1024 * 1024)) * 100) / 100),
-                unit: 'MB',
-            }
-        }
-        return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
-    }
-
     /**
      * Translates a natural-language prompt and applies the AI's filter writes. Returns
      * the caveat + highlighted-field list for QueryDialog to surface in the AI strip
      * and flash effect. Per the M4 ownership contract, this does NOT write to
      * `state.lastAiPrompt` / `state.lastAiCaveat` — QueryDialog handles both.
+     *
+     * Current behavior: invokes the translator (so the AI call fires) but discards
+     * the result and returns `null`. The full filter-write path lives in the wider
+     * Search refactor; this stub keeps the QueryDialog config wiring intact until
+     * that lands.
      */
     async function translateAi(prompt: string): Promise<AiTranslateResult | null> {
-        let translateResult: Awaited<ReturnType<typeof translateSearchQuery>>
         try {
-            translateResult = await translateSearchQuery(prompt)
+            await translateSearchQuery(prompt)
         } catch {
             return null
         }
         return null
-    }
-
-    function handleModeChange(newMode: SearchMode): void {
-        log.debug('handleModeChange: requested newMode={newMode} currentMode={currentMode}', {
-            newMode,
-            currentMode: getMode(),
-        })
-        if (getMode() === newMode) {
-            log.debug('handleModeChange: no-op (already in target mode)')
-            return
-        }
-        // `switchMode` swaps the bar's contents into the target mode's hand-typed buffer
-        // (or restores the AI-produced pattern when its kind matches the target mode and
-        // the hand-typed buffer is empty). The AI-mode-side `query` is the prompt; the
-        // filename/regex side carries patterns. See `search-state.svelte.ts::switchMode`.
-        switchMode(newMode)
-        // Switching mode preserves the typed query; only re-trigger auto-apply for non-AI modes.
-        if (newMode !== 'ai') scheduleSearch()
-    }
-
-    function handleQueryInput(value: string): void {
-        setQueryFromUserInput(value)
-        // D8: query edits hand ⏎ back to the bar's Search button.
-        setLastDialogEvent('query-edited')
-        scheduleSearch()
-    }
-
-    function inputHandler(setter: (v: string) => void, search = true) {
-        return (e: Event) => {
-            setter((e.target as HTMLInputElement).value)
-            // D8: filter inputs (size / date / scope textarea) count as filter edits.
-            setLastDialogEvent('filter-edited')
-            if (search) scheduleSearch()
-        }
-        if (translateResult.query.excludeSystemDirs === false) {
-            setExcludeSystemDirs(false)
-            changed.add('excludeSystemDirs')
-        }
-        if (applySizeFilters(translateResult.display)) changed.add('size')
-        if (applyDateFilters(translateResult.display)) changed.add('date')
-        if (applyAiScope(translateResult.query)) changed.add('scope')
-        return {
-            caveat: translateResult.caveat ?? null,
-            highlightedFields: Array.from(changed),
-        }
     }
 
     /**

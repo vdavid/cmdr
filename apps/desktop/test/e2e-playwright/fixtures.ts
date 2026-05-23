@@ -88,7 +88,7 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
   // Auto-clean (Escape on each overlay, click each toast's close button)
   // runs AFTER the failure decision so the next test starts from a clean
   // slate even when this hook fails. Leaks don't cascade.
-  let leaked: string[] = []
+  let leaked: string[]
   try {
     leaked = await tauriPage.evaluate<string[]>(`(function(){
             var overlays = ['.filter-chip-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];

@@ -38,7 +38,6 @@ import {
   ensureAppReady,
   expectAndDismissToast,
   getFixtureRoot,
-  pollUntil,
   moveCursorToFile,
   pressKey,
   isStateClean,
