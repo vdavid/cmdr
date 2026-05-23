@@ -239,6 +239,85 @@ TauriKeyboard dispatches key names as-is (sends `key: "Space"`), but the DOM spe
 `default.json` breaks non-feature builds. So `build.rs` generates the capability file when the feature is active and
 removes it when the feature is not active. The file is gitignored.
 
+## Closing overlays and toasts
+
+**The rule**: never use `tauriPage.keyboard.press('Escape')` to close a dialog, popover, dropdown, or palette in E2E
+tests. Use the two-helper API in `helpers.ts`:
+
+- **`dismissOverlay(tauriPage)`** — close the topmost open overlay.
+- **`expectAndDismissToast(tauriPage, substring)`** — assert a toast containing `substring` appeared, then dismiss it.
+
+There is no separate "just dismiss toasts" helper on purpose: tests that trigger a user-facing toast should care that it
+appeared (the wording IS the contract), not just clean up after it.
+
+**Why `keyboard.press('Escape')` is bad**: it routes through the OS keyboard layer to the currently-focused element. On
+macOS that works because overlays (`ModalDialog` etc.) focus themselves on mount, so the keystroke lands on the right
+element. Under Linux Xvfb the X11 focus delivery is unreliable: the keystroke can vanish, the overlay stays open, and
+the test fails with an opaque timeout that looks like a flake. Same shape as the License-dialog 18× regression in
+`accessibility.spec.ts` history.
+
+**Why not `document.dispatchEvent`**: events bubble UP from the dispatch target. `ModalDialog.svelte`'s `onkeydown` is
+bound on the `.modal-overlay` div, not on `<svelte:window>`. A document-level event never descends into the overlay
+subtree, so the handler never fires. (We learned this by trying it and breaking macOS first.) Dispatching ON the overlay
+element fires its handler in the target phase AND bubbles to any window-level listeners — universal across overlay
+kinds.
+
+**`dismissOverlay(tauriPage)`** (helpers.ts) does exactly that: finds the topmost open overlay in priority order
+(`.filter-chip-popover` > `.palette-overlay` > `.search-overlay` > `.modal-overlay` > `.volume-dropdown`), dispatches
+synthetic Escape on it, then `expect.poll`s that it actually closed. Throws if no overlay is open (catches tests that
+forgot to wait for the dialog to appear, or that mistakenly call dismiss twice).
+
+```ts
+import { dismissOverlay, expectAndDismissToast } from './helpers.js'
+
+await dismissOverlay(tauriPage) // closes whichever overlay is on top
+await expectAndDismissToast(tauriPage, 'Copy complete') // asserts + cleans up
+```
+
+### The safety net
+
+`fixtures.ts` runs a global `afterEach` that probes for leaked overlays + toasts. On leak:
+
+1. **Fails the offending test** with a message naming the selector and pointing at this section.
+2. **Auto-cleans** (dispatches Escape on each leaked overlay; clicks each toast's close button) so the next test starts
+   fresh. Cascade failures from leaked state never happen.
+
+This means: there is no longer a need for defensive double-Escape cleanups in `beforeEach`s. They used to live in
+`mtp.spec.ts`, `mtp-conflicts.spec.ts`, `smb.spec.ts`, etc.; they're all gone. The leak attribution now points at the
+test that actually leaked, not at the next test's setup.
+
+### What about testing keyboard bindings?
+
+If you're testing "does pressing Escape close the X window" as a production-binding integration test, that's different
+from "I need to clean up an overlay I opened." For binding tests, dispatch the synthetic Escape on the scoped page's
+document (see `viewer.spec.ts` and `settings.spec.ts` "Escape closes the … window (production binding)" tests for the
+canonical pattern). That tests the JS handler path without depending on OS focus routing.
+
+The one in-scope test that still uses `keyboard.press('Escape')` is `type-to-jump.spec.ts:120`, which tests the global
+type-to-jump Escape binding. It's an intentional integration test of the OS → webview path; rewrite to synthetic
+dispatch only if it starts flaking on Linux.
+
+### Toast lifecycle in tests
+
+Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), or persist until explicitly dismissed if
+`dismissal: 'persistent'`. The safety net catches both — leaving any toast open at end-of-test fails the test.
+
+- **Test triggers a toast deliberately**: assert it with `expectAndDismissToast(tauriPage, 'expected substring')`. This
+  pins the toast wording as user-facing contract.
+- **Test triggers a toast as a documented side effect** (e.g. F5 copy fires "Copy complete: copied 1 file."): same
+  pattern. Use a stable prefix like `'Copy complete'` so the assertion survives small wording tweaks.
+- **Persistent toasts (AI download, update-ready, Quick Look hint)**: must be dismissed; assert on a stable fragment of
+  the message. The Quick Look hint that fires on first Space press, for example, is asserted with
+  `expectAndDismissToast(tauriPage, 'Space')` in `app.spec.ts`.
+
+### Migration history
+
+Previously the suite had 5 different mechanisms (OS `keyboard.press`, `document` dispatch, overlay dispatch, `pressKey`
+on activeElement, IPC). The mtp-rs sentinel-drain work (2026-05) plus the License-dialog 18× regression (same week)
+showed both the OS-flake failure mode and the silent-leak failure mode. The standardization landed in the same commit as
+the safety net + helper + caller migration; nothing in the suite should still reach for `keyboard.press('Escape')` to
+close a dialog.
+
 ## Gotchas
 
 **Gotcha**: `npx playwright test` alone will fail with `ECONNREFUSED`. **Why**: The test suite does NOT launch the Cmdr

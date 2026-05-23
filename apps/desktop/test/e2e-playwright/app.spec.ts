@@ -8,8 +8,10 @@
 
 import { test, expect } from './fixtures.js'
 import {
+  dismissOverlay,
   ensureAppReady,
   ensureExplorerFocused,
+  expectAndDismissToast,
   findFileIndex,
   focusPane,
   moveCursorToFile,
@@ -213,6 +215,13 @@ test.describe('Keyboard navigation', () => {
 
     cursorClass = await tauriPage.getAttribute('.file-entry.is-under-cursor', 'class')
     expect(cursorClass).not.toContain('is-selected')
+
+    // First Space press fires the persistent Quick Look hint toast explaining
+    // "In Cmdr, Space selects the file under the cursor by default" (vs.
+    // Finder's Quick Look on Space). Asserting on it pins the hint as part
+    // of the contract for this binding — the toast is the documentation for
+    // the keyboard difference. Dismissed afterwards so the safety net is happy.
+    await expectAndDismissToast(tauriPage, 'Space')
   })
 })
 
@@ -514,9 +523,7 @@ test.describe('New folder dialog', () => {
     expect(await tauriPage.textContent(`${MKDIR_DIALOG} .btn-secondary`)).toBe('Cancel')
 
     // Close dialog with Escape
-    await tauriPage.keyboard.press('Escape')
-
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
+    await dismissOverlay(tauriPage)
   })
 
   test('creates a folder and closes the dialog', async ({ tauriPage }) => {
@@ -561,10 +568,7 @@ test.describe('Transfer dialogs', () => {
     expect(copyBtnText).toBe('Copy')
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .btn-secondary`)).toBe(true)
 
-    await tauriPage.keyboard.press('Escape')
-
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
-    expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
+    await dismissOverlay(tauriPage)
   })
 
   test('opens move dialog with F6', async ({ tauriPage }) => {
@@ -586,10 +590,7 @@ test.describe('Transfer dialogs', () => {
     expect(moveBtnText).toBe('Move')
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .btn-secondary`)).toBe(true)
 
-    await tauriPage.keyboard.press('Escape')
-
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
-    expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
+    await dismissOverlay(tauriPage)
   })
 
   test('Cancel button closes the new folder dialog without creating anything', async ({ tauriPage }) => {
@@ -640,8 +641,7 @@ test.describe('Delete dialog', () => {
     expect(titleText).toContain('Delete')
 
     // Close the dialog without confirming.
-    await tauriPage.keyboard.press('Escape')
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
+    await dismissOverlay(tauriPage)
 
     // The file must still be in the listing after Escape.
     const stillThere = await tauriPage.evaluate<boolean>(

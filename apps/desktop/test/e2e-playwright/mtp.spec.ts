@@ -26,7 +26,9 @@ import {
   mcpSwitchPane,
 } from '../e2e-shared/mcp-client.js'
 import {
+  dismissOverlay,
   ensureAppReady,
+  expectAndDismissToast,
   focusPane,
   getFixtureRoot,
   pollUntil,
@@ -201,11 +203,11 @@ test.beforeEach(async ({ tauriPage }) => {
       .poll(async () => bothPanesOnLocalVolume(tauriPage), { timeout: 5000, intervals: [10, 25, 50, 100] })
       .toBeTruthy()
 
-    // Dismiss any lingering dialogs/overlays from previous tests
-    await tauriPage.keyboard.press('Escape')
-    await tauriPage.keyboard.press('Escape')
-    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    // Previously: double-Escape + best-effort modal-overlay poll to clean up
+    // dialogs leaked from prior tests. The global afterEach safety net in
+    // fixtures.ts now catches and auto-cleans any leaks at the point of leak,
+    // so this defensive cleanup is no longer needed (and would mask the leak
+    // attribution if it crept back).
   }
 })
 
@@ -261,8 +263,9 @@ test.describe('MTP device discovery', () => {
         })()`)
     expect(hasSdCard).toBe(true)
 
-    // Close the dropdown
-    await tauriPage.keyboard.press('Escape')
+    // Close the dropdown (and assert it closed; the global afterEach would
+    // otherwise fail the test for the leak).
+    await dismissOverlay(tauriPage)
   })
 })
 
@@ -339,7 +342,8 @@ test.describe('MTP navigation', () => {
       )
       .toBeTruthy()
 
-    await tauriPage.keyboard.press('Escape')
+    // Close the volume picker dropdown (asserts closure via dismissOverlay's poll).
+    await dismissOverlay(tauriPage)
   })
 })
 
@@ -379,6 +383,10 @@ test.describe('MTP file operations', () => {
     // Verify source still exists (copy, not move)
     await mcpSwitchPane()
     await mcpAwaitItem('left', 'report.txt')
+
+    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
   })
 
   test('copies file from local to MTP', async ({ tauriPage }) => {
@@ -405,6 +413,10 @@ test.describe('MTP file operations', () => {
 
     // Verify in MTP backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt'))).toBe(true)
+
+    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
   })
 
   test('moves file between MTP directories', async ({ tauriPage }) => {
@@ -452,6 +464,10 @@ test.describe('MTP file operations', () => {
     // Verify on backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt'))).toBe(false)
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Music', 'notes.txt'))).toBe(true)
+
+    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
   })
 
   test('deletes file on MTP with "Delete permanently" dialog', async ({ tauriPage }) => {
@@ -517,6 +533,10 @@ test.describe('MTP file operations', () => {
 
     // Verify on backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
+
+    // Transfer fires a "Delete complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Delete complete', { timeout: 30000 })
   })
 
   test('deletes multiple selected files on MTP', async ({ tauriPage }) => {
@@ -554,6 +574,13 @@ test.describe('MTP file operations', () => {
       )
       .toBeTruthy()
 
+    // The first Space press fires the persistent Quick Look hint toast (Cmdr's
+    // Finder-convert reminder). Both Space presses share one toast because
+    // the hint dedupes by id while it's already on screen. Dismiss the hint
+    // before the delete so the safety net doesn't conflate it with the
+    // Delete-complete toast we expect below.
+    await expectAndDismissToast(tauriPage, 'Space')
+
     // Delete via MCP with autoConfirm
     await mcpCall('delete', { autoConfirm: true })
 
@@ -577,6 +604,10 @@ test.describe('MTP file operations', () => {
     // Verify on backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt'))).toBe(false)
+
+    // Transfer fires a "Delete complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Delete complete', { timeout: 30000 })
   })
 
   test('deletes folder with nested files recursively on MTP', async ({ tauriPage }) => {
@@ -605,6 +636,10 @@ test.describe('MTP file operations', () => {
 
     // Verify entire tree gone from backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM'))).toBe(false)
+
+    // Transfer fires a "Delete complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Delete complete', { timeout: 30000 })
   })
 
   test('creates folder on MTP', async ({ tauriPage }) => {
@@ -762,6 +797,10 @@ test.describe('MTP cross-storage move', () => {
         timeout: 15000,
       })
       .toBeTruthy()
+
+    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
   })
 
   test('moves file from local to MTP', async ({ tauriPage }) => {
@@ -794,6 +833,10 @@ test.describe('MTP cross-storage move', () => {
     await expect
       .poll(() => !fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt')), { timeout: 15000 })
       .toBeTruthy()
+
+    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
   })
 })
 
@@ -817,35 +860,10 @@ test.describe('MTP clipboard rejection', () => {
       )
       .toBeTruthy()
 
-    // Press Cmd+C (copy to clipboard). Toast appears asynchronously.
+    // Press Cmd+C (copy to clipboard). Toast appears asynchronously; the
+    // helper polls for the message and dismisses it after asserting.
     await pressKey(tauriPage, `${CTRL_OR_META}+c`)
-
-    // Verify toast appears with MTP clipboard message
-    await expect
-      .poll(
-        async () => {
-          const text = await tauriPage.evaluate<string>(`(function() {
-                var toasts = document.querySelectorAll('.toast-message');
-                for (var i = 0; i < toasts.length; i++) {
-                    if (toasts[i].textContent.includes('F5')) return toasts[i].textContent;
-                }
-                return '';
-            })()`)
-          return text.length > 0
-        },
-        { timeout: 5000 },
-      )
-      .toBeTruthy()
-
-    // Verify exact message
-    const message = await tauriPage.evaluate<string>(`(function() {
-            var toasts = document.querySelectorAll('.toast-message');
-            for (var i = 0; i < toasts.length; i++) {
-                if (toasts[i].textContent.includes('F5')) return toasts[i].textContent;
-            }
-            return '';
-        })()`)
-    expect(message).toBe('Use F5 to copy files from MTP devices')
+    await expectAndDismissToast(tauriPage, 'Use F5 to copy files from MTP devices', { timeout: 5000 })
   })
 
   test('Cmd+X on MTP file shows rejection toast', async ({ tauriPage }) => {
@@ -867,24 +885,10 @@ test.describe('MTP clipboard rejection', () => {
       )
       .toBeTruthy()
 
-    // Press Cmd+X (cut to clipboard). Toast appears asynchronously, and
-    // pollUntilValue below handles waiting for it.
+    // Press Cmd+X (cut to clipboard). Toast appears asynchronously; the
+    // helper polls for the message and dismisses it after asserting.
     await pressKey(tauriPage, `${CTRL_OR_META}+x`)
-
-    // Verify toast with F6 message
-    const message = await pollUntilValue(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<string>(`(function() {
-            var toasts = document.querySelectorAll('.toast-message');
-            for (var i = 0; i < toasts.length; i++) {
-                if (toasts[i].textContent.includes('F6')) return toasts[i].textContent;
-            }
-            return '';
-        })()`),
-      5000,
-    )
-    expect(message).toBe('Use F6 to move files from MTP devices')
+    await expectAndDismissToast(tauriPage, 'Use F6 to move files from MTP devices', { timeout: 5000 })
   })
 
   test('Cmd+V into MTP folder shows rejection toast', async ({ tauriPage }) => {
@@ -921,25 +925,12 @@ test.describe('MTP clipboard rejection', () => {
         })()`)
     expect(rightFocused).toBe(true)
 
-    // Dispatch Cmd+V (macOS) / Ctrl+V (Linux) via trusted keyboard events.
-    // pollUntilValue below waits for the toast to appear, so no fixed delay here.
+    // Dispatch Cmd+V (macOS) / Ctrl+V (Linux) via trusted keyboard events,
+    // then assert+dismiss the rejection toast.
     await tauriPage.keyboard.down(CTRL_OR_META)
     await tauriPage.keyboard.press('v')
     await tauriPage.keyboard.up(CTRL_OR_META)
-
-    // Verify toast with F5 message about copying TO MTP.
-    // Check for ANY toast first to diagnose what's happening.
-    const message = await pollUntilValue(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<string>(`(function() {
-            var toasts = document.querySelectorAll('.toast-message');
-            if (toasts.length > 0) return toasts[toasts.length - 1].textContent || 'empty';
-            return '';
-        })()`),
-      5000,
-    )
-    expect(message).toBe('Use F5 to copy files to MTP devices')
+    await expectAndDismissToast(tauriPage, 'Use F5 to copy files to MTP devices', { timeout: 5000 })
   })
 })
 
@@ -1010,8 +1001,7 @@ test.describe('MTP read-only enforcement', () => {
         .toBeTruthy()
 
       // Dismiss the dialog
-      await tauriPage.keyboard.press('Escape')
-      await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+      await dismissOverlay(tauriPage)
     } else {
       // Neither dialog appeared. This is unexpected; fail explicitly.
       throw new Error('Expected either an alert or mkdir dialog to appear, but neither did')
@@ -1113,6 +1103,10 @@ test.describe('MTP large file transfer', () => {
     // Verify file size in MTP backing dir
     const stat = fs.statSync(destPath)
     expect(stat.size).toBe(expectedSize)
+
+    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
   })
 
   test('copies 50 MB file from MTP to local', async ({ tauriPage }) => {
@@ -1148,5 +1142,9 @@ test.describe('MTP large file transfer', () => {
     // Verify file size on local disk
     const stat = fs.statSync(destPath)
     expect(stat.size).toBe(expectedSize)
+
+    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
   })
 })

@@ -127,11 +127,10 @@ test.beforeEach(async ({ tauriPage }) => {
       )
       .toBeTruthy()
 
-    // Dismiss any lingering dialogs
-    await tauriPage.keyboard.press('Escape')
-    await tauriPage.keyboard.press('Escape')
-    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    // Previously: double-Escape + best-effort modal-overlay poll to clean up
+    // dialogs leaked from prior tests. The global afterEach safety net in
+    // fixtures.ts now catches and auto-cleans any leaks at the point of leak,
+    // so this defensive cleanup is no longer needed.
   }
 })
 

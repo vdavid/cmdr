@@ -36,6 +36,7 @@ import {
 } from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
+  expectAndDismissToast,
   getFixtureRoot,
   pollUntil,
   moveCursorToFile,
@@ -105,10 +106,10 @@ test.beforeEach(async ({ tauriPage }) => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
     })()`)
     await expect.poll(() => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
-    await tauriPage.keyboard.press('Escape')
-    await tauriPage.keyboard.press('Escape')
-    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    // Previously: double-Escape + best-effort modal-overlay poll to clean up
+    // dialogs leaked from prior tests. The global afterEach safety net in
+    // fixtures.ts now catches and auto-cleans any leaks at the point of leak,
+    // so this defensive cleanup is no longer needed.
   }
 })
 
@@ -164,6 +165,11 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
           )
           .toBeTruthy()
       }
+
+      // The first Space press fires the persistent Quick Look hint toast.
+      // Dismiss it before continuing so it doesn't sit through the delete
+      // and trip the safety-net leak guard at end-of-test.
+      await expectAndDismissToast(tauriPage, 'Space')
 
       // Press F8 to open the delete confirmation dialog (MTP volumes show
       // "Delete permanently" because they don't support trash).
@@ -265,6 +271,12 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
       for (const name of selection) {
         expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM', name))).toBe(false)
       }
+
+      // The progress-events poll above can finish a beat before the dialog
+      // settles. Waiting for the "Delete complete" toast both asserts the
+      // user-facing confirmation and gives the progress dialog time to
+      // auto-close before the safety-net check.
+      await expectAndDismissToast(tauriPage, 'Delete complete', { timeout: 30000 })
     } finally {
       // Tear down listeners and clear test state, in that order so a partial
       // failure can still clean up.

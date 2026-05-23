@@ -30,6 +30,7 @@ import {
 } from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
+  expectAndDismissToast,
   getFixtureRoot,
   pollUntil,
   moveCursorToFile,
@@ -98,10 +99,10 @@ test.beforeEach(async ({ tauriPage }) => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
     })()`)
     await expect.poll(() => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
-    await tauriPage.keyboard.press('Escape')
-    await tauriPage.keyboard.press('Escape')
-    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    // Previously: double-Escape + best-effort modal-overlay poll to clean up
+    // dialogs leaked from prior tests. The global afterEach safety net in
+    // fixtures.ts now catches and auto-cleans any leaks at the point of leak,
+    // so this defensive cleanup is no longer needed.
   }
 })
 
@@ -166,6 +167,11 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
           )
           .toBeTruthy()
       }
+
+      // The Space presses above fire the persistent Quick Look hint toast.
+      // Dismiss it before continuing so the safety net's leak check at end of
+      // test doesn't trip on this side-effect toast.
+      await expectAndDismissToast(tauriPage, 'Space')
 
       // Open the delete confirmation, confirm.
       await pressKey(tauriPage, 'F8')

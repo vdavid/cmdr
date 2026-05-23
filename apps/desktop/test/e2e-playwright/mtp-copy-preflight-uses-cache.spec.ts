@@ -34,8 +34,10 @@ import {
   mcpAwaitItem,
 } from '../e2e-shared/mcp-client.js'
 import {
+  dismissOverlay,
   dispatchMenuCommand,
   ensureAppReady,
+  expectAndDismissToast,
   getFixtureRoot,
   pollUntil,
   moveCursorToFile,
@@ -119,10 +121,10 @@ test.beforeEach(async ({ tauriPage }) => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
     })()`)
     await expect.poll(() => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
-    await tauriPage.keyboard.press('Escape')
-    await tauriPage.keyboard.press('Escape')
-    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    // Previously: double-Escape + best-effort modal-overlay poll to clean up
+    // dialogs leaked from prior tests. The global afterEach safety net in
+    // fixtures.ts now catches and auto-cleans any leaks at the point of leak,
+    // so this defensive cleanup is no longer needed.
   }
 })
 
@@ -158,6 +160,11 @@ test.describe('MTP copy pre-flight reuses watcher-backed listing', () => {
         )
         .toBeTruthy()
     }
+
+    // The first Space press fires the persistent Quick Look hint toast.
+    // Dismiss it before continuing so it doesn't sit through the rest of the
+    // test and trip the safety-net leak guard.
+    await expectAndDismissToast(tauriPage, 'Space')
 
     // Open the transfer-confirmation dialog via the same command path F5 hits
     // in production. `dispatchMenuCommand` is unaffected by DOM focus drift.
@@ -198,8 +205,7 @@ test.describe('MTP copy pre-flight reuses watcher-backed listing', () => {
     // Cancel the dialog. Don't run the copy: this spec is about the
     // pre-flight contract, and skipping the actual transfer keeps the test
     // independent of MTP write throughput.
-    await tauriPage.keyboard.press('Escape')
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+    await dismissOverlay(tauriPage)
 
     // Source files must still be on the device (no copy happened).
     for (const name of selection) {

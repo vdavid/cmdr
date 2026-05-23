@@ -16,7 +16,9 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
+  dismissOverlay,
   ensureAppReady,
+  expectAndDismissToast,
   getEntryName,
   getFixtureRoot,
   fileExistsInFocusedPane,
@@ -78,6 +80,10 @@ test.describe('Copy round-trip', () => {
     // Verify on disk
     expect(fs.existsSync(path.join(fixtureRoot, 'right', 'file-a.txt'))).toBe(true)
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(true)
+
+    // F5 success fires a "Copy complete: copied N file" toast. Asserting on it
+    // pins the user-facing confirmation (we ship the wording on purpose).
+    await expectAndDismissToast(tauriPage, 'Copy complete')
   })
 })
 
@@ -125,6 +131,9 @@ test.describe('Move round-trip', () => {
     // Verify on disk
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(false)
     expect(fs.existsSync(path.join(fixtureRoot, 'right', 'file-b.txt'))).toBe(true)
+
+    // F6 success fires a "Move complete: moved N file" toast.
+    await expectAndDismissToast(tauriPage, 'Move complete')
   })
 })
 
@@ -368,9 +377,7 @@ test.describe('Command palette', () => {
     expect(hasSortResult).toBe(true)
 
     // Close palette with Escape
-    await tauriPage.keyboard.press('Escape')
-
-    await expect.poll(async () => !(await tauriPage.isVisible('.palette-overlay')), { timeout: 3000 }).toBeTruthy()
+    await dismissOverlay(tauriPage)
   })
 })
 

@@ -16,7 +16,24 @@ import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { ensureMcpClient, mcpCall, mcpReadResource } from '../e2e-shared/mcp-client.js'
 
 /** Union type for tauriPage. Works in both Tauri and browser mode. */
-type PageLike = TauriPage | BrowserPageAdapter
+export type PageLike = TauriPage | BrowserPageAdapter
+
+/**
+ * Overlay selectors that `dismissOverlay` and the global afterEach safety net know
+ * about. Listed in priority order (foreground-most first): a popover open ON a
+ * dialog should close before the dialog itself. The afterEach probes all of them
+ * for leaks; `dismissOverlay` closes the topmost open one per call.
+ *
+ * If you add a new overlay surface (a new dialog kind, a new dropdown), add its
+ * selector here so the safety net catches leaks of it too.
+ */
+const OVERLAY_SELECTORS = [
+  '.filter-chip-popover',
+  '.palette-overlay',
+  '.search-overlay',
+  '.modal-overlay',
+  '.volume-dropdown',
+] as const
 
 // ── Selectors ────────────────────────────────────────────────────────────────
 
@@ -104,6 +121,134 @@ export async function pressKey(tauriPage: PageLike, key: string): Promise<void> 
     })()`)
 }
 
+// ── Overlay + toast dismissal ───────────────────────────────────────────────
+
+/**
+ * Dismiss the topmost open overlay (modal dialog, command palette, search
+ * dialog, filter-chip popover, volume picker dropdown) via synthetic Escape on
+ * the overlay element itself, then assert it actually closed.
+ *
+ * Why dispatch on the overlay and not at the document or window level:
+ *
+ * - `ModalDialog.svelte` binds its `onkeydown` on the `.modal-overlay` div, not
+ *   on `<svelte:window>`. A `document.dispatchEvent` bubbles up to `window` and
+ *   never reaches the overlay's listener (events don't descend into subtrees).
+ * - `tauriPage.keyboard.press('Escape')` works on macOS because the OS routes
+ *   the keystroke to the focused element (the overlay focuses itself on
+ *   mount), but flakes on Linux Xvfb where X11 focus delivery isn't reliable.
+ * - Dispatching on the overlay element with `bubbles: true` reaches BOTH
+ *   element-bound (target phase) and window-bound (bubble phase) listeners,
+ *   so it's the universal pattern across overlay kinds.
+ *
+ * Throws if no overlay is open (catches tests that call dismiss when nothing
+ * is up — typically a leak from an earlier step that already closed). Fails
+ * via `expect.poll` if the overlay doesn't close within 3s.
+ *
+ * For toasts, use `dismissAllToasts` instead — toasts dismiss via a Close
+ * button click, not via Escape.
+ */
+export async function dismissOverlay(tauriPage: PageLike): Promise<void> {
+  const selectorsJson = JSON.stringify(OVERLAY_SELECTORS)
+  const selector = await tauriPage.evaluate<string | null>(`(function(){
+        var sels = ${selectorsJson};
+        for (var i = 0; i < sels.length; i++) {
+            if (document.querySelector(sels[i]) !== null) return sels[i];
+        }
+        return null;
+    })()`)
+  if (selector === null) {
+    throw new Error(
+      `dismissOverlay: no overlay is open (checked ${OVERLAY_SELECTORS.join(', ')}). ` +
+        `If you expected one, something dismissed it earlier; ` +
+        `if not, drop the dismissOverlay() call.`,
+    )
+  }
+  const sel = JSON.stringify(selector)
+  await tauriPage.evaluate(`(function(){
+        var el = document.querySelector(${sel});
+        if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    })()`)
+  await expect.poll(async () => (await tauriPage.count(selector)) === 0, { timeout: 3000 }).toBeTruthy()
+}
+
+/**
+ * Assert that exactly ONE toast whose text contains `substring` appears within
+ * `timeout`, then dismiss that single toast.
+ *
+ * This is the ONLY public toast helper on purpose. Tests that trigger a
+ * user-visible toast should care that it appeared (the toast IS the user-
+ * facing confirmation; ship-the-wording is the contract) — not just clean
+ * up after it. Bundling the assert + dismiss into one call removes the
+ * "I'll just clean up the leak" shortcut: if you want to dismiss a toast,
+ * you have to assert it first.
+ *
+ * Per-toast scoping (not blanket cleanup): the helper closes ONLY the first
+ * `.toast` whose `.toast-message` text contains `substring`. Other toasts
+ * stay open and will fail the test via the global afterEach safety net. If
+ * your test fires multiple distinct toasts (rare), call this once per toast
+ * with a substring that uniquely identifies each.
+ *
+ * Substring match is case-sensitive. Pass a stable prefix or unique fragment;
+ * toast message format can change in non-load-bearing ways (whitespace,
+ * pluralization) and assertion shouldn't break on those.
+ *
+ * The global afterEach safety net catches any toast you forgot to dismiss
+ * and fails the test, so leaked toasts are loud, not silent.
+ */
+export async function expectAndDismissToast(
+  tauriPage: PageLike,
+  substring: string,
+  options: { timeout?: number } = {},
+): Promise<void> {
+  const timeout = options.timeout ?? 3000
+  const sub = JSON.stringify(substring)
+  // Match against the WHOLE toast's textContent, not just `.toast-message`:
+  // string-content toasts render their text in a `.toast-message` span, but
+  // component-content toasts (`QuickLookHintToastContent`, the AI download
+  // toast, error-report toasts) render the body straight into `.toast-content`
+  // without that wrapper. Reading the toast element's textContent covers both.
+  await expect
+    .poll(
+      async () =>
+        tauriPage.evaluate<boolean>(`(function(){
+            var toasts = document.querySelectorAll('.toast');
+            for (var i = 0; i < toasts.length; i++) {
+                if ((toasts[i].textContent || '').indexOf(${sub}) !== -1) return true;
+            }
+            return false;
+        })()`),
+      { timeout },
+    )
+    .toBeTruthy()
+  // Click the close button on the SAME toast we just asserted, leaving any
+  // other toasts open (they'll fail their own tests' afterEach checks).
+  await tauriPage.evaluate(`(function(){
+        var toasts = document.querySelectorAll('.toast');
+        for (var i = 0; i < toasts.length; i++) {
+            if ((toasts[i].textContent || '').indexOf(${sub}) !== -1) {
+                var close = toasts[i].querySelector('.toast-close');
+                if (close) close.click();
+                return;
+            }
+        }
+    })()`)
+  // Wait for the specific toast to be gone. We poll the same substring match
+  // to avoid races with neighboring toasts (which are out of scope here).
+  await expect
+    .poll(
+      async () =>
+        tauriPage.evaluate<boolean>(`(function(){
+            var toasts = document.querySelectorAll('.toast');
+            for (var i = 0; i < toasts.length; i++) {
+                if ((toasts[i].textContent || '').indexOf(${sub}) !== -1) return false;
+            }
+            return true;
+        })()`),
+      { timeout: 2000 },
+    )
+    .toBeTruthy()
+}
+
 // ── App readiness ────────────────────────────────────────────────────────────
 
 /**
@@ -184,11 +329,10 @@ export async function ensureAppReady(
       if (!volumeReset) {
         throw new Error(`ensureAppReady: both panes did not return to local volume '${LOCAL_VOLUME_NAME}' within 5s`)
       }
-      // Dismiss any lingering dialog the volume-touching spec opened.
-      await tauriPage.keyboard.press('Escape')
-      await tauriPage.keyboard.press('Escape')
-      // allowed-bare-poll: lingering dialog from a volume-touching spec may or may not be present; precautionary dismiss
-      await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+      // Previously: double-Escape + best-effort modal-overlay poll to clean up
+      // a dialog leaked by the volume-touching spec. The global afterEach
+      // safety net in fixtures.ts now catches and auto-cleans any leaks at
+      // the point of leak, so this defensive cleanup is no longer needed.
     }
   } catch {
     // mcp-client may not be available yet (very first test); fall through and

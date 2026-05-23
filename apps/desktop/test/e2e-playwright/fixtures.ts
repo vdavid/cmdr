@@ -76,4 +76,62 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
   } catch {
     // See beforeEach.
   }
+
+  // Overlay + toast leak guard. Catches tests that opened a dialog, popover,
+  // dropdown, or toast without dismissing it. Without this hook, leaked UI
+  // state cascades silently into the next test's beforeEach, where the
+  // failure surfaces against the wrong test and looks like a flake.
+  //
+  // The probe runs unconditionally; if the test itself already failed,
+  // Playwright bundles the probe's findings with the original failure.
+  //
+  // Auto-clean (Escape on each overlay, click each toast's close button)
+  // runs AFTER the failure decision so the next test starts from a clean
+  // slate even when this hook fails. Leaks don't cascade.
+  let leaked: string[] = []
+  try {
+    leaked = await tauriPage.evaluate<string[]>(`(function(){
+            var overlays = ['.filter-chip-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
+            var found = overlays.filter(function(s){ return document.querySelector(s) !== null; });
+            // Include each toast's first-100-char text in the leak label so
+            // the failure message tells the test writer exactly what to assert
+            // (e.g. \`expectAndDismissToast(tauriPage, 'Copy complete')\`).
+            var toasts = document.querySelectorAll('.toast');
+            for (var i = 0; i < toasts.length; i++) {
+                var text = (toasts[i].textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 100);
+                found.push('.toast["' + text + '"]');
+            }
+            return found;
+        })()`)
+  } catch {
+    // If the probe itself fails (e.g. the app crashed mid-test), don't
+    // mask the original failure with a probe error.
+    return
+  }
+
+  if (leaked.length === 0) return
+
+  // Auto-clean: dispatch Escape on each leaked overlay (target-phase fires
+  // the overlay-bound handler in ModalDialog, bubble-phase fires
+  // window-bound handlers elsewhere). Click each toast's close button.
+  try {
+    await tauriPage.evaluate(`(function(){
+            var overlays = ['.filter-chip-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
+            overlays.forEach(function(s){
+                var el = document.querySelector(s);
+                if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            });
+            var btns = document.querySelectorAll('.toast .toast-close');
+            for (var i = 0; i < btns.length; i++) btns[i].click();
+        })()`)
+  } catch {
+    // Best-effort cleanup; the failure below is the load-bearing signal.
+  }
+
+  throw new Error(
+    `Test left UI artifacts open: ${leaked.join(', ')}. ` +
+      `Use dismissOverlay() to close dialogs/popovers/dropdowns, dismissAllToasts() to clear toasts ` +
+      `(or click each toast's X). See apps/desktop/test/e2e-playwright/CLAUDE.md § "Closing overlays" ` +
+      `for the full rule and the dispatch-on-overlay-not-document rationale.`,
+  )
 })

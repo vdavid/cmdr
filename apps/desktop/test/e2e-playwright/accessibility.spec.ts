@@ -17,6 +17,7 @@ import { fileURLToPath } from 'url'
 import { test, expect } from './fixtures.js'
 import {
   closeScopedWindow,
+  dismissOverlay,
   dispatchMenuCommand,
   ensureAppReady,
   executeViaCommandPalette,
@@ -141,27 +142,6 @@ async function runAxeAudit(
   return { critical, serious, moderate, minor, all: results.violations }
 }
 
-/** Dismiss a modal dialog with Escape and wait for it to close. */
-async function dismissDialog(tauriPage: PageLike): Promise<void> {
-  // Dispatch the synthetic Escape on the overlay element itself, not the document.
-  // `ModalDialog.svelte`'s Escape handler is bound on the overlay div
-  // (`<div onkeydown={handleOverlayKeydown}>`), not on `<svelte:window>`, so a
-  // document-level event never reaches it. We previously used
-  // `tauriPage.keyboard.press('Escape')`, which works on macOS because the OS
-  // routes the keystroke to the focused element (the overlay focuses itself on
-  // mount), but flakes on Linux Xvfb because OS focus delivery isn't reliable
-  // under a headless display server.
-  //
-  // The fallback to document dispatch covers non-ModalDialog cases that might
-  // listen at the window level.
-  await tauriPage.evaluate(`(function(){
-        var overlay = document.querySelector('.modal-overlay');
-        var target = overlay || document;
-        target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    })()`)
-  await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
-}
-
 /** Open the command palette overlay. */
 async function openCommandPalette(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
@@ -227,7 +207,7 @@ for (const mode of ['light', 'dark'] as const) {
       await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
       const { all } = await runAxeAudit(tauriPage, `Copy dialog (${mode})`, TRANSFER_DIALOG)
-      await dismissDialog(tauriPage)
+      await dismissOverlay(tauriPage)
       expect(all, `Found ${String(all.length)} violation(s) in Copy dialog (${mode})`).toHaveLength(0)
     })
 
@@ -240,7 +220,7 @@ for (const mode of ['light', 'dark'] as const) {
       await tauriPage.waitForSelector(deleteDialog, 5000)
 
       const { all } = await runAxeAudit(tauriPage, `Delete dialog (${mode})`, deleteDialog)
-      await dismissDialog(tauriPage)
+      await dismissOverlay(tauriPage)
       expect(all, `Found ${String(all.length)} violation(s) in Delete dialog (${mode})`).toHaveLength(0)
     })
 
@@ -252,7 +232,7 @@ for (const mode of ['light', 'dark'] as const) {
       await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
       const { all } = await runAxeAudit(tauriPage, `Move dialog (${mode})`, TRANSFER_DIALOG)
-      await dismissDialog(tauriPage)
+      await dismissOverlay(tauriPage)
       expect(all, `Found ${String(all.length)} violation(s) in Move dialog (${mode})`).toHaveLength(0)
     })
 
@@ -263,7 +243,7 @@ for (const mode of ['light', 'dark'] as const) {
       await tauriPage.waitForSelector('[data-dialog-id="about"]', 5000)
 
       const { all } = await runAxeAudit(tauriPage, `About dialog (${mode})`, '[data-dialog-id="about"]')
-      await dismissDialog(tauriPage)
+      await dismissOverlay(tauriPage)
       expect(all, `Found ${String(all.length)} violation(s) in About dialog (${mode})`).toHaveLength(0)
     })
 
@@ -276,7 +256,7 @@ for (const mode of ['light', 'dark'] as const) {
       await tauriPage.waitForSelector('[data-dialog-id="license"]', 3000)
 
       const { all } = await runAxeAudit(tauriPage, `License dialog (${mode})`, '[data-dialog-id="license"]')
-      await dismissDialog(tauriPage)
+      await dismissOverlay(tauriPage)
       expect(all, `Found ${String(all.length)} violation(s) in License dialog (${mode})`).toHaveLength(0)
     })
 
@@ -288,8 +268,7 @@ for (const mode of ['light', 'dark'] as const) {
       const { all } = await runAxeAudit(tauriPage, `Command palette (${mode})`, '.palette-overlay')
 
       // Dismiss the palette
-      await tauriPage.keyboard.press('Escape')
-      await expect.poll(async () => !(await tauriPage.isVisible('.palette-overlay')), { timeout: 3000 }).toBeTruthy()
+      await dismissOverlay(tauriPage)
 
       expect(all, `Found ${String(all.length)} violation(s) in command palette (${mode})`).toHaveLength(0)
     })
@@ -302,8 +281,7 @@ for (const mode of ['light', 'dark'] as const) {
       const { all } = await runAxeAudit(tauriPage, `Search dialog (${mode})`, '.search-overlay')
 
       // Dismiss the search dialog
-      await tauriPage.keyboard.press('Escape')
-      await expect.poll(async () => !(await tauriPage.isVisible('.search-overlay')), { timeout: 3000 }).toBeTruthy()
+      await dismissOverlay(tauriPage)
 
       expect(all, `Found ${String(all.length)} violation(s) in search dialog (${mode})`).toHaveLength(0)
     })

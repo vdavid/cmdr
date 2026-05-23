@@ -33,9 +33,12 @@ test.describe('Search dialog: recent searches', () => {
     // waits for the index to land a result, then polls the persistence
     // IPC. The 8 s default is too tight for the combined latency.
     test.setTimeout(15000)
-    // Close any leftover search overlay from a prior spec before app-ready
-    // runs. `ensureAppReady` dismisses `.modal-overlay` only; `.search-overlay`
-    // is its own surface and can leak across tests.
+    // Defensive `.search-overlay` cleanup. The global afterEach safety net in
+    // fixtures.ts auto-cleans leaked overlays after each test, BUT this spec's
+    // beforeEach drives the search dialog into a specific prefill state via
+    // MCP (`open_search_dialog` with `autoRun: true`); reopening from a
+    // stale-but-just-auto-cleaned state can race the prefill listener and
+    // leave the dialog without results. Re-dismiss here for determinism.
     await tauriPage.evaluate(`(function(){
         var overlay = document.querySelector('.search-overlay');
         if (overlay) overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));

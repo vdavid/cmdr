@@ -26,6 +26,7 @@ import {
   CTRL_OR_META,
   dispatchMenuCommand,
   ensureAppReady,
+  expectAndDismissToast,
   focusPane,
   getFixtureRoot,
   pollUntil,
@@ -88,10 +89,10 @@ test.beforeEach(async ({ tauriPage }) => {
       invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
     })()`)
     await expect.poll(() => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
-    await tauriPage.keyboard.press('Escape')
-    await tauriPage.keyboard.press('Escape')
-    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    // Previously: double-Escape + best-effort modal-overlay poll to clean up
+    // dialogs leaked from prior tests. The global afterEach safety net in
+    // fixtures.ts now catches and auto-cleans any leaks at the point of leak,
+    // so this defensive cleanup is no longer needed.
   }
 })
 
@@ -141,6 +142,10 @@ test.describe('MTP cross-volume move conflicts', () => {
 
     // Source should be deleted from MTP
     expect(fs.existsSync(srcPath)).toBe(false)
+
+    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
   })
 
   test('MTP-to-local move with skip preserves both files', async ({ tauriPage }) => {
@@ -170,6 +175,10 @@ test.describe('MTP cross-volume move conflicts', () => {
 
     // Source still exists (not moved because skipped)
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
+
+    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
   })
 
   test('local-to-MTP move with overwrite replaces MTP file', async ({ tauriPage }) => {
@@ -216,6 +225,10 @@ test.describe('MTP cross-volume move conflicts', () => {
 
     // Local source should be gone (moved)
     expect(fs.existsSync(localSrc)).toBe(false)
+
+    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
   })
 })
 
@@ -272,6 +285,10 @@ test.describe('MTP same-volume move conflicts', () => {
 
     // Source should be gone from Documents
     expect(fs.existsSync(docsSrc)).toBe(false)
+
+    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
   })
 
   test('same-volume MTP move with skip preserves both files', async ({ tauriPage }) => {
@@ -307,6 +324,10 @@ test.describe('MTP same-volume move conflicts', () => {
 
     // Source still exists (not moved because skipped)
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
+
+    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
   })
 })
 
@@ -433,5 +454,9 @@ test.describe('MTP cross-volume copy conflicts', () => {
           delete window.__skipBytesTestCompleteId;
         })()`)
     }
+
+    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // pins the user-facing confirmation and clears the leak guard.
+    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
   })
 })
