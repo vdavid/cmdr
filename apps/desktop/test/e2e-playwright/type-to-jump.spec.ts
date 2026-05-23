@@ -17,7 +17,7 @@
 
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot, pollUntil } from './helpers.js'
+import { ensureAppReady, getFixtureRoot } from './helpers.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -86,24 +86,26 @@ test.describe('Type-to-jump', () => {
     await typeChars(tauriPage, 'file')
 
     // The indicator must surface the live buffer.
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const text = await indicatorText(tauriPage)
-        return text.includes('Jump:') && text.includes('file')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const text = await indicatorText(tauriPage)
+          return text.includes('Jump:') && text.includes('file')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     // The cursor must have landed on a file-* entry.
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const name = await cursorName(tauriPage)
-        return name.startsWith('file-')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const name = await cursorName(tauriPage)
+          return name.startsWith('file-')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
   })
 
   test('ESC clears the buffer and hides the indicator', async ({ tauriPage }) => {
@@ -116,7 +118,7 @@ test.describe('Type-to-jump', () => {
     // ESC should clear the buffer + indicator. The dispatcher routes ESC to
     // `clearJumpState()` before falling through to other handlers.
     await tauriPage.keyboard.press('Escape')
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible(INDICATOR)), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible(INDICATOR)), { timeout: 3000 }).toBeTruthy()
   })
 
   test('Cmd/Ctrl-modified keys do not feed the buffer', async ({ tauriPage }) => {
@@ -138,7 +140,7 @@ test.describe('Type-to-jump', () => {
     // Give the dispatcher a tick. If the modifier skip worked, the indicator
     // must NOT be in the DOM. Quick poll catches the rare case where the
     // keystroke does fire the indicator before being cleared.
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible(INDICATOR)), 1000)
+    await expect.poll(async () => !(await tauriPage.isVisible(INDICATOR)), { timeout: 1000 }).toBeTruthy()
     expect(await tauriPage.isVisible(INDICATOR)).toBe(false)
   })
 
@@ -152,13 +154,16 @@ test.describe('Type-to-jump', () => {
     await tauriPage.keyboard.press('Tab')
 
     // Once the swap has settled, no indicator should be visible anywhere.
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const count = await tauriPage.evaluate<number>(`document.querySelectorAll(${JSON.stringify(INDICATOR)}).length`)
-        return count === 0
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const count = await tauriPage.evaluate<number>(
+            `document.querySelectorAll(${JSON.stringify(INDICATOR)}).length`,
+          )
+          return count === 0
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
   })
 })

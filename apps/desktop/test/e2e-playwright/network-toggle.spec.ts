@@ -66,7 +66,7 @@ async function openVolumePicker(tauriPage: Parameters<typeof pollUntil>[0]): Pro
 async function closeVolumePicker(tauriPage: Parameters<typeof pollUntil>[0]): Promise<void> {
   if (!(await tauriPage.isVisible(PICKER_DROPDOWN))) return
   await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`)
-  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible(PICKER_DROPDOWN)), 3000)
+  await expect.poll(async () => !(await tauriPage.isVisible(PICKER_DROPDOWN)), { timeout: 3000 }).toBeTruthy()
 }
 
 test.describe('Network toggle in volume picker', () => {
@@ -86,17 +86,20 @@ test.describe('Network toggle in volume picker', () => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
       })()`)
       // Wait for both panes to actually be on the local volume before asserting picker UX.
-      await pollUntil(
-        tauriPage,
-        async () => {
-          const state = await mcpReadResource('cmdr://state')
-          const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
-            line.replace(/^\n {2}volume: /, ''),
-          )
-          return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
-        },
-        5000,
-      )
+      await expect
+        .poll(
+          async () => {
+            const state = await mcpReadResource('cmdr://state')
+            const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
+              line.replace(/^\n {2}volume: /, ''),
+            )
+            return (
+              volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+            )
+          },
+          { timeout: 5000 },
+        )
+        .toBeTruthy()
     }
 
     await ensureAppReady(tauriPage)
@@ -166,10 +169,10 @@ test.describe('Network toggle in volume picker', () => {
     // dropdown's `.volume-item` list may still be re-rendering with the new
     // label. A one-shot click against an in-flight render would silently no-op
     // and then we'd wait for a dropdown-close that won't come.
-    const clicked = await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(`(function() {
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`(function() {
           var items = document.querySelectorAll('.volume-item');
           for (var i = 0; i < items.length; i++) {
             var label = items[i].querySelector('.volume-label');
@@ -180,14 +183,14 @@ test.describe('Network toggle in volume picker', () => {
           }
           return false;
         })()`),
-      2000,
-    )
-    expect(clicked).toBe(true)
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
 
     // The dropdown should close. `handleVolumeSelect` sets `isOpen = false` up front, so
     // both the early-return and the navigate paths close the dropdown, but only the
     // early-return path leaves the breadcrumb unchanged (next assertion).
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible(PICKER_DROPDOWN)), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible(PICKER_DROPDOWN)), { timeout: 3000 }).toBeTruthy()
     expect(await tauriPage.isVisible(PICKER_DROPDOWN)).toBe(false)
 
     // Active volume must NOT have changed: the disabled-network branch returns early
@@ -205,13 +208,14 @@ test.describe('Network toggle in volume picker', () => {
 /** Polls the Network entry label until it matches the expected value, then returns it. */
 async function pollUntilLabel(tauriPage: Parameters<typeof pollUntil>[0], expected: string): Promise<string | null> {
   let label: string | null = null
-  await pollUntil(
-    tauriPage,
-    async () => {
-      label = await readNetworkLabel(tauriPage)
-      return label === expected
-    },
-    3000,
-  )
+  await expect
+    .poll(
+      async () => {
+        label = await readNetworkLabel(tauriPage)
+        return label === expected
+      },
+      { timeout: 3000 },
+    )
+    .toBeTruthy()
   return label
 }

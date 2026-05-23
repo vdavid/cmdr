@@ -12,7 +12,6 @@ import {
   findFileIndex,
   moveCursorToFile,
   skipParentEntry,
-  pollUntil,
   pressKey,
   MKDIR_DIALOG,
   TRANSFER_DIALOG,
@@ -83,20 +82,21 @@ test.describe('Keyboard navigation', () => {
     await tauriPage.keyboard.press('ArrowDown')
 
     // Wait for cursor position to change
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const newIndex = await tauriPage.evaluate<number>(`(function() {
+    await expect
+      .poll(
+        async () => {
+          const newIndex = await tauriPage.evaluate<number>(`(function() {
                     var entries = document.querySelectorAll('.file-entry');
                     for (var i = 0; i < entries.length; i++) {
                         if (entries[i].classList.contains('is-under-cursor')) return i;
                     }
                     return -1;
                 })()`)
-        return newIndex >= 0 && newIndex !== initialCursorIndex
-      },
-      3000,
-    )
+          return newIndex >= 0 && newIndex !== initialCursorIndex
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     const newCursorIndex = await tauriPage.evaluate<number>(`(function() {
             var entries = document.querySelectorAll('.file-entry');
@@ -125,16 +125,17 @@ test.describe('Keyboard navigation', () => {
     // Press Tab to switch to right pane
     await tauriPage.keyboard.press('Tab')
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.evaluate<string>(
-          `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('is-focused')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('is-focused')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     // Verify right pane is now focused
     const rightPaneClass = await tauriPage.evaluate<string>(
@@ -150,16 +151,17 @@ test.describe('Keyboard navigation', () => {
     // Press Tab again to go back to left pane
     await tauriPage.keyboard.press('Tab')
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.evaluate<string>(
-          `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('is-focused')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('is-focused')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     const leftPaneClassFinal = await tauriPage.evaluate<string>(
       `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
@@ -181,14 +183,15 @@ test.describe('Keyboard navigation', () => {
     await pressKey(tauriPage, 'Space')
 
     // Wait for selection state to change
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.getAttribute('.file-entry.is-under-cursor', 'class')
-        return cls?.includes('is-selected') ?? false
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.getAttribute('.file-entry.is-under-cursor', 'class')
+          return cls?.includes('is-selected') ?? false
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     cursorClass = await tauriPage.getAttribute('.file-entry.is-under-cursor', 'class')
     expect(cursorClass).toContain('is-selected')
@@ -196,14 +199,15 @@ test.describe('Keyboard navigation', () => {
     // Press Space again to deselect
     await pressKey(tauriPage, 'Space')
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.getAttribute('.file-entry.is-under-cursor', 'class')
-        return !(cls?.includes('is-selected') ?? false)
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.getAttribute('.file-entry.is-under-cursor', 'class')
+          return !(cls?.includes('is-selected') ?? false)
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     cursorClass = await tauriPage.getAttribute('.file-entry.is-under-cursor', 'class')
     expect(cursorClass).not.toContain('is-selected')
@@ -248,17 +252,18 @@ test.describe('Mouse interactions', () => {
         })()`)
 
     // Wait for cursor to move to the clicked entry
-    await pollUntil(
-      tauriPage,
-      async () => {
-        return tauriPage.evaluate<boolean>(`(function() {
+    await expect
+      .poll(
+        async () => {
+          return tauriPage.evaluate<boolean>(`(function() {
                     var pane = document.querySelectorAll('.file-pane')[0];
                     var entries = pane.querySelectorAll('.file-entry');
                     return entries[${String(targetIndex)}]?.classList.contains('is-under-cursor') || false;
                 })()`)
-      },
-      5000,
-    )
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     const entryClass = await tauriPage.evaluate<string>(
       `document.querySelectorAll('.file-pane')[0]?.querySelectorAll('.file-entry')[${String(targetIndex)}]?.getAttribute('class') || ''`,
@@ -279,16 +284,17 @@ test.describe('Mouse interactions', () => {
             if (entry) entry.click();
         })()`)
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.evaluate<string>(
-          `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('is-focused')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('is-focused')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     const rightPaneClass = await tauriPage.evaluate<string>(
       `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
@@ -302,16 +308,17 @@ test.describe('Mouse interactions', () => {
             if (entry) entry.click();
         })()`)
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.evaluate<string>(
-          `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('is-focused')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('is-focused')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     const leftPaneClass = await tauriPage.evaluate<string>(
       `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
@@ -332,10 +339,10 @@ test.describe('Navigation', () => {
     await tauriPage.keyboard.press('Enter')
 
     // Wait for nested-file.txt to appear
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(`(function() {
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`(function() {
                     var pane = document.querySelector('.file-pane.is-focused');
                     if (!pane) return false;
                     var entries = pane.querySelectorAll('.file-entry');
@@ -344,8 +351,9 @@ test.describe('Navigation', () => {
                     }
                     return false;
                 })()`),
-      5000,
-    )
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
   })
 
   test('navigates to parent with Backspace', async ({ tauriPage }) => {
@@ -380,10 +388,10 @@ test.describe('Navigation', () => {
       log('cursor on sub-dir')
       await tauriPage.keyboard.press('Enter')
       log('Enter pressed')
-      await pollUntil(
-        tauriPage,
-        async () =>
-          tauriPage.evaluate<boolean>(`(function() {
+      await expect
+        .poll(
+          async () =>
+            tauriPage.evaluate<boolean>(`(function() {
                         var pane = document.querySelector('.file-pane.is-focused');
                         if (!pane) return false;
                         var entries = pane.querySelectorAll('.file-entry');
@@ -391,8 +399,9 @@ test.describe('Navigation', () => {
                             return (e.querySelector('.name') || {}).textContent === 'nested-file.txt';
                         });
                     })()`),
-        2000,
-      )
+          { timeout: 2000 },
+        )
+        .toBeTruthy()
       log('inside sub-dir')
     }
 
@@ -401,10 +410,10 @@ test.describe('Navigation', () => {
     log('Backspace pressed')
 
     // Accept either landing: left/ (sub-dir visible) or fixture root (left visible)
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(`(function() {
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`(function() {
                     var pane = document.querySelector('.file-pane.is-focused');
                     if (!pane) return false;
                     var entries = pane.querySelectorAll('.file-entry');
@@ -413,8 +422,9 @@ test.describe('Navigation', () => {
                     });
                     return names.indexOf('sub-dir') >= 0 || names.indexOf('left') >= 0;
                 })()`),
-      2000,
-    )
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
     log('parent listing settled')
   })
 })
@@ -447,7 +457,7 @@ test.describe('New folder dialog', () => {
     // Close dialog with Escape
     await tauriPage.keyboard.press('Escape')
 
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
   })
 
   test('creates a folder and closes the dialog', async ({ tauriPage }) => {
@@ -460,7 +470,7 @@ test.describe('New folder dialog', () => {
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
     // Wait for the OK button to enable in response to the typed name
-    await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
+    await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
 
     // Verify OK button is enabled
     expect(await tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`)).toBe(true)
@@ -469,7 +479,7 @@ test.describe('New folder dialog', () => {
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
     // Wait for dialog to close
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
   })
 })
 
@@ -494,7 +504,7 @@ test.describe('Transfer dialogs', () => {
 
     await tauriPage.keyboard.press('Escape')
 
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
     expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
   })
 
@@ -519,7 +529,7 @@ test.describe('Transfer dialogs', () => {
 
     await tauriPage.keyboard.press('Escape')
 
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
     expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
   })
 
@@ -541,7 +551,7 @@ test.describe('Transfer dialogs', () => {
     // Cancel is always enabled; click directly. No fixed wait needed.
     await tauriPage.click(`${MKDIR_DIALOG} .btn-secondary`)
 
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
     expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
 
     // File listing must not have grown; Cancel must not create the folder.
@@ -572,7 +582,7 @@ test.describe('Delete dialog', () => {
 
     // Close the dialog without confirming.
     await tauriPage.keyboard.press('Escape')
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
 
     // The file must still be in the listing after Escape.
     const stillThere = await tauriPage.evaluate<boolean>(

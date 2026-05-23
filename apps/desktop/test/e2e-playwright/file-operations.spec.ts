@@ -23,7 +23,6 @@ import {
   fileExistsInPane,
   moveCursorToFile,
   executeViaCommandPalette,
-  pollUntil,
   MKDIR_DIALOG,
   TRANSFER_DIALOG,
   CTRL_OR_META,
@@ -57,23 +56,24 @@ test.describe('Copy round-trip', () => {
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
 
     // Wait for dialog to close (confirms copy succeeded)
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
 
     // Switch to right pane to verify the file appeared in DOM
     await tauriPage.keyboard.press('Tab')
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.evaluate<string>(
-          `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('is-focused')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('is-focused')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, 'file-a.txt'), 5000)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'file-a.txt'), { timeout: 5000 }).toBeTruthy()
 
     // Verify on disk
     expect(fs.existsSync(path.join(fixtureRoot, 'right', 'file-a.txt'))).toBe(true)
@@ -100,26 +100,27 @@ test.describe('Move round-trip', () => {
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
 
     // Wait for dialog to close
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
 
     // Verify file-b.txt is gone from left pane DOM
-    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'file-b.txt', 0)), 5000)
+    await expect.poll(async () => !(await fileExistsInPane(tauriPage, 'file-b.txt', 0)), { timeout: 5000 }).toBeTruthy()
 
     // Switch to right pane and verify file-b.txt appeared
     await tauriPage.keyboard.press('Tab')
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.evaluate<string>(
-          `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('is-focused')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('is-focused')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, 'file-b.txt'), 5000)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'file-b.txt'), { timeout: 5000 }).toBeTruthy()
 
     // Verify on disk
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(false)
@@ -154,28 +155,34 @@ test.describe('Rename round-trip', () => {
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
     // Wait for Svelte to flush the reactive update that mirrors the cleared input.
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ''`),
-      2000,
-    )
+    await expect
+      .poll(async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ''`), {
+        timeout: 2000,
+      })
+      .toBeTruthy()
     await tauriPage.type('.rename-input', 'renamed-file.txt')
     // Wait until the typed value is fully reflected in the input before Enter.
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'renamed-file.txt'`),
-      3000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'renamed-file.txt'`),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
     await tauriPage.press('.rename-input', 'Enter')
 
     // Wait for rename input to disappear
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.rename-input')), 5000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
 
     // Verify new name appears
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, 'renamed-file.txt'), 5000)
+    await expect
+      .poll(async () => fileExistsInFocusedPane(tauriPage, 'renamed-file.txt'), { timeout: 5000 })
+      .toBeTruthy()
 
     // Verify old name is gone (poll because file watcher updates are async)
-    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')), 5000)
+    await expect
+      .poll(async () => !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')), { timeout: 5000 })
+      .toBeTruthy()
 
     // Verify on disk
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'renamed-file.txt'))).toBe(true)
@@ -196,15 +203,15 @@ test.describe('Create folder round-trip', () => {
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
     // Wait for the OK button to enable in response to the typed name
-    await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
+    await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
 
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
     // Wait for dialog to close
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
 
     // Verify folder appears in listing
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, folderName), 5000)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, folderName), { timeout: 5000 }).toBeTruthy()
 
     // Verify on disk
     const folderPath = path.join(fixtureRoot, 'left', folderName)
@@ -229,13 +236,13 @@ test.describe('Create folder round-trip', () => {
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
-    await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
+    await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
     // Dialog closes and the listing renders the new folder. fileExistsInFocusedPane
     // polls the DOM, so by the time it returns true the diff has been applied.
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, folderName), 5000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, folderName), { timeout: 5000 }).toBeTruthy()
 
     // Cursor must be on the new folder and stay there. Five checks at 80 ms
     // intervals cover both the immediate-post-diff window and any later
@@ -261,7 +268,7 @@ test.describe('View mode toggle', () => {
     // Switch to Full view via command palette
     await executeViaCommandPalette(tauriPage, 'Full view')
 
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('.full-list-container'), 5000)
+    await expect.poll(async () => tauriPage.isVisible('.full-list-container'), { timeout: 5000 }).toBeTruthy()
 
     // Full mode should have a header row
     expect(await tauriPage.isVisible('.full-list-container .header-row')).toBe(true)
@@ -269,7 +276,7 @@ test.describe('View mode toggle', () => {
     // Switch to Brief view
     await executeViaCommandPalette(tauriPage, 'Brief view')
 
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('.brief-list-container'), 5000)
+    await expect.poll(async () => tauriPage.isVisible('.brief-list-container'), { timeout: 5000 }).toBeTruthy()
   })
 })
 
@@ -298,17 +305,19 @@ test.describe('Hidden files toggle', () => {
     const hiddenVisibleAtStart = await fileExistsInFocusedPane(tauriPage, '.hidden-file')
     if (!hiddenVisibleAtStart) {
       await toggleHidden()
-      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 3000)
+      await expect.poll(async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), { timeout: 3000 }).toBeTruthy()
     }
 
     // Now hidden files are visible, so toggle them OFF
     await toggleHidden()
-    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, '.hidden-file')), 3000)
+    await expect
+      .poll(async () => !(await fileExistsInFocusedPane(tauriPage, '.hidden-file')), { timeout: 3000 })
+      .toBeTruthy()
     expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(false)
 
     // Toggle back ON so the hidden file should reappear
     await toggleHidden()
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 3000)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), { timeout: 3000 }).toBeTruthy()
     expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(true)
   })
 })
@@ -335,14 +344,15 @@ test.describe('Command palette', () => {
     await tauriPage.fill('.palette-overlay .search-input', 'sort')
 
     // Wait for filtered results
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const count = await tauriPage.count('.palette-overlay .result-item')
-        return count > 0
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const count = await tauriPage.count('.palette-overlay .result-item')
+          return count > 0
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     const resultCount = await tauriPage.count('.palette-overlay .result-item')
     expect(resultCount).toBeGreaterThan(0)
@@ -360,7 +370,7 @@ test.describe('Command palette', () => {
     // Close palette with Escape
     await tauriPage.keyboard.press('Escape')
 
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.palette-overlay')), { timeout: 3000 }).toBeTruthy()
   })
 })
 
@@ -371,16 +381,17 @@ test.describe('Empty directory', () => {
     // Switch to right pane (which starts empty)
     await tauriPage.keyboard.press('Tab')
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.evaluate<string>(
-          `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('is-focused')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[1]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('is-focused')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     // Verify right pane is focused
     const rightPaneClass = await tauriPage.evaluate<string>(
@@ -410,16 +421,17 @@ test.describe('Empty directory', () => {
     // Can still switch back to left pane
     await tauriPage.keyboard.press('Tab')
 
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const cls = await tauriPage.evaluate<string>(
-          `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('is-focused')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('is-focused')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     const leftPaneClass = await tauriPage.evaluate<string>(
       `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,

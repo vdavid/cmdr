@@ -14,7 +14,6 @@ import {
   ensureAppReady,
   getFixtureRoot,
   moveCursorToFile,
-  pollUntil,
   sleep,
   TRANSFER_DIALOG,
 } from './helpers.js'
@@ -90,22 +89,21 @@ test.describe('Cancel and rollback', () => {
       await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
       await clickTransferStart(tauriPage)
 
-      // Wait for a progress event proving we're mid-copy. `pollUntil` is fine
+      // Wait for a progress event proving we're mid-copy. Polling is fine
       // here: the underlying signal is event-driven (events arrive in the
       // buffer as the backend fires them), the poll is just how the Node-side
       // test sees the buffer. Each iteration reads the in-memory array, no
       // FS roundtrip. 10 s budget covers ~50 progress events at the backend's
       // 200 ms throttle (10 files × 200 ms = 2 s worst case here).
-      const midCopySeen = await pollUntil(
-        tauriPage,
-        async () =>
-          tauriPage.evaluate<boolean>(
-            `(window.__cancelCopyTestEvents ?? []).some(p => p.phase === 'copying' && p.filesDone >= 1 && p.filesDone < p.filesTotal)`,
-          ),
-        10000,
-        25,
-      )
-      expect(midCopySeen).toBe(true)
+      await expect
+        .poll(
+          async () =>
+            tauriPage.evaluate<boolean>(
+              `(window.__cancelCopyTestEvents ?? []).some(p => p.phase === 'copying' && p.filesDone >= 1 && p.filesDone < p.filesTotal)`,
+            ),
+          { timeout: 10000, intervals: [25] },
+        )
+        .toBeTruthy()
 
       // Click Rollback on the progress dialog.
       const clicked = await tauriPage.evaluate<boolean>(`(function(){
@@ -121,7 +119,7 @@ test.describe('Cancel and rollback', () => {
       expect(clicked).toBe(true)
 
       // Wait for rollback to finish and dialogs to close.
-      await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+      await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
 
       // Rollback must remove the partial files and the directory we created
       // for them. Either right/partial/ doesn't exist, or it's empty.
@@ -303,18 +301,18 @@ test.describe('Type mismatch conflicts', () => {
       });
     })()`)
 
-    const ready = await pollUntil(
-      tauriPage,
-      async () => {
-        return tauriPage.evaluate<boolean>(`(function() {
+    await expect
+      .poll(
+        async () => {
+          return tauriPage.evaluate<boolean>(`(function() {
           var pane = document.querySelectorAll('.file-pane')[0];
           if (!pane) return false;
           return !!pane.querySelector('[data-filename="config"]');
         })()`)
-      },
-      3000,
-    )
-    expect(ready).toBe(true)
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     await tauriPage.evaluate(`(function() {
       var entry = document.querySelectorAll('.file-pane')[0]?.querySelector('.file-entry');

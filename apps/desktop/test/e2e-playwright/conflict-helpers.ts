@@ -192,7 +192,7 @@ export async function waitForConflictPolicy(tauriPage: PageLike): Promise<void> 
   // 15 s value was dead under the suite's 8 s per-test ceiling; it just hid
   // failures behind the outer timeout instead of producing a useful error.
   const found = await pollUntil(tauriPage, async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`), 5000)
-  expect(found).toBe(true)
+  if (!found) throw new Error('waitForConflictPolicy: .conflict-policy radio buttons did not appear within 5s')
 }
 
 /** Selects a conflict resolution policy radio button. */
@@ -216,7 +216,9 @@ export async function waitForDialogsToClose(tauriPage: PageLike, timeout = 5000)
   // pass a tighter timeout when the wait is wrapped inside another budget.
   // The previous 15 s default exceeded the suite's 8 s per-test ceiling.
   const closed = await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), timeout)
-  expect(closed).toBe(true)
+  if (!closed) {
+    throw new Error(`waitForDialogsToClose: .modal-overlay still visible after ${String(timeout)}ms`)
+  }
 }
 
 /**

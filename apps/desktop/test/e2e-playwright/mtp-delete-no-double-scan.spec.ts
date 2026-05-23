@@ -99,9 +99,10 @@ test.beforeEach(async ({ tauriPage }) => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
     })()`)
-    await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
+    await expect.poll(() => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
     await tauriPage.keyboard.press('Escape')
     await tauriPage.keyboard.press('Escape')
+    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
   }
 })
@@ -148,14 +149,15 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
       for (const name of selection) {
         await moveCursorToFile(tauriPage, name)
         await pressKey(tauriPage, 'Space')
-        await pollUntil(
-          tauriPage,
-          async () =>
-            tauriPage.evaluate<boolean>(
-              `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename=' + ${JSON.stringify(JSON.stringify(name))} + '].is-selected')`,
-            ),
-          2000,
-        )
+        await expect
+          .poll(
+            async () =>
+              tauriPage.evaluate<boolean>(
+                `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename=' + ${JSON.stringify(JSON.stringify(name))} + '].is-selected')`,
+              ),
+            { timeout: 2000 },
+          )
+          .toBeTruthy()
       }
 
       // Press F8 to open the delete confirmation dialog (MTP volumes show
@@ -173,24 +175,25 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
 
       // Wait for the operation to finish: filesystem-side files gone, then
       // refresh the pane so the FE catches up.
-      await pollUntil(
-        tauriPage,
-        () => {
-          for (const name of selection) {
-            if (fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM', name))) return Promise.resolve(false)
-          }
-          return Promise.resolve(true)
-        },
-        30000,
-      )
+      await expect
+        .poll(
+          () => {
+            for (const name of selection) {
+              if (fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM', name))) return false
+            }
+            return true
+          },
+          { timeout: 30000 },
+        )
+        .toBeTruthy()
       await mcpCall('refresh', {})
 
       // Wait for write-complete (or for the progress dialog to go away).
-      await pollUntil(
-        tauriPage,
-        async () => tauriPage.evaluate<boolean>(`(window.__deleteCompleteEvents || []).length > 0`),
-        10000,
-      )
+      await expect
+        .poll(async () => tauriPage.evaluate<boolean>(`(window.__deleteCompleteEvents || []).length > 0`), {
+          timeout: 10000,
+        })
+        .toBeTruthy()
 
       // Pull the captured progress sequence and run the M3 assertions.
       const events = await tauriPage.evaluate<CapturedProgress[]>(

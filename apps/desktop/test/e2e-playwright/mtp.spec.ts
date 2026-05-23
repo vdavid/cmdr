@@ -51,6 +51,7 @@ async function pollUntilValue(
   interval = 200,
 ): Promise<string> {
   const captured = { value: '' }
+  // allowed-bare-poll: helper implementation — captures result via closure side-effect, not return value
   await pollUntil(
     page,
     async () => {
@@ -85,19 +86,6 @@ function safeFileSize(p: string): number {
   } catch {
     return -1
   }
-}
-
-/**
- * Polls the filesystem-side MTP backing dir until `predicate()` returns true.
- *
- * MTP write operations (copy/move/delete/mkdir/rename) are fire-and-forget on
- * the IPC side: the MCP `copy`/`move`/`delete`/`mkdir` tools emit an event
- * and return immediately, while the actual work happens on a background task.
- * Polling the backing directory is the most direct signal we have: once the
- * file is on disk, an MTP `refresh` + `mcpAwaitItem` will see it.
- */
-async function pollFs(page: PageLike, predicate: () => boolean, timeout: number, interval = 100): Promise<boolean> {
-  return pollUntil(page, () => Promise.resolve(predicate()), timeout, interval)
 }
 
 /**
@@ -146,11 +134,12 @@ async function setRenameInputValue(page: PageLike, value: string): Promise<void>
       input.dispatchEvent(new Event('input', { bubbles: true }));
     })()`,
   )
-  await pollUntil(
-    page,
-    async () => page.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ${JSON.stringify(value)}`),
-    3000,
-  )
+  await expect
+    .poll(
+      async () => page.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ${JSON.stringify(value)}`),
+      { timeout: 3000 },
+    )
+    .toBeTruthy()
 }
 
 // MTP operations go through the virtual device which adds protocol overhead.
@@ -188,11 +177,12 @@ test.beforeEach(async ({ tauriPage }) => {
           invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
       })()`)
     // Wait for both panes to show the local volume.
-    await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
+    await expect.poll(async () => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
 
     // Dismiss any lingering dialogs/overlays from previous tests
     await tauriPage.keyboard.press('Escape')
     await tauriPage.keyboard.press('Escape')
+    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
   }
 })
@@ -212,21 +202,22 @@ test.describe('MTP device discovery', () => {
         })()`)
 
     // Wait for the dropdown to appear
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('.volume-dropdown'), 5000)
+    await expect.poll(async () => tauriPage.isVisible('.volume-dropdown'), { timeout: 5000 }).toBeTruthy()
 
     // Wait for "Mobile" category label to appear (MTP volumes load reactively)
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(`(function() {
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`(function() {
             var labels = document.querySelectorAll('.volume-dropdown .category-label');
             for (var i = 0; i < labels.length; i++) {
                 if (labels[i].textContent.trim() === 'Mobile') return true;
             }
             return false;
         })()`),
-      10000,
-    )
+        { timeout: 10000 },
+      )
+      .toBeTruthy()
 
     // Check that Internal Storage is listed
     const hasInternal = await tauriPage.evaluate<boolean>(`(function() {
@@ -301,13 +292,13 @@ test.describe('MTP navigation', () => {
             var breadcrumb = document.querySelector('.volume-breadcrumb .volume-name');
             if (breadcrumb) breadcrumb.click();
         })()`)
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('.volume-dropdown'), 5000)
+    await expect.poll(async () => tauriPage.isVisible('.volume-dropdown'), { timeout: 5000 }).toBeTruthy()
 
     // Poll for space info: MTP space data may load asynchronously after dropdown opens
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(`(function() {
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`(function() {
             var items = document.querySelectorAll('.volume-dropdown .volume-item');
             for (var i = 0; i < items.length; i++) {
                 var label = items[i].querySelector('.volume-label');
@@ -322,8 +313,9 @@ test.describe('MTP navigation', () => {
             }
             return false;
         })()`),
-      15000,
-    )
+        { timeout: 15000 },
+      )
+      .toBeTruthy()
 
     await tauriPage.keyboard.press('Escape')
   })
@@ -356,7 +348,7 @@ test.describe('MTP file operations', () => {
     // copy already succeeded and the file is on disk. Tests 11 (local→MTP) and
     // 27 (50 MB MTP→local) already use this pattern; this brings test 10 inline.
     const destPath = path.join(fixtureRoot, 'right', 'report.txt')
-    await pollFs(tauriPage, () => fs.existsSync(destPath), 30000)
+    await expect.poll(() => fs.existsSync(destPath), { timeout: 30000 }).toBeTruthy()
 
     // Force the pane to re-list so the await reads a fresh PaneStateStore.
     await mcpCall('refresh', {})
@@ -381,7 +373,9 @@ test.describe('MTP file operations', () => {
 
     // MTP transfer is fire-and-forget. Poll the backing dir until the file
     // lands, then force a refresh so the pane re-lists.
-    await pollFs(tauriPage, () => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')), 30000)
+    await expect
+      .poll(() => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')), { timeout: 30000 })
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // Wait for file to appear in right pane (MTP root)
@@ -409,14 +403,15 @@ test.describe('MTP file operations', () => {
     // Toggle twice and poll for the visual focus class to land on the left pane.
     await mcpSwitchPane()
     await mcpSwitchPane()
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
-        ),
-      3000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
+          ),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     // Confirm left pane is still showing Documents content after the toggle.
     await mcpAwaitItem('left', 'notes.txt')
@@ -427,17 +422,18 @@ test.describe('MTP file operations', () => {
 
     // MTP move is fire-and-forget. Poll for the backing-dir state (source gone,
     // dest present) before triggering the refresh that drives the pane re-listing.
-    await pollFs(
-      tauriPage,
-      () =>
-        !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt')) &&
-        fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Music', 'notes.txt')),
-      30000,
-    )
+    await expect
+      .poll(
+        () =>
+          !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt')) &&
+          fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Music', 'notes.txt')),
+        { timeout: 30000 },
+      )
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // Wait for notes.txt to disappear from Documents (left pane)
-    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'notes.txt', 0)), 15000)
+    await expect.poll(async () => !(await fileExistsInPane(tauriPage, 'notes.txt', 0)), { timeout: 15000 }).toBeTruthy()
 
     // Wait for notes.txt to appear in Music (right pane)
     await mcpAwaitItem('right', 'notes.txt', 30)
@@ -491,22 +487,22 @@ test.describe('MTP file operations', () => {
         })()`)
 
     // Wait for dialog to close
-    await pollUntil(
-      tauriPage,
-      async () => !(await tauriPage.isVisible('[data-dialog-id="delete-confirmation"]')),
-      10000,
-    )
+    await expect
+      .poll(async () => !(await tauriPage.isVisible('[data-dialog-id="delete-confirmation"]')), { timeout: 10000 })
+      .toBeTruthy()
 
     // MTP delete is fire-and-forget. Poll the backing dir until the file is gone.
-    await pollFs(
-      tauriPage,
-      () => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')),
-      30000,
-    )
+    await expect
+      .poll(() => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')), {
+        timeout: 30000,
+      })
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // Wait for report.txt to disappear from the UI listing
-    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'report.txt', 0)), 15000)
+    await expect
+      .poll(async () => !(await fileExistsInPane(tauriPage, 'report.txt', 0)), { timeout: 15000 })
+      .toBeTruthy()
 
     // Verify on backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
@@ -526,41 +522,46 @@ test.describe('MTP file operations', () => {
     // Poll for `.is-selected` after each Space so we don't race the next cursor move.
     await moveCursorToFile(tauriPage, 'report.txt')
     await pressKey(tauriPage, 'Space')
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename="report.txt"].is-selected')`,
-        ),
-      2000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename="report.txt"].is-selected')`,
+          ),
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
     await moveCursorToFile(tauriPage, 'notes.txt')
     await pressKey(tauriPage, 'Space')
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename="notes.txt"].is-selected')`,
-        ),
-      2000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename="notes.txt"].is-selected')`,
+          ),
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
 
     // Delete via MCP with autoConfirm
     await mcpCall('delete', { autoConfirm: true })
 
     // MTP multi-delete is fire-and-forget. Poll the backing dir.
-    await pollFs(
-      tauriPage,
-      () =>
-        !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')) &&
-        !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt')),
-      30000,
-    )
+    await expect
+      .poll(
+        () =>
+          !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')) &&
+          !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt')),
+        { timeout: 30000 },
+      )
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // Wait for both files to disappear
-    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'report.txt', 0)), 15000)
-    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'notes.txt', 0)), 15000)
+    await expect
+      .poll(async () => !(await fileExistsInPane(tauriPage, 'report.txt', 0)), { timeout: 15000 })
+      .toBeTruthy()
+    await expect.poll(async () => !(await fileExistsInPane(tauriPage, 'notes.txt', 0)), { timeout: 15000 }).toBeTruthy()
 
     // Verify on backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
@@ -583,11 +584,13 @@ test.describe('MTP file operations', () => {
     await mcpCall('delete', { autoConfirm: true })
 
     // MTP recursive delete is fire-and-forget. Poll the backing dir.
-    await pollFs(tauriPage, () => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM')), 45000)
+    await expect
+      .poll(() => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM')), { timeout: 45000 })
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // Wait for DCIM to disappear from listing
-    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'DCIM', 0)), 15000)
+    await expect.poll(async () => !(await fileExistsInPane(tauriPage, 'DCIM', 0)), { timeout: 15000 }).toBeTruthy()
 
     // Verify entire tree gone from backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM'))).toBe(false)
@@ -606,14 +609,16 @@ test.describe('MTP file operations', () => {
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'NewFolder')
     // Wait for the OK button to enable in response to the typed name.
-    await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
+    await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
     // Wait for dialog to close
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
 
     // MTP mkdir is fire-and-forget. Poll the backing dir for the folder.
-    await pollFs(tauriPage, () => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'NewFolder')), 15000)
+    await expect
+      .poll(() => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'NewFolder')), { timeout: 15000 })
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // Wait for the folder to appear
@@ -652,11 +657,11 @@ test.describe('MTP rename', () => {
     await tauriPage.press('.rename-input', 'Enter')
 
     // Wait for rename input to disappear
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.rename-input')), 10000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 10000 }).toBeTruthy()
 
     // Verify new name appears, old name gone
-    await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'renamed-report.txt', 0), 10000)
-    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'report.txt', 0)), 5000)
+    await expect.poll(async () => fileExistsInPane(tauriPage, 'renamed-report.txt', 0), { timeout: 10000 }).toBeTruthy()
+    await expect.poll(async () => !(await fileExistsInPane(tauriPage, 'report.txt', 0)), { timeout: 5000 }).toBeTruthy()
 
     // Verify on backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'renamed-report.txt'))).toBe(true)
@@ -688,7 +693,7 @@ test.describe('MTP rename', () => {
 
     // Cancel the dialog. Both files should remain unchanged.
     await tauriPage.keyboard.press('Escape')
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
 
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt'))).toBe(true)
@@ -714,7 +719,9 @@ test.describe('MTP cross-storage move', () => {
 
     // Wait for the move to land on the local destination, then refresh the
     // pane so mcpAwaitItem sees the file.
-    await pollFs(tauriPage, () => fs.existsSync(path.join(fixtureRoot, 'right', 'report.txt')), 30000)
+    await expect
+      .poll(() => fs.existsSync(path.join(fixtureRoot, 'right', 'report.txt')), { timeout: 30000 })
+      .toBeTruthy()
     await mcpCall('refresh', {})
     await mcpAwaitItem('right', 'report.txt', 30)
 
@@ -723,11 +730,11 @@ test.describe('MTP cross-storage move', () => {
 
     // Verify source removed from MTP backing dir
     // MTP move = copy + delete, so source should be gone
-    await pollUntil(
-      tauriPage,
-      () => Promise.resolve(!fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))),
-      15000,
-    )
+    await expect
+      .poll(() => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')), {
+        timeout: 15000,
+      })
+      .toBeTruthy()
   })
 
   test('moves file from local to MTP', async ({ tauriPage }) => {
@@ -745,7 +752,9 @@ test.describe('MTP cross-storage move', () => {
 
     // Wait for the move to land on the MTP backing dir, then refresh so the
     // pane re-lists.
-    await pollFs(tauriPage, () => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')), 30000)
+    await expect
+      .poll(() => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')), { timeout: 30000 })
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // Wait for file to appear in right pane (MTP root)
@@ -755,11 +764,9 @@ test.describe('MTP cross-storage move', () => {
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt'))).toBe(true)
 
     // Verify source removed from local disk
-    await pollUntil(
-      tauriPage,
-      () => Promise.resolve(!fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))),
-      15000,
-    )
+    await expect
+      .poll(() => !fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt')), { timeout: 15000 })
+      .toBeTruthy()
   })
 })
 
@@ -773,34 +780,35 @@ test.describe('MTP clipboard rejection', () => {
 
     // Focus the left pane and move cursor to Documents
     await mcpCall('move_cursor', { pane: 'left', filename: 'Documents' })
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') === 'Documents'`,
-        ),
-      2000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') === 'Documents'`,
+          ),
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
 
     // Press Cmd+C (copy to clipboard). Toast appears asynchronously.
     await pressKey(tauriPage, `${CTRL_OR_META}+c`)
 
     // Verify toast appears with MTP clipboard message
-    const toastText = await pollUntil(
-      tauriPage,
-      async () => {
-        const text = await tauriPage.evaluate<string>(`(function() {
+    await expect
+      .poll(
+        async () => {
+          const text = await tauriPage.evaluate<string>(`(function() {
                 var toasts = document.querySelectorAll('.toast-message');
                 for (var i = 0; i < toasts.length; i++) {
                     if (toasts[i].textContent.includes('F5')) return toasts[i].textContent;
                 }
                 return '';
             })()`)
-        return text.length > 0
-      },
-      5000,
-    )
-    expect(toastText).toBe(true)
+          return text.length > 0
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     // Verify exact message
     const message = await tauriPage.evaluate<string>(`(function() {
@@ -822,14 +830,15 @@ test.describe('MTP clipboard rejection', () => {
 
     // Focus and move cursor
     await mcpCall('move_cursor', { pane: 'left', filename: 'Documents' })
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') === 'Documents'`,
-        ),
-      2000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') === 'Documents'`,
+          ),
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
 
     // Press Cmd+X (cut to clipboard). Toast appears asynchronously, and
     // pollUntilValue below handles waiting for it.
@@ -868,14 +877,15 @@ test.describe('MTP clipboard rejection', () => {
             }
         })()`)
     // Wait for the right pane to be the focused pane.
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `document.querySelectorAll('.file-pane')[1]?.classList.contains('is-focused') === true`,
-        ),
-      3000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `document.querySelectorAll('.file-pane')[1]?.classList.contains('is-focused') === true`,
+          ),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     // Verify right pane is focused (has MTP volume)
     const rightFocused = await tauriPage.evaluate<boolean>(`(function(){
@@ -925,11 +935,13 @@ test.describe('MTP read-only enforcement', () => {
     // will fail on confirm. Press F7 and wait until either the read-only alert
     // OR the mkdir dialog has appeared.
     await pressKey(tauriPage, 'F7')
-    await pollUntil(
-      tauriPage,
-      async () => (await tauriPage.isVisible('[data-dialog-id="alert"]')) || (await tauriPage.isVisible(MKDIR_DIALOG)),
-      5000,
-    )
+    await expect
+      .poll(
+        async () =>
+          (await tauriPage.isVisible('[data-dialog-id="alert"]')) || (await tauriPage.isVisible(MKDIR_DIALOG)),
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     // Check which dialog appeared (read-only volumes may show an alert
     // instead of the mkdir dialog)
@@ -949,29 +961,30 @@ test.describe('MTP read-only enforcement', () => {
                 var btn = document.querySelector('[data-dialog-id="alert"] button');
                 if (btn) btn.click();
             })()`)
-      await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+      await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
     } else if (hasMkdir) {
       // Dialog opened. Type a name and confirm, expect backend error.
       await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
       await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'TestFolder')
-      await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
+      await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
       await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
       // Wait for an error message to appear in the dialog
-      await pollUntil(
-        tauriPage,
-        async () => {
-          const hasError = await tauriPage.evaluate<boolean>(
-            `!!document.querySelector('${MKDIR_DIALOG} .error-message')`,
-          )
-          return hasError
-        },
-        10000,
-      )
+      await expect
+        .poll(
+          async () => {
+            const hasError = await tauriPage.evaluate<boolean>(
+              `!!document.querySelector('${MKDIR_DIALOG} .error-message')`,
+            )
+            return hasError
+          },
+          { timeout: 10000 },
+        )
+        .toBeTruthy()
 
       // Dismiss the dialog
       await tauriPage.keyboard.press('Escape')
-      await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+      await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
     } else {
       // Neither dialog appeared. This is unexpected; fail explicitly.
       throw new Error('Expected either an alert or mkdir dialog to appear, but neither did')
@@ -984,7 +997,7 @@ test.describe('MTP read-only enforcement', () => {
     await moveCursorToFile(tauriPage, 'sunset.jpg')
     await tauriPage.keyboard.press('F2')
     // Wait for the read-only alert dialog to appear.
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('[data-dialog-id="alert"]'), 5000)
+    await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
 
     // Rename should be blocked with an alert (DualPaneExplorer.startRename checks isReadOnly)
     const hasRenameAlert = await tauriPage.isVisible('[data-dialog-id="alert"]')
@@ -1001,7 +1014,7 @@ test.describe('MTP read-only enforcement', () => {
             var btn = document.querySelector('[data-dialog-id="alert"] button');
             if (btn) btn.click();
         })()`)
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
   })
 })
 
@@ -1066,12 +1079,7 @@ test.describe('MTP large file transfer', () => {
     // Poll until the destination file reaches the expected size (50 MB).
     const expectedSize = 50 * 1024 * 1024
     const destPath = path.join(MTP_FIXTURE_ROOT, 'internal', 'large-test.dat')
-    const transferred = await pollUntil(
-      tauriPage,
-      () => Promise.resolve(safeFileSize(destPath) === expectedSize),
-      30000,
-    )
-    expect(transferred).toBe(true)
+    await expect.poll(() => safeFileSize(destPath) === expectedSize, { timeout: 30000 }).toBeTruthy()
     await mcpCall('refresh', {})
     await mcpAwaitItem('right', 'large-test.dat', 60)
 
@@ -1106,12 +1114,7 @@ test.describe('MTP large file transfer', () => {
     // Poll until the destination file reaches the expected size (50 MB).
     const expectedSize = 50 * 1024 * 1024
     const destPath = path.join(fixtureRoot, 'right', 'large-mtp.dat')
-    const transferred = await pollUntil(
-      tauriPage,
-      () => Promise.resolve(safeFileSize(destPath) === expectedSize),
-      30000,
-    )
-    expect(transferred).toBe(true)
+    await expect.poll(() => safeFileSize(destPath) === expectedSize, { timeout: 30000 }).toBeTruthy()
     await mcpCall('refresh', {})
     await mcpAwaitItem('right', 'large-mtp.dat', 60)
 

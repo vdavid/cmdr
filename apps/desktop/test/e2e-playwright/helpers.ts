@@ -137,6 +137,7 @@ export async function ensureAppReady(
         var overlay = document.querySelector('.modal-overlay');
         if (overlay) overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     })()`)
+  // allowed-bare-poll: modal may or may not be present from a prior test; precautionary dismiss, not a required assertion
   await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
 
   // Dismiss any overlays (AI notification, etc.)
@@ -144,6 +145,7 @@ export async function ensureAppReady(
         var btn = document.querySelector('.ai-notification .ai-button.secondary');
         if (btn) btn.click();
     })()`)
+  // allowed-bare-poll: AI notification may or may not be present; precautionary dismiss, not a required assertion
   await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.ai-notification')), 3000)
 
   // Reset both panes back to the local volume if a previous test (smb,
@@ -167,7 +169,7 @@ export async function ensureAppReady(
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
       })()`)
       // Wait for both panes to actually be on the local volume.
-      await pollUntil(
+      const volumeReset = await pollUntil(
         tauriPage,
         async () => {
           const state = await mcpReadResource('cmdr://state')
@@ -178,9 +180,13 @@ export async function ensureAppReady(
         },
         5000,
       )
+      if (!volumeReset) {
+        throw new Error(`ensureAppReady: both panes did not return to local volume '${LOCAL_VOLUME_NAME}' within 5s`)
+      }
       // Dismiss any lingering dialog the volume-touching spec opened.
       await tauriPage.keyboard.press('Escape')
       await tauriPage.keyboard.press('Escape')
+      // allowed-bare-poll: lingering dialog from a volume-touching spec may or may not be present; precautionary dismiss
       await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
     }
   } catch {
@@ -378,7 +384,7 @@ export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
     })()`)
   if (cursorText === '..') {
     await tauriPage.keyboard.press('ArrowDown')
-    await pollUntil(
+    const moved = await pollUntil(
       tauriPage,
       async () => {
         const name = await tauriPage.evaluate<string>(`(function() {
@@ -390,6 +396,9 @@ export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
       },
       3000,
     )
+    if (!moved) {
+      throw new Error('skipParentEntry: cursor did not leave the ".." entry within 3s after ArrowDown')
+    }
   }
 }
 
@@ -572,7 +581,10 @@ export async function executeViaCommandPalette(tauriPage: PageLike, query: strin
         if (item) item.click();
     })()`)
   // Wait for palette to close after executing the command
-  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
+  const paletteClosed = await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
+  if (!paletteClosed) {
+    throw new Error('executeViaCommandPalette: palette did not close within 3s after clicking a result')
+  }
 }
 
 // ── Size and count helpers ───────────────────────────────────────────────────

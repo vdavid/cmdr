@@ -23,19 +23,19 @@ work into it that a unit test would cover.
 
 ## Decision table: what tool for what test
 
-| You want to test                                              | Tool / layer                                                                                                                                       |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pure function with edge cases                                 | `proptest` (Rust unit). State a property, fuzz inputs.                                                                                             |
-| Pure function with a few specific inputs                      | Plain example tests in `mod tests`                                                                                                                 |
-| Behavior coverage of an existing tested function              | `cargo mutants` survivor triage: every survived mutant is a behavior-level gap                                                                     |
-| State machine transition                                      | Rust unit test, **drive via the public interface**, not by setting the atomic directly                                                             |
-| `#[tauri::command]` boundary                                  | vitest IPC contract test using `installIpcMock()` from `apps/desktop/src/lib/ipc/test-helpers.ts`                                                  |
-| Frontend component logic                                      | vitest + svelte-testing-library in `*.test.ts`                                                                                                     |
-| Component-level a11y (ARIA, labels, focus order)              | tier-3 a11y test in `*.a11y.test.ts`                                                                                                               |
-| Keyboard shortcut opens a dialog                              | E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic F-key press unless the test exists to verify the keyboard pathway |
-| Wait for UI state to change in E2E                            | `pollUntil(tauriPage, async () => …, timeout)` from `helpers.ts`. **Never** `await sleep(N)`                                                       |
-| Cross-component flow (return-focus, dialog stack, navigation) | E2E (Playwright)                                                                                                                                   |
-| Storage volume operation (MTP, SMB)                           | Integration test against a virtual fixture (virtual-mtp feature, Docker SMB containers)                                                            |
+| You want to test                                              | Tool / layer                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure function with edge cases                                 | `proptest` (Rust unit). State a property, fuzz inputs.                                                                                                                                                                                                            |
+| Pure function with a few specific inputs                      | Plain example tests in `mod tests`                                                                                                                                                                                                                                |
+| Behavior coverage of an existing tested function              | `cargo mutants` survivor triage: every survived mutant is a behavior-level gap                                                                                                                                                                                    |
+| State machine transition                                      | Rust unit test, **drive via the public interface**, not by setting the atomic directly                                                                                                                                                                            |
+| `#[tauri::command]` boundary                                  | vitest IPC contract test using `installIpcMock()` from `apps/desktop/src/lib/ipc/test-helpers.ts`                                                                                                                                                                 |
+| Frontend component logic                                      | vitest + svelte-testing-library in `*.test.ts`                                                                                                                                                                                                                    |
+| Component-level a11y (ARIA, labels, focus order)              | tier-3 a11y test in `*.a11y.test.ts`                                                                                                                                                                                                                              |
+| Keyboard shortcut opens a dialog                              | E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic F-key press unless the test exists to verify the keyboard pathway                                                                                                                |
+| Wait for UI state to change in E2E                            | `expect.poll(async () => …, { timeout }).toBeTruthy()` (preferred — wait fuses with assertion); `expect(await pollUntil(...)).toBe(true)` for the few non-Playwright contexts. **Never** bare `await pollUntil(...)` (silent timeout) or `await sleep(N)` (flaky) |
+| Cross-component flow (return-focus, dialog stack, navigation) | E2E (Playwright)                                                                                                                                                                                                                                                  |
+| Storage volume operation (MTP, SMB)                           | Integration test against a virtual fixture (virtual-mtp feature, Docker SMB containers)                                                                                                                                                                           |
 
 ## Anti-patterns
 
@@ -57,22 +57,47 @@ await tauriPage.keyboard.press('F5')
 await tauriPage.waitForSelector('[data-dialog-id="transfer-confirmation"]', 5000)
 ```
 
-For "wait until X is true" where X isn't a selector, use `pollUntil`:
+For "wait until X is true" where X isn't a selector, use Playwright's `expect.poll`:
 
 ```ts
-await pollUntil(
-  tauriPage,
-  async () => {
-    const size = await tauriPage.evaluate<number>(`document.querySelector(…)?.offsetHeight ?? 0`)
-    return size > 0
-  },
-  5000,
-)
+await expect
+  .poll(async () => tauriPage.evaluate<number>(`document.querySelector(…)?.offsetHeight ?? 0`), { timeout: 5000 })
+  .toBeGreaterThan(0)
 ```
 
-The `cmdr/no-arbitrary-sleep-in-e2e` ESLint rule flags this. Opt out per-line with
+The `cmdr/no-arbitrary-sleep-in-e2e` ESLint rule flags `await sleep(N)`. Opt out per-line with
 `// eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- <reason>` only when there's a genuine fixed-duration wait
 (e.g., watcher debounce settling), and even then, prefer a poll if any state changes.
+
+### ❌ Bare `await pollUntil(...)` in E2E specs
+
+The legacy `pollUntil` helper (and its wrappers `pollFs`, `pollUntilValue`, `pollActiveMode`, `pollOverlayGone`,
+`pollFocusedPane`) returns `false` on timeout instead of throwing. A bare expression statement discards the return — if
+the condition never holds, the test passes green so long as no later `expect` happens to catch it. We discovered 187
+sites of this pattern across 20 specs; several tests had **zero** `expect()` calls and literally could not fail. One
+viewer test wasted 5 seconds polling for a toast that never appeared in its window (no `ToastContainer` mounted there)
+and still passed because the next `expect` was happy.
+
+```ts
+// ❌ Don't: timeout returns false, no one checks it, test stays green
+await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, dirName), 2000)
+
+// ✅ Do (preferred — wait fuses with the assertion, fails loudly on timeout):
+await expect.poll(async () => fileExistsInFocusedPane(tauriPage, dirName), { timeout: 2000 }).toBeTruthy()
+
+// ✅ Also fine (keeps the helper for non-Playwright contexts):
+expect(await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, dirName), 2000)).toBe(true)
+
+// ✅ Also fine (when you want to act on the false branch instead of failing):
+if (!(await pollUntil(tauriPage, async () => isReady(tauriPage), 3000))) {
+  throw new Error('listing did not refresh within 3 s')
+}
+```
+
+Enforced by the `bare-poll` Go check (fast lane, ~9 ms warm; scans `apps/desktop/test/`). Opt out for genuine
+best-effort cleanups (dismissing an overlay that might or might not be there) with `// allowed-bare-poll: <reason>` on
+the line above or as a trailing comment on the same line. The full design rationale is in
+`apps/desktop/test/e2e-playwright/CLAUDE.md` § "Polling helpers" and `scripts/check/CLAUDE.md` § `bare-poll`.
 
 ### ❌ Synthesized F-key dispatches for tests that care about the resulting dialog
 
@@ -138,7 +163,7 @@ Cargo / Vite / `beforeBuildCommand` already cache. Wrapping risks shipping stale
 | New state or transition in a state machine             | At least one unit test driving the new transition via the public interface                                                                                                       |
 | New pure parser / transform / collation                | Consider a proptest (round-trip, idempotence, or "output is valid for the consumer")                                                                                             |
 | New keyboard shortcut                                  | Spec it via `dispatchMenuCommand` if menu-bound; synthetic keydown only if the test exists to verify the keyboard pathway itself                                                 |
-| New user-visible flow                                  | One E2E happy-path spec; use `pollUntil` / `waitForSelector` for any state wait                                                                                                  |
+| New user-visible flow                                  | One E2E happy-path spec; use `waitForSelector` or `expect.poll(...).toBeTruthy()` for any state wait (never bare `await pollUntil(...)`)                                         |
 | New write-side operation (copy / move / delete / etc.) | Unit tests for the core + at least one E2E covering cancel and a conflict policy                                                                                                 |
 | New volume implementation                              | Integration tests against the virtual fixture for that volume kind                                                                                                               |
 

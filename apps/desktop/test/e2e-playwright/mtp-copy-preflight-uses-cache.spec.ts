@@ -113,9 +113,10 @@ test.beforeEach(async ({ tauriPage }) => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
     })()`)
-    await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
+    await expect.poll(() => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
     await tauriPage.keyboard.press('Escape')
     await tauriPage.keyboard.press('Escape')
+    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
   }
 })
@@ -142,14 +143,15 @@ test.describe('MTP copy pre-flight reuses watcher-backed listing', () => {
     for (const name of selection) {
       await moveCursorToFile(tauriPage, name)
       await pressKey(tauriPage, 'Space')
-      await pollUntil(
-        tauriPage,
-        async () =>
-          tauriPage.evaluate<boolean>(
-            `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename=' + ${JSON.stringify(JSON.stringify(name))} + '].is-selected')`,
-          ),
-        2000,
-      )
+      await expect
+        .poll(
+          async () =>
+            tauriPage.evaluate<boolean>(
+              `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename=' + ${JSON.stringify(JSON.stringify(name))} + '].is-selected')`,
+            ),
+          { timeout: 2000 },
+        )
+        .toBeTruthy()
     }
 
     // Open the transfer-confirmation dialog via the same command path F5 hits
@@ -192,7 +194,7 @@ test.describe('MTP copy pre-flight reuses watcher-backed listing', () => {
     // pre-flight contract, and skipping the actual transfer keeps the test
     // independent of MTP write throughput.
     await tauriPage.keyboard.press('Escape')
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
 
     // Source files must still be on the device (no copy happened).
     for (const name of selection) {

@@ -114,21 +114,23 @@ test.beforeEach(async ({ tauriPage }) => {
           invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
       })()`)
     // Wait for both panes to show the local volume in cmdr://state.
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const state = await mcpReadResource('cmdr://state')
-        const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
-          line.replace(/^\n {2}volume: /, ''),
-        )
-        return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
-      },
-      5000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const state = await mcpReadResource('cmdr://state')
+          const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
+            line.replace(/^\n {2}volume: /, ''),
+          )
+          return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     // Dismiss any lingering dialogs
     await tauriPage.keyboard.press('Escape')
     await tauriPage.keyboard.press('Escape')
+    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
   }
 })
@@ -190,7 +192,7 @@ describeSmb('SMB host discovery', () => {
     // Wait for virtual hosts to appear (injected by smb-e2e feature).
     // 30s: defensive bound. Hosts typically appear within 1-3 s; longer budget covers
     // mDNS discovery latency variance on Linux Docker.
-    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 30000)
+    await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 30000 }).toBeTruthy()
 
     const hasGuest = await hostExistsInPane(tauriPage, 'SMB Test (Guest)')
     const hasAuth = await hostExistsInPane(tauriPage, 'SMB Test (Auth)')
@@ -204,15 +206,15 @@ describeSmb('SMB host discovery', () => {
     await mcpSelectVolume('left', 'Network')
 
     // Wait for the guest host to appear and its shares to be prefetched
-    const result = await pollUntil(
-      tauriPage,
-      async () => {
-        const state = await mcpReadResource('cmdr://state')
-        return state.includes('SMB Test (Guest)') && state.includes('shares=1')
-      },
-      30000,
-    )
-    expect(result).toBe(true)
+    await expect
+      .poll(
+        async () => {
+          const state = await mcpReadResource('cmdr://state')
+          return state.includes('SMB Test (Guest)') && state.includes('shares=1')
+        },
+        { timeout: 30000 },
+      )
+      .toBeTruthy()
   })
 })
 
@@ -222,14 +224,14 @@ describeSmb('SMB share browsing', () => {
 
     // Switch to Network, wait for hosts
     await mcpSelectVolume('left', 'Network')
-    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 15000)
+    await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
 
     // Move cursor to guest host and open it
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Guest)' })
     await mcpCall('open_under_cursor', {})
 
     // Wait for share browser to load (look for .share-row elements)
-    await pollUntil(tauriPage, async () => shareExistsInPane(tauriPage, SMB_GUEST_SHARE), 30000)
+    await expect.poll(async () => shareExistsInPane(tauriPage, SMB_GUEST_SHARE), { timeout: 30000 }).toBeTruthy()
 
     const hasPublic = await shareExistsInPane(tauriPage, SMB_GUEST_SHARE)
     expect(hasPublic).toBe(true)
@@ -245,11 +247,11 @@ describeSmb('SMB mounting and file browsing', () => {
 
     // Switch to Network → open guest host → select share
     await mcpSelectVolume('left', 'Network')
-    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 15000)
+    await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Guest)' })
     await mcpCall('open_under_cursor', {})
-    await pollUntil(tauriPage, async () => shareExistsInPane(tauriPage, SMB_GUEST_SHARE), 30000)
+    await expect.poll(async () => shareExistsInPane(tauriPage, SMB_GUEST_SHARE), { timeout: 30000 }).toBeTruthy()
 
     // Open the share (triggers mount)
     await mcpCall('move_cursor', { pane: 'left', filename: SMB_GUEST_SHARE })
@@ -307,8 +309,7 @@ describeSmb('SMB cross-storage copy', () => {
 
     // Verify on disk (the mount maps to Docker container volume)
     const copied = path.join(SMB_GUEST_MOUNT_SUITE, 'file-a.txt')
-    await pollUntil(tauriPage, () => Promise.resolve(fs.existsSync(copied)), 10000)
-    expect(fs.existsSync(copied)).toBe(true)
+    await expect.poll(() => fs.existsSync(copied), { timeout: 10000 }).toBeTruthy()
 
     // Verify source still exists (copy, not move)
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(true)
@@ -371,15 +372,15 @@ describeSmb('SMB authentication', () => {
     await mcpSelectVolume('left', 'Network')
 
     // Wait for the auth host to appear and its shares to be prefetched
-    const result = await pollUntil(
-      tauriPage,
-      async () => {
-        const state = await mcpReadResource('cmdr://state')
-        return state.includes('SMB Test (Auth)') && state.includes('shares=1')
-      },
-      30000,
-    )
-    expect(result).toBe(true)
+    await expect
+      .poll(
+        async () => {
+          const state = await mcpReadResource('cmdr://state')
+          return state.includes('SMB Test (Auth)') && state.includes('shares=1')
+        },
+        { timeout: 30000 },
+      )
+      .toBeTruthy()
   })
 
   test('listing shares with valid credentials returns private share', async ({ tauriPage }) => {
@@ -439,15 +440,15 @@ describeSmb('SMB 50-share server', () => {
     await mcpSelectVolume('left', 'Network')
 
     // Wait for the 50-shares host to appear and prefetch shares
-    const result = await pollUntil(
-      tauriPage,
-      async () => {
-        const state = await mcpReadResource('cmdr://state')
-        return state.includes('SMB Test (50 Shares)') && state.includes('shares=50')
-      },
-      30000,
-    )
-    expect(result).toBe(true)
+    await expect
+      .poll(
+        async () => {
+          const state = await mcpReadResource('cmdr://state')
+          return state.includes('SMB Test (50 Shares)') && state.includes('shares=50')
+        },
+        { timeout: 30000 },
+      )
+      .toBeTruthy()
   })
 })
 
@@ -482,22 +483,23 @@ describeSmb('SMB unicode server', () => {
 
     // Switch to Network, open unicode host
     await mcpSelectVolume('left', 'Network')
-    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Unicode)'), 15000)
+    await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Unicode)'), { timeout: 15000 }).toBeTruthy()
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Unicode)' })
     await mcpCall('open_under_cursor', {})
 
     // Wait for share browser to load, should show at least one share
-    await pollUntil(
-      tauriPage,
-      async () => {
-        return tauriPage.evaluate<boolean>(`(function() {
+    await expect
+      .poll(
+        async () => {
+          return tauriPage.evaluate<boolean>(`(function() {
           var rows = document.querySelectorAll('.share-row .share-name');
           return rows.length > 0;
         })()`)
-      },
-      30000,
-    )
+        },
+        { timeout: 30000 },
+      )
+      .toBeTruthy()
 
     // Verify share names rendered (not empty or garbled)
     const shareNames = await tauriPage.evaluate<string[]>(`(function() {

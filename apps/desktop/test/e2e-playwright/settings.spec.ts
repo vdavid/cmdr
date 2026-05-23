@@ -193,15 +193,15 @@ test.describe('Settings page', () => {
     await settings.fill('.search-input', 'accent')
 
     // Sidebar updates on a 200 ms debounce: wait for the count to drop.
-    const narrowed = await pollUntil(
-      settings,
-      async () => {
-        const count = await settings.count('.section-item')
-        return count > 0 && count < baselineCount
-      },
-      3000,
-    )
-    expect(narrowed).toBe(true)
+    await expect
+      .poll(
+        async () => {
+          const count = await settings.count('.section-item')
+          return count > 0 && count < baselineCount
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     // Clear button must reset both the input and the visible section list.
     await settings.evaluate(`(function() {
@@ -209,16 +209,16 @@ test.describe('Settings page', () => {
             if (btn) btn.click();
         })()`)
 
-    const restored = await pollUntil(
-      settings,
-      async () => {
-        const count = await settings.count('.section-item')
-        const value = await settings.inputValue('.search-input')
-        return count === baselineCount && value === ''
-      },
-      3000,
-    )
-    expect(restored).toBe(true)
+    await expect
+      .poll(
+        async () => {
+          const count = await settings.count('.section-item')
+          const value = await settings.inputValue('.search-input')
+          return count === baselineCount && value === ''
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
   })
 
   test('search shows an empty sidebar for queries with no matches', async () => {
@@ -226,8 +226,7 @@ test.describe('Settings page', () => {
     await settings.fill('.search-input', 'zzzyyyxxxnomatch')
 
     // Sidebar updates on a 200 ms debounce: wait for all sections to vanish.
-    const empty = await pollUntil(settings, async () => (await settings.count('.section-item')) === 0, 3000)
-    expect(empty).toBe(true)
+    await expect.poll(async () => (await settings.count('.section-item')) === 0, { timeout: 3000 }).toBeTruthy()
 
     // The clear button still shows up so the user can recover from a dead-end query.
     expect(await settings.isVisible('.search-clear')).toBe(true)
@@ -237,7 +236,7 @@ test.describe('Settings page', () => {
             var btn = document.querySelector('.search-clear');
             if (btn) btn.click();
         })()`)
-    await pollUntil(settings, async () => (await settings.count('.section-item')) > 0, 3000)
+    await expect.poll(async () => (await settings.count('.section-item')) > 0, { timeout: 3000 }).toBeTruthy()
   })
 
   test('Arrow Down in the search box moves section selection forward', async () => {
@@ -251,7 +250,7 @@ test.describe('Settings page', () => {
             else input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
-    await pollUntil(settings, async () => (await settings.count('.section-item')) > 2, 3000)
+    await expect.poll(async () => (await settings.count('.section-item')) > 2, { timeout: 3000 }).toBeTruthy()
 
     // Reset the selected section to the first sidebar entry. Prior tests may
     // have landed on the last entry (post-reorg, that's `Advanced`), where
@@ -262,16 +261,17 @@ test.describe('Settings page', () => {
             var items = document.querySelectorAll('.section-item');
             if (items[0]) items[0].click();
         })()`)
-    await pollUntil(
-      settings,
-      async () => {
-        const cls = await settings.evaluate<string>(
-          `document.querySelectorAll('.section-item')[0]?.getAttribute('class') || ''`,
-        )
-        return cls.includes('selected')
-      },
-      3000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const cls = await settings.evaluate<string>(
+            `document.querySelectorAll('.section-item')[0]?.getAttribute('class') || ''`,
+          )
+          return cls.includes('selected')
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     await settings.waitForSelector('.section-item.selected', 5000)
     const startSelected = await settings.evaluate<string>(
@@ -290,17 +290,17 @@ test.describe('Settings page', () => {
             input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
         })()`)
 
-    const advanced = await pollUntil(
-      settings,
-      async () => {
-        const now = await settings.evaluate<string>(
-          `document.querySelector('.section-item.selected')?.textContent?.trim() || ''`,
-        )
-        return now !== startSelected && now !== ''
-      },
-      3000,
-    )
-    expect(advanced).toBe(true)
+    await expect
+      .poll(
+        async () => {
+          const now = await settings.evaluate<string>(
+            `document.querySelector('.section-item.selected')?.textContent?.trim() || ''`,
+          )
+          return now !== startSelected && now !== ''
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
   })
 })
 

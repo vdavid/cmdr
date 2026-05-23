@@ -49,23 +49,6 @@ async function bothPanesOnLocalVolume(): Promise<boolean> {
   return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
 }
 
-/**
- * Polls a sync filesystem predicate until it returns true or timeout is reached.
- * Used to wait for MTP / cross-volume operations to settle on disk.
- */
-async function pollFs(
-  tauriPage: Parameters<typeof pollUntil>[0],
-  predicate: () => boolean,
-  timeoutMs = 15000,
-): Promise<boolean> {
-  return pollUntil(
-    tauriPage,
-    // eslint-disable-next-line @typescript-eslint/require-await -- pollUntil expects a Promise<boolean>
-    async () => predicate(),
-    timeoutMs,
-  )
-}
-
 /** Discovers the mtp:// path prefix for a named MTP storage from cmdr://state. */
 async function getMtpVolumePath(storageName: string): Promise<string> {
   const state = await mcpReadResource('cmdr://state')
@@ -101,9 +84,10 @@ test.beforeEach(async ({ tauriPage }) => {
       invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
       invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
     })()`)
-    await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
+    await expect.poll(() => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
     await tauriPage.keyboard.press('Escape')
     await tauriPage.keyboard.press('Escape')
+    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
   }
 })
@@ -137,15 +121,16 @@ test.describe('MTP cross-volume move conflicts', () => {
     // Wait for the MTP operation to settle on disk: dest contains MTP content AND source removed.
     const destPath = path.join(fixtureRoot, 'right', 'report.txt')
     const srcPath = path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')
-    await pollFs(
-      tauriPage,
-      () => {
-        if (fs.existsSync(srcPath)) return false
-        if (!fs.existsSync(destPath)) return false
-        return fs.readFileSync(destPath, 'utf-8').includes('Quarterly report')
-      },
-      15000,
-    )
+    await expect
+      .poll(
+        () => {
+          if (fs.existsSync(srcPath)) return false
+          if (!fs.existsSync(destPath)) return false
+          return fs.readFileSync(destPath, 'utf-8').includes('Quarterly report')
+        },
+        { timeout: 15000 },
+      )
+      .toBeTruthy()
 
     // Dest should have MTP content (overwritten)
     const destContent = fs.readFileSync(destPath, 'utf-8')
@@ -210,15 +195,16 @@ test.describe('MTP cross-volume move conflicts', () => {
     const mtpDest = path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')
     const localSrc = path.join(fixtureRoot, 'left', 'file-a.txt')
     const expectedContent = 'A'.repeat(1024)
-    await pollFs(
-      tauriPage,
-      () => {
-        if (fs.existsSync(localSrc)) return false
-        if (!fs.existsSync(mtpDest)) return false
-        return fs.readFileSync(mtpDest, 'utf-8') === expectedContent
-      },
-      15000,
-    )
+    await expect
+      .poll(
+        () => {
+          if (fs.existsSync(localSrc)) return false
+          if (!fs.existsSync(mtpDest)) return false
+          return fs.readFileSync(mtpDest, 'utf-8') === expectedContent
+        },
+        { timeout: 15000 },
+      )
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // MTP file should have local content (overwritten); local fixture is 1024 'A' chars
@@ -255,14 +241,15 @@ test.describe('MTP same-volume move conflicts', () => {
     // class to land on the left pane.
     await mcpSwitchPane()
     await mcpSwitchPane()
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
-        ),
-      3000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
+          ),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
     await dispatchMenuCommand(tauriPage, 'file.move')
@@ -276,15 +263,16 @@ test.describe('MTP same-volume move conflicts', () => {
     // Wait for the same-volume MTP move to settle on disk.
     const rootPath = path.join(MTP_FIXTURE_ROOT, 'internal', 'report.txt')
     const docsSrc = path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')
-    await pollFs(
-      tauriPage,
-      () => {
-        if (fs.existsSync(docsSrc)) return false
-        if (!fs.existsSync(rootPath)) return false
-        return fs.readFileSync(rootPath, 'utf-8').includes('Quarterly report')
-      },
-      15000,
-    )
+    await expect
+      .poll(
+        () => {
+          if (fs.existsSync(docsSrc)) return false
+          if (!fs.existsSync(rootPath)) return false
+          return fs.readFileSync(rootPath, 'utf-8').includes('Quarterly report')
+        },
+        { timeout: 15000 },
+      )
+      .toBeTruthy()
     await mcpCall('refresh', {})
 
     // Root report.txt should have Documents content (overwritten)
@@ -314,14 +302,15 @@ test.describe('MTP same-volume move conflicts', () => {
     // Toggle twice and poll for the visual focus class to land on the left pane.
     await mcpSwitchPane()
     await mcpSwitchPane()
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(
-          `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
-        ),
-      3000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
+          ),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
     await dispatchMenuCommand(tauriPage, 'file.move')
@@ -410,12 +399,12 @@ test.describe('MTP cross-volume copy conflicts', () => {
       await clickTransferStart(tauriPage)
 
       // Wait for the first write-conflict event, then resolve via IPC.
-      await pollUntil(
-        tauriPage,
-        async () => tauriPage.evaluate<boolean>(`(window.__skipBytesTestConflicts ?? []).length > 0`),
-        10000,
-        50,
-      )
+      await expect
+        .poll(async () => tauriPage.evaluate<boolean>(`(window.__skipBytesTestConflicts ?? []).length > 0`), {
+          timeout: 10000,
+          intervals: [50],
+        })
+        .toBeTruthy()
       const firstConflict = await tauriPage.evaluate<{ operationId: string }>(`window.__skipBytesTestConflicts[0]`)
       expect(firstConflict.operationId).toBeTruthy()
       await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resolve_write_conflict', {

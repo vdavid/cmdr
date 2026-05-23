@@ -15,7 +15,7 @@
 import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, executeViaCommandPalette, getFixtureRoot, pollUntil } from './helpers.js'
+import { ensureAppReady, executeViaCommandPalette, getFixtureRoot } from './helpers.js'
 
 /** Subdir under the shared fixture root holding the files for this suite. */
 const FIXTURE_SUBDIR = 'full-page-nav-fixtures'
@@ -133,15 +133,16 @@ async function pressAndWaitCursorChange(
 ): Promise<void> {
   const before = await getCursorName(tauriPage)
   await tauriPage.keyboard.press(key)
-  await pollUntil(
-    tauriPage,
-    async () => {
-      const name = await getCursorName(tauriPage)
-      if (expectedName !== undefined) return name === expectedName
-      return name !== before
-    },
-    2000,
-  )
+  await expect
+    .poll(
+      async () => {
+        const name = await getCursorName(tauriPage)
+        if (expectedName !== undefined) return name === expectedName
+        return name !== before
+      },
+      { timeout: 2000 },
+    )
+    .toBeTruthy()
 }
 
 test.describe('Full view sticky-header cursor visibility', () => {
@@ -155,19 +156,22 @@ test.describe('Full view sticky-header cursor visibility', () => {
 
     const fixtureDir = path.join(getFixtureRoot(), FIXTURE_SUBDIR)
     await navigateFocusedPaneTo(tauriPage, 'left', fixtureDir)
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(`!!document.querySelector('.file-pane.is-focused [data-filename="file-000.txt"]')`),
-      5000,
-    )
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `!!document.querySelector('.file-pane.is-focused [data-filename="file-000.txt"]')`,
+          ),
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     // Switch to Full view via command palette.
     await executeViaCommandPalette(tauriPage, 'Full view')
-    await pollUntil(tauriPage, async () => tauriPage.isVisible(FULL_LIST_HEADER), 5000)
+    await expect.poll(async () => tauriPage.isVisible(FULL_LIST_HEADER), { timeout: 5000 }).toBeTruthy()
 
     // Cursor starts on "..". Confirm before running the repro.
-    await pollUntil(tauriPage, async () => (await getCursorName(tauriPage)) === '..', 3000)
+    await expect.poll(async () => (await getCursorName(tauriPage)) === '..', { timeout: 3000 }).toBeTruthy()
 
     // PageDown × 2 — cursor walks two pages down into the listing.
     await pressAndWaitCursorChange(tauriPage, 'PageDown')

@@ -91,9 +91,10 @@ test.beforeEach(async ({ tauriPage }) => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
     })()`)
-    await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
+    await expect.poll(() => bothPanesOnLocalVolume(), { timeout: 5000 }).toBeTruthy()
     await tauriPage.keyboard.press('Escape')
     await tauriPage.keyboard.press('Escape')
+    // allowed-bare-poll: best-effort modal dismissal in beforeEach; overlay may or may not be present
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
   }
 })
@@ -149,14 +150,15 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
         const name = `cancel-${String(i).padStart(2, '0')}.jpg`
         await moveCursorToFile(tauriPage, name)
         await pressKey(tauriPage, 'Space')
-        await pollUntil(
-          tauriPage,
-          async () =>
-            tauriPage.evaluate<boolean>(
-              `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename=' + ${JSON.stringify(JSON.stringify(name))} + '].is-selected')`,
-            ),
-          2000,
-        )
+        await expect
+          .poll(
+            async () =>
+              tauriPage.evaluate<boolean>(
+                `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename=' + ${JSON.stringify(JSON.stringify(name))} + '].is-selected')`,
+              ),
+            { timeout: 2000 },
+          )
+          .toBeTruthy()
       }
 
       // Open the delete confirmation, confirm.
@@ -185,11 +187,9 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
       // failing (pre-M2 was 30 s). Once settle arrives, dialog closes within
       // ~400 ms (MIN_DISPLAY_MS).
       const cancelClickedAt = Date.now()
-      await pollUntil(
-        tauriPage,
-        async () => tauriPage.evaluate<boolean>(`(window.__settledEvents || []).length > 0`),
-        2_000,
-      )
+      await expect
+        .poll(async () => tauriPage.evaluate<boolean>(`(window.__settledEvents || []).length > 0`), { timeout: 2_000 })
+        .toBeTruthy()
       const settleArrivedAt = Date.now()
       const settleDuration = settleArrivedAt - cancelClickedAt
 

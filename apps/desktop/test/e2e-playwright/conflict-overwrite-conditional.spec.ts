@@ -19,7 +19,7 @@ import path from 'path'
 
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { dispatchMenuCommand, ensureAppReady, getFixtureRoot, pollUntil, TRANSFER_DIALOG } from './helpers.js'
+import { dispatchMenuCommand, ensureAppReady, getFixtureRoot, TRANSFER_DIALOG } from './helpers.js'
 import {
   clearFixtureDirs,
   clickConflictButton,
@@ -159,7 +159,7 @@ test.describe('Conditional conflict policies (per-file dialog buttons)', () => {
     // Per-file conflict dialog appears for the first conflict. The button is
     // labelled "Overwrite all older" and sends `applyToAll: true`. After
     // clicking it, the rest of the operation runs without further prompts.
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 5000)
+    await expect.poll(async () => tauriPage.isVisible('.conflict-section'), { timeout: 5000 }).toBeTruthy()
     await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Overwrite all older')
 
     await waitForDialogsToClose(tauriPage)

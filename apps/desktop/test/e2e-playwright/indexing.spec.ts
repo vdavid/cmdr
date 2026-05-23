@@ -16,7 +16,7 @@ import path from 'path'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot, executeViaCommandPalette, getSizeText, pollUntil } from './helpers.js'
+import { ensureAppReady, getFixtureRoot, executeViaCommandPalette, getSizeText } from './helpers.js'
 
 /** Union type for tauriPage (works in both Tauri and browser mode). */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -57,19 +57,19 @@ async function getDirStats(tauriPage: PageLike, dirPath: string): Promise<DirSta
  */
 async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs = 500_000): Promise<DirStats | null> {
   const result: { stats: DirStats | null } = { stats: null }
-  await pollUntil(
-    tauriPage,
-    async () => {
-      const stats = await getDirStats(tauriPage, dirPath)
-      if (stats && stats.recursiveFileCount > 0) {
-        result.stats = stats
-        return true
-      }
-      return false
-    },
-    timeoutMs,
-    2000,
-  )
+  await expect
+    .poll(
+      async () => {
+        const stats = await getDirStats(tauriPage, dirPath)
+        if (stats && stats.recursiveFileCount > 0) {
+          result.stats = stats
+          return true
+        }
+        return false
+      },
+      { timeout: timeoutMs, intervals: [2000] },
+    )
+    .toBeTruthy()
   return result.stats
 }
 
@@ -84,19 +84,19 @@ async function waitForExactSize(
   timeoutMs = 30_000,
 ): Promise<DirStats | null> {
   const result: { stats: DirStats | null } = { stats: null }
-  await pollUntil(
-    tauriPage,
-    async () => {
-      const stats = await getDirStats(tauriPage, dirPath)
-      if (stats && stats.recursiveSize === expectedSize) {
-        result.stats = stats
-        return true
-      }
-      return false
-    },
-    timeoutMs,
-    500,
-  )
+  await expect
+    .poll(
+      async () => {
+        const stats = await getDirStats(tauriPage, dirPath)
+        if (stats && stats.recursiveSize === expectedSize) {
+          result.stats = stats
+          return true
+        }
+        return false
+      },
+      { timeout: timeoutMs, intervals: [500] },
+    )
+    .toBeTruthy()
   return result.stats ?? (await getDirStats(tauriPage, dirPath))
 }
 
@@ -105,20 +105,21 @@ async function ensureFullView(tauriPage: PageLike): Promise<void> {
   const isFullView = await tauriPage.isVisible('.full-list-container')
   if (!isFullView) {
     await executeViaCommandPalette(tauriPage, 'Full view')
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('.full-list-container'), 5000)
+    await expect.poll(async () => tauriPage.isVisible('.full-list-container'), { timeout: 5000 }).toBeTruthy()
   }
 }
 
 /** Waits until a directory's size column shows a numeric value (not "<dir>" or "Scanning..."). */
 async function waitForNumericSize(tauriPage: PageLike, entryName: string, timeoutMs = 15000): Promise<string> {
-  await pollUntil(
-    tauriPage,
-    async () => {
-      const text = await getSizeText(tauriPage, entryName)
-      return /\d/.test(text)
-    },
-    timeoutMs,
-  )
+  await expect
+    .poll(
+      async () => {
+        const text = await getSizeText(tauriPage, entryName)
+        return /\d/.test(text)
+      },
+      { timeout: timeoutMs },
+    )
+    .toBeTruthy()
   return getSizeText(tauriPage, entryName)
 }
 

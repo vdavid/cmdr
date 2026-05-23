@@ -258,6 +258,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunA11yCoverage,
 	},
 	{
+		ID:          "desktop-svelte-bare-poll",
+		Nickname:    "bare-poll",
+		DisplayName: "bare-poll",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		IsFast:      true,
+		Run:         RunBarePoll,
+	},
+	{
 		ID:          "desktop-svelte-check",
 		Nickname:    "svelte-check",
 		DisplayName: "svelte-check",

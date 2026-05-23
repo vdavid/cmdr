@@ -131,16 +131,17 @@ test.describe('File viewer search', () => {
     await viewer.fill('.search-input', 'AAA')
 
     // Wait for search results (debounced search + backend poll)
-    await pollUntil(
-      viewer,
-      async () => {
-        const visible = await viewer.isVisible('.match-count')
-        if (!visible) return false
-        const text = await viewer.textContent('.match-count')
-        return text?.includes('of') ?? false
-      },
-      5000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const visible = await viewer.isVisible('.match-count')
+          if (!visible) return false
+          const text = await viewer.textContent('.match-count')
+          return text?.includes('of') ?? false
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     const matchText = await viewer.textContent('.match-count')
     expect(matchText).toContain('of')
@@ -155,7 +156,7 @@ test.describe('File viewer search', () => {
 
     await viewer.keyboard.press('Escape')
 
-    await pollUntil(viewer, async () => !(await viewer.isVisible('.search-bar')), 3000)
+    await expect.poll(async () => !(await viewer.isVisible('.search-bar')), { timeout: 3000 }).toBeTruthy()
     expect(await viewer.isVisible('.search-bar')).toBe(false)
   })
 
@@ -169,15 +170,15 @@ test.describe('File viewer search', () => {
     await viewer.fill('.search-input', 'Z'.repeat(40))
 
     // file-a.txt is 1024 'A' chars, so 'Z' x 40 cannot match.
-    const settled = await pollUntil(
-      viewer,
-      async () => {
-        const text = (await viewer.textContent('.match-count')) ?? ''
-        return text.includes('No matches')
-      },
-      5000,
-    )
-    expect(settled).toBe(true)
+    await expect
+      .poll(
+        async () => {
+          const text = (await viewer.textContent('.match-count')) ?? ''
+          return text.includes('No matches')
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     // Cleanup: clear the query.
     await viewer.fill('.search-input', '')
@@ -213,14 +214,15 @@ test.describe('File viewer selection and copy', () => {
         `)
 
     // 3) Wait for the success toast (info-band) so we know the read returned.
-    await pollUntil(
-      viewer,
-      async () => {
-        const text = (await viewer.textContent('.toast-item')) ?? ''
-        return text.includes('on your clipboard')
-      },
-      5000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const text = (await viewer.textContent('.toast-item')) ?? ''
+          return text.includes('on your clipboard')
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     // 4) Read the clipboard and assert it matches the file content. The 1024 'A' chars
     //    are deterministic, so an exact compare works.
@@ -269,14 +271,15 @@ test.describe('File viewer selection and copy', () => {
             })()
         `)
 
-    await pollUntil(
-      viewer,
-      async () => {
-        const text = (await viewer.textContent('.toast-item')) ?? ''
-        return text.includes('on your clipboard')
-      },
-      5000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const text = (await viewer.textContent('.toast-item')) ?? ''
+          return text.includes('on your clipboard')
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     const clip = await viewer.evaluate<string>(
       `(async () => { try { return await navigator.clipboard.readText() } catch { return '' } })()`,
@@ -349,14 +352,15 @@ test.describe('File viewer selection and copy', () => {
         `)
 
     // Wait for the copy success toast.
-    await pollUntil(
-      viewer,
-      async () => {
-        const text = (await viewer.textContent('.toast-item')) ?? ''
-        return text.includes('on your clipboard')
-      },
-      5000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const text = (await viewer.textContent('.toast-item')) ?? ''
+          return text.includes('on your clipboard')
+        },
+        { timeout: 5000 },
+      )
+      .toBeTruthy()
 
     const clip = await viewer.evaluate<string>(
       `(async () => { try { return await navigator.clipboard.readText() } catch { return '' } })()`,
@@ -453,15 +457,15 @@ test.describe('File viewer error handling', () => {
 
       // Status starts as "Loading…" before the missing-path branch resolves; poll the textContent so we read it after it
       // settles rather than the moment the element first exists.
-      const settled = await pollUntil(
-        viewer,
-        async () => {
-          const t = await viewer.textContent('.status-message')
-          return t !== null && t.includes('No file path')
-        },
-        3000,
-      )
-      expect(settled).toBe(true)
+      await expect
+        .poll(
+          async () => {
+            const t = await viewer.textContent('.status-message')
+            return t !== null && t.includes('No file path')
+          },
+          { timeout: 3000 },
+        )
+        .toBeTruthy()
     } finally {
       await closeScopedWindow(main, viewer, label)
     }

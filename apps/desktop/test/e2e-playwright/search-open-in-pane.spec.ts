@@ -180,14 +180,15 @@ async function resetRightPaneToLocalIfNeeded(
             payload: { pane: 'right', name: ${JSON.stringify(localVolumeName)} }
         });
     })()`)
-  await pollUntil(
-    tauriPage,
-    async () => {
-      const p = await getRightPaneActiveTabPath()
-      return p !== null && !p.startsWith('search-results://')
-    },
-    3000,
-  )
+  await expect
+    .poll(
+      async () => {
+        const p = await getRightPaneActiveTabPath()
+        return p !== null && !p.startsWith('search-results://')
+      },
+      { timeout: 3000 },
+    )
+    .toBeTruthy()
   await tauriPage.evaluate(`(function(){
         var invoke = window.__TAURI_INTERNALS__.invoke;
         invoke('plugin:event|emit', {
@@ -195,14 +196,15 @@ async function resetRightPaneToLocalIfNeeded(
             payload: { pane: 'right', path: ${JSON.stringify(fixtureRightPath)} }
         });
     })()`)
-  await pollUntil(
-    tauriPage,
-    async () => {
-      const p = await getRightPaneActiveTabPath()
-      return p === fixtureRightPath
-    },
-    3000,
-  )
+  await expect
+    .poll(
+      async () => {
+        const p = await getRightPaneActiveTabPath()
+        return p === fixtureRightPath
+      },
+      { timeout: 3000 },
+    )
+    .toBeTruthy()
 }
 
 /**

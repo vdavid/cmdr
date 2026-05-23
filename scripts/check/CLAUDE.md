@@ -218,16 +218,16 @@ before tests.
 
 ## Apps and check counts
 
-| App        | Tech     | Checks                                                                                                                                                                                                                    |
-| ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow) |
-| Desktop    | Svelte   | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, a11y-contrast, btn-restyle, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)          |
-| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                                                    |
-| Website    | Docker   | docker-build                                                                                                                                                                                                              |
-| API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                           |
-| Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                      |
-| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows)                                                                    |
-| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                 |
+| App        | Tech     | Checks                                                                                                                                                                                                                      |
+| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)   |
+| Desktop    | Svelte   | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
+| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                                                      |
+| Website    | Docker   | docker-build                                                                                                                                                                                                                |
+| API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                             |
+| Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                        |
+| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows)                                                                      |
+| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                   |
 
 ## Output format
 
@@ -294,6 +294,22 @@ wrapped in `#[cfg(target_os = "macos")]`. CI catches this after push, but the ch
 parses `Cargo.toml` for macOS-only crate names, detects module-level gating (for example,
 `#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe), and scans remaining
 files for ungated `use` statements.
+
+**Decision**: `bare-poll` check to catch silently-passing E2E tests. **Why**: Cmdr's `pollUntil` helper (and its
+wrappers `pollFs`, `pollUntilValue`, `pollActiveMode`, `pollOverlayGone`, `pollFocusedPane`) returns `false` on timeout
+instead of throwing. A bare `await pollUntil(...)` statement therefore reduces to "wait up to N seconds, then quietly
+proceed" — if the polled condition never holds, the test passes green so long as no later `expect` happens to catch it.
+Discovered when investigating why one viewer test took 5+ seconds: the toast it polled for never appeared (the viewer
+window doesn't mount `ToastContainer`), but the test still passed because the next `expect` (clipboard contents) was
+satisfied by the underlying copy. A repo-wide grep turned up 187 bare-poll sites across 20 specs. Several spec files
+contained tests with zero `expect()` calls whose entire assertion was a bare `await pollUntil(...)` — those tests
+literally couldn't fail. The check is a fast-lane Go scanner (`apps/desktop/test/`, ~9 ms warm) modeled on
+`error-string-match`. Same line-anchored grep pattern: `^\s*await\s+(pollUntil|pollFs|…)\s*\(` only matches the
+bare-expression-statement shape, so `expect(await pollUntil(…)).toBe(true)` / `if (!(await pollUntil(…)))` /
+`return await pollUntil(…)` / `const ok = await pollUntil(…)` all pass through. Opt out for genuine best-effort cleanups
+(dismissing an overlay that might or might not be there) with `// allowed-bare-poll: <reason>` on the line above or as a
+trailing comment. The preferred migration target is Playwright's `expect.poll(() => …).toBeTruthy()`, which fuses the
+wait with the assertion so the bug class is structurally impossible.
 
 **Decision**: Auto-fix locally, check-only in CI. **Why**: Developers get instant fixes locally (less friction), CI
 ensures code is properly formatted before merge. Controlled by the `--ci` flag.

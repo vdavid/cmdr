@@ -24,7 +24,6 @@ import {
   getSizeText,
   moveCursorToFile,
   executeViaCommandPalette,
-  pollUntil,
   TRANSFER_DIALOG,
 } from './helpers.js'
 
@@ -61,7 +60,7 @@ test.describe('File watching', () => {
     fs.mkdirSync(dirPath)
     await flushFileWatcher(tauriPage)
 
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, dirName), 2000)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, dirName), { timeout: 2000 }).toBeTruthy()
   })
 
   test('detects an externally created file', async ({ tauriPage }) => {
@@ -76,7 +75,7 @@ test.describe('File watching', () => {
     fs.writeFileSync(filePath, 'hello world (watch test)')
     await flushFileWatcher(tauriPage)
 
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, fileName), 2000)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, fileName), { timeout: 2000 }).toBeTruthy()
   })
 
   test('detects an externally deleted file', async ({ tauriPage }) => {
@@ -89,7 +88,9 @@ test.describe('File watching', () => {
     fs.unlinkSync(path.join(fixtureRoot, 'left', 'file-a.txt'))
     await flushFileWatcher(tauriPage)
 
-    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')), 2000)
+    await expect
+      .poll(async () => !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')), { timeout: 2000 })
+      .toBeTruthy()
   })
 
   test('detects an externally renamed file', async ({ tauriPage }) => {
@@ -102,15 +103,16 @@ test.describe('File watching', () => {
     await flushFileWatcher(tauriPage)
 
     // Both old name gone AND new name present
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const oldGone = !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt'))
-        const newPresent = await fileExistsInFocusedPane(tauriPage, 'file-a-renamed.txt')
-        return oldGone && newPresent
-      },
-      2000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const oldGone = !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt'))
+          const newPresent = await fileExistsInFocusedPane(tauriPage, 'file-a-renamed.txt')
+          return oldGone && newPresent
+        },
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
   })
 
   test('updates displayed size when a file is modified externally', async ({ tauriPage }) => {
@@ -118,7 +120,7 @@ test.describe('File watching', () => {
 
     // Switch to Full view so the size column is visible
     await executeViaCommandPalette(tauriPage, 'Full view')
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('.full-list-container'), 5000)
+    await expect.poll(async () => tauriPage.isVisible('.full-list-container'), { timeout: 5000 }).toBeTruthy()
 
     const fixtureRoot = getFixtureRoot()
 
@@ -131,14 +133,15 @@ test.describe('File watching', () => {
     await flushFileWatcher(tauriPage)
 
     // Wait for the watcher to update the entry with the new size
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const newSize = await getSizeText(tauriPage, 'file-a.txt')
-        return newSize !== '' && newSize !== initialSize
-      },
-      2000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const newSize = await getSizeText(tauriPage, 'file-a.txt')
+          return newSize !== '' && newSize !== initialSize
+        },
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
   })
 
   // ── Batch operations ────────────────────────────────────────────────────
@@ -158,7 +161,9 @@ test.describe('File watching', () => {
     await flushFileWatcher(tauriPage)
 
     // All 25 should appear in the listing
-    await pollUntil(tauriPage, async () => (await countEntriesWithPrefix(tauriPage, prefix)) === 25, 2000)
+    await expect
+      .poll(async () => (await countEntriesWithPrefix(tauriPage, prefix)) === 25, { timeout: 2000 })
+      .toBeTruthy()
   })
 
   // `flush_file_watcher` bypasses the OS watcher entirely (it calls
@@ -179,8 +184,7 @@ test.describe('File watching', () => {
     await flushFileWatcher(tauriPage)
 
     // Verify files appear in the focused pane
-    const found = await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, 'mass-0000.txt'), 5000)
-    expect(found).toBe(true)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'mass-0000.txt'), { timeout: 5000 }).toBeTruthy()
   })
 
   // ── Edge cases ──────────────────────────────────────────────────────────
@@ -199,7 +203,7 @@ test.describe('File watching', () => {
             event: 'mcp-nav-to-path',
             payload: { pane: 'right', path: ${JSON.stringify(tempDir)} }
         })`)
-    await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'temp-file.txt', 1), 2000)
+    await expect.poll(async () => fileExistsInPane(tauriPage, 'temp-file.txt', 1), { timeout: 2000 }).toBeTruthy()
 
     // Delete the directory externally while the pane is watching it
     fs.rmSync(tempDir, { recursive: true, force: true })
@@ -209,14 +213,15 @@ test.describe('File watching', () => {
     // Poll until the file-pane stops listing the temp file (proves the listing
     // was refreshed). The subsequent assertions cover the "app still works"
     // contract regardless.
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const stillThere = await fileExistsInPane(tauriPage, 'temp-file.txt', 1)
-        return !stillThere
-      },
-      2000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const stillThere = await fileExistsInPane(tauriPage, 'temp-file.txt', 1)
+          return !stillThere
+        },
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
 
     // The app should still be functional: left pane unaffected
     expect(await fileExistsInPane(tauriPage, 'file-a.txt', 0)).toBe(true)
@@ -238,7 +243,7 @@ test.describe('File watching', () => {
             event: 'mcp-nav-to-path',
             payload: { pane: 'right', path: ${JSON.stringify(leftDir)} }
         })`)
-    await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'file-a.txt', 1), 2000)
+    await expect.poll(async () => fileExistsInPane(tauriPage, 'file-a.txt', 1), { timeout: 2000 }).toBeTruthy()
 
     // Create a new file externally
     const fileName = `dual-pane-${String(Date.now())}.txt`
@@ -246,15 +251,16 @@ test.describe('File watching', () => {
     await flushFileWatcher(tauriPage)
 
     // Both panes should show the new file
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const inLeft = await fileExistsInPane(tauriPage, fileName, 0)
-        const inRight = await fileExistsInPane(tauriPage, fileName, 1)
-        return inLeft && inRight
-      },
-      2000,
-    )
+    await expect
+      .poll(
+        async () => {
+          const inLeft = await fileExistsInPane(tauriPage, fileName, 0)
+          const inRight = await fileExistsInPane(tauriPage, fileName, 1)
+          return inLeft && inRight
+        },
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
   })
 
   test('in-app copy shows file in target pane without duplicates', async ({ tauriPage }) => {
@@ -268,26 +274,26 @@ test.describe('File watching', () => {
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
     await flushFileWatcher(tauriPage)
 
     // File should appear in right pane, and after the watcher fires there
     // should be exactly one instance (no duplicate from watcher re-adding it).
     // Poll instead of a fixed sleep: the DOM can be transiently empty during
     // a watcher-triggered re-render.
-    const noDuplicates = await pollUntil(
-      tauriPage,
-      async () => {
-        const count = await tauriPage.evaluate<number>(`(function() {
+    await expect
+      .poll(
+        async () => {
+          const count = await tauriPage.evaluate<number>(`(function() {
               var pane = document.querySelectorAll('.file-pane')[1];
               if (!pane) return 0;
               return pane.querySelectorAll('[data-filename="file-a.txt"]').length;
           })()`)
-        return count === 1
-      },
-      3000,
-    )
-    expect(noDuplicates).toBe(true)
+          return count === 1
+        },
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
   })
 
   test('respects hidden file visibility for externally created dotfiles', async ({ tauriPage }) => {
@@ -298,7 +304,7 @@ test.describe('File watching', () => {
     const hiddenFilesShown = await fileExistsInFocusedPane(tauriPage, '.hidden-file')
     if (!hiddenFilesShown) {
       await executeViaCommandPalette(tauriPage, 'Toggle hidden')
-      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 3000)
+      await expect.poll(async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), { timeout: 3000 }).toBeTruthy()
     }
 
     // Create a new hidden file externally
@@ -307,16 +313,18 @@ test.describe('File watching', () => {
     await flushFileWatcher(tauriPage)
 
     // It should appear (hidden files are visible)
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, hiddenName), 2000)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, hiddenName), { timeout: 2000 }).toBeTruthy()
 
     // Toggle hidden files OFF; the dotfile should disappear
     await executeViaCommandPalette(tauriPage, 'Toggle hidden')
-    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, hiddenName)), 3000)
+    await expect
+      .poll(async () => !(await fileExistsInFocusedPane(tauriPage, hiddenName)), { timeout: 3000 })
+      .toBeTruthy()
 
     // Restore original state
     if (hiddenFilesShown) {
       await executeViaCommandPalette(tauriPage, 'Toggle hidden')
-      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 3000)
+      await expect.poll(async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), { timeout: 3000 }).toBeTruthy()
     }
   })
 })

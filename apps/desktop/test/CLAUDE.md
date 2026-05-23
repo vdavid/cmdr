@@ -14,7 +14,9 @@ Always write the probe instead:
 - "container/daemon listening on a port" → tight loop on `nc -z host port` or bash `/dev/tcp/host/port` with ~100 ms
   poll and ~60 s deadline.
 - "DOM element rendered" → `waitForSelector(...)`. Never bare `sleep`.
-- "app state changed" → `pollUntil(condition, timeout)` from `helpers.ts`.
+- "app state changed" → `expect.poll(() => condition(), { timeout }).toBeTruthy()` (Playwright's built-in: the wait IS
+  the assertion). Avoid bare `await pollUntil(...)` — it returns `false` on timeout and a discarded return = silent test
+  pass; the `bare-poll` check (fast lane) flags it. See `docs/testing.md` § "Bare `await pollUntil(...)` in E2E specs".
 - "Tauri event fired" → `tauriPage.waitForFunction(...)` for simple JS, `pollUntil` for anything needing Node-side
   logic.
 

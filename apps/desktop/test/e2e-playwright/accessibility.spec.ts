@@ -144,7 +144,7 @@ async function runAxeAudit(
 /** Dismiss a modal dialog with Escape and wait for it to close. */
 async function dismissDialog(tauriPage: PageLike): Promise<void> {
   await tauriPage.keyboard.press('Escape')
-  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
+  await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
 }
 
 /** Open the command palette overlay. */
@@ -274,7 +274,7 @@ for (const mode of ['light', 'dark'] as const) {
 
       // Dismiss the palette
       await tauriPage.keyboard.press('Escape')
-      await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
+      await expect.poll(async () => !(await tauriPage.isVisible('.palette-overlay')), { timeout: 3000 }).toBeTruthy()
 
       expect(all, `Found ${String(all.length)} violation(s) in command palette (${mode})`).toHaveLength(0)
     })
@@ -288,7 +288,7 @@ for (const mode of ['light', 'dark'] as const) {
 
       // Dismiss the search dialog
       await tauriPage.keyboard.press('Escape')
-      await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.search-overlay')), 3000)
+      await expect.poll(async () => !(await tauriPage.isVisible('.search-overlay')), { timeout: 3000 }).toBeTruthy()
 
       expect(all, `Found ${String(all.length)} violation(s) in search dialog (${mode})`).toHaveLength(0)
     })

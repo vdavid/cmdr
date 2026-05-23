@@ -115,7 +115,7 @@ Three cadences. Pick the one that matches where you are in the work, not the one
   exclusive with `--include-slow` / `--only-slow`. Covers:
   - All formatters (`oxfmt`, `rustfmt`, `gofmt`) and most non-compiling static linters (`cfg-gate`, `log-error-macro`,
     `error-string-match`, `ipc-enum-camelcase`, `cargo-machete`, `knip`, `import-cycles`, `type-drift`, `stylelint`,
-    `css-unused`, `a11y-contrast`, `btn-restyle`, `a11y-coverage`, `e2e-linux-typecheck`).
+    `css-unused`, `a11y-contrast`, `btn-restyle`, `a11y-coverage`, `bare-poll`, `e2e-linux-typecheck`).
   - Go: `go-vet`, `staticcheck`, `ineffassign`, `misspell`, `gocyclo`, `go-tests`.
   - API server: `typecheck`, `tests`.
   - Website: `html-validate` (self-skips when `dist/` is absent).
@@ -261,6 +261,15 @@ resilience, and common pitfalls.
     `// allowed-error-string-match: <reason>` on the line above (Rust) or
     `// eslint-disable-next-line cmdr/no-error-string-match -- <reason>` (TS/Svelte). Pair the opt-out with `LC_ALL=C`
     on the subprocess and snapshot tests pinning the matched strings against a tool version.
+- ❌ **No bare `await pollUntil(...)` (or other `Promise<boolean>` poll helper) in E2E tests.** The helper returns
+  `false` on timeout instead of throwing, and a bare expression statement discards the return — the test silently passes
+  even when the polled condition never holds. Prefer Playwright's `expect.poll(() => ...).toBeTruthy()` (idiomatic and
+  fuses the wait with the assertion); fall back to `expect(await pollUntil(...)).toBe(true)` for the few sites that
+  can't migrate. The same trap applies to `pollFs`, `pollUntilValue`, `pollActiveMode`, `pollOverlayGone`,
+  `pollFocusedPane`, and any future `Promise<boolean>` poll helper.
+  - **Enforced by**: `bare-poll` (Go check, fast lane). Scans `apps/desktop/test/`.
+  - **Opt out** for genuine best-effort cleanups (for example, dismissing an overlay that might or might not be there)
+    with `// allowed-bare-poll: <reason>` on the line above OR as a trailing comment on the same line. Use sparingly.
 - ❌ **Type-safe IPC: no raw `invoke('...')` outside the typed bindings folder.** Tauri command names are duplicated
   across the Rust `#[tauri::command]` site and every TS call site, with no compile-time link. Renaming the Rust side
   silently breaks runtime IPC with a generic "not allowed" error. The repo wires `tauri-specta` to generate typed

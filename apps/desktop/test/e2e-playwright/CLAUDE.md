@@ -212,6 +212,24 @@ intentional. Tier 3 is proving itself.
 `eval()` (fixed in plugin commit `4f39e3e9`). For conditions that need Node.js-side logic, use `pollUntil()` with
 `tauriPage.evaluate()`.
 
+**`pollUntil` is silent on timeout — wrap it.** `pollUntil` returns `false` on deadline instead of throwing, so
+`await pollUntil(...)` as a bare expression statement silently swallows failures: the test passes green even when the
+condition never holds. A repo-wide audit (see `scripts/check/CLAUDE.md` § `bare-poll`) turned up 187 sites of this
+pattern; several specs had tests with zero `expect()` calls whose only assertion was a bare poll, meaning the test
+literally couldn't fail. **The right shape**:
+
+- Preferred: `await expect.poll(() => condition(), { timeout: 3000 }).toBeTruthy()` — Playwright's built-in. The wait IS
+  the assertion, so the failure mode is impossible to write. Falls back gracefully on Tauri's `tauriPage` since
+  `expect.poll` doesn't touch the page object.
+- Acceptable: `expect(await pollUntil(...)).toBe(true)` — keeps the helper, wraps it in an assertion.
+- Acceptable: `if (!(await pollUntil(...))) throw new Error('descriptive message')` — fine for non-test helpers.
+- **Forbidden**: bare `await pollUntil(...)` as an expression statement. The `bare-poll` Go check (fast lane) flags
+  these. Opt out for genuine best-effort cleanups (dismissing an overlay that might or might not be there) with
+  `// allowed-bare-poll: <reason>` on the line above or as a trailing comment. Use sparingly.
+
+The same trap applies to every `Promise<boolean>` poll helper here: `pollFs`, `pollUntilValue`, `pollActiveMode`,
+`pollOverlayGone`, `pollFocusedPane`. Any future helper that follows the shape should land on the check's allowlist.
+
 **Decision**: Use `pressKey()` helper for Space key instead of `tauriPage.keyboard.press('Space')`. **Why**:
 TauriKeyboard dispatches key names as-is (sends `key: "Space"`), but the DOM spec uses `key: " "` for the space bar. The
 `pressKey()` helper maps Playwright key names to their DOM-correct values.
