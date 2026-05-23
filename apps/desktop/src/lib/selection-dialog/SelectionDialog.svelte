@@ -172,9 +172,25 @@
             // Core's `recordAiTranslation` writes the AI pattern into the matching
             // hand-typed buffer so a later mode switch (⌘1 / ⌘2 / ⌘3) restores it.
             // Selection has no extras module, so this is the only AI write.
+            // Clear the OTHER kind's buffer first: `buildMatchQuery` in AI mode picks
+            // whichever buffer has content (regex first, glob second), so a stale
+            // value from a previous AI run of a different kind would shadow the
+            // new pattern. The hand-typed value the user wrote in the non-AI mode
+            // chip is preserved on a per-session basis only when the user actually
+            // typed it there — AI's own previous output isn't worth keeping around.
+            const otherKind: 'filename' | 'regex' = kind === 'regex' ? 'filename' : 'regex'
+            selectionQueryState.setHandTypedBuffer(otherKind, '')
             selectionQueryState.recordAiTranslation({ pattern: result.pattern, kind })
             changed.add('pattern')
         }
+        // Size + date filters: writing only when AI returns a non-null value means a
+        // previous AI run's filter would otherwise leak into the next. Reset both
+        // chips to `any` first so each AI run paints from a clean slate. The user's
+        // own manual filter edits between AI runs are still wiped by this; that's the
+        // right call — a user who runs AI again expects the AI's filter set, not a
+        // merge with their last manual tweak.
+        selectionQueryState.setSizeFilter('any')
+        selectionQueryState.setDateFilter('any')
         if (applySizeFromAi(result.sizeMin, result.sizeMax)) changed.add('size')
         if (applyDateFromAi(result.modifiedAfter, result.modifiedBefore)) changed.add('date')
         return {
@@ -273,6 +289,23 @@
     let lastMatchedIndices: number[] = []
 
     /**
+     * Drops the synthetic `..` parent entry from the matched set. For regular
+     * panes with a parent dir, `getEntriesSnapshot` prepends a synthetic entry
+     * named `..` at index 0 to keep indices aligned with the pane's selection
+     * state. A pattern like `*` matches it; the underlying `applyIndices`
+     * already skips it on commit (`hasParent` gate), but the preview list and
+     * the matched-count must drop it too so the user sees an honest count and
+     * the row never appears in the results table.
+     */
+    function dropParentIndex(idxs: number[]): number[] {
+        if (idxs.length === 0) return idxs
+        if (idxs[0] === 0 && entries.length > 0 && entries[0].name === '..') {
+            return idxs.slice(1)
+        }
+        return idxs
+    }
+
+    /**
      * Runs the matcher against the dialog-time snapshot and returns the matched
      * entries adapted into `SearchResultEntry`. QueryDialog handles writing state.
      */
@@ -287,7 +320,7 @@
             getSizeFor: (i) => entries[i].size,
             getMtimeFor: (i) => entries[i].modifiedAt,
         }
-        const idxs = matchEntries(accessors, entries.length, q)
+        const idxs = dropParentIndex(matchEntries(accessors, entries.length, q))
         lastMatchedIndices = idxs
         const adapted = idxs.map((i) => entryToResult(entries[i]))
         return Promise.resolve({ entries: adapted, totalCount: adapted.length })
@@ -309,7 +342,7 @@
                 getSizeFor: (i) => entries[i].size,
                 getMtimeFor: (i) => entries[i].modifiedAt,
             }
-            indices = matchEntries(accessors, entries.length, q)
+            indices = dropParentIndex(matchEntries(accessors, entries.length, q))
         }
         // Persist to recent selections. Selection's "add" gate is the commit, mirroring
         // Search's "Open in pane" gate (recents are signal-rich, not keystroke-noisy).

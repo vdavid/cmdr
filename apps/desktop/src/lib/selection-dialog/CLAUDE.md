@@ -99,6 +99,21 @@ The R7 banner is driven by `config.noticeBanner` (the same prop Search uses for 
 `applyIndices` on a snapshot pane operates on indices into the snapshot's `entries[]` exactly as for regular panes — no
 special-casing at the pane API layer.
 
+## Gotchas
+
+- **AI runs reset the other-kind hand-typed buffer and the size + date chips before applying the new translation
+  (M10).** `buildMatchQuery` in AI mode picks whichever of `handTyped.regex` / `handTyped.filename` has content (regex
+  first). Without the reset, a previous AI run's pattern of the opposite kind, or a previous AI run's size/date filter
+  that the new run didn't return, would silently shadow the new translation. The hand-typed value the user actually
+  typed under a non-AI mode is also wiped on each AI run; that's the right call because the user invoked AI again,
+  expecting the AI's filter set rather than a merge with stale manual tweaks. Pinned by the "a second AI run does not
+  let a leftover buffer" test in `SelectionDialog.svelte.test.ts`.
+- **The synthetic `..` parent entry at snapshot index 0 is dropped from matches (M10).** On regular panes,
+  `FilePane.getEntriesSnapshot` prepends a synthetic entry named `..` so indices align with the pane's selection state.
+  A pattern like `*` matches it, but the result count and the rows shown must drop it (the commit path's
+  `applyIndices(hasParent=true)` already skips index 0 — the dialog's preview has to match). The wrapper's
+  `dropParentIndex` helper handles this. Pinned by the "drops the synthetic `..` parent" test.
+
 ## Decisions
 
 - **Selection runs the matcher in JS, not via a Rust IPC.** The matcher iterates hundreds of entries, not millions; the

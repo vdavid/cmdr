@@ -156,6 +156,12 @@ describe('SelectionDialog', () => {
     translateSelectionMock.mockClear()
     addRecentMock.mockClear()
     getRecentMock.mockClear()
+    // jsdom doesn't implement `Element.scrollIntoView`; QueryDialog calls it via
+    // `focusFirstResult` after AI runs. Stub on the prototype so every result
+    // row's call is a no-op rather than an unhandled rejection.
+    if (typeof Element.prototype.scrollIntoView !== 'function') {
+      Element.prototype.scrollIntoView = function noopScrollIntoView() {}
+    }
   })
 
   it("renders 'Select files' when mode is 'add'", async () => {
@@ -349,6 +355,106 @@ describe('SelectionDialog', () => {
     // IPC must have been called.
     expect(translateSelectionMock).toHaveBeenCalled()
     expect(strip ?? overlay.textContent).toBeTruthy()
+    cleanup()
+  })
+
+  it('a second AI run does not let a leftover buffer from the first run shadow the new pattern (M10)', async () => {
+    // Regression: Selection's `buildMatchQuery` in AI mode reads from
+    // `handTyped.regex` first, then `handTyped.filename`. Without the wrapper
+    // clearing the "other kind"'s buffer on each AI run, a prior AI run's regex
+    // would silently win over the new run's glob (or vice versa).
+    aiProvider = 'cloud'
+    // First call: regex result. Sets handTyped.regex.
+    translateSelectionMock.mockResolvedValueOnce({
+      pattern: '^.*\\.log$',
+      kind: 'regex',
+      sizeMin: 1024,
+      sizeMax: null,
+      modifiedAfter: null,
+      modifiedBefore: null,
+      caveat: null,
+      label: null,
+    } as SelectionTranslateResult)
+    // Second call: glob result. Must overwrite, and the prior regex must be
+    // gone or `buildMatchQuery` would still pick the regex (it checks first).
+    // Also: the prior size filter must NOT leak through.
+    translateSelectionMock.mockResolvedValueOnce({
+      pattern: '*.png',
+      kind: 'glob',
+      sizeMin: null,
+      sizeMax: null,
+      modifiedAfter: null,
+      modifiedBefore: null,
+      caveat: null,
+      label: null,
+    } as SelectionTranslateResult)
+
+    const matched: number[][] = []
+    const { overlay, cleanup } = await mountDialog({
+      entries: [
+        buildEntry('a.png', { size: 100 }),
+        buildEntry('b.log', { size: 5000 }),
+        buildEntry('c.png', { size: 10 }),
+      ],
+      onCommit: (idxs) => matched.push(idxs),
+    })
+    dispatchKey(overlay, '1', true) // ⌘1 → AI
+    await tick()
+    const input = overlay.querySelector('input[type="text"], input:not([type])') as HTMLInputElement
+
+    // First AI run: regex returns, size filter applies.
+    input.value = 'all log files bigger than 1k'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    await new Promise((r) => setTimeout(r, 100))
+    await tick()
+
+    // Second AI run: glob this time, no filter.
+    input.value = 'all png images'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    await new Promise((r) => setTimeout(r, 100))
+    await tick()
+
+    // Commit. The matcher MUST run against the latest pattern (`*.png`), not the
+    // leaked regex from the first run. The two .png files are indices 0 and 2.
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    expect(matched).toHaveLength(1)
+    expect(matched[0]).toEqual([0, 2])
+
+    cleanup()
+  })
+
+  it('drops the synthetic `..` parent entry from matches even when the pattern matches it (M10)', async () => {
+    // The regular pane's snapshot prepends a synthetic `..` entry at index 0
+    // (FilePane.getEntriesSnapshot when `hasParent`). `applyIndices` already
+    // skips index 0 on commit, but the dialog's preview must also drop it so
+    // the result count and the rows shown stay honest.
+    const matched: number[][] = []
+    const { overlay, cleanup } = await mountDialog({
+      entries: [
+        buildEntry('..', { isDirectory: true, size: undefined, parentPath: '/parent' }),
+        buildEntry('foo.txt'),
+        buildEntry('bar.txt'),
+      ],
+      onCommit: (idxs) => matched.push(idxs),
+    })
+    const input = overlay.querySelector('input[type="text"], input:not([type])') as HTMLInputElement
+    input.value = '*'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    await new Promise((r) => setTimeout(r, 1100))
+    await tick()
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    expect(matched).toHaveLength(1)
+    // Only the two real entries (indices 1 and 2), NOT index 0 (`..`).
+    expect(matched[0]).toEqual([1, 2])
     cleanup()
   })
 
