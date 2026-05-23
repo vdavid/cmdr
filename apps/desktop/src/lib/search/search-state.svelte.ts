@@ -76,65 +76,111 @@ core.setAiPatternProbe((forMode) => {
 
 // Query + mode
 export const getQuery = (): string => core.getQuery()
-export const setQuery = (value: string): void => core.setQuery(value)
-export const setQueryFromUserInput = (value: string): void => core.setQueryFromUserInput(value)
+export const setQuery = (value: string): void => {
+  core.setQuery(value)
+}
+export const setQueryFromUserInput = (value: string): void => {
+  core.setQueryFromUserInput(value)
+}
 export const getMode = (): ReturnType<typeof core.getMode> => core.getMode()
-export const setMode = (value: Parameters<typeof core.setMode>[0]): void => core.setMode(value)
-export const switchMode = (target: Parameters<typeof core.switchMode>[0]): void => core.switchMode(target)
+export const setMode = (value: Parameters<typeof core.setMode>[0]): void => {
+  core.setMode(value)
+}
+export const switchMode = (target: Parameters<typeof core.switchMode>[0]): void => {
+  core.switchMode(target)
+}
 
 // Size
 export const getSizeFilter = (): ReturnType<typeof core.getSizeFilter> => core.getSizeFilter()
-export const setSizeFilter = (v: Parameters<typeof core.setSizeFilter>[0]): void => core.setSizeFilter(v)
+export const setSizeFilter = (v: Parameters<typeof core.setSizeFilter>[0]): void => {
+  core.setSizeFilter(v)
+}
 export const getSizeValue = (): string => core.getSizeValue()
-export const setSizeValue = (v: string): void => core.setSizeValue(v)
+export const setSizeValue = (v: string): void => {
+  core.setSizeValue(v)
+}
 export const getSizeUnit = (): ReturnType<typeof core.getSizeUnit> => core.getSizeUnit()
-export const setSizeUnit = (v: Parameters<typeof core.setSizeUnit>[0]): void => core.setSizeUnit(v)
-export const setSizeValueMax = (v: string): void => core.setSizeValueMax(v)
-export const setSizeUnitMax = (v: Parameters<typeof core.setSizeUnitMax>[0]): void => core.setSizeUnitMax(v)
+export const setSizeUnit = (v: Parameters<typeof core.setSizeUnit>[0]): void => {
+  core.setSizeUnit(v)
+}
+export const setSizeValueMax = (v: string): void => {
+  core.setSizeValueMax(v)
+}
+export const setSizeUnitMax = (v: Parameters<typeof core.setSizeUnitMax>[0]): void => {
+  core.setSizeUnitMax(v)
+}
 
 // Date
 export const getDateFilter = (): ReturnType<typeof core.getDateFilter> => core.getDateFilter()
-export const setDateFilter = (v: Parameters<typeof core.setDateFilter>[0]): void => core.setDateFilter(v)
+export const setDateFilter = (v: Parameters<typeof core.setDateFilter>[0]): void => {
+  core.setDateFilter(v)
+}
 export const getDateValue = (): string => core.getDateValue()
-export const setDateValue = (v: string): void => core.setDateValue(v)
-export const setDateValueMax = (v: string): void => core.setDateValueMax(v)
+export const setDateValue = (v: string): void => {
+  core.setDateValue(v)
+}
+export const setDateValueMax = (v: string): void => {
+  core.setDateValueMax(v)
+}
 
 // Case sensitivity
 export const getCaseSensitive = (): boolean => core.getCaseSensitive()
-export const setCaseSensitive = (v: boolean): void => core.setCaseSensitive(v)
+export const setCaseSensitive = (v: boolean): void => {
+  core.setCaseSensitive(v)
+}
 
 // AI prompt + caveat (core)
 export const getLastAiPrompt = (): string | null => core.getLastAiPrompt()
-export const setLastAiPrompt = (v: string | null): void => core.setLastAiPrompt(v)
+export const setLastAiPrompt = (v: string | null): void => {
+  core.setLastAiPrompt(v)
+}
 export const getLastAiCaveat = (): string | null => core.getLastAiCaveat()
 
 // AI pattern + label (extras)
 export const getLastAiLabel = (): string | null => extras.getLastAiLabel()
 export const getLastAiPattern = (): string | null => extras.getLastAiPattern()
 export const getLastAiPatternKind = (): 'glob' | 'regex' | null => extras.getLastAiPatternKind()
-export const clearAiPattern = (): void => extras.clearAiPattern()
+export const clearAiPattern = (): void => {
+  extras.clearAiPattern()
+}
 
 // Results + cursor
 export const getResults = (): SearchResultEntry[] => core.getResults()
-export const setResults = (v: SearchResultEntry[]): void => core.setResults(v)
+export const setResults = (v: SearchResultEntry[]): void => {
+  core.setResults(v)
+}
 export const getTotalCount = (): number => core.getTotalCount()
-export const setTotalCount = (v: number): void => core.setTotalCount(v)
+export const setTotalCount = (v: number): void => {
+  core.setTotalCount(v)
+}
 export const getCursorIndex = (): number => core.getCursorIndex()
-export const setCursorIndex = (v: number): void => core.setCursorIndex(v)
+export const setCursorIndex = (v: number): void => {
+  core.setCursorIndex(v)
+}
 
 // Index availability (extras; Selection has no index)
 export const getIsIndexReady = (): boolean => extras.getIsIndexReady()
-export const setIsIndexReady = (v: boolean): void => extras.setIsIndexReady(v)
+export const setIsIndexReady = (v: boolean): void => {
+  extras.setIsIndexReady(v)
+}
 export const getIndexEntryCount = (): number => extras.getIndexEntryCount()
-export const setIndexEntryCount = (v: number): void => extras.setIndexEntryCount(v)
+export const setIndexEntryCount = (v: number): void => {
+  extras.setIndexEntryCount(v)
+}
 export const getIsIndexAvailable = (): boolean => extras.getIsIndexAvailable()
-export const setIsIndexAvailable = (v: boolean): void => extras.setIsIndexAvailable(v)
+export const setIsIndexAvailable = (v: boolean): void => {
+  extras.setIsIndexAvailable(v)
+}
 
 // Scope + system-dirs (extras)
 export const getScope = (): string => extras.getScope()
-export const setScope = (v: string): void => extras.setScope(v)
+export const setScope = (v: string): void => {
+  extras.setScope(v)
+}
 export const getExcludeSystemDirs = (): boolean => extras.getExcludeSystemDirs()
-export const setExcludeSystemDirs = (v: boolean): void => extras.setExcludeSystemDirs(v)
+export const setExcludeSystemDirs = (v: boolean): void => {
+  extras.setExcludeSystemDirs(v)
+}
 
 // Dialog lifecycle (core) — note: SearchDialog reaches `searchQueryState` directly for
 // `setRunOnMount` etc. since M4. The legacy named exports are gone; the few call sites

@@ -47,13 +47,13 @@ interface BuildOpts {
   inputsDisabled: boolean
 }
 
-function buildConfig(opts: BuildOpts, state: QueryFilterState): QueryDialogConfig<unknown> {
+function buildConfig(opts: BuildOpts, state: QueryFilterState): QueryDialogConfig {
   // historyStore types as `RecentItemsStore<HistoryEntry>`; we widen to the generic's
   // default so the assembled config matches QueryDialog's `<unknown>` parameter
   // (Svelte's `mount()` pins the generic to its default at the call site).
   const historyStore = createRecentItemsState<HistoryEntry>({
     getRecent: () => Promise.resolve([]),
-  }) as unknown as QueryDialogConfig<unknown>['historyStore']
+  }) as unknown as QueryDialogConfig['historyStore']
   return {
     title: 'Search',
     dialogType: 'search',

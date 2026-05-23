@@ -46,7 +46,7 @@
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
 
     interface Props {
-        config: QueryDialogConfig<E>
+        config: QueryDialogConfig
     }
 
     /* eslint-disable prefer-const -- $props destructuring keeps types clean with const */
@@ -61,7 +61,7 @@
     let recentPopoverOpen = $state(false)
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let unlistenAutoApply: (() => void) | undefined
-    let highlightedFields: SvelteSet<string> = new SvelteSet<string>()
+    let highlightedFields = $state<SvelteSet<string>>(new SvelteSet<string>())
     let hasSearched = $state(false)
     /**
      * IME composition flag. While true, `scheduleSearch` is a no-op so we don't fire
@@ -527,27 +527,6 @@
     }
 
     /**
-     * Handles modified Enter combos: ⌥⏎ runs the primary action (Search's "Show all
-     * in main window"; Selection's apply), ⌘⏎ and ⇧⏎ are explicit no-ops (R4).
-     */
-    function handleModifiedEnter(e: KeyboardEvent): boolean {
-        if (e.key !== 'Enter') return false
-        if (e.altKey && !e.metaKey && !e.shiftKey) {
-            e.preventDefault()
-            const r = config.state.getResults()
-            if (r.length > 0 && config.primaryAction) {
-                void config.primaryAction.handler(r)
-            }
-            return true
-        }
-        if (e.metaKey || e.shiftKey) {
-            e.preventDefault()
-            return true
-        }
-        return false
-    }
-
-    /**
      * Handles ⌘N, ⌘H, ⌘1-9, ⌥A/F/R, ⌥←/⌥→, ⌥⏎ (primary action), ⌘⏎/⇧⏎ no-op.
      */
     function handleModifierShortcuts(e: KeyboardEvent): boolean {
@@ -558,7 +537,20 @@
         }
         if (handleModeChipShortcut(e)) return true
         if (handleAltArrowShortcut(e)) return true
-        if (handleModifiedEnter(e)) return true
+        // ⌥⏎: primary action (Search's "Show all in main window"; Selection's apply).
+        if (e.key === 'Enter' && e.altKey && !e.metaKey && !e.shiftKey) {
+            e.preventDefault()
+            const r = config.state.getResults()
+            if (r.length > 0 && config.primaryAction) {
+                void config.primaryAction.handler(r)
+            }
+            return true
+        }
+        // R4: ⌘⏎ and ⇧⏎ are explicit no-ops. Bare ⏎ is the only path that does anything.
+        if (e.key === 'Enter' && (e.metaKey || e.shiftKey)) {
+            e.preventDefault()
+            return true
+        }
         if (matchKey(e, 'h', 'meta')) {
             e.preventDefault()
             if (recentPopoverOpen) closeRecentPopover()
@@ -582,7 +574,7 @@
         }
         config.state.setLastRunQuery(null)
         hasSearched = false
-        void tick().then(() => focusInput())
+        void tick().then(() => { focusInput(); })
     }
 
     /**
