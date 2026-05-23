@@ -816,10 +816,16 @@ fn handle_insert_entries_v2(
     mutation_counter: &AtomicU64,
 ) {
     let count = entries.len();
-    accumulator.accumulate(&entries);
     let t = Instant::now();
-    if let Err(e) = IndexStore::insert_entries_v2_batch(conn, &entries) {
-        crate::log_error!("Index writer: insert_entries_v2_batch failed: {e}");
+    // Accumulate AFTER the DB commit succeeds. The savepoint inside
+    // `insert_entries_v2_batch` rolls the whole batch back on any conflict
+    // (PK or UNIQUE on `(parent_id, name_folded)` — schema v12), so the
+    // accumulator must not claim rows that never landed; otherwise
+    // `compute_all_aggregates_with_maps` inflates `dir_stats` with phantom
+    // bytes.
+    match IndexStore::insert_entries_v2_batch(conn, &entries) {
+        Ok(()) => accumulator.accumulate(&entries),
+        Err(e) => crate::log_error!("Index writer: insert_entries_v2_batch failed: {e}"),
     }
     let elapsed = t.elapsed().as_millis();
     if elapsed > 100 {
@@ -1634,6 +1640,94 @@ mod tests {
         assert_eq!(children[0].id, 10);
 
         writer.shutdown();
+    }
+
+    // The accumulator must NOT advance when the batch INSERT fails: the
+    // accumulator maps drive `compute_all_aggregates_with_maps`, and counting
+    // bytes for rows that never landed in the DB produces inflated dir_stats.
+    // This was the second mechanism behind the 1.83 TB ghost size on `..` —
+    // the first being two writers racing (Fix #1), the schema admitting
+    // duplicates (Fix #3) finalises it.
+    #[test]
+    fn handle_insert_entries_v2_does_not_accumulate_when_db_insert_fails() {
+        use std::sync::atomic::AtomicU64;
+
+        let (db_path, _dir) = setup_db();
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        // Pre-seed a row with id=100 so a second insert with the same id
+        // collides on the integer PK (UNIQUE on entries.id is enforced
+        // independently of the (parent_id, name_folded) index).
+        let entries_first = vec![EntryRow {
+            id: 100,
+            parent_id: ROOT_ID,
+            name: "first.txt".into(),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(10),
+            physical_size: Some(10),
+            modified_at: None,
+            inode: None,
+        }];
+        IndexStore::insert_entries_v2_batch(&conn, &entries_first).unwrap();
+
+        // Second batch: re-uses id=100. The savepoint rolls back the whole batch
+        // on the PK collision, so neither entry lands in the DB.
+        let entries_dup = vec![
+            EntryRow {
+                id: 100,
+                parent_id: ROOT_ID,
+                name: "first.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(10),
+                physical_size: Some(10),
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 101,
+                parent_id: ROOT_ID,
+                name: "second.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(20),
+                physical_size: Some(20),
+                modified_at: None,
+                inode: None,
+            },
+        ];
+
+        let mut accumulator = AccumulatorMaps::new();
+        let expected = AtomicU64::new(0);
+        let mutation_counter = AtomicU64::new(0);
+
+        handle_insert_entries_v2(
+            &conn,
+            entries_dup,
+            &mut accumulator,
+            &None,
+            &expected,
+            &mutation_counter,
+        );
+
+        // DB unchanged: only the first.txt row from the seed.
+        assert_eq!(
+            IndexStore::get_entry_by_id(&conn, 100).unwrap().unwrap().name,
+            "first.txt"
+        );
+        assert!(IndexStore::get_entry_by_id(&conn, 101).unwrap().is_none());
+
+        // Accumulator must reflect that 0 entries were inserted from this batch.
+        assert_eq!(
+            accumulator.entries_inserted, 0,
+            "accumulator advanced despite failed INSERT (would feed inflated dir_stats into aggregation)"
+        );
+        assert!(
+            accumulator.direct_stats.is_empty(),
+            "accumulator.direct_stats populated despite failed INSERT: {:?}",
+            accumulator.direct_stats
+        );
     }
 
     #[test]

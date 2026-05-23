@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-const SCHEMA_VERSION: &str = "11";
+const SCHEMA_VERSION: &str = "12";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -267,7 +267,7 @@ const CREATE_TABLES_SQL: &str = "
         inode         INTEGER
     );
 
-    CREATE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);
     CREATE INDEX IF NOT EXISTS idx_inode ON entries (inode);
 
     CREATE TABLE IF NOT EXISTS dir_stats (
@@ -1921,12 +1921,13 @@ mod tests {
         assert_eq!(resolve_path(&conn, "/USERS").unwrap(), Some(users_id));
         assert_eq!(resolve_path(&conn, "/Users").unwrap(), Some(users_id));
 
-        // With idx_parent (non-unique), case-variant names are allowed at the SQL level.
-        // Deduplication is handled by the scanner/reconciler, not by a DB constraint.
+        // Schema v12 reinstated UNIQUE on (parent_id, name_folded). On macOS
+        // `normalize_for_comparison("Users") == normalize_for_comparison("users")`
+        // (NFD + case fold), so this insert must collide.
         let result = IndexStore::insert_entry_v2(&conn, ROOT_ID, "users", true, false, None, None, None, None);
         assert!(
-            result.is_ok(),
-            "No unique constraint on (parent_id, name); dedup is done in application code"
+            result.is_err(),
+            "case-variant insert must collide on the UNIQUE (parent_id, name_folded) index; got {result:?}"
         );
     }
 
@@ -1969,6 +1970,67 @@ mod tests {
         let entry = IndexStore::get_entry_by_id(&conn, 101).unwrap().unwrap();
         assert_eq!(entry.name, "file.txt");
         assert_eq!(entry.logical_size, Some(42));
+    }
+
+    // Duplicate (parent_id, name_folded) must be rejected by the schema.
+    // The aggregator walks parent_id chains and sums every row; a duplicate would
+    // double-count its size into ancestor dir_stats. Schema v12 reinstated the
+    // UNIQUE constraint that v5 dropped for collation-cost reasons (since v6,
+    // `name_folded` carries pre-folded bytes, so binary collation is fine).
+    #[test]
+    fn duplicate_parent_name_folded_rejected_individual_insert() {
+        let (_store, dir) = open_temp_store();
+        let db_path = dir.path().join("test-index.db");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        IndexStore::insert_entry_v2(&conn, ROOT_ID, "dup.txt", false, false, Some(10), Some(10), None, None).unwrap();
+        let second =
+            IndexStore::insert_entry_v2(&conn, ROOT_ID, "dup.txt", false, false, Some(10), Some(10), None, None);
+        assert!(
+            second.is_err(),
+            "second insert with same (parent_id, name_folded) must fail; got {second:?}"
+        );
+    }
+
+    #[test]
+    fn duplicate_parent_name_folded_rejected_batch_insert() {
+        let (_store, dir) = open_temp_store();
+        let db_path = dir.path().join("test-index.db");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        let entries = vec![
+            EntryRow {
+                id: 100,
+                parent_id: ROOT_ID,
+                name: "dup.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(10),
+                physical_size: Some(10),
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 101,
+                parent_id: ROOT_ID,
+                name: "dup.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(10),
+                physical_size: Some(10),
+                modified_at: None,
+                inode: None,
+            },
+        ];
+        let result = IndexStore::insert_entries_v2_batch(&conn, &entries);
+        assert!(
+            result.is_err(),
+            "batch with duplicate (parent_id, name_folded) must fail; got {result:?}"
+        );
+
+        // Savepoint rolls back the whole batch, so neither row should be present.
+        assert!(IndexStore::get_entry_by_id(&conn, 100).unwrap().is_none());
+        assert!(IndexStore::get_entry_by_id(&conn, 101).unwrap().is_none());
     }
 
     #[cfg(target_os = "macos")]

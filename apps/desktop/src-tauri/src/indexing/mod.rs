@@ -52,7 +52,7 @@ mod tests {
     use crate::settings::FullDiskAccessChoice;
     use enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
     use rusqlite::Connection;
-    use state::{INDEXING, IndexPhase, is_initializing_phase};
+    use state::{INDEXING, IndexPhase, is_initializing_phase, try_reserve_initializing_phase};
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
@@ -776,6 +776,62 @@ mod tests {
         assert!(!is_initializing_phase(&IndexPhase::ShuttingDown));
         // Initializing classified as initializing.
         assert!(is_initializing_phase(&IndexPhase::Initializing { store }));
+    }
+
+    #[test]
+    fn try_reserve_initializing_succeeds_only_from_disabled() {
+        // The reservation function is the lock-first guard for `start_indexing`.
+        // It must atomically transition `Disabled -> Initializing(store)` and
+        // reject every other starting phase so a second `start_indexing` call
+        // cannot spawn a second `IndexManager` / writer thread on the same DB.
+        let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+
+        // From Disabled: reservation succeeds.
+        reset_indexing_for_test();
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store = IndexStore::open(&dir.path().join("from-disabled.db")).expect("open store");
+        assert!(
+            try_reserve_initializing_phase(store).is_ok(),
+            "reservation from Disabled must succeed"
+        );
+        assert!(
+            is_initializing_phase(&INDEXING.lock().unwrap()),
+            "Disabled should transition to Initializing"
+        );
+
+        // From Initializing: reservation must fail and leave phase untouched.
+        let dir2 = tempfile::tempdir().expect("temp dir");
+        let store2 = IndexStore::open(&dir2.path().join("from-init.db")).expect("open store");
+        let res = try_reserve_initializing_phase(store2);
+        assert!(
+            res.is_err(),
+            "second reservation while already Initializing must fail (would spawn a second writer)"
+        );
+        assert!(
+            is_initializing_phase(&INDEXING.lock().unwrap()),
+            "failed reservation must leave the phase unchanged"
+        );
+        reset_indexing_for_test();
+
+        // From Running stand-in (we can't construct an IndexManager without an
+        // AppHandle, so simulate by installing Initializing and asserting the
+        // mirror behaviour for ShuttingDown below). Pinning ShuttingDown is the
+        // analogous case at the other end of the lifecycle.
+        {
+            let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
+            *guard = IndexPhase::ShuttingDown;
+        }
+        let dir3 = tempfile::tempdir().expect("temp dir");
+        let store3 = IndexStore::open(&dir3.path().join("from-shutdown.db")).expect("open store");
+        let res = try_reserve_initializing_phase(store3);
+        assert!(res.is_err(), "reservation from ShuttingDown must fail");
+        let phase_after = INDEXING.lock().expect("INDEXING lock poisoned");
+        assert!(
+            matches!(*phase_after, IndexPhase::ShuttingDown),
+            "failed reservation must leave ShuttingDown intact"
+        );
+        drop(phase_after);
+        reset_indexing_for_test();
     }
 
     #[test]

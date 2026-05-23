@@ -157,6 +157,26 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
     matches!(phase, IndexPhase::Initializing { .. })
 }
 
+/// Atomically reserve the `Initializing(store)` phase. Returns `Ok(())` when
+/// the previous phase was `Disabled` (the only legitimate start); returns
+/// `Err(store)` otherwise so the caller can drop the unused store without
+/// constructing the heavy `IndexManager`.
+///
+/// This is the lock-first guard for `start_indexing`. Two writer threads
+/// racing on the same DB share neither their `Arc<AtomicI64>` ID counter nor
+/// their `AccumulatorMaps`, which produces PK collisions and inflated
+/// `dir_stats`. The transition must be a single atomic check-and-set, not
+/// "construct manager then maybe shut down" (which leaks a live writer
+/// thread while `resume_or_scan` runs).
+pub(crate) fn try_reserve_initializing_phase(store: IndexStore) -> Result<(), Box<IndexStore>> {
+    let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
+    if !matches!(*guard, IndexPhase::Disabled) {
+        return Err(Box::new(store));
+    }
+    *guard = IndexPhase::Initializing { store };
+    Ok(())
+}
+
 /// Create the IndexManager for the root volume and auto-start indexing
 /// (resume from existing index or fresh scan).
 ///
@@ -167,21 +187,37 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
     log::info!("start_indexing: begin");
     super::memory_watchdog::start(app.clone());
 
-    let mut manager = IndexManager::new("root".to_string(), PathBuf::from("/"), app.clone())?;
+    // Lock-first reservation. We open the init store and atomically claim the
+    // `Disabled -> Initializing(store)` transition BEFORE constructing the
+    // heavy `IndexManager`. If another call is already initializing or
+    // running, this call becomes a no-op — without this guard, two writers
+    // race on the same DB (each owns its own `Arc<AtomicI64>` ID counter and
+    // `AccumulatorMaps`), producing PK collisions and inflated `dir_stats`.
+    let data_dir = crate::config::resolved_app_data_dir(app)?;
+    let db_path = data_dir.join("index-root.db");
+    let init_store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open init store: {e}"))?;
+    if try_reserve_initializing_phase(init_store).is_err() {
+        log::info!("start_indexing: phase already Initializing/Running/ShuttingDown, no-op");
+        return Ok(());
+    }
 
     // Install ReadPool early so enrichment works during the Initializing phase.
-    let pool = Arc::new(
-        ReadPool::new(manager.db_path().to_path_buf()).map_err(|e| format!("Failed to create read pool: {e}"))?,
-    );
+    let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
     *READ_POOL.lock().unwrap() = Some(pool);
 
-    // Transition to Initializing: open a temporary store so enrichment
-    // and status queries work while resume_or_scan() runs.
-    {
-        let init_store = IndexStore::open(manager.db_path()).map_err(|e| format!("Failed to open init store: {e}"))?;
-        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-        *guard = IndexPhase::Initializing { store: init_store };
-    }
+    let mut manager = match IndexManager::new("root".to_string(), PathBuf::from("/"), app.clone()) {
+        Ok(m) => m,
+        Err(e) => {
+            // Reservation succeeded but manager construction failed: hand the
+            // phase back to Disabled so a subsequent call can retry cleanly.
+            let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
+            *guard = IndexPhase::Disabled;
+            if let Some(pool) = READ_POOL.lock().unwrap().take() {
+                pool.invalidate();
+            }
+            return Err(e);
+        }
+    };
 
     let scan_result = manager.resume_or_scan();
 
