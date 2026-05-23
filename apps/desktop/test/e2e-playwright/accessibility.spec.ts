@@ -143,7 +143,22 @@ async function runAxeAudit(
 
 /** Dismiss a modal dialog with Escape and wait for it to close. */
 async function dismissDialog(tauriPage: PageLike): Promise<void> {
-  await tauriPage.keyboard.press('Escape')
+  // Dispatch the synthetic Escape on the overlay element itself, not the document.
+  // `ModalDialog.svelte`'s Escape handler is bound on the overlay div
+  // (`<div onkeydown={handleOverlayKeydown}>`), not on `<svelte:window>`, so a
+  // document-level event never reaches it. We previously used
+  // `tauriPage.keyboard.press('Escape')`, which works on macOS because the OS
+  // routes the keystroke to the focused element (the overlay focuses itself on
+  // mount), but flakes on Linux Xvfb because OS focus delivery isn't reliable
+  // under a headless display server.
+  //
+  // The fallback to document dispatch covers non-ModalDialog cases that might
+  // listen at the window level.
+  await tauriPage.evaluate(`(function(){
+        var overlay = document.querySelector('.modal-overlay');
+        var target = overlay || document;
+        target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    })()`)
   await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
 }
 
