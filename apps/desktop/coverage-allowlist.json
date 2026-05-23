@@ -141,6 +141,7 @@
     "tauri-commands/licensing.ts": { "reason": "Tauri command wrappers, tested via integration" },
     "tauri-commands/mtp.ts": { "reason": "Tauri command wrappers, tested via integration" },
     "tauri-commands/networking.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/selection.ts": { "reason": "Tauri command wrappers, tested via integration" },
     "tauri-commands/settings.ts": { "reason": "Tauri command wrappers, tested via integration" },
     "tauri-commands/storage.ts": { "reason": "Tauri command wrappers, tested via integration" },
     "tauri-commands/write-operations.ts": { "reason": "Tauri command wrappers, tested via integration" },

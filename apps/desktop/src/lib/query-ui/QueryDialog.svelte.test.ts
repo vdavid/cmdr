@@ -8,7 +8,7 @@
  * regressions there don't cascade through every consumer.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
 import QueryDialog from './QueryDialog.svelte'
@@ -122,10 +122,13 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
       return Promise.resolve(opts.runQueryResult ?? { entries: [], totalCount: 0 })
     },
     translateAi: opts.translateAi
-      ? async (prompt: string) => {
-          calls.translateAi.push(prompt)
-          return opts.translateAi!(prompt)
-        }
+      ? (() => {
+          const fn = opts.translateAi
+          return async (prompt: string) => {
+            calls.translateAi.push(prompt)
+            return fn ? fn(prompt) : null
+          }
+        })()
       : undefined,
     primaryAction: {
       label: 'Primary',
@@ -159,7 +162,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
   // Svelte's `mount()` typing of a generic component pins the type parameter at the
   // call site; we widen via `unknown` so the test's `HistoryEntry`-typed config still
   // passes the type check without losing inference on the rest of the file.
-  const component = mount(QueryDialog, { target, props: { config: config } })
+  const component = mount(QueryDialog, { target, props: { config: config as unknown as QueryDialogConfig<unknown> } })
 
   const overlay = target.querySelector('.search-overlay')
   if (!overlay) throw new Error('overlay not found')
