@@ -397,3 +397,12 @@ export type {
   HistoryFilters,
   HistoryMode,
 } from '$lib/ipc/bindings'
+export {
+  translateSelectionQuery,
+  getRecentSelections,
+  addRecentSelection,
+  removeRecentSelection,
+  clearRecentSelections,
+  applyRecentSelectionsMaxCount,
+} from './selection'
+export type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/bindings'

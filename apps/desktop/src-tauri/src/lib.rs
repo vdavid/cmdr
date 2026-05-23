@@ -121,6 +121,7 @@ mod redact;
 mod restricted_paths;
 pub mod search;
 mod secrets;
+pub mod selection;
 mod settings;
 mod short_id;
 mod space_poller;
@@ -454,6 +455,9 @@ pub fn run() {
 
             // Load persisted recent search history into the in-memory cache.
             search::history::load_history(app.handle());
+
+            // Same for recent selections (Selection dialog history).
+            selection::history::load_history(app.handle());
 
             // Load manually-added servers and inject into discovery state
             #[cfg(any(target_os = "macos", target_os = "linux"))]

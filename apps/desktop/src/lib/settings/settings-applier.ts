@@ -27,6 +27,7 @@ import {
   setShowVirtualGitPortal,
   setNetworkEnabled,
   applyRecentSearchesMaxCount,
+  applyRecentSelectionsMaxCount,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 
@@ -162,6 +163,7 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'fileExplorer.git.showVirtualGitPortal': (v) => void setShowVirtualGitPortal(v as boolean),
   'network.enabled': (v) => void setNetworkEnabled(v as boolean),
   'search.recentSearches.maxCount': (v) => void applyRecentSearchesMaxCount(v as number),
+  'selection.recentSelections.maxCount': (v) => void applyRecentSelectionsMaxCount(v as number),
 }
 
 /**

@@ -67,6 +67,21 @@ field is missing (`build_label` returns `None`).
 **Decision**: Single LLM pass, no refinement.
 **Why**: The previous two-pass system (translate + refine) caused regressions ~15% of the time (over-narrowing, flag dropping). With deterministic structure, there's nothing to refine. Also halves LLM latency.
 
+## Sharing with `selection/`
+
+`crate::selection::history` re-exports `HistoryMode` and `HistoryFilters` from this
+module's `history.rs`. The two pure data types are identical in intent across Search
+and Selection, so the wire shape stays in sync. The entry struct itself
+(`HistoryEntry` here vs `SelectionHistoryEntry`) stays separate because the canonical
+dedupe keys differ (Selection has no scope or exclude-system-dirs). If the mode set
+ever forks between consumers, drop the re-export and copy the types.
+
+The AI parser helpers in `search/ai/parser.rs` are NOT shared with Selection: the
+fields are different (Selection has no `keywords` / `type` / `scope` / `folders`), so
+sharing would have meant exporting a few low-level helpers (`is_year`, `is_range`)
+that aren't worth the coupling. Selection's parser lives independently in
+`crate::selection::ai::parser`.
+
 ## Coupling to `indexing/`
 
 `search/` is a read-only consumer of the indexing DB via `ReadPool`, `WRITER_GENERATION`, and `store::resolve_path`. This is intentional -- search reads from the index but doesn't participate in indexing. The dependency is one-way (`search` -> `indexing`, never reverse) and narrow:

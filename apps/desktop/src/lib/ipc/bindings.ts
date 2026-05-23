@@ -1249,6 +1249,38 @@ export const commands = {
   applyRecentSearchesMaxCount: (maxCount: number) =>
     typedError<null, string>(__TAURI_INVOKE('apply_recent_searches_max_count', { maxCount })),
   /**
+   *  Translates a natural-language selection request into a glob/regex plus optional
+   *  size and date filters.
+   *
+   *  The `sample_names` argument is the focused folder's filename listing (already
+   *  sampled on the frontend; see `lib/selection-dialog/folder-sampler.ts` for the
+   *  sampling strategy). It grounds the prompt in what's actually in the folder.
+   */
+  translateSelectionQuery: (prompt: string, sampleNames: string[]) =>
+    typedError<SelectionTranslateResult, string>(__TAURI_INVOKE('translate_selection_query', { prompt, sampleNames })),
+  /**
+   *  Returns the persisted recent-selections entries (newest first). `limit = None`
+   *  returns all.
+   */
+  getRecentSelections: (limit: number | null) =>
+    __TAURI_INVOKE<SelectionHistoryEntry[]>('get_recent_selections', { limit }),
+  /**
+   *  Adds a recent-selection entry. Dedupes against existing entries by canonical
+   *  key, moves the matching one to the top, and trims to `max_count`.
+   */
+  addRecentSelection: (entry: SelectionHistoryEntry, maxCount: number | null) =>
+    typedError<null, string>(__TAURI_INVOKE('add_recent_selection', { entry, maxCount })),
+  // Removes a recent-selection entry by id. No-op when the id isn't present.
+  removeRecentSelection: (id: string) => typedError<null, string>(__TAURI_INVOKE('remove_recent_selection', { id })),
+  // Clears every recent-selection entry.
+  clearRecentSelections: () => typedError<null, string>(__TAURI_INVOKE('clear_recent_selections')),
+  /**
+   *  Live-applies a new `selection.recentSelections.maxCount` value. Trims the
+   *  in-memory store and rewrites disk only when entries actually drop.
+   */
+  applyRecentSelectionsMaxCount: (maxCount: number) =>
+    typedError<null, string>(__TAURI_INVOKE('apply_recent_selections_max_count', { maxCount })),
+  /**
    *  Returns the `CMDR_E2E_START_PATH` env var if set.
    *  The frontend uses this to override startup paths for E2E tests.
    *  Always compiled in. Reading an unset env var is a no-op in production.
@@ -3124,6 +3156,51 @@ export type SearchResultEntry = {
 
 // Status of an ongoing search.
 export type SearchStatus = 'running' | 'done' | 'cancelled' | 'idle'
+
+// A single recent-selection entry, persisted verbatim.
+export type SelectionHistoryEntry = {
+  id: string
+  // Unix epoch milliseconds.
+  timestamp: number
+  mode: HistoryMode
+  query: string
+  filters?: HistoryFilters
+  caseSensitive: boolean
+  /**
+   *  Number of entries the matcher selected when the user committed this query.
+   *  Equivalent to Search's `result_count`; renamed because Selection "matches"
+   *  rather than "returns results".
+   */
+  matchCount: number
+}
+
+/**
+ *  The structured selection translation handed to the frontend. Mirrors Search's
+ *  `TranslateResult` minus the search-specific bits (scope, exclude_system_dirs,
+ *  is_directory, paths). The pattern always comes back ready to compile; the
+ *  frontend matcher decides whether to apply size and date predicates.
+ */
+export type SelectionTranslateResult = {
+  /**
+   *  The glob or regex string. `None` when the LLM didn't produce a usable pattern;
+   *  the frontend then shows the caveat and doesn't apply any selection.
+   */
+  pattern: string | null
+  // `"glob"` or `"regex"`. `None` when `pattern` is `None`.
+  kind: string | null
+  // Minimum size in bytes (inclusive). `None` means no lower bound.
+  sizeMin: number | null
+  // Maximum size in bytes (inclusive). `None` means no upper bound.
+  sizeMax: number | null
+  // ISO date `YYYY-MM-DD`; matches files modified on or after this date.
+  modifiedAfter: string | null
+  // ISO date `YYYY-MM-DD`; matches files modified strictly before this date.
+  modifiedBefore: string | null
+  // Optional caveat the dialog renders in the AI transparency strip.
+  caveat: string | null
+  // Short label (≤40 chars) for breadcrumb / history UX.
+  label: string | null
+}
 
 export type SendResult = {
   id: string
