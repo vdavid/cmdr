@@ -20,6 +20,14 @@ export interface FilePaneAPI {
 
   getListingId(): string
   isLoading(): boolean
+  /**
+   * Resolves when the current load (if any) settles. Used by callers that need
+   * a stable `listingId` for a backend call (for example, the MCP `move_cursor`
+   * tool) to avoid the race where the FE has set a fresh `listingId` but
+   * `list_directory_start_streaming` hasn't yet inserted the listing into the
+   * backend's `LISTING_CACHE`. Resolves immediately when no load is pending.
+   */
+  whenLoadSettles(): Promise<void>
   getFilenameUnderCursor(): string | undefined
   /** Reactive: reads the entry-under-cursor `$state`, so `$effect`s tracking this stay subscribed. */
   getPathUnderCursor(): string | undefined

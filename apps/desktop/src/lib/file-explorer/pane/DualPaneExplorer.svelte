@@ -2720,6 +2720,13 @@
         const paneRef = getPaneRef(pane)
         if (!paneRef) return
 
+        // Wait for the pane's current load (if any) to settle before touching
+        // the listing. Without this, an MCP-driven `move_cursor` that lands
+        // mid-navigation reads the FE's freshly-assigned `listingId` while the
+        // backend's `LISTING_CACHE` insert is still in flight, surfacing as
+        // "Listing not found" from `find_file_index`.
+        await paneRef.whenLoadSettles()
+
         if (typeof to === 'number') {
             await paneRef.setCursorIndex(to)
         } else {

@@ -560,6 +560,33 @@
         return loading
     }
 
+    /**
+     * Returns a promise that resolves when the current load (if any) settles.
+     * Used by `moveCursor` (and any other callers that need a stable
+     * `listingId`) to avoid the race where the FE has set a fresh `listingId`
+     * but `list_directory_start_streaming` hasn't yet inserted the listing
+     * into the backend's `LISTING_CACHE`. Wraps the existing
+     * `pendingLoadResolve` hook so we don't introduce a second promise track:
+     * if no load is in flight, resolves immediately.
+     */
+    export function whenLoadSettles(): Promise<void> {
+        if (!loading) return Promise.resolve()
+        return new Promise<void>((resolve) => {
+            // Chain onto the existing resolver / rejecter so we don't disturb
+            // a pending `navigateToPath` caller already waiting on the load.
+            const prevResolve = pendingLoadResolve
+            const prevReject = pendingLoadReject
+            pendingLoadResolve = () => {
+                prevResolve?.()
+                resolve()
+            }
+            pendingLoadReject = (reason: string) => {
+                prevReject?.(reason)
+                resolve() // We treat reject as "load is no longer in flight"; caller checks isLoading.
+            }
+        })
+    }
+
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function getFilenameUnderCursor(): string | undefined {
         return entryUnderCursor?.name
