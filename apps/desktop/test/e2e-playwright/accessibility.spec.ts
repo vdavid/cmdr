@@ -423,7 +423,11 @@ for (const mode of ['light', 'dark'] as const) {
       await tauriPage.waitForSelector(WIZARD_SELECTOR, 3000)
 
       // Scan the wizard at its opening step (step 1 on macOS, step 2 on Linux).
-      const { all: openingViolations } = await runAxeAudit(tauriPage, `Onboarding wizard opening (${mode})`, WIZARD_SELECTOR)
+      const { all: openingViolations } = await runAxeAudit(
+        tauriPage,
+        `Onboarding wizard opening (${mode})`,
+        WIZARD_SELECTOR,
+      )
       expect(openingViolations, `Violations on wizard opening step (${mode})`).toHaveLength(0)
 
       const isMac = process.platform === 'darwin'
@@ -434,17 +438,24 @@ for (const mode of ['light', 'dark'] as const) {
           if (btn) btn.click();
         })()`)
         await expect
-          .poll(async () => {
-            return tauriPage.evaluate<number | null>(`(function() {
+          .poll(
+            async () => {
+              return tauriPage.evaluate<number | null>(`(function() {
               var dots = document.querySelectorAll('${WIZARD_SELECTOR} .step-dot');
               for (var i = 0; i < dots.length; i++) {
                 if (dots[i].getAttribute('aria-current') === 'step') return i + 1;
               }
               return null;
             })()`)
-          }, { timeout: 3000 })
+            },
+            { timeout: 3000 },
+          )
           .toBe(2)
-        const { all: step2Violations } = await runAxeAudit(tauriPage, `Onboarding wizard step 2 (${mode})`, WIZARD_SELECTOR)
+        const { all: step2Violations } = await runAxeAudit(
+          tauriPage,
+          `Onboarding wizard step 2 (${mode})`,
+          WIZARD_SELECTOR,
+        )
         expect(step2Violations, `Violations on wizard step 2 (${mode})`).toHaveLength(0)
       }
 
@@ -459,17 +470,24 @@ for (const mode of ['light', 'dark'] as const) {
         }
       })()`)
       await expect
-        .poll(async () => {
-          return tauriPage.evaluate<number | null>(`(function() {
+        .poll(
+          async () => {
+            return tauriPage.evaluate<number | null>(`(function() {
             var dots = document.querySelectorAll('${WIZARD_SELECTOR} .step-dot');
             for (var i = 0; i < dots.length; i++) {
               if (dots[i].getAttribute('aria-current') === 'step') return i + 1;
             }
             return null;
           })()`)
-        }, { timeout: 3000 })
+          },
+          { timeout: 3000 },
+        )
         .toBe(3)
-      const { all: step3Violations } = await runAxeAudit(tauriPage, `Onboarding wizard step 3 (${mode})`, WIZARD_SELECTOR)
+      const { all: step3Violations } = await runAxeAudit(
+        tauriPage,
+        `Onboarding wizard step 3 (${mode})`,
+        WIZARD_SELECTOR,
+      )
       expect(step3Violations, `Violations on wizard step 3 (${mode})`).toHaveLength(0)
 
       // Finish so the wizard doesn't leak into the next test (the safety net would otherwise fire).
