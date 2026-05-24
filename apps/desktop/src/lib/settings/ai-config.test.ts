@@ -112,7 +112,7 @@ describe('migrateApiKeysFromSettings', () => {
     expect(saveAiApiKey).toHaveBeenCalledWith('anthropic', 'sk-ant')
   })
 
-  it("keeps the legacy entry in settings.json when the secret store rejects the save", async () => {
+  it('keeps the legacy entry in settings.json when the secret store rejects the save', async () => {
     saveAiApiKey.mockRejectedValueOnce(new Error('keyring locked'))
     settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({
       openai: { apiKey: 'sk-stays', model: 'gpt-4o' },
@@ -185,13 +185,7 @@ describe('pushConfigToBackend', () => {
     await pushConfigToBackend()
 
     expect(getAiApiKey).toHaveBeenCalledWith('openai')
-    expect(configureAi).toHaveBeenCalledWith(
-      'cloud',
-      8192,
-      'sk-fresh',
-      expect.stringContaining('openai.com'),
-      'gpt-4o',
-    )
+    expect(configureAi).toHaveBeenCalledWith('cloud', 8192, 'sk-fresh', expect.stringContaining('openai.com'), 'gpt-4o')
   })
 
   it('surfaces a persistent toast and keeps pushing when the secret store read fails', async () => {

@@ -216,7 +216,7 @@ describe('CloudProviderSetup', () => {
     expect(mounted.target.textContent).toContain('Invalid key')
   })
 
-  it("a connection-error result surfaces the error text", async () => {
+  it('a connection-error result surfaces the error text', async () => {
     checkAiConnection.mockResolvedValue({
       connected: false,
       authError: false,
@@ -315,10 +315,7 @@ describe('CloudProviderSetup', () => {
     modelInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     await settle()
     // saveModel was called with one of the available models.
-    const stored = JSON.parse(settingsMap['ai.cloudProviderConfigs'] as string) as Record<
-      string,
-      { model?: string }
-    >
+    const stored = JSON.parse(settingsMap['ai.cloudProviderConfigs'] as string) as Record<string, { model?: string }>
     expect(['gpt-4.1-mini', 'gpt-4o-mini']).toContain(stored.openai?.model)
   })
 
@@ -362,23 +359,20 @@ describe('CloudProviderSetup', () => {
     expect(options.length).toBeGreaterThan(0)
     options[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
     await settle()
-    const stored = JSON.parse(settingsMap['ai.cloudProviderConfigs'] as string) as Record<
-      string,
-      { model?: string }
-    >
+    const stored = JSON.parse(settingsMap['ai.cloudProviderConfigs'] as string) as Record<string, { model?: string }>
     expect(stored.openai?.model).toBe('gpt-4.1-mini')
   })
 
-  it("a secret store read failure surfaces an inline error", async () => {
+  it('a secret store read failure surfaces an inline error', async () => {
     getAiApiKey.mockRejectedValue(new Error('keyring locked'))
     mountSetup('openai')
     await settle()
     if (!mounted) throw new Error('not mounted')
     // The describeSecretError title for a generic failure starts with "Couldn't read".
-    expect(mounted.target.textContent).toContain("read saved API key")
+    expect(mounted.target.textContent).toContain('read saved API key')
   })
 
-  it("a secret store save failure surfaces an inline error", async () => {
+  it('a secret store save failure surfaces an inline error', async () => {
     saveAiApiKey.mockRejectedValue(new Error('keyring denied'))
     mountSetup('openai')
     await settle()
@@ -388,7 +382,7 @@ describe('CloudProviderSetup', () => {
     keyInput.value = 'sk-cant-save'
     keyInput.dispatchEvent(new Event('input', { bubbles: true }))
     await advanceTimers(500)
-    expect(mounted.target.textContent).toContain("save API key")
+    expect(mounted.target.textContent).toContain('save API key')
   })
 
   it('typing into the combobox filter updates the saved model', async () => {
@@ -407,10 +401,7 @@ describe('CloudProviderSetup', () => {
     modelInput.value = 'gpt-4o'
     modelInput.dispatchEvent(new Event('input', { bubbles: true }))
     await settle()
-    const stored = JSON.parse(settingsMap['ai.cloudProviderConfigs'] as string) as Record<
-      string,
-      { model?: string }
-    >
+    const stored = JSON.parse(settingsMap['ai.cloudProviderConfigs'] as string) as Record<string, { model?: string }>
     expect(stored.openai?.model).toBe('gpt-4o')
   })
 
