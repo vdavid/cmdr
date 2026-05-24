@@ -91,7 +91,7 @@ Tools where the backend can't fully validate preconditions use `mcp_round_trip`:
 
 ### Configuration (`config.rs`)
 
-Constants and configuration for the MCP server (port, bind address, transport settings). `DEFAULT_PORT` is build-mode-dependent: 19224 in prod, 19225 in dev, different so a dev session and an installed prod build don't collide on the same port (separate data dirs alone don't help since the port is a process-wide network resource). Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md.
+Constants and configuration for the MCP server (port, bind address, transport settings). The default port for users who pin (setting `developer.mcpPort` to non-zero) is build-mode-dependent: 19224 in prod, 19225 in dev. Different defaults so a dev session and an installed prod build don't collide when both pin. With the post-instance-isolation default of `developer.mcpPort = 0`, the server binds ephemeral and these constants only matter as the pinned-mode fallback. Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md. See [`/docs/tooling/instance-isolation.md`](../../../../../docs/tooling/instance-isolation.md) for the cross-resource view.
 
 ### Dialog state (`dialog_state.rs`)
 

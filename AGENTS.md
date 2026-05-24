@@ -180,14 +180,17 @@ Three cadences. Pick the one that matches where you are in the work, not the one
 
 Two MCP servers are available when the app is running via `pnpm dev`:
 
-- **cmdr** (port 19224 prod / 19225 dev): high-level app control: navigation, file operations, search, dialogs, state
+- **cmdr** (Cmdr MCP HTTP server): high-level app control: navigation, file operations, search, dialogs, state
   inspection. This is the primary way to test and interact with the running app. Architecture docs:
   `src-tauri/src/mcp/CLAUDE.md`.
-- **tauri** (port 9223): low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
-  verification and UI automation.
+- **tauri** (Tauri MCP bridge): low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for
+  visual verification and UI automation.
 
-**Before making any MCP calls**, read [docs/tooling/mcp.md](docs/tooling/mcp.md) for usage patterns, connection
-resilience, and common pitfalls.
+Both bind `127.0.0.1` only on ephemeral ports per instance. External clients (the `scripts/mcp-call.sh` CLI, agent
+helpers) read the actual port from `<CMDR_DATA_DIR>/mcp.port` (Cmdr server) or `<CMDR_DATA_DIR>/tauri-mcp.port`
+(bridge); `CMDR_MCP_PORT` still pins. See [docs/tooling/instance-isolation.md](docs/tooling/instance-isolation.md) for
+the per-resource breakdown and [docs/tooling/mcp.md](docs/tooling/mcp.md) for usage patterns, connection resilience, and
+common pitfalls.
 
 ## Where to put instructions
 
@@ -299,6 +302,10 @@ resilience, and common pitfalls.
   downloading otherwise. So raw `cargo check` Just Works in fresh worktrees. Don't paper over a missing `resources/ai/`
   with a placeholder file.
 - When using worktrees, always branch off from _local_ `main` (not `origin/main`) and rebase and FF _local_ main.
+- To run two dev sessions in parallel from different worktrees, pass `--worktree <slug>` to `pnpm dev` in each. The
+  wrapper picks per-instance ports (Vite, MCP, Tauri MCP bridge), a per-instance data dir
+  (`~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>/`), and a per-instance Dock label so the sessions
+  never collide. See [docs/tooling/instance-isolation.md](docs/tooling/instance-isolation.md) for the full breakdown.
 
 ## Workflow
 

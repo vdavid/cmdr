@@ -54,8 +54,12 @@ sync with `tauri.conf.json` → `identifier`).
 **`settings.json`**: flat JSON with literal dot-notation string keys, written by `tauri-plugin-store`.
 
 ```json
-{ "showHiddenFiles": true, "developer.mcpEnabled": true, "developer.mcpPort": 19224 }
+{ "showHiddenFiles": true, "developer.mcpEnabled": true, "developer.mcpPort": 0 }
 ```
+
+`developer.mcpPort = 0` means "let the kernel pick an ephemeral port" (the post-instance-isolation default). Any
+non-zero value pins. See [`apps/desktop/src-tauri/src/mcp/CLAUDE.md`](../mcp/CLAUDE.md) § Server lifecycle and
+[`docs/tooling/instance-isolation.md`](../../../../../docs/tooling/instance-isolation.md).
 
 These are top-level keys; the dot is part of the key name, not a nesting separator. `parse_settings` reads them manually (serde can't express dot-notation field names as struct fields).
 

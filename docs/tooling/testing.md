@@ -97,11 +97,13 @@ tests have a known GVFS race in Docker (the `UDisks2VolumeMonitor` warning, see 
 
 When the dev server is running (`pnpm dev` at repo root):
 
-- **cmdr** MCP on port 19224 (prod) / 19225 (dev): high-level: navigation, file ops, search, dialogs, state inspection
-- **tauri** MCP on port 9223: low-level: screenshots, DOM inspection, JS execution, IPC calls
+- **cmdr** MCP server: high-level: navigation, file ops, search, dialogs, state inspection
+- **tauri** MCP bridge: low-level: screenshots, DOM inspection, JS execution, IPC calls
 
-Use to verify expected behavior empirically before writing a test. See `docs/tooling/mcp.md`. Don't leave the dev server
-running after; stop it when done.
+Both bind `127.0.0.1` only on ephemeral ports per instance. External clients read the actual port from
+`<CMDR_DATA_DIR>/mcp.port` and `<CMDR_DATA_DIR>/tauri-mcp.port`. See `docs/tooling/mcp.md` and
+`docs/tooling/instance-isolation.md`. Use this to verify expected behavior empirically before writing a test. Don't
+leave the dev server running after; stop it when done.
 
 ## Linters / static checks
 

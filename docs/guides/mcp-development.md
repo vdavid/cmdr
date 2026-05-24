@@ -193,14 +193,16 @@ cargo test mcp::tests
 # Start the app
 pnpm tauri dev
 
-# In another terminal (port: 19224 prod, 19225 dev):
+# In another terminal. The MCP port is ephemeral per instance; read it from the data dir:
+PORT=$(cat ~/Library/Application\ Support/com.veszelovszki.cmdr-dev/mcp.port)
+
 # List all tools
-curl -X POST http://localhost:19225/mcp \
+curl -X POST "http://localhost:${PORT}/mcp" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
 # Call your tool
-curl -X POST http://localhost:19225/mcp \
+curl -X POST "http://localhost:${PORT}/mcp" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"my.action","arguments":{}}}'
 ```
@@ -294,7 +296,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | ./target/deb
 ### How it works
 
 1. Reads newline-delimited JSON-RPC from stdin
-2. POSTs each message to `http://127.0.0.1:19225/mcp` (or prod is `:19224`)
+2. POSTs each message to `http://127.0.0.1:<port>/mcp` (port discovered from `<CMDR_DATA_DIR>/mcp.port` or pinned via
+   `CMDR_MCP_PORT`)
 3. Writes response to stdout (newline-delimited)
 4. Logs errors to stderr
 

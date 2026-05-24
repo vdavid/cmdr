@@ -26,6 +26,9 @@ The Vite dev port is also ephemeral per instance. The wrapper reserves it via `n
 same port Vite actually binds. Raw `pnpm vite dev` outside the wrapper still defaults to 1420 for backwards
 compatibility.
 
+For the canonical reference on `CMDR_INSTANCE_ID` (per-resource breakdown, precedence rules, debug recipes, acceptance
+smoke), see [`/docs/tooling/instance-isolation.md`](../../docs/tooling/instance-isolation.md).
+
 ## Structure
 
 - `src/`: Svelte frontend (SvelteKit static adapter, TypeScript strict, custom CSS with design tokens)

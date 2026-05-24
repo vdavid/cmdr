@@ -189,8 +189,11 @@ Rules that cut across many modules. All existing commands follow these; apply th
 ### Dev mode
 
 - `pnpm dev` at repo root for hot-reloading Tauri app
+- `pnpm dev --worktree <slug>` for a per-worktree isolated session (separate data dir, ports, Dock label)
 - License mock via `CMDR_MOCK_LICENSE=commercial`
-- MCP server available at `localhost:19224` (prod) / `localhost:19225` (dev) for agent testing
+- MCP servers bind ephemeral ports on `127.0.0.1`; the actual port lives in `<CMDR_DATA_DIR>/mcp.port` and
+  `<CMDR_DATA_DIR>/tauri-mcp.port`. `CMDR_MCP_PORT` still pins the Cmdr MCP server for clients that prefer that. See
+  [tooling/instance-isolation.md](tooling/instance-isolation.md) for the per-resource breakdown
 - `withGlobalTauri: true` in dev mode (security risk if loading remote content)
 
 ### Checker script
@@ -218,13 +221,14 @@ Dev workflow docs and external service references. All in `docs/tooling/`.
 
 ### Dev workflow
 
-| Doc                                                  | Purpose                                                                        |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [logging.md](tooling/logging.md)                     | Unified logging, `RUST_LOG` recipes for every subsystem                        |
-| [testing.md](tooling/testing.md)                     | Testing tools inventory (Rust, Vitest, Playwright, Linux E2E, Docker SMB)      |
-| [mcp.md](tooling/mcp.md)                             | MCP servers (`cmdr`, `tauri`) for agent-driven app testing                     |
-| [css-health-checks.md](tooling/css-health-checks.md) | Stylelint + Go-based unused CSS checker                                        |
-| [index-query.md](tooling/index-query.md)             | `index_query`: query index DB with `platform_case` collation (`sqlite3` can't) |
+| Doc                                                    | Purpose                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| [logging.md](tooling/logging.md)                       | Unified logging, `RUST_LOG` recipes for every subsystem                        |
+| [testing.md](tooling/testing.md)                       | Testing tools inventory (Rust, Vitest, Playwright, Linux E2E, Docker SMB)      |
+| [mcp.md](tooling/mcp.md)                               | MCP servers (`cmdr`, `tauri`) for agent-driven app testing                     |
+| [instance-isolation.md](tooling/instance-isolation.md) | `CMDR_INSTANCE_ID` primer: per-resource isolation for parallel dev / E2E       |
+| [css-health-checks.md](tooling/css-health-checks.md)   | Stylelint + Go-based unused CSS checker                                        |
+| [index-query.md](tooling/index-query.md)               | `index_query`: query index DB with `platform_case` collation (`sqlite3` can't) |
 
 The check runner and E2E testing docs live colocated with their code:
 
