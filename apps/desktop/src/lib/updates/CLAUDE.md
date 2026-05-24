@@ -84,9 +84,8 @@ module-level `$state` flags drive this:
 - `onboarded`: seeded from `loadSettings().isOnboarded` on `startUpdateChecker()` start, then flipped by
   `notifyOnboardingComplete()` (also persists `isOnboarded: true`).
 - `onboardingShowing`: flipped by `setOnboardingShowing(value)` from `routes/(main)/+page.svelte` whenever the
-  onboarding wizard (or the legacy `FullDiskAccessPrompt`) opens or closes. The flag spans the whole wizard lifecycle
-  (step 1 FDA, step 2 AI, step 3 optional) — the "restart to update" toast would land just as awkwardly on the AI step
-  as on the FDA step.
+  onboarding wizard opens or closes. The flag spans the whole wizard lifecycle (step 1 FDA, step 2 AI, step 3 optional)
+  — the "restart to update" toast would land just as awkwardly on the AI step as on the FDA step.
 
 When a gate opens (`notifyOnboardingComplete()` runs, or `setOnboardingShowing(false)` flips), the helper re-attempts
 the toast. If the download completed during onboarding, `updateState.status` stays `'ready'` and the toast shows on

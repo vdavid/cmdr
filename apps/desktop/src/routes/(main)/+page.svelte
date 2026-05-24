@@ -2,8 +2,8 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import DualPaneExplorer from '$lib/file-explorer/pane/DualPaneExplorer.svelte'
     import FunctionKeyBar from '$lib/file-explorer/pane/FunctionKeyBar.svelte'
-    import FullDiskAccessPrompt from '$lib/onboarding/FullDiskAccessPrompt.svelte'
     import OnboardingWizard from '$lib/onboarding/OnboardingWizard.svelte'
+    import { openWizard as openOnboardingWizard } from '$lib/onboarding/onboarding-state.svelte'
     import { isForceOnboarding } from '$lib/tauri-commands'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
     import CommercialReminderModal from '$lib/licensing/CommercialReminderModal.svelte'
@@ -52,12 +52,10 @@
     import type { FriendlyError } from '$lib/file-explorer/types'
     import type { ExplorerAPI } from './explorer-api'
 
-    let showFdaPrompt = $state(false)
-    let fdaWasRevoked = $state(false)
     /**
-     * Onboarding wizard visibility. Currently only flipped on via `CMDR_FORCE_ONBOARDING=1`
-     * (M1 scope). M2 takes over the production FDA mount; M5 wires menu and palette re-entry.
-     * The existing `showFdaPrompt` path stays live in production until M2.
+     * Onboarding wizard visibility. The wizard owns the first-launch path: FDA, AI consent,
+     * and the optional-settings step. M5 wires menu / palette re-entry. `CMDR_FORCE_ONBOARDING=1`
+     * overrides every gate and opens the wizard regardless of persisted state.
      */
     let showOnboarding = $state(false)
     let showApp = $state(false)
@@ -382,6 +380,60 @@
         }
     }
 
+    /**
+     * Reads `CMDR_FORCE_ONBOARDING`, settings, and the FDA probe, then flips the right
+     * top-level state. Extracted from `onMount` to keep that function under the project's
+     * complexity cap. See `apps/desktop/src/lib/onboarding/CLAUDE.md` § "Mount + onboarding
+     * flag" for the truth table this implements.
+     */
+    async function resolveOnboardingMount(): Promise<void> {
+        const forceOnboarding = await isForceOnboarding().catch(() => false)
+        const settings = await loadSettings()
+        const hasFda = await checkFullDiskAccess()
+        const ctx = {
+            fullDiskAccessChoice: settings.fullDiskAccessChoice,
+            isOnboarded: settings.isOnboarded,
+            hasFda,
+        }
+
+        if (forceOnboarding) {
+            openOnboardingWizard('force', ctx)
+            showOnboarding = true
+            setOnboardingShowing(true)
+            showApp = true
+            return
+        }
+
+        if (hasFda) {
+            // Granted-now: mirror the setting if it diverged (covers OS-side toggles), then
+            // either skip or mark onboarded based on the `isOnboarded` flag.
+            if (settings.fullDiskAccessChoice !== 'allow') {
+                await saveSettings({ fullDiskAccessChoice: 'allow' })
+            }
+            if (!settings.isOnboarded) {
+                // Pre-wizard users who granted FDA before the wizard existed: unblock the
+                // update toast by marking them onboarded.
+                await notifyOnboardingComplete()
+            }
+            showApp = true
+            return
+        }
+
+        if (settings.fullDiskAccessChoice === 'deny' && settings.isOnboarded) {
+            // User explicitly denied and already finished onboarding. Don't re-prompt.
+            showApp = true
+            return
+        }
+
+        // Everything else routes through the wizard: first-launch (notAskedYet),
+        // revoke-after-allow, first-time-stuck (Allow but didn't grant), or
+        // Deny-but-not-onboarded.
+        openOnboardingWizard('first-launch', ctx)
+        showOnboarding = true
+        setOnboardingShowing(true)
+        showApp = true
+    }
+
     onMount(async () => {
         // Hide loading screen
         const loadingScreen = document.getElementById('loading-screen')
@@ -433,48 +485,7 @@
         // shows them in the same language the user sees in System Settings.
         await initSystemStrings()
 
-        // `CMDR_FORCE_ONBOARDING=1` opens the wizard regardless of FDA / `isOnboarded` state so
-        // developers and tests can iterate on the wizard without resetting persistence. M1 gates
-        // the wizard mount behind this env var only; M2 swaps the production FDA mount over.
-        const forceOnboarding = await isForceOnboarding().catch(() => false)
-        if (forceOnboarding) {
-            showOnboarding = true
-            setOnboardingShowing(true)
-            showApp = true
-        } else {
-            // Check FDA status
-            const settings = await loadSettings()
-            const hasFda = await checkFullDiskAccess()
-
-            if (hasFda) {
-                // Already have FDA - ensure setting reflects this
-                if (settings.fullDiskAccessChoice !== 'allow') {
-                    await saveSettings({ fullDiskAccessChoice: 'allow' })
-                }
-                // Cover users who granted FDA before the `isOnboarded` flag existed: if they're
-                // not yet flagged as onboarded, mark them so now (and unblock the update toast).
-                if (!settings.isOnboarded) {
-                    await notifyOnboardingComplete()
-                }
-                showApp = true
-            } else if (settings.fullDiskAccessChoice === 'notAskedYet') {
-                // First time - show onboarding
-                showFdaPrompt = true
-                setOnboardingShowing(true)
-            } else if (settings.fullDiskAccessChoice === 'allow') {
-                // User previously allowed but FDA was revoked - show prompt with different text
-                showFdaPrompt = true
-                fdaWasRevoked = true
-                setOnboardingShowing(true)
-            } else {
-                // User explicitly denied - proceed without prompting. Cover legacy users who denied
-                // before the `isOnboarded` flag existed so the update toast isn't permanently gated.
-                if (!settings.isOnboarded) {
-                    await notifyOnboardingComplete()
-                }
-                showApp = true
-            }
-        }
+        await resolveOnboardingMount()
 
         // Show window when ready
         void showMainWindow()
@@ -572,18 +583,10 @@
         tauriUnlistenFns.length = 0
     })
 
-    function handleFdaComplete() {
-        showFdaPrompt = false
-        setOnboardingShowing(false)
-        showApp = true
-        // Mark onboarding as complete and (if an update is already ready) trigger the deferred toast.
-        // notifyOnboardingComplete persists `isOnboarded: true` itself, no double-save needed.
-        void notifyOnboardingComplete()
-    }
-
     /**
-     * Wizard finished. Currently only reachable via `CMDR_FORCE_ONBOARDING=1` (M1 scope).
-     * M2 wires this for the real first-launch path once `StepFda.svelte` is shipping.
+     * Wizard finished. Reached when the user clicks "Finish" on the last step (M3+ wires
+     * the per-step persistence). Persists `isOnboarded: true` via `notifyOnboardingComplete()`
+     * so the deferred update toast can fire and we stop re-opening the wizard on next launch.
      */
     function handleWizardComplete() {
         showOnboarding = false
@@ -824,15 +827,11 @@
             <CommercialReminderModal onClose={handleCommercialReminderClose} />
         {/if}
 
-        {#if showFdaPrompt}
-            <FullDiskAccessPrompt onComplete={handleFdaComplete} wasRevoked={fdaWasRevoked} />
-        {/if}
-
         {#if showOnboarding}
             <OnboardingWizard onComplete={handleWizardComplete} />
         {/if}
 
-        {#if showApp && !showFdaPrompt}
+        {#if showApp}
             <DualPaneExplorer
                 bind:this={explorerRef}
                 onFocusedVolumeChange={(vid: string) => {

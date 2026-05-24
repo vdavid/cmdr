@@ -87,7 +87,6 @@
     "licensing/ExpirationModal.svelte": { "reason": "UI component" },
     "licensing/LicenseKeyDialog.svelte": { "reason": "UI modal, depends on Tauri commands" },
     "file-explorer/network/network-store.svelte.ts": { "reason": "Depends on Tauri APIs" },
-    "onboarding/FullDiskAccessPrompt.svelte": { "reason": "UI component" },
     "settings-store.ts": { "reason": "Depends on Tauri store APIs" },
     "settings/components/SettingNumberInput.svelte": { "reason": "UI component, logic is simple" },
     "settings/components/SettingRadioGroup.svelte": { "reason": "UI component, logic is simple" },

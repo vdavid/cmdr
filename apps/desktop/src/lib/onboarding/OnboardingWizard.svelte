@@ -1,9 +1,11 @@
 <script lang="ts">
     import { onMount, onDestroy, tick, untrack } from 'svelte'
+    import { relaunch } from '@tauri-apps/plugin-process'
     import IconArrowLeft from '~icons/lucide/arrow-left'
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { getAppLogger } from '$lib/logging/logger'
     import {
         getOnboardingState,
         ONBOARDING_STEP_COUNT,
@@ -16,6 +18,8 @@
     import StepFda from './StepFda.svelte'
     import StepAi from './StepAi.svelte'
     import StepOptional from './StepOptional.svelte'
+
+    const log = getAppLogger('onboarding')
 
     interface Props {
         /** Called when the user finishes the last step. M2+ wires the per-step persistence. */
@@ -118,12 +122,52 @@
         previousStep()
     }
 
+    async function handleRestart(): Promise<void> {
+        try {
+            await relaunch()
+        } catch (error) {
+            log.warn('relaunch() failed: {error}', { error })
+        }
+    }
+
     function handleNext(): void {
         if (untrack(() => isAtLastStep())) {
             onComplete()
             return
         }
         nextStep()
+    }
+
+    /**
+     * What primary footer button to render for the current step + state. Returns
+     * `null` when the step body owns its own buttons (step 1 in decide mode renders
+     * Allow/Deny inside `StepFda.svelte`). The wizard's footer reserves space for
+     * the back button on the left and the primary button on the right; rendering
+     * `null` for primary just leaves the right slot empty.
+     */
+    type PrimaryButton =
+        | { label: string; onclick: () => void; variant: 'primary' }
+        | null
+
+    const primary: PrimaryButton = $derived.by(() => computePrimaryButton())
+
+    function computePrimaryButton(): PrimaryButton {
+        const step = onboardingState.currentStep
+        if (step === null) return null
+        if (step === 1) {
+            if (onboardingState.step1FooterMode === 'restart') {
+                return { label: 'Restart Cmdr', onclick: () => void handleRestart(), variant: 'primary' }
+            }
+            if (onboardingState.step1Variant === 'already-granted') {
+                return { label: 'Next', onclick: handleNext, variant: 'primary' }
+            }
+            // Step 1 decide mode: Allow + Deny live in the body; footer primary is hidden.
+            return null
+        }
+        if (isAtLastStep()) {
+            return { label: 'Finish', onclick: handleNext, variant: 'primary' }
+        }
+        return { label: 'Next', onclick: handleNext, variant: 'primary' }
     }
 
     /**
@@ -190,9 +234,9 @@
                 {/if}
             </div>
             <div class="primary-slot">
-                <Button variant="primary" onclick={handleNext}>
-                    {isAtLastStep() ? 'Finish' : 'Next'}
-                </Button>
+                {#if primary}
+                    <Button variant={primary.variant} onclick={primary.onclick}>{primary.label}</Button>
+                {/if}
             </div>
         </footer>
     </div>

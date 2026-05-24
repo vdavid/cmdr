@@ -1,145 +1,169 @@
 # Onboarding module
 
-Handles first-launch onboarding: the legacy Full Disk Access modal (production path until M2 of the onboarding revamp)
-plus the new multi-step `OnboardingWizard` (reachable via `CMDR_FORCE_ONBOARDING=1` in M1; takes over production in M2).
+Owns first-launch consent: Full Disk Access (macOS only), AI provider, and a small optional-settings step. Renders the
+`OnboardingWizard` — a soft-sheet that covers ~90% of the viewport over the running app — as the single first-launch
+path.
 
 ## Key files
 
-| File                          | Purpose                                                                                                                             |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `FullDiskAccessPrompt.svelte` | Legacy modal shown when FDA is not yet granted or was previously revoked. Replaced by `OnboardingWizard` in M2 of the revamp.       |
-| `OnboardingWizard.svelte`     | Soft-sheet wizard (~90% viewport) that owns first-launch FDA + AI consent + optional setup. M1: skeleton only, env-var gated.       |
-| `OnboardingStepShell.svelte`  | Per-step inner frame (padding, scroll container, footer row). Steps render their body inside.                                       |
-| `StepFda.svelte`              | Step 1: Full Disk Access. M1 stub; M2 ports the FDA copy + actions.                                                                 |
-| `StepAi.svelte`               | Step 2: AI provider picker. M1 stub; M3 ships the provider list + per-provider setup.                                               |
-| `StepOptional.svelte`         | Step 3 (optional): networking, indexing, updates, MTP toggles. M1 stub; M4 wires the toggles.                                       |
-| `onboarding-state.svelte.ts`  | Wizard state machine: `openWizard()` / `closeWizard()` / `currentStep`. Owns the step-resume rule (lands on first not-yet-decided). |
+| File                         | Purpose                                                                                                                            |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, focus trap, Escape-swallow.             |
+| `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                  |
+| `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants — first-ask, revoked, already-granted.                                       |
+| `StepAi.svelte`              | Step 2: AI provider picker. M2 ships a stub; M3 lands the provider list + per-provider setup + FDA-outcome banner.                 |
+| `StepOptional.svelte`        | Step 3 (optional): networking, indexing, updates, MTP toggles. M2 ships a stub; M4 wires the toggles.                              |
+| `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc. |
 
-## M1 status
+## Status
 
-Only the wizard skeleton + state machine are in place. The wizard is reachable via `CMDR_FORCE_ONBOARDING=1 pnpm dev`
-for development; production users still see the legacy `FullDiskAccessPrompt`. M2 swaps the mount and deletes the legacy
-modal.
+M2-shipping. Step 1 (FDA) is real and is the single production FDA path — the legacy `FullDiskAccessPrompt.svelte` modal
+has been removed. Steps 2 and 3 are stubs (M3 / M4 land their content). `CMDR_FORCE_ONBOARDING=1` forces the wizard
+regardless of persisted state for dev / E2E iteration.
 
-## Behavior
+## Step 1 (Full Disk Access)
 
-The component renders inside `ModalDialog` and presents pros/cons plus step-by-step instructions for granting Full Disk
-Access in macOS System Settings.
+macOS only — Linux skips the step entirely (the resume rule lands Linux users on step 2).
 
-Two actions are available:
+The step has three opening copy variants, picked by `step1VariantFor()` in `onboarding-state.svelte.ts`:
 
-- **Open System Settings**: re-runs `checkFullDiskAccess()` (so TCC has a fresh registration of the bundle and the Cmdr
-  row appears in the FDA list), then calls `openPrivacySettings()` via IPC, then shows a follow-up hint to restart the
-  app. The IPC deep-links straight to the Full Disk Access pane (not the Privacy category list).
-- **Deny**: saves `fullDiskAccessChoice: 'deny'` to settings, calls `startIndexingAfterFdaDecision()` so the indexer
-  starts within this session, then calls `onComplete()` to dismiss.
+- **first-ask** (`fullDiskAccessChoice === 'notAskedYet'`): welcome + pros/cons + how-to + Allow / Deny.
+- **revoked** (`'allow' && !hasFda && isOnboarded`): "Cmdr previously had FDA but you revoked it…" framing.
+- **already-granted** (`hasFda === true`, menu / palette re-entry): single line + a Next footer button.
+
+The buttons inside the step body (`Open System Settings`, `Deny`) own the Allow / Deny flow; the wizard's footer primary
+button is hidden in `decide` mode and reads `Restart Cmdr` in `restart` mode (set after Allow). The `already-granted`
+variant has no in-body buttons; the wizard's footer renders a single `Next`.
+
+### Allow path requires a restart
+
+Per `docs/specs/onboarding-revamp-plan.md` § "FDA gate clear-on-Allow": after the user clicks Allow, the wizard does NOT
+advance to step 2 in-session. The footer's primary button flips to "Restart Cmdr" (calls `relaunch()` from
+`@tauri-apps/plugin-process`). Reason: the FDA gate (`fda_gate::FDA_PENDING`) is set once at boot from
+`(fda_choice, os_fda_granted)`; clearing it at runtime would race the TCC popups the gate was built to suppress (we hit
+5–10 stacked popups once already). The user's choice persists, and the resume rule lands them on step 2 immediately
+after relaunch.
+
+The Allow / Deny buttons stay live in restart mode so the user can change their mind to Deny without restarting (Deny
+advances normally).
+
+### Deny path
+
+`StepFda.svelte::handleDeny`:
+
+1. `saveSettings({ fullDiskAccessChoice: 'deny' })`.
+2. `startIndexingAfterFdaDecision()` — clears the runtime FDA gate, starts the MTP watcher, kicks off the indexer. The
+   scan walks `~/Downloads`, `~/Documents`, `~/Desktop`, etc., firing one TCC popup per folder. Those are the per-folder
+   prompts the user opted into by denying FDA. Folders the user denies stay unindexed.
+3. `setStepTwoBanner('denied')` + advance to step 2.
+
+## Resume rule
+
+`onboarding-state.svelte.ts::resumeStepFor(ctx)` picks the right step from the persisted flags + an FDA probe:
+
+| macOS state                              | Resume step | Step 1 variant | Step 2 banner |
+| ---------------------------------------- | ----------- | -------------- | ------------- |
+| `notAskedYet`                            | 1           | first-ask      | (stuck)       |
+| `allow` && `!hasFda` && `isOnboarded`    | 1           | revoked        | (stuck)       |
+| `allow` && `hasFda` (and `!isOnboarded`) | 2           | (n/a)          | granted       |
+| `allow` && `!hasFda` && `!isOnboarded`   | 2           | (n/a)          | stuck         |
+| `deny`                                   | 2           | (n/a)          | denied        |
+
+Linux always resumes at step 2 (no FDA gate).
 
 ## FDA gate
 
-Two things are gated on the FDA decision at app launch:
+Two things stay gated on the FDA decision at app launch:
 
-1. **Drive indexer**: recursive scan from `/` would touch iCloud, Photos, and other TCC-protected paths.
-2. **Path-based icon fetches** in `volumes::list_locations`: `NSWorkspace.iconForFile:` resolution for `/Applications`,
-   `~/Desktop`, `~/Documents`, `~/Downloads`, the iCloud root, and other cloud-storage paths reaches into adjacent TCC
-   services. On a fresh launch with FDA off, this stacks 5–10 macOS native popups (MediaLibrary, AppData, Desktop,
-   Documents, Downloads, ...) on top of this in-app FDA modal.
+1. **Drive indexer** (recursive scan from `/` would touch iCloud, Photos, ...).
+2. **Path-based icon fetches** in `volumes::list_locations` (NSWorkspace.iconForFile on `/Applications`, `~/Desktop`,
+   etc. cascades into adjacent TCC services).
 
-Both gates use the same predicate, exposed by `crate::fda_gate::is_fda_pending(fda_choice, os_fda_granted)`: pending iff
-`fullDiskAccessChoice === 'notAskedYet'` AND the OS-level FDA check returns false. The runtime side reads a global atom
-via `is_fda_pending_runtime()` so background-thread callers don't reload settings.
+Both gates use the same predicate via `crate::fda_gate::is_fda_pending(fda_choice, os_fda_granted)`.
 
 After the user decides:
 
-- **Deny** path: `FullDiskAccessPrompt.svelte` calls `startIndexingAfterFdaDecision()`. The Tauri command clears the
-  runtime gate, starts the MTP hotplug watcher, and starts the drive indexer. As the scan walks protected paths
-  (`~/Downloads`, `~/Documents`, `~/Desktop`, ...), macOS fires one TCC popup per folder; those are the "individual
-  Allow/Deny prompts" the user opted into by denying FDA. Folders the user denies stay unindexed; their size shows as
-  `<dir>`. The command does NOT re-emit `volumes-changed`: that would refire per-folder prompts via NSWorkspace icon
-  resolution on top of the scan's prompts, doubling the dialog count. Sidebar favorites stay icon-less until the next
-  listing-driven refresh.
-- **Allow** path: the user grants FDA in System Settings, then restarts the app. On next launch the OS check returns
-  true, the gate is open, and both the indexer and the icon fetches run normally with no popups.
+- **Deny**: `startIndexingAfterFdaDecision()` clears the runtime gate, starts the MTP hotplug watcher, and starts the
+  indexer. As the scan walks protected paths, macOS fires one TCC popup per folder.
+- **Allow**: the user grants FDA in System Settings, then clicks `Restart Cmdr`. On next launch the OS check returns
+  true, the gate is open at boot, and both the indexer and icon fetches run normally with no popups.
 
-The Tauri command is idempotent. See `src-tauri/src/fda_gate.rs` for the gate, `src-tauri/src/volumes/CLAUDE.md` § "FDA
-gate" for the icon-side rules, and `src-tauri/src/indexing/CLAUDE.md` § "Defer indexer auto-start" for the indexer side.
+The Tauri command is idempotent. See `src-tauri/src/fda_gate.rs`, `src-tauri/src/volumes/CLAUDE.md` § "FDA gate", and
+`src-tauri/src/indexing/CLAUDE.md` § "Defer indexer auto-start".
 
-The `wasRevoked` prop switches the copy from "first ask" to "revoked" framing.
+## Mount + onboarding flag
 
-## Where it is rendered
+`routes/(main)/+page.svelte` decides whether to mount the wizard:
 
-`routes/(main)/+page.svelte` decides whether to render the prompt by checking:
+- `CMDR_FORCE_ONBOARDING=1` → mount wizard.
+- `hasFda && isOnboarded` → no wizard; mirror `fullDiskAccessChoice` to `'allow'` if needed.
+- `hasFda && !isOnboarded` → no wizard; mirror setting + call `notifyOnboardingComplete()` (covers pre-wizard users who
+  already granted FDA).
+- `deny && isOnboarded` → no wizard (user denied and finished onboarding).
+- Anything else → mount wizard.
 
-1. `checkFullDiskAccess()` IPC result: if FDA is already granted, sync setting to `'allow'` and skip.
-2. If FDA is not granted:
-   - `'notAskedYet'` → show first-time onboarding prompt.
-   - `'allow'` (but FDA revoked) → show prompt with "revoked" framing.
-   - `'deny'` → skip (user previously declined).
+The `isOnboarded` boolean lives in `$lib/settings-store.ts`. It flips to `true` on full wizard completion via
+`notifyOnboardingComplete()` (from `$lib/updates/updater.svelte`), so the auto-update "restart to apply" toast doesn't
+fire during first-launch onboarding.
 
-## Onboarding flag and deferred update toast
+While the wizard is up, `+page.svelte` also calls `setOnboardingShowing(true)` so the updater suppresses the deferred
+toast; `handleWizardComplete` flips it back. See `$lib/updates/CLAUDE.md` § "Onboarding gating".
 
-A separate `isOnboarded` boolean lives in `$lib/settings-store.ts` (default `false`). It exists so the auto-update
-"restart to apply" toast doesn't fire during first-launch onboarding (the user just downloaded the app; they'd be
-confused) nor stack on top of the FDA-revoked re-prompt.
+## Testing
 
-`+page.svelte` calls `notifyOnboardingComplete()` from `$lib/updates/updater.svelte` in two places:
+Two env vars (mirror `CMDR_MOCK_LICENSE`):
 
-- `handleFdaComplete()`: fires whichever way the FDA prompt closes (Allow → restart hint, Deny → setting saved). The
-  helper persists `isOnboarded: true` itself, so the page doesn't double-save.
-- The `hasFda === true` branch: covers users who granted FDA before the flag existed. If `!settings.isOnboarded`, call
-  the helper so they get unblocked too.
+- `CMDR_FORCE_ONBOARDING=1` (read by `is_force_onboarding()` Tauri command in the backend): opens the wizard regardless
+  of persisted state. Useful for design iteration without touching settings.
+- `CMDR_MOCK_FDA=granted|denied|notgranted` (read in `permissions.rs::check_full_disk_access`): overrides the TCC probe
+  so all banner branches can be tested without ever opening real System Settings. `granted` → `true`; `denied` /
+  `notgranted` → `false`. The wizard distinguishes them via the persisted setting + a fresh probe on step-2 entry (M3).
 
-Around the same place where `showFdaPrompt = true` is set (both first-run and `wasRevoked`), `+page.svelte` also calls
-`setOnboardingShowing(true)` so the updater suppresses the toast while the modal is up. `handleFdaComplete()` flips it
-back with `setOnboardingShowing(false)`. The same flag covers the new wizard's full lifecycle (all three steps), so the
-rename in M1 was a 1:1 swap with broader semantics. See `$lib/updates/CLAUDE.md` § "Onboarding gating" for the updater
-side.
+Run with both: `CMDR_FORCE_ONBOARDING=1 CMDR_MOCK_FDA=notgranted pnpm dev`.
 
 ## Key decisions
 
 **Decision**: Three-state setting (`notAskedYet` / `allow` / `deny`) instead of a boolean. **Why**: The app needs to
-distinguish "never asked" (show first-time prompt), "granted but later revoked" (show revoked prompt with different
-copy), and "user explicitly declined" (never ask again). A boolean would conflate "not asked" with "denied", losing the
-ability to respect the user's explicit refusal.
+distinguish "never asked" (show first-ask), "granted but later revoked" (show revoked copy), and "user explicitly
+declined" (don't re-prompt once onboarded). A boolean would conflate "not asked" with "denied".
 
-**Decision**: No `onclose` prop on the ModalDialog (no x button, no Escape dismiss). **Why**: This is a blocking
-onboarding prompt. If the user could dismiss it without choosing, the app would have no recorded preference and would
-re-show the prompt on every launch. The user must explicitly click "Open System Settings" or "Deny" to proceed.
+**Decision**: No Escape handler on the wizard. **Why**: The wizard owns first-launch consent; dismissing without
+choosing leaves the app with no recorded preference. The user must commit to Allow / Deny / Next on each step.
 
-**Decision**: Post-click hint to restart manually instead of auto-detecting the grant. **Why**: Tauri has no API or
-callback for when macOS System Settings grants FDA. Polling `checkFullDiskAccess()` would work but adds complexity and
-may not detect the change instantly. A simple "restart the app" instruction is reliable and matches what other macOS
-apps (VS Code, iTerm2) do.
+**Decision**: Allow requires a restart before advancing past step 1. **Why**: The FDA gate is set once at boot; clearing
+it at runtime races background threads that resolve icons / scan paths into the TCC popups the gate suppresses. We hit
+5–10 stacked popups once already — the restart costs the user one click and keeps the gate's invariant intact. See plan
+§ "FDA gate clear-on-Allow".
+
+**Decision**: Step 1 footer button hidden in `decide` mode (body owns Allow / Deny). **Why**: The Allow / Deny choice is
+the meat of step 1; placing the buttons inside the body groups them with the explanatory copy they belong to. The
+wizard's footer remains consistent for the other steps (Back + Next / Finish / Restart Cmdr).
 
 ## Key gotchas
 
-- Tauri provides no callback for when the user finishes in System Preferences. The app cannot detect the grant
-  automatically. The post-click hint tells the user to restart manually.
-- Uses `dialogId="full-disk-access"` on `ModalDialog`, so MCP dialog tracking is automatic.
-- **TCC's registration hook fires on `open()`, not `opendir()`.** A `read_dir` against a protected directory may be
-  silently denied without ever adding the bundle to the Full Disk Access list, leaving the user with no row to toggle
-  on. The probe in `permissions.rs` opens specific protected _files_ (`~/Library/Safari/Bookmarks.plist`,
-  `~/Library/Mail/V10/MailData/Envelope Index`, `~/Library/Messages/chat.db`, etc.) and walks them in order until one
-  returns either `Ok` or `PermissionDenied`. `NotFound` doesn't trigger TCC, so we keep walking. The component re-runs
-  `checkFullDiskAccess()` right before `openPrivacySettings()` so the registration is fresh when the Settings pane
-  loads.
+- **TCC's registration hook fires on `open()`, not `opendir()`.** Without a `read()` attempt on a protected file, Cmdr
+  never enters the Full Disk Access list. `StepFda` re-runs `checkFullDiskAccess()` right before `openPrivacySettings()`
+  so the registration is fresh when the Settings pane loads. See `permissions.rs` for the per-file probe list.
 - **Deep-link host changed in Ventura.** macOS 13+ uses `com.apple.settings.PrivacySecurity.extension`; older macOS uses
-  `com.apple.preference.security`. Both anchor on `Privacy_AllFiles`. `open_privacy_settings` picks the right one via
-  `get_macos_major_version`. The same version informs the modal copy: macOS 12 and older append new FDA entries at the
-  end of the list (instead of alphabetical), so the "find Cmdr" instruction adjusts.
+  `com.apple.preference.security`. `openPrivacySettings()` picks via `get_macos_major_version`. The same version informs
+  the modal copy: macOS 12 and older append new FDA entries at the end of the list (instead of alphabetical).
 - **macOS 26 (Tahoe) FDA auto-add is broken.** Even with a notarized Developer ID build at `/Applications/Cmdr.app`, the
-  kernel/sandbox can short-circuit `read()` denials on TCC-protected paths without ever consulting `tccd`, meaning Cmdr
-  never enters the Full Disk Access list automatically. We mitigate by firing `mmap`, `NSData dataWithContentsOfFile:`,
-  and `read_dir` of the parent in addition to `read()` on a denial (one of them may thread the needle on some Tahoe
-  minor versions), but on `macOS 26.1+` even the `+`-button manual add has been reported broken for some users. The
-  modal's "Tip" substep guides the user to the `+` workflow as the user-side fallback. Don't spend hours
-  re-investigating: this is a documented OS regression, not an app bug. References:
-  [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549) (Tahoe 26.1 FDA),
-  [Backrest issue #986](https://github.com/garethgeorge/backrest/issues/986) (FDA broken on Tahoe 26.1),
-  [Apple Developer Forums #757768](https://developer.apple.com/forums/thread/757768) (Quinn confirms `open()` is the
-  trigger pre-Tahoe).
+  kernel / sandbox can short-circuit `read()` denials on TCC-protected paths without consulting `tccd`, meaning Cmdr may
+  not enter the FDA list automatically. The "+" button fallback (documented in step 1's `step-tip`) is the user-side
+  workaround. References: [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549),
+  [Backrest issue #986](https://github.com/garethgeorge/backrest/issues/986),
+  [Apple Developer Forums #757768](https://developer.apple.com/forums/thread/757768).
+- **The wizard renders the app behind it.** First launch lands on `~`, so what peeks through the backdrop is friendly.
+  No "white screen until wizard done" code path.
+- **Linux skips step 1.** `isAtFirstStep()` returns `true` on step 2 for Linux so the Back button disables there. Step 1
+  returns `null` on Linux as a safety net.
 
 ## Dependencies
 
-- `$lib/tauri-commands`: `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`
-- `$lib/settings-store`: `saveSettings`
-- `$lib/ui`: `ModalDialog`, `Button`
+- `$lib/tauri-commands`: `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`,
+  `startIndexingAfterFdaDecision`, `openExternalUrl`, `notifyDialogOpened`, `notifyDialogClosed`, `isForceOnboarding`
+- `$lib/settings-store`: `saveSettings`, `loadSettings`
+- `$lib/shortcuts/key-capture`: `isMacOS`
+- `$lib/system-strings.svelte`: localized system pane names
+- `$lib/ui`: `Button`, `LinkButton`
+- `@tauri-apps/plugin-process`: `relaunch` (Allow-path footer button)
