@@ -164,7 +164,8 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
   // passes the type check without losing inference on the rest of the file.
   const component = mount(QueryDialog, {
     target,
-    props: { config: config as unknown as QueryDialogConfig<unknown> },
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- load-bearing for svelte-check; `mount()` erases the generic to its `unknown` default and `historyStore.setList`'s contravariant `next` arg can't be re-narrowed. ESLint's `--fix` keeps stripping the cast (see commit 9962b00c).
+    props: { config: config as unknown as QueryDialogConfig },
   })
 
   const overlay = target.querySelector('.search-overlay')

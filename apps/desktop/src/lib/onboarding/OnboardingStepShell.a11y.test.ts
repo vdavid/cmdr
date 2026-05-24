@@ -11,9 +11,9 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 
 let mounted: { target: HTMLElement; instance: ReturnType<typeof mount> } | undefined
 
-afterEach(() => {
+afterEach(async () => {
   if (mounted) {
-    unmount(mounted.instance)
+    await unmount(mounted.instance)
     mounted.target.remove()
     mounted = undefined
   }

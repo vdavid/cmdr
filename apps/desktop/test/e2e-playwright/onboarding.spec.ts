@@ -182,7 +182,7 @@ test.describe('Onboarding wizard via MCP', () => {
     await initMcpClient(tauriPage)
     expect(await wizardIsOpen(tauriPage)).toBe(false)
     const result = await mcpCall('dialog', { action: 'open', type: 'onboarding' })
-    expect(String(result)).toContain('OK')
+    expect(result).toContain('OK')
     expect(await wizardIsOpen(tauriPage)).toBe(true)
     // SoftDialogTracker should now reflect the open onboarding sheet.
     const state = await mcpReadResource('cmdr://state')

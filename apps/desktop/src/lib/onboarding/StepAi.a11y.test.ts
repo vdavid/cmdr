@@ -104,9 +104,9 @@ beforeEach(() => {
   setCurrentStep(2)
 })
 
-afterEach(() => {
+afterEach(async () => {
   if (mounted) {
-    unmount(mounted.instance)
+    await unmount(mounted.instance)
     mounted.target.remove()
     mounted = undefined
   }

@@ -119,9 +119,9 @@ describe('OnboardingWizard', () => {
     resetForTesting()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     if (mounted) {
-      unmount(mounted.instance)
+      await unmount(mounted.instance)
       mounted.target.remove()
       mounted = undefined
     }
@@ -145,7 +145,7 @@ describe('OnboardingWizard', () => {
     mounted = mountWizard()
     await tick()
     const next = primaryFooterButton(mounted.target)
-    expect(next?.textContent?.trim()).toBe('Next')
+    expect(next?.textContent.trim()).toBe('Next')
     next?.click()
     flushSync()
     expect(getOnboardingState().currentStep).toBe(2)
@@ -157,7 +157,7 @@ describe('OnboardingWizard', () => {
     mounted = mountWizard()
     await tick()
     const btn = primaryFooterButton(mounted.target)
-    expect(btn?.textContent?.trim()).toBe('Restart Cmdr')
+    expect(btn?.textContent.trim()).toBe('Restart Cmdr')
     btn?.click()
     flushSync()
     await tick()
@@ -185,7 +185,7 @@ describe('OnboardingWizard', () => {
     expect(getOnboardingState().currentStep).toBe(3)
     // Step 3 registers its own footer override ("Start using Cmdr") via setFooterOverride().
     // The wizard's built-in "Finish" label only renders for steps that don't override.
-    expect(primaryFooterButton(mounted.target)?.textContent?.trim()).toBe('Start using Cmdr')
+    expect(primaryFooterButton(mounted.target)?.textContent.trim()).toBe('Start using Cmdr')
     primaryFooterButton(mounted.target)?.click()
     flushSync()
     expect(onComplete).toHaveBeenCalledOnce()

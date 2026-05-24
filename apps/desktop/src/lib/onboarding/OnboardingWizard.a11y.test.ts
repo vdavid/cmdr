@@ -57,9 +57,9 @@ function mountAt(): HTMLDivElement {
   return target
 }
 
-afterEach(() => {
+afterEach(async () => {
   if (lastInstance) {
-    unmount(lastInstance)
+    await unmount(lastInstance)
     lastInstance = undefined
   }
   if (lastTarget) {

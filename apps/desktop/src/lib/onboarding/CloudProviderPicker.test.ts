@@ -23,7 +23,7 @@ function mountPicker(initial: string = cloudProviderPresets[0].id) {
         // Re-mount to drive `value` reactively. Cheaper than wiring a wrapper Svelte
         // component; the picker doesn't internally cache `value`, so a re-mount keeps
         // tests simple.
-        unmount(instance)
+        void unmount(instance)
         const newInst = mount(CloudProviderPicker, {
           target,
           props: {
@@ -61,9 +61,9 @@ async function settle(): Promise<void> {
 
 describe('CloudProviderPicker', () => {
   beforeEach(() => {})
-  afterEach(() => {
+  afterEach(async () => {
     if (mounted) {
-      unmount(mounted.instance)
+      await unmount(mounted.instance)
       mounted.target.remove()
       mounted = undefined
     }

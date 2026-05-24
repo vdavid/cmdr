@@ -55,16 +55,14 @@ function mountStep() {
 
 function findButton(target: HTMLElement, label: string): HTMLButtonElement | null {
   return (
-    Array.from(target.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent?.trim() === label) ??
-    null
+    Array.from(target.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent.trim() === label) ?? null
   )
 }
 
 function findButtonContaining(target: HTMLElement, fragment: string): HTMLButtonElement | null {
   return (
-    Array.from(target.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
-      (b.textContent ?? '').includes(fragment),
-    ) ?? null
+    Array.from(target.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent.includes(fragment)) ??
+    null
   )
 }
 
@@ -85,9 +83,9 @@ describe('StepFda', () => {
     getMacosMajorVersion.mockResolvedValue(14)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     if (mounted) {
-      unmount(mounted.instance)
+      await unmount(mounted.instance)
       mounted.target.remove()
       mounted = undefined
     }
@@ -99,8 +97,8 @@ describe('StepFda', () => {
     setStep1Variant('first-ask')
     mounted = mountStep()
     await tick()
-    expect(mounted.target.textContent ?? '').toContain('Welcome to Cmdr!')
-    expect(mounted.target.textContent ?? '').toContain('full disk access')
+    expect(mounted.target.textContent).toContain('Welcome to Cmdr!')
+    expect(mounted.target.textContent).toContain('full disk access')
     expect(findButtonContaining(mounted.target, 'Open')).not.toBeNull()
     expect(findButton(mounted.target, 'Deny')).not.toBeNull()
   })
@@ -109,7 +107,7 @@ describe('StepFda', () => {
     setStep1Variant('revoked')
     mounted = mountStep()
     await tick()
-    expect(mounted.target.textContent ?? '').toContain('accepted full disk access before but then revoked it')
+    expect(mounted.target.textContent).toContain('accepted full disk access before but then revoked it')
     expect(findButtonContaining(mounted.target, 'Open')).not.toBeNull()
     expect(findButton(mounted.target, 'Deny')).not.toBeNull()
   })
@@ -118,7 +116,7 @@ describe('StepFda', () => {
     setStep1Variant('already-granted')
     mounted = mountStep()
     await tick()
-    expect(mounted.target.textContent ?? '').toContain('Cmdr currently has full disk access')
+    expect(mounted.target.textContent).toContain('Cmdr currently has full disk access')
     expect(findButtonContaining(mounted.target, 'Open')).toBeNull()
     expect(findButton(mounted.target, 'Deny')).toBeNull()
   })
@@ -141,7 +139,7 @@ describe('StepFda', () => {
     expect(getOnboardingState().step1FooterMode).toBe('restart')
     expect(getOnboardingState().currentStep).toBe(1)
     // The post-action hint appears once the flip has happened.
-    expect(mounted.target.textContent ?? '').toContain('Cmdr needs to restart')
+    expect(mounted.target.textContent).toContain('Cmdr needs to restart')
   })
 
   it('Deny persists deny, fires startIndexingAfterFdaDecision, and advances to step 2', async () => {
@@ -170,7 +168,7 @@ describe('StepFda', () => {
     await Promise.resolve()
     await tick()
     await tick()
-    expect(mounted.target.textContent ?? '').toContain('at the end of the list')
+    expect(mounted.target.textContent).toContain('at the end of the list')
   })
 
   it('macOS 13+ (Ventura+) shows the alphabetical wording', async () => {
@@ -180,6 +178,6 @@ describe('StepFda', () => {
     await tick()
     await Promise.resolve()
     await tick()
-    expect(mounted.target.textContent ?? '').toContain('Find Cmdr in the list')
+    expect(mounted.target.textContent).toContain('Find Cmdr in the list')
   })
 })

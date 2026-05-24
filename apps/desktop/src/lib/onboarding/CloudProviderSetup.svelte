@@ -392,7 +392,7 @@
                                 href={links.signup}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onclick={(event) => {
+                                onclick={(event: MouseEvent) => {
                                     event.preventDefault()
                                     openProviderUrl(links.signup)
                                 }}
@@ -417,7 +417,7 @@
                                 href={links.apiKeys}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onclick={(event) => {
+                                onclick={(event: MouseEvent) => {
                                     event.preventDefault()
                                     openProviderUrl(links.apiKeys)
                                 }}

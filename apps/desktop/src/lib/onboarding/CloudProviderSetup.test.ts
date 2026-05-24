@@ -98,10 +98,10 @@ describe('CloudProviderSetup', () => {
     vi.useFakeTimers()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.useRealTimers()
     if (mounted) {
-      unmount(mounted.instance)
+      await unmount(mounted.instance)
       mounted.target.remove()
       mounted = undefined
     }
@@ -111,11 +111,11 @@ describe('CloudProviderSetup', () => {
     mountSetup('openai')
     await settle()
     if (!mounted) throw new Error('not mounted')
-    expect(mounted.target.textContent ?? '').toContain('Set up OpenAI')
-    expect(mounted.target.textContent ?? '').toContain('Sign up at')
-    expect(mounted.target.textContent ?? '').toContain('Create an API key')
-    expect(mounted.target.textContent ?? '').toContain('Paste your API key')
-    expect(mounted.target.textContent ?? '').toContain('Pick a model')
+    expect(mounted.target.textContent).toContain('Set up OpenAI')
+    expect(mounted.target.textContent).toContain('Sign up at')
+    expect(mounted.target.textContent).toContain('Create an API key')
+    expect(mounted.target.textContent).toContain('Paste your API key')
+    expect(mounted.target.textContent).toContain('Pick a model')
   })
 
   it('shows the default model as a placeholder when no model is set', async () => {
@@ -147,12 +147,12 @@ describe('CloudProviderSetup', () => {
     await settle()
     // Re-mount with a new providerId prop; simplest way to test `$effect(providerId)`.
     if (mounted) {
-      unmount(mounted.instance)
+      await unmount(mounted.instance)
     }
     const instance = mount(CloudProviderSetup, { target, props: { providerId: 'anthropic' } })
     mounted = { target, instance, providerId: 'anthropic' }
     await settle()
-    expect(mounted.target.textContent ?? '').toContain('Set up Anthropic')
+    expect(mounted.target.textContent).toContain('Set up Anthropic')
     expect(getAiApiKey).toHaveBeenCalledWith('anthropic')
   })
 
@@ -165,7 +165,7 @@ describe('CloudProviderSetup', () => {
     keyInput.value = 'sk-good'
     keyInput.dispatchEvent(new Event('input', { bubbles: true }))
     await advanceTimers(1500)
-    expect(mounted.target.textContent ?? '').toContain('Connected!')
+    expect(mounted.target.textContent).toContain('Connected!')
   })
 
   it('renders the editable endpoint field for "custom" provider', async () => {

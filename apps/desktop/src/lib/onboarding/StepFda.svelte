@@ -154,7 +154,7 @@
                         href="https://github.com/vdavid/cmdr"
                         target="_blank"
                         rel="noopener noreferrer"
-                        onclick={(event) => {
+                        onclick={(event: MouseEvent) => {
                             event.preventDefault()
                             void openExternalUrl('https://github.com/vdavid/cmdr')
                         }}

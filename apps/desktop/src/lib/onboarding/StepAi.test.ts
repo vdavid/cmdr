@@ -187,9 +187,9 @@ describe('StepAi', () => {
     })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     if (mounted) {
-      unmount(mounted.instance)
+      await unmount(mounted.instance)
       mounted.target.remove()
       mounted = undefined
     }
@@ -200,7 +200,7 @@ describe('StepAi', () => {
   it('renders the comparison table and the three radio choices', async () => {
     mounted = mountStep()
     await waitForAsync()
-    expect(mounted.target.textContent ?? '').toContain('Here is how you do common actions')
+    expect(mounted.target.textContent).toContain('Here is how you do common actions')
     expect(radioByValue(mounted.target, 'cloud')).not.toBeNull()
     expect(radioByValue(mounted.target, 'local')).not.toBeNull()
     expect(radioByValue(mounted.target, 'off')).not.toBeNull()
@@ -210,7 +210,7 @@ describe('StepAi', () => {
     setStepTwoBanner('granted')
     mounted = mountStep()
     await waitForAsync()
-    expect(mounted.target.textContent ?? '').toContain('Thanks for granting full disk access')
+    expect(mounted.target.textContent).toContain('Thanks for granting full disk access')
   })
 
   it('shows the "denied" banner when the user denied FDA', async () => {
@@ -223,7 +223,7 @@ describe('StepAi', () => {
     })
     mounted = mountStep()
     await waitForAsync()
-    expect(mounted.target.textContent ?? '').toContain('You chose not to enable full disk access')
+    expect(mounted.target.textContent).toContain('You chose not to enable full disk access')
   })
 
   it('shows the "stuck" banner when FDA was requested but not granted', async () => {
@@ -236,7 +236,7 @@ describe('StepAi', () => {
     })
     mounted = mountStep()
     await waitForAsync()
-    expect(mounted.target.textContent ?? '').toContain("Cmdr doesn't seem to have full disk access yet")
+    expect(mounted.target.textContent).toContain("Cmdr doesn't seem to have full disk access yet")
   })
 
   it('picking cloud reveals the provider picker and setup grid', async () => {
