@@ -226,6 +226,33 @@ describe('buildInstanceConfig', () => {
     expect(cfg.app.withGlobalTauri).toBe(true)
     expect(cfg.plugins.updater.endpoints).toEqual(['https://localhost.invalid/no-updater'])
   })
+
+  it('omits build.devUrl by default so the static tauri.conf.json value applies', () => {
+    const cfg = buildInstanceConfig('dev')
+    expect(cfg).not.toBeNull()
+    if (cfg === null) return
+    expect(cfg.build).toBeUndefined()
+  })
+
+  it('writes build.devUrl when a Vite port is supplied', () => {
+    const cfg = buildInstanceConfig('dev-foo', { vitePort: 54321 })
+    expect(cfg).not.toBeNull()
+    if (cfg === null) return
+    expect(cfg.build).toEqual({ devUrl: 'http://localhost:54321' })
+  })
+
+  it('also stubs the updater endpoint for E2E instances so shards never phone home', () => {
+    const cfg = buildInstanceConfig('e2e-nonmtp1-12345')
+    expect(cfg).not.toBeNull()
+    if (cfg === null) return
+    expect(cfg.plugins.updater.endpoints).toEqual(['https://localhost.invalid/no-updater'])
+  })
+
+  it('rejects out-of-range Vite ports', () => {
+    expect(() => buildInstanceConfig('dev', { vitePort: 0 })).toThrow(/vitePort/)
+    expect(() => buildInstanceConfig('dev', { vitePort: 70000 })).toThrow(/vitePort/)
+    expect(() => buildInstanceConfig('dev', { vitePort: 1.5 })).toThrow(/vitePort/)
+  })
 })
 
 describe('pickEphemeralPort', () => {
@@ -319,5 +346,16 @@ describe('deriveInstance', () => {
     expect(out.identifier).toBe('com.veszelovszki.cmdr')
     expect(out.dataDir).toBe('/Users/me/Library/Application Support/com.veszelovszki.cmdr')
     expect(out.config).toBeNull()
+  })
+
+  it('threads vitePort into the generated config build.devUrl', () => {
+    const out = deriveInstance({
+      instanceId: 'dev-foo',
+      platform: 'darwin',
+      home: '/Users/me',
+      xdgDataHome: undefined,
+      vitePort: 49152,
+    })
+    expect(out.config?.build?.devUrl).toBe('http://localhost:49152')
   })
 })

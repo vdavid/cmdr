@@ -160,6 +160,7 @@ export function extractWorktreeFlag(argv) {
  *   identifier: string,
  *   app: { withGlobalTauri: boolean },
  *   plugins: { updater: { endpoints: string[] } },
+ *   build?: { devUrl: string },
  * }} InstanceConfig
  */
 
@@ -169,12 +170,24 @@ export function extractWorktreeFlag(argv) {
  * For prod (instanceId null), returns null: the wrapper omits -c entirely so canonical
  * tauri.conf.json governs the build.
  *
+ * When `vitePort` is set (dev only; the wrapper reserves an ephemeral port in P4), the
+ * config also overrides `build.devUrl` so Tauri points the webview at the same port Vite
+ * actually binds. Without the override, Tauri falls back to the static
+ * `http://localhost:1420` in `tauri.conf.json` and the webview loads a blank page when Vite
+ * is on a different port.
+ *
+ * The updater endpoints list always points at a dead URL for non-prod instances so a stray
+ * dev or E2E build never phones home to the real `api.getcmdr.com`.
+ *
  * @param {string|null} instanceId
+ * @param {object} [opts]
+ * @param {number} [opts.vitePort]
  * @returns {InstanceConfig|null}
  */
-export function buildInstanceConfig(instanceId) {
+export function buildInstanceConfig(instanceId, opts = {}) {
   if (!instanceId) return null
-  return {
+  /** @type {InstanceConfig} */
+  const config = {
     $schema: 'https://schema.tauri.app/config/2',
     productName: productName(instanceId),
     identifier: bundleIdentifier(instanceId),
@@ -183,12 +196,20 @@ export function buildInstanceConfig(instanceId) {
     },
     plugins: {
       updater: {
-        // Dead URL so non-prod instances never phone home accidentally. P4 will replace
-        // this with a real per-instance stub when the Vite dev port also lands here.
+        // Dead URL so non-prod instances never phone home accidentally. Real prod
+        // (instanceId null) returns the whole-null config above so canonical
+        // tauri.conf.json's getcmdr.com endpoint applies.
         endpoints: ['https://localhost.invalid/no-updater'],
       },
     },
   }
+  if (typeof opts.vitePort === 'number') {
+    if (!Number.isInteger(opts.vitePort) || opts.vitePort < 1 || opts.vitePort > 65535) {
+      throw new Error(`buildInstanceConfig: vitePort must be a 1-65535 integer, got ${String(opts.vitePort)}`)
+    }
+    config.build = { devUrl: `http://localhost:${String(opts.vitePort)}` }
+  }
+  return config
 }
 
 /**
@@ -200,12 +221,13 @@ export function buildInstanceConfig(instanceId) {
  * @param {NodeJS.Platform} opts.platform
  * @param {string} opts.home
  * @param {string|undefined} opts.xdgDataHome
+ * @param {number} [opts.vitePort]  threaded into `build.devUrl` (dev only)
  * @returns {{ identifier: string, dataDir: string, config: InstanceConfig|null }}
  */
-export function deriveInstance({ instanceId, platform, home, xdgDataHome }) {
+export function deriveInstance({ instanceId, platform, home, xdgDataHome, vitePort }) {
   const identifier = bundleIdentifier(instanceId)
   const dataDir = computeAppDataDir({ identifier, platform, home, xdgDataHome })
-  const config = buildInstanceConfig(instanceId)
+  const config = buildInstanceConfig(instanceId, typeof vitePort === 'number' ? { vitePort } : {})
   return { identifier, dataDir, config }
 }
 

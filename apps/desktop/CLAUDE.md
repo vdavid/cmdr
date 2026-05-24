@@ -21,6 +21,11 @@ label, pass `--worktree <slug>`: `pnpm dev --worktree my-feature`. The slug is s
 chars) and feeds into both the bundle identifier (`com.veszelovszki.cmdr-dev-my-feature`) and the data dir. See
 [`docs/specs/instance-isolation-plan.md`](../../docs/specs/instance-isolation-plan.md) for the full design.
 
+The Vite dev port is also ephemeral per instance. The wrapper reserves it via `net.createServer().listen(0)`, exports
+`CMDR_VITE_PORT`, and rewrites `build.devUrl` in the generated `tauri.instance.json` so Tauri's webview points at the
+same port Vite actually binds. Raw `pnpm vite dev` outside the wrapper still defaults to 1420 for backwards
+compatibility.
+
 ## Structure
 
 - `src/`: Svelte frontend (SvelteKit static adapter, TypeScript strict, custom CSS with design tokens)

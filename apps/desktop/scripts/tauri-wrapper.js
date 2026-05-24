@@ -15,10 +15,7 @@
 //   - Force the file-backed secret store for any non-prod instance so dev/E2E never pop
 //     the Keychain password dialog.
 //
-// What this wrapper does NOT do yet (P2+):
-//   - Allocate ephemeral MCP / Tauri-MCP-bridge ports.
-//   - Allocate the Vite dev port.
-//   - Keychain SERVICE_NAME suffix (Rust side, in P3).
+// What this wrapper does NOT do yet (P5+):
 //   - Fixture root or clipboard mock plumbing (P5, owned by the E2E checker).
 
 import { spawn } from 'child_process'
@@ -72,11 +69,33 @@ try {
       env.CMDR_MCP_BRIDGE_PORT = String(await pickEphemeralPort())
     }
 
+    // P4: reserve an ephemeral port for the Vite dev server (dev only). Threaded through
+    // both `CMDR_VITE_PORT` (read by `vite.config.js`) AND the generated config's
+    // `build.devUrl` (read by Tauri to point the webview). Both routes must see the same
+    // number or the webview loads a blank page.
+    //
+    // The race window between `net.createServer().listen(0)` close and Vite's actual bind
+    // is small (tens of ms). `strictPort: true` in `vite.config.js` turns any collision
+    // into a loud `EADDRINUSE` instead of a silent migration to a different port. See
+    // docs/specs/instance-isolation-plan.md § "Wrapper-allocated ephemeral ports: race
+    // and mitigation".
+    /** @type {number|undefined} */
+    let vitePort
+    if (isDev) {
+      if (env.CMDR_VITE_PORT) {
+        vitePort = Number(env.CMDR_VITE_PORT)
+      } else {
+        vitePort = await pickEphemeralPort()
+        env.CMDR_VITE_PORT = String(vitePort)
+      }
+    }
+
     const { identifier, dataDir, config } = deriveInstance({
       instanceId,
       platform: process.platform,
       home: homedir(),
       xdgDataHome: env.XDG_DATA_HOME,
+      vitePort,
     })
 
     env.CMDR_INSTANCE_ID = instanceId
@@ -130,6 +149,9 @@ try {
 
       console.log(`Using CMDR_INSTANCE_ID: ${instanceId} (identifier=${identifier})`)
       console.log(`Using CMDR_DATA_DIR: ${env.CMDR_DATA_DIR}`)
+      if (vitePort !== undefined) {
+        console.log(`Using CMDR_VITE_PORT: ${String(vitePort)}`)
+      }
     }
   }
 } catch (err) {
