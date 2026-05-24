@@ -107,7 +107,7 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
                 found.push('.toast["' + text + '"]');
             }
             return found;
-        })()`)) as string[] | null
+        })()`))
   } catch {
     // If the probe itself fails (e.g. the app crashed mid-test), don't
     // mask the original failure with a probe error.
