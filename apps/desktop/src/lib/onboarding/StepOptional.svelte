@@ -131,7 +131,9 @@
 <style>
     .step-title {
         margin: 0 0 var(--spacing-md);
-        font-size: var(--font-size-lg);
+        /* 20% larger than body font — same calc() as StepFda/.welcome and
+           StepAi/.step-title so all onboarding step headings match. */
+        font-size: calc(var(--font-size-md) * 1.2);
         font-weight: 600;
         color: var(--color-text-primary);
     }

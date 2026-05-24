@@ -203,8 +203,11 @@
 <style>
     .welcome {
         margin: 0 0 var(--spacing-md) 0;
-        /* About 20% larger than body font, per David's copy spec. */
-        font-size: var(--font-size-lg);
+        /* 20% larger than body font, per David's copy spec. `--font-size-lg`
+           (16px) over body 14px is only ~14%; `--font-size-xl` (20px) reads as
+           a hero. The `calc()` matches the other step titles (StepAi, StepOptional)
+           so all three onboarding steps share one heading size. */
+        font-size: calc(var(--font-size-md) * 1.2);
         font-weight: 600;
         color: var(--color-text-primary);
     }
