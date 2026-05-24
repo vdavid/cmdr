@@ -152,8 +152,11 @@ Three cadences. Pick the one that matches where you are in the work, not the one
 ## Debugging
 
 - **Data dirs (dev and prod are separate!)**: Prod: `~/Library/Application Support/com.veszelovszki.cmdr/`, Dev:
-  `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. Dev path is set via `CMDR_DATA_DIR` env var by
-  `tauri-wrapper.js`; resolved in `src-tauri/src/config.rs`.
+  `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. The split has two prongs that converge on the same path:
+  (1) `tauri.dev.json` overrides `identifier` to `com.veszelovszki.cmdr-dev` so Tauri's own `app_data_dir()` (and
+  anything keyed off it, e.g. `tauri-plugin-store`'s `settings.json`) lands in the dev path; (2) `tauri-wrapper.js` sets
+  `CMDR_DATA_DIR` to the same path so `src-tauri/src/config.rs::data_dir()` and direct file I/O (crash reports, logs,
+  the file-backed secret store) all agree without round-tripping through Tauri's API.
 - **Logging**: Frontend and backend logs appear together in terminal and in the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
   prod: `~/Library/Logs/com.veszelovszki.cmdr/`). **Read [docs/tooling/logging.md](docs/tooling/logging.md) before using
   `RUST_LOG`**: it has copy-paste recipes for every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not
