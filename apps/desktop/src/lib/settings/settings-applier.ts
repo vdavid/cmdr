@@ -178,7 +178,9 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   // also fires an immediate check on `true` so the user gets a fresh state right after
   // re-enabling. Without this entry the wizard's step 3 toggle would only take effect after
   // an app restart, breaking the live-apply contract.
-  'updates.autoCheck': (v) => applyAutoCheckEnabled(v as boolean),
+  'updates.autoCheck': (v) => {
+    applyAutoCheckEnabled(v as boolean)
+  },
 }
 
 /**
