@@ -57,8 +57,23 @@ describe('hasDescendantUpdate', () => {
     expect(hasDescendantUpdate(['/Users/test/foo/'], '/Users/test/')).toBe(true)
   })
 
-  it('returns false when the path is the dir itself', () => {
-    expect(hasDescendantUpdate(['/Users/test/'], '/Users/test/')).toBe(false)
+  // The dir's own dir_stats change refreshes the `..` row (which renders the
+  // current folder's recursive size, per views/CLAUDE.md). Previously this
+  // returned false, dropping legitimate refreshes for the `..` row.
+  it('returns true when the path is the dir itself (refreshes the .. row)', () => {
+    expect(hasDescendantUpdate(['/Users/test/'], '/Users/test/')).toBe(true)
+  })
+
+  // The backend uses `/` as a full-refresh sentinel after a full scan
+  // completes (manager.rs end-of-scan emit) or after a replay overflow
+  // (event_loop.rs:780). Today the strict-descendant check drops it
+  // because `/` is an ancestor of every pane path, never a descendant.
+  it('returns true for the / refresh-everything sentinel', () => {
+    expect(hasDescendantUpdate(['/'], '/Users/test/')).toBe(true)
+  })
+
+  it('returns true when / sentinel is mixed with other paths', () => {
+    expect(hasDescendantUpdate(['/Users/other/', '/'], '/Users/test/')).toBe(true)
   })
 
   it('returns false when paths are unrelated', () => {

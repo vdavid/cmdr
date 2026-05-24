@@ -993,6 +993,21 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             log::warn!("Background verification flush failed: {e}");
         }
 
+        // Progressive reveal: as soon as a newly-scanned subtree's `dir_stats`
+        // is committed, tell the UI so open listings can refresh that one folder.
+        // Without this, open listings sat on `<dir>` placeholders for the entire
+        // verification window (observed up to 5 minutes) and the single emit at
+        // the end of this function carried only the replay-affected paths, not
+        // the newly-scanned ones — see the 1.83 TB ghost-size investigation.
+        // The FE handler is throttled at 2 s per pane, so bursty subtree
+        // completions naturally coalesce.
+        for dir_path in &verify_result.new_dir_paths {
+            if scanner::should_exclude(dir_path) {
+                continue;
+            }
+            reconciler::emit_dir_updated(&app, vec![dir_path.clone()]);
+        }
+
         // For new directories, propagate their subtree totals up the ancestor chain.
         // scan_subtree computes aggregates within the subtree but doesn't propagate
         // upward. Resolve each new dir path to its entry ID, read the computed
@@ -1049,10 +1064,13 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             }
         }
 
-        // Emit index-dir-updated for any corrected paths so the UI refreshes
-        let mut corrected_paths: Vec<String> = affected_paths.into_iter().collect();
-        corrected_paths.extend(verify_result.new_dir_paths.iter().cloned());
-        reconciler::emit_dir_updated(&app, corrected_paths);
+        // Final emit for the replay-affected paths whose stats were corrected
+        // (stale-row deletions and new-file additions in the affected_paths set).
+        // `new_dir_paths` are not included here — they were already emitted
+        // progressively above as each subtree's scan finished.
+        if !affected_paths.is_empty() {
+            reconciler::emit_dir_updated(&app, affected_paths.into_iter().collect());
+        }
     }
 
     DEBUG_STATS.verifying.store(false, Ordering::Relaxed);

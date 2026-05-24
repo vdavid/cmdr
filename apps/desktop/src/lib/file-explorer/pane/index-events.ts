@@ -22,11 +22,26 @@ export function resolvePrivateSymlinks(path: string): string {
   return path
 }
 
-/** Returns true if any updated path is a descendant of `dir`. */
+/**
+ * Returns true if the pane at `dir` should refresh given the `paths` payload
+ * of an `index-dir-updated` event.
+ *
+ * Three cases trigger a refresh:
+ * - `/` sentinel: the backend uses this after a full-scan completion
+ *   (`manager.rs` end-of-scan emit) or replay overflow (`event_loop.rs:780`)
+ *   to mean "every pane re-enriches". Without the short-circuit, the
+ *   descendant check below drops it because `/` is an ancestor of every
+ *   pane path, never a descendant.
+ * - The dir itself is in `paths`: the dir's own `dir_stats` changed, so the
+ *   `..` row (which renders the current folder's recursive size, per
+ *   views/CLAUDE.md) needs refresh.
+ * - A descendant of dir is in `paths`: a child's row needs refresh.
+ */
 export function hasDescendantUpdate(paths: string[], dir: string): boolean {
+  if (paths.includes('/')) return true
   return paths.some((p) => {
     const withSlash = ensureTrailingSlash(p)
-    return withSlash.startsWith(dir) && withSlash !== dir
+    return withSlash.startsWith(dir)
   })
 }
 
