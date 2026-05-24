@@ -47,8 +47,14 @@ the Tauri binary with `--features playwright-e2e,virtual-mtp` inside Docker, lau
 
 ## Shared fixture system
 
-All E2E suites share `e2e-shared/fixtures.ts`, which creates a temp directory at `/tmp/cmdr-e2e-<timestamp>/`. MTP E2E
-tests use a virtual MTP device (pure Rust, no USB needed) via the `virtual-mtp` feature flag, with helpers in
+All E2E suites share `e2e-shared/fixtures.ts`. When `createFixtures(instanceId)` is called with an instance ID (macOS
+Playwright path, passed by the Go checker), fixtures land at `/tmp/cmdr-e2e-fixtures-<instance>-<timestamp>/`. Bulk
+`.dat` files are hardlinked from a shared cache at `/tmp/cmdr-e2e-fixtures-cache/`; the cache is built on first use via
+a tmp-dir + atomic-rename protocol so parallel shards never race. Text files are full copies because tests mutate them.
+When `createFixtures()` is called without an instance ID (Linux Docker path), it falls back to the legacy
+`/tmp/cmdr-e2e-<timestamp>/` root with no cache (single shard, low benefit).
+
+MTP E2E tests use a virtual MTP device (pure Rust, no USB needed) via the `virtual-mtp` feature flag, with helpers in
 `e2e-shared/mcp-client.ts` and `e2e-shared/mtp-fixtures.ts`. SMB E2E tests use virtual hosts injected via the `smb-e2e`
 feature flag pointing at Docker SMB containers, with helpers in `e2e-shared/smb-fixtures.ts`.
 

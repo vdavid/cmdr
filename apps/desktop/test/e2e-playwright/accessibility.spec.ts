@@ -47,8 +47,16 @@ interface AxeResults {
   violations: AxeViolation[]
 }
 
-// Use fixture file from the shared E2E fixture tree
-const fixtureRoot = process.env.CMDR_E2E_START_PATH ?? '/tmp/cmdr-e2e-fallback'
+// Use fixture file from the shared E2E fixture tree. Throw instead of using a
+// fallback path: a silent fallback hides setup bugs (the test would try to read
+// a non-existent file and fail with a confusing "ENOENT" instead of the actual
+// "env var is missing" root cause).
+const fixtureRoot = (() => {
+  const root = process.env.CMDR_E2E_START_PATH
+  if (!root)
+    throw new Error('CMDR_E2E_START_PATH env var is not set; fixtures must be created before running this spec')
+  return root
+})()
 const testFilePath = path.join(fixtureRoot, 'left', 'file-a.txt')
 
 /** Read and cache the axe-core source so we only read it from disk once. */

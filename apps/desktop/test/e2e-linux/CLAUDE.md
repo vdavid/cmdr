@@ -3,6 +3,12 @@
 Docker setup for running the Playwright E2E tests (`../e2e-playwright/`) on Linux. The test files themselves live in
 `e2e-playwright/` and are shared between macOS and Linux -- see `e2e-playwright/CLAUDE.md` for test documentation.
 
+**Scope note:** Linux Docker runs a single shard, so the per-instance fixture isolation introduced for parallel macOS
+shards (`/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` plus hardlink cache at `/tmp/cmdr-e2e-fixtures-cache/`) is explicitly
+out of scope here. `e2e-linux.sh` calls `createFixtures()` without an instance ID, which falls back to the legacy shared
+`/tmp/cmdr-e2e-<ts>/` root with no cache. The 170 MB regen cost is paid once per run and is dominated by container
+startup; the bookkeeping for one shard isn't worth it.
+
 ## Architecture
 
 ```

@@ -2,8 +2,18 @@
 //!
 //! All functions assume they are called on the main thread. Callers must use
 //! `app.run_on_main_thread()` when invoking from async Tauri commands.
+//!
+//! Runtime opt-out: setting `CMDR_CLIPBOARD_BACKEND=mock` at process start
+//! makes every call delegate to the shared in-process store in `super::store`
+//! instead of touching NSPasteboard. The env value is sampled once via a
+//! `LazyLock`; flipping it mid-process has no effect. This is the dev /
+//! debug equivalent of the compile-time `playwright-e2e` mock module: a
+//! prod-feature build can be flipped to mock without recompiling when a
+//! dev wants to inspect Cmdr's clipboard payloads without polluting the
+//! system pasteboard.
 
 use std::path::PathBuf;
+use std::sync::LazyLock;
 
 use objc2::ClassType;
 use objc2::msg_send;
@@ -14,6 +24,17 @@ use objc2_app_kit::{
 };
 use objc2_foundation::{NSArray, NSDictionary, NSString, NSURL};
 
+use super::store;
+
+/// Sampled once at first access. `true` when `CMDR_CLIPBOARD_BACKEND=mock`
+/// was set in the process env at that point.
+static USE_MOCK_BACKEND: LazyLock<bool> =
+    LazyLock::new(|| std::env::var("CMDR_CLIPBOARD_BACKEND").as_deref() == Ok("mock"));
+
+fn use_mock() -> bool {
+    *USE_MOCK_BACKEND
+}
+
 /// Writes file URLs to the system pasteboard.
 ///
 /// Places both file URL items (for Finder-compatible paste) and plain-text
@@ -21,6 +42,12 @@ use objc2_foundation::{NSArray, NSDictionary, NSString, NSURL};
 pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
     if paths.is_empty() {
         return Err("No paths to write to clipboard".to_string());
+    }
+
+    if use_mock() {
+        store::write_paths(paths);
+        log::info!(target: "clipboard", "[mock-env] wrote {} file URL(s) to in-process clipboard", paths.len());
+        return Ok(());
     }
 
     let pasteboard = NSPasteboard::generalPasteboard();
@@ -61,6 +88,10 @@ pub fn write_file_urls_to_clipboard(paths: &[PathBuf]) -> Result<(), String> {
 /// Uses `readObjectsForClasses:options:` with `NSURL` and `fileURLsOnly` to retrieve
 /// only local file URLs (not remote HTTP URLs).
 pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
+    if use_mock() {
+        return Ok(store::read_paths());
+    }
+
     let pasteboard = NSPasteboard::generalPasteboard();
 
     // Build class array containing NSURL's class
@@ -113,6 +144,10 @@ pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
 /// Used by the frontend to paste text into input fields without triggering
 /// WebKit's clipboard permission popup (which `navigator.clipboard.readText()` causes).
 pub fn read_text_from_clipboard() -> Option<String> {
+    if use_mock() {
+        return store::read_text();
+    }
+
     let pasteboard = NSPasteboard::generalPasteboard();
     let pasteboard_type = unsafe { NSPasteboardTypeString };
     pasteboard.stringForType(pasteboard_type).map(|s| s.to_string())

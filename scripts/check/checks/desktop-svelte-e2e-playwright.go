@@ -138,7 +138,7 @@ func buildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64) (st
 // far are removed before returning.
 func allocateShardFixtures(desktopDir string, shards []shardSpec) (func(), error) {
 	for i := range shards {
-		fixtureDir, err := createE2EFixtures(desktopDir)
+		fixtureDir, err := createE2EFixtures(desktopDir, shards[i].instanceID)
 		if err != nil {
 			for j := range i {
 				os.RemoveAll(shards[j].fixtureDir)
@@ -360,11 +360,18 @@ func findTauriBinary(rootDir string) (string, error) {
 
 // createE2EFixtures creates the E2E fixture directory tree (~170 MB) via the shared
 // Node.js helper. Returns the fixture directory path. Each call generates a
-// unique timestamped path so multiple shards do not collide.
-func createE2EFixtures(desktopDir string) (string, error) {
-	script := `import { createFixtures } from "./test/e2e-shared/fixtures.js"; console.log(createFixtures())`
+// unique timestamped path under /tmp/cmdr-e2e-fixtures-<instance>-<ts>/ so
+// parallel shards never collide. Bulk .dat files are hard-linked from a shared
+// cache at /tmp/cmdr-e2e-fixtures-cache/ (built on first call); see
+// e2e-shared/fixtures.ts for the cache build protocol.
+func createE2EFixtures(desktopDir, instanceID string) (string, error) {
+	// The instance ID is passed via env (not a CLI arg) because tsx's `-e` form
+	// evaluates a single expression string; smuggling args through that would
+	// need a wrapper file. Env is the path of least surprise.
+	script := `import { createFixtures } from "./test/e2e-shared/fixtures.js"; console.log(createFixtures(process.env.CMDR_INSTANCE_ID))`
 	cmd := exec.Command("npx", "tsx", "-e", script)
 	cmd.Dir = desktopDir
+	cmd.Env = append(os.Environ(), "CMDR_INSTANCE_ID="+instanceID)
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		return "", fmt.Errorf("failed to create fixtures: %w\n%s", err, indentOutput(output))

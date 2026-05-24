@@ -19,7 +19,12 @@ export default function globalSetup(): void {
     // App already running with this fixture dir: refresh text files
     recreateFixtures(existingRoot)
   } else {
-    const fixtureRoot = createFixtures()
+    // Pass the instance ID through to createFixtures so per-shard runs land
+    // under /tmp/cmdr-e2e-fixtures-<instance>-<ts>/ and share the hardlink
+    // cache. Linux Docker has no instance ID and stays on the legacy shared
+    // root.
+    const instanceId = process.env.CMDR_INSTANCE_ID
+    const fixtureRoot = createFixtures(instanceId)
     process.env.CMDR_E2E_START_PATH = fixtureRoot
     globalThis.__PLAYWRIGHT_CREATED_FIXTURES = true
   }
