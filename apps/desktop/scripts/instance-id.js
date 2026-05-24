@@ -11,6 +11,8 @@
 // The wrapper derives CMDR_DATA_DIR, bundle identifier, productName, and (in later phases)
 // Vite port + MCP ports from this single string.
 
+import { createServer } from 'net'
+import { mkdirSync, openSync, writeSync, fsyncSync, closeSync, renameSync, unlinkSync } from 'fs'
 import { join } from 'path'
 
 const PROD_IDENTIFIER = 'com.veszelovszki.cmdr'
@@ -196,6 +198,92 @@ export function deriveInstance({ instanceId, platform, home, xdgDataHome }) {
   const dataDir = computeAppDataDir({ identifier, platform, home, xdgDataHome })
   const config = buildInstanceConfig(instanceId)
   return { identifier, dataDir, config }
+}
+
+/**
+ * Reserve an ephemeral TCP port via `net.createServer().listen(0)`. Closes the listener
+ * immediately so the caller can rebind it. There's a small race window between close and
+ * the downstream bind, identical to the trick we'll use for Vite in P4. Mitigation in P2's
+ * case is on the Rust side (500 ms post-bind probe + warn log).
+ *
+ * @returns {Promise<number>}
+ */
+export function pickEphemeralPort() {
+  return new Promise((resolve, reject) => {
+    const server = createServer()
+    server.unref() // don't hold the Node event loop open if anything goes wrong
+    server.on('error', reject)
+    server.listen({ host: '127.0.0.1', port: 0 }, () => {
+      const addr = server.address()
+      if (addr === null || typeof addr === 'string') {
+        server.close()
+        reject(new Error(`net.createServer returned unexpected address: ${JSON.stringify(addr)}`))
+        return
+      }
+      const { port } = addr
+      server.close((closeErr) => {
+        if (closeErr) {
+          reject(closeErr)
+        } else {
+          resolve(port)
+        }
+      })
+    })
+  })
+}
+
+/**
+ * Atomically write `<dir>/<name>` containing `port + "\n"`. Mirrors the Rust
+ * `port_file::write_port_file` protocol (tempfile + fsync + rename) so wrapper-written
+ * files and Rust-written files use the same on-disk contract.
+ *
+ * @param {string} dir
+ * @param {string} name  e.g. "tauri-mcp.port"
+ * @param {number} port
+ */
+export function writePortFile(dir, name, port) {
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(`writePortFile: port must be a u16, got ${String(port)}`)
+  }
+  mkdirSync(dir, { recursive: true })
+  const finalPath = join(dir, name)
+  const tmpPath = join(dir, `${name}.tmp.${String(process.pid)}`)
+  let fd = null
+  try {
+    fd = openSync(tmpPath, 'w')
+    writeSync(fd, `${String(port)}\n`)
+    fsyncSync(fd)
+  } finally {
+    if (fd !== null) closeSync(fd)
+  }
+  try {
+    renameSync(tmpPath, finalPath)
+  } catch (err) {
+    try {
+      unlinkSync(tmpPath)
+    } catch {
+      // best-effort cleanup
+    }
+    throw err
+  }
+}
+
+/**
+ * Best-effort delete of `<dir>/<name>`. Swallows "file not found" so callers can use this
+ * unconditionally on exit (the file may have been already cleaned up by Rust shutdown).
+ *
+ * @param {string} dir
+ * @param {string} name
+ */
+export function removePortFile(dir, name) {
+  try {
+    unlinkSync(join(dir, name))
+  } catch (err) {
+    // ENOENT is fine: the file may have been removed by Rust shutdown or never written.
+    if (err instanceof Error && /** @type {NodeJS.ErrnoException} */ (err).code !== 'ENOENT') {
+      console.warn(`Could not remove port file ${join(dir, name)}: ${err.message}`)
+    }
+  }
 }
 
 // Re-export the platform default for callers that need to detect "no override".

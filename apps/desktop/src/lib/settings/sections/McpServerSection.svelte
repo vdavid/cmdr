@@ -195,7 +195,9 @@
         {:else if serverRunning && runningPort}
             <div class="port-status active">
                 Server is running on port {runningPort}
-                {#if runningPort !== getSetting('developer.mcpPort')}
+                {#if getSetting('developer.mcpPort') === 0}
+                    (ephemeral)
+                {:else if runningPort !== getSetting('developer.mcpPort')}
                     (port {getSetting('developer.mcpPort')} was in use)
                 {/if}
             </div>

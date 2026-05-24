@@ -25,7 +25,16 @@ import { spawn } from 'child_process'
 import { mkdtempSync, writeFileSync, rmSync } from 'fs'
 import { tmpdir, homedir } from 'os'
 import { join } from 'path'
-import { extractWorktreeFlag, resolveInstanceId, deriveInstance } from './instance-id.js'
+import {
+  extractWorktreeFlag,
+  resolveInstanceId,
+  deriveInstance,
+  pickEphemeralPort,
+  writePortFile,
+  removePortFile,
+} from './instance-id.js'
+
+const TAURI_MCP_PORT_FILE = 'tauri-mcp.port'
 
 const args = process.argv.slice(2)
 const isDev = args.includes('dev')
@@ -38,6 +47,9 @@ const { slug: rawWorktreeSlug, rest: forwardedArgs } = extractWorktreeFlag(args)
 const env = { ...process.env }
 /** @type {string | null} */
 let instanceTmpDir = null
+/** Path to the per-instance data dir we wrote the tauri-mcp port file into. */
+/** @type {string | null} */
+let tauriMcpPortFileDir = null
 
 try {
   const instanceId = resolveInstanceId({
@@ -47,6 +59,19 @@ try {
   })
 
   if (instanceId) {
+    // P2: reserve an ephemeral port for the tauri-MCP bridge plugin (debug builds only)
+    // and write `<data_dir>/tauri-mcp.port` BEFORE Tauri launches. The plugin has no
+    // public bound-port accessor and silently falls back to `base_port` on exhaustion,
+    // so we own discovery from the outside. Allocation goes first so we can thread the
+    // chosen port through env + write the file before the long-running spawn below.
+    //
+    // Only allocate when we're going to dev-build (`isDev`): the bridge is gated by
+    // `#[cfg(debug_assertions)]` on the Rust side, so a release `pnpm build` doesn't
+    // need the port or the file.
+    if (isDev && !env.CMDR_MCP_BRIDGE_PORT) {
+      env.CMDR_MCP_BRIDGE_PORT = String(await pickEphemeralPort())
+    }
+
     const { identifier, dataDir, config } = deriveInstance({
       instanceId,
       platform: process.platform,
@@ -68,6 +93,24 @@ try {
     // password dialog mid-test or mid-dev. Don't override an explicit setting.
     if (!env.CMDR_SECRET_STORE) {
       env.CMDR_SECRET_STORE = 'file'
+    }
+
+    // Write the tauri-MCP bridge port file BEFORE launching Tauri (we already have both
+    // the port and the data dir). External readers see the file appear at the same moment
+    // as the Tauri process; an early reader gets ECONNREFUSED on the right port and
+    // retries. See docs/specs/instance-isolation-plan.md § "Wrapper-allocated ephemeral
+    // ports: race and mitigation".
+    if (isDev && env.CMDR_MCP_BRIDGE_PORT) {
+      const bridgePort = Number(env.CMDR_MCP_BRIDGE_PORT)
+      try {
+        writePortFile(dataDir, TAURI_MCP_PORT_FILE, bridgePort)
+        tauriMcpPortFileDir = dataDir
+        console.log(`Wrote ${TAURI_MCP_PORT_FILE} = ${String(bridgePort)} to ${dataDir}`)
+      } catch (err) {
+        console.warn(
+          `Could not write tauri-MCP port file at ${dataDir}: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
     }
 
     if (config) {
@@ -116,17 +159,29 @@ function cleanupInstanceTmpDir() {
   }
 }
 
-process.on('exit', cleanupInstanceTmpDir)
-process.on('SIGINT', () => {
+function cleanupTauriMcpPortFile() {
+  if (tauriMcpPortFileDir) {
+    removePortFile(tauriMcpPortFileDir, TAURI_MCP_PORT_FILE)
+    tauriMcpPortFileDir = null
+  }
+}
+
+function cleanupAll() {
   cleanupInstanceTmpDir()
+  cleanupTauriMcpPortFile()
+}
+
+process.on('exit', cleanupAll)
+process.on('SIGINT', () => {
+  cleanupAll()
   process.exit(130)
 })
 process.on('SIGTERM', () => {
-  cleanupInstanceTmpDir()
+  cleanupAll()
   process.exit(143)
 })
 
 tauriProcess.on('exit', (code) => {
-  cleanupInstanceTmpDir()
+  cleanupAll()
   process.exit(code ?? 0)
 })

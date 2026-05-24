@@ -683,16 +683,18 @@ export const settingsRegistry: SettingDefinition[] = [
     id: 'developer.mcpPort',
     section: ['Developer', 'MCP server'],
     label: 'Port',
-    description: 'Preferred port for the MCP server. If in use, the next available port is used automatically.',
-    keywords: ['port', 'mcp', 'network'],
+    description:
+      'Preferred port for the MCP server. Leave at 0 to let the OS pick an ephemeral port (recommended; the actual port is shown below when running). Pin a specific port if external tooling needs it.',
+    keywords: ['port', 'mcp', 'network', 'ephemeral'],
     type: 'number',
-    // Dev and prod intentionally differ so a developer can run both side-by-side. Mirrors
-    // `DEFAULT_PORT` in `apps/desktop/src-tauri/src/mcp/config.rs`. Both in 10000–29999 per
-    // AGENTS.md no-standard-ports rule.
-    default: import.meta.env.DEV ? 19225 : 19224,
+    // 0 = ephemeral. The backend binds 127.0.0.1:0 and writes the actual port to
+    // `<data_dir>/mcp.port` so external clients can discover it. Pinning a non-zero port
+    // is still supported for tooling that needs a fixed target. See
+    // `docs/specs/instance-isolation-plan.md` § P2.
+    default: 0,
     component: 'number-input',
     constraints: {
-      min: 1024,
+      min: 0,
       max: 65535,
       step: 1,
     },

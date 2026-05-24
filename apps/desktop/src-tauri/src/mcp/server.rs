@@ -17,8 +17,9 @@ use futures_util::stream;
 use serde_json::{Value, json};
 use std::convert::Infallible;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicU16, Ordering};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
 use tauri::async_runtime::JoinHandle;
 use tauri::{AppHandle, Runtime};
 use tower_http::cors::{Any, CorsLayer};
@@ -26,15 +27,29 @@ use uuid::Uuid;
 
 use super::config::McpConfig;
 use super::executor::execute_tool;
+use super::port_file::{remove_port_file, write_port_file};
 use super::protocol::{INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, McpRequest, McpResponse, ServerCapabilities};
 use super::resources::{get_all_resources, read_resource};
 use super::tools::get_all_tools;
+
+/// File name written under `<data_dir>` so external readers (CLI, E2E fixtures, agent
+/// helpers) can discover the actual bound port. See `port_file.rs` for the protocol.
+pub const PORT_FILE_NAME: &str = "mcp.port";
 
 /// Handle to the running MCP server task, if any.
 static MCP_HANDLE: Mutex<Option<JoinHandle<()>>> = Mutex::new(None);
 
 /// The port the server is actually listening on (0 when not running).
 static MCP_ACTUAL_PORT: AtomicU16 = AtomicU16::new(0);
+
+/// The data dir we last wrote the port file into. Used by `stop_mcp_server` to remove the
+/// file on shutdown without needing the AppHandle (the FE-driven stop path doesn't have
+/// one to hand). Set once at first successful start; subsequent restarts overwrite it.
+static MCP_PORT_FILE_DIR: OnceLock<Mutex<Option<PathBuf>>> = OnceLock::new();
+
+fn port_file_dir_slot() -> &'static Mutex<Option<PathBuf>> {
+    MCP_PORT_FILE_DIR.get_or_init(|| Mutex::new(None))
+}
 
 /// The current MCP protocol version we support.
 pub const PROTOCOL_VERSION: &str = "2025-11-25";
@@ -61,9 +76,39 @@ impl<R: Runtime> McpState<R> {
     }
 }
 
+/// What kind of port the caller asked us to bind. Pure so it can be unit-tested without
+/// poking at sockets. The bind strategy is decided once at `start_mcp_server` time and the
+/// rest of the function pipes the resolved port through.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum BindStrategy {
+    /// Caller wants an ephemeral port. We bind `127.0.0.1:0` and ask the kernel.
+    Ephemeral,
+    /// Caller pinned an explicit port. We bind it; on failure we probe upward (today's
+    /// behaviour) so a transient one-shot collision doesn't kill MCP for the session.
+    Pinned(u16),
+}
+
+/// Pure: turn the loaded `(setting_port, env_port_override)` into a `BindStrategy`. The
+/// canonical "0 means ephemeral" convention lives in exactly one place: here.
+///
+/// Precedence (matches `McpConfig::from_settings_and_env`):
+///   1. `env_port_override` (typically from `CMDR_MCP_PORT`); 0 → ephemeral.
+///   2. The setting value (already folded into `config.port` by the caller); 0 → ephemeral.
+///
+/// In practice the caller always passes `config.port` directly because env-then-setting
+/// already collapsed to one number. This signature accepts both so a future caller can
+/// disambiguate `port=0 because env said so` from `port=0 because setting said so`.
+pub fn resolve_bind_strategy(config_port: u16) -> BindStrategy {
+    if config_port == 0 {
+        BindStrategy::Ephemeral
+    } else {
+        BindStrategy::Pinned(config_port)
+    }
+}
+
 /// Try to bind a tokio TcpListener starting at `start_port`, probing up to 100 ports.
-/// Returns the bound listener and the port it's on. This avoids the TOCTOU race of
-/// checking port availability with a sync TcpListener then re-binding with tokio.
+/// Returns the bound listener and the port it's on. Only used for the `Pinned` strategy;
+/// ephemeral binds go straight to `127.0.0.1:0` and trust the kernel.
 async fn bind_with_probe(start_port: u16) -> Result<(tokio::net::TcpListener, u16), String> {
     for offset in 0u16..100 {
         let port = start_port.saturating_add(offset);
@@ -81,8 +126,22 @@ async fn bind_with_probe(start_port: u16) -> Result<(tokio::net::TcpListener, u1
     ))
 }
 
-/// Start the MCP server. Binds to the configured port and spawns the server task.
-/// If the configured port is taken, auto-probes upward to find the next available port.
+/// Bind `127.0.0.1:0` and ask the OS for the assigned port. Single round-trip, no probing.
+async fn bind_ephemeral() -> Result<(tokio::net::TcpListener, u16), String> {
+    let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .map_err(|e| format!("MCP server: failed to bind ephemeral port: {e}"))?;
+    let port = listener
+        .local_addr()
+        .map_err(|e| format!("MCP server: bound but local_addr failed: {e}"))?
+        .port();
+    Ok((listener, port))
+}
+
+/// Start the MCP server. Binds the requested port (or an ephemeral one when the configured
+/// port is 0) and spawns the server task. After binding, writes the actual port to
+/// `<data_dir>/mcp.port` atomically so external readers can discover it.
 pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: McpConfig) -> Result<(), String> {
     if !config.enabled {
         log::info!("MCP server is disabled");
@@ -96,6 +155,13 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
     }
 
     let configured_port = config.port;
+    let strategy = resolve_bind_strategy(configured_port);
+
+    // Resolve the data dir up front so a write failure on the port file is visible at
+    // start time (not when we tear the server down). The dir is what `<data_dir>/mcp.port`
+    // lives in; we cache it in `MCP_PORT_FILE_DIR` for the shutdown path.
+    let data_dir = crate::config::resolved_app_data_dir(&app)
+        .map_err(|e| format!("MCP server: could not resolve data dir for port file: {e}"))?;
 
     let state = Arc::new(McpState::new(app));
 
@@ -108,29 +174,49 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
         .layer(cors)
         .with_state(state);
 
-    // Bind directly with retry to avoid TOCTOU race. The old approach used
-    // find_available_port() (sync TcpListener check) then bound again with
-    // tokio; the port could be taken between the two steps.
-    let (listener, port) = bind_with_probe(configured_port).await?;
-
-    if port != configured_port {
-        log::info!(
-            "MCP server: port {} is in use, using port {} instead",
-            configured_port,
-            port
-        );
-    }
+    let (listener, port) = match strategy {
+        BindStrategy::Ephemeral => bind_ephemeral().await?,
+        BindStrategy::Pinned(p) => {
+            let (l, bound) = bind_with_probe(p).await?;
+            if bound != p {
+                log::info!("MCP server: port {} is in use, using port {} instead", p, bound);
+            }
+            (l, bound)
+        }
+    };
 
     log::info!("MCP server listening on http://127.0.0.1:{}", port);
 
     MCP_ACTUAL_PORT.store(port, Ordering::Relaxed);
+
+    // Write the port file BEFORE handing the listener to the spawned serve task. Failure
+    // here is logged but non-fatal: external readers can fall back to `CMDR_MCP_PORT` or
+    // the FE IPC, and the server itself is healthy.
+    if let Err(err) = write_port_file(&data_dir, PORT_FILE_NAME, port) {
+        log::warn!(
+            target: "mcp::server",
+            "MCP server bound on {port} but could not write port file at {}: {err}",
+            data_dir.display(),
+        );
+    } else {
+        log::debug!(
+            target: "mcp::server",
+            "Wrote MCP port file {}/{PORT_FILE_NAME} = {port}",
+            data_dir.display(),
+        );
+        if let Ok(mut slot) = port_file_dir_slot().lock() {
+            *slot = Some(data_dir);
+        }
+    }
 
     let handle = tauri::async_runtime::spawn(async move {
         if let Err(e) = axum::serve(listener, router).await {
             crate::log_error!("MCP server crashed: {}", e);
         }
         // Server exited (crash or graceful shutdown); reset port so
-        // is_mcp_running() and get_mcp_actual_port() reflect reality.
+        // is_mcp_running() and get_mcp_actual_port() reflect reality. The on-disk port
+        // file is removed in `stop_mcp_server`; for a true crash here we leave it (stale)
+        // and trust readers to retry on `ECONNREFUSED`.
         MCP_ACTUAL_PORT.store(0, Ordering::Relaxed);
     });
 
@@ -158,6 +244,13 @@ pub fn stop_mcp_server() {
     {
         handle.abort();
         MCP_ACTUAL_PORT.store(0, Ordering::Relaxed);
+        // Remove the port file so external readers see the stop. Logged but ignored on
+        // failure: a stale file is just a leftover, not a correctness bug.
+        if let Ok(mut slot) = port_file_dir_slot().lock()
+            && let Some(dir) = slot.take()
+        {
+            remove_port_file(&dir, PORT_FILE_NAME);
+        }
         log::info!("MCP server stopped");
     }
 }
@@ -669,6 +762,18 @@ mod tests {
     #[test]
     fn test_protocol_version_constant() {
         assert_eq!(PROTOCOL_VERSION, "2025-11-25");
+    }
+
+    #[test]
+    fn resolve_bind_strategy_zero_means_ephemeral() {
+        assert_eq!(resolve_bind_strategy(0), BindStrategy::Ephemeral);
+    }
+
+    #[test]
+    fn resolve_bind_strategy_nonzero_is_pinned() {
+        assert_eq!(resolve_bind_strategy(19224), BindStrategy::Pinned(19224));
+        assert_eq!(resolve_bind_strategy(1), BindStrategy::Pinned(1));
+        assert_eq!(resolve_bind_strategy(65535), BindStrategy::Pinned(65535));
     }
 
     #[test]

@@ -10,7 +10,9 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'developer.mcpEnabled') return false
-    if (key === 'developer.mcpPort') return 19224
+    // P2: default is 0 (ephemeral). The backend writes the actual port to
+    // `<data_dir>/mcp.port` and the FE reads it via `getMcpPort()` for display.
+    if (key === 'developer.mcpPort') return 0
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),
@@ -23,11 +25,11 @@ vi.mock('$lib/settings/settings-store', () => ({
 vi.mock('$lib/tauri-commands', () => ({
   invoke: vi.fn(() => Promise.resolve()),
   checkPortAvailable: vi.fn(() => Promise.resolve(true)),
-  findAvailablePort: vi.fn(() => Promise.resolve(19224)),
+  findAvailablePort: vi.fn(() => Promise.resolve(57821)),
   setMcpEnabled: vi.fn(() => Promise.resolve()),
   setMcpPort: vi.fn(() => Promise.resolve()),
   getMcpRunning: vi.fn(() => Promise.resolve(false)),
-  getMcpPort: vi.fn(() => Promise.resolve(19224)),
+  getMcpPort: vi.fn(() => Promise.resolve(57821)),
 }))
 
 describe('McpServerSection a11y', () => {

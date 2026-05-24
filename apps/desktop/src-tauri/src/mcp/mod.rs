@@ -8,6 +8,7 @@ pub mod dialog_state;
 mod executor;
 pub mod listing_errors;
 pub mod pane_state;
+pub mod port_file;
 mod protocol;
 pub mod resources;
 mod server;

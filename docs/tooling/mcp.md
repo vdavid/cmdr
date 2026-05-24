@@ -4,11 +4,45 @@ Two MCP servers are available when the app is running via `pnpm dev`.
 
 ## Servers
 
-- **cmdr** (port 19224 prod / 19225 dev): High-level app control: navigation, file operations, search, dialogs, state
+- **cmdr** (Cmdr MCP HTTP server): High-level app control: navigation, file operations, search, dialogs, state
   inspection. This is the primary way to test and interact with the running app. Architecture docs:
   `src-tauri/src/mcp/CLAUDE.md`.
-- **tauri** (port 9223): Low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
-  verification and UI automation.
+- **tauri** (`tauri-plugin-mcp-bridge` WebSocket bridge): Low-level Tauri access: screenshots, DOM inspection, JS
+  execution, IPC calls. Use for visual verification and UI automation.
+
+Both bind `127.0.0.1` only (the bridge had to be forced; the plugin default is `0.0.0.0`, which would expose the
+WebSocket to the LAN).
+
+## Port discovery
+
+Both servers use ephemeral ports by default so concurrent dev / E2E instances can coexist without collisions. The actual
+port is written to the per-instance data dir as a plain text file (ASCII port + `\n`, written via tempfile+rename so a
+zero-byte read can't happen):
+
+| Server           | Port file (under `<data_dir>`) | Writer                                     |
+| ---------------- | ------------------------------ | ------------------------------------------ |
+| Cmdr MCP HTTP    | `mcp.port`                     | Rust (after `bind`)                        |
+| Tauri MCP bridge | `tauri-mcp.port`               | `tauri-wrapper.js` (before Tauri launches) |
+
+Resolve `<data_dir>` for the instance you care about:
+
+- Prod: `~/Library/Application Support/com.veszelovszki.cmdr/`
+- `pnpm dev`: `~/Library/Application Support/com.veszelovszki.cmdr-dev/`
+- `pnpm dev --worktree foo`: `~/Library/Application Support/com.veszelovszki.cmdr-dev-foo/`
+- Anything else: whatever the wrapper exported as `CMDR_DATA_DIR` (E2E shards land under
+  `/tmp/cmdr-e2e-data-<instance>/`).
+
+**Read precedence for external clients** (CLI, agent helpers, E2E fixtures):
+
+1. `CMDR_MCP_PORT` env var (manual pin).
+2. `<data_dir>/mcp.port` (Cmdr MCP server) or `<data_dir>/tauri-mcp.port` (bridge).
+3. Fail loud with a typed error. Don't fall back to a legacy hardcoded port; that hides bugs.
+
+The FE keeps using the `get_mcp_port` IPC inside the running webview (it reads the same in-process atomic). The port
+file is for **out-of-process** readers only.
+
+Pinning a fixed port stays supported: set `CMDR_MCP_PORT` (or set the `developer.mcpPort` setting in the UI). The server
+still writes the file in that case so external readers don't have to special-case pinned vs ephemeral.
 
 ## How to use
 

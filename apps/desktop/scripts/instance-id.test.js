@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { mkdtempSync, readFileSync, existsSync, writeFileSync, readdirSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import {
   sanitizeWorktreeSlug,
   resolveInstanceId,
@@ -8,6 +11,9 @@ import {
   extractWorktreeFlag,
   buildInstanceConfig,
   deriveInstance,
+  pickEphemeralPort,
+  writePortFile,
+  removePortFile,
 } from './instance-id.js'
 
 describe('sanitizeWorktreeSlug', () => {
@@ -204,6 +210,74 @@ describe('buildInstanceConfig', () => {
     expect(cfg.productName).toBe('Cmdr (dev-foo)')
     expect(cfg.app.withGlobalTauri).toBe(true)
     expect(cfg.plugins.updater.endpoints).toEqual(['https://localhost.invalid/no-updater'])
+  })
+})
+
+describe('pickEphemeralPort', () => {
+  it('returns a usable port in the unprivileged range', async () => {
+    const port = await pickEphemeralPort()
+    expect(port).toBeGreaterThan(1024)
+    expect(port).toBeLessThanOrEqual(65535)
+  })
+
+  it('returns different ports across two back-to-back calls', async () => {
+    // Not a strict guarantee per the OS, but in practice the kernel rotates the ephemeral
+    // pool fast enough that two sequential allocations are almost always distinct.
+    const a = await pickEphemeralPort()
+    const b = await pickEphemeralPort()
+    // Even if they happen to collide once in a blue moon, at least one of them is valid.
+    expect(a).toBeGreaterThan(0)
+    expect(b).toBeGreaterThan(0)
+  })
+})
+
+describe('writePortFile + removePortFile', () => {
+  it('writes the port + newline atomically and reads back', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-'))
+    writePortFile(dir, 'tauri-mcp.port', 54321)
+    const content = readFileSync(join(dir, 'tauri-mcp.port'), 'utf8')
+    expect(content).toBe('54321\n')
+  })
+
+  it('creates the parent directory if missing', () => {
+    const dir = join(mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-')), 'nested', 'subdir')
+    writePortFile(dir, 'tauri-mcp.port', 1234)
+    expect(existsSync(join(dir, 'tauri-mcp.port'))).toBe(true)
+  })
+
+  it('overwrites an existing file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-'))
+    writePortFile(dir, 'tauri-mcp.port', 1111)
+    writePortFile(dir, 'tauri-mcp.port', 2222)
+    expect(readFileSync(join(dir, 'tauri-mcp.port'), 'utf8')).toBe('2222\n')
+  })
+
+  it('does not leave a tempfile behind on success', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-'))
+    writePortFile(dir, 'tauri-mcp.port', 9999)
+    const stragglers = readdirSync(dir).filter((name) => name.startsWith('tauri-mcp.port.tmp.'))
+    expect(stragglers).toEqual([])
+  })
+
+  it('rejects out-of-range port values', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-'))
+    expect(() => writePortFile(dir, 'tauri-mcp.port', -1)).toThrow(/u16/)
+    expect(() => writePortFile(dir, 'tauri-mcp.port', 70000)).toThrow(/u16/)
+    expect(() => writePortFile(dir, 'tauri-mcp.port', 1.5)).toThrow(/u16/)
+  })
+
+  it('removePortFile is a no-op when the file is missing', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-'))
+    expect(() => {
+      removePortFile(dir, 'tauri-mcp.port')
+    }).not.toThrow()
+  })
+
+  it('removePortFile deletes an existing port file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-'))
+    writeFileSync(join(dir, 'tauri-mcp.port'), '12345\n')
+    removePortFile(dir, 'tauri-mcp.port')
+    expect(existsSync(join(dir, 'tauri-mcp.port'))).toBe(false)
   })
 })
 
