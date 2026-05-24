@@ -19,6 +19,17 @@ Reusable UI components used across the entire desktop app.
 | `ToggleGroup.svelte`     | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
 | `toast/`                 | Centralized toast notification system: store, container, item                                  |
 
+## Not part of this module: soft sheets
+
+`OnboardingWizard.svelte` (in `$lib/onboarding/`) is the canonical soft-sheet implementation: ~90% viewport coverage,
+frosted backdrop, no drag / Escape / × button, body owns the close gesture. It's NOT a `ModalDialog` variant — sheets
+break almost every `ModalDialog` constraint (full-bleed sizing, no title bar, no Escape, no draggable). Adding sheet
+variants to `ModalDialog` would dilute its contract; sheets get their own shell, their own `--sheet-*` design tokens
+(see [`docs/design-system.md`](../../../../docs/design-system.md) § "Soft sheets"), and their own focus-trap. They still
+plug into the same dialog registry (`'onboarding'`) so MCP tracking works through the same id-based surface.
+
+Reach for a sheet when you have a multi-step flow the user must commit to. Reach for `ModalDialog` for everything else.
+
 ## ModalDialog
 
 Props:

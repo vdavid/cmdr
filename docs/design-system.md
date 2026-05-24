@@ -488,6 +488,35 @@ All dialogs use `ModalDialog.svelte`.
 Overlay: `background: rgba(0,0,0, 0.4)` in light mode, `rgba(0,0,0, 0.6)` in dark mode (higher opacity needed for
 contrast against dark chrome).
 
+### Soft sheets (app)
+
+Soft sheets cover ~90% of the viewport over the running app and host multi-step flows the user must commit to (consent,
+setup, onboarding). The canonical implementation is `OnboardingWizard.svelte`. Unlike `ModalDialog`, sheets have no
+title bar, no drag, no Escape close, no × button: the body owns the close gesture (Next / Finish / Allow / Deny). The
+sheet is centered, lifted off the canvas with a frosted backdrop, and sized via the `--sheet-*` tokens below.
+
+| Token                     | Value                       | Role                                                                                         |
+| ------------------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
+| `--sheet-width-fraction`  | `90vw`                      | Sheet width target. Pair with `min(var(--sheet-max-width), var(--sheet-width-fraction))`.    |
+| `--sheet-height-fraction` | `90vh`                      | Sheet height target. Pair with `min(var(--sheet-max-height), var(--sheet-height-fraction))`. |
+| `--sheet-max-width`       | `1200px`                    | Hard cap so the sheet stays readable on ultra-wide displays.                                 |
+| `--sheet-max-height`      | `900px`                     | Hard cap so the sheet stays compact on 4K+ vertical setups.                                  |
+| `--sheet-radius`          | `var(--radius-lg)` (8px)    | Matches macOS sheet convention.                                                              |
+| `--sheet-backdrop-blur`   | `10px`                      | Frosted-glass amount. GPU-composited; the sheet is the only consumer today.                  |
+| `--sheet-backdrop-color`  | `var(--color-overlay-heavy)` | Dim layer behind the sheet. Resolves to `rgba(0,0,0,0.6)` in both themes (heavier than `ModalDialog`'s scrim because sheets sit over the full app, not a centered cluster). |
+
+**When to use a sheet vs `ModalDialog`:**
+
+| Use a sheet for                                                                | Use `ModalDialog` for                                                |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| Multi-step flows the user must commit to (onboarding, paid licensing later)    | Single-decision confirmations (delete, discard, overwrite)           |
+| Content that needs > 480px width (provider picker grids, comparison tables)    | Short prose + a two-button choice                                    |
+| Flows where Escape-to-dismiss would lose meaningful state                      | Flows where Escape-to-dismiss is safe (re-openable, idempotent)      |
+| First-launch consent (user must choose, can't cancel)                          | Any everyday dialog (drag, blur, focus trap all come from the prim.) |
+
+Sheets are heavier: they own their own backdrop, focus trap, MCP dialog-registry entry (`'onboarding'`), and footer
+chrome. Only use one when the contract genuinely needs it.
+
 ### Inputs (app)
 
 ```css

@@ -409,6 +409,77 @@ for (const mode of ['light', 'dark'] as const) {
       }
     })
 
+    test(`Onboarding wizard (re-entry)`, async ({ tauriPage }) => {
+      // The wizard is mounted via the same re-entry path the menu / palette use.
+      // On macOS the E2E fixture grants FDA so re-entry shows step 1 (already-granted variant);
+      // on Linux re-entry lands directly on step 2 (the Linux skip-step-1 path).
+      // Step 3 is reached by clicking "One more optional setup step" on step 2.
+      // Per-FDA-branch banner coverage stays in tier-3 Vitest (`StepAi.a11y.test.ts`).
+      await ensureAppReady(tauriPage)
+
+      const WIZARD_SELECTOR = '[data-dialog-id="onboarding"]'
+
+      await dispatchMenuCommand(tauriPage, 'cmdr.openOnboarding')
+      await tauriPage.waitForSelector(WIZARD_SELECTOR, 3000)
+
+      // Scan the wizard at its opening step (step 1 on macOS, step 2 on Linux).
+      const { all: openingViolations } = await runAxeAudit(tauriPage, `Onboarding wizard opening (${mode})`, WIZARD_SELECTOR)
+      expect(openingViolations, `Violations on wizard opening step (${mode})`).toHaveLength(0)
+
+      const isMac = process.platform === 'darwin'
+      if (isMac) {
+        // Advance step 1 (already-granted) → step 2 so we can scan it too.
+        await tauriPage.evaluate(`(function() {
+          var btn = document.querySelector('${WIZARD_SELECTOR} .primary-slot button');
+          if (btn) btn.click();
+        })()`)
+        await expect
+          .poll(async () => {
+            return tauriPage.evaluate<number | null>(`(function() {
+              var dots = document.querySelectorAll('${WIZARD_SELECTOR} .step-dot');
+              for (var i = 0; i < dots.length; i++) {
+                if (dots[i].getAttribute('aria-current') === 'step') return i + 1;
+              }
+              return null;
+            })()`)
+          }, { timeout: 3000 })
+          .toBe(2)
+        const { all: step2Violations } = await runAxeAudit(tauriPage, `Onboarding wizard step 2 (${mode})`, WIZARD_SELECTOR)
+        expect(step2Violations, `Violations on wizard step 2 (${mode})`).toHaveLength(0)
+      }
+
+      // Advance step 2 → step 3 via the "One more optional setup step" button (primary slot, last).
+      await tauriPage.evaluate(`(function() {
+        var btns = document.querySelectorAll('${WIZARD_SELECTOR} .primary-slot button');
+        for (var i = 0; i < btns.length; i++) {
+          if ((btns[i].textContent || '').indexOf('One more optional') !== -1) {
+            btns[i].click();
+            return;
+          }
+        }
+      })()`)
+      await expect
+        .poll(async () => {
+          return tauriPage.evaluate<number | null>(`(function() {
+            var dots = document.querySelectorAll('${WIZARD_SELECTOR} .step-dot');
+            for (var i = 0; i < dots.length; i++) {
+              if (dots[i].getAttribute('aria-current') === 'step') return i + 1;
+            }
+            return null;
+          })()`)
+        }, { timeout: 3000 })
+        .toBe(3)
+      const { all: step3Violations } = await runAxeAudit(tauriPage, `Onboarding wizard step 3 (${mode})`, WIZARD_SELECTOR)
+      expect(step3Violations, `Violations on wizard step 3 (${mode})`).toHaveLength(0)
+
+      // Finish so the wizard doesn't leak into the next test (the safety net would otherwise fire).
+      await tauriPage.evaluate(`(function() {
+        var btns = document.querySelectorAll('${WIZARD_SELECTOR} .primary-slot button');
+        if (btns.length > 0) btns[btns.length - 1].click();
+      })()`)
+      await expect.poll(async () => !(await tauriPage.isVisible(WIZARD_SELECTOR)), { timeout: 3000 }).toBeTruthy()
+    })
+
     test(`File viewer with text file`, async ({ tauriPage }) => {
       await ensureAppReady(tauriPage)
 
