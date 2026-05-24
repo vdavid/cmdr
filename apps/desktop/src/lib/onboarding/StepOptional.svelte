@@ -5,7 +5,7 @@
     import { setFooterOverride, requestWizardComplete } from './onboarding-state.svelte'
 
     /**
-     * Step 3 — Optional setup.
+     * Step 3: Optional setup.
      *
      * Four toggles, each bound to an existing registry setting via `<SettingSwitch>`.
      * The switch component reads + writes the setting directly, so the toggles
@@ -69,6 +69,7 @@
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="network.enabled" />
+                <p class="toggle-caption">Recommended: on. You can change this any time in Settings.</p>
             </div>
         </header>
     </section>
@@ -78,16 +79,24 @@
             <div class="toggle-text">
                 <h3 id="toggle-indexing-title" class="toggle-title">Drive indexing</h3>
                 <p class="toggle-desc">
-                    Drive indexing is totally cool. It gives you two main things: instant search of your whole drive
-                    (think Spotlight, but even faster), and real-time folder sizes for your whole drive (you always
-                    know how much stuff you have in each folder). If you turn this off, you only get
-                    <code>&lt;DIR&gt;</code> for the sizes. The cost is a 300 MB index on your drive, but no extra CPU
-                    or memory use after the first two or three minutes of you first starting the app, or starting it
-                    after a long time. It's a cheap feature considering the benefits.
+                    Drive indexing is totally cool! Gives you two main things:
+                </p>
+                <ol class="toggle-list">
+                    <li>Instant search of your whole drive. Think Spotlight, but even faster.</li>
+                    <li>
+                        Real-time folder sizes for your whole drive. You always know how much stuff you have in each
+                        folder.
+                    </li>
+                </ol>
+                <p class="toggle-desc">
+                    If you turn this off, you only get <code>&lt;DIR&gt;</code> for the sizes. The cost is a 300 MB
+                    index on your drive, but no extra CPU or memory use after the first 2&ndash;3 minutes of you first
+                    starting the app, or starting it after a long time. It's a cheap feature considering the benefits.
                 </p>
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="indexing.enabled" />
+                <p class="toggle-caption">Recommended: on. You can change this any time in Settings.</p>
             </div>
         </header>
     </section>
@@ -105,6 +114,7 @@
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="updates.autoCheck" />
+                <p class="toggle-caption">Recommended: on. You can change this any time in Settings.</p>
             </div>
         </header>
     </section>
@@ -114,15 +124,16 @@
             <div class="toggle-text">
                 <h3 id="toggle-mtp-title" class="toggle-title">MTP (Android phones, Kindles, cameras)</h3>
                 <p class="toggle-desc">
-                    If you enable this, Cmdr can connect to Android phones, Kindles, cameras, some music players, and
-                    any other device that supports the protocols called MTP or PTP. The cost is that macOS also wants
-                    to connect to these (and it usually fails, which is why you can't just use Finder to copy photos
-                    from Android phones), so Cmdr has to suppress that macOS process while it's running. When you quit
-                    Cmdr, this is politely restored. A bit of a cost, but worth it for the connectivity.
+                    If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some
+                    music players, and any other device that supports the protocols called MTP or PTP. The cost is
+                    that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can't
+                    just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process
+                    while it's running. When you quit Cmdr, this is politely restored. But it's a bit of a cost, so:
                 </p>
             </div>
             <div class="toggle-control">
                 <SettingSwitch id="fileOperations.mtpEnabled" />
+                <p class="toggle-caption">Recommended: on. You can change this any time in Settings.</p>
             </div>
         </header>
     </section>
@@ -131,8 +142,8 @@
 <style>
     .step-title {
         margin: 0 0 var(--spacing-md);
-        /* 20% larger than body font — same calc() as StepFda/.welcome and
-           StepAi/.step-title so all onboarding step headings match. */
+        /* 20% larger than body font (same calc() as StepFda/.welcome and
+           StepAi/.step-title so all onboarding step headings match). */
         font-size: calc(var(--font-size-md) * 1.2);
         font-weight: 600;
         color: var(--color-text-primary);
@@ -169,7 +180,32 @@
 
     .toggle-control {
         flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--spacing-xs);
         padding-top: var(--spacing-xxs);
+    }
+
+    .toggle-caption {
+        margin: 0;
+        max-width: 14rem;
+        text-align: right;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        line-height: 1.4;
+    }
+
+    .toggle-list {
+        margin: 0 0 var(--spacing-sm);
+        padding-left: var(--spacing-lg);
+        font-size: var(--font-size-sm);
+        line-height: 1.5;
+        color: var(--color-text-secondary);
+    }
+
+    .toggle-list li {
+        margin: 0 0 var(--spacing-xxs);
     }
 
     .toggle-title {

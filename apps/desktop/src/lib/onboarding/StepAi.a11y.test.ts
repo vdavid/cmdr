@@ -2,7 +2,7 @@
  * Tier 3 axe a11y tests for `StepAi.svelte` (M3).
  *
  * One test per meaningful state: each FDA banner branch + each radio choice. Axe
- * runs in jsdom (no contrast, no region — see `$lib/test-a11y`).
+ * runs in jsdom (no contrast, no region; see `$lib/test-a11y`).
  */
 
 import { describe, it, vi, beforeEach, afterEach } from 'vitest'

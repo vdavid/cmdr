@@ -24,10 +24,10 @@
      *
      * Numbered steps, each with a checkmark that flips on when the step is satisfied:
      *
-     *   1. Sign up at <provider>  — always ✓ (informational link, can't fail here)
-     *   2. Create an API key      — link to the provider's API-key console; always ✓
-     *   3. Paste your API key     — ✓ when `connectionStatus === 'connected'`
-     *   4. Pick a model           — ✓ when the user has picked a non-empty model
+     *   1. Sign up at <provider>: always ✓ (informational link, can't fail here)
+     *   2. Create an API key: link to the provider's API-key console; always ✓
+     *   3. Paste your API key: ✓ when `connectionStatus === 'connected'`
+     *   4. Pick a model: ✓ when the user has picked a non-empty model
      *
      * The connection-check pipeline mirrors `AiCloudSection.svelte`: 1 s debounce on
      * key/base-URL change, calls `checkAiConnection(baseUrl, apiKey)`, surfaces the

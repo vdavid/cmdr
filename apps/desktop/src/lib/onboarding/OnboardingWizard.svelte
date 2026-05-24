@@ -140,7 +140,7 @@
 
     /**
      * Step bodies (currently step 2's "Start using Cmdr!" button) can ask the wizard
-     * to finish early — skipping any remaining steps. They bump `finishRequestTick`
+     * to finish early, skipping any remaining steps. They bump `finishRequestTick`
      * via `requestWizardComplete()` and we react here. Using a tick counter (not a
      * boolean) means repeated requests in the same session still each fire exactly
      * once.

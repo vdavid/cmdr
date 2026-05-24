@@ -7,7 +7,7 @@
  * 1. A persisted-flag-aware resume step (`resumeStepFor()`). Production launches read
  *    `fullDiskAccessChoice` + `isOnboarded` + an FDA probe and land the user on the
  *    first not-yet-decided step. Linux skips step 1 entirely (no FDA on Linux).
- * 2. A step-1 variant tag (first-ask / revoked / already-granted) — the body switches
+ * 2. A step-1 variant tag (first-ask / revoked / already-granted); the body switches
  *    copy + buttons by variant. `'already-granted'` is a single-Next variant for the
  *    menu re-entry case.
  * 3. A step-1 footer mode (`'decide' | 'restart'`). The "Allow" path requires the
@@ -48,7 +48,7 @@ export type Step1Variant = 'first-ask' | 'revoked' | 'already-granted'
  * Step 1 footer mode.
  *
  * - `'decide'`: Allow + Deny buttons (or the single Next button for the already-granted
- *   variant). The wizard's footer renders nothing here — the step body owns the buttons.
+ *   variant). The wizard's footer renders nothing here; the step body owns the buttons.
  * - `'restart'`: user has clicked Allow this session. The wizard's footer shows a
  *   "Restart Cmdr" primary button (which calls `relaunch()`). The step body keeps the
  *   Allow/Deny buttons live so the user can change their mind to Deny.
@@ -66,7 +66,7 @@ export type Step1FooterMode = 'decide' | 'restart'
  * - `'denied'`: user clicked Deny on step 1. "You chose not to enable…"
  * - `'stuck'`: user clicked Allow but FDA still isn't granted in-session. "You said
  *   you wanted to enable Full Disk Access, but Cmdr doesn't seem to have gotten it…"
- *   Also covers Linux (no FDA, no banner needed — the step renders a Welcome).
+ *   Also covers Linux (no FDA, no banner needed; the step renders a Welcome).
  */
 export type StepTwoFdaBanner = 'granted' | 'denied' | 'stuck' | 'linux'
 
@@ -144,7 +144,7 @@ export interface ResumeContext {
 
 /**
  * Returns the step the wizard should resume at, given the persisted flags + FDA probe.
- * See plan § "Step persistence resume — edge cases" for the truth table:
+ * See plan § "Step persistence resume, edge cases" for the truth table:
  *
  * macOS:
  *   - `notAskedYet`                            → step 1 (first-ask)

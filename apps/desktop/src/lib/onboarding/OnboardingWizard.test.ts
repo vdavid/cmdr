@@ -206,7 +206,7 @@ describe('OnboardingWizard', () => {
     flushSync()
     await tick()
     expect(onComplete).toHaveBeenCalledOnce()
-    // Should NOT have advanced to step 3 — the finish request short-circuits.
+    // Should NOT have advanced to step 3: the finish request short-circuits.
     expect(getOnboardingState().currentStep).toBe(2)
   })
 

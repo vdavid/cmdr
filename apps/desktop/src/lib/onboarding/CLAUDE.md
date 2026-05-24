@@ -1,8 +1,7 @@
 # Onboarding module
 
 Owns first-launch consent: Full Disk Access (macOS only), AI provider, and a small optional-settings step. Renders the
-`OnboardingWizard` — a soft-sheet that covers ~90% of the viewport over the running app — as the single first-launch
-path.
+`OnboardingWizard` (a soft-sheet that covers ~90% of the viewport over the running app) as the single first-launch path.
 
 ## Key files
 
@@ -10,7 +9,7 @@ path.
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, focus trap, Escape-swallow.             |
 | `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                  |
-| `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants — first-ask, revoked, already-granted.                                       |
+| `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.                                        |
 | `StepAi.svelte`              | Step 2: AI provider picker. Three FDA-outcome banners, three radio choices, dual-button footer (Start vs Continue).                |
 | `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Arrow / Home / End / type-to-jump keyboard nav.                  |
 | `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                            |
@@ -21,18 +20,18 @@ path.
 
 M5-shipping. All three steps are real, and the wizard is re-openable from the macOS app menu and the command palette
 (both platforms). Existing users on upgrade see a one-time `info` toast pointing at the new menu item. The legacy
-`FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single first-launch path on macOS.
+`FullDiskAccessPrompt.svelte` modal is gone; the wizard is the single first-launch path on macOS.
 `CMDR_FORCE_ONBOARDING=1` forces the wizard regardless of persisted state for dev / E2E iteration.
 
 ## Re-entry points
 
 Three surfaces open the wizard after first launch:
 
-| Surface         | macOS                                             | Linux                           | Internal command id   |
-| --------------- | ------------------------------------------------- | ------------------------------- | --------------------- |
-| Menu item       | `Cmdr > Onboarding…` (under "Check for updates…") | (none — palette-only by design) | `cmdr.openOnboarding` |
-| Command palette | "Onboarding…" (both platforms)                    | "Onboarding…"                   | `cmdr.openOnboarding` |
-| MCP             | `dialog` tool with `type: "onboarding"`           | same                            | (none — direct event) |
+| Surface         | macOS                                             | Linux                          | Internal command id   |
+| --------------- | ------------------------------------------------- | ------------------------------ | --------------------- |
+| Menu item       | `Cmdr > Onboarding…` (under "Check for updates…") | (none; palette-only by design) | `cmdr.openOnboarding` |
+| Command palette | "Onboarding…" (both platforms)                    | "Onboarding…"                  | `cmdr.openOnboarding` |
+| MCP             | `dialog` tool with `type: "onboarding"`           | same                           | (none; direct event)  |
 
 All three surfaces route through the same handler (`+page.svelte::openOnboardingFromMenuOrPalette`), which opens the
 wizard at the first reachable step (step 1 on macOS, step 2 on Linux) regardless of `isOnboarded`. The plan's round-3 #1
@@ -63,19 +62,19 @@ a behaviour change.
 ### MCP
 
 The MCP `dialog` tool's open path accepts `type: "onboarding"`. It emits the standard `execute-command` Tauri event with
-`commandId: "cmdr.openOnboarding"` — the same path the menu and palette use — and acks on
+`commandId: "cmdr.openOnboarding"` (the same path the menu and palette use), and acks on
 `SoftDialogAppeared("onboarding")` within the standard 1500 ms budget. The wizard calls
 `notifyDialogOpened('onboarding')` on mount, so `SoftDialogTracker` reflects it.
 
 No dedicated `open_onboarding` MCP command was needed: the existing generic `dialog` tool's open switch is hard-coded
 per dialog type, but adding one case is cheaper than a new tool and keeps the agent API consistent with
 `dialog open about` / `dialog open settings`. Close / focus actions aren't wired for `onboarding` (the wizard has no
-rivals to focus above, and closing requires committing to a step per round-3 #9 — the design forbids
+rivals to focus above, and closing requires committing to a step per round-3 #9; the design forbids
 dismiss-without-decision).
 
 ## Step 1 (Full Disk Access)
 
-macOS only — Linux skips the step entirely (the resume rule lands Linux users on step 2).
+macOS only. Linux skips the step entirely (the resume rule lands Linux users on step 2).
 
 The step has three opening copy variants, picked by `step1VariantFor()` in `onboarding-state.svelte.ts`:
 
@@ -104,7 +103,7 @@ advances normally).
 `StepFda.svelte::handleDeny`:
 
 1. `saveSettings({ fullDiskAccessChoice: 'deny' })`.
-2. `startIndexingAfterFdaDecision()` — clears the runtime FDA gate, starts the MTP watcher, kicks off the indexer. The
+2. `startIndexingAfterFdaDecision()`: clears the runtime FDA gate, starts the MTP watcher, kicks off the indexer. The
    scan walks `~/Downloads`, `~/Documents`, `~/Desktop`, etc., firing one TCC popup per folder. Those are the per-folder
    prompts the user opted into by denying FDA. Folders the user denies stay unindexed.
 3. `setStepTwoBanner('denied')` + advance to step 2.
@@ -113,14 +112,14 @@ advances normally).
 
 Three pieces stacked top to bottom:
 
-1. **FDA-outcome banner** — on step-2 entry, `StepAi.svelte` fires a fresh `checkFullDiskAccess()` + reads
+1. **FDA-outcome banner**: on step-2 entry, `StepAi.svelte` fires a fresh `checkFullDiskAccess()` + reads
    `fullDiskAccessChoice` and writes one of three modes via `setStepTwoBanner()`:
    - `granted` ("Thanks for granting full disk access!")
    - `denied` ("You chose not to enable full disk access.")
-   - `stuck` ("Cmdr doesn't seem to have full disk access yet" — surfaces a deep link to System Settings) Linux
+   - `stuck` ("Cmdr doesn't seem to have full disk access yet"; surfaces a deep link to System Settings) Linux
      short-circuits with `linux` (no banner; the step opens with the Welcome line instead).
-2. **Comparison table** — verbatim from David's spec, "with AI vs without" for Search, Mass-rename, Select.
-3. **Three radio choices** — cloud / local / no AI. Pre-selected from the persisted `ai.provider` so a crash-then-resume
+2. **Comparison table**: verbatim from David's spec, "with AI vs without" for Search, Mass-rename, Select.
+3. **Three radio choices**: cloud / local / no AI. Pre-selected from the persisted `ai.provider` so a crash-then-resume
    user lands on their previous pick. Picking cloud reveals `CloudProviderPicker.svelte` (left) and
    `CloudProviderSetup.svelte` (right). Picking local kicks off `startAiDownload()` in the background; switching away
    cancels (HTTP-Range resume picks up on switch-back). Intel Macs see the local radio disabled with a tooltip ("Local
@@ -168,7 +167,7 @@ about letting the user turn things OFF with full context, not about asking for o
 | MTP               | `fileOperations.mtpEnabled` | `passthroughBackendHandlers` → `setMtpEnabled` (pre-existing)                               |
 
 Because `<SettingSwitch>` writes via `setSetting()` on every flip, the toggles take effect the moment the user clicks
-them — the wizard doesn't need its own persist queue. The footer's single primary button (`Start using Cmdr`, registered
+them; the wizard doesn't need its own persist queue. The footer's single primary button (`Start using Cmdr`, registered
 via `setFooterOverride()`) just bumps `finishRequestTick`; the wizard shell's `onComplete` callback then runs
 `notifyOnboardingComplete()` (which flips `isOnboarded: true`) and closes the sheet.
 
@@ -253,8 +252,8 @@ choosing leaves the app with no recorded preference. The user must commit to All
 
 **Decision**: Allow requires a restart before advancing past step 1. **Why**: The FDA gate is set once at boot; clearing
 it at runtime races background threads that resolve icons / scan paths into the TCC popups the gate suppresses. We hit
-5–10 stacked popups once already — the restart costs the user one click and keeps the gate's invariant intact. See plan
-§ "FDA gate clear-on-Allow".
+5–10 stacked popups once already; the restart costs the user one click and keeps the gate's invariant intact. See plan §
+"FDA gate clear-on-Allow".
 
 **Decision**: Step 1 footer button hidden in `decide` mode (body owns Allow / Deny). **Why**: The Allow / Deny choice is
 the meat of step 1; placing the buttons inside the body groups them with the explanatory copy they belong to. The

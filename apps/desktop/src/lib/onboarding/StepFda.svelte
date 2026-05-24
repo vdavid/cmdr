@@ -22,7 +22,7 @@
     } from './onboarding-state.svelte'
 
     /**
-     * Step 1 — Full Disk Access.
+     * Step 1: Full Disk Access.
      *
      * Three variants (driven from `onboardingState.step1Variant`, computed in
      * `+page.svelte` from persisted flags + an FDA probe):
@@ -64,8 +64,8 @@
         hasClickedOpenSettings = true
         // Re-probe right before opening Settings so the bundle is freshly registered
         // with TCC. Without this, the Cmdr row may not appear in the Full Disk Access
-        // list — TCC only adds apps that have recently attempted to read a protected
-        // path. The probe also happens to be how we detect a same-session grant; if it
+        // list (TCC only adds apps that have recently attempted to read a protected
+        // path). The probe also happens to be how we detect a same-session grant; if it
         // returns true, the user already toggled it in another way and the restart is
         // still the safest path (the FDA gate is set at boot from the probe, so we need
         // a relaunch to clear it).
@@ -85,8 +85,8 @@
             log.warn('openPrivacySettings failed: {error}', { error })
         }
         // Pre-compute the step-2 banner so if the user changes their mind and comes back,
-        // step 2 reads the right state. (We treat "Allow but not granted yet" as 'stuck'
-        // — same banner the resume rule lands on for first-time-stuck users.)
+        // step 2 reads the right state. (We treat "Allow but not granted yet" as 'stuck',
+        // the same banner the resume rule lands on for first-time-stuck users.)
         setStepTwoBanner('stuck')
         // Footer flips to "Restart Cmdr". The user must relaunch before advancing.
         setStep1Restart()
@@ -101,14 +101,14 @@
         // Indexing was deferred at app launch (FDA gate). Now that the user has decided,
         // start it within this session so they don't need to restart for the index to
         // populate. Per-folder TCC popups will appear as the scan walks ~/Downloads,
-        // ~/Documents, ~/Desktop, ... — those are the prompts the user opted into.
+        // ~/Documents, ~/Desktop, and the like (those are the prompts the user opted into).
         try {
             await startIndexingAfterFdaDecision()
         } catch (error) {
             log.warn('Failed to start indexing after FDA deny: {error}', { error })
         }
         setStepTwoBanner('denied')
-        // Advance to step 2 immediately. No restart needed on Deny — the gate clears
+        // Advance to step 2 immediately. No restart needed on Deny: the gate clears
         // via `startIndexingAfterFdaDecision`.
         setCurrentStep(2)
     }

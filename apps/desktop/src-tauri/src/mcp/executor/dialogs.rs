@@ -202,7 +202,7 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
                 app.emit("close-file-viewer", json!({"path": path}))?;
                 // Closing one of N viewers: ack when the count drops below `before`.
                 // If the path doesn't match any open viewer, the count stays put and
-                // we time out — which is the right contract (caller asked to close a
+                // we time out, which is the right contract (caller asked to close a
                 // specific viewer that isn't there).
                 wait_for_ack(
                     app,
@@ -232,7 +232,7 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
         "about" => {
             // `about` is a soft dialog (overlay in the main window), tracked via
             // SoftDialogTracker (id: "about"). If it isn't open, the tracker doesn't
-            // hold the id and `SoftDialogDisappeared` returns immediately — close is
+            // hold the id and `SoftDialogDisappeared` returns immediately, so close is
             // a fast no-op in that case, no timeout.
             app.emit("close-about", ())?;
             wait_for_ack(app, AckSignal::SoftDialogDisappeared("about"), DEFAULT_ACK_TIMEOUT).await?;

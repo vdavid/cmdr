@@ -29,11 +29,11 @@
     import { getAppLogger } from '$lib/logging/logger'
 
     /**
-     * Step 2 — AI provider picker.
+     * Step 2: AI provider picker.
      *
      * Layout:
      *
-     *   [FDA-outcome banner]      ← three branches: granted / denied / stuck (Linux: hidden)
+     *   [FDA-outcome banner]      ← three branches: granted, denied, stuck (Linux: hidden)
      *   [Comparison table]        ← David's verbatim "with AI vs without" copy
      *   [Three radio choices]
      *     ○ Yes, cloud + [picker | setup]
@@ -71,7 +71,7 @@
 
     // Pre-select from the persisted provider so a crash-then-resume user sees their last pick.
     function initialChoice(): WizardChoice {
-        const provider = getSetting('ai.provider') as AiProvider
+        const provider = getSetting('ai.provider')
         if (provider === 'cloud') return 'cloud'
         if (provider === 'local') return 'local'
         return 'off'
@@ -87,14 +87,14 @@
     /**
      * Track whether `local` was the user's choice when they leave the step. The wizard
      * keeps the backend download running across step transitions; only switching back
-     * to non-local inside the same wizard session cancels. Not reactive — we only need
-     * the previous value at `handleChoiceChange` time.
+     * to non-local inside the same wizard session cancels. Not reactive (we only need
+     * the previous value at `handleChoiceChange` time).
      */
     let previousChoice: WizardChoice = choice
 
     onMount(() => {
         // Show the passive resume cue if the user previously picked something other than
-        // 'off' (per plan § "Step persistence resume — edge case"). `isOnboarded` lives
+        // 'off' (per plan § "Step persistence resume, edge case"). `isOnboarded` lives
         // in settings-store; we can't read it sync here without churn, so we infer
         // "user resumed mid-wizard" from "the persisted provider isn't the default".
         showResumeCue = choice !== 'off'
@@ -230,7 +230,7 @@
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // Banner copy. Verbatim from `onboarding-revamp-context.md` § "Step 2 — AI".
+    // Banner copy. Verbatim from `onboarding-revamp-context.md` § "Step 2: AI".
     // ─────────────────────────────────────────────────────────────────────────────
 
     const bannerTitleByMode = {
@@ -287,12 +287,12 @@
         </section>
     {/if}
 
-    <h2 class="step-title">
-        {#if onboardingState.stepTwoBanner === 'linux'}
-            Welcome to Cmdr!
-        {/if}
-        Now, the last necessary step: AI stuff
-    </h2>
+    {#if onboardingState.stepTwoBanner === 'linux'}
+        <h2 class="step-title">Welcome to Cmdr!</h2>
+        <p class="step-subtitle">Let's set up AI.</p>
+    {:else}
+        <h2 class="step-title">Now, the last necessary step: AI stuff</h2>
+    {/if}
 
     <p>
         Cmdr has a bunch of AI features that you <em>may</em> want and may not want. AI is a controversial topic these
@@ -430,11 +430,17 @@
 <style>
     .step-title {
         margin: var(--spacing-lg) 0 var(--spacing-md);
-        /* 20% larger than body font — same calc() as StepFda/.welcome and
-           StepOptional/.step-title so all onboarding step headings match. */
+        /* 20% larger than body font (same calc() as StepFda/.welcome and
+           StepOptional/.step-title so all onboarding step headings match). */
         font-size: calc(var(--font-size-md) * 1.2);
         font-weight: 600;
         color: var(--color-text-primary);
+    }
+
+    .step-subtitle {
+        margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
+        font-size: var(--font-size-md);
+        color: var(--color-text-secondary);
     }
 
     p {

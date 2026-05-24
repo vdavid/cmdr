@@ -29,7 +29,7 @@ Three provider modes:
 
 Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `start_ai_download`, `cancel_ai_download`, `get_folder_suggestions`, `stream_folder_suggestions`, `cancel_folder_suggestions`. Note: `get_system_memory_info` moved to top-level `system_memory.rs`.
 API keys: `save_ai_api_key`, `get_ai_api_key`, `delete_ai_api_key`, `has_ai_api_key` (in `api_keys.rs`).
-Legacy (still wired, used by toast): `uninstall_ai`, `dismiss_ai_offer`, `opt_out_ai`, `opt_in_ai`, `is_ai_opted_out`.
+Orphan (no frontend callers after the onboarding revamp; flagged for follow-up cleanup): `uninstall_ai`, `opt_in_ai`, `is_ai_opted_out`. The post-FDA AI offer toast is gone, so `dismiss_ai_offer` and `opt_out_ai` were deleted with it.
 
 ## Startup flow
 

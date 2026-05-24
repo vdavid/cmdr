@@ -8,8 +8,8 @@
      * Renders all 15 cloud-provider presets as a single `<ul role="listbox">`. The
      * active option carries `tabindex=0` (roving), the rest `tabindex=-1`. Keyboard:
      *
-     * - ArrowDown / ArrowUp / Home / End — move within the list.
-     * - Type-to-jump — typing a prefix selects the first matching option name. The
+     * - ArrowDown / ArrowUp / Home / End: move within the list.
+     * - Type-to-jump: typing a prefix selects the first matching option name. The
      *   prefix buffer resets after 700 ms of inactivity. Per onboarding-revamp-plan
      *   § M3 step 1: the file-explorer's `type-to-jump-state.svelte.ts` factory is
      *   pane-coupled (cursor / snapshot deps), so an inline matcher is the right
@@ -96,7 +96,7 @@
         // type capitals). We append, then find the first prefix match (case-insensitive).
         if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
             const ch = event.key.toLowerCase()
-            // Ignore whitespace — none of the provider names start with one.
+            // Ignore whitespace (none of the provider names start with one).
             if (ch === ' ' || ch === '\t') return
             typeBuffer += ch
             bumpTypeBufferTimer()

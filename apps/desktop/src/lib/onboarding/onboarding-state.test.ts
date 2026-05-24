@@ -1,7 +1,7 @@
 /**
  * Unit tests for the onboarding state machine.
  *
- * Covers `resumeStepFor`, `step1VariantFor`, and `stepTwoBannerFor` — all pure logic
+ * Covers `resumeStepFor`, `step1VariantFor`, and `stepTwoBannerFor`: all pure logic
  * over the persisted-flag triple `(fullDiskAccessChoice, isOnboarded, hasFda)`. Platform
  * is passed in explicitly via `ctx.isMac` so jsdom's userAgent doesn't matter.
  */
@@ -150,7 +150,7 @@ describe('menu / palette re-entry always opens step 1 on macOS', () => {
     expect(getOnboardingState().currentStep).toBe(1)
   })
 
-  it('first-launch source still honours the resume rule (sanity check)', () => {
+  it('first-launch source still honours the resume rule (smoke-test)', () => {
     openWizard('first-launch', ctxMac({ fullDiskAccessChoice: 'allow', isOnboarded: false, hasFda: true }))
     expect(getOnboardingState().currentStep).toBe(2)
   })
