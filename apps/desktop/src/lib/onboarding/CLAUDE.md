@@ -14,14 +14,14 @@ path.
 | `StepAi.svelte`              | Step 2: AI provider picker. Three FDA-outcome banners, three radio choices, dual-button footer (Start vs Continue).                |
 | `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Arrow / Home / End / type-to-jump keyboard nav.                  |
 | `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                            |
-| `StepOptional.svelte`        | Step 3 (optional): networking, indexing, updates, MTP toggles. M2 ships a stub; M4 wires the toggles.                              |
+| `StepOptional.svelte`        | Step 3 (optional): networking, indexing, updates, MTP toggles bound to existing registry settings.                                 |
 | `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc. |
 
 ## Status
 
-M3-shipping. Step 1 (FDA) and step 2 (AI provider) are real; step 3 is a stub until M4. The legacy
-`FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single first-launch path on macOS.
-`CMDR_FORCE_ONBOARDING=1` forces the wizard regardless of persisted state for dev / E2E iteration.
+M4-shipping. All three steps are real. The legacy `FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single
+first-launch path on macOS. `CMDR_FORCE_ONBOARDING=1` forces the wizard regardless of persisted state for dev / E2E
+iteration.
 
 ## Step 1 (Full Disk Access)
 
@@ -104,6 +104,29 @@ The `settings-applier.ts` listener wired in M1 also calls `pushConfigToBackend()
 state. The reason it's there: the listener fires per-setting-change, so if the user flips three settings in one tick we
 get three async invocations racing the wizard's `onComplete()`. The explicit `await pushConfigToBackend()` in
 `StepAi.persist()` orders the backend reconfigure before the user lands in the app deterministically.
+
+## Step 3 (optional setup)
+
+Four toggle blocks, each bound to an existing registry setting via `<SettingSwitch>`. Defaults stay ON; the step is
+about letting the user turn things OFF with full context, not about asking for opt-in.
+
+| Toggle            | Setting ID                  | Live-apply wiring                                                                           |
+| ----------------- | --------------------------- | ------------------------------------------------------------------------------------------- |
+| Networking        | `network.enabled`           | `passthroughBackendHandlers` → `setNetworkEnabled` (pre-existing)                           |
+| Drive indexing    | `indexing.enabled`          | `passthroughBackendHandlers` → `setIndexingEnabled` (pre-existing)                          |
+| Automatic updates | `updates.autoCheck`         | `passthroughBackendHandlers` → `applyAutoCheckEnabled` in `updater.svelte.ts` (added in M4) |
+| MTP               | `fileOperations.mtpEnabled` | `passthroughBackendHandlers` → `setMtpEnabled` (pre-existing)                               |
+
+Because `<SettingSwitch>` writes via `setSetting()` on every flip, the toggles take effect the moment the user clicks
+them — the wizard doesn't need its own persist queue. The footer's single primary button (`Start using Cmdr`, registered
+via `setFooterOverride()`) just bumps `finishRequestTick`; the wizard shell's `onComplete` callback then runs
+`notifyOnboardingComplete()` (which flips `isOnboarded: true`) and closes the sheet.
+
+`updates.autoCheck` live-apply was the M4 net-new wiring. Before M4 the setting existed in the registry and the UI but
+no listener watched it, so flipping it required an app restart. M4 added `applyAutoCheckEnabled(enabled)` to
+`updates/updater.svelte.ts` (lifts the poll-loop interval handle to module scope, starts/stops it in place, fires one
+immediate `checkForUpdates()` on re-enable so users don't wait the full cadence) plus an entry in
+`settings-applier.ts`'s `passthroughBackendHandlers` table so the toggle works from anywhere (wizard, Settings UI, MCP).
 
 ## Resume rule
 

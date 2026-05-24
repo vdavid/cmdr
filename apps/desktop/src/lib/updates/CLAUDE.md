@@ -16,10 +16,18 @@ app.
 
 `startUpdateChecker()` is called once from `+layout.svelte` on app start. It:
 
-1. Fires an immediate `checkForUpdates()` call.
-2. Schedules a `setInterval` using `advanced.updateCheckInterval` from settings.
-3. Listens for setting changes via `onSpecificSettingChange`; clears and re-creates the interval when the value changes.
-4. Returns a cleanup function that `+layout.svelte` calls in `onDestroy`.
+1. If `updates.autoCheck` is `true` (the default), fires an immediate `checkForUpdates()` call and schedules a
+   `setInterval` using `advanced.updateCheckInterval`. If `false`, skips both — the user has opted out of the background
+   poll loop.
+2. Listens for `advanced.updateCheckInterval` changes; clears and re-creates the interval when the value changes (only
+   if the loop is currently running).
+3. Returns a cleanup function that `+layout.svelte` calls in `onDestroy`.
+
+`applyAutoCheckEnabled(enabled)` is exported so the live-apply hook in `settings-applier.ts`'s
+`passthroughBackendHandlers` can flip the poll loop on or off in place when the user toggles `updates.autoCheck` (from
+the Settings UI switch, the onboarding wizard's step 3, or any MCP/IPC writer). On enable, it fires one immediate check
+so the user doesn't wait the full cadence for the first tick; on disable, it stops the loop but leaves
+`updateState.status` alone so any in-flight update isn't lost.
 
 `checkForUpdates()` transitions the state machine: `idle → checking → downloading → installing → ready` (macOS) or
 `idle → checking → downloading → ready` (non-macOS; see asymmetry below). If an update is found, it downloads and

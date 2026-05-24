@@ -224,6 +224,49 @@ export async function runMenuTriggeredCheck(): Promise<void> {
   }
 }
 
+/**
+ * Module-scoped interval handle for the auto-check poll loop. Lifted to module scope so
+ * `applyAutoCheckEnabled()` can stop and restart the loop in response to live
+ * `updates.autoCheck` flips, without restarting the whole checker. `undefined` means
+ * "no poll loop active right now" (either auto-check is off, or the checker hasn't
+ * started yet).
+ */
+let pollIntervalId: ReturnType<typeof setInterval> | undefined
+
+function startPollLoop(): void {
+  if (pollIntervalId !== undefined) return
+  pollIntervalId = setInterval(() => {
+    void checkForUpdates()
+  }, getCheckIntervalMs())
+}
+
+function stopPollLoop(): void {
+  if (pollIntervalId === undefined) return
+  clearInterval(pollIntervalId)
+  pollIntervalId = undefined
+}
+
+/**
+ * Live-apply hook for `updates.autoCheck`. Off cancels the background poll loop in
+ * place (the user keeps whatever update state we last computed; we just stop asking).
+ * On re-starts the loop and fires one immediate check, so users who turn the toggle
+ * back on don't have to wait an interval for the first tick. Called from
+ * `settings-applier.ts`'s `passthroughBackendHandlers` lookup whenever the setting
+ * flips, including from the onboarding wizard's step 3.
+ *
+ * Safe to call before `startUpdateChecker()` has run (only matters in tests today,
+ * but cheap insurance): `startPollLoop()` is idempotent, and `checkForUpdates()`
+ * tolerates an early call (it just transitions through `checking` → `idle`).
+ */
+export function applyAutoCheckEnabled(enabled: boolean): void {
+  if (enabled) {
+    startPollLoop()
+    void checkForUpdates()
+  } else {
+    stopPollLoop()
+  }
+}
+
 export function startUpdateChecker(): () => void {
   log.debug('Started')
 
@@ -234,32 +277,38 @@ export function startUpdateChecker(): () => void {
     showUpdateToast()
   })
 
-  // Check immediately on start
-  void checkForUpdates()
+  const autoCheckEnabled = getSetting('updates.autoCheck')
 
-  // Check periodically using the interval from settings
-  let intervalId = setInterval(() => {
+  if (autoCheckEnabled) {
+    // Check immediately on start
     void checkForUpdates()
-  }, getCheckIntervalMs())
+    startPollLoop()
+  } else {
+    log.debug('Auto-check disabled; skipping initial check and poll loop')
+  }
 
-  // Re-create interval when setting changes
-  const unsubscribe = onSpecificSettingChange('advanced.updateCheckInterval', () => {
-    clearInterval(intervalId)
+  // Re-create interval when the cadence changes (only if the loop is running).
+  const unsubscribeInterval = onSpecificSettingChange('advanced.updateCheckInterval', () => {
+    if (pollIntervalId === undefined) return
+    stopPollLoop()
     const newInterval = getCheckIntervalMs()
     const minutes = newInterval / 60000
     log.info('Interval changed to {minutes} {minutesNoun}', {
       minutes,
       minutesNoun: pluralize(minutes, 'minute'),
     })
-    intervalId = setInterval(() => {
-      void checkForUpdates()
-    }, newInterval)
+    startPollLoop()
   })
+
+  // Live-apply for `updates.autoCheck` lives in `settings-applier.ts`'s
+  // `passthroughBackendHandlers`, calling `applyAutoCheckEnabled()` above. One source
+  // of truth keeps the wizard's step 3 toggle, the Settings UI switch, and any future
+  // MCP/IPC writer all going through the same hook.
 
   // Return cleanup function
   return () => {
-    clearInterval(intervalId)
-    unsubscribe()
+    stopPollLoop()
+    unsubscribeInterval()
   }
 }
 

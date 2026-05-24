@@ -78,6 +78,7 @@ vi.mock('$lib/logging/logger', () => ({
 import {
   _resetUpdaterStateForTest,
   _setUpdateStatusForTest,
+  applyAutoCheckEnabled,
   notifyOnboardingComplete,
   runMenuTriggeredCheck,
   setOnboardingShowing,
@@ -231,6 +232,32 @@ describe('formatUpdateStatus', () => {
     expect(
       formatUpdateStatus({ status: 'idle', error: 'boom', previousVersion: '1.2.3', nextVersion: null }),
     ).toBeNull()
+  })
+})
+
+describe('applyAutoCheckEnabled', () => {
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+    invokeMock.mockReset()
+    pluginCheckMock.mockReset()
+  })
+
+  afterEach(() => {
+    _resetUpdaterStateForTest()
+  })
+
+  it('fires one immediate check when flipped on', async () => {
+    pluginCheckMock.mockResolvedValueOnce(null)
+    applyAutoCheckEnabled(true)
+    // Settle the async `checkForUpdates()` triggered inline.
+    await new Promise((r) => setTimeout(r, 0))
+    expect(pluginCheckMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT fire a check when flipped off', async () => {
+    applyAutoCheckEnabled(false)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(pluginCheckMock).not.toHaveBeenCalled()
   })
 })
 
