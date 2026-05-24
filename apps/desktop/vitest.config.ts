@@ -6,7 +6,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [Icons({ compiler: 'svelte' }), svelte()],
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.js'],
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.ts'],

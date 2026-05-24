@@ -151,12 +151,15 @@ Three cadences. Pick the one that matches where you are in the work, not the one
 
 ## Debugging
 
-- **Data dirs (dev and prod are separate!)**: Prod: `~/Library/Application Support/com.veszelovszki.cmdr/`, Dev:
-  `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. The split has two prongs that converge on the same path:
-  (1) `tauri.dev.json` overrides `identifier` to `com.veszelovszki.cmdr-dev` so Tauri's own `app_data_dir()` (and
-  anything keyed off it, e.g. `tauri-plugin-store`'s `settings.json`) lands in the dev path; (2) `tauri-wrapper.js` sets
-  `CMDR_DATA_DIR` to the same path so `src-tauri/src/config.rs::data_dir()` and direct file I/O (crash reports, logs,
-  the file-backed secret store) all agree without round-tripping through Tauri's API.
+- **Data dirs (prod, dev, and dev-per-worktree are separate!)**: Prod:
+  `~/Library/Application Support/com.veszelovszki.cmdr/`. Dev (plain `pnpm dev`):
+  `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. A per-worktree dev session started with
+  `pnpm dev --worktree foo` lives at `~/Library/Application Support/com.veszelovszki.cmdr-dev-foo/`. The wrapper
+  (`apps/desktop/scripts/tauri-wrapper.js`) resolves `CMDR_INSTANCE_ID` from flags and env, writes a fresh
+  `tauri.instance.json` under `$TMPDIR` with the matching identifier (so Tauri's own `app_data_dir()` lands on the right
+  path), and exports `CMDR_DATA_DIR` to the same path so direct file I/O (crash reports, logs, file-backed secret store)
+  agrees without round-tripping through Tauri's API. See
+  [`docs/specs/instance-isolation-plan.md`](docs/specs/instance-isolation-plan.md) for the full design.
 - **Logging**: Frontend and backend logs appear together in terminal and in the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
   prod: `~/Library/Logs/com.veszelovszki.cmdr/`). **Read [docs/tooling/logging.md](docs/tooling/logging.md) before using
   `RUST_LOG`**: it has copy-paste recipes for every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not

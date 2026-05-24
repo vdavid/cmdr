@@ -59,8 +59,12 @@ This starts both the Svelte frontend and the Rust backend with hot reload.
 To test with a virtual MTP device (simulated Android phone):
 
 ```bash
-cd apps/desktop && pnpm tauri dev -c src-tauri/tauri.dev.json --features virtual-mtp
+pnpm dev -- --features virtual-mtp
 ```
+
+This still flows through `apps/desktop/scripts/tauri-wrapper.js`, which generates the per-instance config (bundle
+identifier, `CMDR_DATA_DIR`, file-backed secret store) on the fly. Pass `--worktree <slug>` first to isolate a
+worktree's data dir from your main dev session: `pnpm dev --worktree foo -- --features virtual-mtp`.
 
 ## Debug window
 

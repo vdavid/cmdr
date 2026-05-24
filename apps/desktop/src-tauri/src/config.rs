@@ -24,17 +24,27 @@ pub const USE_APP_ICONS_AS_DOCUMENT_ICONS: bool = true;
 ///
 /// Creates the directory if needed.
 pub fn resolved_app_data_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
-    let dir = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        PathBuf::from(custom)
-    } else {
-        app.path()
+    let dir = match data_dir_from_env(std::env::var("CMDR_DATA_DIR").ok().as_deref()) {
+        Some(path) => path,
+        None => app
+            .path()
             .app_data_dir()
-            .map_err(|e| format!("Failed to get app data dir: {e}"))?
+            .map_err(|e| format!("Failed to get app data dir: {e}"))?,
     };
 
     std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create app data dir: {e}"))?;
 
     Ok(dir)
+}
+
+/// Pure helper: pull a data dir out of the env-var value, treating empty as unset.
+/// Kept private + unit-tested so the env-precedence branch of `resolved_app_data_dir`
+/// is exercised without needing a Tauri mock runtime.
+fn data_dir_from_env(env_value: Option<&str>) -> Option<PathBuf> {
+    match env_value {
+        Some(s) if !s.is_empty() => Some(PathBuf::from(s)),
+        _ => None,
+    }
 }
 
 /// Logs the resolved data directory once at startup.
@@ -55,7 +65,32 @@ pub fn log_app_data_dir<R: Runtime>(app: &AppHandle<R>) {
 //
 // To prevent this security risk in production:
 // 1. The MCP plugin is only registered in debug builds (see lib.rs: #[cfg(debug_assertions)])
-// 2. `withGlobalTauri` is only enabled via tauri.dev.json (merged in dev only by tauri-wrapper.js)
-// 3. Production builds use tauri.conf.json which has `withGlobalTauri: false`
+// 2. `withGlobalTauri` is only flipped to `true` by the generated `tauri.instance.json` that
+//    `apps/desktop/scripts/tauri-wrapper.js` writes for non-prod instances and merges via `-c`.
+// 3. Production builds skip the wrapper's instance composition, so canonical
+//    `tauri.conf.json` (with `withGlobalTauri: false`) governs the bundle.
 //
 // See CONTRIBUTING.md for setup instructions.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn data_dir_from_env_honors_set_value() {
+        let got = data_dir_from_env(Some("/tmp/cmdr-p1-test"));
+        assert_eq!(got, Some(PathBuf::from("/tmp/cmdr-p1-test")));
+    }
+
+    #[test]
+    fn data_dir_from_env_returns_none_when_unset() {
+        assert_eq!(data_dir_from_env(None), None);
+    }
+
+    #[test]
+    fn data_dir_from_env_treats_empty_as_unset() {
+        // An empty CMDR_DATA_DIR should not silently land us in cwd-equivalent paths.
+        // Falling through to the Tauri default is the documented behavior.
+        assert_eq!(data_dir_from_env(Some("")), None);
+    }
+}

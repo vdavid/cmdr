@@ -9,11 +9,13 @@ The MCP bridge requires `withGlobalTauri: true` which exposes `window.__TAURI__`
 security risk in production (untrusted JS could access system APIs, not good), so we enable it **only in development**:
 
 1. **Compile-time exclusion**: The MCP plugin is only registered via `#[cfg(debug_assertions)]` in `lib.rs`
-2. **Config separation**: `"withGlobalTauri": false` in `tauri.conf.json` (production), only overridden via
-   `tauri.dev.json` during dev
-3. **Wrapper script**: `apps/desktop/scripts/tauri-wrapper.js` injects `-c src-tauri/tauri.dev.json` only for `dev`
-   commands. (`pnpm tauri dev` calls the wrapper which adds `-c src-tauri/tauri.dev.json`, then Tauri merges this with
-   `tauri.conf.json` via [JSON Merge Patch (RFC 7396)](https://datatracker.ietf.org/doc/html/rfc7396).))
+2. **Config separation**: `"withGlobalTauri": false` in `tauri.conf.json` (production). For any non-prod instance, the
+   wrapper generates a fresh `tauri.instance.json` under `$TMPDIR` that flips `withGlobalTauri` to `true` (plus sets the
+   per-instance identifier and `productName`).
+3. **Wrapper script**: `apps/desktop/scripts/tauri-wrapper.js` writes the generated config and passes it via
+   `-c <absolute path>` for `dev` commands. Tauri merges it with `tauri.conf.json` via
+   [JSON Merge Patch (RFC 7396)](https://datatracker.ietf.org/doc/html/rfc7396). Prod builds skip the wrapper's instance
+   composition entirely, so canonical `tauri.conf.json` (with `withGlobalTauri: false`) governs the bundle.
 
 To avoid security issues in dev mode, always add a condition to **disable** that functionality in dev mode. This way,
 malicious websites can't access the system APIs even on your machine.
