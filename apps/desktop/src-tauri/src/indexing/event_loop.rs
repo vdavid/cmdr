@@ -947,7 +947,33 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
     // so child deletions may only show as "parent dir modified," and new
     // children may not get individual creation events. Readdir each affected
     // parent and reconcile with DB.
-    let verify_result = verify_affected_dirs(&affected_paths, &writer);
+    //
+    // Run on the blocking pool: `verify_affected_dirs` is sync (Phase 1 SQLite
+    // reads via `ReadPool`, Phase 2 `read_dir`/`symlink_metadata` per child).
+    // On a typical home folder it takes seconds. Doing it inline on an async
+    // worker pins that worker for the full duration; on macOS it also feeds
+    // a burst of writer messages and event emits through the main thread,
+    // which competes with user-initiated IPCs like `plugin:window|close`.
+    // The blocking pool absorbs the sync work; the async runtime stays free
+    // to serve UI requests responsively (top-5 principle #3 — UI must always
+    // be responsive).
+    let verify_writer = writer.clone();
+    let verify_affected_paths = affected_paths.clone();
+    let verify_result = match tauri::async_runtime::spawn_blocking(move || {
+        verify_affected_dirs(&verify_affected_paths, &verify_writer)
+    })
+    .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            log::warn!("Background verification: verify_affected_dirs join failed: {e}");
+            VerifyResult {
+                stale_count: 0,
+                new_file_count: 0,
+                new_dir_paths: Vec::new(),
+            }
+        }
+    };
 
     // Scan newly discovered directories (inserts children + computes subtree aggregates).
     // Skip excluded paths (system dirs like /System, /dev) that aren't in the index.
@@ -959,23 +985,35 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             log::warn!("Background verification pre-scan flush failed: {e}");
         }
 
-        let cancelled = AtomicBool::new(false);
-        for dir_path in &verify_result.new_dir_paths {
-            if scanner::should_exclude(dir_path) {
-                continue;
-            }
-            match scanner::scan_subtree(Path::new(dir_path), &writer, &cancelled) {
-                Ok(summary) => {
-                    log::debug!(
-                        "Background verification: scanned new dir {dir_path} ({} entries, {}ms)",
-                        summary.total_entries,
-                        summary.duration_ms,
-                    );
+        // jwalk-based parallel walk + sync writer-channel sends — same blocking-pool
+        // reasoning as `verify_affected_dirs` above. A subtree scan can take many
+        // seconds and saturates multiple rayon threads; keeping it off the async
+        // pool is essential.
+        let scan_writer = writer.clone();
+        let scan_dirs = verify_result.new_dir_paths.clone();
+        if let Err(e) = tauri::async_runtime::spawn_blocking(move || {
+            let cancelled = AtomicBool::new(false);
+            for dir_path in &scan_dirs {
+                if scanner::should_exclude(dir_path) {
+                    continue;
                 }
-                Err(e) => {
-                    log::warn!("Background verification: scan_subtree({dir_path}) failed: {e}");
+                match scanner::scan_subtree(Path::new(dir_path), &scan_writer, &cancelled) {
+                    Ok(summary) => {
+                        log::debug!(
+                            "Background verification: scanned new dir {dir_path} ({} entries, {}ms)",
+                            summary.total_entries,
+                            summary.duration_ms,
+                        );
+                    }
+                    Err(e) => {
+                        log::warn!("Background verification: scan_subtree({dir_path}) failed: {e}");
+                    }
                 }
             }
+        })
+        .await
+        {
+            log::warn!("Background verification: scan_subtree batch join failed: {e}");
         }
     }
 
@@ -993,19 +1031,25 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             log::warn!("Background verification flush failed: {e}");
         }
 
-        // Progressive reveal: as soon as a newly-scanned subtree's `dir_stats`
-        // is committed, tell the UI so open listings can refresh that one folder.
-        // Without this, open listings sat on `<dir>` placeholders for the entire
-        // verification window (observed up to 5 minutes) and the single emit at
-        // the end of this function carried only the replay-affected paths, not
-        // the newly-scanned ones — see the 1.83 TB ghost-size investigation.
-        // The FE handler is throttled at 2 s per pane, so bursty subtree
-        // completions naturally coalesce.
-        for dir_path in &verify_result.new_dir_paths {
-            if scanner::should_exclude(dir_path) {
-                continue;
-            }
-            reconciler::emit_dir_updated(&app, vec![dir_path.clone()]);
+        // Tell the UI about the newly-scanned subtrees so open listings can
+        // refresh them. Coalesced into a single emit: the scan loop above
+        // already finished all subtrees before we get here (the loop is
+        // synchronous), so emitting per-path here only paid the per-emit
+        // macOS main-thread cost N times without giving the FE any new info.
+        // The FE handler is throttled at 2 s per pane anyway, so N separate
+        // emits and one batched emit produce the same UX. This keeps the main
+        // thread free for user-initiated IPCs like `plugin:window|close`.
+        // (Was the post-commit-66712c2d "1.83 TB ghost-size" fix; the
+        // `affected_paths` problem it solved persists — we just batch the
+        // emit instead of looping it.)
+        let visible_new_dirs: Vec<String> = verify_result
+            .new_dir_paths
+            .iter()
+            .filter(|p| !scanner::should_exclude(p))
+            .cloned()
+            .collect();
+        if !visible_new_dirs.is_empty() {
+            reconciler::emit_dir_updated(&app, visible_new_dirs);
         }
 
         // For new directories, propagate their subtree totals up the ancestor chain.
