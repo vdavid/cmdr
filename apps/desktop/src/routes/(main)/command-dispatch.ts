@@ -45,6 +45,12 @@ export interface CommandDispatchDialogs {
    * `'remove'` opens "Deselect files…", `null` closes.
    */
   showSelectionDialog: (mode: 'add' | 'remove' | null) => void
+  /**
+   * Opens the onboarding wizard for re-entry from the `Cmdr > Onboarding…`
+   * menu item or the `cmdr.openOnboarding` command palette command. No-op when
+   * the wizard is already open.
+   */
+  openOnboarding: () => void
 }
 
 export interface CommandDispatchContext {
@@ -212,6 +218,10 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
 
     case 'app.checkForUpdates':
       void runMenuTriggeredCheck()
+      return
+
+    case 'cmdr.openOnboarding':
+      ctx.dialogs.openOnboarding()
       return
 
     // === View commands ===

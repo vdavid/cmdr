@@ -34,7 +34,8 @@
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
-    import { getSetting } from '$lib/settings'
+    import { getSetting, setSetting } from '$lib/settings'
+    import { addToast } from '$lib/ui/toast'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import {
         handleCommandExecute as dispatchCommand,
@@ -416,12 +417,14 @@
                 await notifyOnboardingComplete()
             }
             showApp = true
+            maybeFireUpgradeNudge()
             return
         }
 
         if (settings.fullDiskAccessChoice === 'deny' && settings.isOnboarded) {
             // User explicitly denied and already finished onboarding. Don't re-prompt.
             showApp = true
+            maybeFireUpgradeNudge()
             return
         }
 
@@ -432,6 +435,52 @@
         showOnboarding = true
         setOnboardingShowing(true)
         showApp = true
+    }
+
+    /**
+     * Fires the one-time `info` toast pointing existing users at the new
+     * `Cmdr > Onboarding…` menu item (and the matching palette entry on Linux).
+     * Persists `onboarding.upgradeNudgeShown: true` after firing so the toast
+     * never appears again on this machine.
+     *
+     * Guarded against running when the wizard is up: this code only runs from
+     * the `showApp = true` branches in `resolveOnboardingMount`, so the wizard
+     * is closed by definition; no extra `onboardingShowing` check needed.
+     *
+     * Suppressed under E2E mode: the toast would leak into the first Playwright
+     * test after every fresh-data-dir launch (each shard gets its own data dir),
+     * tripping the fixture safety net. E2E mode isn't a real user and the
+     * upgrade-discovery affordance doesn't matter there. The firing behaviour
+     * is covered by Vitest unit tests instead.
+     */
+    function maybeFireUpgradeNudge(): void {
+        if (getAppMode() === 'e2e') return
+        if (getSetting('onboarding.upgradeNudgeShown')) return
+        const message = isMacOS()
+            ? "We've added new onboarding options. Open Cmdr > Onboarding… to review them."
+            : "We've added new onboarding options. Open the command palette and run Onboarding… to review them."
+        addToast(message, { level: 'info' })
+        setSetting('onboarding.upgradeNudgeShown', true)
+    }
+
+    /**
+     * Opens the onboarding wizard for re-entry from the menu item or the command
+     * palette. Always opens at step 1 on macOS (step 2 on Linux) regardless of
+     * `isOnboarded` — `openWizard()` itself enforces this when source is 'menu'.
+     * No-op when the wizard is already open.
+     */
+    async function openOnboardingFromMenuOrPalette(source: 'menu' | 'palette'): Promise<void> {
+        if (showOnboarding) return
+        const settings = await loadSettings()
+        const hasFda = await checkFullDiskAccess()
+        const ctx = {
+            fullDiskAccessChoice: settings.fullDiskAccessChoice,
+            isOnboarded: settings.isOnboarded,
+            hasFda,
+        }
+        openOnboardingWizard(source, ctx)
+        showOnboarding = true
+        setOnboardingShowing(true)
     }
 
     onMount(async () => {
@@ -753,6 +802,9 @@
             },
             showSelectionDialog: (mode: 'add' | 'remove' | null) => {
                 void setSelectionDialog(mode)
+            },
+            openOnboarding: () => {
+                void openOnboardingFromMenuOrPalette('menu')
             },
         },
     }

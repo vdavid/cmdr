@@ -32,11 +32,13 @@ const setSetting = vi.fn((id: string, value: unknown) => {
 })
 
 vi.mock('$lib/settings', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
+  const actual = await importOriginal<Record<string, unknown>>()
   return {
     ...actual,
     getSetting: (id: string) => settingsMap[id],
-    setSetting: (id: string, value: unknown) => setSetting(id, value),
+    setSetting: (id: string, value: unknown) => {
+      setSetting(id, value)
+    },
     onSpecificSettingChange: () => () => {},
   }
 })

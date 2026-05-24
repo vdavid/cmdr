@@ -41,6 +41,14 @@ export const commands: Command[] = [
     description: 'Check whether a newer version of Cmdr is available, and download it if so',
   },
   {
+    id: 'cmdr.openOnboarding',
+    name: 'Onboarding…',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    description: 'Reopen the onboarding wizard to review or change first-launch setup options',
+  },
+  {
     id: 'help.sendErrorReport',
     name: 'Send error report…',
     scope: 'App',

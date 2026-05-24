@@ -198,6 +198,14 @@ export function stepTwoBannerFor(ctx: ResumeContext): StepTwoFdaBanner {
 export function openWizard(source: OnboardingSource, ctx: ResumeContext | null = null): void {
   state.source = source
   state.footerOverride = null
+  // Reset the finish-request counter. The wizard's `$effect` watching this counter has
+  // its own local "last seen" cursor that resets on remount; without resetting the
+  // module-level counter here, a re-entry after a previous Start/Finish would fire
+  // `onComplete()` immediately on remount (because `finishRequestTick > 0`, and the
+  // new instance's `lastSeenFinishTick` starts at 0, so the gate trips on first
+  // observation). The wizard would visibly never appear on menu / palette re-entry.
+  // Resetting on open keeps each wizard session independent.
+  state.finishRequestTick = 0
   if (ctx === null) {
     // No flags available (M1-style dev force). Use sensible defaults: macOS lands on
     // step 1 with the first-ask variant; Linux skips to step 2.
@@ -207,7 +215,16 @@ export function openWizard(source: OnboardingSource, ctx: ResumeContext | null =
     state.stepTwoBanner = isMacOS() ? 'stuck' : 'linux'
     return
   }
-  state.currentStep = resumeStepFor(ctx)
+  // Menu / palette re-entry always opens at the first reachable step (step 1 on macOS,
+  // step 2 on Linux) so the user can step through every page from the start. The plan's
+  // round-3 #1 and M5 step 3 codify this. Other sources (force / first-launch) honour
+  // the resume rule so crash-then-resume lands on the first not-yet-decided step.
+  const isMac = ctx.isMac ?? isMacOS()
+  if (source === 'menu' || source === 'palette') {
+    state.currentStep = isMac ? 1 : 2
+  } else {
+    state.currentStep = resumeStepFor(ctx)
+  }
   state.step1Variant = step1VariantFor(ctx, source)
   state.step1FooterMode = 'decide'
   state.stepTwoBanner = stepTwoBannerFor(ctx)
@@ -220,6 +237,7 @@ export function closeWizard(): void {
   state.step1FooterMode = 'decide'
   state.stepTwoBanner = 'stuck'
   state.footerOverride = null
+  state.finishRequestTick = 0
 }
 
 /**

@@ -27,7 +27,7 @@ vi.mock('$lib/settings-store', () => ({
 // Same reason as in `StepFda.test.ts`: jsdom isn't macOS so the safety-net guard would
 // short-circuit the render. Resume-rule platform logic is unit-tested separately.
 vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
+  const actual = await importOriginal<Record<string, unknown>>()
   return { ...actual, isMacOS: () => true }
 })
 

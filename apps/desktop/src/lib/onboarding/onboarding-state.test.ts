@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // resolve to the macOS branches. Linux behaviour is exercised via the explicit `isMac`
 // override on `ResumeContext`, not via the jsdom userAgent.
 vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
+  const actual = await importOriginal<Record<string, unknown>>()
   return { ...actual, isMacOS: () => true }
 })
 
@@ -25,6 +25,7 @@ import {
   setStep1Restart,
   nextStep,
   previousStep,
+  requestWizardComplete,
   getOnboardingState,
   type ResumeContext,
 } from './onboarding-state.svelte'
@@ -129,5 +130,46 @@ describe('navigation state', () => {
     previousStep()
     expect(getOnboardingState().currentStep).toBe(1)
     expect(getOnboardingState().step1FooterMode).toBe('decide')
+  })
+})
+
+describe('menu / palette re-entry always opens step 1 on macOS', () => {
+  beforeEach(() => {
+    resetForTesting()
+  })
+
+  it('menu source with hasFda + isOnboarded → step 1 (already-granted variant)', () => {
+    openWizard('menu', ctxMac({ fullDiskAccessChoice: 'allow', isOnboarded: true, hasFda: true }))
+    const s = getOnboardingState()
+    expect(s.currentStep).toBe(1)
+    expect(s.step1Variant).toBe('already-granted')
+  })
+
+  it('palette source with deny + isOnboarded → step 1 (resume rule would have said step 2)', () => {
+    openWizard('palette', ctxMac({ fullDiskAccessChoice: 'deny', isOnboarded: true, hasFda: false }))
+    expect(getOnboardingState().currentStep).toBe(1)
+  })
+
+  it('first-launch source still honours the resume rule (sanity check)', () => {
+    openWizard('first-launch', ctxMac({ fullDiskAccessChoice: 'allow', isOnboarded: false, hasFda: true }))
+    expect(getOnboardingState().currentStep).toBe(2)
+  })
+
+  it('Linux menu re-entry lands on step 2 (no step 1 to render)', () => {
+    openWizard('menu', { fullDiskAccessChoice: 'notAskedYet', isOnboarded: true, hasFda: false, isMac: false })
+    expect(getOnboardingState().currentStep).toBe(2)
+  })
+
+  it('openWizard resets finishRequestTick so re-entry does NOT fire onComplete on remount', () => {
+    // Simulate a previous wizard session that requested completion (bumped the tick).
+    openWizard('first-launch', ctxMac({ fullDiskAccessChoice: 'deny' }))
+    requestWizardComplete()
+    expect(getOnboardingState().finishRequestTick).toBe(1)
+    // openWizard a second time. The counter MUST be reset; otherwise the new wizard
+    // instance's `$effect` (which starts with `lastSeenFinishTick = 0`) would fire
+    // `onComplete()` immediately on first observation, and the wizard would visibly
+    // never appear on menu / palette re-entry. Regression for M5 Playwright failure.
+    openWizard('menu', ctxMac({ fullDiskAccessChoice: 'allow', isOnboarded: true, hasFda: true }))
+    expect(getOnboardingState().finishRequestTick).toBe(0)
   })
 })

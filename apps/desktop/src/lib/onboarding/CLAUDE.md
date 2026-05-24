@@ -19,9 +19,59 @@ path.
 
 ## Status
 
-M4-shipping. All three steps are real. The legacy `FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single
-first-launch path on macOS. `CMDR_FORCE_ONBOARDING=1` forces the wizard regardless of persisted state for dev / E2E
-iteration.
+M5-shipping. All three steps are real, and the wizard is re-openable from the macOS app menu and the command palette
+(both platforms). Existing users on upgrade see a one-time `info` toast pointing at the new menu item. The legacy
+`FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single first-launch path on macOS.
+`CMDR_FORCE_ONBOARDING=1` forces the wizard regardless of persisted state for dev / E2E iteration.
+
+## Re-entry points
+
+Three surfaces open the wizard after first launch:
+
+| Surface         | macOS                                             | Linux                           | Internal command id   |
+| --------------- | ------------------------------------------------- | ------------------------------- | --------------------- |
+| Menu item       | `Cmdr > Onboarding…` (under "Check for updates…") | (none — palette-only by design) | `cmdr.openOnboarding` |
+| Command palette | "Onboarding…" (both platforms)                    | "Onboarding…"                   | `cmdr.openOnboarding` |
+| MCP             | `dialog` tool with `type: "onboarding"`           | same                            | (none — direct event) |
+
+All three surfaces route through the same handler (`+page.svelte::openOnboardingFromMenuOrPalette`), which opens the
+wizard at the first reachable step (step 1 on macOS, step 2 on Linux) regardless of `isOnboarded`. The plan's round-3 #1
+codifies "menu re-entry always opens at step 1"; `openWizard()` enforces this by checking the `source` argument.
+
+**Why no Linux menu entry**: the wizard's design language is macOS-centric (frosted backdrop matches macOS sheets,
+"Restart Cmdr" copy assumes the Quit & Reopen flow, FDA-relevance). Adding a redundant menu entry next to the palette
+command would clutter Linux's GTK menu bar for marginal benefit. Palette discovery is good enough; the upgrade-nudge
+toast names it on first launch after upgrade.
+
+### Upgrade nudge
+
+Existing users (anyone with `isOnboarded === true` and `onboarding.upgradeNudgeShown === false`) see one `info` toast on
+the first launch after they update past the wizard revamp:
+
+- macOS: "We've added new onboarding options. Open Cmdr > Onboarding… to review them."
+- Linux: "We've added new onboarding options. Open the command palette and run Onboarding… to review them."
+
+The toast fires from `resolveOnboardingMount()`'s `showApp = true` branches (so it only runs when the wizard is NOT
+mounting; no need for an extra `onboardingShowing` check). It writes `onboarding.upgradeNudgeShown = true` synchronously
+after firing, so it never appears again on the same machine. The hidden setting was added in M1; M5 wires the firing.
+
+The toast is suppressed under `getAppMode() === 'e2e'` so it doesn't leak into Playwright's first-spec-of-the-run state
+(each E2E shard gets its own fresh data dir, so the nudge would otherwise fire once per shard launch and trip the
+fixture safety net). The firing logic itself stays unit-tested in Vitest; the E2E suppression is a target-mode gate, not
+a behaviour change.
+
+### MCP
+
+The MCP `dialog` tool's open path accepts `type: "onboarding"`. It emits the standard `execute-command` Tauri event with
+`commandId: "cmdr.openOnboarding"` — the same path the menu and palette use — and acks on
+`SoftDialogAppeared("onboarding")` within the standard 1500 ms budget. The wizard calls
+`notifyDialogOpened('onboarding')` on mount, so `SoftDialogTracker` reflects it.
+
+No dedicated `open_onboarding` MCP command was needed: the existing generic `dialog` tool's open switch is hard-coded
+per dialog type, but adding one case is cheaper than a new tool and keeps the agent API consistent with
+`dialog open about` / `dialog open settings`. Close / focus actions aren't wired for `onboarding` (the wizard has no
+rivals to focus above, and closing requires committing to a step per round-3 #9 — the design forbids
+dismiss-without-decision).
 
 ## Step 1 (Full Disk Access)
 

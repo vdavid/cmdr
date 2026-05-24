@@ -42,7 +42,7 @@ vi.mock('$lib/settings-store', () => ({
 // we're on macOS for these tests; Linux flow is enforced by the wizard's resume rule,
 // not by the step body, and the resume-rule unit tests live in onboarding-state.test.ts.
 vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
+  const actual = await importOriginal<Record<string, unknown>>()
   return { ...actual, isMacOS: () => true }
 })
 

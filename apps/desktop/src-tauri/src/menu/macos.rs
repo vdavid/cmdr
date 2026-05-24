@@ -17,11 +17,11 @@ use super::{
     COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID,
     EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID,
     FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID,
-    MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID,
-    REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
-    SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID,
-    SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
-    ViewMode,
+    MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID,
+    RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID,
+    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
+    SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
+    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -47,6 +47,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         None::<&str>,
     )?;
+    // Re-entry to the onboarding wizard. Placed under "Check for updates…" per the
+    // onboarding-revamp plan M5 step 2; Linux gets no menu entry (palette-only) by design.
+    let open_onboarding_item = MenuItem::with_id(app, OPEN_ONBOARDING_ID, "Onboarding\u{2026}", true, None::<&str>)?;
     let settings_item = MenuItem::with_id(app, SETTINGS_ID, "Settings...", true, Some("Cmd+,"))?;
 
     let app_menu = Submenu::with_items(
@@ -57,6 +60,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &about_item,
             &license_item,
             &check_for_updates_item,
+            &open_onboarding_item,
             &PredefinedMenuItem::separator(app)?,
             &settings_item,
             &PredefinedMenuItem::separator(app)?,
@@ -454,9 +458,11 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         0,
     );
 
-    // cmdr menu positions: about(0), license(1), check_for_updates(2), sep(3), settings(4),
-    // sep(5), hide(6), hide_others(7), show_all(8), sep(9), quit(10)
+    // cmdr menu positions: about(0), license(1), check_for_updates(2), open_onboarding(3),
+    // sep(4), settings(5), sep(6), services(7), sep(8), hide(9), hide_others(10),
+    // show_all(11), sep(12), quit(13)
     register_item(&mut items, CHECK_FOR_UPDATES_ID, &check_for_updates_item, &app_menu, 2);
+    register_item(&mut items, OPEN_ONBOARDING_ID, &open_onboarding_item, &app_menu, 3);
 
     Ok(MenuItems {
         menu,
@@ -579,6 +585,7 @@ fn set_macos_menu_icons_inner() {
                 ("Enter license key\u{2026}", "key"),
                 ("See license details\u{2026}", "key"),
                 ("Check for updates\u{2026}", "arrow.down.circle"),
+                ("Onboarding\u{2026}", "sparkles"),
                 ("Settings\u{2026}", "gearshape"),
             ],
             "File" => &[

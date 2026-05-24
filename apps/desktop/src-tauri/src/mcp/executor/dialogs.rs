@@ -110,6 +110,15 @@ async fn execute_dialog_open<R: Runtime>(
             wait_for_ack(app, AckSignal::SoftDialogAppeared("about"), DEFAULT_ACK_TIMEOUT).await?;
             Ok(json!("OK: Opened about dialog"))
         }
+        "onboarding" => {
+            // Re-entry path. Same command id the menu / palette use, so a single FE
+            // handler covers all three surfaces. The wizard is a soft sheet (its own
+            // `OnboardingWizard.svelte`, not a ModalDialog consumer), but it calls
+            // `notifyDialogOpened('onboarding')` on mount, so SoftDialogTracker fires.
+            app.emit_to("main", "execute-command", json!({"commandId": "cmdr.openOnboarding"}))?;
+            wait_for_ack(app, AckSignal::SoftDialogAppeared("onboarding"), DEFAULT_ACK_TIMEOUT).await?;
+            Ok(json!("OK: Opened onboarding wizard"))
+        }
         "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
             Err(ToolError::invalid_params(
                 "Cannot open confirmation dialogs directly. Use copy, move, delete, mkdir, or mkfile tools instead.",

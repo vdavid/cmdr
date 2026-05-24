@@ -47,7 +47,7 @@ function resetSettings(): void {
 }
 
 vi.mock('$lib/settings', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
+  const actual = await importOriginal<Record<string, unknown>>()
   return {
     ...actual,
     getSetting: (id: string) => settingsMap[id] ?? '',

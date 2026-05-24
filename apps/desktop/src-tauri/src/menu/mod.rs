@@ -164,6 +164,11 @@ pub const HELP_SEND_ERROR_REPORT_ID: &str = "help_send_error_report";
 /// Menu item ID for "Check for updates…" (under the Cmdr / Help menu).
 pub const CHECK_FOR_UPDATES_ID: &str = "check_for_updates";
 
+/// Menu item ID for "Onboarding…" (under the Cmdr app menu, macOS only).
+/// Linux re-entry to the onboarding wizard is palette-only by design (see
+/// `apps/desktop/src/lib/onboarding/CLAUDE.md` § "Re-entry points").
+pub const OPEN_ONBOARDING_ID: &str = "open_onboarding";
+
 /// Whether a command requires the main window to be focused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommandScope {
@@ -194,6 +199,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         SEARCH_FILES_ID => Some(("search.open", CommandScope::FileScoped)),
         HELP_SEND_ERROR_REPORT_ID => Some(("help.sendErrorReport", CommandScope::App)),
         CHECK_FOR_UPDATES_ID => Some(("app.checkForUpdates", CommandScope::App)),
+        OPEN_ONBOARDING_ID => Some(("cmdr.openOnboarding", CommandScope::App)),
 
         // Pane commands (file-scoped)
         SWITCH_PANE_ID => Some(("pane.switch", CommandScope::FileScoped)),
@@ -284,6 +290,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "search.open" => Some(SEARCH_FILES_ID),
         "help.sendErrorReport" => Some(HELP_SEND_ERROR_REPORT_ID),
         "app.checkForUpdates" => Some(CHECK_FOR_UPDATES_ID),
+        "cmdr.openOnboarding" => Some(OPEN_ONBOARDING_ID),
         "pane.switch" => Some(SWITCH_PANE_ID),
         "pane.swap" => Some(SWAP_PANES_ID),
         "nav.back" => Some(GO_BACK_ID),
@@ -598,6 +605,7 @@ mod tests {
             "selection.deselectFiles",
             "help.sendErrorReport",
             "app.checkForUpdates",
+            "cmdr.openOnboarding",
             "cloud.makeOffline",
             "cloud.removeDownload",
             "sort.byName",

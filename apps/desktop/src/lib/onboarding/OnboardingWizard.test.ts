@@ -75,7 +75,7 @@ vi.mock('$lib/settings-store', () => ({
 // Force macOS in jsdom so the wizard renders step 1 (StepFda) instead of skipping it.
 // Resume-rule behaviour on Linux is unit-tested in onboarding-state.test.ts.
 vi.mock('$lib/shortcuts/key-capture', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
+  const actual = await importOriginal<Record<string, unknown>>()
   return { ...actual, isMacOS: () => true }
 })
 
@@ -183,7 +183,9 @@ describe('OnboardingWizard', () => {
     flushSync()
     await tick()
     expect(getOnboardingState().currentStep).toBe(3)
-    expect(primaryFooterButton(mounted.target)?.textContent?.trim()).toBe('Finish')
+    // Step 3 registers its own footer override ("Start using Cmdr") via setFooterOverride().
+    // The wizard's built-in "Finish" label only renders for steps that don't override.
+    expect(primaryFooterButton(mounted.target)?.textContent?.trim()).toBe('Start using Cmdr')
     primaryFooterButton(mounted.target)?.click()
     flushSync()
     expect(onComplete).toHaveBeenCalledOnce()
@@ -233,35 +235,51 @@ describe('OnboardingWizard', () => {
     expect(mounted.target.querySelector('.wizard-panel')).not.toBeNull()
   })
 
+  // Focus trap wrap-around. We assert structurally (first ↔ last focusable) rather than
+  // pinning specific elements (Back vs Finish vs a switch input) because step content
+  // changes the focusable set as steps evolve (step 3 now includes <SettingSwitch>
+  // checkbox inputs that sort last in DOM order). The wizard's job is to wrap; whether
+  // the bookend happens to be a button or an input is incidental.
+  const FOCUSABLE_SELECTOR =
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+  function focusables(panel: HTMLElement): HTMLElement[] {
+    return Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+  }
+
+  async function advanceToStep3(target: HTMLElement): Promise<void> {
+    // Step 1 → step 2.
+    primaryFooterButton(target)?.click()
+    flushSync()
+    await tick()
+    // Step 2 → step 3 (use LAST footer button to advance, not Start-using-Cmdr).
+    lastPrimaryFooterButton(target)?.click()
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+    flushSync()
+    await tick()
+  }
+
   it('wraps Tab from the last focusable back to the first', async () => {
     // Force `already-granted` so step 1 has a single Next footer button, then advance
-    // to step 3 where both Back and a single Finish footer button are visible. We use
-    // step 3 (not step 2) here so the focus-trap test isn't entangled with step 2's
-    // dual-button footer override and embedded radios/inputs.
+    // to step 3 to exercise the full focusable set (Back + body controls + footer
+    // primary).
     openWizard('menu')
     setStep1Variant('already-granted')
     mounted = mountWizard()
     await tick()
-    // Step 1 → step 2.
-    primaryFooterButton(mounted.target)?.click()
-    flushSync()
-    await tick()
-    // Step 2 → step 3 (use LAST footer button to advance, not Start-using-Cmdr).
-    lastPrimaryFooterButton(mounted.target)?.click()
-    for (let i = 0; i < 10; i++) await Promise.resolve()
-    flushSync()
-    await tick()
+    await advanceToStep3(mounted.target)
     const panel = getPanel(mounted.target)
-    const back = backButton(mounted.target)
-    const next = primaryFooterButton(mounted.target)
-    if (!back || !next) throw new Error('back + next must exist on step 3')
-    next.focus()
-    expect(document.activeElement).toBe(next)
+    const items = focusables(panel)
+    expect(items.length).toBeGreaterThanOrEqual(2)
+    const first = items[0]
+    const last = items[items.length - 1]
+    last.focus()
+    expect(document.activeElement).toBe(last)
     const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
     panel.dispatchEvent(tab)
     flushSync()
     expect(tab.defaultPrevented).toBe(true)
-    expect(document.activeElement).toBe(back)
+    expect(document.activeElement).toBe(first)
   })
 
   it('wraps Shift+Tab from the first focusable back to the last', async () => {
@@ -269,23 +287,18 @@ describe('OnboardingWizard', () => {
     setStep1Variant('already-granted')
     mounted = mountWizard()
     await tick()
-    primaryFooterButton(mounted.target)?.click()
-    flushSync()
-    await tick()
-    lastPrimaryFooterButton(mounted.target)?.click()
-    for (let i = 0; i < 10; i++) await Promise.resolve()
-    flushSync()
-    await tick()
+    await advanceToStep3(mounted.target)
     const panel = getPanel(mounted.target)
-    const back = backButton(mounted.target)
-    const next = primaryFooterButton(mounted.target)
-    if (!back || !next) throw new Error('back + next must exist on step 3')
-    back.focus()
-    expect(document.activeElement).toBe(back)
+    const items = focusables(panel)
+    expect(items.length).toBeGreaterThanOrEqual(2)
+    const first = items[0]
+    const last = items[items.length - 1]
+    first.focus()
+    expect(document.activeElement).toBe(first)
     const shiftTab = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })
     panel.dispatchEvent(shiftTab)
     flushSync()
     expect(shiftTab.defaultPrevented).toBe(true)
-    expect(document.activeElement).toBe(next)
+    expect(document.activeElement).toBe(last)
   })
 })
