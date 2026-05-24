@@ -95,7 +95,7 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
   // legibly necessary instead of being stripped by `no-unnecessary-condition`.
   let leaked: string[] | null
   try {
-    leaked = (await tauriPage.evaluate<string[]>(`(function(){
+    leaked = await tauriPage.evaluate<string[]>(`(function(){
             var overlays = ['.filter-chip-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
             var found = overlays.filter(function(s){ return document.querySelector(s) !== null; });
             // Include each toast's first-100-char text in the leak label so
@@ -107,7 +107,7 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
                 found.push('.toast["' + text + '"]');
             }
             return found;
-        })()`))
+        })()`)
   } catch {
     // If the probe itself fails (e.g. the app crashed mid-test), don't
     // mask the original failure with a probe error.
