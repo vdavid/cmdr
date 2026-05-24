@@ -91,11 +91,12 @@ test.afterEach(async ({ tauriPage }, testInfo) => {
   // `tauriPage.evaluate<T>()`'s generic asserts the return type, but the call
   // actually resolves to null when the focused window was destroyed mid-test
   // (e.g. the production-binding Escape tests in viewer.spec.ts and
-  // settings.spec.ts). Widen via cast so the `!leaked` null-guard below stays
-  // legibly necessary instead of being stripped by `no-unnecessary-condition`.
+  // settings.spec.ts). Widen the generic to `string[] | null` so the `!leaked`
+  // null-guard below stays legibly necessary instead of being stripped by
+  // `no-unnecessary-condition`.
   let leaked: string[] | null
   try {
-    leaked = await tauriPage.evaluate<string[]>(`(function(){
+    leaked = await tauriPage.evaluate<string[] | null>(`(function(){
             var overlays = ['.filter-chip-popover', '.palette-overlay', '.search-overlay', '.modal-overlay', '.volume-dropdown'];
             var found = overlays.filter(function(s){ return document.querySelector(s) !== null; });
             // Include each toast's first-100-char text in the leak label so

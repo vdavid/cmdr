@@ -164,7 +164,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
   // passes the type check without losing inference on the rest of the file.
   const component = mount(QueryDialog, {
     target,
-    props: { config: config },
+    props: { config: config as unknown as QueryDialogConfig<unknown> },
   })
 
   const overlay = target.querySelector('.search-overlay')
