@@ -34,6 +34,34 @@ vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: vi.fn(() => Promise.resolve()),
   startIndexingAfterFdaDecision: vi.fn(() => Promise.resolve()),
   openExternalUrl: vi.fn(() => Promise.resolve()),
+  // M3: StepAi pulls in the AI pipeline. None of these need real behaviour here;
+  // the wizard test only cares about navigation + footer plumbing.
+  startAiDownload: vi.fn(() => Promise.resolve()),
+  cancelAiDownload: vi.fn(() => Promise.resolve()),
+  checkAiConnection: vi.fn(() => Promise.resolve({ connected: false, authError: false, models: [], error: null })),
+  saveAiApiKey: vi.fn(() => Promise.resolve(null)),
+  getAiApiKey: vi.fn(() => Promise.resolve('')),
+  configureAi: vi.fn(() => Promise.resolve()),
+  getAiRuntimeStatus: vi.fn(() =>
+    Promise.resolve({
+      serverRunning: false,
+      serverStarting: false,
+      pid: null,
+      port: null,
+      modelInstalled: false,
+      modelName: 'Ministral 3B',
+      modelSizeBytes: 0,
+      modelSizeFormatted: '0 B',
+      downloadInProgress: false,
+      localAiSupported: true,
+      kvBytesPerToken: 0,
+      baseOverheadBytes: 0,
+    }),
+  ),
+}))
+
+vi.mock('$lib/settings/ai-config', () => ({
+  pushConfigToBackend: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@tauri-apps/plugin-process', () => ({
@@ -68,6 +96,15 @@ function primaryFooterButton(target: HTMLElement): HTMLButtonElement | null {
   const slot = target.querySelector<HTMLElement>('.primary-slot')
   if (!slot) return null
   return slot.querySelector<HTMLButtonElement>('button')
+}
+
+/** Returns the LAST button in the primary slot. On step 2 the wizard renders two */
+/** footer buttons; the "advance" one ("One more optional setup step") is the last. */
+function lastPrimaryFooterButton(target: HTMLElement): HTMLButtonElement | null {
+  const slot = target.querySelector<HTMLElement>('.primary-slot')
+  if (!slot) return null
+  const buttons = slot.querySelectorAll<HTMLButtonElement>('button')
+  return buttons[buttons.length - 1] ?? null
 }
 
 function backButton(target: HTMLElement): HTMLButtonElement | null {
@@ -134,15 +171,41 @@ describe('OnboardingWizard', () => {
     setStep1Variant('already-granted')
     mounted = mountWizard(onComplete)
     await tick()
+    // Step 1 → step 2 via wizard's default Next.
     primaryFooterButton(mounted.target)?.click()
     flushSync()
-    primaryFooterButton(mounted.target)?.click()
+    await tick()
+    // Step 2 owns its footer override: [Start (secondary), One more (primary)]. Click
+    // the LAST button to advance to step 3 without skipping. Allow microtasks for the
+    // step-2 persist + nextStep() chain to settle.
+    lastPrimaryFooterButton(mounted.target)?.click()
+    for (let i = 0; i < 10; i++) await Promise.resolve()
     flushSync()
+    await tick()
     expect(getOnboardingState().currentStep).toBe(3)
     expect(primaryFooterButton(mounted.target)?.textContent?.trim()).toBe('Finish')
     primaryFooterButton(mounted.target)?.click()
     flushSync()
     expect(onComplete).toHaveBeenCalledOnce()
+  })
+
+  it('step 2 "Start using Cmdr!" requests wizard finish (skips step 3)', async () => {
+    const onComplete = vi.fn()
+    openWizard('menu')
+    setStep1Variant('already-granted')
+    mounted = mountWizard(onComplete)
+    await tick()
+    primaryFooterButton(mounted.target)?.click()
+    flushSync()
+    await tick()
+    // Step 2 footer's FIRST button is "Start using Cmdr!" (secondary).
+    primaryFooterButton(mounted.target)?.click()
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+    flushSync()
+    await tick()
+    expect(onComplete).toHaveBeenCalledOnce()
+    // Should NOT have advanced to step 3 — the finish request short-circuits.
+    expect(getOnboardingState().currentStep).toBe(2)
   })
 
   it('Back from step 2 resets the footer mode to `decide` (Allow/Deny live again)', async () => {
@@ -172,18 +235,26 @@ describe('OnboardingWizard', () => {
 
   it('wraps Tab from the last focusable back to the first', async () => {
     // Force `already-granted` so step 1 has a single Next footer button, then advance
-    // to step 2 where both Back and Next are visible.
+    // to step 3 where both Back and a single Finish footer button are visible. We use
+    // step 3 (not step 2) here so the focus-trap test isn't entangled with step 2's
+    // dual-button footer override and embedded radios/inputs.
     openWizard('menu')
     setStep1Variant('already-granted')
     mounted = mountWizard()
     await tick()
+    // Step 1 → step 2.
     primaryFooterButton(mounted.target)?.click()
+    flushSync()
+    await tick()
+    // Step 2 → step 3 (use LAST footer button to advance, not Start-using-Cmdr).
+    lastPrimaryFooterButton(mounted.target)?.click()
+    for (let i = 0; i < 10; i++) await Promise.resolve()
     flushSync()
     await tick()
     const panel = getPanel(mounted.target)
     const back = backButton(mounted.target)
     const next = primaryFooterButton(mounted.target)
-    if (!back || !next) throw new Error('back + next must exist on step 2')
+    if (!back || !next) throw new Error('back + next must exist on step 3')
     next.focus()
     expect(document.activeElement).toBe(next)
     const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
@@ -201,10 +272,14 @@ describe('OnboardingWizard', () => {
     primaryFooterButton(mounted.target)?.click()
     flushSync()
     await tick()
+    lastPrimaryFooterButton(mounted.target)?.click()
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+    flushSync()
+    await tick()
     const panel = getPanel(mounted.target)
     const back = backButton(mounted.target)
     const next = primaryFooterButton(mounted.target)
-    if (!back || !next) throw new Error('back + next must exist on step 2')
+    if (!back || !next) throw new Error('back + next must exist on step 3')
     back.focus()
     expect(document.activeElement).toBe(back)
     const shiftTab = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })

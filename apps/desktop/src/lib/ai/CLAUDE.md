@@ -43,6 +43,12 @@ The settings-applier listens for `ai.provider` / `ai.cloudProvider` / `ai.cloudP
 fresh config to Rust via `lib/settings/ai-config.ts::pushConfigToBackend()`. Same helper, same read-fresh semantics —
 this means the wizard's step 2 doesn't need to know about backend wiring beyond `setSetting(...)`.
 
+The onboarding wizard's step 2 (`lib/onboarding/StepAi.svelte` + `CloudProviderSetup.svelte`) reuses the
+`checkAiConnection` / `saveAiApiKey` / `getAiApiKey` pipeline from `lib/settings/sections/AiCloudSection.svelte`
+verbatim (1 s debounce, /models fetch, in-place model combobox). The pipeline itself is documented in
+`lib/settings/CLAUDE.md` § "AiSection". Step 2 also calls `pushConfigToBackend()` explicitly on the "Start using Cmdr!"
+/ "One more optional setup step" handlers to order the backend reconfigure ahead of the wizard's `onComplete()`.
+
 ### Model registry is extensible
 
 `AVAILABLE_MODELS` constant in backend (`src-tauri/src/ai/mod.rs`) defines available models. Current default: Ministral

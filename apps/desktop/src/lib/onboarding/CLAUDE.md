@@ -11,15 +11,17 @@ path.
 | `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, focus trap, Escape-swallow.             |
 | `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                  |
 | `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants — first-ask, revoked, already-granted.                                       |
-| `StepAi.svelte`              | Step 2: AI provider picker. M2 ships a stub; M3 lands the provider list + per-provider setup + FDA-outcome banner.                 |
+| `StepAi.svelte`              | Step 2: AI provider picker. Three FDA-outcome banners, three radio choices, dual-button footer (Start vs Continue).                |
+| `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Arrow / Home / End / type-to-jump keyboard nav.                  |
+| `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                            |
 | `StepOptional.svelte`        | Step 3 (optional): networking, indexing, updates, MTP toggles. M2 ships a stub; M4 wires the toggles.                              |
 | `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc. |
 
 ## Status
 
-M2-shipping. Step 1 (FDA) is real and is the single production FDA path — the legacy `FullDiskAccessPrompt.svelte` modal
-has been removed. Steps 2 and 3 are stubs (M3 / M4 land their content). `CMDR_FORCE_ONBOARDING=1` forces the wizard
-regardless of persisted state for dev / E2E iteration.
+M3-shipping. Step 1 (FDA) and step 2 (AI provider) are real; step 3 is a stub until M4. The legacy
+`FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single first-launch path on macOS.
+`CMDR_FORCE_ONBOARDING=1` forces the wizard regardless of persisted state for dev / E2E iteration.
 
 ## Step 1 (Full Disk Access)
 
@@ -56,6 +58,52 @@ advances normally).
    scan walks `~/Downloads`, `~/Documents`, `~/Desktop`, etc., firing one TCC popup per folder. Those are the per-folder
    prompts the user opted into by denying FDA. Folders the user denies stay unindexed.
 3. `setStepTwoBanner('denied')` + advance to step 2.
+
+## Step 2 (AI provider)
+
+Three pieces stacked top to bottom:
+
+1. **FDA-outcome banner** — on step-2 entry, `StepAi.svelte` fires a fresh `checkFullDiskAccess()` + reads
+   `fullDiskAccessChoice` and writes one of three modes via `setStepTwoBanner()`:
+   - `granted` ("Thanks for granting full disk access!")
+   - `denied` ("You chose not to enable full disk access.")
+   - `stuck` ("Cmdr doesn't seem to have full disk access yet" — surfaces a deep link to System Settings) Linux
+     short-circuits with `linux` (no banner; the step opens with the Welcome line instead).
+2. **Comparison table** — verbatim from David's spec, "with AI vs without" for Search, Mass-rename, Select.
+3. **Three radio choices** — cloud / local / no AI. Pre-selected from the persisted `ai.provider` so a crash-then-resume
+   user lands on their previous pick. Picking cloud reveals `CloudProviderPicker.svelte` (left) and
+   `CloudProviderSetup.svelte` (right). Picking local kicks off `startAiDownload()` in the background; switching away
+   cancels (HTTP-Range resume picks up on switch-back). Intel Macs see the local radio disabled with a tooltip ("Local
+   LLM requires Apple Silicon. Cloud works on Intel.") driven by `getAiRuntimeStatus().localAiSupported`.
+
+### Dual-button footer
+
+Step 2 owns its own footer via `setFooterOverride([...])` (the wizard's right slot supports an array of buttons):
+
+- **Start using Cmdr!** (secondary): persists + `pushConfigToBackend()`, then bumps the wizard's `finishRequestTick` so
+  the wizard fires `onComplete()` (skipping step 3 entirely).
+- **One more optional setup step** (primary, accent-colored): persists + `pushConfigToBackend()`, then `nextStep()` to
+  step 3. The primary color is intentional, to nudge users toward the optional setup without forcing them.
+
+Both buttons stay enabled regardless of API-key validity per the **no-key-blocks-advance** rule: the auto-check status
+in the right column is feedback enough; forcing valid key entry as a precondition would fight users who want to grab the
+key later. The user can re-enter via `Cmdr > Onboarding…` or fix it in Settings; first AI use surfaces the standard
+`NotConfigured` error path.
+
+### Connection-check pipeline
+
+`CloudProviderSetup.svelte` mirrors `lib/settings/sections/AiCloudSection.svelte`'s pipeline rather than forking it: 300
+ms debounce on API-key persist, 1 s debounce on `checkAiConnection(baseUrl, apiKey)`. On `connected`, the right column
+reveals the model combobox populated from `/models` and the API-key step gets a green check. The wizard never disables
+advance based on connection status; the auto-check is purely informational.
+
+### `pushConfigToBackend()` belt-and-braces
+
+The `settings-applier.ts` listener wired in M1 also calls `pushConfigToBackend()` on any `ai.provider` /
+`ai.cloudProvider` / `ai.cloudProviderConfigs` change, so the wizard's explicit `await` is redundant in the steady
+state. The reason it's there: the listener fires per-setting-change, so if the user flips three settings in one tick we
+get three async invocations racing the wizard's `onComplete()`. The explicit `await pushConfigToBackend()` in
+`StepAi.persist()` orders the backend reconfigure before the user lands in the app deterministically.
 
 ## Resume rule
 

@@ -70,6 +70,22 @@ export type Step1FooterMode = 'decide' | 'restart'
  */
 export type StepTwoFdaBanner = 'granted' | 'denied' | 'stuck' | 'linux'
 
+/**
+ * A button to render in the wizard's footer (right slot). Steps register an array of
+ * these when they want to override the wizard's default single-primary-button layout.
+ * Step 2 uses this to render the dual-button footer ("Start using Cmdr!" secondary +
+ * "One more optional setup step" primary). When `null`, the wizard falls back to its
+ * built-in per-step button (`Next`, `Finish`, `Restart Cmdr`, or nothing).
+ */
+export interface WizardFooterButton {
+  label: string
+  variant: 'primary' | 'secondary' | 'danger'
+  onclick: () => void
+  disabled?: boolean
+  /** Optional aria-label override; falls back to `label`. */
+  ariaLabel?: string
+}
+
 interface OnboardingStateData {
   /** `null` when the wizard is closed; an integer step when open. */
   currentStep: OnboardingStep | null
@@ -81,6 +97,23 @@ interface OnboardingStateData {
   step1FooterMode: Step1FooterMode
   /** Pre-computed step-2 banner mode. M3 reads this; M2 stores it. */
   stepTwoBanner: StepTwoFdaBanner
+  /**
+   * If set, the wizard renders these buttons in the footer's right slot instead of
+   * its default single primary button. Step 2 registers `[Start, Continue]` here so
+   * the dual-button layout lives next to the rest of the wizard chrome. Reset to
+   * `null` on `closeWizard()` / `previousStep()` / step transitions so stale handlers
+   * never linger.
+   */
+  footerOverride: WizardFooterButton[] | null
+  /**
+   * Monotonic tick. A step bumps this via `requestWizardComplete()` to ask the wizard
+   * shell to fire `onComplete` and close the wizard. The wizard's `$effect` watches
+   * this value (not a boolean, so repeated requests within the same session still
+   * fire) and reads it once per increment. Used by step 2's "Start using Cmdr!"
+   * button to skip past step 3 without the step body needing to import the wizard's
+   * callback.
+   */
+  finishRequestTick: number
 }
 
 const state = $state<OnboardingStateData>({
@@ -89,6 +122,8 @@ const state = $state<OnboardingStateData>({
   step1Variant: 'first-ask',
   step1FooterMode: 'decide',
   stepTwoBanner: 'stuck',
+  footerOverride: null,
+  finishRequestTick: 0,
 })
 
 export function getOnboardingState(): Readonly<OnboardingStateData> {
@@ -162,6 +197,7 @@ export function stepTwoBannerFor(ctx: ResumeContext): StepTwoFdaBanner {
  */
 export function openWizard(source: OnboardingSource, ctx: ResumeContext | null = null): void {
   state.source = source
+  state.footerOverride = null
   if (ctx === null) {
     // No flags available (M1-style dev force). Use sensible defaults: macOS lands on
     // step 1 with the first-ask variant; Linux skips to step 2.
@@ -183,6 +219,7 @@ export function closeWizard(): void {
   state.step1Variant = 'first-ask'
   state.step1FooterMode = 'decide'
   state.stepTwoBanner = 'stuck'
+  state.footerOverride = null
 }
 
 /**
@@ -194,6 +231,8 @@ export function nextStep(): void {
   if (state.currentStep === 1 && state.step1FooterMode === 'restart') return
   if (state.currentStep < ONBOARDING_STEP_COUNT) {
     state.currentStep = (state.currentStep + 1) as OnboardingStep
+    // Clear any prior step's footer override; the new step opts in fresh if it wants.
+    state.footerOverride = null
   }
 }
 
@@ -211,6 +250,7 @@ export function previousStep(): void {
   if (state.currentStep > 1) {
     state.currentStep = (state.currentStep - 1) as OnboardingStep
     state.step1FooterMode = 'decide'
+    state.footerOverride = null
   }
 }
 
@@ -248,6 +288,26 @@ export function setStepTwoBanner(banner: StepTwoFdaBanner): void {
   state.stepTwoBanner = banner
 }
 
+/**
+ * Step-controlled footer override. Pass an array of buttons to render in the wizard's
+ * footer right slot in place of the default per-step button; pass `null` to fall back
+ * to the default. Step 2 uses this for its dual-button layout. Always reset to `null`
+ * on tear-down so a stale closure doesn't leak across remounts.
+ */
+export function setFooterOverride(buttons: WizardFooterButton[] | null): void {
+  state.footerOverride = buttons
+}
+
+/**
+ * Ask the wizard to fire its `onComplete` callback (close + persist `isOnboarded`).
+ * Used by step 2's "Start using Cmdr!" button to finish without stepping through
+ * step 3. The wizard observes `finishRequestTick` and calls `onComplete()` once per
+ * increment.
+ */
+export function requestWizardComplete(): void {
+  state.finishRequestTick++
+}
+
 /** Reset to closed. For use in tests only. */
 export function resetForTesting(): void {
   state.currentStep = null
@@ -255,4 +315,6 @@ export function resetForTesting(): void {
   state.step1Variant = 'first-ask'
   state.step1FooterMode = 'decide'
   state.stepTwoBanner = 'stuck'
+  state.footerOverride = null
+  state.finishRequestTick = 0
 }

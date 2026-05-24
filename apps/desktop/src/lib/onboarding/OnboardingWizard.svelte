@@ -139,35 +139,64 @@
     }
 
     /**
-     * What primary footer button to render for the current step + state. Returns
-     * `null` when the step body owns its own buttons (step 1 in decide mode renders
-     * Allow/Deny inside `StepFda.svelte`). The wizard's footer reserves space for
-     * the back button on the left and the primary button on the right; rendering
-     * `null` for primary just leaves the right slot empty.
+     * Step bodies (currently step 2's "Start using Cmdr!" button) can ask the wizard
+     * to finish early — skipping any remaining steps. They bump `finishRequestTick`
+     * via `requestWizardComplete()` and we react here. Using a tick counter (not a
+     * boolean) means repeated requests in the same session still each fire exactly
+     * once.
      */
-    type PrimaryButton =
-        | { label: string; onclick: () => void; variant: 'primary' }
-        | null
+    let lastSeenFinishTick = 0
+    $effect(() => {
+        const tick = onboardingState.finishRequestTick
+        if (tick === 0 || tick === lastSeenFinishTick) return
+        lastSeenFinishTick = tick
+        onComplete()
+    })
 
-    const primary: PrimaryButton = $derived.by(() => computePrimaryButton())
+    /**
+     * Buttons to render in the footer's right slot. By default the wizard computes a
+     * single per-step primary button (`Next`, `Finish`, `Restart Cmdr`, or nothing for
+     * step 1's decide mode where the body owns Allow/Deny). Steps that need a custom
+     * layout (step 2's dual-button "Start using Cmdr!" / "One more optional setup step")
+     * register their own array via `setFooterOverride()` in onboarding-state and we
+     * render those instead. Rendering `[]` for primary just leaves the right slot empty.
+     */
+    type FooterButton = {
+        label: string
+        onclick: () => void
+        variant: 'primary' | 'secondary' | 'danger'
+        disabled?: boolean
+        ariaLabel?: string
+    }
 
-    function computePrimaryButton(): PrimaryButton {
+    const footerButtons: FooterButton[] = $derived.by(() => computeFooterButtons())
+
+    function computeFooterButtons(): FooterButton[] {
+        if (onboardingState.footerOverride) {
+            return onboardingState.footerOverride.map((b) => ({
+                label: b.label,
+                onclick: b.onclick,
+                variant: b.variant,
+                disabled: b.disabled,
+                ariaLabel: b.ariaLabel,
+            }))
+        }
         const step = onboardingState.currentStep
-        if (step === null) return null
+        if (step === null) return []
         if (step === 1) {
             if (onboardingState.step1FooterMode === 'restart') {
-                return { label: 'Restart Cmdr', onclick: () => void handleRestart(), variant: 'primary' }
+                return [{ label: 'Restart Cmdr', onclick: () => void handleRestart(), variant: 'primary' }]
             }
             if (onboardingState.step1Variant === 'already-granted') {
-                return { label: 'Next', onclick: handleNext, variant: 'primary' }
+                return [{ label: 'Next', onclick: handleNext, variant: 'primary' }]
             }
             // Step 1 decide mode: Allow + Deny live in the body; footer primary is hidden.
-            return null
+            return []
         }
         if (isAtLastStep()) {
-            return { label: 'Finish', onclick: handleNext, variant: 'primary' }
+            return [{ label: 'Finish', onclick: handleNext, variant: 'primary' }]
         }
-        return { label: 'Next', onclick: handleNext, variant: 'primary' }
+        return [{ label: 'Next', onclick: handleNext, variant: 'primary' }]
     }
 
     /**
@@ -234,9 +263,16 @@
                 {/if}
             </div>
             <div class="primary-slot">
-                {#if primary}
-                    <Button variant={primary.variant} onclick={primary.onclick}>{primary.label}</Button>
-                {/if}
+                {#each footerButtons as button, i (`${String(i)}-${button.label}`)}
+                    <Button
+                        variant={button.variant}
+                        disabled={button.disabled ?? false}
+                        onclick={button.onclick}
+                        aria-label={button.ariaLabel ?? button.label}
+                    >
+                        {button.label}
+                    </Button>
+                {/each}
             </div>
         </footer>
     </div>
@@ -331,6 +367,10 @@
     .primary-slot {
         display: flex;
         align-items: center;
+    }
+
+    .primary-slot {
+        gap: var(--spacing-md);
     }
 
     .back-button {
