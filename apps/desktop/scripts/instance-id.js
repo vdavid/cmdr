@@ -105,11 +105,20 @@ export function bundleIdentifier(instanceId) {
 /**
  * Compose the Dock / process label (productName) from an instance ID. Unset → "Cmdr".
  *
+ * Special-cases E2E instance IDs of the shape `e2e-<kind>-<pid>` (set by the Go checker,
+ * see scripts/check/checks/desktop-svelte-e2e-playwright.go) into `Cmdr (E2E <kind>)` so
+ * cleanup scripts can target only the right processes via `pgrep -f 'Cmdr (E2E '`. The
+ * `<pid>` is dropped from the label because it bloats the Dock string and is recoverable
+ * from `ps` anyway. Dev / dev-<slug> / other inputs stringify as-is.
+ *
  * @param {string|null} instanceId
  * @returns {string}
  */
 export function productName(instanceId) {
-  return instanceId ? `Cmdr (${instanceId})` : PROD_PRODUCT_NAME
+  if (!instanceId) return PROD_PRODUCT_NAME
+  const e2eMatch = /^e2e-([a-z0-9-]+?)-(\d+)$/.exec(instanceId)
+  if (e2eMatch) return `Cmdr (E2E ${e2eMatch[1]})`
+  return `Cmdr (${instanceId})`
 }
 
 /**

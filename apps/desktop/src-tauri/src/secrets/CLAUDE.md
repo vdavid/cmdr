@@ -36,6 +36,15 @@ This keeps the store reusable for any future secret type.
 Unlike the old `keychain_linux.rs` which hardcoded `~/.local/share/cmdr/`, file stores respect `CMDR_DATA_DIR` so dev
 and prod credentials are properly isolated.
 
+### macOS Keychain `SERVICE_NAME` is instance-suffixed
+
+`keychain_macos.rs` resolves `SERVICE_NAME` once at first use from `CMDR_INSTANCE_ID`: prod (env unset or empty) keeps
+`"Cmdr"`; any non-empty instance ID maps to `"Cmdr-<instance>"` (for example, `"Cmdr-dev"`, `"Cmdr-dev-my-feature"`,
+`"Cmdr-e2e-nonmtp1-12345"`). The wrapper already short-circuits non-prod to the file backend via `CMDR_SECRET_STORE=file`
+and E2E forces the file backend via `is_e2e_mode()`, so the Keychain path is rarely hit outside prod. The suffix is the
+belt-and-suspenders defense: if a stray manual launch ever lands on the Keychain backend under a non-prod identifier,
+it writes to its own service namespace instead of mixing into prod credentials. Prod runs unchanged.
+
 ### Plain file for dev, encrypted for prod Linux
 
 Dev mode doesn't encrypt -- it's the developer's machine, and the file is in the dev data dir. The Linux production

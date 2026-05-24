@@ -1,9 +1,70 @@
 package checks
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
+
+// shardInstanceID stamps the CMDR_INSTANCE_ID env var the binary picks up at launch. The
+// format is load-bearing on two fronts: (1) instance-id.js productName() expects exactly
+// `e2e-<short>-<pid>` to reshape the Dock label into `Cmdr (E2E <short>)`, and (2) the
+// macOS Keychain backend suffixes its SERVICE_NAME with the same string. Drift would
+// quietly turn the Dock label into "Cmdr (e2e-mtp-12345)" (still works, ugly) and break a
+// future `pgrep -f 'Cmdr (E2E '` cleanup script.
+func TestShardInstanceIDFormat(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		short string
+		pid   int
+		want  string
+	}{
+		{"mtp", 12345, "e2e-mtp-12345"},
+		{"nonmtp1", 99999, "e2e-nonmtp1-99999"},
+		{"nonmtp2", 1, "e2e-nonmtp2-1"},
+	}
+	for _, tc := range cases {
+		got := shardInstanceID(tc.short, tc.pid)
+		if got != tc.want {
+			t.Errorf("shardInstanceID(%q, %d) = %q, want %q", tc.short, tc.pid, got, tc.want)
+		}
+	}
+}
+
+// planShards must compose the per-shard CMDR_INSTANCE_ID alongside the data dir and ports,
+// and the MTP lane is shard 0 (sequential). Pinning both invariants here catches a future
+// refactor that drops the instance ID or reshuffles the MTP lane out of position 0 (the MTP
+// shard MUST run alone because `/tmp/cmdr-mtp-e2e-fixtures` is shared across instances).
+func TestPlanShardsAssignsInstanceIDs(t *testing.T) {
+	t.Parallel()
+
+	const pid = 4242
+	shards := planShards("", 1700000000, pid)
+
+	if len(shards) != nonMtpShards+1 {
+		t.Fatalf("planShards returned %d shards, want %d", len(shards), nonMtpShards+1)
+	}
+	if shards[0].kind != "mtp" {
+		t.Errorf("shards[0].kind = %q, want %q", shards[0].kind, "mtp")
+	}
+	if shards[0].instanceID != "e2e-mtp-4242" {
+		t.Errorf("shards[0].instanceID = %q, want %q", shards[0].instanceID, "e2e-mtp-4242")
+	}
+
+	// Non-MTP shards use the `nonmtp<i>` short name (no dash between "nonmtp" and the index)
+	// to match the productName regex in instance-id.js.
+	for i := 1; i <= nonMtpShards; i++ {
+		shard := shards[i]
+		wantInstance := fmt.Sprintf("e2e-nonmtp%d-%d", i, pid)
+		if shard.instanceID != wantInstance {
+			t.Errorf("shards[%d].instanceID = %q, want %q", i, shard.instanceID, wantInstance)
+		}
+		if !strings.HasPrefix(shard.instanceID, "e2e-nonmtp") {
+			t.Errorf("shards[%d].instanceID = %q, want e2e-nonmtp prefix", i, shard.instanceID)
+		}
+	}
+}
 
 func TestExtractE2ETestOutput_PreTestSetupFailure(t *testing.T) {
 	// Captured output when SMB containers came up but the test runner never

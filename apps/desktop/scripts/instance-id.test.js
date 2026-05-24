@@ -195,6 +195,21 @@ describe('bundleIdentifier + productName', () => {
     expect(productName('dev-foo')).toBe('Cmdr (dev-foo)')
     expect(bundleIdentifier('e2e-mtp-12345')).toBe('com.veszelovszki.cmdr-e2e-mtp-12345')
   })
+
+  it('reformats E2E instance IDs into a pgrep-friendly label without the PID', () => {
+    // The checker uses `e2e-<kind>-<pid>` for shard isolation. The label drops the pid so
+    // the Dock string stays short and cleanup scripts can target `Cmdr (E2E ` cleanly.
+    expect(productName('e2e-mtp-12345')).toBe('Cmdr (E2E mtp)')
+    expect(productName('e2e-nonmtp1-99999')).toBe('Cmdr (E2E nonmtp1)')
+    expect(productName('e2e-nonmtp-2-12345')).toBe('Cmdr (E2E nonmtp-2)')
+  })
+
+  it('leaves non-E2E instance IDs unchanged in the label', () => {
+    // dev-<slug> looks superficially similar but must NOT be re-shaped: the slug is
+    // user-supplied and could legitimately contain digits in its tail.
+    expect(productName('dev-12345')).toBe('Cmdr (dev-12345)')
+    expect(productName('dev-foo')).toBe('Cmdr (dev-foo)')
+  })
 })
 
 describe('buildInstanceConfig', () => {

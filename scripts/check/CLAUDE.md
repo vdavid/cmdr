@@ -132,10 +132,13 @@ hatch: an explicit `--check cargo-udeps` always runs, so you can verify locally 
 
 **Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build binary once, create per-shard
 fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). Each shard runs in its own isolated
-`CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset). One shard is dedicated to MTP specs
-(serialized; the virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri instance). Stale
-processes on each port are killed before starting. Per-shard logs go to
-`/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
+`CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset), plus a per-shard `CMDR_INSTANCE_ID` of the
+form `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). The instance ID drives the macOS Keychain
+`SERVICE_NAME` suffix (`Cmdr-e2e-<short>-<pid>`) so two parallel shards can never collide on credentials, and reshapes
+the Dock label into `Cmdr (E2E <short>)` so cleanup scripts can target with `pgrep -f 'Cmdr (E2E '`. One shard is
+dedicated to MTP specs (serialized; the virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri
+instance). Stale processes on each port are killed before starting. Per-shard logs go to
+`/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`. See `docs/specs/instance-isolation-plan.md` § P3 for the design.
 
 `RUST_LOG` is forwarded to the app (via inherited `os.Environ()`), so trace-level output is one shell-prefix away:
 

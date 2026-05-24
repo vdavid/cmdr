@@ -36,9 +36,12 @@ startup, test execution, and cleanup:
 
 The checker runs the suite as **N parallel shards**: one dedicated MTP lane (sequential, `mtp.spec.ts` +
 `mtp-conflicts.spec.ts`) plus 2 non-MTP lanes split by Playwright's `--shard X/2`. Each shard gets its own Tauri
-instance with a distinct `CMDR_DATA_DIR`, MCP port (9429 + offset), and Unix socket path. The MTP shard runs alone
-because the virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance. Running MTP specs
-from two shards at once would corrupt it. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
+instance with a distinct `CMDR_DATA_DIR`, MCP port (9429 + offset), Unix socket path, and `CMDR_INSTANCE_ID` of the form
+`e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). The instance ID drives the macOS Keychain
+`SERVICE_NAME` suffix so two parallel shards can never collide on credentials, and reshapes the Dock label to
+`Cmdr (E2E <short>)` for easy `pgrep` cleanup. The MTP shard runs alone because the virtual MTP backing dir
+(`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance. Running MTP specs from two shards at once would
+corrupt it. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
 
 The socket path is overridable via the `CMDR_PLAYWRIGHT_SOCKET` env var (read in `src-tauri/src/lib.rs` and passed to
 `tauri_plugin_playwright::init_with_config`). When unset, the plugin falls back to `/tmp/tauri-playwright.sock` so

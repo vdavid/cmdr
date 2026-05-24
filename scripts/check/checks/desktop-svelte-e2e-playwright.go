@@ -33,8 +33,13 @@ const (
 )
 
 type shardSpec struct {
-	name       string
-	kind       string // "mtp" or "non-mtp"
+	name string
+	kind string // "mtp" or "non-mtp"
+	// instanceID is the per-shard CMDR_INSTANCE_ID stamped into the launched binary's env.
+	// Drives the macOS Keychain SERVICE_NAME suffix and the productName so Activity Monitor /
+	// pgrep can target shards individually. Format: `e2e-<short-name>-<pid>` where
+	// <short-name> is `mtp` or `nonmtpN`. See planShards for the mapping.
+	instanceID string
 	socketPath string
 	mcpPort    int
 	dataDir    string
@@ -204,6 +209,15 @@ func aggregateShardResults(results []shardResult, totalShards int) (CheckResult,
 	return Success("All Playwright E2E tests passed"), nil
 }
 
+// shardInstanceID returns the CMDR_INSTANCE_ID for a shard short-name. Format:
+// `e2e-<short>-<pid>`. The wrapper / binary derive the macOS Keychain suffix from this and
+// instance-id.js reshapes it into `Cmdr (E2E <short>)` for the Dock label so cleanup
+// scripts can `pgrep -f 'Cmdr (E2E '` cleanly. See P3 in
+// docs/specs/instance-isolation-plan.md.
+func shardInstanceID(shortName string, pid int) string {
+	return fmt.Sprintf("e2e-%s-%d", shortName, pid)
+}
+
 // planShards builds the per-shard plan. Shard 0 is the MTP lane; shards
 // 1..N are the non-MTP lanes, split by Playwright's --shard X/N.
 func planShards(_ string, timestamp int64, pid int) []shardSpec {
@@ -220,6 +234,7 @@ func planShards(_ string, timestamp int64, pid int) []shardSpec {
 	shards = append(shards, shardSpec{
 		name:       "mtp",
 		kind:       "mtp",
+		instanceID: shardInstanceID("mtp", pid),
 		socketPath: fmt.Sprintf("/tmp/tauri-playwright-mtp-%d.sock", pid),
 		mcpPort:    mcpPortBase,
 		dataDir:    fmt.Sprintf("/tmp/cmdr-e2e-data-mtp-%d", pid),
@@ -229,14 +244,16 @@ func planShards(_ string, timestamp int64, pid int) []shardSpec {
 
 	// Non-MTP shards
 	for i := 1; i <= nonMtpShards; i++ {
+		shortName := fmt.Sprintf("nonmtp%d", i)
 		shards = append(shards, shardSpec{
 			name:            fmt.Sprintf("non-mtp-%d", i),
 			kind:            "non-mtp",
+			instanceID:      shardInstanceID(shortName, pid),
 			socketPath:      fmt.Sprintf("/tmp/tauri-playwright-nonmtp%d-%d.sock", i, pid),
 			mcpPort:         mcpPortBase + i,
 			dataDir:         fmt.Sprintf("/tmp/cmdr-e2e-data-nonmtp%d-%d", i, pid),
-			logFile:         mkLog(fmt.Sprintf("nonmtp%d", i)),
-			jsonReport:      mkJSON(fmt.Sprintf("nonmtp%d", i)),
+			logFile:         mkLog(shortName),
+			jsonReport:      mkJSON(shortName),
 			playwrightShard: fmt.Sprintf("%d/%d", i, nonMtpShards),
 		})
 	}
@@ -384,6 +401,14 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 
 	cmd := exec.Command(binaryPath)
 	cmd.Env = append(os.Environ(),
+		// CMDR_INSTANCE_ID drives the macOS Keychain SERVICE_NAME suffix
+		// ("Cmdr-<instance>") and the Dock label ("Cmdr (E2E <kind>)") so parallel shards
+		// never collide on credentials and `pgrep -f 'Cmdr (E2E '` can target them. The
+		// data dir / port / socket below are still composed explicitly: the checker holds
+		// the per-shard derivation rather than asking the binary to recompute from the
+		// instance ID, keeping the Rust side env-driven (precedence rules in
+		// docs/specs/instance-isolation-plan.md § "Precedence rules").
+		"CMDR_INSTANCE_ID="+s.instanceID,
 		"CMDR_DATA_DIR="+s.dataDir,
 		"CMDR_MCP_PORT="+strconv.Itoa(s.mcpPort),
 		"CMDR_MCP_ENABLED=true",
