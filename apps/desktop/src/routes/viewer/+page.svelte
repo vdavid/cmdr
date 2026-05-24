@@ -420,16 +420,20 @@
 
         const currentWindow = getCurrentWindow()
 
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                log.debug('closeWindow: calling close() after {elapsed}ms', {
-                    elapsed: Math.round(performance.now() - start),
-                })
-                currentWindow.close().catch((e: unknown) => {
-                    log.error('closeWindow: close failed: {error}', { error: String(e) })
-                })
+        // Defer the close() past the current event-loop iteration so the keydown
+        // handler (or whichever caller invoked us) can settle before webkit2gtk
+        // begins destroying this webview — the Linux GTK-main-loop-stall fix.
+        // setTimeout(0) instead of nested rAFs: macOS WKWebView throttles rAF on
+        // unfocused windows (e.g. the E2E case where a viewer opens without
+        // grabbing focus), which can push close past the test's confirmation budget.
+        setTimeout(() => {
+            log.debug('closeWindow: calling close() after {elapsed}ms', {
+                elapsed: Math.round(performance.now() - start),
             })
-        })
+            currentWindow.close().catch((e: unknown) => {
+                log.error('closeWindow: close failed: {error}', { error: String(e) })
+            })
+        }, 0)
     }
 
     function toggleWordWrap(fromMenu = false) {

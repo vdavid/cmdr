@@ -110,8 +110,11 @@ logical coordinates, independent of which lines happen to be rendered.
 - `runHeightMapInitEffect` guards with `if (heightMap.ready) return` to avoid re-preparing when only `textWidth`
   changes. Width-only changes are handled by `runHeightMapReflowEffect` via `reflow()` (instant) instead of re-running
   the async `prepareLines` pipeline. Without this guard, both effects would race on width changes.
-- `closeWindow()`'s two `requestAnimationFrame`s before `currentWindow.close()` are load-bearing — not decoration.
-  Calling `close()` synchronously from inside a webview event handler runs webkit2gtk's destruction on the same GTK
-  main-loop tick, stalling other webviews' IPC for an undefined duration. The settings page
-  (`routes/settings/+page.svelte`'s Escape handler) mirrors this exact pattern for the same reason; see the Gotcha note
-  in `lib/settings/CLAUDE.md` and commit `46481b29` for the post-mortem.
+- `closeWindow()`'s `setTimeout(() => …, 0)` before `currentWindow.close()` is load-bearing — not decoration. Calling
+  `close()` synchronously from inside a webview event handler runs webkit2gtk's destruction on the same GTK main-loop
+  tick, stalling other webviews' IPC for an undefined duration. The settings page (`routes/settings/+page.svelte`'s
+  Escape handler) mirrors this exact pattern for the same reason; see the Gotcha note in `lib/settings/CLAUDE.md` and
+  commit `46481b29` for the original post-mortem. The defer used to be two nested `requestAnimationFrame`s; that flaked
+  on macOS E2E because WKWebView throttles rAF for windows that opened without focus, pushing the deferred close past
+  the test's confirmation budget. `setTimeout(0)` achieves the same "next event-loop tick" guarantee without the
+  throttling pitfall.

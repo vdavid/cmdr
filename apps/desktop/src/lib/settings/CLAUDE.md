@@ -366,14 +366,20 @@ overlap. Only warn when the same key combo is used in overlapping scopes (e.g., 
 Both settings and shortcuts save immediately (after debounce). There's no undo stack. Users must use "Reset to default"
 to recover from mistakes.
 
-### Escape closing the settings window must defer `close()` via two `requestAnimationFrame`s
+### Escape closing the settings window must defer `close()` past the current event-loop iteration
 
-`routes/settings/+page.svelte`'s `handleKeydown` wraps `getCurrentWindow().close()` in two nested rAFs (mirroring
-`routes/viewer/+page.svelte`'s `closeWindow()`). Calling `close()` synchronously from inside the keydown handler runs
-the destruction on the same GTK main-loop tick that handled the keydown. On Linux/webkit2gtk this stalls **any IPC call
-queued behind the destruction from other webviews** (e.g. the main window) for an undefined time (observed 60-65 % of
-test runs landing in the fast path, others timing out past 30 s). macOS uses WKWebView with per-webview processes and
-doesn't exhibit the issue, so it's invisible there. The +16 ms from the rAFs is invisible to the user.
+`routes/settings/+page.svelte`'s `handleKeydown` wraps `getCurrentWindow().close()` in `setTimeout(() => …, 0)`
+(mirroring `routes/viewer/+page.svelte`'s `closeWindow()`). Calling `close()` synchronously from inside the keydown
+handler runs the destruction on the same GTK main-loop tick that handled the keydown. On Linux/webkit2gtk this stalls
+**any IPC call queued behind the destruction from other webviews** (e.g. the main window) for an undefined time
+(observed 60-65 % of test runs landing in the fast path, others timing out past 30 s). macOS uses WKWebView with
+per-webview processes and doesn't exhibit the GTK-stall issue.
+
+**`setTimeout(0)` instead of two `requestAnimationFrame`s** — the earlier rAF-based version flaked on macOS E2E because
+WKWebView throttles `requestAnimationFrame` on windows that opened without focus (in E2E, `openSettingsWindow` passes
+`focus: false` so the host machine stays usable while tests run). Throttled rAFs could push the deferred close past the
+test's 3 s close-confirmation budget. `setTimeout(0)` isn't subject to the same throttling and still defers to the next
+event-loop tick, which is all the Linux fix needs.
 
 When adding a new self-closing webview (escape, close button, etc.), defer the `close()` call the same way. See commit
-`46481b29` for the bug-fix that revealed this.
+`46481b29` for the original bug-fix and the subsequent settings-escape-flake hunt for the macOS-throttle follow-up.

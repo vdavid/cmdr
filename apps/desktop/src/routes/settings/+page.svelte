@@ -135,21 +135,26 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             event.preventDefault()
-            // Defer the close() by two animation frames so the keydown event
-            // loop iteration can settle (including any in-flight IPC ack to
+            // Defer the close() past the current event-loop iteration so the
+            // keydown handler can settle (including any in-flight IPC ack to
             // the Tauri runtime) before webkit2gtk begins destroying this
             // webview. Without this, the synchronous close() runs inside the
             // same GTK main-loop tick that handled the keydown, and the
             // destruction can stall queued IPC calls from other webviews —
             // the root cause of the Linux E2E flake on this binding. Mirrors
             // the pattern in `routes/viewer/+page.svelte`'s `closeWindow()`.
-            // The +16 ms is invisible to the user.
+            //
+            // Uses `setTimeout(0)` instead of nested `requestAnimationFrame`s
+            // because macOS WKWebView throttles rAF for windows that opened
+            // without focus (E2E case: `openSettingsWindow` passes `focus: false`
+            // under `CMDR_E2E_MODE`). Throttled rAF can push the deferred
+            // close past the test's 3 s close-confirmation budget. setTimeout
+            // isn't subject to the same throttling and still defers to the
+            // next event-loop tick, which is all the Linux fix needs.
             const win = getCurrentWindow()
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    void win.close()
-                })
-            })
+            setTimeout(() => {
+                void win.close()
+            }, 0)
         }
         // Prevent Space from triggering Quick Look (bound to Space in main window menu)
         // Space should only activate focused buttons/controls, not bubble up
@@ -245,16 +250,16 @@
             })
 
             // MCP can request that this window close (used by `dialog close settings`).
-            // Mirror the Escape-key handler: defer the close() by two rAFs so the in-flight
-            // IPC ack can settle before webkit2gtk begins destroying the webview.
+            // Mirror the Escape-key handler: defer past the current event-loop iteration
+            // so the in-flight IPC ack can settle before webkit2gtk begins destroying
+            // the webview. See `handleKeydown` for why `setTimeout(0)` is used instead
+            // of nested rAFs.
             unlistenMcpClose = await listen('mcp-settings-close', () => {
                 log.debug('Received mcp-settings-close, closing window')
                 const win = getCurrentWindow()
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        void win.close()
-                    })
-                })
+                setTimeout(() => {
+                    void win.close()
+                }, 0)
             })
 
             // Persist position/size while this window is open so reopening
