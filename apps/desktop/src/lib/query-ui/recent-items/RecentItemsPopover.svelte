@@ -18,7 +18,7 @@
      * Keyboard: ↑/↓ moves the cursor, Enter activates, Esc closes (via the popover wrapper).
      */
     import uFuzzy from '@leeoniya/ufuzzy'
-    import FilterChipPopover from '../FilterChipPopover.svelte'
+    import FilterChipPopover from '../filter-chips/FilterChipPopover.svelte'
     import { modeBadge } from './recent-items-utils'
     import type { RecentItemAdapter, RecentItemKey, RecentItemView } from './recent-items-types'
 

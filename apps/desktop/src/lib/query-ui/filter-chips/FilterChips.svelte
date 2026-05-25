@@ -24,7 +24,7 @@
     import FilterChip from './FilterChip.svelte'
     import FilterChipPopover from './FilterChipPopover.svelte'
     import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
-    import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter } from './query-filter-state.svelte'
+    import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter } from '../query-filter-state.svelte'
     import {
         SIZE_PRESETS,
         byteUnitLabel,

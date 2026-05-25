@@ -36,7 +36,7 @@
     import { iconCacheVersion } from '$lib/icon-cache'
     import QueryBar from './QueryBar.svelte'
     import ModeChips from './ModeChips.svelte'
-    import FilterChips from './FilterChips.svelte'
+    import FilterChips from './filter-chips/FilterChips.svelte'
     import QueryResults from './QueryResults.svelte'
     import AiPromptStrip from './AiPromptStrip.svelte'
     import RecentItemsFooter from './recent-items/RecentItemsFooter.svelte'
