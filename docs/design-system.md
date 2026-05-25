@@ -363,6 +363,10 @@ opacity fade.
 
 ## Component patterns
 
+For a live view of every primitive in `lib/ui/`, with all variants and states rendered flat, open the in-app **component
+catalog**: Debug window (`⌘D`) → "Components", or `http://localhost:<port>/dev/components` in a browser tab. The
+canonical "grouped card" wrapper used there (and intended for Settings refactors) is `SectionCard.svelte`.
+
 ### Focus indicators (app)
 
 Every interactive element needs a visible focus indicator. This is a keyboard-driven app, so all focus must be visible

@@ -9,7 +9,9 @@
     import DebugHistoryPanel from './DebugHistoryPanel.svelte'
     import DebugSmbDiagnosticsPanel from './DebugSmbDiagnosticsPanel.svelte'
     import DebugToastPanel from './DebugToastPanel.svelte'
+    import ComponentsCatalog from '../dev/components/+page.svelte'
 
+    /** Section ids. The `components-*` ids are children of the `'components'` parent. */
     type SectionId =
         | 'appearance'
         | 'drive-index'
@@ -18,9 +20,27 @@
         | 'navigation-history'
         | 'closed-tabs'
         | 'error-preview'
+        | 'components'
+        | 'components-buttons'
+        | 'components-links'
+        | 'components-groups'
+        | 'components-dialogs'
+        | 'components-toasts'
+        | 'components-progress'
+        | 'components-loading'
+        | 'components-tooltips'
+        | 'components-size-badges'
+        | 'components-commandbox'
+        | 'components-empty-states'
+
+    interface Section {
+        id: SectionId
+        label: string
+        children?: { id: SectionId; label: string }[]
+    }
 
     /** Sidebar order. First entry is the default selection. */
-    const SECTIONS: { id: SectionId; label: string }[] = [
+    const SECTIONS: Section[] = [
         { id: 'appearance', label: 'Appearance' },
         { id: 'drive-index', label: 'Drive index' },
         { id: 'smb-diagnostics', label: 'SMB diagnostics' },
@@ -28,11 +48,44 @@
         { id: 'navigation-history', label: 'Navigation history' },
         { id: 'closed-tabs', label: 'Closed tabs' },
         { id: 'error-preview', label: 'Error pane preview' },
+        {
+            id: 'components',
+            label: 'Components',
+            children: [
+                { id: 'components-buttons', label: 'Buttons' },
+                { id: 'components-links', label: 'Links' },
+                { id: 'components-groups', label: 'Groups' },
+                { id: 'components-dialogs', label: 'Dialogs' },
+                { id: 'components-toasts', label: 'Toasts' },
+                { id: 'components-progress', label: 'Progress' },
+                { id: 'components-loading', label: 'Loading' },
+                { id: 'components-tooltips', label: 'Tooltips' },
+                { id: 'components-size-badges', label: 'Size badges' },
+                { id: 'components-commandbox', label: 'CommandBox' },
+                { id: 'components-empty-states', label: 'Empty states' },
+            ],
+        },
     ]
 
     let pageElement: HTMLElement | undefined = $state()
     let selected: SectionId = $state('appearance')
     let unlistenRectTracking: (() => void) | undefined
+
+    /** Sub-anchor for the catalog page (the bit after `components-`), or null for top of catalog. */
+    const catalogAnchor = $derived.by((): string | null => {
+        if (selected === 'components') return null
+        if (selected.startsWith('components-')) return selected.slice('components-'.length)
+        return null
+    })
+
+    const isComponentsView = $derived.by(
+        () => selected === 'components' || selected.startsWith('components-'),
+    )
+
+    function handleSectionInView(subId: string | null) {
+        const target: SectionId = subId === null ? 'components' : (`components-${subId}` as SectionId)
+        if (selected !== target) selected = target
+    }
 
     onMount(async () => {
         const loadingScreen = document.getElementById('loading-screen')
@@ -89,6 +142,19 @@
                     >
                         {section.label}
                     </button>
+                    {#if section.children}
+                        {#each section.children as child (child.id)}
+                            <button
+                                type="button"
+                                class="debug-section-item debug-section-child"
+                                class:selected={selected === child.id}
+                                onclick={() => (selected = child.id)}
+                                aria-current={selected === child.id ? 'page' : undefined}
+                            >
+                                {child.label}
+                            </button>
+                        {/each}
+                    {/if}
                 {/each}
             </nav>
         </aside>
@@ -108,6 +174,8 @@
                 <DebugClosedTabsPanel />
             {:else if selected === 'error-preview'}
                 <DebugErrorPreviewPanel />
+            {:else if isComponentsView}
+                <ComponentsCatalog targetAnchor={catalogAnchor} onSectionInView={handleSectionInView} />
             {/if}
         </div>
     </div>
@@ -209,6 +277,15 @@
 
     .debug-section-item.selected:hover {
         background: var(--color-accent-hover);
+    }
+
+    .debug-section-child {
+        padding-left: var(--spacing-lg);
+        color: var(--color-text-secondary);
+    }
+
+    .debug-section-child.selected {
+        color: var(--color-accent-fg);
     }
 
     .debug-content-wrapper {

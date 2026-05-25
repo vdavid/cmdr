@@ -16,6 +16,7 @@ Reusable UI components used across the entire desktop app.
 | `ProgressBar.svelte`     | Reusable progress bar (just the bar, no labels or layout)                                      |
 | `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA                              |
 | `Size.svelte`            | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
+| `SectionCard.svelte`     | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
 | `ToggleGroup.svelte`     | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
 | `toast/`                 | Centralized toast notification system: store, container, item                                  |
 
@@ -260,6 +261,51 @@ The `<Size>` component always renders the friendly dynamic form regardless of th
 matters; tooltips, dialogs, breadcrumbs, and inline `<Size>` callouts read more clearly with the self-describing dynamic
 format. The file-list column renders `formatSizeForDisplay` directly (passing the active unit) because it also needs the
 mismatch-warning + cursor-row neutralization treatment.
+
+## SectionCard
+
+The canonical "grouped card" primitive that mirrors macOS System Settings on Tahoe: an optional label sitting on its own
+line above a rounded card with a soft background. Use it anywhere you'd reach for "a section with a faint, rounded
+background" — Settings panels, the Debug window's Components catalog, anywhere we want the native macOS grouping look.
+
+Props:
+
+| Prop       | Type      | Notes                                                                                |
+| ---------- | --------- | ------------------------------------------------------------------------------------ |
+| `label`    | `string?` | Rendered as a sentence-case `<h3>` above the card. Omit for an unlabelled grouping.  |
+| `id`       | `string?` | Set on the outer `<section>` element. Use for scroll-to anchors (`#components-foo`). |
+| `children` | Snippet   | Slot for whatever goes inside the card                                               |
+
+Spacing between adjacent `SectionCard`s is built in (`var(--spacing-xl)` bottom margin); consumers don't have to manage
+it. Stack them top-to-bottom and they read correctly.
+
+Anatomy:
+
+- Label: `<h3>` styled at `var(--font-size-sm)`, weight 500, `var(--color-text-secondary)`, sentence case (style guide).
+- Card: `var(--color-bg-secondary)` background, `var(--radius-lg)` corners, `var(--spacing-lg)` padding, 1px
+  `var(--color-border-subtle)` border in both themes.
+
+This is intentionally minimal: it's a wrapper, not a layout. Inner content is whatever you want — a grid of buttons, a
+label-and-control row, a paragraph of text. For a Settings-style label-left + control-right row inside the card, compose
+with the existing setting components (or, later, a dedicated `SectionRow` primitive when the pattern needs codifying).
+
+## Component catalog
+
+Every primitive listed above also has a section in the in-app, dev-only Components catalog at
+`apps/desktop/src/routes/dev/components/+page.svelte`. The catalog renders matrices of states (all `Button` variants ×
+sizes × states in one grid, every toast level, every loading message, etc.) so agents and humans can see the visual
+contract of a primitive at a glance. It's reachable in the running app via Debug window (`⌘D`) → "Components", or
+directly in a browser tab at `http://localhost:<port>/dev/components`.
+
+When you add a new primitive to `lib/ui/`:
+
+1. Add a row to the "Key files" table above.
+2. Add a dedicated section in this file describing the API and key decisions.
+3. Add a section file at `apps/desktop/src/routes/dev/components/sections/<Name>.svelte` showing the primitive's states
+   flat (no toggles, just everything visible at once). Import it from the catalog page and add a sidebar entry in
+   `apps/desktop/src/routes/debug/+page.svelte` under the "Components" parent.
+4. Add a Vitest behavior test (`<Name>.test.ts`) and a tier-3 a11y test (`<Name>.a11y.test.ts`) colocated next to the
+   component.
 
 ## ToggleGroup
 
