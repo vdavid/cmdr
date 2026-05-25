@@ -12,7 +12,7 @@ use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::state::WriteOperationState;
+use super::super::state::WriteOperationState;
 use crate::file_system::volume::{Volume, VolumeError};
 
 /// Copies a single path from source volume to destination volume.
@@ -39,7 +39,7 @@ pub(super) async fn copy_single_path(
     on_file_complete: &(dyn Fn() + Sync),
 ) -> Result<u64, VolumeError> {
     // Check cancellation up front.
-    if super::state::is_cancelled(&state.intent) {
+    if super::super::state::is_cancelled(&state.intent) {
         return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
     }
 
@@ -124,7 +124,7 @@ async fn copy_directory_streaming(
     let mut total_bytes = 0u64;
 
     for entry in &entries {
-        if super::state::is_cancelled(&state.intent) {
+        if super::super::state::is_cancelled(&state.intent) {
             return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
         }
 
@@ -162,7 +162,7 @@ async fn copy_directory_streaming(
 
 #[cfg(test)]
 mod tests {
-    use super::super::state::OperationIntent;
+    use super::super::super::state::OperationIntent;
     use super::*;
     use std::path::Path;
     use std::sync::Arc;

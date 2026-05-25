@@ -14,17 +14,17 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-use super::state::{
+use super::super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, register_operation_status, unregister_operation_status,
+};
+use super::super::types::{
+    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
+    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
+    WriteOperationType, WriteProgressEvent,
 };
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
     build_pre_skip_set, drive_transfer_serial_async,
-};
-use super::types::{
-    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
-    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
-    WriteOperationType, WriteProgressEvent,
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
@@ -82,7 +82,7 @@ pub async fn move_between_volumes(
             ..Default::default()
         };
 
-        return super::move_files_start(app, absolute_sources, absolute_dest, write_config).await;
+        return super::super::move_files_start(app, absolute_sources, absolute_dest, write_config).await;
     }
 
     // Cross-volume: copy each file to destination, then delete source

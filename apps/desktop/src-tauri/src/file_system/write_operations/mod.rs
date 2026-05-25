@@ -16,45 +16,37 @@
 //! - Copy rollback on failure (CopyTransaction)
 //! - Atomic cross-filesystem moves using staging directory
 
-mod chunked_copy;
-mod copy;
-mod copy_strategy;
 mod delete;
 mod eta;
 mod helpers;
-#[cfg(target_os = "linux")]
-mod linux_copy;
-#[cfg(target_os = "macos")]
-pub(crate) mod macos_copy;
-mod move_op;
 mod scan;
 mod scan_preview;
 mod state;
-mod transfer_driver;
+mod transfer;
 pub(crate) mod trash;
 mod types;
-mod volume_conflict;
-mod volume_copy;
-mod volume_move;
-mod volume_preflight;
-mod volume_strategy;
+
+// Re-export `macos_copy` at this level so existing call sites
+// (`crate::file_system::write_operations::macos_copy`) keep compiling.
+#[cfg(target_os = "macos")]
+pub(crate) use transfer::macos_copy;
 
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
 
-use copy::copy_files_with_progress_inner;
 use delete::{delete_files_with_progress, delete_volume_files_with_progress};
 #[cfg(not(test))]
 use helpers::{
     validate_destination, validate_destination_not_inside_source, validate_destination_writable,
     validate_not_same_location, validate_sources,
 };
-use move_op::move_files_with_progress;
 #[cfg(not(test))]
 use state::WriteOperationState;
 use state::{WRITE_OPERATION_STATE, WriteSettledGuard, register_operation_status, unregister_operation_status};
+use transfer::copy::copy_files_with_progress_inner;
+use transfer::move_op::move_files_with_progress;
 use trash::trash_files_with_progress;
 
 // Re-export public types
@@ -88,15 +80,15 @@ pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is
 // directly against a real SMB backend instead of the full Tauri path.
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
-pub(crate) use types::CollectorEventSink;
+pub(crate) use transfer::volume_copy::copy_volumes_with_progress;
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
-pub(crate) use volume_copy::copy_volumes_with_progress;
+pub(crate) use types::CollectorEventSink;
 
 // Re-export volume copy types and functions
+pub use transfer::volume_copy::{copy_between_volumes, scan_for_volume_copy};
+pub use transfer::volume_move::move_between_volumes;
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
-pub use volume_copy::{copy_between_volumes, scan_for_volume_copy};
-pub use volume_move::move_between_volumes;
 
 // ============================================================================
 // Public API functions
@@ -393,13 +385,9 @@ pub async fn trash_files_start(
 }
 
 #[cfg(test)]
-mod copy_integration_test;
-#[cfg(test)]
 mod delete_integration_test;
 #[cfg(test)]
 mod delete_volume_reuse_tests;
-#[cfg(test)]
-mod move_integration_test;
 #[cfg(test)]
 mod scan_preview_listing_progress_tests;
 #[cfg(test)]
@@ -408,8 +396,6 @@ mod scan_preview_oracle_tests;
 mod settle_event_tests;
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod transaction_integration_test;
 #[cfg(test)]
 mod validation_integration_test;
 #[cfg(test)]

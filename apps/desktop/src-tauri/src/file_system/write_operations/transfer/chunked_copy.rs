@@ -12,7 +12,7 @@ use std::sync::atomic::AtomicU8;
 #[cfg(test)]
 use std::sync::atomic::Ordering;
 
-use super::types::WriteOperationError;
+use super::super::types::WriteOperationError;
 
 /// Progress callback for chunked copy operations.
 /// Called after each chunk with (bytes_copied_so_far, total_bytes).
@@ -119,14 +119,14 @@ fn copy_data_chunked(
 
     loop {
         // Check cancellation BEFORE each read
-        if super::state::is_cancelled(cancelled) {
+        if super::super::state::is_cancelled(cancelled) {
             log::debug!(
                 "chunked_copy: cancellation detected after {} bytes, cleaning up",
                 total_bytes
             );
             // Clean up partial file in background (may block on network mounts)
             drop(dst_file);
-            super::helpers::remove_file_in_background(dest.to_path_buf());
+            super::super::helpers::remove_file_in_background(dest.to_path_buf());
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });

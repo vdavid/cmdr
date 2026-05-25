@@ -107,8 +107,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Instant;
 
-use super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
-use super::types::{
+use super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
+use super::super::types::{
     ConflictResolution, OperationEventSink, WriteOperationError, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent,
 };

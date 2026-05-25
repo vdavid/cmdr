@@ -8,12 +8,12 @@ use std::time::{Duration, Instant};
 use super::helpers::spawn_async_sync;
 use super::scan::{SourceItemTracker, scan_sources, take_cached_scan_result};
 use super::state::{WriteOperationState, update_operation_status};
+use super::transfer::volume_copy::map_volume_error;
 use super::types::{
     DryRunResult, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
-use super::volume_copy::map_volume_error;
 use crate::file_system::listing::caching::try_get_watched_listing;
 use crate::file_system::volume::{Volume, VolumeError};
 

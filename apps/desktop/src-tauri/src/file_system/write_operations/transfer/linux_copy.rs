@@ -11,7 +11,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU8;
 
-use super::types::WriteOperationError;
+use super::super::types::WriteOperationError;
 
 /// Chunk size per `copy_file_range` call (4 MB).
 /// Larger than chunked_copy's 1 MB because this is an in-kernel operation
@@ -65,7 +65,7 @@ pub fn copy_single_file_linux(
 
     while bytes_copied < total_size {
         // Check cancellation before each chunk
-        if super::state::is_cancelled(cancelled) {
+        if super::super::state::is_cancelled(cancelled) {
             log::debug!("linux_copy: cancelled after {} bytes, cleaning up", bytes_copied);
             drop(dst_file);
             let _ = fs::remove_file(destination);

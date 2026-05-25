@@ -6,15 +6,17 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
-use super::copy::copy_single_item;
-use super::helpers::{is_same_filesystem, remove_dir_all_in_background, resolve_conflict, spawn_async_sync};
-use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
-use super::state::{CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status};
-use super::types::{
+use super::super::helpers::{is_same_filesystem, remove_dir_all_in_background, resolve_conflict, spawn_async_sync};
+use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
+use super::super::state::{
+    CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
+};
+use super::super::types::{
     ConflictResolution, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
     WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent, WriteSourceItemDoneEvent,
 };
+use super::copy::copy_single_item;
 
 // ============================================================================
 // Move rollback tracking
@@ -55,7 +57,7 @@ impl MoveTransaction {
 // Move implementation
 // ============================================================================
 
-pub(super) fn move_files_with_progress(
+pub(in crate::file_system::write_operations) fn move_files_with_progress(
     app: &tauri::AppHandle,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -120,7 +122,7 @@ fn move_with_rename(
     let result: Result<(), WriteOperationError> = (|| {
         for source in sources {
             // Check cancellation
-            if super::state::is_cancelled(&state.intent) {
+            if super::super::state::is_cancelled(&state.intent) {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });
@@ -253,7 +255,7 @@ fn merge_move_directory(
         let dest_child = dest_dir.join(&file_name);
 
         // Check cancellation
-        if super::state::is_cancelled(&state.intent) {
+        if super::super::state::is_cancelled(&state.intent) {
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -566,7 +568,7 @@ fn delete_sources_after_move(
 ) -> Result<(), WriteOperationError> {
     for source in sources {
         // Check cancellation
-        if super::state::is_cancelled(&state.intent) {
+        if super::super::state::is_cancelled(&state.intent) {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,

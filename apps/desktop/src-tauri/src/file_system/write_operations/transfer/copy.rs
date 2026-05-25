@@ -9,22 +9,24 @@ use std::time::{Duration, Instant};
 #[cfg(target_os = "macos")]
 use super::macos_copy::copy_symlink;
 
-use super::chunked_copy::ChunkedCopyProgressFn;
-use super::copy_strategy::copy_file_with_strategy;
-use super::helpers::{
+use super::super::helpers::{
     find_unique_name, is_same_file, resolve_conflict, run_cancellable, spawn_async_sync, validate_disk_space,
     validate_path_length,
 };
-use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path};
-use super::state::{
+use super::super::scan::{
+    SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path,
+};
+use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
-use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
-use super::types::{
+use super::super::types::{
     ConflictResolution, IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
+use super::chunked_copy::ChunkedCopyProgressFn;
+use super::copy_strategy::copy_file_with_strategy;
+use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
 
 // ============================================================================
 // Cancellation-aware helpers
@@ -51,7 +53,7 @@ fn validate_disk_space_cancellable(
 // Copy implementation
 // ============================================================================
 
-pub(super) fn copy_files_with_progress_inner(
+pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -581,7 +583,7 @@ pub(super) fn copy_single_item(
                         }
 
                         // Directory created successfully; delete backup in background
-                        super::helpers::remove_file_in_background(backup_path);
+                        super::super::helpers::remove_file_in_background(backup_path);
                         log::debug!(
                             "copy: replaced file with directory at {} (type mismatch)",
                             blocking.display()

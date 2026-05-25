@@ -28,18 +28,18 @@ use uuid::Uuid;
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
-use super::state::{
+use super::super::state::{
     OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, load_intent, register_operation_status,
     unregister_operation_status, update_operation_status,
+};
+use super::super::types::{
+    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult,
+    WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
+    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
     build_pre_skip_set, drive_transfer_serial_async,
-};
-use super::types::{
-    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult,
-    WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_preflight::{SourceHint, scan_volume_sources};
@@ -122,7 +122,7 @@ pub async fn copy_between_volumes(
         };
 
         // Delegate to the existing copy implementation with full cancellation support
-        return super::copy_files_start(app, absolute_sources, absolute_dest, write_config).await;
+        return super::super::copy_files_start(app, absolute_sources, absolute_dest, write_config).await;
     }
 
     let operation_id = Uuid::new_v4().to_string();
@@ -1503,7 +1503,10 @@ pub(super) fn write_error_event_from(
 
 /// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks
 /// one.
-pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOperationError {
+pub(in crate::file_system::write_operations) fn map_volume_error(
+    context_path: &str,
+    e: VolumeError,
+) -> WriteOperationError {
     match e {
         VolumeError::NotFound(path) => WriteOperationError::SourceNotFound { path },
         VolumeError::PermissionDenied(msg) => WriteOperationError::PermissionDenied {

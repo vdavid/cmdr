@@ -24,10 +24,10 @@
 //! - **Sync driver only**: `&mut`-state captures work (the prototype's whole point) — exercise a
 //!   captured `tracker`-like counter.
 
-use super::super::state::{
+use super::super::super::state::{
     OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,
 };
-use super::super::types::{
+use super::super::super::types::{
     CollectorEventSink, ConflictResolution, WriteOperationError, WriteOperationPhase, WriteOperationType,
 };
 use super::{
@@ -676,7 +676,7 @@ fn sync_driver_status_cache_matches_emitted_progress() {
     );
 
     assert!(matches!(outcome.intent, PostLoopIntent::Completed));
-    let status = super::super::state::get_operation_status(&op_id).expect("status entry present");
+    let status = super::super::super::state::get_operation_status(&op_id).expect("status entry present");
     // After bulk-skip /a (1 file, 100 bytes) and transfer /b (100 bytes), the
     // status cache reflects the bulk-skip emit; the per-Transferred arm
     // doesn't emit (the sync closure owns its own intra-file emits in
@@ -1278,7 +1278,7 @@ async fn async_driver_status_cache_matches_emitted_progress() {
     .await;
 
     assert!(matches!(outcome.intent, PostLoopIntent::Completed));
-    let status = super::super::state::get_operation_status(&op_id).expect("status entry present");
+    let status = super::super::super::state::get_operation_status(&op_id).expect("status entry present");
     // The per-iter Skip emit pairs with `update_operation_status` so the cache
     // must mirror the same numbers.
     assert_eq!(status.files_done, 1);

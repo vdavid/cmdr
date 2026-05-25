@@ -9,8 +9,10 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::state::WriteOperationState;
-use super::types::{ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError};
+use super::super::state::WriteOperationState;
+use super::super::types::{
+    ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError,
+};
 use crate::file_system::volume::Volume;
 
 /// Resolves a file conflict for volume-to-volume copy.

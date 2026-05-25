@@ -28,9 +28,9 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use super::scan::take_cached_scan_result;
-use super::state::{WriteOperationState, is_cancelled};
-use super::types::{
+use super::super::scan::take_cached_scan_result;
+use super::super::state::{WriteOperationState, is_cancelled};
+use super::super::types::{
     OperationEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteOperationError, WriteOperationPhase,
     WriteOperationType, WriteProgressEvent,
 };

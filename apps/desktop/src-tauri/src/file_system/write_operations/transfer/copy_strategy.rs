@@ -29,15 +29,15 @@ use super::linux_copy::copy_single_file_linux;
 #[cfg(target_os = "macos")]
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
+use super::super::helpers::safe_overwrite_file;
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+use super::super::types::IoResultExt;
+use super::super::types::WriteOperationError;
 use super::chunked_copy::ChunkedCopyProgressFn;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use super::chunked_copy::chunked_copy_with_metadata;
 #[cfg(target_os = "linux")]
 use super::chunked_copy::is_network_filesystem;
-use super::helpers::safe_overwrite_file;
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-use super::types::IoResultExt;
-use super::types::WriteOperationError;
 
 // ============================================================================
 // macOS: APFS clonefile detection

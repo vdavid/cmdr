@@ -150,7 +150,7 @@ extern "C" fn copy_progress_callback(
 
     // Check cancellation (log only once to avoid spam: macOS may call this hundreds of times
     // after COPYFILE_QUIT while draining buffers)
-    if super::state::is_cancelled(&context.cancelled) {
+    if super::super::state::is_cancelled(&context.cancelled) {
         if !context.cancel_logged.swap(true, Ordering::Relaxed) {
             log::debug!("copyfile callback: cancellation detected, returning COPYFILE_QUIT");
         }
@@ -343,7 +343,7 @@ pub fn copy_file_native(
     // even after the callback returned COPYFILE_QUIT, because it may continue draining
     // buffered I/O (especially common when the source is on a network mount).
     if let Some(ctx) = context
-        && super::state::is_cancelled(&ctx.cancelled)
+        && super::super::state::is_cancelled(&ctx.cancelled)
     {
         let _ = std::fs::remove_file(destination);
         return Err(WriteOperationError::Cancelled {
