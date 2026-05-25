@@ -2,11 +2,10 @@
     /**
      * SearchRowMenu: The `…` icon button rendered on a search-result row.
      *
-     * Per search-fixup-brief item 2: visible on EVERY row at all times. (The previous
-     * hover-only / cursor-only treatment was kept hidden until proximity, which David
-     * called out as wrong — discoverability matters more than visual quiet here.) The
-     * column header reads "Actions" so the button column has a clear name in the
-     * grid.
+     * Visible on EVERY row at all times. (An earlier hover-only / cursor-only treatment
+     * kept it hidden until proximity, but discoverability matters more than visual quiet
+     * here.) The column header reads "Actions" so the button column has a clear name in
+     * the grid.
      *
      * Clicking the button opens the same native context menu as right-clicking the
      * row (Open, Reveal in Finder / Open in file manager, Copy path, Copy name —
@@ -41,9 +40,8 @@
 </button>
 
 <style>
-    /* Always-on. The previous `opacity: 0` baseline + cursor / hover overrides went
-       per the search-fixup brief — the button is now a permanent affordance, matching
-       the "Actions" column header. */
+    /* Always-on. The previous `opacity: 0` baseline + cursor / hover overrides are gone —
+       the button is a permanent affordance, matching the "Actions" column header. */
     .row-menu-btn {
         display: inline-flex;
         align-items: center;

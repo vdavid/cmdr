@@ -6,14 +6,16 @@
      * small button; clicking navigates the active pane to that ancestor folder AND closes
      * the dialog (the parent wires both via `onPick`).
      *
-     * Per search-fixup-brief item 4: the strip NEVER wraps to two lines. When the full
-     * path doesn't fit its container, the middle pills collapse into a single "…" pill;
-     * hovering that pill shows a tooltip listing the hidden pills, with the same
-     * nav-to-ancestor behavior on click. Measurement uses `@chenglou/pretext` via
-     * `createPretextMeasure` so we get pixel-accurate widths without DOM reflow.
+     * The strip NEVER wraps to two lines. When the full path doesn't fit its container,
+     * the middle pills collapse into a single "…" pill; hovering that pill shows a tooltip
+     * listing the hidden pills, with the same nav-to-ancestor behavior on click. Measurement
+     * uses `@chenglou/pretext` via `createPretextMeasure` so we get pixel-accurate widths
+     * without DOM reflow.
      *
-     * Per search-redesign-plan §3.8 (still in force):
-     *   - Pills are NOT in the keyboard Tab order (`tabindex="-1"`).
+     * Load-bearing rules:
+     *   - Pills are NOT in the keyboard Tab order (`tabindex="-1"`) — would break the row's
+     *     arrow-down keyboard flow inside virtualized rows. ⌥← / ⌥→ are the keyboard
+     *     equivalents. See `lib/query-ui/CLAUDE.md` § "Path pills with overflow collapse".
      *   - macOS and Linux only: split strictly on `/`. No `\` handling.
      *   - Pill chrome: `--radius-sm`, `--spacing-xxs / --spacing-xs` padding,
      *     `--font-size-xs`, hover background = `--color-bg-tertiary`.

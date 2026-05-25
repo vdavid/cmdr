@@ -138,7 +138,7 @@ form `e2e-<short>-<pid>` (for example, `e2e-mtp-12345`, `e2e-nonmtp1-12345`). Th
 the Dock label into `Cmdr (E2E <short>)` so cleanup scripts can target with `pgrep -f 'Cmdr (E2E '`. One shard is
 dedicated to MTP specs (serialized; the virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri
 instance). Stale processes on each port are killed before starting. Per-shard logs go to
-`/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`. See `docs/specs/instance-isolation-plan.md` § P3 for the design.
+`/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`. See `docs/tooling/instance-isolation.md` § "How E2E gets isolated per shard".
 
 `RUST_LOG` is forwarded to the app (via inherited `os.Environ()`), so trace-level output is one shell-prefix away:
 

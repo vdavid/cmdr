@@ -230,7 +230,7 @@
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // Banner copy. Verbatim from `onboarding-revamp-context.md` § "Step 2: AI".
+    // Banner copy. See `lib/onboarding/CLAUDE.md` § "Step 2 (AI provider)" for the three FDA-outcome modes.
     // ─────────────────────────────────────────────────────────────────────────────
 
     const bannerTitleByMode = {

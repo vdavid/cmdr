@@ -1,11 +1,9 @@
 /**
- * M8 acceptance test for the search-redesign plan: open the search dialog,
- * run a query, click "Open in pane", and verify the right pane shows the
- * snapshot view. Then walk `⌘[` back to the previous state and `⌘]` forward
- * to the snapshot to confirm the virtual volume integrates with the existing
- * navigation history.
- *
- * Spec name from search-redesign-plan §M8c.
+ * Acceptance test for "Open in pane": open the search dialog, run a query,
+ * click "Open in pane", and verify the right pane shows the snapshot view.
+ * Then walk `⌘[` back to the previous state and `⌘]` forward to the snapshot
+ * to confirm the virtual volume integrates with the existing navigation
+ * history. See `lib/search/CLAUDE.md` § "Open in pane" for the contract.
  */
 
 import { test, expect } from './fixtures.js'
@@ -38,8 +36,8 @@ const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main windo
  * .header-row` because once `pollRightPaneVolumeId('search-results')` confirms
  * the pane is on the snapshot, a present `.header-row` means `FullList`
  * rendered (the alternative would be `.snapshot-missing`, the defensive
- * placeholder for an evicted snapshot). The Path column header was removed
- * per search-fixup-brief item 15; the Name column now shows the full path.
+ * placeholder for an evicted snapshot). There's no Path column header on the
+ * snapshot pane — the Name column shows the full path instead.
  */
 const SNAPSHOT_PANE_PATH_HEADER = '[aria-label="Right file pane"] .full-list .header-row'
 

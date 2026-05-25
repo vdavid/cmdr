@@ -9,8 +9,9 @@
      *
      * Each chip carries a small mode badge (`AI` / `Aa` / `.*`). Clicking a chip loads the
      * entry into the dialog's state and runs it. For AI entries, the click counts as the
-     * user's explicit "yes, please run this" (search-redesign-plan §3.4 / §3.5). Right-click
-     * opens a context menu with "Remove from history".
+     * user's explicit "yes, please run this" (AI mode requires an explicit trigger because
+     * each call has a real cost — see `lib/query-ui/CLAUDE.md` § "AI mode never
+     * auto-applies"). Right-click opens a context menu with "Remove from history".
      *
      * Hidden when there are zero entries (the empty state already covers the discoverability
      * gap there).

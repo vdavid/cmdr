@@ -5,9 +5,10 @@ Home for primitives shared between the Search dialog (`lib/search/`) and the upc
 scope, pattern), virtualized results table with path pills and per-row menus, recent- items footer + popover, and the
 cross-consumer filter state factory.
 
-See [`docs/specs/selection-dialog-plan.md`](../../../../../docs/specs/selection-dialog-plan.md) for the bigger picture.
-`lib/search/CLAUDE.md` keeps Search-specific decisions (snapshot store, virtual volume, MCP open path, "Open in pane",
-index lifecycle, "Use current folder" smart fallback).
+See [`lib/search/CLAUDE.md`](../search/CLAUDE.md) for Search-specific decisions (snapshot store, virtual volume, MCP
+open path, "Open in pane", index lifecycle, "Use current folder" smart fallback) and
+[`lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md) for Selection-specific decisions (matcher in JS,
+cloud-only AI, commit-on-Enter, R7 snapshot-pane banner).
 
 ## QueryDialog orchestrator (M4)
 
@@ -189,7 +190,7 @@ shape as a convenience that calls both methods in sequence.
 
 ## Round 3 polish (R3)
 
-These shipped with the search-fixup round 3 brief but apply to every consumer of the query UI:
+These items apply to every consumer of the query UI:
 
 - **B1**: `QueryBar.svelte` run button no longer leads with a corner-down-left icon; the `⏎` shortcut sits at the suffix
   slot at `--spacing-xs` from the "Search" label so the rhythm matches "Go to file ⏎" and "All searches… ⌘H" elsewhere.
@@ -426,10 +427,10 @@ The plan calls for a sub-overlay-of-an-overlay with the same auto-flip, focus-tr
 semantics as the filter chips. Reimplementing those would risk drift; reusing the primitive guarantees the contract
 covers both popover kinds via the single `.filter-chip-popover` DOM selector.
 
-**Decision**: Pattern chip always rendered (search-fixup clarification 5). **Why**: After moving the AI bar to keep the
-natural-language prompt visible, the AI's produced pattern needed a visible home in the dialog. We use the same chip
-primitive for all three modes for consistency: in filename / regex mode the chip reads from the bar, and in AI mode it
-reads from `lastAiPattern`. Clicking × clears the pattern only; the AI transparency strip stays put.
+**Decision**: Pattern chip always rendered. **Why**: After moving the AI bar to keep the natural-language prompt
+visible, the AI's produced pattern needed a visible home in the dialog. We use the same chip primitive for all three
+modes for consistency: in filename / regex mode the chip reads from the bar, and in AI mode it reads from
+`lastAiPattern`. Clicking × clears the pattern only; the AI transparency strip stays put.
 
 **Decision**: Path pills inside result rows are mouse-only and not in the keyboard Tab order. **Why**: Making the pills
 tabbable inside virtualized rows would break the row's arrow-down keyboard flow: pressing Down at the end of a row would

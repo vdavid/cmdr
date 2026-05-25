@@ -1,7 +1,7 @@
 /**
  * Builds the friendly label shown in the search-results pane's breadcrumb and tab title.
  *
- * Per search-redesign-plan §3.7 plus the search-fixup brief:
+ * Rules (see `lib/search/CLAUDE.md` § "Open in pane" for context):
  *   - AI mode: the LLM-produced label (`aiLabel`) wins when present (truncated to ~40
  *     chars), falling back to the original prompt (also truncated). The LLM summarizes
  *     intent better than the verbatim phrasing the user typed.

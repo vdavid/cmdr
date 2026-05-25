@@ -1,13 +1,13 @@
 /**
  * Frontend-only in-memory store of search-result snapshots with refcounting.
  *
- * See search-redesign-plan.md §3.7. Each pane history entry whose `path` starts with
- * `search-results://` holds a +1 ref on the snapshot. The dialog's "last attempt" slot
- * (the most-recent dialog search the user ran) also holds a +1 ref. When a snapshot's
- * refcount drops to 0, the entry is deleted from the store. Refcount is the only
- * authority; there's no hard cap on the store itself.
+ * Each pane history entry whose `path` starts with `search-results://` holds a +1 ref on
+ * the snapshot. The dialog's "last attempt" slot (the most-recent dialog search the user
+ * ran) also holds a +1 ref. When a snapshot's refcount drops to 0, the entry is deleted
+ * from the store. Refcount is the only authority; there's no hard cap on the store itself.
+ * See `lib/search/CLAUDE.md` § "Snapshot store" for the full contract.
  *
- * M8a verification — TabState ownership of history (plan §3.7 risk register):
+ * TabState ownership of history (load-bearing for refcount correctness):
  * `TabState.history: NavigationHistory` lives in `tab-types.ts` (a per-tab field on
  * `TabManager.tabs`). The dual-pane explorer's `{#key activeTabId}` block recreates
  * `FilePane` on tab switch, but the parent `DualPaneExplorer` owns the `TabManager`

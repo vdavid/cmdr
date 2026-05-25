@@ -1,10 +1,11 @@
 /**
  * Tier 3 a11y test for `PathPills.svelte`.
  *
- * The load-bearing rule (search-redesign-plan §3.8): pills are **not** in the
- * keyboard Tab order. Putting them in Tab order would break the row's
- * arrow-down keyboard flow inside virtualized rows. The dialog wires `⌥←` /
- * `⌥→` on the cursor row's path as the keyboard equivalent.
+ * The load-bearing rule: pills are **not** in the keyboard Tab order. Putting
+ * them in Tab order would break the row's arrow-down keyboard flow inside
+ * virtualized rows. The dialog wires `⌥←` / `⌥→` on the cursor row's path as
+ * the keyboard equivalent. See `lib/query-ui/CLAUDE.md` § "Path pills with
+ * overflow collapse" for the rationale.
  *
  * This test pins the contract: every pill carries `tabindex="-1"`, so Tab
  * focus traversal walks past them.

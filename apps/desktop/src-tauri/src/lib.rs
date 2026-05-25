@@ -229,8 +229,8 @@ pub fn run() {
     //      plugin setup we run a 500 ms post-bind `TcpStream::connect` probe and
     //      warn-log on mismatch so a silent fallback is visible in the logs.
     //
-    // See docs/specs/instance-isolation-plan.md § P2 ("Tauri-MCP plugin verified state")
-    // for the full analysis against tauri-plugin-mcp-bridge 0.11.1 source.
+    // See docs/tooling/instance-isolation.md § "Per-resource breakdown" (Tauri MCP
+    // bridge port row) for the wrapper-writes-port-file contract.
     #[cfg(debug_assertions)]
     let builder = {
         let mut bridge_builder = tauri_plugin_mcp_bridge::Builder::new().bind_address("127.0.0.1");

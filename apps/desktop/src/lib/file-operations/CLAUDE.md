@@ -170,15 +170,17 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   whose operation state was already removed, so it's a no-op but briefly flashes "Rolling back..." giving false
   feedback. `operationSettled` is a `$state(false)` that flips when the operation reaches a terminal state. See
   `TransferProgressDialog.svelte` and the Cancel-copy investigation in `docs/notes/speed-up-e2e-tests.md`.
-- **Cancel close is two-condition: `write-cancelled` + `write-settled`** (M4 of `docs/specs/cancel-settled-plan.md`).
-  When the user clicks Cancel (without rollback), `TransferProgressDialog` does NOT close immediately. It keeps the
-  "Cancelling…" label up until both events have arrived for this `operationId`, then applies the existing
-  `MIN_DISPLAY_MS` floor and closes via `onCancelled(filesProcessed)`. After 200 ms of waiting, the label gains a
-  clarifying tail: "Cancelling… (finishing USB transfers)". The BE-side contract — settle fires after a fully-torn-down
-  spawn task, even on panic — lives in `src-tauri/.../write_operations/CLAUDE.md` § "Settle contract". Race protection:
-  if `write-settled` arrives before `write-cancelled` (shouldn't happen, but is defensive), the dialog buffers it and
-  closes only after `write-cancelled` has been processed. Complete / error paths are unchanged: they still close on the
-  existing `MIN_DISPLAY_MS` gate without waiting for settle.
+- **Cancel close is two-condition: `write-cancelled` + `write-settled`.** When the user clicks Cancel (without
+  rollback), `TransferProgressDialog` does NOT close immediately. It keeps the "Cancelling…" label up until both events
+  have arrived for this `operationId`, then applies the existing `MIN_DISPLAY_MS` floor and closes via
+  `onCancelled(filesProcessed)`. After 200 ms of waiting, the label gains a clarifying tail: "Cancelling… (finishing USB
+  transfers)". The BE-side contract — settle fires after a fully-torn-down spawn task, even on panic — lives in
+  `src-tauri/.../write_operations/CLAUDE.md` § "Settle contract". Race protection: if `write-settled` arrives before
+  `write-cancelled` (shouldn't happen, but is defensive), the dialog buffers it and closes only after `write-cancelled`
+  has been processed. Complete / error paths are unchanged: they still close on the existing `MIN_DISPLAY_MS` gate
+  without waiting for settle. Why it matters: the original incident was an MTP delete cancel followed by an immediate
+  second F8 — the device was still mid-teardown, the second op queued behind the 17 s tail, hit the 30 s op timeout, and
+  wedged the USB session.
 - **Scan preview reuse**: TransferDialog starts a scan preview on mount. If the user confirms before the scan finishes,
   the scan keeps running (TransferDialog sets `confirmed = true` and skips cancellation in `onDestroy`).
   TransferProgressDialog picks up listening to the same scan events via `scanInProgress` prop. `waitForScanThenStart`

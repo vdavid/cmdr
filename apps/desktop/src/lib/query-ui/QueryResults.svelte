@@ -2,8 +2,8 @@
     /**
      * SearchResults: Column headers + results list + all states + status bar.
      *
-     * Per the search-fixup brief, the table uses CSS grid with the Path column as the
-     * single flex track (`1fr`). Name has a measured max width and mid-truncates
+     * The table uses CSS grid with the Path column as the single flex track (`1fr`).
+     * Name has a measured max width and mid-truncates
      * (`useShortenMiddle`); Path renders via `PathPills` with overflow-aware collapse;
      * Size and Modified shrink-wrap to their content and sit comfortably apart (we
      * give them a generous gap via the grid `column-gap` declaration). The Actions
@@ -278,7 +278,7 @@
                     <DateLabel modifiedAt={entry.modifiedAt} />
                 </span>
                 <!-- Actions column: per-row `…` menu. Always visible on every row
-                     (search-fixup brief item 2). Header label aligns above. -->
+                     (discoverability beats visual quiet here). Header label aligns above. -->
                 <span class="result-actions">
                     <SearchRowMenu
                         onOpen={() => {
@@ -434,7 +434,7 @@
     /* Single cursor: mouse hover and keyboard arrows both write to `cursorIndex`
        (see `onHover` in the row's `onmouseenter`), so there's no separate
        `.is-hovered` background. The accent-colored cursor follows whichever
-       input the user reaches for. Per search-fixup-brief item 6. */
+       input the user reaches for (volume-switcher pattern). */
     .result-row.is-under-cursor {
         background: var(--color-accent-subtle);
     }
@@ -487,8 +487,8 @@
         text-align: right;
     }
 
-    /* Actions column. Per search-fixup-brief item 2, the `…` button is always
-       visible on every row (no hover-only fade). */
+    /* Actions column. The `…` button is always visible on every row (no
+       hover-only fade) — discoverability matters more than visual quiet here. */
     .result-actions {
         display: inline-flex;
         align-items: center;

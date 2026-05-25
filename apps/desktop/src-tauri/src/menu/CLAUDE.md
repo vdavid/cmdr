@@ -219,7 +219,8 @@ this entry and the selection-dialog plan's M8 § "Menu structure" rationale.
   ensures text clipboard works natively in all windows. Undo and Redo remain PredefinedMenuItems
   since they only apply to text fields.
 - **⌘A dual routing**: "Select all" uses ⌘A as a native menu accelerator (so it's visible in the
-  Select menu — moved out of Edit in M8 of the selection-dialog plan). Since macOS intercepts it before the webview,
+  Select menu — see § "Decision: Select all and Deselect all live in the new Select top-level menu"
+  above). Since macOS intercepts it before the webview,
   the frontend's `handleCommandExecute` checks `document.activeElement`: if it's an input/textarea, it calls `.select()`
   for text selection; otherwise it selects files. This avoids PredefinedMenuItem::select_all which would conflict with
   the custom MenuItem.

@@ -1,4 +1,5 @@
-//! Tests for the `write-settled` per-op event (M4 of `cancel-settled-plan.md`).
+//! Tests for the `write-settled` per-op event. See § "Settle contract" in the
+//! module CLAUDE.md for the full contract.
 //!
 //! The `WriteSettledGuard` RAII pattern emits exactly one `write-settled`
 //! event when the spawned task fully returns — happy path, error path,

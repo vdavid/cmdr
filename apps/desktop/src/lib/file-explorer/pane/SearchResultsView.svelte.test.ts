@@ -183,9 +183,9 @@ describe('SearchResultsView', () => {
 
     const target = document.createElement('div')
     document.body.appendChild(target)
-    // The `name` field on the adapted entry is now the friendly full path
-    // (`~/second.txt`), per search-fixup-brief item 15. We assert against
-    // `path` so the test pins navigation routing rather than the display string.
+    // The `name` field on the adapted entry is the friendly full path
+    // (`~/second.txt`). We assert against `path` so the test pins navigation
+    // routing rather than the display string.
     let navigatedPath: string | null = null
     const component = mount(SearchResultsView, {
       target,

@@ -4,8 +4,7 @@ Canonical reference for how Cmdr keeps prod, dev, per-worktree dev, and concurre
 ports, Keychain, clipboard, fixtures, or process names.
 
 One env var (`CMDR_INSTANCE_ID`) drives every per-instance suffix. Read [`AGENTS.md`](../../AGENTS.md) for repo-wide
-rules. Read [`docs/specs/instance-isolation-plan.md`](../specs/instance-isolation-plan.md) for the full design rationale
-and the seven-phase rollout that landed this primitive.
+rules. This doc is the canonical reference — the design has fully landed in code.
 
 ## The primitive
 
@@ -228,10 +227,6 @@ of the per-resource derivation paths. Future regressions are caught by re-runnin
 
 ## Related docs
 
-- [`docs/specs/instance-isolation-plan.md`](../specs/instance-isolation-plan.md): full design, phase-by-phase rollout,
-  precedence rules, race-window analysis.
-- [`docs/specs/instance-isolation-context.md`](../specs/instance-isolation-context.md): the frozen "why" behind every
-  decision in the plan.
 - [`docs/tooling/mcp.md`](mcp.md): MCP server overview, port discovery for external clients, action-tool ack contract.
 - [`AGENTS.md`](../../AGENTS.md) § Debugging / § MCP / § Worktrees: repo-wide cross-references.
 - [`apps/desktop/CLAUDE.md`](../../apps/desktop/CLAUDE.md): desktop app overview, `--worktree` flag.

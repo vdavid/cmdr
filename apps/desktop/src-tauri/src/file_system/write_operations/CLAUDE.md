@@ -39,7 +39,7 @@ Pre-flight scans reuse cached listings when the source volume reports an active 
 | `tests.rs` | Unit tests. |
 | `copy_integration_test.rs` | Copy operation integration tests (permissions, symlinks, xattrs, edge cases). |
 | `delete_integration_test.rs` | Delete operation integration tests. |
-| `delete_volume_reuse_tests.rs` | Volume-delete tests for scan-preview reuse and oracle fast paths (M3 of `fresh-listing-reuse-plan.md`). |
+| `delete_volume_reuse_tests.rs` | Volume-delete tests for scan-preview reuse and oracle fast paths. See § "Decision: Volume delete reuses the scan preview" below. |
 | `move_integration_test.rs` | Same-fs and cross-fs move integration tests. |
 | `transaction_integration_test.rs` | CopyTransaction record/rollback/commit tests. |
 | `validation_integration_test.rs` | Validation functions, safety checks, path length, disk space tests. |

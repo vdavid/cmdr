@@ -1,16 +1,18 @@
 /**
- * E2E test for M4 of `docs/specs/cancel-settled-plan.md`: when an MTP delete
- * is cancelled mid-flight, the progress dialog stays in "Cancelling…" until
- * the backend emits `write-settled`, then clears. Immediately after that the
- * next F8 must dispatch a new delete cleanly (no wedge).
+ * E2E test for the cancel + settle contract: when an MTP delete is cancelled
+ * mid-flight, the progress dialog stays in "Cancelling…" until the backend
+ * emits `write-settled`, then clears. Immediately after that the next F8 must
+ * dispatch a new delete cleanly (no wedge).
  *
  * The original incident: user cancelled an MTP delete after ~30 of 92 photos,
  * pressed F8 again on the survivors, all subsequent MTP ops timed out at 30 s
  * because the device was still mid-teardown when the second op dispatched.
  *
- * M2 propagates cancel into mtp-rs so teardown is fast (~one USB roundtrip).
- * M4 makes the FE honest: the dialog stays up until the backend confirms it's
- * actually torn down, not just "I told it to stop."
+ * Cancel propagation into mtp-rs makes teardown fast (~one USB roundtrip); the
+ * settle gate makes the FE honest by holding the dialog until the backend
+ * confirms it's actually torn down, not just "I told it to stop." See
+ * `src-tauri/src/file_system/write_operations/CLAUDE.md` § "Settle contract"
+ * and `src-tauri/src/mtp/CLAUDE.md` § "Cancel propagation".
  *
  * Requires `--features playwright-e2e,virtual-mtp`.
  */

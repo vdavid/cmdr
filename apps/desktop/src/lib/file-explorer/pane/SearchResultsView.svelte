@@ -11,10 +11,10 @@
      *
      * Click on a row opens the file or navigates into the directory via the host pane's
      * `onNavigate` callback (which routes through `FilePane.handleNavigate` and pushes a
-     * regular history entry for the underlying real path). The Path column was removed
-     * per search-fixup-brief item 15; the Name column shows the full path now, and the
-     * row-level "Reveal in Finder" / "Open" context menu items cover the ancestor-jump
-     * cases. The breadcrumb still shows the snapshot's label.
+     * regular history entry for the underlying real path). The snapshot pane has no
+     * separate Path column; the Name column shows the full path, and the row-level
+     * "Reveal in Finder" / "Open" context menu items cover the ancestor-jump cases.
+     * The breadcrumb still shows the snapshot's label.
      *
      * Missing snapshot — shouldn't happen in practice (the dialog pins via the
      * last-attempt slot and the tab-state manager holds refs for history entries), but
@@ -85,9 +85,9 @@
 
     /**
      * Adapt `SearchResultEntry` (the wire-typed search result) into `FileEntry` (the
-     * shape FullList expects). Per search-fixup-brief item 15: the Name column shows
-     * the FULL PATH for each entry (`~/Library/Dropbox/test.md`), so we synthesize
-     * the FileEntry with `name = friendly full path`. FullList's `col-name` mid-
+     * shape FullList expects). The Name column shows the FULL PATH for each entry
+     * (`~/Library/Dropbox/test.md`), so we synthesize the FileEntry with
+     * `name = friendly full path`. FullList's `col-name` mid-
      * truncates via `useShortenMiddle` (snapping to `/` when the name contains one)
      * and the tooltip surfaces the full string on hover. Recursive fields stay
      * absent: snapshots only carry per-file basics from the search engine. The Size
@@ -146,7 +146,7 @@
 
     /**
      * Find an entry by basename; returns its global index or -1. The entry's
-     * `name` field is now a full path (post-search-fixup-brief item 15), so we
+     * `name` field is a full path (snapshot-pane display convention), so we
      * compare against the basename derived from `path` instead. Callers (mostly
      * type-to-jump and MCP) still pass plain filenames.
      */

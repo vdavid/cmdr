@@ -19,7 +19,7 @@ embedded frontend.
 To run two dev sessions side-by-side from different worktrees without colliding on `settings.json`, ports, or the Dock
 label, pass `--worktree <slug>`: `pnpm dev --worktree my-feature`. The slug is sanitized to lowercase ASCII (max 32
 chars) and feeds into both the bundle identifier (`com.veszelovszki.cmdr-dev-my-feature`) and the data dir. See
-[`docs/specs/instance-isolation-plan.md`](../../docs/specs/instance-isolation-plan.md) for the full design.
+[`docs/tooling/instance-isolation.md`](../../docs/tooling/instance-isolation.md) for the per-resource breakdown.
 
 The Vite dev port is also ephemeral per instance. The wrapper reserves it via `net.createServer().listen(0)`, exports
 `CMDR_VITE_PORT`, and rewrites `build.devUrl` in the generated `tauri.instance.json` so Tauri's webview points at the

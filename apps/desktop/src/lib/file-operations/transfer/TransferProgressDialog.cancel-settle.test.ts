@@ -1,7 +1,8 @@
 /**
- * M4 of `docs/specs/cancel-settled-plan.md`: the dialog must stay in
- * "Cancelling…" until both `write-cancelled` AND `write-settled` have
- * arrived. Reversing order, or closing on either alone, is wrong.
+ * Two-condition cancel close: the dialog must stay in "Cancelling…" until
+ * both `write-cancelled` AND `write-settled` have arrived. Reversing order,
+ * or closing on either alone, is wrong. See `lib/file-operations/CLAUDE.md`
+ * § "Cancel close" for the contract.
  *
  * We mount the dialog with mocked event helpers that capture the registered
  * callbacks. The test then drives the dialog by invoking those callbacks

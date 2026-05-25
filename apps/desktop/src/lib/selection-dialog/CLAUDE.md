@@ -4,7 +4,8 @@ The "Select files…" / "Deselect files…" dialog. Lets the user select files i
 natural-language prompt (AI mode, cloud only). Second consumer of the shared `QueryDialog` primitive in
 [`lib/query-ui/`](../query-ui/CLAUDE.md) — Search is the first; Selection mirrors its shape.
 
-See [`docs/specs/selection-dialog-plan.md`](../../../../../docs/specs/selection-dialog-plan.md) for the full spec.
+Backend lives in [`src-tauri/src/selection/`](../../../src-tauri/src/selection/CLAUDE.md) (history store + AI
+translation). The shared dialog primitives live in [`lib/query-ui/`](../query-ui/CLAUDE.md).
 
 Dialog dimensions: `max-width: min(720px, 60vw)` (narrower than Search's `min(1080px, 80vw)` because Selection lists
 have no path column and shouldn't dominate the viewport). `max-height: 80vh`.

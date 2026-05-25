@@ -124,7 +124,7 @@ describe('PathPills', () => {
     target.remove()
   })
 
-  it('keeps pills out of the keyboard Tab order (search-redesign-plan §3.8)', async () => {
+  it('keeps pills out of the keyboard Tab order', async () => {
     const target = renderPills('/a/b')
     await tick()
     const pills = Array.from(target.querySelectorAll('.pill'))

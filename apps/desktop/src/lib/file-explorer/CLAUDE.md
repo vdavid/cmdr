@@ -187,11 +187,11 @@ already gates on `isNetworkView` (git lookups, listing watcher, dir-exists poll,
 `SearchResultsView` from the {#if/elseif} chain when active.
 
 `SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`
-via `staticEntries`. No backend listing exists, no IPC traffic. Per search-fixup-brief item 15, each adapted entry's
-`name` field is the friendly full path (home folder shown as `~`); the col-name cell mid-truncates via
-`useShortenMiddle` and surfaces the full path on hover. There's no separate Path column anymore. The view exports a
-small API (`setCursorIndex` / `findItemIndex` / `openCursorItem` / `isMissing`) used by FilePane's keyboard handler;
-`findItemIndex` matches on the basename of `path` so type-to-jump / MCP keep working with plain filenames.
+via `staticEntries`. No backend listing exists, no IPC traffic. Each adapted entry's `name` field is the friendly full
+path (home folder shown as `~`); the col-name cell mid-truncates via `useShortenMiddle` and surfaces the full path on
+hover. There's no separate Path column anymore. The view exports a small API (`setCursorIndex` / `findItemIndex` /
+`openCursorItem` / `isMissing`) used by FilePane's keyboard handler; `findItemIndex` matches on the basename of `path`
+so type-to-jump / MCP keep working with plain filenames.
 
 Navigation:
 

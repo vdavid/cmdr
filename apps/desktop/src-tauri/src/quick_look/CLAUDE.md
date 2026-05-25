@@ -3,8 +3,7 @@
 Native macOS Quick Look (`QLPreviewPanel`) integration. Shift+Space opens a real AppKit preview
 panel over Cmdr; arrow keys keep navigating the file list while the panel tracks the cursor.
 
-The full design rationale lives in [`docs/specs/quick-look-plan.md`](../../../../../docs/specs/quick-look-plan.md);
-this file is the per-module quick reference.
+This file is the per-module reference; the architecture and decisions live below.
 
 ## Files
 

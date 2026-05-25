@@ -201,8 +201,8 @@
      *  "Cancelling…" until BOTH this AND `settleEventReceived` are true,
      *  giving the BE time to tear down in-flight USB / network ops. */
     let cancelEventReceived = $state(false)
-    /** Set when `write-settled` arrives for this op. See M4 of
-     *  `docs/specs/cancel-settled-plan.md` for the contract. */
+    /** Set when `write-settled` arrives for this op. See § "Settle contract"
+     *  in `src-tauri/src/file_system/write_operations/CLAUDE.md`. */
     let settleEventReceived = $state(false)
     /** Cached `WriteCancelledEvent` payload — held until settle arrives so we
      *  can pass `filesProcessed` to `onCancelled` at close time. */
@@ -762,11 +762,11 @@
             }
         } else {
             // Cancel: keep partial files. Stay in "Cancelling…" until both
-            // `write-cancelled` and `write-settled` have landed (M4 of
-            // `docs/specs/cancel-settled-plan.md`): the BE may still be
-            // tearing down USB / network sessions, and dispatching a new op
-            // against a volume in that state is what wedged the device in
-            // the original incident.
+            // `write-cancelled` and `write-settled` have landed: the BE may
+            // still be tearing down USB / network sessions, and dispatching a
+            // new op against a volume in that state is what wedged the device
+            // in the original incident. See the "Settle contract" in
+            // `src-tauri/src/file_system/write_operations/CLAUDE.md`.
             log.info('Cancelling operation (keeping partial files): {operationId}', { operationId })
             isCancelling = true
             startSlowSettleTimer()

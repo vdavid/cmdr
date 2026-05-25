@@ -171,9 +171,8 @@
         z-index: var(--z-dropdown);
 
         /* Frosted-glass material via shared design tokens. Same translucency, blur, and hairline
-           as the tooltip primitive — that's the contract the search-redesign-plan calls out:
-           "Reuse the tooltip's frosted-glass material values exactly." See `app.css` §
-           Frosted-glass material for the underlying values. */
+           as the tooltip primitive — reuse the tooltip's frosted-glass material values exactly.
+           See `app.css` § Frosted-glass material for the underlying values. */
         background: var(--color-bg-glass);
         -webkit-backdrop-filter: saturate(180%) blur(20px);
         backdrop-filter: saturate(180%) blur(20px);

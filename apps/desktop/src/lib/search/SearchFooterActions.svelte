@@ -4,13 +4,11 @@
      *
      * Two affordances:
      *   - "Go to file": closes the dialog and navigates the active pane to the cursor
-     *     row's parent folder, focusing the file (pushes a new history entry).
-     *     Replaces the previous "Open in Finder" button per search-fixup-brief
-     *     clarification 3. The parent owns the navigation; this component only fires
-     *     the callback.
-     *   - "Show all in main window" (⌥A): the primary action. Promotes the current
+     *     row's parent folder, focusing the file (pushes a new history entry). The
+     *     parent owns the navigation; this component only fires the callback.
+     *   - "Show all in main window" (⌥⏎): the primary action. Promotes the current
      *     result set into a `search-results://<id>` virtual-volume pane and closes the
-     *     dialog. Per search-fixup-brief item 10 + clarification 1.
+     *     dialog.
      *
      * Both buttons are HIDDEN (not just disabled) when there are no results, because
      * they have nothing to act on. Shortcut hints render inline in tertiary text so
@@ -82,8 +80,7 @@
 
 <style>
     /* No background / border-top here: the parent `.dialog-footer` owns the
-       single uniform footer surface and the hairline above it (search-fixup
-       brief item 1). */
+       single uniform footer surface and the hairline above it. */
     .footer-actions {
         display: inline-flex;
         align-items: center;

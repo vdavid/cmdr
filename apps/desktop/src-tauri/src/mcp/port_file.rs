@@ -2,8 +2,8 @@
 //! bridge plugin). External readers (the `scripts/mcp-call.sh` CLI, E2E fixtures, agent
 //! helpers) discover the actual bound port by reading `<data_dir>/<name>.port` rather than
 //! guessing the configured default. The in-process FE keeps using the `get_mcp_port` IPC
-//! (it reads the same `MCP_ACTUAL_PORT` atomic). See `docs/specs/instance-isolation-plan.md`
-//! § P2 for the full contract.
+//! (it reads the same `MCP_ACTUAL_PORT` atomic). See `docs/tooling/instance-isolation.md`
+//! § "Per-resource breakdown" (Cmdr MCP HTTP port row) for the full contract.
 //!
 //! Write protocol:
 //!   1. Write the ASCII port + `\n` to `<dir>/<name>.tmp.<pid>`.

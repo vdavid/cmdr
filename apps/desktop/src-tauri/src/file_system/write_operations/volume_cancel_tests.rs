@@ -1,5 +1,5 @@
-//! Tests for cooperative cancel propagation into volume backends (M2 of
-//! `cancel-settled-plan.md`).
+//! Tests for cooperative cancel propagation into volume backends. See
+//! `crate::mtp` § "Cancel propagation" for the contract.
 //!
 //! These tests pin the contract that `OperationIntent::Stopped` actually stops
 //! the wire activity (per-USB-roundtrip granularity), not just the loop above

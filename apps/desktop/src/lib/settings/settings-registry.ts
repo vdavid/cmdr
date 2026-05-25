@@ -690,7 +690,7 @@ export const settingsRegistry: SettingDefinition[] = [
     // 0 = ephemeral. The backend binds 127.0.0.1:0 and writes the actual port to
     // `<data_dir>/mcp.port` so external clients can discover it. Pinning a non-zero port
     // is still supported for tooling that needs a fixed target. See
-    // `docs/specs/instance-isolation-plan.md` § P2.
+    // `docs/tooling/instance-isolation.md` § "Per-resource breakdown" (Cmdr MCP HTTP port row).
     default: 0,
     component: 'number-input',
     constraints: {

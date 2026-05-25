@@ -90,9 +90,9 @@ export function deriveDateChip(dateFilter: DateFilter, dateValue: string, dateVa
 }
 
 /**
- * Returns the chip state for the cross-mode Pattern chip. Per search-fixup-brief
- * clarification 5, this chip is ALWAYS rendered alongside Size / Modified / Search in
- * and surfaces the active filename pattern, regex pattern, or AI-produced pattern.
+ * Returns the chip state for the cross-mode Pattern chip. This chip is ALWAYS
+ * rendered alongside Size / Modified / Search in and surfaces the active filename
+ * pattern, regex pattern, or AI-produced pattern.
  * "Active" means: in filename / regex mode it's the bar contents; in AI mode it's
  * the LLM-produced pattern (the bar holds the natural-language prompt). The chip
  * is unconfigured (empty pill that the user can ignore) when no pattern is set.

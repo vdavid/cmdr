@@ -10,8 +10,8 @@
      *
      * - ArrowDown / ArrowUp / Home / End: move within the list.
      * - Type-to-jump: typing a prefix selects the first matching option name. The
-     *   prefix buffer resets after 700 ms of inactivity. Per onboarding-revamp-plan
-     *   § M3 step 1: the file-explorer's `type-to-jump-state.svelte.ts` factory is
+     *   prefix buffer resets after 700 ms of inactivity. See `lib/onboarding/CLAUDE.md` §
+     *   "Step 2": the file-explorer's `type-to-jump-state.svelte.ts` factory is
      *   pane-coupled (cursor / snapshot deps), so an inline matcher is the right
      *   tradeoff here. 15 names, single comparator, no factory needed.
      *

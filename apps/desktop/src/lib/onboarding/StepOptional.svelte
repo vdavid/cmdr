@@ -16,8 +16,7 @@
      * other three were already in place).
      *
      * Defaults stay ON. Step 3's purpose is to let the user turn things OFF with full
-     * context, not to ask for opt-in. Verbatim copy from David's spec in
-     * `docs/specs/onboarding-revamp-context.md` § "Step 3 (optional)".
+     * context, not to ask for opt-in. See `lib/onboarding/CLAUDE.md` § "Step 3 (optional setup)".
      *
      * Footer: single primary "Start using Cmdr" button registered via
      * `setFooterOverride()`. Clicking it asks the wizard to finish: the wizard's

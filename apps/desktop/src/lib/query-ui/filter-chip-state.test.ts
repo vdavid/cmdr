@@ -142,7 +142,7 @@ describe('deriveScopeChip', () => {
   })
 })
 
-describe('derivePatternChip (search-fixup-brief clarification 5)', () => {
+describe('derivePatternChip', () => {
   it('reads from `query` in filename mode', () => {
     expect(derivePatternChip({ mode: 'filename', query: '*.pdf', aiPattern: null })).toEqual({
       configured: true,

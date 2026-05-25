@@ -57,7 +57,7 @@ types.rs defines  ->  query.rs prepares (resolve_include_paths)
 **Decision**: LLM classifies intent into enums, Rust computes values deterministically.
 **Why**: Even small (2B) LLMs understand natural language across languages and can map "last week" to the token `last_week`. But asking them to generate regex, compute ISO dates, or produce valid JSON fails ~60% of the time on local models. Separating classification (LLM) from computation (Rust) makes the pipeline reliable regardless of model size.
 
-**Decision**: The classification prompt also asks the LLM for a short `label:` (per search-fixup-brief item 16).
+**Decision**: The classification prompt also asks the LLM for a short `label:`.
 **Why**: When the user opens a search-results snapshot in a pane, the breadcrumb wants a short, human-friendly title
 ("Big PDFs from this week") rather than the verbatim natural-language prompt. The LLM is already summarizing intent for
 the rest of the prompt fields; asking it for one more compact title is cheap and reliable, no extra round trip. Rust
@@ -96,7 +96,7 @@ IPC commands live in `commands/search.rs` -- thin wrappers. `translate_search_qu
 
 ## Recent-searches history (`history.rs`)
 
-Persistent store for the dialog's recent-searches footer and popover (`search-redesign-plan.md` §3.5).
+Persistent store for the dialog's recent-searches footer and popover.
 
 - **Persistence path**: `{app_data_dir}/search-history.json`. Schema-versioned via the `_schemaVersion` key (currently 1).
 - **In-memory cache** + **disk lock**: in-memory `Mutex<HistoryStore>` mirrors `network::known_shares`; a separate
@@ -109,9 +109,9 @@ Persistent store for the dialog's recent-searches footer and popover (`search-re
   (move-to-top), older copies dropped.
 - **Recovery**: parse failure or schema-version mismatch → rename file to `.broken`, start fresh. The user keeps using
   the dialog; the corrupted file is preserved for one more rotation in case we want to debug.
-- **Add-on-write hook**: history entries are added ONLY from the frontend "Open in pane" action (search-redesign-plan
-  §3.5). The Rust side doesn't enforce this — the IPC commands accept any entry — but the frontend's only call site for
-  `addRecentSearch` is the Open-in-pane handler (M8 wires it).
+- **Add-on-write hook**: history entries are added ONLY from the frontend "Open in pane" action. The Rust side doesn't
+  enforce this — the IPC commands accept any entry — but the frontend's only call site for `addRecentSearch` is the
+  Open-in-pane handler. The rationale (1000-entry budget stays signal-rich) lives in the Decision/Why block below.
 - **Cap**: configurable via `search.recentSearches.maxCount` (default 1000). `apply_max_count` trims the in-memory store
   on live-apply; `0` clears everything and short-circuits future adds.
 

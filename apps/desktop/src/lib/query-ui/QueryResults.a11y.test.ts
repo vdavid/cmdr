@@ -139,14 +139,14 @@ describe('SearchResults a11y', () => {
   })
 
   // Populated rows are `role="option"` AND contain interactive children
-  // (path-pill `<button>`s and the `…` row-menu `<button>`). Per
-  // search-redesign-plan §3.8 / §3.9, the inner buttons are mouse-only and
-  // intentionally outside the keyboard Tab order (`tabindex="-1"`); the row
-  // itself is the keyboard target. Axe's `nested-interactive` rule flags the
-  // structural nesting anyway. We disable that one rule for this state and
-  // let every other rule run, so any regression in label, name, or contrast
-  // semantics still trips this test. See `lib/search/CLAUDE.md` for the
-  // design rationale (decision: "Path pills mouse-only, not in Tab order").
+  // (path-pill `<button>`s and the `…` row-menu `<button>`). The inner buttons
+  // are mouse-only and intentionally outside the keyboard Tab order
+  // (`tabindex="-1"`); the row itself is the keyboard target. Axe's
+  // `nested-interactive` rule flags the structural nesting anyway. We disable
+  // that one rule for this state and let every other rule run, so any
+  // regression in label, name, or contrast semantics still trips this test.
+  // See `lib/query-ui/CLAUDE.md` § "Path pills with overflow collapse" for
+  // the design rationale.
   it('populated results has no a11y violations (nested-interactive intentionally disabled)', async () => {
     const results: SearchResultEntry[] = [
       {

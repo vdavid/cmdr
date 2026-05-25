@@ -5,7 +5,7 @@
      * Each filter (Size, Modified, Search in) renders as a single chip. Clicking the chip opens
      * a popover with the controls. A trailing "+ Add filter" chip surfaces filters that are
      * currently in their default state; when all three are configured, the Add filter chip
-     * disappears. See `docs/specs/search-redesign-plan.md` §3.2 for the full spec.
+     * disappears. See `lib/query-ui/CLAUDE.md` § "Filter chips with popovers" for the rationale.
      *
      * Chip behavior:
      *   - Default state: shows just the label ("Size", "Modified", "Search in").
@@ -392,11 +392,10 @@
     const patternState = $derived(derivePatternChip({ mode, query, aiPattern }))
 
     /**
-     * Clears the active pattern across all modes. Per search-fixup-brief
-     * clarification 5: clicking the Pattern chip's `×` clears the pattern but
-     * does NOT hide the AI transparency strip (that lives separately on
-     * `lastAiPrompt`). In filename / regex mode we clear the bar; in AI mode we
-     * clear the AI-produced pattern slot.
+     * Clears the active pattern across all modes. Clicking the Pattern chip's
+     * `×` clears the pattern but does NOT hide the AI transparency strip (that
+     * lives separately on `lastAiPrompt`). In filename / regex mode we clear
+     * the bar; in AI mode we clear the AI-produced pattern slot.
      */
     function clearPattern(): void {
         if (mode === 'ai') {
@@ -474,11 +473,10 @@
     }
 </script>
 
-<!-- Filter chip strip. Replaces the old `.filter-row` and `.input-row` (scope) sections.
-     Per search-fixup-brief clarification 5, the Pattern chip is ALWAYS rendered ahead of
-     Size / Modified / Search in. Its value comes from the bar in filename / regex mode and
-     from the AI-produced pattern in AI mode, so the user sees the actual pattern being
-     applied across every mode. -->
+<!-- Filter chip strip. The Pattern chip is ALWAYS rendered ahead of Size / Modified /
+     Search in. Its value comes from the bar in filename / regex mode and from the
+     AI-produced pattern in AI mode, so the user sees the actual pattern being applied
+     across every mode. See `lib/query-ui/CLAUDE.md` for the rationale. -->
 <div class="filter-chip-strip" role="toolbar" aria-label="Search filters">
     {#if patternChipVisible}
         <FilterChip

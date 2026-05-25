@@ -235,7 +235,7 @@ describe('computeFullListColumnWidths', () => {
     expect(human.size).toBeLessThan(raw.size)
   })
 
-  // Path column tests removed: per search-fixup-brief item 15, the optional
-  // path column was dropped. The search-results pane now shows full paths in
-  // the Name column (mid-truncated via `useShortenMiddle`) instead.
+  // Path column tests removed: the optional path column was dropped. The
+  // search-results pane now shows full paths in the Name column
+  // (mid-truncated via `useShortenMiddle`) instead.
 })

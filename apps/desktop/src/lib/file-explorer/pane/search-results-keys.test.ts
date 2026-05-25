@@ -1,8 +1,9 @@
 /**
- * Pins the snapshot pane's keyboard contract (David's round-2 P-series).
+ * Pins the snapshot pane's keyboard contract.
  *
- * Tests are written to fail BEFORE the implementation lands: each one mirrors one of the
- * bugs David reported in `docs/specs/search-fixup-round2-brief.md` ("P1-P10" section).
+ * Originally written TDD-style for the snapshot-pane keyboard fixes (PgUp/PgDown,
+ * Home/End, Space-toggle, ⇧Up/⇧Down range, ⌘A select-all, F-keys). Each case
+ * pins a specific contract: see `computeSearchPaneKeyAction` below.
  */
 import { describe, it, expect } from 'vitest'
 import { computeSearchPaneKeyAction, type SearchPaneKeyAction } from './search-results-keys'

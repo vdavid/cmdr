@@ -244,8 +244,8 @@ describe('SearchDialog mode shortcuts (AI on)', () => {
   })
 
   it("switching mode swaps the bar to the target mode's hand-typed buffer", async () => {
-    // Per search-fixup-brief clarification 2, each mode owns its own input
-    // buffer: switching from AI to filename restores filename's last hand-typed
+    // Each mode owns its own input buffer: switching from AI to filename
+    // restores filename's last hand-typed
     // value (empty here), not the AI-mode contents. The AI bar's prompt stays
     // available via `getLastAiPrompt()` for the transparency strip.
     const { overlay, cleanup } = await mountDialog()

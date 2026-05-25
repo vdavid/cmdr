@@ -349,7 +349,7 @@ describe('scope state', () => {
   })
 })
 
-describe('per-mode buffer (search-fixup-brief clarification 2)', () => {
+describe('per-mode buffer', () => {
   // These tests import lazily so they don't add to the static import surface
   // at the top of the file (and so we don't have to repeat the long shared
   // list of helpers).

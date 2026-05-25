@@ -6,7 +6,7 @@
  * displayed port came from the kernel, not from their preference. When the setting is
  * non-zero, the existing "(port N was in use)" suffix appears only on mismatch.
  *
- * See docs/specs/instance-isolation-plan.md § P2.
+ * See docs/tooling/instance-isolation.md § "Per-resource breakdown" (Cmdr MCP HTTP port row).
  */
 
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
