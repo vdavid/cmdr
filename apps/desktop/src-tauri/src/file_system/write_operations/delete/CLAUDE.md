@@ -1,0 +1,39 @@
+# Delete + trash
+
+Delete and trash operations: local-FS walker, volume-aware walker (MTP, SMB), and the OS-native trash. The local walker uses `walkdir` + `fs::remove_file`; the volume walker uses the `Volume` trait and is oracle-aware.
+
+See [`../CLAUDE.md`](../CLAUDE.md) for the shared `WriteOperationState`, `OperationIntent` state machine, cancel contract, ETA estimator, and settle contract. [`../transfer/CLAUDE.md`](../transfer/CLAUDE.md) is the parallel doc for copy + move.
+
+## Files
+
+| File | Responsibility |
+|------|----------------|
+| `walker.rs` | Scan, delete files first, then directories in reverse/deepest-first order. Not rollbackable. Also contains `delete_volume_files_with_progress` for non-local volumes (MTP): consumes the scan preview via `take_cached_scan_result(preview_id)` first (top-level files come straight from `CopyScanResult` with no `is_directory` probe, top-level dirs recurse via the oracle-aware walker); on no-preview paths (MCP, programmatic) the top-level `is_directory(source)` probe stays unless the source's parent is watcher-fresh in `LISTING_CACHE`, in which case the type comes from the cached entry. The walker (`scan_volume_recursive`) consults `try_get_watched_listing(volume_id, path)` before every `list_directory`, so any subtree open in another pane is cache-fed. Scans via `volume.list_directory(path, Some(&cb))` (per-entry throttled progress so the FE tally climbs mid-listing on slow MTP roundtrips), deletes via `volume.delete()` per item. Shared cumulative tally lives in an `Arc<VolumeScanTracker>` (atomics for files/dirs/bytes + `Mutex<Instant>` throttle) so the per-entry callback and the post-subtree snapshot agree across recursion levels. Both emit paths use `with_scan_meta(current_dir, dirs_done, None)` so the scanning UI shows the dir count and the directory the walker is currently in. |
+| `trash.rs` | `move_to_trash_sync()` (macOS: ObjC `trashItemAtURL`; Linux: `trash` crate; reused by `commands/rename.rs`) and `trash_files_with_progress()` (batch trash with per-item progress, cancellation, partial failure). Uses `symlink_metadata()` for existence checks (handles dangling symlinks). |
+| `delete_integration_test.rs` | Delete operation integration tests. |
+| `delete_volume_reuse_tests.rs` | Volume-delete tests for scan-preview reuse and oracle fast paths. See § "Decision: Volume delete reuses the scan preview" below. |
+| `volume_cancel_tests.rs` | Tests for cooperative cancel propagation into volume backends. Drives `delete_volume_files_with_progress_inner` against a `CancellingVolume` that mimics MTP's per-handle loop with an explicit cancel check. Also pins the settle-event contract for the volume-delete handler. |
+
+## Delete semantics
+
+**Delete order: files first, then directories deepest-first.** The walker collects entries in DFS order, then deletes in reverse so directories are empty by the time `remove_dir` runs.
+
+**Not rollbackable.** Once deleted, data is gone (unless trashed). Cancellation stops further deletes but won't restore the already-deleted ones.
+
+**`delete_files_start` routes to either `delete_files_with_progress` (local, uses `walkdir` + `fs::remove_file`) or `delete_volume_files_with_progress` (non-local, uses `Volume` trait) based on `volume_id`.** MTP volumes can't use `walkdir` or `fs::remove_*`. Rather than refactoring the existing local delete to go through the Volume trait (which would add overhead for local ops), we keep the fast local path and add a parallel volume-aware path. Both emit identical events so the frontend progress dialog works unchanged.
+
+**Local delete reuses the scan-preview cache via `config.preview_id`.** `delete_files_with_progress_inner` used to ignore `preview_id` and always re-run `scan_sources`. The FE had just paid the cost of a full scan in `DeleteDialog` (which emits cumulative `scan-preview-progress` events), so the second BE-side scan starting from `filesDone=0` made the count visibly reset in `TransferProgressDialog`. Now the function checks `config.preview_id` first: on cache hit the `ScanResult` is consumed directly, skipping the redundant scan and going straight to the active phase. The function also emits an initial `phase: Deleting` `WriteProgressEvent` after the cache hit so the FE switches to the active-phase UI with the right denominator.
+
+## Trash
+
+**Trash has no scan phase.** `trashItemAtURL` is atomic per top-level item (the OS moves the entire tree), so trash doesn't need the recursive scan that delete/copy use. Progress tracks top-level items, with optional byte-level progress from pre-computed item sizes. Partial failure is supported: if some items fail, others still succeed. The core `move_to_trash_sync()` is extracted to `trash.rs` and reused by `commands/rename.rs`.
+
+## Key decisions
+
+**Decision**: Volume delete reuses the scan preview and is oracle-aware on the no-preview path.
+**Why**: Before this, `delete_volume_files_with_progress_inner` ignored `config.preview_id` entirely and ran `scan_volume_recursive` again. On MTP that meant a second 17 s parent listing for a 135-photo `/DCIM/Camera` delete after the user had just paid that cost in the pre-flight dialog — and the second scan emitted no per-top-level-file progress, so the UI looked frozen. The fix has three parts. (1) `delete_volume_files_with_progress_inner` calls `take_cached_scan_result(preview_id)` at the top; on hit, top-level files are recorded from `CopyScanResult::total_bytes` with no `is_directory` probe and no `list_directory` round-trip, and top-level dirs recurse via the oracle-aware `scan_volume_recursive` (passing `is_dir_hint = Some(true)` so the recursion never re-probes). (2) The walker's internal `volume.list_directory(path, ...)` is now preceded by `try_get_watched_listing(volume_id, path)`; on hit, the cached entries replace the volume call entirely at every recursion level. (3) On the no-preview path (MCP triggers, programmatic deletes), the top-level `volume.is_directory(source)` probe stays only when the parent oracle misses — when a pane has the source's parent open and watcher-fresh, the type comes from the cached `FileEntry` and the probe is skipped. The cache-hit path also emits a throttled scan-progress event per `progress_interval` while building the entry list, so the FE dialog shows movement during the fast path instead of waiting for the delete phase to start. Pinned by `delete_volume_reuse_tests.rs`. Data-safety contract: stale-by-one cached entries can either silently skip a now-gone file (acceptable: the user already moved it elsewhere) or attempt to delete a missing one (the volume's `delete` errors cleanly). Neither direction can delete the wrong file because we feed `volume.delete(&entry.path)` exact paths the cache observed; a cached entry that races with a concurrent rename ends up addressing the old path the next call won't find.
+
+## Gotchas
+
+**Gotcha**: Recursive scan helpers that bail with `Err(Cancelled)` must NOT emit `write-cancelled` themselves; their top-level callers must.
+**Why**: `walker.rs::scan_volume_recursive` checks `is_cancelled(&state.intent)` at the top of every recursion level. If it emitted `write-cancelled` at the bail site, a mid-walk cancel would fire the terminal event once per recursion frame still on the stack. So the function returns `Err(Cancelled)` silently and the caller is responsible for emitting before propagating. `delete_volume_files_with_progress_inner` uses the `emit_cancelled_if_aborted` helper at each of its three `scan_volume_recursive(...).await?` sites for exactly this. Any future recursive scan that follows the same shape (per-level cancel check) needs the same caller-side emit, otherwise the FE never sees `write-cancelled` for scan-phase cancels and the dialog closes via the M4 settle-fallback path instead of the proper cancel flow. Pinned by `delete_cancel_during_scan_emits_write_cancelled` in `delete_volume_reuse_tests.rs`.
