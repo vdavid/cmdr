@@ -4,6 +4,8 @@ Copy and move operations, both local-FS and volume-aware (Local ↔ MTP ↔ SMB)
 
 See [`../CLAUDE.md`](../CLAUDE.md) for the shared `WriteOperationState`, `OperationIntent` state machine, cancel/rollback contract, ETA estimator, and settle contract. [`../delete/CLAUDE.md`](../delete/CLAUDE.md) is the parallel doc for delete + trash.
 
+Frontend counterpart: [`apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`](../../../../../src/lib/file-operations/transfer/CLAUDE.md) for the dialog flow, progress UI, conflict-policy radios, and the cancel/settle close contract.
+
 ## Files
 
 | File | Responsibility |

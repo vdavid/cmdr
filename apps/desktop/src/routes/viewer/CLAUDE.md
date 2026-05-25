@@ -2,6 +2,10 @@
 
 The file viewer opens files in a separate Tauri window with virtual scrolling and text search.
 
+Backend counterpart: [`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`](../../../src-tauri/src/file_viewer/CLAUDE.md)
+for the three backend strategies (chunked, full-load, pretext), session orchestration, and background search. Reusable
+FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CLAUDE.md).
+
 ## Files
 
 | File                            | Contents                                                                                    |

@@ -2,6 +2,12 @@
 
 Copy, move, delete, and trash with streaming progress, cancellation, conflict resolution, and rollback. macOS and Linux.
 
+Frontend counterpart: [`apps/desktop/src/lib/file-operations/CLAUDE.md`](../../../../src/lib/file-operations/CLAUDE.md)
+(umbrella) plus colocated child docs for [`transfer/`](../../../../src/lib/file-operations/transfer/CLAUDE.md),
+[`delete/`](../../../../src/lib/file-operations/delete/CLAUDE.md),
+[`mkdir/`](../../../../src/lib/file-operations/mkdir/CLAUDE.md), and
+[`mkfile/`](../../../../src/lib/file-operations/mkfile/CLAUDE.md).
+
 Subdirs:
 - [`transfer/CLAUDE.md`](transfer/CLAUDE.md) — copy + move (local FS, cross-volume, MTP, SMB), conflict resolution, the shared transfer driver, platform-specific copy backends.
 - [`delete/CLAUDE.md`](delete/CLAUDE.md) — delete walker (local + volume-aware), trash, the oracle-aware delete fast path.

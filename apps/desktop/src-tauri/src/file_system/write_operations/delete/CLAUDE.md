@@ -4,6 +4,8 @@ Delete and trash operations: local-FS walker, volume-aware walker (MTP, SMB), an
 
 See [`../CLAUDE.md`](../CLAUDE.md) for the shared `WriteOperationState`, `OperationIntent` state machine, cancel contract, ETA estimator, and settle contract. [`../transfer/CLAUDE.md`](../transfer/CLAUDE.md) is the parallel doc for copy + move.
 
+Frontend counterpart: [`apps/desktop/src/lib/file-operations/delete/CLAUDE.md`](../../../../../src/lib/file-operations/delete/CLAUDE.md) for the confirmation dialog, scan preview, no-trash warning, and the F8/Shift+F8 routing.
+
 ## Files
 
 | File | Responsibility |

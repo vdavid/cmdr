@@ -2,6 +2,8 @@
 
 Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 
+Frontend counterpart: [`apps/desktop/src/lib/file-explorer/network/CLAUDE.md`](../../../src/lib/file-explorer/network/CLAUDE.md) for the network browser, share picker, login form, and reconnect-manager state.
+
 ## Architecture
 
 - **Discovery**: `mdns_discovery.rs`: Pure Rust mDNS using `mdns-sd` crate. Cross-platform.

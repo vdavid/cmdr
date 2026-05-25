@@ -1,5 +1,7 @@
 # File system › git
 
+Frontend counterpart: [`apps/desktop/src/lib/file-explorer/git/CLAUDE.md`](../../../../../src/lib/file-explorer/git/CLAUDE.md) for the breadcrumb chip, status column, and the live `RepoInfo` store.
+
 Backend module for the git browser. Provides:
 
 - Repo discovery, repo info, status, and the per-repo watcher.

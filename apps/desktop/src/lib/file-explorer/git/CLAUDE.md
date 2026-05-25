@@ -7,6 +7,10 @@ store. M2 wired the virtual portal into `FilePane.svelte`'s breadcrumb. M3 wired
 Rust atomic to disable the backend portal hook in real time, and every git failure now lands in `ErrorPane` with warm
 copy via the FriendlyError pipeline.
 
+Backend counterpart:
+[`apps/desktop/src-tauri/src/file_system/git/CLAUDE.md`](../../../../src-tauri/src/file_system/git/CLAUDE.md) for repo
+discovery, the virtual `.git` portal, the per-repo watcher, and the FriendlyError content for git failures.
+
 ## File map
 
 | File                     | Role                                                                                                                                                                      |

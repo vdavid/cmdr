@@ -4,6 +4,9 @@ MTP (Media Transfer Protocol) support for Android devices and PTP cameras connec
 Available on macOS and Linux (`#[cfg(any(target_os = "macos", target_os = "linux"))]`).
 On Linux, users may need udev rules for USB device permissions (see `resources/99-cmdr-mtp.rules`).
 
+Frontend counterpart: [`apps/desktop/src/lib/mtp/CLAUDE.md`](../../../src/lib/mtp/CLAUDE.md) for the connection toast,
+storage picker, and reactive volume state.
+
 ## File map
 
 | File | Purpose |

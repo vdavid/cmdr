@@ -2,6 +2,10 @@
 
 Opens files in a read-only viewer with instant load for any file size, virtual scrolling, and background search.
 
+Backend counterpart: [`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`](../../../src-tauri/src/file_viewer/CLAUDE.md)
+for the three backend strategies (chunked, full-load, pretext), session lifecycle, and background search. The viewer
+route shell lives at [`src/routes/viewer/CLAUDE.md`](../../routes/viewer/CLAUDE.md).
+
 ## Key files
 
 - `open-viewer.ts`: `openFileViewer(filePath)` creates new `WebviewWindow` with unique label

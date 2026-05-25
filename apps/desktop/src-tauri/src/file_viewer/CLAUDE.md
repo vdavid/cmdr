@@ -2,6 +2,8 @@
 
 Provides three backend strategies for serving file content line-by-line with instant open, virtual scrolling, and background search.
 
+Frontend counterpart: [`apps/desktop/src/routes/viewer/CLAUDE.md`](../../../src/routes/viewer/CLAUDE.md) for the viewer route shell (window lifecycle, scroll/search composables) and [`apps/desktop/src/lib/file-viewer/CLAUDE.md`](../../../src/lib/file-viewer/CLAUDE.md) for the reusable open-viewer helper and binary-warning classifier.
+
 ## Key files
 
 - `mod.rs`: public API, constants (1MB threshold, 256-line checkpoints, 8KB backward scan limit), `ViewerError` typed

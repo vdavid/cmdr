@@ -1,5 +1,7 @@
 # Settings (Rust)
 
+Frontend counterpart: [`apps/desktop/src/lib/settings/CLAUDE.md`](../../../src/lib/settings/CLAUDE.md) owns the settings store (`tauri-plugin-store`), the typed `getSetting` / `setSetting` wrapper, the Settings window UI, and the `settings-applier.ts` IPC pump that satisfies the live-apply rule below.
+
 ## Live-apply rule
 
 **Every setting MUST apply immediately without restart.** When adding a new setting that the backend reads, also add: (a) a Tauri command that updates the relevant atomic/global (live in `commands/settings.rs`, delegate to the owning subsystem's setter), and (b) a call from `settings-applier.ts` triggered by `onSettingChange`. Startup-time seeding from `load_settings` stays (it gives the backend a sane initial value before any window opens), but every subsequent change is pushed via IPC. Restart-required is a bug, not a design choice. If you're tempted to leave a setting as startup-only because it touches a TCP connection, a thread pool, a watcher, or a server: find a way. Reconnect, rebind, restart the thread, swap the worker pool, whatever it takes. **MUST.** No exceptions.

@@ -2,6 +2,8 @@
 
 AI features powered by local LLM (llama-server) or remote LLM providers. Currently used for folder name suggestions and natural-language search.
 
+Frontend counterpart: [`apps/desktop/src/lib/ai/CLAUDE.md`](../../../src/lib/ai/CLAUDE.md) for the AI status surface, model picker, BYOK key management, and the inline suggestion UI.
+
 Three provider modes:
 - **Off**: No AI features.
 - **Cloud AI** (BYOK): OpenAI / Anthropic / Gemini / xAI / Groq / DeepSeek / OpenRouter / any OpenAI-compatible endpoint. Adapter is picked from the model name. Works on any hardware. Persisted as `ai.provider = "cloud"`; the Rust constructor is `AiBackend::remote(...)` because the same code path handles native Anthropic/Gemini protocols too.
