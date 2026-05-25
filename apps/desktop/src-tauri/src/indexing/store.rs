@@ -302,8 +302,16 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreErro
              PRAGMA journal_mode = WAL;",
         )?;
     }
+    // busy_timeout: when another connection holds the write lock, retry for up
+    // to 5s instead of returning SQLITE_BUSY immediately. Applies to every open
+    // (read and write) because even read-only connections in WAL mode touch the
+    // -shm file at startup and can briefly race a writer. Without this, the
+    // live event loop was dying on its initial open under transient contention,
+    // dropping the FSEvents receiver and silently stopping live index updates
+    // for the rest of the session.
     conn.execute_batch(
-        "PRAGMA synchronous = NORMAL;
+        "PRAGMA busy_timeout = 5000;
+         PRAGMA synchronous = NORMAL;
          PRAGMA cache_size = -16384;",
     )?;
     Ok(())
@@ -1228,6 +1236,55 @@ mod tests {
         let (store, _dir) = open_temp_store();
         let status = store.get_index_status().unwrap();
         assert_eq!(status.schema_version.as_deref(), Some(SCHEMA_VERSION));
+    }
+
+    /// `apply_pragmas` must set a non-zero `busy_timeout` on both read and
+    /// write connections. Without it, concurrent connections fail with
+    /// `SQLITE_BUSY` on the first lock contention instead of waiting.
+    #[test]
+    fn apply_pragmas_sets_busy_timeout_on_both_modes() {
+        let (store, _dir) = open_temp_store();
+        let write_conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+        let write_timeout: i64 = write_conn
+            .pragma_query_value(None, "busy_timeout", |r| r.get(0))
+            .unwrap();
+        assert!(
+            write_timeout > 0,
+            "write connection should have busy_timeout set, got {write_timeout}"
+        );
+
+        let read_conn = IndexStore::open_read_connection(store.db_path()).unwrap();
+        let read_timeout: i64 = read_conn
+            .pragma_query_value(None, "busy_timeout", |r| r.get(0))
+            .unwrap();
+        assert!(
+            read_timeout > 0,
+            "read connection should have busy_timeout set, got {read_timeout}"
+        );
+    }
+
+    /// `open_read_connection` must succeed while another connection holds a
+    /// write transaction. The live and replay event loops rely on this to
+    /// open their path-resolution connection without racing the writer
+    /// thread. Regression: switching this call site to `open_write_connection`
+    /// (or removing the `busy_timeout` pragma) makes the open fail on every
+    /// concurrent commit, which silently kills the FSEvents receiver and
+    /// stops live index updates for the rest of the session.
+    #[test]
+    fn open_read_connection_succeeds_under_write_lock() {
+        let (store, _dir) = open_temp_store();
+        let db_path = store.db_path().to_path_buf();
+        let writer = IndexStore::open_write_connection(&db_path).unwrap();
+        writer.execute_batch("BEGIN IMMEDIATE").unwrap();
+
+        // The read connection should open and be usable while the writer's
+        // transaction is still in flight.
+        let read = IndexStore::open_read_connection(&db_path).expect("read connection should open under write lock");
+        let root = IndexStore::get_entry_by_id(&read, ROOT_ID).unwrap();
+        assert!(root.is_some(), "read connection should see committed root sentinel");
+
+        // Release the writer's lock so the tempdir can clean up cleanly.
+        writer.execute_batch("ROLLBACK").unwrap();
     }
 
     #[test]

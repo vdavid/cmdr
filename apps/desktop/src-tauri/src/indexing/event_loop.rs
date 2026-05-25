@@ -121,6 +121,21 @@ fn merge_fs_events(existing: &watcher::FsChangeEvent, incoming: &watcher::FsChan
     }
 }
 
+/// Open a read-only DB connection with a bounded retry. Used by the live
+/// and replay event loops at startup. With `busy_timeout` already set in
+/// `apply_pragmas` the first attempt almost always succeeds; the retry is
+/// here so a one-off open error can't permanently disable live indexing.
+async fn open_read_conn_with_retry(db_path: &Path) -> Result<Connection, store::IndexStoreError> {
+    match IndexStore::open_read_connection(db_path) {
+        Ok(c) => Ok(c),
+        Err(e) => {
+            log::warn!("Open read connection failed, retrying in 100ms: {e}");
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            IndexStore::open_read_connection(db_path)
+        }
+    }
+}
+
 /// Process FSEvents in real time after scan + reconciliation completes.
 ///
 /// Runs as a tokio task, reading events from the watcher channel and
@@ -140,12 +155,22 @@ pub(super) async fn run_live_event_loop(
     log::info!("Live event processing: started");
     log::info!(target: "stall_probe::reconciler", "live_event_loop_started");
 
-    // Open a read connection for path resolution (integer-keyed lookups)
+    // Open a read-only connection for path resolution (integer-keyed lookups).
+    // Read-only because nothing in this loop writes through this connection -
+    // all writes go via `writer.send(...)`. Using `open_read_connection`
+    // avoids running write-mode pragmas (auto_vacuum, journal_mode = WAL) that
+    // can race the writer thread on startup. Retry once: with `busy_timeout`
+    // set in `apply_pragmas` this should almost never fail, but a single
+    // transient error here used to silently kill the FSEvents receiver and
+    // stop live indexing for the rest of the session, so retry + error-log
+    // is cheap insurance.
     let db_path = writer.db_path();
-    let conn = match IndexStore::open_write_connection(&db_path) {
+    let conn = match open_read_conn_with_retry(&db_path).await {
         Ok(c) => c,
         Err(e) => {
-            log::warn!("Live event loop: failed to open read connection: {e}");
+            crate::log_error!(
+                "Live event loop: failed to open read connection after retries, live indexing disabled: {e}"
+            );
             return;
         }
     };
@@ -527,9 +552,10 @@ pub(super) async fn run_replay_event_loop(
     log::info!("Replay: started (since_event_id={since_event_id}, estimated_total={estimated_total:?})");
     log::info!(target: "stall_probe::reconciler", "replay_event_loop_started since_event_id={since_event_id}");
 
-    // Open a read connection for path resolution (integer-keyed lookups)
+    // Open a read-only connection for path resolution (integer-keyed lookups).
+    // See `run_live_event_loop` for the rationale on read-only + retry.
     let db_path = writer.db_path();
-    let conn = match IndexStore::open_write_connection(&db_path) {
+    let conn = match open_read_conn_with_retry(&db_path).await {
         Ok(c) => c,
         Err(e) => {
             return Err(format!("Failed to open read connection for replay: {e}"));

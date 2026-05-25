@@ -346,8 +346,14 @@ macro_rules! define_callback {
                 if let Err(e) = event_handler.try_send(events) {
                     let overflow = unsafe { &(*info).overflow };
                     if !overflow.swap(true, Ordering::Relaxed) {
-                        // Log once on first overflow; subsequent drops are silent.
-                        error!("Event channel full, events will be dropped: {}", e);
+                        // Log once on first failure; subsequent drops are silent.
+                        // `try_send` fails for two reasons that need different responses
+                        // upstream: `Full` (consumer is slow → overflow flag drives a
+                        // rescan) and `Closed` (consumer dropped → events lost
+                        // permanently until the stream is restarted). The error's
+                        // Display impl distinguishes them ("no available capacity" vs
+                        // "channel closed"), so the message below carries both signals.
+                        error!("FSEvents try_send failed (events dropped): {}", e);
                     }
                 }
             }
