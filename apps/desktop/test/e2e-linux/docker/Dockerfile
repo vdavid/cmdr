@@ -80,12 +80,13 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Set up display for Xvfb
 ENV DISPLAY=:99
 
-# Playwright doesn't publish chromium binaries for ubuntu26.04-arm64 yet, but
-# the ubuntu24.04 build runs fine on 26.04 (libc-compatible). Without this
-# override, `npx playwright install chromium` errors with "Playwright does not
-# support chromium on ubuntu26.04-arm64". Drop this once Playwright adds 26.04
-# to its supported list.
-ENV PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-arm64
+# Playwright doesn't publish chromium binaries for ubuntu26.04 yet, but the
+# ubuntu24.04 build runs fine on 26.04 (libc-compatible). Without an override,
+# `npx playwright install chromium` errors with "Playwright does not support
+# chromium on ubuntu26.04[-arm64]". The override has to be arch-aware (arm64
+# locally on macOS, x64 in CI on GitHub-hosted Linux runners) — set it in
+# entrypoint.sh based on `dpkg --print-architecture`, not as a static ENV here.
+# Drop this once Playwright adds 26.04 to its supported list.
 
 # Create working directory
 WORKDIR /app

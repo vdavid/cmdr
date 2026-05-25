@@ -54,7 +54,13 @@ pub fn init_state() -> QuickLookState {
 /// `#[deny(unused)]` on that platform.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(
+        dead_code,
+        reason = "constructed only on macOS; struct exists on Linux for serde-shape symmetry"
+    )
+)]
 pub struct QuickLookKeyEvent {
     /// `KeyboardEvent.key`. Matches DOM semantics (`'ArrowDown'`, `' '`, `'a'`).
     pub key: String,

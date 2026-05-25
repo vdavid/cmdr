@@ -18,6 +18,16 @@ done
 export DISPLAY=:99
 export GDK_BACKEND=x11
 
+# Pin Playwright's host-platform tag to a 24.04 build that Playwright publishes
+# (the 26.04 base image has no Playwright chromium build yet — see Dockerfile).
+# Has to be arch-aware: arm64 locally on macOS, x64 in CI on x86_64 runners.
+# A static -arm64 suffix would download an arm64 ELF onto x86_64 CI and dash
+# would try to interpret the binary as a script ("Syntax error: '&' unexpected").
+case "$(dpkg --print-architecture)" in
+    arm64) export PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-arm64 ;;
+    amd64) export PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04 ;;
+esac
+
 # Start dbus (required for WebKitGTK)
 echo "Starting dbus..."
 eval "$(dbus-launch --sh-syntax)"
