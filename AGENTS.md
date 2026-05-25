@@ -159,7 +159,8 @@ Three cadences. Pick the one that matches where you are in the work, not the one
   `tauri.instance.json` under `$TMPDIR` with the matching identifier (so Tauri's own `app_data_dir()` lands on the right
   path), and exports `CMDR_DATA_DIR` to the same path so direct file I/O (crash reports, logs, file-backed secret store)
   agrees without round-tripping through Tauri's API. See
-  [`docs/tooling/instance-isolation.md`](docs/tooling/instance-isolation.md) for the per-resource breakdown and the precedence rules.
+  [`docs/tooling/instance-isolation.md`](docs/tooling/instance-isolation.md) for the per-resource breakdown and the
+  precedence rules.
 - **Logging**: Frontend and backend logs appear together in terminal and in the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
   prod: `~/Library/Logs/com.veszelovszki.cmdr/`). **Read [docs/tooling/logging.md](docs/tooling/logging.md) before using
   `RUST_LOG`**: it has copy-paste recipes for every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not

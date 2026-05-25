@@ -88,8 +88,8 @@ variant has no in-body buttons; the wizard's footer renders a single `Next`.
 
 ### Allow path requires a restart
 
-Per the "FDA gate clear-on-Allow" decision (see also § "Key decisions" below): after the user clicks Allow, the wizard does NOT
-advance to step 2 in-session. The footer's primary button flips to "Restart Cmdr" (calls `relaunch()` from
+Per the "FDA gate clear-on-Allow" decision (see also § "Key decisions" below): after the user clicks Allow, the wizard
+does NOT advance to step 2 in-session. The footer's primary button flips to "Restart Cmdr" (calls `relaunch()` from
 `@tauri-apps/plugin-process`). Reason: the FDA gate (`fda_gate::FDA_PENDING`) is set once at boot from
 `(fda_choice, os_fda_granted)`; clearing it at runtime would race the TCC popups the gate was built to suppress (we hit
 5–10 stacked popups once already). The user's choice persists, and the resume rule lands them on step 2 immediately
