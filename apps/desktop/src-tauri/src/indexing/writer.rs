@@ -617,7 +617,7 @@ impl ProbeStats {
         if self.last_heartbeat.elapsed() < Duration::from_secs(5) {
             return;
         }
-        log::info!(
+        log::debug!(
             target: "stall_probe::writer",
             "heartbeat queue_depth={} messages_processed_since_last_heartbeat={} transaction_commits_since_last_heartbeat={} time_in_recv_ms={} time_in_processing_ms={} time_in_commit_ms={}",
             queue_depth,
