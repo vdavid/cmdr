@@ -8,9 +8,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
-use super::helpers::spawn_async_sync;
-use super::state::{WriteOperationState, update_operation_status};
-use super::types::{
+use super::super::helpers::spawn_async_sync;
+use super::super::state::{WriteOperationState, update_operation_status};
+use super::super::types::{
     WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase,
     WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
@@ -90,7 +90,7 @@ pub struct TrashItemError {
 /// * `sources` - Top-level items to trash
 /// * `item_sizes` - Optional per-item sizes for byte-level progress (from scan preview or drive
 ///   index). When `None`, bytes progress is not reported.
-pub(super) fn trash_files_with_progress(
+pub(in crate::file_system::write_operations) fn trash_files_with_progress(
     app: &tauri::AppHandle,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -109,7 +109,7 @@ pub(super) fn trash_files_with_progress(
 
     for (i, source) in sources.iter().enumerate() {
         // Check cancellation between items
-        if super::state::is_cancelled(&state.intent) {
+        if super::super::state::is_cancelled(&state.intent) {
             let _ = app.emit(
                 "write-cancelled",
                 WriteCancelledEvent {

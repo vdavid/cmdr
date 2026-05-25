@@ -23,13 +23,16 @@ mod scan;
 mod scan_preview;
 mod state;
 mod transfer;
-pub(crate) mod trash;
 mod types;
 
 // Re-export `macos_copy` at this level so existing call sites
 // (`crate::file_system::write_operations::macos_copy`) keep compiling.
 #[cfg(target_os = "macos")]
 pub(crate) use transfer::macos_copy;
+
+// Re-export `trash` at this level so `crate::file_system::write_operations::trash`
+// keeps resolving (used by `commands/rename.rs`).
+pub(crate) use delete::trash;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -385,10 +388,6 @@ pub async fn trash_files_start(
 }
 
 #[cfg(test)]
-mod delete_integration_test;
-#[cfg(test)]
-mod delete_volume_reuse_tests;
-#[cfg(test)]
 mod scan_preview_listing_progress_tests;
 #[cfg(test)]
 mod scan_preview_oracle_tests;
@@ -398,5 +397,3 @@ mod settle_event_tests;
 mod tests;
 #[cfg(test)]
 mod validation_integration_test;
-#[cfg(test)]
-mod volume_cancel_tests;

@@ -5,11 +5,11 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use super::helpers::spawn_async_sync;
-use super::scan::{SourceItemTracker, scan_sources, take_cached_scan_result};
-use super::state::{WriteOperationState, update_operation_status};
-use super::transfer::volume_copy::map_volume_error;
-use super::types::{
+use super::super::helpers::spawn_async_sync;
+use super::super::scan::{SourceItemTracker, scan_sources, take_cached_scan_result};
+use super::super::state::{WriteOperationState, update_operation_status};
+use super::super::transfer::volume_copy::map_volume_error;
+use super::super::types::{
     DryRunResult, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
@@ -21,7 +21,7 @@ use crate::file_system::volume::{Volume, VolumeError};
 // Delete implementation
 // ============================================================================
 
-pub(super) fn delete_files_with_progress(
+pub(in crate::file_system::write_operations) fn delete_files_with_progress(
     app: &tauri::AppHandle,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -132,7 +132,7 @@ pub(super) fn delete_files_with_progress_inner(
     // Delete files
     for file_info in &scan_result.files {
         // Check cancellation
-        if super::state::is_cancelled(&state.intent) {
+        if super::super::state::is_cancelled(&state.intent) {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
@@ -191,7 +191,7 @@ pub(super) fn delete_files_with_progress_inner(
     // Delete directories (in reverse order - deepest first)
     for dir in scan_result.dirs.iter().rev() {
         // Check cancellation
-        if super::state::is_cancelled(&state.intent) {
+        if super::super::state::is_cancelled(&state.intent) {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
@@ -306,7 +306,7 @@ async fn scan_volume_recursive(
 ) -> Result<(), WriteOperationError> {
     use std::sync::atomic::Ordering;
 
-    if super::state::is_cancelled(&state.intent) {
+    if super::super::state::is_cancelled(&state.intent) {
         return Err(WriteOperationError::Cancelled {
             message: "Operation cancelled by user".to_string(),
         });
@@ -517,7 +517,7 @@ fn emit_cancelled_if_aborted(
     clippy::too_many_arguments,
     reason = "Matches the parameter pattern of other write operation functions"
 )]
-pub(super) async fn delete_volume_files_with_progress(
+pub(in crate::file_system::write_operations) async fn delete_volume_files_with_progress(
     volume: Arc<dyn Volume>,
     volume_id: &str,
     app: &tauri::AppHandle,
@@ -574,7 +574,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
             scan.per_path.iter().map(|(p, r)| (p.clone(), r)).collect();
 
         for source in sources {
-            if super::state::is_cancelled(&state.intent) {
+            if super::super::state::is_cancelled(&state.intent) {
                 events.emit_cancelled(WriteCancelledEvent {
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Delete,
@@ -774,7 +774,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
 
     // Delete files
     for entry in entries.iter().filter(|e| !e.is_dir) {
-        if super::state::is_cancelled(&state.intent) {
+        if super::super::state::is_cancelled(&state.intent) {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
@@ -853,7 +853,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
 
     // Delete directories (already in deepest-first order from scan_volume_recursive)
     for entry in entries.iter().filter(|e| e.is_dir) {
-        if super::state::is_cancelled(&state.intent) {
+        if super::super::state::is_cancelled(&state.intent) {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,

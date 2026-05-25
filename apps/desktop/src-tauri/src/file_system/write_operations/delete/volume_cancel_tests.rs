@@ -19,9 +19,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-use super::delete::delete_volume_files_with_progress_inner;
-use super::state::{OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, cancel_write_operation, load_intent};
-use super::types::{CollectorEventSink, WriteOperationConfig};
+use super::super::state::{
+    OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, cancel_write_operation, load_intent,
+};
+use super::super::types::{CollectorEventSink, WriteOperationConfig};
+use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
 
@@ -329,34 +331,34 @@ async fn volume_cancel_emits_write_settled_event() {
     }
 
     impl OperationEventSink for OrderedSink {
-        fn emit_progress(&self, e: super::types::WriteProgressEvent) {
+        fn emit_progress(&self, e: super::super::types::WriteProgressEvent) {
             self.inner_collector.emit_progress(e);
         }
-        fn emit_complete(&self, e: super::types::WriteCompleteEvent) {
+        fn emit_complete(&self, e: super::super::types::WriteCompleteEvent) {
             self.events.lock().unwrap().push("complete");
             self.inner_collector.emit_complete(e);
         }
-        fn emit_cancelled(&self, e: super::types::WriteCancelledEvent) {
+        fn emit_cancelled(&self, e: super::super::types::WriteCancelledEvent) {
             self.events.lock().unwrap().push("cancelled");
             self.inner_collector.emit_cancelled(e);
         }
-        fn emit_error(&self, e: super::types::WriteErrorEvent) {
+        fn emit_error(&self, e: super::super::types::WriteErrorEvent) {
             self.events.lock().unwrap().push("error");
             self.inner_collector.emit_error(e);
         }
-        fn emit_conflict(&self, e: super::types::WriteConflictEvent) {
+        fn emit_conflict(&self, e: super::super::types::WriteConflictEvent) {
             self.inner_collector.emit_conflict(e);
         }
-        fn emit_source_item_done(&self, e: super::types::WriteSourceItemDoneEvent) {
+        fn emit_source_item_done(&self, e: super::super::types::WriteSourceItemDoneEvent) {
             self.inner_collector.emit_source_item_done(e);
         }
-        fn emit_scan_progress(&self, e: super::types::ScanProgressEvent) {
+        fn emit_scan_progress(&self, e: super::super::types::ScanProgressEvent) {
             self.inner_collector.emit_scan_progress(e);
         }
-        fn emit_scan_conflict(&self, c: super::types::ConflictInfo) {
+        fn emit_scan_conflict(&self, c: super::super::types::ConflictInfo) {
             self.inner_collector.emit_scan_conflict(c);
         }
-        fn emit_dry_run_complete(&self, r: super::types::DryRunResult) {
+        fn emit_dry_run_complete(&self, r: super::super::types::DryRunResult) {
             self.inner_collector.emit_dry_run_complete(r);
         }
         fn emit_settled(&self, e: WriteSettledEvent) {

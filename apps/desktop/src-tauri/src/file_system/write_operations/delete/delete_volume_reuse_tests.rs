@@ -15,9 +15,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::Duration;
 
-use super::delete::delete_volume_files_with_progress_inner;
-use super::state::{CachedScanResult, OperationIntent, SCAN_PREVIEW_RESULTS, WriteOperationState};
-use super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationError};
+use super::super::state::{CachedScanResult, OperationIntent, SCAN_PREVIEW_RESULTS, WriteOperationState};
+use super::super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationError};
+use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::get_volume_manager;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
