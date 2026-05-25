@@ -179,10 +179,9 @@ fn try_emit_line(raw: &[u8], cutoff: DateTime<Utc>, kept: &mut Vec<String>, hit_
 /// Parses an ISO-8601 stamp at the start of a log line (matches the format produced by
 /// `logging::dispatch::file_timestamp`: `YYYY-MM-DDTHH:MM:SS.mmm±HH:MM`).
 ///
-/// Returns `None` for lines that don't start with one (pre-fix-3 lines with just
-/// `HH:MM:SS.mmm`, blank lines, panic-backtrace continuation lines, redacted-payload
-/// lines, etc.). Callers fall back to keeping the line in that case rather than risk a
-/// false drop.
+/// Returns `None` for lines that don't start with one (legacy `HH:MM:SS.mmm`-stamped lines,
+/// blank lines, panic-backtrace continuation lines, redacted-payload lines, etc.). Callers
+/// fall back to keeping the line in that case rather than risk a false drop.
 pub fn parse_leading_iso8601(line: &str) -> Option<DateTime<Utc>> {
     // The timestamp is always 29 chars: 23 for date+time+ms + 6 for `±HH:MM`.
     if line.len() < 29 {

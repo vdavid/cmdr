@@ -89,10 +89,8 @@ pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
 /// the FE picker can show the yellow indicator.
 ///
 /// Used by the `list_volumes` IPC call, the `volumes-changed` push, and the MCP
-/// `cmdr://state` resource — all three need the same enrichment, and previously
-/// the logic was duplicated across `commands/volumes.rs` and
-/// `volume_broadcast.rs` with a "keep these in sync" gotcha. Now there's one
-/// implementation.
+/// `cmdr://state` resource — all three need the same enrichment, so it lives in
+/// one place. Add new enrichment fields here, not at each call site.
 pub fn enrich_smb_connection_state(volumes: &mut [LocationInfo]) {
     let manager = crate::file_system::get_volume_manager();
     for vol in volumes.iter_mut() {

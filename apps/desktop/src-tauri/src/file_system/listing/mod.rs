@@ -10,8 +10,8 @@ pub(crate) mod reading;
 pub(crate) mod sorting;
 pub(crate) mod streaming;
 
-// Re-export types for backwards compatibility (they were originally defined in operations.rs)
-// These re-exports make the types available both externally and locally in this module
+// Re-export types so they're available both externally and locally in this module
+// (call sites import them from `crate::file_system::listing` directly).
 pub use brief_columns::{BriefColumnsError, compute_brief_column_text_widths};
 pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
 pub use metadata::{ExtendedMetadata, FileEntry};

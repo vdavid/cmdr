@@ -97,11 +97,11 @@
     }
 
     /**
-     * Per-pill chrome budget added on top of the measured text width. Round 2 R2:
-     * the round-1 budget of 16 px massively overshot the actual chrome (`--spacing-xxs` /
-     * 2 px each side ≈ 4 px) and made the strip collapse even when there was free space.
-     * 4 px matches the rendered CSS; if a measurement undershoots by a pixel or two the
-     * outer `overflow: hidden` clips cleanly, never wrapping.
+     * Per-pill chrome budget added on top of the measured text width. 4 px matches the
+     * rendered CSS (`--spacing-xxs` / 2 px each side ≈ 4 px); if a measurement undershoots
+     * by a pixel or two the outer `overflow: hidden` clips cleanly, never wrapping. Don't
+     * raise this budget: a larger value overshoots the actual chrome and makes the strip
+     * collapse even when there's free space.
      */
     const PILL_CHROME_PX = 4
     /** Gap between consecutive pills (`--spacing-xxs` ≈ 2 px on each side of the separator). */

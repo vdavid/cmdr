@@ -206,11 +206,11 @@
             // "make a new folder here". `caps` is the capability flag set
             // (`searchResultsVolumeCapabilities`) that gates this.
             //
-            // Round 2 P10: the menu's `Copy {filename}` label uses the
-            // `filename` arg as-is. Our adapted `entry.name` is the friendly
-            // full path (`~/Library/.../test.md`) so the menu would otherwise
-            // read `Copy ~/Library/.../test.md`. Hand the Rust side the
-            // basename instead so it reads `Copy test.md` and the underlying
+            // The menu's `Copy {filename}` label uses the `filename` arg as-is.
+            // Our adapted `entry.name` is the friendly full path
+            // (`~/Library/.../test.md`) so the menu would otherwise read
+            // `Copy ~/Library/.../test.md`. Hand the Rust side the basename
+            // instead so it reads `Copy test.md` and the underlying
             // command-dispatch (which uses `entryUnderCursor.name`, also a
             // basename) copies the same string.
             const restrict = !caps.canRename

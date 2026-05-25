@@ -107,9 +107,6 @@ These commands stay on raw `invoke()` for now. Each call site has:
 | `store_font_metrics`                                     | Generic over `<R: tauri::Runtime>`, specta can't collect type info for generic commands        | Keep as-is; font metrics are write-only (no TS type needed for the return value)    |
 | `stream_folder_suggestions`, `cancel_folder_suggestions` | Tauri `Channel<T>` (streaming) isn't specta-friendly yet                                       | Re-evaluate when specta supports `Channel<T>` (track upstream)                      |
 
-Note: `check_pending_crash_report`, `send_crash_report`, and `record_settings_defaults` were previously excluded and
-have since been migrated to typed bindings (`CrashReport`, `ActiveSettings`, `SettingValue`).
-
 When specta gets a fix that closes one of these, drop the opt-out comment, add the command to `collect_*_types()`,
 regenerate, migrate the call site to `commands.foo(...)`.
 

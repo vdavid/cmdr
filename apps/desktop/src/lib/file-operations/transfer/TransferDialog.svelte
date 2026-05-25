@@ -128,8 +128,8 @@
     let destroyed = false
 
     // Conflict detection state. `totalConflictCount` is the unbounded count
-    // for the summary text (it was previously rendered from a capped slice
-    // and misled the user about how many files would actually be skipped).
+    // for the summary text — must NOT be derived from a capped slice, or the
+    // summary misleads the user about how many files will actually be skipped.
     // The full set of conflicting names is forwarded to the backend on
     // confirm so it can bulk-skip them upfront under `Skip all`. We never
     // render per-conflict rows in this dialog, so we don't need to keep the

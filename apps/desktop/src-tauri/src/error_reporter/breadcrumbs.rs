@@ -8,9 +8,9 @@
 //!
 //! Logs are noisy and unstructured. Breadcrumbs are structured (kind + ctx) and
 //! curated (only the kinds we care about during triage). The `kind: "command"`
-//! breadcrumb subsumes what was previously the manifest's `last_user_action`
-//! field (since removed); `handleCommandExecute` pushes one on every dispatch,
-//! and the most recent such entry is the "what did the user just do" signal.
+//! breadcrumb is the "what did the user just do" signal: `handleCommandExecute`
+//! pushes one on every dispatch, and the most recent such entry is what triagers
+//! read first.
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};

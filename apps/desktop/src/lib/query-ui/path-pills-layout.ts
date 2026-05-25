@@ -37,9 +37,9 @@ export interface LayoutMetrics {
    */
   separatorWidth: number
   /**
-   * Per-pill chrome (padding etc.) added on top of the measured text width. Round 2 R2
-   * cut this from 16 px to 4 px (2 px padding each side) so we no longer needlessly
-   * collapse when there's free space.
+   * Per-pill chrome (padding etc.) added on top of the measured text width. Sized at
+   * 4 px (2 px padding each side) to match the real CSS so the strip doesn't collapse
+   * when there's free space.
    */
   pillChrome: number
 }

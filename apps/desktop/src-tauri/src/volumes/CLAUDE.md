@@ -128,11 +128,8 @@ watcher and the mount-time `register_smb_volume`, so they always agree. The unmo
 
 ## Gotchas
 
-**Gotcha**: `path_to_id` was previously duplicated between `mod.rs` and `watcher.rs`
-**Why**: Fixed. `path_to_id` is now `pub(crate)` in `mod.rs` and `watcher.rs` calls `super::path_to_id()` directly.
-
 **Gotcha**: `VolumeInfo` is a type alias for `LocationInfo`, not a separate type
-**Why**: The module was originally called "volumes" and used `VolumeInfo` everywhere. It was renamed to "locations" (since favorites and cloud drives aren't volumes), but the frontend still sends/receives `VolumeInfo`. The alias preserves backwards compatibility without a migration.
+**Why**: The frontend sends/receives `VolumeInfo`, but locations also cover favorites and cloud drives (not just volumes). The alias keeps IPC compatibility without a frontend migration.
 
 **Gotcha**: Watcher registers/unregisters volumes with `VolumeManager` directly, creating tight coupling to `file_system::get_volume_manager()`
 **Why**: When a volume mounts, it must be immediately available for file operations. Emitting just a Tauri event and letting the frontend trigger registration would introduce a race window where operations fail because the volume isn't registered yet. Direct registration ensures atomicity: by the time the frontend receives `volume-mounted`, the volume is already usable.

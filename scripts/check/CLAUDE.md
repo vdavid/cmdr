@@ -331,9 +331,9 @@ warnings = no fix to apply). The enforcing pass is the one that actually decides
 `-D warnings` so it can't be combined into a single invocation. The trade is one extra re-check on the rare warning
 path; cuts ~50% off clippy in the common clean case.
 
-**Decision**: `bindings-fresh` is hash-cached. **Why**: The check used to run `pnpm bindings:regen` on every invocation
-(~2 min for a test-mode compile of the full crate) just to confirm the output didn't change. We now hash every `.rs`
-file under `src-tauri/src` plus `Cargo.lock` and `Cargo.toml`, plus the current `bindings.ts`, and store both hashes in
+**Decision**: `bindings-fresh` is hash-cached. **Why**: A naive `pnpm bindings:regen` on every invocation takes ~2 min
+for a test-mode compile of the full crate just to confirm the output didn't change. Instead, we hash every `.rs` file
+under `src-tauri/src` plus `Cargo.lock` and `Cargo.toml`, plus the current `bindings.ts`, and store both hashes in
 `<CARGO_TARGET_DIR or workspace target>/.bindings-fresh-marker` after each successful run. If both match next time, we
 return OK in <100 ms. The bindings.ts hash in the marker protects against manual edits; if someone hand-tweaks the file
 the marker no longer matches and we run the full regen. The marker lives inside cargo's actual target dir (honoring

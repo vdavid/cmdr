@@ -157,7 +157,7 @@ fn bench_50k_files_list_status_under_budget() {
     assert!(warm_p95 <= 5_000, "warm p95 over 5ms: {}µs", warm_p95);
 }
 
-// ── Modified + Size column population bench (M4 follow-up) ──────────
+// ── Modified + Size column population bench ──────────
 
 /// Builds a small repo with `branches` branches, each `ahead` commits ahead
 /// of `main`. Used to bench `list_branches` (Modified + ahead/behind).

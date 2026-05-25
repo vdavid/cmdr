@@ -87,10 +87,10 @@ the viewport once any scroll has happened, so the effective row area is `contain
 `.listbox-region` inner wrapper around `.virtual-spacer` so the sticky header isn't a direct child of the listbox (would
 violate `aria-required-children`).
 
-The earlier version of this model shifted scrollTop by `headerHeight` and lossy-clamped at zero, which made
-`scrollTop ∈ [0, headerHeight]` collapse to the same spacer state. PageDown × 2 → PageUp × 2 then landed at
-`scrollTop === headerHeight`, hiding row 0 (including the `..` cursor) under the sticky header. See
-`test/e2e-playwright/full-cursor-page-nav.spec.ts` for the pinned regression.
+**Don't reintroduce a `scrollTop - headerHeight` shift with a `Math.max(0, …)` clamp**: `scrollTop ∈ [0, headerHeight]`
+then collapses to the same spacer state. PageDown × 2 → PageUp × 2 lands at `scrollTop === headerHeight`, hiding row 0
+(including the `..` cursor) under the sticky header. The pinned regression is
+`test/e2e-playwright/full-cursor-page-nav.spec.ts`.
 
 **Decision**: Virtual scroll in frontend, data in backend **Why**: Sending 50k entries over IPC = 17.4MB, ~4s transfer.
 Virtual scroll fetches only visible ~50 items on demand. Backend-driven caching eliminates serialization overhead.

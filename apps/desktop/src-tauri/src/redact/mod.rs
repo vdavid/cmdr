@@ -491,8 +491,8 @@ fn redact_path_tail(tail: &str, salt: Option<&[u8]>) -> String {
     }
     // Walk segments: all but the last are dirs; the last is guessed via the
     // extension heuristic: leaves with `.ext` are files, leaves without are dirs.
-    // The pre-fix-7 code labeled every leaf `<file>`, which made directory listings
-    // (the most common log line) incorrectly read as files in error reports.
+    // Don't default leaves to `<file>` unconditionally: directory listings dominate
+    // log lines, so they'd read as files in error reports.
     let mut out = String::new();
     let last_idx = segments.len() - 1;
     for (i, seg) in segments.iter().enumerate() {

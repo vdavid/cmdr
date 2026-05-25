@@ -1,8 +1,8 @@
 /**
- * Round 2 R2: tests that pin the PathPills fitting algorithm. David reported the strip
- * collapsing into `…` even when there's clearly free space in the row — the per-pill
- * chrome safety margin was too conservative. These tests use a deterministic mock
- * measurer (1 px per character) so we can assert exact behaviour.
+ * Tests that pin the PathPills fitting algorithm: the strip must not collapse into `…`
+ * when there's free space in the row, and the per-pill chrome safety margin must match
+ * the real CSS. Uses a deterministic mock measurer (1 px per character) so we can
+ * assert exact behaviour.
  */
 import { describe, it, expect, vi } from 'vitest'
 import {

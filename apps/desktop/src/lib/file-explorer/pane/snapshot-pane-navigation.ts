@@ -1,24 +1,22 @@
 /**
  * Pure helpers for the snapshot pane (`volumeId === 'search-results'`)
- * cross-volume navigation rule (R4 bug fix).
+ * cross-volume navigation rule.
  *
- * The bug: when the user activates a row in a snapshot pane that points to a
- * real folder, `FilePane.handleNavigate` used to do `currentPath = entry.path`
- * plus `loadDirectory(entry.path)`. That left `volumeId === 'search-results'`
- * but `path` pointing to a real filesystem location. The pane then re-rendered
- * `SearchResultsView` (because `volumeId === 'search-results'`), tried to
- * extract a snapshot id from a path that doesn't start with `search-results://`,
- * got `null`, and fell through to "Search results no longer available". The
- * IPC also kicked off a real listing under the wrong `volume_id`, which the
- * `applyPathChange` guard then drops with a "Dropping stale onPathChange on
- * search-results pane" warning.
- *
- * The fix: when the active pane is on the snapshot volume and the user
+ * The rule: when the active pane is on the snapshot volume and the user
  * navigates to a real path, route through the volume-change machinery
  * (`onVolumeChange` / `handleVolumeChange`) so the pane switches to the
  * resolved real volume FIRST, then loads the target path. Symmetric for the
  * search-dialog "navigate to a file" path: `DualPaneExplorer.navigateToPath`
  * must do the same conversion when its current `volumeId` is `search-results`.
+ *
+ * Why this matters: a bare `loadDirectory(realPath)` from a snapshot pane
+ * leaves `volumeId === 'search-results'` but `path` pointing to a real
+ * filesystem location. The pane then re-renders `SearchResultsView`, tries to
+ * extract a snapshot id from a path that doesn't start with
+ * `search-results://`, gets `null`, and falls through to "Search results no
+ * longer available". The IPC also kicks off a real listing under the wrong
+ * `volume_id`, which the `applyPathChange` guard then drops with a "Dropping
+ * stale onPathChange on search-results pane" warning.
  *
  * `isCrossVolumeNavigation` answers the trigger question: "is the upcoming
  * navigation crossing out of the snapshot volume?". Keep this pure so both

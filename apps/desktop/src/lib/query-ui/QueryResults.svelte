@@ -299,13 +299,13 @@
 <style>
     /* Shared grid template. Path (1fr) absorbs the remaining width; Name has a
        hard ceiling so very long names don't squeeze the path column to nothing.
-       Round 2 R1: Size / Modified / Actions used to be `max-content`, which made
-       each row's grid resolve its own column widths from its own data — the
+       Size / Modified / Actions are pinned to fixed `ch` widths so the header
+       row and data rows resolve the SAME widths, aligning the column boundary
+       perfectly across rows. Don't switch them back to `max-content`: the
        header row's "Size" / "Modified" labels are narrower than typical row
-       data (`1.2 MB`, `Jan 12, 2026`), so the header text drifted left of the
-       row content. Pinning them to fixed `ch` widths makes the header row and
-       data rows resolve the SAME widths, aligning the column boundary perfectly
-       across rows. */
+       data (`1.2 MB`, `Jan 12, 2026`), so each row would resolve its own
+       widths from its own data and the header text would drift left of the
+       row content. */
     .column-header,
     .result-row {
         display: grid;

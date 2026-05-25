@@ -1,10 +1,10 @@
 //! Action-tool ack contract.
 //!
-//! MCP "action" tools used to return `OK` the instant they dispatched an event to the
-//! frontend. If the FE was stalled (modal blocking input, error pane up, race during
-//! startup), the action was silently dropped but the tool still reported success.
-//! Real QA hit this. To make MCP a trustworthy automation surface, every fire-and-forget
-//! action now waits for a small ack signal before returning.
+//! MCP "action" tools are fire-and-forget: each one dispatches an event to the frontend
+//! and waits for a small ack signal before returning. This way `OK` is a real promise
+//! that the FE actually processed the action, not just that the event was sent. Without
+//! the ack, a stalled FE (modal blocking input, error pane up, startup race) would
+//! silently drop the action while the tool still reported success.
 //!
 //! ## Signals
 //!

@@ -6,19 +6,14 @@
 //! items for worktree changes; we merge by path, giving staged changes
 //! priority (matching git's XY column precedence).
 //!
-//! An earlier attempt (gix < 0.72) missed staged additions in fixture-driven
-//! tests against a single-commit repo. gix 0.81 ships the `TreeIndex` leg of
-//! the iterator via `into_iter()`, which handles this correctly. See
-//! `CLAUDE.md` § Decisions for the full history.
-//!
 //! ## Caching
 //!
-//! `list_status` runs once per repo per `.git/index` mtime change. Every
-//! `listing-complete` event used to trigger a fresh walk; now we walk the
+//! `list_status` runs once per repo per `.git/index` mtime change. We walk the
 //! whole worktree once, cache the result keyed by repo root + index mtime,
 //! and slice it by `dir_in_worktree` on subsequent calls. The `.git/index`
 //! watcher invalidates the entry on any index change so the next call
-//! re-walks.
+//! re-walks. Without the cache, every `listing-complete` event would trigger a
+//! fresh worktree walk (~75 ms on a 50k-file repo).
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};

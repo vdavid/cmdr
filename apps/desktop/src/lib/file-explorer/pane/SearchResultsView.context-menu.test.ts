@@ -1,8 +1,7 @@
 /**
- * Round 2 P10: the snapshot pane's right-click context menu used to label
- * `Copy {filename}` with the row's friendly full path (because the adapted
- * FileEntry's `name` is `~/Library/.../test.md`). The fix passes the basename
- * to the Rust menu builder instead. This test pins the basename helper that
+ * The snapshot pane's right-click context menu must label `Copy {filename}` with the
+ * basename, not the adapted FileEntry's `name` (which is the friendly full path like
+ * `~/Library/.../test.md`). This test pins the basename helper that
  * SearchResultsView's onContextMenu uses.
  *
  * We don't drive the full component here (FullList virtualization makes the

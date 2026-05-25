@@ -2,10 +2,10 @@
     /**
      * SearchRowMenu: The `…` icon button rendered on a search-result row.
      *
-     * Visible on EVERY row at all times. (An earlier hover-only / cursor-only treatment
-     * kept it hidden until proximity, but discoverability matters more than visual quiet
-     * here.) The column header reads "Actions" so the button column has a clear name in
-     * the grid.
+     * Visible on EVERY row at all times. Hover-only or cursor-only treatments hide the
+     * action until proximity and hurt discoverability; visual quiet matters less than
+     * discoverability here. The column header reads "Actions" so the button column has
+     * a clear name in the grid.
      *
      * Clicking the button opens the same native context menu as right-clicking the
      * row (Open, Reveal in Finder / Open in file manager, Copy path, Copy name —

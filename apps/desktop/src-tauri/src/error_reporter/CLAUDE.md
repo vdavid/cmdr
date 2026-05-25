@@ -113,8 +113,8 @@ live error-report channel even if a test triggers a report.
 Debug builds **do** upload (that's the point of "Send error report" working in dev). The
 manifest carries `buildMode: "debug"`, which the api server reads to prefix the Discord
 embed title with `[DEV]` so triage can separate dev-run reports from production traffic
-at a glance. (Pre-fix-* `upload()` skipped the network in `cfg!(debug_assertions)` too,
-which made dev-mode "Send report" silently no-op, confusing and unhelpful.)
+at a glance. Don't gate `upload()` on `cfg!(debug_assertions)`: that path makes dev-mode
+"Send report" silently no-op, which is confusing and unhelpful.
 
 The dialog has an extra "Save bundle to disk (debug)" button in dev that calls
 `save_error_report_to_disk` instead, writing the zip to the app data dir for inspection.
@@ -330,9 +330,9 @@ because breadcrumbs are best-effort instrumentation, not a feature.
   Without this, the `zip` crate's `SimpleFileOptions::default()` writes 1980-01-01 for
   every entry, and extracted bundles look like ancient archives.
 - The server uses the client-supplied `id` verbatim; the upload response echoes it.
-  Earlier versions regenerated server-side; that was removed because the trailing UUID
-  in the R2 key already guarantees uniqueness, and it was confusing to show one id in
-  the preview dialog and a different one in the toast.
+  Don't regenerate server-side: the trailing UUID in the R2 key already guarantees
+  uniqueness, and showing one id in the preview dialog and a different one in the
+  toast is confusing.
 - The line-timestamp filter (Flow A's tail walker AND Flow B's per-line filter) relies
   on the file chain's ISO-8601 stamp format
   (`YYYY-MM-DDTHH:MM:SS.mmm±HH:MM`, see `logging::dispatch::file_timestamp`). Lines
@@ -356,8 +356,3 @@ because breadcrumbs are best-effort instrumentation, not a feature.
   by value. To get the bytes back, `writer.finish()` returns the wrapped cursor; call
   `into_inner()` on it to extract the `Vec<u8>`. Don't try to thread an `&mut Vec<u8>`
   through it; the borrow checker will fight the `Arc<AtomicU64>` you also need.
-- Pre-fix-3 logs that started with `HH:MM:SS.mmm` (the legacy stdout-style stamp) won't
-  parse as ISO 8601, so they'd pass through both filters as "untimestamped continuation
-  lines." For Flow A this means the tail walker won't stop at any of them; it'll keep
-  going and get filtered by the file-mtime pre-check instead. For new logs (post
-  fix #3), the line filter trims cleanly.

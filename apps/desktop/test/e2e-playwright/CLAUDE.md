@@ -285,9 +285,8 @@ await expectAndDismissToast(tauriPage, 'Copy complete') // asserts + cleans up
 2. **Auto-cleans** (dispatches Escape on each leaked overlay; clicks each toast's close button) so the next test starts
    fresh. Cascade failures from leaked state never happen.
 
-This means: there is no longer a need for defensive double-Escape cleanups in `beforeEach`s. They used to live in
-`mtp.spec.ts`, `mtp-conflicts.spec.ts`, `smb.spec.ts`, etc.; they're all gone. The leak attribution now points at the
-test that actually leaked, not at the next test's setup.
+This means: no defensive double-Escape cleanups in `beforeEach`s. The leak attribution points at the test that actually
+leaked, not at the next test's setup.
 
 ### What about testing keyboard bindings?
 
@@ -312,14 +311,6 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
 - **Persistent toasts (AI download, update-ready, Quick Look hint)**: must be dismissed; assert on a stable fragment of
   the message. The Quick Look hint that fires on first Space press, for example, is asserted with
   `expectAndDismissToast(tauriPage, 'Space')` in `app.spec.ts`.
-
-### Migration history
-
-Previously the suite had 5 different mechanisms (OS `keyboard.press`, `document` dispatch, overlay dispatch, `pressKey`
-on activeElement, IPC). The mtp-rs sentinel-drain work (2026-05) plus the License-dialog 18× regression (same week)
-showed both the OS-flake failure mode and the silent-leak failure mode. The standardization landed in the same commit as
-the safety net + helper + caller migration; nothing in the suite should still reach for `keyboard.press('Escape')` to
-close a dialog.
 
 ## Gotchas
 
@@ -347,8 +338,7 @@ state is persistent across tests. So `ensureAppReady()` does three things, in or
 The volume reset (step 1) is required because `DualPaneExplorer.navigateToPath` **rejects** `mcp-nav-to-path` events for
 non-local panes — without the reset, step 2 silently no-ops and step 3 times out with an empty pane. Specs that
 explicitly switch panes to non-local volumes (`smb.spec.ts`, `mtp.spec.ts`, `mtp-conflicts.spec.ts`,
-`network-toggle.spec.ts`) previously did this reset themselves in their own `beforeEach`; that duplicate logic is now
-redundant but harmless to keep.
+`network-toggle.spec.ts`) don't need their own per-spec reset; `ensureAppReady()` covers it.
 
 **Gotcha**: File-operation tests need fixture recreation. **Why**: Tests that copy, move, rename, or create files mutate
 the shared fixture directory. Without cleanup, later tests see stale artifacts. `recreateFixtures()` runs in

@@ -48,10 +48,10 @@ function validateCrashReportShape(report: Record<string, unknown>): string | nul
       return `Missing required field: ${field}`
     }
   }
-  // `null` and `undefined` both mean "field absent"; old clients omit the keys,
-  // newer Rust clients serialize `Option::None` as `null` (specta's unified mode
-  // rejects `skip_serializing_if`). Treat them the same so an upgrade-window send
-  // of a pre-fix-* crash file with `None` defaults isn't rejected.
+  // `null` and `undefined` both mean "field absent": some clients omit the keys,
+  // Rust clients serialize `Option::None` as `null` (specta's unified mode
+  // rejects `skip_serializing_if`). Treat them the same so a send of a crash
+  // file with `None` defaults isn't rejected.
   const buildMode = report.buildMode
   if (buildMode !== undefined && buildMode !== null && buildMode !== 'release' && buildMode !== 'debug') {
     return 'Invalid buildMode'

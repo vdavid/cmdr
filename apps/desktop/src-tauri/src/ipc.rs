@@ -6,10 +6,10 @@
 //!
 //! ## Why
 //!
-//! Tauri command names used to live as magic strings on both sides: a Rust
+//! Without typed bindings, Tauri command names are magic strings on both sides: a Rust
 //! `#[tauri::command]` plus an `invoke('command_name', args)` on the frontend,
-//! with no compile-time link. Renaming the Rust side silently broke runtime
-//! IPC with a generic "not allowed" error. Now the frontend imports typed
+//! with no compile-time link. Renaming the Rust side silently breaks runtime
+//! IPC with a generic "not allowed" error. The frontend imports typed
 //! `commands.commandName(args)` from generated bindings, so command-name and
 //! argument-shape mismatches surface at `pnpm check`.
 //!

@@ -3035,7 +3035,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_scan_for_copy_batch_mixed() {
-        // Phase 4 Fix 4: pipelined batch scan on the SMB hot copy path.
+        // Pipelined batch scan on the SMB hot copy path.
         // Mixed batch of files + a directory: aggregate counts should match
         // what the per-path scan_for_copy loop would produce, and the
         // per_path vec should carry correct top_level_is_directory / size.

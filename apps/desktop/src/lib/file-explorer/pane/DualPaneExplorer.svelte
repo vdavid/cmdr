@@ -2571,9 +2571,9 @@
             handleVolumeChange(pane, volume.id, volume.path, volume.path)
         }
 
-        // Note: previously we re-anchored DOM focus on the container here, but it was
-        // the proximate cause of mtp.spec.ts:414 dropping a Space press during the
-        // multi-select-then-delete sequence. Removed pending a less invasive fix.
+        // Don't re-anchor DOM focus on the container here: doing so drops a Space press
+        // during the multi-select-then-delete sequence (regression guard:
+        // mtp.spec.ts:414).
         return true
     }
 
@@ -2702,12 +2702,12 @@
 
         const paneRef = getPaneRef(pane)
         if (!paneRef) return 'Pane not available'
-        // Note: previously we re-anchored DOM focus on the container after the listing
-        // settled, but the late-firing `.finally()` callback raced with subsequent test
-        // keystrokes (mtp.spec.ts line 414: `deletes multiple selected files on MTP`)
-        // and dropped one of the Space presses on the floor. If MCP/test paths actually
-        // need focus restoration here, rewire the `mcp-nav-to-path` listener to restore
-        // focus AFTER awaiting the promise, not via fire-and-forget `.finally()`.
+        // Don't re-anchor DOM focus on the container after the listing settles via a
+        // fire-and-forget `.finally()`: the late callback races subsequent keystrokes
+        // and drops one of the Space presses on the floor (regression guard:
+        // mtp.spec.ts:414, `deletes multiple selected files on MTP`). If MCP/test paths
+        // actually need focus restoration here, rewire the `mcp-nav-to-path` listener
+        // to restore focus AFTER awaiting the promise instead.
         return paneRef.navigateToPath(path)
     }
 

@@ -192,9 +192,8 @@ try-catch so one failure doesn't block the others:
 
 1. **Crash notifications** (every invocation): queries `crash_reports WHERE notified_at IS NULL`, sorted newest-first,
    marks rows as notified, then sends an email via Resend with one row per crash report (When, Env, ID, Site, Signal,
-   Version). Marks before sending to prefer missed notifications over duplicates. Pre-fix-\* this grouped by
-   `top_function`; the per-row layout is easier to scan and includes the user-visible `CRASH-XXXXX` id. Requires
-   `CRASH_NOTIFICATION_EMAIL` and `RESEND_API_KEY`.
+   Version). Marks before sending to prefer missed notifications over duplicates. The per-row layout is easy to scan and
+   includes the user-visible `CRASH-XXXXX` id. Requires `CRASH_NOTIFICATION_EMAIL` and `RESEND_API_KEY`.
 
 2. **Daily aggregation** (00:00 UTC only): aggregates yesterday's `update_checks` into `daily_active_users` via
    `INSERT OR IGNORE ... GROUP BY`, then prunes raw update checks older than 7 days. Idempotent via existence check.

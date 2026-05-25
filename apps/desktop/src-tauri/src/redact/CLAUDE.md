@@ -57,8 +57,7 @@ The trailing segment is classified by `has_extension_like_suffix`:
 This means `notes.md` → `<file>.md` but `Application Support` → `<dir>`. Trade-off: an
 extensionless file like `id_rsa`, `README`, or `Makefile` will be (mis)labeled `<dir>`.
 Acceptable in our context: Cmdr's logs are dominated by directory listings, so defaulting
-to `<dir>` reads more accurately on real triage data than the pre-fix-7 always-`<file>`
-default.
+to `<dir>` reads more accurately on real triage data than an always-`<file>` default would.
 
 ### Decision: why path-shape preservation + allowlist
 
@@ -69,10 +68,9 @@ guess the failure context without seeing the user's secrets.
 
 ### Decision: MTP owner names redacted, model names kept
 
-Phase 1 punted on MTP names; a post-implementation fix added an `mtp_owner` pattern that
-catches the common shape `<Owner>'s <Model>` (e.g., `John's Pixel 8 Pro`). The owner part
-becomes `<mtp-owner>` and the model phrase (`Pixel 8 Pro`, `iPhone 15 Pro`, ...) is kept
-because model strings alone aren't identifying and are useful diagnostic context.
+The `mtp_owner` pattern catches the common shape `<Owner>'s <Model>` (e.g., `John's Pixel 8 Pro`).
+The owner part becomes `<mtp-owner>` and the model phrase (`Pixel 8 Pro`, `iPhone 15 Pro`, ...)
+is kept because model strings alone aren't identifying and are useful diagnostic context.
 
 The pattern requires both a capitalized possessive AND a model word from a known set
 (`iPhone | iPad | Pixel | Galaxy | OnePlus | Note | Tablet | Phone | Camera | ...`)

@@ -1,12 +1,12 @@
 /**
- * Pure helper for `FilePane.svelte`'s `hasParent` derivation. Round 2 P6
- * found that `selection.selectAll(hasParent, ...)` skipped index 0 in the
- * search-results pane because the path comparison `currentPath !==
- * effectiveVolumeRoot` was always true (a `search-results://sr-N` URL never
- * matches a real volume root). The fix gated on `isSearchResultsView`.
+ * Pure helper for `FilePane.svelte`'s `hasParent` derivation.
  *
- * Round 3 T1: pin this gating with a regression test so a future refactor
- * can't silently re-introduce the off-by-one.
+ * For search-results panes, `hasParent` is always `false`: a snapshot pane has
+ * no `..` row. Don't fall back to the path comparison `currentPath !==
+ * effectiveVolumeRoot` for these panes — a `search-results://sr-N` URL never
+ * matches a real volume root, so the comparison returns `true` and
+ * `selection.selectAll(hasParent, ...)` then skips index 0 (the off-by-one
+ * pinned by the regression test).
  */
 export interface HasParentInput {
   /** True when the pane is rendering a search-results snapshot. */

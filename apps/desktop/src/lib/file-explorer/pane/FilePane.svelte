@@ -2055,7 +2055,7 @@
     /** Apply a `move-cursor` action from the search-pane key dispatcher. */
     function applySearchPaneMove(index: number, overflow: boolean, shiftKey: boolean): void {
         if (shiftKey) {
-            // Round 2 P5: extend selection across the jump via the same toggle-and-fill helper
+            // Extend selection across the jump via the same toggle-and-fill helper
             // the regular pane uses. `hasParent = false` because the snapshot pane never
             // carries a synthetic `..` row.
             selection.handleShiftKeyboardNavigation(cursorIndex, index, overflow, false)
