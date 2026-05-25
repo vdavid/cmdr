@@ -78,6 +78,12 @@ logical coordinates, independent of which lines happen to be rendered.
   browser's native selection would render a competing-and-broken one on top of ours that loses its anchor as soon as the
   line scrolls out. `.status-bar` opts back in with `user-select: text` so users can still copy the file name or line
   count. `.line-number` keeps the global default (`none`), it's aria-hidden chrome.
+  - Trap: webkit2gtk 2.50.4 (Ubuntu 24.04) has a bug where `caretRangeFromPoint` returns `offset: 0` for every x-coord
+    inside `user-select: none` text, which breaks the pointer → caret path in `viewer-pointer.ts:resolveCaret`.
+    webkit2gtk 2.52.3 (Ubuntu 25.10+) doesn't have it. The Docker E2E image is pinned to `ubuntu:26.04` to avoid this;
+    see `apps/desktop/test/e2e-linux/CLAUDE.md` § Gotchas. If you ever need to support a webview version that still has
+    the bug (e.g. an older Linux distro target), replace this code path with a `Range.getClientRects()`-based binary
+    search that doesn't depend on the browser caret API.
 - **Selection offsets are UTF-16 code units, not bytes or grapheme clusters.** When you add features that compute
   offsets from a click position (M3a's caret math) or accept them across the IPC boundary (M2's `viewer_read_range`),
   preserve the UTF-16 convention. The backend handles the conversion to UTF-8 bytes, clamping lone surrogates to the

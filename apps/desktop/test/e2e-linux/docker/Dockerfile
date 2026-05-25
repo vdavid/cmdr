@@ -2,7 +2,7 @@
 # This container provides a Linux environment for running Tauri E2E tests
 # via tauri-playwright (Unix socket bridge to the real Tauri webview).
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 # Avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -79,6 +79,13 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Set up display for Xvfb
 ENV DISPLAY=:99
+
+# Playwright doesn't publish chromium binaries for ubuntu26.04-arm64 yet, but
+# the ubuntu24.04 build runs fine on 26.04 (libc-compatible). Without this
+# override, `npx playwright install chromium` errors with "Playwright does not
+# support chromium on ubuntu26.04-arm64". Drop this once Playwright adds 26.04
+# to its supported list.
+ENV PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-arm64
 
 # Create working directory
 WORKDIR /app

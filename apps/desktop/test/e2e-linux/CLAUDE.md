@@ -111,6 +111,22 @@ test opens the settings page and navigates through all sections including MCP se
 setting sync, this can trigger an MCP server state change. When SMB tests start, the app may have already exited.
 Running SMB tests in isolation avoids this. Investigating the root cause is tracked separately.
 
+**Gotcha**: the Docker base image is pinned to `ubuntu:26.04` (not 24.04) because webkit2gtk 2.50.4 (the version that
+ships with 24.04) has a bug where `document.caretRangeFromPoint(x, y)` returns `startOffset: 0` for ALL x-coordinates
+inside text with `user-select: none` in its ancestor chain. Caret resolution is the first step in the viewer's
+pointer-drag → selection pipeline (see `routes/viewer/viewer-pointer.ts:resolveCaret`), so `viewer.spec.ts` "drag within
+viewport selects the dragged range" used to fail on every E2E run: the drag produced an empty selection, `runCopy()`
+returned `{ kind: 'empty' }`, no toast appeared, the test timed out. **Why we know it's this**: probed at x = 25, 35,
+50, 75, 200, 500 on `.line-text` (`user-select: none`) — all return offset 0 on webkit2gtk 2.50.4, but offset 1, 4, 7,
+25, 68 (monotonic per-character) on 2.52.3 on the same Xvfb display server. Control: probing the status-bar text
+(`user-select: text`) returns sensible offsets even on 2.50.4. So it's a `user-select: none` + webkit2gtk 2.50.4
+interaction, not Xvfb itself. Ruled out: `WEBKIT_DISABLE_COMPOSITING_MODE=1`, `WEBKIT_DISABLE_DMABUF_RENDERER=1`,
+`WEBKIT_SKIA_ENABLE_CPU_RENDERING=1` (none help individually or together); fonts (DejaVu Sans Mono present in both 24.04
+and 26.04); GDK backend (Wayland-vs-X11 isn't the lever — Xwayland and Xvfb both work with 2.52.3). Real Linux users
+(Wayland or X11 with a real display server) were never affected, only the synthetic-pointer-event test path was. **If
+you ever want to drop back to an older base image**, you'll need to skip this single test or replace the production
+caret-from-point with a JS-side `Range.getClientRects()`-based binary search that bypasses the buggy API.
+
 ## CI integration
 
 | Check nickname        | What it runs                             | Included by default? |
