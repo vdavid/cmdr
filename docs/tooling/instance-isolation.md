@@ -228,18 +228,18 @@ of the per-resource derivation paths. Future regressions are caught by re-runnin
 
 ## Related docs
 
-- [`docs/specs/instance-isolation-plan.md`](../specs/instance-isolation-plan.md) — full design, phase-by-phase rollout,
+- [`docs/specs/instance-isolation-plan.md`](../specs/instance-isolation-plan.md): full design, phase-by-phase rollout,
   precedence rules, race-window analysis.
-- [`docs/specs/instance-isolation-context.md`](../specs/instance-isolation-context.md) — the frozen "why" behind every
+- [`docs/specs/instance-isolation-context.md`](../specs/instance-isolation-context.md): the frozen "why" behind every
   decision in the plan.
-- [`docs/tooling/mcp.md`](mcp.md) — MCP server overview, port discovery for external clients, action-tool ack contract.
-- [`AGENTS.md`](../../AGENTS.md) § Debugging / § MCP / § Worktrees — repo-wide cross-references.
-- [`apps/desktop/CLAUDE.md`](../../apps/desktop/CLAUDE.md) — desktop app overview, `--worktree` flag.
-- [`apps/desktop/src-tauri/src/mcp/CLAUDE.md`](../../apps/desktop/src-tauri/src/mcp/CLAUDE.md) — server lifecycle and
+- [`docs/tooling/mcp.md`](mcp.md): MCP server overview, port discovery for external clients, action-tool ack contract.
+- [`AGENTS.md`](../../AGENTS.md) § Debugging / § MCP / § Worktrees: repo-wide cross-references.
+- [`apps/desktop/CLAUDE.md`](../../apps/desktop/CLAUDE.md): desktop app overview, `--worktree` flag.
+- [`apps/desktop/src-tauri/src/mcp/CLAUDE.md`](../../apps/desktop/src-tauri/src/mcp/CLAUDE.md): server lifecycle and
   port-file protocol.
-- [`apps/desktop/src-tauri/src/secrets/CLAUDE.md`](../../apps/desktop/src-tauri/src/secrets/CLAUDE.md) — Keychain
+- [`apps/desktop/src-tauri/src/secrets/CLAUDE.md`](../../apps/desktop/src-tauri/src/secrets/CLAUDE.md): Keychain
   service-name suffix.
-- [`apps/desktop/src-tauri/src/clipboard/CLAUDE.md`](../../apps/desktop/src-tauri/src/clipboard/CLAUDE.md) — mock
+- [`apps/desktop/src-tauri/src/clipboard/CLAUDE.md`](../../apps/desktop/src-tauri/src/clipboard/CLAUDE.md): mock
   backend.
-- [`apps/desktop/test/CLAUDE.md`](../../apps/desktop/test/CLAUDE.md) — fixture cache, per-instance root.
-- [`scripts/check/CLAUDE.md`](../../scripts/check/CLAUDE.md) § Self-contained E2E checks — per-shard env composition.
+- [`apps/desktop/test/CLAUDE.md`](../../apps/desktop/test/CLAUDE.md): fixture cache, per-instance root.
+- [`scripts/check/CLAUDE.md`](../../scripts/check/CLAUDE.md) § Self-contained E2E checks: per-shard env composition.

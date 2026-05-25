@@ -354,6 +354,19 @@ redundant but harmless to keep.
 the shared fixture directory. Without cleanup, later tests see stale artifacts. `recreateFixtures()` runs in
 `test.beforeEach` in `file-operations.spec.ts` to reset text files and directories (bulk .dat files persist).
 
+**Gotcha**: The clipboard is mocked, not real. **Why**: E2E builds compile with the `playwright-e2e` Cargo feature,
+which swaps the real `NSPasteboard` interop for an in-process mock store
+(`apps/desktop/src-tauri/src/clipboard/mock.rs`). Net effect: anything a test does with `Cmd+C` / `Cmd+X` / `Cmd+V` goes
+through the same IPC commands as production but the bytes live in a Rust `Mutex<Option<ClipboardEntry>>`, not the system
+pasteboard. So `pbpaste` in your shell will NOT see test contents (good: the test doesn't trash your real clipboard),
+and a test that wants to assert clipboard state can't read it via `pbpaste` either. Inspection of the mock from a spec
+needs to go through the existing clipboard IPC commands (paste-side IPCs read from the same mock). The admin helpers
+`snapshot_mock_clipboard` and `clear_mock_clipboard` exist in
+[`apps/desktop/src-tauri/src/clipboard/mod.rs`](../../src-tauri/src/clipboard/mod.rs) as Rust pub fns under the E2E
+feature, NOT as Tauri commands; if a future spec needs to read the mock state from TS, add a thin `#[tauri::command]`
+wrapper gated on the same `playwright-e2e` feature so the prod surface stays unchanged. See
+[`apps/desktop/src-tauri/src/clipboard/CLAUDE.md`](../../src-tauri/src/clipboard/CLAUDE.md).
+
 ## `ensureAppReady` focus contract
 
 By the time `ensureAppReady` returns, `document.activeElement` is inside `.dual-pane-explorer`. Tests that rely on
