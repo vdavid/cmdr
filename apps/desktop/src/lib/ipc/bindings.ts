@@ -2317,8 +2317,8 @@ export type ErrorCategory =
  *  Represents a file or directory entry with extended metadata.
  *
  *  Only serialized (Rust → frontend); never sent from the frontend, so no `Deserialize`.
- *  Fields that were previously omitted when `None`/empty now serialize as explicit `null`
- *  so specta's `validate_exported_command` accepts the type in Unified mode.
+ *  `None`/empty fields serialize as explicit `null` (no `skip_serializing_if`) so
+ *  specta's `validate_exported_command` accepts the type in Unified mode.
  */
 export type FileEntry = {
   name: string
