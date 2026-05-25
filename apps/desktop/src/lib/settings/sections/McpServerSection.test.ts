@@ -81,10 +81,10 @@ describe('McpServerSection', () => {
     tauriState.actualPort = 57821
 
     const { target, component } = await render()
-    const text = target.textContent ?? ''
+    const text = target.textContent
     expect(text).toContain('Server is running on port 57821')
     expect(text).toContain('(ephemeral)')
-    unmount(component)
+    void unmount(component)
   })
 
   it('shows neither "(ephemeral)" nor "(in use)" when setting matches the bound port', async () => {
@@ -94,11 +94,11 @@ describe('McpServerSection', () => {
     tauriState.actualPort = 19225
 
     const { target, component } = await render()
-    const text = target.textContent ?? ''
+    const text = target.textContent
     expect(text).toContain('Server is running on port 19225')
     expect(text).not.toContain('(ephemeral)')
     expect(text).not.toContain('was in use')
-    unmount(component)
+    void unmount(component)
   })
 
   it('shows the "(port N was in use)" copy when the setting pinned a port the server could not bind', async () => {
@@ -108,10 +108,10 @@ describe('McpServerSection', () => {
     tauriState.actualPort = 19226
 
     const { target, component } = await render()
-    const text = target.textContent ?? ''
+    const text = target.textContent
     expect(text).toContain('Server is running on port 19226')
     expect(text).toContain('(port 19225 was in use)')
     expect(text).not.toContain('(ephemeral)')
-    unmount(component)
+    void unmount(component)
   })
 })

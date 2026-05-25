@@ -38,19 +38,27 @@ vi.mock('$lib/settings', async (importOriginal) => {
   }
 })
 
-const addToast = vi.fn()
+const addToast = vi.fn<(...args: unknown[]) => void>()
 vi.mock('$lib/ui/toast', () => ({
-  addToast: (...args: unknown[]) => addToast(...args),
+  addToast: (...args: unknown[]) => {
+    addToast(...args)
+  },
 }))
 
-const loggerWarn = vi.fn()
-const loggerInfo = vi.fn()
-const loggerError = vi.fn()
+const loggerWarn = vi.fn<(...args: unknown[]) => void>()
+const loggerInfo = vi.fn<(...args: unknown[]) => void>()
+const loggerError = vi.fn<(...args: unknown[]) => void>()
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({
-    warn: (...args: unknown[]) => loggerWarn(...args),
-    info: (...args: unknown[]) => loggerInfo(...args),
-    error: (...args: unknown[]) => loggerError(...args),
+    warn: (...args: unknown[]) => {
+      loggerWarn(...args)
+    },
+    info: (...args: unknown[]) => {
+      loggerInfo(...args)
+    },
+    error: (...args: unknown[]) => {
+      loggerError(...args)
+    },
     debug: () => {},
   }),
 }))
@@ -118,7 +126,9 @@ describe('migrateApiKeysFromSettings', () => {
       openai: { apiKey: 'sk-stays', model: 'gpt-4o' },
     })
     await migrateApiKeysFromSettings()
-    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Record<string, { apiKey?: string }>
+    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Partial<
+      Record<string, { apiKey?: string }>
+    >
     expect(updated.openai?.apiKey).toBe('sk-stays')
     expect(loggerWarn).toHaveBeenCalled()
   })
@@ -133,7 +143,9 @@ describe('migrateApiKeysFromSettings', () => {
       anthropic: { apiKey: 'sk-works', model: 'claude' },
     })
     await migrateApiKeysFromSettings()
-    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Record<string, { apiKey?: string }>
+    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Partial<
+      Record<string, { apiKey?: string }>
+    >
     expect(updated.openai?.apiKey).toBe('sk-fails')
     expect(updated.anthropic?.apiKey).toBeUndefined()
   })
@@ -144,8 +156,10 @@ describe('migrateApiKeysFromSettings', () => {
     })
     await migrateApiKeysFromSettings()
     expect(saveAiApiKey).not.toHaveBeenCalled()
-    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Record<string, Record<string, unknown>>
-    expect('apiKey' in updated.openai).toBe(false)
+    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Partial<
+      Record<string, Record<string, unknown>>
+    >
+    expect(updated.openai && 'apiKey' in updated.openai).toBe(false)
   })
 
   it('skips providers with no apiKey field altogether', async () => {
