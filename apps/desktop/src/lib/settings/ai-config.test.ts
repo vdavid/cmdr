@@ -126,9 +126,7 @@ describe('migrateApiKeysFromSettings', () => {
       openai: { apiKey: 'sk-stays', model: 'gpt-4o' },
     })
     await migrateApiKeysFromSettings()
-    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Partial<
-      Record<string, { apiKey?: string }>
-    >
+    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Partial<Record<string, { apiKey?: string }>>
     expect(updated.openai?.apiKey).toBe('sk-stays')
     expect(loggerWarn).toHaveBeenCalled()
   })
@@ -143,9 +141,7 @@ describe('migrateApiKeysFromSettings', () => {
       anthropic: { apiKey: 'sk-works', model: 'claude' },
     })
     await migrateApiKeysFromSettings()
-    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Partial<
-      Record<string, { apiKey?: string }>
-    >
+    const updated = JSON.parse(settingsMap['ai.cloudProviderConfigs']) as Partial<Record<string, { apiKey?: string }>>
     expect(updated.openai?.apiKey).toBe('sk-fails')
     expect(updated.anthropic?.apiKey).toBeUndefined()
   })
