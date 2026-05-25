@@ -868,21 +868,33 @@ impl IndexStore {
     ///
     /// Uses a savepoint instead of `unchecked_transaction()` so it nests correctly
     /// inside explicit transactions (replay's `BEGIN IMMEDIATE`).
-    pub fn insert_entries_v2_batch(conn: &Connection, entries: &[EntryRow]) -> Result<(), IndexStoreError> {
+    ///
+    /// Uses `INSERT OR IGNORE` so a single `(parent_id, name_folded)` collision
+    /// (case-sensitive filesystems with `Foo.txt`/`foo.txt` siblings, NFC/NFD
+    /// duplicates from cross-OS sync, etc.) skips just that row rather than
+    /// rolling back the whole batch of ~2000 entries. Returns a `Vec<bool>`
+    /// parallel to `entries` where each element indicates whether the
+    /// corresponding row actually landed in the DB. Callers (the writer
+    /// thread's accumulator) must consult this so the in-memory aggregation
+    /// state never claims more than the DB actually has.
+    pub fn insert_entries_v2_batch(conn: &Connection, entries: &[EntryRow]) -> Result<Vec<bool>, IndexStoreError> {
         if entries.is_empty() {
-            return Ok(());
+            return Ok(Vec::new());
         }
         with_savepoint(conn, "insert_entries", |conn| {
-            // Plain INSERT: IDs are allocated from a shared AtomicI64 counter owned by
-            // IndexWriter, so conflicts shouldn't occur. The table is truncated before
-            // full scans and descendants are deleted before subtree scans.
+            // INSERT OR IGNORE: the table is truncated before full scans and
+            // descendants are deleted before subtree scans, so collisions
+            // against existing rows are rare, but two siblings with the same
+            // `name_folded` can show up on case-sensitive volumes / sync
+            // sources. Skip the duplicate, keep the rest.
             let mut stmt = conn.prepare_cached(
-                "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+                "INSERT OR IGNORE INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             )?;
+            let mut inserted = Vec::with_capacity(entries.len());
             for e in entries {
                 let name_folded = normalize_for_comparison(&e.name);
-                stmt.execute(params![
+                let rows = stmt.execute(params![
                     e.id,
                     e.parent_id,
                     e.name,
@@ -894,8 +906,9 @@ impl IndexStore {
                     e.modified_at,
                     e.inode,
                 ])?;
+                inserted.push(rows == 1);
             }
-            Ok(())
+            Ok(inserted)
         })
     }
 
@@ -2049,8 +2062,15 @@ mod tests {
         );
     }
 
+    /// Batch insert uses `INSERT OR IGNORE`: a duplicate `(parent_id, name_folded)`
+    /// in the batch (or against an existing row) skips just that row, keeping
+    /// every other entry in the batch. The returned `Vec<bool>` flags which
+    /// rows actually landed. This replaces the previous roll-back-the-whole-batch
+    /// behavior, which silently dropped ~2000 unrelated entries every time a
+    /// scan encountered two siblings with colliding `name_folded` (case-sensitive
+    /// volumes, NFC/NFD duplicates, etc.).
     #[test]
-    fn duplicate_parent_name_folded_rejected_batch_insert() {
+    fn duplicate_parent_name_folded_skipped_in_batch_insert() {
         let (_store, dir) = open_temp_store();
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
@@ -2073,21 +2093,31 @@ mod tests {
                 name: "dup.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                logical_size: Some(10),
-                physical_size: Some(10),
+                logical_size: Some(20),
+                physical_size: Some(20),
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 102,
+                parent_id: ROOT_ID,
+                name: "unrelated.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(30),
+                physical_size: Some(30),
                 modified_at: None,
                 inode: None,
             },
         ];
-        let result = IndexStore::insert_entries_v2_batch(&conn, &entries);
-        assert!(
-            result.is_err(),
-            "batch with duplicate (parent_id, name_folded) must fail; got {result:?}"
-        );
+        let inserted = IndexStore::insert_entries_v2_batch(&conn, &entries).unwrap();
+        assert_eq!(inserted, vec![true, false, true]);
 
-        // Savepoint rolls back the whole batch, so neither row should be present.
-        assert!(IndexStore::get_entry_by_id(&conn, 100).unwrap().is_none());
+        // First duplicate wins; the second is dropped; the unrelated entry survives.
+        // Without the per-row skip, the savepoint used to roll back ALL THREE.
+        assert!(IndexStore::get_entry_by_id(&conn, 100).unwrap().is_some());
         assert!(IndexStore::get_entry_by_id(&conn, 101).unwrap().is_none());
+        assert!(IndexStore::get_entry_by_id(&conn, 102).unwrap().is_some());
     }
 
     #[cfg(target_os = "macos")]

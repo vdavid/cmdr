@@ -468,10 +468,12 @@ impl AccumulatorMaps {
         }
     }
 
-    /// Accumulate stats from a batch of inserted entries.
-    fn accumulate(&mut self, entries: &[EntryRow]) {
-        self.entries_inserted += entries.len() as u64;
+    /// Accumulate stats from a set of inserted entries. Accepts any iterator
+    /// of `&EntryRow` so callers can pre-filter (skipping rows that lost a
+    /// UNIQUE conflict during `INSERT OR IGNORE`) without an extra clone.
+    fn accumulate<'a>(&mut self, entries: impl IntoIterator<Item = &'a EntryRow>) {
         for entry in entries {
+            self.entries_inserted += 1;
             let stats = self.direct_stats.entry(entry.parent_id).or_insert((0, 0, 0, 0, false));
             if entry.is_symlink {
                 stats.4 = true;
@@ -817,14 +819,45 @@ fn handle_insert_entries_v2(
 ) {
     let count = entries.len();
     let t = Instant::now();
-    // Accumulate AFTER the DB commit succeeds. The savepoint inside
-    // `insert_entries_v2_batch` rolls the whole batch back on any conflict
-    // (PK or UNIQUE on `(parent_id, name_folded)` — schema v12), so the
-    // accumulator must not claim rows that never landed; otherwise
-    // `compute_all_aggregates_with_maps` inflates `dir_stats` with phantom
-    // bytes.
+    // Accumulate AFTER the DB commit succeeds. `insert_entries_v2_batch`
+    // uses `INSERT OR IGNORE`, so a UNIQUE conflict on
+    // `(parent_id, name_folded)` (case-sensitive volumes with `Foo.txt` and
+    // `foo.txt` siblings, NFC/NFD duplicates from cross-OS sync, etc.) skips
+    // just that row instead of rolling back the entire 2000-entry batch. The
+    // accumulator must skip those rows too, or `compute_all_aggregates_with_maps`
+    // inflates `dir_stats` with phantom bytes (the constraint comment that
+    // called out "1.83 TB ghost size on a 994 GB volume" is exactly this
+    // failure mode).
     match IndexStore::insert_entries_v2_batch(conn, &entries) {
-        Ok(()) => accumulator.accumulate(&entries),
+        Ok(inserted) => {
+            let skipped_count = inserted.iter().filter(|landed| !**landed).count();
+            if skipped_count == 0 {
+                accumulator.accumulate(&entries);
+            } else {
+                accumulator.accumulate(
+                    entries
+                        .iter()
+                        .zip(inserted.iter())
+                        .filter_map(|(e, landed)| if *landed { Some(e) } else { None }),
+                );
+                let samples: Vec<(i64, &str)> = entries
+                    .iter()
+                    .zip(inserted.iter())
+                    .filter_map(|(e, landed)| {
+                        if !*landed {
+                            Some((e.parent_id, e.name.as_str()))
+                        } else {
+                            None
+                        }
+                    })
+                    .take(3)
+                    .collect();
+                log::warn!(
+                    "Index writer: {skipped_count} of {batch_size} skipped due to UNIQUE conflict on (parent_id, name_folded); sample: {samples:?}",
+                    batch_size = pluralize_with(count as u64, "entry", "entries")
+                );
+            }
+        }
         Err(e) => crate::log_error!("Index writer: insert_entries_v2_batch failed: {e}"),
     }
     let elapsed = t.elapsed().as_millis();
@@ -1642,22 +1675,20 @@ mod tests {
         writer.shutdown();
     }
 
-    // The accumulator must NOT advance when the batch INSERT fails: the
-    // accumulator maps drive `compute_all_aggregates_with_maps`, and counting
-    // bytes for rows that never landed in the DB produces inflated dir_stats.
-    // This was the second mechanism behind the 1.83 TB ghost size on `..` —
-    // the first being two writers racing (Fix #1), the schema admitting
-    // duplicates (Fix #3) finalises it.
+    // The accumulator must only count rows that actually landed in the DB.
+    // `insert_entries_v2_batch` uses `INSERT OR IGNORE`, so one duplicate in
+    // a batch skips just that row and the rest insert. The accumulator maps
+    // drive `compute_all_aggregates_with_maps`; counting bytes for a row that
+    // lost an OR-IGNORE produces inflated dir_stats (this was one of the
+    // mechanisms behind the 1.83 TB ghost size on `..` of a 994 GB volume).
     #[test]
-    fn handle_insert_entries_v2_does_not_accumulate_when_db_insert_fails() {
+    fn handle_insert_entries_v2_only_accumulates_rows_that_landed() {
         use std::sync::atomic::AtomicU64;
 
         let (db_path, _dir) = setup_db();
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        // Pre-seed a row with id=100 so a second insert with the same id
-        // collides on the integer PK (UNIQUE on entries.id is enforced
-        // independently of the (parent_id, name_folded) index).
+        // Pre-seed: id=100, name="first.txt".
         let entries_first = vec![EntryRow {
             id: 100,
             parent_id: ROOT_ID,
@@ -1671,17 +1702,17 @@ mod tests {
         }];
         IndexStore::insert_entries_v2_batch(&conn, &entries_first).unwrap();
 
-        // Second batch: re-uses id=100. The savepoint rolls back the whole batch
-        // on the PK collision, so neither entry lands in the DB.
+        // Second batch: row 0 collides on the (parent_id, name_folded) UNIQUE
+        // index (same `first.txt` under ROOT_ID). Row 1 is fresh and must land.
         let entries_dup = vec![
             EntryRow {
-                id: 100,
+                id: 200,
                 parent_id: ROOT_ID,
                 name: "first.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                logical_size: Some(10),
-                physical_size: Some(10),
+                logical_size: Some(999_999),
+                physical_size: Some(999_999),
                 modified_at: None,
                 inode: None,
             },
@@ -1711,23 +1742,29 @@ mod tests {
             &mutation_counter,
         );
 
-        // DB unchanged: only the first.txt row from the seed.
+        // DB has the original first.txt (id=100) and the new second.txt (id=101).
+        // id=200 was the OR-IGNORE'd duplicate and must not be in the DB.
         assert_eq!(
             IndexStore::get_entry_by_id(&conn, 100).unwrap().unwrap().name,
             "first.txt"
         );
-        assert!(IndexStore::get_entry_by_id(&conn, 101).unwrap().is_none());
-
-        // Accumulator must reflect that 0 entries were inserted from this batch.
         assert_eq!(
-            accumulator.entries_inserted, 0,
-            "accumulator advanced despite failed INSERT (would feed inflated dir_stats into aggregation)"
+            IndexStore::get_entry_by_id(&conn, 101).unwrap().unwrap().name,
+            "second.txt"
         );
-        assert!(
-            accumulator.direct_stats.is_empty(),
-            "accumulator.direct_stats populated despite failed INSERT: {:?}",
-            accumulator.direct_stats
+        assert!(IndexStore::get_entry_by_id(&conn, 200).unwrap().is_none());
+
+        // Accumulator must reflect exactly one new entry (the row that landed),
+        // never the 999_999-byte phantom. If a regression makes the accumulator
+        // count the OR-IGNORE'd row, this assert catches it.
+        assert_eq!(
+            accumulator.entries_inserted, 1,
+            "accumulator must count only rows that landed in the DB"
         );
+        let stats = accumulator.direct_stats.get(&ROOT_ID).expect("ROOT_ID stats present");
+        assert_eq!(stats.0, 20, "logical bytes must only count the landed row");
+        assert_eq!(stats.1, 20, "physical bytes must only count the landed row");
+        assert_eq!(stats.2, 1, "file count must only include the landed row");
     }
 
     #[test]
