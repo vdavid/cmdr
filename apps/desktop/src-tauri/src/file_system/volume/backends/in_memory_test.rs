@@ -1,6 +1,7 @@
 //! Tests for InMemoryVolume.
 
 use super::*;
+use crate::file_system::listing::FileEntry;
 use std::path::{Path, PathBuf};
 
 #[tokio::test]

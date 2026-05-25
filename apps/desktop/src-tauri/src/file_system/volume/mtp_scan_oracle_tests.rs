@@ -6,7 +6,7 @@
 //! 1. **Oracle hit**: when the parent listing is watcher-backed (the device is connected and
 //!    `LISTING_CACHE` holds the entries), the MTP batch scan reads child sizes from the cache and
 //!    doesn't hit the device. We pin this with a test-only call counter on
-//!    `MtpVolume::list_directory` (`super::mtp::test_hooks`): zero calls after the scan.
+//!    `MtpVolume::list_directory` (`super::backends::mtp::test_hooks`): zero calls after the scan.
 //! 2. **Cold cache, parent-grouped**: when there's no cached listing, the existing parent-grouping
 //!    optimization still runs. 4 children sharing parent `A` + 2 children sharing parent `B`
 //!    collapse to exactly 2 `list_directory` calls, not 6. This is the load-bearing perf for the
@@ -29,7 +29,7 @@ use crate::file_system::volume::{MtpVolume, Volume};
 use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
 use crate::mtp::virtual_device::setup_virtual_mtp_device;
 
-use super::mtp::test_hooks;
+use super::backends::mtp::test_hooks;
 
 // `setup_virtual_mtp_device` wipes and recreates a shared backing-dir fixture
 // root at `/tmp/cmdr-mtp-e2e-fixtures`. Tests in this module + the existing

@@ -300,7 +300,7 @@ impl SmbVolume {
     /// to prove the oracle short-circuit doesn't touch the SMB session: if it
     /// did, the scan would fail with DeviceDisconnected after this call.
     #[cfg(test)]
-    pub(super) async fn detach_session_for_test(&self) {
+    pub(in crate::file_system::volume) async fn detach_session_for_test(&self) {
         let mut client_guard = self.client.lock().await;
         *client_guard = None;
     }

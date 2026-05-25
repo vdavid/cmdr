@@ -905,35 +905,26 @@ pub trait Volume: Send + Sync {
     }
 }
 
-// Implementations
+// Per-backend `Volume` implementations live in `backends/`. The trait surface
+// stays here; submodule names are re-exported below so external callers keep
+// importing `volume::LocalPosixVolume`, `volume::MtpVolume`, etc. without
+// caring about the `backends/` split.
+pub mod backends;
 pub mod friendly_error;
-mod in_memory;
-mod local_posix;
 pub(crate) mod manager;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-mod mtp;
 mod provider;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) mod smb;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-mod smb_watcher;
 
-pub use in_memory::InMemoryVolume;
-pub use local_posix::LocalPosixVolume;
+pub use backends::{InMemoryVolume, LocalPosixVolume};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use mtp::MtpVolume;
+pub use backends::{MtpVolume, SmbVolume};
+
+// `smb` is re-exported as a module path because callers reach into it for
+// `SmbConnectionParams` / `connect_smb_volume` / `set_app_handle`.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use smb::SmbVolume;
+pub use backends::smb;
 
-// Re-export types defined in this module for convenience
-// (they're already public since defined in mod.rs)
-
-#[cfg(test)]
-mod in_memory_test;
 #[cfg(test)]
 mod inmemory_test;
-#[cfg(test)]
-mod local_posix_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod mtp_scan_oracle_tests;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
