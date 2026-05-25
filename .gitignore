@@ -33,9 +33,6 @@ node_modules/
 # Tauri/Vite build files
 build/
 
-# Go build files
-scripts/check/check
-
 # Freestyle.sh VM ID (local to each developer)
 .freestyle-vm-id
 
@@ -70,3 +67,6 @@ apps/desktop/src-tauri/resources/ai
 
 # Per-milestone progress tracker for in-flight feature work (transient, recovery aid)
 docs/specs/file-viewer-selection-progress.md
+
+# CodeGraph
+.codegraph/
