@@ -912,7 +912,6 @@ pub trait Volume: Send + Sync {
 pub mod backends;
 pub mod friendly_error;
 pub(crate) mod manager;
-mod provider;
 
 pub use backends::{InMemoryVolume, LocalPosixVolume};
 #[cfg(any(target_os = "macos", target_os = "linux"))]

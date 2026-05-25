@@ -9,14 +9,15 @@
 //!   `IoError` carries a `raw_os_error`)
 //! - `empty_root`: TCC-restricted volume root hint (a single special case)
 //!
-//! `enrich_with_provider` (in sibling module `provider.rs`) layers
-//! provider-specific suggestions on top: that's the second pass that turns
-//! "Couldn't read this folder" into "This folder is managed by **MacDroid**…".
+//! `enrich_with_provider` (in submodule `provider`) layers provider-specific
+//! suggestions on top: that's the second pass that turns "Couldn't read this
+//! folder" into "This folder is managed by **MacDroid**…".
 
 mod empty_root;
 mod errno;
 mod kinds;
 mod markdown;
+mod provider;
 mod volume_error;
 mod write_error;
 
@@ -29,9 +30,7 @@ pub use markdown::{Markdown, MarkdownArg};
 pub use volume_error::friendly_error_from_volume_error;
 pub use write_error::friendly_from_write_error;
 
-// Re-export `enrich_with_provider` so callers can keep importing from
-// `friendly_error::enrich_with_provider`.
-pub use crate::file_system::volume::provider::enrich_with_provider;
+pub use provider::enrich_with_provider;
 
 // ============================================================================
 // Data model

@@ -5,7 +5,7 @@
 
 use std::path::Path;
 
-use super::friendly_error::{ErrorCategory, FriendlyError, Markdown};
+use super::{ErrorCategory, FriendlyError, Markdown};
 use crate::md;
 
 // ============================================================================
