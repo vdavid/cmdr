@@ -45,49 +45,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Executor (`executor/`)
 
-Directory module split by tool category. `mod.rs` contains the main `execute_tool()` dispatcher, shared types (`ToolResult`, `ToolError`), and the `mcp_round_trip` helpers. Category files:
-- `app.rs`: quit, switch_pane, swap_panes, tab
-- `view.rs`: toggle_hidden, set_view_mode, sort
-- `nav.rs`: navigation commands (with and without params)
-- `file_ops.rs`: copy, move, delete, mkdir, mkfile, refresh, select
-- `dialogs.rs`: unified dialog open/focus/close/confirm
-- `async_tools.rs`: await, connect_to_server, remove_manual_server, upgrade_smb_to_direct, set_setting
-- `search.rs`: search index loading, search, ai_search
-
-**Action-tool ack contract.** Every fire-and-forget action tool now waits for a backend ack signal before returning `OK`. Previously the tool returned `OK` the instant the event was dispatched; if the FE was stalled (modal blocking input, error pane up, race during startup), the action was silently dropped and MCP reported success anyway. The ack contract makes `OK` a meaningful promise: the FE has actually processed the dispatched action.
-
-The mechanism lives in `executor/ack.rs`. Each tool:
-
-1. Captures a precondition snapshot (typically `snapshot_generation(app)`).
-2. Emits its existing event / runs its existing command.
-3. Calls `wait_for_ack(app, signal, DEFAULT_ACK_TIMEOUT)` — default 1500 ms.
-4. Returns the original `OK` string on success, or a typed `ToolError::internal` whose message names the missing signal and the elapsed budget on timeout.
-
-`AckSignal` variants:
-
-| Variant                  | Fires when                                                              | Used by                                                                                                                          |
-| ------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `GenerationAdvanced`     | `PaneStateStore.generation` is strictly greater than the captured value | Anything that mutates pane state (`select`, `set_view_mode`, `sort`, `toggle_hidden`, `tab`, `nav_*`, auto-confirmed `copy`/`move`/`delete`, `dialog confirm`). NOT `refresh` — see TODO note below.                                  |
-| `SoftDialogAppeared(id)` | A soft dialog with that ID is in `SoftDialogTracker`                    | Confirmation dialogs from `copy`/`move`/`delete` (autoConfirm: false), `mkdir`, `mkfile`; `dialog open about`                    |
-| `SoftDialogDisappeared(id)` | A soft dialog with that ID is no longer in `SoftDialogTracker`        | `dialog close <confirmation>` — the FE `ModalDialog` fires `notifyDialogClosed` on unmount, so the tracker reflects the close even when cancel doesn't bump pane generation |
-| `WindowAppeared(label)`  | A `webview_windows()` entry matches the label (exact, or `viewer-*`)    | `dialog open settings|file-viewer`, `dialog focus`                                                                               |
-| `WindowDisappeared(label)` | The matching `webview_windows()` entry is gone                        | `dialog close settings` (single window family)                                                                                   |
-| `WindowCountBelow {prefix, threshold}` | Count of matching windows is `< threshold`                | `dialog close file-viewer` — snapshot the count, ack when one closes (don't wait for *all* viewers to vanish)                    |
-| `Any([...])`             | Logical OR — any inner signal fires                                     | Reserved for future multi-mode tools                                                                                              |
-
-The polling cadence is 250 ms for state-driven signals (matching the existing `await` tool) and 100 ms for window/soft-dialog signals (both react faster than a full pane state push).
-
-**Gotcha/Why**: `dialog close <settings>` requires the settings window to listen for the `mcp-settings-close` event and close itself (`apps/desktop/src/routes/settings/+page.svelte`). Without that listener the backend keeps polling for `WindowDisappeared("settings")` and times out at 1500 ms while the window stays put. Same shape applies if you add new window-based dialogs: the FE side has to opt in.
-
-The 1500 ms budget is a backend-side latency budget, not a client-facing knob: MCP clients shouldn't have to tune ack timeouts. Bump it per-call via the `Duration` argument to `wait_for_ack` if a specific operation has a known higher latency floor; don't expose it as a tool parameter. The navigation family (`nav_to_parent`, `nav_back`, `nav_forward`, `open_under_cursor`) uses `NAV_ACK_TIMEOUT` (5 s) because a parent/back navigation can land on an SMB or MTP path whose directory listing takes a few seconds even on success. `nav_to_path` and `select_volume` use higher round-trip budgets via `mcp_round_trip_with_timeout` and aren't part of the ack-contract family.
-
-**Caveat: `GenerationAdvanced` isn't a per-action proof.** The snapshot-dispatch-wait sequence proves the FE pushed pane state *recently after* dispatch — not that the FE specifically handled our event. An unrelated push between snapshot and dispatch (the other pane's watcher, a tab refresh) will satisfy the signal as a false positive. The window is microseconds wide and the FE was clearly running (something pushed), so this is a much weaker false-positive class than the original "always OK" bug. If a real false positive ever surfaces, the fix is to switch the affected tool to `mcp_round_trip` with a request id. Tagged `TODO(mcp-ack):` in `ack.rs`.
-
-**Note on `update_pane_tabs`.** Tab changes flow through this command (not `set_left`/`set_right`). It delegates to `PaneStateStore::set_tabs`, which is the single place tab mutation + generation bump live. Add any new tab-mutating path through that helper, or the `tab` MCP tool's ack will time out.
-
-**Known TODO: `refresh` is still fire-and-forget.** The FE skips the `update_*_pane_state` push when the new listing is byte-identical to the cached state (correct behavior for state sync but no signal for the ack helper). Switching `refresh` to `mcp_round_trip` is the right follow-up, but requires a FE change to emit `mcp-response` after every re-list. The original "FE silently dropping the action" bug is less acute for refresh than for destructive tools, so this stays open. Search the codebase for `TODO(mcp-ack):` to find this and any future similar cases.
-
-Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Used by `move_cursor` and `set_setting` (5 s timeout). `nav_to_path` uses `mcp_round_trip_with_timeout` with a 30 s timeout because it waits for the directory listing to complete (the frontend delays the response until `handleListingComplete` fires in FilePane). `open_under_cursor` also uses `mcp_round_trip_with_timeout` (5 s) because Enter on a non-directory file delegates to the OS default app (no pane state push, no viewer window), so neither `GenerationAdvanced` nor `WindowAppeared` would fire — the FE explicitly awaits `handleNavigate(entry)` and signals completion. Resources that need frontend data use `resource_round_trip` (same pattern but returns `data` from the response). Used by `cmdr://settings`. Use these patterns for any new tool/resource where the backend would otherwise need to replicate frontend knowledge.
+Tool dispatch and the ack contract live in `executor/`. The category split (`app.rs`, `view.rs`, `nav.rs`, `file_ops.rs`, `dialogs.rs`, `async_tools.rs`, `search.rs`), the `AckSignal` variants and budgets, and the `mcp_round_trip` pattern for tools that need an explicit FE response are all documented in [`executor/CLAUDE.md`](executor/CLAUDE.md). Read that before adding or modifying a tool handler.
 
 ### Configuration (`config.rs`)
 
