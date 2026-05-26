@@ -16,14 +16,7 @@ storage picker, and reactive volume state.
 | `discovery.rs` | `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"` |
 | `watcher.rs` | `start_mtp_watcher()`: nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones |
 | `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill`; restores on disconnect/exit; `ensure_ptpcamerad_enabled()` on startup for crash recovery. Falls back to manual `PTPCAMERAD_WORKAROUND_COMMAND` dialog if suppression fails |
-| `connection/mod.rs` | `MtpConnectionManager` singleton (`LazyLock`); `DeviceEntry` map; `connect()` (idempotent, probes write capability, registers `MtpVolume`, re-runs `MtpDevice::list_devices()` once to fetch the negotiated USB link speed since the open `MtpDevice` doesn't expose it); `disconnect()` takes a `MtpDisconnectReason` (`User` for explicit toggle off / manual disconnect, `Removed` for hotplug-loss / I/O drop) so logs and UI don't read every USB error as user-initiated |
-| `connection/cache.rs` | `PathHandleCache` (path → MTP object handle), `ListingCache` (5 s TTL), `EventDebouncer` (500 ms per device) |
-| `connection/errors.rs` | `MtpConnectionError` enum with typed variants and `map_mtp_error()` from `mtp_rs::Error` |
-| `connection/event_loop.rs` | Background tokio task per device: polls `device.next_event()`, computes diffs, emits `directory-diff` events using the unified diff system |
-| `connection/directory_ops.rs` | `list_directory()` (with lock-contention logging), `resolve_path_to_handle()` (cache-only) |
-| `connection/file_ops.rs` | `download_file()`, `upload_file()`, `open_download_stream()`: emit `mtp-transfer-progress` Tauri events. `open_download_stream()` returns a `FileDownload` for streaming reads (used by `MtpReadStream` in `volume/mtp.rs`). |
-| `connection/mutation_ops.rs` | `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()`: no copy+delete fallback |
-| `connection/bulk_ops.rs` | `scan_for_copy()`: uses `Box::pin` for async recursion |
+| `connection/` | Per-device session layer: `MtpConnectionManager` singleton, connect / disconnect (with `MtpDisconnectReason` so logs and UI distinguish explicit toggle-off from hotplug-loss), event-loop task, list / read / write / mutate / bulk ops. See [`connection/CLAUDE.md`](connection/CLAUDE.md) for the file-by-file breakdown, lock semantics, caches, and gotchas. |
 | `virtual_device.rs` | Virtual MTP device for E2E testing; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Run with: `pnpm dev -- --features virtual-mtp` (pass `--worktree <slug>` first for an isolated data dir). |
 
 ## Architecture / data flow
@@ -72,15 +65,12 @@ It never orchestrates MTP connections.
 
 ## Key patterns and gotchas
 
-- **Device lock**: `Arc<tokio::sync::Mutex<MtpDevice>>` held for the entire USB I/O call (tokio's Mutex can be held across `.await` points, unlike `std::sync::Mutex`). Operations are serialized per device with a 30 s timeout (`MTP_TIMEOUT_SECS`). Holding the lock too long logs a warning.
-- **Cache-only path resolution**: `resolve_path_to_handle()` fails if the path has not appeared in a prior `list_directory()` call. There is no on-demand path walk.
 - **Write capability probe**: `probe_write_capability()` creates a hidden `.cmdr_write_probe` folder to detect cameras that advertise write support but reject writes at runtime (`StoreReadOnly`). Timeout or non-fatal errors are treated as writable (benefit of the doubt).
 - **Automatic ptpcamerad suppression**: on macOS, the watcher auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill -9` before connecting to MTP devices, and restores it when all devices disconnect or the app exits. On startup, `ensure_ptpcamerad_enabled()` runs to recover from a previous crash. If suppression fails, the existing `ExclusiveAccess` dialog serves as a manual fallback.
 - **ExclusiveAccess errors (fallback)**: when `ptpcamerad` claims a device despite suppression, `connect()` emits `mtp-exclusive-access-error` with the blocking process name (from `ioreg`) so the frontend can show a dialog with the workaround command. On Linux, the blocking process is reported as `None`.
 - **PermissionDenied errors (Linux)**: when `open_device()` fails with "permission denied" (missing udev rules), `connect()` emits `mtp-permission-error`. Frontend shows `MtpPermissionDialog` with a copyable udev install command. Rules file at `resources/99-cmdr-mtp.rules`.
-- **Async recursion**: all recursive operations in `bulk_ops.rs` use `Box::pin(async move { ... })`.
-- **Event loop shutdown**: uses a biased `tokio::select!` so the shutdown signal (broadcast channel) is always checked first.
 - **Volume IDs**: MTP storage volumes use `"{device_id}:{storage_id}"` (e.g., `"mtp-336592896:65537"`).
+- For session-level details (device lock, caches, cache-only path resolution, event-loop shutdown, async recursion), see [`connection/CLAUDE.md`](connection/CLAUDE.md).
 
 ## Cancel propagation (M2 of cancel-settled)
 
