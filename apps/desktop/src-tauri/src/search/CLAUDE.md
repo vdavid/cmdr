@@ -12,16 +12,7 @@ In-memory search index and AI-powered query translation for whole-drive file sea
 | `history.rs` | Persistent recent-searches store (`HistoryStore`, `HistoryEntry`). Atomic JSON read/write, canonical dedupe key, cap eviction, schema-version quarantine. Used by `commands::search::{get,add,remove,clear}_recent_search` and `apply_recent_searches_max_count`. |
 | `types.rs` | Pure data definitions: `SearchQuery`, `SearchResult`, `SearchResultEntry`, `ParsedScope`, `PatternType`, `default_limit`. No logic |
 | `query.rs` | Operations on the types: `parse_scope()`, `resolve_include_paths()` (DB pre-query), `fill_directory_sizes()` (DB post-query), `format_size()`, `format_timestamp()`, `summarize_query()`, `SYSTEM_DIR_EXCLUDES` |
-| `ai/mod.rs` | Re-exports from AI submodules |
-| `ai/prompt.rs` | `CLASSIFICATION_PROMPT` const and `build_classification_prompt()`. Instructs the LLM to extract structured key-value fields (keywords, type, time, size, scope, exclude, folders, note) |
-| `ai/parser.rs` | `ParsedLlmResponse` struct and `parse_llm_response()`. Key-value line parser with enum validation. `fallback_keywords()` for when LLM fails |
-| `ai/mappings/` | Directory module: pure LLM enum → value conversions, split by domain |
-| `ai/mappings/mod.rs` | Shared constants (`KB`, `MB`, `GB`, `KNOWN_EXTENSIONS`) + re-exports |
-| `ai/mappings/type_mapping.rs` | Type enum → filename regex pattern (with `include_system_dirs` flag) |
-| `ai/mappings/time_mapping.rs` | Time enum → (modified_after, modified_before) timestamps, date range parsing |
-| `ai/mappings/size_scope_mapping.rs` | Size enum → byte range, scope enum → search paths |
-| `ai/mappings/keyword_mapping.rs` | Keywords → glob/regex pattern, pattern merging with type filter, exclude parsing |
-| `ai/query_builder.rs` | Assembles `SearchQuery` from parsed LLM output by calling mapping functions. Also `iso_date_to_timestamp()` (used by MCP executor) and display/caveat generation |
+| `ai/` | Natural-language → `SearchQuery` translation: classification prompt, key-value parser, deterministic enum mappings, and assembler. See [`ai/CLAUDE.md`](ai/CLAUDE.md). |
 
 ## Data flow
 
@@ -49,23 +40,7 @@ types.rs defines  ->  query.rs prepares (resolve_include_paths)
 **Why**: `types.rs` is imported by everything (`engine.rs`, `query.rs`, `ai/`). Keeping it free of logic prevents circular dependencies and makes the data model easy to find.
 
 **Decision**: AI pipeline lives in `search::ai`, not `commands/`.
-**Why**: The parser, prompt, and query builder are search domain logic, not IPC concerns. `commands/search.rs` remains a thin IPC wrapper that calls into `search::ai`.
-
-**Decision**: AI uses key-value line output, not JSON.
-**Why**: JSON generation is the #1 failure mode for small LLMs (13% parse failure on 2B models). Key-value lines (`keywords: rymd\ntype: documents\ntime: recent`) are trivial to produce and parse. Missing lines = no filter. Malformed lines are individually skippable without losing the whole response.
-
-**Decision**: LLM classifies intent into enums, Rust computes values deterministically.
-**Why**: Even small (2B) LLMs understand natural language across languages and can map "last week" to the token `last_week`. But asking them to generate regex, compute ISO dates, or produce valid JSON fails ~60% of the time on local models. Separating classification (LLM) from computation (Rust) makes the pipeline reliable regardless of model size.
-
-**Decision**: The classification prompt also asks the LLM for a short `label:`.
-**Why**: When the user opens a search-results snapshot in a pane, the breadcrumb wants a short, human-friendly title
-("Big PDFs from this week") rather than the verbatim natural-language prompt. The LLM is already summarizing intent for
-the rest of the prompt fields; asking it for one more compact title is cheap and reliable, no extra round trip. Rust
-truncates to 40 characters and trims trailing punctuation; the frontend falls back to the original prompt when the
-field is missing (`build_label` returns `None`).
-
-**Decision**: Single LLM pass, no refinement.
-**Why**: The previous two-pass system (translate + refine) caused regressions ~15% of the time (over-narrowing, flag dropping). With deterministic structure, there's nothing to refine. Also halves LLM latency.
+**Why**: The parser, prompt, and query builder are search domain logic, not IPC concerns. `commands/search.rs` remains a thin IPC wrapper that calls into `search::ai`. AI-pipeline-internal decisions (key-value vs. JSON, classify-vs-compute, label field, single-pass) live in [`ai/CLAUDE.md`](ai/CLAUDE.md).
 
 ## Sharing with `selection/`
 
