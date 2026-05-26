@@ -302,45 +302,9 @@ Inline rename with validation, conflict resolution, and an extension change conf
 
 ## Pane (`pane/`)
 
-Core explorer UI components:
-
-- **DualPaneExplorer.svelte**: root component; manages both panes, unified key/command handlers, MCP exports
-- **FilePane.svelte**: single pane (navigation, listing, cursor, selection, view mode)
-- **DialogManager.svelte**: renders all modal dialogs (transfer, delete, rename, new-folder, etc.)
-- **FunctionKeyBar.svelte**: F1–F10 bar at the bottom of the window
-- **MtpConnectionView.svelte** / **NetworkMountView.svelte**: placeholder panes for MTP/network mount states
-- **PaneResizer.svelte**: drag handle between the two panes
-- **ErrorPane.svelte**: unified error display for listing failures. See [Error display](#error-display) below.
-- **VolumeUnreachableBanner.svelte**: shown when a tab's volume resolution timed out at startup (retry + open home), and
-  also when the SMB reconnect manager has given up after exhausting its backoff cycle (retry + disconnect, `smbGaveUp`
-  variant)
-- **SmbReconnectingView.svelte**: shown while the per-volume SMB reconnect cycle is running (waiting/attempting).
-  Spinner + progress bar for the current backoff window + dynamic body text. Three actions: Retry now / Cancel /
-  Disconnect. Driven by `smb-reconnect-manager.svelte.ts` in `network/`.
-- **selection-state.svelte.ts**: reactive selection set (indices) with range/toggle helpers
-- **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts**: pure logic extracted from
-  DualPaneExplorer
-- **initialization.ts**: startup logic (load persisted tabs + app status, resolve volumes, apply E2E overrides, create
-  tab managers)
-- **index-events.ts**: throttled index-dir-updated handler with macOS `/private/` symlink resolution
-- **dialog-state.svelte.ts**: dialog state and handlers (transfer, delete/trash, new folder, alert, error) extracted
-  from DualPaneExplorer via factory pattern. `TransferErrorPropsData` carries an optional `FriendlyError` (from the
-  backend `write-error` event payload) alongside the typed `WriteOperationError`;
-  `handleTransferError(error, friendly?)` accepts both and stores them so the rendered dialog (see
-  `file-operations/CLAUDE.md`) can prefer the backend copy.
-- **rename-flow.svelte.ts**: rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
-- **type-to-jump-state.svelte.ts** / **TypeToJumpIndicator.svelte**: type-to-jump factory + the "Jump: …" chip. See
-  [Type-to-jump](#type-to-jump) below.
-- **volume-tint.svelte.ts**: per-pane background tinting by volume kind (local / SMB / MTP). Reads
-  `appearance.tint{Local,Smb,Mtp}` reactively, returns either a `color-mix(in oklch, ...)` expression (modern WebKit) or
-  a precomputed sRGB hex string (Safari < 16.2, common on macOS 12 Monterey). The branch is picked once at module load
-  via `hasColorMix` from `$lib/utils/webkit-compat.ts`. On the old-WebKit branch, a `mediaTick` `$state` re-fires
-  `$derived` callers when `prefers-color-scheme` / `prefers-contrast` flips, since CSS no longer re-evaluates the string
-  at paint time. `FilePane.svelte` applies the result as inline `background-color`. Mix share flows through
-  `--pane-tint-{bg,fg}-pct` so dark mode and `prefers-contrast: more` can each dial it up without re-evaluating the
-  helper. Live-tuned matrix: 10% (light), 15% (light AAA), 15% (dark), 25% (dark AAA) — dark needs more because there's
-  less luminance headroom against `#1e1e1e`. Pure classifier `volumeKindFor` is unit-tested separately in
-  `volume-tint.test.ts`.
+`DualPaneExplorer` + `FilePane` + dialog manager + per-pane state (selection, type-to-jump, rename flow, volume tint).
+See [`pane/CLAUDE.md`](pane/CLAUDE.md) for the full file map, conventions, and gotchas. Cross-references below
+(type-to-jump, live disk space, error display) point into the same subsystem.
 
 ### Type-to-jump
 
