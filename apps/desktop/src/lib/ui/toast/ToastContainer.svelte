@@ -21,6 +21,7 @@
                 dismissal={toast.dismissal}
                 timeoutMs={toast.timeoutMs}
                 closeTooltip={toast.closeTooltip}
+                contentProps={toast.props}
                 onTimeout={dismissToast}
                 onUserDismiss={handleUserDismiss}
             />

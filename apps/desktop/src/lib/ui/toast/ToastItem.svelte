@@ -12,13 +12,30 @@
         dismissal: ToastDismissal
         timeoutMs: number
         closeTooltip?: string
+        /**
+         * Props forwarded to a component-shaped `content`. Merged with the
+         * toast id under `toastId` so the content component can self-dismiss
+         * without a module-state bridge. Ignored for string content.
+         */
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors ToastOptions.props
+        contentProps?: Record<string, any>
         /** Called when the auto-dismiss timer fires for transient toasts. */
         onTimeout: (id: string) => void
         /** Called when the user clicks the X button or the inline action. */
         onUserDismiss: (id: string) => void
     }
 
-    const { id, content, level, dismissal, timeoutMs, closeTooltip, onTimeout, onUserDismiss }: Props = $props()
+    const {
+        id,
+        content,
+        level,
+        dismissal,
+        timeoutMs,
+        closeTooltip,
+        contentProps,
+        onTimeout,
+        onUserDismiss,
+    }: Props = $props()
 
     // Auto-dismiss timer plus hover-pause bookkeeping.
     //
@@ -144,7 +161,15 @@
             {/if}
         {:else}
             {@const ContentComponent = content}
-            <ContentComponent />
+            {#if contentProps}
+                <!-- Component toasts that opt into the prop-forwarding shape get
+                     the toast id appended for self-dismiss. Existing toasts that
+                     don't pass `props` to `addToast` keep their zero-prop shape so
+                     they don't see Svelte's unknown-prop warning. -->
+                <ContentComponent {...contentProps} toastId={id} />
+            {:else}
+                <ContentComponent />
+            {/if}
         {/if}
     </div>
     <button
