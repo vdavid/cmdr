@@ -25,7 +25,9 @@
     import { createViewerScroll } from './viewer-scroll.svelte'
     import { createTextWidthTracker } from './viewer-text-width.svelte'
     import { createIndexingPoll } from './viewer-indexing-poll'
-    import { handleNavigationKey, handleSearchToggleKey, handleToggleKey } from './viewer-keyboard'
+    import { handleNavigationKey, handleSearchToggleKey, handleTailToggleKey, handleToggleKey } from './viewer-keyboard'
+    import { createViewerTail } from './viewer-tail.svelte'
+    import { flush as flushTailPersistence, getLastTailMode, setLastTailMode } from './viewer-tail-persistence'
     import {
         createViewerSelection,
         describeSelectionForAt,
@@ -77,6 +79,14 @@
     let encodingChoices = $state<EncodingChoice[]>([])
     let viewMode = $state<'text'>('text')
 
+    /**
+     * Tail mode: when on, the open viewport auto-follows newly appended bytes.
+     * When off, the watcher's `viewer:file-changed` event surfaces a persistent
+     * reload toast. The setting persists per file path (SHA-256 truncated) so
+     * a log the user tailed yesterday opens tailed today.
+     */
+    let tailMode = $state(false)
+
     // Derive current mode: if we started with byteSeek but now have totalLines, we upgraded to lineIndex
     const currentMode = $derived(backendType === 'byteSeek' && totalLines !== null ? 'lineIndex' : backendType)
 
@@ -88,6 +98,44 @@
             if (tl !== null) totalLines = tl
         },
     })
+
+    const viewerTail = createViewerTail({
+        getSessionId: () => sessionId,
+        getTailMode: () => tailMode,
+        onAppendDetected: () => {
+            // Tail mode is on: the backend already extended its index in
+            // response to the watcher event. Refetch the visible window so the
+            // user sees the new bytes immediately.
+            scroll.lineCache.clear()
+            scroll.fetchVisibleNow()
+        },
+    })
+
+    /**
+     * Flip the tail-mode flag, push the new value down to the backend, and
+     * persist it for next time we open this file. Calling without a sessionId
+     * (during startup) is a no-op.
+     */
+    async function toggleTailMode(): Promise<void> {
+        if (!sessionId) return
+        const next = !tailMode
+        tailMode = next
+        try {
+            const res = await commands.viewerSetTailMode(sessionId, next)
+            if (res.status === 'error') {
+                log.warn('viewer_set_tail_mode failed: {error}', { error: res.error })
+                tailMode = !next
+                return
+            }
+        } catch (e) {
+            log.warn('viewer_set_tail_mode threw: {error}', { error: String(e) })
+            tailMode = !next
+            return
+        }
+        if (filePath) {
+            void setLastTailMode(filePath, next).catch(() => {})
+        }
+    }
 
     // Window lifecycle state: prevents closing before WebKit is fully initialized
     let windowReady = $state(false)
@@ -700,6 +748,21 @@
         return false
     }
 
+    /**
+     * Routes unmodified single-letter and navigation keys to their handler.
+     * Split out from `handleKeyDown` to keep the latter's cyclomatic
+     * complexity below the project lint threshold.
+     */
+    function handleBareKey(e: KeyboardEvent): boolean {
+        return (
+            handleTailToggleKey(e, () => {
+                void toggleTailMode()
+            }) ||
+            handleToggleKey(e, toggleWordWrap) ||
+            handleNavigationKey(e.key, scroll)
+        )
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
         const searchInputFocused = search.searchVisible && document.activeElement === search.searchInputRef
 
@@ -735,9 +798,7 @@
 
         if (searchInputFocused) return
 
-        if (handleToggleKey(e, toggleWordWrap) || handleNavigationKey(e.key, scroll)) {
-            e.preventDefault()
-        }
+        if (handleBareKey(e)) e.preventDefault()
     }
 
     async function setupMcpListeners(myFilePath: string) {
@@ -799,6 +860,23 @@
 
         if (result.isIndexing) {
             indexingPoll.start()
+        }
+
+        // Subscribe to the watcher event stream first, then apply persisted
+        // tail mode (which may also push the flag into the backend).
+        await viewerTail.init()
+        try {
+            const persisted = await getLastTailMode(path)
+            if (persisted === true) {
+                tailMode = true
+                const res = await commands.viewerSetTailMode(result.sessionId, true)
+                if (res.status === 'error') {
+                    log.warn('persisted tail-on failed: {error}', { error: res.error })
+                    tailMode = false
+                }
+            }
+        } catch (e) {
+            log.warn('reading persisted tail mode failed: {error}', { error: String(e) })
         }
 
         scroll.lineCache.clear()
@@ -952,6 +1030,8 @@
         search.destroy()
         scroll.destroy()
         indexingPoll.stop()
+        viewerTail.destroy()
+        void flushTailPersistence().catch(() => {})
     })
 </script>
 
@@ -995,6 +1075,20 @@
                 disabled={isIndexing}
                 onChange={(enc) => void handleEncodingChange(enc)}
             />
+            <button
+                type="button"
+                class="viewer-toolbar-toggle"
+                class:active={tailMode}
+                role="switch"
+                aria-checked={tailMode}
+                aria-label="Tail mode: follow file changes"
+                onclick={() => {
+                    void toggleTailMode()
+                }}
+                use:tooltip={{ text: 'Auto-follow file changes', shortcut: 'F' }}
+            >
+                Tail
+            </button>
             {#if isIndexing}
                 <span class="viewer-toolbar-indexing" role="status" aria-live="polite">Reindexing…</span>
             {/if}
@@ -1226,7 +1320,9 @@
                 >wrap</span
             >
         {/if}
-        <span class="shortcut-hint">W wrap &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span>
+        <span class="shortcut-hint"
+            >W wrap &middot; F tail &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span
+        >
     </div>
 </main>
 
@@ -1371,6 +1467,35 @@
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
         font-style: italic;
+    }
+
+    /* Tail toggle: same chrome as the search-bar toggles, sized for the toolbar. */
+    .viewer-toolbar-toggle {
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-sm);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- compact toolbar button */
+        padding: 2px 10px;
+        line-height: 1.4;
+        transition: all var(--transition-base);
+    }
+
+    .viewer-toolbar-toggle:hover {
+        background: var(--color-bg-secondary);
+    }
+
+    .viewer-toolbar-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
+    .viewer-toolbar-toggle.active {
+        background: var(--color-accent-subtle);
+        border-color: var(--color-accent);
+        color: var(--color-accent-text);
     }
 
     .search-bar {

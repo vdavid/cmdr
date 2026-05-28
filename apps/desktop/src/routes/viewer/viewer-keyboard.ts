@@ -40,6 +40,19 @@ export function handleToggleKey(e: KeyboardEvent, toggleWordWrap: () => void): b
   return false
 }
 
+/**
+ * Handles the tail-mode toggle on the unmodified `F` key. Returns true if
+ * handled. Gated on no modifier so it can't collide with `⌘F` (open search)
+ * or other chords.
+ */
+export function handleTailToggleKey(e: KeyboardEvent, toggleTailMode: () => void): boolean {
+  if (e.key.toLowerCase() === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+    toggleTailMode()
+    return true
+  }
+  return false
+}
+
 interface SearchToggleActions {
   toggleUseRegex: () => void
   toggleCaseSensitive: () => void
