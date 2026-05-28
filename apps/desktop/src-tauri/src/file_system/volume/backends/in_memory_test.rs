@@ -136,6 +136,29 @@ async fn test_create_file_then_exists() {
 }
 
 #[tokio::test]
+async fn test_create_file_does_not_clobber_existing() {
+    // Regression for the high-severity audit finding: `create_file` is a
+    // no-overwrite contract. The InMemoryVolume must reject collisions so
+    // tests that stand in for real backends don't mask the bug.
+    let volume = InMemoryVolume::new("Test");
+
+    volume
+        .create_file(Path::new("/notes.txt"), b"important user data")
+        .await
+        .unwrap();
+
+    let result = volume.create_file(Path::new("/notes.txt"), b"").await;
+
+    assert!(
+        matches!(result, Err(VolumeError::AlreadyExists(_))),
+        "expected AlreadyExists, got {:?}",
+        result
+    );
+    let metadata = volume.get_metadata(Path::new("/notes.txt")).await.unwrap();
+    assert_eq!(metadata.size, Some(19), "original file bytes must survive");
+}
+
+#[tokio::test]
 async fn test_create_directory_then_exists() {
     let volume = InMemoryVolume::new("Test");
 

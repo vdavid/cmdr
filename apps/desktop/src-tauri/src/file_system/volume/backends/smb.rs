@@ -1314,6 +1314,27 @@ impl Volume for SmbVolume {
 
             {
                 let (tree, mut conn) = self.clone_session().await?;
+                // No-clobber contract. The smb2 0.11 public API only exposes
+                // file writers backed by `FileOverwriteIf` disposition (no
+                // exclusive `FileCreate` for files), so we do a pre-flight
+                // stat. There's a brief TOCTOU window between stat and write
+                // where a third party can create the same path; we accept it
+                // because the alternative (silently truncating the user's
+                // file when the listing-cache pre-check races) is worse, and
+                // because the realistic attack window is microseconds on the
+                // same SMB session. The truly atomic fix needs an smb2 crate
+                // release that exposes an exclusive-create writer.
+                match tree.stat(&mut conn, &smb_path).await {
+                    Ok(_) => {
+                        return Err(VolumeError::AlreadyExists(path.display().to_string()));
+                    }
+                    Err(e) if e.kind() == smb2::ErrorKind::NotFound => {
+                        // Expected: file doesn't exist, fall through to write.
+                    }
+                    Err(e) => {
+                        return Err(map_smb_error(e));
+                    }
+                }
                 let result = tree.write_file(&mut conn, &smb_path, &data).await;
                 self.handle_smb_result("create_file", result)?;
             }
@@ -2828,6 +2849,41 @@ mod tests {
         assert_eq!(entries[0].name, "test.txt");
 
         // Clean up
+        vol.delete(Path::new(&file_path)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
+    }
+
+    /// Regression for the high-severity audit finding: `create_file` is a
+    /// no-overwrite contract. Pre-fix, SMB delegated to `tree.write_file`
+    /// which uses `FileOverwriteIf` disposition and silently truncated.
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_create_file_does_not_clobber_existing() {
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+        let file_path = format!("{}/notes.txt", dir);
+        let original = b"important user data";
+        vol.create_file(Path::new(&file_path), original).await.unwrap();
+
+        // Second create on the same path must fail with AlreadyExists;
+        // bytes on the wire must be unchanged.
+        let result = vol.create_file(Path::new(&file_path), b"junk").await;
+        assert!(
+            matches!(result, Err(VolumeError::AlreadyExists(_))),
+            "expected AlreadyExists, got {:?}",
+            result
+        );
+
+        let mut readback = vol.open_read_stream(Path::new(&file_path)).await.unwrap();
+        let mut bytes = Vec::new();
+        while let Some(Ok(chunk)) = readback.next_chunk().await {
+            bytes.extend_from_slice(&chunk);
+        }
+        assert_eq!(bytes, original, "original bytes must survive a colliding create_file");
+
         vol.delete(Path::new(&file_path)).await.unwrap();
         vol.delete(Path::new(&dir)).await.unwrap();
     }

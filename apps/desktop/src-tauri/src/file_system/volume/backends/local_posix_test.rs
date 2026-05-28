@@ -203,6 +203,39 @@ async fn test_rename_force_overwrites() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
+#[tokio::test]
+async fn test_create_file_does_not_clobber_existing() {
+    // Regression for the high-severity audit finding: `create_file` is a
+    // no-overwrite contract; the IPC layer maps `AlreadyExists` to a friendly
+    // "file already exists" error. Switching to a truncating write here loses
+    // the user's data when the listing-cache pre-check race fails.
+    use std::fs;
+
+    let test_dir = std::env::temp_dir().join("cmdr_create_file_no_clobber_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let volume = LocalPosixVolume::new("Test", &test_dir);
+    let target = test_dir.join("notes.txt");
+
+    fs::write(&target, "important user data").unwrap();
+
+    let result = volume.create_file(Path::new("notes.txt"), b"").await;
+
+    assert!(
+        matches!(result, Err(VolumeError::AlreadyExists(_))),
+        "expected AlreadyExists, got {:?}",
+        result
+    );
+    assert_eq!(
+        fs::read_to_string(&target).unwrap(),
+        "important user data",
+        "original file contents must survive a colliding create_file"
+    );
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
 // ============================================================================
 // Symlink edge case tests
 // ============================================================================

@@ -287,6 +287,10 @@ impl Volume for InMemoryVolume {
 
             let normalized = self.normalize(path);
 
+            if entries.contains_key(&normalized) {
+                return Err(VolumeError::AlreadyExists(normalized.display().to_string()));
+            }
+
             let name = normalized
                 .file_name()
                 .map(|s| s.to_string_lossy().to_string())

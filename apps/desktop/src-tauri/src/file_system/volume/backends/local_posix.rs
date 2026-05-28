@@ -287,8 +287,18 @@ impl Volume for LocalPosixVolume {
         }
         let content = content.to_vec();
         Box::pin(async move {
-            spawn_blocking(move || {
-                std::fs::write(&abs_path, content)?;
+            spawn_blocking(move || -> Result<(), VolumeError> {
+                use std::io::Write;
+                // `create_new(true)` is the no-clobber contract the IPC layer
+                // and frontend assume: an `AlreadyExists` errno surfaces as
+                // `VolumeError::AlreadyExists`, which the New File command
+                // maps to a friendly "already exists" error. A plain
+                // `std::fs::write` would silently truncate the user's file.
+                let mut file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&abs_path)?;
+                file.write_all(&content)?;
                 Ok(())
             })
             .await
