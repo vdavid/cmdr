@@ -127,9 +127,7 @@ test.describe('File viewer tail mode', () => {
     // Before the upgrade finishes the status bar omits the line count span
     // entirely (status-bar template: `{#if totalLines !== null}`); the upgrade
     // for a 1.2 MB file is fast but not synchronous.
-    await expect
-      .poll(async () => await statusLines(), { timeout: 8000 })
-      .not.toBeNull()
+    await expect.poll(async () => await statusLines(), { timeout: 8000 }).not.toBeNull()
     const initialLines = await statusLines()
     expect(initialLines).not.toBeNull()
     expect(initialLines).toBeGreaterThan(0)
