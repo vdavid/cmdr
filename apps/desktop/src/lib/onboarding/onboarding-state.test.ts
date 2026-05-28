@@ -168,7 +168,8 @@ describe('menu / palette re-entry always opens step 1 on macOS', () => {
     // openWizard a second time. The counter MUST be reset; otherwise the new wizard
     // instance's `$effect` (which starts with `lastSeenFinishTick = 0`) would fire
     // `onComplete()` immediately on first observation, and the wizard would visibly
-    // never appear on menu / palette re-entry. Regression for M5 Playwright failure.
+    // never appear on menu / palette re-entry. Regression guard for a Playwright failure
+    // that surfaced when the counter wasn't being reset between wizard mounts.
     openWizard('menu', ctxMac({ fullDiskAccessChoice: 'allow', isOnboarded: true, hasFda: true }))
     expect(getOnboardingState().finishRequestTick).toBe(0)
   })

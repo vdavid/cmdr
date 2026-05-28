@@ -98,7 +98,7 @@ Each entry stores `{ tab, originalIndex }` where `tab` is a `$state.snapshot` of
 `closeOtherTabsRecording` pushes closed tabs in right-to-left order (rightmost first). Popping in reverse and
 re-inserting at `originalIndex` restores the exact pre-close arrangement.
 
-**Search-results snapshot refs (M8a)**: the closed-tab stack also carries snapshot-ref obligations for any
+**Search-results snapshot refs**: the closed-tab stack also carries snapshot-ref obligations for any
 `search-results://<id>` paths in the closed tab's history. The model is "transfer on close, release on eviction":
 
 - `closeTabRecording` / `closeOtherTabsRecording` do **not** decrement snapshot refs when they push the closed tab onto
@@ -112,7 +112,7 @@ re-inserting at `originalIndex` restores the exact pre-close arrangement.
 
 The bookkeeping is concentrated in `tab-state-manager.svelte.ts`'s
 `transferSnapshotRefs(closedTab, 'transfer' | 'release')` helper, called once at each transition. See
-`lib/search/CLAUDE.md` § "Snapshot store (M8a, §3.7)" for the broader picture.
+`lib/search/CLAUDE.md` § "Snapshot store" for the broader picture.
 
 The Tab menu's "Reopen closed tab" item enables/disables based on the focused pane's stack via the
 `set_reopen_closed_tab_enabled` Tauri command (mirrors the `update_pin_tab_menu` pattern). Frontend pushes the state

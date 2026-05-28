@@ -1,6 +1,5 @@
 /**
- * Round 2 D10 / D11: pins the pure helpers driving the grid-style Size and Modified
- * filter popovers.
+ * Pins the pure helpers driving the grid-style Size and Modified filter popovers.
  */
 import { describe, it, expect } from 'vitest'
 import {

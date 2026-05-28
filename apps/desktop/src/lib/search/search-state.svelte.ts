@@ -1,20 +1,18 @@
 /**
- * Façade over the M2 core/extras split.
- *
- * Before M2 this file was a 713-line module-singleton. M2 carved it into:
+ * Façade over the cross-consumer core + Search-only extras split:
  *   - `lib/query-ui/query-filter-state.svelte.ts`: the cross-consumer core
  *     (factory `createQueryFilterState`).
  *   - `lib/search/search-extras-state.svelte.ts`: Search-only fields
  *     (factory `createSearchExtrasState`).
  *   - `lib/search/build-search-query.ts`: the `SearchQuery` IPC payload builder.
  *
- * This file instantiates one of each and re-exports the legacy named-function API
- * so the ~15 Search call sites work unchanged during the rest of the milestones.
- * The intention is a transparent passthrough: no branching, no shape adaptation,
- * just delegation. M3 will rename the call sites to use the instances directly.
+ * This file instantiates one of each and re-exports a flat named-function API so
+ * the Search call sites stay shallow. Transparent passthrough: no branching, no
+ * shape adaptation, just delegation.
  *
- * The `recordAiTranslation({pattern, kind, label})` shape is preserved here as a
- * convenience that fans out to `core.recordAiTranslation({pattern, kind})` and
+ * The `recordAiTranslation({pattern, kind, label})` shape is the one place this
+ * façade fans a single call out across both factories: it forwards to
+ * `core.recordAiTranslation({pattern, kind})` and
  * `extras.recordAiPatternAndLabel({pattern, kind, label})`. The Selection wrapper
  * calls only the core directly and never reaches this file.
  */
@@ -171,13 +169,13 @@ export const setExcludeSystemDirs = (v: boolean): void => {
   extras.setExcludeSystemDirs(v)
 }
 
-// Dialog lifecycle (core) — note: SearchDialog reaches `searchQueryState` directly for
-// `setRunOnMount` etc. since M4. The legacy named exports are gone; the few call sites
-// that still need lastDialogEvent / runOnMount go through the underlying core instance.
+// Dialog lifecycle: SearchDialog reaches `searchQueryState` directly for `setRunOnMount`
+// etc. The few call sites that need lastDialogEvent / runOnMount go through the
+// underlying core instance.
 
 /**
- * Records an AI translation. The legacy single-call API fans out across the M2
- * split: `core.recordAiTranslation` updates the matching hand-typed buffer;
+ * Records an AI translation. Fans a single call out across the core + extras split:
+ * `core.recordAiTranslation` updates the matching hand-typed buffer;
  * `extras.recordAiPatternAndLabel` updates Search's Pattern chip + label slots.
  * Selection's wrapper bypasses this façade and calls only `core.recordAiTranslation`.
  */

@@ -1,8 +1,8 @@
 # Error reporter
 
 Builds a privacy-redacted zip bundle of recent log files plus a JSON manifest, then (in
-prod) ships it to `POST /error-report` on the api server. Used by the user-initiated
-"Send error report" flow in Phase 4 and the auto-send flow in Phase 5.
+prod) ships it to `POST /error-report` on the api server. Used by both the user-initiated
+"Send error report" flow and the opt-in auto-send flow.
 
 ## Convention
 
@@ -29,7 +29,7 @@ Manifest fields (`BundleManifest`):
   validates the shape and uses this id as-is. The trailing UUID in the R2 key
   guarantees object uniqueness, so there's no server-side regeneration. The UI shows
   the same id everywhere (dialog preview, toast, server response).
-- `kind`: `"user"` or `"auto"` (Phase 5).
+- `kind`: `"user"` (user-initiated send) or `"auto"` (opt-in auto-send).
 - `buildMode`: `"release"` or `"debug"`. Resolved at compile time from
   `cfg!(debug_assertions)` via `BuildMode::current()`. Forwarded to the api server so the
   Discord notification embed prefixes the title with `[DEV]` for debug-build reports,

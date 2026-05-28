@@ -128,12 +128,13 @@ export const commands = {
          */
         recursiveHasSymlinks: boolean | null
         /**
-         *  When set on a virtual entry, the frontend navigates to this path
-         *  instead of treating the entry as a normal directory listing.
-         *  Inert until M3 wires it for `worktrees/` and `submodules/`. Lives on
-         *  the schema from M1 so M3 doesn't have to ripple a change through every
-         *  consumer (frontend list views, MCP `cmdr://state`, drag-drop, copy
-         *  preview, Brief/Full renderers).
+         *  When set on a virtual entry, the frontend navigates to this path instead
+         *  of treating the entry as a normal directory listing. Currently set on
+         *  `worktrees/` and `submodules/` entries inside the git portal so they
+         *  open their working dir directly. The field lives on the base
+         *  `FileEntry` schema so every consumer (frontend list views, MCP
+         *  `cmdr://state`, drag-drop, copy preview, Brief/Full renderers) carries
+         *  it for free.
          */
         redirectToPath: string | null
         /**
@@ -594,9 +595,9 @@ export const commands = {
   unsubscribeGitState: (repoRoot: string) => __TAURI_INVOKE<void>('unsubscribe_git_state', { repoRoot }),
   /**
    *  Returns the per-entry status for a worktree. The `dir` argument scopes the
-   *  caller's interest; today gix returns the whole worktree and the frontend
-   *  filters, but the parameter is here so M2 can scope properly without an IPC
-   *  shape change.
+   *  caller's interest; gix currently returns the whole worktree and the
+   *  frontend filters, but the parameter is here so the backend can start
+   *  scoping properly without an IPC shape change.
    */
   getGitStatusForPaths: (repoRoot: string, dir: string) =>
     __TAURI_INVOKE<TimedOut<EntryStatus[]>>('get_git_status_for_paths', { repoRoot, dir }),
@@ -2358,12 +2359,13 @@ export type FileEntry = {
    */
   recursiveHasSymlinks: boolean | null
   /**
-   *  When set on a virtual entry, the frontend navigates to this path
-   *  instead of treating the entry as a normal directory listing.
-   *  Inert until M3 wires it for `worktrees/` and `submodules/`. Lives on
-   *  the schema from M1 so M3 doesn't have to ripple a change through every
-   *  consumer (frontend list views, MCP `cmdr://state`, drag-drop, copy
-   *  preview, Brief/Full renderers).
+   *  When set on a virtual entry, the frontend navigates to this path instead
+   *  of treating the entry as a normal directory listing. Currently set on
+   *  `worktrees/` and `submodules/` entries inside the git portal so they
+   *  open their working dir directly. The field lives on the base
+   *  `FileEntry` schema so every consumer (frontend list views, MCP
+   *  `cmdr://state`, drag-drop, copy preview, Brief/Full renderers) carries
+   *  it for free.
    */
   redirectToPath: string | null
   /**

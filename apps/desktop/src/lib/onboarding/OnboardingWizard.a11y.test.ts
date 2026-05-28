@@ -1,13 +1,13 @@
 /**
- * Tier 3 axe-based a11y tests for the M2 onboarding wizard.
+ * Tier 3 axe-based a11y tests for the onboarding wizard.
  *
  * Asserts axe-clean structure for each reachable wizard state. Step 1 has three variants
  * (first-ask, revoked, already-granted) and two footer modes (decide, restart); we exercise
- * the ones that change visible structure. Steps 2 and 3 are still stubs (M3/M4 ship them),
- * so we only assert their default a11y shape.
+ * the ones that change visible structure. Step 2 and step 3 a11y live in their own files
+ * alongside the per-step components.
  *
  * Focus trap + Escape-swallowing behaviour live in `OnboardingWizard.test.ts`. Per-step
- * a11y lives in `StepFda.a11y.test.ts` (M2) and the step-2/3 a11y files (M3/M4).
+ * a11y lives in `StepFda.a11y.test.ts`, `StepAi.a11y.test.ts`, and `StepOptional.a11y.test.ts`.
  */
 
 import { describe, it, vi, afterEach } from 'vitest'

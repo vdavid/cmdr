@@ -1,5 +1,5 @@
 /**
- * Behavior tests for `SelectionDialog.svelte` (M7).
+ * Behavior tests for `SelectionDialog.svelte`.
  *
  * Pins the wrapper's contract: title-per-mode, commit-on-Enter, ⌘N reset,
  * mode-switch buffer preservation, recent-selections wiring, and the mid-dialog
@@ -358,7 +358,7 @@ describe('SelectionDialog', () => {
     cleanup()
   })
 
-  it('a second AI run does not let a leftover buffer from the first run shadow the new pattern (M10)', async () => {
+  it('a second AI run does not let a leftover buffer from the first run shadow the new pattern', async () => {
     // Regression: Selection's `buildMatchQuery` in AI mode reads from
     // `handTyped.regex` first, then `handTyped.filename`. Without the wrapper
     // clearing the "other kind"'s buffer on each AI run, a prior AI run's regex
@@ -430,7 +430,7 @@ describe('SelectionDialog', () => {
     cleanup()
   })
 
-  it('drops the synthetic `..` parent entry from matches even when the pattern matches it (M10)', async () => {
+  it('drops the synthetic `..` parent entry from matches even when the pattern matches it', async () => {
     // The regular pane's snapshot prepends a synthetic `..` entry at index 0
     // (FilePane.getEntriesSnapshot when `hasParent`). `applyIndices` already
     // skips index 0 on commit, but the dialog's preview must also drop it so

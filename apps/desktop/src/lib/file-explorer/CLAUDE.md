@@ -35,14 +35,14 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **".." entry can't be selected**: keyboard fills from `..` default to "select" (so Shift+End from `..` selects).
 - **Cleared on navigation**: selection is per-directory
 
-### Select files / Deselect files dialog (M7)
+### Select files / Deselect files dialog
 
 A modal that lets the user select by a glob, regex, or natural-language prompt against the focused pane's listing.
 Mounts via `+page.svelte`. Snapshot of entries + cursor is captured ONCE at open via
 `explorerRef.getFocusedPaneEntries()`; mid-dialog focused-pane changes do NOT re-snapshot. The dialog hands matched
 indices to `explorerRef.applyIndicesToFocusedPane(indices, mode)` on commit (`mode === 'add'` for select, `'remove'` for
 deselect). See [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md) for the wiring, match semantics, AI
-fallback contract, and the snapshot-pane note (R7).
+fallback contract, and the snapshot-pane note.
 
 ### Implementation
 
@@ -55,7 +55,7 @@ fallback contract, and the snapshot-pane note (R7).
 - **`applyIndices(idxs, mode, hasParent)`**: bulk add/remove without disturbing the range anchor/end state. Skips `..`
   per `hasParent`, same rule as `selectAll`. Fires `onChanged?.()` exactly once per call. Exposed on `FilePane` as
   `applyIndices(idxs, mode)` and on `DualPaneExplorer` as `applyIndicesToFocusedPane(idxs, mode)`, which the Selection
-  dialog (M7, see [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md)) calls at commit time.
+  dialog (see [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md)) calls at commit time.
 - **Visual**: three-tier `--color-selection-fg` cascade (red, Total-Commander-style):
   - `--color-selection-fg-primary` (strong red — `#cc0000` light, `#ff4040` dark) applies on the selection bg.
   - `--color-selection-fg-cursor` (`#b80808` / `#ff8c8c`) takes over when the row is also under the cursor
@@ -216,7 +216,7 @@ DualPaneExplorer extensions:
   `'search-results'` (with prefix `search-results://`). The two namespaces are uniformly opaque to `isPathOnVolume`.
 - `openSearchSnapshotInPane(snapshotId, pane?)` is the public entry point the SearchDialog calls (via +page.svelte's
   `handleOpenSearchInPane`). It routes through `handleVolumeChange(pane, 'search-results', url, url)` so pushed history
-  entries flow through `pushHistoryEntry`, which increments the snapshot refcount via the M8a integration.
+  entries flow through `pushHistoryEntry`, which increments the snapshot refcount via the snapshot-store integration.
 
 Breadcrumb: `VolumeBreadcrumb` recognises `volumeId === 'search-results'` and reads the friendly label from
 `getSnapshot(id).label` (with "Search" as fallback). The label itself is the snapshot's `label` field, which the search
@@ -224,10 +224,11 @@ dialog builds via `snapshot-label.ts::buildSnapshotLabel`: AI mode prefers the L
 `TranslateResult.label`), filename mode shows the pattern (`*.pdf`), regex mode wraps it in slashes (`/pattern/`).
 FilePane suppresses the trailing path segments entirely for search-results panes — the label IS the breadcrumb.
 
-Source-side operations (M8d): selection works in the snapshot pane (Space, Insert, Shift+click range, Cmd+click toggle,
-Cmd+A / Cmd+Shift+A). `effectiveTotalCount` returns the snapshot's entry count so range selection spans the result set.
+Source-side operations on the snapshot pane: selection works in the snapshot pane (Space, Insert, Shift+click range,
+Cmd+click toggle, Cmd+A / Cmd+Shift+A). `effectiveTotalCount` returns the snapshot's entry count so range selection
+spans the result set.
 
-Round 2 P-series keyboard contract: `FilePane.handleSearchResultsKeyDown` routes through the pure
+Keyboard contract: `FilePane.handleSearchResultsKeyDown` routes through the pure
 `pane/search-results-keys.ts::computeSearchPaneKeyAction` helper, which translates each keypress into an action enum
 (`move-cursor`, `open-cursor`, `toggle-selection-at-cursor`, `toggle-selection-and-advance`, `view-file`, `edit-file`,
 `noop`). Splitting dispatch from side effects keeps the keyboard contract unit-testable without spinning up the whole
@@ -235,39 +236,37 @@ pane. Covered: PgUp / PgDn (visible-page step), Home / End, Shift+Up / Shift+Dow
 toggle-and-fill helper the regular pane uses), Space (toggle), Insert (toggle + advance), F3 (view), F4 (edit). Left /
 Right return `noop` (no parent-folder semantics in a flat snapshot; the caller still calls `preventDefault` so the
 regular full-pane handler can't jump to first / last row underneath). Cmd+A flows through the unified command dispatch
-in `command-dispatch.ts` as before.
+in `command-dispatch.ts`.
 
-Round 2 P6 fix: `hasParent` now `false` for `search-results` panes. Previously the path comparison
-`currentPath !== effectiveVolumeRoot` was true (a `search-results://sr-N` URL never matches a real volume root), so
-`selection.selectAll(hasParent=true, ...)` skipped index 0. Setting `hasParent = false` for snapshot panes restores the
-off-by-one and keeps `..` row handling untouched for real panes.
-
-R3 T1: the round-2 fix was correct but had no test. The derivation now lives in `pane/has-parent.ts` as
+`hasParent` is `false` for `search-results` panes. The path comparison `currentPath !== effectiveVolumeRoot` would
+otherwise be true (a `search-results://sr-N` URL never matches a real volume root), so
+`selection.selectAll(hasParent=true, ...)` would skip index 0. Setting `hasParent = false` for snapshot panes keeps the
+synthetic-`..` skip rule applied only to real panes. The derivation lives in `pane/has-parent.ts` as
 `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })` and is pinned by
 `pane/has-parent.test.ts`, which also covers the integration with `selection.selectAll` (snapshot pane → all 5 indices
 selected; non-snapshot pane with hasParent → indices 1..4, skipping the `..` row at 0).
 
-R3 B6: the search-results breadcrumb shape changed. The volume selector reads the static "Search results" label (set by
+Search-results breadcrumb shape: the volume selector reads the static "Search results" label (set by
 `VolumeBreadcrumb.svelte::currentVolume`) and `FilePane.svelte::breadcrumbDisplayPath` renders the snapshot's friendly
 label (`*.svelte`, the AI title, ...) as the path. The `breadcrumbSegments` derived produces a single-segment list for
 search-results panes so a label containing `/` (regex mode like `/foo\/bar/`) doesn't get broken into path-style
-segments. Round 2 had these inverted (label in the volume slot, empty path).
+segments. Don't invert this (label in the volume slot, empty path).
 
-Round 2 P8 / P9 / P10 (context-menu wiring):
+Context-menu wiring on the snapshot pane:
 
-- `DualPaneExplorer.getFileAndPathUnderCursor()` now prefers the pane-reported `getPathUnderCursor()` over the round-1
-  `${currentPath}/${filename}` concatenation. Without this fix, `file.showInFinder` / `file.copyPath` / `file.edit` on a
-  snapshot pane built a `search-results://sr-N/<name>` path that downstream IPCs couldn't act on.
-- `SearchResultsView.svelte::onContextMenu` now hands the Rust menu builder the path's basename, not the adapted entry's
-  `name` (which is the friendly full path like `~/Library/.../test.md`). Without this, the menu label read
-  `Copy ~/Library/.../test.md` instead of `Copy test.md`. The action itself was already correct because
+- `DualPaneExplorer.getFileAndPathUnderCursor()` prefers the pane-reported `getPathUnderCursor()` over a
+  `${currentPath}/${filename}` concatenation. Otherwise `file.showInFinder` / `file.copyPath` / `file.edit` on a
+  snapshot pane would build a `search-results://sr-N/<name>` path that downstream IPCs can't act on.
+- `SearchResultsView.svelte::onContextMenu` hands the Rust menu builder the path's basename, not the adapted entry's
+  `name` (which is the friendly full path like `~/Library/.../test.md`). Otherwise the menu label reads
+  `Copy ~/Library/.../test.md` instead of `Copy test.md`. The action itself is correct either way because
   `entryUnderCursor.name` on a snapshot pane mirrors the raw `SearchResultEntry.name` (a basename). Cmd+C / Cmd+X call
   the paths-by-value clipboard IPCs (`copy_paths_to_clipboard` / `cut_paths_to_clipboard`) instead of the
   listing-id-keyed family. F5 / F6 (the unified transfer dialog) detect `volumeId === 'search-results'` and call
   `transfer-operations::buildTransferPropsFromSnapshot` with paths resolved from `snapshot-store::resolveSnapshotPaths`;
   the existing `copy_files` / `move_files` IPCs already accept paths-by-value, so no IPC change was needed for the
-  transfer path. Drag-out uses the new `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
-  `start_drag_paths`. Post-move snapshot cleanup is the M8c hook in `dialog-state::handleTransferComplete`.
+  transfer path. Drag-out uses the `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
+  `start_drag_paths`. Post-move snapshot cleanup is the cleanup hook in `dialog-state::handleTransferComplete`.
 
 For the dialog-side wiring see [`apps/desktop/src/lib/search/CLAUDE.md`](../../search/CLAUDE.md).
 

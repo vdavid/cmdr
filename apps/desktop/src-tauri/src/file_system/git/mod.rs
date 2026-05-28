@@ -1,14 +1,11 @@
-//! Git browser foundation (M1) + virtual `.git` portal (M2).
-//!
-//! M1 ships repo detection, repo info, status, the `.git/*` watcher, and
-//! friendly-error mapping. M2 adds the virtual portal: `branches/`,
-//! `tags/`, `commits/`, `stash/`, `worktrees/`, `submodules/` browsable
-//! as virtual trees, with cross-volume copy "for free" because git blobs
-//! flow through the existing `VolumeReadStream` abstraction. The portal
-//! root listing also surfaces real `.git/*` entries (HEAD, config,
-//! hooks/, objects/, refs/, …) alongside the virtual categories – the
-//! user sees everything in one place and navigates real entries through
-//! the standard real-FS path.
+//! Git browser. Ships repo detection, repo info, status, the `.git/*` watcher,
+//! friendly-error mapping, and the virtual `.git` portal: `branches/`, `tags/`,
+//! `commits/`, `stash/`, `worktrees/`, `submodules/` browsable as virtual
+//! trees, with cross-volume copy "for free" because git blobs flow through the
+//! existing `VolumeReadStream` abstraction. The portal root listing also
+//! surfaces real `.git/*` entries (HEAD, config, hooks/, objects/, refs/, …)
+//! alongside the virtual categories — the user sees everything in one place
+//! and navigates real entries through the standard real-FS path.
 //!
 //! ## Volume hook contract
 //!
@@ -60,11 +57,11 @@ pub mod worktrees;
 #[cfg(test)]
 mod bench;
 #[cfg(test)]
-mod m2_tests;
+mod category_tests;
 #[cfg(test)]
-mod m3_tests;
+mod column_meta_tests;
 #[cfg(test)]
-mod m4_tests;
+mod portal_tests;
 #[cfg(test)]
 mod snapshot_dates_tests;
 #[cfg(test)]
@@ -72,25 +69,13 @@ mod test_fixtures;
 #[cfg(test)]
 mod tests;
 
-#[allow(
-    unused_imports,
-    reason = "Public API re-exports consumed by IPC commands and future M3 modules"
-)]
+#[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use friendly::{FriendlyGitError, FriendlyGitErrorKind};
-#[allow(
-    unused_imports,
-    reason = "Public API re-exports consumed by IPC commands and future M3 modules"
-)]
+#[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use repo::{RepoInfo, discover_repo, repo_info};
-#[allow(
-    unused_imports,
-    reason = "Public API re-exports consumed by IPC commands and future M3 modules"
-)]
+#[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use status::{EntryStatus, EntryStatusCode, list_status};
-#[allow(
-    unused_imports,
-    reason = "Public API re-exports consumed by IPC commands and future M3 modules"
-)]
+#[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use watcher::{GitWatcherRegistry, get_watcher_registry};
 
 #[allow(unused_imports, reason = "Used by LocalPosixVolume mutation hooks")]
@@ -201,8 +186,8 @@ fn list_ref_tree(
 }
 
 /// Resolves a `Cat::* / name` pair to the commit ID whose tree we should
-/// browse. Branches/tags peel through refs (M2), commits resolve the SHA
-/// prefix, stash resolves through `stash@{n}`.
+/// browse. Branches/tags peel through refs, commits resolve the SHA prefix,
+/// stash resolves through `stash@{n}`.
 pub(crate) fn resolve_commit_for_cat(
     handle: &repo::RepoHandle,
     cat: path::Cat,

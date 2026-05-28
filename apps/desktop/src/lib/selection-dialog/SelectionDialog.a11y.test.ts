@@ -1,5 +1,5 @@
 /**
- * Tier 3 a11y tests for `SelectionDialog.svelte` (M7).
+ * Tier 3 a11y tests for `SelectionDialog.svelte`.
  *
  * The dialog reuses the shared `QueryDialog`, so this suite audits the
  * Selection-specific configuration (title, banner, primary action label,

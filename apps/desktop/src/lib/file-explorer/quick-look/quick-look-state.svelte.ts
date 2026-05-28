@@ -15,11 +15,10 @@
  *
  * The state object is a module-level singleton (`quickLookState`). The
  * command dispatcher reads `isOpen` to choose between `quickLookOpen` and
- * `quickLookClose`, and the close listener flips it. Nothing in the M1
- * surface needs cross-pane fanout, so a single shared instance is fine.
+ * `quickLookClose`, and the close listener flips it. Nothing here needs
+ * cross-pane fanout, so a single shared instance is fine.
  *
- * See `apps/desktop/src-tauri/src/quick_look/CLAUDE.md` (will be added in M4)
- * for the native side.
+ * See `apps/desktop/src-tauri/src/quick_look/CLAUDE.md` for the native side.
  *
  * v1 shows the cursor item only; multi-selection "carousel" mode (Finder-style
  * arrow-keys-between-selected) is deliberately not implemented in v1 — see
@@ -77,7 +76,7 @@ export function armQuickLookDispatchGuard(): void {
 }
 
 /**
- * M3: close the panel because the focused pane went into an error state
+ * Close the panel because the focused pane went into an error state
  * (volume unmounted, listing failed, etc.). Sitting on a stale path while
  * the underlying volume is gone is worse than just dismissing the preview.
  *

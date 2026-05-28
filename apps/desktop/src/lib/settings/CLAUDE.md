@@ -127,9 +127,9 @@ file map, the 50-50 split-layout rule, and the `SettingPasswordInput` store-driv
   setting fresh at call time, so callers MUST NOT pass cached values — whichever provider/key/model is current at the
   IPC moment wins. This is the wiring that makes Settings AI-provider changes hot-apply without restart, and that lets
   the onboarding wizard's step 2 just call `setSetting(...)` and have the backend reconfigure automatically. The same
-  table also wires `updates.autoCheck` (added in onboarding-revamp M4) to `updater.svelte::applyAutoCheckEnabled()`,
-  which starts / stops the background poll loop in place. The wizard's step 3 toggle, the Settings UI switch, and any
-  future MCP/IPC writer all go through this one handler.
+  table also wires `updates.autoCheck` to `updater.svelte::applyAutoCheckEnabled()`, which starts / stops the background
+  poll loop in place. The onboarding wizard's "auto-update" toggle, the Settings UI switch, and any future MCP/IPC
+  writer all go through this one handler.
 - **ai-config.ts**: AI configuration plumbing shared by Settings, the onboarding wizard, and the applier listener.
   Exports `pushConfigToBackend()` (read-fresh push of the current AI config to Rust) and `migrateApiKeysFromSettings()`
   (one-time lift of pre-launch `apiKey` strings from `settings.json` into the OS secret store). Relocated here from

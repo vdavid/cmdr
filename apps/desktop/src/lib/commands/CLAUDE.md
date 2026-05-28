@@ -155,9 +155,9 @@ do text things in selectable regions. See `handleTextRegionShortcut` in `command
 command system (TypeScript) are separate codebases connected by string IDs. The four places are: (1)
 `command-registry.ts`, (2) `handleCommandExecute` switch in `command-dispatch.ts`, (3) `src-tauri/src/menu/mod.rs` ID
 mappings (`menu_id_to_command` + `command_id_to_menu_id`) plus the matching `Menu/SubmenuItem::with_id` registration in
-the right platform builder (`macos.rs` / `linux.rs` — note the top-level menus include `Select` between Edit and View
-since M8), (4) `menuCommands` array in `shortcuts-store.ts`. Missing any one causes silent failures (shortcut works but
-menu doesn't, or vice versa).
+the right platform builder (`macos.rs` / `linux.rs` — the top-level menus include `Select` between Edit and View), (4)
+`menuCommands` array in `shortcuts-store.ts`. Missing any one causes silent failures (shortcut works but menu doesn't,
+or vice versa).
 
 ## Dependencies
 

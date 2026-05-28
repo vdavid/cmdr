@@ -13,7 +13,7 @@ Two backend commands, both routed through `native_drag.rs` so the pasteboard pay
 - **Multi-file selection** → `start_selection_drag` (backend resolves paths from the listing cache, avoiding IPC
   overhead for large selections)
 - **Multi-file paths-by-value** → `start_drag_paths` (the same single-file command, just with > 1 path). Used by the
-  search-results pane (M8d): `staticEntries` panes have no backend listing for `start_selection_drag` to resolve indices
+  search-results pane: `staticEntries` panes have no backend listing for `start_selection_drag` to resolve indices
   against, but the FE already has absolute paths on each row, so we send them directly. Wired via the `PathsDragContext`
   variant in `drag-drop.ts`; FullList picks this branch automatically when `usingStaticEntries`.
 

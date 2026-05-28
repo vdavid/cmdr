@@ -1,8 +1,8 @@
 /**
- * Pins the Search-only extras shape and the M2 NG3 split contract: the core's
+ * Pins the Search-only extras shape and the AI-write split contract: the core's
  * `recordAiTranslation` writes ONLY to `handTyped[mode]`; the extras module's
  * `recordAiPatternAndLabel` writes ONLY to its own AI fields. Calling both in
- * sequence reproduces the pre-M2 single-function behavior.
+ * sequence (Search's wrapper does) leaves the two surfaces in sync.
  */
 import { describe, it, expect } from 'vitest'
 import { createQueryFilterState } from '$lib/query-ui/query-filter-state.svelte'
@@ -86,9 +86,8 @@ describe('createSearchExtrasState: clearExtras', () => {
   })
 })
 
-describe('NG3 split contract: core.recordAiTranslation + extras.recordAiPatternAndLabel reproduce the pre-M2 behavior', () => {
-  // Pre-M2 single function: set handTyped[mode] AND lastAiPattern + Kind + Label.
-  // M2 splits the writes: core owns handTyped; extras owns the AI surface fields.
+describe('split contract: core.recordAiTranslation + extras.recordAiPatternAndLabel stay in sync', () => {
+  // Core owns `handTyped[mode]`; extras owns `lastAiPattern` + `Kind` + `Label`.
   // Calling both in sequence (Search's wrapper does this) must leave both in sync.
 
   it('core writes only to the matching hand-typed buffer (handTyped.filename for glob)', () => {

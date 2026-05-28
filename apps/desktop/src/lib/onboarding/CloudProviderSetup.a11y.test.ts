@@ -1,5 +1,5 @@
 /**
- * Tier 3 axe a11y tests for `CloudProviderSetup.svelte` (M3).
+ * Tier 3 axe a11y tests for `CloudProviderSetup.svelte`.
  */
 
 import { describe, it, vi, beforeEach, afterEach } from 'vitest'

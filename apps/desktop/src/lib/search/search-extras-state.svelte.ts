@@ -2,10 +2,9 @@
  * Search-only state alongside the cross-consumer core (see
  * `lib/query-ui/query-filter-state.svelte.ts`).
  *
- * M2 split this out from `search-state.svelte.ts` so Selection's instance doesn't
- * carry Search-only fields it would never read (`scope`, `excludeSystemDirs`,
- * `lastAiLabel`, `lastAiPattern`, `lastAiPatternKind`). The Search wrapper composes
- * a core instance + this extras instance.
+ * This module carries Search-only fields (`scope`, `excludeSystemDirs`, `lastAiLabel`,
+ * `lastAiPattern`, `lastAiPatternKind`) so Selection's instance doesn't lug fields it
+ * would never read. The Search wrapper composes a core instance + this extras instance.
  *
  * The AI-pattern + label setter (`recordAiPatternAndLabel`) is called by the Search
  * wrapper right after `core.recordAiTranslation(...)`, completing the contract that

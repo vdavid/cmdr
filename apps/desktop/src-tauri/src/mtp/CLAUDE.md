@@ -72,14 +72,14 @@ It never orchestrates MTP connections.
 - **Volume IDs**: MTP storage volumes use `"{device_id}:{storage_id}"` (e.g., `"mtp-336592896:65537"`).
 - For session-level details (device lock, caches, cache-only path resolution, event-loop shutdown, async recursion), see [`connection/CLAUDE.md`](connection/CLAUDE.md).
 
-## Cancel propagation (M2 of cancel-settled)
+## Cancel propagation
 
 Long MTP operations bail at the next per-USB-roundtrip boundary when the
-caller's write-op intent flips to `Stopped`/`RollingBack`. Until M2 the cancel
-only stopped the **loop above** the USB call — the in-flight `list_objects` for
-a 950-photo `/DCIM/Camera` still ran all 950 `GetObjectInfo` roundtrips to
-completion (15–30 s), and the user's next op queued behind it, hit the 30 s
-op timeout, and wedged the device.
+caller's write-op intent flips to `Stopped`/`RollingBack`. Without this, a
+cancel would only stop the **loop above** the USB call — the in-flight
+`list_objects` for a 950-photo `/DCIM/Camera` would still run all 950
+`GetObjectInfo` roundtrips to completion (15–30 s), and the user's next op
+would queue behind it, hit the 30 s op timeout, and wedge the device.
 
 Wiring:
 
@@ -127,8 +127,9 @@ mechanism for a different problem.
 Some Android devices may still leave the session in a degraded state after a
 flurry of operations, even when cancel is clean on our side (Pixel 6/7 era
 firmware has been observed mis-handling rapid op-cancel-op sequences). This is
-hardware-side and unfixable in software; the M4 settled-state gate ensures the
-user doesn't issue the next op until our side is fully quiet, which avoids
+hardware-side and unfixable in software; the settled-state gate (see
+`file_system/write_operations/CLAUDE.md` § "Settle contract") ensures the user
+doesn't issue the next op until our side is fully quiet, which avoids
 provoking the device-side bug in practice.
 
 ## Dependencies

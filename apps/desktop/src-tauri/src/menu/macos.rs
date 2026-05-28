@@ -47,8 +47,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         None::<&str>,
     )?;
-    // Re-entry to the onboarding wizard. Placed under "Check for updates…" per the
-    // onboarding-revamp plan M5 step 2; Linux gets no menu entry (palette-only) by design.
+    // Re-entry to the onboarding wizard. Placed under "Check for updates…".
+    // Linux gets no menu entry (palette-only) by design — see
+    // `lib/onboarding/CLAUDE.md` § "Re-entry points".
     let open_onboarding_item = MenuItem::with_id(app, OPEN_ONBOARDING_ID, "Onboarding\u{2026}", true, None::<&str>)?;
     let settings_item = MenuItem::with_id(app, SETTINGS_ID, "Settings...", true, Some("Cmd+,"))?;
 

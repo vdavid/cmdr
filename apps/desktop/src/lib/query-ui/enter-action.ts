@@ -1,5 +1,5 @@
 /**
- * Pure helper for the dialog's `⏎` ownership swap (R3 D8).
+ * Pure helper for the dialog's `⏎` ownership swap.
  *
  * `lastDialogEvent` × `resultsCount > 0` determines whether bare Enter runs the
  * query or opens the cursor row. See `lib/query-ui/CLAUDE.md` § Keyboard contract.

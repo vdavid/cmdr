@@ -1,5 +1,5 @@
 /**
- * Tier 3 axe a11y test for `CloudProviderPicker.svelte` (M3).
+ * Tier 3 axe a11y test for `CloudProviderPicker.svelte`.
  */
 
 import { describe, it, beforeEach, afterEach } from 'vitest'

@@ -1,5 +1,5 @@
 /**
- * Behavior tests for `SearchFilterChips.svelte` (M3).
+ * Behavior tests for `FilterChips.svelte`.
  *
  * Pins:
  *   - Three chips render by default (Size, Modified, Search in) plus the trailing Add filter chip.
@@ -330,8 +330,8 @@ describe('SearchFilterChips: scope popover behavior', () => {
     expect(checkboxes?.length).toBe(2)
     const footerButtons = popover?.querySelectorAll('.footer-button')
     expect(footerButtons?.length).toBe(2)
-    // Round 2 D9: footer buttons surface ⌥C / ⌥V, scoped to the open popover.
-    // ⌥F / ⌥D are gone (⌥F is now the global Filename mode chip).
+    // Footer buttons surface ⌥C / ⌥V, scoped to the open popover (⌥F is the global
+    // Filename mode chip elsewhere).
     expect(footerButtons?.[0].textContent).toContain('Use current folder')
     expect(footerButtons?.[0].textContent).toContain('⌥C')
     expect(footerButtons?.[1].textContent).toContain('All folders')

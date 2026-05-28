@@ -84,11 +84,10 @@ export const DATE_PRESETS: readonly DatePreset[] = [
   { key: 'thisYear', label: 'this year' },
 ]
 
-// ── R3 U4: dynamic Modified preset labels ─────────────────────────────────
+// ── Dynamic Modified preset labels ────────────────────────────────────────
 //
-// David asked for friendlier, more specific labels: instead of "this week" /
-// "last week" / "this month" / "last month" / "this year" we render the
-// concrete date the preset resolves to. Examples:
+// The Modified popover renders friendly, concrete labels for date presets
+// instead of relative phrases. Examples:
 //
 //   today 0:00
 //   yesterday 0:00

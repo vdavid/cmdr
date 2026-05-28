@@ -1,6 +1,6 @@
 /**
- * Behaviour tests for `CloudProviderPicker.svelte` (M3): keyboard nav (ArrowDown / Up
- * / Home / End), type-to-jump, click-to-select, and ARIA listbox semantics.
+ * Behaviour tests for `CloudProviderPicker.svelte`: keyboard nav (ArrowDown / Up /
+ * Home / End), type-to-jump, click-to-select, and ARIA listbox semantics.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'

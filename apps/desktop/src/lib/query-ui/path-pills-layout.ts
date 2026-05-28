@@ -55,12 +55,11 @@ function totalWidth(labels: string[], measure: (s: string) => number, chrome: nu
 }
 
 /**
- * R3 B4: schedules a sequence of re-measure callbacks to catch the CSS grid
- * race where `el.clientWidth` is read before the parent track has finished
- * resolving its width. David reported the strip first rendering the full
- * path, then "gradually wrapping back to ellipses" once a late, smaller width
- * read came in. The fix re-reads the width on the next animation frame and
- * once more ~80ms later (well under the 100ms cap in the brief). The two
+ * Schedules a sequence of re-measure callbacks to catch the CSS grid race where
+ * `el.clientWidth` is read before the parent track has finished resolving its
+ * width. Without this, the strip can render the full path first, then "gradually
+ * wrap back to ellipses" once a late, smaller width read comes in. Re-reads the
+ * width on the next animation frame and once more ~80 ms later. The two
  * follow-up reads cover two distinct settling moments:
  *
  *   1. First RAF: the grid's first layout pass usually completes here.

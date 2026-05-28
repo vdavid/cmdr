@@ -18,10 +18,10 @@ Owns first-launch consent: Full Disk Access (macOS only), AI provider, and a sma
 
 ## Status
 
-M5-shipping. All three steps are real, and the wizard is re-openable from the macOS app menu and the command palette
-(both platforms). Existing users on upgrade see a one-time `info` toast pointing at the new menu item. The legacy
-`FullDiskAccessPrompt.svelte` modal is gone; the wizard is the single first-launch path on macOS.
-`CMDR_FORCE_ONBOARDING=1` forces the wizard regardless of persisted state for dev / E2E iteration.
+All three steps are real. The wizard is re-openable from the macOS app menu and the command palette (both platforms),
+and the legacy `FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single first-launch path on macOS.
+Existing users on upgrade see a one-time `info` toast pointing at the menu item. `CMDR_FORCE_ONBOARDING=1` forces the
+wizard regardless of persisted state for dev / E2E iteration.
 
 ## Re-entry points
 
@@ -52,7 +52,7 @@ the first launch after they update past the wizard revamp:
 
 The toast fires from `resolveOnboardingMount()`'s `showApp = true` branches (so it only runs when the wizard is NOT
 mounting; no need for an extra `onboardingShowing` check). It writes `onboarding.upgradeNudgeShown = true` synchronously
-after firing, so it never appears again on the same machine. The hidden setting was added in M1; M5 wires the firing.
+after firing, so it never appears again on the same machine.
 
 The toast is suppressed under `getAppMode() === 'e2e'` so it doesn't leak into Playwright's first-spec-of-the-run state
 (each E2E shard gets its own fresh data dir, so the nudge would otherwise fire once per shard launch and trip the
@@ -148,34 +148,34 @@ advance based on connection status; the auto-check is purely informational.
 
 ### `pushConfigToBackend()` belt-and-braces
 
-The `settings-applier.ts` listener wired in M1 also calls `pushConfigToBackend()` on any `ai.provider` /
-`ai.cloudProvider` / `ai.cloudProviderConfigs` change, so the wizard's explicit `await` is redundant in the steady
-state. The reason it's there: the listener fires per-setting-change, so if the user flips three settings in one tick we
-get three async invocations racing the wizard's `onComplete()`. The explicit `await pushConfigToBackend()` in
-`StepAi.persist()` orders the backend reconfigure before the user lands in the app deterministically.
+The `settings-applier.ts` listener also calls `pushConfigToBackend()` on any `ai.provider` / `ai.cloudProvider` /
+`ai.cloudProviderConfigs` change, so the wizard's explicit `await` is redundant in the steady state. The reason it's
+there: the listener fires per-setting-change, so if the user flips three settings in one tick we get three async
+invocations racing the wizard's `onComplete()`. The explicit `await pushConfigToBackend()` in `StepAi.persist()` orders
+the backend reconfigure before the user lands in the app deterministically.
 
 ## Step 3 (optional setup)
 
 Four toggle blocks, each bound to an existing registry setting via `<SettingSwitch>`. Defaults stay ON; the step is
 about letting the user turn things OFF with full context, not about asking for opt-in.
 
-| Toggle            | Setting ID                  | Live-apply wiring                                                                           |
-| ----------------- | --------------------------- | ------------------------------------------------------------------------------------------- |
-| Networking        | `network.enabled`           | `passthroughBackendHandlers` → `setNetworkEnabled` (pre-existing)                           |
-| Drive indexing    | `indexing.enabled`          | `passthroughBackendHandlers` → `setIndexingEnabled` (pre-existing)                          |
-| Automatic updates | `updates.autoCheck`         | `passthroughBackendHandlers` → `applyAutoCheckEnabled` in `updater.svelte.ts` (added in M4) |
-| MTP               | `fileOperations.mtpEnabled` | `passthroughBackendHandlers` → `setMtpEnabled` (pre-existing)                               |
+| Toggle            | Setting ID                  | Live-apply wiring                                                             |
+| ----------------- | --------------------------- | ----------------------------------------------------------------------------- |
+| Networking        | `network.enabled`           | `passthroughBackendHandlers` → `setNetworkEnabled` (pre-existing)             |
+| Drive indexing    | `indexing.enabled`          | `passthroughBackendHandlers` → `setIndexingEnabled` (pre-existing)            |
+| Automatic updates | `updates.autoCheck`         | `passthroughBackendHandlers` → `applyAutoCheckEnabled` in `updater.svelte.ts` |
+| MTP               | `fileOperations.mtpEnabled` | `passthroughBackendHandlers` → `setMtpEnabled` (pre-existing)                 |
 
 Because `<SettingSwitch>` writes via `setSetting()` on every flip, the toggles take effect the moment the user clicks
 them; the wizard doesn't need its own persist queue. The footer's single primary button (`Start using Cmdr`, registered
 via `setFooterOverride()`) just bumps `finishRequestTick`; the wizard shell's `onComplete` callback then runs
 `notifyOnboardingComplete()` (which flips `isOnboarded: true`) and closes the sheet.
 
-`updates.autoCheck` live-apply was the M4 net-new wiring. Before M4 the setting existed in the registry and the UI but
-no listener watched it, so flipping it required an app restart. M4 added `applyAutoCheckEnabled(enabled)` to
-`updates/updater.svelte.ts` (lifts the poll-loop interval handle to module scope, starts/stops it in place, fires one
-immediate `checkForUpdates()` on re-enable so users don't wait the full cadence) plus an entry in
-`settings-applier.ts`'s `passthroughBackendHandlers` table so the toggle works from anywhere (wizard, Settings UI, MCP).
+`updates.autoCheck` live-apply runs through `applyAutoCheckEnabled(enabled)` in `updates/updater.svelte.ts`: the
+poll-loop interval handle lives at module scope so the listener can start/stop it in place and fire one immediate
+`checkForUpdates()` on re-enable so users don't wait the full cadence. The matching entry in `settings-applier.ts`'s
+`passthroughBackendHandlers` table is what makes the toggle work from anywhere (wizard, Settings UI, MCP) without an app
+restart.
 
 ## Resume rule
 
@@ -237,7 +237,7 @@ Two env vars (mirror `CMDR_MOCK_LICENSE`):
   of persisted state. Useful for design iteration without touching settings.
 - `CMDR_MOCK_FDA=granted|denied|notgranted` (read in `permissions.rs::check_full_disk_access`): overrides the TCC probe
   so all banner branches can be tested without ever opening real System Settings. `granted` → `true`; `denied` /
-  `notgranted` → `false`. The wizard distinguishes them via the persisted setting + a fresh probe on step-2 entry (M3).
+  `notgranted` → `false`. The wizard distinguishes them via the persisted setting + a fresh probe on step-2 entry.
 
 Run with both: `CMDR_FORCE_ONBOARDING=1 CMDR_MOCK_FDA=notgranted pnpm dev`.
 

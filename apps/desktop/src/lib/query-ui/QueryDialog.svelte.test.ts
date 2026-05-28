@@ -1,7 +1,7 @@
 /**
  * Behavior tests for `QueryDialog.svelte`, the shared orchestrator.
  *
- * Pins the M4 ownership contracts and the keyboard / IME / action wiring against a
+ * Pins the ownership contracts and the keyboard / IME / action wiring against a
  * minimal Search-shaped config. Search's full integration is covered by
  * `lib/search/SearchDialog.svelte.test.ts` (which mounts QueryDialog through the thin
  * Search wrapper); these tests target the orchestrator's contract directly so

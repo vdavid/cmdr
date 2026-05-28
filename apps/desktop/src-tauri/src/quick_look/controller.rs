@@ -68,13 +68,16 @@ impl QuickLookController {
 
     /// Whether the panel is currently considered open. Used by tests and by
     /// future state-inspection IPCs.
-    #[allow(dead_code, reason = "M4 unit tests + future state-inspection IPC")]
+    #[allow(
+        dead_code,
+        reason = "Used by unit tests and reserved for future state-inspection IPC"
+    )]
     pub fn is_open(&self) -> bool {
         self.is_open
     }
 
     /// The URL the panel is currently showing, if any. Used by tests.
-    #[allow(dead_code, reason = "M4 unit tests")]
+    #[allow(dead_code, reason = "Used by unit tests")]
     pub fn current_url(&self) -> Option<&Path> {
         self.current_url.as_deref()
     }
@@ -256,7 +259,7 @@ define_class!(
             // `previewItemAtIndex`. The frontend would call a new
             // `quick_look_set_paths(paths[])` IPC whenever the selection
             // size > 1, mirroring the cursor-follow $effect but on the
-            // selection set. See plan §M3 "Multi-selection".
+            // selection set.
             let has_url = self.ivars().url.lock().ok().map(|g| g.is_some()).unwrap_or(false);
             if has_url { 1 } else { 0 }
         }

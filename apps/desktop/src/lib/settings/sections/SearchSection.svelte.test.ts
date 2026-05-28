@@ -1,10 +1,10 @@
 /**
  * Tier-3 tests for `SearchSection.svelte`.
  *
- * Pins the M6 + M9 contract:
+ * Pins the contract:
  *   - The auto-apply switch renders (canonical home).
  *   - The recent-searches max-count row renders here too (mirror; canonical is Advanced).
- *   - The recent-selections max-count row renders here too (mirror; canonical is Advanced; added M9).
+ *   - The recent-selections max-count row renders here too (mirror; canonical is Advanced).
  *   - Rows respect the search filter (`shouldShow`).
  *   - No a11y violations.
  */

@@ -69,7 +69,7 @@ export interface FilePaneAPI {
   /** Bulk-add or bulk-remove indices (used by the Selection dialog at commit time). */
   applyIndices(idxs: number[], mode: 'add' | 'remove'): void
   /**
-   * Snapshot of the pane's entries for the Selection dialog (M7). Indices in the
+   * Snapshot of the pane's entries for the Selection dialog. Indices in the
    * returned array match the pane's selection-state indices (`..` row included
    * at index 0 when `hasParent`).
    */

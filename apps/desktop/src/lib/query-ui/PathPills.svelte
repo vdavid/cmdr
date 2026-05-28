@@ -178,15 +178,15 @@
             if (!pretext) return
             measureWidth = createPretextMeasure(readFont(el), pretext)
             containerWidth = el.clientWidth
-            // R3 B4: the initial `el.clientWidth` read above can land BEFORE
-            // the parent CSS grid track resolves to its final width. That
-            // produces the bug David hit: the strip first renders the full
-            // path (uncollapsed fallback while measureWidth was null), then
-            // collapses back to ellipses once `measureWidth` lands but
-            // `containerWidth` is still stale-small. Re-read on the next
-            // animation frame (when the grid layout has settled) and again
-            // ~80ms later (when fonts and any late style recalculations have
-            // settled too). Both reads are cheap; the layout `$derived`
+            // The initial `el.clientWidth` read above can land BEFORE the parent
+            // CSS grid track resolves to its final width. Without the follow-up
+            // re-measure, the strip first renders the full path (uncollapsed
+            // fallback while measureWidth was null), then collapses back to
+            // ellipses once `measureWidth` lands but `containerWidth` is still
+            // stale-small. Re-read on the next animation frame (when the grid
+            // layout has settled) and again ~80 ms later (when fonts and any
+            // late style recalculations have settled too). Both reads are cheap;
+            // the layout `$derived`
             // re-runs only when `containerWidth` actually changes.
             cancelStableMeasure = scheduleStableWidthMeasure(() => {
                 containerWidth = el.clientWidth
@@ -271,9 +271,8 @@
 
     .sep {
         color: var(--color-text-tertiary);
-        /* R3 U7: path text reads at --font-size-sm (matching Name) instead
-           of --font-size-xs. The eye reads the path as quickly as the
-           filename, not as a footnote. */
+        /* Path text reads at --font-size-sm (matching Name) instead of --font-size-xs.
+           The eye reads the path as quickly as the filename, not as a footnote. */
         font-size: var(--font-size-sm);
         user-select: none;
     }
@@ -281,9 +280,8 @@
     .pill {
         background: transparent;
         border: 0;
-        /* R3 U7: cut horizontal padding so the larger font doesn't blow
-           the column; vertical padding stays at 0 since the row padding
-           handles vertical rhythm. */
+        /* Trimmed horizontal padding so the larger font doesn't blow the column;
+           vertical padding stays at 0 since the row padding handles vertical rhythm. */
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 0 var(--spacing-xxs);
         border-radius: var(--radius-sm);

@@ -1,9 +1,8 @@
 /**
  * E2E tests for onboarding wizard re-entry.
  *
- * Covers the user-visible re-entry surfaces added in M5: the macOS menu item,
- * the command palette command (both platforms), and the MCP `dialog open
- * onboarding` path. Walks the resume rule's already-granted variant (FDA is
+ * Covers the user-visible re-entry surfaces: the macOS menu item, the command
+ * palette command (both platforms), and the MCP `dialog open onboarding` path. Walks the resume rule's already-granted variant (FDA is
  * already granted in the E2E fixture, so menu re-entry shows step 1 with the
  * single-Next variant on macOS, or step 2 directly on Linux).
  *

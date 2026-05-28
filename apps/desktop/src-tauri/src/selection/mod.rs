@@ -1,4 +1,4 @@
-//! Selection dialog backend (M5).
+//! Selection dialog backend.
 //!
 //! Mirrors `crate::search` but narrower: there is no scope, no system-dir exclusion,
 //! and no in-memory index. The selection matcher runs in JS against the focused folder's

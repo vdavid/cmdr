@@ -160,11 +160,11 @@
     const MIN_DISPLAY_MS = 400
     /** After this many ms of waiting for the backend to settle, the
      *  "Cancelling…" label gets a clarifying tail ("(finishing USB transfers)").
-     *  Picked at 200 ms so a fast settle (the common case after M2) clears
-     *  before the label ever changes. */
+     *  Picked at 200 ms so a fast settle (the common case once cancel
+     *  propagation lands on the backend) clears before the label ever changes. */
     const SLOW_SETTLE_LABEL_MS = 200
     /** Last-resort cap on how long we'll keep the dialog open after the user
-     *  clicks Cancel. The settle gate (M4) is supposed to fire `write-cancelled`
+     *  clicks Cancel. The settle gate is supposed to fire `write-cancelled`
      *  + `write-settled` quickly, but if the BE op state was already gone when
      *  we issued the cancel (e.g. it was cleaned up by `cancel_all_write_operations`
      *  during a hot-reload or by a previous teardown), no events ever fire and

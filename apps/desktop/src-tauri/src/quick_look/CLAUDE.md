@@ -100,7 +100,7 @@ Use `Volume::supports_local_fs_access()` instead.
 opens `NSOpenPanel` for "Open with… Other" (`commands/open_with.rs`) and for save dialogs via
 Tauri's file plugin.
 
-Empirically (M3 read-only verification, no native UI driving), AppKit serializes:
+Empirically, with no native UI driving in test, AppKit serializes:
 
 - While `NSOpenPanel` is the modal key window, our `makeKeyAndOrderFront:` call on
   `QLPreviewPanel` runs but the panel doesn't visibly take key — it queues behind the open panel.

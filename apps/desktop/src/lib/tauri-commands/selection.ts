@@ -1,4 +1,4 @@
-// Selection dialog IPC commands: typed wrappers around the Rust backend (M5).
+// Selection dialog IPC commands: typed wrappers around the Rust backend.
 
 import { commands } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'

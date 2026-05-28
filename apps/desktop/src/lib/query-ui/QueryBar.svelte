@@ -12,7 +12,7 @@
      *   - A small ⏎ run button. Always present; clicking it is equivalent to pressing Enter.
      *
      * IME composition is also surfaced: `oncompositionstart` and `oncompositionend` let the parent
-     * suppress auto-apply mid-composition and fire exactly once on completion (M6 addition).
+     * suppress auto-apply mid-composition and fire exactly once on completion.
      *
      * Keyboard contract (handled by the parent dialog, not here):
      *   - Enter runs the search in the active mode.
@@ -109,12 +109,10 @@
     {#if showRunHint}
         <span class="run-hint" aria-hidden="true">Press Enter to search</span>
     {/if}
-    <!-- D8: button reads "Search ⏎" when ⏎ owns the run action; just "Search" when
-         the footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint.
-         R3 B1: dropped the leading corner-down-left icon. Round 2 put the icon at
-         the start AND the "⏎" suffix at the end, producing a "⏎Search⏎" double-hint.
-         The shortcut belongs in the suffix slot (matching "Go to file ⏎" and
-         "All searches… ⌘H"); the icon was visual noise on top. -->
+    <!-- Button reads "Search ⏎" when ⏎ owns the run action; just "Search" when the
+         footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint. The
+         shortcut belongs in the suffix slot (matching "Go to file ⏎" and "All
+         searches… ⌘H"); no leading icon. -->
     <button
         type="button"
         class="run-button"
@@ -179,8 +177,7 @@
         flex-shrink: 0;
         display: inline-flex;
         align-items: center;
-        /* R3 B1: bumped from --spacing-xxs to --spacing-xs so the gap between
-           "Search" and "⏎" reads cleanly. Matches the visual rhythm of
+        /* --spacing-xs gap between "Search" and "⏎" matches the visual rhythm of
            "All searches… ⌘H" and "Go to file ⏎" elsewhere in the dialog. */
         gap: var(--spacing-xs);
         justify-content: center;

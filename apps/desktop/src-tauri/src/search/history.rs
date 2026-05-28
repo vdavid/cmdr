@@ -1,7 +1,8 @@
 //! Persistent recent-searches store for the search dialog.
 //!
-//! Adds an entry only when the user clicks "Open in pane" (M8 hooks the call site;
-//! M5 ships the storage layer plus the IPC commands the frontend consumes).
+//! Adds an entry only when the user clicks "Open in pane" — see the FE
+//! `lib/search/CLAUDE.md` for the call-site rule. This module owns the storage
+//! layer plus the IPC commands the frontend consumes.
 //!
 //! ## Design notes
 //!

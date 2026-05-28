@@ -1,9 +1,9 @@
 /**
  * Behavior tests for `SearchDialog.svelte`.
  *
- * Pins the M1 state-preservation contract and the M2 unified-bar contract:
+ * Pins:
  *   - `⌘N` inside the dialog clears state (and the input is refocused).
- *   - Close + reopen preserves state (the dialog no longer wipes state on unmount).
+ *   - Close + reopen preserves state (the dialog doesn't wipe state on unmount).
  *   - `⌘1` / `⌘2` / `⌘3` switch modes; numbering shifts when AI is off.
  *   - `⌘Enter` triggers an AI search regardless of active mode (when AI is enabled).
  *   - Switching mode preserves the typed query.
@@ -442,7 +442,7 @@ describe('SearchDialog AI transparency strip', () => {
   })
 })
 
-describe('SearchDialog auto-apply (M6)', () => {
+describe('SearchDialog auto-apply', () => {
   beforeEach(() => {
     clearSearchState()
     aiProvider = 'off'
@@ -667,7 +667,7 @@ describe('SearchDialog auto-apply (M6)', () => {
   })
 })
 
-describe('SearchDialog M7 path-pill navigation shortcuts', () => {
+describe('SearchDialog path-pill navigation shortcuts', () => {
   beforeEach(() => {
     clearSearchState()
     aiProvider = 'off'
@@ -916,8 +916,8 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     })
     // No results seeded.
     await tick()
-    // Round 2 D6: the button stays VISIBLE when resultCount === 0, just rendered
-    // disabled. Yanking it would jump the layout while the user is mid-thought.
+    // The button stays VISIBLE when resultCount === 0, just rendered disabled. Yanking
+    // it would jump the layout while the user is mid-thought.
     const btn = document.body.querySelector<HTMLButtonElement>('button[aria-label="Show all in main window"]')
     expect(btn).not.toBeNull()
     expect(btn?.disabled).toBe(true)

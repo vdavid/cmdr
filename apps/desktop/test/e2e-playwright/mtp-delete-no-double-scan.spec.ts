@@ -1,13 +1,13 @@
 /**
  * E2E test pinning the "delete reuses scan preview, no double scan" contract
- * for MTP delete (M4).
+ * for MTP delete.
  *
- * The bug this guards against: pre-fix, `delete_volume_files_with_progress`
- * ignored `preview_id` and re-walked the source tree. On MTP that meant a
+ * The bug this guards against: without the fix, `delete_volume_files_with_progress`
+ * would ignore `preview_id` and re-walk the source tree. On MTP that means a
  * second silent parent listing after the user already paid that cost in the
- * delete confirmation dialog — and because the re-walk emitted no top-level
- * progress, the UI looked frozen. Now the backend `take_cached_scan_result`s
- * the preview and goes straight from Scanning to Deleting.
+ * delete confirmation dialog — and because the re-walk emits no top-level
+ * progress, the UI looks frozen. The backend `take_cached_scan_result`s the
+ * preview and goes straight from Scanning to Deleting.
  *
  * The spec subscribes to `write-progress` events from the webview, captures
  * the `phase` sequence, and asserts:
@@ -205,7 +205,7 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
         })
         .toBeTruthy()
 
-      // Pull the captured progress sequence and run the M3 assertions.
+      // Pull the captured progress sequence and run the phase-sequence assertions.
       const events = await tauriPage.evaluate<CapturedProgress[]>(
         `(window.__deleteProgressEvents || []).map(p => ({ phase: p.phase, filesDone: p.filesDone, filesTotal: p.filesTotal, bytesDone: p.bytesDone }))`,
       )
@@ -218,9 +218,9 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
       //    Why "or doesn't appear" is fine: the per-file delete on a small
       //    selection often finishes inside one 200 ms progress-throttle
       //    window, so the BE fires `scanning` then jumps to write-complete.
-      //    That's the M3 fast path doing its job — the bug we guard against
-      //    is a SECOND scanning phase showing up after deleting started, not
-      //    "delete must emit a deleting event."
+      //    That's the scan-preview-reuse fast path doing its job — the bug
+      //    we guard against is a SECOND scanning phase showing up after
+      //    deleting started, not "delete must emit a deleting event."
       const phaseSequence: string[] = []
       for (const ev of events) {
         if (phaseSequence[phaseSequence.length - 1] !== ev.phase) phaseSequence.push(ev.phase)

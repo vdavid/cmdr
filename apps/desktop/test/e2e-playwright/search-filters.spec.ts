@@ -22,10 +22,9 @@ const SIZE_CHIP_DEFAULT = '.search-overlay .filter-chip[aria-label="Size"]'
 const SIZE_CHIP_CONFIGURED = '.search-overlay .filter-chip.is-configured'
 const SIZE_CHIP_CLEAR = '.search-overlay .filter-chip.is-configured .chip-clear'
 const FILTER_POPOVER = '.search-overlay .filter-chip-popover'
-// Round 3 D10 replaced the `<select>` + number input chain with a list-style
-// grid. Each comparator / preset / unit is a `role="radio"` button inside a
-// labeled `role="radiogroup"` column. The "≥" cell sits in the Comparator
-// column; the "100" cell sits in the "Minimum size value" column.
+// The Size popover renders as a list-style grid: each comparator / preset / unit is a
+// `role="radio"` button inside a labeled `role="radiogroup"` column. The "≥" cell sits
+// in the Comparator column; the "100" cell sits in the "Minimum size value" column.
 const SIZE_COMPARATOR_GTE = `${FILTER_POPOVER} [role="radiogroup"][aria-label="Comparator"] button[role="radio"]:nth-child(2)`
 const SIZE_VALUE_100 = `${FILTER_POPOVER} [role="radiogroup"][aria-label="Minimum size value"] button[role="radio"]:nth-child(8)`
 

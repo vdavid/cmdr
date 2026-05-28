@@ -42,10 +42,10 @@
 
     interface Props {
         /**
-         * The query-filter state instance owning size/date/case/setQuery setters. Passed by
-         * the consumer wrapper (Search wires the search instance; Selection wires its own
-         * Selection instance in M7). Replaces the M2-era module-singleton setter imports.
-         * Named `filterState` (not `state`) to avoid shadowing Svelte's `$state` rune.
+         * The query-filter state instance owning size/date/case/setQuery setters. Passed
+         * by the consumer wrapper (Search wires the search instance; Selection wires its
+         * own). Named `filterState` (not `state`) to avoid shadowing Svelte's `$state`
+         * rune.
          */
         filterState: QueryFilterState
         caseSensitive: boolean
@@ -85,9 +85,8 @@
         aiPattern: string | null
         /**
          * Whether to render the "Search in" (scope) chip and its popover. Search renders this
-         * `true` (scope is core to whole-drive search); Selection (M7+) passes `false`
-         * because selection runs against a single in-memory folder. Default `true` keeps
-         * Search's existing behavior.
+         * `true` (scope is core to whole-drive search); Selection passes `false` because
+         * selection runs against a single in-memory folder. Default `true` matches Search.
          */
         scopeChipVisible?: boolean
         /**
@@ -102,9 +101,8 @@
         onSetScope: (path: string) => void
         /**
          * Called when the user clicks the Pattern chip's `×` while in AI mode. Search clears
-         * its AI-extras `lastAiPattern`. Selection's M7 wrapper will clear its own AI-pattern
-         * slot (Selection has no Pattern chip per the M3 plan, but the callback is wired so
-         * the same component can be reused if Selection later opts in).
+         * its AI-extras `lastAiPattern`. Selection has no Pattern chip today, but the callback
+         * is wired so the same component can be reused if Selection later opts in.
          */
         onClearAiPattern: () => void
         scheduleSearch: () => void
@@ -164,9 +162,9 @@
     let openChip = $state<FilterKey | 'add' | null>(null)
 
     /**
-     * Round 2 D10 grid: the comparator column (col 1) of the Size popover. The
-     * `>=` and `<=` use HTML entities so the rendered cell reads as the math
-     * glyph rather than the ASCII soup.
+     * The comparator column (col 1) of the Size popover. The `>=` and `<=` use
+     * HTML entities so the rendered cell reads as the math glyph rather than the
+     * ASCII soup.
      */
     const SIZE_COMPARATORS: ReadonlyArray<{ value: SizeFilter; label: string }> = [
         { value: 'any', label: 'any' },
@@ -176,7 +174,7 @@
     ]
 
     /**
-     * Round 2 D11 grid: the comparator column of the Modified popover.
+     * The comparator column of the Modified popover.
      */
     const DATE_COMPARATORS: ReadonlyArray<{ value: DateFilter; label: string }> = [
         { value: 'any', label: 'any' },
@@ -197,11 +195,11 @@
     let dateIsCustomUpper = $state(false)
 
     /**
-     * R3 B5: rebuild the Modified preset list each time the popover renders.
-     * Labels are date-relative ("1st of May 0:00"), so a stale cached list
-     * from yesterday would mislead the user. The dynamic list is cheap to
-     * compute (one Date plus a few format calls); the only reason to memoize
-     * would be benchmarks, which haven't surfaced as a concern.
+     * Rebuild the Modified preset list each time the popover renders. Labels are
+     * date-relative ("1st of May 0:00"), so a stale cached list from yesterday
+     * would mislead the user. The dynamic list is cheap to compute (one Date plus
+     * a few format calls); the only reason to memoize would be benchmarks, which
+     * haven't surfaced as a concern.
      */
     const datePresets = $derived<DynamicDatePreset[]>(buildDatePresets())
     /** Set of ISO date strings that match a preset. Used for the custom-isolation rule. */
@@ -226,16 +224,15 @@
     })
 
     /**
-     * R3 B5: mirror the size effect for the Modified popover. The bug was
-     * that selecting any preset wrote the resolved ISO date into `dateValue`,
-     * which the popover then displayed as both the preset's `is-selected`
-     * cell AND the Custom cell (because `dateIsCustomLower` was set true at
-     * some earlier point and never reset). Selection model now:
+     * Mirrors the size effect for the Modified popover. Selection model:
      *   - dateValue matches a preset → dateIsCustomLower = false.
      *   - dateValue is non-empty and does NOT match any preset → user picked
      *     Custom (or the AI / history set a custom value) → keep
      *     dateIsCustomLower = true.
      *   - dateValue empty → keep whatever the flag was (don't reset on clear).
+     * Without this rule, selecting a preset would write the resolved ISO date into
+     * `dateValue`, and the popover would highlight both the preset cell AND the
+     * Custom cell (if `dateIsCustomLower` was set earlier and never reset).
      */
     $effect(() => {
         if (dateValue && !datePresetSet.has(dateValue)) {
@@ -267,15 +264,15 @@
     }
 
     /**
-     * R3 U5: helpers for the "click on disabled cell auto-promotes the
-     * comparator" behaviour. When the user clicks a value in the value
-     * column (or a unit in the unit column) while the comparator is `any`,
-     * promote the comparator (Size → `gte`, Modified → `after`) AND apply
-     * the clicked value. The user can still tweak the comparator before
-     * hitting Enter; we don't fire the search until they explicitly do.
+     * Helpers for the "click on disabled cell auto-promotes the comparator"
+     * behaviour. When the user clicks a value in the value column (or a unit in the
+     * unit column) while the comparator is `any`, promote the comparator (Size →
+     * `gte`, Modified → `after`) AND apply the clicked value. The user can still
+     * tweak the comparator before hitting Enter; we don't fire the search until
+     * they explicitly do.
      *
-     * These helpers are wrappers around the existing setters so the cell
-     * click handlers can stay compact in the template.
+     * These wrap the existing setters so the cell click handlers stay compact in
+     * the template.
      */
     function pickSizeValue(value: string): void {
         if (sizeFilter === 'any') setSizeFilter('gte')
@@ -381,9 +378,8 @@
     let scopeChipEl: HTMLButtonElement | undefined = $state()
     let addChipEl: HTMLButtonElement | undefined = $state()
 
-    // R3 B3: pipe the user's file-size format through so the chip's KB/kB label
-    // matches the popover. Today the popover renders `kB` for SI but the chip
-    // bypassed the setting and always printed `KB`.
+    // Pipe the user's file-size format through so the chip's KB/kB label matches
+    // the popover (`kB` for SI, `KB` for binary).
     const sizeState = $derived(
         deriveSizeChip(sizeFilter, sizeValue, sizeUnit, sizeValueMax, sizeUnitMax, getFileSizeFormat()),
     )
@@ -559,12 +555,11 @@
     {/if}
 </div>
 
-<!-- Size popover. Round 2 D10: replaces the old `<select>` triplet with a
-     multi-column list-style grid. Col 1 = comparator (`any` / `>=` / `<=` /
-     `between`). Col 2 = numeric preset (`0` / `1` / `5` / ... / `Custom...`).
-     Col 3 = unit (`bytes` / `KB` / `MB` / `GB`). When col 1 = `between`, cols
-     4 + 5 mirror cols 2 + 3 for the upper bound. Cols 2-5 render disabled when
-     col 1 = `any` (no range to apply). -->
+<!-- Size popover: multi-column list-style grid. Col 1 = comparator (`any` /
+     `>=` / `<=` / `between`). Col 2 = numeric preset (`0` / `1` / `5` / ... /
+     `Custom...`). Col 3 = unit (`bytes` / `KB` / `MB` / `GB`). When col 1 =
+     `between`, cols 4 + 5 mirror cols 2 + 3 for the upper bound. Cols 2-5 render
+     disabled when col 1 = `any` (no range to apply). -->
 {#if sizeChipEl}
     <FilterChipPopover
         anchor={sizeChipEl}
@@ -599,11 +594,11 @@
                     {/each}
                 </div>
 
-                <!-- Col 2: lower-bound value. R3 U5: cells stay clickable when
-                     the comparator is `any`. Clicking promotes the comparator
-                     to `gte` and applies the chosen value. R3 U3: the Custom
-                     <input> renders INSIDE the Custom cell so one click both
-                     selects it AND focuses the input. -->
+                <!-- Col 2: lower-bound value. Cells stay clickable when the
+                     comparator is `any`; clicking promotes the comparator to
+                     `gte` and applies the chosen value. The Custom <input>
+                     renders INSIDE the Custom cell so one click both selects
+                     it AND focuses the input. -->
                 <div class="list-col" role="radiogroup" aria-label="Minimum size value">
                     {#each SIZE_PRESETS as preset (preset)}
                         <button
@@ -620,10 +615,10 @@
                             {preset}
                         </button>
                     {/each}
-                    <!-- R3 U3 + B5: Custom cell holds the inline number input.
-                         Selected only when the user explicitly clicked Custom
-                         (or the AI / history set a custom value via the
-                         `dateIsCustomLower`-style effect above). -->
+                    <!-- Custom cell holds the inline number input. Selected only
+                         when the user explicitly clicked Custom (or the AI /
+                         history set a custom value via the `sizeIsCustomLower`
+                         effect above). -->
                     <button
                         type="button"
                         class="list-cell list-cell-custom"
@@ -709,7 +704,7 @@
                 </div>
 
                 {#if showsUpperBound(sizeFilter)}
-                    <!-- Col 4: upper-bound value. R3 U3: Custom input inline. -->
+                    <!-- Col 4: upper-bound value. Custom input is inline. -->
                     <div class="list-col" role="radiogroup" aria-label="Maximum size value">
                         {#each SIZE_PRESETS as preset (preset)}
                             <button
@@ -812,10 +807,10 @@
     </FilterChipPopover>
 {/if}
 
-<!-- Modified popover. Round 2 D11: list-style grid mirroring the Size popover.
-     Col 1 = comparator (`any` / `after` / `before` / `between`). Col 2 = preset
-     dates (`today`, `yesterday`, `this week`, ..., `Custom…`). Cols 3 + 4
-     appear when col 1 = `between` for the upper bound. No unit column. -->
+<!-- Modified popover: list-style grid mirroring the Size popover. Col 1 =
+     comparator (`any` / `after` / `before` / `between`). Col 2 = preset dates
+     (`today`, `yesterday`, `this week`, ..., `Custom…`). Cols 3 + 4 appear when
+     col 1 = `between` for the upper bound. No unit column. -->
 {#if dateChipEl}
     <FilterChipPopover
         anchor={dateChipEl}
@@ -850,14 +845,13 @@
                     {/each}
                 </div>
 
-                <!-- Col 2: lower-bound preset. R3 U4: dynamic labels
-                     ("today 0:00", "1st of May 0:00", "1st of April, 2026,
-                     0:00", ...) computed at popover render. R3 U5: cells
-                     remain clickable while comparator = `any`; clicking
-                     promotes the comparator to `after`. R3 B5: Custom is
-                     selected only when the user explicitly clicked it (or
-                     the AI / history loaded a custom value); the `$effect`
-                     above keeps `dateIsCustomLower` in sync. -->
+                <!-- Col 2: lower-bound preset. Labels are dynamic ("today 0:00",
+                     "1st of May 0:00", "1st of April, 2026, 0:00", ...) computed
+                     at popover render. Cells remain clickable while comparator =
+                     `any`; clicking promotes the comparator to `after`. Custom is
+                     selected only when the user explicitly clicked it (or the AI
+                     / history loaded a custom value); the `$effect` above keeps
+                     `dateIsCustomLower` in sync. -->
                 <div class="list-col" role="radiogroup" aria-label="Date value">
                     {#each datePresets as preset (preset.key)}
                         <button
@@ -1015,9 +1009,10 @@
                         }}
                         aria-label="Hide boring folders"
                     />
-                    <!-- R3 U6: copy renamed "Hide system folders" -> "Hide boring folders".
-                         Tooltip lists EVERY exclude (built by the parent from the
-                         `get_system_dir_excludes` IPC); no "+30 more" truncation. -->
+                    <!-- "Hide boring folders" (the label is intentional, not "Hide
+                         system folders"). Tooltip lists EVERY exclude (built by the
+                         parent from the `get_system_dir_excludes` IPC); no
+                         "+30 more" truncation. -->
                     <span use:tooltip={{ html: systemDirExcludeTooltip }}>Hide boring folders</span>
                 </label>
                 <label class="popover-checkbox">
@@ -1154,7 +1149,7 @@
         gap: var(--spacing-xs);
     }
 
-    /* ===== Round 2 D10 / D11: list-style grid popover ===== */
+    /* ===== List-style grid popover (Size + Modified) ===== */
 
     .size-grid-section {
         min-width: 320px;
@@ -1225,10 +1220,9 @@
         cursor: not-allowed;
     }
 
-    /* R3 U5: cells in the value / unit columns stay clickable while the
-       comparator is `any`. The dimmed look mirrors `:disabled` but the cell
-       is still a real button: clicking promotes the comparator and applies
-       the value. */
+    /* Cells in the value / unit columns stay clickable while the comparator is
+       `any`. The dimmed look mirrors `:disabled` but the cell is still a real
+       button: clicking promotes the comparator and applies the value. */
     .list-cell.is-disabled-look {
         opacity: 0.5;
     }
@@ -1238,9 +1232,9 @@
         opacity: 0.7;
     }
 
-    /* R3 U3: the Custom cell holds the inline input. The cell itself stays
-       sized for the longest preset label so the column doesn't reflow when
-       Custom expands; the input fills the remaining cell width. */
+    /* The Custom cell holds the inline input. The cell itself stays sized for
+       the longest preset label so the column doesn't reflow when Custom expands;
+       the input fills the remaining cell width. */
     .list-cell.list-cell-custom {
         /* Reserve enough vertical room for the inner input. */
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
@@ -1261,9 +1255,8 @@
         line-height: 1.3;
     }
 
-    /* R3 U3: dropped the round-2 `.custom-input` rule (the input lived as a
-       sibling under the Custom cell). The new layout puts the input INSIDE
-       the cell, styled via `.custom-input-inline` above. */
+    /* The Custom input lives INSIDE the cell, styled via `.custom-input-inline`
+       above. */
 
     .popover-label {
         font-size: var(--font-size-xs);

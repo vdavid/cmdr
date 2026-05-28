@@ -1,9 +1,6 @@
-// Factory for the recent-items reactive store. Replaces the M2-era module singleton
-// `lib/search/recent-searches-state.svelte.ts`.
-//
-// Both the footer (6 most recent) and the popover (fuzzy over the full set) read from the
-// same in-memory list. Loading is owned by the store so multiple consumers don't double-fetch
-// from the backend on mount.
+// Factory for the recent-items reactive store. Both the footer (6 most recent) and the
+// popover (fuzzy over the full set) read from the same in-memory list. Loading is owned
+// by the store so multiple consumers don't double-fetch from the backend on mount.
 //
 // Two consumers (Search + Selection) each construct their own instance with their own set
 // of IPC functions, so one dialog's history can't leak into the other.
@@ -44,7 +41,7 @@ export interface RecentItemsStore<E> {
 
 /**
  * Constructs a recent-items store bound to a specific set of IPC functions. Search wires the
- * `getRecentSearches`-family; Selection (M5+) will wire the `getRecentSelections`-family.
+ * `getRecentSearches`-family; Selection wires the `getRecentSelections`-family.
  */
 export function createRecentItemsState<E>(ipc: RecentItemsIPC<E>): RecentItemsStore<E> {
   let entries = $state<E[]>([])

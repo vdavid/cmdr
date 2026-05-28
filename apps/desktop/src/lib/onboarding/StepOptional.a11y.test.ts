@@ -1,5 +1,5 @@
 /**
- * Tier 3 axe a11y tests for `StepOptional.svelte` (M4).
+ * Tier 3 axe a11y tests for `StepOptional.svelte`.
  *
  * Two states: default (all four toggles on) and one-off (networking off). Each switch
  * is labelled by its registry definition; the section heading gives the question

@@ -27,8 +27,9 @@
     const recolorToGold = $derived(isFolderIcon && getIsCmdrGold())
 
     // Git portal icons resolve in the frontend via Lucide instead of going
-    // through the OS icon provider. The four IDs are reserved by the M1
-    // schema and rendered here in M2.
+    // through the OS icon provider. The four IDs are reserved by the
+    // `FileEntry` schema (`git:`-prefixed) and rendered as Lucide
+    // components here.
     const isGitIcon = $derived(file.iconId.startsWith('git:'))
 </script>
 

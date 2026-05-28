@@ -135,7 +135,7 @@ async function mountDialog(): Promise<{
   return { component, onComplete, onCancelled, onError, target }
 }
 
-describe('TransferProgressDialog cancel-settle gate (M4)', () => {
+describe('TransferProgressDialog cancel-settle gate', () => {
   it('stays in "Cancelling…" until both write-cancelled and write-settled arrive', async () => {
     const { component, onCancelled, target } = await mountDialog()
     vi.useFakeTimers({ shouldAdvanceTime: false })
@@ -218,7 +218,7 @@ describe('TransferProgressDialog cancel-settle gate (M4)', () => {
       await tick()
       vi.advanceTimersByTime(450)
       await tick()
-      expect(onComplete, 'complete path is unchanged by M4 (closes on min-display gate)').toHaveBeenCalledTimes(1)
+      expect(onComplete, 'complete path closes on min-display gate, no settle wait').toHaveBeenCalledTimes(1)
       expect(onComplete).toHaveBeenCalledWith(5, 0, 1234)
       void unmount(component)
     } finally {

@@ -2,7 +2,7 @@
 // over the consumer's entry shape `E`; the adapter is the only seam where consumer-specific
 // fields (Search's `excludeSystemDirs`, Selection's narrower entry, etc.) leak in.
 //
-// Search wires the adapter to its `HistoryEntry`; Selection (M7+) wires its own. The
+// Search wires the adapter to its `HistoryEntry`; Selection wires its own. The
 // `recent-chips-layout.ts` packer only sees the adapted `{ label, tooltip }`, so packing is
 // identical across consumers.
 

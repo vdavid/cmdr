@@ -8,7 +8,7 @@
      * is open).
      *
      * Generic over the entry shape `E`. Search instantiates it with `E = HistoryEntry`;
-     * Selection (M7+) instantiates it with its own narrower entry. The adapter is the only
+     * Selection instantiates it with its own narrower entry. The adapter is the only
      * thing that knows about the entry's internals.
      *
      * The list is fuzzy-searched via `@leeoniya/ufuzzy`, the same library the command palette

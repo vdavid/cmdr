@@ -301,8 +301,7 @@ mod tests {
 
         let path = Path::new("/test/path");
 
-        // Test a selection of variants and errnos, plus every git-friendly
-        // kind so the M4 additions stay clean.
+        // Test a selection of variants and errnos, plus every git-friendly kind.
         let mut errors: Vec<VolumeError> = vec![
             VolumeError::NotFound("x".into()),
             VolumeError::PermissionDenied("x".into()),

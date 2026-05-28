@@ -23,7 +23,7 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
 - **Event debounce**: `EventDebouncer` per-device collapses MTP event bursts (bulk copy / delete) to one frontend emit per 500 ms. Cleared on disconnect.
 - **Async recursion** in `bulk_ops.rs` and recursive `delete()`: `Box::pin(async move { ... })` to break the infinitely-sized future.
 - **Event loop shutdown**: biased `tokio::select!` so the broadcast shutdown signal always wins over the event poll.
-- **Cancel propagation**: see parent `../CLAUDE.md` § "Cancel propagation (M2 of cancel-settled)". Cancel-aware entry points here are `delete()` and the `list_objects_with_cancel` path threaded down to `mtp-rs`.
+- **Cancel propagation**: see parent `../CLAUDE.md` § "Cancel propagation". Cancel-aware entry points here are `delete()` and the `list_objects_with_cancel` path threaded down to `mtp-rs`.
 
 ## Gotchas
 

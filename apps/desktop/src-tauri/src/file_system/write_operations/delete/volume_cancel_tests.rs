@@ -8,9 +8,9 @@
 //! cancel check — when the token flips, the listing/delete bails promptly
 //! instead of running to completion.
 //!
-//! Real-device end-to-end coverage (a Pixel with a 950-entry `/DCIM/Camera`)
-//! lives in M5 of the plan; these tests pin the wiring so the prompt-cancel
-//! behaviour is regression-safe.
+//! Real-device end-to-end coverage (a Pixel with a 950-entry `/DCIM/Camera`) is a
+//! manual smoke test; these unit tests pin the wiring so the prompt-cancel behaviour
+//! is regression-safe.
 
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -308,10 +308,10 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
     WRITE_OPERATION_STATE.write().unwrap().remove(&op_id);
 }
 
-/// Pins the M4 contract: when an MTP-style volume delete is cancelled,
-/// the spawn task's `WriteSettledGuard` Drop fires `write-settled` AFTER
-/// the handler emitted `write-cancelled`. The FE needs that ordering
-/// to keep "Cancelling…" up until the volume is genuinely torn down.
+/// Pins the settle-event contract: when an MTP-style volume delete is
+/// cancelled, the spawn task's `WriteSettledGuard` Drop fires `write-settled`
+/// AFTER the handler emitted `write-cancelled`. The FE needs that ordering to
+/// keep "Cancelling…" up until the volume is genuinely torn down.
 ///
 /// We can't drive the full `tokio::spawn` path here (it needs a real
 /// `AppHandle`), so we manually reproduce the spawn-task scope shape:
@@ -374,8 +374,8 @@ async fn volume_cancel_emits_write_settled_event() {
     });
 
     // Use a moderately-sized directory so the test reliably fires a cancel
-    // mid-operation (timing of scan vs. delete phase is irrelevant for this
-    // M4 assertion: the guard fires no matter what phase ends the op).
+    // mid-operation. Timing of scan vs. delete phase is irrelevant: the guard
+    // fires no matter what phase ends the op.
     let children: Vec<_> = (0..200)
         .map(|i| make_file_entry(&format!("photo-{:04}.jpg", i), "/dir", false))
         .collect();

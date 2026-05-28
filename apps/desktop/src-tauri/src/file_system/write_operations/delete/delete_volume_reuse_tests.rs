@@ -1,6 +1,5 @@
 //! Integration tests for `delete_volume_files_with_progress_inner`'s reuse of
-//! the scan preview and the fresh-listing oracle (M3 of the fresh-listing-reuse
-//! plan).
+//! the scan preview and the fresh-listing oracle.
 //!
 //! These tests use the `OperationEventSink` test plumbing (no Tauri
 //! `AppHandle`) and a counter-wrapping `InMemoryVolume` so we can assert call

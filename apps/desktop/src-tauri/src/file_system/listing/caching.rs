@@ -526,7 +526,10 @@ pub(crate) fn increment_sequence(listing_id: &str) -> Option<u64> {
 /// `sequence`, ties broken by the latest `created_at`. Both listings receive watcher
 /// events, so they're equally fresh; the tiebreaker is just to keep the result
 /// stable across calls.
-#[allow(dead_code, reason = "M1 plumbing: callers (scan walker, scan-preview) wire up in M2")]
+#[allow(
+    dead_code,
+    reason = "Plumbing: callers (scan walker, scan-preview) consume this via the fresh-listing oracle path"
+)]
 pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
     // Step 1: find all listings on this (volume_id, path) and pick the most-recently-updated
     // one (highest sequence, ties broken by latest created_at). Read the entries out

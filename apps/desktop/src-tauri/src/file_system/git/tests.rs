@@ -268,7 +268,7 @@ fn repo_info_recomputes_after_commit() {
     cleanup(&dir);
 }
 
-// ── M4: virtual portal toggle ──────────────────────────────────────────
+// ── Virtual portal toggle ──────────────────────────────────────────────
 
 /// `try_route_listing` short-circuits to `None` when the portal is off,
 /// letting `LocalPosixVolume` fall through to real-FS code. The toggle

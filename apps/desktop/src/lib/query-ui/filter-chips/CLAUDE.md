@@ -48,7 +48,7 @@ trap, and the close-on-Escape contract. It's also reused by `RecentItemsPopover.
 **Anatomy** (top to bottom):
 
 1. Header strip with the filter name (Size / Modified / Search in / Pattern).
-2. The grid of controls (cells render as `<button>` with `role="radio"` plus `aria-checked` — see "Round 2 grid-style"
+2. The grid of controls (cells render as `<button>` with `role="radio"` plus `aria-checked` — see "Grid-style popovers"
    below).
 3. Optional inline custom input when the user selects `Custom…`.
 4. Footer affordances for the Search-in popover (`⌥F` / `⌥D` buttons).
@@ -67,7 +67,7 @@ dialog. The popover's own keydown handler then runs on the bubble, closes itself
 else fires. Without this guard, Escape inside a popover would close the whole dialog and lose the user's place. Pinned
 in `FilterChips.svelte.test.ts`.
 
-## Round 2 grid-style popovers (D10 / D11)
+## Grid-style popovers
 
 The Size and Modified popovers render as a multi-column list selector. Tested via `filter-popover-helpers.test.ts` and
 `FilterChips.svelte.test.ts`.
@@ -105,15 +105,14 @@ On macOS the Option key remaps `event.key` to typographic glyphs (Option+S → `
 matches on `event.code` (`KeyS`, `KeyM`, …) first and falls back to `event.key` for synthesized test events. Same trick
 lives in `SearchDialog.svelte::matchKey` for the mode-chip ⌥A / ⌥F / ⌥R shortcuts.
 
-## Round 3 polish (R3) — chip-side items
+## Chip-side behavior
 
-- **B5**: `FilterChips.svelte` keeps `dateIsCustomLower` / `dateIsCustomUpper` in sync via an `$effect` that flips them
-  OFF when `dateValue` matches a preset (mirrors the size flow). The Modified popover never shows both a preset AND
-  Custom as selected.
-- **U3**: Size > Custom input lives INSIDE the Custom cell (one click selects + focuses).
-- **U4**: Modified presets are dynamic ("today 0:00", "1st of May 0:00", …) — see
-  `filter-popover-helpers.ts::buildDatePresets`.
-- **U5**: value + unit cells in the Size and Modified popovers stay clickable while comparator = `any`; they render with
+- `FilterChips.svelte` keeps `dateIsCustomLower` / `dateIsCustomUpper` in sync via an `$effect` that flips them OFF when
+  `dateValue` matches a preset (mirrors the size flow). The Modified popover never shows both a preset AND Custom as
+  selected.
+- Size > Custom input lives INSIDE the Custom cell (one click selects + focuses).
+- Modified presets are dynamic ("today 0:00", "1st of May 0:00", …) — see `filter-popover-helpers.ts::buildDatePresets`.
+- Value + unit cells in the Size and Modified popovers stay clickable while comparator = `any`; they render with
   `.is-disabled-look` (dimmed) and clicking auto-promotes the comparator to `gte` / `after` plus applies the clicked
   value.
 

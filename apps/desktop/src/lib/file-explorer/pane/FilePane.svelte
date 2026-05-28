@@ -156,8 +156,8 @@
         onOpenHome?: () => void
         /**
          * Bubbles a high-level command id out of the pane. Used by the Selection
-         * dialog's `+` / `-` shortcuts (M7) so the parent route can dispatch via
-         * the unified command-dispatch path without FilePane importing it. Receives
+         * dialog's `+` / `-` shortcuts so the parent route can dispatch via the
+         * unified command-dispatch path without FilePane importing it. Receives
          * the command id (`'selection.selectFiles'` / `'selection.deselectFiles'`).
          */
         onCommand?: (commandId: string) => void
@@ -381,10 +381,11 @@
     const breadcrumbDisplayPath = $derived.by(() => {
         // R3 B6: the search-results pane shows the snapshot's friendly label
         // (the AI title / filename pattern / regex pattern) AS the path. The
-        // volume selector itself now reads the generic "Search results" so
-        // the slots map cleanly: volume-kind on the left, query-specific
-        // label on the right. Round 2 inverted these (label on the left, no
-        // path on the right); David flagged it in the round 3 brief.
+        // volume selector itself reads the generic "Search results" so the
+        // slots map cleanly: volume-kind on the left, query-specific label
+        // on the right. Don't invert this (label on the left, no path on
+        // the right) — see `lib/search/CLAUDE.md` § "Search-specific UI
+        // behavior".
         if (isSearchResultsView) {
             return searchSnapshot?.label ?? 'Search'
         }
@@ -809,7 +810,7 @@
     }
 
     /**
-     * Returns a snapshot of the pane's entries for the Selection dialog (M7). The
+     * Returns a snapshot of the pane's entries for the Selection dialog. The
      * dialog needs the full list at open-time to run its matcher; this method
      * fetches all entries via `getFileRange` for normal panes, or reads them
      * directly from the search-results snapshot.
@@ -1932,7 +1933,7 @@
     }
 
     /**
-     * M7: bare `+` / `-` open the Selection dialog. Dispatch lives at the FilePane
+     * Bare `+` / `-` open the Selection dialog. Dispatch lives at the FilePane
      * keyboard level (not menu-driven on macOS, since menu accelerators always carry
      * ⌘). The pure classifier in `selection-dialog-keys.ts` pins the exact event
      * filter: no `metaKey` / `altKey` / `ctrlKey`; `shiftKey` is intentionally NOT
@@ -2030,9 +2031,8 @@
      * pane state for whichever action it returns. Splitting the dispatch from the side
      * effects keeps the keyboard contract unit-testable without spinning up `FilePane`.
      *
-     * Round 2 P-series coverage:
-     *   - P1 PgUp/PgDn, P2 Home/End, P3 Left/Right (intentional no-op), P4 Space,
-     *     P5 ⇧Up/⇧Dn, P7 F3 / F4.
+     * Key coverage: PgUp / PgDn, Home / End, Left / Right (intentional no-op),
+     * Space, ⇧Up / ⇧Dn, F3 / F4.
      *
      * The snapshot pane has no `..` row, so the selection helpers run with
      * `hasParent = false`. Cmd+A keeps flowing through the unified command
@@ -2147,7 +2147,7 @@
             return
         }
 
-        // M7: bare `+` / `-` open the Selection dialog (Total Commander parity).
+        // Bare `+` / `-` open the Selection dialog (Total Commander parity).
         if (handleSelectionDialogKey(e)) return
 
         // Handle selection keys
@@ -2181,9 +2181,10 @@
      * Reactive: true when this pane is showing a full-pane error state — either
      * a `FriendlyError` (listing failed for an existing path) or the
      * `unreachable` banner (volume couldn't be resolved at startup, or SMB
-     * reconnect gave up). Used by Quick Look's M3 hook in DualPaneExplorer to
-     * close the panel when the focused pane goes into a state where its
-     * `getPathUnderCursor()` would no longer return a meaningful path.
+     * reconnect gave up). Used by Quick Look's error-state hook in
+     * DualPaneExplorer to close the panel when the focused pane goes into a
+     * state where its `getPathUnderCursor()` would no longer return a
+     * meaningful path.
      */
     // noinspection JSUnusedGlobalSymbols -- consumed by DualPaneExplorer's Quick Look effect
     export function isInErrorState(): boolean {

@@ -37,8 +37,8 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 
 - `supports_watching()`: enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the `VolumeWatcher` trait used for drive indexing). `MtpVolume` returns `false` (it has its own USB event loop).
 - `supports_export()`: "this volume can stream its bytes via `open_read_stream`" (so it can act as a source in a cross-volume copy). Gates the copy dialog's "copy from this volume" UI. Local, MTP, SMB, and InMemory return `true`.
-- `supports_streaming()`: enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, and `InMemoryVolume` all return `true`. Since Phase 4 this is the universal byte path for every non-APFS-clone copy. New backends just implement the two streaming methods to get cross-volume copy for free.
-- `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path takes `min(src.max_concurrent_ops(), dst.max_concurrent_ops(), 32)` and spawns that many `FuturesUnordered` tasks. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16; `SmbVolume` returns 10 (hardcoded in Phase 4.2; Phase 4.3 will wire it to `network.smbConcurrency`); `MtpVolume` returns 1 (USB bulk transport is serial); `InMemoryVolume` returns 32.
+- `supports_streaming()`: enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, and `InMemoryVolume` all return `true`. This is the universal byte path for every non-APFS-clone copy. New backends just implement the two streaming methods to get cross-volume copy for free.
+- `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path takes `min(src.max_concurrent_ops(), dst.max_concurrent_ops(), 32)` and spawns that many `FuturesUnordered` tasks. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16; `SmbVolume` returns 10 (currently hardcoded; eventually wires to `network.smbConcurrency`); `MtpVolume` returns 1 (USB bulk transport is serial); `InMemoryVolume` returns 32.
 - `local_path()`: returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
 - `supports_local_fs_access()`: whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
 - `notify_mutation(volume_id, parent_path, mutation)`: called after a successful mutation (create, delete, rename) to update the listing cache immediately. Default impl uses `std::fs` (works for `LocalPosixVolume`). `SmbVolume` and `MtpVolume` override to use their own protocol's `get_metadata`. Fire-and-forget, no error propagation.
@@ -104,7 +104,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 
 - [ ] Implement `create_directory`, `create_file`, `delete`, `rename`.
 - [ ] After each successful mutation, call `self.notify_mutation(&volume_id, parent_path, MutationEvent::...)` so the listing cache updates immediately. Override `notify_mutation` on the trait if your backend can answer `get_metadata` faster than `std::fs::metadata` would (MTP and SMB do this).
-- [ ] Return `supports_streaming() = true` and implement `open_read_stream` + `write_from_stream`. These are the byte path for every cross-volume copy (Phase 4 collapsed the old `export_to_local` / `import_from_local` onto this pair). The Copy dialog uses them for "this volume ↔ anywhere" transfers.
+- [ ] Return `supports_streaming() = true` and implement `open_read_stream` + `write_from_stream`. These are the byte path for every cross-volume copy. The Copy dialog uses them for "this volume ↔ anywhere" transfers.
 - [ ] Return `supports_export() = true` if the volume should appear as a copy source in the UI.
 - [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight.
 - [ ] Map your backend's errors through a `map_*_error` function that returns `VolumeError`. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
@@ -149,7 +149,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `on_unmount`                | default              | default                 | ✅ drops smb2 session     | default            |
 | `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             |
 | `space_poll_interval`       | 2 s (default)        | 5 s                     | 5 s                       | `None`             |
-| `max_concurrent_ops`        | 4..=16 (core-based)  | 1 (USB bulk serial)     | 10 (P4.3 will tune)       | 32                 |
+| `max_concurrent_ops`        | 4..=16 (core-based)  | 1 (USB bulk serial)     | 10 (eventually setting)   | 32                 |
 
 Legend: ✅ = implemented, ❌ = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
 
@@ -205,7 +205,7 @@ The same rule applies to write paths: `write_from_stream` must drive the backend
 
 `LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.
 
-## Git delegation hooks (M2)
+## Git delegation hooks
 
 `LocalPosixVolume` delegates three read-side methods to the git module after `resolve()`:
 

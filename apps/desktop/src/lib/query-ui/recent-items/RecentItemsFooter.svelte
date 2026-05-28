@@ -4,8 +4,8 @@
      * recent entries plus an "All …" trailing chip that opens the popover.
      *
      * Generic over the entry shape `E`. Search instantiates it with `E = HistoryEntry` and
-     * a Search-flavoured adapter; Selection (M7+) instantiates it with its own entry shape
-     * and adapter. The adapter is the only thing that knows about the entry's internals.
+     * a Search-flavoured adapter; Selection instantiates it with its own entry shape and
+     * adapter. The adapter is the only thing that knows about the entry's internals.
      *
      * Each chip carries a small mode badge (`AI` / `Aa` / `.*`). Clicking a chip loads the
      * entry into the dialog's state and runs it. For AI entries, the click counts as the
@@ -38,8 +38,7 @@
         onOpenAll: () => void
         /**
          * Strip-leading label and trailing-button label / tooltip. Default to Search's
-         * existing copy so the M3 rename is visually a no-op for Search; Selection (M7+)
-         * passes its own copy ("Recent selections:" / "All selections…").
+         * copy; Selection passes its own ("Recent selections:" / "All selections…").
          */
         leadingLabel?: string
         trailingLabel?: string

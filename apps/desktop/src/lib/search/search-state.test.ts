@@ -397,14 +397,14 @@ describe('per-mode buffer', () => {
     expect(getQuery()).toBe('find my pdfs')
   })
 
-  // R3 B2: when AI produces a glob, it overwrites the filename buffer; when it
-  // produces a regex, it overwrites the regex buffer. Round 2 stored the AI
-  // pattern in a separate slot and used `switchMode` to lazily hand it to the
-  // matching mode ONLY when that mode's hand-typed buffer was empty. David hit
-  // a case where he typed `*.foo` in filename mode, then asked the AI for PDFs,
-  // then ⌘2'd to filename mode and saw `*.foo` instead of `*.pdf`. Fix: the AI
-  // takeover is opinionated. Overwrite the matching buffer on translation.
-  it('R3 B2: AI translation overwrites the matching hand-typed buffer (glob -> filename)', async () => {
+  // When AI produces a glob, it overwrites the filename buffer; when it produces a
+  // regex, it overwrites the regex buffer. The AI takeover is opinionated by design:
+  // a "hand the matching pattern to the user-facing buffer when AI lazily picks the
+  // mode" approach hid translations behind the previously hand-typed value (typing
+  // `*.foo` in filename mode, then asking AI for PDFs, then ⌘2 to filename, would
+  // show `*.foo` instead of `*.pdf`). Overwrite at translation time so the user sees
+  // the AI result immediately when they look at the matching mode.
+  it('AI translation overwrites the matching hand-typed buffer (glob -> filename)', async () => {
     const { switchMode, setQueryFromUserInput, recordAiTranslation } = await import('./search-state.svelte')
     clearSearchState()
     // User typed *.foo in filename mode by hand, then jumped to AI to refine.

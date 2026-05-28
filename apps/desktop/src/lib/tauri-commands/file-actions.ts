@@ -126,7 +126,7 @@ export async function quickLookOpen(path: string, volumeId: string): Promise<voi
 
 /**
  * Retarget an open Quick Look panel to a new path (macOS only). No-op when the panel isn't
- * currently open. Used by M2's cursor-follow effect.
+ * currently open. Used by the cursor-follow `$effect` in the file pane.
  */
 export async function quickLookSetPath(path: string, volumeId: string): Promise<void> {
   const res = await commands.quickLookSetPath(path, volumeId)

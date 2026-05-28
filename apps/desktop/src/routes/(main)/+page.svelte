@@ -55,8 +55,9 @@
 
     /**
      * Onboarding wizard visibility. The wizard owns the first-launch path: FDA, AI consent,
-     * and the optional-settings step. M5 wires menu / palette re-entry. `CMDR_FORCE_ONBOARDING=1`
-     * overrides every gate and opens the wizard regardless of persisted state.
+     * and the optional-settings step. Menu / palette re-entry opens the same wizard.
+     * `CMDR_FORCE_ONBOARDING=1` overrides every gate and opens the wizard regardless of
+     * persisted state.
      */
     let showOnboarding = $state(false)
     let showApp = $state(false)
@@ -69,7 +70,7 @@
     let showCommandPalette = $state(false)
     let showSearchDialog = $state(false)
     /**
-     * Selection dialog state (M7). `'add'` opens "Select files…", `'remove'` opens
+     * Selection dialog state. `'add'` opens "Select files…", `'remove'` opens
      * "Deselect files…", `null` closes. The entries + cursor snapshot is captured
      * once when we flip from `null` to a non-null value.
      */
@@ -633,9 +634,10 @@
     })
 
     /**
-     * Wizard finished. Reached when the user clicks "Finish" on the last step (M3+ wires
-     * the per-step persistence). Persists `isOnboarded: true` via `notifyOnboardingComplete()`
-     * so the deferred update toast can fire and we stop re-opening the wizard on next launch.
+     * Wizard finished. Reached when the user clicks "Finish" on the last step (per-step
+     * persistence is wired inside each `Step*.svelte`). Persists `isOnboarded: true` via
+     * `notifyOnboardingComplete()` so the deferred update toast can fire and we stop
+     * re-opening the wizard on next launch.
      */
     function handleWizardComplete() {
         showOnboarding = false

@@ -3,7 +3,7 @@
  *
  * The user need is mundane: most copies are tiny and should land silently. A copy of
  * 10 MiB is unusual enough to deserve a confirm; over 100 MiB risks freezing the
- * downstream app's paste handler, so we refuse and offer a save-as alternative (M5).
+ * downstream app's paste handler, so we refuse and offer a save-as alternative.
  *
  * Thresholds are fixed binary bytes, independent of the user's display setting; the
  * sizes shown in dialogs/toasts go through `formatBytes()`, which honours

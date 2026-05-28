@@ -21,10 +21,9 @@ import { test, expect } from './fixtures.js'
 import { ensureAppReady, pollUntil } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 
-// Round 3 renamed the "Open in pane" footer button to "Show all in main window".
-// `:not([disabled])` matters: the button is always in the DOM (round 1) but
-// disabled until results land. Without the qualifier, the selector matches the
-// disabled state and the test clicks a no-op.
+// The footer button is labelled "Show all in main window" and is always in the DOM,
+// disabled until results land. `:not([disabled])` matters — without it, the selector
+// matches the disabled state and the test clicks a no-op.
 const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]:not([disabled])'
 
 test.describe('Search dialog: recent searches', () => {
@@ -47,10 +46,9 @@ test.describe('Search dialog: recent searches', () => {
     await ensureMcpClient(tauriPage)
 
     // Open the dialog via the MCP `open_search_dialog` tool, prefilling a
-    // Filename-mode query and asking for autoRun. This is the same path the
-    // M9 MCP integration uses; it bypasses the dialog's preserved-state
-    // pitfall (where prior tests leave the query / mode dirty) and the
-    // AI-mode default that would otherwise need a live provider to land
+    // Filename-mode query and asking for autoRun. This bypasses the dialog's
+    // preserved-state pitfall (where prior tests leave the query / mode dirty)
+    // and the AI-mode default that would otherwise need a live provider to land
     // results.
     const seededQuery = 'file'
     await mcpCall('open_search_dialog', { query: seededQuery, mode: 'filename', autoRun: true })

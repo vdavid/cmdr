@@ -107,7 +107,7 @@ describe('RecentSearchesPopover a11y', () => {
   // (correctly) flags with `aria-required-children`. That's the same pattern
   // as SearchResults' loading / no-results branches (see
   // `SearchResults.a11y.test.ts`). Fixing it cleanly means lifting the empty
-  // message out of the listbox container, which is a tidy follow-up but not
-  // M10 scope. The two states above already cover the popover's full a11y
-  // surface in the path users actually hit.
+  // message out of the listbox container, which is a tidy follow-up. The two
+  // states above already cover the popover's full a11y surface in the path
+  // users actually hit.
 })

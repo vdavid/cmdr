@@ -1,18 +1,16 @@
 /**
- * Pure layout helper for the recent-searches footer strip (R3 U1).
+ * Pure layout helper for the recent-searches footer strip.
  *
- * Round 2 sliced the first 6 entries unconditionally and let the strip
- * scroll horizontally on overflow. David's R3 brief asks for a dynamic
- * layout instead:
+ * The strip is a dynamic greedy-fit layout:
  *   - "Recent searches:" label on the left, always rendered.
  *   - "All searches… ⌘H" button on the right, always rendered.
- *   - Middle slot: pack AS MANY chips as fit in the remaining width; the
- *     rest are dropped silently (no scroll, no ellipsis chip).
+ *   - Middle slot: pack AS MANY chips as fit in the remaining width; the rest
+ *     are dropped silently (no scroll, no ellipsis chip).
  *
- * This helper takes the strip width and a per-chip width estimate (the
- * caller pre-measures with pretext or with a rendered + hidden DOM probe)
- * and returns the count of chips that fit. Pure, so we can unit-test the
- * greedy-fit rule with mocked widths.
+ * This helper takes the strip width and a per-chip width estimate (the caller
+ * pre-measures with pretext or with a rendered + hidden DOM probe) and returns
+ * the count of chips that fit. Pure, so we can unit-test the greedy-fit rule
+ * with mocked widths.
  */
 
 export interface RecentChipsLayoutInput {

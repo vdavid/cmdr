@@ -2,7 +2,7 @@
     /**
      * SelectionDialog: thin Selection-specific wrapper around the shared `QueryDialog`.
      *
-     * M7. Mirrors `lib/search/SearchDialog.svelte`'s shape — the Selection feature is the
+     * Mirrors `lib/search/SearchDialog.svelte`'s shape — the Selection feature is the
      * second consumer of `QueryDialog`, not a fork. The wrapper owns:
      *
      *   - Building the `QueryDialogConfig` for Selection (title, max width, modes,

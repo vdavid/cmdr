@@ -45,10 +45,10 @@ export interface ExplorerAPI {
   getFocusedPane: () => 'left' | 'right'
   getFocusedPanePath: () => string
   /**
-   * Round 2 D12: "smart current folder" for the Search-in popover. When the focused
-   * pane is a `search-results://` snapshot the host walks back through history to find
-   * the most recent real folder; when none is reachable it surfaces a disabled state
-   * with `disabledReason` as the tooltip. See `lib/search/searchable-folder.ts`.
+   * "Smart current folder" for the Search-in popover. When the focused pane is a
+   * `search-results://` snapshot the host walks back through history to find the most
+   * recent real folder; when none is reachable it surfaces a disabled state with
+   * `disabledReason` as the tooltip. See `lib/search/searchable-folder.ts`.
    */
   getFocusedPaneSearchableFolder: () => {
     path: string | null
@@ -98,14 +98,14 @@ export interface ExplorerAPI {
   togglePinActiveTab: () => void
   closeOtherTabs: () => void
   /**
-   * Bulk-applies matched indices to the focused pane's selection set. Used by
-   * the Selection dialog (M7) on commit.
+   * Bulk-applies matched indices to the focused pane's selection set. Used by the
+   * Selection dialog on commit.
    */
   applyIndicesToFocusedPane: (idxs: number[], mode: 'add' | 'remove') => void
   /**
-   * Returns a snapshot of the focused pane's entries + cursor index for the
-   * Selection dialog (M7). Captured ONCE at dialog open per the plan's G15
-   * contract; the dialog does not refresh on mid-dialog focused-pane change.
+   * Returns a snapshot of the focused pane's entries + cursor index for the Selection
+   * dialog. Captured ONCE at dialog open; the dialog does not refresh on mid-dialog
+   * focused-pane change.
    */
   getFocusedPaneEntries: () => Promise<{
     entries: FileEntry[]

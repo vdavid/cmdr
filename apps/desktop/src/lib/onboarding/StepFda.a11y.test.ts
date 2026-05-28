@@ -1,5 +1,5 @@
 /**
- * Tier 3 axe a11y tests for `StepFda.svelte` (M2).
+ * Tier 3 axe a11y tests for `StepFda.svelte`.
  *
  * One test per variant. Tier-3 a11y is structural (ARIA, labels, focusables); axe runs
  * in jsdom against the mounted component. Focus management and Escape behaviour live

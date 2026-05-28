@@ -2,7 +2,7 @@
     /**
      * SearchDialog: thin Search-specific wrapper around the shared `QueryDialog`.
      *
-     * M4 extracted all dialog orchestration into
+     * Dialog orchestration lives in
      * [`lib/query-ui/QueryDialog.svelte`](../query-ui/QueryDialog.svelte). This file owns
      * only the Search-specific glue:
      *
@@ -170,7 +170,7 @@
     /**
      * Translates a natural-language prompt and applies the AI's filter writes. Returns
      * the caveat + highlighted-field list for QueryDialog to surface in the AI strip
-     * and flash effect. Per the M4 ownership contract, this does NOT write to
+     * and flash effect. Per QueryDialog's ownership contract, this does NOT write to
      * `state.lastAiPrompt` / `state.lastAiCaveat` — QueryDialog handles both.
      *
      * Current behavior: invokes the translator (so the AI call fires) but discards
@@ -249,9 +249,9 @@
         const snapshotFilters = {
             ...(hf.sizeMin != null ? { sizeMin: hf.sizeMin } : {}),
             ...(hf.sizeMax != null ? { sizeMax: hf.sizeMax } : {}),
-            // Snapshot date filters omitted on purpose; see the pre-M4 comment in the
-            // legacy wrapper for the reasoning (the search-results pane doesn't need
-            // them post-run).
+            // Snapshot date filters intentionally omitted: the search-results pane
+            // doesn't need them post-run (the snapshot stores the matched paths
+            // directly, not the date predicate).
         }
         const snapshot: SearchSnapshot = {
             id,
@@ -477,8 +477,8 @@
         },
 
         emptyState: {
-            // Examples + indexHint shapes are reserved for M7 (Selection consumes them);
-            // Search reads its examples + index count off QueryDialog's defaults today.
+            // Examples + indexHint shapes are reserved for Selection consumers; Search
+            // reads its examples + index count off QueryDialog's defaults today.
             examples: [],
             indexEntryCount,
         },

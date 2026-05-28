@@ -804,7 +804,7 @@ mod tests {
         uninstall_state(&id);
     }
 
-    // ---- backend_cancel flag flipping (M2 wedge fix) ------------------------
+    // ---- backend_cancel flag flipping ---------------------------------------
 
     #[test]
     fn backend_cancel_starts_unset_on_fresh_state() {

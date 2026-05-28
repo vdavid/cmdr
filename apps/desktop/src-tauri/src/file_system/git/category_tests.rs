@@ -1,4 +1,5 @@
-//! Integration tests for M3 – commits, stash, worktrees, submodules.
+//! Integration tests for the extra virtual-portal categories: commits, stash,
+//! worktrees, submodules.
 //!
 //! Standard init+commit fixtures go through [`Fixture`]. The handful
 //! of operations gix 0.81 doesn't expose publicly (stash creation,

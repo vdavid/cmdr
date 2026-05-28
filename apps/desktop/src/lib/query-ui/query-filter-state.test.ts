@@ -1,8 +1,8 @@
 /**
- * Factory-instance counterpart to `lib/search/search-state.test.ts`. M2 split the
- * module-singleton into a factory; this file pins the same behaviors against an
- * instance returned by `createQueryFilterState()`. Search's existing tests still
- * pass verbatim against the façade in `lib/search/search-state.svelte.ts`.
+ * Factory-instance counterpart to `lib/search/search-state.test.ts`. Pins the
+ * cross-consumer behaviors against an instance returned by `createQueryFilterState()`.
+ * Search's existing tests pass against the façade in `lib/search/search-state.svelte.ts`
+ * which re-exports the named API on top of this factory.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -160,7 +160,7 @@ describe('createQueryFilterState: switchMode + per-mode buffers', () => {
     expect(s.getQuery()).toBe('find my pdfs')
   })
 
-  it('R3 B2: AI translation overwrites the matching hand-typed buffer (glob to filename)', () => {
+  it('AI translation overwrites the matching hand-typed buffer (glob to filename)', () => {
     const s = createQueryFilterState()
     s.setMode('filename')
     s.setQueryFromUserInput('*.foo')
@@ -171,7 +171,7 @@ describe('createQueryFilterState: switchMode + per-mode buffers', () => {
     expect(s.getQuery()).toBe('*.pdf')
   })
 
-  it('R3 B2: AI translation of a regex overwrites the regex buffer, not filename', () => {
+  it('AI translation of a regex overwrites the regex buffer, not filename', () => {
     const s = createQueryFilterState()
     s.setMode('filename')
     s.setQueryFromUserInput('*.foo') // hand-typed glob
@@ -278,7 +278,7 @@ describe('createQueryFilterState: clearCore', () => {
   })
 })
 
-describe('createQueryFilterState: recordAiTranslation contract (M2 NG3)', () => {
+describe('createQueryFilterState: recordAiTranslation contract', () => {
   it('writes ONLY to the matching hand-typed buffer (glob to filename)', () => {
     const s = createQueryFilterState()
     s.recordAiTranslation({ pattern: '*.pdf', kind: 'glob' })

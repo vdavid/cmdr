@@ -1,5 +1,5 @@
 /**
- * Behaviour tests for `StepAi.svelte` (M3).
+ * Behaviour tests for `StepAi.svelte`.
  *
  * Covers:
  * - The three FDA-banner branches (granted / denied / stuck), driven by the FDA probe

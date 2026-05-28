@@ -83,7 +83,7 @@ describe('EmptyState', () => {
     target.remove()
   })
 
-  it('renders consumer-provided examples when passed (M10)', async () => {
+  it('renders consumer-provided examples when passed', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(EmptyState, {
@@ -109,7 +109,7 @@ describe('EmptyState', () => {
     target.remove()
   })
 
-  it('hides the index-status line when indexEntryCount is 0 (M10, Selection)', async () => {
+  it('hides the index-status line when indexEntryCount is 0 (Selection)', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(EmptyState, {

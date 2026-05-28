@@ -1,6 +1,6 @@
 # Redact
 
-Path-shape-preserving redactor used by the crash reporter and (Phase 4+) the error reporter.
+Path-shape-preserving redactor shared by the crash reporter and the error reporter.
 
 The hot path is `redact_line`, called once per log line. One composed regex with named capture
 groups drives a single pass; the dispatch closure inspects which group matched and calls the

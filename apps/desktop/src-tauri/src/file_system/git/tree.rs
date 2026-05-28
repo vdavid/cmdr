@@ -281,7 +281,8 @@ fn apply_kind(
             fe.size = blob_size(repo, oid);
         }
         EntryKind::Commit => {
-            // Submodule pointer. M3 will redirect; for M2 surface as a dir.
+            // Submodule pointer. `submodules.rs` sets `redirect_to_path` so
+            // the FE opens the working dir directly; we surface as a dir.
             fe.is_directory = true;
             fe.permissions = 0o755;
         }

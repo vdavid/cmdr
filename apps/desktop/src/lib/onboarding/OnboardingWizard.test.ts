@@ -1,5 +1,5 @@
 /**
- * Behaviour tests for the onboarding wizard shell (M2).
+ * Behaviour tests for the onboarding wizard shell.
  *
  * Covers:
  * - Escape is a no-op (the wizard intentionally swallows it).
@@ -34,7 +34,7 @@ vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: vi.fn(() => Promise.resolve()),
   startIndexingAfterFdaDecision: vi.fn(() => Promise.resolve()),
   openExternalUrl: vi.fn(() => Promise.resolve()),
-  // M3: StepAi pulls in the AI pipeline. None of these need real behaviour here;
+  // StepAi pulls in the AI pipeline. None of these need real behaviour here;
   // the wizard test only cares about navigation + footer plumbing.
   startAiDownload: vi.fn(() => Promise.resolve()),
   cancelAiDownload: vi.fn(() => Promise.resolve()),

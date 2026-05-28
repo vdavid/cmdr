@@ -22,7 +22,8 @@
     const log = getAppLogger('onboarding')
 
     interface Props {
-        /** Called when the user finishes the last step. M2+ wires the per-step persistence. */
+        /** Called when the user finishes the last step. Per-step persistence is wired
+         *  inside each `Step*.svelte`; this callback only triggers the close + finalize. */
         onComplete: () => void
     }
 

@@ -22,11 +22,10 @@ type PageLike = TauriPage | BrowserPageAdapter
 
 const SEARCH_OVERLAY = '.search-overlay'
 const SEARCH_INPUT = '.search-overlay input'
-// Round 3 renamed the "Open in pane" footer button to "Show all in main window".
-// The handler and the snapshot-pane promotion is the same; only the label changed.
-// Round 1's "footer buttons always visible" rule means the button is in the DOM
-// even when there are no results (just disabled); `:not([disabled])` is the
-// "actually clickable" signal — without it the test races on a disabled click.
+// The "Show all in main window" footer button promotes the result set to a snapshot
+// pane. The "footer buttons always visible" rule keeps the button in the DOM even when
+// there are no results (disabled); `:not([disabled])` is the "actually clickable"
+// signal — without it the test races on a disabled click.
 const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]:not([disabled])'
 /**
  * The right pane's content area when it's showing a search-results snapshot.
@@ -207,9 +206,9 @@ async function resetRightPaneToLocalIfNeeded(
 
 /**
  * Types into the search input and waits for results to land. The dialog
- * auto-applies on a 1 s debounce in filename / regex modes (M6); pressing
- * Enter is the synchronous path that bypasses the debounce, which is what
- * we want for a deterministic test.
+ * auto-applies on a 1 s debounce in filename / regex modes; pressing Enter is
+ * the synchronous path that bypasses the debounce, which is what we want for
+ * a deterministic test.
  *
  * We set `.value` directly and fire `input` so the bound query state
  * updates, then `pressKey('Enter')` dispatches a real keydown event on the
@@ -234,7 +233,7 @@ async function typeAndRunSearch(tauriPage: PageLike, query: string): Promise<voi
   await tauriPage.waitForSelector(OPEN_IN_PANE_BUTTON, 5000)
 }
 
-test.describe('Search dialog: Open in pane (M8c acceptance)', () => {
+test.describe('Search dialog: Open in pane', () => {
   test('Open in pane lands the right pane on a search-results snapshot', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
@@ -261,9 +260,9 @@ test.describe('Search dialog: Open in pane (M8c acceptance)', () => {
     expect(await pollOverlayGone(tauriPage)).toBe(true)
     expect(await pollRightPaneVolumeId(tauriPage, 'search-results')).toBe(true)
 
-    // The path column header is the M8b shrink-wrapped marker for the
-    // search-results pane (FullList + showPathColumn). Confirms the view
-    // actually rendered and isn't a placeholder.
+    // The path column header is the shrink-wrapped marker for the search-results pane
+    // (FullList + showPathColumn). Confirms the view actually rendered and isn't a
+    // placeholder.
     const pathHeaderCount = await tauriPage.count(SNAPSHOT_PANE_PATH_HEADER)
     expect(pathHeaderCount).toBeGreaterThan(0)
   })

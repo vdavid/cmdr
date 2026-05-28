@@ -58,10 +58,10 @@
      * from local within the same session cancels; the existing AI toast handles any
      * surfaced progress.
      *
-     * **No-key-blocks-advance rule** (plan M3): if the user picks cloud but the
-     * connection check hasn't gone green, both footer buttons stay enabled. The
-     * auto-check status is right there as feedback; forcing key entry as a precondition
-     * would fight users who want to come back later.
+     * **No-key-blocks-advance rule**: if the user picks cloud but the connection check
+     * hasn't gone green, both footer buttons stay enabled. The auto-check status is
+     * right there as feedback; forcing key entry as a precondition would fight users
+     * who want to come back later.
      */
 
     const log = getAppLogger('onboarding-step-ai')
@@ -173,7 +173,7 @@
         }
         // Belt-and-braces: the applier listener fires on each setSetting above, but we
         // await this explicitly so the backend is reconfigured before the user lands in
-        // the app. Per plan M3 § "Persist on click of either footer button".
+        // the app. Both footer buttons commit on click.
         await pushConfigToBackend()
     }
 

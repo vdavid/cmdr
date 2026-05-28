@@ -1,5 +1,5 @@
 /**
- * Tier-3 a11y tests for `SearchFilterChips.svelte` (M3).
+ * Tier-3 a11y tests for `FilterChips.svelte`.
  *
  * Covers the chip strip in default and configured states plus the open popovers (size, modified,
  * scope). Popovers are dialogs (`role="dialog"`); the chip is `aria-haspopup="dialog"` with an

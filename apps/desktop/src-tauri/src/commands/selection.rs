@@ -1,4 +1,4 @@
-//! IPC commands for the Selection dialog (M5).
+//! IPC commands for the Selection dialog.
 //!
 //! Thin wrappers around `crate::selection`. The selection AI translation is
 //! cloud-only: small local models can't reliably handle a 200+-name folder sample

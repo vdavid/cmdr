@@ -105,12 +105,13 @@ pub struct FileEntry {
     /// recursive size). Drives the "size omits symlinked content" hint in the UI.
     /// `None` when the directory isn't indexed yet.
     pub recursive_has_symlinks: Option<bool>,
-    /// When set on a virtual entry, the frontend navigates to this path
-    /// instead of treating the entry as a normal directory listing.
-    /// Inert until M3 wires it for `worktrees/` and `submodules/`. Lives on
-    /// the schema from M1 so M3 doesn't have to ripple a change through every
-    /// consumer (frontend list views, MCP `cmdr://state`, drag-drop, copy
-    /// preview, Brief/Full renderers).
+    /// When set on a virtual entry, the frontend navigates to this path instead
+    /// of treating the entry as a normal directory listing. Currently set on
+    /// `worktrees/` and `submodules/` entries inside the git portal so they
+    /// open their working dir directly. The field lives on the base
+    /// `FileEntry` schema so every consumer (frontend list views, MCP
+    /// `cmdr://state`, drag-drop, copy preview, Brief/Full renderers) carries
+    /// it for free.
     pub redirect_to_path: Option<String>,
     /// Loose Size-column override for virtual git entries: rendered verbatim
     /// in the Full mode Size column instead of formatted bytes from `size`.

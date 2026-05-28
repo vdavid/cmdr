@@ -1,12 +1,9 @@
-// Search-side instantiation of the recent-items factory store.
+// Search-side instantiation of the recent-items factory store (see
+// `lib/query-ui/recent-items/recent-items-state.svelte.ts`). Search wires the factory
+// with the search-history IPC family; Selection wires its own.
 //
-// M3 converted the previous module-singleton into a factory (see
-// `lib/query-ui/recent-items/recent-items-state.svelte.ts`). Search wires the factory with
-// the search-history IPC family; Selection (M5+) will wire its own.
-//
-// We keep the same named exports the rest of `lib/search/` already imports
-// (`getRecentSearchesList`, `loadRecentSearches`, …) so the Search dialog's call sites stay
-// stable through M3.
+// We export the named functions the rest of `lib/search/` imports
+// (`getRecentSearchesList`, `loadRecentSearches`, …) so call sites stay shallow.
 
 import { getRecentSearches, type HistoryEntry } from '$lib/tauri-commands'
 import { createRecentItemsState } from '$lib/query-ui/recent-items/recent-items-state.svelte'
@@ -15,10 +12,10 @@ import { createRecentItemsState } from '$lib/query-ui/recent-items/recent-items-
 // time. Test mocks (`vi.mock('$lib/tauri-commands', ...)`) that omit `getRecentSearches`
 // would otherwise throw at import time; the thunk pushes the lookup to first call.
 //
-// Exported as `recentSearchesStore` so `SearchDialog.svelte` (M4) can hand the underlying
-// reactive store straight to `QueryDialog`'s `historyStore` prop without re-wrapping the
-// getter/setter surface. The named helpers below stay around because the rest of `lib/search/`
-// still imports them through the legacy API.
+// Exported as `recentSearchesStore` so `SearchDialog.svelte` can hand the underlying
+// reactive store straight to `QueryDialog`'s `historyStore` prop without re-wrapping
+// the getter/setter surface. The named helpers below stay around because the rest of
+// `lib/search/` still imports them through the named-export API.
 export const recentSearchesStore = createRecentItemsState<HistoryEntry>({
   getRecent: () => getRecentSearches(),
 })

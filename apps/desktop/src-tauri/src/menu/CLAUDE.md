@@ -193,12 +193,12 @@ also Window and Help.
 **Decision**: Per-pane View submenus (`View > Left pane > …`, `View > Right pane > …`) with the accelerator following the active pane.
 **Why**: The previous single Full/Brief pair always targeted the active pane, but that scope was invisible in the menu, so testers were slow to figure out how to change the inactive pane's view. Nesting each pane's Full/Brief items inside its own submenu makes the scope obvious without cluttering the View root. The accelerator is attached only to the active pane's pair (and migrates on focus change via `rebuild_view_mode_items`) so the shortcut remains accurate: pressing ⌘1 always affects the active pane, and the visible binding sits next to the items it actually targets.
 
-**Decision**: `Select all` and `Deselect all` live in the new `Select` top-level menu, not in `Edit`.
+**Decision**: `Select all` and `Deselect all` live in the `Select` top-level menu, not in `Edit`.
 **Why**: macOS convention puts them under `Edit`, but Cmdr's `selection.selectAll` operates on files, not on text. The
-`Select` menu is the honest home for file-selection commands, and it groups them with the new `Select files…` /
-`Deselect files…` dialog openers (M8 of the selection-dialog plan). `Edit` retains the text-edit operations
-(Cut/Copy/Paste/Move here/Copy path/Copy filename/Search files) plus Undo/Redo. Don't move them back without re-reading
-this entry and the selection-dialog plan's M8 § "Menu structure" rationale.
+`Select` menu is the honest home for file-selection commands, and it groups them with the `Select files…` /
+`Deselect files…` dialog openers. `Edit` retains the text-edit operations (Cut/Copy/Paste/Move here/Copy path/Copy
+filename/Search files) plus Undo/Redo. Don't move them back without re-reading this entry — the file-vs-text-selection
+distinction is the load-bearing reason.
 
 **Decision**: SF Symbol icons only on the menu bar, not on context menus.
 **Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects, producing true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).

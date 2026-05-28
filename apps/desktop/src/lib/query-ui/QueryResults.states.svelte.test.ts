@@ -1,5 +1,5 @@
 /**
- * Round 2 fixup tests for `SearchResults.svelte` states.
+ * Tests for `QueryResults.svelte` states.
  *
  * Pins:
  * - D1: Searching state renders the project's normal spinner (`.spinner`), not the

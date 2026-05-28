@@ -1,8 +1,7 @@
 /**
  * Onboarding wizard state machine.
  *
- * M2 scope: step 1 (FDA) is real. The wizard now needs three pieces of state beyond
- * the bare step cursor:
+ * State carried beyond the bare step cursor:
  *
  * 1. A persisted-flag-aware resume step (`resumeStepFor()`). Production launches read
  *    `fullDiskAccessChoice` + `isOnboarded` + an FDA probe and land the user on the
@@ -11,13 +10,12 @@
  *    copy + buttons by variant. `'already-granted'` is a single-Next variant for the
  *    menu re-entry case.
  * 3. A step-1 footer mode (`'decide' | 'restart'`). The "Allow" path requires the
- *    user to restart the app before advancing (see plan § "FDA gate clear-on-Allow"):
- *    after clicking Allow, the wizard swaps the primary footer button from "Open
- *    System Settings" to "Restart Cmdr".
+ *    user to restart the app before advancing (the FDA gate is set once at boot; see
+ *    `apps/desktop/src-tauri/src/fda_gate.rs`). After clicking Allow, the wizard swaps
+ *    the primary footer button from "Open System Settings" to "Restart Cmdr".
  *
- * Step 2 reads the same flag triple via `stepTwoFdaBanner()` so the M3 banner can pick
- * the right copy. Even though M2 doesn't render step 2 content, we set this up here so
- * the M3 work just slots into an existing field.
+ * Step 2 reads the same flag triple via `stepTwoFdaBanner()` so its banner can pick
+ * the right copy.
  */
 
 import { isMacOS } from '$lib/shortcuts/key-capture'
@@ -60,7 +58,7 @@ export type Step1Variant = 'first-ask' | 'revoked' | 'already-granted'
 export type Step1FooterMode = 'decide' | 'restart'
 
 /**
- * Which step-2 banner copy to render. M3 reads this; M2 only sets it on step transition.
+ * Which step-2 banner copy to render. Set on step transition, read by step 2.
  *
  * - `'granted'`: FDA is now granted (`hasFda === true`). "Thanks for granting…"
  * - `'denied'`: user clicked Deny on step 1. "You chose not to enable…"
@@ -95,7 +93,7 @@ interface OnboardingStateData {
   step1Variant: Step1Variant
   /** Step 1 footer mode. Flips to `'restart'` when the user clicks Allow this session. */
   step1FooterMode: Step1FooterMode
-  /** Pre-computed step-2 banner mode. M3 reads this; M2 stores it. */
+  /** Pre-computed step-2 banner mode (set on step transition, read by step 2). */
   stepTwoBanner: StepTwoFdaBanner
   /**
    * If set, the wizard renders these buttons in the footer's right slot instead of
@@ -180,7 +178,7 @@ export function step1VariantFor(ctx: ResumeContext, source: OnboardingSource): S
   return 'first-ask'
 }
 
-/** Returns the step 2 banner mode for the given context. Used by M3 step 2 + by the */
+/** Returns the step 2 banner mode for the given context. Used by step 2 and by the */
 /** state machine itself when advancing from step 1. */
 export function stepTwoBannerFor(ctx: ResumeContext): StepTwoFdaBanner {
   const isMac = ctx.isMac ?? isMacOS()
@@ -216,9 +214,9 @@ export function openWizard(source: OnboardingSource, ctx: ResumeContext | null =
     return
   }
   // Menu / palette re-entry always opens at the first reachable step (step 1 on macOS,
-  // step 2 on Linux) so the user can step through every page from the start. The plan's
-  // round-3 #1 and M5 step 3 codify this. Other sources (force / first-launch) honour
-  // the resume rule so crash-then-resume lands on the first not-yet-decided step.
+  // step 2 on Linux) so the user can step through every page from the start. Other
+  // sources (force / first-launch) honour the resume rule so crash-then-resume lands on
+  // the first not-yet-decided step.
   const isMac = ctx.isMac ?? isMacOS()
   if (source === 'menu' || source === 'palette') {
     state.currentStep = isMac ? 1 : 2
@@ -260,7 +258,8 @@ export function nextStep(): void {
  * - Linux: step 2 is the first reachable step (step 1 is skipped).
  *
  * When going back from step 2 to step 1, reset the footer to `'decide'` so the
- * Allow/Deny buttons are live again (plan M2 § "Back-from-step-2 with prior Deny").
+ * Allow/Deny buttons are live again (a prior Deny shouldn't lock the user into the
+ * restart-mode footer on a return visit).
  */
 export function previousStep(): void {
   if (state.currentStep === null) return

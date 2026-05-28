@@ -1,5 +1,5 @@
 //! Integration tests for Modified + Size column population on virtual
-//! git entries (the M4-era follow-up to the M1+M2+M3 portal).
+//! git entries.
 //!
 //! Fixtures go through `test_fixtures::Fixture` (in-process gix); stash,
 //! worktree-add, submodule-add operations stay on the [`git_cli`]

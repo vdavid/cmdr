@@ -89,9 +89,9 @@ logical coordinates, independent of which lines happen to be rendered.
     the bug (e.g. an older Linux distro target), replace this code path with a `Range.getClientRects()`-based binary
     search that doesn't depend on the browser caret API.
 - **Selection offsets are UTF-16 code units, not bytes or grapheme clusters.** When you add features that compute
-  offsets from a click position (M3a's caret math) or accept them across the IPC boundary (M2's `viewer_read_range`),
-  preserve the UTF-16 convention. The backend handles the conversion to UTF-8 bytes, clamping lone surrogates to the
-  nearest codepoint boundary.
+  offsets from a click position (caret math in `viewer-pointer.ts`) or accept them across the IPC boundary
+  (`viewer_read_range`), preserve the UTF-16 convention. The backend handles the conversion to UTF-8 bytes, clamping
+  lone surrogates to the nearest codepoint boundary.
 - **Drag autoscroll uses `setPointerCapture` + window `blur` fallback** because the Tauri webview can lose `pointerup`
   events to other macOS windows. Without capture, dragging past the webview's edge leaves the RAF loop running forever
   with no way to stop. Capture is wrapped in try/catch because some webviews refuse it on non-focusable targets; the

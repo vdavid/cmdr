@@ -1,5 +1,5 @@
 /**
- * Behaviour tests for `StepOptional.svelte` (M4).
+ * Behaviour tests for `StepOptional.svelte`.
  *
  * Covers:
  * - Each of the four toggles round-trips: clicking the switch writes the new value

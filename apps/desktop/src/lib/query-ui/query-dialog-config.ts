@@ -1,9 +1,9 @@
 /**
  * Config shape consumed by `QueryDialog.svelte`.
  *
- * M4: the orchestrator becomes a shared primitive between Search and the upcoming
- * Selection dialog. Each consumer wires its own data source, AI translation, history
- * store, primary/secondary actions, and lifecycle hooks via this config.
+ * The orchestrator is a shared primitive between Search and Selection. Each consumer
+ * wires its own data source, AI translation, history store, primary/secondary actions,
+ * and lifecycle hooks via this config.
  *
  * Everything that diverges per consumer lives here; everything else (overlay layout,
  * keyboard dispatch, IME guard, auto-apply debounce, `lastDialogEvent` ownership,
@@ -39,7 +39,7 @@ import type { QueryFilterState, SearchMode } from './query-filter-state.svelte'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items/recent-items-types'
 import type { RecentItemsStore } from './recent-items/recent-items-state.svelte'
 
-/** Which filter chips render in the strip. Search shows all four; Selection (M7+) hides scope. */
+/** Which filter chips render in the strip. Search shows all four; Selection hides scope. */
 export interface QueryDialogVisibleChips {
   size: boolean
   date: boolean
@@ -77,10 +77,10 @@ export interface AiTranslateResult {
 /**
  * Search-specific filter-chips state that QueryDialog forwards to `FilterChips.svelte`.
  *
- * Selection (M7+) will pass empty/no-op values for the Search-only fields once
- * `scopeChipVisible: false` and the Pattern-chip surface stop requiring them.
- * Keeping the props named the same way the underlying component already speaks
- * means M4 doesn't churn `FilterChips.svelte`'s prop list.
+ * Selection passes empty/no-op values for the Search-only fields with
+ * `scopeChipVisible: false` and a Pattern-chip surface that doesn't require them.
+ * Keeping the props named the way the underlying component speaks means
+ * `FilterChips.svelte`'s prop list stays stable for both consumers.
  */
 export interface QueryDialogFilterChipsExtras {
   caseSensitive: boolean
@@ -150,18 +150,18 @@ export interface QueryDialogRecentItems<E> {
 /**
  * The shape every consumer of `QueryDialog` builds.
  *
- * Generic over `E` (the history entry type) so Search wires `HistoryEntry` and Selection
- * (M7+) wires `SelectionHistoryEntry`.
+ * Generic over `E` (the history entry type): Search wires `HistoryEntry`, Selection
+ * wires `SelectionHistoryEntry`.
  */
 export interface QueryDialogConfig<E = unknown> {
-  /** Dialog title shown in the new title bar (M4 § "Title bar"). */
+  /** Dialog title shown in the title bar. */
   title: string
   /** Dialog-type string passed to `notifyDialogOpened` / `notifyDialogClosed`. */
   dialogType: string
   /** Dialog max-width, e.g. `'min(1080px, 80vw)'`. */
   maxWidth: string
 
-  /** Cross-consumer state instance (the M2 core factory). */
+  /** Cross-consumer state instance (the core factory's output). */
   state: QueryFilterState
 
   /** Whether the AI mode chip is available + AI-mode workflows are wired. */
@@ -174,7 +174,7 @@ export interface QueryDialogConfig<E = unknown> {
   /** Whether the results table shows the Path column. */
   showPathColumn: boolean
 
-  /** Copy for the QueryBar's right-gutter run hint. Locked in M4 (G14). */
+  /** Copy for the QueryBar's right-gutter run hint. */
   runHintCopy: string
 
   /** Recent-items store. */
@@ -187,7 +187,7 @@ export interface QueryDialogConfig<E = unknown> {
   /** Empty-state config. */
   emptyState: QueryDialogEmptyState
 
-  /** Search-specific filter-chips state. Selection (M7+) passes a narrower shape. */
+  /** Search-specific filter-chips state. Selectionpasses a narrower shape. */
   filterChipsExtras: QueryDialogFilterChipsExtras
 
   /** Scan progress for the "Drive index not ready" state. Search only. */
@@ -201,9 +201,9 @@ export interface QueryDialogConfig<E = unknown> {
 
   /**
    * Optional notice banner shown below the AI strip and above the filter chips.
-   * Used by R7 mitigation for snapshot-pane Selection ("Matching what's shown…").
-   * Search passes `undefined`. The banner is purely informational; clicking does
-   * nothing. Empty/undefined hides the row.
+   * Selection uses it on snapshot panes ("Matching what's shown…"); Search passes
+   * `undefined`. The banner is purely informational; clicking does nothing.
+   * Empty/undefined hides the row.
    */
   noticeBanner?: string
 

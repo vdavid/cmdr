@@ -8,7 +8,7 @@
      *
      * Search renders the full set:
      *     [AI Ask anything ⌥A] [Filename ⌥F] [Content (disabled)] [Regex ⌥R]
-     * When AI is disabled, the AI chip is hidden. Selection (M7+) renders the same minus
+     * When AI is disabled, the AI chip is hidden. Selection renders the same set minus
      * the disabled Content chip.
      *
      * The Content chip stays visible-disabled with a "Coming soon" tooltip. It has no

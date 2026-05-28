@@ -196,10 +196,11 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
         }
       })()`)
 
-      // The dialog must stay visible until `write-settled` lands. Settle
-      // bound: less than 2 s — anything beyond that is the M2 propagation
-      // failing (pre-M2 was 30 s). Once settle arrives, dialog closes within
-      // ~400 ms (MIN_DISPLAY_MS).
+      // The dialog must stay visible until `write-settled` lands. Settle bound:
+      // less than 2 s — anything beyond that is the cancel propagation failing
+      // (without propagation the MTP teardown took 30 s and triggered the op
+      // timeout). Once settle arrives, dialog closes within ~400 ms
+      // (MIN_DISPLAY_MS).
       const cancelClickedAt = Date.now()
       await expect
         .poll(async () => tauriPage.evaluate<boolean>(`(window.__settledEvents || []).length > 0`), { timeout: 2_000 })
@@ -242,13 +243,13 @@ test.describe('MTP cancel: settle gate keeps "Cancelling…" until BE quiets dow
       ).toBeGreaterThanOrEqual(events.cancelled[0].at)
       expect(
         settleDuration,
-        `settle within 2 s after cancel click (took ${String(settleDuration)} ms; pre-M2 was 30 s)`,
+        `settle within 2 s after cancel click (took ${String(settleDuration)} ms; without cancel propagation it would be 30 s)`,
       ).toBeLessThan(2_000)
 
-      // Now press F8 again on survivors. With M4 in place, the FE has
-      // already closed the dialog (settle arrived), so the second op
-      // dispatches cleanly. Without M4, the dialog would still be open
-      // here and F8 would be a no-op.
+      // Now press F8 again on survivors. The FE has already closed the dialog
+      // (settle arrived), so the second op dispatches cleanly. Without the
+      // settle gate, the dialog would still be open here and F8 would be a
+      // no-op.
       await mcpCall('refresh', {})
       // Find any remaining cancel-* file and select it.
       const survivors = await tauriPage.evaluate<string[]>(`(function() {

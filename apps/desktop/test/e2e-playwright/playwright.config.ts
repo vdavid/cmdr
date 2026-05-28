@@ -7,8 +7,8 @@ import { defineConfig } from '@playwright/test'
 // - unset / "all": every spec (single-instance / legacy run).
 const shardKind = process.env.CMDR_E2E_SHARD_KIND ?? 'all'
 
-// Match every MTP spec: `mtp.spec.ts`, `mtp-conflicts.spec.ts`, and the
-// M4 fresh-listing-reuse specs (`mtp-copy-preflight-uses-cache.spec.ts`,
+// Match every MTP spec: `mtp.spec.ts`, `mtp-conflicts.spec.ts`, plus the
+// fresh-listing-reuse specs (`mtp-copy-preflight-uses-cache.spec.ts`,
 // `mtp-delete-no-double-scan.spec.ts`). Every spec that touches the virtual
 // MTP backing dir must live on the dedicated MTP shard — running two MTP
 // specs in parallel corrupts the shared fixture root.

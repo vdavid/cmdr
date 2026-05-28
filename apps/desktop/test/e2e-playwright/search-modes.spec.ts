@@ -30,12 +30,10 @@ import {
 } from './search-helpers.js'
 
 test.describe('Search dialog: mode shortcuts', () => {
-  // Round 2 part B introduced per-mode hand-typed buffers (`handTyped.ai`,
-  // `handTyped.filename`, `handTyped.regex`). Switching modes now SWAPS the
-  // bar to the target mode's buffer, not the same shared string. The original
-  // test asserted the shared-buffer contract; updated below to pin the
-  // per-mode behavior plus the round-trip ("buffer for mode X survives a
-  // detour through modes Y and Z").
+  // Per-mode hand-typed buffers (`handTyped.ai` / `handTyped.filename` / `handTyped.regex`):
+  // switching modes SWAPS the bar to the target mode's buffer, not a shared string. This
+  // pins the per-mode behavior plus the round-trip ("buffer for mode X survives a detour
+  // through modes Y and Z").
   test("⌘1/⌘2/⌘3 switch modes and preserve each mode's own typed query", async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)

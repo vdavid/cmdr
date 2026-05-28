@@ -1,4 +1,5 @@
-//! Integration tests for M2 – virtual `.git/` portal.
+//! Integration tests for the virtual `.git/` portal: classify, list_branches /
+//! _tags / _root, list_tree, blob-read parity, cross-volume copy.
 //!
 //! Fixtures go through `test_fixtures::Fixture` (in-process gix). The
 //! one test that asserts byte-for-byte parity with `git show` still
@@ -427,7 +428,7 @@ fn watcher_invalidates_branches_listing_on_new_branch() {
             "refs/heads/added-after-init",
             head_id,
             gix::refs::transaction::PreviousValue::MustNotExist,
-            "m2_tests: new branch",
+            "portal_tests: new branch",
         )
         .expect("create branch ref");
     super::watcher::invalidate_for_test(&root);

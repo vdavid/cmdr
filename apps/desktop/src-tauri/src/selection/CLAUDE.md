@@ -112,5 +112,5 @@ appear in `apps/desktop/src/lib/ipc/bindings.ts`; the typed wrappers live in
   Mirrors `crate::commands::search`'s usage exactly.
 - `crate::config::resolved_app_data_dir`: shared persistence-path resolver.
 
-No other modules depend on `selection`; the dialog frontend and
-command-dispatch wiring land in M7.
+No other modules depend on `selection`; the dialog frontend and command-dispatch wiring live in
+`apps/desktop/src/lib/selection-dialog/` and `apps/desktop/src/lib/commands/`.

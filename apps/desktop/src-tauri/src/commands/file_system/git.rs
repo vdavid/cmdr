@@ -82,9 +82,9 @@ pub async fn unsubscribe_git_state(repo_root: String) {
 }
 
 /// Returns the per-entry status for a worktree. The `dir` argument scopes the
-/// caller's interest; today gix returns the whole worktree and the frontend
-/// filters, but the parameter is here so M2 can scope properly without an IPC
-/// shape change.
+/// caller's interest; gix currently returns the whole worktree and the
+/// frontend filters, but the parameter is here so the backend can start
+/// scoping properly without an IPC shape change.
 #[tauri::command]
 #[specta::specta]
 pub async fn get_git_status_for_paths(repo_root: String, dir: String) -> TimedOut<Vec<EntryStatus>> {

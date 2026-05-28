@@ -1,5 +1,5 @@
 /**
- * E2E test pinning the fresh-listing-reuse contract for MTP copy pre-flight (M4).
+ * E2E test pinning the fresh-listing-reuse contract for MTP copy pre-flight.
  *
  * Setup: connect to the virtual MTP device, navigate the left pane into a
  * subfolder of `/DCIM` so the FE has the listing cached and the device's

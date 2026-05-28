@@ -1,13 +1,11 @@
 /**
- * Round 2 tests for `SearchFooterActions.svelte`.
+ * Footer-policy tests for `SearchFooterActions.svelte`.
  *
- * D6: Both footer buttons are ALWAYS visible. When there are no results (or the
- *   index isn't ready), they render disabled instead of hidden.
- * R3: The "Show all in main window" button surfaces `⌥⏎` as its shortcut hint
- *   (was `⌥A` in round 1; ⌥A now belongs to mode chip AI).
- * D8 (footer half): The "Go to file" button surfaces `⏎` only when
- *   `enterAction === 'go-to-file'`. Otherwise the shortcut hint isn't rendered
- *   on this button.
+ *   - Both footer buttons are ALWAYS visible. When there are no results (or the
+ *     index isn't ready), they render disabled instead of hidden.
+ *   - The "Show all in main window" button surfaces `⌥⏎` as its shortcut hint.
+ *   - The "Go to file" button surfaces `⏎` only when `enterAction === 'go-to-file'`.
+ *     Otherwise the shortcut hint isn't rendered on this button.
  */
 import { describe, expect, it } from 'vitest'
 import { mount, tick } from 'svelte'

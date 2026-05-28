@@ -1,5 +1,5 @@
 /**
- * IPC contract tests for the Selection dialog commands added in M5.
+ * IPC contract tests for the Selection dialog commands.
  *
  * Pins the wire shape (command names + payload field names) so a rename on the Rust
  * side won't silently break the selection dialog. The destructive `clear_recent_selections`

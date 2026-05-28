@@ -2,13 +2,12 @@
     /**
      * QueryDialog: the shared orchestrator for filter-and-act-on dialogs.
      *
-     * M4 extracted this from `lib/search/SearchDialog.svelte`. Search is the first
-     * consumer; Selection (M7+) is the second. Everything that diverges per consumer
-     * comes in via `QueryDialogConfig`; everything else lives here as the one source
-     * of truth for both consumers' polish (keyboard contract, IME guard, auto-apply
-     * gates, `deriveEnterAction` ownership swap, `lastDialogEvent` lifecycle, the
-     * title bar, the chip strip, the results table, the recent-items footer + popover,
-     * the empty state, the notice banner).
+     * Search is the first consumer; Selection is the second. Everything that diverges
+     * per consumer comes in via `QueryDialogConfig`; everything else lives here as the
+     * one source of truth for both consumers' polish (keyboard contract, IME guard,
+     * auto-apply gates, `deriveEnterAction` ownership swap, `lastDialogEvent` lifecycle,
+     * the title bar, the chip strip, the results table, the recent-items footer +
+     * popover, the empty state, the notice banner).
      *
      * Ownership contracts (see `query-dialog-config.ts` for the long version):
      *   1. `state.lastDialogEvent` is written ONLY here (opened / query-edited /
@@ -24,7 +23,7 @@
      *   2. QueryBar (unified input drives every mode).
      *   3. ModeChips (AI / Filename / Content (disabled) / Regex; consumer-driven).
      *   4. AiPromptStrip (when `state.lastAiPrompt` is non-null).
-     *   5. Optional notice banner (R7 mitigation for snapshot-pane Selection).
+     *   5. Optional notice banner (Selection uses this on snapshot panes).
      *   6. FilterChips (Pattern / Size / Modified / Search in; visibility per config).
      *   7. QueryResults (column headers + results + states + status bar).
      *   8. Footer: recent-items strip on the left, primary/secondary action buttons on the right.
@@ -713,7 +712,7 @@
           Title bar: a heading-shaped element (not a banner). `<header>` would be a
           landmark and duplicate the app's existing banner; `<h2>` is the right semantic
           choice for "dialog title" and pairs cleanly with the dialog's
-          `aria-labelledby`. Visually styled as the M4 title strip per § "Title bar".
+          `aria-labelledby`. Visually styled as the title strip per § "Title bar".
         -->
         <h2 class="query-dialog__title" id="query-dialog-title">
             <span>{config.title}</span>
@@ -902,9 +901,9 @@
         overflow: hidden;
     }
 
-    /* M4 title bar: 32px tall, centered. Per § "Title bar" in the plan: no close
-       button (Escape is the only close path). Not in the Tab order — text only.
-       Rendered as <h2> for semantics; we reset the default heading typography. */
+    /* Title bar: 32px tall, centered. No close button (Escape is the only close path).
+       Not in the Tab order — text only. Rendered as <h2> for semantics; we reset the
+       default heading typography. */
     .query-dialog__title {
         margin: 0;
         height: 32px;
@@ -919,9 +918,9 @@
         flex-shrink: 0;
     }
 
-    /* R7 mitigation: optional notice banner row. Selection's snapshot-pane mode
-       uses this to surface "Matching what's shown in the list (the full path)";
-       Search passes undefined and the row doesn't render. */
+    /* Optional notice banner row. Selection's snapshot-pane mode uses this to
+       surface "Matching what's shown in the list (the full path)"; Search passes
+       undefined and the row doesn't render. */
     .query-dialog__notice {
         padding: var(--spacing-xs) var(--spacing-lg);
         background: var(--color-bg-primary);

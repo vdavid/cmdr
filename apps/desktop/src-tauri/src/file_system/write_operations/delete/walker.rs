@@ -805,7 +805,8 @@ pub(super) async fn delete_volume_files_with_progress_inner(
             // delete_with_cancel itself). The top-of-loop cancel check only
             // catches cancels that land between iterations; without this arm,
             // the `?` propagation would surface as a Cancelled error with no
-            // `write-cancelled` event, breaking the M4 settle contract.
+            // `write-cancelled` event, breaking the settle contract (see the
+            // module CLAUDE.md § "Settle contract").
             Err(VolumeError::Cancelled(_)) => {
                 events.emit_cancelled(WriteCancelledEvent {
                     operation_id: operation_id.to_string(),

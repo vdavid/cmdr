@@ -309,8 +309,8 @@ When you add a new primitive to `lib/ui/`:
 
 ## ToggleGroup
 
-Generic segmented-control primitive used by Settings (`SettingToggleGroup`) and, from M3 onwards, the search / selection
-mode chips. One visual contract, two ARIA shapes selected via the `semantics` prop.
+Generic segmented-control primitive used by Settings (`SettingToggleGroup`) and the search / selection mode chips. One
+visual contract, two ARIA shapes selected via the `semantics` prop.
 
 Pick the shape from the user's perspective, not the visual:
 

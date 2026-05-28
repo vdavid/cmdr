@@ -12,8 +12,7 @@
      * live-apply the moment the user flips them: `network.enabled` /
      * `indexing.enabled` / `updates.autoCheck` / `fileOperations.mtpEnabled` all
      * have entries in `settings-applier.ts`'s `passthroughBackendHandlers` table that
-     * fire the matching Rust-side helper (`updates.autoCheck` got wired in M4; the
-     * other three were already in place).
+     * fire the matching Rust-side helper.
      *
      * Defaults stay ON. Step 3's purpose is to let the user turn things OFF with full
      * context, not to ask for opt-in. See `lib/onboarding/CLAUDE.md` § "Step 3 (optional setup)".

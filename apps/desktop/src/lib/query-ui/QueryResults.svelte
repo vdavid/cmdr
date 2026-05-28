@@ -420,12 +420,10 @@
     }
 
     .result-row {
-        /* R3 U7: vertical padding cut from --spacing-xs (~8 px) to
-           --spacing-xxs (~4 px) so the Path column can bump its font from
-           --font-size-xs to --font-size-sm without growing the row. All
-           cells vertically center via the grid's `align-items: center`
-           rule above, so the look stays clean even with the tighter
-           padding. */
+        /* Vertical padding sits at --spacing-xxs (~4 px) instead of --spacing-xs
+           (~8 px) so the Path column can use --font-size-sm without growing the row.
+           All cells vertically center via the grid's `align-items: center` rule above,
+           so the look stays clean with the tighter padding. */
         padding: var(--spacing-xxs) var(--spacing-lg);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);

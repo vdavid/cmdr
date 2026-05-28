@@ -208,8 +208,9 @@ describe('key-capture', () => {
 
 describe('menuCommands', () => {
   it('includes the four Select menu commands so accelerator sync covers them', () => {
-    // The Select menu landed in M8 (selection-dialog plan). Both Select all / Deselect all
-    // (moved from Edit) and the new Select files… / Deselect files… items live there.
+    // The Select menu contains Select all, Deselect all, Select files…, and Deselect
+    // files… (Select all / Deselect all moved from Edit; the file-selection focus is
+    // the reason — see `src-tauri/src/menu/CLAUDE.md` § Decisions).
     expect(menuCommands).toContain('selection.selectAll')
     expect(menuCommands).toContain('selection.deselectAll')
     expect(menuCommands).toContain('selection.selectFiles')

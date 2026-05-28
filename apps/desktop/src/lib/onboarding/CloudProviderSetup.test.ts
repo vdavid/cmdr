@@ -1,5 +1,5 @@
 /**
- * Behaviour tests for `CloudProviderSetup.svelte` (M3): per-provider tutorial steps,
+ * Behaviour tests for `CloudProviderSetup.svelte`: per-provider tutorial steps,
  * checkmarks flipping on completion, API-key persist + connection-check pipeline,
  * provider switching.
  */

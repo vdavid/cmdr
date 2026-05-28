@@ -1,12 +1,12 @@
 /**
- * R3 U1: pin the greedy-fit algorithm for the recent-searches footer strip.
- * Mocked widths only; the DOM-measurement integration lives in the Svelte
- * component on top of this helper.
+ * Pins the greedy-fit algorithm for the recent-searches footer strip. Mocked
+ * widths only; the DOM-measurement integration lives in the Svelte component
+ * on top of this helper.
  */
 import { describe, it, expect } from 'vitest'
 import { computeRecentChipsLayout } from './recent-chips-layout'
 
-describe('computeRecentChipsLayout (R3 U1)', () => {
+describe('computeRecentChipsLayout', () => {
   it('shows every chip when there is plenty of room', () => {
     const out = computeRecentChipsLayout({
       stripWidth: 1000,

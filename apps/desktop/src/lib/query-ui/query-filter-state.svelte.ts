@@ -1,9 +1,10 @@
 /**
  * Reactive cross-consumer filter state for the Query dialog (Search + Selection).
  *
- * M2: this factory replaces the module-singleton `lib/search/search-state.svelte.ts`.
  * Two consumers (Search dialog and Selection dialog) each get their own instance, so
- * one dialog's state can't leak into the other.
+ * one dialog's state can't leak into the other. The Search façade in
+ * `lib/search/search-state.svelte.ts` keeps the legacy named-export API on top of this
+ * factory for the dialog's existing call sites.
  *
  * Scope: ONLY cross-consumer fields live here. Search-only fields (`scope`,
  * `excludeSystemDirs`, `lastAiLabel`, `lastAiPattern`, `lastAiPatternKind`) live in
@@ -105,8 +106,7 @@ export function bytesToSize(bytes: number): { value: string; unit: SizeUnit } {
 
 /**
  * The shape returned by `createQueryFilterState()`. All getters/setters mirror the named
- * exports of the previous module-singleton API so the Search wrapper can keep its existing
- * call sites unchanged while M2 transitions.
+ * exports the Search wrapper's call sites use, so the wrapper can stay unchanged.
  */
 export interface QueryFilterState {
   // Query + mode
@@ -166,11 +166,11 @@ export interface QueryFilterState {
   setLastRunQuery(value: string | null): void
 
   /**
-   * Records an AI translation's pattern outputs into the matching hand-typed buffer
-   * (per R3 B2). Does NOT touch `lastAiLabel`, `lastAiPattern`, or `lastAiPatternKind`:
-   * those live in the Search-extras module so Selection's instance doesn't carry unused
-   * fields. The Search wrapper calls this AND `extras.recordAiPatternAndLabel(...)` in
-   * sequence; Selection's wrapper calls only this.
+   * Records an AI translation's pattern outputs into the matching hand-typed buffer.
+   * Does NOT touch `lastAiLabel`, `lastAiPattern`, or `lastAiPatternKind`: those live in
+   * the Search-extras module so Selection's instance doesn't carry unused fields. The
+   * Search wrapper calls this AND `extras.recordAiPatternAndLabel(...)` in sequence;
+   * Selection's wrapper calls only this.
    */
   recordAiTranslation(input: { pattern: string | null; kind: 'glob' | 'regex' | null }): void
 
@@ -483,15 +483,14 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
     },
 
     /**
-     * R3 B2: the AI's pattern OVERWRITES the matching hand-typed buffer. The user
-     * just asked the AI to take over: if it produces a glob, that's the new filename
-     * pattern; if it produces a regex, that's the new regex pattern. Empty patterns
-     * leave the buffers alone so a no-op translation doesn't wipe the user's
-     * typed-by-hand value.
+     * The AI's pattern OVERWRITES the matching hand-typed buffer. The user just asked
+     * the AI to take over: if it produces a glob, that's the new filename pattern; if
+     * it produces a regex, that's the new regex pattern. Empty patterns leave the
+     * buffers alone so a no-op translation doesn't wipe the user's typed-by-hand value.
      *
-     * Per the M2 split, this no longer writes the Search-only pattern/label fields
-     * — those are extras concerns. Search's wrapper calls
-     * `extras.recordAiPatternAndLabel(...)` right after this method.
+     * This does NOT write the Search-only pattern/label fields — those are extras
+     * concerns. Search's wrapper calls `extras.recordAiPatternAndLabel(...)` right
+     * after this method.
      */
     recordAiTranslation: (input) => {
       if (input.pattern && input.pattern.trim()) {

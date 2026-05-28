@@ -1,5 +1,5 @@
 /**
- * Behaviour tests for `StepFda.svelte` (M2).
+ * Behaviour tests for `StepFda.svelte`.
  *
  * Covers the three variants (first-ask, revoked, already-granted), the Allow path
  * (re-probe → persist → openPrivacySettings → flip footer to restart), the Deny path

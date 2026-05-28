@@ -1,10 +1,10 @@
-# File explorer › git (complete: M1 + M2 + M3 + M4)
+# File explorer › git
 
-Frontend module for the git browser. M1 shipped the breadcrumb chip, status-column helpers, and the live `RepoInfo`
-store. M2 wired the virtual portal into `FilePane.svelte`'s breadcrumb. M3 wired `redirectToPath` navigation in
-`handleNavigate` so worktree / submodule entries open their working dir directly. M4 ties everything together:
-**Settings > General > Git** has three live toggles (`GitSection.svelte`), `showVirtualGitPortal` round-trips through a
-Rust atomic to disable the backend portal hook in real time, and every git failure now lands in `ErrorPane` with warm
+Frontend module for the git browser. Renders the per-pane breadcrumb chip (`RepoChip.svelte`), the optional Git status
+column (`status-column.ts`), the live `RepoInfo` store (`git-store.svelte.ts`), the virtual `.git` portal path detection
+(`path-detection.ts`), and the `redirectToPath` plumbing so worktree / submodule entries open their working dir
+directly. **Settings > General > Git** has three live toggles (`GitSection.svelte`); `showVirtualGitPortal` round-trips
+through a Rust atomic that disables the backend portal hook in real time. Git failures land in `ErrorPane` with warm
 copy via the FriendlyError pipeline.
 
 Backend counterpart:
@@ -51,11 +51,11 @@ Three keys, all under `fileExplorer.git.*`:
 
 - `fileExplorer.git.showRepoChip` (default `true`): gates the chip render.
 - `fileExplorer.git.showStatusColumn` (default `false`): gates the optional status column in Full mode.
-- `fileExplorer.git.showVirtualGitPortal` (default `true`): controls whether `cd .git` shows the virtual portal. M4
-  rebuilds the round-trip: `settings-applier.ts` calls `setShowVirtualGitPortal(value)` (Tauri command
-  `set_show_virtual_git_portal`), which flips a Rust `AtomicBool` consulted on every volume-hook entry. Toggling off
-  makes the portal stop hijacking `.git` listings immediately. **Settings > General > Git > GitSection.svelte** wires
-  the UI; `setShowVirtualGitPortal` lives in `tauri-commands/settings.ts`.
+- `fileExplorer.git.showVirtualGitPortal` (default `true`): controls whether `cd .git` shows the virtual portal.
+  `settings-applier.ts` calls `setShowVirtualGitPortal(value)` (Tauri command `set_show_virtual_git_portal`), which
+  flips a Rust `AtomicBool` consulted on every volume-hook entry. Toggling off makes the portal stop hijacking `.git`
+  listings immediately. **Settings > General > Git > GitSection.svelte** wires the UI; `setShowVirtualGitPortal` lives
+  in `tauri-commands/settings.ts`.
 
 ## Decisions
 
@@ -63,18 +63,17 @@ Three keys, all under `fileExplorer.git.*`:
 on the same repo would otherwise pay for two watcher subscriptions and two IPC round-trips. Refcounting in the store
 makes the backend tear-down deterministic without per-pane dance.
 
-**Decision**: `RepoChip.svelte` is a single thin pill, no menu yet **Why**: M1's job is to ship the schema and the
-foundation. Click-to-copy branch name, click-to-open `.git/...` virtual root, and the longer tooltip expansion all land
-in M3/M4.
+**Decision**: `RepoChip.svelte` is a passive state indicator, not an action surface **Why**: The chip shows branch +
+ahead/behind/dirty status. Action affordances (navigate to `.git/...`, branch operations) live in the navigation flow
+and Settings rather than crammed into a header pill.
 
 **Decision**: `lookupRepoInfo` and `subscribeToRepo` are separate calls **Why**: Lookup is cheap and runs on every path
 change; subscribe is a real commitment (opens a watcher). Splitting them means rapid path changes across non-repo paths
 don't churn watcher state, and the chip can react to the lookup before the watcher is up.
 
-**Decision**: Place the Git status column right after Name, not after Modified **Why**: The plan's open question
-suggested "right after Name" and visual review confirmed it: the glyph reads as a per-row tag of the file, so it sits
-naturally next to the name. Putting it last would make the row scan name → metadata → meta-meta-tag, which is one
-indirection too many.
+**Decision**: Place the Git status column right after Name, not after Modified **Why**: The glyph reads as a per-row tag
+of the file, so it sits naturally next to the name. Putting it last would make the row scan name → metadata →
+meta-meta-tag, which is one indirection too many.
 
 **Decision**: The Git column is omitted from the grid when `gitRepoRoot` is null, even if the user enabled the setting
 **Why**: Outside a worktree the column would just show blank cells, which costs ~28 px from the name column for no
@@ -88,7 +87,7 @@ portal, not on disk. After two consecutive false readings the poll calls `naviga
 returns via `isVirtualGitPath(currentPath)` so virtual paths stay put. Cache freshness for virtual listings already
 flows through `git-state-changed` and the backend's `invalidate_virtual_listings`.
 
-## Redirect navigation (M3)
+## Redirect navigation
 
 `FileEntry.redirectToPath` is honoured in `FilePane.svelte::handleNavigate`. When set, opening the entry navigates to
 that path directly instead of treating it as a virtual subtree. Used today by:

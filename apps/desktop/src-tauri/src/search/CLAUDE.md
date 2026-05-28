@@ -96,8 +96,8 @@ acting on) instead of every keystroke-debounced filename search. The Rust side d
 frontend convention. Don't paper over this with a "convenience" add-on-search call site.
 
 **Decision**: `_schemaVersion` mismatch quarantines instead of migrating in-place.
-**Why**: M5 ships schema v1. There's no v2 yet, so a migrator would be speculative code. When v2 lands, replace the
-quarantine branch with a `match` on the version that calls a `migrate_v1_to_v2` helper.
+**Why**: There's only schema v1 today; a migrator would be speculative code. When v2 lands, replace the quarantine
+branch with a `match` on the version that calls a `migrate_v1_to_v2` helper.
 
 ## Gotchas
 

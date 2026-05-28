@@ -26,7 +26,7 @@ function makeEntry(overrides: Partial<HistoryEntry>): HistoryEntry {
   }
 }
 
-// Search-shaped adapter: the wrapping the Search dialog ships in M3.
+// Search-shaped adapter: the wrapping the Search dialog ships.
 const searchAdapter: RecentItemAdapter<HistoryEntry> = (entry) => ({
   label: entry.query,
   tooltip: chipTooltip(entry),
@@ -251,10 +251,10 @@ describe('RecentSearchesFooter', () => {
     target.remove()
   })
 
-  // M3: the adapter pattern is the only seam between consumer-specific entries and the
-  // generic footer. We pin both wrappings: Search's full HistoryEntry (above) and a hypothetical
-  // Selection-shaped entry (below). Selection's actual wrapping ships in M7; this test ensures
-  // the contract holds against any narrower entry shape.
+  // The adapter pattern is the only seam between consumer-specific entries and the
+  // generic footer. We pin both wrappings: Search's full HistoryEntry (above) and a
+  // Selection-shaped entry (below). This test ensures the contract holds against any
+  // narrower entry shape.
   it('renders against a Selection-shaped adapter', async () => {
     interface SelectionEntry {
       id: string

@@ -16,11 +16,9 @@ export type PageLike = TauriPage | BrowserPageAdapter
 export const SEARCH_OVERLAY = '.search-overlay'
 export const SEARCH_INPUT = '.search-overlay input.query-input'
 /**
- * Active mode chip in the dialog's `role="tablist"`. Selectors changed in M3:
- * `ModeChips.svelte` is now backed by `lib/ui/ToggleGroup.svelte` (semantics='tabs'),
- * which renders `.tg-item` cells with `aria-selected="true"` for the active one and
- * `.tg-label` for the inner label. The `.mode-chip` / `.chip-label` / `.is-active`
- * classes are gone.
+ * Active mode chip in the dialog's `role="tablist"`. `ModeChips.svelte` is backed by
+ * `lib/ui/ToggleGroup.svelte` (semantics='tabs'), which renders `.tg-item` cells with
+ * `aria-selected="true"` for the active one and `.tg-label` for the inner label.
  */
 export const ACTIVE_MODE_CHIP = '.search-overlay .tg-item[aria-selected="true"]'
 /** All mode chips in the dialog. Used to confirm the chip set (and indirectly, whether AI is on). */

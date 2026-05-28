@@ -36,9 +36,9 @@ categories so the user sees everything in one place.**
 | `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` – ten variants including `BlobTooLarge`, `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`. Active-voice copy, no "error" / "failed". `to_friendly_error()` builds a `volume::FriendlyError` for `ErrorPane`. The volume hooks wrap a `FriendlyGitError` directly inside the typed `VolumeError::FriendlyGit` variant so the streaming pipeline carries the structured payload end-to-end without string parsing |
 | `column_meta.rs` | Per-row column-population helpers shared across `virtual_listing`, `log`, `tree`, etc.: `ahead_behind_for_branch`, `commit_meta`, `files_changed_count`, `recursive_tree_size`, plus newest-of-set helpers for category-level Modified dates (count + noun formatting goes through `crate::pluralize`) |
 | `tests.rs` | Discover, repo_info, status, friendly errors |
-| `m2_tests.rs` | Classify, list_branches/tags/root, list_tree, blob-read parity with `git show`, cross-volume copy round-trip |
-| `m3_tests.rs` | list_commits + sha browsing + cancellation + 1000-commit walk (`#[ignore]`), list_stashes, list_worktrees + redirect, list_submodules + redirect, watcher invalidation for `commits/` |
-| `m4_tests.rs` | Modified + Size column population per category (root counts, branches ahead/behind + sort key, tags short SHA, commits files-changed, stash branch parsing, worktree branch/SHA, submodule pinned SHA, snapshot-interior date + recursive bytes) |
+| `portal_tests.rs` | Classify, list_branches/tags/root, list_tree, blob-read parity with `git show`, cross-volume copy round-trip |
+| `category_tests.rs` | list_commits + sha browsing + cancellation + 1000-commit walk (`#[ignore]`), list_stashes, list_worktrees + redirect, list_submodules + redirect, watcher invalidation for `commits/` |
+| `column_meta_tests.rs` | Modified + Size column population per category (root counts, branches ahead/behind + sort key, tags short SHA, commits files-changed, stash branch parsing, worktree branch/SHA, submodule pinned SHA, snapshot-interior date + recursive bytes) |
 | `bench.rs` | `#[ignore]` benchmark over a 50k-file synth fixture. Run with `cargo test --release -- --ignored --test-threads=1 bench_50k` |
 
 ## Tauri commands

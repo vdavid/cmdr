@@ -8,13 +8,13 @@ cross-consumer filter state factory.
 See [`lib/search/CLAUDE.md`](../search/CLAUDE.md) for Search-specific decisions (snapshot store, virtual volume, MCP
 open path, "Open in pane", index lifecycle, "Use current folder" smart fallback) and
 [`lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md) for Selection-specific decisions (matcher in JS,
-cloud-only AI, commit-on-Enter, R7 snapshot-pane banner).
+cloud-only AI, commit-on-Enter, snapshot-pane banner).
 
 Filter-chip internals (chip strip, single chips, popover anatomy, the chip-popover focus contract, grid-style Size /
 Modified popovers, shortcut openers, and chip-specific decisions) live in
 [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md).
 
-## QueryDialog orchestrator (M4)
+## QueryDialog orchestrator
 
 `QueryDialog.svelte` is the shared overlay every consumer mounts. It owns the overlay chrome, the keyboard contract, IME
 guard, auto-apply gates, the `⏎` ownership swap, the `lastDialogEvent` lifecycle, the title bar, the chip strip, the AI
@@ -22,9 +22,9 @@ prompt strip, the results table, the recent-items footer + popover, the empty st
 Consumers wire everything Search-or-Selection-specific through a single [`QueryDialogConfig`](query-dialog-config.ts)
 prop.
 
-The config carries the title + max width, the cross-consumer state instance (the M2 factory output), an `aiEnabled`
-flag, the per-chip visibility set, a `showPathColumn` flag, the run-hint copy, the history store + adapter + key, the
-empty-state hints, the filter-chips extras, the index lifecycle flags, an optional `noticeBanner` (R7), the async
+The config carries the title + max width, the cross-consumer state instance (the factory output), an `aiEnabled` flag,
+the per-chip visibility set, a `showPathColumn` flag, the run-hint copy, the history store + adapter + key, the
+empty-state hints, the filter-chips extras, the index lifecycle flags, an optional `noticeBanner`, the async
 `runQuery` + optional `translateAi` callbacks, primary + secondary action descriptors, callbacks for path-pill / example
 / row-menu / recent-activate / recent-remove / close events, optional `onMount` / `onDestroy` / `onClearState` hooks.
 
@@ -44,7 +44,7 @@ Three pieces of state are QueryDialog's alone; the consumer's callbacks MUST NOT
 The split keeps the `⏎` ownership swap deterministic and lets the orchestrator drive the AI strip lifecycle (clear on
 the next non-AI run, etc.) without each consumer re-implementing the rule.
 
-### Title bar (M4)
+### Title bar
 
 The top of the dialog renders the consumer's `config.title` in a 32 px strip with no close button (Escape is the only
 close path). The strip is an `<h2>` semantically (the dialog's `aria-labelledby` points at it) styled to look like a
@@ -54,7 +54,7 @@ thin centered bar; it's NOT a `<header>` landmark, which would collide with the 
 ### Lifecycle hooks
 
 - **`onMount`**: invoked once after the orchestrator has wired its own listeners (Esc capture, autoApply setting
-  subscription). Search wires `prepareSearchIndex` and the `search-index-ready` listener here; Selection's wrapper (M7)
+  subscription). Search wires `prepareSearchIndex` and the `search-index-ready` listener here; Selection's wrapper
   snapshots the focused pane's listing here.
 - **`onDestroy`**: invoked at unmount, before the orchestrator tears down its own listeners. Search wires
   `releaseSearchIndex` here.
@@ -78,20 +78,20 @@ AI-on against a minimal Search-shaped config. Search's full integration tests li
 `lib/search/SearchDialog.svelte.test.ts` and `lib/search/SearchDialog.a11y.test.ts` and they mount QueryDialog through
 the Search wrapper.
 
-## Files (M3)
+## Files
 
 | File                                        | Purpose                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `QueryDialog.svelte`                        | Shared orchestrator (M4): overlay, title bar, keyboard contract, IME guard, auto-apply gates, `lastDialogEvent` ownership. Consumer-driven via `QueryDialogConfig`                                                                                                                                                 |
+| `QueryDialog.svelte`                        | Shared orchestrator: overlay, title bar, keyboard contract, IME guard, auto-apply gates, `lastDialogEvent` ownership. Consumer-driven via `QueryDialogConfig`                                                                                                                                                      |
 | `query-dialog-config.ts`                    | `QueryDialogConfig<E>` shape every consumer builds + ownership contract comments                                                                                                                                                                                                                                   |
 | `QueryBar.svelte`                           | Unified query input: one `<input>` for AI / filename / regex; placeholder updates per mode; right-gutter run hint + ⏎ button                                                                                                                                                                                       |
-| `ModeChips.svelte`                          | Mode chip row below the bar. Thin wrapper over `lib/ui/ToggleGroup.svelte` with `semantics="tabs"`. AI / Filename / Content (disabled) / Regex. Search renders all four; Selection (M7+) drops Content.                                                                                                            |
+| `ModeChips.svelte`                          | Mode chip row below the bar. Thin wrapper over `lib/ui/ToggleGroup.svelte` with `semantics="tabs"`. AI / Filename / Content (disabled) / Regex. Search renders all four; Selection drops Content.                                                                                                                  |
 | `AiPromptStrip.svelte`                      | Strip below the chip row showing the AI prompt, optional caveat, disabled Refine button                                                                                                                                                                                                                            |
 | `QueryResults.svelte`                       | Column headers + results list + states (loading, empty, populated) + status bar. New `showPathColumn` prop (default `true` for Search; Selection passes `false`)                                                                                                                                                   |
 | `EmptyState.svelte`                         | Pre-search "Try…" block: three example chips, optional index size hint, optional keyboard hint. Examples come from `config.emptyState.examples` (forwarded by `QueryResults`); Search-flavoured defaults render when the consumer omits them. `indexEntryCount === 0` hides the "Index ready · …" line (Selection) |
 | `PathPills.svelte`                          | Clickable path-pill strip rendered inside each row's path column. Overflow collapse into a single `…` pill with hidden-segments tooltip                                                                                                                                                                            |
 | `path-pills-layout.ts`                      | Pure: `computePathPillsLayout`, `scheduleStableWidthMeasure`                                                                                                                                                                                                                                                       |
-| `SearchRowMenu.svelte`                      | Per-row `…` button: always visible on every row. Routes to the parent's native context menu via `onOpen`. Name kept verbatim per M3 plan                                                                                                                                                                           |
+| `SearchRowMenu.svelte`                      | Per-row `…` button: always visible on every row. Routes to the parent's native context menu via `onOpen`                                                                                                                                                                                                           |
 | `query-filter-state.svelte.ts`              | Factory `createQueryFilterState()` producing the cross-consumer state instance                                                                                                                                                                                                                                     |
 | `enter-action.ts`                           | Pure: `deriveEnterAction({ lastEvent, resultsCount })` returning `'run-search' \| 'go-to-file'`                                                                                                                                                                                                                    |
 | `recent-chips-layout.ts`                    | Pure: `computeRecentChipsLayout` for the recent-items footer's greedy fit                                                                                                                                                                                                                                          |
@@ -107,7 +107,7 @@ companion test catalog (mirrors the file table above):
 
 | Test                                     | Coverage                                                                                                                         |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `QueryDialog.svelte.test.ts`             | M4 orchestrator: title bar, primary / secondary action handlers, ⌘N / ⌘H, IME guard, `lastDialogEvent` writes after `runQuery`   |
+| `QueryDialog.svelte.test.ts`             | Orchestrator: title bar, primary / secondary action handlers, ⌘N / ⌘H, IME guard, `lastDialogEvent` writes after `runQuery`      |
 | `QueryDialog.a11y.test.ts`               | Tier-3 axe-core audit across loading, index-ready, and AI-on macro-states                                                        |
 | `QueryBar.svelte.test.ts`                | Per-mode placeholder, value mirror, `onInput` callback                                                                           |
 | `ModeChips.svelte.test.ts`               | Chip set, active marker, click + keyboard activation, focus motion (skipping Content), AI-on/off cardinality, ToggleGroup wiring |
@@ -121,11 +121,11 @@ companion test catalog (mirrors the file table above):
 | `SearchRowMenu.a11y.test.ts`             | Tier-3 axe-core audit for cursor-row and non-cursor variants                                                                     |
 | `EmptyState.svelte.test.ts`              | Chip rendering per `aiEnabled`, click → `onPick`                                                                                 |
 | `RecentItemsFooter.svelte.test.ts`       | Layout cap, click → onPick, contextmenu → onRemove, "All …" → onOpenAll, Search-shaped + Selection-shaped adapters               |
-| `RecentItemsFooter.label.svelte.test.ts` | D5: the leading label renders                                                                                                    |
+| `RecentItemsFooter.label.svelte.test.ts` | The leading label renders                                                                                                        |
 | `RecentItemsFooter.a11y.test.ts`         | Zero/one/many/disabled state audits                                                                                              |
 | `RecentItemsPopover.svelte.test.ts`      | Closed/open render, fuzzy filter, empty message, Enter on cursor row, right-click → onRemove, filter resets on reopen            |
 | `RecentItemsPopover.a11y.test.ts`        | Closed + open-with-entries audits                                                                                                |
-| `query-filter-state.test.ts`             | Factory defaults, switchMode + per-mode buffers, history filters, recordAi NG3 split                                             |
+| `query-filter-state.test.ts`             | Factory defaults, switchMode + per-mode buffers, history filters, recordAi split                                                 |
 | `enter-action.test.ts`                   | Eight-permutation table for `deriveEnterAction`                                                                                  |
 | `recent-chips-layout.test.ts`            | Greedy-fit packing against mocked widths                                                                                         |
 | `recent-items-utils.test.ts`             | `modeBadge`, `modeName`, `formatAge`, `filterSummary`, `chipTooltip` rules                                                       |
@@ -171,31 +171,31 @@ When adding a new field, ask: "would Selection also care about this?"
 The `lastAiLabel` field is the textbook "no" case. Search's snapshot pane needs a short LLM-produced title for the
 breadcrumb; Selection has no snapshot pane and no breadcrumb to seed.
 
-### `recordAiTranslation` is split (NG3)
+### `recordAiTranslation` is split
 
-The core's `recordAiTranslation({pattern, kind})` writes ONLY to `handTyped[mode]` (R3 B2: AI's output overwrites the
-matching mode's hand-typed buffer). Both consumers call this. The extras'
-`recordAiPatternAndLabel({pattern, kind, label})` writes ONLY to the Search-only fields. Search's wrapper calls this
-right after the core method; Selection's wrapper skips it. The Search façade in `lib/search/search-state.svelte.ts`
-keeps a `recordAiTranslation({pattern, kind, label})` convenience that calls both methods in sequence.
+The core's `recordAiTranslation({pattern, kind})` writes ONLY to `handTyped[mode]` — AI's output overwrites the matching
+mode's hand-typed buffer. Both consumers call this. The extras' `recordAiPatternAndLabel({pattern, kind, label})` writes
+ONLY to the Search-only fields. Search's wrapper calls this right after the core method; Selection's wrapper skips it.
+The Search façade in `lib/search/search-state.svelte.ts` keeps a `recordAiTranslation({pattern, kind, label})`
+convenience that calls both methods in sequence.
 
-## Round 3 polish (R3) — shared items
+## Shared UI behavior
 
-These items apply to every consumer of the query UI:
+Small contracts that apply to every consumer of the query UI:
 
-- **B1**: `QueryBar.svelte` run button no longer leads with a corner-down-left icon; the `⏎` shortcut sits at the suffix
-  slot at `--spacing-xs` from the "Search" label so the rhythm matches "Go to file ⏎" and "All searches… ⌘H" elsewhere.
-- **U1**: `RecentItemsFooter.svelte` + `recent-chips-layout.ts` use a greedy-fit layout: leading label ("Recent
-  searches:" or "Recent selections:") and trailing button ("All searches… ⌘H" or equivalent) are always rendered; the
-  middle slot packs as many chips as fit, dropping the rest silently. No horizontal scrolling, no ellipsis chip.
-- **U2**: each chip's tooltip leads with the full text so a CSS-ellipsis-truncated chip stays readable on hover.
-- **U7**: path column font bumped from `--font-size-xs` to `--font-size-sm` (matching the filename column); row vertical
-  padding cut from `--spacing-xs` to `--spacing-xxs` so the row height stays the same.
+- `QueryBar.svelte`'s run button has the `⏎` shortcut at the suffix slot at `--spacing-xs` from the "Search" label so
+  the rhythm matches "Go to file ⏎" and "All searches… ⌘H" elsewhere.
+- `RecentItemsFooter.svelte` + `recent-chips-layout.ts` use a greedy-fit layout: leading label ("Recent searches:" or
+  "Recent selections:") and trailing button ("All searches… ⌘H" or equivalent) are always rendered; the middle slot
+  packs as many chips as fit, dropping the rest silently. No horizontal scrolling, no ellipsis chip.
+- Each chip's tooltip leads with the full text so a CSS-ellipsis-truncated chip stays readable on hover.
+- Path column font is `--font-size-sm` (matching the filename column) with `--spacing-xxs` row vertical padding so the
+  row height stays compact.
 
-R3 chip-side items (B5, U3, U4, U5) live in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). R3 search-specific items
-(B2, B3, B4, B6, U6, U8, T1) stay in `lib/search/CLAUDE.md`.
+Chip-side behaviors live in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md); search-specific ones in
+`lib/search/CLAUDE.md`.
 
-## Round 2 R2: PathPills measurement
+## PathPills measurement
 
 The fitting algorithm lives in `path-pills-layout.ts::computePathPillsLayout` (pure, deterministic, unit-tested with
 mocked widths). The chrome budget per pill is 4 px (matching the real CSS padding) so the strip doesn't collapse when
@@ -206,33 +206,33 @@ provides pixel-accurate text widths.
 
 Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below).
 
-| Shortcut  | Action                                                                              |
-| --------- | ----------------------------------------------------------------------------------- |
-| `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)                     |
-| `⌥⏎`      | Show all results in the main window (Search) / no-op (Selection); see consumer      |
-| `⌘Enter`  | No-op (R4). Bare Enter is the only path that runs a search or opens the cursor row. |
-| `⇧Enter`  | No-op (R4). Same rule as ⌘Enter.                                                    |
-| `⌘N`      | Clear all dialog state ("new search" / "new selection")                             |
-| `⌘H`      | Toggle the recent-items popover (fuzzy over the full history)                       |
-| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                                           |
-| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                                        |
-| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                                       |
-| `⌘4`      | Reserved for Content when it ships; not wired now                                   |
-| `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled)                   |
-| `⌥F`      | Mode chip: Filename (global)                                                        |
-| `⌥R`      | Mode chip: Regex (global)                                                           |
-| `⌥←`      | Navigate the active pane to the cursor row's parent folder                          |
-| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)                    |
-| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)                       |
-| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)                     |
-| `Tab`     | Trapped within the dialog; cycles through interactive elements                      |
-| `Escape`  | Close the dialog                                                                    |
+| Shortcut  | Action                                                                         |
+| --------- | ------------------------------------------------------------------------------ |
+| `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)                |
+| `⌥⏎`      | Show all results in the main window (Search) / no-op (Selection); see consumer |
+| `⌘Enter`  | No-op. Bare Enter is the only path that runs a search or opens the cursor row. |
+| `⇧Enter`  | No-op. Same rule as ⌘Enter.                                                    |
+| `⌘N`      | Clear all dialog state ("new search" / "new selection")                        |
+| `⌘H`      | Toggle the recent-items popover (fuzzy over the full history)                  |
+| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                                      |
+| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                                   |
+| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                                  |
+| `⌘4`      | Reserved for Content when it ships; not wired now                              |
+| `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled)              |
+| `⌥F`      | Mode chip: Filename (global)                                                   |
+| `⌥R`      | Mode chip: Regex (global)                                                      |
+| `⌥←`      | Navigate the active pane to the cursor row's parent folder                     |
+| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)               |
+| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)                  |
+| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)                |
+| `Tab`     | Trapped within the dialog; cycles through interactive elements                 |
+| `Escape`  | Close the dialog                                                               |
 
 Filter-popover openers (`⌥S`, `⌥M`, `⌥I`) and the macOS Option-glyph remap live in
 [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). Scope-popover shortcuts (`⌥C`, `⌥V`) are Search-only — see
 `lib/search/CLAUDE.md` § "Scope shortcuts".
 
-### Round 2 D8: `⏎` ownership swap
+### `⏎` ownership swap
 
 The factory carries `lastDialogEvent: LastDialogEvent` (one of `opened`, `results-arrived`, `cursor-moved`,
 `query-edited`, `filter-edited`). The pure helper `deriveEnterAction({ lastEvent, resultsCount })` returns
@@ -246,7 +246,7 @@ The bar's run button reads `Search ⏎` only when `enterAction === 'run-search'`
 `Go to file ⏎` only when `enterAction === 'go-to-file'`. Exactly one of them surfaces the hint at any time. Tests in
 `enter-action.test.ts` pin the eight-permutation table.
 
-### Round 2 D6: footer buttons always visible
+### Footer buttons always visible
 
 The policy: footer actions render unconditionally; when there are no results (or the index isn't ready) they render
 disabled instead of hidden, so the layout stays still while the user types. The specific Search footer buttons ("Show
@@ -384,7 +384,7 @@ Loading drive index). The rule: content is the source of truth; duplicating the 
 broken. When you add a new content-area state in `QueryResults.svelte`, make sure `getStatusText()` returns `''` for
 that state.
 
-**Gotcha**: ⌘⏎ and ⇧⏎ are explicit no-ops in the dialog (R4). Bare Enter is the only key that runs a search or opens the
+**Gotcha**: ⌘⏎ and ⇧⏎ are explicit no-ops in the dialog. Bare Enter is the only key that runs a search or opens the
 cursor row (dispatched via `enterAction` per D8). The dialog's `handleModifierShortcuts` swallows both modifier
 combinations with `preventDefault` so the bare-Enter handler never sees a modified Enter.
 

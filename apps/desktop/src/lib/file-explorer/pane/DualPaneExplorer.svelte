@@ -212,7 +212,7 @@
         /**
          * Bubbles a high-level command id from a pane up to the route, which
          * routes it through `handleCommandExecute` (the unified dispatcher).
-         * Used by the Selection dialog's bare `+` / `-` shortcuts (M7).
+         * Used by the Selection dialog's bare `+` / `-` shortcuts.
          */
         onCommand?: (commandId: string) => void
     }
@@ -2107,7 +2107,7 @@
         }
     })
 
-    // Quick Look cursor-follow (M2): while the panel is open, push the path under the
+    // Quick Look cursor-follow: while the panel is open, push the path under the
     // focused pane's cursor to the backend on every cursor move, pane switch, or
     // directory navigation. The backend silently no-ops for volumes without local-fs
     // access (MTP, virtual git portal), so no skip logic is needed here.
@@ -2161,7 +2161,7 @@
         }, QUICK_LOOK_FOLLOW_DEBOUNCE_MS)
     })
 
-    // Quick Look error-state close (M3): when the focused pane transitions into
+    // Quick Look error-state close: when the focused pane transitions into
     // an error state (volume unmounted, listing failed) while the panel is open,
     // dismiss the panel. Sitting on a stale path while the underlying volume is
     // gone is worse UX than just closing — and the cursor-follow effect above
@@ -2611,8 +2611,8 @@
 
     /**
      * Bulk-apply matched indices to the focused pane's selection set. Called by
-     * the Selection dialog (M7) on commit. Mode is `'add'` for "Select files…"
-     * and `'remove'` for "Deselect files…". No-op when no pane is focused.
+     * the Selection dialog on commit. Mode is `'add'` for "Select files…" and
+     * `'remove'` for "Deselect files…". No-op when no pane is focused.
      */
     export function applyIndicesToFocusedPane(idxs: number[], mode: 'add' | 'remove') {
         getPaneRef(focusedPane)?.applyIndices(idxs, mode)
@@ -2620,10 +2620,10 @@
 
     /**
      * Returns a snapshot of the focused pane's entries + cursor index, for the
-     * Selection dialog (M7). The dialog uses this once at open-time; we
-     * intentionally don't refresh on focused-pane change mid-dialog (G15).
+     * Selection dialog. The dialog uses this once at open-time; we
+     * intentionally don't refresh on focused-pane change mid-dialog.
      * `isSnapshotPane` flags `search-results://` panes so the dialog renders
-     * the R7 banner ("Matching what is shown in the list…").
+     * the banner ("Matching what is shown in the list…").
      */
     // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte for Selection dialog
     export async function getFocusedPaneEntries(): Promise<{

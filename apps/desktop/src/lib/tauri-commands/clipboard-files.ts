@@ -32,8 +32,8 @@ export async function cutFilesToClipboard(
 
 /**
  * Writes the given paths to the system clipboard as a copy. Paths-by-value
- * sibling of `copyFilesToClipboard`, used by the search-results pane (M8d)
- * where there's no backend listing to resolve indices against.
+ * sibling of `copyFilesToClipboard`, used by the search-results pane where
+ * there's no backend listing to resolve indices against.
  */
 export async function copyPathsToClipboard(paths: string[]): Promise<number> {
   const res = await commands.copyPathsToClipboard(paths)

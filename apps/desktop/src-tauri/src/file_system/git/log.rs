@@ -46,9 +46,9 @@
 //! contract would mean reworking the hook contract. The 5000-commit cap +
 //! task-abort cancellation gives us ≤30 ms typical walks even on
 //! medium-size repos (cmdr's own ~3000-commit history walks in ~7 ms);
-//! the budget plus the cap makes a streaming layer overkill in v1. The
-//! batch constant (`BATCH_SIZE`) is exposed so M4 can flip the switch
-//! without churning callers.
+//! the budget plus the cap makes a streaming layer overkill. The batch
+//! constant (`BATCH_SIZE`) is exposed so a future streaming refactor can
+//! flip the switch without churning callers.
 
 use std::path::Path;
 #[cfg(test)]
@@ -136,10 +136,10 @@ pub fn resolve_commit_id(handle: &RepoHandle, prefix: &str) -> Result<ObjectId, 
 /// public helper so future code (URL pasting, drag-drop validation) can
 /// shape-check candidates before doing a real DB lookup. Resolution
 /// happens via `resolve_commit_id`.
-// TODO(M3.1): Wire from URL paste / drag-drop input validation. The dead
-// gate stays because the classifier already does the implicit shape check
-// through `resolve_commit_id`; this helper is for callers that want to
-// reject obviously-wrong input before paying for the DB lookup.
+// TODO: Wire from URL paste / drag-drop input validation. The dead-code gate
+// stays because the classifier already does the implicit shape check through
+// `resolve_commit_id`; this helper is for callers that want to reject
+// obviously-wrong input before paying for the DB lookup.
 #[allow(
     dead_code,
     reason = "Public helper for URL paste / drag-drop validation; the classifier doesn't call it because the SHA-shape check happens implicitly through resolve_commit_id"

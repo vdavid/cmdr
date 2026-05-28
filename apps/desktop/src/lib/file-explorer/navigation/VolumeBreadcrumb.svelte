@@ -120,14 +120,13 @@
     )
 
     /**
-     * R3 B6: the snapshot's friendly label is now rendered as the trailing
-     * path text (in `FilePane.svelte`'s `breadcrumbDisplayPath`). The volume
-     * selector here reads the static "Search results" label so the
-     * volume-selector slot describes the KIND of volume (matching every
-     * other volume: "Network", "Macintosh HD", an MTP device name) and the
-     * path slot carries the QUERY-specific label. Round 2 had these
-     * inverted, which David flagged in the round 3 brief (the snapshot
-     * label was the volume name and the path was empty).
+     * The snapshot's friendly label is rendered as the trailing path text
+     * (in `FilePane.svelte`'s `breadcrumbDisplayPath`). The volume selector
+     * here reads the static "Search results" label so the volume-selector
+     * slot describes the KIND of volume (matching every other volume:
+     * "Network", "Macintosh HD", an MTP device name) and the path slot
+     * carries the QUERY-specific label. Don't invert these (label in the
+     * volume slot, empty path).
      */
     const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))

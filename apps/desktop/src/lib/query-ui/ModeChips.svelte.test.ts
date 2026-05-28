@@ -179,10 +179,10 @@ describe('SearchModeChips', () => {
     cleanup()
   })
 
-  // M3: ModeChips is now a thin wrapper over `lib/ui/ToggleGroup.svelte` with
-  // `semantics="tabs"`. These pins confirm the underlying primitive is wired correctly so a
-  // future refactor of ToggleGroup doesn't silently drop the tablist contract.
-  describe('M3: built on ToggleGroup with semantics="tabs"', () => {
+  // ModeChips is a thin wrapper over `lib/ui/ToggleGroup.svelte` with `semantics="tabs"`.
+  // These pins confirm the underlying primitive is wired correctly so a future refactor
+  // of ToggleGroup doesn't silently drop the tablist contract.
+  describe('built on ToggleGroup with semantics="tabs"', () => {
     it('renders a role="tablist" with role="tab" children', async () => {
       const { target, cleanup } = setup({ aiEnabled: true })
       await tick()

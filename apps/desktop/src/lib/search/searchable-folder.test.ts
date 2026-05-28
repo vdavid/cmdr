@@ -1,6 +1,5 @@
 /**
- * Round 2 D12: pinning the "Use current folder" smart fallback for the
- * Search-in popover.
+ * Pins the "Use current folder" smart fallback for the Search-in popover.
  */
 import { describe, it, expect } from 'vitest'
 import { resolveSearchableFolder } from './searchable-folder'
