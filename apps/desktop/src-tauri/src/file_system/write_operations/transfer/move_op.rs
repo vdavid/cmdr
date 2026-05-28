@@ -597,3 +597,7 @@ fn delete_sources_after_move(
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "move_op_tests.rs"]
+mod tests;

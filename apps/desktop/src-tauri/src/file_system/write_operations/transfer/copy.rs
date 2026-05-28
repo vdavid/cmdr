@@ -477,6 +477,59 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
     }
 }
 
+/// Operation-wide context for the per-file milestone emit. Bundled into one
+/// struct so the six emit sites in [`copy_single_item`] don't each restate
+/// ten arguments to [`record_file_done`].
+struct PerFileCtx<'a> {
+    events: &'a dyn OperationEventSink,
+    state: &'a Arc<WriteOperationState>,
+    operation_id: &'a str,
+    operation_type: WriteOperationType,
+    files_total: usize,
+    bytes_total: u64,
+}
+
+/// Marks one file as completed: bumps the cumulative counters and emits a
+/// `Copying`-phase `WriteProgressEvent` carrying the bumped values.
+///
+/// Called from every `Ok`-return site in [`copy_single_item`] (regular file
+/// copy, symlink copy, per-file Skip, type-mismatch parent Skip, same-file
+/// no-op). Owning the milestone here — rather than in the driver's
+/// `Transferred` arm — means both `copy_files_with_progress_inner` (which
+/// goes through `drive_transfer_serial_sync`) and `move_with_staging` (which
+/// calls `copy_single_item` directly inside its own copy loop) see the same
+/// per-file milestone shape. Without that, single-file ops never see the FE's
+/// files-done axis cross `0/1` before the dialog closes on the complete
+/// event, because the chunked-copy callback (or an instant clonefile) leaves
+/// the axis snapshotted at the pre-iteration value.
+///
+/// Fires unconditionally (no throttle): per-file milestones are bounded by
+/// file count, and throttle suppression of this specific event is the bug
+/// being fixed. The chunked intra-file emit inside `copy_single_item` keeps
+/// its own throttle for the byte-axis stream.
+fn record_file_done(
+    ctx: &PerFileCtx<'_>,
+    source: &Path,
+    progress_weight: u64,
+    files_done: &mut usize,
+    bytes_done: &mut u64,
+) {
+    *files_done += 1;
+    *bytes_done += progress_weight;
+    super::transfer_driver::emit_progress_and_status(
+        ctx.events,
+        ctx.state,
+        ctx.operation_id,
+        ctx.operation_type,
+        WriteOperationPhase::Copying,
+        source.file_name().map(|n| n.to_string_lossy().to_string()),
+        *files_done,
+        ctx.files_total,
+        *bytes_done,
+        ctx.bytes_total,
+    );
+}
+
 /// Copies a single file or symlink to its destination.
 /// Ensures parent directories exist before copying.
 /// Used by both copy and cross-filesystem move operations.
@@ -512,6 +565,15 @@ pub(super) fn copy_single_item(
     apply_to_all_resolution: &mut Option<ConflictResolution>,
     created_dirs: &mut HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
+    let progress_ctx = PerFileCtx {
+        events,
+        state,
+        operation_id,
+        operation_type,
+        files_total,
+        bytes_total,
+    };
+
     // Check cancellation
     if is_cancelled(&state.intent) {
         log::debug!(
@@ -610,8 +672,7 @@ pub(super) fn copy_single_item(
                         // (not `metadata.len()`) so the dedup decision baked
                         // in by scan stays consistent across skip paths.
                         let _ = fs::symlink_metadata(source).with_path(source)?;
-                        *files_done += 1;
-                        *bytes_done += progress_weight;
+                        record_file_done(&progress_ctx, source, progress_weight, files_done, bytes_done);
                         return Ok(());
                     }
                 }
@@ -666,8 +727,7 @@ pub(super) fn copy_single_item(
                 Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
                 None => {
                     // Skip this file but still count it toward progress
-                    *files_done += 1;
-                    *bytes_done += progress_weight;
+                    record_file_done(&progress_ctx, source, progress_weight, files_done, bytes_done);
                     return Ok(());
                 }
             }
@@ -703,8 +763,7 @@ pub(super) fn copy_single_item(
         }
 
         transaction.record_file(actual_dest);
-        *files_done += 1;
-        *bytes_done += progress_weight;
+        record_file_done(&progress_ctx, source, progress_weight, files_done, bytes_done);
     } else {
         // Handle regular file
         // Pre-fix this branch used `dest_path.exists()`, which follows symlinks
@@ -724,8 +783,7 @@ pub(super) fn copy_single_item(
                 Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
                 None => {
                     // Skip this file but still count it toward progress
-                    *files_done += 1;
-                    *bytes_done += progress_weight;
+                    record_file_done(&progress_ctx, source, progress_weight, files_done, bytes_done);
                     return Ok(());
                 }
             }
@@ -742,8 +800,7 @@ pub(super) fn copy_single_item(
                 "copy: skipping {}: source and destination resolve to the same file",
                 source.display()
             );
-            *files_done += 1;
-            *bytes_done += progress_weight;
+            record_file_done(&progress_ctx, source, progress_weight, files_done, bytes_done);
             return Ok(());
         }
 
@@ -818,14 +875,7 @@ pub(super) fn copy_single_item(
         // returned by the strategy) so a hardlink dupe contributes 0 to the
         // numerator while still being physically copied at the destination.
         transaction.record_file(actual_dest.clone());
-        *files_done += 1;
-        *bytes_done += progress_weight;
-
-        // Per-file milestone emit (bumped `files_done` / `bytes_done`) lives
-        // in the sync driver's `Transferred` arm in `transfer_driver.rs` —
-        // fires unconditionally per file, so the FE's files-axis crosses
-        // `N/N` even when the chunked progress callback above absorbed the
-        // throttle window. Intra-file chunked emits stay here.
+        record_file_done(&progress_ctx, source, progress_weight, files_done, bytes_done);
     }
 
     Ok(())
