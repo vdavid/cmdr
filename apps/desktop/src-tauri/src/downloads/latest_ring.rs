@@ -27,6 +27,10 @@ pub struct LatestRing {
     capacity: usize,
 }
 
+#[allow(
+    dead_code,
+    reason = "clear/len are reserved for future ring management; M2b uses push + latest only"
+)]
 impl LatestRing {
     pub fn new() -> Self {
         Self::with_capacity(DEFAULT_CAPACITY)

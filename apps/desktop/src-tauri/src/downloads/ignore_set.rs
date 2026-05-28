@@ -51,10 +51,16 @@ struct State {
 #[derive(Debug)]
 pub struct IgnoreSet {
     state: Mutex<State>,
+    #[allow(dead_code, reason = "Read by note_pending, which is M3's hook contract")]
     max_entries: usize,
+    #[allow(dead_code, reason = "Read by note_pending, which is M3's hook contract")]
     downloads_root: PathBuf,
 }
 
+#[allow(
+    dead_code,
+    reason = "note_pending/note_pending_batch are M3's hook contract; M2b only wires is_pending"
+)]
 impl IgnoreSet {
     /// Build an ignore set scoped to `downloads_root`. Paths outside this
     /// root will silently no-op on `note_pending`.

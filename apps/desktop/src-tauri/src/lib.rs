@@ -29,8 +29,6 @@ use proptest as _;
 use env_logger as _;
 //noinspection RsUnusedImport
 use mimalloc as _;
-//noinspection RsUnusedImport
-use notify as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -84,17 +82,11 @@ mod clipboard;
 mod commands;
 pub mod config;
 mod crash_reporter;
+mod downloads;
 #[cfg(target_os = "macos")]
 mod drag_image_detection;
 #[cfg(target_os = "macos")]
 mod drag_image_swap;
-// M2a lands the pure-Rust primitives only; the watcher (M2b) wires them up
-// and becomes the first caller, at which point this allow can come off.
-#[allow(
-    dead_code,
-    reason = "M2a lands the primitives; M2b's watcher becomes their first caller"
-)]
-mod downloads;
 mod error_reporter;
 mod fda_gate;
 mod file_system;
@@ -491,6 +483,14 @@ pub fn run() {
                 saved_settings.full_disk_access_choice,
                 os_fda_granted_for_gate,
             ));
+
+            // Start the Downloads watcher if the FDA gate is open. The
+            // window-focus listener (registered below in `on_window_event`)
+            // re-runs this on every transition, so a missed start here
+            // recovers as soon as the user focuses the main window.
+            if let Err(err) = downloads::refresh_runtime(app.handle()) {
+                log::warn!(target: "downloads::watcher", "Initial start failed: {err}");
+            }
 
             // Apply the Flow B opt-in flag *before* any user-visible error path can fire.
             // Default off (opt-in by design: Flow B sends data without per-event consent).
@@ -987,6 +987,19 @@ pub fn run() {
         })
         .invoke_handler(specta_builder.invoke_handler())
         .on_window_event(|window, event| {
+            // Main-window focus re-checks the FDA gate so the Downloads
+            // watcher starts/stops on transitions. Covers the "user
+            // toggled FDA in System Settings, came back to Cmdr" path
+            // without polling. Idempotent when nothing changed.
+            if let tauri::WindowEvent::Focused(true) = event
+                && window.label() == "main"
+                && let Err(err) = downloads::refresh_runtime(window.app_handle())
+            {
+                log::warn!(
+                    target: "downloads::watcher",
+                    "Focus-driven gate re-check failed: {err}",
+                );
+            }
             // When the main window is closed, quit the entire app (including settings/debug/viewer windows)
             if let tauri::WindowEvent::CloseRequested { .. } = event
                 && window.label() == "main"
