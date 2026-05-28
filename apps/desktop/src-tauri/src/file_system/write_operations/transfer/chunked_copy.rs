@@ -156,8 +156,18 @@ fn copy_data_chunked(
         }
     }
 
-    // Note: sync_all() removed - network writes are synchronous and the async sync
-    // at operation completion handles durability. Blocking sync defeats cancellation.
+    // Flush the file's data pages durably before signalling success.
+    //
+    // `sync_all` defeating cancellation only applies *during* the chunk loop;
+    // at this point we've left the loop, there's nothing left to cancel, and
+    // the next thing the caller does is emit `write-complete`. Without this,
+    // the user can pull a USB drive after "Copy finished" and lose a file
+    // that lived only in the OS page cache. `sync_data` is the cheaper
+    // `fdatasync` variant — file data + size are durable; mtime can lag.
+    dst_file.sync_data().map_err(|e| WriteOperationError::WriteError {
+        path: dest.display().to_string(),
+        message: format!("Couldn't flush destination to disk: {}", e),
+    })?;
 
     Ok(total_bytes)
 }
