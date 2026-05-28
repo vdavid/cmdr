@@ -91,7 +91,7 @@ mod drag_image_swap;
 mod error_reporter;
 mod fda_gate;
 mod file_system;
-pub(crate) mod file_viewer;
+pub mod file_viewer;
 mod font_metrics;
 pub mod icons;
 pub mod indexing;
