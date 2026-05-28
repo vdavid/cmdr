@@ -208,6 +208,24 @@ pub fn viewer_set_encoding(session_id: String, encoding: FileEncoding) -> Result
     file_viewer::set_encoding(&session_id, encoding).map_err(|e| e.to_string())
 }
 
+/// Toggles tail mode for a viewer session. When enabled, the backend extends its line index
+/// in response to filesystem `Grew` events so the viewport can auto-follow new bytes.
+/// When disabled, the FE still receives `viewer:file-changed:<sid>` events and renders a
+/// persistent reload toast.
+#[tauri::command]
+#[specta::specta]
+pub fn viewer_set_tail_mode(session_id: String, enabled: bool) -> Result<(), String> {
+    file_viewer::set_tail_mode(&session_id, enabled).map_err(|e| e.to_string())
+}
+
+/// Reopens the viewer's backend against the file on disk under the session's current
+/// encoding. Called by the FE reload toast and on file rotation.
+#[tauri::command]
+#[specta::specta]
+pub fn viewer_reload(session_id: String) -> Result<(), String> {
+    file_viewer::reload(&session_id).map_err(|e| e.to_string())
+}
+
 /// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
 #[tauri::command]
 #[specta::specta]

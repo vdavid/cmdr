@@ -299,3 +299,34 @@ describe('commands.viewerCancelRead', () => {
     expect(ipc.lastCall('viewer_cancel_read')?.payload).toEqual({ sessionId, readId })
   })
 })
+
+describe('commands.viewerSetTailMode', () => {
+  it('sends sessionId and enabled as camelCase payload keys', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_set_tail_mode', () => null)
+
+    const sessionId = 'sess-tail-1'
+    const result = await commands.viewerSetTailMode(sessionId, true)
+    expect(result).toEqual({ status: 'ok', data: null })
+    expect(ipc.lastCall('viewer_set_tail_mode')?.payload).toEqual({ sessionId, enabled: true })
+  })
+
+  it('round-trips disabling tail mode', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_set_tail_mode', () => null)
+
+    await commands.viewerSetTailMode('sess-tail-2', false)
+    expect(ipc.lastCall('viewer_set_tail_mode')?.payload).toEqual({ sessionId: 'sess-tail-2', enabled: false })
+  })
+})
+
+describe('commands.viewerReload', () => {
+  it('sends sessionId as camelCase payload key', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_reload', () => null)
+
+    const result = await commands.viewerReload('sess-reload-1')
+    expect(result).toEqual({ status: 'ok', data: null })
+    expect(ipc.lastCall('viewer_reload')?.payload).toEqual({ sessionId: 'sess-reload-1' })
+  })
+})

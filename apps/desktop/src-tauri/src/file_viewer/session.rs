@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, LazyLock, Mutex, RwLock};
 use std::thread;
 use std::time::Duration;
 
@@ -16,6 +16,7 @@ use crate::commands::file_system::expand_tilde;
 use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use serde::Serialize;
+use tauri::{AppHandle, Emitter};
 
 use super::byte_seek::ByteSeekBackend;
 use super::encoding::{FileEncoding, detect, same_byte_layout};
@@ -23,10 +24,27 @@ use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::range_read::{RangeEnd, read_range as do_read_range};
 use super::search_matcher::{Matcher, SearchMode};
+use super::watcher::{VIEWER_WATCHER_MANAGER, ViewerSubscription, WatcherEvent};
 use super::{
     BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch,
     SeekTarget, ViewerError,
 };
+
+/// Process-wide AppHandle for emitting `viewer:file-changed:<sid>` events from
+/// background watcher threads. Set during app setup via [`init_app_handle`].
+static VIEWER_APP_HANDLE: LazyLock<RwLock<Option<AppHandle>>> = LazyLock::new(|| RwLock::new(None));
+
+/// Stash the AppHandle so the per-session watcher manager threads can emit
+/// `viewer:file-changed:<session_id>` events.
+pub fn init_app_handle(handle: AppHandle) {
+    if let Ok(mut guard) = VIEWER_APP_HANDLE.write() {
+        *guard = Some(handle);
+    }
+}
+
+fn app_handle() -> Option<AppHandle> {
+    VIEWER_APP_HANDLE.read().ok().and_then(|g| g.clone())
+}
 
 /// Which backend strategy is active for a session.
 #[derive(Debug, Clone, Serialize, specta::Type)]
@@ -170,11 +188,19 @@ struct ViewerSession {
     /// all under one mutex lock.
     pending_grew: Mutex<Option<u64>>,
     /// Current encoding. Updated atomically with the backend swap on `set_encoding`.
-    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     encoding: Mutex<FileEncoding>,
     /// Detected encoding at open time (sticky; never changes after `open_session`).
-    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     detected_encoding: FileEncoding,
+    /// Tail mode flag: when true, `Grew` watcher events trigger a backend
+    /// `extend_to` so the open viewport auto-follows newly appended bytes.
+    /// When false, the FE still hears `viewer:file-changed:<sid>` events and
+    /// renders the persistent reload toast.
+    tail_mode: AtomicBool,
+    /// Cancel flag the manager thread reads on session close. Dropping the
+    /// session sets this flag; the manager thread observes it on its next
+    /// receive cycle, drops its owned `ViewerSubscription`, and exits. The
+    /// subscription's `Drop` then unwatches the path via the shared singleton.
+    watcher_stop: Arc<AtomicBool>,
     /// Per-read cancel flags. Each `read_range` call inserts an entry keyed by the FE's
     /// `read_id`, removes it on completion (cancelled or not). The FE generates fresh
     /// ids per call (a monotonic counter is fine; uniqueness within a session is all
@@ -333,6 +359,9 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         });
     }
 
+    let watcher_stop = Arc::new(AtomicBool::new(false));
+    let watcher_stop_for_thread = watcher_stop.clone();
+
     let session = ViewerSession {
         backend,
         backend_type: Mutex::new(backend_type.clone()),
@@ -342,6 +371,8 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         pending_grew: Mutex::new(None),
         encoding: Mutex::new(detected_encoding),
         detected_encoding,
+        tail_mode: AtomicBool::new(false),
+        watcher_stop,
         active_reads: Mutex::new(HashMap::new()),
         path: file_path,
     };
@@ -374,7 +405,25 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         encoding: detected_encoding,
     };
 
-    SESSIONS.lock_ignore_poison().insert(session_id, session);
+    let session_path = session.path.clone();
+    SESSIONS.lock_ignore_poison().insert(session_id.clone(), session);
+
+    // Subscribe the session to filesystem events AFTER it's been inserted
+    // into the SESSIONS map. notify-debouncer-full's `new_debouncer` /
+    // `debouncer.watch` calls take long enough on macOS (FSEvents stream
+    // setup) that doing them before insert opens a window where the ByteSeek
+    // → LineIndex upgrade thread can finish and fail to find the session,
+    // leaving `upgrading` stuck at `Some` forever. Best-effort: if the
+    // watcher can't register, the session still opens; the tail toggle just
+    // won't surface external changes.
+    //
+    // Tests can opt out via `CMDR_VIEWER_DISABLE_WATCHER=1`.
+    if std::env::var("CMDR_VIEWER_DISABLE_WATCHER").is_err() {
+        match VIEWER_WATCHER_MANAGER.subscribe(&session_path) {
+            Ok(sub) => spawn_watcher_manager_thread(session_id, sub, watcher_stop_for_thread),
+            Err(e) => debug!("viewer watcher subscribe failed for {}: {}", session_path.display(), e),
+        }
+    }
 
     Ok(result)
 }
@@ -952,10 +1001,231 @@ pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
         if let Some(rebuild_cancel) = session.rebuilding.lock_ignore_poison().as_ref() {
             rebuild_cancel.store(true, Ordering::Relaxed);
         }
+        // Stop the watcher manager thread; dropping the Arc<ViewerSubscription>
+        // when `session` falls out of scope unregisters the underlying path.
+        session.watcher_stop.store(true, Ordering::Relaxed);
         // Cancel any in-flight range reads so they exit promptly with `Cancelled`.
         for flag in session.active_reads.lock_ignore_poison().values() {
             flag.store(true, Ordering::Relaxed);
         }
     }
     Ok(())
+}
+
+/// Toggle tail mode for a session. When enabled, future watcher `Grew` events
+/// trigger an `extend_to` on the active backend so the open viewport
+/// auto-follows newly appended bytes. When disabled, the FE still receives
+/// `viewer:file-changed:<sid>` events and renders its persistent reload toast.
+pub fn set_tail_mode(session_id: &str, enabled: bool) -> Result<(), ViewerError> {
+    let sessions = SESSIONS.lock_ignore_poison();
+    let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+        session_id: session_id.to_string(),
+    })?;
+    session.tail_mode.store(enabled, Ordering::Relaxed);
+    debug!("set_tail_mode: session={}, enabled={}", session_id, enabled);
+
+    // If tail is being turned on and the file already grew on disk while tail
+    // was off, jump the backend to the on-disk EOF so the user doesn't have to
+    // wait for the next change to see the catch-up.
+    if enabled {
+        let path = session.path.clone();
+        let backend_arc = session.load_backend();
+        drop(sessions);
+        if let Ok(meta) = std::fs::metadata(&path) {
+            let on_disk = meta.len();
+            if on_disk > backend_arc.total_bytes() {
+                apply_tail_extend(session_id, on_disk);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Reopen the active backend from scratch with the session's current encoding.
+/// Called by the FE's reload toast or by the watcher's rotation handler.
+/// Choice of backend mirrors `open_session`: FullLoad under the threshold,
+/// otherwise ByteSeek (an in-flight LineIndex upgrade isn't restarted here;
+/// the next `get_lines` settles into the right backend).
+pub fn reload(session_id: &str) -> Result<(), ViewerError> {
+    let path;
+    let encoding;
+    {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+            session_id: session_id.to_string(),
+        })?;
+        path = session.path.clone();
+        encoding = *session.encoding.lock_ignore_poison();
+    }
+
+    let metadata = std::fs::metadata(&path)?;
+    let file_size = metadata.len();
+    let new_backend: Box<dyn FileViewerBackend> = if file_size <= FULL_LOAD_THRESHOLD {
+        Box::new(FullLoadBackend::open_with_encoding(&path, encoding)?)
+    } else {
+        Box::new(ByteSeekBackend::open_with_encoding(&path, encoding)?)
+    };
+    let new_type = if file_size <= FULL_LOAD_THRESHOLD {
+        BackendType::FullLoad
+    } else {
+        BackendType::ByteSeek
+    };
+
+    let sessions = SESSIONS.lock_ignore_poison();
+    if let Some(session) = sessions.get(session_id) {
+        session.backend.store(Arc::new(new_backend));
+        *session.backend_type.lock_ignore_poison() = new_type;
+        // Reset the pending grew queue; the fresh backend covers what the queue
+        // was reserving for the old one.
+        *session.pending_grew.lock_ignore_poison() = None;
+    }
+    Ok(())
+}
+
+/// Manager thread spawned once per session. Owns the `ViewerSubscription`
+/// (kept off `ViewerSession` because the channel receiver isn't `Sync`).
+/// Drops the subscription when `stop` flips (set by `close_session`) or when
+/// the upstream channel disconnects; the subscription's `Drop` then
+/// unregisters the path from the shared singleton.
+fn spawn_watcher_manager_thread(session_id: String, sub: ViewerSubscription, stop: Arc<AtomicBool>) {
+    thread::spawn(move || {
+        // Poll with a timeout so we periodically check `stop` even if the
+        // file's idle: this is the only way the manager exits when
+        // `close_session` runs without the file changing first.
+        const POLL: Duration = Duration::from_millis(200);
+        loop {
+            if stop.load(Ordering::Relaxed) {
+                return;
+            }
+            if let Some(event) = sub.recv_timeout(POLL) {
+                if stop.load(Ordering::Relaxed) {
+                    return;
+                }
+                handle_watcher_event(&session_id, event);
+            }
+        }
+    });
+}
+
+fn emit_file_changed(session_id: &str, kind: &'static str, new_size: Option<u64>) {
+    let Some(handle) = app_handle() else {
+        return;
+    };
+    let event = format!("viewer:file-changed:{}", session_id);
+    let payload = serde_json::json!({
+        "kind": kind,
+        "newSize": new_size,
+    });
+    if let Err(e) = handle.emit(&event, payload) {
+        debug!("emit viewer:file-changed failed: {}", e);
+    }
+}
+
+fn handle_watcher_event(session_id: &str, event: WatcherEvent) {
+    match event {
+        WatcherEvent::MetadataOnly => {
+            // No bytes changed; nothing for the viewer to do.
+        }
+        WatcherEvent::Grew(new_size) => {
+            // Always tell the FE.
+            emit_file_changed(session_id, "grew", Some(new_size));
+
+            // Look up session state to decide whether to queue or apply.
+            let (queue, can_extend, is_tail) = {
+                let sessions = SESSIONS.lock_ignore_poison();
+                let Some(session) = sessions.get(session_id) else {
+                    return;
+                };
+                let upgrading = session.upgrading.lock_ignore_poison().is_some();
+                let rebuilding = session.rebuilding.lock_ignore_poison().is_some();
+                (
+                    upgrading || rebuilding,
+                    !upgrading && !rebuilding,
+                    session.tail_mode.load(Ordering::Relaxed),
+                )
+            };
+
+            if queue {
+                push_pending_grew(session_id, new_size);
+                return;
+            }
+            if can_extend && is_tail {
+                apply_tail_extend(session_id, new_size);
+            }
+        }
+        WatcherEvent::Shrunk | WatcherEvent::Replaced => {
+            emit_file_changed(session_id, "rotated", None);
+            // Best-effort reload; failure here surfaces on the next FE
+            // interaction.
+            let _ = reload(session_id);
+        }
+    }
+}
+
+/// Apply a single tail-mode extension under the drain-and-swap-under-lock
+/// protocol. Re-reads the current backend on every call (no cached Arc) so
+/// concurrent encoding rebuilds / upgrades don't write into a stale slot.
+fn apply_tail_extend(session_id: &str, new_size: u64) {
+    let dummy_cancel = AtomicBool::new(false);
+
+    let sessions = SESSIONS.lock_ignore_poison();
+    let Some(session) = sessions.get(session_id) else {
+        return;
+    };
+    // Re-check: an upgrade or rebuild may have started between the watcher
+    // thread's read and this lock acquisition. Queue and bail in that case.
+    if session.upgrading.lock_ignore_poison().is_some() || session.rebuilding.lock_ignore_poison().is_some() {
+        let mut q = session.pending_grew.lock_ignore_poison();
+        let next = match *q {
+            Some(prev) => prev.max(new_size),
+            None => new_size,
+        };
+        *q = Some(next);
+        return;
+    }
+    // Fresh ArcSwap::load on every call: the watcher must observe whichever
+    // backend `set_encoding`/`upgrade` last installed.
+    let backend = session.backend.load_full();
+    let current_size = backend.total_bytes();
+    if new_size <= current_size {
+        return;
+    }
+    drop(sessions);
+
+    let extended = match backend.extend_to_boxed(new_size, &dummy_cancel) {
+        Ok(b) => b,
+        Err(_) => {
+            // The active backend can't extend (FullLoad).  The viewer remains
+            // valid against the older byte range until the user reloads.
+            return;
+        }
+    };
+
+    let sessions = SESSIONS.lock_ignore_poison();
+    if let Some(session) = sessions.get(session_id) {
+        session.backend.store(Arc::new(extended));
+    }
+}
+
+fn push_pending_grew(session_id: &str, new_size: u64) {
+    let sessions = SESSIONS.lock_ignore_poison();
+    if let Some(session) = sessions.get(session_id) {
+        let mut q = session.pending_grew.lock_ignore_poison();
+        let next = match *q {
+            Some(prev) => prev.max(new_size),
+            None => new_size,
+        };
+        *q = Some(next);
+    }
+}
+
+/// Test-only helper: returns the current tail-mode flag.
+#[cfg(test)]
+#[allow(dead_code, reason = "consumed by session_test::tail_mode_can_be_toggled")]
+pub fn test_only_tail_mode(session_id: &str) -> bool {
+    let sessions = SESSIONS.lock_ignore_poison();
+    sessions
+        .get(session_id)
+        .map(|s| s.tail_mode.load(Ordering::Relaxed))
+        .unwrap_or(false)
 }

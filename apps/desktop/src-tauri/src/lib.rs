@@ -413,6 +413,10 @@ pub fn run() {
             // Initialize the file watcher manager with app handle for events
             file_system::init_watcher_manager(app.handle().clone());
 
+            // Stash the AppHandle for the viewer's per-session watcher manager
+            // threads so they can emit `viewer:file-changed:<sid>` events.
+            file_viewer::init_app_handle(app.handle().clone());
+
             // Initialize the volume manager with the root volume
             file_system::init_volume_manager();
 

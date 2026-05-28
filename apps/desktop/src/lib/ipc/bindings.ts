@@ -745,6 +745,19 @@ export const commands = {
   viewerSetEncoding: (sessionId: string, encoding: FileEncoding) =>
     typedError<null, string>(__TAURI_INVOKE('viewer_set_encoding', { sessionId, encoding })),
   /**
+   *  Toggles tail mode for a viewer session. When enabled, the backend extends its line index
+   *  in response to filesystem `Grew` events so the viewport can auto-follow new bytes.
+   *  When disabled, the FE still receives `viewer:file-changed:<sid>` events and renders a
+   *  persistent reload toast.
+   */
+  viewerSetTailMode: (sessionId: string, enabled: boolean) =>
+    typedError<null, string>(__TAURI_INVOKE('viewer_set_tail_mode', { sessionId, enabled })),
+  /**
+   *  Reopens the viewer's backend against the file on disk under the session's current
+   *  encoding. Called by the FE reload toast and on file rotation.
+   */
+  viewerReload: (sessionId: string) => typedError<null, string>(__TAURI_INVOKE('viewer_reload', { sessionId })),
+  /**
    *  Checks if font metrics are available for a font ID.
    *
    *  # Arguments

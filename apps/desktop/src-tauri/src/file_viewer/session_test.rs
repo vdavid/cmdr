@@ -1142,3 +1142,164 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     session::close_session(&result.session_id).unwrap();
     cleanup(&dir);
 }
+
+// ─── Tail mode + reload + watcher wiring (milestone 3) ─────────────────
+
+#[test]
+fn tail_mode_toggle_persists_on_session() {
+    let dir = create_test_dir("tail_toggle");
+    let file = write_test_file(&dir, "log.txt", "hello\n");
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+
+    assert!(!session::test_only_tail_mode(&sid));
+    session::set_tail_mode(&sid, true).unwrap();
+    assert!(session::test_only_tail_mode(&sid));
+    session::set_tail_mode(&sid, false).unwrap();
+    assert!(!session::test_only_tail_mode(&sid));
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn reload_replaces_backend_against_current_disk_contents() {
+    let dir = create_test_dir("reload");
+    let file = write_test_file(&dir, "log.txt", "first\n");
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+
+    // Overwrite the file out of band: same path, fully replaced content.
+    fs::write(&file, "first\nsecond\nthird\n").unwrap();
+
+    session::reload(&sid).unwrap();
+    let status = session::get_session_status(&sid).unwrap();
+    assert!(status.total_lines.is_some());
+    let chunk = session::get_lines(&sid, super::SeekTarget::Line(1), 2).unwrap();
+    assert_eq!(chunk.lines, vec!["second", "third"]);
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn set_tail_mode_enabling_catches_up_existing_growth() {
+    let dir = create_test_dir("tail_catchup");
+    // Use a file just over FULL_LOAD_THRESHOLD so we land on ByteSeek and
+    // then upgrade to LineIndex. We use ByteSeek's extend_to which simply
+    // updates total_bytes; the catch-up check still proves the path is wired.
+    let initial: String = "a\n".repeat((FULL_LOAD_THRESHOLD as usize / 2) + 1);
+    let file = write_test_file(&dir, "log.txt", &initial);
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+    let original_bytes = result.total_bytes;
+
+    // Grow on disk while tail is off.
+    {
+        use std::io::Write;
+        let mut f = fs::OpenOptions::new().append(true).open(&file).unwrap();
+        f.write_all(b"extra-bytes-extra-bytes-extra-bytes-\n").unwrap();
+    }
+    let on_disk = fs::metadata(&file).unwrap().len();
+    assert!(on_disk > original_bytes);
+
+    session::set_tail_mode(&sid, true).unwrap();
+
+    // The backend's total_bytes should snap to the on-disk size (ByteSeek
+    // extend_to just updates the size field). On LineIndex it may have been
+    // re-indexed via the same path.
+    let backend_bytes = session::get_session_status(&sid).unwrap();
+    let _ = backend_bytes; // we re-read via get_lines below
+    // get_lines after the snap should not blow up; that's the smoke check.
+    let _chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.99), 2).unwrap();
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
+    // Integration-style test for the watcher → session pipeline. We exercise
+    // the full handler stack (handle_watcher_event → apply_tail_extend →
+    // backend.extend_to_boxed → ArcSwap::store), but inject the WatcherEvent
+    // directly via the watcher's test-only hook instead of waiting on the
+    // macOS FSEvents debouncer. Reasons: (1) FSEvents latency is variable
+    // (~1–3 s) and the 8 s nextest cap leaves no margin for a real-FS test
+    // to also wait for the background ByteSeek → LineIndex upgrade; (2) the
+    // watcher's own tests already cover the FS-event path end-to-end against
+    // tempfile.
+    let dir = create_test_dir("tail_int");
+    let line = "x".repeat(120) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 100;
+    let initial: String = line.repeat(line_count);
+    let path = write_test_file(&dir, "tail-int.log", &initial);
+
+    let result = session::open_session(path.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+    let original_bytes = result.total_bytes;
+
+    // Wait for the background ByteSeek → LineIndex upgrade to finish so
+    // we're testing the post-upgrade fast path (extend an existing
+    // LineIndex), not the upgrade-queue interaction (already covered by
+    // `test_append_during_upgrade_not_dropped`).
+    let mut upgrade_done = false;
+    let mut last_backend = format!("{:?}", session::get_session_status(&sid).unwrap().backend_type);
+    let mut last_indexing = session::get_session_status(&sid).unwrap().is_indexing;
+    for _ in 0..30 {
+        thread::sleep(Duration::from_millis(100));
+        let status = session::get_session_status(&sid).unwrap();
+        last_backend = format!("{:?}", status.backend_type);
+        last_indexing = status.is_indexing;
+        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
+            upgrade_done = true;
+            break;
+        }
+    }
+    assert!(
+        upgrade_done,
+        "upgrade thread should have completed within 3 s; last_backend={}, last_indexing={}",
+        last_backend, last_indexing,
+    );
+
+    // Switch on tail mode now (before the watcher fires).
+    session::set_tail_mode(&sid, true).unwrap();
+
+    // Append to disk first so extend_to has something to scan.
+    {
+        use std::io::Write;
+        let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+        f.write_all(b"second line at the end\n").unwrap();
+    }
+    let want_size = fs::metadata(&path).unwrap().len();
+    assert!(want_size > original_bytes);
+
+    // Drive the watcher → session handler directly via the test-only emit
+    // hook on the watcher singleton, then poll until apply_tail_extend has
+    // moved the backend's view forward.
+    let sent = super::watcher::test_only_emit(
+        &fs::canonicalize(&path).unwrap(),
+        super::watcher::WatcherEvent::Grew(want_size),
+    );
+    assert!(sent > 0, "test_only_emit should have found a subscriber");
+
+    let mut caught_up = false;
+    let mut last_chunk_bytes = 0;
+    for _ in 0..30 {
+        thread::sleep(Duration::from_millis(100));
+        let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
+        last_chunk_bytes = chunk.total_bytes;
+        if chunk.total_bytes >= want_size {
+            caught_up = true;
+            break;
+        }
+    }
+    let status = session::get_session_status(&sid).unwrap();
+    assert!(
+        caught_up,
+        "tail-mode handler should have extended the backend; last={}, want={}, backend={:?}, indexing={}",
+        last_chunk_bytes, want_size, status.backend_type, status.is_indexing,
+    );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}

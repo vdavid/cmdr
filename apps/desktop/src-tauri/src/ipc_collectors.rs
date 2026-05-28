@@ -83,6 +83,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::file_viewer::viewer_set_word_wrap,
         crate::commands::file_viewer::viewer_get_encoding_options,
         crate::commands::file_viewer::viewer_set_encoding,
+        crate::commands::file_viewer::viewer_set_tail_mode,
+        crate::commands::file_viewer::viewer_reload,
         // store_font_metrics is generic (<R: tauri::Runtime>): excluded from specta collection
         crate::commands::font_metrics::has_font_metrics,
         crate::commands::icons::get_icons,
