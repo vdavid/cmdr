@@ -88,6 +88,13 @@ mod crash_reporter;
 mod drag_image_detection;
 #[cfg(target_os = "macos")]
 mod drag_image_swap;
+// M2a lands the pure-Rust primitives only; the watcher (M2b) wires them up
+// and becomes the first caller, at which point this allow can come off.
+#[allow(
+    dead_code,
+    reason = "M2a lands the primitives; M2b's watcher becomes their first caller"
+)]
+mod downloads;
 mod error_reporter;
 mod fda_gate;
 mod file_system;
