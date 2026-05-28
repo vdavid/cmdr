@@ -18,8 +18,9 @@ describe('ViewModePicker', () => {
     expect(select).not.toBeNull()
     const options = target.querySelectorAll('option')
     expect(options).toHaveLength(1)
-    expect(options[0]?.textContent).toBe('Text')
-    expect(options[0]?.getAttribute('value')).toBe('text')
+    const first = options[0]
+    expect(first.textContent).toBe('Text')
+    expect(first.getAttribute('value')).toBe('text')
 
     void unmount(instance)
   })

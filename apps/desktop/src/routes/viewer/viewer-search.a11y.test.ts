@@ -29,13 +29,13 @@ function renderToolbarFixture(opts: {
       <button
         type="button"
         class="search-toggle ${opts.caseSensitive ? 'active' : ''}"
-        aria-pressed="${opts.caseSensitive}"
+        aria-pressed="${String(opts.caseSensitive)}"
         aria-label="Case sensitive"
       >Aa</button>
       <button
         type="button"
         class="search-toggle ${opts.useRegex ? 'active' : ''}"
-        aria-pressed="${opts.useRegex}"
+        aria-pressed="${String(opts.useRegex)}"
         aria-label="Regex"
       >.*</button>
       <span class="match-count" aria-live="polite">
@@ -90,7 +90,7 @@ describe('viewer search-bar a11y', () => {
     })
     const alert = target.querySelector('[role="alert"]')
     expect(alert).not.toBeNull()
-    expect(alert?.textContent?.trim()).toBe('Bad regex')
+    expect(alert?.textContent.trim()).toBe('Bad regex')
     target.remove()
   })
 })

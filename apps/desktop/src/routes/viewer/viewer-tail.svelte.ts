@@ -14,7 +14,17 @@
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 
 import { addToast, dismissToast } from '$lib/ui/toast/toast-store.svelte'
-import ViewerReloadToast, { setReloadToastContext } from './ViewerReloadToast.svelte'
+import ViewerReloadToast, { setReloadToastContext as setReloadToastContextRaw } from './ViewerReloadToast.svelte'
+
+// `setReloadToastContext` is exported from a `.svelte` module block; the
+// ESLint+TS pipeline can't always resolve the type across that boundary, so
+// we re-type the symbol locally. The shape matches the module export at
+// `ViewerReloadToast.svelte:19`.
+const setReloadToastContext = setReloadToastContextRaw as (next: {
+  sessionId: string
+  toastId: string
+  kind: FileChangedKind
+}) => void
 
 export type FileChangedKind = 'grew' | 'rotated'
 

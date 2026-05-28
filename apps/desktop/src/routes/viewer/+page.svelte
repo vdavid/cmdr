@@ -1067,13 +1067,18 @@
     <header class="viewer-toolbar" data-tauri-drag-region>
         <span class="viewer-toolbar-title" data-tauri-drag-region>{fileName}</span>
         <div class="viewer-toolbar-pickers">
-            <ViewModePicker value={viewMode} onChange={(mode) => (viewMode = mode)} />
+            <ViewModePicker
+                value={viewMode}
+                onChange={(mode: 'text') => {
+                    viewMode = mode
+                }}
+            />
             <EncodingPicker
                 value={currentEncoding}
                 detected={detectedEncoding}
                 options={encodingChoices}
                 disabled={isIndexing}
-                onChange={(enc) => void handleEncodingChange(enc)}
+                onChange={(enc: FileEncoding) => void handleEncodingChange(enc)}
             />
             <button
                 type="button"

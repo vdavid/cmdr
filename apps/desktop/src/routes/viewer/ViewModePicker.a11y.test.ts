@@ -42,7 +42,7 @@ describe('ViewModePicker accessibility', () => {
     })
     await tick()
 
-    const select = target.querySelector('select.view-mode-picker') as HTMLSelectElement | null
+    const select = target.querySelector<HTMLSelectElement>('select.view-mode-picker')
     expect(select).not.toBeNull()
     expect(select?.disabled).toBe(true)
 
@@ -68,7 +68,7 @@ describe('ViewModePicker accessibility', () => {
     expect(target.querySelector('select')).not.toBeNull()
     expect(target.querySelectorAll('option').length).toBeGreaterThan(0)
     const option = target.querySelector('option[value="text"]')
-    expect(option?.textContent?.trim()).toBe('Text')
+    expect(option?.textContent.trim()).toBe('Text')
 
     void unmount(instance)
   })

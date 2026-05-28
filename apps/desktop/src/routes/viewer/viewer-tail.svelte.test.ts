@@ -12,14 +12,14 @@ import { clearAllToasts, getToasts } from '$lib/ui/toast/toast-store.svelte'
 
 // Mock the Tauri event listener so `init()` doesn't try to reach a backend.
 vi.mock('@tauri-apps/api/event', () => ({
-  listen: vi.fn(async () => () => {}),
+  listen: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 // Mock the bindings: the toast button mounts but isn't clicked here, so we
 // only need the symbol to resolve.
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    viewerReload: vi.fn(async () => ({ status: 'ok', data: null })),
+    viewerReload: vi.fn(() => Promise.resolve({ status: 'ok', data: null })),
   },
 }))
 

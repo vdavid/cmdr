@@ -10,13 +10,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const fakeStoreState: Record<string, unknown> = {}
 
 vi.mock('@tauri-apps/plugin-store', () => ({
-  load: vi.fn(async () => ({
-    get: vi.fn(async (key: string) => fakeStoreState[key]),
-    set: vi.fn(async (key: string, value: unknown) => {
-      fakeStoreState[key] = value
+  load: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn((key: string) => Promise.resolve(fakeStoreState[key])),
+      set: vi.fn((key: string, value: unknown) => {
+        fakeStoreState[key] = value
+        return Promise.resolve()
+      }),
+      save: vi.fn(() => Promise.resolve()),
     }),
-    save: vi.fn(async () => {}),
-  })),
+  ),
 }))
 
 import {
