@@ -20,11 +20,27 @@ use std::time::Duration;
 
 use tauri::AppHandle;
 
+use super::global_shortcut::{GlobalShortcutManager, RegistrationError, RegistrationStatus, TauriRegistrar};
 use super::watcher::DEFAULT_IGNORE_TTL;
 use super::{DownloadsWatcher, WatcherError, desired_running};
 
 /// Process-global handle. `None` when the watcher isn't running.
 static RUNTIME: Mutex<Option<DownloadsWatcher>> = Mutex::new(None);
+
+/// Process-global global-shortcut manager. Lazily constructed on first
+/// `apply_global_reveal_shortcut` call so tests don't need a real
+/// `AppHandle`.
+static GLOBAL_SHORTCUT: Mutex<Option<GlobalShortcutManager<TauriRegistrar>>> = Mutex::new(None);
+
+fn global_shortcut_manager(
+    app: &AppHandle,
+) -> std::sync::MutexGuard<'_, Option<GlobalShortcutManager<TauriRegistrar>>> {
+    let mut guard = GLOBAL_SHORTCUT.lock().expect("global_shortcut runtime poisoned");
+    if guard.is_none() {
+        *guard = Some(GlobalShortcutManager::new(TauriRegistrar::new(app.clone())));
+    }
+    guard
+}
 
 /// Start the watcher if the FDA gate is open and we aren't already running;
 /// stop it if the gate is closed and we are. Idempotent.
@@ -52,6 +68,100 @@ pub fn refresh_runtime(app: &AppHandle) -> Result<(), WatcherError> {
         }
     }
     Ok(())
+}
+
+/// Translate the user-facing macOS-symbol binding (`'⌃⌥⌘J'`, what we store
+/// in settings) into the accelerator string the Tauri global-shortcut
+/// plugin understands (`'Control+Alt+Meta+J'`). Returns `None` for empty or
+/// modifier-only input — global shortcuts always need a non-modifier key.
+///
+/// Mirrors `apps/desktop/src/lib/downloads/global-shortcut-binding.ts`. The
+/// two sides should stay in sync; the FE adapter is unit-tested.
+pub fn binding_to_accelerator(binding: &str) -> Option<String> {
+    if binding.is_empty() {
+        return None;
+    }
+    let mut modifiers: Vec<&'static str> = Vec::new();
+    let mut chars = binding.chars().peekable();
+    while let Some(&c) = chars.peek() {
+        let name = match c {
+            '\u{2303}' => "Control", // ⌃
+            '\u{2325}' => "Alt",     // ⌥
+            '\u{21E7}' => "Shift",   // ⇧
+            '\u{2318}' => "Meta",    // ⌘
+            _ => break,
+        };
+        if !modifiers.contains(&name) {
+            modifiers.push(name);
+        }
+        chars.next();
+    }
+    let key: String = chars.collect::<String>().trim().to_string();
+    if key.is_empty() || modifiers.is_empty() {
+        return None;
+    }
+    let mut out = modifiers.join("+");
+    out.push('+');
+    out.push_str(&key.to_uppercase());
+    Some(out)
+}
+
+/// Apply a Settings change (toggle + binding) to the live global-shortcut
+/// registration. Idempotent. Re-evaluates the FDA gate so the call also
+/// covers the "I just toggled FDA" path.
+///
+/// Returns the resulting status snapshot the FE row should display.
+pub fn apply_global_reveal_shortcut(
+    app: &AppHandle,
+    enabled: bool,
+    binding: &str,
+) -> Result<super::commands::GlobalRevealShortcutState, RegistrationError> {
+    let accelerator = binding_to_accelerator(binding);
+    let fda_open = !crate::fda_gate::is_fda_pending_runtime();
+    let should_run = enabled && fda_open && accelerator.is_some();
+
+    let mut guard = global_shortcut_manager(app);
+    // `unwrap` is safe: `global_shortcut_manager` always populates `Some`.
+    let mgr = guard.as_mut().expect("global_shortcut manager initialized");
+
+    let (status, register_error) = if should_run {
+        // Safe: `should_run` implies `accelerator.is_some()`.
+        let accel = accelerator.as_deref().expect("should_run implies accelerator present");
+        match mgr.register(accel) {
+            Ok(()) => (RegistrationStatus::Registered, None),
+            Err(RegistrationError::Conflict) => (RegistrationStatus::Conflict, None),
+            Err(other) => (mgr.registration_status(accel), Some(other)),
+        }
+    } else {
+        mgr.unregister();
+        (RegistrationStatus::NotRegistered, None)
+    };
+
+    if let Some(err) = register_error {
+        return Err(err);
+    }
+
+    Ok(super::commands::GlobalRevealShortcutState {
+        status,
+        binding: binding.to_string(),
+        enabled,
+    })
+}
+
+/// Refresh the global-shortcut registration based on the FDA gate alone.
+/// Used by the focus-event lifecycle to undo/redo the registration without
+/// the FE re-issuing a `set_global_reveal_shortcut` call. Reads the
+/// last-known `enabled` and `binding` from the Settings file via the
+/// existing settings loader.
+pub fn refresh_global_reveal_shortcut(app: &AppHandle) {
+    let (enabled, binding) = crate::settings::early_load_global_reveal_shortcut()
+        .unwrap_or((true, String::from("\u{2303}\u{2325}\u{2318}J")));
+    if let Err(err) = apply_global_reveal_shortcut(app, enabled, &binding) {
+        log::warn!(
+            target: "downloads::global_shortcut",
+            "Focus-driven refresh of global shortcut failed: {err}",
+        );
+    }
 }
 
 /// Is the watcher currently running?

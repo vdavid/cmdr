@@ -378,6 +378,45 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   // ========================================================================
+  // Behavior › File system watching (M6 lands the global-shortcut entries here;
+  // M7 renames the section to "File system watching" and adds the notifications
+  // ToggleGroup alongside.)
+  // ========================================================================
+  {
+    id: 'behavior.fileSystemWatching.globalRevealShortcut.enabled',
+    section: ['Behavior', 'Drive indexing'],
+    label: 'Global reveal-latest-download shortcut',
+    description: 'Press ⌃⌥⌘J from anywhere to jump to your latest download. Requires Full Disk Access.',
+    keywords: ['shortcut', 'hotkey', 'global', 'reveal', 'download', 'downloads', 'jump'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'behavior.fileSystemWatching.globalRevealShortcut.binding',
+    section: ['Behavior', 'Drive indexing'],
+    label: 'Global reveal-latest-download binding',
+    description: 'The system-wide combo that triggers reveal-latest-download.',
+    keywords: ['shortcut', 'hotkey', 'global', 'binding', 'combo'],
+    type: 'string',
+    default: '\u{2303}\u{2325}\u{2318}J', // ⌃⌥⌘J
+    component: 'text-input', // Tier-1 row uses a plain string; M7 may swap in a key recorder.
+  },
+  {
+    // Internal: hidden from the Settings UI. Drives the first-trigger warn-toast
+    // suppression. Reset on `binding` change via `setGlobalRevealBinding`.
+    id: 'behavior.fileSystemWatching.globalRevealShortcut.acknowledged',
+    section: ['Behavior', 'Drive indexing'],
+    label: 'Global reveal-latest-download warn-toast acknowledged',
+    description: 'Internal. Suppresses the first-trigger warning toast.',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+
+  // ========================================================================
   // Behavior › Search
   // ========================================================================
   {

@@ -38,6 +38,7 @@
     import { addToast } from '$lib/ui/toast'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
+    import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
     import {
         handleCommandExecute as dispatchCommand,
         type CommandDispatchContext,
@@ -603,6 +604,11 @@
         // native notification per the current settings value.
         const unlistenDownloads = await startDownloadsEventBridge(explorerRef)
         tauriUnlistenFns.push(unlistenDownloads)
+        // Global reveal-latest-download hotkey bridge (default ⌃⌥⌘J): one
+        // `global-shortcut-fired` listener; routes through `revealLatestDownload`
+        // and shows the first-trigger warn toast when `acknowledged === false`.
+        const unlistenGlobalShortcut = await startGlobalShortcutBridge(explorerRef)
+        tauriUnlistenFns.push(unlistenGlobalShortcut)
     }
 
     /** Sync file-scoped menu items with main window focus state. */

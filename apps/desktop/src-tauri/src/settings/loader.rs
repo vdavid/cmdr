@@ -234,3 +234,39 @@ pub fn early_load_verbose_logging() -> Option<bool> {
     let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
     json.get("developer.verboseLogging").and_then(|v| v.as_bool())
 }
+
+/// Reads the `behavior.fileSystemWatching.globalRevealShortcut.{enabled,binding}`
+/// pair from disk before the AppHandle is wired up. Used by the focus-event
+/// global-shortcut refresh hook in `downloads::runtime`. Returns `None` when
+/// the settings file is missing OR the user hasn't customized either key (in
+/// which case the registry defaults apply — `enabled = true`,
+/// `binding = "⌃⌥⌘J"`).
+pub fn early_load_global_reveal_shortcut() -> Option<(bool, String)> {
+    /// Bundle id from `tauri.conf.json`. Keep in sync if it ever changes.
+    const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
+
+    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
+        PathBuf::from(custom)
+    } else {
+        let base = dirs::data_dir()?;
+        base.join(BUNDLE_ID)
+    };
+    let settings_path = data_dir.join("settings.json");
+    let contents = fs::read_to_string(&settings_path).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
+
+    // The FE settings-store only persists non-default values, so a missing
+    // key means "use the documented default." We return `None` only when the
+    // settings file itself is missing; partial reads (one key set, one not)
+    // fall back to defaults per-field.
+    let enabled = json
+        .get("behavior.fileSystemWatching.globalRevealShortcut.enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+    let binding = json
+        .get("behavior.fileSystemWatching.globalRevealShortcut.binding")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| String::from("\u{2303}\u{2325}\u{2318}J"));
+    Some((enabled, binding))
+}

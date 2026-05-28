@@ -131,6 +131,34 @@ pub async fn recheck_downloads_watcher_gate(app: AppHandle) -> Result<(), String
     super::runtime::refresh_runtime(&app).map_err(|e| e.to_string())
 }
 
+/// Result of [`set_global_reveal_shortcut`]: the new status the Settings row
+/// should display. The FE caches this until the next register/unregister, so
+/// the row's "Registered" / "Couldn't register" indicator stays in sync
+/// without an extra round trip.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct GlobalRevealShortcutState {
+    pub status: super::global_shortcut::RegistrationStatus,
+    pub binding: String,
+    pub enabled: bool,
+}
+
+/// Apply a Settings change (toggle + binding) to the live global-shortcut
+/// registration. Idempotent; safe to call repeatedly with the same args.
+///
+/// Returns the resulting status so the FE row can render the indicator
+/// without another round trip. Errors are wrapped in the typed
+/// [`super::global_shortcut::RegistrationError`] enum.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_global_reveal_shortcut(
+    app: AppHandle,
+    enabled: bool,
+    binding: String,
+) -> Result<GlobalRevealShortcutState, super::global_shortcut::RegistrationError> {
+    super::runtime::apply_global_reveal_shortcut(&app, enabled, &binding)
+}
+
 #[cfg(test)]
 mod tests {
     //! Tests for the `reveal_latest_download` branches. The process-global

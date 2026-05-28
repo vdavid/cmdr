@@ -39,6 +39,11 @@ tauri-plugin-mcp-bridge = "0.11"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2.6"
 tauri-plugin-notification = "2.3.3"
+# Global system-wide keyboard shortcut (default ⌃⌥⌘J for "reveal latest download"). On
+# macOS, the plugin uses Carbon's `RegisterEventHotKey` so it needs no extra TCC grant
+# (Accessibility/Input Monitoring not required). Pinned at 2.3.1 (published 2025-10-27,
+# ~7 months old; the 2.3.2 release from 2026-05-28 is still within the 14-day age policy).
+tauri-plugin-global-shortcut = "=2.3.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 notify = "8"

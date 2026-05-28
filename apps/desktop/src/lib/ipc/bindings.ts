@@ -1170,6 +1170,18 @@ export const commands = {
    *  flip the gate state, in which case this is a no-op.
    */
   recheckDownloadsWatcherGate: () => typedError<null, string>(__TAURI_INVOKE('recheck_downloads_watcher_gate')),
+  /**
+   *  Apply a Settings change (toggle + binding) to the live global-shortcut
+   *  registration. Idempotent; safe to call repeatedly with the same args.
+   *
+   *  Returns the resulting status so the FE row can render the indicator
+   *  without another round trip. Errors are wrapped in the typed
+   *  [`super::global_shortcut::RegistrationError`] enum.
+   */
+  setGlobalRevealShortcut: (enabled: boolean, binding: string) =>
+    typedError<GlobalRevealShortcutState, RegistrationError>(
+      __TAURI_INVOKE('set_global_reveal_shortcut', { enabled, binding }),
+    ),
   startDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('start_drive_index')),
   stopDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('stop_drive_index')),
   getIndexStatus: () => typedError<IndexStatusResponse, string>(__TAURI_INVOKE('get_index_status')),
@@ -2510,6 +2522,18 @@ export type FrontendLogEntry = {
   message: string
 }
 
+/**
+ *  Result of [`set_global_reveal_shortcut`]: the new status the Settings row
+ *  should display. The FE caches this until the next register/unregister, so
+ *  the row's "Registered" / "Couldn't register" indicator stays in sync
+ *  without an extra round trip.
+ */
+export type GlobalRevealShortcutState = {
+  status: RegistrationStatus
+  binding: string
+  enabled: boolean
+}
+
 // A single recent-search entry, persisted verbatim.
 export type HistoryEntry = {
   id: string
@@ -3093,6 +3117,48 @@ export type PrepareResult = {
  *  it uses `Eof` so the backend can resolve the end without a fake line number.
  */
 export type RangeEnd = { kind: 'line'; line: number; offset: number } | { kind: 'eof' }
+
+/**
+ *  Typed errors from a registration attempt. The FE branches on `kind`;
+ *  never match on the message string.
+ */
+export type RegistrationError =
+  /**
+   *  Another app already holds the combo. Surface the message
+   *  "Couldn't register: in use by another app." in the Settings row.
+   */
+  | { kind: 'conflict' }
+  // The accelerator string couldn't be parsed by the plugin.
+  | {
+      kind: 'invalidBinding'
+      /**
+       *  The rejected binding so the FE can surface it (for debugging only;
+       *  the row already shows the binding the user picked).
+       */
+      binding: string
+    }
+  /**
+   *  Any other plugin failure (allocation, IO with the OS, etc.). Carries
+   *  the underlying message for the log line; the FE shows a generic
+   *  fallback string.
+   */
+  | { kind: 'pluginError'; message: string }
+
+// Snapshot of the registrar's state for the Settings row indicator.
+export type RegistrationStatus =
+  // The binding is live; the hotkey will fire from any app.
+  | 'registered'
+  /**
+   *  Nothing is currently registered (disabled, FDA gate closed, or empty
+   *  binding).
+   */
+  | 'notRegistered'
+  /**
+   *  Last attempt failed because another app holds the combo. The FE
+   *  surfaces the conflict copy; nothing fires until the user picks a
+   *  different combo.
+   */
+  | 'conflict'
 
 // Result of a rename validity check.
 export type RenameValidityResult = {

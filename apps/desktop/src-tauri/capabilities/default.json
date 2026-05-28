@@ -36,6 +36,7 @@
         "updater:default",
         "process:allow-restart",
         "dialog:allow-ask",
-        "notification:default"
+        "notification:default",
+        "global-shortcut:default"
     ]
 }

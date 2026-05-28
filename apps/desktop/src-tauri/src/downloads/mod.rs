@@ -65,6 +65,7 @@
 
 pub mod commands;
 mod filter;
+pub mod global_shortcut;
 mod ignore_set;
 mod latest_ring;
 pub mod runtime;
@@ -73,5 +74,5 @@ pub mod watcher;
 pub use filter::is_eligible;
 pub use ignore_set::IgnoreSet;
 pub use latest_ring::LatestRing;
-pub use runtime::{note_pending_write_for_cmdr, refresh_runtime};
+pub use runtime::{note_pending_write_for_cmdr, refresh_global_reveal_shortcut, refresh_runtime};
 pub use watcher::{DownloadsWatcher, WatcherError, desired_running};

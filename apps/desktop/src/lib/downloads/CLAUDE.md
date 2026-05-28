@@ -8,15 +8,19 @@ Backend counterpart: [`src-tauri/src/downloads/CLAUDE.md`](../../../src-tauri/sr
 
 ## Architecture
 
-| File                             | Purpose                                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `reveal.ts`                      | `revealLatestDownload(explorer)` (M4): consult ring + scan fallback. `revealPath(explorer, dir, name)` (M5): jump to a specific file. |
-| `RevealEmptyToastContent.svelte` | M4 INFO toast: "Your Downloads folder is empty…" with a "Go to Downloads" action.                                                     |
-| `RevealFdaToastContent.svelte`   | M4 INFO toast: "Cmdr needs Full Disk Access…" with an "Open System Settings" action.                                                  |
-| `reveal-ids.ts`                  | Dedup ids for M4's INFO toasts.                                                                                                       |
-| `event-bridge.svelte.ts`         | M5 listener bridge: one `download-detected` subscription, dispatches per the settings enum.                                           |
-| `DownloadToastContent.svelte`    | M5 in-app toast: title with filename + size, optional subdir line, snapshotted shortcut hint, Jump + Stop-showing actions.            |
-| `notifications-mode.ts`          | Reader, writer, and deep-link helper for `behavior.fileSystemWatching.downloadsNotifications`.                                        |
+| File                                    | Purpose                                                                                                                                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reveal.ts`                             | `revealLatestDownload(explorer)` (M4): consult ring + scan fallback. `revealPath(explorer, dir, name)` (M5): jump to a specific file.                                                                    |
+| `RevealEmptyToastContent.svelte`        | M4 INFO toast: "Your Downloads folder is empty…" with a "Go to Downloads" action.                                                                                                                        |
+| `RevealFdaToastContent.svelte`          | M4 INFO toast: "Cmdr needs Full Disk Access…" with an "Open System Settings" action.                                                                                                                     |
+| `reveal-ids.ts`                         | Dedup ids for M4's INFO toasts.                                                                                                                                                                          |
+| `event-bridge.svelte.ts`                | M5 listener bridge: one `download-detected` subscription, dispatches per the settings enum.                                                                                                              |
+| `DownloadToastContent.svelte`           | M5 in-app toast: title with filename + size, optional subdir line, snapshotted shortcut hint, Jump + Stop-showing actions.                                                                               |
+| `notifications-mode.ts`                 | Reader, writer, and deep-link helper for `behavior.fileSystemWatching.downloadsNotifications`.                                                                                                           |
+| `global-shortcut-bridge.svelte.ts`      | M6: one `global-shortcut-fired` Tauri event subscription. Calls `revealLatestDownload` plus, on first un-acknowledged trigger, the warn toast.                                                           |
+| `GlobalShortcutWarnToastContent.svelte` | M6 first-trigger persistent warn toast for ⌃⌥⌘J. "Keep it on" / "Turn it off" buttons. Snapshotted binding prop.                                                                                         |
+| `global-shortcut-binding.ts`            | Translates the macOS-symbol binding (`'⌃⌥⌘J'`) into the accelerator string the plugin understands (`'Control+Alt+Meta+J'`).                                                                              |
+| `global-shortcut-setting.ts`            | Narrow getters/setters for `behavior.fileSystemWatching.globalRevealShortcut.*`. **`setGlobalRevealBinding` resets `acknowledged` to `false`** — the new combo deserves the first-trigger warning again. |
 
 ## Settings-gated dispatch
 
@@ -68,6 +72,20 @@ is a mouse-only convenience.
 
 Both buttons call `event.stopPropagation()` in their click handlers so the body-click reveal doesn't also fire
 underneath (otherwise "Stop showing these" would navigate to the file before the Settings window came up).
+
+## Global reveal hotkey (M6)
+
+The default global hotkey is `⌃⌥⌘J`. Registration lifecycle lives in the backend (`refresh_global_reveal_shortcut` runs
+at startup, on focus, and when the Settings UI toggles); the FE bridge owns the trigger handler.
+
+**First-trigger warn toast.** Persistent, level `warn`. Fires only when the hotkey triggered AND
+`acknowledged === false`. The bridge flips `acknowledged = true` BEFORE opening the toast so back-to-back presses don't
+queue duplicates. The toast itself only carries the binding string snapshot and the two buttons — "Keep it on" (dismiss)
+and "Turn it off" (flip `enabled = false` + call `setGlobalRevealShortcut(false, ...)` IPC).
+
+**Acknowledged reset.** When the user rebinds via `setGlobalRevealBinding`, the helper resets `acknowledged = false` so
+the new combo gets its own first-trigger warning. Single chokepoint — don't write `binding` through plain `setSetting`;
+that bypasses the reset.
 
 ## Settings registry note
 

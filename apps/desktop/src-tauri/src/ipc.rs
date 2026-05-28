@@ -480,6 +480,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::downloads::commands::reveal_latest_download,
         crate::downloads::commands::downloads_watcher_status,
         crate::downloads::commands::recheck_downloads_watcher_gate,
+        crate::downloads::commands::set_global_reveal_shortcut,
         crate::commands::indexing::start_drive_index,
         crate::commands::indexing::stop_drive_index,
         crate::commands::indexing::get_index_status,

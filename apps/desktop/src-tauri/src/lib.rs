@@ -301,6 +301,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(downloads::global_shortcut::plugin_builder())
         .setup(|app| {
             // === Logging setup ===
             //
@@ -492,6 +493,12 @@ pub fn run() {
             if let Err(err) = downloads::refresh_runtime(app.handle()) {
                 log::warn!(target: "downloads::watcher", "Initial start failed: {err}");
             }
+
+            // Register the global reveal-latest-download shortcut (default
+            // ⌃⌥⌘J). FDA-gated: `apply_global_reveal_shortcut` no-ops when
+            // the gate is closed, and the focus-event listener below
+            // re-runs the check on every transition.
+            downloads::refresh_global_reveal_shortcut(app.handle());
 
             // Apply the Flow B opt-in flag *before* any user-visible error path can fire.
             // Default off (opt-in by design: Flow B sends data without per-event consent).
@@ -994,12 +1001,17 @@ pub fn run() {
             // without polling. Idempotent when nothing changed.
             if let tauri::WindowEvent::Focused(true) = event
                 && window.label() == "main"
-                && let Err(err) = downloads::refresh_runtime(window.app_handle())
             {
-                log::warn!(
-                    target: "downloads::watcher",
-                    "Focus-driven gate re-check failed: {err}",
-                );
+                if let Err(err) = downloads::refresh_runtime(window.app_handle()) {
+                    log::warn!(
+                        target: "downloads::watcher",
+                        "Focus-driven gate re-check failed: {err}",
+                    );
+                }
+                // Re-evaluate the global-shortcut registration too: if FDA
+                // flipped between blur and focus, register/unregister to
+                // match. Idempotent when nothing changed.
+                downloads::refresh_global_reveal_shortcut(window.app_handle());
             }
             // When the main window is closed, quit the entire app (including settings/debug/viewer windows)
             if let tauri::WindowEvent::CloseRequested { .. } = event
