@@ -585,7 +585,24 @@ fn apply_resolution(
     }
 }
 
-/// Finds a unique filename by appending " (1)", " (2)", etc.
+/// Finds a unique filename by appending " (1)", " (2)", etc., **atomically
+/// reserving** the chosen name via `O_CREAT|O_EXCL` so a concurrent process
+/// (backup tool, cloud-sync agent, second Cmdr op) can't land a file at the
+/// same path between our pick and the caller's write.
+///
+/// Pre-fix this returned the first non-existing candidate after an
+/// `if !new_path.exists()` check; the caller then copied or renamed to that
+/// path, leaving a ~ms TOCTOU window during which a concurrent write could
+/// land an unrelated file at the same name — silently clobbered the next time
+/// our copy / rename hit the path. By creating an empty placeholder under the
+/// reserved name and letting downstream operations (`fs::copy` truncates;
+/// `fs::rename` atomically replaces; `copyfile(3)` / `copy_file_range(2)` open
+/// the dest with create+truncate) overwrite it, the race window collapses to
+/// microseconds. Callers never observe the placeholder.
+///
+/// On the rare loss-of-the-placeholder edge case (a third party deletes our
+/// empty file before the caller writes), the caller's write still succeeds
+/// (creating fresh).
 pub(super) fn find_unique_name(path: &Path) -> PathBuf {
     let parent = path.parent().unwrap_or(Path::new(""));
     let stem = path
@@ -594,17 +611,27 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
         .unwrap_or_default();
     let extension = path.extension().map(|s| s.to_string_lossy().to_string());
 
-    let mut counter = 1;
+    let mut counter: u32 = 1;
     loop {
         let new_name = match &extension {
             Some(ext) => format!("{} ({}).{}", stem, counter, ext),
             None => format!("{} ({})", stem, counter),
         };
         let new_path = parent.join(new_name);
-        if !new_path.exists() {
-            return new_path;
+
+        match fs::OpenOptions::new().write(true).create_new(true).open(&new_path) {
+            Ok(_) => return new_path,
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                counter = counter.saturating_add(1);
+            }
+            Err(_) => {
+                // Anything else (parent unwritable, ENOSPC, …) leaks back to
+                // the caller's write attempt, which has its own error path.
+                // Mirror the pre-fix behaviour of returning the path so the
+                // caller surfaces the real error against the right operation.
+                return new_path;
+            }
         }
-        counter += 1;
     }
 }
 
@@ -1203,6 +1230,53 @@ mod conditional_resolution_tests {
             ConflictResolution::Skip,
             "dst from now must NOT be overwritten by src from an hour ago"
         );
+    }
+}
+
+#[cfg(test)]
+mod find_unique_name_tests {
+    //! Regression for the low-severity audit finding: pre-fix
+    //! `find_unique_name` picked a name by exists()-checking each candidate
+    //! and returning the first miss. Between the check and the caller's
+    //! write, a concurrent process (backup tool, cloud-sync agent, second
+    //! Cmdr op) could land a file at the same name and the next copy /
+    //! rename would silently clobber it. The fix atomically reserves the
+    //! chosen name via O_EXCL.
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn reserves_the_chosen_name_on_disk() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("notes.txt");
+        fs::write(&target, b"original").unwrap();
+
+        let unique = find_unique_name(&target);
+
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (1).txt");
+        // O_EXCL placeholder must already exist after the call.
+        assert!(unique.exists(), "reservation must create the placeholder");
+        // Second call goes to (2), proving the first reservation persisted.
+        let next = find_unique_name(&target);
+        assert_eq!(next.file_name().unwrap().to_string_lossy(), "notes (2).txt");
+    }
+
+    #[test]
+    fn keeps_extension_in_the_right_place() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("report.pdf");
+        fs::write(&target, b"x").unwrap();
+        let unique = find_unique_name(&target);
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "report (1).pdf");
+    }
+
+    #[test]
+    fn handles_extensionless_filenames() {
+        let temp = TempDir::new().unwrap();
+        let target = temp.path().join("README");
+        fs::write(&target, b"x").unwrap();
+        let unique = find_unique_name(&target);
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "README (1)");
     }
 }
 
