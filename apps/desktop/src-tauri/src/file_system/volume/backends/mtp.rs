@@ -798,8 +798,8 @@ impl Volume for MtpVolume {
         &'a self,
         dest: &'a Path,
         size: u64,
-        mut stream: Box<dyn VolumeReadStream>,
-        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
@@ -812,16 +812,18 @@ impl Volume for MtpVolume {
                 })?
                 .to_string();
 
-            // Stream chunks directly with .await (no need to pre-collect; we're
-            // fully async now, no nested block_on risk).
-            let mut chunks: Vec<bytes::Bytes> = Vec::new();
-            while let Some(result) = stream.next_chunk().await {
-                let data = result?;
-                chunks.push(bytes::Bytes::from(data));
-            }
+            let chunk_stream = volume_read_stream_to_chunk_stream(stream, size, on_progress);
+            let chunk_stream = Box::pin(chunk_stream);
 
             let bytes_written = connection_manager()
-                .upload_from_chunks(&self.device_id, self.storage_id, &dest_folder, &filename, size, chunks)
+                .upload_from_stream(
+                    &self.device_id,
+                    self.storage_id,
+                    &dest_folder,
+                    &filename,
+                    size,
+                    chunk_stream,
+                )
                 .await
                 .map_err(map_mtp_error)?;
 
@@ -837,6 +839,40 @@ impl Volume for MtpVolume {
             Ok(bytes_written)
         })
     }
+}
+
+/// Adapts a `VolumeReadStream` into a `futures::Stream` that mtp-rs can
+/// consume lazily, calling `on_progress` after each chunk and surfacing
+/// `ControlFlow::Break` as an `io::Error` so the upload unwinds promptly.
+///
+/// Pre-fix this loop was missing entirely: `write_from_stream` collected
+/// every chunk into a `Vec<Bytes>` before any USB write began (OOM risk for
+/// large files) and never invoked the transfer progress / cancel callback.
+fn volume_read_stream_to_chunk_stream<'a>(
+    stream: Box<dyn VolumeReadStream>,
+    total: u64,
+    on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+) -> impl futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Send + 'a {
+    futures_util::stream::unfold(
+        (stream, 0u64, on_progress, total),
+        |(mut stream, bytes_written, on_progress, total)| async move {
+            match stream.next_chunk().await {
+                Some(Ok(chunk)) => {
+                    let new_total = bytes_written + chunk.len() as u64;
+                    if on_progress(new_total, total) == std::ops::ControlFlow::Break(()) {
+                        let err = std::io::Error::new(std::io::ErrorKind::Interrupted, "Operation cancelled");
+                        return Some((Err(err), (stream, new_total, on_progress, total)));
+                    }
+                    Some((Ok(bytes::Bytes::from(chunk)), (stream, new_total, on_progress, total)))
+                }
+                Some(Err(e)) => {
+                    let err = std::io::Error::other(e.to_string());
+                    Some((Err(err), (stream, bytes_written, on_progress, total)))
+                }
+                None => None,
+            }
+        },
+    )
 }
 
 /// Direct async streaming reader for MTP files.
@@ -1012,6 +1048,114 @@ mod tests {
         // MTP volumes support streaming for direct MTP-to-MTP transfers.
         let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
         assert!(vol.supports_streaming());
+    }
+
+    /// Regression for the high-severity audit finding: pre-fix, MtpVolume's
+    /// `write_from_stream` was named `_on_progress` (signaling unused) and
+    /// drained the entire source into a `Vec<Bytes>` before any USB write.
+    /// Both behaviors are tested via the extracted stream adapter helper,
+    /// which is what `write_from_stream` now drives.
+    #[tokio::test]
+    async fn volume_read_stream_to_chunk_stream_calls_on_progress_per_chunk() {
+        use futures_util::StreamExt;
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicU64, Ordering};
+
+        struct MockStream {
+            chunks: std::vec::IntoIter<Vec<u8>>,
+            total: u64,
+            read: u64,
+        }
+        impl VolumeReadStream for MockStream {
+            fn next_chunk(
+                &mut self,
+            ) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+                Box::pin(async move {
+                    self.chunks.next().map(|c| {
+                        self.read += c.len() as u64;
+                        Ok(c)
+                    })
+                })
+            }
+            fn total_size(&self) -> u64 {
+                self.total
+            }
+            fn bytes_read(&self) -> u64 {
+                self.read
+            }
+        }
+
+        let chunks = vec![vec![0u8; 64], vec![0u8; 64], vec![0u8; 64], vec![0u8; 64]];
+        let total: u64 = chunks.iter().map(|c| c.len() as u64).sum();
+        let stream = Box::new(MockStream {
+            chunks: chunks.into_iter(),
+            total,
+            read: 0,
+        });
+
+        let calls = Arc::new(AtomicU64::new(0));
+        let counter = Arc::clone(&calls);
+        let on_progress = move |_bytes, _total| {
+            counter.fetch_add(1, Ordering::SeqCst);
+            std::ops::ControlFlow::Continue(())
+        };
+
+        let mut adapter = Box::pin(volume_read_stream_to_chunk_stream(stream, total, &on_progress));
+        let mut emitted = 0u64;
+        while let Some(chunk) = adapter.next().await {
+            emitted += chunk.expect("chunk should be Ok").len() as u64;
+        }
+
+        assert_eq!(emitted, total, "all bytes should be forwarded to the upload");
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            4,
+            "on_progress must fire once per chunk (4 chunks emitted)"
+        );
+    }
+
+    /// Companion regression: `ControlFlow::Break(())` must unwind the upload
+    /// promptly. Pre-fix, the callback was never invoked, so a Cancel could
+    /// only stop the loop *above* the upload — not the upload itself.
+    #[tokio::test]
+    async fn volume_read_stream_to_chunk_stream_surfaces_cancellation() {
+        use futures_util::StreamExt;
+
+        struct InfiniteStream {
+            total: u64,
+            read: u64,
+        }
+        impl VolumeReadStream for InfiniteStream {
+            fn next_chunk(
+                &mut self,
+            ) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+                Box::pin(async move {
+                    self.read += 64;
+                    Some(Ok(vec![0u8; 64]))
+                })
+            }
+            fn total_size(&self) -> u64 {
+                self.total
+            }
+            fn bytes_read(&self) -> u64 {
+                self.read
+            }
+        }
+
+        let stream = Box::new(InfiniteStream {
+            total: u64::MAX,
+            read: 0,
+        });
+        let on_progress = |_bytes, _total| std::ops::ControlFlow::Break(());
+
+        let mut adapter = Box::pin(volume_read_stream_to_chunk_stream(stream, u64::MAX, &on_progress));
+        let first = adapter.next().await.expect("adapter should yield once");
+        assert!(first.is_err(), "Break(()) must produce an io::Error item");
+        assert_eq!(
+            first.unwrap_err().kind(),
+            std::io::ErrorKind::Interrupted,
+            "cancellation must surface as Interrupted"
+        );
     }
 
     #[test]

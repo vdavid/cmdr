@@ -484,24 +484,24 @@ impl MtpConnectionManager {
     /// * `dest_folder` - Destination folder path on device (like "DCIM")
     /// * `filename` - Name for the new file
     /// * `size` - Total size in bytes
-    /// * `chunks` - Pre-collected data chunks
-    pub async fn upload_from_chunks(
+    /// * `data_stream` - Chunk stream that mtp-rs consumes lazily as the USB
+    ///   transfer drains it. Don't pre-collect the source into a `Vec`; the
+    ///   point of the stream is to keep the working set bounded for huge files.
+    pub async fn upload_from_stream<S>(
         &self,
         device_id: &str,
         storage_id: u32,
         dest_folder: &str,
         filename: &str,
         size: u64,
-        chunks: Vec<bytes::Bytes>,
-    ) -> Result<u64, MtpConnectionError> {
+        data_stream: S,
+    ) -> Result<u64, MtpConnectionError>
+    where
+        S: futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Unpin + Send,
+    {
         debug!(
-            "MTP upload_from_chunks: device={}, storage={}, dest={}/{}, size={}, chunks={}",
-            device_id,
-            storage_id,
-            dest_folder,
-            filename,
-            size,
-            chunks.len()
+            "MTP upload_from_stream: device={}, storage={}, dest={}/{}, size={}",
+            device_id, storage_id, dest_folder, filename, size,
         );
 
         // Get device and resolve parent folder
@@ -519,7 +519,7 @@ impl MtpConnectionManager {
             (Arc::clone(&entry.device), parent)
         };
 
-        let device = acquire_device_lock(&device_arc, device_id, "upload_from_chunks").await?;
+        let device = acquire_device_lock(&device_arc, device_id, "upload_from_stream").await?;
 
         // Get the storage
         let storage = tokio::time::timeout(
@@ -540,10 +540,6 @@ impl MtpConnectionManager {
         } else {
             Some(parent_handle)
         };
-
-        // Convert chunks to stream format expected by mtp-rs
-        let chunk_results: Vec<Result<bytes::Bytes, std::io::Error>> = chunks.into_iter().map(Ok).collect();
-        let data_stream = futures_util::stream::iter(chunk_results);
 
         let new_handle = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS * 10),
@@ -577,7 +573,7 @@ impl MtpConnectionManager {
             .await;
 
         debug!(
-            "MTP upload_from_chunks complete: {} bytes to {}/{}",
+            "MTP upload_from_stream complete: {} bytes to {}/{}",
             size, dest_folder, filename
         );
 
