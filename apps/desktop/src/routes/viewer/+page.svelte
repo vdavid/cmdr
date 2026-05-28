@@ -39,7 +39,11 @@
     import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
     import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
     import ViewerContextMenu from './ViewerContextMenu.svelte'
+    import EncodingPicker from './EncodingPicker.svelte'
+    import ViewModePicker from './ViewModePicker.svelte'
     import { findWordBoundsAt } from './viewer-word'
+    import { commands } from '$lib/ipc/bindings'
+    import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
     import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
     import { formatBytes, type RangeEnd } from '$lib/tauri-commands'
@@ -62,6 +66,16 @@
     let sessionId = $state('')
     let backendType = $state<'fullLoad' | 'byteSeek' | 'lineIndex'>('fullLoad')
     let isIndexing = $state(false)
+    /**
+     * Encoding picker state. `currentEncoding` follows the user's selection (set
+     * synchronously when they pick), `detectedEncoding` is the auto-detection
+     * result at open time, and `encodingChoices` is the backend-authoritative
+     * dropdown list. We refetch the choices once on open; they don't change after.
+     */
+    let currentEncoding = $state<FileEncoding>('utf8')
+    let detectedEncoding = $state<FileEncoding>('utf8')
+    let encodingChoices = $state<EncodingChoice[]>([])
+    let viewMode = $state<'text'>('text')
 
     // Derive current mode: if we started with byteSeek but now have totalLines, we upgraded to lineIndex
     const currentMode = $derived(backendType === 'byteSeek' && totalLines !== null ? 'lineIndex' : backendType)
@@ -97,6 +111,38 @@
     function suppressBannerForever(): void {
         setSetting('fileViewer.suppressBinaryWarning', true)
         bannerDismissed = true
+    }
+
+    /**
+     * Switch encoding for the current session. The backend may swap the active
+     * backend (instant for same-byte-layout encoding pairs, ByteSeek + background
+     * LineIndex rebuild otherwise); we follow up by restarting the indexing poll
+     * so the toolbar surfaces the rebuild progress like the initial open does.
+     * Clears the line cache so stale decoded strings don't linger.
+     */
+    async function handleEncodingChange(encoding: FileEncoding): Promise<void> {
+        if (!sessionId || encoding === currentEncoding) return
+        const prev = currentEncoding
+        currentEncoding = encoding
+        try {
+            const res = await commands.viewerSetEncoding(sessionId, encoding)
+            if (res.status === 'error') {
+                log.error('set_encoding failed: {message}', { message: res.error })
+                currentEncoding = prev
+                return
+            }
+            scroll.lineCache.clear()
+            await tick()
+            // Force-fetch the current visible range under the new encoding so the
+            // user doesn't have to scroll to see the re-decoded content.
+            scroll.fetchVisibleNow()
+            // Start polling if a background rebuild is now running. The poll
+            // self-terminates when the backend reports `is_indexing: false`.
+            indexingPoll.start()
+        } catch (e) {
+            log.error('set_encoding threw: {error}', { error: String(e) })
+            currentEncoding = prev
+        }
     }
 
     // Event listener cleanup functions
@@ -724,6 +770,19 @@
         estimatedLines = result.estimatedTotalLines
         backendType = result.backendType
         isIndexing = result.isIndexing
+        currentEncoding = result.encoding
+        detectedEncoding = result.encoding
+        // Fetch the dropdown options once; they don't change after open.
+        void commands
+            .viewerGetEncodingOptions(result.sessionId)
+            .then((res) => {
+                if (res.status === 'ok') {
+                    encodingChoices = res.data.all
+                    detectedEncoding = res.data.detected
+                    currentEncoding = res.data.current
+                }
+            })
+            .catch(() => {})
 
         log.debug(
             'Opened file: {fileName}, {totalBytes} {bytesNoun}, totalLines={totalLines}, estimatedTotalLines={estimatedTotalLines}, backend={backendType}, isIndexing={isIndexing}',
@@ -916,6 +975,31 @@
     }}
 >
     <h1 class="sr-only">File viewer</h1>
+    <!--
+        Title-bar overlay toolbar: matches the main window's overlay style
+        (see `tauri.conf.json` § titleBarStyle and `open-viewer.ts` mirror).
+        Reserves 80 px on the left for the macOS traffic lights and lets the
+        empty space remain draggable via `data-tauri-drag-region`. The pickers
+        opt out of the drag region with their own click handlers so the user
+        can interact with them. Indexing progress sits next to the pickers
+        instead of stealing space in the status bar.
+    -->
+    <header class="viewer-toolbar" data-tauri-drag-region>
+        <span class="viewer-toolbar-title" data-tauri-drag-region>{fileName}</span>
+        <div class="viewer-toolbar-pickers">
+            <ViewModePicker value={viewMode} onChange={(mode) => (viewMode = mode)} />
+            <EncodingPicker
+                value={currentEncoding}
+                detected={detectedEncoding}
+                options={encodingChoices}
+                disabled={isIndexing}
+                onChange={(enc) => void handleEncodingChange(enc)}
+            />
+            {#if isIndexing}
+                <span class="viewer-toolbar-indexing" role="status" aria-live="polite">Reindexing…</span>
+            {/if}
+        </div>
+    </header>
     <!--
         ARIA live region: announces selection state to assistive tech. Updates whenever
         the selection changes via any gesture (⌘A, drag, shift-click, double / triple-
@@ -1241,6 +1325,52 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         outline: none;
+    }
+
+    .viewer-toolbar {
+        /* The 80 px wide left gutter reserves space for the macOS traffic
+           lights, which sit at trafficLightPosition { x: 9, y: 17 } per
+           open-viewer.ts. Stylelint forbids raw px in `padding` shorthand,
+           so the gutter goes on a pseudo-element instead. */
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background: var(--color-bg-secondary);
+        border-bottom: 1px solid var(--color-border-strong);
+        flex-shrink: 0;
+        min-height: 38px;
+    }
+
+    .viewer-toolbar::before {
+        content: '';
+        display: block;
+        width: 72px;
+        flex-shrink: 0;
+    }
+
+    .viewer-toolbar-title {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        user-select: none;
+    }
+
+    .viewer-toolbar-pickers {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        flex-shrink: 0;
+    }
+
+    .viewer-toolbar-indexing {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        font-style: italic;
     }
 
     .search-bar {

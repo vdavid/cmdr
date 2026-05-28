@@ -42,7 +42,7 @@ pub struct LineIndexBackend {
 
 impl LineIndexBackend {
     /// Build the line index by scanning the file. Auto-detects encoding.
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     pub fn open(path: &Path, cancel: &AtomicBool) -> Result<Self, ViewerError> {
         let encoding = detect(path).unwrap_or(FileEncoding::Utf8);
         Self::open_with_encoding(path, encoding, cancel)
@@ -88,7 +88,6 @@ impl LineIndexBackend {
         });
 
         let le = matches!(encoding, FileEncoding::Utf16Le);
-        let nl_unit_bytes: u64 = if encoding.is_ascii_newline_compatible() { 1 } else { 2 };
         loop {
             if cancel.load(Ordering::Relaxed) {
                 return Err(ViewerError::Cancelled);
@@ -124,8 +123,6 @@ impl LineIndexBackend {
                         offset: next_line_offset,
                     });
                 }
-                // Compiler: silence dead_code if we end up not using nl_unit_bytes elsewhere.
-                let _ = nl_unit_bytes;
             }
         }
 
@@ -141,7 +138,7 @@ impl LineIndexBackend {
         })
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     pub fn encoding(&self) -> FileEncoding {
         self.encoding
     }
@@ -153,7 +150,7 @@ impl LineIndexBackend {
     /// Cost: opens the file, seeks to `self.total_bytes`, scans only the new
     /// range. Memory: the checkpoint vec is cloned (O(checkpoints), cheap — 16
     /// bytes per checkpoint, ~390 K for a 100 M-line file).
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     pub fn extend_to(&self, new_size: u64, cancel: &AtomicBool) -> Result<Self, ViewerError> {
         if new_size <= self.total_bytes {
             return Ok(Self {

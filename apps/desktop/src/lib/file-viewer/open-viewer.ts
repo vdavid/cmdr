@@ -1,3 +1,5 @@
+import { LogicalPosition } from '@tauri-apps/api/dpi'
+
 import { cascadeFromMain, clampToMonitor, nearestMonitor, readMainRect, readMonitors } from '$lib/window-positioning'
 
 const VIEWER_WIDTH = 800
@@ -47,5 +49,12 @@ export async function openFileViewer(filePath: string): Promise<void> {
     maximizable: true,
     closable: true,
     focus: !isE2e,
+    // Mirror the main window's overlay title bar (see `tauri.conf.json:23-28`):
+    // traffic-light position `{ x: 9, y: 17 }` and a hidden title. The viewer toolbar
+    // owns the title-bar row, so the picker rows sit inline with the close/min/max
+    // buttons on macOS. Keep these values in sync with `tauri.conf.json`.
+    titleBarStyle: 'overlay',
+    trafficLightPosition: new LogicalPosition(9, 17),
+    hiddenTitle: true,
   })
 }

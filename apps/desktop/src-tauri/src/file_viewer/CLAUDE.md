@@ -9,16 +9,23 @@ Frontend counterpart: [`apps/desktop/src/routes/viewer/CLAUDE.md`](../../../src/
 - `mod.rs`: public API, constants (1MB threshold, 256-line checkpoints, 8KB backward scan limit), `ViewerError` typed
   enum
 - `session.rs`: session orchestration, backend switching, search state, per-read cancel registry (`active_reads`),
-  `read_range` and `cancel_read` entry points
+  encoding-switch (`set_encoding`), drain-and-swap-under-lock protocol via `pending_grew`, `read_range` and
+  `cancel_read` entry points
 - `range_read.rs`: backend-agnostic stitching of a `(line, offset) -> (line, offset)` range into one UTF-8 string,
   UTF-16 -> UTF-8 offset clamp (surrogate-safe), streaming via byte-offset seeks to keep `ByteSeek` honest
-- `full_load.rs`: loads entire file into `String` (<1MB files)
-- `byte_seek.rs`: seeks by byte offset, scans backward for newline (instant open)
-- `line_index.rs`: sparse newline index (1 checkpoint per 256 lines), SIMD-accelerated via `memchr`
+- `encoding.rs`: `FileEncoding` enum (UTF-8, UTF-8 with BOM, Windows-1252, ISO-8859-1, Mac Roman, US-ASCII, UTF-16 LE,
+  UTF-16 BE), BOM + 64 KB heuristic detection, `NewlineScanner` with carry-byte state for UTF-16 chunked reads,
+  `find_newlines` / `decode_line`, `same_byte_layout` predicate
+- `full_load.rs`: loads entire file into `String` (<1MB files); decodes per `FileEncoding`
+- `byte_seek.rs`: seeks by byte offset, scans backward for newline (instant open); ASCII-compatible encodings use the
+  `memchr` fast path, UTF-16 uses `NewlineScanner` with byte-aligned reads
+- `line_index.rs`: sparse newline index (1 checkpoint per 256 lines), SIMD-accelerated via `memchr` for
+  ASCII-compatible encodings, `NewlineScanner`-driven for UTF-16; `extend_to(&self, new_size, cancel) -> Self` produces
+  an extended backend by value
 - `search_matcher.rs`: `Matcher` (literal or regex), `SearchMode`, `scan_line_with_matcher` helper. One matcher built
   per search; reused across every line. Huge-line chunking (1 MB windows, 256 byte overlap) lives here.
 - `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math, range reads,
-  cancellation
+  cancellation, encoding detection, UTF-16 newline scanning, encoding-switch rebuild + drain-and-swap
 
 ## Backend selection logic
 
@@ -56,6 +63,12 @@ if file_size < 1MB {
 - `viewer_close(session_id)` → frees resources (also signals every in-flight read to cancel)
 - `viewer_setup_menu(label)`: builds viewer menu with word wrap item
 - `viewer_set_word_wrap(label, checked)`: syncs menu state
+- `viewer_get_encoding_options(session_id)` → `EncodingOptions`: current selection, detected encoding, and the full list
+  of selectable encodings with their labels and groups. The FE renders the dropdown straight from this; no encoding list
+  lives on the FE.
+- `viewer_set_encoding(session_id, encoding)`: switches the active encoding. Instant when `same_byte_layout(current,
+  new)` holds (UTF-8 ↔ Windows-1252 family); otherwise snaps to ByteSeek immediately and rebuilds LineIndex in the
+  background. The FE polls `viewer_get_status` for `is_indexing` to track the rebuild.
 
 ## Key decisions
 
@@ -100,6 +113,37 @@ covers the orthogonal "single `iter.next()` call took too long" case.
 per-line cancellation. The chunked scan keeps the working set bounded and a needle straddling a chunk boundary is
 still found exactly once: matches starting in `[0, chunk_len - overlap)` are reported, matches starting in the overlap
 belong to the next chunk.
+
+**Decision**: `ViewerSession.backend` is `Arc<ArcSwap<Box<dyn FileViewerBackend>>>`, not `Arc<dyn …>` or
+`RwLock<Box<dyn …>>`.
+**Why**: Background threads (ByteSeek → LineIndex upgrade, encoding rebuild, future tail-mode `extend_to`) need to
+replace the active backend without taking a write lock on the `get_lines` read path. Each backend is immutable; readers
+hold an `Arc<Box<dyn FileViewerBackend>>` from `load_full()` and finish their call against whichever backend was current
+at load time. Mid-swap there's no torn read because the old `Arc` is only dropped when the last reader releases it. A
+`RwLock` would either block readers on a heavy rebuild or force the rebuild to copy data into the lock; `ArcSwap` is
+both lock-free for readers and zero-copy for the writer.
+
+**Decision**: `FileEncoding` detection runs the UTF-16 parity heuristic BEFORE the UTF-8 fast path.
+**Why**: ASCII text encoded as UTF-16 (interleaved with `0x00` bytes) is technically valid UTF-8 — every `0x00` is a
+legal U+0000 codepoint — so `std::str::from_utf8(buf).is_ok()` would misclassify it as UTF-8 and decode to a stream of
+ASCII chars with NUL gaps. The 30% zero-byte parity threshold is restrictive enough that real UTF-8 text never trips
+it, while ASCII-dominant UTF-16 streams hit nearly 100% in the matching slot.
+
+**Decision**: UTF-16 LE ↔ BE swap is NOT instant; both go through a background rebuild.
+**Why**: `same_byte_layout(a, b)` requires both encodings to be ASCII-newline-compatible, which UTF-16 isn't. Even when
+two UTF-16 encodings share a BOM length, any codepoint above U+007F puts the `0x0A` byte at a different file offset
+under each byte order, so the newline index is invalid for the new encoding. The only "free" UTF-16 swap is identity,
+which we short-circuit at the top of `set_encoding`.
+
+**Decision**: Drain-and-swap-under-lock protocol for both the ByteSeek → LineIndex upgrade and the encoding rebuild.
+**Why**: A watcher `Grew(eof)` event that arrives between the rebuild thread reading the on-disk EOF and storing the
+new backend would be silently dropped: the new backend covers only the pre-rebuild EOF, and the watcher never re-fires
+for the same file. The fix queues such events in `session.pending_grew: Mutex<Option<u64>>`. The rebuild thread's swap
+critical section drains the queue, optionally `extend_to`s the new backend to the queued EOF, `ArcSwap::store`s it, and
+clears the `upgrading` / `rebuilding` flag — all inside one `pending_grew` lock. The watcher writers also lock
+`pending_grew`, so they physically can't write between the rebuild's read-and-clear and its store. Reused by both
+upgrade and encoding-rebuild paths. Pinned by `test_append_during_encoding_rebuild_not_dropped` (milestone 3 will land
+the watcher itself plus the analogue `test_append_during_upgrade_not_dropped`).
 
 **Decision**: Sticky `SearchStatus::Cancelled` under a single mutex critical section, plus a watchdog.
 **Why**: The per-match cancel in the search loop covers the cooperative case. For the pathological case (runaway regex

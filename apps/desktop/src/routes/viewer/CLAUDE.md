@@ -26,6 +26,8 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
 | `viewer-autoscroll.svelte.ts`   | Autoscroll RAF controller: start / stop / self-terminate                                                                                    |
 | `viewer-word.ts`                | Pure word-boundary finder via `Intl.Segmenter` for double-click selection                                                                   |
 | `ViewerContextMenu.svelte`      | Minimal in-app right-click menu (Copy, Select all)                                                                                          |
+| `EncodingPicker.svelte`         | `<select>` + `<optgroup>` Unicode / Western. Reactive to backend `EncodingChoice[]`. The detected encoding gets a "(Detected)" suffix.      |
+| `ViewModePicker.svelte`         | `<select>` placeholder for future view modes (today: only "Text", disabled).                                                                |
 
 ## Architecture
 
@@ -73,6 +75,19 @@ logical coordinates, independent of which lines happen to be rendered.
 - **Visual collision**: when a search hit and the selection overlap on the same span, search wins on the background
   (`var(--color-highlight)`) and selection wins on the foreground (`var(--color-selection-fg)`, gold). Matches the
   "selected = gold" language from the file list (design-system.md § File list).
+
+## Title-bar overlay toolbar
+
+The viewer window opens with `titleBarStyle: 'overlay'` and `trafficLightPosition: { x: 9, y: 17 }` (see
+`lib/file-viewer/open-viewer.ts` — kept in sync with the main window's `tauri.conf.json`). The toolbar at the top of
+`+page.svelte` reserves 80 px of left padding for the macOS traffic lights and lets the empty space remain draggable via
+`data-tauri-drag-region`. The pickers and indexing status sit on the right; the file name occupies the flexible middle.
+
+The encoding picker fetches its options once via `commands.viewerGetEncodingOptions(sessionId)` on open; the list is
+backend-authoritative (no FE-side encoding catalog). Switching encoding calls `commands.viewerSetEncoding`, clears the
+line cache, and triggers `scroll.fetchVisibleNow()` so the user sees re-decoded lines immediately. If the swap requires
+a rebuild, `indexingPoll.start()` runs the same status-poll the initial ByteSeek → LineIndex upgrade uses; the toolbar
+shows "Reindexing…" while `isIndexing` is true.
 
 ## Search modes
 

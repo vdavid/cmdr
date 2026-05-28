@@ -1,6 +1,7 @@
-// Allow dead code during incremental wiring; every item here is consumed by the
-// backends and IPC layer added later in the same milestone.
-#![allow(dead_code)]
+// Some helpers (`find_newlines`, `EncodingGroup`, `decode_line` re-exports) are
+// consumed by tests and FE-facing IPC layers; the `#[deny(unused)]` lint at the
+// crate root would flag them otherwise.
+#![allow(dead_code, reason = "module-level helpers used by tests and IPC consumers")]
 
 //! File encoding detection, newline scanning, and per-line decoding.
 //!

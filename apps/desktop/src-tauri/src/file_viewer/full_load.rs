@@ -18,7 +18,7 @@ pub struct FullLoadBackend {
     line_offsets: Vec<u64>,
     total_bytes: u64,
     file_name: String,
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     encoding: FileEncoding,
 }
 
@@ -26,7 +26,7 @@ impl FullLoadBackend {
     /// Open with auto-detected encoding. Falls back to UTF-8 on detection IO errors
     /// (the subsequent `decode_line` calls then run through `from_utf8_lossy`, which
     /// is what the viewer used to do before encoding-awareness landed).
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     pub fn open(path: &Path) -> Result<Self, ViewerError> {
         let encoding = detect(path).unwrap_or(FileEncoding::Utf8);
         Self::open_with_encoding(path, encoding)
@@ -109,7 +109,7 @@ impl FullLoadBackend {
         }
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     pub fn encoding(&self) -> FileEncoding {
         self.encoding
     }

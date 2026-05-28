@@ -62,7 +62,7 @@ impl ByteSeekBackend {
         })
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     pub fn encoding(&self) -> FileEncoding {
         self.encoding
     }
@@ -70,7 +70,7 @@ impl ByteSeekBackend {
     /// Returns a fresh backend with `total_bytes = new_size`. The backend is
     /// immutable; tail-mode extension produces a new instance and `ArcSwap`s it
     /// into place. Cancellable for symmetry with `LineIndexBackend::extend_to`.
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     pub fn extend_to(&self, new_size: u64, _cancel: &AtomicBool) -> Self {
         Self {
             path: self.path.clone(),

@@ -170,10 +170,10 @@ struct ViewerSession {
     /// all under one mutex lock.
     pending_grew: Mutex<Option<u64>>,
     /// Current encoding. Updated atomically with the backend swap on `set_encoding`.
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     encoding: Mutex<FileEncoding>,
     /// Detected encoding at open time (sticky; never changes after `open_session`).
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "milestone-3 watcher/tail extends usage")]
     detected_encoding: FileEncoding,
     /// Per-read cancel flags. Each `read_range` call inserts an entry keyed by the FE's
     /// `read_id`, removes it on completion (cancelled or not). The FE generates fresh

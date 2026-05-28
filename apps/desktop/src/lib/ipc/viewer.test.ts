@@ -46,6 +46,7 @@ const openResult: ViewerOpenResult = {
   },
   initialLines,
   isIndexing: false,
+  encoding: 'utf8',
 }
 
 describe('commands.viewerOpen', () => {

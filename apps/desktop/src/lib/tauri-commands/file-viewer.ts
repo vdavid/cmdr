@@ -2,6 +2,7 @@
 
 import {
   commands,
+  type FileEncoding,
   type RangeEnd,
   type SearchMode as ViewerSearchMode,
   type SearchStatus as ViewerSearchStatus,
@@ -9,7 +10,7 @@ import {
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { RangeEnd, ViewerError, ViewerSearchMode, ViewerSearchStatus }
+export type { FileEncoding, RangeEnd, ViewerError, ViewerSearchMode, ViewerSearchStatus }
 
 /** A chunk of lines returned by the viewer backend. */
 export interface LineChunk {
@@ -41,6 +42,8 @@ export interface ViewerOpenResult {
   initialLines: LineChunk
   /** Whether background indexing is in progress */
   isIndexing: boolean
+  /** Auto-detected encoding (also the initial picker selection). */
+  encoding: FileEncoding
 }
 
 /** Current status of a viewer session. */

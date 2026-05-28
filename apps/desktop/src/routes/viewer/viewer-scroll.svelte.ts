@@ -270,6 +270,17 @@ export function createViewerScroll(deps: ScrollDeps) {
     }
   }
 
+  /**
+   * Force a fetch of the current visible range, bypassing the cache check. Used
+   * when the cache was deliberately invalidated (encoding switch) so the next
+   * render shows freshly-decoded lines without waiting for the user to scroll.
+   */
+  function fetchVisibleNow() {
+    const sessionId = deps.getSessionId()
+    if (!sessionId) return
+    void fetchLines(visibleFrom, visibleTo)
+  }
+
   function runContentWidthEffect() {
     if (wordWrap) return
     void visibleLines
@@ -466,6 +477,7 @@ export function createViewerScroll(deps: ScrollDeps) {
     scrollToStart,
     scrollToEnd,
     runFetchEffect,
+    fetchVisibleNow,
     runContentWidthEffect,
     runWrappedLineHeightEffect,
     runScrollCompensationEffect,
