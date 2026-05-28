@@ -88,3 +88,29 @@ describe('ToastItem a11y', () => {
     await expectNoA11yViolations(target)
   })
 })
+
+describe('ToastItem a11y (hover-paused state)', () => {
+  it('hover-paused transient toast has no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ToastItem, {
+      target,
+      props: {
+        id: 't-hover',
+        content: 'Downloaded report.pdf',
+        level: 'info',
+        dismissal: 'transient',
+        timeoutMs: 10000,
+        onTimeout: vi.fn(),
+        onUserDismiss: vi.fn(),
+      },
+    })
+    await tick()
+
+    const toast = target.querySelector('.toast') as HTMLElement
+    toast.dispatchEvent(new PointerEvent('pointerenter'))
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+

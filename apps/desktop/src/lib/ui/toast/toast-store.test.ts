@@ -180,3 +180,117 @@ describe('max 5 toasts', () => {
     expect(toasts.find((t) => t.id === 't1')).toBeUndefined()
   })
 })
+
+describe('toastGroup eviction', () => {
+  it('a toast without toastGroup behaves identically to before (no grouping side effects)', () => {
+    addToast(dummyContent, { id: 'a1' })
+    addToast(dummyContent, { id: 'a2' })
+    addToast(dummyContent, { id: 'a3' })
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(3)
+    expect(toasts.every((t) => t.toastGroup === undefined)).toBe(true)
+  })
+
+  it('stores toastGroup and maxInGroup on the toast', () => {
+    addToast(dummyContent, { id: 'g1', toastGroup: 'downloads' })
+    const toast = getToasts()[0]
+    expect(toast.toastGroup).toBe('downloads')
+    expect(toast.maxInGroup).toBe(5)
+  })
+
+  it('defaults maxInGroup to 5 when toastGroup is set', () => {
+    addToast(dummyContent, { id: 'g1', toastGroup: 'downloads' })
+    expect(getToasts()[0].maxInGroup).toBe(5)
+  })
+
+  it('honors an explicit maxInGroup of 3', () => {
+    addToast(dummyContent, { id: 'g1', toastGroup: 'downloads', maxInGroup: 3 })
+    addToast(dummyContent, { id: 'g2', toastGroup: 'downloads', maxInGroup: 3 })
+    addToast(dummyContent, { id: 'g3', toastGroup: 'downloads', maxInGroup: 3 })
+    addToast(dummyContent, { id: 'g4', toastGroup: 'downloads', maxInGroup: 3 })
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(3)
+    expect(toasts.find((t) => t.id === 'g1')).toBeUndefined()
+    expect(toasts.find((t) => t.id === 'g4')).toBeDefined()
+  })
+
+  it('with 5 of group A + 1 of group B, a new group-A toast evicts the oldest A (not B)', () => {
+    addToast(dummyContent, { id: 'a1', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a2', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a3', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a4', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a5', toastGroup: 'A' })
+    // Adding a 6th item (b1, group B) pushes past the global cap of 5; the
+    // oldest transient (a1) is evicted by the global rule. Then a new group-A
+    // toast must evict the oldest remaining A (a2), not B.
+    addToast(dummyContent, { id: 'b1', toastGroup: 'B' })
+    addToast(dummyContent, { id: 'a6', toastGroup: 'A' })
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(5)
+    expect(toasts.find((t) => t.id === 'b1')).toBeDefined()
+    expect(toasts.find((t) => t.id === 'a6')).toBeDefined()
+    expect(toasts.find((t) => t.id === 'a2')).toBeUndefined()
+  })
+
+  it('6 toasts of group A in succession: only 5 visible, oldest dropped', () => {
+    addToast(dummyContent, { id: 'a1', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a2', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a3', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a4', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a5', toastGroup: 'A' })
+    addToast(dummyContent, { id: 'a6', toastGroup: 'A' })
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(5)
+    expect(toasts.find((t) => t.id === 'a1')).toBeUndefined()
+    expect(toasts.find((t) => t.id === 'a6')).toBeDefined()
+  })
+
+  it('persistent toast in a group blocks group eviction (new transient dropped)', () => {
+    addToast(dummyContent, { id: 'p1', toastGroup: 'A', dismissal: 'persistent' })
+    addToast(dummyContent, { id: 'p2', toastGroup: 'A', dismissal: 'persistent' })
+    addToast(dummyContent, { id: 'p3', toastGroup: 'A', dismissal: 'persistent' })
+    addToast(dummyContent, { id: 'p4', toastGroup: 'A', dismissal: 'persistent' })
+    addToast(dummyContent, { id: 'p5', toastGroup: 'A', dismissal: 'persistent' })
+
+    addToast(dummyContent, { id: 'a6', toastGroup: 'A' })
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(5)
+    expect(toasts.find((t) => t.id === 'a6')).toBeUndefined()
+    expect(toasts.filter((t) => t.toastGroup === 'A')).toHaveLength(5)
+  })
+
+  it('group eviction frees a global slot when at the global cap', () => {
+    addToast(dummyContent, { id: 'a1', toastGroup: 'A', maxInGroup: 4 })
+    addToast(dummyContent, { id: 'a2', toastGroup: 'A', maxInGroup: 4 })
+    addToast(dummyContent, { id: 'a3', toastGroup: 'A', maxInGroup: 4 })
+    addToast(dummyContent, { id: 'a4', toastGroup: 'A', maxInGroup: 4 })
+    addToast(dummyContent, { id: 'x1' })
+
+    // Global cap (5) is hit AND group cap (4) is hit. Adding a5 should evict
+    // the oldest A (a1) via the group rule, freeing the global slot.
+    addToast(dummyContent, { id: 'a5', toastGroup: 'A', maxInGroup: 4 })
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(5)
+    expect(toasts.find((t) => t.id === 'a1')).toBeUndefined()
+    expect(toasts.find((t) => t.id === 'x1')).toBeDefined()
+    expect(toasts.find((t) => t.id === 'a5')).toBeDefined()
+  })
+
+  it('dismissTransientToasts still drops grouped transient toasts', () => {
+    addToast(dummyContent, { id: 'g1', toastGroup: 'downloads' })
+    addToast(dummyContent, { id: 'g2', toastGroup: 'downloads', dismissal: 'persistent' })
+    addToast(dummyContent, { id: 'g3', toastGroup: 'downloads' })
+
+    dismissTransientToasts()
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(1)
+    expect(toasts[0].id).toBe('g2')
+  })
+})
+
