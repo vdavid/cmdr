@@ -83,6 +83,14 @@ tower-http = { version = "0.6", features = ["cors"] }
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 memchr = "2"
+# File-viewer encoding decoder (UTF-16, Windows-1252, ISO-8859-1, Mac Roman, US-ASCII).
+# Pinned 2026-05-28 against crates.io v0.8.35 (released 2024-10-24, well past 14-day gate).
+# Apache-2.0 OR MIT.
+encoding_rs = "0.8.35"
+# Lock-free atomic Arc swap used by the file viewer to replace the active backend
+# (ByteSeek/LineIndex) without taking a write lock on the read path. Already pulled
+# in transitively; declaring it makes the dependency explicit.
+arc-swap = "1.9.1"
 walkdir = "2"
 # Drive indexing: parallel directory walker, SQLite store, and macOS FSEvents watcher
 jwalk = "0.8"

@@ -6,6 +6,7 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 mod byte_seek;
+mod encoding;
 mod full_load;
 mod line_index;
 mod range_read;
@@ -14,6 +15,8 @@ mod session;
 
 #[cfg(test)]
 mod byte_seek_test;
+#[cfg(test)]
+mod encoding_test;
 #[cfg(test)]
 mod full_load_test;
 #[cfg(test)]
