@@ -67,8 +67,9 @@ if file_size < 1MB {
   of selectable encodings with their labels and groups. The FE renders the dropdown straight from this; no encoding list
   lives on the FE.
 - `viewer_set_encoding(session_id, encoding)`: switches the active encoding. Instant when `same_byte_layout(current,
-  new)` holds (UTF-8 ↔ Windows-1252 family); otherwise snaps to ByteSeek immediately and rebuilds LineIndex in the
-  background. The FE polls `viewer_get_status` for `is_indexing` to track the rebuild.
+  new)` holds (UTF-8 ↔ Windows-1252 family): the active backend's `with_encoding(new)` method returns a fresh backend
+  with only the encoding field swapped, no reindex. Otherwise snaps to ByteSeek immediately and rebuilds LineIndex in
+  the background. The FE polls `viewer_get_status` for `is_indexing` to track the rebuild.
 - `viewer_set_tail_mode(session_id, enabled)`: flips the per-session tail-mode flag. When true, watcher `Grew` events
   trigger an `extend_to` on the active backend so the open viewport auto-follows newly appended bytes. When false, the
   FE still hears `viewer:file-changed:<sid>` events and renders a persistent reload toast. Enabling also catches the
@@ -110,11 +111,19 @@ Per-session, a manager thread (`spawn_watcher_manager_thread`) consumes events o
 
 ## Gotchas (tail mode)
 
-**Watcher subscribe MUST happen AFTER `SESSIONS.insert`.** `notify-debouncer-full::new_debouncer` plus
-`debouncer.watch` takes long enough on macOS that subscribing before the insert opens a window where the upgrade thread
-finishes its scan, tries to look up the session, fails, and silently exits — leaving `upgrading: Some(_)` forever. The
-insert at the end of `open_session` is the boundary; the watcher subscribe runs right after. Pinned by
-`tail_mode_on_extends_backend_when_watcher_reports_grew`.
+**Watcher subscribe happens AFTER `SESSIONS.insert` but BEFORE the upgrade spawn.** `notify-debouncer-full::new_debouncer`
+plus `debouncer.watch` need the session already in `SESSIONS` so the manager thread can look it up. They run before the
+upgrade thread spawn so the watcher captures any append that lands during the upgrade window; otherwise an append
+arriving between SESSIONS.insert and the watcher's first event would be observed by no one (the upgrade has already
+stored its LineIndex covering only the pre-append EOF, and no later FS event ever fires for that one append). Pinned by
+`tail_mode_on_extends_backend_when_watcher_reports_grew` and `test_append_during_upgrade_not_dropped`.
+
+**Tail-extend race against an encoding rebuild.** `apply_tail_extend` snapshots the active backend `Arc`, drops the
+SESSIONS lock, runs `extend_to_boxed` (multi-second on a multi-MB append), then re-acquires the lock. If an encoding
+rebuild installed a fresh backend during the unlocked window, storing the stale extend would clobber it. The fix:
+snapshot via `ArcSwap::load_full()` BEFORE the extend; after the extend, re-load and compare with `Arc::ptr_eq`. On
+mismatch, discard the stale extend and re-queue the EOF into `pending_grew` so the rebuild's drain (or a follow-up FS
+event) still catches up. Pinned by `test_tail_extend_during_encoding_rebuild_discards_stale_extend`.
 
 **`watcher.rs` canonicalises paths** so `/var/folders/...` (the tempfile path on macOS) and `/private/var/folders/...`
 (the equivalent without the symlink) collapse into the same registration. `test_only_emit` walks the same stored
@@ -178,6 +187,13 @@ hold an `Arc<Box<dyn FileViewerBackend>>` from `load_full()` and finish their ca
 at load time. Mid-swap there's no torn read because the old `Arc` is only dropped when the last reader releases it. A
 `RwLock` would either block readers on a heavy rebuild or force the rebuild to copy data into the lock; `ArcSwap` is
 both lock-free for readers and zero-copy for the writer.
+
+**Decision**: ISO-8859-1 is decoded via a manual 1:1 byte → codepoint table, NOT via `encoding_rs::WINDOWS_1252`.
+**Why**: `encoding_rs` aliases the ISO-8859-1 label to Windows-1252. The two disagree on the `0x80-0x9F` range:
+Windows-1252 reassigns `0x80` to `€` (U+20AC), while strict ISO-8859-1 leaves the byte as the C1 control code U+0080.
+Users selecting "Western (ISO-8859-1)" expect the strict mapping. The decoder is a single byte-to-char loop (10 lines of
+code), small enough to colocate with `decode_line` rather than add a new dependency. Pinned by
+`decode_line_iso_8859_1_keeps_c1_control_codes`.
 
 **Decision**: `FileEncoding` detection runs the UTF-16 parity heuristic BEFORE the UTF-8 fast path.
 **Why**: ASCII text encoded as UTF-16 (interleaved with `0x00` bytes) is technically valid UTF-8 — every `0x00` is a

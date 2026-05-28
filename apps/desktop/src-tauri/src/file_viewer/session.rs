@@ -276,11 +276,82 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
     let backend: Arc<ArcSwap<Box<dyn FileViewerBackend>>> = Arc::new(ArcSwap::from_pointee(backend_box));
 
     let session_id = generate_session_id();
-
-    // If we're using ByteSeek, start background upgrade to LineIndex with timeout
     let upgrade_cancel = upgrading.clone();
     let is_indexing = upgrade_cancel.is_some();
-    if let Some(cancel_flag) = upgrade_cancel.clone() {
+
+    let watcher_stop = Arc::new(AtomicBool::new(false));
+    let watcher_stop_for_thread = watcher_stop.clone();
+
+    let session = ViewerSession {
+        backend,
+        backend_type: Mutex::new(backend_type.clone()),
+        search: None,
+        upgrading: Mutex::new(upgrade_cancel.clone()),
+        rebuilding: Mutex::new(None),
+        pending_grew: Mutex::new(None),
+        encoding: Mutex::new(detected_encoding),
+        detected_encoding,
+        tail_mode: AtomicBool::new(false),
+        watcher_stop,
+        active_reads: Mutex::new(HashMap::new()),
+        path: file_path.clone(),
+    };
+
+    // Calculate estimated total lines from the initial sample
+    let estimated_total_lines = if let Some(lines) = total_lines {
+        // If we know the exact count, use it
+        lines
+    } else if !initial_lines.lines.is_empty() {
+        // Estimate from initial sample: total_bytes / avg_bytes_per_line
+        let total_bytes_in_sample: usize = initial_lines.lines.iter().map(|l| l.len() + 1).sum(); // +1 for newline
+        let avg_bytes_per_line = total_bytes_in_sample / initial_lines.lines.len();
+        (total_bytes as usize)
+            .checked_div(avg_bytes_per_line)
+            .unwrap_or((total_bytes as usize) / 80) // fallback when avg is 0
+    } else {
+        (total_bytes as usize) / 80 // fallback for empty files
+    };
+
+    let result = ViewerOpenResult {
+        session_id: session_id.clone(),
+        file_name,
+        total_bytes,
+        total_lines,
+        estimated_total_lines,
+        backend_type,
+        capabilities,
+        initial_lines,
+        is_indexing,
+        encoding: detected_encoding,
+    };
+
+    let session_path = session.path.clone();
+    SESSIONS.lock_ignore_poison().insert(session_id.clone(), session);
+
+    // Subscribe to filesystem events BEFORE spawning the upgrade thread.
+    // If the upgrade thread is spawned first and finishes between the spawn
+    // and the watcher subscribe, any append on disk during that window is
+    // observed by no one: the upgrade thread already stored its LineIndex
+    // (covering only the pre-append EOF), and the watcher hasn't subscribed
+    // yet so no event ever fires. Subscribing first means the watcher is
+    // live throughout the upgrade window; any append queues into
+    // `pending_grew` and the upgrade's drain-and-swap critical section
+    // picks it up.
+    //
+    // The watcher manager thread itself locks SESSIONS to look up the
+    // session on each event, so it gracefully tolerates the brief window
+    // between this insert and the manager thread's first `recv`.
+    //
+    // Tests can opt out via `CMDR_VIEWER_DISABLE_WATCHER=1`.
+    if std::env::var("CMDR_VIEWER_DISABLE_WATCHER").is_err() {
+        match VIEWER_WATCHER_MANAGER.subscribe(&session_path) {
+            Ok(sub) => spawn_watcher_manager_thread(session_id.clone(), sub, watcher_stop_for_thread),
+            Err(e) => debug!("viewer watcher subscribe failed for {}: {}", session_path.display(), e),
+        }
+    }
+
+    // If we're using ByteSeek, start background upgrade to LineIndex with timeout
+    if let Some(cancel_flag) = upgrade_cancel {
         let session_id_clone = session_id.clone();
         let path_clone = file_path.clone();
         let cancel_for_indexer = cancel_flag.clone();
@@ -319,6 +390,17 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         // window is queued in `pending_grew` and consumed by the swap.
         let encoding_for_upgrade = detected_encoding;
         thread::spawn(move || {
+            // Test-only sleep hook: lets tests pin the upgrade thread mid-scan
+            // so they can race appends or other operations against the drain.
+            #[cfg(test)]
+            {
+                // `swap` self-clears so the next upgrade in this test process
+                // doesn't accidentally inherit the hold.
+                let hold = UPGRADE_SLEEP_HOOK.swap(0, Ordering::SeqCst);
+                if hold > 0 {
+                    thread::sleep(Duration::from_millis(hold));
+                }
+            }
             match LineIndexBackend::open_with_encoding(&path_clone, encoding_for_upgrade, &cancel_for_indexer) {
                 Ok(new_backend) => {
                     if !cancel_for_indexer.load(Ordering::Relaxed) {
@@ -359,73 +441,32 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         });
     }
 
-    let watcher_stop = Arc::new(AtomicBool::new(false));
-    let watcher_stop_for_thread = watcher_stop.clone();
-
-    let session = ViewerSession {
-        backend,
-        backend_type: Mutex::new(backend_type.clone()),
-        search: None,
-        upgrading: Mutex::new(upgrade_cancel),
-        rebuilding: Mutex::new(None),
-        pending_grew: Mutex::new(None),
-        encoding: Mutex::new(detected_encoding),
-        detected_encoding,
-        tail_mode: AtomicBool::new(false),
-        watcher_stop,
-        active_reads: Mutex::new(HashMap::new()),
-        path: file_path,
-    };
-
-    // Calculate estimated total lines from the initial sample
-    let estimated_total_lines = if let Some(lines) = total_lines {
-        // If we know the exact count, use it
-        lines
-    } else if !initial_lines.lines.is_empty() {
-        // Estimate from initial sample: total_bytes / avg_bytes_per_line
-        let total_bytes_in_sample: usize = initial_lines.lines.iter().map(|l| l.len() + 1).sum(); // +1 for newline
-        let avg_bytes_per_line = total_bytes_in_sample / initial_lines.lines.len();
-        (total_bytes as usize)
-            .checked_div(avg_bytes_per_line)
-            .unwrap_or((total_bytes as usize) / 80) // fallback when avg is 0
-    } else {
-        (total_bytes as usize) / 80 // fallback for empty files
-    };
-
-    let result = ViewerOpenResult {
-        session_id: session_id.clone(),
-        file_name,
-        total_bytes,
-        total_lines,
-        estimated_total_lines,
-        backend_type,
-        capabilities,
-        initial_lines,
-        is_indexing,
-        encoding: detected_encoding,
-    };
-
-    let session_path = session.path.clone();
-    SESSIONS.lock_ignore_poison().insert(session_id.clone(), session);
-
-    // Subscribe the session to filesystem events AFTER it's been inserted
-    // into the SESSIONS map. notify-debouncer-full's `new_debouncer` /
-    // `debouncer.watch` calls take long enough on macOS (FSEvents stream
-    // setup) that doing them before insert opens a window where the ByteSeek
-    // → LineIndex upgrade thread can finish and fail to find the session,
-    // leaving `upgrading` stuck at `Some` forever. Best-effort: if the
-    // watcher can't register, the session still opens; the tail toggle just
-    // won't surface external changes.
-    //
-    // Tests can opt out via `CMDR_VIEWER_DISABLE_WATCHER=1`.
-    if std::env::var("CMDR_VIEWER_DISABLE_WATCHER").is_err() {
-        match VIEWER_WATCHER_MANAGER.subscribe(&session_path) {
-            Ok(sub) => spawn_watcher_manager_thread(session_id, sub, watcher_stop_for_thread),
-            Err(e) => debug!("viewer watcher subscribe failed for {}: {}", session_path.display(), e),
-        }
-    }
-
     Ok(result)
+}
+
+/// Test-only millisecond sleep injected at the start of the upgrade thread so
+/// tests can race appends or other operations against the drain-and-swap
+/// critical section deterministically. `0` disables the hold.
+#[cfg(test)]
+static UPGRADE_SLEEP_HOOK: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Test-only: park the next upgrade thread for `ms` milliseconds before it
+/// starts scanning. Resets back to `0` after the spawn observes it.
+#[cfg(test)]
+#[allow(dead_code, reason = "consumed by session_test race-coverage tests")]
+pub fn test_only_set_upgrade_hold(ms: u64) {
+    UPGRADE_SLEEP_HOOK.store(ms, Ordering::SeqCst);
+}
+
+/// Test-only: park the next encoding-rebuild thread for `ms` milliseconds.
+/// Self-clears after the spawn observes it.
+#[cfg(test)]
+static REBUILD_SLEEP_HOOK: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+#[cfg(test)]
+#[allow(dead_code, reason = "consumed by session_test rebuild-serialization test")]
+pub fn test_only_set_rebuild_hold(ms: u64) {
+    REBUILD_SLEEP_HOOK.store(ms, Ordering::SeqCst);
 }
 
 /// Gets the current status of a session (backend type, indexing state).
@@ -860,17 +901,25 @@ pub fn set_encoding(session_id: &str, new_encoding: FileEncoding) -> Result<(), 
     }
 
     // Instant-swap path: when the byte layout is identical (same BOM + both
-    // ASCII-newline-compatible), the existing LineIndex is still valid. Reopen
-    // ByteSeek with the new encoding — the index will be rebuilt in the background
-    // anyway, but the viewport stays interactive without a visible blip. Future:
-    // share checkpoints across the swap. The instant case is small enough today
-    // (ASCII Latin-1 swaps) that paying for one extra `memchr` scan is fine.
-    let instant = same_byte_layout(current_encoding, new_encoding);
-    if instant {
+    // ASCII-newline-compatible), the existing LineIndex / ByteSeek is still
+    // valid. We swap only the encoding field via `with_encoding`. No
+    // background rebuild; the viewport stays unchanged except per-line decode.
+    if same_byte_layout(current_encoding, new_encoding) {
         debug!(
             "set_encoding: instant swap {:?} -> {:?} (same byte layout)",
             current_encoding, new_encoding
         );
+        let sessions = SESSIONS.lock_ignore_poison();
+        if let Some(session) = sessions.get(session_id) {
+            let backend = session.backend.load_full();
+            if let Some(swapped) = backend.with_encoding(new_encoding) {
+                session.backend.store(Arc::new(swapped));
+                *session.encoding.lock_ignore_poison() = new_encoding;
+                return Ok(());
+            }
+            // Backend declined the instant swap (e.g. FullLoad pre-decoded
+            // its lines). Fall through to the rebuild path.
+        }
     }
 
     // Large-file path: snap to ByteSeek immediately so the viewport stays interactive,
@@ -892,6 +941,13 @@ pub fn set_encoding(session_id: &str, new_encoding: FileEncoding) -> Result<(), 
     let path_clone = path;
     let cancel_for_thread = cancel.clone();
     thread::spawn(move || {
+        #[cfg(test)]
+        {
+            let hold = REBUILD_SLEEP_HOOK.swap(0, Ordering::SeqCst);
+            if hold > 0 {
+                thread::sleep(Duration::from_millis(hold));
+            }
+        }
         match LineIndexBackend::open_with_encoding(&path_clone, new_encoding, &cancel_for_thread) {
             Ok(new_backend) => {
                 if cancel_for_thread.load(Ordering::Relaxed) {
@@ -961,6 +1017,16 @@ pub fn test_only_push_pending_grew(session_id: &str, eof: u64) {
         };
         *q = Some(next);
     }
+}
+
+/// Test-only hook: reads the current `pending_grew` queue value.
+#[cfg(test)]
+#[allow(dead_code, reason = "consumed by session_test race-coverage tests")]
+pub fn test_only_pending_grew(session_id: &str) -> Option<u64> {
+    let sessions = SESSIONS.lock_ignore_poison();
+    sessions
+        .get(session_id)
+        .and_then(|s| *s.pending_grew.lock_ignore_poison())
 }
 
 /// Test-only hook: reads the rebuilding flag's strong-count parity (Some/None) to
@@ -1163,47 +1229,78 @@ fn handle_watcher_event(session_id: &str, event: WatcherEvent) {
 }
 
 /// Apply a single tail-mode extension under the drain-and-swap-under-lock
-/// protocol. Re-reads the current backend on every call (no cached Arc) so
-/// concurrent encoding rebuilds / upgrades don't write into a stale slot.
+/// protocol.
+///
+/// Race protocol: `extend_to_boxed` can take seconds for a multi-MB append, so
+/// we run it OUTSIDE the SESSIONS lock. That opens a window in which an
+/// encoding rebuild or upgrade can install a fresh backend via
+/// `ArcSwap::store`. Snapshotting the backend `Arc` before the long extend and
+/// re-comparing via `Arc::ptr_eq` after — under the SESSIONS lock — lets us
+/// detect that case and discard the stale extend instead of clobbering the
+/// fresh backend. The new EOF is re-queued into `pending_grew` so the rebuild
+/// swap or a follow-up watcher event still catches up.
 fn apply_tail_extend(session_id: &str, new_size: u64) {
     let dummy_cancel = AtomicBool::new(false);
 
+    let backend_snapshot = {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let Some(session) = sessions.get(session_id) else {
+            return;
+        };
+        // Re-check: an upgrade or rebuild may have started between the watcher
+        // thread's read and this lock acquisition. Queue and bail in that case.
+        if session.upgrading.lock_ignore_poison().is_some() || session.rebuilding.lock_ignore_poison().is_some() {
+            let mut q = session.pending_grew.lock_ignore_poison();
+            let next = match *q {
+                Some(prev) => prev.max(new_size),
+                None => new_size,
+            };
+            *q = Some(next);
+            return;
+        }
+        let backend = session.backend.load_full();
+        if new_size <= backend.total_bytes() {
+            return;
+        }
+        backend
+    };
+
+    let extended = match backend_snapshot.extend_to_boxed(new_size, &dummy_cancel) {
+        Ok(b) => b,
+        Err(_) => {
+            // The active backend can't extend (FullLoad). The viewer remains
+            // valid against the older byte range until the user reloads.
+            return;
+        }
+    };
+
+    // Re-acquire the lock and verify the backend we extended is still the one
+    // installed. If an encoding rebuild or upgrade swapped a new backend in
+    // during our extend, our extended-from-stale backend would clobber it.
     let sessions = SESSIONS.lock_ignore_poison();
     let Some(session) = sessions.get(session_id) else {
         return;
     };
-    // Re-check: an upgrade or rebuild may have started between the watcher
-    // thread's read and this lock acquisition. Queue and bail in that case.
-    if session.upgrading.lock_ignore_poison().is_some() || session.rebuilding.lock_ignore_poison().is_some() {
+    let current = session.backend.load_full();
+    if Arc::ptr_eq(&current, &backend_snapshot) {
+        session.backend.store(Arc::new(extended));
+    } else {
+        // A fresh backend was installed during our extend. Discard the stale
+        // extend and re-queue the EOF so the rebuild's drain-and-swap (or a
+        // follow-up watcher event) picks it up. The new backend may already
+        // cover `new_size` via its own drain; in that case the queue is
+        // harmlessly higher than `total_bytes` and the next pass treats it as
+        // a no-op.
+        debug!(
+            "apply_tail_extend: backend changed during extend; discarding stale extend for session {}",
+            session_id
+        );
         let mut q = session.pending_grew.lock_ignore_poison();
         let next = match *q {
             Some(prev) => prev.max(new_size),
             None => new_size,
         };
         *q = Some(next);
-        return;
-    }
-    // Fresh ArcSwap::load on every call: the watcher must observe whichever
-    // backend `set_encoding`/`upgrade` last installed.
-    let backend = session.backend.load_full();
-    let current_size = backend.total_bytes();
-    if new_size <= current_size {
-        return;
-    }
-    drop(sessions);
-
-    let extended = match backend.extend_to_boxed(new_size, &dummy_cancel) {
-        Ok(b) => b,
-        Err(_) => {
-            // The active backend can't extend (FullLoad).  The viewer remains
-            // valid against the older byte range until the user reloads.
-            return;
-        }
-    };
-
-    let sessions = SESSIONS.lock_ignore_poison();
-    if let Some(session) = sessions.get(session_id) {
-        session.backend.store(Arc::new(extended));
     }
 }
 
@@ -1216,6 +1313,53 @@ fn push_pending_grew(session_id: &str, new_size: u64) {
             None => new_size,
         };
         *q = Some(next);
+    }
+}
+
+/// Test-only helper: drives the race in `apply_tail_extend` deterministically.
+///
+/// Simulates the timing the round-3 audit caught:
+/// 1. The watcher thread takes a backend snapshot.
+/// 2. Before its long `extend_to_boxed` returns, a separate concurrent
+///    activity (encoding rebuild, upgrade) installs a brand-new backend.
+/// 3. The watcher's eventual `store` must NOT clobber the new backend.
+///
+/// We script this by snapshotting the backend, calling `swap_callback` (which
+/// the test uses to install a fresh backend via, e.g., `reload` or
+/// `set_encoding`), then calling `extend_to_boxed` on the snapshot, then
+/// running the same ptr-eq check the production code uses to decide
+/// store-vs-discard. Returns `true` if the store was applied (snapshot still
+/// current), `false` if the extend was discarded.
+#[cfg(test)]
+#[allow(dead_code, reason = "consumed by session_test tail-extend clobber-race test")]
+pub fn test_only_run_tail_extend_with_swap(session_id: &str, new_size: u64, swap_callback: impl FnOnce()) -> bool {
+    let dummy_cancel = AtomicBool::new(false);
+    let backend_snapshot = {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let session = sessions.get(session_id).expect("session must exist");
+        session.backend.load_full()
+    };
+    // Trigger the racing swap (the test installs a new backend here).
+    swap_callback();
+
+    let extended = backend_snapshot
+        .extend_to_boxed(new_size, &dummy_cancel)
+        .expect("extend should succeed");
+
+    let sessions = SESSIONS.lock_ignore_poison();
+    let session = sessions.get(session_id).expect("session must exist");
+    let current = session.backend.load_full();
+    if Arc::ptr_eq(&current, &backend_snapshot) {
+        session.backend.store(Arc::new(extended));
+        true
+    } else {
+        let mut q = session.pending_grew.lock_ignore_poison();
+        let next = match *q {
+            Some(prev) => prev.max(new_size),
+            None => new_size,
+        };
+        *q = Some(next);
+        false
     }
 }
 
