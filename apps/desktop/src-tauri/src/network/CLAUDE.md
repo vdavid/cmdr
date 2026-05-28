@@ -125,6 +125,14 @@ All credential storage backends now live in `crate::secrets` (see `secrets/CLAUD
 
 When the user mounts an SMB share, we establish a parallel smb2 connection alongside the OS mount. The OS mount provides Finder/Terminal/drag-drop compatibility, while Cmdr's file operations use the smb2 session for better performance and fail-fast behavior. The `SmbVolume` is registered in `VolumeManager` before the FSEvents watcher fires, using `register` (overwrite). When the watcher fires, `register_if_absent` is a no-op since the SmbVolume is already registered. See `file_system/volume/smb.rs` for the implementation.
 
+### `register_replacing_predecessor` cleans up the displaced volume before replacing it
+
+Every `NSWorkspaceDidMountNotification` on an SMB share triggers a fresh `register_smb_volume` cycle, and the user can re-trigger the same path via manual "Connect directly" after an unmount/remount cycle. Without explicit cleanup, the new `SmbVolume` simply overwrites the old one's `Arc` slot in `VolumeManager`. The old volume's watcher would still exit eventually — its `watcher_cancel: Mutex<Option<oneshot::Sender<()>>>` drops with the `Arc`, the `Sender` drops, the watcher's `cancel_rx` resolves to `Err(Closed)` and the `select!` branch fires — but timing is non-deterministic ("whenever the last `Arc` ref goes away") and an in-flight `do_attempt_reconnect` on the displaced volume could install a fresh session into a volume that's no longer in the manager.
+
+`register_replacing_predecessor` (in `smb_upgrade.rs`) closes both gaps: it looks up the predecessor via `manager.get(volume_id)`, calls `on_unmount` on it (which sets the `unmounted` flag, transitions state, pings the watcher cancel, and drops the smb2 session), then `register`s the new volume. Both `register_smb_volume` and `try_smb_upgrade` route through this helper.
+
+**Gotcha**: `SmbVolume::on_unmount` uses `blocking_write()` / `blocking_lock()` because the FSEvents-thread call site (`volumes::watcher::handle_volume_unmounted`) is sync. Inside `register_replacing_predecessor` we're in an async context, so calling `on_unmount` directly would panic ("cannot block_on within a runtime"). The helper wraps the call in `tokio::task::spawn_blocking(...).await` so the lock acquisition runs on the blocking-thread pool. Don't switch back to a direct call.
+
 ### Linux mounting via GVFS
 
 `gio mount` is used for user-space SMB mounting on Linux. It requires the `gvfs-smb` package. If `gio` is not available, a helpful error message is returned. Mounts appear under `/run/user/<uid>/gvfs/`.

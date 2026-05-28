@@ -61,6 +61,36 @@ pub(crate) enum UpgradeError {
     Network(String),
 }
 
+/// Register `new_volume` under `volume_id`, calling `on_unmount` on any
+/// predecessor first. Without the explicit cleanup, a re-register (every
+/// `NSWorkspaceDidMountNotification`, or a manual "Connect directly" after
+/// an unmount+remount cycle) would still eventually tear the old volume's
+/// watcher down via `Arc` drop → `Mutex<Option<Sender>>` drop → watcher
+/// `cancel_rx` resolves to `Err`. What this helper adds:
+///
+/// 1. **Deterministic timing**: the watcher exits within one `select!` tick
+///    rather than "whenever the last `Arc` drops."
+/// 2. **`unmounted` flag**: any in-flight `do_attempt_reconnect` on the
+///    displaced volume bails before installing a session into a volume
+///    that's no longer in the manager.
+///
+/// `SmbVolume::on_unmount` uses `blocking_write()` / `blocking_lock()`
+/// (designed for the sync FSEvents thread), which panics inside a tokio
+/// runtime. `spawn_blocking` moves the call to a blocking-thread-pool
+/// thread so the lock acquisition is legal. Awaited so the cleanup
+/// completes before `register` swaps the new volume in.
+async fn register_replacing_predecessor(
+    volume_id: &str,
+    new_volume: std::sync::Arc<dyn crate::file_system::volume::Volume>,
+) {
+    let manager = crate::file_system::get_volume_manager();
+    if let Some(prev) = manager.get(volume_id) {
+        log::debug!("Replacing existing volume at id={volume_id}; calling on_unmount on the predecessor");
+        let _ = tokio::task::spawn_blocking(move || prev.on_unmount()).await;
+    }
+    manager.register(volume_id, new_volume);
+}
+
 /// Tries to establish a direct smb2 connection and register as `SmbVolume`.
 ///
 /// Best-effort: logs a warning and returns quietly on failure. The FSEvents
@@ -73,7 +103,6 @@ pub(crate) async fn register_smb_volume(
     password: Option<&str>,
     port: u16,
 ) {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::smb::connect_smb_volume;
     use std::sync::Arc;
 
@@ -99,9 +128,11 @@ pub(crate) async fn register_smb_volume(
         crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
     match connect_smb_volume(share, mount_path, &volume_id, params).await {
         Ok(volume) => {
-            // Use register (overwrite) so SmbVolume always wins over any
-            // LocalPosixVolume the watcher may have registered in the race window.
-            get_volume_manager().register(&volume_id, Arc::new(volume));
+            // Overwrite-with-cleanup so SmbVolume always wins over any
+            // LocalPosixVolume the watcher may have registered in the race
+            // window, and any prior SmbVolume gets its watcher + smb2 session
+            // torn down before we replace it.
+            register_replacing_predecessor(&volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
         }
         Err(e) => {
@@ -126,7 +157,6 @@ pub(crate) async fn try_smb_upgrade(
     port: u16,
     volume_id: &str,
 ) -> Result<(), UpgradeError> {
-    use crate::file_system::get_volume_manager;
     use crate::file_system::volume::smb::connect_smb_volume;
     use crate::network::smb_util::is_auth_error;
     use std::sync::Arc;
@@ -139,7 +169,7 @@ pub(crate) async fn try_smb_upgrade(
         crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
     match connect_smb_volume(share, mount_path, volume_id, params).await {
         Ok(volume) => {
-            get_volume_manager().register(volume_id, Arc::new(volume));
+            register_replacing_predecessor(volume_id, Arc::new(volume)).await;
             log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
             Ok(())
         }
@@ -423,5 +453,134 @@ mod tests {
             "shouldn't blow past timeout by much; elapsed {:?}",
             elapsed
         );
+    }
+
+    // ── register_replacing_predecessor ─────────────────────────────────
+
+    /// A minimal `Volume` impl whose only purpose is to record whether
+    /// `on_unmount` was called. Used to verify `register_replacing_predecessor`
+    /// runs the cleanup hook on the displaced volume.
+    mod tracking {
+        use crate::file_system::listing::metadata::FileEntry;
+        use crate::file_system::volume::{SpaceInfo, Volume, VolumeError};
+        use std::future::Future;
+        use std::path::{Path, PathBuf};
+        use std::pin::Pin;
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        pub(super) struct TrackingVolume {
+            pub(super) on_unmount_called: Arc<AtomicBool>,
+            root: PathBuf,
+        }
+
+        impl TrackingVolume {
+            pub(super) fn create(label: &str) -> (Arc<dyn Volume>, Arc<AtomicBool>) {
+                let flag = Arc::new(AtomicBool::new(false));
+                let vol = Arc::new(Self {
+                    on_unmount_called: Arc::clone(&flag),
+                    root: PathBuf::from(format!("/tmp/tracking-{label}")),
+                }) as Arc<dyn Volume>;
+                (vol, flag)
+            }
+        }
+
+        impl Volume for TrackingVolume {
+            fn name(&self) -> &str {
+                "tracking"
+            }
+            fn root(&self) -> &Path {
+                &self.root
+            }
+            fn as_any(&self) -> &dyn std::any::Any {
+                self
+            }
+            fn list_directory<'a>(
+                &'a self,
+                _path: &'a Path,
+                _on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync + 'a)>,
+            ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+                Box::pin(async { Err(VolumeError::NotSupported) })
+            }
+            fn get_metadata<'a>(
+                &'a self,
+                _path: &'a Path,
+            ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+                Box::pin(async { Err(VolumeError::NotSupported) })
+            }
+            fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+                Box::pin(async { false })
+            }
+            fn is_directory<'a>(
+                &'a self,
+                _path: &'a Path,
+            ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+                Box::pin(async { Err(VolumeError::NotSupported) })
+            }
+            fn get_space_info<'a>(
+                &'a self,
+            ) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+                Box::pin(async { Err(VolumeError::NotSupported) })
+            }
+            fn on_unmount(&self) {
+                self.on_unmount_called.store(true, Ordering::Relaxed);
+            }
+        }
+    }
+
+    /// `register_replacing_predecessor` must call `on_unmount` on whatever
+    /// `Volume` is currently registered at the target id before installing the
+    /// new one. Without this, the predecessor's `unmounted` flag never flips and
+    /// any in-flight `attempt_reconnect` could install a fresh session into a
+    /// volume that's no longer in the manager.
+    #[tokio::test]
+    async fn predecessor_on_unmount_runs_before_replace() {
+        use std::sync::atomic::Ordering;
+
+        let volume_id = "test-register-replacing-predecessor-replace";
+        let manager = crate::file_system::get_volume_manager();
+
+        let (old_volume, old_flag) = tracking::TrackingVolume::create("old");
+        let (new_volume, new_flag) = tracking::TrackingVolume::create("new");
+
+        manager.register(volume_id, old_volume);
+        assert!(!old_flag.load(Ordering::Relaxed));
+
+        register_replacing_predecessor(volume_id, std::sync::Arc::clone(&new_volume)).await;
+
+        assert!(
+            old_flag.load(Ordering::Relaxed),
+            "displaced volume's on_unmount must have been called"
+        );
+        assert!(
+            !new_flag.load(Ordering::Relaxed),
+            "new volume's on_unmount must not be called"
+        );
+
+        let current = manager.get(volume_id).expect("new volume should be registered");
+        assert!(
+            std::sync::Arc::ptr_eq(&current, &new_volume),
+            "new volume should be the one registered under volume_id"
+        );
+
+        manager.unregister(volume_id);
+    }
+
+    /// When no predecessor exists, `register_replacing_predecessor` just
+    /// registers — no `on_unmount` call (there's nothing to call it on), no
+    /// panic.
+    #[tokio::test]
+    async fn register_with_no_predecessor_just_registers() {
+        let volume_id = "test-register-replacing-predecessor-fresh";
+        let manager = crate::file_system::get_volume_manager();
+        manager.unregister(volume_id); // belt-and-suspenders in case a prior test leaked.
+
+        let (new_volume, new_flag) = tracking::TrackingVolume::create("fresh");
+        register_replacing_predecessor(volume_id, std::sync::Arc::clone(&new_volume)).await;
+
+        assert!(!new_flag.load(std::sync::atomic::Ordering::Relaxed));
+        assert!(manager.get(volume_id).is_some());
+
+        manager.unregister(volume_id);
     }
 }
