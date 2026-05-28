@@ -60,11 +60,18 @@ The admin-privilege path (`rsync -a`) already uses atomic rename by default.
 
 - **macOS-only.** The module, command registrations, and `UpdateState` are all gated with `#[cfg(target_os = "macos")]`.
   On non-macOS, the frontend uses `@tauri-apps/plugin-updater` directly.
-- **Staging dir is `/tmp/cmdr-update-staging`.** Cleaned before and after install. If the app crashes mid-install,
-  leftover staging doesn't block the next attempt (it gets cleaned on retry).
+- **Staging dir is per-instance: `<tmp>/cmdr-update-staging-{CMDR_INSTANCE_ID}`** (`installer::staging_dir`).
+  Cleaned before and after install. Production (no wrapper, no env var) lands at `cmdr-update-staging-default`.
+  Dev/worktree sessions get their own subdir so concurrent `Cmdr` processes don't race on the same path and trip
+  `ENOTEMPTY` (we observed exactly this when running main + a worktree side-by-side).
 - **Privilege escalation via `osascript`.** Only triggers when direct writes to `/Applications/Cmdr.app` are denied.
   Users who run from `~/Applications` or a dev build won't see the auth dialog.
 - **CI guard.** `check_for_update` returns `None` when the `CI` env var is set, avoiding network calls in tests.
+- **Dev-build guard.** `check_for_update` also returns `None` when the current exe isn't inside a `.app` bundle
+  (via `installer::is_running_from_app_bundle`). Without it, dev builds run from `target/<triple>/release/Cmdr` would
+  surface a noisy `Couldn't find .app bundle in path: ...` error every time the auto-error-reporter caught it. The
+  gate makes the updater a silent no-op for any binary that isn't packaged. Don't loosen it: the install path
+  fundamentally can't work outside a bundle (the sync target has no `Contents/` to sync into).
 - **Manifest URL routes through the API server** (`https://api.getcmdr.com/update-check/{version}?arch={arch}`),
   which logs the check to D1 for active user counting, then 302-redirects to `https://getcmdr.com/latest.json`.
   The URL is constructed at runtime from the compile-time version and architecture.

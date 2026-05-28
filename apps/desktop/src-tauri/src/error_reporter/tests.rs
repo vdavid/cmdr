@@ -1,4 +1,6 @@
-use super::bundle_builder::{PreparedFile, build_bundle_streaming, build_zip, load_and_filter_log_file, zip_dt};
+use super::bundle_builder::{
+    PreparedFile, build_bundle_streaming, build_zip, load_and_filter_log_file, prepare_user_note, zip_dt,
+};
 use super::bundle_capper::cap_bundle_to_bytes;
 use super::*;
 use crate::redact;
@@ -139,6 +141,62 @@ fn redaction_is_applied_to_log_lines() {
         log_body.contains("$HOME"),
         "expected `$HOME` token in redacted output (got: {log_body})"
     );
+}
+
+#[test]
+fn prepare_user_note_redacts_paths_in_auto_notes() {
+    // Regression: v0.21.0 auto-send bundles shipped `userNote` verbatim, which leaked
+    // `/Users/<name>/...` from updater error messages. The redactor must scrub it.
+    let salt = [0u8; 16];
+    let raw = "auto-send: 1 error within 60s, first: FE:updater | Couldn't find .app bundle in path: /Users/jane/projects/cmdr/target/release/Cmdr";
+    let redacted = prepare_user_note(raw, BundleKind::Auto, &salt).expect("non-empty note");
+    assert!(
+        !redacted.contains("/Users/jane"),
+        "expected `/Users/jane` to be redacted (got: {redacted})"
+    );
+    assert!(
+        redacted.contains("$HOME"),
+        "expected `$HOME` token after redaction (got: {redacted})"
+    );
+    // The prefix that doesn't contain a path should pass through unchanged.
+    assert!(
+        redacted.starts_with("auto-send: 1 error within 60s, first: FE:updater"),
+        "non-path prefix should survive (got: {redacted})"
+    );
+}
+
+#[test]
+fn prepare_user_note_leaves_user_notes_verbatim() {
+    // User-typed notes are previewed in the dialog and shipped verbatim. We trust the
+    // user to know what they're sharing; a path they typed in is a path they want sent.
+    let salt = [0u8; 16];
+    let raw = "I opened /Users/jane/Documents/budget.pdf and the app froze";
+    let kept = prepare_user_note(raw, BundleKind::User, &salt).expect("non-empty note");
+    assert_eq!(kept, raw);
+}
+
+#[test]
+fn prepare_user_note_drops_empty_and_whitespace_for_both_kinds() {
+    let salt = [0u8; 16];
+    assert!(prepare_user_note("", BundleKind::Auto, &salt).is_none());
+    assert!(prepare_user_note("   \t  ", BundleKind::Auto, &salt).is_none());
+    assert!(prepare_user_note("", BundleKind::User, &salt).is_none());
+    assert!(prepare_user_note("\n  \n", BundleKind::User, &salt).is_none());
+}
+
+#[test]
+fn prepare_user_note_redacts_each_line_of_multiline_auto_note() {
+    // Defensive: auto_dispatcher's format string is single-line, but `state.first_message`
+    // is arbitrary; a multi-line message must still get redacted on every line.
+    let salt = [0u8; 16];
+    let raw = "auto-send: first error\nlocation: /Users/jane/projects/foo\ndetail: also /Users/jane/Documents/x.pdf";
+    let redacted = prepare_user_note(raw, BundleKind::Auto, &salt).expect("non-empty note");
+    assert!(
+        !redacted.contains("/Users/jane"),
+        "every line must be redacted (got: {redacted})"
+    );
+    // The split-on-newline preserves the line count.
+    assert_eq!(redacted.matches('\n').count(), 2);
 }
 
 #[test]

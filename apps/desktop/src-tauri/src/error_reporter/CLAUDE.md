@@ -57,7 +57,13 @@ Manifest fields (`BundleManifest`):
   `lastUserAction` field (removed); `handleCommandExecute` pushes one on every
   keyboard / palette / menu dispatch. See "Breadcrumbs" below.
 - `userNote` (optional): user-supplied free text. Trimmed; capped at 100 000 chars by the
-  Tauri command layer.
+  Tauri command layer. For [`BundleKind::Auto`] bundles only, the note is also routed
+  through the same `redact_line_salted` pass that scrubs every log line. The auto
+  pipeline constructs the note from a raw error message (see [`auto_dispatcher`]) that
+  routinely contains paths (e.g. updater failures embedding `current_exe()`), and the
+  user never previews what ships, so the redactor is the only thing standing between a
+  `/Users/<name>/...` path in the message and the manifest. [`BundleKind::User`] notes
+  are typed by the user, previewed in the dialog, and shipped verbatim.
 - `generatedAt`: ISO 8601 UTC timestamp.
 
 Distinct from `crash_reporter::ActiveSettings`: that struct is the on-disk crash file

@@ -8,13 +8,34 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-const STAGING_DIR: &str = "/tmp/cmdr-update-staging";
+/// Returns the per-instance staging dir. Each dev/worktree instance gets its own subdir so
+/// concurrent `Cmdr` processes (main repo + worktree sessions) don't race on a shared
+/// `/tmp/cmdr-update-staging` and trip `ENOTEMPTY` when one cleans up while another extracts.
+///
+/// `CMDR_INSTANCE_ID` is set by `tauri-wrapper.js` for every dev session; production builds
+/// don't go through the wrapper, so the env var is absent and the dir lands at
+/// `<tmp>/cmdr-update-staging-default`.
+fn staging_dir() -> PathBuf {
+    let instance = std::env::var("CMDR_INSTANCE_ID").unwrap_or_else(|_| "default".to_string());
+    std::env::temp_dir().join(format!("cmdr-update-staging-{instance}"))
+}
+
+/// Returns `true` when the current executable lives inside a `.app` bundle.
+///
+/// Used to gate the updater entirely in dev builds, where `current_exe()` points at
+/// `target/<triple>/release/Cmdr` (no `.app` ancestor) and the install path can't possibly
+/// succeed. Calling `check_for_update`/`install_update` from such a build only produced
+/// noisy auto-error-reports without any chance of installing anything.
+pub fn is_running_from_app_bundle() -> bool {
+    find_running_bundle().is_ok()
+}
 
 /// Extracts the tarball at `tarball_path` and syncs its contents into the running app bundle.
 ///
 /// The tarball is expected to contain a `Cmdr.app/` root directory (as produced by `tauri-action`).
 pub fn install(tarball_path: &Path) -> Result<(), String> {
-    let staging = Path::new(STAGING_DIR);
+    let staging_owned = staging_dir();
+    let staging = staging_owned.as_path();
     let staged_app = staging.join("Cmdr.app");
 
     // Clean up any previous staging dir
@@ -77,14 +98,21 @@ fn extract_tarball(tarball_path: &Path, dest_dir: &Path) -> Result<(), String> {
 /// Finds the running app's `.app` bundle path by walking up from `current_exe()`.
 fn find_running_bundle() -> Result<PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| format!("Couldn't get current exe: {e}"))?;
-    let mut path = exe.as_path();
-    while let Some(parent) = path.parent() {
+    find_app_bundle_above(&exe).ok_or_else(|| format!("Couldn't find .app bundle in path: {}", exe.display()))
+}
+
+/// Pure walk: returns the closest ancestor of `start` whose own segment ends in `.app`,
+/// or `None` if no such ancestor exists. Split out from [`find_running_bundle`] so it can
+/// be unit-tested without touching `current_exe()`.
+fn find_app_bundle_above(start: &Path) -> Option<PathBuf> {
+    let mut path = start;
+    while path.parent().is_some() {
         if path.extension().is_some_and(|ext| ext == "app") {
-            return Ok(path.to_path_buf());
+            return Some(path.to_path_buf());
         }
-        path = parent;
+        path = path.parent()?;
     }
-    Err(format!("Couldn't find .app bundle in path: {}", exe.display()))
+    None
 }
 
 /// Syncs files from `src` (new Contents/) into `dest` (existing Contents/).
@@ -281,5 +309,73 @@ fn touch_bundle(bundle_path: &Path) {
     let now = filetime::FileTime::now();
     if let Err(e) = filetime::set_file_mtime(bundle_path, now) {
         log::warn!("Couldn't touch bundle: {e}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn staging_dir_uses_instance_id_when_set() {
+        // SAFETY: nextest runs each test in its own process, so env-var mutation is process-local.
+        unsafe { std::env::set_var("CMDR_INSTANCE_ID", "wt-foo") };
+        let dir = staging_dir();
+        assert_eq!(
+            dir.file_name().and_then(|s| s.to_str()),
+            Some("cmdr-update-staging-wt-foo")
+        );
+    }
+
+    #[test]
+    fn staging_dir_falls_back_to_default_when_unset() {
+        // SAFETY: see note in the sibling test.
+        unsafe { std::env::remove_var("CMDR_INSTANCE_ID") };
+        let dir = staging_dir();
+        assert_eq!(
+            dir.file_name().and_then(|s| s.to_str()),
+            Some("cmdr-update-staging-default")
+        );
+    }
+
+    #[test]
+    fn staging_dir_sits_under_temp_dir() {
+        // SAFETY: see note in the sibling test.
+        unsafe { std::env::remove_var("CMDR_INSTANCE_ID") };
+        let dir = staging_dir();
+        assert!(dir.starts_with(std::env::temp_dir()), "{:?} should sit under tmp", dir);
+    }
+
+    #[test]
+    fn find_app_bundle_above_returns_bundle_for_installed_layout() {
+        let exe = Path::new("/Applications/Cmdr.app/Contents/MacOS/Cmdr");
+        assert_eq!(
+            find_app_bundle_above(exe),
+            Some(PathBuf::from("/Applications/Cmdr.app"))
+        );
+    }
+
+    #[test]
+    fn find_app_bundle_above_returns_bundle_for_user_applications_layout() {
+        let exe = Path::new("/Users/jane/Applications/Cmdr.app/Contents/MacOS/Cmdr");
+        assert_eq!(
+            find_app_bundle_above(exe),
+            Some(PathBuf::from("/Users/jane/Applications/Cmdr.app"))
+        );
+    }
+
+    #[test]
+    fn find_app_bundle_above_returns_none_for_dev_target_layout() {
+        // Regression for the noisy auto-error-reports observed in v0.21.0: dev builds run from
+        // `target/<triple>/release/Cmdr` have no `.app` ancestor, so the installer can't possibly
+        // succeed. The wrapping `is_running_from_app_bundle()` gate uses exactly this distinction.
+        let exe = Path::new("/Users/jane/code/cmdr/target/aarch64-apple-darwin/release/Cmdr");
+        assert_eq!(find_app_bundle_above(exe), None);
+    }
+
+    #[test]
+    fn find_app_bundle_above_returns_none_for_worktree_target_layout() {
+        let exe = Path::new("/Users/jane/code/cmdr/.claude/worktrees/feature/target/aarch64-apple-darwin/release/Cmdr");
+        assert_eq!(find_app_bundle_above(exe), None);
     }
 }

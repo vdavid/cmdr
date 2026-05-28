@@ -1939,6 +1939,8 @@ export const commands = {
    *
    *  Returns `None` when:
    *  - The `CI` env var is set (CI guard: avoids network calls in tests)
+   *  - The current executable isn't inside a `.app` bundle (dev builds: install can't possibly
+   *    succeed, so there's no point checking and no point letting the user click "Update")
    *  - The remote version is not newer than the current version
    *  - The manifest doesn't contain an entry for this platform
    */

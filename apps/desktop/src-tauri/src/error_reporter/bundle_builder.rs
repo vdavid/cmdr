@@ -45,7 +45,12 @@ pub(super) struct PreparedFile {
 /// Build an error report bundle in memory. No network. No disk writes (except reading logs).
 ///
 /// `user_note` is trimmed and dropped if empty. Callers are expected to cap its length
-/// (the commands layer enforces 100 000 chars); we store it verbatim.
+/// (the commands layer enforces 100 000 chars). For [`BundleKind::Auto`] bundles, the note
+/// is also run through [`redact::redact_line_salted`] before being stored in the manifest:
+/// the auto-dispatcher constructs the note from a raw error message that routinely contains
+/// paths (e.g. updater failures embedding `current_exe()`), and the user never gets a chance
+/// to vet what ships. For [`BundleKind::User`] the user typed the note themselves and is
+/// presumed to know what they're sharing, so it goes through verbatim.
 ///
 /// `scope` controls which log content makes it into the bundle. See [`BundleScope`].
 ///
@@ -88,14 +93,7 @@ pub fn build_bundle<R: tauri::Runtime>(
         active_settings: cached_active_settings(app).clone(),
         log_levels: build_log_level_snapshot(),
         breadcrumbs: breadcrumbs::snapshot(),
-        user_note: user_note.and_then(|n| {
-            let trimmed = n.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                Some(trimmed.to_string())
-            }
-        }),
+        user_note: user_note.and_then(|n| prepare_user_note(&n, kind, &salt)),
         generated_at: now_utc.to_rfc3339(),
     };
 
@@ -110,6 +108,32 @@ pub fn build_bundle<R: tauri::Runtime>(
         }
         BundleScope::Window { .. } => build_bundle_legacy_window(id, manifest, scope, now_utc, now_system, &salt),
     }
+}
+
+/// Trims `note`, drops it if empty, and (for [`BundleKind::Auto`] only) runs the result
+/// through the per-line salted redactor. Split out so the kind-dispatching logic has its
+/// own unit tests without needing a full `tauri::AppHandle`.
+///
+/// Auto notes get redacted because [`super::auto_dispatcher`] builds them from a raw
+/// error message that may embed paths; the user never previews them. User notes are
+/// typed and previewed, so they ship verbatim.
+///
+/// The split-on-`\n` is defensive: `auto_dispatcher`'s format string has no newline, but
+/// `state.first_message` is arbitrary and a multi-line note would otherwise break
+/// `redact_line`'s `\b`-anchored patterns at the line boundary.
+pub(super) fn prepare_user_note(note: &str, kind: BundleKind, salt: &[u8]) -> Option<String> {
+    let trimmed = note.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(match kind {
+        BundleKind::Auto => trimmed
+            .split('\n')
+            .map(|line| redact::redact_line_salted(line, salt))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        BundleKind::User => trimmed.to_string(),
+    })
 }
 
 /// Streaming Flow A pipeline. Walks log files newest-first via the tail walker, redacts
