@@ -69,6 +69,62 @@ if file_size < 1MB {
 - `viewer_set_encoding(session_id, encoding)`: switches the active encoding. Instant when `same_byte_layout(current,
   new)` holds (UTF-8 ↔ Windows-1252 family); otherwise snaps to ByteSeek immediately and rebuilds LineIndex in the
   background. The FE polls `viewer_get_status` for `is_indexing` to track the rebuild.
+- `viewer_set_tail_mode(session_id, enabled)`: flips the per-session tail-mode flag. When true, watcher `Grew` events
+  trigger an `extend_to` on the active backend so the open viewport auto-follows newly appended bytes. When false, the
+  FE still hears `viewer:file-changed:<sid>` events and renders a persistent reload toast. Enabling also catches the
+  backend up to the current on-disk size in one step.
+- `viewer_reload(session_id)`: reopens the active backend against the file on disk under the session's current
+  encoding. Called by the FE's reload toast and on rotation (`Shrunk` / `Replaced`).
+
+## Tail mode + external-change watcher
+
+The viewer watcher (`watcher.rs`) is a shared singleton modelled on the existing
+`apps/desktop/src-tauri/src/file_system/watcher.rs`. One `notify-debouncer-full` debouncer per watched path; each
+`ViewerSession` holds a single subscription via `VIEWER_WATCHER_MANAGER.subscribe(path)`. Dropping the subscription
+unregisters the path. Debounce window is 300 ms.
+
+Classification per debounce window:
+
+- `Grew(new_size)` when `metadata.len()` grew vs. last-known.
+- `Shrunk` when the size dropped (truncation, in-place reset).
+- `Replaced` when the inode changed (rename + atomic replace, log rotation).
+- `MetadataOnly` when nothing observable changed.
+
+Per-session, a manager thread (`spawn_watcher_manager_thread`) consumes events on the subscription channel:
+
+- Always emits `viewer:file-changed:<sid>` with `{ kind: "grew", newSize }` or `{ kind: "rotated" }`.
+- `Grew` with `upgrading` or `rebuilding` in flight: queues `pending_grew = Some(new_size.max(prev))` (drain-and-swap
+  protocol from § "Key decisions").
+- `Grew` with no in-flight transition AND tail mode on: re-reads the current backend via `ArcSwap::load_full()` on
+  every event (no cached `Arc`), calls `extend_to_boxed(new_size)`, and `backend.store(extended)`.
+- `Shrunk` / `Replaced`: best-effort `reload(session_id)` which reopens the backend under the session's current
+  encoding.
+
+`extend_to_boxed` is a trait method on `FileViewerBackend` with backend-specific impls:
+
+- `LineIndexBackend::extend_to(new_size, cancel)` opens the file, seeks to `self.total_bytes`, drives a
+  `NewlineScanner` started at that offset over the new range, clones the checkpoint vec and appends new entries.
+- `ByteSeekBackend::extend_to` returns a fresh `ByteSeekBackend` with the updated size field.
+- `FullLoadBackend::extend_to_boxed` returns `ViewerError::Io` — the session is responsible for escalating FullLoad →
+  ByteSeek before any append crosses `FULL_LOAD_THRESHOLD`.
+
+## Gotchas (tail mode)
+
+**Watcher subscribe MUST happen AFTER `SESSIONS.insert`.** `notify-debouncer-full::new_debouncer` plus
+`debouncer.watch` takes long enough on macOS that subscribing before the insert opens a window where the upgrade thread
+finishes its scan, tries to look up the session, fails, and silently exits — leaving `upgrading: Some(_)` forever. The
+insert at the end of `open_session` is the boundary; the watcher subscribe runs right after. Pinned by
+`tail_mode_on_extends_backend_when_watcher_reports_grew`.
+
+**`watcher.rs` canonicalises paths** so `/var/folders/...` (the tempfile path on macOS) and `/private/var/folders/...`
+(the equivalent without the symlink) collapse into the same registration. `test_only_emit` walks the same stored
+canonical paths.
+
+**Watcher subscription is process-wide and shared.** Two sessions on the same path share one debouncer; the subscriber
+list is keyed by path. Dropping the last subscription unwatches the path.
+
+**Manager thread polls with a 200 ms timeout.** This is the only path that lets `close_session` make the manager exit
+when the file is idle (no events). Without it, `recv` would block forever and the thread would leak.
 
 ## Key decisions
 
