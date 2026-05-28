@@ -54,6 +54,8 @@ export type {
   ViewerOpenResult,
   ViewerSessionStatus,
   ViewerSearchMatch,
+  ViewerSearchMode,
+  ViewerSearchStatus,
   SearchPollResult,
   RangeEnd,
   ViewerError,

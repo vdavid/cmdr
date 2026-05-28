@@ -25,7 +25,7 @@
     import { createViewerScroll } from './viewer-scroll.svelte'
     import { createTextWidthTracker } from './viewer-text-width.svelte'
     import { createIndexingPoll } from './viewer-indexing-poll'
-    import { handleNavigationKey, handleToggleKey } from './viewer-keyboard'
+    import { handleNavigationKey, handleSearchToggleKey, handleToggleKey } from './viewer-keyboard'
     import {
         createViewerSelection,
         describeSelectionForAt,
@@ -657,6 +657,20 @@
     function handleKeyDown(e: KeyboardEvent) {
         const searchInputFocused = search.searchVisible && document.activeElement === search.searchInputRef
 
+        // Search-mode chords (⌘⌥R for regex, ⌘⌥C for case) work whenever the search
+        // bar is visible, even if the input has focus. Checked before the generic
+        // modifier-shortcut handler so the alt-bearing chord wins.
+        if (
+            search.searchVisible &&
+            handleSearchToggleKey(e, {
+                toggleUseRegex: search.toggleUseRegex,
+                toggleCaseSensitive: search.toggleCaseSensitive,
+            })
+        ) {
+            e.preventDefault()
+            return
+        }
+
         if ((e.metaKey || e.ctrlKey) && handleModifierShortcut(e, searchInputFocused)) return
 
         if (e.key === 'Escape') {
@@ -943,8 +957,32 @@
                 autocapitalize="off"
                 spellcheck="false"
             />
+            <button
+                type="button"
+                class="search-toggle"
+                class:active={search.caseSensitive}
+                aria-pressed={search.caseSensitive}
+                aria-label="Case sensitive"
+                onclick={() => search.toggleCaseSensitive()}
+                use:tooltip={{ text: 'Case sensitive', shortcut: '⌘⌥C' }}
+            >
+                Aa
+            </button>
+            <button
+                type="button"
+                class="search-toggle"
+                class:active={search.useRegex}
+                aria-pressed={search.useRegex}
+                aria-label="Regex"
+                onclick={() => search.toggleUseRegex()}
+                use:tooltip={{ text: 'Regex', shortcut: '⌘⌥R' }}
+            >
+                .*
+            </button>
             <span class="match-count" aria-live="polite">
-                {#if search.searchStatus === 'running'}
+                {#if search.searchStatus === 'invalidQuery'}
+                    <span class="search-error" role="alert">{search.searchError}</span>
+                {:else if search.searchStatus === 'running'}
                     <span class="spinner spinner-sm search-spinner" aria-hidden="true"></span>
                     {#if search.searchMatches.length > 0}
                         {search.currentMatchIndex + 1} of {search.searchMatches.length}{search.searchLimitReached
@@ -1360,6 +1398,25 @@
     .search-bar button:disabled {
         opacity: 0.4;
         cursor: default;
+    }
+
+    /* Search-mode toggles (Aa, .*). Use the same chrome as other search-bar
+       buttons but switch background + text colour when active so the toggle
+       state is visible at a glance. */
+    .search-toggle {
+        font-family: var(--font-mono);
+        min-width: 2.2em;
+    }
+
+    .search-toggle.active {
+        background: var(--color-accent-subtle);
+        border-color: var(--color-accent);
+        color: var(--color-accent-text);
+    }
+
+    .search-error {
+        color: var(--color-error);
+        font-size: var(--font-size-sm);
     }
 
     .file-content {

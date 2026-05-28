@@ -8,24 +8,24 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
 
 ## Files
 
-| File                            | Contents                                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------------------------- |
-| `+page.svelte`                  | Top-level component: lifecycle, window management, UI                                       |
-| `viewer-scroll.svelte.ts`       | Virtual scroll composable: line cache, fetch debounce, scroll compression, effects          |
-| `viewer-search.svelte.ts`       | Search composable: start/poll/cancel/navigate, match highlighting, debounce                 |
-| `viewer-line-heights.svelte.ts` | Height map for accurate word-wrap scrolling via pretext (FullLoad files only)               |
-| `viewer-text-width.svelte.ts`   | `ResizeObserver`-driven tracker for the rendered `.line-text` width                         |
-| `viewer-indexing-poll.ts`       | Periodic `viewer_get_status` poll while the backend builds a line index                     |
-| `viewer-keyboard.ts`            | Pure helpers `handleNavigationKey` / `handleToggleKey` mapping keys to scroll calls         |
-| `selection.svelte.ts`           | Selection model: state + pure helpers (normalise, in-range, segment bounds, byte estimator) |
-| `line-segments.ts`              | Pure shared segmenter: merges search matches + selection bounds into render spans           |
-| `viewer-pointer.ts`             | Pure caret-from-point math: `(x, y)` -> `LineOffset` with surrogate-safe sibling-offset sum |
-| `viewer-copy.ts`                | Pure three-band copy policy (silent / confirm / refuse) and threshold constants             |
-| `viewer-copy.svelte.ts`         | Copy composable: state + busy flag + per-call read_id + cancel plumbing + saveAs            |
-| `viewer-autoscroll.ts`          | Pure speed curve for drag-past-edge autoscroll                                              |
-| `viewer-autoscroll.svelte.ts`   | Autoscroll RAF controller: start / stop / self-terminate                                    |
-| `viewer-word.ts`                | Pure word-boundary finder via `Intl.Segmenter` for double-click selection                   |
-| `ViewerContextMenu.svelte`      | Minimal in-app right-click menu (Copy, Select all)                                          |
+| File                            | Contents                                                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `+page.svelte`                  | Top-level component: lifecycle, window management, UI                                                                                       |
+| `viewer-scroll.svelte.ts`       | Virtual scroll composable: line cache, fetch debounce, scroll compression, effects                                                          |
+| `viewer-search.svelte.ts`       | Search composable: start/poll/cancel/navigate, match highlighting, debounce, `useRegex` and `caseSensitive` toggles, regex-error projection |
+| `viewer-line-heights.svelte.ts` | Height map for accurate word-wrap scrolling via pretext (FullLoad files only)                                                               |
+| `viewer-text-width.svelte.ts`   | `ResizeObserver`-driven tracker for the rendered `.line-text` width                                                                         |
+| `viewer-indexing-poll.ts`       | Periodic `viewer_get_status` poll while the backend builds a line index                                                                     |
+| `viewer-keyboard.ts`            | Pure helpers `handleNavigationKey` / `handleToggleKey` mapping keys to scroll calls                                                         |
+| `selection.svelte.ts`           | Selection model: state + pure helpers (normalise, in-range, segment bounds, byte estimator)                                                 |
+| `line-segments.ts`              | Pure shared segmenter: merges search matches + selection bounds into render spans                                                           |
+| `viewer-pointer.ts`             | Pure caret-from-point math: `(x, y)` -> `LineOffset` with surrogate-safe sibling-offset sum                                                 |
+| `viewer-copy.ts`                | Pure three-band copy policy (silent / confirm / refuse) and threshold constants                                                             |
+| `viewer-copy.svelte.ts`         | Copy composable: state + busy flag + per-call read_id + cancel plumbing + saveAs                                                            |
+| `viewer-autoscroll.ts`          | Pure speed curve for drag-past-edge autoscroll                                                                                              |
+| `viewer-autoscroll.svelte.ts`   | Autoscroll RAF controller: start / stop / self-terminate                                                                                    |
+| `viewer-word.ts`                | Pure word-boundary finder via `Intl.Segmenter` for double-click selection                                                                   |
+| `ViewerContextMenu.svelte`      | Minimal in-app right-click menu (Copy, Select all)                                                                                          |
 
 ## Architecture
 
@@ -73,6 +73,22 @@ logical coordinates, independent of which lines happen to be rendered.
 - **Visual collision**: when a search hit and the selection overlap on the same span, search wins on the background
   (`var(--color-highlight)`) and selection wins on the foreground (`var(--color-selection-fg)`, gold). Matches the
   "selected = gold" language from the file list (design-system.md § File list).
+
+## Search modes
+
+`createViewerSearch` owns two mode flags besides the query text: `useRegex` (default off) and `caseSensitive` (default
+on). Both are exposed as toggle buttons in the search bar (`Aa` and `.*`) with `aria-pressed` reflecting the state, plus
+keyboard shortcuts `⌘⌥C` and `⌘⌥R` handled by `viewer-keyboard.ts::handleSearchToggleKey`. The chord is gated on
+meta+alt (or ctrl+alt) so it can't collide with the input's native `⌘A` / `⌘C`.
+
+Toggling either flag while a query is active cancels the in-flight search and re-runs it with the new mode. The
+backend's `SearchStatus::InvalidQuery { message }` is projected to a flat `searchStatus === 'invalidQuery'` plus a
+sibling `searchError: string | null`, kept as plain text and rendered in a `role="alert"` span. The composable never
+inspects the message text (per the no-error-string-match rule).
+
+In regex mode, `getLineMatches` reads spans straight from the backend's authoritative `searchMatches` array instead of
+recomputing them client-side; the regex compile already happened in the backend, and re-running it per line in JS would
+either duplicate work or risk a different result.
 
 ## Gotchas
 

@@ -39,3 +39,31 @@ export function handleToggleKey(e: KeyboardEvent, toggleWordWrap: () => void): b
   }
   return false
 }
+
+interface SearchToggleActions {
+  toggleUseRegex: () => void
+  toggleCaseSensitive: () => void
+}
+
+/** Handles the search-mode chords:
+ *  - Cmd+Alt+R (or Ctrl+Alt+R on non-mac): toggle regex
+ *  - Cmd+Alt+C (or Ctrl+Alt+C on non-mac): toggle case-sensitivity
+ *
+ *  Returns true if handled. Caller is responsible for `preventDefault`.
+ *
+ *  The chord is gated on both meta/ctrl AND alt so it can't collide with the
+ *  in-input shortcuts (Cmd+A = select all, Cmd+C = copy). */
+export function handleSearchToggleKey(e: KeyboardEvent, actions: SearchToggleActions): boolean {
+  const modKey = e.metaKey || e.ctrlKey
+  if (!modKey || !e.altKey) return false
+  const key = e.key.toLowerCase()
+  if (key === 'r') {
+    actions.toggleUseRegex()
+    return true
+  }
+  if (key === 'c') {
+    actions.toggleCaseSensitive()
+    return true
+  }
+  return false
+}

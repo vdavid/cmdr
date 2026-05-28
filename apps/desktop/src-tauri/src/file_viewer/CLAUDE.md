@@ -15,6 +15,8 @@ Frontend counterpart: [`apps/desktop/src/routes/viewer/CLAUDE.md`](../../../src/
 - `full_load.rs`: loads entire file into `String` (<1MB files)
 - `byte_seek.rs`: seeks by byte offset, scans backward for newline (instant open)
 - `line_index.rs`: sparse newline index (1 checkpoint per 256 lines), SIMD-accelerated via `memchr`
+- `search_matcher.rs`: `Matcher` (literal or regex), `SearchMode`, `scan_line_with_matcher` helper. One matcher built
+  per search; reused across every line. Huge-line chunking (1 MB windows, 256 byte overlap) lives here.
 - `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math, range reads,
   cancellation
 
@@ -44,8 +46,12 @@ if file_size < 1MB {
 - `viewer_write_range_to_file(session_id, read_id, anchor, focus, dest_path)` → reads a logical range and writes it
   atomically to `dest_path` (temp+rename). Used by "Save as file…" in the copy dialogs. Same cancellation plumbing as
   `viewer_read_range`. Temp suffix includes the `read_id` for crash isolation.
-- `viewer_search_start(session_id, query)` → starts background search
-- `viewer_search_poll(session_id)` → `SearchPollResult` (matches, progress, status)
+- `viewer_search_start(session_id, query, mode)` → starts background search. `mode = { useRegex, caseSensitive }`. An
+  invalid regex pattern (parse error, exceeds size limits) or a multiline pattern (`(?s)`, literal newline, `\n`
+  escape) makes the search status flip to `InvalidQuery { message }` synchronously; the worker isn't spawned. `(?m)`
+  is fine because it only affects `^` / `$` within a line slice.
+- `viewer_search_poll(session_id)` → `SearchPollResult` (matches, progress, status). `status` is a tagged union
+  `{ status: "running" | "done" | "cancelled" | "idle" | "invalidQuery", message?: string }`.
 - `viewer_search_cancel(session_id)` → cancels running search
 - `viewer_close(session_id)` → frees resources (also signals every in-flight read to cancel)
 - `viewer_setup_menu(label)`: builds viewer menu with word wrap item
@@ -64,6 +70,43 @@ if file_size < 1MB {
 
 **Decision**: `SearchMatch.column` and `.length` use UTF-16 code units instead of byte or char offsets.
 **Why**: The frontend is JavaScript, where `String.prototype.length` and `String.prototype.substring()` count UTF-16 code units. If the backend returned byte offsets or Unicode scalar offsets, the frontend would need to convert on every match highlight, which is error-prone for text with emoji or CJK characters. Matching the JS string model eliminates an entire class of off-by-one bugs in the highlight rendering.
+
+**Decision**: One `Matcher` (literal or regex) is compiled at `search_start` and reused for every line in the file.
+**Why**: The regex crate's `Regex::new` builds the NFA / lazy DFA up front. Recompiling per line would tank throughput
+on million-line files. `Matcher::Literal` carries the pre-lowercased haystack form when case-insensitive so each line
+scan only pays for the per-line `to_lowercase()` (skipped entirely in the case-sensitive path). The `find_matches`
+callback returns `ControlFlow` so the backend can stop at the match limit or on a cancel signal without scanning the
+rest of the line.
+
+**Decision**: Reject cross-line regex patterns (`(?s)`, literal `\n`, `\n` escape) at build time; accept `(?m)`.
+**Why**: Our search engine streams line by line, so a cross-line pattern silently never matches. A clear error at
+build time is better UX than "no matches" for a query that can never match. `(?m)` only changes the meaning of `^` /
+`$` within the current slice; it doesn't cross newlines, so it's safe.
+
+**Decision**: Per-pattern memory caps (`size_limit = 8 MB`, `dfa_size_limit = 8 MB`) on regex builds.
+**Why**: The watchdog assumes the per-call cost of `Regex::find_iter` stays bounded by the `regex` crate's linear-time
+guarantee. The guarantee holds while the lazy DFA stays under `dfa_size_limit`. A pathological pattern that would blow
+the budget at scan time is rejected at build time via `MatcherBuildError::InvalidRegex("regex too complex")`.
+
+**Decision**: Per-match cancellation inside the scan loop, not just per-chunk / per-line.
+**Why**: A 1 MB line with 100,000 matches would block cancellation for seconds without per-match cancel. The
+`scan_line_with_matcher` helper checks the cancel flag once per match (inside the `Matcher::find_matches` callback)
+and breaks out via `ControlFlow::Break(())`. This solves the "many matches on a moderate line" case. The watchdog
+covers the orthogonal "single `iter.next()` call took too long" case.
+
+**Decision**: Huge-line chunking with 1 MB windows and 256-byte overlap.
+**Why**: Lines longer than 1 MB are rare but real (machine-generated JSON, minified JS). Without chunking, search on a
+5 MB line allocates a 5 MB `to_lowercase()` buffer for every line scan in case-insensitive mode AND blocks
+per-line cancellation. The chunked scan keeps the working set bounded and a needle straddling a chunk boundary is
+still found exactly once: matches starting in `[0, chunk_len - overlap)` are reported, matches starting in the overlap
+belong to the next chunk.
+
+**Decision**: Sticky `SearchStatus::Cancelled` under a single mutex critical section, plus a watchdog.
+**Why**: The per-match cancel in the search loop covers the cooperative case. For the pathological case (runaway regex
+inside a single `iter.next()`), the watchdog forces `Cancelled` within 1 s. To avoid the worker clobbering the
+watchdog's verdict when it eventually finishes naturally, the worker's final-status write is conditional under the
+same mutex: if it sees `Cancelled`, it leaves it. Tests `test_worker_done_after_watchdog_cancelled_is_sticky` and
+`test_watchdog_forces_cancel_when_worker_ignores_flag` pin this contract.
 
 **Decision**: `SearchMatch.byte_offset` stores the byte offset of the line start for each match.
 **Why**: In ByteSeek mode (when line indexing timed out), search returns exact line numbers but the virtual scroll uses estimated line counts for fraction-based seeking. The byte offset lets the frontend convert to scroll position via `(byteOffset / totalBytes) * estimatedTotalLines`, which is the same fraction the virtual scroll uses for fetching. Without this, navigating to a search match scrolls to the wrong part of the file.
