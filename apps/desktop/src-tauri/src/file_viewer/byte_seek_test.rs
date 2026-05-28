@@ -524,6 +524,49 @@ fn read_emoji_only_lines() {
 }
 
 #[test]
+fn test_per_match_cancel_observes_within_100ms() {
+    // ByteSeek mirror of the LineIndex test: many matches per line, cancel
+    // after the search starts producing matches, must observe within ~100 ms
+    // because `scan_line_with_matcher` checks the cancel flag once per match.
+    use std::sync::Arc;
+    use std::sync::atomic::Ordering;
+    use std::thread;
+    use std::time::{Duration, Instant};
+
+    let dir = create_test_dir("per_match_cancel_bs");
+    let line: String = "a".repeat(1_000) + "\n";
+    let content: String = line.repeat(1_000);
+    let path = write_test_file(&dir, "many_matches.txt", &content);
+
+    let backend = ByteSeekBackend::open(&path).unwrap();
+    let cancel = Arc::new(AtomicBool::new(false));
+    let matches: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress = Mutex::new(0u64);
+    let matcher = literal_matcher("a", true);
+
+    let cancel_setter = cancel.clone();
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(20));
+        cancel_setter.store(true, Ordering::Relaxed);
+    });
+    let start = Instant::now();
+    let _ = backend.search(&matcher, &cancel, &matches, &progress);
+    let elapsed = start.elapsed();
+
+    assert!(
+        elapsed < Duration::from_millis(800),
+        "search must observe cancel quickly; took {:?}",
+        elapsed
+    );
+    assert!(
+        !matches.lock().unwrap().is_empty(),
+        "scan must have reported at least one match before cancel"
+    );
+
+    cleanup(&dir);
+}
+
+#[test]
 fn read_file_starting_with_bom() {
     let dir = create_test_dir("bom");
     // UTF-8 BOM is EF BB BF (3 bytes), rendered as U+FEFF

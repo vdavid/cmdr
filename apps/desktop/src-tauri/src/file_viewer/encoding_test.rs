@@ -322,3 +322,96 @@ fn decode_line_mac_roman_smoke() {
     let decoded = decode_line(&[0xAE], FileEncoding::MacRoman);
     assert!(!decoded.is_empty(), "Mac Roman 0xAE should decode to something");
 }
+
+#[test]
+fn decode_line_iso_8859_1_keeps_c1_control_codes() {
+    // Strict ISO-8859-1 leaves 0x80-0x9F as C1 control codes (U+0080-U+009F),
+    // unlike Windows-1252 which reassigns them (0x80 -> €). We test the
+    // contrast directly: byte 0x80 must decode to U+0080 under ISO-8859-1,
+    // and to U+20AC (€) under Windows-1252.
+    let iso = decode_line(&[0x80], FileEncoding::Iso8859_1);
+    assert_eq!(iso, "\u{0080}", "ISO-8859-1 0x80 must be U+0080, got {:?}", iso);
+    let win = decode_line(&[0x80], FileEncoding::Windows1252);
+    assert_eq!(win, "\u{20AC}", "Windows-1252 0x80 must be U+20AC (€)");
+    // Round-trip every high-bit byte under ISO.
+    for byte in 0xA0u8..=0xFFu8 {
+        let s = decode_line(&[byte], FileEncoding::Iso8859_1);
+        let mut chars = s.chars();
+        let ch = chars.next().expect("non-empty");
+        assert_eq!(ch as u32, byte as u32, "ISO-8859-1 must be 1:1");
+        assert!(chars.next().is_none(), "single byte → single char");
+    }
+}
+
+// -- Throughput bench --------------------------------------------------------------
+
+/// Manually-invoked throughput bench for `NewlineScanner::feed`.
+///
+/// `#[ignore]` so it doesn't run in CI. Invoke with:
+///
+/// ```bash
+/// cargo nextest run -p cmdr --run-ignored only newline_scan_throughput_bench --nocapture
+/// ```
+///
+/// Pinned numbers are captured in `docs/notes/viewer-encoding-bench.md`. The
+/// UTF-16 path is intentionally slower than the SIMD `memchr` fast path; the
+/// 1 GB/s target sets the floor that keeps UTF-16 log indexing usable.
+#[test]
+#[ignore = "manual throughput bench; release-only meaningful"]
+#[allow(clippy::print_stdout, reason = "ignored bench prints to stdout for human inspection")]
+fn newline_scan_throughput_bench() {
+    let mb_bytes = 64usize * 1024 * 1024;
+    let ascii: Vec<u8> = (0..mb_bytes)
+        .map(|i| if i % 100 == 99 { b'\n' } else { b'a' })
+        .collect();
+    let mut u16le: Vec<u8> = Vec::with_capacity(mb_bytes);
+    for i in 0..(mb_bytes / 2) {
+        if i % 100 == 99 {
+            u16le.extend_from_slice(&[0x0A, 0x00]);
+        } else {
+            u16le.extend_from_slice(&[b'a', 0x00]);
+        }
+    }
+
+    let now = std::time::Instant::now();
+    let _ = find_newlines(&ascii, FileEncoding::Utf8);
+    let utf8_dur = now.elapsed();
+    let now = std::time::Instant::now();
+    let _ = find_newlines(&u16le, FileEncoding::Utf16Le);
+    let u16_dur = now.elapsed();
+
+    let utf8_gbps = (ascii.len() as f64 / 1e9) / utf8_dur.as_secs_f64();
+    let u16_gbps = (u16le.len() as f64 / 1e9) / u16_dur.as_secs_f64();
+    println!("64 MB UTF-8 scan: {:?} ({:.2} GB/s)", utf8_dur, utf8_gbps);
+    println!("64 MB UTF-16 LE scan: {:?} ({:.2} GB/s)", u16_dur, u16_gbps);
+}
+
+// -- BOM round-trip property test --------------------------------------------------
+
+proptest! {
+    /// Plan step 2.3 / property inventory: encode random printable ASCII as
+    /// UTF-8-with-BOM, run `detect()` (returns `Utf8WithBom`), strip the BOM
+    /// bytes, decode the rest with `decode_line(_, Utf8WithBom)`, and assert
+    /// the round-trip equals the original.
+    ///
+    /// Pins the contract that the BOM bytes are NOT part of any visible line
+    /// (they live at the file head). A regression that emitted BOM bytes as
+    /// content would surface here.
+    #[test]
+    fn bom_round_trip_utf8_with_bom(
+        text in "[ -~]{0,256}"
+    ) {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&[0xEF, 0xBB, 0xBF]);
+        buf.extend_from_slice(text.as_bytes());
+
+        let detected = detect_from_head(&buf);
+        prop_assert_eq!(detected, FileEncoding::Utf8WithBom);
+
+        // Strip the BOM bytes (the file viewer's line readers do this at scan
+        // time by recording `first_line_offset = bom_len`).
+        let bom_len = FileEncoding::Utf8WithBom.bom_bytes().len();
+        let decoded = decode_line(&buf[bom_len..], FileEncoding::Utf8WithBom);
+        prop_assert_eq!(decoded, text);
+    }
+}

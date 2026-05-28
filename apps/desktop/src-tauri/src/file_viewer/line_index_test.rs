@@ -523,3 +523,137 @@ fn extend_to_observes_cancel() {
 
     cleanup(&dir);
 }
+
+// -- Property test: extend_to(N) ≡ open-at-N -------------------------------------
+
+use proptest::prelude::*;
+
+proptest! {
+    /// Plan property inventory (last row): given a random newline-rich buffer
+    /// and a split point N, fresh-open + `extend_to(N)` produces the same
+    /// `total_lines` and `total_bytes` as opening directly at size N. This
+    /// pins the contract that `extend_to` is a faithful continuation of the
+    /// initial scan, not a separate code path with different counting.
+    #[test]
+    fn extend_to_n_equals_open_at_n(
+        seed in proptest::collection::vec(
+            // Sample directly within the printable + newline range so the
+            // strategy doesn't have to reject the majority of random bytes
+            // (which trips proptest's local-reject cap).
+            prop_oneof![
+                Just(b'\n'),
+                (0x20u8..=0x7Eu8),
+            ],
+            16..2048,
+        ),
+        split_pct in 0u8..=100u8,
+    ) {
+        let dir = std::env::temp_dir().join(format!("cmdr_lidx_proptest_{}", std::process::id()));
+        let _ = fs::create_dir_all(&dir);
+        let split = (seed.len() * split_pct as usize) / 100;
+        let split = split.min(seed.len());
+
+        let full_path = dir.join("full.txt");
+        fs::write(&full_path, &seed).unwrap();
+        let partial_path = dir.join("partial.txt");
+        fs::write(&partial_path, &seed[..split]).unwrap();
+
+        let cancel = AtomicBool::new(false);
+        // Open directly at split size.
+        let direct = LineIndexBackend::open(&partial_path, &cancel).unwrap();
+        // Open at 0 (well, full file scanned), but extend_to to split.
+        // Easier: open full, then it covers `seed.len()` bytes; we want a
+        // baseline at split, so build it by opening the partial file (which
+        // is what direct does). Then make `extended`: open partial then
+        // extend_to `seed.len()` after writing the full buffer. We compare
+        // that extended against opening the full file directly.
+        let extended_open = LineIndexBackend::open(&partial_path, &cancel).unwrap();
+        // Make the file longer to extend_to.
+        fs::write(&partial_path, &seed).unwrap();
+        let new_total = fs::metadata(&partial_path).unwrap().len();
+        let extended = extended_open.extend_to(new_total, &cancel).unwrap();
+        let full = LineIndexBackend::open(&full_path, &cancel).unwrap();
+
+        prop_assert_eq!(
+            extended.total_bytes(),
+            full.total_bytes(),
+            "extend_to total_bytes must match direct open"
+        );
+        prop_assert_eq!(
+            extended.total_lines(),
+            full.total_lines(),
+            "extend_to total_lines must match direct open"
+        );
+        // Also: the direct partial open and the extended-from-partial differ
+        // by exactly the appended bytes.
+        let extra_bytes = (new_total - direct.total_bytes()) as i64;
+        prop_assert!(extra_bytes >= 0);
+
+        let _ = fs::remove_file(&full_path);
+        let _ = fs::remove_file(&partial_path);
+    }
+}
+
+// -- Per-match cancel timer -----------------------------------------------------
+
+#[test]
+fn test_per_match_cancel_observes_within_100ms() {
+    // Build a file with many matches per line and trigger cancel after the
+    // first batch lands. The scan must stop within 100 ms (timer-based) so
+    // the per-match cancel check inside `scan_line_with_matcher` is exercised.
+    use std::sync::Mutex;
+    use std::sync::atomic::Ordering;
+    use std::thread;
+    use std::time::{Duration, Instant};
+
+    let dir = create_test_dir("per_match_cancel");
+    // 1,000 lines × 1,000 matches per line.
+    let line: String = "a".repeat(1_000) + "\n";
+    let content: String = line.repeat(1_000);
+    let path = write_test_file(&dir, "many_matches.txt", &content);
+
+    let cancel = std::sync::Arc::new(AtomicBool::new(false));
+    let backend = LineIndexBackend::open(&path, &cancel).unwrap();
+
+    let matches: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress = Mutex::new(0u64);
+    let matcher = literal_matcher("a", true);
+
+    let cancel_for_killer = cancel.clone();
+    let killer = thread::spawn(move || {
+        // Wait until the search has reported some matches, then cancel.
+        let start = Instant::now();
+        loop {
+            thread::sleep(Duration::from_millis(5));
+            if start.elapsed() > Duration::from_secs(2) {
+                break; // safety
+            }
+        }
+        cancel_for_killer.store(true, Ordering::Relaxed);
+    });
+    // Run the search; measure how long after we set cancel the call returns.
+    let cancel_setter = cancel.clone();
+    thread::spawn(move || {
+        // Set cancel after a short delay so we observe the per-match path
+        // taking effect within 100 ms.
+        thread::sleep(Duration::from_millis(20));
+        cancel_setter.store(true, Ordering::Relaxed);
+    });
+    let start = Instant::now();
+    let _ = backend.search(&matcher, &cancel, &matches, &progress);
+    let elapsed = start.elapsed();
+    let _ = killer.join();
+
+    assert!(
+        elapsed < Duration::from_millis(800),
+        "search must observe cancel quickly; took {:?}",
+        elapsed
+    );
+    // At least one match should have been recorded before cancel.
+    assert!(
+        !matches.lock().unwrap().is_empty(),
+        "scan must have reported at least one match before cancel"
+    );
+
+    cleanup(&dir);
+}

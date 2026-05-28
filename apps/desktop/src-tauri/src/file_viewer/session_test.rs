@@ -1100,6 +1100,18 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     let original_size = fs::metadata(&file).unwrap().len();
 
     let result = session::open_session(file.to_str().unwrap()).unwrap();
+    // Wait for the initial ByteSeek -> LineIndex upgrade to finish so the
+    // pending_grew queue only exercises the rebuild's drain, not the
+    // upgrade's. (Otherwise the upgrade could drain our queued EOF before
+    // the rebuild ever sees it.)
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(8) {
+        let status = session::get_session_status(&result.session_id).unwrap();
+        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
+            break;
+        }
+        thread::sleep(Duration::from_millis(20));
+    }
 
     // Append 10 KB BEFORE the rebuild starts; the on-disk file is now bigger than
     // what the backend knows about. The test queues this new EOF and verifies that
@@ -1110,11 +1122,13 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     let new_size = fs::metadata(&file).unwrap().len();
     assert!(new_size > original_size);
 
-    // Queue the new EOF before triggering the rebuild.
-    session::test_only_push_pending_grew(&result.session_id, new_size);
-
+    // Park the rebuild thread so we can queue the EOF before it drains.
+    session::test_only_set_rebuild_hold(400);
     // Force a non-instant encoding swap (UTF-8 -> UTF-16 LE) so the rebuild runs.
     session::set_encoding(&result.session_id, FileEncoding::Utf16Le).unwrap();
+    // Queue the new EOF; the rebuild's drain-and-swap protocol must observe it.
+    // The hold above ensures the rebuild hasn't drained yet.
+    session::test_only_push_pending_grew(&result.session_id, new_size);
 
     // Wait for rebuild to finish.
     let start = std::time::Instant::now();
@@ -1299,6 +1313,438 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
         "tail-mode handler should have extended the backend; last={}, want={}, backend={:?}, indexing={}",
         last_chunk_bytes, want_size, status.backend_type, status.is_indexing,
     );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+// ─── Audit fix coverage ────────────────────────────────────────────────────────────
+
+#[test]
+fn test_tail_extend_during_encoding_rebuild_discards_stale_extend() {
+    // The round-3 audit caught: `apply_tail_extend` snapshots the backend, runs
+    // a multi-second `extend_to_boxed`, then stores. If an encoding rebuild
+    // installs a new backend during the extend, the tail's store would clobber
+    // it. The fix uses `Arc::ptr_eq` between the snapshot and the live backend
+    // before storing; on mismatch, the extend is discarded and the EOF is
+    // re-queued.
+    //
+    // We script the timing with `test_only_run_tail_extend_with_swap`: it
+    // snapshots, runs a `swap_callback` (we use it to call `reload`, which
+    // installs a brand-new backend), then runs `extend_to_boxed`, then runs
+    // the same ptr-eq check the production code uses. Returns `false` if the
+    // stale extend was discarded — that's the assertion.
+    let dir = create_test_dir("tail_clobber_race");
+    let initial: String = "x\n".repeat((FULL_LOAD_THRESHOLD as usize / 2) + 1);
+    let file = write_test_file(&dir, "race.log", &initial);
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+
+    // Grow the file so apply_tail_extend has something to extend to.
+    {
+        use std::io::Write;
+        let mut f = fs::OpenOptions::new().append(true).open(&file).unwrap();
+        f.write_all(b"appended\n").unwrap();
+    }
+    let new_size = fs::metadata(&file).unwrap().len();
+
+    let sid_for_swap = sid.clone();
+    let stored = session::test_only_run_tail_extend_with_swap(&sid, new_size, move || {
+        // While the watcher's extend is in flight, a "rebuild" installs a
+        // brand-new backend via reload(). The tail's stale extend must NOT
+        // clobber it.
+        session::reload(&sid_for_swap).unwrap();
+    });
+    assert!(
+        !stored,
+        "stale extend must be discarded after a swap installs a fresh backend"
+    );
+
+    // The EOF should be re-queued so a follow-up FS event still catches up.
+    let queued = session::test_only_pending_grew(&sid);
+    assert!(
+        matches!(queued, Some(eof) if eof >= new_size),
+        "discarded extend must re-queue the EOF; got {:?}",
+        queued
+    );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_append_during_upgrade_not_dropped() {
+    // A watcher Grew event arriving while the ByteSeek -> LineIndex upgrade is
+    // mid-scan queues into `pending_grew`. The upgrade thread's drain-and-swap
+    // critical section reads-and-clears the queue and extends the new
+    // LineIndex to the queued EOF. So the final backend covers the full file,
+    // not just the pre-upgrade EOF.
+    //
+    // We script timing with `test_only_set_upgrade_hold`: the upgrade thread
+    // sleeps before scanning so we can append to disk and queue the EOF before
+    // the swap runs.
+    let dir = create_test_dir("append_during_upgrade");
+    session::test_only_set_upgrade_hold(800);
+
+    // ~2 MB file -> ByteSeek + upgrade.
+    let line = "x".repeat(80) + "\n";
+    let line_count = (2 * FULL_LOAD_THRESHOLD as usize) / line.len();
+    let mut content = line.repeat(line_count);
+    let file = write_test_file(&dir, "upgrade.log", &content);
+    let original_size = fs::metadata(&file).unwrap().len();
+
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+
+    // Append 500 KB while the upgrade thread is paused.
+    let suffix: String = ("y".repeat(80) + "\n").repeat(6400);
+    content.push_str(&suffix);
+    fs::write(&file, &content).unwrap();
+    let new_size = fs::metadata(&file).unwrap().len();
+    assert!(new_size > original_size);
+
+    // Queue the EOF the way the real watcher would.
+    session::test_only_push_pending_grew(&sid, new_size);
+
+    // Wait for the upgrade thread to release and drain.
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(15) {
+        let status = session::get_session_status(&sid).unwrap();
+        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
+    assert_eq!(
+        chunk.total_bytes, new_size,
+        "upgrade drain must absorb the queued append"
+    );
+    assert!(
+        chunk.total_lines.is_some_and(|n| n > line_count),
+        "total_lines must cover the appended block; got {:?}",
+        chunk.total_lines,
+    );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_append_between_drain_and_swap_not_dropped() {
+    // Variant where multiple appends queue during the upgrade. Because the
+    // watcher writes also take the `pending_grew` lock (and the drain holds
+    // it across the whole drain + store), watcher writes physically block
+    // until the upgrade releases the lock. The coalesced EOF is observed by
+    // the upgrade's drain.
+    let dir = create_test_dir("append_between_drain_swap");
+    session::test_only_set_upgrade_hold(400);
+
+    let line = "z".repeat(80) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 1000;
+    let mut content = line.repeat(line_count);
+    let file = write_test_file(&dir, "race.log", &content);
+
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+
+    // Two consecutive queued EOFs: simulates two watcher events the
+    // production code must coalesce into the final one.
+    content.push_str("first-append\n");
+    fs::write(&file, &content).unwrap();
+    let mid_size = fs::metadata(&file).unwrap().len();
+    session::test_only_push_pending_grew(&sid, mid_size);
+
+    content.push_str("second-append-bigger\n");
+    fs::write(&file, &content).unwrap();
+    let final_size = fs::metadata(&file).unwrap().len();
+    session::test_only_push_pending_grew(&sid, final_size);
+
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(15) {
+        let status = session::get_session_status(&sid).unwrap();
+        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
+    assert_eq!(
+        chunk.total_bytes, final_size,
+        "coalesced queue must land on the final backend"
+    );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_session_emits_file_changed_on_append() {
+    // We can't easily intercept Tauri events from a unit test without an
+    // AppHandle, so we verify the observable side of the same code path: an
+    // append with tail-on flips through `apply_tail_extend` and advances
+    // total_bytes on the active backend. We use a > 1 MB file so the
+    // backend is ByteSeek (or LineIndex after upgrade), both of which
+    // support `extend_to_boxed`. FullLoad declines extension and would only
+    // surface via the FE reload toast.
+    let dir = create_test_dir("emit_on_append");
+    let line = "a\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 100;
+    let initial: String = line.repeat(line_count);
+    let file = write_test_file(&dir, "emit.log", &initial);
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+    session::set_tail_mode(&sid, true).unwrap();
+
+    let mut content = initial.clone();
+    content.push_str("extra-line-content\n");
+    fs::write(&file, &content).unwrap();
+    let new_size = fs::metadata(&file).unwrap().len();
+
+    let canonical = fs::canonicalize(&file).unwrap();
+    let sent = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Grew(new_size));
+    assert!(sent > 0, "test_only_emit must reach the session's subscriber");
+
+    let start = std::time::Instant::now();
+    let mut observed = 0;
+    while start.elapsed() < Duration::from_secs(8) {
+        let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
+        observed = chunk.total_bytes;
+        if observed >= new_size {
+            break;
+        }
+        thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(
+        observed, new_size,
+        "tail-on watcher event must advance backend total_bytes"
+    );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_session_tail_mode_off_does_not_extend_index() {
+    // With tail mode OFF: a Grew event must NOT change total_lines on the
+    // active backend. The FE still gets the `viewer:file-changed` event and
+    // renders its reload toast; only `reload()` actually re-indexes.
+    let dir = create_test_dir("tail_off_no_extend");
+    let initial = "a\nb\nc\n";
+    let file = write_test_file(&dir, "tailoff.log", initial);
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+    assert!(!session::test_only_tail_mode(&sid));
+
+    let original_lines = session::get_session_status(&sid).unwrap().total_lines;
+
+    let mut content = initial.to_string();
+    content.push_str("d\ne\nf\n");
+    fs::write(&file, &content).unwrap();
+    let new_size = fs::metadata(&file).unwrap().len();
+
+    let canonical = fs::canonicalize(&file).unwrap();
+    super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Grew(new_size));
+
+    // Give the manager thread time to process the event (200 ms poll plus
+    // slack); confirm total_lines did NOT move.
+    thread::sleep(Duration::from_millis(400));
+    let after_lines = session::get_session_status(&sid).unwrap().total_lines;
+    assert_eq!(
+        original_lines, after_lines,
+        "tail-off watcher events must not extend the line index"
+    );
+
+    // After explicit reload, the backend reflects the new content.
+    session::reload(&sid).unwrap();
+    let reloaded_lines = session::get_session_status(&sid).unwrap().total_lines;
+    assert!(
+        reloaded_lines.unwrap_or(0) > after_lines.unwrap_or(0),
+        "reload must surface the new content"
+    );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_session_rotation_reopens_backend() {
+    // A `Replaced` event triggers an internal reload, which installs a fresh
+    // backend. Observable via total_bytes: post-rotation it matches the new
+    // file size.
+    let dir = create_test_dir("rotation");
+    fs::write(dir.join("rot.log"), b"old content\n").unwrap();
+    let file = dir.join("rot.log");
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+    let original_bytes = result.total_bytes;
+
+    // Replace the file with a longer one.
+    let new_path = dir.join("rot.log.new");
+    fs::write(&new_path, b"NEW: longer content goes here\n").unwrap();
+    fs::rename(&new_path, &file).unwrap();
+    let new_size = fs::metadata(&file).unwrap().len();
+    assert!(new_size != original_bytes);
+
+    // Drive the rotation via the watcher's test-only emit hook.
+    let canonical = fs::canonicalize(&file).unwrap();
+    super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Replaced);
+
+    let start = std::time::Instant::now();
+    let mut observed = 0;
+    while start.elapsed() < Duration::from_secs(3) {
+        let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
+        observed = chunk.total_bytes;
+        if observed == new_size {
+            break;
+        }
+        thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(observed, new_size, "rotation must reopen against the new bytes");
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_session_close_stops_watcher() {
+    // `close_session` flips `watcher_stop`; the manager thread observes it on
+    // its next 200 ms poll cycle and exits, dropping the
+    // `ViewerSubscription`. The subscription's `Drop` unregisters the path
+    // from the shared singleton.
+    let dir = create_test_dir("close_stops_watcher");
+    let file = write_test_file(&dir, "tmp.log", "hi\n");
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+
+    let canonical = fs::canonicalize(&file).unwrap();
+    // The subscription is alive: a test-only emit reaches it.
+    let sent_before = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly);
+    assert!(sent_before > 0, "manager thread should be subscribed before close");
+
+    session::close_session(&sid).unwrap();
+
+    // Give the manager thread ~300 ms to observe `watcher_stop` and drop its
+    // subscription. After that, no subscribers should remain for the path.
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(2) {
+        let sent = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly);
+        if sent == 0 {
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    let sent_after = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly);
+    assert_eq!(sent_after, 0, "close_session must drop the watcher subscription");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn test_set_encoding_during_rebuild_serialization() {
+    // Two `set_encoding` calls in rapid succession: the first one is cancelled
+    // by the second's `prev_cancel.store(true)`. Only the final encoding ends
+    // up on the session, and only one rebuild ever succeeds in storing.
+    let dir = create_test_dir("enc_serialize");
+    let line = "x".repeat(100) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 200;
+    let content = line.repeat(line_count);
+    let file = write_test_file(&dir, "rebuild.txt", &content);
+
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+
+    // Wait for the initial upgrade so we test the rebuild path, not the
+    // upgrade path.
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(8) {
+        let status = session::get_session_status(&sid).unwrap();
+        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    // Park the next rebuild so the first set_encoding can be superseded by
+    // the second BEFORE its scan starts.
+    session::test_only_set_rebuild_hold(800);
+
+    // First call: triggers a rebuild that will sleep for 800 ms.
+    session::set_encoding(&sid, FileEncoding::Utf16Le).unwrap();
+    // Second call lands immediately; it cancels the in-flight rebuild and
+    // installs its own.
+    session::set_encoding(&sid, FileEncoding::Utf16Be).unwrap();
+
+    // Wait for the rebuild storm to settle.
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(15) {
+        if !session::test_only_rebuilding_active(&sid) {
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    assert!(!session::test_only_rebuilding_active(&sid), "rebuild must settle");
+
+    let opts = session::get_encoding_options(&sid).unwrap();
+    assert_eq!(
+        opts.current,
+        FileEncoding::Utf16Be,
+        "only the latest set_encoding call must win"
+    );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_set_encoding_ascii_compatible_is_instant() {
+    // For ASCII-newline-compatible encodings with the same BOM (UTF-8 ->
+    // Windows-1252), `set_encoding` should NOT trigger a LineIndex rebuild.
+    // The instrumentation counter on `LineIndexBackend::open_with_encoding`
+    // pins this contract.
+    let dir = create_test_dir("instant_swap");
+    let line = "abcd\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 500;
+    let content = line.repeat(line_count);
+    let file = write_test_file(&dir, "instant.txt", &content);
+
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = result.session_id.clone();
+
+    // Wait for the initial upgrade so we count from a stable baseline.
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(8) {
+        let status = session::get_session_status(&sid).unwrap();
+        if matches!(status.backend_type, session::BackendType::LineIndex) && !status.is_indexing {
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    let baseline = super::line_index::test_only_open_call_count();
+
+    // UTF-8 -> Windows-1252: same byte layout (no BOM, ASCII-compatible).
+    session::set_encoding(&sid, FileEncoding::Windows1252).unwrap();
+
+    // Wait for any in-flight rebuild to settle.
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(3) {
+        if !session::test_only_rebuilding_active(&sid) {
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    let post = super::line_index::test_only_open_call_count();
+    assert_eq!(
+        post, baseline,
+        "instant swap must NOT re-open LineIndex (baseline={}, post={})",
+        baseline, post
+    );
+
+    let opts = session::get_encoding_options(&sid).unwrap();
+    assert_eq!(opts.current, FileEncoding::Windows1252);
 
     session::close_session(&sid).unwrap();
     cleanup(&dir);
