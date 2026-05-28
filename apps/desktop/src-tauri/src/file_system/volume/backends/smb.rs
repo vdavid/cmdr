@@ -1313,30 +1313,21 @@ impl Volume for SmbVolume {
             debug!("SmbVolume::create_file: share={}, path={:?}", self.share_name, smb_path);
 
             {
-                let (tree, mut conn) = self.clone_session().await?;
-                // No-clobber contract. The smb2 0.11 public API only exposes
-                // file writers backed by `FileOverwriteIf` disposition (no
-                // exclusive `FileCreate` for files), so we do a pre-flight
-                // stat. There's a brief TOCTOU window between stat and write
-                // where a third party can create the same path; we accept it
-                // because the alternative (silently truncating the user's
-                // file when the listing-cache pre-check races) is worse, and
-                // because the realistic attack window is microseconds on the
-                // same SMB session. The truly atomic fix needs an smb2 crate
-                // release that exposes an exclusive-create writer.
-                match tree.stat(&mut conn, &smb_path).await {
-                    Ok(_) => {
-                        return Err(VolumeError::AlreadyExists(path.display().to_string()));
-                    }
-                    Err(e) if e.kind() == smb2::ErrorKind::NotFound => {
-                        // Expected: file doesn't exist, fall through to write.
-                    }
-                    Err(e) => {
-                        return Err(map_smb_error(e));
-                    }
+                let (tree, conn) = self.clone_session().await?;
+                // No-clobber contract via the exclusive-create writer
+                // (`FileCreate` disposition): if the file already exists the
+                // server returns `STATUS_OBJECT_NAME_COLLISION`, which the
+                // smb2 crate maps to `ErrorKind::AlreadyExists`. The earlier
+                // stat-then-write workaround left a microsecond TOCTOU
+                // window; this closes it atomically at the protocol layer.
+                let writer_result = tree.create_file_writer_exclusive(conn, &smb_path).await;
+                let mut writer = self.handle_smb_result("create_file(open)", writer_result)?;
+                if !data.is_empty() {
+                    let write_result = writer.write_chunk(&data).await;
+                    self.handle_smb_result("create_file(write_chunk)", write_result)?;
                 }
-                let result = tree.write_file(&mut conn, &smb_path, &data).await;
-                self.handle_smb_result("create_file", result)?;
+                let finish_result = writer.finish().await;
+                self.handle_smb_result("create_file(finish)", finish_result)?;
             }
 
             if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {

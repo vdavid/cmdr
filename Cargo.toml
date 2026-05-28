@@ -2,3 +2,11 @@
 members = ["apps/desktop/src-tauri", "crates/fsevent-stream", "crates/index-query"]
 exclude = ["benchmarks/smb"]
 resolver = "2"
+
+# Temporary patch: smb2 0.11.2 adds `create_file_writer_exclusive` (FileCreate
+# disposition) which the SMB volume's `create_file` needs to close the audit's
+# silent-clobber race. The release lives at `~/projects-git/vdavid/smb2/` and is
+# tagged but not yet published to crates.io. **Remove this patch (and the path
+# override) once smb2 0.11.2 lands on crates.io.**
+[patch.crates-io]
+smb2 = { path = "../../../../smb2" }
