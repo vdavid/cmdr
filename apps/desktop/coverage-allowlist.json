@@ -124,7 +124,7 @@
     "settings/sections/MtpSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/sections/NetworkSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/sections/ThemesSection.svelte": { "reason": "UI section, simple rendering" },
-    "settings/sections/DriveIndexingSection.svelte": { "reason": "UI section, depends on Tauri invoke" },
+    "settings/sections/FileSystemWatchingSection.svelte": { "reason": "UI section, depends on Tauri invoke" },
     "settings/sections/ListingSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/sections/UpdatesSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/sections/ViewerSection.svelte": { "reason": "UI section, simple rendering" },

@@ -364,11 +364,13 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   // ========================================================================
-  // Behavior › Drive indexing
+  // Behavior › File system watching
+  // (formerly "Drive indexing"; renamed in M7 so the indexer and the downloads
+  // watcher both live under one umbrella that shares the FDA gate)
   // ========================================================================
   {
     id: 'indexing.enabled',
-    section: ['Behavior', 'Drive indexing'],
+    section: ['Behavior', 'File system watching'],
     label: 'Drive indexing',
     description: 'Index your drive in the background for instant directory sizes.',
     keywords: ['index', 'drive', 'scan', 'size', 'directory', 'folder', 'background'],
@@ -376,15 +378,27 @@ export const settingsRegistry: SettingDefinition[] = [
     default: true,
     component: 'switch',
   },
-
-  // ========================================================================
-  // Behavior › File system watching (M6 lands the global-shortcut entries here;
-  // M7 renames the section to "File system watching" and adds the notifications
-  // ToggleGroup alongside.)
-  // ========================================================================
+  {
+    id: 'behavior.fileSystemWatching.downloadsNotifications',
+    section: ['Behavior', 'File system watching'],
+    label: 'Notify on downloads',
+    description: 'How to surface new files arriving in your Downloads folder.',
+    keywords: ['download', 'downloads', 'notification', 'toast', 'notify', 'macos'],
+    type: 'enum',
+    default: 'in-app',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'in-app', label: 'In-app' },
+        { value: 'macos', label: 'macOS notifications' },
+        { value: 'both', label: 'Both' },
+        { value: 'neither', label: 'Neither' },
+      ],
+    },
+  },
   {
     id: 'behavior.fileSystemWatching.globalRevealShortcut.enabled',
-    section: ['Behavior', 'Drive indexing'],
+    section: ['Behavior', 'File system watching'],
     label: 'Global reveal-latest-download shortcut',
     description: 'Press ⌃⌥⌘J from anywhere to jump to your latest download. Requires Full Disk Access.',
     keywords: ['shortcut', 'hotkey', 'global', 'reveal', 'download', 'downloads', 'jump'],
@@ -394,19 +408,19 @@ export const settingsRegistry: SettingDefinition[] = [
   },
   {
     id: 'behavior.fileSystemWatching.globalRevealShortcut.binding',
-    section: ['Behavior', 'Drive indexing'],
+    section: ['Behavior', 'File system watching'],
     label: 'Global reveal-latest-download binding',
     description: 'The system-wide combo that triggers reveal-latest-download.',
     keywords: ['shortcut', 'hotkey', 'global', 'binding', 'combo'],
     type: 'string',
     default: '\u{2303}\u{2325}\u{2318}J', // ⌃⌥⌘J
-    component: 'text-input', // Tier-1 row uses a plain string; M7 may swap in a key recorder.
+    component: 'text-input', // v1 uses a plain string; recorder follow-up tracked in plan.
   },
   {
     // Internal: hidden from the Settings UI. Drives the first-trigger warn-toast
     // suppression. Reset on `binding` change via `setGlobalRevealBinding`.
     id: 'behavior.fileSystemWatching.globalRevealShortcut.acknowledged',
-    section: ['Behavior', 'Drive indexing'],
+    section: ['Behavior', 'File system watching'],
     label: 'Global reveal-latest-download warn-toast acknowledged',
     description: 'Internal. Suppresses the first-trigger warning toast.',
     keywords: [],

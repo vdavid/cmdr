@@ -33,8 +33,9 @@ The watcher is alive iff `fda_gate::is_fda_pending_runtime() == false`. `lib.rs`
 1. **Startup**, after `set_fda_pending(...)` runs.
 2. **Every main-window `Focused(true)` event** — covers the "I just toggled FDA in System
    Settings, came back to Cmdr" path.
-3. **Settings pane mount** (frontend M7 will wire `recheck_downloads_watcher_gate`) — covers the
-   focus-event-fired-on-stale-read race.
+3. **Settings pane mount** — `FileSystemWatchingSection.svelte`'s `onMount` calls
+   `recheck_downloads_watcher_gate` so opening the section recovers from a stale focus-event read
+   (the user granted FDA and came straight to Settings without window-focus firing).
 
 Dropping the handle releases the OS watch. The watcher holds no FDA-protected state beyond
 that, so the closed-gate side is a pure no-op.

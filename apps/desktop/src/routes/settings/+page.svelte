@@ -107,6 +107,27 @@
         }
     }
 
+    /**
+     * Scroll a sub-group anchor into view. Called after `selectedSection` has
+     * committed and the section's `onMount` has run; we use a short
+     * `requestAnimationFrame` cycle to wait for the section to render its
+     * `SectionCard`s. If the anchor never appears the scroll silently no-ops;
+     * the deep-link still lands on the right section.
+     */
+    function scrollAnchorIntoView(anchorId: string) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const target = document.getElementById(anchorId)
+                if (target && contentElement) {
+                    contentElement.scrollTo({
+                        top: target.offsetTop - 16,
+                        behavior: 'smooth',
+                    })
+                }
+            })
+        })
+    }
+
     // Handle section selection from sidebar
     function handleSectionSelect(sectionPath: string[]) {
         log.debug('Section selected: {sectionPath}', { sectionPath: sectionPath.join(' > ') })
@@ -208,8 +229,10 @@
             // the volume picker's "Network (disabled)" entry) can deep-link. The param is a
             // JSON-encoded string array so section names with `/` (like "SMB/Network shares")
             // round-trip safely.
-            const urlSection = new URLSearchParams(window.location.search).get('section')
+            const params = new URLSearchParams(window.location.search)
+            const urlSection = params.get('section')
             const parsed = urlSection ? safeParseSectionParam(urlSection) : null
+            const urlAnchor = params.get('anchor')
             if (parsed) {
                 selectedSection = parsed
                 log.debug('Opened settings to URL section: {section}', { section: parsed.join(' > ') })
@@ -222,6 +245,12 @@
             initialized = true
 
             await tick()
+
+            // Scroll the deep-link anchor into view, if any. Runs after `selectedSection`
+            // commits and the section's `onMount` runs so the target element exists.
+            if (urlAnchor) {
+                scrollAnchorIntoView(urlAnchor)
+            }
 
             // Focus the search input on open so users can start typing immediately.
             const searchInput = document.querySelector('.search-input')
@@ -245,9 +274,15 @@
             // Cross-window deep-link: when the volume picker's "Network (disabled)" entry
             // (or anything else) opens an already-running settings window with a target
             // section, navigate there.
-            unlistenNavigate = await listen<{ section: string[] }>('navigate-to-section', (event) => {
-                handleSectionSelect(event.payload.section)
-            })
+            unlistenNavigate = await listen<{ section: string[]; anchor?: string }>(
+                'navigate-to-section',
+                (event) => {
+                    handleSectionSelect(event.payload.section)
+                    if (event.payload.anchor) {
+                        scrollAnchorIntoView(event.payload.anchor)
+                    }
+                },
+            )
 
             // MCP can request that this window close (used by `dialog close settings`).
             // Mirror the Escape-key handler: defer past the current event-loop iteration

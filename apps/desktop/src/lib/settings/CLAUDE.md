@@ -95,7 +95,7 @@ Top-level sidebar order (declared in `SettingsSidebar.svelte`'s `TOP_LEVEL_ORDER
 `settings.spec.ts`):
 
 1. **Appearance** — `Colors and formats`, `Zoom and density`, `File and folder sizes`, `Listing`
-2. **Behavior** — `File operations`, `Drive indexing`, `Search`
+2. **Behavior** — `File operations`, `File system watching`, `Search`
 3. **AI** (no subsections)
 4. **File systems** — `SMB/Network shares`, `MTP (Android/Kindle/cameras)`, `Git`
 5. **Viewer** (no subsections)

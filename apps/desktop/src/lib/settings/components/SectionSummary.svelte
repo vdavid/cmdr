@@ -24,7 +24,8 @@
             'File and folder sizes': 'How sizes are shown in the file list and warnings about size mismatches.',
             Listing: 'Document icons, directory sorting, and Brief mode column width.',
             'File operations': 'Behavior when renaming files (e.g. extension changes).',
-            'Drive indexing': 'Background indexing for directory sizes. Manage index storage.',
+            'File system watching':
+                'Drive indexing, Downloads notifications, and the global reveal-latest-download shortcut. Needs Full Disk Access.',
             Search: 'Live-applied filename and regex searches, and the recent-searches cap.',
             'SMB/Network shares': 'Enable networking, direct SMB connections, share cache, and timeouts.',
             'MTP (Android/Kindle/cameras)': 'Detect Android, Kindle, and camera devices over USB.',

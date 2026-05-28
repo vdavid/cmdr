@@ -1,9 +1,12 @@
 /**
  * Settings-side helpers for the downloads-notifications mode.
  *
- * The setting key lives in the M7 registry. M5 reads it with a safe default
- * so the feature can ship before the registry entry exists. Once M7 lands
- * the registry entry, the same key path keeps working — no changes here.
+ * The setting key lives in the registry as
+ * `behavior.fileSystemWatching.downloadsNotifications`. Read/write happens via
+ * the same `getSetting`/`setSetting` API as any other registry entry; the
+ * try/catch around the reader is belt-and-braces against a corrupt value (the
+ * registry guarantees the default, but defending the parse keeps the bridge
+ * resilient if `settings.json` is hand-edited).
  */
 
 import { getSetting, setSetting } from '$lib/settings'
@@ -12,8 +15,15 @@ import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('downloads')
 
-/** Setting key. Matches the M7 registry entry; defined here so M5 doesn't depend on M7. */
+/** Setting key. Mirrors the registry entry. */
 export const DOWNLOADS_NOTIFICATIONS_SETTING_KEY = 'behavior.fileSystemWatching.downloadsNotifications'
+
+/**
+ * Anchor id of the **Downloads notifications** sub-group inside
+ * `FileSystemWatchingSection.svelte`. Used by `openSettingsToDownloadsNotifications`
+ * to land the M5 "Stop showing these" deep-link on the right row.
+ */
+export const DOWNLOADS_NOTIFICATIONS_ANCHOR_ID = 'settings-downloads-notifications'
 
 export type DownloadsNotificationsMode = 'in-app' | 'macos' | 'both' | 'neither'
 
@@ -25,47 +35,38 @@ function isValidMode(value: unknown): value is DownloadsNotificationsMode {
 
 /**
  * Read the current downloads-notifications mode. Returns `'in-app'` (the
- * registered default) when the setting key isn't in the registry yet (M7
- * adds it) or the stored value is corrupt.
- *
- * Wrapped in try/catch because `getSetting` throws on unknown keys via
- * `getDefaultValue`. Once M7 registers the entry, the catch path becomes
- * unreachable but harmless.
+ * registered default) when the stored value is corrupt. The try/catch covers
+ * the unlikely "key isn't in the registry" path so callers can be loaded in
+ * any order.
  */
 export function getDownloadsNotificationsMode(): DownloadsNotificationsMode {
   try {
-    // Cast because M5 ships before the registry knows about this key.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-M7 the key isn't in SettingId
-    const value = getSetting(DOWNLOADS_NOTIFICATIONS_SETTING_KEY as any) as unknown
+    const value = getSetting(DOWNLOADS_NOTIFICATIONS_SETTING_KEY) as unknown
     if (isValidMode(value)) return value
     return 'in-app'
   } catch {
-    // Setting not registered yet (M7 territory) — fall back to the documented default.
     return 'in-app'
   }
 }
 
 /**
- * Write the current downloads-notifications mode. Wrapped in try/catch for
- * the same reason as the reader: M7 adds the registry entry, but M5's
- * "Stop showing these" button must work right away. Without a registry
- * entry, `setSetting`'s validate step throws — log and continue.
+ * Write the current downloads-notifications mode. Wraps `setSetting` in a
+ * try/catch as a defensive log so the M5 "Stop showing these" button never
+ * throws even if the registry entry temporarily disappears (mid-rename, etc.).
  */
 export function setDownloadsNotificationsMode(value: DownloadsNotificationsMode): void {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-M7 the key isn't in SettingId
-    setSetting(DOWNLOADS_NOTIFICATIONS_SETTING_KEY as any, value as any)
+    setSetting(DOWNLOADS_NOTIFICATIONS_SETTING_KEY, value)
   } catch (err) {
     log.warn('Failed to write downloads-notifications mode ({value}): {err}', { value, err: String(err) })
   }
 }
 
 /**
- * Deep-link to **Settings > Behavior > File system watching > Downloads
- * notifications**. M5 opens the section ("Drive indexing" still owns the
- * section path); M7 will rename the section to "File system watching" and
- * extend the deep-link helper to focus the specific sub-group.
+ * Deep-link to **Settings > Behavior > File system watching**, scrolled to the
+ * Downloads notifications sub-group. M5's "Stop showing these" button calls
+ * this after flipping the setting to `'neither'`.
  */
 export async function openSettingsToDownloadsNotifications(): Promise<void> {
-  await openSettingsWindow(['Behavior', 'Drive indexing'])
+  await openSettingsWindow(['Behavior', 'File system watching'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)
 }

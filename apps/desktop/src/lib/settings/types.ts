@@ -119,6 +119,8 @@ export const VOLUME_TINT_COLORS: readonly Exclude<VolumeTintColor, 'none'>[] = [
   'pink',
   'brown',
 ] as const
+export type DownloadsNotificationsMode = 'in-app' | 'macos' | 'both' | 'neither'
+
 export type AiProvider = 'off' | 'cloud' | 'local'
 export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
 
@@ -184,9 +186,8 @@ export interface SettingsValues {
   // Indexing
   'indexing.enabled': boolean
 
-  // File system watching - global reveal-latest-download shortcut (M6).
-  // The notifications enum (`downloadsNotifications`) lives in M7 territory;
-  // M5's bridge reads it via try-catch'd getSetting so it works either way.
+  // File system watching - downloads notifications + global reveal shortcut.
+  'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode
   'behavior.fileSystemWatching.globalRevealShortcut.enabled': boolean
   'behavior.fileSystemWatching.globalRevealShortcut.binding': string
   /** Internal: suppresses the first-trigger warn toast once the user acknowledges it. */

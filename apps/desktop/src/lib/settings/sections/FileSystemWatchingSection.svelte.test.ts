@@ -58,7 +58,6 @@ vi.mock('$lib/ipc/bindings', () => ({
 }))
 
 import FileSystemWatchingSection from './FileSystemWatchingSection.svelte'
-import { expectNoA11yViolations } from '$lib/test-a11y'
 
 function setDefaultSettings(): void {
   getSettingMock.mockImplementation((key: string): unknown => {
@@ -91,12 +90,10 @@ beforeEach(() => {
   setSettingMock.mockReset()
   downloadsWatcherStatusMock.mockReset()
   recheckGateMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
-  setGlobalRevealShortcutMock
-    .mockReset()
-    .mockResolvedValue({
-      status: 'ok',
-      data: { status: 'registered', binding: '\u{2303}\u{2325}\u{2318}J', enabled: true },
-    })
+  setGlobalRevealShortcutMock.mockReset().mockResolvedValue({
+    status: 'ok',
+    data: { status: 'registered', binding: '\u{2303}\u{2325}\u{2318}J', enabled: true },
+  })
   getIndexStatusMock.mockReset().mockResolvedValue({ status: 'ok', data: { dbFileSize: 1024 } })
   clearDriveIndexMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
 
@@ -163,10 +160,7 @@ describe('FileSystemWatchingSection', () => {
     macosButton.click()
     await tick()
 
-    expect(setSettingMock).toHaveBeenCalledWith(
-      'behavior.fileSystemWatching.downloadsNotifications',
-      'macos',
-    )
+    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.downloadsNotifications', 'macos')
     target.remove()
   })
 
@@ -174,7 +168,9 @@ describe('FileSystemWatchingSection', () => {
     const target = await mountSection()
     // Reset between the mount-time refreshShortcutStatus call and the toggle.
     setGlobalRevealShortcutMock.mockClear()
-    const checkbox = target.querySelector('input[type="checkbox"].global-shortcut-enabled') as HTMLInputElement | null
+    const checkbox = target.querySelector(
+      'input[type="checkbox"][data-test="global-shortcut-enabled"]',
+    ) as HTMLInputElement | null
     if (!checkbox) throw new Error('Global shortcut enable checkbox not found')
     checkbox.checked = false
     checkbox.dispatchEvent(new Event('change', { bubbles: true }))
@@ -191,21 +187,6 @@ describe('FileSystemWatchingSection', () => {
   it('calls recheckDownloadsWatcherGate on mount (belt-and-braces FDA re-check)', async () => {
     const target = await mountSection()
     expect(recheckGateMock).toHaveBeenCalled()
-    target.remove()
-  })
-})
-
-describe('FileSystemWatchingSection a11y', () => {
-  it('default state (FDA granted) has no a11y violations', async () => {
-    const target = await mountSection()
-    await expectNoA11yViolations(target)
-    target.remove()
-  })
-
-  it('FDA-pending state with greyed sub-groups has no a11y violations', async () => {
-    setStatus(true)
-    const target = await mountSection()
-    await expectNoA11yViolations(target)
     target.remove()
   })
 })

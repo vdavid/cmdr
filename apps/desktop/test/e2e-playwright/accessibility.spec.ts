@@ -342,9 +342,9 @@ for (const mode of ['light', 'dark'] as const) {
             sectionId: 'behavior-file-operations',
           },
           {
-            name: 'Behavior > Drive indexing',
-            path: ['Behavior', 'Drive indexing'],
-            sectionId: 'behavior-drive-indexing',
+            name: 'Behavior > File system watching',
+            path: ['Behavior', 'File system watching'],
+            sectionId: 'behavior-file-system-watching',
           },
           { name: 'AI', path: ['AI'], sectionId: 'ai' },
           {
@@ -394,7 +394,7 @@ for (const mode of ['light', 'dark'] as const) {
             continue
           }
 
-          // Brief settle for sections with async data (for example, Drive indexing
+          // Brief settle for sections with async data (for example, File system watching
           // loads dbFileSize which controls the "Clear index" button's disabled state).
           // The pollUntil above already gated on section visibility: this just lets
           // any reactive child updates land before axe inspects the DOM. No specific

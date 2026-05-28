@@ -89,12 +89,16 @@ that bypasses the reset.
 
 ## Settings registry note
 
-The `behavior.fileSystemWatching.downloadsNotifications` registry entry is M7's territory. M5 reads the setting via
-try-catch'd `getSetting` so the key path works whether or not the registry knows about it yet; the documented default is
-`'in-app'`. Once M7 lands the entry, the try-catch becomes belt-and-braces with no behavior change.
+The `behavior.fileSystemWatching.downloadsNotifications` registry entry holds the canonical default `'in-app'`. The
+reader (`getDownloadsNotificationsMode`) wraps `getSetting` in a try/catch as belt-and-braces against a corrupt stored
+value (the registry guarantees the default, but a hand-edited `settings.json` could land here); the catch path falls
+through to the same `'in-app'` default.
 
 ## Deep-link target
 
-`openSettingsToDownloadsNotifications` currently opens `Behavior > Drive indexing` — that's where the "Notify on
-~/Downloads changes" sub-group will live once M7 renames the section to "File system watching." M7 swaps the section
-path and (if the deep-link helper grows sub-group anchor support) focuses the specific row.
+`openSettingsToDownloadsNotifications` calls
+`openSettingsWindow(['Behavior', 'File system watching'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)`. The settings page reads
+the optional anchor from the URL on cold-open and from the `navigate-to-section` event on already-open windows, then
+scrolls the matching DOM id into view. The anchor id is the source-of-truth `DOWNLOADS_NOTIFICATIONS_ANCHOR_ID` constant
+exported from `notifications-mode.ts`; the section component imports the same constant for its `<div id={…}>` wrapper,
+so renaming flows through one place.

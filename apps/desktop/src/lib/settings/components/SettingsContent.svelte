@@ -4,7 +4,7 @@
     import AppearanceSizesSection from '$lib/settings/sections/AppearanceSizesSection.svelte'
     import ListingSection from '$lib/settings/sections/ListingSection.svelte'
     import FileOperationsSection from '$lib/settings/sections/FileOperationsSection.svelte'
-    import DriveIndexingSection from '$lib/settings/sections/DriveIndexingSection.svelte'
+    import FileSystemWatchingSection from '$lib/settings/sections/FileSystemWatchingSection.svelte'
     import SearchSection from '$lib/settings/sections/SearchSection.svelte'
     import AiSection from '$lib/settings/sections/AiSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
@@ -102,9 +102,9 @@
                 <FileOperationsSection {searchQuery} />
             </section>
         {/if}
-        {#if shouldShowSection(['Behavior', 'Drive indexing'])}
-            <section data-section-id="behavior-drive-indexing">
-                <DriveIndexingSection {searchQuery} />
+        {#if shouldShowSection(['Behavior', 'File system watching'])}
+            <section data-section-id="behavior-file-system-watching">
+                <FileSystemWatchingSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Behavior', 'Search'])}

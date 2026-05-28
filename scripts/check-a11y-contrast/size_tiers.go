@@ -48,7 +48,7 @@ type sizeTier struct {
 //     viewer body, settings pages, and the fallback transfer-error dialog.
 //   - `color-bg-secondary` covers the SelectionInfo footer, viewer status bar,
 //     search results panel, AiLocalSection rows, ErrorReportDialog body,
-//     DriveIndexingSection sub-panel.
+//     FileSystemWatchingSection sub-panel.
 //   - `color-bg-tertiary` covers the VolumeBreadcrumb dropdown items, AI toast,
 //     ErrorReportDialog file rows, AiLocalSection inner cards.
 //   - `color-error-bg` covers the DeleteDialog danger row.

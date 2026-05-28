@@ -9,35 +9,36 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 
 ## File map
 
-| File                              | Responsibility                                                                                                                                          |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AppearanceSection.svelte`        | `Appearance > Colors and formats`: theme mode, app color, size/date palettes, date/time format, striped rows                                            |
-| `AppearanceZoomSection.svelte`    | `Appearance > Zoom and density`: text size slider and UI density                                                                                        |
-| `AppearanceSizesSection.svelte`   | `Appearance > File and folder sizes`: size display, size unit (binary/SI drives `kB`↔`KB` label override), file size format, size mismatch warning      |
-| `ListingSection.svelte`           | `Appearance > Listing`: document icons, directory sort, brief column width                                                                              |
-| `FileOperationsSection.svelte`    | `Behavior > File operations`: extension-change confirms (`maxConflictsToShow` / `progressUpdateInterval` live in Advanced)                              |
-| `DriveIndexingSection.svelte`     | `Behavior > Drive indexing`: enable toggle plus the clear-index action                                                                                  |
-| `SearchSection.svelte`            | `Behavior > Search`: auto-apply switch plus mirrored `recentSearches.maxCount` / `recentSelections.maxCount` rows from Advanced                         |
-| `AiSection.svelte`                | `AI` wrapper: provider toggle (Off / Cloud / Local), auto-stops local server on switch-away, dispatches to one of the two sub-sections below            |
-| `AiCloudSection.svelte`           | Cloud provider config: preset dropdown, per-provider endpoint/model in `ai.cloudProviderConfigs`, API key in OS secret store, two-step connection check |
-| `AiLocalSection.svelte`           | Local llama-server lifecycle, model install with multi-step tracking, context window "Apply" (server restart), RAM gauge, delete confirmation           |
-| `NetworkSection.svelte`           | `File systems > SMB/Network shares`: `network.enabled` master switch and the Local Network access info card                                             |
-| `MtpSection.svelte`               | `File systems > MTP (Android/Kindle/cameras)`                                                                                                           |
-| `GitSection.svelte`               | `File systems > Git`                                                                                                                                    |
-| `ViewerSection.svelte`            | `Viewer`                                                                                                                                                |
-| `KeyboardShortcutsSection.svelte` | `Keyboard shortcuts`: special (non-registry) section, renders the shortcut table from `shortcuts.json`                                                  |
-| `McpServerSection.svelte`         | `Developer > MCP server`                                                                                                                                |
-| `LoggingSection.svelte`           | `Developer > Logging`                                                                                                                                   |
-| `UpdatesSection.svelte`           | `Updates`: includes the `updates.errorReports` opt-in for Flow B (auto-send); Flow A consent-on-click is always available                               |
-| `LicenseSection.svelte`           | `License`: special (non-registry), reads `getLicenseInfo` / `getLicenseStatus`                                                                          |
-| `AdvancedSection.svelte`          | `Advanced`: auto-generated rows for every registry entry with `showInAdvanced: true`. No custom UI per row                                              |
-| `ai-secret-error.ts`              | Pure mapper from OS secret-store error variants to user-facing strings. Used by `AiCloudSection`                                                        |
-| `license-section-utils.ts`        | Pure label/status formatters extracted from `LicenseSection` for testability                                                                            |
-| `ram-gauge-utils.ts`              | Pure stacked-bar segment math for `AiLocalSection`'s memory gauge (used → projected → free, plus warning thresholds)                                    |
+| File                               | Responsibility                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AppearanceSection.svelte`         | `Appearance > Colors and formats`: theme mode, app color, size/date palettes, date/time format, striped rows                                                                                                                                                                                                                         |
+| `AppearanceZoomSection.svelte`     | `Appearance > Zoom and density`: text size slider and UI density                                                                                                                                                                                                                                                                     |
+| `AppearanceSizesSection.svelte`    | `Appearance > File and folder sizes`: size display, size unit (binary/SI drives `kB`↔`KB` label override), file size format, size mismatch warning                                                                                                                                                                                   |
+| `ListingSection.svelte`            | `Appearance > Listing`: document icons, directory sort, brief column width                                                                                                                                                                                                                                                           |
+| `FileOperationsSection.svelte`     | `Behavior > File operations`: extension-change confirms (`maxConflictsToShow` / `progressUpdateInterval` live in Advanced)                                                                                                                                                                                                           |
+| `FileSystemWatchingSection.svelte` | `Behavior > File system watching`: three `SectionCard` sub-groups — Drive indexing (toggle + clear-index), Downloads notifications (4-option ToggleGroup, anchor `settings-downloads-notifications`), Reveal latest download (global shortcut row). FDA-closed greys sub-groups 2-3 with one shared hint linking to System Settings. |
+| `SearchSection.svelte`             | `Behavior > Search`: auto-apply switch plus mirrored `recentSearches.maxCount` / `recentSelections.maxCount` rows from Advanced                                                                                                                                                                                                      |
+| `AiSection.svelte`                 | `AI` wrapper: provider toggle (Off / Cloud / Local), auto-stops local server on switch-away, dispatches to one of the two sub-sections below                                                                                                                                                                                         |
+| `AiCloudSection.svelte`            | Cloud provider config: preset dropdown, per-provider endpoint/model in `ai.cloudProviderConfigs`, API key in OS secret store, two-step connection check                                                                                                                                                                              |
+| `AiLocalSection.svelte`            | Local llama-server lifecycle, model install with multi-step tracking, context window "Apply" (server restart), RAM gauge, delete confirmation                                                                                                                                                                                        |
+| `NetworkSection.svelte`            | `File systems > SMB/Network shares`: `network.enabled` master switch and the Local Network access info card                                                                                                                                                                                                                          |
+| `MtpSection.svelte`                | `File systems > MTP (Android/Kindle/cameras)`                                                                                                                                                                                                                                                                                        |
+| `GitSection.svelte`                | `File systems > Git`                                                                                                                                                                                                                                                                                                                 |
+| `ViewerSection.svelte`             | `Viewer`                                                                                                                                                                                                                                                                                                                             |
+| `KeyboardShortcutsSection.svelte`  | `Keyboard shortcuts`: special (non-registry) section, renders the shortcut table from `shortcuts.json`                                                                                                                                                                                                                               |
+| `McpServerSection.svelte`          | `Developer > MCP server`                                                                                                                                                                                                                                                                                                             |
+| `LoggingSection.svelte`            | `Developer > Logging`                                                                                                                                                                                                                                                                                                                |
+| `UpdatesSection.svelte`            | `Updates`: includes the `updates.errorReports` opt-in for Flow B (auto-send); Flow A consent-on-click is always available                                                                                                                                                                                                            |
+| `LicenseSection.svelte`            | `License`: special (non-registry), reads `getLicenseInfo` / `getLicenseStatus`                                                                                                                                                                                                                                                       |
+| `AdvancedSection.svelte`           | `Advanced`: auto-generated rows for every registry entry with `showInAdvanced: true`. No custom UI per row                                                                                                                                                                                                                           |
+| `ai-secret-error.ts`               | Pure mapper from OS secret-store error variants to user-facing strings. Used by `AiCloudSection`                                                                                                                                                                                                                                     |
+| `license-section-utils.ts`         | Pure label/status formatters extracted from `LicenseSection` for testability                                                                                                                                                                                                                                                         |
+| `ram-gauge-utils.ts`               | Pure stacked-bar segment math for `AiLocalSection`'s memory gauge (used → projected → free, plus warning thresholds)                                                                                                                                                                                                                 |
 
-Each section ships with an `*.a11y.test.ts` (axe-core tier-3). `McpServerSection`, `UpdatesSection`, and `SearchSection`
-also have functional `*.test.ts` / `*.svelte.test.ts` files; the three pure-helper `.ts` files have unit tests next to
-them.
+Each section ships with an `*.a11y.test.ts` (axe-core tier-3). `McpServerSection`, `UpdatesSection`, `SearchSection`,
+and `FileSystemWatchingSection` also have functional `*.test.ts` / `*.svelte.test.ts` files; the three pure-helper `.ts`
+files have unit tests next to them. `FileSystemWatchingSection.svelte.test.ts` combines tier-3 axe with the functional
+render contract since both share the same heavy IPC mock setup.
 
 ## Conventions
 
@@ -100,3 +101,17 @@ the OS secret store".
 Settings AI changes hot-apply because `settings-applier.ts` routes `ai.provider`, `ai.cloudProvider`, and
 `ai.cloudProviderConfigs` to `ai-config.ts::pushConfigToBackend()`, which re-reads everything fresh. Sections just call
 `setSetting(...)`; don't try to push the AI config from the section component.
+
+## Key decisions
+
+### Section renamed from "Drive indexing" to "File system watching"
+
+The umbrella section under `Behavior` was renamed because both the file-system indexer and the downloads watcher are
+file-system watchers, and they share the same FDA gate. One header, one shared FDA hint, three `SectionCard` sub-groups
+(Drive indexing, Downloads notifications, Reveal latest download). The indexer setting still carries the label "Drive
+indexing" — that's the per-toggle name and stays accurate; what changed is the umbrella section's name.
+
+The sub-group sits inside a `<div id="settings-downloads-notifications">` so M5's "Stop showing these" deep-link lands
+on the right row instead of the section top. `openSettingsWindow(section, anchor)` accepts an optional `anchor` arg that
+the settings page (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section`
+event on already-open windows, then `scrollIntoView`s the matching element.

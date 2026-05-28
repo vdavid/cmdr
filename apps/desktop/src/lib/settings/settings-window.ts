@@ -55,8 +55,12 @@ export const settingsMaxWidth = (scale: number): number =>
  * Opens the settings window, or focuses it if already open. When `section` is provided,
  * the settings window listens for the `navigate-to-section` event and scrolls/highlights
  * the matching section path (e.g., `['File systems', 'SMB/Network shares']`).
+ *
+ * When `anchor` is provided alongside `section`, the settings page also scrolls the
+ * element with that DOM id into view after the section has rendered. Use for sub-group
+ * deep-links (the "Stop showing these" toast → `'settings-downloads-notifications'`).
  */
-export async function openSettingsWindow(section?: string[]): Promise<void> {
+export async function openSettingsWindow(section?: string[], anchor?: string): Promise<void> {
   // E2E suites re-open Settings many times; stealing OS focus each time
   // makes the host machine unusable while tests run. The plugin reaches the
   // webview over a Unix socket, so it doesn't need OS focus to drive the DOM.
@@ -70,7 +74,7 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
       await emitTo('settings', 'focus-self')
     }
     if (section) {
-      await emitTo('settings', 'navigate-to-section', { section })
+      await emitTo('settings', 'navigate-to-section', { section, anchor })
     }
     return
   }
@@ -88,8 +92,15 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
   const [main, monitors, saved] = await Promise.all([readMainRect(), readMonitors(), readSavedRect('settings')])
   const rect = main ? resolveChildPosition({ size: { width, height }, main, monitors, saved }) : null
 
+  // Build the URL: section as JSON (names can contain `/`), anchor as a plain query param.
+  const settingsUrl = section
+    ? `/settings?section=${encodeURIComponent(JSON.stringify(section))}${
+        anchor ? `&anchor=${encodeURIComponent(anchor)}` : ''
+      }`
+    : '/settings'
+
   const win = new WebviewWindow('settings', {
-    url: section ? `/settings?section=${encodeURIComponent(JSON.stringify(section))}` : '/settings',
+    url: settingsUrl,
     title: decorateChildWindowTitle('Settings'),
     // Open at max width so the content-area starts at its scaled cap; user can
     // shrink down to `settingsMinWidth(scale)`.

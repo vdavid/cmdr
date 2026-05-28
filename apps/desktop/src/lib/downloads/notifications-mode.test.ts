@@ -58,10 +58,7 @@ describe('getDownloadsNotificationsMode', () => {
 describe('setDownloadsNotificationsMode', () => {
   it('writes through to the settings store', () => {
     setDownloadsNotificationsMode('neither')
-    expect(setSettingMock).toHaveBeenCalledWith(
-      'behavior.fileSystemWatching.downloadsNotifications',
-      'neither',
-    )
+    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.downloadsNotifications', 'neither')
   })
 })
 
