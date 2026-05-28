@@ -12,7 +12,7 @@ const {
   listenMock: vi.fn(),
   revealLatestDownloadMock: vi.fn(),
   setGlobalRevealShortcutMock: vi.fn(),
-  addToastMock: vi.fn(() => 'toast-id'),
+  addToastMock: vi.fn<(content: unknown, options?: Record<string, unknown>) => string>(() => 'toast-id'),
   dismissToastMock: vi.fn(),
   getSettingMock: vi.fn(),
   setSettingMock: vi.fn(),
@@ -62,8 +62,9 @@ async function mountBridgeAndCapturePayloadHandler(): Promise<(payload?: unknown
   })
   await startGlobalShortcutBridge(undefined)
   if (!handler) throw new Error('bridge did not subscribe to ' + GLOBAL_SHORTCUT_FIRED_EVENT)
+  const capturedHandler = handler
   return async (payload: unknown = {}) => {
-    handler!({ payload })
+    capturedHandler({ payload })
     // Let any awaited internal microtasks settle before assertions read state.
     await new Promise((r) => setTimeout(r, 0))
   }
@@ -101,10 +102,12 @@ describe('startGlobalShortcutBridge', () => {
     await fire()
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
-    const [content, options] = addToastMock.mock.calls[0]
+    const firstCall = addToastMock.mock.calls[0]
+    if (!firstCall) throw new Error('addToast was not called')
+    const [content, options] = firstCall
     expect(content).toBe(GlobalShortcutWarnToastContent)
-    expect(options.level).toBe('warn')
-    expect(options.dismissal).toBe('persistent')
+    expect(options?.level).toBe('warn')
+    expect(options?.dismissal).toBe('persistent')
 
     expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalRevealShortcut.acknowledged', true)
     expect(revealLatestDownloadMock).toHaveBeenCalledTimes(1)

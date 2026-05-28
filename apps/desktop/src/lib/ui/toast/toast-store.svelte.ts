@@ -153,13 +153,31 @@ function makeRoomForNewToast(toastGroup: string | undefined, maxInGroup: number)
   return true
 }
 
-export function addToast(content: ToastContent, options?: ToastOptions): string {
-  const level = options?.level ?? 'default'
+interface ResolvedToastOptions {
+  level: ToastLevel
+  dismissal: ToastDismissal
+  timeoutMs: number
+  id: string
+  toastGroup: string | undefined
+  maxInGroup: number | undefined
+}
+
+function resolveOptions(options: ToastOptions | undefined): ResolvedToastOptions {
   const dismissal = options?.dismissal ?? 'transient'
-  const timeoutMs = dismissal === 'persistent' ? 0 : (options?.timeoutMs ?? 4000)
-  const id = options?.id ?? crypto.randomUUID()
   const toastGroup = options?.toastGroup
-  const maxInGroup = toastGroup === undefined ? undefined : (options?.maxInGroup ?? DEFAULT_MAX_IN_GROUP)
+  return {
+    level: options?.level ?? 'default',
+    dismissal,
+    timeoutMs: dismissal === 'persistent' ? 0 : (options?.timeoutMs ?? 4000),
+    id: options?.id ?? crypto.randomUUID(),
+    toastGroup,
+    maxInGroup: toastGroup === undefined ? undefined : (options?.maxInGroup ?? DEFAULT_MAX_IN_GROUP),
+  }
+}
+
+export function addToast(content: ToastContent, options?: ToastOptions): string {
+  const resolved = resolveOptions(options)
+  const { id, level, dismissal, timeoutMs, toastGroup, maxInGroup } = resolved
 
   // Dedup: replace content and level in place if ID already exists.
   const existingIndex = findIndexById(id)
@@ -170,7 +188,7 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
 
   if (!makeRoomForNewToast(toastGroup, maxInGroup ?? maxVisibleToasts)) return id
 
-  const toast: Toast = {
+  toasts.push({
     id,
     content,
     level,
@@ -182,9 +200,7 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
     toastGroup,
     maxInGroup,
     props: options?.props,
-  }
-
-  toasts.push(toast)
+  })
   return id
 }
 

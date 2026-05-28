@@ -46,7 +46,7 @@ vi.mock('./RevealFdaToastContent.svelte', () => ({
   default: { __toastContent: 'RevealFdaToastContent' },
 }))
 
-import { revealLatestDownload, REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID } from './reveal'
+import { revealLatestDownload, revealPath, REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID } from './reveal'
 import RevealEmptyToastContent from './RevealEmptyToastContent.svelte'
 import RevealFdaToastContent from './RevealFdaToastContent.svelte'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
@@ -177,5 +177,41 @@ describe('revealLatestDownload', () => {
     expect(revealLatestDownloadMock).not.toHaveBeenCalled()
     expect(addToastMock).not.toHaveBeenCalled()
     expect(navigateToPathMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('revealPath', () => {
+  beforeEach(() => {
+    addToastMock.mockReset().mockReturnValue('toast-id')
+    navigateToPathMock.mockReset().mockResolvedValue(undefined)
+    moveCursorMock.mockReset().mockResolvedValue(undefined)
+    getFocusedPaneMock.mockReset().mockReturnValue('left')
+  })
+
+  it('navigates the focused pane to parentDir and selects the file', async () => {
+    await revealPath(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
+
+    expect(navigateToPathMock).toHaveBeenCalledWith('left', '/Users/me/Downloads')
+    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
+  })
+
+  it('does nothing when the explorer handle is missing (HMR / pre-mount)', async () => {
+    await revealPath(undefined, '/Users/me/Downloads', 'report.pdf')
+
+    expect(navigateToPathMock).not.toHaveBeenCalled()
+    expect(moveCursorMock).not.toHaveBeenCalled()
+  })
+
+  it('bails out without moving the cursor when navigateToPath refuses synchronously', async () => {
+    // `navigateToPath` returns `string | Promise<void>`; the mock factory's
+    // inferred type pins it to `Promise<void>`, so cast for this one return path.
+    ;(navigateToPathMock as unknown as { mockReturnValueOnce: (v: unknown) => void }).mockReturnValueOnce(
+      'snapshot pane on a missing volume',
+    )
+
+    await revealPath(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
+
+    expect(navigateToPathMock).toHaveBeenCalledWith('left', '/Users/me/Downloads')
+    expect(moveCursorMock).not.toHaveBeenCalled()
   })
 })

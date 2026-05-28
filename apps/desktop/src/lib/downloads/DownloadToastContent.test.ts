@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, tick } from 'svelte'
+import { mount, tick, type ComponentProps } from 'svelte'
 
 // Hoisted mocks: the component delegates to the reveal-by-path helper and the
 // "Stop showing these" deep-link + settings writer. We assert the exact wire
@@ -32,7 +32,9 @@ vi.mock('$lib/ui/toast', () => ({
 import DownloadToastContent from './DownloadToastContent.svelte'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
-function makeProps(overrides: Partial<Parameters<typeof DownloadToastContent>[0]['props']> = {}) {
+type DownloadToastProps = ComponentProps<typeof DownloadToastContent>
+
+function makeProps(overrides: Partial<DownloadToastProps> = {}): DownloadToastProps {
   return {
     toastId: 'downloads:test-id',
     explorer: undefined as ExplorerAPI | undefined,
