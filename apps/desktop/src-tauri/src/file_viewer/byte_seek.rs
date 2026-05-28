@@ -270,6 +270,18 @@ impl FileViewerBackend for ByteSeekBackend {
         Ok(Box::new(self.extend_to(new_size, cancel)))
     }
 
+    fn with_encoding(&self, new_encoding: FileEncoding) -> Option<Box<dyn FileViewerBackend>> {
+        if !super::encoding::same_byte_layout(self.encoding, new_encoding) {
+            return None;
+        }
+        Some(Box::new(Self {
+            path: self.path.clone(),
+            total_bytes: self.total_bytes,
+            file_name: self.file_name.clone(),
+            encoding: new_encoding,
+        }))
+    }
+
     fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
         let raw_offset = self.resolve_byte_offset(target);
 

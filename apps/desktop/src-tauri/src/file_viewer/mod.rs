@@ -6,13 +6,13 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 mod byte_seek;
-mod encoding;
+pub mod encoding;
 mod full_load;
 mod line_index;
 mod range_read;
 mod search_matcher;
-mod session;
-mod watcher;
+pub mod session;
+pub mod watcher;
 
 #[cfg(test)]
 mod byte_seek_test;
@@ -171,6 +171,16 @@ pub trait FileViewerBackend: Send + Sync {
         Err(ViewerError::Io {
             message: "backend does not support extend_to".to_string(),
         })
+    }
+
+    /// Returns a fresh boxed backend whose internal state is identical to
+    /// `self` but with the encoding field swapped to `new_encoding`. Used by
+    /// the `set_encoding` instant-swap path when `same_byte_layout` holds: the
+    /// existing newline index is still valid under the new encoding, so only
+    /// the decoder needs to change. Default is `None`, meaning the session
+    /// must take the slow rebuild path.
+    fn with_encoding(&self, _new_encoding: FileEncoding) -> Option<Box<dyn FileViewerBackend>> {
+        None
     }
 
     /// Search the file with the given `Matcher`, populating matches into the provided vec.

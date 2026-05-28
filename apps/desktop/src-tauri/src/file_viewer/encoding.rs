@@ -107,11 +107,19 @@ impl FileEncoding {
     }
 
     /// Maps to the `encoding_rs` static encoding used by `decode_line`.
+    ///
+    /// **Iso8859_1 is NOT mapped via `encoding_rs::WINDOWS_1252`** because the
+    /// two disagree on the `0x80-0x9F` range: Windows-1252 reassigns those
+    /// bytes to characters like `€` (`0x80`), while strict ISO-8859-1 leaves
+    /// them as the C1 control codes `U+0080-U+009F`. The viewer handles ISO
+    /// directly via a manual 1:1 byte → codepoint table in [`decode_line`];
+    /// this method is unused for the `Iso8859_1` variant (and asserts the
+    /// invariant via `unreachable!`).
     pub fn as_static(self) -> &'static encoding_rs::Encoding {
         match self {
             Self::Utf8 | Self::Utf8WithBom | Self::UsAscii => encoding_rs::UTF_8,
             Self::Windows1252 => encoding_rs::WINDOWS_1252,
-            Self::Iso8859_1 => encoding_rs::WINDOWS_1252, // ISO-8859-1 is a strict subset; encoding_rs aliases.
+            Self::Iso8859_1 => unreachable!("ISO-8859-1 decoding is handled manually in decode_line"),
             Self::MacRoman => encoding_rs::MACINTOSH,
             Self::Utf16Le => encoding_rs::UTF_16LE,
             Self::Utf16Be => encoding_rs::UTF_16BE,
@@ -367,6 +375,18 @@ pub fn decode_line(bytes: &[u8], encoding: FileEncoding) -> String {
         FileEncoding::Utf8 | FileEncoding::Utf8WithBom | FileEncoding::UsAscii
     ) {
         return String::from_utf8_lossy(bytes).into_owned();
+    }
+    if matches!(encoding, FileEncoding::Iso8859_1) {
+        // Strict ISO-8859-1: byte N decodes to U+00XX with no remapping. The
+        // 0x80-0x9F range stays as C1 control codes, unlike Windows-1252
+        // which reassigns them to characters like `€` (0x80). Implemented
+        // manually because `encoding_rs` doesn't ship a strict ISO-8859-1
+        // decoder — it aliases the label to Windows-1252.
+        let mut out = String::with_capacity(bytes.len());
+        for &b in bytes {
+            out.push(b as char);
+        }
+        return out;
     }
     let (cow, _had_errors) = encoding.as_static().decode_without_bom_handling(bytes);
     cow.into_owned()

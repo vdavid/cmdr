@@ -21,6 +21,17 @@ use super::{
     BackendCapabilities, FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, LineChunk, SearchMatch, SeekTarget, ViewerError,
 };
 
+/// Test-only counter incremented every time `LineIndexBackend::open_with_encoding`
+/// runs. Lets tests assert the instant-swap path actually skips the rebuild.
+#[cfg(test)]
+static OPEN_CALL_COUNT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+#[cfg(test)]
+#[allow(dead_code, reason = "consumed by session_test instant-swap test")]
+pub fn test_only_open_call_count() -> usize {
+    OPEN_CALL_COUNT.load(Ordering::Relaxed)
+}
+
 /// A checkpoint in the line index: (line_number, byte_offset).
 #[derive(Debug, Clone)]
 struct Checkpoint {
@@ -49,6 +60,8 @@ impl LineIndexBackend {
     }
 
     pub fn open_with_encoding(path: &Path, encoding: FileEncoding, cancel: &AtomicBool) -> Result<Self, ViewerError> {
+        #[cfg(test)]
+        OPEN_CALL_COUNT.fetch_add(1, Ordering::Relaxed);
         let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
             std::io::ErrorKind::NotFound => ViewerError::NotFound {
                 path: path.display().to_string(),
@@ -386,6 +399,24 @@ impl FileViewerBackend for LineIndexBackend {
     fn extend_to_boxed(&self, new_size: u64, cancel: &AtomicBool) -> Result<Box<dyn FileViewerBackend>, ViewerError> {
         let extended = self.extend_to(new_size, cancel)?;
         Ok(Box::new(extended))
+    }
+
+    fn with_encoding(&self, new_encoding: FileEncoding) -> Option<Box<dyn FileViewerBackend>> {
+        // Only valid when the new encoding shares byte layout with the current
+        // one (same BOM + both ASCII-newline-compatible). The session enforces
+        // this via `same_byte_layout` before calling, but check again here so
+        // a future caller can't accidentally bypass the rebuild.
+        if !super::encoding::same_byte_layout(self.encoding, new_encoding) {
+            return None;
+        }
+        Some(Box::new(Self {
+            path: self.path.clone(),
+            total_bytes: self.total_bytes,
+            file_name: self.file_name.clone(),
+            checkpoints: self.checkpoints.clone(),
+            total_lines: self.total_lines,
+            encoding: new_encoding,
+        }))
     }
 
     fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
