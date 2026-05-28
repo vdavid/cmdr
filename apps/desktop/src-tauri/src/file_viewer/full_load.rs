@@ -8,6 +8,7 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use super::encoding::{FileEncoding, decode_line, detect, find_newlines};
 use super::search_matcher::{LineScan, Matcher, scan_line_with_matcher};
 use super::{BackendCapabilities, FileViewerBackend, LineChunk, SearchMatch, SeekTarget, ViewerError};
 
@@ -17,10 +18,21 @@ pub struct FullLoadBackend {
     line_offsets: Vec<u64>,
     total_bytes: u64,
     file_name: String,
+    #[allow(dead_code)]
+    encoding: FileEncoding,
 }
 
 impl FullLoadBackend {
+    /// Open with auto-detected encoding. Falls back to UTF-8 on detection IO errors
+    /// (the subsequent `decode_line` calls then run through `from_utf8_lossy`, which
+    /// is what the viewer used to do before encoding-awareness landed).
+    #[allow(dead_code)]
     pub fn open(path: &Path) -> Result<Self, ViewerError> {
+        let encoding = detect(path).unwrap_or(FileEncoding::Utf8);
+        Self::open_with_encoding(path, encoding)
+    }
+
+    pub fn open_with_encoding(path: &Path, encoding: FileEncoding) -> Result<Self, ViewerError> {
         let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
             std::io::ErrorKind::NotFound => ViewerError::NotFound {
                 path: path.display().to_string(),
@@ -33,64 +45,85 @@ impl FullLoadBackend {
 
         let total_bytes = metadata.len();
         let bytes = std::fs::read(path)?;
-        let content = String::from_utf8_lossy(&bytes);
-
-        let mut lines = Vec::new();
-        let mut line_offsets = Vec::new();
-        let mut offset: u64 = 0;
-
-        for line in content.split('\n') {
-            line_offsets.push(offset);
-            lines.push(line.to_string());
-            // +1 for the '\n' delimiter (even if last line has none, offset won't be used beyond)
-            offset += line.len() as u64 + 1;
-        }
-
-        // If file ends without newline and content is non-empty, the split gives correct result.
-        // If file is empty, we still want at least one empty line.
-        if lines.is_empty() {
-            lines.push(String::new());
-            line_offsets.push(0);
-        }
-
         let file_name = path
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| path.display().to_string());
-
-        Ok(Self {
-            lines,
-            line_offsets,
-            total_bytes,
-            file_name,
-        })
+        Ok(Self::build_from_bytes(bytes, total_bytes, file_name, encoding))
     }
 
-    /// Create from in-memory content (for testing).
-    #[cfg(test)]
-    pub fn from_content(content: &str, file_name: &str) -> Self {
-        let total_bytes = content.len() as u64;
-        let mut lines = Vec::new();
-        let mut line_offsets = Vec::new();
-        let mut offset: u64 = 0;
+    /// Split `bytes` into per-encoding lines, populating `line_offsets` with absolute
+    /// byte offsets in the SOURCE bytes (not the decoded UTF-8). Search and selection
+    /// flows downstream of this struct convert UTF-16 offsets via the existing
+    /// surrogate-safe clamp; this struct keeps source-byte offsets so range reads
+    /// against the raw file still line up.
+    fn build_from_bytes(bytes: Vec<u8>, total_bytes: u64, file_name: String, encoding: FileEncoding) -> Self {
+        // Strip the leading BOM if present so the first line doesn't surface it as
+        // visible content. The byte offset accounting keeps the BOM bytes in the
+        // count (offsets stay aligned with the on-disk file).
+        let bom_len = if bytes.starts_with(encoding.bom_bytes()) {
+            encoding.bom_bytes().len()
+        } else {
+            0
+        };
+        let scan = &bytes[bom_len..];
+        let newlines = find_newlines(scan, encoding);
 
-        for line in content.split('\n') {
-            line_offsets.push(offset);
-            lines.push(line.to_string());
-            offset += line.len() as u64 + 1;
+        let mut lines: Vec<String> = Vec::with_capacity(newlines.len() + 1);
+        let mut line_offsets: Vec<u64> = Vec::with_capacity(newlines.len() + 1);
+        let mut start: usize = 0;
+        for nl in &newlines {
+            line_offsets.push((bom_len + start) as u64);
+            // The byte that starts the newline pair, and the byte just after the pair.
+            //   ASCII-compatible: pair = [0x0A], starts at nl, ends at nl + 1.
+            //   UTF-16 LE: pair = [0x0A, 0x00] starting at nl, ending at nl + 2.
+            //   UTF-16 BE: pair = [0x00, 0x0A] starting at nl - 1, ending at nl + 1.
+            let (pair_start, next_start) = match encoding {
+                FileEncoding::Utf16Le => (*nl, nl + 2),
+                FileEncoding::Utf16Be => (nl - 1, nl + 1),
+                _ => (*nl, nl + 1),
+            };
+            lines.push(decode_line(&scan[start..pair_start], encoding));
+            start = next_start;
         }
-
-        if lines.is_empty() {
+        // Trailing partial line (or whole content if no newlines).
+        if start < scan.len() {
+            line_offsets.push((bom_len + start) as u64);
+            lines.push(decode_line(&scan[start..], encoding));
+        } else if lines.is_empty() {
+            // Empty file → one empty line.
+            line_offsets.push(bom_len as u64);
             lines.push(String::new());
-            line_offsets.push(0);
+        } else if newlines.last().is_some() {
+            // File ends with a newline → trailing empty line, matching split('\n') legacy.
+            line_offsets.push(bom_len as u64 + scan.len() as u64);
+            lines.push(String::new());
         }
 
         Self {
             lines,
             line_offsets,
             total_bytes,
-            file_name: file_name.to_string(),
+            file_name,
+            encoding,
         }
+    }
+
+    #[allow(dead_code)]
+    pub fn encoding(&self) -> FileEncoding {
+        self.encoding
+    }
+
+    /// Create from in-memory UTF-8 content (for testing). Always opens as UTF-8 with
+    /// the legacy split-on-`\n` semantics that pre-encoding tests rely on.
+    #[cfg(test)]
+    pub fn from_content(content: &str, file_name: &str) -> Self {
+        Self::build_from_bytes(
+            content.as_bytes().to_vec(),
+            content.len() as u64,
+            file_name.to_string(),
+            FileEncoding::Utf8,
+        )
     }
 
     fn resolve_target(&self, target: &SeekTarget) -> usize {

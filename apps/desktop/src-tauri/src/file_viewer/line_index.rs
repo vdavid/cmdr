@@ -15,6 +15,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::ignore_poison::IgnorePoison;
 use memchr::memchr;
 
+use super::encoding::{FileEncoding, NewlineScanner, decode_line, detect};
 use super::search_matcher::{LineScan, Matcher, scan_line_with_matcher};
 use super::{
     BackendCapabilities, FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, LineChunk, SearchMatch, SeekTarget, ViewerError,
@@ -24,6 +25,7 @@ use super::{
 #[derive(Debug, Clone)]
 struct Checkpoint {
     line: usize,
+    /// Absolute file offset of the FIRST byte of the line at index `line`.
     offset: u64,
 }
 
@@ -35,12 +37,18 @@ pub struct LineIndexBackend {
     checkpoints: Vec<Checkpoint>,
     /// Total lines discovered during scan.
     total_lines: usize,
+    encoding: FileEncoding,
 }
 
 impl LineIndexBackend {
-    /// Build the line index by scanning the file. This is blocking and should be run
-    /// in a background thread for large files. Checks `cancel` periodically.
+    /// Build the line index by scanning the file. Auto-detects encoding.
+    #[allow(dead_code)]
     pub fn open(path: &Path, cancel: &AtomicBool) -> Result<Self, ViewerError> {
+        let encoding = detect(path).unwrap_or(FileEncoding::Utf8);
+        Self::open_with_encoding(path, encoding, cancel)
+    }
+
+    pub fn open_with_encoding(path: &Path, encoding: FileEncoding, cancel: &AtomicBool) -> Result<Self, ViewerError> {
         let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
             std::io::ErrorKind::NotFound => ViewerError::NotFound {
                 path: path.display().to_string(),
@@ -57,17 +65,30 @@ impl LineIndexBackend {
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| path.display().to_string());
 
-        // Scan the file to build the sparse line index
+        // Scan the file to build the sparse line index, dispatching to the encoding-aware
+        // newline scanner. The scanner emits absolute file offsets of `0x0A` bytes that
+        // are part of a `U+000A` code unit; we convert that to "start of NEXT line" by
+        // adding 1 (ASCII) or 2 (UTF-16) and adding 1 to `line_number`.
         let mut file = File::open(path)?;
+        // For UTF-16, skip the BOM bytes in our line-numbering accounting but record
+        // the first line's offset as the byte just past the BOM.
+        let bom_len = encoding.bom_bytes().len() as u64;
+        let first_line_offset = if total_bytes >= bom_len { bom_len } else { 0 };
+
         let mut checkpoints = Vec::new();
-        let chunk_size: usize = 256 * 1024; // 256 KB scan buffer
+        let chunk_size: usize = 256 * 1024;
         let mut buf = vec![0u8; chunk_size];
         let mut line_number: usize = 0;
-        let mut byte_offset: u64 = 0;
+        let mut scanner = NewlineScanner::new(encoding, 0);
 
-        // First line always starts at offset 0
-        checkpoints.push(Checkpoint { line: 0, offset: 0 });
+        // First line always starts at the byte just past the BOM.
+        checkpoints.push(Checkpoint {
+            line: 0,
+            offset: first_line_offset,
+        });
 
+        let le = matches!(encoding, FileEncoding::Utf16Le);
+        let nl_unit_bytes: u64 = if encoding.is_ascii_newline_compatible() { 1 } else { 2 };
         loop {
             if cancel.load(Ordering::Relaxed) {
                 return Err(ViewerError::Cancelled);
@@ -78,33 +99,36 @@ impl LineIndexBackend {
                 break;
             }
 
-            let data = &buf[..bytes_read];
-            let mut pos = 0;
+            let chunk = &buf[..bytes_read];
+            // Collect newline offsets from the scanner (it owns absolute-offset state).
+            let mut hits: Vec<u64> = Vec::new();
+            scanner.feed(chunk, |off| hits.push(off));
 
-            while pos < data.len() {
-                if let Some(nl_pos) = memchr(b'\n', &data[pos..]) {
-                    line_number += 1;
-                    let nl_byte_offset = byte_offset + (pos + nl_pos) as u64 + 1;
-
-                    // Store checkpoint every N lines
-                    if line_number.is_multiple_of(INDEX_CHECKPOINT_INTERVAL) {
-                        checkpoints.push(Checkpoint {
-                            line: line_number,
-                            offset: nl_byte_offset,
-                        });
-                    }
-
-                    pos += nl_pos + 1;
+            for nl in &hits {
+                line_number += 1;
+                // Next line starts past the newline code unit.
+                //   ASCII-compatible: nl is the `0x0A` byte; next starts at nl + 1.
+                //   UTF-16 LE: nl is the low byte (0x0A) starting the pair; next at nl + 2.
+                //   UTF-16 BE: nl is the low byte (0x0A) at offset nl, pair starts at nl - 1;
+                //     next at nl + 1 == (nl - 1) + 2.
+                let next_line_offset = if encoding.is_ascii_newline_compatible() {
+                    *nl + 1
+                } else if le {
+                    *nl + 2
                 } else {
-                    break;
+                    *nl + 1
+                };
+                if line_number.is_multiple_of(INDEX_CHECKPOINT_INTERVAL) {
+                    checkpoints.push(Checkpoint {
+                        line: line_number,
+                        offset: next_line_offset,
+                    });
                 }
+                // Compiler: silence dead_code if we end up not using nl_unit_bytes elsewhere.
+                let _ = nl_unit_bytes;
             }
-
-            byte_offset += bytes_read as u64;
         }
 
-        // total_lines is line_number + 1 (for the last line, which may not end with \n)
-        // But if the file ends with \n, the last "line" is empty; we still count it.
         let total_lines = line_number + 1;
 
         Ok(Self {
@@ -113,6 +137,85 @@ impl LineIndexBackend {
             file_name,
             checkpoints,
             total_lines,
+            encoding,
+        })
+    }
+
+    #[allow(dead_code)]
+    pub fn encoding(&self) -> FileEncoding {
+        self.encoding
+    }
+
+    /// Returns a fresh backend with checkpoints extended to cover bytes up to
+    /// `new_size`. Cancellable; if `cancel` flips, returns `Err(Cancelled)` and
+    /// the caller falls back to the prior backend.
+    ///
+    /// Cost: opens the file, seeks to `self.total_bytes`, scans only the new
+    /// range. Memory: the checkpoint vec is cloned (O(checkpoints), cheap — 16
+    /// bytes per checkpoint, ~390 K for a 100 M-line file).
+    #[allow(dead_code)]
+    pub fn extend_to(&self, new_size: u64, cancel: &AtomicBool) -> Result<Self, ViewerError> {
+        if new_size <= self.total_bytes {
+            return Ok(Self {
+                path: self.path.clone(),
+                total_bytes: new_size,
+                file_name: self.file_name.clone(),
+                checkpoints: self.checkpoints.clone(),
+                total_lines: self.total_lines,
+                encoding: self.encoding,
+            });
+        }
+        let mut file = File::open(&self.path)?;
+        file.seek(SeekFrom::Start(self.total_bytes))?;
+
+        let mut checkpoints = self.checkpoints.clone();
+        // total_lines counts the trailing-after-last-`\n` virtual line as +1; reverse it
+        // so we scan from the actual last-newline boundary.
+        let mut line_number = self.total_lines.saturating_sub(1);
+        let mut scanner = NewlineScanner::new(self.encoding, self.total_bytes);
+
+        let chunk_size: usize = 256 * 1024;
+        let mut buf = vec![0u8; chunk_size];
+        let le = matches!(self.encoding, FileEncoding::Utf16Le);
+        let mut remaining = new_size - self.total_bytes;
+        while remaining > 0 {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(ViewerError::Cancelled);
+            }
+            let want = remaining.min(buf.len() as u64) as usize;
+            let bytes_read = file.read(&mut buf[..want])?;
+            if bytes_read == 0 {
+                break;
+            }
+            let chunk = &buf[..bytes_read];
+            let mut hits: Vec<u64> = Vec::new();
+            scanner.feed(chunk, |off| hits.push(off));
+            for nl in &hits {
+                line_number += 1;
+                let next_line_offset = if self.encoding.is_ascii_newline_compatible() {
+                    *nl + 1
+                } else if le {
+                    *nl + 2
+                } else {
+                    *nl + 1
+                };
+                if line_number.is_multiple_of(INDEX_CHECKPOINT_INTERVAL) {
+                    checkpoints.push(Checkpoint {
+                        line: line_number,
+                        offset: next_line_offset,
+                    });
+                }
+            }
+            remaining -= bytes_read as u64;
+        }
+
+        Ok(Self {
+            path: self.path.clone(),
+            total_bytes: new_size,
+            file_name: self.file_name.clone(),
+            checkpoints,
+            total_lines: line_number + 1,
+            encoding: self.encoding,
         })
     }
 
@@ -129,6 +232,19 @@ impl LineIndexBackend {
     /// Read forward from a byte offset, skipping `lines_to_skip` lines,
     /// then returning the next `count` lines.
     fn read_lines_from_checkpoint(
+        &self,
+        start_offset: u64,
+        lines_to_skip: usize,
+        count: usize,
+    ) -> Result<Vec<String>, ViewerError> {
+        if self.encoding.is_ascii_newline_compatible() {
+            self.read_lines_ascii_from(start_offset, lines_to_skip, count)
+        } else {
+            self.read_lines_utf16_from(start_offset, lines_to_skip, count)
+        }
+    }
+
+    fn read_lines_ascii_from(
         &self,
         start_offset: u64,
         lines_to_skip: usize,
@@ -170,7 +286,7 @@ impl LineIndexBackend {
                     }
 
                     let line_bytes = &data[pos..pos + nl_pos];
-                    lines.push(String::from_utf8_lossy(line_bytes).into_owned());
+                    lines.push(decode_line(line_bytes, self.encoding));
                     pos += nl_pos + 1;
 
                     if lines.len() >= count {
@@ -185,7 +301,65 @@ impl LineIndexBackend {
 
         // Handle last line without newline
         if !leftover.is_empty() && lines.len() < count && skipped >= lines_to_skip {
-            lines.push(String::from_utf8_lossy(&leftover).into_owned());
+            lines.push(decode_line(&leftover, self.encoding));
+        }
+
+        Ok(lines)
+    }
+
+    fn read_lines_utf16_from(
+        &self,
+        start_offset: u64,
+        lines_to_skip: usize,
+        count: usize,
+    ) -> Result<Vec<String>, ViewerError> {
+        let mut file = File::open(&self.path)?;
+        let aligned_start = start_offset & !1;
+        file.seek(SeekFrom::Start(aligned_start))?;
+
+        let mut lines: Vec<String> = Vec::with_capacity(count);
+        let mut scanner = NewlineScanner::new(self.encoding, aligned_start);
+        let mut accum: Vec<u8> = Vec::new();
+        let mut line_start: u64 = aligned_start;
+        let mut skipped: usize = 0;
+
+        let le = matches!(self.encoding, FileEncoding::Utf16Le);
+
+        let chunk_size: usize = 64 * 1024;
+        let mut buf = vec![0u8; chunk_size];
+
+        while lines.len() < count {
+            let bytes_read = file.read(&mut buf)?;
+            if bytes_read == 0 {
+                break;
+            }
+            let chunk = &buf[..bytes_read];
+            let mut hits: Vec<u64> = Vec::new();
+            scanner.feed(chunk, |off| hits.push(off));
+            accum.extend_from_slice(chunk);
+
+            for nl_byte_off in &hits {
+                if lines.len() >= count {
+                    break;
+                }
+                let pair_start = if le { *nl_byte_off } else { nl_byte_off - 1 };
+                let next_start = pair_start + 2;
+                let line_len_bytes = (pair_start - line_start) as usize;
+                if skipped < lines_to_skip {
+                    skipped += 1;
+                } else {
+                    let line = decode_line(&accum[..line_len_bytes], self.encoding);
+                    lines.push(line);
+                }
+                let drain = (next_start - line_start) as usize;
+                accum.drain(..drain);
+                line_start = next_start;
+            }
+        }
+
+        // Trailing partial line.
+        if !accum.is_empty() && lines.len() < count && skipped >= lines_to_skip {
+            lines.push(decode_line(&accum, self.encoding));
         }
 
         Ok(lines)
@@ -280,7 +454,7 @@ impl FileViewerBackend for LineIndexBackend {
 
                 if let Some(nl_pos) = memchr(b'\n', &data[pos..]) {
                     let line_bytes = &data[pos..pos + nl_pos];
-                    let line = String::from_utf8_lossy(line_bytes);
+                    let line = decode_line(line_bytes, self.encoding);
                     match scan_line_with_matcher(matcher, &line, line_number, line_byte_offset, cancel, results) {
                         LineScan::HitLimit => limit_reached = true,
                         LineScan::Cancelled => {
@@ -306,7 +480,7 @@ impl FileViewerBackend for LineIndexBackend {
 
         // Handle last line (only reached if limit not hit; loop breaks early otherwise)
         if !leftover.is_empty() {
-            let line = String::from_utf8_lossy(&leftover);
+            let line = decode_line(&leftover, self.encoding);
             let _ = scan_line_with_matcher(matcher, &line, line_number, line_byte_offset, cancel, results);
             scanned += leftover.len() as u64;
         }

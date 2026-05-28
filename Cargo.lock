@@ -1209,6 +1209,7 @@ name = "cmdr"
 version = "0.22.0"
 dependencies = [
  "alphanumeric-sort",
+ "arc-swap",
  "axum",
  "base64 0.22.1",
  "bincode2",
@@ -1223,6 +1224,7 @@ dependencies = [
  "criterion",
  "dirs 6.0.0",
  "ed25519-dalek",
+ "encoding_rs",
  "env_logger 0.11.10",
  "exacl",
  "fern",

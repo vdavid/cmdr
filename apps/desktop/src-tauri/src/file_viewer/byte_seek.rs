@@ -18,6 +18,7 @@ use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use memchr::memchr;
 
+use super::encoding::{FileEncoding, NewlineScanner, decode_line, detect};
 use super::search_matcher::{LineScan, Matcher, scan_line_with_matcher};
 use super::{
     BackendCapabilities, FileViewerBackend, LineChunk, MAX_BACKWARD_SCAN, SearchMatch, SeekTarget, ViewerError,
@@ -27,10 +28,17 @@ pub struct ByteSeekBackend {
     path: std::path::PathBuf,
     total_bytes: u64,
     file_name: String,
+    encoding: FileEncoding,
 }
 
 impl ByteSeekBackend {
+    /// Open with auto-detected encoding.
     pub fn open(path: &Path) -> Result<Self, ViewerError> {
+        let encoding = detect(path).unwrap_or(FileEncoding::Utf8);
+        Self::open_with_encoding(path, encoding)
+    }
+
+    pub fn open_with_encoding(path: &Path, encoding: FileEncoding) -> Result<Self, ViewerError> {
         let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
             std::io::ErrorKind::NotFound => ViewerError::NotFound {
                 path: path.display().to_string(),
@@ -50,7 +58,26 @@ impl ByteSeekBackend {
             path: path.to_path_buf(),
             total_bytes: metadata.len(),
             file_name,
+            encoding,
         })
+    }
+
+    #[allow(dead_code)]
+    pub fn encoding(&self) -> FileEncoding {
+        self.encoding
+    }
+
+    /// Returns a fresh backend with `total_bytes = new_size`. The backend is
+    /// immutable; tail-mode extension produces a new instance and `ArcSwap`s it
+    /// into place. Cancellable for symmetry with `LineIndexBackend::extend_to`.
+    #[allow(dead_code)]
+    pub fn extend_to(&self, new_size: u64, _cancel: &AtomicBool) -> Self {
+        Self {
+            path: self.path.clone(),
+            total_bytes: new_size,
+            file_name: self.file_name.clone(),
+            encoding: self.encoding,
+        }
     }
 
     /// Given a byte offset, scan backward to find the start of the line containing that offset.
@@ -84,6 +111,14 @@ impl ByteSeekBackend {
     /// Read `count` lines starting from `byte_offset`.
     /// Returns the lines and the byte offset just past the last line read.
     fn read_lines_from(&self, start_offset: u64, count: usize) -> Result<(Vec<String>, u64), ViewerError> {
+        if self.encoding.is_ascii_newline_compatible() {
+            self.read_lines_ascii(start_offset, count)
+        } else {
+            self.read_lines_utf16(start_offset, count)
+        }
+    }
+
+    fn read_lines_ascii(&self, start_offset: u64, count: usize) -> Result<(Vec<String>, u64), ViewerError> {
         let mut file = File::open(&self.path)?;
         file.seek(SeekFrom::Start(start_offset))?;
 
@@ -117,7 +152,7 @@ impl ByteSeekBackend {
             while pos < data.len() && lines.len() < count {
                 if let Some(nl_pos) = memchr(b'\n', &data[pos..]) {
                     let line_bytes = &data[pos..pos + nl_pos];
-                    let line = String::from_utf8_lossy(line_bytes).into_owned();
+                    let line = decode_line(line_bytes, self.encoding);
                     lines.push(line);
                     current_offset += (nl_pos + 1) as u64; // +1 for newline
                     pos += nl_pos + 1;
@@ -131,8 +166,78 @@ impl ByteSeekBackend {
 
         // If there's leftover data (last line without newline), add it
         if !leftover.is_empty() && lines.len() < count {
-            let line = String::from_utf8_lossy(&leftover).into_owned();
+            let line = decode_line(&leftover, self.encoding);
             current_offset += leftover.len() as u64;
+            lines.push(line);
+        }
+
+        Ok((lines, current_offset))
+    }
+
+    /// UTF-16 path: drain the file through a `NewlineScanner` and accumulate
+    /// pair-aligned line slices. The scanner's `feed` callback emits absolute
+    /// file offsets, so we keep a `pair_start` tracking the start of the current
+    /// line's pair-aligned region and slice each completed line at the byte
+    /// before the newline code unit.
+    fn read_lines_utf16(&self, start_offset: u64, count: usize) -> Result<(Vec<String>, u64), ViewerError> {
+        let mut file = File::open(&self.path)?;
+        // For UTF-16, every code unit is 2 bytes. Align the start offset down to an
+        // even boundary in case the caller passed a misaligned byte offset (the
+        // backward-scan-for-newline below already returns an even boundary, but
+        // an explicit ByteOffset target may not).
+        let aligned_start = start_offset & !1;
+        file.seek(SeekFrom::Start(aligned_start))?;
+
+        let chunk_size: usize = 64 * 1024;
+        let mut buf = vec![0u8; chunk_size];
+        let mut scanner = NewlineScanner::new(self.encoding, aligned_start);
+        let mut accum: Vec<u8> = Vec::new(); // Bytes from `line_start` to scanner cursor.
+        let mut line_start: u64 = aligned_start;
+        let mut lines: Vec<String> = Vec::with_capacity(count);
+        let mut current_offset = aligned_start;
+
+        let le = matches!(self.encoding, FileEncoding::Utf16Le);
+
+        while lines.len() < count {
+            let bytes_read = file.read(&mut buf)?;
+            if bytes_read == 0 {
+                break;
+            }
+            let chunk = &buf[..bytes_read];
+
+            // Collect newline offsets, then process between hits without re-feeding.
+            let mut hits: Vec<u64> = Vec::new();
+            scanner.feed(chunk, |off| hits.push(off));
+            accum.extend_from_slice(chunk);
+            current_offset += bytes_read as u64;
+
+            for nl_byte_off in &hits {
+                if lines.len() >= count {
+                    break;
+                }
+                // Pair start: LE = nl_byte_off, BE = nl_byte_off - 1
+                let pair_start = if le { *nl_byte_off } else { nl_byte_off - 1 };
+                // Bytes constituting this line (relative to accum start, which is
+                // line_start).
+                let line_len_bytes = (pair_start - line_start) as usize;
+                let line = decode_line(&accum[..line_len_bytes], self.encoding);
+                lines.push(line);
+                // Skip past the 2-byte newline code unit.
+                let next_start = pair_start + 2;
+                let skip = (next_start - line_start) as usize;
+                accum.drain(..skip);
+                line_start = next_start;
+            }
+
+            if current_offset >= self.total_bytes {
+                break;
+            }
+        }
+
+        // Trailing partial line.
+        if !accum.is_empty() && lines.len() < count {
+            let line = decode_line(&accum, self.encoding);
+            current_offset = line_start + accum.len() as u64;
             lines.push(line);
         }
 
@@ -260,7 +365,7 @@ impl FileViewerBackend for ByteSeekBackend {
 
                 if let Some(nl_pos) = memchr(b'\n', &data[pos..]) {
                     let line_bytes = &data[pos..pos + nl_pos];
-                    let line = String::from_utf8_lossy(line_bytes);
+                    let line = decode_line(line_bytes, self.encoding);
                     let cf = scan_line_with_matcher(matcher, &line, line_number, line_byte_offset, cancel, results);
                     match cf {
                         LineScan::HitLimit => limit_reached = true,
@@ -288,7 +393,7 @@ impl FileViewerBackend for ByteSeekBackend {
 
         // Handle last line without newline (only reached if limit not hit; loop breaks early otherwise)
         if !leftover.is_empty() {
-            let line = String::from_utf8_lossy(&leftover);
+            let line = decode_line(&leftover, self.encoding);
             let _ = scan_line_with_matcher(matcher, &line, line_number, line_byte_offset, cancel, results);
             scanned += leftover.len() as u64;
         }

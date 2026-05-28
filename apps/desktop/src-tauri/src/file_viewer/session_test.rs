@@ -6,7 +6,7 @@ use std::thread;
 use std::time::Duration;
 
 use super::session::{self, SearchStatus};
-use super::{FULL_LOAD_THRESHOLD, MAX_SEARCH_MATCHES, RangeEnd, SearchMode, ViewerError};
+use super::{FULL_LOAD_THRESHOLD, FileEncoding, MAX_SEARCH_MATCHES, RangeEnd, SearchMode, ViewerError};
 
 /// Default mode for existing tests: literal, case-sensitive (matches pre-mode behaviour
 /// for ASCII queries). Tests that exercise case-insensitivity should pass an explicit
@@ -982,5 +982,163 @@ fn test_regex_search_returns_matches() {
     assert!(done, "regex search did not complete");
 
     session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+// -- Encoding-switch tests --------------------------------------------------------
+
+fn encode_utf16_le(s: &str) -> Vec<u8> {
+    let mut out = Vec::new();
+    for ch in s.encode_utf16() {
+        out.extend_from_slice(&ch.to_le_bytes());
+    }
+    out
+}
+
+#[test]
+fn get_encoding_options_returns_detected_and_all() {
+    let dir = create_test_dir("enc_options");
+    // UTF-8 with high-bit Latin-1 (Windows-1252-detectable).
+    let file = dir.join("latin1.txt");
+    fs::write(&file, b"caf\xE9\n").unwrap();
+
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let opts = session::get_encoding_options(&result.session_id).unwrap();
+    assert_eq!(opts.detected, FileEncoding::Windows1252);
+    assert_eq!(opts.current, FileEncoding::Windows1252);
+    assert!(opts.all.len() >= 8, "expected all 8 encodings, got {}", opts.all.len());
+    assert!(opts.all.iter().any(|c| c.encoding == FileEncoding::Utf8));
+    assert!(opts.all.iter().any(|c| c.encoding == FileEncoding::Utf16Le));
+
+    session::close_session(&result.session_id).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn set_encoding_full_load_swaps_decoder() {
+    let dir = create_test_dir("enc_full_load_swap");
+    // 0xE9 = 'é' in Windows-1252 / 'í' in Mac Roman / lone 0xE9 in UTF-8 is U+FFFD.
+    let file = dir.join("bytes.txt");
+    fs::write(&file, b"caf\xE9\n").unwrap();
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    assert!(matches!(result.backend_type, session::BackendType::FullLoad));
+
+    // Currently Windows-1252 (detected): line should decode as "café".
+    let chunk = session::get_lines(&result.session_id, super::SeekTarget::Line(0), 1).unwrap();
+    assert_eq!(chunk.lines[0], "café");
+
+    // Force UTF-8: the high byte becomes U+FFFD.
+    session::set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
+    let chunk = session::get_lines(&result.session_id, super::SeekTarget::Line(0), 1).unwrap();
+    assert_eq!(chunk.lines[0], "caf\u{FFFD}");
+
+    session::close_session(&result.session_id).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn set_encoding_large_file_utf8_to_utf16_rebuilds_under_new_encoding() {
+    let dir = create_test_dir("enc_large_utf16_rebuild");
+    // Build a > 1 MB file in UTF-16 LE so the backend ends up as ByteSeek + LineIndex.
+    let line_utf16 = encode_utf16_le("hello world\n");
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line_utf16.len()) + 200;
+    let mut bytes = Vec::with_capacity(line_utf16.len() * line_count);
+    for _ in 0..line_count {
+        bytes.extend_from_slice(&line_utf16);
+    }
+    let file = dir.join("big-utf16.txt");
+    fs::write(&file, &bytes).unwrap();
+
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    // Detector should already pick UTF-16 LE via parity. Decode of line 0 = "hello world".
+    let initial = &result.initial_lines.lines;
+    assert!(
+        initial.iter().any(|l| l == "hello world"),
+        "expected 'hello world' lines, got {:?}",
+        initial.iter().take(3).collect::<Vec<_>>()
+    );
+
+    // Force UTF-8: each "hello world" line becomes a garbled string (every other byte 0x00),
+    // but the backend doesn't crash and `get_lines` still returns content.
+    session::set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
+    // Wait briefly for the BG rebuild thread to complete (or time out).
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(8) {
+        let opts = session::get_encoding_options(&result.session_id).unwrap();
+        assert_eq!(opts.current, FileEncoding::Utf8);
+        if !session::test_only_rebuilding_active(&result.session_id) {
+            break;
+        }
+        thread::sleep(Duration::from_millis(20));
+    }
+    // Status should not loop forever.
+    assert!(
+        !session::test_only_rebuilding_active(&result.session_id),
+        "rebuild did not complete within 8 s"
+    );
+
+    session::close_session(&result.session_id).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_append_during_encoding_rebuild_not_dropped() {
+    // The drain-and-swap protocol: a watcher Grew(eof) event queued in
+    // session.pending_grew during the rebuild must be picked up by the rebuild
+    // thread's swap critical section, so the final LineIndex covers the new EOF
+    // (not just the pre-rebuild EOF).
+    //
+    // We simulate the watcher by calling test_only_push_pending_grew directly
+    // (the actual watcher lands in milestone 3).
+    let dir = create_test_dir("enc_append_during_rebuild");
+    // Start with a > 1 MB Windows-1252 file.
+    let line = "x".repeat(80) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 200;
+    let mut content: String = line.repeat(line_count);
+    let file = dir.join("big.txt");
+    fs::write(&file, &content).unwrap();
+    let original_size = fs::metadata(&file).unwrap().len();
+
+    let result = session::open_session(file.to_str().unwrap()).unwrap();
+
+    // Append 10 KB BEFORE the rebuild starts; the on-disk file is now bigger than
+    // what the backend knows about. The test queues this new EOF and verifies that
+    // the rebuild's drain-and-swap protocol picks it up.
+    let suffix = "y".repeat(10_000) + "\n";
+    content.push_str(&suffix);
+    fs::write(&file, &content).unwrap();
+    let new_size = fs::metadata(&file).unwrap().len();
+    assert!(new_size > original_size);
+
+    // Queue the new EOF before triggering the rebuild.
+    session::test_only_push_pending_grew(&result.session_id, new_size);
+
+    // Force a non-instant encoding swap (UTF-8 -> UTF-16 LE) so the rebuild runs.
+    session::set_encoding(&result.session_id, FileEncoding::Utf16Le).unwrap();
+
+    // Wait for rebuild to finish.
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(10) {
+        if !session::test_only_rebuilding_active(&result.session_id) {
+            break;
+        }
+        thread::sleep(Duration::from_millis(20));
+    }
+    assert!(
+        !session::test_only_rebuilding_active(&result.session_id),
+        "rebuild did not complete"
+    );
+
+    // The final backend should cover the FULL new_size (not the pre-append size).
+    // We can't read total_bytes directly from outside; use get_lines with a Fraction
+    // target near 1.0 — the chunk's `total_bytes` field reflects the backend's
+    // current total.
+    let chunk = session::get_lines(&result.session_id, super::SeekTarget::Fraction(0.0), 1).unwrap();
+    assert_eq!(
+        chunk.total_bytes, new_size,
+        "rebuild must absorb the queued append (drain-and-swap protocol)"
+    );
+
+    session::close_session(&result.session_id).unwrap();
     cleanup(&dir);
 }

@@ -252,10 +252,11 @@ fn binary_content_handled() {
     let backend = FullLoadBackend::open(&file).unwrap();
     let chunk = backend.get_lines(&SeekTarget::Line(0), 10).unwrap();
 
-    // Should have 2 lines (split on \n)
+    // Detector picks Windows-1252 (failing-UTF-8 fallback), which maps every byte
+    // 1:1 to a codepoint — so binary bytes don't produce replacement characters,
+    // but the newline split still gives two lines.
     assert_eq!(chunk.lines.len(), 2);
-    // Binary bytes become replacement characters
-    assert!(chunk.lines[0].contains('\u{FFFD}'));
+    assert!(!chunk.lines[0].is_empty());
 
     cleanup(&dir);
 }

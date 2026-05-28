@@ -4,8 +4,8 @@ use tokio::time::Duration;
 
 use super::util::{IpcError, blocking_result_with_timeout};
 use crate::file_viewer::{
-    self, LineChunk, RangeEnd, SearchMode, SearchPollResult, SeekTarget, ViewerError, ViewerOpenResult,
-    ViewerSessionStatus,
+    self, EncodingOptions, FileEncoding, LineChunk, RangeEnd, SearchMode, SearchPollResult, SeekTarget, ViewerError,
+    ViewerOpenResult, ViewerSessionStatus,
 };
 use log::debug;
 use tauri::Manager;
@@ -188,6 +188,24 @@ pub async fn viewer_write_range_to_file(
         }),
         Err(_) => Err(ViewerError::TimedOut),
     }
+}
+
+/// Returns the encoding dropdown payload: current selection, detected encoding, and the
+/// full list of selectable encodings (with their labels and groups). The FE renders the
+/// dropdown directly from this payload — no encoding list lives on the FE.
+#[tauri::command]
+#[specta::specta]
+pub fn viewer_get_encoding_options(session_id: String) -> Result<EncodingOptions, String> {
+    file_viewer::get_encoding_options(&session_id).map_err(|e| e.to_string())
+}
+
+/// Switches the active encoding for a session. Returns immediately; if the swap
+/// requires a background reindex (most cases except UTF-8 ↔ Windows-1252-family),
+/// the FE polls `viewer_get_status` for `is_indexing` to track completion.
+#[tauri::command]
+#[specta::specta]
+pub fn viewer_set_encoding(session_id: String, encoding: FileEncoding) -> Result<(), String> {
+    file_viewer::set_encoding(&session_id, encoding).map_err(|e| e.to_string())
 }
 
 /// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).

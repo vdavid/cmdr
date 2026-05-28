@@ -731,6 +731,20 @@ export const commands = {
   viewerSetWordWrap: (label: string, checked: boolean) =>
     typedError<null, string>(__TAURI_INVOKE('viewer_set_word_wrap', { label, checked })),
   /**
+   *  Returns the encoding dropdown payload: current selection, detected encoding, and the
+   *  full list of selectable encodings (with their labels and groups). The FE renders the
+   *  dropdown directly from this payload — no encoding list lives on the FE.
+   */
+  viewerGetEncodingOptions: (sessionId: string) =>
+    typedError<EncodingOptions, string>(__TAURI_INVOKE('viewer_get_encoding_options', { sessionId })),
+  /**
+   *  Switches the active encoding for a session. Returns immediately; if the swap
+   *  requires a background reindex (most cases except UTF-8 ↔ Windows-1252-family),
+   *  the FE polls `viewer_get_status` for `is_indexing` to track completion.
+   */
+  viewerSetEncoding: (sessionId: string, encoding: FileEncoding) =>
+    typedError<null, string>(__TAURI_INVOKE('viewer_set_encoding', { sessionId, encoding })),
+  /**
    *  Checks if font metrics are available for a font ID.
    *
    *  # Arguments
@@ -2281,6 +2295,26 @@ export type DiscoveryState =
   // Initial burst is complete, still listening.
   | 'active'
 
+// One row in the encoding dropdown.
+export type EncodingChoice = {
+  encoding: FileEncoding
+  label: string
+  group: EncodingGroup
+}
+
+// Coarse grouping for the encoding dropdown's `<optgroup>` split.
+export type EncodingGroup = 'unicode' | 'western'
+
+/**
+ *  Returned by `viewer_get_encoding_options`: current selection, detected encoding, and
+ *  the full list of dropdown rows. The FE shows `detected` with a "(Detected)" suffix.
+ */
+export type EncodingOptions = {
+  current: FileEncoding
+  detected: FileEncoding
+  all: EncodingChoice[]
+}
+
 export type EncryptionInfoDto = {
   active: boolean
   cipher: string | null
@@ -2332,6 +2366,25 @@ export type ErrorCategory =
   | 'needs_action'
   // Something is genuinely broken (I/O hardware issues, corrupted data).
   | 'serious'
+
+/**
+ *  User-selectable text encoding for the file viewer.
+ *
+ *  The variants are deliberately narrow: every entry is something a user is
+ *  likely to need (UTF-8 + BOM, the Western single-byte family, UTF-16 in both
+ *  orders). EBCDIC, UTF-32, UTF-7, and the various DOS / Mac code pages are
+ *  out of scope until requested; `encoding_rs` supports them so extending later
+ *  is just an enum + dropdown addition.
+ */
+export type FileEncoding =
+  | 'utf8'
+  | 'utf8WithBom'
+  | 'windows1252'
+  | 'iso8859_1'
+  | 'macRoman'
+  | 'usAscii'
+  | 'utf16Le'
+  | 'utf16Be'
 
 /**
  *  Represents a file or directory entry with extended metadata.
@@ -3618,6 +3671,8 @@ export type ViewerOpenResult = {
   initialLines: LineChunk
   // ByteSeek -> LineIndex upgrade in progress.
   isIndexing: boolean
+  // Auto-detected encoding (also the initial selection of the picker).
+  encoding: FileEncoding
 }
 
 // Current status of a viewer session.

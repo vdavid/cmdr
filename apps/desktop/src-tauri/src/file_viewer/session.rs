@@ -10,12 +10,15 @@ use std::sync::{Arc, LazyLock, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use arc_swap::ArcSwap;
+
 use crate::commands::file_system::expand_tilde;
 use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use serde::Serialize;
 
 use super::byte_seek::ByteSeekBackend;
+use super::encoding::{FileEncoding, detect, same_byte_layout};
 use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::range_read::{RangeEnd, read_range as do_read_range};
@@ -34,6 +37,47 @@ pub enum BackendType {
     LineIndex,
 }
 
+/// One row in the encoding dropdown.
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct EncodingChoice {
+    pub encoding: FileEncoding,
+    pub label: String,
+    pub group: super::encoding::EncodingGroup,
+}
+
+/// Returned by `viewer_get_encoding_options`: current selection, detected encoding, and
+/// the full list of dropdown rows. The FE shows `detected` with a "(Detected)" suffix.
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct EncodingOptions {
+    pub current: FileEncoding,
+    pub detected: FileEncoding,
+    pub all: Vec<EncodingChoice>,
+}
+
+/// All encodings the viewer offers, in dropdown order (Unicode first, then Western).
+fn all_encoding_choices() -> Vec<EncodingChoice> {
+    use FileEncoding::*;
+    [
+        Utf8,
+        Utf8WithBom,
+        Utf16Le,
+        Utf16Be,
+        Windows1252,
+        Iso8859_1,
+        MacRoman,
+        UsAscii,
+    ]
+    .iter()
+    .map(|enc| EncodingChoice {
+        encoding: *enc,
+        label: enc.label().to_string(),
+        group: enc.group(),
+    })
+    .collect()
+}
+
 /// Result returned when opening a viewer session.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -49,6 +93,8 @@ pub struct ViewerOpenResult {
     pub initial_lines: LineChunk,
     /// ByteSeek -> LineIndex upgrade in progress.
     pub is_indexing: bool,
+    /// Auto-detected encoding (also the initial selection of the picker).
+    pub encoding: FileEncoding,
 }
 
 /// Current status of a viewer session.
@@ -103,14 +149,32 @@ struct SearchState {
 
 /// A viewer session wraps a backend and tracks search state.
 struct ViewerSession {
-    /// `Arc` so a long-running range read can clone the pointer and drop the SESSIONS
-    /// lock while the read iterates lines (which can take seconds for 100 MB selections).
-    /// The upgrade thread replaces the Arc when ByteSeek -> LineIndex completes.
-    backend: Arc<dyn FileViewerBackend>,
-    backend_type: BackendType,
+    /// `ArcSwap` so background threads (ByteSeek → LineIndex upgrade, encoding rebuild,
+    /// tail-mode `extend_to`) can replace the backend without a write lock on the
+    /// `get_lines` read path. Each backend is immutable; readers pick up either the
+    /// old or new backend atomically. Document rationale: `file_viewer/CLAUDE.md`
+    /// § "ArcSwap rather than RwLock."
+    backend: Arc<ArcSwap<Box<dyn FileViewerBackend>>>,
+    backend_type: Mutex<BackendType>,
     search: Option<SearchState>,
     /// Set when upgrading from ByteSeek to LineIndex in the background.
-    upgrading: Option<Arc<AtomicBool>>,
+    upgrading: Mutex<Option<Arc<AtomicBool>>>,
+    /// Set when an encoding-switch rebuild is in flight. Same `AtomicBool` pattern as
+    /// `upgrading`: the rebuild thread reads it to see if it's been superseded by a
+    /// rapid follow-up `set_encoding`.
+    rebuilding: Mutex<Option<Arc<AtomicBool>>>,
+    /// Latest pending `Grew(eof)` from the (future) watcher manager. Both the upgrade
+    /// thread and the encoding-rebuild thread drain this inside their swap critical
+    /// section so a tail append arriving mid-rebuild isn't silently dropped. Documented
+    /// protocol: drain-read → optional `extend_to` → `ArcSwap::store` → clear flag,
+    /// all under one mutex lock.
+    pending_grew: Mutex<Option<u64>>,
+    /// Current encoding. Updated atomically with the backend swap on `set_encoding`.
+    #[allow(dead_code)]
+    encoding: Mutex<FileEncoding>,
+    /// Detected encoding at open time (sticky; never changes after `open_session`).
+    #[allow(dead_code)]
+    detected_encoding: FileEncoding,
     /// Per-read cancel flags. Each `read_range` call inserts an entry keyed by the FE's
     /// `read_id`, removes it on completion (cancelled or not). The FE generates fresh
     /// ids per call (a monotonic counter is fine; uniqueness within a session is all
@@ -118,6 +182,14 @@ struct ViewerSession {
     /// affect a follow-up read that started in the same gesture.
     active_reads: Mutex<HashMap<u64, Arc<AtomicBool>>>,
     path: PathBuf,
+}
+
+impl ViewerSession {
+    /// Loads a freshly cloned `Arc` to the current backend. Holds no lock so calls to
+    /// `get_lines` can run in parallel.
+    fn load_backend(&self) -> Arc<Box<dyn FileViewerBackend>> {
+        self.backend.load_full()
+    }
 }
 
 /// Global session cache.
@@ -154,23 +226,28 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
     let metadata = std::fs::metadata(&file_path)?;
     let file_size = metadata.len();
 
-    let (backend, backend_type, upgrading): (Arc<dyn FileViewerBackend>, BackendType, Option<Arc<AtomicBool>>) =
+    // Auto-detect encoding at open time. Used as the initial encoding for every backend.
+    let detected_encoding = detect(&file_path).unwrap_or(FileEncoding::Utf8);
+
+    let (backend_box, backend_type, upgrading): (Box<dyn FileViewerBackend>, BackendType, Option<Arc<AtomicBool>>) =
         if file_size <= FULL_LOAD_THRESHOLD {
-            let b = FullLoadBackend::open(&file_path)?;
-            (Arc::new(b), BackendType::FullLoad, None)
+            let b = FullLoadBackend::open_with_encoding(&file_path, detected_encoding)?;
+            (Box::new(b), BackendType::FullLoad, None)
         } else {
             // Start with ByteSeek (instant), then upgrade to LineIndex in background
-            let b = ByteSeekBackend::open(&file_path)?;
+            let b = ByteSeekBackend::open_with_encoding(&file_path, detected_encoding)?;
             let cancel = Arc::new(AtomicBool::new(false));
-            (Arc::new(b), BackendType::ByteSeek, Some(cancel))
+            (Box::new(b), BackendType::ByteSeek, Some(cancel))
         };
 
     // Get initial lines
-    let initial_lines = backend.get_lines(&SeekTarget::Line(0), INITIAL_LINE_COUNT)?;
-    let capabilities = backend.capabilities();
-    let total_bytes = backend.total_bytes();
-    let total_lines = backend.total_lines();
-    let file_name = backend.file_name().to_string();
+    let initial_lines = backend_box.get_lines(&SeekTarget::Line(0), INITIAL_LINE_COUNT)?;
+    let capabilities = backend_box.capabilities();
+    let total_bytes = backend_box.total_bytes();
+    let total_lines = backend_box.total_lines();
+    let file_name = backend_box.file_name().to_string();
+
+    let backend: Arc<ArcSwap<Box<dyn FileViewerBackend>>> = Arc::new(ArcSwap::from_pointee(backend_box));
 
     let session_id = generate_session_id();
 
@@ -195,38 +272,61 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
                 );
                 cancel_for_timeout.store(true, Ordering::Relaxed);
                 // Mark session as no longer indexing
-                if let Ok(mut sessions) = SESSIONS.lock()
-                    && let Some(session) = sessions.get_mut(&session_id_for_timeout)
+                if let Ok(sessions) = SESSIONS.lock()
+                    && let Some(session) = sessions.get(&session_id_for_timeout)
                 {
-                    session.upgrading = None;
+                    *session.upgrading.lock_ignore_poison() = None;
+                    // Drop any pending tail-append: ByteSeek has no line index to
+                    // extend, so a queued EOF is no-op until next FS event.
+                    *session.pending_grew.lock_ignore_poison() = None;
                 }
             }
         });
 
-        // Spawn indexing thread
+        // Spawn indexing thread.
+        // The upgrade follows the drain-and-swap-under-lock protocol from
+        // `file_viewer/CLAUDE.md` § "Drain-and-swap protocol": after scanning, we
+        // acquire `pending_grew` lock and (a) optionally extend the new LineIndex to
+        // the latest tail-mode EOF, (b) `ArcSwap::store` the new backend, (c) clear
+        // `upgrading`, all inside one critical section. This makes the swap atomic
+        // from the watcher's point of view; any append that arrives during the
+        // window is queued in `pending_grew` and consumed by the swap.
+        let encoding_for_upgrade = detected_encoding;
         thread::spawn(move || {
-            match LineIndexBackend::open(&path_clone, &cancel_for_indexer) {
+            match LineIndexBackend::open_with_encoding(&path_clone, encoding_for_upgrade, &cancel_for_indexer) {
                 Ok(new_backend) => {
                     if !cancel_for_indexer.load(Ordering::Relaxed) {
-                        let mut sessions = SESSIONS.lock_ignore_poison();
-                        if let Some(session) = sessions.get_mut(&session_id_clone) {
+                        let sessions = SESSIONS.lock_ignore_poison();
+                        if let Some(session) = sessions.get(&session_id_clone) {
                             debug!(
                                 "Indexing completed for session {}, upgrading to LineIndex",
                                 session_id_clone
                             );
-                            session.backend = Arc::new(new_backend);
-                            session.backend_type = BackendType::LineIndex;
-                            session.upgrading = None;
+                            // Drain-and-swap critical section.
+                            let mut pending_lock = session.pending_grew.lock_ignore_poison();
+                            let pending = pending_lock.take();
+                            let final_backend: Box<dyn FileViewerBackend> = match pending {
+                                Some(eof) if eof > new_backend.total_bytes() => {
+                                    match new_backend.extend_to(eof, &cancel_for_indexer) {
+                                        Ok(extended) => Box::new(extended),
+                                        Err(_) => Box::new(new_backend),
+                                    }
+                                }
+                                _ => Box::new(new_backend),
+                            };
+                            session.backend.store(Arc::new(final_backend));
+                            *session.backend_type.lock_ignore_poison() = BackendType::LineIndex;
+                            *session.upgrading.lock_ignore_poison() = None;
+                            drop(pending_lock);
                         }
                     }
                 }
                 Err(e) => {
                     debug!("Indexing failed for session {}: {}", session_id_clone, e);
-                    // Mark as no longer indexing
-                    if let Ok(mut sessions) = SESSIONS.lock()
-                        && let Some(session) = sessions.get_mut(&session_id_clone)
+                    if let Ok(sessions) = SESSIONS.lock()
+                        && let Some(session) = sessions.get(&session_id_clone)
                     {
-                        session.upgrading = None;
+                        *session.upgrading.lock_ignore_poison() = None;
                     }
                 }
             }
@@ -235,9 +335,13 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
 
     let session = ViewerSession {
         backend,
-        backend_type: backend_type.clone(),
+        backend_type: Mutex::new(backend_type.clone()),
         search: None,
-        upgrading: upgrade_cancel,
+        upgrading: Mutex::new(upgrade_cancel),
+        rebuilding: Mutex::new(None),
+        pending_grew: Mutex::new(None),
+        encoding: Mutex::new(detected_encoding),
+        detected_encoding,
         active_reads: Mutex::new(HashMap::new()),
         path: file_path,
     };
@@ -267,6 +371,7 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         capabilities,
         initial_lines,
         is_indexing,
+        encoding: detected_encoding,
     };
 
     SESSIONS.lock_ignore_poison().insert(session_id, session);
@@ -280,27 +385,36 @@ pub fn get_session_status(session_id: &str) -> Result<ViewerSessionStatus, Viewe
     let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
         session_id: session_id.to_string(),
     })?;
+    let backend = session.load_backend();
+    let is_indexing =
+        session.upgrading.lock_ignore_poison().is_some() || session.rebuilding.lock_ignore_poison().is_some();
 
     Ok(ViewerSessionStatus {
-        backend_type: session.backend_type.clone(),
-        is_indexing: session.upgrading.is_some(),
-        total_lines: session.backend.total_lines(),
+        backend_type: session.backend_type.lock_ignore_poison().clone(),
+        is_indexing,
+        total_lines: backend.total_lines(),
     })
 }
 
 /// Gets a range of lines from a session.
 pub fn get_lines(session_id: &str, target: SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
-    let sessions = SESSIONS.lock_ignore_poison();
-    let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
-        session_id: session_id.to_string(),
-    })?;
+    let (backend, backend_type) = {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+            session_id: session_id.to_string(),
+        })?;
+        (
+            session.load_backend(),
+            session.backend_type.lock_ignore_poison().clone(),
+        )
+    };
 
     debug!(
         "get_lines: session={}, backend_type={:?}, target={:?}, count={}",
-        session_id, session.backend_type, target, count
+        session_id, backend_type, target, count
     );
 
-    session.backend.get_lines(&target, count)
+    backend.get_lines(&target, count)
 }
 
 /// Starts a background search in the given session.
@@ -480,7 +594,7 @@ pub fn search_poll(session_id: &str, since_index: usize) -> Result<SearchPollRes
         session_id: session_id.to_string(),
     })?;
 
-    let total_bytes = session.backend.total_bytes();
+    let total_bytes = session.load_backend().total_bytes();
 
     match &session.search {
         None => Ok(SearchPollResult {
@@ -557,10 +671,10 @@ pub fn read_range(session_id: &str, read_id: u64, anchor: RangeEnd, focus: Range
         })?;
         let flag = Arc::new(AtomicBool::new(false));
         session.active_reads.lock_ignore_poison().insert(read_id, flag.clone());
-        (session.backend.clone(), flag)
+        (session.load_backend(), flag)
     };
 
-    let result = do_read_range(backend.as_ref(), anchor, focus, &cancel_flag);
+    let result = do_read_range(backend.as_ref().as_ref(), anchor, focus, &cancel_flag);
 
     // Always unregister, whether the read succeeded, failed, or was cancelled.
     if let Ok(sessions) = SESSIONS.lock()
@@ -622,6 +736,195 @@ pub fn cancel_read(session_id: &str, read_id: u64) -> Result<(), ViewerError> {
     Ok(())
 }
 
+/// Returns the list of selectable encodings plus the currently-active and detected
+/// encoding for this session. The FE renders the dropdown directly from this; no
+/// hard-coded encoding list lives on the FE.
+pub fn get_encoding_options(session_id: &str) -> Result<EncodingOptions, ViewerError> {
+    let sessions = SESSIONS.lock_ignore_poison();
+    let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+        session_id: session_id.to_string(),
+    })?;
+    Ok(EncodingOptions {
+        current: *session.encoding.lock_ignore_poison(),
+        detected: session.detected_encoding,
+        all: all_encoding_choices(),
+    })
+}
+
+/// Switches the active encoding for an open session.
+///
+/// Two modes:
+///
+/// - **Instant** when [`same_byte_layout`] holds: only the decoder changes; the
+///   newline index stays valid. This is the UTF-8 ↔ Windows-1252 ↔ Mac Roman case.
+///   The current backend's `encoding` field is read by `get_lines` / `search`, so we
+///   need to actually swap in a fresh backend with the new encoding — but no
+///   reindex is needed. ByteSeek and FullLoad just reopen with the new encoding;
+///   for LineIndex we'd want to keep the index. We approximate this today by
+///   reopening LineIndex too (cheap relative to the actual file scan because the
+///   newline scanner is `memchr`-fast for ASCII-compatible encodings). Future
+///   refactor: stash a new backend with the same checkpoints + new encoding without
+///   re-scanning.
+/// - **Rebuild** otherwise: swap to a fresh ByteSeek so the viewport stays
+///   interactive, then spawn a thread that rebuilds the LineIndex (or FullLoad)
+///   under the new encoding. The thread follows the drain-and-swap-under-lock
+///   protocol: drain `pending_grew`, optionally `extend_to`, `backend.store`, clear
+///   `rebuilding`, all inside one `pending_grew` mutex critical section.
+///
+/// Returns immediately. The FE polls `get_session_status` for `is_indexing` and
+/// switches its progress indicator like for the initial ByteSeek → LineIndex upgrade.
+pub fn set_encoding(session_id: &str, new_encoding: FileEncoding) -> Result<(), ViewerError> {
+    let path;
+    let was_full_load;
+    let current_encoding;
+    let prev_cancel: Option<Arc<AtomicBool>>;
+    {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+            session_id: session_id.to_string(),
+        })?;
+        path = session.path.clone();
+        was_full_load = matches!(*session.backend_type.lock_ignore_poison(), BackendType::FullLoad);
+        current_encoding = *session.encoding.lock_ignore_poison();
+        // Cancel any in-flight rebuild from a previous set_encoding call. The earlier
+        // rebuild observes the flag and exits; the new rebuild owns the swap.
+        prev_cancel = session.rebuilding.lock_ignore_poison().clone();
+    }
+    if current_encoding == new_encoding {
+        return Ok(());
+    }
+    if let Some(cancel) = prev_cancel {
+        cancel.store(true, Ordering::Relaxed);
+    }
+
+    // FullLoad path: reopen + atomic swap. Fast enough on <1 MB files that no
+    // background thread is needed.
+    if was_full_load {
+        let new_backend: Box<dyn FileViewerBackend> =
+            Box::new(FullLoadBackend::open_with_encoding(&path, new_encoding)?);
+        let sessions = SESSIONS.lock_ignore_poison();
+        if let Some(session) = sessions.get(session_id) {
+            session.backend.store(Arc::new(new_backend));
+            *session.encoding.lock_ignore_poison() = new_encoding;
+        }
+        return Ok(());
+    }
+
+    // Instant-swap path: when the byte layout is identical (same BOM + both
+    // ASCII-newline-compatible), the existing LineIndex is still valid. Reopen
+    // ByteSeek with the new encoding — the index will be rebuilt in the background
+    // anyway, but the viewport stays interactive without a visible blip. Future:
+    // share checkpoints across the swap. The instant case is small enough today
+    // (ASCII Latin-1 swaps) that paying for one extra `memchr` scan is fine.
+    let instant = same_byte_layout(current_encoding, new_encoding);
+    if instant {
+        debug!(
+            "set_encoding: instant swap {:?} -> {:?} (same byte layout)",
+            current_encoding, new_encoding
+        );
+    }
+
+    // Large-file path: snap to ByteSeek immediately so the viewport stays interactive,
+    // then rebuild LineIndex under the new encoding in the background.
+    let bs = ByteSeekBackend::open_with_encoding(&path, new_encoding)?;
+    let bs_box: Box<dyn FileViewerBackend> = Box::new(bs);
+    let cancel = Arc::new(AtomicBool::new(false));
+    {
+        let sessions = SESSIONS.lock_ignore_poison();
+        if let Some(session) = sessions.get(session_id) {
+            session.backend.store(Arc::new(bs_box));
+            *session.backend_type.lock_ignore_poison() = BackendType::ByteSeek;
+            *session.encoding.lock_ignore_poison() = new_encoding;
+            *session.rebuilding.lock_ignore_poison() = Some(cancel.clone());
+        }
+    }
+
+    let session_id_clone = session_id.to_string();
+    let path_clone = path;
+    let cancel_for_thread = cancel.clone();
+    thread::spawn(move || {
+        match LineIndexBackend::open_with_encoding(&path_clone, new_encoding, &cancel_for_thread) {
+            Ok(new_backend) => {
+                if cancel_for_thread.load(Ordering::Relaxed) {
+                    return;
+                }
+                let sessions = SESSIONS.lock_ignore_poison();
+                if let Some(session) = sessions.get(&session_id_clone) {
+                    // Make sure we're still the owning rebuild before swapping.
+                    let still_owner = session
+                        .rebuilding
+                        .lock_ignore_poison()
+                        .as_ref()
+                        .map(|c| Arc::ptr_eq(c, &cancel_for_thread))
+                        .unwrap_or(false);
+                    if !still_owner {
+                        return;
+                    }
+                    // Drain-and-swap critical section.
+                    let mut pending_lock = session.pending_grew.lock_ignore_poison();
+                    let pending = pending_lock.take();
+                    let final_backend: Box<dyn FileViewerBackend> = match pending {
+                        Some(eof) if eof > new_backend.total_bytes() => {
+                            match new_backend.extend_to(eof, &cancel_for_thread) {
+                                Ok(extended) => Box::new(extended),
+                                Err(_) => Box::new(new_backend),
+                            }
+                        }
+                        _ => Box::new(new_backend),
+                    };
+                    session.backend.store(Arc::new(final_backend));
+                    *session.backend_type.lock_ignore_poison() = BackendType::LineIndex;
+                    *session.rebuilding.lock_ignore_poison() = None;
+                    drop(pending_lock);
+                }
+            }
+            Err(_) => {
+                let sessions = SESSIONS.lock_ignore_poison();
+                if let Some(session) = sessions.get(&session_id_clone) {
+                    let still_owner = session
+                        .rebuilding
+                        .lock_ignore_poison()
+                        .as_ref()
+                        .map(|c| Arc::ptr_eq(c, &cancel_for_thread))
+                        .unwrap_or(false);
+                    if still_owner {
+                        *session.rebuilding.lock_ignore_poison() = None;
+                    }
+                }
+            }
+        }
+    });
+
+    Ok(())
+}
+
+/// Test-only hook: simulates a watcher `Grew(eof)` event by writing into the session's
+/// `pending_grew` queue. Drives `test_append_during_encoding_rebuild_not_dropped`
+/// without standing up the (milestone-3) FS watcher.
+#[cfg(test)]
+pub fn test_only_push_pending_grew(session_id: &str, eof: u64) {
+    let sessions = SESSIONS.lock_ignore_poison();
+    if let Some(session) = sessions.get(session_id) {
+        let mut q = session.pending_grew.lock_ignore_poison();
+        let next = match *q {
+            Some(prev) => prev.max(eof),
+            None => eof,
+        };
+        *q = Some(next);
+    }
+}
+
+/// Test-only hook: reads the rebuilding flag's strong-count parity (Some/None) to
+/// help tests block-poll for completion without sleeping.
+#[cfg(test)]
+pub fn test_only_rebuilding_active(session_id: &str) -> bool {
+    let sessions = SESSIONS.lock_ignore_poison();
+    sessions
+        .get(session_id)
+        .map(|s| s.rebuilding.lock_ignore_poison().is_some())
+        .unwrap_or(false)
+}
+
 /// Returns the count of currently-active reads. Test-only helper for asserting that
 /// a cancelled or completed read cleaned up its `active_reads` entry.
 #[cfg(test)]
@@ -642,8 +945,12 @@ pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
             search.cancel.store(true, Ordering::Relaxed);
         }
         // Cancel any ongoing upgrade
-        if let Some(upgrade_cancel) = &session.upgrading {
+        if let Some(upgrade_cancel) = session.upgrading.lock_ignore_poison().as_ref() {
             upgrade_cancel.store(true, Ordering::Relaxed);
+        }
+        // Cancel any ongoing encoding rebuild
+        if let Some(rebuild_cancel) = session.rebuilding.lock_ignore_poison().as_ref() {
+            rebuild_cancel.store(true, Ordering::Relaxed);
         }
         // Cancel any in-flight range reads so they exit promptly with `Cancelled`.
         for flag in session.active_reads.lock_ignore_poison().values() {

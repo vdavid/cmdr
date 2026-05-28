@@ -26,11 +26,13 @@ mod search_matcher_test;
 #[cfg(test)]
 mod session_test;
 
+pub use encoding::FileEncoding;
 pub use range_read::RangeEnd;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
-    SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session, get_lines, get_session_status,
-    open_session, read_range, search_cancel, search_poll, search_start, write_range_to_file,
+    EncodingOptions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session,
+    get_encoding_options, get_lines, get_session_status, open_session, read_range, search_cancel, search_poll,
+    search_start, set_encoding, write_range_to_file,
 };
 
 use serde::Serialize;
