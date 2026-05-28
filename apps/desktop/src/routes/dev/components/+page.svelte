@@ -4,12 +4,14 @@
     import Buttons from './sections/Buttons.svelte'
     import Links from './sections/Links.svelte'
     import Groups from './sections/Groups.svelte'
+    import ToggleGroupSection from './sections/ToggleGroupSection.svelte'
     import Dialogs from './sections/Dialogs.svelte'
     import Toasts from './sections/Toasts.svelte'
     import Progress from './sections/Progress.svelte'
     import Loading from './sections/Loading.svelte'
     import Tooltips from './sections/Tooltips.svelte'
     import SizeBadges from './sections/SizeBadges.svelte'
+    import DateLabelSection from './sections/DateLabelSection.svelte'
     import CommandBoxSection from './sections/CommandBoxSection.svelte'
     import EmptyStates from './sections/EmptyStates.svelte'
 
@@ -31,12 +33,14 @@
         'buttons',
         'links',
         'groups',
+        'toggle-group',
         'dialogs',
         'toasts',
         'progress',
         'loading',
         'tooltips',
         'size-badges',
+        'date-label',
         'commandbox',
         'empty-states',
     ] as const
@@ -140,12 +144,14 @@
         <Buttons />
         <Links />
         <Groups />
+        <ToggleGroupSection />
         <Dialogs />
         <Toasts />
         <Progress />
         <Loading />
         <Tooltips />
         <SizeBadges />
+        <DateLabelSection />
         <CommandBoxSection />
         <EmptyStates />
     </div>

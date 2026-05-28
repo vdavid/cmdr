@@ -24,12 +24,14 @@
         | 'components-buttons'
         | 'components-links'
         | 'components-groups'
+        | 'components-toggle-group'
         | 'components-dialogs'
         | 'components-toasts'
         | 'components-progress'
         | 'components-loading'
         | 'components-tooltips'
         | 'components-size-badges'
+        | 'components-date-label'
         | 'components-commandbox'
         | 'components-empty-states'
 
@@ -55,12 +57,14 @@
                 { id: 'components-buttons', label: 'Buttons' },
                 { id: 'components-links', label: 'Links' },
                 { id: 'components-groups', label: 'Groups' },
+                { id: 'components-toggle-group', label: 'Toggle group' },
                 { id: 'components-dialogs', label: 'Dialogs' },
                 { id: 'components-toasts', label: 'Toasts' },
                 { id: 'components-progress', label: 'Progress' },
                 { id: 'components-loading', label: 'Loading' },
                 { id: 'components-tooltips', label: 'Tooltips' },
                 { id: 'components-size-badges', label: 'Size badges' },
+                { id: 'components-date-label', label: 'Date label' },
                 { id: 'components-commandbox', label: 'CommandBox' },
                 { id: 'components-empty-states', label: 'Empty states' },
             ],

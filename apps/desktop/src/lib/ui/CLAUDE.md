@@ -18,6 +18,7 @@ Reusable UI components used across the entire desktop app.
 | `Size.svelte`            | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
 | `SectionCard.svelte`     | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
 | `ToggleGroup.svelte`     | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
+| `DateLabel.svelte`       | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
 | `toast/`                 | Centralized toast notification system: store, container, item                                  |
 
 ## Not part of this module: soft sheets
@@ -261,6 +262,30 @@ The `<Size>` component always renders the friendly dynamic form regardless of th
 matters; tooltips, dialogs, breadcrumbs, and inline `<Size>` callouts read more clearly with the self-describing dynamic
 format. The file-list column renders `formatSizeForDisplay` directly (passing the active unit) because it also needs the
 mismatch-warning + cursor-row neutralization treatment.
+
+## DateLabel
+
+`DateLabel.svelte`: canonical inline renderer for a file's modified date. Wraps `formattedDate(modifiedAt)` from
+`lib/settings/reactive-settings.svelte.ts` so it picks up the current `appearance.dateTimeFormat` and
+`appearance.dateColors` automatically. Each segment carries its own age-tier class (year / month / day / time) so the
+active date palette colors components independently; literals (separators) and tier-less segments render plain. Empty
+input (`null` / `undefined`) renders nothing.
+
+Props:
+
+| Prop         | Type                          | Notes                                                                                   |
+| ------------ | ----------------------------- | --------------------------------------------------------------------------------------- |
+| `modifiedAt` | `number \| null \| undefined` | Unix timestamp in seconds (matches `FileEntry`)                                         |
+| `class`      | `string?`                     | Optional class on the outer `<span>` wrapper, in case the parent needs to scope spacing |
+
+Use this anywhere you'd otherwise reach for `formatDateTime` or hand-roll a date string. The one consumer that opts out
+is `FullList.svelte`: its column-alignment story needs the two halves rendered into specific elements (`.date-left` /
+`.date-right`), so it uses the same `formattedDate(...)` data directly. Keep it that way.
+
+The wrapper sets `font-variant-numeric: tabular-nums` and `white-space: nowrap` so dates align vertically in lists.
+
+See the parent `lib/settings/CLAUDE.md` § "Date display" for the full one-source-of-truth chain (`formatDateForDisplay`,
+the per-component tier rules in `age-tier-utils.ts`, and the HTML-string variant for tooltips / MCP responses).
 
 ## SectionCard
 
