@@ -27,7 +27,7 @@ const TAIL_FIXTURE_PATH = path.join(TAIL_FIXTURE_DIR, 'tailable.log')
 // when the append fires (auto-scroll only triggers when the user is at EOF).
 const INITIAL_LINES: string[] = []
 for (let i = 0; i < 50; i++) {
-  INITIAL_LINES.push(`seed line ${i}`)
+  INITIAL_LINES.push(`seed line ${String(i)}`)
 }
 const INITIAL_CONTENT = INITIAL_LINES.join('\n') + '\n'
 
@@ -38,8 +38,13 @@ async function openViewerForFile(mainPage: TauriPage, filePath: string): Promise
 }
 
 test.describe('File viewer tail mode', () => {
-  let viewer: TauriPage
-  let viewerLabel: string
+  let viewer: TauriPage | undefined
+  let viewerLabel: string | undefined
+
+  // FSEvents debounce (300 ms) plus the BE-side coalescer plus the FE refetch
+  // budget pushes this test past the default 8 s in slow-CI conditions. The
+  // poll deadline below is 10 s; allow another window for open + setup.
+  test.describe.configure({ timeout: 30000 })
 
   test.beforeAll(() => {
     fs.writeFileSync(TAIL_FIXTURE_PATH, INITIAL_CONTENT, 'utf-8')
@@ -54,23 +59,33 @@ test.describe('File viewer tail mode', () => {
   })
 
   test.beforeEach(async ({ tauriPage }) => {
-    // Refresh the file each run so totals aren't carried over from a previous
-    // run leaving the viewport already at EOF.
+    viewer = undefined
+    viewerLabel = undefined
+    // Refresh the file each run so a previous run's append isn't carried over.
     fs.writeFileSync(TAIL_FIXTURE_PATH, INITIAL_CONTENT, 'utf-8')
-    viewer = await openViewerForFile(tauriPage as TauriPage, TAIL_FIXTURE_PATH)
-    const wl = viewer.targetWindow
-    if (!wl) throw new Error('Scoped viewer page has no targetWindow label')
-    viewerLabel = wl
+    const v = await openViewerForFile(tauriPage as TauriPage, TAIL_FIXTURE_PATH)
+    if (!v.targetWindow) throw new Error('Scoped viewer page has no targetWindow label')
+    viewer = v
+    viewerLabel = v.targetWindow
   })
 
   test.afterEach(async ({ tauriPage }) => {
-    await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
+    // Guard the close path: if beforeEach failed, viewer may be undefined and
+    // a blind closeScopedWindow with undefined label would poll for 5 s
+    // looking for a window that doesn't exist and starve the next test's
+    // budget.
+    if (viewer && viewerLabel !== undefined) {
+      await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
+    }
   })
 
   test('enabling tail mode auto-extends the viewport on append', async () => {
+    if (!viewer) throw new Error('viewer was not opened in beforeEach')
+    const v = viewer
+
     // Find and click the tail toggle. It carries `aria-label="Tail mode: ..."`.
-    await viewer.waitForSelector('button[aria-label^="Tail mode"]', 5000)
-    await viewer.evaluate(`
+    await v.waitForSelector('button[aria-label^="Tail mode"]', 5000)
+    await v.evaluate(`
       (function () {
         const btn = document.querySelector('button[aria-label^="Tail mode"]')
         if (!btn) throw new Error('tail toggle not found')
@@ -82,7 +97,7 @@ test.describe('File viewer tail mode', () => {
     await expect
       .poll(
         async () => {
-          return await viewer.evaluate<string | null>(`
+          return await v.evaluate<string | null>(`
             (function () {
               const btn = document.querySelector('button[aria-label^="Tail mode"]')
               return btn ? btn.getAttribute('aria-checked') : null
@@ -94,7 +109,7 @@ test.describe('File viewer tail mode', () => {
       .toBe('true')
 
     // Capture the initial total-lines count from the status bar.
-    const initialLines = await viewer.evaluate<number>(`
+    const initialLines = await v.evaluate<number>(`
       (function () {
         // The status bar shows lines/bytes; we count rendered lines instead so
         // we don't have to parse the formatted total.
@@ -119,7 +134,7 @@ test.describe('File viewer tail mode', () => {
     await expect
       .poll(
         async () => {
-          return await viewer.evaluate<boolean>(`
+          return await v.evaluate<boolean>(`
             (function () {
               const text = document.body.textContent || ''
               return text.includes('appended via tail E2E')

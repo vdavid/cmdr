@@ -19,7 +19,7 @@ immediately to business-logic modules. No significant logic lives here.
 | `icons.rs` | File icons | `get_icons`, `refresh_directory_icons`, cache clear |
 | `rename.rs` | Rename / trash | `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`), `check_rename_permission`, `check_rename_validity`, `rename_file`. `rename_file` calls `notify_mutation` after success to update the listing cache (both local and volume-aware paths). |
 | `restricted_paths.rs` | TCC-restricted paths | `get_restricted_paths`: read-only snapshot for the frontend store bootstrap. See `crate::restricted_paths` for the underlying state machine and the `restricted-paths-changed` event payload. |
-| `file_viewer.rs` | File viewer | Session lifecycle, line search, word wrap, menu state |
+| `file_viewer.rs` | File viewer | Session lifecycle, regex/literal search with mode flags, word wrap, menu state, encoding pickers (`viewer_set_encoding` / `viewer_get_encoding_options`), tail mode (`viewer_set_tail_mode`), `viewer_reload` |
 | `ui.rs` | UI / menu | Context menu (file/breadcrumb/tab/network host), Finder reveal, clipboard, Quick Look, Get Info, view mode, `set_menu_context` (enables/disables file-scoped menu items based on window focus), `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive eviction/download via `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`) |
 | `settings.rs` | Settings | Port availability check, watcher debounce, menu accelerator updates, and live-apply setters for `network.directSmbConnection`, `advanced.filterSafeSaveArtifacts`, `network.smbConcurrency` |
 | `mcp.rs` | MCP server | `set_mcp_enabled`, `set_mcp_port`: live start/stop/port-change of the MCP server without app restart |
