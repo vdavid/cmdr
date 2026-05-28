@@ -105,9 +105,15 @@
         onAppendDetected: () => {
             // Tail mode is on: the backend already extended its index in
             // response to the watcher event. Refetch the visible window so the
-            // user sees the new bytes immediately.
+            // user sees the new bytes immediately, and restart the indexing
+            // poll so the status bar's `totalLines` / `totalBytes` reflect the
+            // new content (the BE advanced `total_bytes` inside
+            // `apply_tail_extend`, but the FE state is updated by the poll).
+            // The poll self-terminates once it sees `is_indexing: false` again,
+            // so this is cheap.
             scroll.lineCache.clear()
             scroll.fetchVisibleNow()
+            indexingPoll.start()
         },
     })
 

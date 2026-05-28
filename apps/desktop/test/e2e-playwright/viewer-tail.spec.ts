@@ -22,12 +22,14 @@ import type { TauriPage } from '@srsholmes/tauri-playwright'
 const TAIL_FIXTURE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cmdr-viewer-tail-'))
 const TAIL_FIXTURE_PATH = path.join(TAIL_FIXTURE_DIR, 'tailable.log')
 
-// Seed with enough lines that the viewport doesn't start at EOF — the
-// auto-scroll assertion below depends on the viewport being away from EOF
-// when the append fires (auto-scroll only triggers when the user is at EOF).
+// Seed with enough lines to push the backend over the 1 MB FullLoad
+// threshold so it picks ByteSeek + LineIndex. FullLoad doesn't support
+// `extend_to`, so tail mode is a no-op on FullLoad files. Each line is
+// ~84 bytes ("seed line NNNNNNNN " + 60 'x' chars + "\n"), so we need
+// ~12.5k lines for 1 MB.
 const INITIAL_LINES: string[] = []
-for (let i = 0; i < 50; i++) {
-  INITIAL_LINES.push(`seed line ${String(i)}`)
+for (let i = 0; i < 15000; i++) {
+  INITIAL_LINES.push(`seed line ${String(i).padStart(8, '0')} ${'x'.repeat(60)}`)
 }
 const INITIAL_CONTENT = INITIAL_LINES.join('\n') + '\n'
 
@@ -108,46 +110,47 @@ test.describe('File viewer tail mode', () => {
       )
       .toBe('true')
 
-    // Capture the initial total-lines count from the status bar.
-    const initialLines = await v.evaluate<number>(`
-      (function () {
-        // The status bar shows lines/bytes; we count rendered lines instead so
-        // we don't have to parse the formatted total.
-        const rows = document.querySelectorAll('.line')
-        return rows.length
-      })()
-    `)
+    // Capture the initial total-lines count from the status bar. The status bar
+    // text contains "<N> lines"; we parse that integer so the assertion is
+    // robust against any future status-bar wording tweak.
+    function statusLines(): Promise<number | null> {
+      return v.evaluate<number | null>(`
+        (function () {
+          const bar = document.querySelector('.status-bar')
+          if (!bar) return null
+          const match = (bar.textContent || '').match(/(\\d+)\\s+lines?/)
+          return match ? Number(match[1]) : null
+        })()
+      `)
+    }
+    const initialLines = await statusLines()
+    expect(initialLines).not.toBeNull()
     expect(initialLines).toBeGreaterThan(0)
 
     // Append on the Node side. fs.appendFile is async; we await its promise
     // before polling so the assertion isn't racing with the write itself.
     const appended = '\nappended via tail E2E\nsecond appended line\n'
     await fs.promises.appendFile(TAIL_FIXTURE_PATH, appended, 'utf-8')
-
-    // Wait until the rendered rows include one of the appended lines OR the
-    // total-bytes status reflects the new size. We use rendered-content
-    // matching rather than scroll position because the viewport auto-scroll
-    // policy ("only auto-scroll if the user is at EOF") doesn't apply in the
-    // initial-render case; what we really care about is that the BE picked
-    // up the append and the FE has refetched lines.
     const expectedSize = fs.statSync(TAIL_FIXTURE_PATH).size
+    expect(expectedSize).toBeGreaterThan(INITIAL_CONTENT.length)
+
+    // Wait until the status-bar line count reflects the new content. The
+    // BE-side path: FSEvents debounce (~300 ms) → ViewerWatcher classification
+    // → session handler → `apply_tail_extend` → `total_bytes` advances →
+    // status poll surfaces the new totalLines. We assert on totalLines (a
+    // structural property) rather than rendered line content because the
+    // viewport stays at the top after the append; the appended bytes live at
+    // EOF and aren't in the rendered range.
     await expect
       .poll(
         async () => {
-          return await v.evaluate<boolean>(`
-            (function () {
-              const text = document.body.textContent || ''
-              return text.includes('appended via tail E2E')
-            })()
-          `)
+          const now = await statusLines()
+          return now !== null && initialLines !== null && now > initialLines
         },
         // Generous deadline: FSEvents debounce on macOS is ~300 ms, plus
-        // BE-side debouncer + tail extend + FE refetch.
-        { timeout: 10000 },
+        // BE-side debouncer + tail extend + FE indexing poll.
+        { timeout: 15000 },
       )
       .toBe(true)
-
-    // Sanity: the file on disk grew, and the BE total-bytes status reflects it.
-    expect(expectedSize).toBeGreaterThan(INITIAL_CONTENT.length)
   })
 })
