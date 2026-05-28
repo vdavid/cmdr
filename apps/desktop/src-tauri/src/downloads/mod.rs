@@ -67,11 +67,11 @@ pub mod commands;
 mod filter;
 mod ignore_set;
 mod latest_ring;
-mod runtime;
+pub mod runtime;
 pub mod watcher;
 
 pub use filter::is_eligible;
 pub use ignore_set::IgnoreSet;
 pub use latest_ring::LatestRing;
-pub use runtime::refresh_runtime;
+pub use runtime::{note_pending_write_for_cmdr, refresh_runtime};
 pub use watcher::{DownloadsWatcher, WatcherError, desired_running};

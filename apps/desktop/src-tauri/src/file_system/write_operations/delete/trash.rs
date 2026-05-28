@@ -130,6 +130,11 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
             continue;
         }
 
+        // Defensive: register with the downloads watcher's ignore set so a
+        // future "deleted from Downloads" event source wouldn't surprise us.
+        // No-ops outside ~/Downloads.
+        crate::downloads::note_pending_write_for_cmdr(source);
+
         // Attempt to trash the item
         match move_to_trash_sync(source) {
             Ok(()) => {

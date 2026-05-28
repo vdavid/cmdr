@@ -32,6 +32,27 @@ use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
+/// Resolve `path` against `volume.local_path()` and register it with the
+/// downloads watcher's ignore set. Skips silently when `volume` isn't
+/// local-FS-backed: those paths can't trigger the watcher anyway.
+fn note_pending_for_local_volume(volume: &Arc<dyn Volume>, path: &Path) {
+    let Some(root) = volume.local_path() else {
+        return;
+    };
+    let absolute = if path.as_os_str().is_empty() || path == Path::new(".") {
+        root
+    } else if path.is_absolute() {
+        if path.starts_with(&root) || root == Path::new("/") {
+            path.to_path_buf()
+        } else {
+            root.join(path.strip_prefix("/").unwrap_or(path))
+        }
+    } else {
+        root.join(path)
+    };
+    crate::downloads::note_pending_write_for_cmdr(&absolute);
+}
+
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
 
@@ -800,6 +821,13 @@ pub(super) async fn move_within_same_volume_with_progress(
                             .and_then(|m| m.size)
                             .unwrap_or(0),
                     };
+
+                    // Register both halves with the downloads watcher's
+                    // ignore set when the volume is local-FS-backed.
+                    // No-ops otherwise. Same rationale as `commands/rename.rs`:
+                    // suppress both the arrival and the move-out.
+                    note_pending_for_local_volume(&volume, &source_path);
+                    note_pending_for_local_volume(&volume, &dest_item_path);
 
                     volume
                         .rename(&source_path, &dest_item_path, false)

@@ -51,16 +51,10 @@ struct State {
 #[derive(Debug)]
 pub struct IgnoreSet {
     state: Mutex<State>,
-    #[allow(dead_code, reason = "Read by note_pending, which is M3's hook contract")]
     max_entries: usize,
-    #[allow(dead_code, reason = "Read by note_pending, which is M3's hook contract")]
     downloads_root: PathBuf,
 }
 
-#[allow(
-    dead_code,
-    reason = "note_pending/note_pending_batch are M3's hook contract; M2b only wires is_pending"
-)]
 impl IgnoreSet {
     /// Build an ignore set scoped to `downloads_root`. Paths outside this
     /// root will silently no-op on `note_pending`.
@@ -106,7 +100,13 @@ impl IgnoreSet {
         }
     }
 
-    /// Bulk version of [`Self::note_pending`].
+    /// Bulk version of [`Self::note_pending`]. Reserved for future call
+    /// sites with a full destination list up front (transfer driver, etc.);
+    /// the per-file path is what M3 wires today.
+    #[allow(
+        dead_code,
+        reason = "M3 hook contract surface; per-file note_pending is what's wired today"
+    )]
     pub fn note_pending_batch(&self, paths: Vec<PathBuf>, ttl: Duration) {
         for p in paths {
             self.note_pending(p, ttl);
@@ -124,7 +124,9 @@ impl IgnoreSet {
         s.map.contains_key(path)
     }
 
-    /// Current entry count. Performs lazy expiry first.
+    /// Current entry count. Performs lazy expiry first. Test-only: no
+    /// production caller reads this; only the unit tests below.
+    #[cfg(test)]
     pub fn len(&self) -> usize {
         let now = Instant::now();
         let mut s = self.state.lock().expect("IgnoreSet poisoned");

@@ -118,6 +118,30 @@ Rates and ETA are computed in the backend (`eta.rs`) and shipped on every `Write
 
 **Special files skipped.** Sockets, FIFOs, and device files are filtered out during scan.
 
+## Cmdr-own-write hook (downloads watcher)
+
+Every write-op driver MUST register its destination with the downloads watcher's ignore set BEFORE issuing the syscall. This is what makes the watcher silently suppress events Cmdr itself caused, so the user doesn't see a "Downloaded foo.bin" toast when they just used Cmdr to copy 100 files into `~/Downloads`.
+
+**Contract:** call `crate::downloads::note_pending_write_for_cmdr(&dest_path)` immediately before the write syscall (or the volume-trait equivalent: `Volume::write_from_stream`, `Volume::create_file`, `Volume::create_directory`, `Volume::rename`, `Volume::delete`). For batches with a known full destination list up front, `note_pending_writes_for_cmdr(paths)` saves N-1 mutex acquires.
+
+**Locked-in scoping:** the prefix check lives INSIDE the helper (and the underlying `IgnoreSet::note_pending`). Call sites invoke unconditionally; paths outside the resolved Downloads root silently no-op. **Don't add `if path.starts_with(downloads_dir)` guards at call sites** — see [`docs/specs/downloads-watcher-plan.md`](../../../../../docs/specs/downloads-watcher-plan.md) § "Cmdr-own-write ignore set" for the rationale.
+
+**No-op when the watcher is dormant.** If the FDA gate is closed (or `refresh_runtime` hasn't been called yet), the watcher isn't installed and the helper is a cheap no-op (single mutex `lock + is_none`). Production write ops fire freely; the cost is one atomic-bool read per write.
+
+**Renames register both halves.** A rename moves a file out of one location into another. The Cmdr-own-write contract requires registering both the source path (so a rename-OUT-of-Downloads is also suppressed via the watcher's rename-from-ignored-source branch) and the destination path (so the rename-arrival event is suppressed). See `commands/rename.rs::rename_file` and `transfer/move_op.rs` for the pattern.
+
+**Cross-volume writes that land on a local FS** (MTP→Local, SMB→Local) hook via the local helper inside `transfer/volume_strategy.rs::note_pending_for_local_dest` and `transfer/volume_move.rs::note_pending_for_local_volume`. They check `dest_volume.local_path()` first and skip when the destination isn't a local-FS-backed volume (MTP/SMB/InMemory) — those paths can't trigger the watcher anyway.
+
+Example placement:
+
+```rust
+// In `copy_single_item` (transfer/copy.rs), just before `copy_file_with_strategy`:
+crate::downloads::note_pending_write_for_cmdr(&actual_dest);
+let bytes = copy_file_with_strategy(source, &actual_dest, ..)?;
+```
+
+See also: [`apps/desktop/src-tauri/src/downloads/CLAUDE.md`](../../downloads/CLAUDE.md) for the watcher architecture, ignore-set internals, and the FDA-gated lifecycle. End-to-end safety net for the contract lives in `downloads::runtime::tests::note_pending_write_for_cmdr_suppresses_watcher_event_end_to_end`.
+
 ## Events emitted
 
 | Event | Trigger |

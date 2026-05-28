@@ -749,6 +749,10 @@ pub(super) fn copy_single_item(
             }
         }
 
+        // Register the symlink destination with the downloads watcher's
+        // ignore set before issuing the syscall; no-ops outside ~/Downloads.
+        crate::downloads::note_pending_write_for_cmdr(&actual_dest);
+
         #[cfg(target_os = "macos")]
         {
             copy_symlink(source, &actual_dest)?;
@@ -813,6 +817,13 @@ pub(super) fn copy_single_item(
                 message: "Operation cancelled by user".to_string(),
             });
         }
+
+        // Register the destination with the downloads watcher's ignore set
+        // before issuing the syscall; no-ops outside ~/Downloads. Placed
+        // after the cancellation check so a cancel-just-before-write doesn't
+        // leak an entry — the 5 s TTL would clean it up anyway, but this
+        // keeps the map tighter under cancel-heavy workloads.
+        crate::downloads::note_pending_write_for_cmdr(&actual_dest);
 
         // Copy file using appropriate strategy (network, safe overwrite, or native)
         // Create progress callback for intra-file progress reporting on network filesystems

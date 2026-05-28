@@ -18,6 +18,10 @@ pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
 
+    // Defensive registration with the downloads watcher's ignore set; no-ops
+    // outside ~/Downloads.
+    crate::downloads::note_pending_write_for_cmdr(&path_buf);
+
     tokio::time::timeout(
         Duration::from_secs(15),
         tokio::task::spawn_blocking(move || move_to_trash_sync(&path_buf)),
@@ -118,6 +122,14 @@ pub async fn rename_file(from: String, to: String, force: bool, volume_id: Optio
         let from_path = PathBuf::from(&from);
         let to_path = PathBuf::from(&to);
 
+        // Register both halves of the rename with the downloads watcher's
+        // ignore set: `to` so the rename-arrival event is suppressed, `from`
+        // so a Cmdr-initiated move OUT of Downloads is also suppressed
+        // (the watcher's rename-from-ignored-source branch checks this).
+        // No-ops for paths outside ~/Downloads.
+        crate::downloads::note_pending_write_for_cmdr(&from_path);
+        crate::downloads::note_pending_write_for_cmdr(&to_path);
+
         tokio::time::timeout(Duration::from_secs(5), volume.rename(&from_path, &to_path, force))
             .await
             .map_err(|_| IpcError::timeout())?
@@ -131,6 +143,10 @@ pub async fn rename_file(from: String, to: String, force: bool, volume_id: Optio
 
         let from_for_notify = from_path.clone();
         let to_for_notify = to_path.clone();
+
+        // See volume-aware branch above for the dual-registration rationale.
+        crate::downloads::note_pending_write_for_cmdr(&from_path);
+        crate::downloads::note_pending_write_for_cmdr(&to_path);
 
         tokio::time::timeout(
             Duration::from_secs(5),

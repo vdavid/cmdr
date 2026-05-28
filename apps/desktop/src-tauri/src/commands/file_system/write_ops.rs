@@ -77,6 +77,10 @@ pub(super) async fn create_directory_core(
         let parent_path_owned = parent_path.to_string();
         let name_owned = name.to_string();
 
+        // Register the new directory path with the downloads watcher's
+        // ignore set; no-ops for paths outside ~/Downloads.
+        crate::downloads::note_pending_write_for_cmdr(&new_path);
+
         // Use spawn_blocking to run the Volume operation in a context where
         // tokio::runtime::Handle::current() is available (needed for MtpVolume)
         tokio::time::timeout(Duration::from_secs(5), volume.create_directory(&new_path_clone))
@@ -99,6 +103,7 @@ pub(super) async fn create_directory_core(
     // Fallback for unknown volumes (shouldn't happen in practice)
     let mut new_path = PathBuf::from(&expanded_path);
     new_path.push(name);
+    crate::downloads::note_pending_write_for_cmdr(&new_path);
     std::fs::create_dir(&new_path)
         .map_err(|e| match e.kind() {
             std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),
@@ -142,6 +147,10 @@ pub(super) async fn create_file_core(
         let parent_path_owned = parent_path.to_string();
         let name_owned = name.to_string();
 
+        // Register the new file path with the downloads watcher's ignore
+        // set; no-ops for paths outside ~/Downloads.
+        crate::downloads::note_pending_write_for_cmdr(&new_path);
+
         tokio::time::timeout(Duration::from_secs(5), volume.create_file(&new_path_clone, b""))
             .await
             .map_err(|_| IpcError::timeout())?
@@ -162,6 +171,7 @@ pub(super) async fn create_file_core(
     // Fallback for unknown volumes (shouldn't happen in practice)
     let mut new_path = PathBuf::from(&expanded_path);
     new_path.push(name);
+    crate::downloads::note_pending_write_for_cmdr(&new_path);
     std::fs::File::create_new(&new_path)
         .map_err(|e| match e.kind() {
             std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),

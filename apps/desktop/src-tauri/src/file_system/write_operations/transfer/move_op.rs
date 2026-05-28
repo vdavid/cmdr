@@ -161,6 +161,12 @@ fn move_with_rename(
                     &mut apply_to_all_resolution,
                 )? {
                     Some(resolved) => {
+                        // Register both halves with the downloads watcher's
+                        // ignore set: destination so rename-arrival is
+                        // suppressed, source so a Cmdr move OUT of Downloads
+                        // is also suppressed. No-ops outside ~/Downloads.
+                        crate::downloads::note_pending_write_for_cmdr(source);
+                        crate::downloads::note_pending_write_for_cmdr(&resolved.path);
                         fs::rename(source, &resolved.path).with_path(source)?;
                         move_tx.record(source.clone(), resolved.path);
                     }
@@ -172,6 +178,8 @@ fn move_with_rename(
                 }
             } else {
                 // No conflict, so just rename
+                crate::downloads::note_pending_write_for_cmdr(source);
+                crate::downloads::note_pending_write_for_cmdr(&dest_path);
                 fs::rename(source, &dest_path).with_path(source)?;
                 move_tx.record(source.clone(), dest_path);
             }
@@ -287,6 +295,10 @@ fn merge_move_directory(
                 apply_to_all_resolution,
             )? {
                 Some(resolved) => {
+                    // Hook the downloads watcher's ignore set for both
+                    // halves of the rename; no-ops outside ~/Downloads.
+                    crate::downloads::note_pending_write_for_cmdr(&source_child);
+                    crate::downloads::note_pending_write_for_cmdr(&resolved.path);
                     fs::rename(&source_child, &resolved.path).with_path(&source_child)?;
                     move_tx.record(source_child, resolved.path);
                 }
@@ -298,6 +310,8 @@ fn merge_move_directory(
             }
         } else {
             // No conflict, just rename
+            crate::downloads::note_pending_write_for_cmdr(&source_child);
+            crate::downloads::note_pending_write_for_cmdr(&dest_child);
             fs::rename(&source_child, &dest_child).with_path(&source_child)?;
             move_tx.record(source_child, dest_child);
         }
@@ -502,6 +516,10 @@ fn move_with_staging(
                     &mut apply_to_all_resolution,
                 )? {
                     Some(resolved) => {
+                        // Cross-FS move: stage→final lands the file at its
+                        // final visible name. Register so the watcher
+                        // suppresses; no-ops outside ~/Downloads.
+                        crate::downloads::note_pending_write_for_cmdr(&resolved.path);
                         fs::rename(&staged_path, &resolved.path).map_err(|e| WriteOperationError::IoError {
                             path: staged_path.display().to_string(),
                             message: format!("Failed to move from staging: {}", e),
@@ -520,6 +538,7 @@ fn move_with_staging(
                 }
             } else {
                 // No conflict, just rename from staging to final
+                crate::downloads::note_pending_write_for_cmdr(&final_path);
                 fs::rename(&staged_path, &final_path).map_err(|e| WriteOperationError::IoError {
                     path: staged_path.display().to_string(),
                     message: format!("Failed to move from staging: {}", e),

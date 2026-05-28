@@ -38,10 +38,6 @@ use super::{IgnoreSet, LatestRing, is_eligible};
 
 /// How long an `IgnoreSet` entry lives by default. Browser FS events land
 /// within a few hundred ms of the syscall; 5 s is plenty of headroom.
-#[allow(
-    dead_code,
-    reason = "M3 hook contract; M2b lands the surface, M3 wires the call sites"
-)]
 pub const DEFAULT_IGNORE_TTL: Duration = Duration::from_secs(5);
 
 /// `notify-debouncer-full` window. Matches the listing watcher's default
@@ -239,10 +235,6 @@ pub struct DownloadsWatcher {
     // Held to keep the OS watch alive; never read directly.
     #[allow(dead_code, reason = "Debouncer must outlive the watcher to keep notify alive")]
     debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
-    #[allow(
-        dead_code,
-        reason = "Read by note_pending_write* (M3 hook contract); the notify callback holds its own Arc clone"
-    )]
     ignore_set: Arc<IgnoreSet>,
     latest_ring: Arc<LatestRing>,
     downloads_root: PathBuf,
@@ -335,15 +327,16 @@ impl DownloadsWatcher {
     /// `/var/folders/...` → `/private/var/folders/...`). The file leaf may
     /// not exist yet — that's the whole point of the pre-write hook — so
     /// canonicalization happens at parent-dir granularity.
-    #[allow(dead_code, reason = "M3 hook contract; write-ops call this just before each syscall")]
     pub fn note_pending_write(&self, path: PathBuf, ttl: Duration) {
         self.ignore_set.note_pending(canonicalize_for_match(&path), ttl);
     }
 
-    /// Bulk version of [`Self::note_pending_write`].
+    /// Bulk version of [`Self::note_pending_write`]. Reserved for future
+    /// call sites with a known full destination list (transfer driver,
+    /// etc.); the per-file [`Self::note_pending_write`] is what M3 wires.
     #[allow(
         dead_code,
-        reason = "M3 hook contract; transfer driver calls this with the destination batch"
+        reason = "Hook contract surface; per-file note_pending_write is what's wired today"
     )]
     pub fn note_pending_writes(&self, paths: Vec<PathBuf>, ttl: Duration) {
         let canonical: Vec<PathBuf> = paths.iter().map(|p| canonicalize_for_match(p)).collect();

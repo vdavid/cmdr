@@ -84,6 +84,12 @@ async fn stream_pipe_file(
 ) -> Result<u64, VolumeError> {
     log::debug!("stream_pipe_file: {} -> {}", source_path.display(), dest_path.display());
 
+    // Register the destination with the downloads watcher's ignore set
+    // when the destination is local-FS-backed (the only case where the
+    // watcher could otherwise fire). Covers MTP→Local and SMB→Local
+    // imports that land in ~/Downloads.
+    note_pending_for_local_dest(dest_volume, dest_path);
+
     let stream = source_volume
         .open_read_stream_with_hint(source_path, source_size_hint)
         .await?;
@@ -91,6 +97,31 @@ async fn stream_pipe_file(
     dest_volume
         .write_from_stream(dest_path, size, stream, on_file_progress)
         .await
+}
+
+/// Resolve `dest_path` against `dest_volume.local_path()` and register it
+/// with the downloads watcher's ignore set. Skips silently when
+/// `dest_volume` isn't local-FS-backed (MTP, SMB, in-memory): those paths
+/// would never trigger the watcher anyway, and synthesizing a non-local
+/// path into the ignore set would just churn the map for no benefit.
+fn note_pending_for_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: &Path) {
+    let Some(root) = dest_volume.local_path() else {
+        return;
+    };
+    // Mirror `LocalPosixVolume::resolve`'s absolute-path handling so the
+    // path we register matches the one `write_from_stream` will hit.
+    let absolute = if dest_path.as_os_str().is_empty() || dest_path == Path::new(".") {
+        root
+    } else if dest_path.is_absolute() {
+        if dest_path.starts_with(&root) || root == Path::new("/") {
+            dest_path.to_path_buf()
+        } else {
+            root.join(dest_path.strip_prefix("/").unwrap_or(dest_path))
+        }
+    } else {
+        root.join(dest_path)
+    };
+    crate::downloads::note_pending_write_for_cmdr(&absolute);
 }
 
 /// Recursively copies a directory tree from source to destination, streaming
@@ -109,6 +140,7 @@ async fn copy_directory_streaming(
     // because that's the merge-into-existing-directory signal, not a failure.
     // (SMB needed smb2 ≥ 0.8.0 to typed-classify STATUS_OBJECT_NAME_COLLISION;
     // older versions leaked it as IoError and the merge path blew up.)
+    note_pending_for_local_dest(dest_volume, dest_path);
     match dest_volume.create_directory(dest_path).await {
         Ok(()) => {}
         Err(VolumeError::AlreadyExists(_)) => {}
