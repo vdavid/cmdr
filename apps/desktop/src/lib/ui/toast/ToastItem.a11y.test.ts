@@ -113,4 +113,3 @@ describe('ToastItem a11y (hover-paused state)', () => {
     await expectNoA11yViolations(target)
   })
 })
-

@@ -26,6 +26,26 @@
     function triggerPersistent() {
         addToast('Persistent toast (catalog preview).', { level: 'info', dismissal: 'persistent' })
     }
+
+    // Group + hover demos for M1.
+
+    function triggerGroupBurst() {
+        // Fires 6 toasts in the 'demo' group with cap 5; the first one
+        // should evict instantly to demonstrate FIFO-in-group eviction.
+        for (let i = 1; i <= 6; i++) {
+            addToast(`Demo notification ${i} of 6`, {
+                level: 'info',
+                toastGroup: 'demo',
+            })
+        }
+    }
+
+    function triggerHoverDemo() {
+        addToast('Hover me to pause; leaving past expiry gives a 2-second grace.', {
+            level: 'info',
+            timeoutMs: 6000,
+        })
+    }
 </script>
 
 <SectionCard id="components-toasts" label="Toasts">
@@ -59,6 +79,22 @@
         {/each}
         <Button size="mini" onclick={triggerPersistent}>persistent</Button>
     </div>
+
+    <p class="caption">
+        Group cap: fire 6 toasts of group <code>'demo'</code> with cap 5; the oldest in the group is evicted instantly.
+    </p>
+    <div class="trigger-row">
+        <Button size="mini" onclick={triggerGroupBurst}>Burst of 6 grouped toasts</Button>
+    </div>
+
+    <p class="caption">
+        Hover behavior: the timer pauses while the pointer is over a transient toast. Past natural expiry, leaving
+        starts a 2-second grace timer.
+    </p>
+    <div class="trigger-row">
+        <Button size="mini" onclick={triggerHoverDemo}>Show a hover-pause toast</Button>
+        <span class="hint">Hover the toast top-right; move away to see the resume or grace behavior.</span>
+    </div>
 </SectionCard>
 
 <style>
@@ -66,6 +102,12 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
+    }
+
+    .hint {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        align-self: center;
     }
 
     .preview-row {
@@ -79,6 +121,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
     }
 
     /* Mirror ToastItem.svelte chrome for static previews. */

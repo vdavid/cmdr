@@ -232,6 +232,27 @@ Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 - `onDismiss?: () => void`: fires only when the user clicks X (or the inline "Send error report…" link). Auto-dismiss on
   timeout and programmatic `dismissToast()` calls do NOT trigger it. Use this when the caller needs to remember "the
   user closed this," for example to avoid re-adding a toast that's tied to long-running background work.
+- `toastGroup?: string`: opt into a per-group cap so a burst of homogeneous notifications can't push unrelated toasts
+  off the screen. When set, the new toast counts against a per-group cap BEFORE the global cap of 5 applies. On a full
+  group, the oldest transient in that same group is evicted first (FIFO-in-group), even if the global cap hasn't been
+  hit. Persistent toasts in the group block group-level eviction the same way they block global eviction.
+- `maxInGroup?: number`: per-group cap. Defaults to 5 when `toastGroup` is set, ignored otherwise. A higher value than
+  the global cap (5) is silently clamped by the global cap kicking in second.
+
+### Hover behavior
+
+All transient toasts pause their auto-dismiss timer while the pointer is over them. On pointer leave, the timer either
+resumes with the remaining time or starts a 2-second grace window, depending on whether the user got any unhovered time
+to read the toast:
+
+- If the timer had made any progress before the hover started, leaving resumes the timer with the captured remainder so
+  the user gets the rest of the natural visibility window they would have had without the hover.
+- If the pointer entered before the toast had any unhovered visibility (the only reading window was during hover),
+  leaving starts a `HOVER_LEAVE_GRACE_MS` (2-second) grace timer. This catches accidental cursor exits and gives the
+  user a beat to actually read the toast before it disappears.
+
+`HOVER_LEAVE_GRACE_MS` is exported from `toast/index.ts` for any future tuning. Persistent toasts have no timer and the
+hover handlers no-op for them.
 
 ## CommandBox
 

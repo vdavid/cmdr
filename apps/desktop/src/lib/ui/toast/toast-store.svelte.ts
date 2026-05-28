@@ -7,6 +7,19 @@ export type ToastDismissal = 'transient' | 'persistent'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ToastContent = string | Component<any>
 
+/**
+ * Grace period applied by `ToastItem` after the pointer leaves a transient
+ * toast that has already passed its natural `timeoutMs`. Catches accidental
+ * cursor exits so the toast doesn't vanish the instant the mouse drifts off.
+ *
+ * Exported so a future tuning lives in one place; `ToastItem.svelte` imports
+ * this constant rather than hard-coding the value.
+ */
+export const HOVER_LEAVE_GRACE_MS = 2000
+
+/** Default per-group cap when `toastGroup` is set but `maxInGroup` is not. */
+export const DEFAULT_MAX_IN_GROUP = 5
+
 export interface ToastOptions {
   level?: ToastLevel
   dismissal?: ToastDismissal
@@ -26,6 +39,23 @@ export interface ToastOptions {
    * that the user actively closed the toast.
    */
   onDismiss?: () => void
+  /**
+   * Optional group key. Toasts that share a `toastGroup` count against a per-group cap
+   * (`maxInGroup`, default 5) BEFORE the global cap of 5 applies. When a new grouped toast
+   * arrives and the group is full, the oldest transient toast in that same group is evicted
+   * first — even if the global cap hasn't been hit. Persistent toasts in the group still
+   * block group-level eviction (mirrors how persistent toasts block global eviction).
+   *
+   * Use this for streams of homogeneous notifications (downloads detected, share-disconnect
+   * events) so a burst can't push unrelated toasts off the screen.
+   */
+  toastGroup?: string
+  /**
+   * Per-group cap. Defaults to {@link DEFAULT_MAX_IN_GROUP} (5) when `toastGroup` is set,
+   * ignored otherwise. The group cap cannot exceed the global cap by design: if you set it
+   * higher, the global cap kicks in first.
+   */
+  maxInGroup?: number
 }
 
 export interface Toast {
@@ -37,6 +67,8 @@ export interface Toast {
   createdAt: number
   closeTooltip?: string
   onDismiss?: () => void
+  toastGroup?: string
+  maxInGroup?: number
 }
 
 const maxVisibleToasts = 5
@@ -55,6 +87,14 @@ function findOldestTransientIndex(): number {
   return toasts.findIndex((t) => t.dismissal === 'transient')
 }
 
+function findOldestTransientIndexInGroup(group: string): number {
+  return toasts.findIndex((t) => t.dismissal === 'transient' && t.toastGroup === group)
+}
+
+function countInGroup(group: string): number {
+  return toasts.reduce((n, t) => (t.toastGroup === group ? n + 1 : n), 0)
+}
+
 function replaceExisting(index: number, content: ToastContent, level: ToastLevel, options?: ToastOptions): void {
   toasts[index].content = content
   toasts[index].level = level
@@ -62,9 +102,34 @@ function replaceExisting(index: number, content: ToastContent, level: ToastLevel
   toasts[index].onDismiss = options?.onDismiss
 }
 
-/** Returns true if there's room for a new toast (after evicting if needed). */
-function makeRoomForNewToast(): boolean {
+/**
+ * Make room for an incoming toast, applying group-aware eviction first and the
+ * global cap second.
+ *
+ * Order of operations:
+ *
+ *  1. If `toastGroup` is set and the group is already at `maxInGroup`, evict
+ *     the oldest *transient* toast in that same group. If only persistent
+ *     toasts fill the group, return `false` — the new toast is silently dropped
+ *     (consistent with the global-cap behavior when all 5 slots are persistent).
+ *     Group eviction can also free a global slot when both caps are hit.
+ *  2. If we're still at the global cap of 5 after step 1, evict the oldest
+ *     transient toast globally. If all are persistent, return `false`.
+ *
+ * Returns `true` when there's room to push the new toast.
+ */
+function makeRoomForNewToast(toastGroup: string | undefined, maxInGroup: number): boolean {
+  if (toastGroup !== undefined && countInGroup(toastGroup) >= maxInGroup) {
+    const oldestInGroup = findOldestTransientIndexInGroup(toastGroup)
+    if (oldestInGroup === -1) {
+      // Group is full of persistent toasts: drop the new one.
+      return false
+    }
+    removeAtIndex(oldestInGroup)
+  }
+
   if (toasts.length < maxVisibleToasts) return true
+
   const oldestTransientIndex = findOldestTransientIndex()
   if (oldestTransientIndex === -1) {
     // All slots are persistent: drop the new toast.
@@ -79,6 +144,8 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
   const dismissal = options?.dismissal ?? 'transient'
   const timeoutMs = dismissal === 'persistent' ? 0 : (options?.timeoutMs ?? 4000)
   const id = options?.id ?? crypto.randomUUID()
+  const toastGroup = options?.toastGroup
+  const maxInGroup = toastGroup === undefined ? undefined : (options?.maxInGroup ?? DEFAULT_MAX_IN_GROUP)
 
   // Dedup: replace content and level in place if ID already exists.
   const existingIndex = findIndexById(id)
@@ -87,7 +154,7 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
     return id
   }
 
-  if (!makeRoomForNewToast()) return id
+  if (!makeRoomForNewToast(toastGroup, maxInGroup ?? maxVisibleToasts)) return id
 
   const toast: Toast = {
     id,
@@ -98,6 +165,8 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
     createdAt: Date.now(),
     closeTooltip: options?.closeTooltip,
     onDismiss: options?.onDismiss,
+    toastGroup,
+    maxInGroup,
   }
 
   toasts.push(toast)

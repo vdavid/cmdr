@@ -293,4 +293,3 @@ describe('toastGroup eviction', () => {
     expect(toasts[0].id).toBe('g2')
   })
 })
-

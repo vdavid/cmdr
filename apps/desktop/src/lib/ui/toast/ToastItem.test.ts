@@ -177,4 +177,3 @@ describe('ToastItem hover-pause and grace timer', () => {
     expect(onTimeout).not.toHaveBeenCalled()
   })
 })
-
