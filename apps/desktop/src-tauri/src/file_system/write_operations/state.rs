@@ -515,18 +515,38 @@ pub(super) struct FileInfo {
     /// Parent of the original source (used to compute relative path for destination)
     pub source_root: PathBuf,
     pub size: u64,
+    /// Bytes this entry contributes to operation progress. Equals `size` for
+    /// the first occurrence of an inode in the scan; `0` for subsequent
+    /// hardlink pairs to the same inode. Active-phase counters (delete,
+    /// trash, copy, move) sum this so the bar denominator (`total_bytes`,
+    /// also dedup'd at scan time) and the numerator (`bytes_done`) stay in
+    /// agreement. Without this split, a hardlink-heavy tree like cargo's
+    /// `target/` overshoots — 81.6 GB delete numerator against a 59.84 GB
+    /// scan denominator on a real-world repro.
+    ///
+    /// Set per call site: scan sets it from inode tracking; sites that build
+    /// `FileInfo` without inode info (the oracle path in `walk_cached_entries`,
+    /// MTP synthesis) fall back to `size` and accept the documented
+    /// cross-boundary overshoot (see write_operations CLAUDE.md gotcha).
+    pub progress_bytes: u64,
     pub modified: u64, // Unix timestamp in seconds
     pub created: u64,  // Unix timestamp in seconds
     pub is_symlink: bool,
 }
 
 impl FileInfo {
+    /// Construct a `FileInfo` from filesystem metadata, treating it as the
+    /// first observation of its inode (`progress_bytes == size`). Use
+    /// `with_progress_bytes` to override when the scan-side inode tracker
+    /// has already seen this inode.
     pub fn new(path: PathBuf, source_root: PathBuf, metadata: &std::fs::Metadata) -> Self {
         use std::time::UNIX_EPOCH;
+        let size = metadata.len();
         Self {
             path,
             source_root,
-            size: metadata.len(),
+            size,
+            progress_bytes: size,
             modified: metadata
                 .modified()
                 .ok()
@@ -541,6 +561,16 @@ impl FileInfo {
                 .unwrap_or(0),
             is_symlink: metadata.is_symlink(),
         }
+    }
+
+    /// Override `progress_bytes` (typically with `0`) when the scan-side
+    /// inode tracker reports this file shares an inode with a previously-seen
+    /// `FileInfo`. Keeps `size` (the actual file size) intact for sites that
+    /// need it (sorting, conflict checks).
+    #[must_use]
+    pub fn with_progress_bytes(mut self, progress_bytes: u64) -> Self {
+        self.progress_bytes = progress_bytes;
+        self
     }
 
     /// Get extension for sorting (lowercase, empty string if none).
@@ -1064,6 +1094,7 @@ mod tests {
             path: PathBuf::from(path),
             source_root: PathBuf::from(source_root),
             size: 0,
+            progress_bytes: 0,
             modified: 0,
             created: 0,
             is_symlink: false,

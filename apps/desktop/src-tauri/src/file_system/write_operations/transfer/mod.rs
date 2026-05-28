@@ -33,6 +33,8 @@ pub(crate) use super::state::CopyTransaction;
 #[cfg(test)]
 mod copy_integration_test;
 #[cfg(test)]
+mod hardlink_progress_tests;
+#[cfg(test)]
 mod move_integration_test;
 #[cfg(test)]
 mod transaction_integration_test;

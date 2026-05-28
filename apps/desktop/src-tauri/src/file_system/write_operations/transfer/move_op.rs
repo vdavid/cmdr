@@ -427,6 +427,7 @@ fn move_with_staging(
                 &file_info.path,
                 file_info.dest_path(&staging_dir),
                 file_info.is_symlink,
+                file_info.progress_bytes,
                 &mut files_done,
                 &mut bytes_done,
                 scan_result.file_count,

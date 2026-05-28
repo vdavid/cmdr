@@ -144,13 +144,17 @@ pub(super) fn delete_files_with_progress_inner(
             });
         }
 
-        // Use the size from FileInfo (already captured during scan)
-        let file_size = file_info.size;
+        // Use `progress_bytes` (not `size`) so the delete numerator stays in
+        // lockstep with the scan denominator on hardlink-heavy trees: scan
+        // sets `progress_bytes = 0` for the second+ entry of each shared
+        // inode while `total_bytes` already counted the first one. See
+        // `state.rs::FileInfo::progress_bytes` for the contract.
+        let progress_bytes = file_info.progress_bytes;
 
         fs::remove_file(&file_info.path).with_path(&file_info.path)?;
 
         files_done += 1;
-        bytes_done += file_size;
+        bytes_done += progress_bytes;
 
         if let Some(source_path) = tracker.record(file_info) {
             events.emit_source_item_done(WriteSourceItemDoneEvent {

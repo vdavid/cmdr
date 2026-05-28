@@ -20,4 +20,6 @@ mod delete_integration_test;
 #[cfg(test)]
 mod delete_volume_reuse_tests;
 #[cfg(test)]
+mod hardlink_progress_tests;
+#[cfg(test)]
 mod volume_cancel_tests;

@@ -233,7 +233,10 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             let top = top_level_source_path(fi);
             if pre_skip_top_levels.contains(&top) {
                 bulk_skip_files += 1;
-                bulk_skip_bytes += fi.size;
+                // `progress_bytes` (not `size`) so the bulk-skip seed agrees
+                // with the dedup'd `total_bytes` denominator — a hardlink
+                // dupe contributes 0 to both ends of the equation.
+                bulk_skip_bytes += fi.progress_bytes;
                 false
             } else {
                 true
@@ -305,6 +308,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 &file_info.path,
                 file_info.dest_path(destination),
                 file_info.is_symlink,
+                file_info.progress_bytes,
                 &mut local_files,
                 &mut local_bytes,
                 file_count,
@@ -491,6 +495,11 @@ pub(super) fn copy_single_item(
     source: &Path,
     dest_path: PathBuf,
     is_symlink: bool,
+    // `progress_weight` = the number of bytes this file contributes to the
+    // dedup'd `bytes_total` denominator: `metadata.len()` for a first-seen
+    // inode, `0` for a hardlink dupe. Threaded from `FileInfo::progress_bytes`
+    // (see `state.rs::FileInfo` and the write_operations CLAUDE.md).
+    progress_weight: u64,
     files_done: &mut usize,
     bytes_done: &mut u64,
     files_total: usize,
@@ -600,10 +609,12 @@ pub(super) fn copy_single_item(
                         );
                     }
                     None => {
-                        // Skip: don't copy this file
-                        let metadata = fs::symlink_metadata(source).with_path(source)?;
+                        // Skip: don't copy this file. Use `progress_weight`
+                        // (not `metadata.len()`) so the dedup decision baked
+                        // in by scan stays consistent across skip paths.
+                        let _ = fs::symlink_metadata(source).with_path(source)?;
                         *files_done += 1;
-                        *bytes_done += metadata.len();
+                        *bytes_done += progress_weight;
                         return Ok(());
                     }
                 }
@@ -659,7 +670,7 @@ pub(super) fn copy_single_item(
                 None => {
                     // Skip this file but still count it toward progress
                     *files_done += 1;
-                    *bytes_done += metadata.len();
+                    *bytes_done += progress_weight;
                     return Ok(());
                 }
             }
@@ -696,7 +707,7 @@ pub(super) fn copy_single_item(
 
         transaction.record_file(actual_dest);
         *files_done += 1;
-        *bytes_done += metadata.len();
+        *bytes_done += progress_weight;
     } else {
         // Handle regular file
         // Pre-fix this branch used `dest_path.exists()`, which follows symlinks
@@ -717,7 +728,7 @@ pub(super) fn copy_single_item(
                 None => {
                     // Skip this file but still count it toward progress
                     *files_done += 1;
-                    *bytes_done += metadata.len();
+                    *bytes_done += progress_weight;
                     return Ok(());
                 }
             }
@@ -735,7 +746,7 @@ pub(super) fn copy_single_item(
                 source.display()
             );
             *files_done += 1;
-            *bytes_done += metadata.len();
+            *bytes_done += progress_weight;
             return Ok(());
         }
 
@@ -752,9 +763,18 @@ pub(super) fn copy_single_item(
         let current_file_name = file_name.to_string_lossy().to_string();
         let last_emit_time = std::cell::Cell::new(Instant::now());
 
+        // Mid-file progress is scaled by `progress_weight / metadata.len()` so
+        // chunked copies of hardlink dupes (`progress_weight == 0`) don't
+        // briefly overshoot the dedup'd `bytes_total`. For first-seen inodes
+        // the scale is 1 (no behavior change).
+        let file_size = metadata.len();
         let progress_cb: ChunkedCopyProgressFn = &|chunk_bytes: u64, _total: u64| {
             if last_emit_time.get().elapsed() >= *progress_interval {
-                let effective_bytes_done = base_bytes_done + chunk_bytes;
+                let weighted_chunk = chunk_bytes
+                    .saturating_mul(progress_weight)
+                    .checked_div(file_size)
+                    .unwrap_or(0);
+                let effective_bytes_done = base_bytes_done + weighted_chunk;
                 log::debug!(
                     "copy: emitting chunked progress op={} files={}/{} bytes={}/{}",
                     operation_id,
@@ -789,7 +809,7 @@ pub(super) fn copy_single_item(
             }
         };
 
-        let bytes = copy_file_with_strategy(
+        let _bytes = copy_file_with_strategy(
             source,
             &actual_dest,
             needs_safe_overwrite,
@@ -797,9 +817,12 @@ pub(super) fn copy_single_item(
             Some(progress_cb),
         )?;
 
+        // Final accounting uses `progress_weight` (not the actual bytes
+        // returned by the strategy) so a hardlink dupe contributes 0 to the
+        // numerator while still being physically copied at the destination.
         transaction.record_file(actual_dest.clone());
         *files_done += 1;
-        *bytes_done += bytes;
+        *bytes_done += progress_weight;
 
         // Emit progress
         if last_progress_time.elapsed() >= *progress_interval {

@@ -83,10 +83,18 @@ pub(super) fn walk_dir_recursive<E>(
         *total_bytes += metadata.len();
         files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
     } else if metadata.is_file() {
-        if file_bytes_count_toward_total(&metadata, seen_inodes) {
-            *total_bytes += metadata.len();
+        // Same inode-dedup decision feeds both `total_bytes` (scan denominator)
+        // and the per-file `progress_bytes` (numerator the active phase sums).
+        // Keeping the two in lockstep is the contract that stops the progress
+        // bar overshooting on hardlink-heavy trees like cargo's `target/`.
+        let counts = file_bytes_count_toward_total(&metadata, seen_inodes);
+        let size = metadata.len();
+        if counts {
+            *total_bytes += size;
         }
-        files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
+        let info = FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata)
+            .with_progress_bytes(if counts { size } else { 0 });
+        files.push(info);
     } else if metadata.is_dir() {
         if is_symlink_loop(path, visited) {
             return Err((ctx.on_symlink_loop)(path));
@@ -201,10 +209,15 @@ fn walk_cached_entries<E>(
             // symlink flag.
             let size = entry.size.unwrap_or(0);
             *total_bytes += size;
+            // Oracle path has no inode to feed `seen_inodes` with, so this
+            // file is treated as a unique inode (`progress_bytes == size`).
+            // Documented overshoot when a hardlink pair straddles the
+            // oracle/walk boundary — see write_operations CLAUDE.md gotcha.
             files.push(FileInfo {
                 path: child_path,
                 source_root: source_root.to_path_buf(),
                 size,
+                progress_bytes: size,
                 modified: entry.modified_at.unwrap_or(0),
                 created: entry.created_at.unwrap_or(0),
                 is_symlink: entry.is_symlink,
@@ -917,6 +930,7 @@ mod tests {
             path: PathBuf::from(path),
             source_root: PathBuf::from(source_root),
             size: 100,
+            progress_bytes: 100,
             modified: 0,
             created: 0,
             is_symlink: false,
