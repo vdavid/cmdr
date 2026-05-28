@@ -69,6 +69,18 @@ export const commands: Command[] = [
   },
 
   // ============================================================================
+  // Main window - Downloads
+  // ============================================================================
+  {
+    id: 'downloads.revealLatest',
+    name: 'Reveal latest download',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘J'],
+    description: 'Open ~/Downloads and select the most recent file.',
+  },
+
+  // ============================================================================
   // Main window - View commands
   // ============================================================================
   {

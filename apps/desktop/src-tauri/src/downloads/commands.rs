@@ -130,3 +130,111 @@ pub async fn downloads_watcher_status() -> Result<DownloadsWatcherStatus, String
 pub async fn recheck_downloads_watcher_gate(app: AppHandle) -> Result<(), String> {
     super::runtime::refresh_runtime(&app).map_err(|e| e.to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    //! Tests for the `reveal_latest_download` branches. The process-global
+    //! `runtime::RUNTIME` is shared across the crate; serialize through the
+    //! same `install_lock` the runtime module uses, drained via a private
+    //! `with_clean_runtime` helper so a panicking test can't leave a
+    //! lingering watcher behind.
+    use super::*;
+    use crate::downloads::DownloadsWatcher;
+    use crate::downloads::runtime::install_for_test;
+    use crate::downloads::watcher::{DownloadDetectedEvent, EventSink};
+    use std::sync::Arc;
+    use std::sync::Mutex as StdMutex;
+    use std::sync::OnceLock;
+    use std::sync::mpsc;
+
+    fn install_lock() -> &'static StdMutex<()> {
+        static LOCK: OnceLock<StdMutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| StdMutex::new(()))
+    }
+
+    struct ChannelSink(mpsc::Sender<DownloadDetectedEvent>);
+    impl EventSink for ChannelSink {
+        fn emit(&self, event: DownloadDetectedEvent) {
+            let _ = self.0.send(event);
+        }
+    }
+
+    fn unhidden_tempdir() -> tempfile::TempDir {
+        tempfile::Builder::new()
+            .prefix("cmdr-reveal-test-")
+            .tempdir()
+            .expect("tempdir")
+    }
+
+    /// Build a single-threaded tokio runtime per test. Wrapping the `await` in
+    /// `block_on` lets us hold the std `Mutex` install-lock across the
+    /// reveal future without tripping `clippy::await_holding_lock` (the lock
+    /// stays on the sync caller stack; the runtime only drives the future).
+    /// The existing `runtime` module's tests use the same shape (plain
+    /// `#[test]`); matching the pattern keeps the install-serialization
+    /// guard consistent across the crate.
+    fn block_on<F: Future>(fut: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("tokio runtime")
+            .block_on(fut)
+    }
+
+    #[test]
+    fn reveal_returns_watcher_unavailable_when_runtime_is_dormant() {
+        // No watcher installed → distinguish "dormant" from "running but
+        // empty." The FE branches on this to show the FDA-required toast
+        // instead of the empty-Downloads toast.
+        let _lock = install_lock().lock().unwrap_or_else(|p| p.into_inner());
+        assert!(
+            !super::super::runtime::is_running(),
+            "precondition: no watcher installed"
+        );
+
+        let err = block_on(reveal_latest_download()).expect_err("expected error");
+        assert!(matches!(err, RevealError::WatcherUnavailable), "got {err:?}");
+    }
+
+    #[test]
+    fn reveal_returns_empty_when_ring_and_scan_both_turn_up_nothing() {
+        // Watcher running, no events have arrived, Downloads dir is empty.
+        // This is the cold-start "you just launched Cmdr, no downloads yet"
+        // path — distinct from `WatcherUnavailable` so the FE can show the
+        // empty-Downloads toast (with a "Go to Downloads anyway?" action)
+        // instead of the FDA toast.
+        let _lock = install_lock().lock().unwrap_or_else(|p| p.into_inner());
+
+        let tempdir = unhidden_tempdir();
+        let (tx, _rx) = mpsc::channel::<DownloadDetectedEvent>();
+        let sink: Arc<dyn EventSink> = Arc::new(ChannelSink(tx));
+        let watcher = DownloadsWatcher::start_at(tempdir.path().to_path_buf(), sink).expect("watcher start");
+        let _guard = install_for_test(watcher);
+
+        let err = block_on(reveal_latest_download()).expect_err("expected error");
+        assert!(matches!(err, RevealError::Empty), "got {err:?}");
+    }
+
+    #[test]
+    fn reveal_returns_revealed_download_from_scan_fallback_when_ring_is_empty() {
+        // The scan fallback finds an eligible file even though the ring is
+        // empty. The returned shape splits the path into `parent_dir` and
+        // `file_name` so the FE doesn't have to parse paths.
+        let _lock = install_lock().lock().unwrap_or_else(|p| p.into_inner());
+
+        let tempdir = unhidden_tempdir();
+        let canonical_root = std::fs::canonicalize(tempdir.path()).expect("canonicalize");
+        let file_path = canonical_root.join("downloaded-from-cli.bin");
+        std::fs::write(&file_path, b"hi").expect("write");
+
+        let (tx, _rx) = mpsc::channel::<DownloadDetectedEvent>();
+        let sink: Arc<dyn EventSink> = Arc::new(ChannelSink(tx));
+        let watcher = DownloadsWatcher::start_at(canonical_root.clone(), sink).expect("watcher start");
+        let _guard = install_for_test(watcher);
+
+        let revealed = block_on(reveal_latest_download()).expect("expected Ok");
+        assert_eq!(revealed.path, file_path.to_string_lossy());
+        assert_eq!(revealed.parent_dir, canonical_root.to_string_lossy());
+        assert_eq!(revealed.file_name, "downloaded-from-cli.bin");
+    }
+}

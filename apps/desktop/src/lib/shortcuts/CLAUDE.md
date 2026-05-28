@@ -98,6 +98,18 @@ one window and "New folder" in another if their scopes don't overlap.
 Users often mis-press keys or change their mind mid-capture. The delay lets them press multiple combos rapidly and only
 the final one (after 500ms of silence) is saved. Prevents accidental captures.
 
+### ⌘J binds to "Reveal latest download" (not Finder's "View Options")
+
+**Decision.** The in-app `⌘J` shortcut triggers `downloads.revealLatest`, jumping the focused pane to the most recent
+file in `~/Downloads`. We accept the deviation from Finder, which uses `⌘J` for the "View Options" inspector.
+
+**Why.** Cmdr's view-mode toggles already live on dedicated single-key shortcuts (`⌘1` Full, `⌘2` Brief, plus the inline
+view-mode toggle and the appearance controls under `⌘,`), so we're not displacing an existing Cmdr action — we're
+choosing not to mirror Finder for this one binding. `⌘J` is short, easy to reach, and intuitive as "Jump." Chrome's
+Downloads-tab shortcut is `⌘⇧J`, so there's no collision with the most common downloads workflow either. Finder migrants
+pick up the new muscle memory within a few uses because the view-mode controls they expect are still keyboard-accessible
+on dedicated keys. See `docs/specs/downloads-watcher-plan.md` § "In-app shortcut: ⌘J" for the full rationale.
+
 ### Why two tiers (action vs navigation commands)?
 
 Tier 1 commands (~20 "action" commands like F-keys and Cmd+ combos) go through centralized dispatch. Tier 2 commands

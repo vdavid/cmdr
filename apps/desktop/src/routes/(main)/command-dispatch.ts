@@ -30,6 +30,7 @@ import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import { getAppLogger } from '$lib/logging/logger'
+import { revealLatestDownload } from '$lib/downloads/reveal'
 import type { ExplorerAPI } from './explorer-api'
 
 const log = getAppLogger('user-action')
@@ -380,6 +381,11 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
 
     case 'nav.pageDown':
       explorerRef?.sendKeyToFocusedPane('PageDown')
+      return
+
+    // === Downloads commands ===
+    case 'downloads.revealLatest':
+      await revealLatestDownload(explorerRef)
       return
 
     // === Network commands ===

@@ -591,6 +591,14 @@ fn get_await_tools() -> Vec<Tool> {
     }]
 }
 
+/// Get downloads tools.
+fn get_downloads_tools() -> Vec<Tool> {
+    vec![Tool::no_params(
+        "reveal_latest_download",
+        "Navigate the focused pane to the most recently observed eligible file in ~/Downloads and select it. Errors if no eligible file exists or Cmdr lacks Full Disk Access.",
+    )]
+}
+
 /// Get settings tools.
 fn get_settings_tools() -> Vec<Tool> {
     vec![Tool {
@@ -627,6 +635,7 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_settings_tools());
     tools.extend(get_network_tools());
     tools.extend(get_await_tools());
+    tools.extend(get_downloads_tools());
     tools
 }
 
@@ -749,8 +758,15 @@ mod tests {
     fn test_all_tools_count() {
         let tools = get_all_tools();
         // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2 search + 1
-        // settings + 3 network + 1 await = 31
-        assert_eq!(tools.len(), 31);
+        // settings + 3 network + 1 await + 1 downloads = 32
+        assert_eq!(tools.len(), 32);
+    }
+
+    #[test]
+    fn test_downloads_tools_count() {
+        let tools = get_downloads_tools();
+        assert_eq!(tools.len(), 1);
+        assert_eq!(tools[0].name, "reveal_latest_download");
     }
 
     #[test]

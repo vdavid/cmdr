@@ -22,7 +22,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-31 semantic tools grouped by category:
+32 semantic tools grouped by category:
 - Navigation (6): `select_volume` (also accepts MTP volume names), `nav_to_path` (supports `mtp://` paths, skips filesystem existence check), `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (6): `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`. `copy`/`move` accept optional `autoConfirm` (bool) and `onConflict` (`skip_all`|`overwrite_all`|`rename_all`). `delete` accepts optional `autoConfirm`. When `autoConfirm` is true, the dialog opens and immediately confirms.
@@ -34,6 +34,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - Settings (1): `set_setting` (change a setting value via round-trip to frontend)
 - Network (3): `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID), `upgrade_smb_to_direct` (upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O; thin wrapper over the existing manual "Connect directly" Tauri command — tries Keychain creds, returns a typed result mirroring `UpgradeResult`)
 - Async (1): `await` (poll PaneStateStore until a condition is met: `has_item`, `item_count_gte`, `path`, or `path_contains`. Supports `after_generation` to avoid matching stale state)
+- Downloads (1): `reveal_latest_download` (no args; navigates the focused pane to `~/Downloads` and selects the most recently observed eligible file. Errors when no eligible file exists or FDA is missing. Reuses the same backend code path as the `⌘J` shortcut and the `reveal_latest_download` Tauri command, then drives `mcp-nav-to-path` + `mcp-move-cursor` round-trips for the navigation + cursor placement)
 
 ### Resources (`resources.rs`)
 

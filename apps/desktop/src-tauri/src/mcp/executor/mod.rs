@@ -7,6 +7,7 @@ mod ack;
 mod app;
 mod async_tools;
 mod dialogs;
+mod downloads;
 mod file_ops;
 mod nav;
 mod search;
@@ -166,6 +167,8 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         "upgrade_smb_to_direct" => async_tools::execute_upgrade_smb_to_direct(app, params).await,
         // Async wait
         "await" => async_tools::execute_await(app, params).await,
+        // Downloads
+        "reveal_latest_download" => downloads::execute_reveal_latest_download(app).await,
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
