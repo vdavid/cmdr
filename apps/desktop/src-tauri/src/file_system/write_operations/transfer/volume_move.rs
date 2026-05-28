@@ -7,7 +7,6 @@
 
 use std::collections::HashMap;
 use std::future::Future;
-use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -15,16 +14,16 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use super::super::state::{
-    WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, register_operation_status, unregister_operation_status,
+    WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,
 };
 use super::super::types::{
     ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
     WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
-    WriteOperationType, WriteProgressEvent,
+    WriteOperationType,
 };
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
-    build_pre_skip_set, drive_transfer_serial_async,
+    build_pre_skip_set, drive_transfer_serial_async, make_serial_per_file_progress,
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
@@ -390,12 +389,20 @@ pub(super) async fn move_volumes_with_progress(
                     };
                     let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
 
-                    let no_progress = |_: u64, _: u64| -> ControlFlow<()> {
-                        if is_cancelled(&state.intent) {
-                            return ControlFlow::Break(());
-                        }
-                        ControlFlow::Continue(())
-                    };
+                    let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
+                    let on_file_progress = make_serial_per_file_progress(
+                        Arc::clone(&events),
+                        Arc::clone(&state),
+                        operation_id.clone(),
+                        WriteOperationType::Move,
+                        file_name.clone(),
+                        files_done_so_far,
+                        bytes_done_so_far,
+                        total_files,
+                        total_bytes,
+                        Arc::clone(&last_progress_time),
+                        progress_interval,
+                    );
                     let bytes = match copy_single_path(
                         &source_volume,
                         &source_path,
@@ -404,7 +411,7 @@ pub(super) async fn move_volumes_with_progress(
                         &dest_volume,
                         &dest_item_path,
                         &state,
-                        &no_progress,
+                        &on_file_progress,
                         &|| {},
                     )
                     .await
@@ -446,34 +453,12 @@ pub(super) async fn move_volumes_with_progress(
                         return Err(mapped);
                     }
 
-                    // Throttled per-source progress emit. The driver's
-                    // `Transferred` arm only updates counters; for the move
-                    // path, no per-byte progress fires from
-                    // `copy_single_path`, so without an emit here cancel-mid-batch
-                    // sinks listening to `emit_progress` would never observe
-                    // file-1's completion and never trip their cancel hook.
-                    let mut last = last_progress_time.lock_ignore_poison();
-                    if last.elapsed() >= progress_interval {
-                        *last = Instant::now();
-                        drop(last);
-                        let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
-                        let new_files = files_done_so_far + 1;
-                        let new_bytes = bytes_done_so_far + bytes;
-                        state.emit_progress_via_sink(
-                            &*events,
-                            WriteProgressEvent::new(
-                                operation_id.clone(),
-                                WriteOperationType::Move,
-                                WriteOperationPhase::Copying,
-                                file_name,
-                                new_files,
-                                total_files,
-                                new_bytes,
-                                total_bytes,
-                            ),
-                        );
-                    }
-
+                    // Per-file milestone emit (bumped `files_done = N`,
+                    // bumped `bytes_done`) now lives in the driver's
+                    // `Transferred` arm — fires uniformly across copy + move
+                    // and pins the FE's files-axis even when the chunked
+                    // emits absorbed the throttle window. See
+                    // `transfer_driver.rs::drive_transfer_serial_async`.
                     Ok(TransferOutcome::Transferred { bytes })
                 })
             }
@@ -791,26 +776,15 @@ pub(super) async fn move_within_same_volume_with_progress(
         },
         {
             let volume = Arc::clone(&volume);
-            let progress_interval = state.progress_interval;
-            let state = Arc::clone(state);
-            let events = Arc::clone(&events);
             let source_hints = Arc::clone(&source_hints);
-            let operation_id = operation_id_owned.clone();
-            let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let volume = Arc::clone(&volume);
-                let state = Arc::clone(&state);
-                let events = Arc::clone(&events);
                 let source_hints = Arc::clone(&source_hints);
-                let operation_id = operation_id.clone();
-                let last_progress_time = Arc::clone(&last_progress_time);
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
                     .dest_path
                     .expect("async driver always supplies dest_path")
                     .to_path_buf();
-                let bytes_done_so_far = ctx.bytes_done_so_far;
-                let files_done_so_far = ctx.files_done_so_far;
                 Box::pin(async move {
                     // Use the cached scan hint for size. Falls back to a
                     // per-source stat if the hint is missing (cached preview
@@ -832,34 +806,10 @@ pub(super) async fn move_within_same_volume_with_progress(
                         .await
                         .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
-                    // Throttled per-source progress emit. The driver's
-                    // `Transferred` arm only updates counters; rename
-                    // itself fires no per-byte progress, so without this
-                    // emit cancel-mid-batch sinks listening to
-                    // `emit_progress` would never observe a successful
-                    // rename and never trip their cancel hook.
-                    let mut last = last_progress_time.lock_ignore_poison();
-                    if last.elapsed() >= progress_interval {
-                        *last = Instant::now();
-                        drop(last);
-                        let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
-                        let new_files = files_done_so_far + 1;
-                        let new_bytes = bytes_done_so_far + size;
-                        state.emit_progress_via_sink(
-                            &*events,
-                            WriteProgressEvent::new(
-                                operation_id.clone(),
-                                WriteOperationType::Move,
-                                WriteOperationPhase::Copying,
-                                file_name,
-                                new_files,
-                                total_files,
-                                new_bytes,
-                                total_bytes,
-                            ),
-                        );
-                    }
-
+                    // Per-file milestone emit (bumped `files_done` /
+                    // `bytes_done`) now lives in the driver's `Transferred`
+                    // arm — fires uniformly across copy + move. See
+                    // `transfer_driver.rs::drive_transfer_serial_async`.
                     Ok(TransferOutcome::Transferred { bytes: size })
                 })
             }

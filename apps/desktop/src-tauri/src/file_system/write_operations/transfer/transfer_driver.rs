@@ -102,10 +102,15 @@
 
 use std::collections::HashSet;
 use std::future::Future;
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Instant;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
+
+use crate::ignore_poison::IgnorePoison;
 
 use super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
 use super::super::types::{
@@ -290,6 +295,176 @@ pub(super) fn emit_progress_and_status(
         bytes_done,
         bytes_total,
     );
+}
+
+// ============================================================================
+// Per-file progress callback builders
+// ============================================================================
+
+/// Builds a per-file `on_progress` callback for `copy_single_path` for
+/// **serial** transfer paths (one source in flight at a time).
+///
+/// The returned closure is invoked per chunk by the destination volume's
+/// `write_from_stream`. On each call it:
+/// - Checks `state.intent`; returns `Break` to abort the write on cancel.
+/// - Throttles via `last_emit` (skip if the previous emit was less than
+///   `progress_interval` ago).
+/// - Emits a `WriteProgressEvent { phase: Copying, ... }` carrying the
+///   driver's per-iteration snapshots (`files_done_so_far`,
+///   `bytes_done_so_far`) plus the in-flight file's `file_bytes_done` as
+///   `bytes_done_so_far + file_bytes_done`.
+///
+/// Used by:
+/// - `volume_copy::copy_volumes_with_progress` serial path
+/// - `volume_move::move_volumes_with_progress` (cross-volume copy phase)
+///
+/// Captures everything by value (`Arc`-cloned), so the returned closure
+/// is `'static + Send + Sync` — safe to pass through `copy_single_path`'s
+/// `&dyn Fn(...)` parameter from inside an async move-block executed
+/// across `tokio::spawn` boundaries.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "matches WriteProgressEvent shape; bundling into a context struct adds ceremony without cleaning anything up"
+)]
+pub(super) fn make_serial_per_file_progress(
+    events: Arc<dyn OperationEventSink>,
+    state: Arc<WriteOperationState>,
+    operation_id: String,
+    operation_type: WriteOperationType,
+    file_name: Option<String>,
+    files_done_so_far: usize,
+    bytes_done_so_far: u64,
+    total_files: usize,
+    total_bytes: u64,
+    last_emit: Arc<Mutex<Instant>>,
+    progress_interval: Duration,
+) -> impl Fn(u64, u64) -> ControlFlow<()> + Send + Sync + 'static {
+    move |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
+        if is_cancelled(&state.intent) {
+            return ControlFlow::Break(());
+        }
+        let current_total = bytes_done_so_far + file_bytes_done;
+        try_emit_throttled_progress(
+            &*events,
+            &state,
+            &operation_id,
+            operation_type,
+            file_name.clone(),
+            files_done_so_far,
+            total_files,
+            current_total,
+            total_bytes,
+            &last_emit,
+            progress_interval,
+        );
+        ControlFlow::Continue(())
+    }
+}
+
+/// Builds a per-file `on_progress` callback for `copy_single_path` for
+/// **concurrent** transfer paths (multiple sources in flight at once).
+///
+/// Unlike the serial variant, each task fires its own callback against
+/// shared op-wide counters: `bytes_done_atomic` accumulates deltas across
+/// all in-flight files; `files_done_atomic` is read (not written) per
+/// chunk so the emitted event reflects the latest cross-task tally.
+///
+/// `last_file_bytes` is a per-task atomic that the callback uses to
+/// convert the volume's cumulative-for-this-file count into a delta
+/// before rolling into the shared `bytes_done_atomic`. Callers must
+/// allocate a fresh `AtomicU64` per spawned task; the caller can also
+/// inspect `last_file_bytes.load() == 0` after the task finishes to
+/// detect volumes that never invoked `on_progress` and credit the file's
+/// bytes to the aggregate as a compensation.
+///
+/// Used by: `volume_copy::copy_volumes_with_progress` concurrent path.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "matches WriteProgressEvent shape + per-task cross-file delta tracking"
+)]
+pub(super) fn make_concurrent_per_file_progress(
+    events: Arc<dyn OperationEventSink>,
+    state: Arc<WriteOperationState>,
+    operation_id: String,
+    operation_type: WriteOperationType,
+    file_name: Option<String>,
+    last_file_bytes: Arc<AtomicU64>,
+    bytes_done_atomic: Arc<AtomicU64>,
+    files_done_atomic: Arc<AtomicUsize>,
+    total_files: usize,
+    total_bytes: u64,
+    last_emit: Arc<Mutex<Instant>>,
+    progress_interval: Duration,
+) -> impl Fn(u64, u64) -> ControlFlow<()> + Send + Sync + 'static {
+    move |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
+        if is_cancelled(&state.intent) {
+            return ControlFlow::Break(());
+        }
+        let prev = last_file_bytes.swap(file_bytes_done, Ordering::Relaxed);
+        let delta = file_bytes_done.saturating_sub(prev);
+        let current_total = bytes_done_atomic.fetch_add(delta, Ordering::Relaxed) + delta;
+        let current_files_done = files_done_atomic.load(Ordering::Relaxed);
+        try_emit_throttled_progress(
+            &*events,
+            &state,
+            &operation_id,
+            operation_type,
+            file_name.clone(),
+            current_files_done,
+            total_files,
+            current_total,
+            total_bytes,
+            &last_emit,
+            progress_interval,
+        );
+        ControlFlow::Continue(())
+    }
+}
+
+/// Throttle gate + paired emit. Returns `true` if it emitted, `false` if
+/// the call was suppressed by the throttle.
+///
+/// Two callers racing on the gate can both succeed; over-emission is
+/// fine — the throttle protects the *floor* event rate, not a strict
+/// ceiling. The Mutex is released before `emit_progress_and_status`
+/// (which may take its own internal locks for the ETA estimator and
+/// status cache), so the gate never serializes downstream emits.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "matches WriteProgressEvent shape; bundling into a context struct adds ceremony without cleaning anything up"
+)]
+fn try_emit_throttled_progress(
+    events: &dyn OperationEventSink,
+    state: &Arc<WriteOperationState>,
+    operation_id: &str,
+    operation_type: WriteOperationType,
+    file_name: Option<String>,
+    files_done: usize,
+    total_files: usize,
+    bytes_done: u64,
+    total_bytes: u64,
+    last_emit: &Mutex<Instant>,
+    progress_interval: Duration,
+) -> bool {
+    let mut last = last_emit.lock_ignore_poison();
+    if last.elapsed() < progress_interval {
+        return false;
+    }
+    *last = Instant::now();
+    drop(last);
+    emit_progress_and_status(
+        events,
+        state,
+        operation_id,
+        operation_type,
+        WriteOperationPhase::Copying,
+        file_name,
+        files_done,
+        total_files,
+        bytes_done,
+        total_bytes,
+    );
+    true
 }
 
 // ============================================================================
@@ -761,6 +936,25 @@ where
             Ok(TransferOutcome::Transferred { bytes }) => {
                 files_done += 1;
                 bytes_done += bytes;
+                // Per-file milestone emit. Bypasses the throttle because
+                // it's a per-file event (bounded by file count, not noisy)
+                // and the FE's files-done axis needs at least one Copying
+                // event with the bumped `files_done` — chunked emits inside
+                // `transfer_one` carry the pre-iteration snapshot, so for
+                // single-file ops the chunked path never crosses `N/N`.
+                last_progress_time = Instant::now();
+                emit_progress_and_status(
+                    events,
+                    state,
+                    operation_id,
+                    config.operation_type,
+                    config.phase,
+                    source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+                    files_done,
+                    total_files,
+                    bytes_done,
+                    total_bytes,
+                );
             }
             Ok(TransferOutcome::Skipped { bytes_accounted }) => {
                 files_done += 1;

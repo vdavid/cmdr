@@ -17,7 +17,6 @@
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
-use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -39,7 +38,7 @@ use super::super::types::{
 };
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
-    build_pre_skip_set, drive_transfer_serial_async,
+    build_pre_skip_set, drive_transfer_serial_async, make_concurrent_per_file_progress, make_serial_per_file_progress,
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_preflight::{SourceHint, scan_volume_sources};
@@ -719,43 +718,24 @@ pub(crate) async fn copy_volumes_with_progress(
                     // Per-task `last_file_bytes` tracks bytes reported for the
                     // file this task is copying; deltas roll up into the
                     // shared `bytes_done_a` so the throttle emits an aggregate.
-                    let last_file_bytes = AtomicU64::new(0);
-                    let on_file_progress = |file_bytes_done: u64, _total: u64| -> ControlFlow<()> {
-                        if is_cancelled(&state_clone.intent) {
-                            return ControlFlow::Break(());
-                        }
-                        let prev = last_file_bytes.swap(file_bytes_done, Ordering::Relaxed);
-                        let delta = file_bytes_done.saturating_sub(prev);
-                        let current_total = bytes_done_a.fetch_add(delta, Ordering::Relaxed) + delta;
-                        let current_files_done = files_done_a.load(Ordering::Relaxed);
-                        let last = *last_prog_a.lock_ignore_poison();
-                        if last.elapsed() >= progress_interval {
-                            *last_prog_a.lock_ignore_poison() = Instant::now();
-                            state_clone.emit_progress_via_sink(
-                                &*events_task,
-                                WriteProgressEvent::new(
-                                    op_id.to_string(),
-                                    WriteOperationType::Copy,
-                                    WriteOperationPhase::Copying,
-                                    file_name_owned.clone(),
-                                    current_files_done,
-                                    total_files,
-                                    current_total,
-                                    total_bytes,
-                                ),
-                            );
-                            update_operation_status(
-                                op_id,
-                                WriteOperationPhase::Copying,
-                                file_name_owned.clone(),
-                                current_files_done,
-                                total_files,
-                                current_total,
-                                total_bytes,
-                            );
-                        }
-                        ControlFlow::Continue(())
-                    };
+                    // Owned by the task; the helper closure carries its own
+                    // Arc clone, the post-call compensation reads the same
+                    // counter to detect "volume never invoked on_progress."
+                    let last_file_bytes = Arc::new(AtomicU64::new(0));
+                    let on_file_progress = make_concurrent_per_file_progress(
+                        Arc::clone(&events_task),
+                        Arc::clone(&state_clone),
+                        op_id.to_string(),
+                        WriteOperationType::Copy,
+                        file_name_owned.clone(),
+                        Arc::clone(&last_file_bytes),
+                        Arc::clone(&bytes_done_a),
+                        Arc::clone(&files_done_a),
+                        total_files,
+                        total_bytes,
+                        Arc::clone(&last_prog_a),
+                        progress_interval,
+                    );
                     let on_file_complete = || {
                         files_done_a.fetch_add(1, Ordering::Relaxed);
                     };
@@ -798,7 +778,39 @@ pub(crate) async fn copy_volumes_with_progress(
                         partials.swap_remove(pos);
                     }
                     drop(partials);
+                    let file_name_done = completed_dest.file_name().map(|n| n.to_string_lossy().to_string());
                     copied_paths.lock_ignore_poison().push(completed_dest);
+                    // Per-file milestone emit. The task's `on_file_complete`
+                    // bumped `files_done_atomic`; the FE's files-axis needs
+                    // a Copying event that observes the bumped value, but
+                    // no chunked emit fires after `on_file_complete` (the
+                    // file's transfer is over). Mirrors the serial path's
+                    // milestone in `transfer_driver.rs::drive_transfer_serial_async`.
+                    *last_progress_mutex.lock_ignore_poison() = Instant::now();
+                    let current_files = files_done_atomic.load(Ordering::Relaxed);
+                    let current_bytes = atomic_bytes_done.load(Ordering::Relaxed);
+                    state.emit_progress_via_sink(
+                        &*events,
+                        WriteProgressEvent::new(
+                            operation_id.to_string(),
+                            WriteOperationType::Copy,
+                            WriteOperationPhase::Copying,
+                            file_name_done.clone(),
+                            current_files,
+                            total_files,
+                            current_bytes,
+                            total_bytes,
+                        ),
+                    );
+                    update_operation_status(
+                        operation_id,
+                        WriteOperationPhase::Copying,
+                        file_name_done,
+                        current_files,
+                        total_files,
+                        current_bytes,
+                        total_bytes,
+                    );
                 }
                 Some(Err((failed_dest, e))) => {
                     // Remove from in-flight partials; this one's its own
@@ -1014,48 +1026,24 @@ pub(crate) async fn copy_volumes_with_progress(
                         let source_is_dir_hint = hint.is_directory;
                         let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
 
-                        // Per-file intra-progress: emit a throttled
-                        // aggregate event including running totals
-                        // (`bytes_done_so_far` was snapshotted by the
-                        // driver at the start of this iteration).
-                        let last_emit = std::sync::Mutex::new(Instant::now());
-                        let file_name_for_cb = file_name.clone();
-                        let state_for_cb = Arc::clone(&state);
-                        let events_for_cb = Arc::clone(&events);
-                        let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
-                            if is_cancelled(&state_for_cb.intent) {
-                                return ControlFlow::Break(());
-                            }
-                            let mut last = last_emit.lock_ignore_poison();
-                            if last.elapsed() >= progress_interval {
-                                *last = Instant::now();
-                                drop(last);
-                                let current_total = bytes_done_so_far + file_bytes_done;
-                                state_for_cb.emit_progress_via_sink(
-                                    &*events_for_cb,
-                                    WriteProgressEvent::new(
-                                        operation_id.clone(),
-                                        WriteOperationType::Copy,
-                                        WriteOperationPhase::Copying,
-                                        file_name_for_cb.clone(),
-                                        files_done_so_far,
-                                        total_files,
-                                        current_total,
-                                        total_bytes,
-                                    ),
-                                );
-                                update_operation_status(
-                                    &operation_id,
-                                    WriteOperationPhase::Copying,
-                                    file_name_for_cb.clone(),
-                                    files_done_so_far,
-                                    total_files,
-                                    current_total,
-                                    total_bytes,
-                                );
-                            }
-                            ControlFlow::Continue(())
-                        };
+                        // Per-file intra-progress: a fresh per-source
+                        // throttle mutex (the serial-path closure outlives
+                        // a single iteration but the previous file's last-
+                        // emit instant doesn't carry meaning across files).
+                        let last_emit = Arc::new(std::sync::Mutex::new(Instant::now()));
+                        let on_file_progress = make_serial_per_file_progress(
+                            Arc::clone(&events),
+                            Arc::clone(&state),
+                            operation_id.clone(),
+                            WriteOperationType::Copy,
+                            file_name.clone(),
+                            files_done_so_far,
+                            bytes_done_so_far,
+                            total_files,
+                            total_bytes,
+                            last_emit,
+                            progress_interval,
+                        );
                         let on_file_complete = || {};
 
                         *last_dest_cell.lock_ignore_poison() = Some(dest_item_path.clone());

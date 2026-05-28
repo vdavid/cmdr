@@ -12,7 +12,7 @@ use super::*;
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume};
 use crate::file_system::write_operations::state::ConflictResolutionResponse;
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, WriteCancelledEvent, WriteConflictEvent, WriteSourceItemDoneEvent,
+    CollectorEventSink, WriteCancelledEvent, WriteConflictEvent, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::{AtomicU8, Ordering};
 
@@ -303,13 +303,14 @@ async fn cross_volume_move_pre_known_conflicts_bulk_skip() {
     assert!(!source.exists(Path::new("/b.txt")).await);
     assert!(!source.exists(Path::new("/d.txt")).await);
 
-    // The first non-zero progress event must bump files_done to 3 in one shot
-    // (bulk-skip emit), not trickle one-per-conflict.
+    // The first non-zero Copying progress event must bump files_done to 3 in
+    // one shot (bulk-skip emit), not trickle one-per-conflict. Filter to
+    // Copying phase to skip Scanning-phase tallies.
     let progress = events.progress.lock().unwrap();
     let first_nonzero = progress
         .iter()
-        .find(|p| p.files_done > 0)
-        .expect("expected a progress event with files_done > 0");
+        .find(|p| p.phase == WriteOperationPhase::Copying && p.files_done > 0)
+        .expect("expected a Copying progress event with files_done > 0");
     assert_eq!(
         first_nonzero.files_done, 3,
         "bulk-skip must account 3 conflicts in one event, saw {first_nonzero:?}",
@@ -392,14 +393,15 @@ async fn cross_volume_move_top_level_directory_excluded_from_bulk_skip() {
     assert_eq!(dest_file.next_chunk().await.unwrap().unwrap(), b"old-file");
     assert!(source.exists(Path::new("/file.txt")).await);
 
-    // Pin the bulk-skip exclusion: the first non-zero progress event must
-    // account exactly ONE source (`file.txt`), not two. If `docs` were
-    // bulk-skipped, this event would jump to `files_done = 2`.
+    // Pin the bulk-skip exclusion: the first non-zero Copying progress event
+    // must account exactly ONE source (`file.txt`), not two. If `docs` were
+    // bulk-skipped, this event would jump to `files_done = 2`. Filter to
+    // Copying phase to skip Scanning-phase tallies.
     let progress = events.progress.lock().unwrap();
     let first_nonzero = progress
         .iter()
-        .find(|p| p.files_done > 0)
-        .expect("expected a progress event with files_done > 0");
+        .find(|p| p.phase == WriteOperationPhase::Copying && p.files_done > 0)
+        .expect("expected a Copying progress event with files_done > 0");
     assert_eq!(
         first_nonzero.files_done, 1,
         "bulk-skip must account only the FILE conflict, not the directory; saw {first_nonzero:?}",
@@ -829,12 +831,13 @@ async fn same_volume_move_pre_known_conflicts_bulk_skip() {
     let mut b = volume.open_read_stream(Path::new("/dst/b.txt")).await.unwrap();
     assert_eq!(b.next_chunk().await.unwrap().unwrap(), b"new");
 
-    // First non-zero progress event must account both bulk-skipped conflicts at once.
+    // First non-zero Copying event must account both bulk-skipped conflicts at
+    // once. Filter to Copying phase to skip Scanning-phase tallies.
     let progress = events.progress.lock().unwrap();
     let first_nonzero = progress
         .iter()
-        .find(|p| p.files_done > 0)
-        .expect("expected a progress event with files_done > 0");
+        .find(|p| p.phase == WriteOperationPhase::Copying && p.files_done > 0)
+        .expect("expected a Copying progress event with files_done > 0");
     assert_eq!(
         first_nonzero.files_done, 2,
         "bulk-skip must account 2 conflicts in one event",
@@ -941,4 +944,153 @@ async fn same_volume_move_emits_bytes_total_on_progress() {
 
     let complete = events.complete.lock().unwrap();
     assert_eq!(complete[0].bytes_processed, expected_total);
+}
+
+/// Cross-volume move (no `preview_id`) emits multiple `Scanning`-phase
+/// progress events with climbing tallies as `scan_for_copy_batch_with_progress`
+/// walks the source list, not just one frozen event at `0/0/0/0`. Without the
+/// per-listing progress wiring, programmatic / MCP-triggered moves against a
+/// slow source (cold MTP, large SMB tree) sit on "Scanning... 0 bytes / 0
+/// files / 0 dirs" for the entire scan duration.
+///
+/// `InMemoryVolume` inherits the default `scan_for_copy_batch_with_progress`,
+/// which fires `on_progress` once per top-level path. With 4 sources we
+/// expect the kickoff emit plus at least one mid-scan event showing a partial
+/// tally before the scan finishes.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_emits_scan_phase_tallies_during_walk() {
+    let (source, dest) = make_volumes();
+    let payload = vec![0u8; 4096];
+    for i in 0..4 {
+        source
+            .create_file(Path::new(&format!("/a_{}.bin", i)), &payload)
+            .await
+            .unwrap();
+    }
+    let total_bytes = (payload.len() * 4) as u64;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let sources: Vec<PathBuf> = (0..4).map(|i| PathBuf::from(format!("/a_{}.bin", i))).collect();
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-scan-tally",
+        &state,
+        Arc::clone(&source),
+        &sources,
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let scanning: Vec<_> = progress
+        .iter()
+        .filter(|p| p.phase == WriteOperationPhase::Scanning)
+        .collect();
+
+    // Pre-fix: exactly one Scanning event (the kickoff emit at 0/0/0/0).
+    // Post-fix: kickoff + one event per scanned top-level path.
+    assert!(
+        scanning.len() >= 2,
+        "expected multiple Scanning events during a 4-source walk, got {} ({:?})",
+        scanning.len(),
+        scanning
+            .iter()
+            .map(|e| (e.files_done, e.bytes_done))
+            .collect::<Vec<_>>(),
+    );
+    for w in scanning.windows(2) {
+        assert!(
+            w[0].bytes_done <= w[1].bytes_done,
+            "scan bytes_done must be non-decreasing across Scanning events, got {} then {}",
+            w[0].bytes_done,
+            w[1].bytes_done,
+        );
+    }
+    let last = scanning.last().expect("at least one Scanning event");
+    assert_eq!(
+        last.files_done, 4,
+        "final Scanning event should tally all 4 source files"
+    );
+    assert_eq!(
+        last.bytes_done, total_bytes,
+        "final Scanning event should tally all source bytes"
+    );
+}
+
+/// Cross-volume move of a single large file emits multiple `Copying`-phase
+/// progress events as chunks stream through, not just one event after the
+/// whole file lands. Without intra-file progress the FE's "Moving..." dialog
+/// shows `0 bytes / 0 files / 0 dirs` for the entire upload — bug observed
+/// against an SMB destination with a 3.7 GB file.
+///
+/// `InMemoryVolume` streams in 64 KB chunks (see
+/// `volume/backends/in_memory.rs::CHUNK_SIZE`), so 1 MB ≈ 16 callback
+/// invocations; with `progress_interval_ms: 0` the throttle is open and
+/// every chunk emits. The `>= 3` floor is well above "one tail emit per
+/// source" (current buggy floor: 1) and well below the ~16 events the
+/// fix produces, so it's robust against scheduler jitter on busy CI.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_emits_intra_file_progress() {
+    let (source, dest) = make_volumes();
+    let payload: Vec<u8> = vec![0u8; 1_048_576];
+    source.create_file(Path::new("/big.bin"), &payload).await.unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-intra-file",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/big.bin")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let copying: Vec<_> = progress
+        .iter()
+        .filter(|p| p.phase == WriteOperationPhase::Copying)
+        .collect();
+
+    // Pre-fix: exactly one event (the post-source throttled emit at the end).
+    // Post-fix: ~16 intra-file events plus the post-source tail emit.
+    assert!(
+        copying.len() >= 3,
+        "expected multiple Copying events to stream during a 1 MB move, got {} ({:?})",
+        copying.len(),
+        copying.iter().map(|e| (e.files_done, e.bytes_done)).collect::<Vec<_>>(),
+    );
+
+    // bytes_done is non-decreasing as the stream advances.
+    for w in copying.windows(2) {
+        assert!(
+            w[0].bytes_done <= w[1].bytes_done,
+            "bytes_done must be non-decreasing across Copying events, got {} then {}",
+            w[0].bytes_done,
+            w[1].bytes_done,
+        );
+    }
+
+    // Final Copying event accounts for the whole transfer.
+    let last = copying.last().expect("at least one Copying event");
+    assert_eq!(last.bytes_done, payload.len() as u64);
+    assert_eq!(last.files_done, 1);
 }

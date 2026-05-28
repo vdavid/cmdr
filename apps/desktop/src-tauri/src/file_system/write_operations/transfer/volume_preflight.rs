@@ -27,6 +27,8 @@
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::Mutex;
+use std::time::Instant;
 
 use super::super::scan::take_cached_scan_result;
 use super::super::state::{WriteOperationState, is_cancelled};
@@ -35,7 +37,8 @@ use super::super::types::{
     WriteOperationType, WriteProgressEvent,
 };
 use super::volume_copy::WriteFailure;
-use crate::file_system::volume::Volume;
+use crate::file_system::volume::{ListingProgress, Volume};
+use crate::ignore_poison::IgnorePoison;
 
 /// Per-source hint collected during the scan: whether the top-level path is a
 /// directory and, for top-level files, the file size.
@@ -164,14 +167,73 @@ pub(super) async fn scan_volume_sources(
         source_paths.len(),
     );
 
+    // Throttled scan-tally emit: every per-listing callback from the volume
+    // turns into a `Scanning`-phase `WriteProgressEvent` carrying running
+    // tallies. Without this, the FE shows "Scanning... 0 / 0 / 0" for the
+    // entire scan duration (which can be seconds on cold MTP / large SMB
+    // trees) when no `preview_id` is available (programmatic / MCP-triggered
+    // moves, copies started outside the dialog flow). The scan-preview
+    // pipeline emits its own climbing tallies into the preview's event
+    // channel, not the operation's, so the operation needs its own.
+    //
+    // The closure borrows `events` and `state` for the duration of the
+    // trait-method call below — same scope as the function body, so no
+    // `Arc`-ing or pointer gymnastics needed. Throttle interval comes from
+    // the op state (default 200 ms in prod, 0 ms in tests).
+    let last_scan_emit: Mutex<Instant> = Mutex::new(Instant::now());
+    let progress_interval = state.progress_interval;
+    let scan_progress = |progress: ListingProgress| {
+        let mut last = last_scan_emit.lock_ignore_poison();
+        if last.elapsed() < progress_interval {
+            return;
+        }
+        *last = Instant::now();
+        drop(last);
+        state.emit_progress_via_sink(
+            events,
+            WriteProgressEvent::new(
+                operation_id.to_string(),
+                operation_type,
+                WriteOperationPhase::Scanning,
+                None,
+                progress.files,
+                0,
+                progress.bytes,
+                0,
+            ),
+        );
+    };
+
     // Single pipelined batch scan. The default impl loops per-path for
     // backends where per-path I/O is cheap (local FS, in-memory). MTP groups
     // by parent dir; SMB pipelines stats over one session. Either way, one
-    // call per operation here.
-    let batch = volume.scan_for_copy_batch(source_paths).await.map_err(|e| {
-        let path = source_paths.first().cloned().unwrap_or_default();
-        WriteFailure::from_volume(&path, e)
-    })?;
+    // call per operation here. `_with_progress` threads the throttled scan
+    // callback through so the FE sees tallies climb during the walk.
+    let batch = volume
+        .scan_for_copy_batch_with_progress(source_paths, Some(&scan_progress))
+        .await
+        .map_err(|e| {
+            let path = source_paths.first().cloned().unwrap_or_default();
+            WriteFailure::from_volume(&path, e)
+        })?;
+
+    // Final Scanning event with the aggregate totals. Bypasses the throttle
+    // so the FE's last-known scan-phase state lands on the real total before
+    // the phase flips to Copying — without this, a fast scan whose per-
+    // listing emits all got throttled would still flash the right number.
+    state.emit_progress_via_sink(
+        events,
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            operation_type,
+            WriteOperationPhase::Scanning,
+            None,
+            batch.aggregate.file_count,
+            0,
+            batch.aggregate.total_bytes,
+            0,
+        ),
+    );
 
     let mut source_hints = HashMap::with_capacity(batch.per_path.len());
     for (source_path, scan) in &batch.per_path {
