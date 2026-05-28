@@ -9,9 +9,7 @@
         "core:window:allow-close",
         "core:window:allow-set-title",
         "core:window:allow-set-focus",
-        "core:window:allow-get-all-windows",
         "core:event:default",
-        "store:default",
         "clipboard-manager:allow-write-text",
         "dialog:allow-save"
     ]
