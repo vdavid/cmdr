@@ -155,6 +155,34 @@ test.describe('Settings page', () => {
     expect(labels).toContain('Striped rows')
   })
 
+  test('toggle-group items pick up their CSS (regression: Svelte 5 scoping through Ark)', async () => {
+    // `ToggleGroup` with `semantics="toggles"` wraps Ark UI's `ToggleGroup.Root`. Svelte 5
+    // doesn't propagate the component's scoping hash through Ark's `class` forwarding, so
+    // `.tg-root.svelte-<hash> .tg-item { ... }` rules whiff against Ark-rendered DOM. The
+    // items then render unstyled (no padding, no separating border, no active background),
+    // collapsing visually into a single run-on label like "SmartContentOn disk".
+    //
+    // File and folder sizes is the densest user of toggle groups in Settings (3 rows).
+    const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('File and folder sizes'))
+    expect(clicked).toBe(true)
+    await settings.waitForSelector('[data-section-id="appearance-file-and-folder-sizes"]', 3000)
+    await settings.waitForSelector('[data-scope="toggle-group"][data-part="item"]', 3000)
+
+    // Probe computed style on a non-last item: `.tg-root .tg-item` sets padding for every
+    // item and `border-right` for every item except the last. Both reading "0px" means the
+    // rules never matched. Reading anything non-zero proves scoping landed.
+    const styles = await settings.evaluate<{ padding: string; borderRightWidth: string }>(
+      `(function() {
+        var item = document.querySelector('[data-scope="toggle-group"][data-part="item"]');
+        if (!item) return { padding: '', borderRightWidth: '' };
+        var cs = getComputedStyle(item);
+        return { padding: cs.padding, borderRightWidth: cs.borderRightWidth };
+      })()`,
+    )
+    expect(styles.padding).not.toBe('0px')
+    expect(styles.borderRightWidth).not.toBe('0px')
+  })
+
   test('Advanced section renders auto-generated rows for showInAdvanced entries', async () => {
     // The Advanced page is registry-driven: every `showInAdvanced: true` entry becomes a
     // `.advanced-setting-row`. A regression in the iteration / filtering would silently

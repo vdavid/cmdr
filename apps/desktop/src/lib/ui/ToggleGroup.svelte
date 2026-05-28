@@ -180,7 +180,13 @@
      * `lib/settings/components/SettingToggleGroup.svelte`'s globals so both Settings and the
      * future Query mode chips render identically.
      */
-    .tg-root {
+    /* All selectors are `:global(...)` because the `toggles` branch renders `.tg-root` via
+       Ark UI's `ToggleGroup.Root`, and Svelte 5 doesn't propagate this component's scoping
+       hash through a `class` prop forwarded into a third-party component. Without `:global`,
+       `.tg-root.svelte-<hash> .tg-item` whiffed against the Ark-rendered DOM and every
+       Settings toggle row rendered as unstyled run-on text. No other component uses these
+       class names, so unscoping is safe. */
+    :global(.tg-root) {
         display: inline-flex;
         align-items: center;
         border: 1px solid var(--color-border);
@@ -191,7 +197,7 @@
     /* Tabs and Ark toggles both render their items via `.tg-item`. Ark prints
        `data-scope="toggle-group"][data-part="item"]` on the same node, so the same selector covers
        both shapes for the cell styling that follows. */
-    .tg-root :global(.tg-item) {
+    :global(.tg-root .tg-item) {
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
@@ -210,34 +216,34 @@
             color var(--transition-base);
     }
 
-    .tg-root :global(.tg-item:last-child) {
+    :global(.tg-root .tg-item:last-child) {
         border-right: none;
     }
 
-    .tg-root :global(.tg-item:not(:disabled):hover) {
+    :global(.tg-root .tg-item:not(:disabled):hover) {
         background: var(--color-bg-tertiary);
     }
 
     /* Active state: tabs branch uses an `.is-active` class; toggles branch uses Ark's
        `data-state="on"` attribute. Spell both out so we don't drift. */
-    .tg-root :global(.tg-item.is-active),
-    .tg-root :global(.tg-item[data-state='on']) {
+    :global(.tg-root .tg-item.is-active),
+    :global(.tg-root .tg-item[data-state='on']) {
         background: var(--color-accent);
         color: var(--color-accent-fg);
     }
 
-    .tg-root :global(.tg-item.is-active:hover),
-    .tg-root :global(.tg-item[data-state='on']:hover) {
+    :global(.tg-root .tg-item.is-active:hover),
+    :global(.tg-root .tg-item[data-state='on']:hover) {
         background: var(--color-accent-hover);
     }
 
-    .tg-root :global(.tg-item:disabled),
-    .tg-root :global(.tg-item.is-disabled),
-    .tg-root :global(.tg-item[data-disabled]) {
+    :global(.tg-root .tg-item:disabled),
+    :global(.tg-root .tg-item.is-disabled),
+    :global(.tg-root .tg-item[data-disabled]) {
         opacity: 0.5;
     }
 
-    .tg-root :global(.tg-item:focus-visible) {
+    :global(.tg-root .tg-item:focus-visible) {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
         box-shadow: var(--shadow-focus);
@@ -247,13 +253,13 @@
     /* Inner wrapper for Ark items: the tooltip action needs a real element to attach to and Ark's
        item is the host button. We wrap the contents in a span so badge / label / hint can sit
        inside it the same way the tabs branch lays them out. */
-    .tg-root :global(.tg-item-inner) {
+    :global(.tg-root .tg-item-inner) {
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
     }
 
-    .tg-root :global(.tg-badge) {
+    :global(.tg-root .tg-badge) {
         font-size: var(--font-size-xs);
         font-family: var(--font-mono);
         font-weight: 600;
@@ -265,13 +271,13 @@
         line-height: 1;
     }
 
-    .tg-root :global(.tg-label) {
+    :global(.tg-root .tg-label) {
         line-height: 1;
     }
 
     /* Mono tertiary hint (for example `⌥A`). Visible only in the resting state so it doesn't
        compete with the accent-filled active cell. */
-    .tg-root :global(.tg-hint) {
+    :global(.tg-root .tg-hint) {
         margin-left: var(--spacing-xxs);
         font-family: var(--font-mono);
         font-size: var(--font-size-xs);
