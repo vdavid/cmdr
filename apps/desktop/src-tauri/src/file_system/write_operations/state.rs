@@ -129,18 +129,10 @@ impl WriteOperationState {
         event.eta_seconds = stats.eta_seconds;
     }
 
-    /// Enrich and emit a `WriteProgressEvent` via a Tauri `AppHandle`. The
-    /// canonical emit path for local copy/delete/trash, which don't go through
-    /// the `OperationEventSink` indirection.
-    pub fn emit_progress_via_app(&self, app: &tauri::AppHandle, mut event: WriteProgressEvent) {
-        use tauri::Emitter;
-        self.enrich_progress(&mut event);
-        let _ = app.emit("write-progress", &event);
-    }
-
     /// Enrich and emit a `WriteProgressEvent` via an `OperationEventSink`. The
-    /// volume-copy/move pipeline uses this for testability: the test sink
-    /// stores events in a `Vec` instead of calling `app.emit`.
+    /// single emit path for all write ops: production wraps a Tauri AppHandle
+    /// in `TauriEventSink`; tests use `CollectorEventSink` to capture events
+    /// in a `Vec` instead of round-tripping through the Tauri runtime.
     pub fn emit_progress_via_sink(&self, sink: &dyn OperationEventSink, mut event: WriteProgressEvent) {
         self.enrich_progress(&mut event);
         sink.emit_progress(event);

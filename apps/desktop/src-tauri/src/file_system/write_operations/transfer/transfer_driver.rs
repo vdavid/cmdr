@@ -624,11 +624,27 @@ where
 
         match transfer_one(ctx) {
             Ok(TransferOutcome::Transferred { bytes }) => {
-                // Sync per-file closures (e.g., `copy_single_item`) drive
-                // their own intra-file progress emission, so the driver
-                // doesn't need to emit here. Just update its counters.
                 files_done += 1;
                 bytes_done += bytes;
+                // Per-file milestone emit. Bypasses any throttle for the
+                // same reason as the async driver's Transferred arm: it's
+                // a per-file event (bounded by file count) and the FE's
+                // files-axis needs at least one Copying event observing
+                // the bumped value. The chunked-copy progress callback
+                // inside `copy_single_item` handles intra-file bytes; the
+                // sync driver fires the file-level milestone uniformly.
+                emit_progress_and_status(
+                    events,
+                    state,
+                    operation_id,
+                    config.operation_type,
+                    config.phase,
+                    source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+                    files_done,
+                    total_files,
+                    bytes_done,
+                    total_bytes,
+                );
             }
             Ok(TransferOutcome::Skipped { bytes_accounted }) => {
                 files_done += 1;

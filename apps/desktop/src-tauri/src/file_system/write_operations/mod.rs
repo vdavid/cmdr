@@ -381,7 +381,8 @@ pub async fn trash_files_start(
         config.progress_interval_ms,
         move |app, op_id, state| {
             validate_sources(&sources)?;
-            trash_files_with_progress(&app, &op_id, &state, &sources, item_sizes.as_deref())
+            let events: Arc<dyn types::OperationEventSink> = Arc::new(types::TauriEventSink::new(app));
+            trash_files_with_progress(&*events, &op_id, &state, &sources, item_sizes.as_deref())
         },
     )
     .await

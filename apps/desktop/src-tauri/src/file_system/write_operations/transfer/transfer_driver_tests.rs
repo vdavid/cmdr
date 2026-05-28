@@ -678,11 +678,11 @@ fn sync_driver_status_cache_matches_emitted_progress() {
     assert!(matches!(outcome.intent, PostLoopIntent::Completed));
     let status = super::super::super::state::get_operation_status(&op_id).expect("status entry present");
     // After bulk-skip /a (1 file, 100 bytes) and transfer /b (100 bytes), the
-    // status cache reflects the bulk-skip emit; the per-Transferred arm
-    // doesn't emit (the sync closure owns its own intra-file emits in
-    // production). So the cache sees the bulk-skip numbers.
-    assert_eq!(status.files_done, 1);
-    assert_eq!(status.bytes_done, 100);
+    // status cache reflects both: the bulk-skip emit lands first (files_done = 1),
+    // then the Transferred arm's per-file milestone emit bumps it to 2 with
+    // the transferred bytes added. Cache always sees the latest emit.
+    assert_eq!(status.files_done, 2);
+    assert_eq!(status.bytes_done, 200);
     uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }

@@ -11,8 +11,8 @@ use std::time::Instant;
 use super::super::helpers::spawn_async_sync;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::types::{
-    WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase,
-    WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
+    WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -84,21 +84,21 @@ pub struct TrashItemError {
 /// `trashItemAtURL` is atomic per top-level item (the OS moves the entire tree).
 ///
 /// # Arguments
-/// * `app` - Tauri app handle for event emission
+/// * `events` - Event sink for `write-progress`, `write-complete`, `write-cancelled`,
+///   `write-error`, and `write-source-item-done` emits. Production wraps a Tauri AppHandle
+///   in `TauriEventSink`; tests use `CollectorEventSink`.
 /// * `operation_id` - Unique operation ID for event correlation
 /// * `state` - Shared state with cancellation flag and progress interval
 /// * `sources` - Top-level items to trash
 /// * `item_sizes` - Optional per-item sizes for byte-level progress (from scan preview or drive
 ///   index). When `None`, bytes progress is not reported.
 pub(in crate::file_system::write_operations) fn trash_files_with_progress(
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     sources: &[PathBuf],
     item_sizes: Option<&[u64]>,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
     let items_total = sources.len();
     let bytes_total: u64 = item_sizes.map(|s| s.iter().sum()).unwrap_or(0);
 
@@ -110,15 +110,12 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
     for (i, source) in sources.iter().enumerate() {
         // Check cancellation between items
         if super::super::state::is_cancelled(&state.intent) {
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Trash,
-                    files_processed: items_done,
-                    rolled_back: false, // Trash is recoverable, no rollback needed
-                },
-            );
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Trash,
+                files_processed: items_done,
+                rolled_back: false, // Trash is recoverable, no rollback needed
+            });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -143,13 +140,10 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                     bytes_done += size;
                 }
 
-                let _ = app.emit(
-                    "write-source-item-done",
-                    WriteSourceItemDoneEvent {
-                        operation_id: operation_id.to_string(),
-                        source_path: source.display().to_string(),
-                    },
-                );
+                events.emit_source_item_done(WriteSourceItemDoneEvent {
+                    operation_id: operation_id.to_string(),
+                    source_path: source.display().to_string(),
+                });
             }
             Err(e) => {
                 errors.push(TrashItemError {
@@ -163,8 +157,8 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
         // Emit throttled progress
         if last_progress_time.elapsed() >= state.progress_interval {
             let current_file = source.file_name().map(|n| n.to_string_lossy().to_string());
-            state.emit_progress_via_app(
-                app,
+            state.emit_progress_via_sink(
+                events,
                 WriteProgressEvent::new(
                     operation_id.to_string(),
                     WriteOperationType::Trash,
@@ -199,17 +193,14 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
             .map(|e| format!("{}: {}", e.path.display(), e.message))
             .collect::<Vec<_>>()
             .join("; ");
-        let _ = app.emit(
-            "write-error",
-            WriteErrorEvent::new(
-                operation_id.to_string(),
-                WriteOperationType::Trash,
-                WriteOperationError::IoError {
-                    path: String::new(),
-                    message: error_summary,
-                },
-            ),
-        );
+        events.emit_error(WriteErrorEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Trash,
+            WriteOperationError::IoError {
+                path: String::new(),
+                message: error_summary,
+            },
+        ));
         return Err(WriteOperationError::IoError {
             path: String::new(),
             message: format!(
@@ -224,16 +215,13 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
     }
 
     // Emit completion (may include partial errors)
-    let _ = app.emit(
-        "write-complete",
-        WriteCompleteEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Trash,
-            files_processed: items_done,
-            files_skipped: 0,
-            bytes_processed: bytes_done,
-        },
-    );
+    events.emit_complete(WriteCompleteEvent {
+        operation_id: operation_id.to_string(),
+        operation_type: WriteOperationType::Trash,
+        files_processed: items_done,
+        files_skipped: 0,
+        bytes_processed: bytes_done,
+    });
 
     // Log partial failures
     if !errors.is_empty() {
@@ -337,14 +325,71 @@ mod tests {
     }
 
     // ========================================================================
-    // trash_files_with_progress tests (using mock AppHandle)
+    // trash_files_with_progress tests (via CollectorEventSink)
     // ========================================================================
 
-    // Note: Full integration tests for trash_files_with_progress require a
-    // tauri::AppHandle, which needs the Tauri runtime. Unit-level tests for
-    // the core move_to_trash_sync function above cover the ObjC logic.
-    // The cancellation and progress patterns are structurally identical to
-    // delete_files_with_progress, which is tested via integration tests.
+    use crate::file_system::write_operations::types::CollectorEventSink;
+
+    /// Empty source list short-circuits: no destructive work, but a
+    /// `write-complete` event still fires so the FE dialog closes cleanly.
+    #[test]
+    fn trash_empty_sources_emits_complete_via_sink() {
+        let events = Arc::new(CollectorEventSink::new());
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+
+        let result = trash_files_with_progress(&*events, "op-trash-empty", &state, &[], None);
+        assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+        let complete = events.complete.lock().unwrap();
+        assert_eq!(complete.len(), 1);
+        assert_eq!(complete[0].files_processed, 0);
+        assert_eq!(complete[0].bytes_processed, 0);
+        assert!(events.cancelled.lock().unwrap().is_empty());
+        assert!(events.errors.lock().unwrap().is_empty());
+    }
+
+    /// Pre-cancel: `Stopped` set before the loop's first iteration. Trash
+    /// emits `write-cancelled` via the sink and returns
+    /// `WriteOperationError::Cancelled` without invoking `move_to_trash_sync`.
+    /// Source path is intentionally bogus — the cancel check fires first, so
+    /// the path is never stat'd.
+    #[test]
+    fn trash_pre_cancel_emits_cancelled_via_sink() {
+        let events = Arc::new(CollectorEventSink::new());
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+        state.intent.store(2u8, std::sync::atomic::Ordering::Relaxed); // Stopped
+
+        let sources = [PathBuf::from("/nonexistent_trash_test_12345/file.txt")];
+        let result = trash_files_with_progress(&*events, "op-trash-cancel", &state, &sources, None);
+        assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
+
+        let cancelled = events.cancelled.lock().unwrap();
+        assert_eq!(cancelled.len(), 1);
+        assert_eq!(cancelled[0].files_processed, 0);
+        assert!(!cancelled[0].rolled_back);
+        assert!(events.complete.lock().unwrap().is_empty());
+    }
+
+    /// All sources missing: trash emits `write-error` via the sink and
+    /// returns `IoError`. Tests the all-failed branch without invoking
+    /// `move_to_trash_sync` (the missing-source branch short-circuits
+    /// before the trash call).
+    #[test]
+    fn trash_all_sources_missing_emits_error_via_sink() {
+        let events = Arc::new(CollectorEventSink::new());
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+
+        let sources = [
+            PathBuf::from("/nonexistent_trash_test_aaa/x.txt"),
+            PathBuf::from("/nonexistent_trash_test_bbb/y.txt"),
+        ];
+        let result = trash_files_with_progress(&*events, "op-trash-all-missing", &state, &sources, None);
+        assert!(matches!(result, Err(WriteOperationError::IoError { .. })));
+
+        let errors = events.errors.lock().unwrap();
+        assert_eq!(errors.len(), 1);
+        assert!(events.complete.lock().unwrap().is_empty());
+    }
 
     #[test]
     fn test_trash_item_error_captures_path_and_message() {

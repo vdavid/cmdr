@@ -151,7 +151,6 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
 
     // Phase 2: Copy files in sorted order with rollback support
     let mut transaction = CopyTransaction::new();
-    let mut last_progress_time = Instant::now();
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
@@ -318,7 +317,6 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 operation_id,
                 WriteOperationType::Copy,
                 &progress_interval,
-                &mut last_progress_time,
                 config,
                 &mut transaction,
                 &mut apply_to_all_resolution,
@@ -509,7 +507,6 @@ pub(super) fn copy_single_item(
     operation_id: &str,
     operation_type: WriteOperationType,
     progress_interval: &Duration,
-    last_progress_time: &mut Instant,
     config: &WriteOperationConfig,
     transaction: &mut CopyTransaction,
     apply_to_all_resolution: &mut Option<ConflictResolution>,
@@ -824,41 +821,11 @@ pub(super) fn copy_single_item(
         *files_done += 1;
         *bytes_done += progress_weight;
 
-        // Emit progress
-        if last_progress_time.elapsed() >= *progress_interval {
-            let current_file_name = file_name.to_string_lossy().to_string();
-            log::debug!(
-                "copy: emitting write-progress op={} phase=copying files={}/{} bytes={}/{}",
-                operation_id,
-                *files_done,
-                files_total,
-                *bytes_done,
-                bytes_total
-            );
-            state.emit_progress_via_sink(
-                events,
-                WriteProgressEvent::new(
-                    operation_id.to_string(),
-                    operation_type,
-                    WriteOperationPhase::Copying,
-                    Some(current_file_name.clone()),
-                    *files_done,
-                    files_total,
-                    *bytes_done,
-                    bytes_total,
-                ),
-            );
-            update_operation_status(
-                operation_id,
-                WriteOperationPhase::Copying,
-                Some(current_file_name),
-                *files_done,
-                files_total,
-                *bytes_done,
-                bytes_total,
-            );
-            *last_progress_time = Instant::now();
-        }
+        // Per-file milestone emit (bumped `files_done` / `bytes_done`) lives
+        // in the sync driver's `Transferred` arm in `transfer_driver.rs` —
+        // fires unconditionally per file, so the FE's files-axis crosses
+        // `N/N` even when the chunked progress callback above absorbed the
+        // throttle window. Intra-file chunked emits stay here.
     }
 
     Ok(())
@@ -985,3 +952,7 @@ fn rollback_with_progress(
 
     true
 }
+
+#[cfg(test)]
+#[path = "copy_tests.rs"]
+mod tests;

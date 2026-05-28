@@ -4,7 +4,6 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Instant;
 
 use super::super::helpers::{
     is_same_filesystem, path_exists_or_is_symlink, remove_dir_all_in_background, resolve_conflict, spawn_async_sync,
@@ -379,7 +378,6 @@ fn move_with_staging(
     let mut files_done = 0;
     let mut bytes_done = 0u64;
     let mut files_skipped = 0usize;
-    let mut last_progress_time = Instant::now();
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
@@ -437,7 +435,6 @@ fn move_with_staging(
                 operation_id,
                 WriteOperationType::Move,
                 &state.progress_interval,
-                &mut last_progress_time,
                 config,
                 &mut transaction,
                 &mut apply_to_all_resolution,
