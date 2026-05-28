@@ -10,15 +10,15 @@ Backend counterpart: [`src-tauri/src/downloads/CLAUDE.md`](../../../src-tauri/sr
 
 | File                                    | Purpose                                                                                                                                                                                                  |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reveal.ts`                             | `revealLatestDownload(explorer)` (M4): consult ring + scan fallback. `revealPath(explorer, dir, name)` (M5): jump to a specific file.                                                                    |
-| `RevealEmptyToastContent.svelte`        | M4 INFO toast: "Your Downloads folder is empty…" with a "Go to Downloads" action.                                                                                                                        |
-| `RevealFdaToastContent.svelte`          | M4 INFO toast: "Cmdr needs Full Disk Access…" with an "Open System Settings" action.                                                                                                                     |
-| `reveal-ids.ts`                         | Dedup ids for M4's INFO toasts.                                                                                                                                                                          |
-| `event-bridge.svelte.ts`                | M5 listener bridge: one `download-detected` subscription, dispatches per the settings enum.                                                                                                              |
-| `DownloadToastContent.svelte`           | M5 in-app toast: title with filename + size, optional subdir line, snapshotted shortcut hint, Jump + Stop-showing actions.                                                                               |
+| `reveal.ts`                             | `revealLatestDownload(explorer)` consults ring + scan fallback. `revealPath(explorer, dir, name)` jumps to a specific file.                                                                              |
+| `RevealEmptyToastContent.svelte`        | INFO toast: "Your Downloads folder is empty…" with a "Go to Downloads" action.                                                                                                                           |
+| `RevealFdaToastContent.svelte`          | INFO toast: "Cmdr needs Full Disk Access…" with an "Open System Settings" action.                                                                                                                        |
+| `reveal-ids.ts`                         | Dedup ids for the reveal-path INFO toasts.                                                                                                                                                               |
+| `event-bridge.svelte.ts`                | Listener bridge: one `download-detected` subscription, dispatches per the settings enum.                                                                                                                 |
+| `DownloadToastContent.svelte`           | In-app toast: title with filename + size, optional subdir line, snapshotted shortcut hint, Jump + Stop-showing actions.                                                                                  |
 | `notifications-mode.ts`                 | Reader, writer, and deep-link helper for `behavior.fileSystemWatching.downloadsNotifications`.                                                                                                           |
-| `global-shortcut-bridge.svelte.ts`      | M6: one `global-shortcut-fired` Tauri event subscription. Calls `revealLatestDownload` plus, on first un-acknowledged trigger, the warn toast.                                                           |
-| `GlobalShortcutWarnToastContent.svelte` | M6 first-trigger persistent warn toast for ⌃⌥⌘J. "Keep it on" / "Turn it off" buttons. Snapshotted binding prop.                                                                                         |
+| `global-shortcut-bridge.svelte.ts`      | One `global-shortcut-fired` Tauri event subscription. Calls `revealLatestDownload` plus, on first un-acknowledged trigger, the warn toast.                                                               |
+| `GlobalShortcutWarnToastContent.svelte` | First-trigger persistent warn toast for ⌃⌥⌘J. "Keep it on" / "Turn it off" buttons. Snapshotted binding prop.                                                                                            |
 | `global-shortcut-binding.ts`            | Translates the macOS-symbol binding (`'⌃⌥⌘J'`) into the accelerator string the plugin understands (`'Control+Alt+Meta+J'`).                                                                              |
 | `global-shortcut-setting.ts`            | Narrow getters/setters for `behavior.fileSystemWatching.globalRevealShortcut.*`. **`setGlobalRevealBinding` resets `acknowledged` to `false`** — the new combo deserves the first-trigger warning again. |
 
@@ -73,7 +73,7 @@ is a mouse-only convenience.
 Both buttons call `event.stopPropagation()` in their click handlers so the body-click reveal doesn't also fire
 underneath (otherwise "Stop showing these" would navigate to the file before the Settings window came up).
 
-## Global reveal hotkey (M6)
+## Global reveal hotkey
 
 The default global hotkey is `⌃⌥⌘J`. Registration lifecycle lives in the backend (`refresh_global_reveal_shortcut` runs
 at startup, on focus, and when the Settings UI toggles); the FE bridge owns the trigger handler.
@@ -102,3 +102,34 @@ the optional anchor from the URL on cold-open and from the `navigate-to-section`
 scrolls the matching DOM id into view. The anchor id is the source-of-truth `DOWNLOADS_NOTIFICATIONS_ANCHOR_ID` constant
 exported from `notifications-mode.ts`; the section component imports the same constant for its `<div id={…}>` wrapper,
 so renaming flows through one place.
+
+## Smoke test guide
+
+Run through this list after any change that touches the downloads watcher, the reveal action, the global hotkey, or the
+settings rows. Each step is independent; you can stop after the ones that cover your change.
+
+1. Start dev: `pnpm dev` at repo root.
+2. Wait for the FDA gate to open (existing onboarding). If FDA is already granted in System Settings, the gate clears
+   automatically.
+3. Drop a file via Terminal: `touch ~/Downloads/test1.txt` → expect a Downloads toast in Cmdr.
+4. Click the toast body (anywhere outside the buttons) → the focused pane navigates to `~/Downloads` and selects
+   `test1.txt`.
+5. Press `⌘J` from a Cmdr-focused window → the focused pane reveals the latest download (`test1.txt`).
+6. `Cmd-Tab` to Chrome, press `⌃⌥⌘J` → Cmdr foregrounds and reveals `test1.txt`. The first trigger of this session shows
+   the warn toast ("The ⌃⌥⌘J shortcut jumps to your latest download from anywhere. Keep it on?").
+7. Click "Keep it on" on the warn toast → `acknowledged` flips to `true`; subsequent triggers don't show the toast.
+8. Copy five files via Cmdr into `~/Downloads` (Cmd+C + Cmd+V or drag) → expect NO downloads toasts (Cmdr-own-write
+   suppression).
+9. In **Settings > Behavior > File system watching**, pick "macOS notifications" under "Downloads notifications". macOS
+   asks for notification permission. Allow. Drop another file in Terminal → expect a macOS notification (no in-app toast
+   for this event).
+10. Pick "Both" → expect both surfaces. Pick "Neither" → expect neither.
+11. Click "Stop showing these" on a Downloads toast → the setting flips to "Neither" and Settings opens scrolled to the
+    right sub-group.
+12. In Settings, toggle "Global shortcut" off → press `⌃⌥⌘J` from Chrome, expect nothing. Toggle on again → expect the
+    reveal to work.
+13. Change the binding in the "Combo" field (for example to `⌃⌥⌘K`) → the warn toast re-fires on the next trigger
+    because `acknowledged` resets on rebind.
+14. Revoke FDA in System Settings → return to Cmdr. The two sub-groups grey out with the shared FDA hint. The global
+    hotkey unregisters. Pressing `⌘J` from Cmdr shows the FDA INFO toast (with a stable dedup id so spamming `⌘J`
+    doesn't stack toasts).

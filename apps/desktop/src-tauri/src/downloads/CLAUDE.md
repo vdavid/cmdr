@@ -40,7 +40,7 @@ The watcher is alive iff `fda_gate::is_fda_pending_runtime() == false`. `lib.rs`
 Dropping the handle releases the OS watch. The watcher holds no FDA-protected state beyond
 that, so the closed-gate side is a pure no-op.
 
-## M3 hook contract (Cmdr-own-write ignore set)
+## Cmdr-own-write hook contract
 
 Write operations land in `file_system/write_operations/`. Just before each filesystem syscall,
 the operation calls:
@@ -62,7 +62,7 @@ the ignore set. Cmdr never writes `.crdownload` files; always register the final
 The bulk variant `note_pending_writes(paths, ttl)` exists for transfer-driver paths that know
 their destination set up front.
 
-## Global reveal hotkey (M6)
+## Global reveal hotkey
 
 The default global combo is `⌃⌥⌘J`. `apps/desktop/src-tauri/src/lib.rs` calls
 `downloads::refresh_global_reveal_shortcut(app)` at:
