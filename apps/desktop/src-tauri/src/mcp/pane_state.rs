@@ -2,6 +2,7 @@
 //!
 //! Stores the current state of both panes so MCP tools can access it.
 
+use crate::ignore_poison::RwLockIgnorePoison;
 use serde::{Deserialize, Serialize};
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -124,24 +125,24 @@ impl PaneStateStore {
     }
 
     pub fn get_left(&self) -> PaneState {
-        self.left.read().unwrap().clone()
+        self.left.read_ignore_poison().clone()
     }
 
     pub fn get_right(&self) -> PaneState {
-        self.right.read().unwrap().clone()
+        self.right.read_ignore_poison().clone()
     }
 
     pub fn get_focused_pane(&self) -> String {
-        self.focused_pane.read().unwrap().clone()
+        self.focused_pane.read_ignore_poison().clone()
     }
 
     pub fn set_left(&self, state: PaneState) {
-        *self.left.write().unwrap() = state;
+        *self.left.write_ignore_poison() = state;
         self.generation.fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn set_right(&self, state: PaneState) {
-        *self.right.write().unwrap() = state;
+        *self.right.write_ignore_poison() = state;
         self.generation.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -156,7 +157,7 @@ impl PaneStateStore {
             "right" => &self.right,
             _ => return false,
         };
-        pane_state.write().unwrap().tabs = tabs;
+        pane_state.write_ignore_poison().tabs = tabs;
         self.generation.fetch_add(1, Ordering::Relaxed);
         true
     }
@@ -166,7 +167,7 @@ impl PaneStateStore {
     }
 
     pub fn set_focused_pane(&self, pane: String) {
-        *self.focused_pane.write().unwrap() = pane;
+        *self.focused_pane.write_ignore_poison() = pane;
     }
 }
 
@@ -176,7 +177,7 @@ impl PaneStateStore {
 #[specta::specta]
 pub fn update_left_pane_state(app: AppHandle, state: PaneState) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
-        let tabs = store.left.read().unwrap().tabs.clone();
+        let tabs = store.left.read_ignore_poison().tabs.clone();
         let mut state = state;
         state.tabs = tabs;
         store.set_left(state);
@@ -189,7 +190,7 @@ pub fn update_left_pane_state(app: AppHandle, state: PaneState) {
 #[specta::specta]
 pub fn update_right_pane_state(app: AppHandle, state: PaneState) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
-        let tabs = store.right.read().unwrap().tabs.clone();
+        let tabs = store.right.read_ignore_poison().tabs.clone();
         let mut state = state;
         state.tabs = tabs;
         store.set_right(state);

@@ -31,6 +31,7 @@ use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_
 use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{Volume, VolumeError};
+use crate::ignore_poison::IgnorePoison;
 
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
@@ -316,7 +317,7 @@ pub(super) async fn move_volumes_with_progress(
                     // doesn't re-list the parent dir per conflict on MTP.
                     let source_hint = source_hints.get(&source_path_owned).copied();
                     let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
-                    let mut latched = apply_to_all.lock().unwrap().take();
+                    let mut latched = apply_to_all.lock_ignore_poison().take();
                     let resolved = resolve_volume_conflict(
                         &source_volume,
                         &source_path_owned,
@@ -331,7 +332,7 @@ pub(super) async fn move_volumes_with_progress(
                         dest_size_hint,
                     )
                     .await;
-                    *apply_to_all.lock().unwrap() = latched;
+                    *apply_to_all.lock_ignore_poison() = latched;
                     let resolved = resolved?;
                     Ok(match resolved {
                         None => {
@@ -418,7 +419,7 @@ pub(super) async fn move_volumes_with_progress(
                                 e
                             );
                             let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
-                            *failure_ctx_cell.lock().unwrap() = Some((e, source_path));
+                            *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
                             return Err(mapped);
                         }
                     };
@@ -441,7 +442,7 @@ pub(super) async fn move_volumes_with_progress(
                             e
                         );
                         let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
-                        *failure_ctx_cell.lock().unwrap() = Some((e, source_path));
+                        *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
                         return Err(mapped);
                     }
 
@@ -451,7 +452,7 @@ pub(super) async fn move_volumes_with_progress(
                     // `copy_single_path`, so without an emit here cancel-mid-batch
                     // sinks listening to `emit_progress` would never observe
                     // file-1's completion and never trip their cancel hook.
-                    let mut last = last_progress_time.lock().unwrap();
+                    let mut last = last_progress_time.lock_ignore_poison();
                     if last.elapsed() >= progress_interval {
                         *last = Instant::now();
                         drop(last);
@@ -480,7 +481,7 @@ pub(super) async fn move_volumes_with_progress(
     )
     .await;
 
-    let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock().unwrap().take();
+    let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock_ignore_poison().take();
     let files_done = outcome.files_done;
     let bytes_done = outcome.bytes_done;
     let files_skipped = outcome.files_skipped;
@@ -753,7 +754,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                     );
                     let source_hint = source_hints.get(&source_path_owned).copied();
                     let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
-                    let mut latched = apply_to_all.lock().unwrap().take();
+                    let mut latched = apply_to_all.lock_ignore_poison().take();
                     // Same volume on both sides; pass `&volume` twice.
                     let resolved = resolve_volume_conflict(
                         &volume,
@@ -769,7 +770,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                         dest_size_hint,
                     )
                     .await;
-                    *apply_to_all.lock().unwrap() = latched;
+                    *apply_to_all.lock_ignore_poison() = latched;
                     let resolved = resolved?;
                     Ok(match resolved {
                         None => {
@@ -837,7 +838,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                     // emit cancel-mid-batch sinks listening to
                     // `emit_progress` would never observe a successful
                     // rename and never trip their cancel hook.
-                    let mut last = last_progress_time.lock().unwrap();
+                    let mut last = last_progress_time.lock_ignore_poison();
                     if last.elapsed() >= progress_interval {
                         *last = Instant::now();
                         drop(last);

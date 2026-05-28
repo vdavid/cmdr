@@ -45,6 +45,7 @@ use super::volume_conflict::resolve_volume_conflict;
 use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{SourceItemInfo, Volume, VolumeError};
+use crate::ignore_poison::IgnorePoison;
 
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
@@ -348,7 +349,7 @@ fn account_skipped_file(
     files_skipped_atomic.fetch_add(1, Ordering::Relaxed);
     bytes_skipped_atomic.fetch_add(hint_size, Ordering::Relaxed);
 
-    let mut last = last_progress_mutex.lock().unwrap();
+    let mut last = last_progress_mutex.lock_ignore_poison();
     if last.elapsed() >= progress_interval {
         *last = Instant::now();
         drop(last);
@@ -697,7 +698,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 );
 
                 // Mark this destination as in-flight so cancel/error can clean it up.
-                in_flight_partials.lock().unwrap().push(dest_item_path.clone());
+                in_flight_partials.lock_ignore_poison().push(dest_item_path.clone());
 
                 let src_vol = Arc::clone(&source_volume);
                 let dst_vol = Arc::clone(&dest_volume);
@@ -727,9 +728,9 @@ pub(crate) async fn copy_volumes_with_progress(
                         let delta = file_bytes_done.saturating_sub(prev);
                         let current_total = bytes_done_a.fetch_add(delta, Ordering::Relaxed) + delta;
                         let current_files_done = files_done_a.load(Ordering::Relaxed);
-                        let last = *last_prog_a.lock().unwrap();
+                        let last = *last_prog_a.lock_ignore_poison();
                         if last.elapsed() >= progress_interval {
-                            *last_prog_a.lock().unwrap() = Instant::now();
+                            *last_prog_a.lock_ignore_poison() = Instant::now();
                             state_clone.emit_progress_via_sink(
                                 &*events_task,
                                 WriteProgressEvent::new(
@@ -792,17 +793,17 @@ pub(crate) async fn copy_volumes_with_progress(
             match in_flight.next().await {
                 Some(Ok((completed_dest, _bytes))) => {
                     // Remove from in-flight partials and record as completed.
-                    let mut partials = in_flight_partials.lock().unwrap();
+                    let mut partials = in_flight_partials.lock_ignore_poison();
                     if let Some(pos) = partials.iter().position(|p| p == &completed_dest) {
                         partials.swap_remove(pos);
                     }
                     drop(partials);
-                    copied_paths.lock().unwrap().push(completed_dest);
+                    copied_paths.lock_ignore_poison().push(completed_dest);
                 }
                 Some(Err((failed_dest, e))) => {
                     // Remove from in-flight partials; this one's its own
                     // partial cleanup the post-loop logic will do.
-                    let mut partials = in_flight_partials.lock().unwrap();
+                    let mut partials = in_flight_partials.lock_ignore_poison();
                     if let Some(pos) = partials.iter().position(|p| p == &failed_dest) {
                         partials.swap_remove(pos);
                     }
@@ -937,7 +938,7 @@ pub(crate) async fn copy_volumes_with_progress(
                         // The serial driver guarantees single-threaded
                         // sequencing; the Mutex just keeps the closure
                         // `Fn`-shaped.
-                        let mut latched = apply_to_all.lock().unwrap().take();
+                        let mut latched = apply_to_all.lock_ignore_poison().take();
                         let resolved = resolve_volume_conflict(
                             &source_volume,
                             &source_path_owned,
@@ -952,7 +953,7 @@ pub(crate) async fn copy_volumes_with_progress(
                             dest_size_hint,
                         )
                         .await;
-                        *apply_to_all.lock().unwrap() = latched;
+                        *apply_to_all.lock_ignore_poison() = latched;
                         let resolved = resolved?;
                         Ok(match resolved {
                             None => {
@@ -1025,7 +1026,7 @@ pub(crate) async fn copy_volumes_with_progress(
                             if is_cancelled(&state_for_cb.intent) {
                                 return ControlFlow::Break(());
                             }
-                            let mut last = last_emit.lock().unwrap();
+                            let mut last = last_emit.lock_ignore_poison();
                             if last.elapsed() >= progress_interval {
                                 *last = Instant::now();
                                 drop(last);
@@ -1057,7 +1058,7 @@ pub(crate) async fn copy_volumes_with_progress(
                         };
                         let on_file_complete = || {};
 
-                        *last_dest_cell.lock().unwrap() = Some(dest_item_path.clone());
+                        *last_dest_cell.lock_ignore_poison() = Some(dest_item_path.clone());
 
                         match copy_single_path(
                             &source_volume,
@@ -1073,13 +1074,13 @@ pub(crate) async fn copy_volumes_with_progress(
                         .await
                         {
                             Ok(bytes_copied) => {
-                                copied_paths.lock().unwrap().push(dest_item_path);
-                                *last_dest_cell.lock().unwrap() = None;
+                                copied_paths.lock_ignore_poison().push(dest_item_path);
+                                *last_dest_cell.lock_ignore_poison() = None;
                                 Ok(TransferOutcome::Transferred { bytes: bytes_copied })
                             }
                             Err(e) => {
                                 let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
-                                *failure_ctx_cell.lock().unwrap() = Some((e, source_path));
+                                *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
                                 Err(mapped)
                             }
                         }
@@ -1098,11 +1099,11 @@ pub(crate) async fn copy_volumes_with_progress(
         // driver and never read post-loop — silenced with `_ =` rather than
         // assigned back to dead locals (which `#[deny(unused_assignments)]`
         // would flag).
-        let _ = apply_to_all_cell.lock().unwrap().take();
-        if let Some(p) = last_dest_cell.lock().unwrap().take() {
+        let _ = apply_to_all_cell.lock_ignore_poison().take();
+        if let Some(p) = last_dest_cell.lock_ignore_poison().take() {
             last_dest_path = Some(p);
         }
-        let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock().unwrap().take();
+        let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock_ignore_poison().take();
         let _ = source_hints_arc;
 
         files_done = outcome.files_done;
@@ -1135,10 +1136,10 @@ pub(crate) async fn copy_volumes_with_progress(
     // Unwrap shared containers for post-loop logic.
     let mut copied_paths: Vec<PathBuf> = Arc::try_unwrap(copied_paths)
         .map(|m| m.into_inner().unwrap_or_default())
-        .unwrap_or_else(|arc| arc.lock().unwrap().clone());
+        .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
     let in_flight_partials: Vec<PathBuf> = Arc::try_unwrap(in_flight_partials)
         .map(|m| m.into_inner().unwrap_or_default())
-        .unwrap_or_else(|arc| arc.lock().unwrap().clone());
+        .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
 
     // Post-loop: handle success, cancellation, or error
     let intent = load_intent(&state.intent);
