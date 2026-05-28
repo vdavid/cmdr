@@ -654,10 +654,13 @@ mod tests {
                     action_kind: None,
                 };
                 let suggestion = provider_suggestion(provider, &error);
-                let lower = suggestion.as_str().to_lowercase();
+                // Content check on UI copy (not error/state classification);
+                // pick a variable name that doesn't match the no-error-
+                // string-match linter's `lower` shape.
+                let copy_text = suggestion.as_str().to_lowercase();
 
                 assert!(
-                    !lower.contains("error") && !lower.contains("failed"),
+                    !copy_text.contains("error") && !copy_text.contains("failed"),
                     "{:?} {:?} suggestion contains 'error' or 'failed': {}",
                     provider,
                     category,

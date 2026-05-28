@@ -245,11 +245,16 @@ impl MtpConnectionManager {
                     });
                 }
 
-                // Check for permission errors (Linux: missing udev rules)
+                // Check for permission errors (Linux: missing udev rules).
+                // Use nusb's typed `ErrorKind` so we don't depend on the OS
+                // error message wording (which differs across distros and
+                // nusb versions).
                 #[cfg(target_os = "linux")]
                 {
-                    let msg = e.to_string().to_lowercase();
-                    if msg.contains("permission denied") || msg.contains("access denied") {
+                    if matches!(
+                        &e,
+                        mtp_rs::Error::Usb(usb_err) if usb_err.kind() == nusb::ErrorKind::PermissionDenied
+                    ) {
                         if let Some(app) = app {
                             let _ = app.emit("mtp-permission-error", serde_json::json!({ "deviceId": device_id }));
                         }

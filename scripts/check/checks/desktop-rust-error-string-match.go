@@ -35,18 +35,18 @@ var errorStringMatchPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`\.to_string\(\)\.starts_with\(`),
 	// `.to_lowercase().contains(...)` and `.to_lowercase().starts_with(...)`
 	// are the canonical "classify by case-insensitive substring" anti-pattern.
-	// Catches an audit-finding-style introduction even before the lowered
-	// String gets bound to a `let lower = ...`. The May 2026 audit hit this
-	// shape three times (installer / keychain / write_operations).
-	//
-	// Known gap: `let lower = msg.to_lowercase(); lower.contains(...)` is the
-	// same bug but split across two lines. Widening to `\blower\.contains\(`
-	// would also flag a handful of pre-existing, documented sites (Linux
-	// mount-CLI output parsing, MTP USB-permission detection); fixing those
-	// is out of scope here and review/CLAUDE.md guidance remains the second
-	// line of defense.
+	// Catches the inline chain even before the lowered String gets bound.
 	regexp.MustCompile(`\.to_lowercase\(\)\.contains\(`),
 	regexp.MustCompile(`\.to_lowercase\(\)\.starts_with\(`),
+	// `let lower = msg.to_lowercase(); lower.contains(...)` is the same anti-
+	// pattern split across two lines. We flag the canonical local-binding
+	// names (`error`, `err`, `msg`, `err_msg`, `errmsg`, `lower`, `lowered`).
+	// Any classification dressed up as one of these names trips the rule;
+	// genuinely-content checks on unrelated locals (UI copy assertions, log
+	// line routing) either pick a different variable name or carry the
+	// `allowed-error-string-match:` opt-out with a reason.
+	regexp.MustCompile(`\b(error|err|msg|err_msg|errmsg|lower|lowered)\.contains\(`),
+	regexp.MustCompile(`\b(error|err|msg|err_msg|errmsg|lower|lowered)\.starts_with\(`),
 }
 
 type errorStringMatchSite struct {

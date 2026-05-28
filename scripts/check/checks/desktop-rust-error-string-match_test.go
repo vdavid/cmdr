@@ -208,6 +208,80 @@ fn classify(e: &io::Error) {
 	}
 }
 
+func TestErrorStringMatch_FlagsBoundLowerContains(t *testing.T) {
+	// Regression for the audit follow-up: a `let lower = msg.to_lowercase();
+	// lower.contains(...)` chain across two lines is the same anti-pattern as
+	// the inline `.to_lowercase().contains(...)` but split. The bound-name
+	// pattern covers it.
+	_, err := runErrorStringMatchOn(t, map[string]string{
+		"net.rs": `
+fn classify(msg: &str) {
+    let lower = msg.to_lowercase();
+    if lower.contains("permission denied") {}
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected violation for `lower.contains(...)` after a let-bind")
+	}
+	if !strings.Contains(err.Error(), "lower.contains") {
+		t.Errorf("expected lower.contains hit, got: %s", err.Error())
+	}
+}
+
+func TestErrorStringMatch_FlagsBoundErrStartsWith(t *testing.T) {
+	_, err := runErrorStringMatchOn(t, map[string]string{
+		"foo.rs": `
+fn classify(err: &str) {
+    if err.starts_with("USB: ") {}
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected violation for `err.starts_with(...)`")
+	}
+	if !strings.Contains(err.Error(), "err.starts_with") {
+		t.Errorf("expected err.starts_with hit, got: %s", err.Error())
+	}
+}
+
+func TestErrorStringMatch_FlagsBoundMsgContains(t *testing.T) {
+	_, err := runErrorStringMatchOn(t, map[string]string{
+		"usb.rs": `
+fn classify(usb_err: &nusb::Error) {
+    let msg = usb_err.to_string().to_lowercase();
+    if msg.contains("exclusive access") {}
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected violation for `msg.contains(...)`")
+	}
+}
+
+func TestErrorStringMatch_PassesOnUnrelatedLocalNames(t *testing.T) {
+	// The pattern is keyed on the canonical local-binding names. A genuinely
+	// unrelated `text.contains(...)` (a UI copy assertion, a log line) doesn't
+	// get flagged: clean code shouldn't have to thread the opt-out comment
+	// when it isn't doing classification.
+	res, err := runErrorStringMatchOn(t, map[string]string{
+		"copy_check.rs": `
+fn assert_no_forbidden(s: &str) {
+    let copy_text = s.to_lowercase();
+    for word in ["error", "failed"] {
+        assert!(!copy_text.contains(word));
+    }
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success for unrelated local name, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
 func TestErrorStringMatch_PassesOnCleanCode(t *testing.T) {
 	res, err := runErrorStringMatchOn(t, map[string]string{
 		"foo.rs": `

@@ -30,6 +30,35 @@ pub enum EjectAction {
     MtpDisconnect { device_id: String },
 }
 
+/// Reasons `decide_eject_action` can't pick an action. Kept as a typed enum so
+/// callers and tests classify the failure by variant instead of substring-
+/// matching a free-form message.
+#[derive(Debug, PartialEq, Eq)]
+pub enum EjectDecisionError {
+    /// MTP volume id is shaped wrong: missing the `{device_id}:{storage_id}`
+    /// separator. Carries the bad id verbatim for diagnostics / UI rendering.
+    MtpIdMissingDevicePrefix { volume_id: String },
+    /// Volume can't be ejected (not SMB, not MTP, and NSURL/`/sys/block`
+    /// reports `is_ejectable = false`). Typical for the boot volume or other
+    /// internal disks.
+    NotEjectable { volume_id: String },
+}
+
+impl std::fmt::Display for EjectDecisionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MtpIdMissingDevicePrefix { volume_id } => {
+                write!(f, "MTP volume id {} is missing a device prefix", volume_id)
+            }
+            Self::NotEjectable { volume_id } => {
+                write!(f, "Volume {} isn't ejectable", volume_id)
+            }
+        }
+    }
+}
+
+impl std::error::Error for EjectDecisionError {}
+
 /// Inputs the decision needs. Kept as primitives so the decision is a pure
 /// function that can be tested without touching `VolumeManager` or the FS.
 #[derive(Debug)]
@@ -47,13 +76,15 @@ pub struct EjectContext<'a> {
 /// Decides what to do for a given volume. Pure function; the impure parts
 /// (looking up the volume, running `diskutil`, calling MTP disconnect) live
 /// in the Tauri command wrapper.
-pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, String> {
+pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, EjectDecisionError> {
     if ctx.is_mtp {
         let device_id = ctx
             .volume_id
             .split_once(':')
             .map(|(d, _)| d.to_string())
-            .ok_or_else(|| format!("MTP volume id {} is missing a device prefix", ctx.volume_id))?;
+            .ok_or_else(|| EjectDecisionError::MtpIdMissingDevicePrefix {
+                volume_id: ctx.volume_id.to_string(),
+            })?;
         return Ok(EjectAction::MtpDisconnect { device_id });
     }
     if ctx.is_smb {
@@ -62,7 +93,9 @@ pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, String> {
     if ctx.is_ejectable {
         return Ok(EjectAction::DiskutilEject);
     }
-    Err(format!("Volume {} isn't ejectable", ctx.volume_id))
+    Err(EjectDecisionError::NotEjectable {
+        volume_id: ctx.volume_id.to_string(),
+    })
 }
 
 /// Ejects a volume. Picks the right teardown for the volume's kind.
@@ -106,7 +139,7 @@ pub async fn eject_volume(volume_id: String) -> Result<(), IpcError> {
         is_smb,
         is_mtp,
     })
-    .map_err(IpcError::from_err)?;
+    .map_err(|e| IpcError::from_err(e.to_string()))?;
 
     match action {
         EjectAction::MtpDisconnect { device_id } => mtp_disconnect(&device_id).await,
@@ -255,8 +288,12 @@ mod tests {
             is_smb: false,
             is_mtp: true,
         };
-        let err = decide_eject_action(&ctx).unwrap_err();
-        assert!(err.contains("device prefix"), "got: {}", err);
+        assert_eq!(
+            decide_eject_action(&ctx).unwrap_err(),
+            EjectDecisionError::MtpIdMissingDevicePrefix {
+                volume_id: "no-colon-id".to_string(),
+            }
+        );
     }
 
     #[test]
@@ -289,8 +326,12 @@ mod tests {
             is_smb: false,
             is_mtp: false,
         };
-        let err = decide_eject_action(&ctx).unwrap_err();
-        assert!(err.contains("isn't ejectable"), "got: {}", err);
+        assert_eq!(
+            decide_eject_action(&ctx).unwrap_err(),
+            EjectDecisionError::NotEjectable {
+                volume_id: "root".to_string(),
+            }
+        );
     }
 
     #[test]

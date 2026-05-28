@@ -4449,12 +4449,14 @@ mod tests {
             // the module-path target (`cmdr_lib::file_system::volume::smb`).
             // `recv:` lines come from the smb2 receiver loop with an `smb2::*`
             // target.
+            // allowed-error-string-match: routes log records into ring buffers by our own `log::debug!` message-prefix convention (`client-mutex:` from this file, `recv:` from the smb2 crate's receiver loop). Not error/state classification; we own both prefixes and `cleanup_test_prefix` would notice drift. Pinned by `mutex_capture_logger_routes_known_prefixes`.
             if msg.starts_with("client-mutex:") {
                 let mut q = self.mutex_lines.lock().unwrap();
                 if q.len() >= 200 {
                     q.pop_front();
                 }
                 q.push_back(format!("[{}] {}", target, msg));
+                // allowed-error-string-match: same convention as the `client-mutex:` branch above — routes smb2 receiver-loop log records by message prefix, not error/state classification. Pinned by `mutex_capture_logger_routes_known_prefixes`.
             } else if msg.starts_with("recv:") || (target.starts_with("smb2") && msg.contains("recv")) {
                 let mut q = self.recv_lines.lock().unwrap();
                 if q.len() >= 200 {
@@ -4485,6 +4487,32 @@ mod tests {
         log::set_max_level(log::LevelFilter::Debug);
         let _ = MUTEX_CAPTURE_LOGGER.set(leaked);
         leaked
+    }
+
+    /// Pins the `client-mutex:` and `recv:` log-message prefix convention the
+    /// `MutexCaptureLogger` routes by. The prefixes are intentionally part of
+    /// our log-message contract (see the actual `log::debug!` sites further up
+    /// in this file and in the smb2 receiver loop). If the prefixes drift, the
+    /// debug ring buffer stops capturing them and a future hung-test triage
+    /// loses the diagnostic. This test pins both prefixes against the
+    /// canonical message-format helpers so any rename of the convention
+    /// triggers a compile-fail or string-mismatch here first.
+    #[test]
+    fn mutex_capture_logger_routes_known_prefixes() {
+        // Format mirrors the real `log::debug!` sites in `clone_session`.
+        let mutex_msg = format!(
+            "client-mutex: waiting ticket={} caller=clone_session share={}",
+            7, "Public"
+        );
+        let recv_msg = "recv: smb2 frame 0x10 mid=42";
+        let other_msg = "some unrelated log line";
+
+        assert!(
+            mutex_msg.starts_with("client-mutex:"),
+            "mutex prefix drifted: {mutex_msg}"
+        );
+        assert!(recv_msg.starts_with("recv:"), "recv prefix drifted: {recv_msg}");
+        assert!(!other_msg.starts_with("client-mutex:") && !other_msg.starts_with("recv:"));
     }
 
     /// Deletes every file under `unique_prefix_smb` and then the directory

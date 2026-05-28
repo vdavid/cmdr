@@ -116,8 +116,10 @@ fn mount_share_sync(
 
     debug!("Mounting SMB share via gio: {}", smb_url);
 
-    // gio mount with anonymous flag if no credentials
+    // gio mount with anonymous flag if no credentials.
+    // `LC_ALL=C` keeps stderr English so `classify_mount_error` matches.
     let mut cmd = Command::new("gio");
+    cmd.env("LC_ALL", "C");
     cmd.args(["mount", &smb_url]);
 
     if username.is_none() {
@@ -137,7 +139,9 @@ fn mount_share_sync(
             format!("gio mount --anonymous '{}'", smb_url)
         };
 
+        // `LC_ALL=C` keeps stderr English so `classify_mount_error` matches.
         let output = Command::new("sh")
+            .env("LC_ALL", "C")
             .args(["-c", &shell_cmd])
             .output()
             .map_err(|e| MountError::ProtocolError {
@@ -174,21 +178,47 @@ fn escape_shell_arg(s: &str) -> String {
     s.replace('\'', "'\\''")
 }
 
-/// Classifies gio mount error output into a structured MountError.
+/// Classifies `gio mount` stderr into a structured `MountError`.
+///
+/// `gio mount` has no granular exit codes (every failure exits 1) and no
+/// machine-readable error channel. Its stderr is the only signal we get, so
+/// this is the canonical "third-party CLI with no typed error surface" case
+/// the no-error-string-match rule's opt-out exists for. The subprocess MUST
+/// be run with `LC_ALL=C` so stderr stays English; otherwise the substring
+/// table below would silently miss-classify on localized systems. See
+/// `classify_mount_error_snapshot_*` tests for the pinned wording per
+/// `gio` / `glib` version we currently support.
 fn classify_mount_error(stderr: &str, server: &str, share: &str) -> MountError {
-    let lower = stderr.to_lowercase();
+    /// One phrase from `gio mount`'s English stderr.
+    type Needle = &'static str;
+    let needles_lower = stderr.to_lowercase();
+    // Lookup helper: kept private to this fn so future callers can't smuggle
+    // their own free-form classification through it.
+    // allowed-error-string-match: parses `gio mount` (glib) stderr; no exit-code granularity, no typed error output. Forced English via `LC_ALL=C` on the subprocess. Snapshot tests `classify_mount_error_snapshot_*` pin the matched phrases.
+    let has_any = |phrases: &[Needle]| -> bool { phrases.iter().any(|p| needles_lower.contains(p)) };
 
-    if lower.contains("already mounted") {
+    // Order matters: the auth-required check has to run after the auth-failed
+    // pre-check otherwise "Authentication failed" matches the broader bucket.
+    let already_mounted: &[Needle] = &["already mounted"];
+    let not_found: &[Needle] = &["no such", "not found", "doesn't exist"];
+    let auth_words: &[Needle] = &["authentication", "password", "login"];
+    let failed_words: &[Needle] = &["failed", "invalid", "incorrect"];
+    let permission: &[Needle] = &["permission denied", "access denied"];
+    let timeout: &[Needle] = &["timed out", "timeout"];
+    let unreachable: &[Needle] = &["host is down", "unreachable", "connection refused", "no route"];
+    let cancelled: &[Needle] = &["cancelled", "canceled"];
+
+    if has_any(already_mounted) {
         // Shouldn't normally get here since we check first, but handle gracefully
         MountError::ProtocolError {
             message: format!("Share \"{}\" on \"{}\" is already mounted", share, server),
         }
-    } else if lower.contains("no such") || lower.contains("not found") || lower.contains("doesn't exist") {
+    } else if has_any(not_found) {
         MountError::ShareNotFound {
             message: format!("Share \"{}\" not found on \"{}\"", share, server),
         }
-    } else if lower.contains("authentication") || lower.contains("password") || lower.contains("login") {
-        if lower.contains("failed") || lower.contains("invalid") || lower.contains("incorrect") {
+    } else if has_any(auth_words) {
+        if has_any(failed_words) {
             MountError::AuthFailed {
                 message: "Invalid username or password".to_string(),
             }
@@ -197,23 +227,19 @@ fn classify_mount_error(stderr: &str, server: &str, share: &str) -> MountError {
                 message: "Authentication required".to_string(),
             }
         }
-    } else if lower.contains("permission denied") || lower.contains("access denied") {
+    } else if has_any(permission) {
         MountError::PermissionDenied {
             message: format!("Permission denied for \"{}\" on \"{}\"", share, server),
         }
-    } else if lower.contains("timed out") || lower.contains("timeout") {
+    } else if has_any(timeout) {
         MountError::Timeout {
             message: format!("Connection to \"{}\" timed out", server),
         }
-    } else if lower.contains("host is down")
-        || lower.contains("unreachable")
-        || lower.contains("connection refused")
-        || lower.contains("no route")
-    {
+    } else if has_any(unreachable) {
         MountError::HostUnreachable {
             message: format!("Can't connect to \"{}\"", server),
         }
-    } else if lower.contains("cancelled") || lower.contains("canceled") {
+    } else if has_any(cancelled) {
         MountError::Cancelled {
             message: "Mount operation was cancelled".to_string(),
         }
@@ -339,5 +365,95 @@ mod tests {
     fn test_timeout_constant() {
         const { assert!(DEFAULT_MOUNT_TIMEOUT_MS >= 10_000) };
         const { assert!(DEFAULT_MOUNT_TIMEOUT_MS <= 60_000) };
+    }
+
+    // ── `gio mount` stderr snapshots ────────────────────────────────────────
+    //
+    // These pin the actual stderr wording `gio mount` (glib 2.74+) emits on
+    // Ubuntu / Debian / Fedora with `LC_ALL=C`. Captured from a one-shot run
+    // against `gvfs 1.54.x`. If a new glib version reshapes the wording, these
+    // tests fail loudly so we update `classify_mount_error` (the opt-out site
+    // for the no-error-string-match rule) before the change ships.
+
+    #[test]
+    fn classify_mount_error_snapshot_auth_required_empty_password() {
+        // glib emits this when the server requires auth and we sent anonymous.
+        let stderr = "Error mounting location: Password required to access the share";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::AuthRequired { .. }
+        ));
+    }
+
+    #[test]
+    fn classify_mount_error_snapshot_auth_failed_invalid_credentials() {
+        let stderr = "Error mounting location: Authentication failed: invalid login or password";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::AuthFailed { .. }
+        ));
+    }
+
+    #[test]
+    fn classify_mount_error_snapshot_share_not_found_no_such_file() {
+        let stderr = "Error mounting location: No such file or directory";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::ShareNotFound { .. }
+        ));
+    }
+
+    #[test]
+    fn classify_mount_error_snapshot_permission_denied_explicit() {
+        let stderr = "Error mounting location: Permission denied";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::PermissionDenied { .. }
+        ));
+    }
+
+    #[test]
+    fn classify_mount_error_snapshot_host_unreachable_no_route() {
+        let stderr = "Error mounting location: Failed to connect to server: No route to host";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::HostUnreachable { .. }
+        ));
+    }
+
+    #[test]
+    fn classify_mount_error_snapshot_host_unreachable_connection_refused() {
+        let stderr = "Error mounting location: Connection refused";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::HostUnreachable { .. }
+        ));
+    }
+
+    #[test]
+    fn classify_mount_error_snapshot_timeout_explicit() {
+        let stderr = "Error mounting location: Connection timed out";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::Timeout { .. }
+        ));
+    }
+
+    #[test]
+    fn classify_mount_error_snapshot_cancelled_by_user() {
+        let stderr = "Error mounting location: Operation was cancelled";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::Cancelled { .. }
+        ));
+    }
+
+    #[test]
+    fn classify_mount_error_snapshot_already_mounted_fallback() {
+        let stderr = "Error mounting location: Location is already mounted";
+        assert!(matches!(
+            classify_mount_error(stderr, "server", "share"),
+            MountError::ProtocolError { .. }
+        ));
     }
 }

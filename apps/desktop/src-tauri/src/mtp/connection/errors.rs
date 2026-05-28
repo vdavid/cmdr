@@ -165,24 +165,27 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
             message: format!("I/O error: {}", io_err),
         },
         mtp_rs::Error::Usb(usb_err) => {
-            // nusb::Error wraps OS-level USB errors. The message is typically the OS error
-            // string (e.g. "Permission denied (os error 13)" on Linux). The two checks
-            // below are mutually exclusive: "exclusive access"/"busy" vs "permission denied".
-            let msg = usb_err.to_string().to_lowercase();
-            if msg.contains("exclusive access") || msg.contains("device or resource busy") {
-                MtpConnectionError::ExclusiveAccess {
+            // nusb's typed `ErrorKind` enum already separates the cases we
+            // care about (Busy = exclusive-access / EBUSY, PermissionDenied =
+            // missing udev rules / OS denial). Don't fall back to substring-
+            // matching the message: it changes between nusb versions and
+            // platforms, and was previously the source of misclassified
+            // udev-permission errors looking like "other USB".
+            match usb_err.kind() {
+                nusb::ErrorKind::Busy => MtpConnectionError::ExclusiveAccess {
                     device_id: device_id.to_string(),
                     blocking_process: None,
-                }
-            } else if msg.contains("permission denied") || msg.contains("access denied") {
-                MtpConnectionError::PermissionDenied {
+                },
+                nusb::ErrorKind::PermissionDenied => MtpConnectionError::PermissionDenied {
                     device_id: device_id.to_string(),
-                }
-            } else {
-                MtpConnectionError::Other {
+                },
+                nusb::ErrorKind::Disconnected => MtpConnectionError::Disconnected {
+                    device_id: device_id.to_string(),
+                },
+                _ => MtpConnectionError::Other {
                     device_id: device_id.to_string(),
                     message: format!("USB error: {}", usb_err),
-                }
+                },
             }
         }
     }
