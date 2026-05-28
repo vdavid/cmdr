@@ -1,9 +1,15 @@
 // File viewer session commands (open, seek, search, close)
 
-import { commands, type RangeEnd, type ViewerError } from '$lib/ipc/bindings'
+import {
+  commands,
+  type RangeEnd,
+  type SearchMode as ViewerSearchMode,
+  type SearchStatus as ViewerSearchStatus,
+  type ViewerError,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { RangeEnd, ViewerError }
+export type { RangeEnd, ViewerError, ViewerSearchMode, ViewerSearchStatus }
 
 /** A chunk of lines returned by the viewer backend. */
 export interface LineChunk {
@@ -55,7 +61,12 @@ export interface ViewerSearchMatch {
 
 /** Result from polling search progress. */
 export interface SearchPollResult {
-  status: 'running' | 'done' | 'cancelled' | 'idle'
+  /**
+   * Tagged-union status. `invalidQuery` carries the user-facing reason as plain text;
+   * the FE renders the message verbatim (no string inspection — see the
+   * no-error-string-match rule).
+   */
+  status: ViewerSearchStatus
   /** Only matches discovered since the caller's `sinceIndex`. Accumulate locally. */
   newMatches: ViewerSearchMatch[]
   /** Authoritative total match count (including matches the caller already has). */
@@ -86,8 +97,12 @@ export async function viewerGetLines(
 }
 
 /** Starts a background search in the viewer session. */
-export async function viewerSearchStart(sessionId: string, query: string): Promise<void> {
-  const res = await commands.viewerSearchStart(sessionId, query)
+export async function viewerSearchStart(
+  sessionId: string,
+  query: string,
+  mode: ViewerSearchMode,
+): Promise<void> {
+  const res = await commands.viewerSearchStart(sessionId, query, mode)
   if (res.status === 'error') throwIpcError(res.error)
 }
 

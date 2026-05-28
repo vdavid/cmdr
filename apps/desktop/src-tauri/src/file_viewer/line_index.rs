@@ -15,9 +15,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::ignore_poison::IgnorePoison;
 use memchr::memchr;
 
+use super::search_matcher::{LineScan, Matcher, scan_line_with_matcher};
 use super::{
-    BackendCapabilities, FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, LineChunk, MAX_SEARCH_MATCHES, SearchMatch,
-    SeekTarget, ViewerError,
+    BackendCapabilities, FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, LineChunk, SearchMatch, SeekTarget, ViewerError,
 };
 
 /// A checkpoint in the line index: (line_number, byte_offset).
@@ -233,13 +233,12 @@ impl FileViewerBackend for LineIndexBackend {
 
     fn search(
         &self,
-        query: &str,
+        matcher: &Matcher,
         cancel: &AtomicBool,
         results: &Mutex<Vec<SearchMatch>>,
         progress: &Mutex<u64>,
     ) -> Result<u64, ViewerError> {
-        // Stream through file in 1 MB chunks, same as ByteSeekBackend
-        let query_lower = query.to_lowercase();
+        // Stream through file in 1 MB chunks, same as ByteSeekBackend.
         let mut file = File::open(&self.path)?;
         file.seek(SeekFrom::Start(0))?;
 
@@ -282,25 +281,13 @@ impl FileViewerBackend for LineIndexBackend {
                 if let Some(nl_pos) = memchr(b'\n', &data[pos..]) {
                     let line_bytes = &data[pos..pos + nl_pos];
                     let line = String::from_utf8_lossy(line_bytes);
-                    let line_lower = line.to_lowercase();
-
-                    let mut search_start = 0;
-                    while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                        let col_bytes = search_start + match_pos;
-                        let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
-                        let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
-                        let mut matches = results.lock_ignore_poison();
-                        matches.push(SearchMatch {
-                            line: line_number,
-                            column: col_utf16,
-                            length: len_utf16,
-                            byte_offset: line_byte_offset,
-                        });
-                        if matches.len() >= MAX_SEARCH_MATCHES {
-                            limit_reached = true;
-                            break;
+                    match scan_line_with_matcher(matcher, &line, line_number, line_byte_offset, cancel, results) {
+                        LineScan::HitLimit => limit_reached = true,
+                        LineScan::Cancelled => {
+                            *progress.lock_ignore_poison() = scanned;
+                            return Ok(scanned);
                         }
-                        search_start = col_bytes + query_lower.len();
+                        LineScan::Done => {}
                     }
 
                     scanned += (nl_pos + 1) as u64;
@@ -320,24 +307,7 @@ impl FileViewerBackend for LineIndexBackend {
         // Handle last line (only reached if limit not hit; loop breaks early otherwise)
         if !leftover.is_empty() {
             let line = String::from_utf8_lossy(&leftover);
-            let line_lower = line.to_lowercase();
-            let mut search_start = 0;
-            while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                let col_bytes = search_start + match_pos;
-                let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
-                let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
-                let mut matches = results.lock_ignore_poison();
-                matches.push(SearchMatch {
-                    line: line_number,
-                    column: col_utf16,
-                    length: len_utf16,
-                    byte_offset: line_byte_offset,
-                });
-                if matches.len() >= MAX_SEARCH_MATCHES {
-                    break;
-                }
-                search_start = col_bytes + query_lower.len();
-            }
+            let _ = scan_line_with_matcher(matcher, &line, line_number, line_byte_offset, cancel, results);
             scanned += leftover.len() as u64;
         }
 

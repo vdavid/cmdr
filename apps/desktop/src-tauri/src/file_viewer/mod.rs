@@ -9,6 +9,7 @@ mod byte_seek;
 mod full_load;
 mod line_index;
 mod range_read;
+mod search_matcher;
 mod session;
 
 #[cfg(test)]
@@ -18,9 +19,12 @@ mod full_load_test;
 #[cfg(test)]
 mod line_index_test;
 #[cfg(test)]
+mod search_matcher_test;
+#[cfg(test)]
 mod session_test;
 
 pub use range_read::RangeEnd;
+pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
     SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session, get_lines, get_session_status,
     open_session, read_range, search_cancel, search_poll, search_start, write_range_to_file,
@@ -144,13 +148,13 @@ pub trait FileViewerBackend: Send + Sync {
     /// Fetch a range of lines starting from the given target.
     fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError>;
 
-    /// Search for a query string, populating matches into the provided vec.
-    /// Checks the cancel flag periodically and stops early if set.
+    /// Search the file with the given `Matcher`, populating matches into the provided vec.
+    /// Checks the cancel flag at chunk, line, and match granularity and stops early if set.
     /// Updates `progress` with the number of bytes scanned so far.
     /// Returns the total number of bytes scanned.
     fn search(
         &self,
-        query: &str,
+        matcher: &Matcher,
         cancel: &std::sync::atomic::AtomicBool,
         matches: &std::sync::Mutex<Vec<SearchMatch>>,
         progress: &std::sync::Mutex<u64>,

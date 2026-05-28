@@ -6,7 +6,19 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 
 use super::full_load::FullLoadBackend;
+use super::search_matcher::{Matcher, SearchMode};
 use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget};
+
+fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
+    Matcher::build(
+        query,
+        SearchMode {
+            use_regex: false,
+            case_sensitive,
+        },
+    )
+    .expect("test query must build")
+}
 
 fn create_test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("cmdr_viewer_full_{}", name));
@@ -134,7 +146,9 @@ fn search_finds_matches() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    let scanned = backend.search("hello", &cancel, &results, &progress).unwrap();
+    let scanned = backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 2);
@@ -158,7 +172,9 @@ fn search_case_insensitive() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 3);
@@ -172,7 +188,9 @@ fn search_multiple_per_line() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("aa", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("aa", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     // Non-overlapping: "aaa" contains "aa" once at position 0, then only "a" remains
@@ -189,7 +207,9 @@ fn search_cancellation() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     // Should find zero or very few matches since cancelled immediately
@@ -204,7 +224,9 @@ fn search_no_matches() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("xyz", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("xyz", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 0);
@@ -247,7 +269,9 @@ fn search_with_multibyte_chars() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("latte", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("latte", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -267,7 +291,9 @@ fn search_with_replacement_chars() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("png", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("png", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -286,7 +312,9 @@ fn search_with_emoji() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("rust", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("rust", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -314,7 +342,9 @@ fn search_caps_at_match_limit() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("a", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("a", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     // Should cap at exactly MAX_SEARCH_MATCHES
@@ -358,7 +388,9 @@ fn search_cjk_utf16_column() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("test", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("test", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);

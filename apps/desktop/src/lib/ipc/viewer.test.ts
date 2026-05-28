@@ -102,22 +102,54 @@ describe('commands.viewerGetLines', () => {
 })
 
 describe('commands.viewerSearchStart and viewerSearchPoll', () => {
-  it('search_start sends sessionId + query', async () => {
+  it('search_start sends sessionId + query + mode (camelCase)', async () => {
     const ipc = installIpcMock()
     ipc.mock('viewer_search_start', () => null)
 
-    await commands.viewerSearchStart('sess-2', 'TODO')
+    const mode = { useRegex: false, caseSensitive: true } as const
+    await commands.viewerSearchStart('sess-2', 'TODO', mode)
 
     expect(ipc.lastCall('viewer_search_start')?.payload).toEqual({
       sessionId: 'sess-2',
       query: 'TODO',
+      mode,
     })
+  })
+
+  it('search_start carries regex + case toggles for a regex query', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('viewer_search_start', () => null)
+
+    const mode = { useRegex: true, caseSensitive: false } as const
+    await commands.viewerSearchStart('sess-2a', String.raw`\d+`, mode)
+
+    expect(ipc.lastCall('viewer_search_start')?.payload).toEqual({
+      sessionId: 'sess-2a',
+      query: String.raw`\d+`,
+      mode,
+    })
+  })
+
+  it('search_poll surfaces invalidQuery as a tagged variant with message', async () => {
+    const ipc = installIpcMock()
+    const pollResult: SearchPollResult = {
+      status: { status: 'invalidQuery', message: 'Invalid regex: error parsing' },
+      newMatches: [],
+      totalMatchCount: 0,
+      totalBytes: 100,
+      bytesScanned: 0,
+      matchLimitReached: false,
+    }
+    ipc.mock('viewer_search_poll', () => pollResult)
+
+    const result = await commands.viewerSearchPoll('sess-2', 0)
+    expect(result).toEqual({ status: 'ok', data: pollResult })
   })
 
   it('search_poll delta protocol: sinceIndex on the wire matches the FE-tracked offset', async () => {
     const ipc = installIpcMock()
     const pollResult: SearchPollResult = {
-      status: 'running',
+      status: { status: 'running' },
       newMatches: [{ line: 5, column: 0, length: 4, byteOffset: 80 }],
       totalMatchCount: 6,
       totalBytes: 1000,

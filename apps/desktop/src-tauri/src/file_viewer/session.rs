@@ -19,6 +19,7 @@ use super::byte_seek::ByteSeekBackend;
 use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::range_read::{RangeEnd, read_range as do_read_range};
+use super::search_matcher::{Matcher, MatcherBuildError, SearchMode};
 use super::{
     BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch,
     SeekTarget, ViewerError,
@@ -60,13 +61,19 @@ pub struct ViewerSessionStatus {
 }
 
 /// Status of an ongoing search.
+///
+/// `InvalidQuery` carries the user-facing reason (invalid regex syntax, multiline
+/// pattern, regex exceeds size limits). Surfaced via `search_poll`; the FE renders
+/// the message as plain text without inspecting its contents (per the
+/// no-error-string-match rule).
 #[derive(Debug, Clone, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(tag = "status", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum SearchStatus {
     Running,
     Done,
     Cancelled,
     Idle,
+    InvalidQuery { message: String },
 }
 
 /// Result from polling search progress.
@@ -298,13 +305,50 @@ pub fn get_lines(session_id: &str, target: SeekTarget, count: usize) -> Result<L
 
 /// Starts a background search in the given session.
 /// Any previous search is cancelled first.
-pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> {
+///
+/// Builds a `Matcher` from `query` + `mode`. On `MatcherBuildError` the session's
+/// search status is set to `InvalidQuery { message }` synchronously (no worker is
+/// spawned); the FE picks this up via `search_poll`. Returning `Ok(())` mirrors
+/// the existing IPC shape: callers don't need to disambiguate "started a worker"
+/// from "marked the query as invalid" because both lead to the same `search_poll`
+/// flow.
+pub fn search_start(session_id: &str, query: String, mode: SearchMode) -> Result<(), ViewerError> {
     // First, cancel any existing search
     search_cancel(session_id)?;
 
     let cancel = Arc::new(AtomicBool::new(false));
     let matches: Arc<Mutex<Vec<SearchMatch>>> = Arc::new(Mutex::new(Vec::new()));
     let bytes_scanned: Arc<Mutex<u64>> = Arc::new(Mutex::new(0));
+
+    // Build the matcher up front: an invalid query short-circuits without spawning
+    // a worker thread.
+    let matcher = match Matcher::build(&query, mode) {
+        Ok(m) => m,
+        Err(err) => {
+            let message = match err {
+                MatcherBuildError::InvalidRegex(msg) => format!("Invalid regex: {}", msg),
+                MatcherBuildError::MultilineNotSupported => {
+                    "Multiline patterns aren't supported. The viewer searches line by line.".to_string()
+                }
+            };
+            let status: Arc<Mutex<SearchStatus>> = Arc::new(Mutex::new(SearchStatus::InvalidQuery { message }));
+            let search_state = SearchState {
+                cancel: cancel.clone(),
+                matches: matches.clone(),
+                bytes_scanned: bytes_scanned.clone(),
+                status,
+            };
+            let mut sessions = SESSIONS.lock_ignore_poison();
+            let session = sessions
+                .get_mut(session_id)
+                .ok_or_else(|| ViewerError::SessionNotFound {
+                    session_id: session_id.to_string(),
+                })?;
+            session.search = Some(search_state);
+            return Ok(());
+        }
+    };
+
     let status: Arc<Mutex<SearchStatus>> = Arc::new(Mutex::new(SearchStatus::Running));
 
     let search_state = SearchState {
@@ -326,35 +370,107 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
         session.path.clone()
     };
 
-    // Spawn search thread. Creates its own backend for searching.
-    let cancel_clone = cancel.clone();
-    let matches_clone = matches;
-    let bytes_scanned_clone = bytes_scanned;
-    let status_clone = status;
+    spawn_search_worker(path, matcher, cancel, matches, bytes_scanned, status);
+    Ok(())
+}
+
+/// Spawns the worker thread that drives a single search. Factored out for clarity;
+/// the worker's final status write must be under the same mutex critical section as
+/// the watchdog's so a watchdog-set `Cancelled` is sticky (see step 1.4 of the
+/// viewer-search plan).
+fn spawn_search_worker(
+    path: PathBuf,
+    matcher: Matcher,
+    cancel: Arc<AtomicBool>,
+    matches: Arc<Mutex<Vec<SearchMatch>>>,
+    bytes_scanned: Arc<Mutex<u64>>,
+    status: Arc<Mutex<SearchStatus>>,
+) {
+    // The watchdog observes the worker via the shared `cancel` flag + `status`
+    // mutex; we spawn it inside the worker thread so closing the session before
+    // the worker starts doesn't leak a watchdog.
+    let watchdog_cancel = cancel.clone();
+    let watchdog_status = status.clone();
 
     thread::spawn(move || {
+        let watchdog_handle = thread::spawn(move || run_search_watchdog(watchdog_cancel, watchdog_status));
+
         // Use ByteSeekBackend for streaming search (low memory, works on any file)
         let backend = match ByteSeekBackend::open(&path) {
             Ok(b) => b,
             Err(_) => {
-                *status_clone.lock_ignore_poison() = SearchStatus::Done;
+                finalize_search_status(&status, &cancel, /*errored=*/ true);
+                let _ = watchdog_handle.join();
                 return;
             }
         };
 
-        backend
-            .search(&query, &cancel_clone, &matches_clone, &bytes_scanned_clone)
-            .ok();
+        let result = backend.search(&matcher, &cancel, &matches, &bytes_scanned);
 
-        let final_status = if cancel_clone.load(Ordering::Relaxed) {
-            SearchStatus::Cancelled
-        } else {
-            SearchStatus::Done
-        };
-        *status_clone.lock_ignore_poison() = final_status;
+        finalize_search_status(&status, &cancel, /*errored=*/ result.is_err());
+        // Joining the watchdog is best-effort; it exits as soon as it sees a
+        // non-Running status (which finalize_search_status just wrote).
+        let _ = watchdog_handle.join();
     });
+}
 
-    Ok(())
+/// Writes the worker's final status under the same lock the watchdog uses, so
+/// `SearchStatus::Cancelled` is sticky. If the watchdog already wrote
+/// `Cancelled`, this is a no-op; otherwise we promote `Running` to one of
+/// `Cancelled`, `Done`, or leave-in-place when an error path already wrote.
+pub(super) fn finalize_search_status(status: &Arc<Mutex<SearchStatus>>, cancel: &Arc<AtomicBool>, errored: bool) {
+    let mut guard = status.lock_ignore_poison();
+    *guard = match &*guard {
+        // Watchdog won the race: keep the Cancelled verdict.
+        SearchStatus::Cancelled => SearchStatus::Cancelled,
+        // Invalid-query write happens on the caller's thread before the worker
+        // is even spawned; the worker never runs in that case. Defensive in
+        // case future refactors interleave them.
+        SearchStatus::InvalidQuery { .. } => return,
+        // Normal completion: pick Cancelled (the cooperative path) or Done.
+        _ => {
+            if cancel.load(Ordering::Relaxed) {
+                SearchStatus::Cancelled
+            } else if errored {
+                // Failures (file vanished mid-scan, IO error) map to Done with no
+                // matches: the user already saw whatever the worker reported, and
+                // a transient IO error isn't worth its own surface today.
+                SearchStatus::Done
+            } else {
+                SearchStatus::Done
+            }
+        }
+    };
+}
+
+/// Watchdog: polls the worker's `cancel` flag and forces the search status to
+/// `Cancelled` if the worker hasn't observed the flag within 1 s. Exits as soon
+/// as the worker writes a non-Running status (i.e. it finished naturally or got
+/// cancelled cooperatively).
+///
+/// The 250 ms poll + 1 s budget pair keeps user-visible cancellation under
+/// 1.25 s in the worst case even for runaway-regex paths where the inner
+/// `iter.next()` call doesn't observe the per-match cancel.
+pub(super) fn run_search_watchdog(cancel: Arc<AtomicBool>, status: Arc<Mutex<SearchStatus>>) {
+    let mut cancel_seen_at: Option<std::time::Instant> = None;
+    loop {
+        thread::sleep(Duration::from_millis(250));
+        // Cheap check first; bail out if the worker is done.
+        let still_running = matches!(*status.lock_ignore_poison(), SearchStatus::Running);
+        if !still_running {
+            return;
+        }
+        if cancel.load(Ordering::Relaxed) {
+            let started = cancel_seen_at.get_or_insert_with(std::time::Instant::now);
+            if started.elapsed() >= Duration::from_secs(1) {
+                let mut guard = status.lock_ignore_poison();
+                if matches!(*guard, SearchStatus::Running) {
+                    *guard = SearchStatus::Cancelled;
+                }
+                return;
+            }
+        }
+    }
 }
 
 /// Polls search progress for a session.

@@ -6,7 +6,19 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 
 use super::line_index::LineIndexBackend;
+use super::search_matcher::{Matcher, SearchMode};
 use super::{FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, SearchMatch, SeekTarget};
+
+fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
+    Matcher::build(
+        query,
+        SearchMode {
+            use_regex: false,
+            case_sensitive,
+        },
+    )
+    .expect("test query must build")
+}
 
 fn create_test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("cmdr_viewer_lidx_{}", name));
@@ -189,7 +201,9 @@ fn search_finds_matches() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 2);
@@ -214,7 +228,9 @@ fn search_case_insensitive() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 3);
@@ -235,7 +251,9 @@ fn search_cancellation() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert!(matches.len() < 10000);
@@ -324,7 +342,9 @@ fn search_emoji_utf16_column() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("rust", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("rust", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -346,7 +366,9 @@ fn search_cjk_utf16_column() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("test", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("test", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -369,7 +391,9 @@ fn search_accented_char_utf16_column() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("latte", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("latte", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -392,7 +416,9 @@ fn search_on_last_line_without_newline_utf16() {
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("rust", &cancel, &results, &progress).unwrap();
+    backend
+        .search(&literal_matcher("rust", false), &cancel, &results, &progress)
+        .unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);

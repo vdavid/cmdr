@@ -679,9 +679,15 @@ export const commands = {
   /**
    *  Starts a background search in the viewer session.
    *  Poll with `viewer_search_poll` to get results.
+   *
+   *  `mode` carries the case-sensitivity and literal-vs-regex toggles. Invalid regex
+   *  patterns and multiline patterns surface via `viewer_search_poll` as
+   *  `SearchStatus::InvalidQuery`, not as a command-level error: the session moves
+   *  into a "you typed something the engine can't run" state, and the FE renders the
+   *  typed message.
    */
-  viewerSearchStart: (sessionId: string, query: string) =>
-    typedError<null, string>(__TAURI_INVOKE('viewer_search_start', { sessionId, query })),
+  viewerSearchStart: (sessionId: string, query: string, mode: SearchMode) =>
+    typedError<null, string>(__TAURI_INVOKE('viewer_search_start', { sessionId, query, mode })),
   // Polls search progress and new matches since `since_index`.
   viewerSearchPoll: (sessionId: string, sinceIndex: number) =>
     typedError<SearchPollResult, string>(__TAURI_INVOKE('viewer_search_poll', { sessionId, sinceIndex })),
@@ -3134,6 +3140,15 @@ export type SearchMatch = {
   byteOffset: number
 }
 
+/**
+ *  Mode flags for building a `Matcher`. Crosses the IPC boundary via serde +
+ *  specta with camelCase field names (`useRegex` and `caseSensitive`).
+ */
+export type SearchMode = {
+  useRegex: boolean
+  caseSensitive: boolean
+}
+
 // Result from polling search progress.
 export type SearchPollResult = {
   status: SearchStatus
@@ -3191,8 +3206,20 @@ export type SearchResultEntry = {
   iconId: string
 }
 
-// Status of an ongoing search.
-export type SearchStatus = 'running' | 'done' | 'cancelled' | 'idle'
+/**
+ *  Status of an ongoing search.
+ *
+ *  `InvalidQuery` carries the user-facing reason (invalid regex syntax, multiline
+ *  pattern, regex exceeds size limits). Surfaced via `search_poll`; the FE renders
+ *  the message as plain text without inspecting its contents (per the
+ *  no-error-string-match rule).
+ */
+export type SearchStatus =
+  | { status: 'running' }
+  | { status: 'done' }
+  | { status: 'cancelled' }
+  | { status: 'idle' }
+  | { status: 'invalidQuery'; message: string }
 
 // A single recent-selection entry, persisted verbatim.
 export type SelectionHistoryEntry = {

@@ -18,9 +18,9 @@ use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use memchr::memchr;
 
+use super::search_matcher::{LineScan, Matcher, scan_line_with_matcher};
 use super::{
-    BackendCapabilities, FileViewerBackend, LineChunk, MAX_BACKWARD_SCAN, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget,
-    ViewerError,
+    BackendCapabilities, FileViewerBackend, LineChunk, MAX_BACKWARD_SCAN, SearchMatch, SeekTarget, ViewerError,
 };
 
 pub struct ByteSeekBackend {
@@ -213,12 +213,11 @@ impl FileViewerBackend for ByteSeekBackend {
 
     fn search(
         &self,
-        query: &str,
+        matcher: &Matcher,
         cancel: &AtomicBool,
         results: &Mutex<Vec<SearchMatch>>,
         progress: &Mutex<u64>,
     ) -> Result<u64, ViewerError> {
-        let query_lower = query.to_lowercase();
         let mut file = File::open(&self.path)?;
         file.seek(SeekFrom::Start(0))?;
 
@@ -262,25 +261,14 @@ impl FileViewerBackend for ByteSeekBackend {
                 if let Some(nl_pos) = memchr(b'\n', &data[pos..]) {
                     let line_bytes = &data[pos..pos + nl_pos];
                     let line = String::from_utf8_lossy(line_bytes);
-                    let line_lower = line.to_lowercase();
-
-                    let mut search_start = 0;
-                    while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                        let col_bytes = search_start + match_pos;
-                        let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
-                        let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
-                        let mut matches = results.lock_ignore_poison();
-                        matches.push(SearchMatch {
-                            line: line_number,
-                            column: col_utf16,
-                            length: len_utf16,
-                            byte_offset: line_byte_offset,
-                        });
-                        if matches.len() >= MAX_SEARCH_MATCHES {
-                            limit_reached = true;
-                            break;
+                    let cf = scan_line_with_matcher(matcher, &line, line_number, line_byte_offset, cancel, results);
+                    match cf {
+                        LineScan::HitLimit => limit_reached = true,
+                        LineScan::Cancelled => {
+                            *progress.lock_ignore_poison() = scanned;
+                            return Ok(scanned);
                         }
-                        search_start = col_bytes + query_lower.len();
+                        LineScan::Done => {}
                     }
 
                     scanned += (nl_pos + 1) as u64;
@@ -301,24 +289,7 @@ impl FileViewerBackend for ByteSeekBackend {
         // Handle last line without newline (only reached if limit not hit; loop breaks early otherwise)
         if !leftover.is_empty() {
             let line = String::from_utf8_lossy(&leftover);
-            let line_lower = line.to_lowercase();
-            let mut search_start = 0;
-            while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                let col_bytes = search_start + match_pos;
-                let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
-                let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
-                let mut matches = results.lock_ignore_poison();
-                matches.push(SearchMatch {
-                    line: line_number,
-                    column: col_utf16,
-                    length: len_utf16,
-                    byte_offset: line_byte_offset,
-                });
-                if matches.len() >= MAX_SEARCH_MATCHES {
-                    break;
-                }
-                search_start = col_bytes + query_lower.len();
-            }
+            let _ = scan_line_with_matcher(matcher, &line, line_number, line_byte_offset, cancel, results);
             scanned += leftover.len() as u64;
         }
 

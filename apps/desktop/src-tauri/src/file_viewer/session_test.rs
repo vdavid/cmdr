@@ -6,7 +6,17 @@ use std::thread;
 use std::time::Duration;
 
 use super::session::{self, SearchStatus};
-use super::{FULL_LOAD_THRESHOLD, MAX_SEARCH_MATCHES, RangeEnd, ViewerError};
+use super::{FULL_LOAD_THRESHOLD, MAX_SEARCH_MATCHES, RangeEnd, SearchMode, ViewerError};
+
+/// Default mode for existing tests: literal, case-sensitive (matches pre-mode behaviour
+/// for ASCII queries). Tests that exercise case-insensitivity should pass an explicit
+/// `SearchMode { case_sensitive: false, .. }`.
+fn literal_mode() -> SearchMode {
+    SearchMode {
+        use_regex: false,
+        case_sensitive: true,
+    }
+}
 
 fn create_test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("cmdr_viewer_session_{}", name));
@@ -133,7 +143,7 @@ fn search_start_and_poll() {
     let sid = &open_result.session_id;
 
     // Start search
-    session::search_start(sid, "hello".to_string()).unwrap();
+    session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
 
     // Poll until done (with timeout)
     let mut done = false;
@@ -162,7 +172,7 @@ fn search_cancel_works() {
     let open_result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "hello".to_string()).unwrap();
+    session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
 
     // Cancel immediately. The cancel flag is set synchronously; the search
     // thread will see it on its next iteration and exit, writing the final
@@ -207,7 +217,7 @@ fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
     let open_result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "hello".to_string()).unwrap();
+    session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
     session::search_cancel(sid).unwrap();
 
     // Wait for the Cancelled transition.
@@ -223,7 +233,7 @@ fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
     assert!(saw_cancelled, "Cancelled was never observed by poll");
 
     // Starting a fresh search must reset the observable status.
-    session::search_start(sid, "world".to_string()).unwrap();
+    session::search_start(sid, "world".to_string(), literal_mode()).unwrap();
     let poll_after_restart = session::search_poll(sid, 0).unwrap();
     assert!(
         matches!(poll_after_restart.status, SearchStatus::Running | SearchStatus::Done),
@@ -324,7 +334,7 @@ fn search_poll_reports_match_limit() {
     let open_result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "a".to_string()).unwrap();
+    session::search_start(sid, "a".to_string(), literal_mode()).unwrap();
 
     // Poll until done
     let mut done = false;
@@ -355,7 +365,7 @@ fn search_poll_incremental_delivery() {
     let open_result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "aaa".to_string()).unwrap();
+    session::search_start(sid, "aaa".to_string(), literal_mode()).unwrap();
 
     // Wait for search to finish
     for _ in 0..100 {
@@ -708,6 +718,268 @@ fn read_range_stitching_adjacent_ranges_equals_one_big_range() {
     let first = session::read_range(&sid, 2, line(0, 0), line(1, 2)).unwrap();
     let second = session::read_range(&sid, 3, line(1, 2), line(4, 5)).unwrap();
     assert_eq!(big, format!("{}{}", first, second));
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+// ─── Step 1.2: per-match cancellation ──────────────────────────────────────────────
+
+#[test]
+fn search_pre_cancelled_starts_and_finishes_quickly() {
+    // Setting the cancel flag before search_start completes should produce a
+    // Cancelled status within a short wall-clock budget.
+    let dir = create_test_dir("search_pre_cancel");
+    // ~50 MB file, plenty of matches per line.
+    let line_with_a: String = "a".repeat(1_000) + "\n";
+    let content: String = line_with_a.repeat(50_000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = &open_result.session_id;
+
+    session::search_start(sid, "a".to_string(), literal_mode()).unwrap();
+    session::search_cancel(sid).unwrap();
+
+    let start = std::time::Instant::now();
+    let mut saw_terminal = false;
+    while start.elapsed() < Duration::from_millis(1_500) {
+        let poll = session::search_poll(sid, 0).unwrap();
+        if matches!(poll.status, SearchStatus::Cancelled | SearchStatus::Done) {
+            saw_terminal = true;
+            break;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    assert!(
+        saw_terminal,
+        "search did not reach a terminal status within 1.5s of cancel"
+    );
+
+    session::close_session(sid).unwrap();
+    cleanup(&dir);
+}
+
+// ─── Step 1.4: watchdog protocol ───────────────────────────────────────────────────
+
+#[test]
+fn test_worker_done_after_watchdog_cancelled_is_sticky() {
+    // Simulate the race the round-3 review caught: the watchdog has already
+    // written `Cancelled`, then the worker tries to write its natural verdict.
+    // The conditional in `finalize_search_status` must keep `Cancelled`.
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Cancelled));
+    let cancel = Arc::new(AtomicBool::new(true));
+
+    session::finalize_search_status(&status, &cancel, /* errored */ false);
+    assert!(
+        matches!(*status.lock().unwrap(), SearchStatus::Cancelled),
+        "finalize must keep Cancelled when the watchdog already wrote it"
+    );
+
+    // Same race, errored worker.
+    session::finalize_search_status(&status, &cancel, /* errored */ true);
+    assert!(
+        matches!(*status.lock().unwrap(), SearchStatus::Cancelled),
+        "finalize must keep Cancelled even when the worker errored"
+    );
+}
+
+#[test]
+fn test_finalize_writes_done_when_worker_finishes_naturally() {
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Running));
+    let cancel = Arc::new(AtomicBool::new(false));
+
+    session::finalize_search_status(&status, &cancel, false);
+    assert!(matches!(*status.lock().unwrap(), SearchStatus::Done));
+}
+
+#[test]
+fn test_finalize_writes_cancelled_when_cancel_observed() {
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Running));
+    let cancel = Arc::new(AtomicBool::new(true));
+
+    session::finalize_search_status(&status, &cancel, false);
+    assert!(matches!(*status.lock().unwrap(), SearchStatus::Cancelled));
+}
+
+#[test]
+fn test_watchdog_forces_cancel_when_worker_ignores_flag() {
+    // Spawn `run_search_watchdog` against a fake worker that never observes
+    // the cancel flag (it just keeps the status at `Running`). The watchdog
+    // must transition the status to `Cancelled` within ~1.25 s of the flag
+    // being set.
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Running));
+    let cancel = Arc::new(AtomicBool::new(false));
+
+    let watchdog_status = status.clone();
+    let watchdog_cancel = cancel.clone();
+    let handle = thread::spawn(move || session::run_search_watchdog(watchdog_cancel, watchdog_status));
+
+    // Set the cancel flag after a short delay so the watchdog observes
+    // Running first, then sees the cancel.
+    thread::sleep(Duration::from_millis(50));
+    cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+
+    let start = std::time::Instant::now();
+    handle.join().unwrap();
+    let elapsed = start.elapsed();
+
+    assert!(
+        matches!(*status.lock().unwrap(), SearchStatus::Cancelled),
+        "watchdog must write Cancelled"
+    );
+    assert!(
+        elapsed < Duration::from_millis(1_500),
+        "watchdog took too long: {:?}",
+        elapsed
+    );
+}
+
+#[test]
+fn test_watchdog_exits_when_worker_finishes_first() {
+    // The watchdog must not write Cancelled if the worker reaches Done first
+    // (with no cancel signalled).
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Running));
+    let cancel = Arc::new(AtomicBool::new(false));
+
+    let watchdog_status = status.clone();
+    let watchdog_cancel = cancel.clone();
+    let handle = thread::spawn(move || session::run_search_watchdog(watchdog_cancel, watchdog_status));
+
+    // Mark worker done before the watchdog's first poll tick (250 ms).
+    thread::sleep(Duration::from_millis(50));
+    *status.lock().unwrap() = SearchStatus::Done;
+
+    handle.join().unwrap();
+    assert!(
+        matches!(*status.lock().unwrap(), SearchStatus::Done),
+        "watchdog must not clobber Done"
+    );
+}
+
+#[test]
+fn test_new_search_after_watchdog_cancelled_starts_clean() {
+    // After a Cancelled verdict, starting a fresh search must reset the status.
+    let dir = create_test_dir("watchdog_reset");
+    let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
+    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = &open_result.session_id;
+
+    session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    session::search_cancel(sid).unwrap();
+
+    // Wait until we see Cancelled.
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_millis(2_000) {
+        let poll = session::search_poll(sid, 0).unwrap();
+        if matches!(poll.status, SearchStatus::Cancelled) {
+            break;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+
+    // Fresh search must clear the Cancelled state.
+    session::search_start(sid, "world".to_string(), literal_mode()).unwrap();
+    let poll = session::search_poll(sid, 0).unwrap();
+    assert!(
+        matches!(poll.status, SearchStatus::Running | SearchStatus::Done),
+        "fresh search after Cancelled must start clean, got {:?}",
+        poll.status
+    );
+
+    session::close_session(sid).unwrap();
+    cleanup(&dir);
+}
+
+// ─── Step 1.5: invalid query surface ──────────────────────────────────────────────
+
+#[test]
+fn test_invalid_regex_surfaces_as_invalid_query_status() {
+    let dir = create_test_dir("invalid_regex");
+    let file = write_test_file(&dir, "test.txt", "hello\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let mode = SearchMode {
+        use_regex: true,
+        case_sensitive: true,
+    };
+    // `(unclosed` is invalid syntax.
+    session::search_start(&sid, "(unclosed".to_string(), mode).unwrap();
+
+    let poll = session::search_poll(&sid, 0).unwrap();
+    match poll.status {
+        SearchStatus::InvalidQuery { message } => {
+            assert!(!message.is_empty(), "invalid-query message must be non-empty");
+        }
+        other => panic!("expected InvalidQuery, got {:?}", other),
+    }
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_multiline_regex_surfaces_as_invalid_query_status() {
+    let dir = create_test_dir("multiline_regex");
+    let file = write_test_file(&dir, "test.txt", "hello\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let mode = SearchMode {
+        use_regex: true,
+        case_sensitive: true,
+    };
+    session::search_start(&sid, "(?s).".to_string(), mode).unwrap();
+
+    let poll = session::search_poll(&sid, 0).unwrap();
+    assert!(
+        matches!(poll.status, SearchStatus::InvalidQuery { .. }),
+        "expected InvalidQuery, got {:?}",
+        poll.status
+    );
+
+    session::close_session(&sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn test_regex_search_returns_matches() {
+    let dir = create_test_dir("regex_search");
+    let file = write_test_file(&dir, "test.txt", "a123\nb456\nc789\n");
+    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+
+    let mode = SearchMode {
+        use_regex: true,
+        case_sensitive: true,
+    };
+    session::search_start(&sid, r"\d+".to_string(), mode).unwrap();
+
+    let start = std::time::Instant::now();
+    let mut done = false;
+    while start.elapsed() < Duration::from_secs(2) {
+        let poll = session::search_poll(&sid, 0).unwrap();
+        if matches!(poll.status, SearchStatus::Done) {
+            assert_eq!(poll.total_match_count, 3);
+            done = true;
+            break;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    assert!(done, "regex search did not complete");
 
     session::close_session(&sid).unwrap();
     cleanup(&dir);

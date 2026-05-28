@@ -4,7 +4,8 @@ use tokio::time::Duration;
 
 use super::util::{IpcError, blocking_result_with_timeout};
 use crate::file_viewer::{
-    self, LineChunk, RangeEnd, SearchPollResult, SeekTarget, ViewerError, ViewerOpenResult, ViewerSessionStatus,
+    self, LineChunk, RangeEnd, SearchMode, SearchPollResult, SeekTarget, ViewerError, ViewerOpenResult,
+    ViewerSessionStatus,
 };
 use log::debug;
 use tauri::Manager;
@@ -78,13 +79,19 @@ pub async fn viewer_get_lines(
 
 /// Starts a background search in the viewer session.
 /// Poll with `viewer_search_poll` to get results.
+///
+/// `mode` carries the case-sensitivity and literal-vs-regex toggles. Invalid regex
+/// patterns and multiline patterns surface via `viewer_search_poll` as
+/// `SearchStatus::InvalidQuery`, not as a command-level error: the session moves
+/// into a "you typed something the engine can't run" state, and the FE renders the
+/// typed message.
 #[tauri::command]
 #[specta::specta]
-pub fn viewer_search_start(session_id: String, query: String) -> Result<(), String> {
+pub fn viewer_search_start(session_id: String, query: String, mode: SearchMode) -> Result<(), String> {
     if query.is_empty() {
         return Err("Search query cannot be empty".to_string());
     }
-    file_viewer::search_start(&session_id, query).map_err(|e| e.to_string())
+    file_viewer::search_start(&session_id, query, mode).map_err(|e| e.to_string())
 }
 
 /// Polls search progress and new matches since `since_index`.

@@ -8,9 +8,8 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use super::{
-    BackendCapabilities, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget, ViewerError,
-};
+use super::search_matcher::{LineScan, Matcher, scan_line_with_matcher};
+use super::{BackendCapabilities, FileViewerBackend, LineChunk, SearchMatch, SeekTarget, ViewerError};
 
 pub struct FullLoadBackend {
     lines: Vec<String>,
@@ -130,12 +129,11 @@ impl FileViewerBackend for FullLoadBackend {
 
     fn search(
         &self,
-        query: &str,
+        matcher: &Matcher,
         cancel: &AtomicBool,
         results: &Mutex<Vec<SearchMatch>>,
         progress: &Mutex<u64>,
     ) -> Result<u64, ViewerError> {
-        let query_lower = query.to_lowercase();
         let mut scanned: u64 = 0;
         let mut limit_reached = false;
 
@@ -143,27 +141,11 @@ impl FileViewerBackend for FullLoadBackend {
             if cancel.load(Ordering::Relaxed) || limit_reached {
                 break;
             }
-
-            let line_lower = line.to_lowercase();
-            let mut search_start = 0;
-            while let Some(pos) = line_lower[search_start..].find(&query_lower) {
-                let col_bytes = search_start + pos;
-                let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
-                let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
-                let mut matches = results.lock_ignore_poison();
-                matches.push(SearchMatch {
-                    line: line_idx,
-                    column: col_utf16,
-                    length: len_utf16,
-                    byte_offset: self.line_offsets[line_idx],
-                });
-                if matches.len() >= MAX_SEARCH_MATCHES {
-                    limit_reached = true;
-                    break;
-                }
-                search_start = col_bytes + query_lower.len();
+            match scan_line_with_matcher(matcher, line, line_idx, self.line_offsets[line_idx], cancel, results) {
+                LineScan::HitLimit => limit_reached = true,
+                LineScan::Cancelled => break,
+                LineScan::Done => {}
             }
-
             scanned += line.len() as u64 + 1; // +1 for newline
         }
 
