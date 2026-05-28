@@ -566,6 +566,10 @@ export interface WriteConflictEvent {
   destinationIsNewer: boolean
   /** Size difference (positive = destination is larger) */
   sizeDifference: number
+  /** Whether the source side is a directory. Renders the type-mismatch warning when this differs from `destinationIsDirectory`. */
+  sourceIsDirectory: boolean
+  /** Whether the destination side is a directory. See `sourceIsDirectory`. */
+  destinationIsDirectory: boolean
 }
 
 /** Error types for write operations (discriminated union). */

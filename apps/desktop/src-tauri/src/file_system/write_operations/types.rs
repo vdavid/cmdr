@@ -328,6 +328,15 @@ pub struct WriteConflictEvent {
     pub destination_is_newer: bool,
     /// Positive = destination is larger.
     pub size_difference: i64,
+    /// `true` when the source side is a directory. Lets the FE render the
+    /// distinct "replace a folder with a file" / "replace a file with a folder"
+    /// warning instead of the generic file-over-file dialog.
+    #[serde(default)]
+    pub source_is_directory: bool,
+    /// `true` when the destination side is a directory. See
+    /// `source_is_directory`.
+    #[serde(default)]
+    pub destination_is_directory: bool,
 }
 
 /// Progress event during scanning phase (emitted in dry-run mode).

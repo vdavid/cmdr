@@ -1017,11 +1017,29 @@
         {@const newIsNewer = !existingIsNewer && conflictEvent.sourceModified !== conflictEvent.destinationModified}
         {@const existingIsLarger = conflictEvent.sizeDifference > 0}
         {@const newIsLarger = conflictEvent.sizeDifference < 0}
+        {@const sourceIsDir = conflictEvent.sourceIsDirectory}
+        {@const destIsDir = conflictEvent.destinationIsDirectory}
+        {@const isTypeMismatch = sourceIsDir !== destIsDir}
         <div class="conflict-section">
             <!-- Filename -->
             <p class="conflict-filename" use:tooltip={{ text: conflictEvent.destinationPath, overflowOnly: true }}>
                 {fileName}
             </p>
+
+            {#if isTypeMismatch}
+                <!-- Audit follow-up: warn loudly when "Overwrite" actually means
+                     replacing a file with a folder or vice versa. Pre-fix the
+                     event carried no is_directory flags and this case rendered
+                     as a generic file-over-file dialog. -->
+                <p class="conflict-type-mismatch">
+                    {#if destIsDir}
+                        Heads up: the existing item is a folder. Overwrite will replace the entire folder with this
+                        file.
+                    {:else}
+                        Heads up: the existing item is a file. Overwrite will replace the file with this folder.
+                    {/if}
+                </p>
+            {/if}
 
             <!-- File comparison -->
             <div class="conflict-comparison">
@@ -1423,6 +1441,16 @@
         gap: var(--spacing-xs);
         margin-bottom: var(--spacing-lg);
         font-size: var(--font-size-sm);
+    }
+
+    .conflict-type-mismatch {
+        margin: 0 0 var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-md);
+        background-color: var(--color-warning-bg);
+        color: var(--color-text-primary);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-sm);
+        text-align: center;
     }
 
     .conflict-file {

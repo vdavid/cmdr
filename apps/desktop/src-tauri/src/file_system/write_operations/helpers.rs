@@ -405,43 +405,14 @@ pub(super) fn resolve_conflict(
             // Emit conflict event for frontend to handle
             let source_meta = fs::metadata(source).ok();
             let dest_meta = fs::metadata(dest_path).ok();
-
-            let destination_is_newer = match (&source_meta, &dest_meta) {
-                (Some(s), Some(d)) => {
-                    let src_time = s.modified().ok();
-                    let dst_time = d.modified().ok();
-                    matches!((src_time, dst_time), (Some(src), Some(dst)) if dst > src)
-                }
-                _ => false,
-            };
-
-            let source_size = source_meta.as_ref().map(|m| m.len()).unwrap_or(0);
-            let destination_size = dest_meta.as_ref().map(|m| m.len()).unwrap_or(0);
-            let size_difference = destination_size as i64 - source_size as i64;
-
-            let source_modified = source_meta
-                .as_ref()
-                .and_then(|m| m.modified().ok())
-                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                .map(|d| d.as_secs() as i64);
-
-            let destination_modified = dest_meta
-                .as_ref()
-                .and_then(|m| m.modified().ok())
-                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                .map(|d| d.as_secs() as i64);
-
-            events.emit_conflict(WriteConflictEvent {
-                operation_id: operation_id.to_string(),
-                source_path: source.display().to_string(),
-                destination_path: dest_path.display().to_string(),
-                source_size,
-                destination_size,
-                source_modified,
-                destination_modified,
-                destination_is_newer,
-                size_difference,
-            });
+            let event = build_conflict_event(
+                operation_id,
+                source,
+                dest_path,
+                source_meta.as_ref(),
+                dest_meta.as_ref(),
+            );
+            events.emit_conflict(event);
 
             // Create a oneshot channel for this conflict resolution
             let (tx, rx) = tokio::sync::oneshot::channel();
@@ -700,6 +671,56 @@ pub(super) fn safe_overwrite_file(
     }
 
     Ok(bytes)
+}
+
+/// Builds a `WriteConflictEvent` from the source / destination metadata pair.
+/// Extracted from `resolve_conflict` so the source/destination type-mismatch
+/// flags can be unit-tested in isolation. Pre-fix the inline event omitted
+/// `source_is_directory` / `destination_is_directory` entirely; the FE Stop
+/// dialog couldn't tell the user "you're about to replace a folder with a
+/// file" and silently took the user's "Overwrite" click as consent to drop
+/// an entire directory tree.
+fn build_conflict_event(
+    operation_id: &str,
+    source: &Path,
+    dest_path: &Path,
+    source_meta: Option<&fs::Metadata>,
+    dest_meta: Option<&fs::Metadata>,
+) -> WriteConflictEvent {
+    let destination_is_newer = match (source_meta, dest_meta) {
+        (Some(s), Some(d)) => {
+            let src_time = s.modified().ok();
+            let dst_time = d.modified().ok();
+            matches!((src_time, dst_time), (Some(src), Some(dst)) if dst > src)
+        }
+        _ => false,
+    };
+
+    let source_size = source_meta.map(|m| m.len()).unwrap_or(0);
+    let destination_size = dest_meta.map(|m| m.len()).unwrap_or(0);
+    let size_difference = destination_size as i64 - source_size as i64;
+
+    let unix_secs = |m: Option<&fs::Metadata>| -> Option<i64> {
+        m?.modified()
+            .ok()?
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()
+            .map(|d| d.as_secs() as i64)
+    };
+
+    WriteConflictEvent {
+        operation_id: operation_id.to_string(),
+        source_path: source.display().to_string(),
+        destination_path: dest_path.display().to_string(),
+        source_size,
+        destination_size,
+        source_modified: unix_secs(source_meta),
+        destination_modified: unix_secs(dest_meta),
+        destination_is_newer,
+        size_difference,
+        source_is_directory: source_meta.map(|m| m.is_dir()).unwrap_or(false),
+        destination_is_directory: dest_meta.map(|m| m.is_dir()).unwrap_or(false),
+    }
 }
 
 // ============================================================================
@@ -1230,6 +1251,69 @@ mod conditional_resolution_tests {
             ConflictResolution::Skip,
             "dst from now must NOT be overwritten by src from an hour ago"
         );
+    }
+}
+
+#[cfg(test)]
+mod build_conflict_event_tests {
+    //! Regression for the low-severity audit finding: the Stop-mode
+    //! conflict event used to carry no `is_directory` flags, so the FE
+    //! dialog rendered a generic "file already exists" prompt even when
+    //! the collision was a type mismatch (file → directory or vice versa).
+    //! User clicked "Overwrite" thinking they were replacing a file, ended
+    //! up dropping a whole directory tree without warning.
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn file_over_directory_marks_destination_is_directory() {
+        let temp = TempDir::new().unwrap();
+        let source = temp.path().join("notes.txt");
+        let dest = temp.path().join("conflicting");
+        fs::write(&source, b"a file").unwrap();
+        fs::create_dir(&dest).unwrap();
+
+        let source_meta = fs::metadata(&source).unwrap();
+        let dest_meta = fs::metadata(&dest).unwrap();
+
+        let event = build_conflict_event("op-1", &source, &dest, Some(&source_meta), Some(&dest_meta));
+
+        assert!(!event.source_is_directory, "source is a file");
+        assert!(event.destination_is_directory, "destination is a directory");
+    }
+
+    #[test]
+    fn directory_over_file_marks_source_is_directory() {
+        let temp = TempDir::new().unwrap();
+        let source = temp.path().join("conflicting");
+        let dest = temp.path().join("notes.txt");
+        fs::create_dir(&source).unwrap();
+        fs::write(&dest, b"a file").unwrap();
+
+        let source_meta = fs::metadata(&source).unwrap();
+        let dest_meta = fs::metadata(&dest).unwrap();
+
+        let event = build_conflict_event("op-2", &source, &dest, Some(&source_meta), Some(&dest_meta));
+
+        assert!(event.source_is_directory, "source is a directory");
+        assert!(!event.destination_is_directory, "destination is a file");
+    }
+
+    #[test]
+    fn file_over_file_flags_both_false() {
+        let temp = TempDir::new().unwrap();
+        let source = temp.path().join("a.txt");
+        let dest = temp.path().join("b.txt");
+        fs::write(&source, b"a").unwrap();
+        fs::write(&dest, b"b").unwrap();
+
+        let source_meta = fs::metadata(&source).unwrap();
+        let dest_meta = fs::metadata(&dest).unwrap();
+
+        let event = build_conflict_event("op-3", &source, &dest, Some(&source_meta), Some(&dest_meta));
+
+        assert!(!event.source_is_directory);
+        assert!(!event.destination_is_directory);
     }
 }
 

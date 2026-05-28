@@ -97,6 +97,12 @@ pub(super) async fn resolve_volume_conflict(
             let destination_is_newer = matches!((source_modified, destination_modified), (Some(s), Some(d)) if d > s);
             let size_difference = dest_size as i64 - source_size as i64;
 
+            // Type flags via `is_directory`; same Stop-only cost rationale as
+            // the mtimes above. Best-effort: a backend that errors here just
+            // reports `false`, falling back to file-over-file dialog shape.
+            let source_is_directory = source_volume.is_directory(source_path).await.unwrap_or(false);
+            let destination_is_directory = dest_volume.is_directory(dest_path).await.unwrap_or(false);
+
             events.emit_conflict(WriteConflictEvent {
                 operation_id: operation_id.to_string(),
                 source_path: source_path.display().to_string(),
@@ -107,6 +113,8 @@ pub(super) async fn resolve_volume_conflict(
                 destination_modified,
                 destination_is_newer,
                 size_difference,
+                source_is_directory,
+                destination_is_directory,
             });
 
             // Create a oneshot channel for this conflict resolution
