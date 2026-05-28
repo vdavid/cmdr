@@ -26,6 +26,14 @@
       "schedule": ["at any time"],
       "automerge": true,
       "groupName": null
+    },
+    {
+      "description": "First-party crates (David's own). Stricter pre-release gate than the 14-day window protects against; bypass so cmdr pulls fixes immediately.",
+      "matchPackageNames": ["smb2", "mtp-rs"],
+      "minimumReleaseAge": "0 days",
+      "schedule": ["at any time"],
+      "automerge": true,
+      "groupName": null
     }
   ],
   "cargo": {
