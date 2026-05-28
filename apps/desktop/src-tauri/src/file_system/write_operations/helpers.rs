@@ -213,6 +213,19 @@ pub(crate) fn is_same_file(_source: &Path, _destination: &Path) -> bool {
     false
 }
 
+/// Returns `true` when `path` already names something we should treat as a
+/// conflict — including dangling symlinks.
+///
+/// `Path::exists()` follows symlinks: it returns `false` for a symlink whose
+/// target is missing. Using it alone for the "does the destination exist?"
+/// gate lets a dangling symlink slip past conflict resolution; the subsequent
+/// write then follows the symlink and either clobbers wherever it points or
+/// surfaces a confusing `ENOENT` from the target's parent. Pair it with
+/// `symlink_metadata` so the gate fires for symlinks (broken or not).
+pub(crate) fn path_exists_or_is_symlink(path: &Path) -> bool {
+    path.exists() || fs::symlink_metadata(path).is_ok()
+}
+
 // ============================================================================
 // Path length validation
 // ============================================================================
@@ -1157,5 +1170,53 @@ mod conditional_resolution_tests {
             ConflictResolution::Skip,
             "dst from now must NOT be overwritten by src from an hour ago"
         );
+    }
+}
+
+#[cfg(all(test, unix))]
+mod path_exists_or_is_symlink_tests {
+    //! Regression for the medium-severity audit finding: the regular-file
+    //! copy branch (and both move-op branches) used `Path::exists()` for
+    //! conflict detection, which follows symlinks and returns `false` for
+    //! a dangling symlink at the destination — the copy then followed the
+    //! symlink and silently clobbered (or failed mid-batch with a confusing
+    //! ENOENT against the target's parent).
+    use super::*;
+    use std::os::unix::fs::symlink;
+    use tempfile::TempDir;
+
+    #[test]
+    fn flags_dangling_symlink_at_destination() {
+        let temp = TempDir::new().unwrap();
+        let dest = temp.path().join("notes.txt");
+        // Symlink target intentionally never exists.
+        symlink(temp.path().join("missing-target"), &dest).unwrap();
+
+        // `Path::exists()` is the pre-fix gate — must return false for a
+        // dangling symlink (this is the trap).
+        assert!(!dest.exists(), "exists() must NOT see a dangling symlink");
+        // Our helper closes the trap.
+        assert!(
+            path_exists_or_is_symlink(&dest),
+            "dangling symlink must be treated as an existing destination"
+        );
+    }
+
+    #[test]
+    fn flags_live_symlink_and_regular_paths() {
+        let temp = TempDir::new().unwrap();
+        let real = temp.path().join("real.txt");
+        fs::write(&real, b"data").unwrap();
+        let link = temp.path().join("link.txt");
+        symlink(&real, &link).unwrap();
+
+        assert!(path_exists_or_is_symlink(&real));
+        assert!(path_exists_or_is_symlink(&link));
+    }
+
+    #[test]
+    fn returns_false_for_missing_path() {
+        let temp = TempDir::new().unwrap();
+        assert!(!path_exists_or_is_symlink(&temp.path().join("absent")));
     }
 }

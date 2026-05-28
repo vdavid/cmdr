@@ -6,7 +6,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
-use super::super::helpers::{is_same_filesystem, remove_dir_all_in_background, resolve_conflict, spawn_async_sync};
+use super::super::helpers::{
+    is_same_filesystem, path_exists_or_is_symlink, remove_dir_all_in_background, resolve_conflict, spawn_async_sync,
+};
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
@@ -148,7 +150,7 @@ fn move_with_rename(
                     &mut move_tx,
                     &mut files_skipped,
                 )?;
-            } else if dest_path.exists() {
+            } else if path_exists_or_is_symlink(&dest_path) {
                 // File-to-file (or type mismatch) conflict
                 match resolve_conflict(
                     source,
@@ -274,7 +276,7 @@ fn merge_move_directory(
                 move_tx,
                 files_skipped,
             )?;
-        } else if dest_child.exists() {
+        } else if path_exists_or_is_symlink(&dest_child) {
             // File conflict (or type mismatch)
             match resolve_conflict(
                 &source_child,

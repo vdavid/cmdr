@@ -10,8 +10,8 @@ use std::time::{Duration, Instant};
 use super::macos_copy::copy_symlink;
 
 use super::super::helpers::{
-    find_unique_name, is_same_file, resolve_conflict, run_cancellable, spawn_async_sync, validate_disk_space,
-    validate_path_length,
+    find_unique_name, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable, spawn_async_sync,
+    validate_disk_space, validate_path_length,
 };
 use super::super::scan::{
     SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path,
@@ -645,7 +645,7 @@ pub(super) fn copy_single_item(
 
     if is_symlink {
         // Handle symlink
-        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() || fs::symlink_metadata(&dest_path).is_ok() {
+        let (actual_dest, needs_safe_overwrite) = if path_exists_or_is_symlink(&dest_path) {
             match resolve_conflict(
                 source,
                 &dest_path,
@@ -699,7 +699,11 @@ pub(super) fn copy_single_item(
         *bytes_done += metadata.len();
     } else {
         // Handle regular file
-        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() {
+        // Pre-fix this branch used `dest_path.exists()`, which follows symlinks
+        // and returns false for dangling symlinks. The copy then opened the
+        // symlink target for writing — silent clobber or a confusing ENOENT.
+        // `path_exists_or_is_symlink` mirrors the symlink branch above.
+        let (actual_dest, needs_safe_overwrite) = if path_exists_or_is_symlink(&dest_path) {
             match resolve_conflict(
                 source,
                 &dest_path,
