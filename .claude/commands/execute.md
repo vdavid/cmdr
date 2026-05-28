@@ -29,4 +29,11 @@ Final review:
 - In the end, ask +1 Opus agent to do a thorough review of the execution, and flag if anything is skipped, broken,
   incomplete, etc.
 - Have +1 Opus agent run `./scripts/check.sh` and make sure that it's green, even if checks fail on unrelated things.
+- Strip milestone tags from the touched code and docs. Plan-specific names like "M1", "M2a", "Milestone 3", "Phase 2",
+  etc. leak into inline comments, dead-code `reason` strings, test helper prefixes, doc strings, and CLAUDE.md text
+  during execution. Grep the touched files (`rg -n '\b(M[0-9][a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <paths>`) and
+  replace each hit with a descriptive reference ("the watcher", "the hook contract", "the downloads toast", etc.) so a
+  future reader doesn't need the plan in hand. The plan file itself keeps its milestone structure — that's where
+  milestones belong. Be careful to leave pre-existing milestone references in unrelated code alone (different feature's
+  M1, Apple Silicon "M1" chip, SVG `M` path coords, etc.).
 - Do a review yourself, and report: is this something you're proud of? Is this solid AND elegant? Is something missing?
