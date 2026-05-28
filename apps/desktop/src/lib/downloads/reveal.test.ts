@@ -18,7 +18,7 @@ const {
   openPrivacySettingsMock: vi.fn(() => Promise.resolve()),
   navigateToPathMock: vi.fn(() => Promise.resolve()),
   moveCursorMock: vi.fn(() => Promise.resolve()),
-  getFocusedPaneMock: vi.fn(() => 'left' as 'left' | 'right'),
+  getFocusedPaneMock: vi.fn(() => 'left'),
 }))
 
 vi.mock('$lib/ipc/bindings', () => ({

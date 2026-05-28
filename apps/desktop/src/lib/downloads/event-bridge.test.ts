@@ -100,6 +100,10 @@ async function startBridgeAndCaptureListener(): Promise<DetectedListener> {
     return Promise.resolve(() => {})
   })
   await startDownloadsEventBridge(undefined)
+  // `captured` is assigned inside the `listen` mock's closure, so TS's
+  // control-flow analysis still sees its initialized `null` here. The runtime
+  // check is the actual contract.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!captured) throw new Error('Bridge did not register a listener')
   return captured
 }
@@ -198,8 +202,8 @@ describe('startDownloadsEventBridge', () => {
     // emitted toast must not change its hint.
     getEffectiveShortcutsMock.mockReturnValue(['⌘K'])
 
-    const firstCall = addToastMock.mock.calls[0] as unknown as [unknown, { props?: { shortcutHint?: string } }]
-    expect(firstCall[1]?.props?.shortcutHint).toBe('⌘J')
+    const firstCall = addToastMock.mock.calls[0] as unknown as [unknown, { props: { shortcutHint: string } }]
+    expect(firstCall[1].props.shortcutHint).toBe('⌘J')
   })
 
   it('skips notification dispatch entirely while the FDA gate is pending', async () => {

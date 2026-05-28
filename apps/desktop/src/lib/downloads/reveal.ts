@@ -14,9 +14,15 @@ import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
-import RevealEmptyToastContent, { setEmptyToastHandler } from './RevealEmptyToastContent.svelte'
+import RevealEmptyToastContent, {
+  setEmptyToastHandler as setEmptyToastHandlerUntyped,
+} from './RevealEmptyToastContent.svelte'
 import RevealFdaToastContent from './RevealFdaToastContent.svelte'
 import { REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID } from './reveal-ids'
+
+// Svelte component module-level exports come through as `any` at the `.svelte`
+// boundary. Re-pin the signature locally so the call site stays type-safe.
+const setEmptyToastHandler = setEmptyToastHandlerUntyped as (action: () => void) => void
 
 export { REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID }
 

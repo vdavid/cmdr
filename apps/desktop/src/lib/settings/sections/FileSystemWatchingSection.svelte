@@ -261,7 +261,7 @@
                                 checked={shortcutEnabled}
                                 onchange={(e) =>
                                     void handleShortcutEnabledChange(
-                                        (e.currentTarget as HTMLInputElement).checked,
+                                        (e.currentTarget).checked,
                                     )}
                                 disabled={downloadsGated}
                             />
@@ -274,7 +274,7 @@
                                 type="text"
                                 value={shortcutBinding}
                                 onchange={(e) =>
-                                    void handleBindingChange((e.currentTarget as HTMLInputElement).value)}
+                                    void handleBindingChange((e.currentTarget).value)}
                                 disabled={downloadsGated || !shortcutEnabled}
                                 spellcheck="false"
                             />

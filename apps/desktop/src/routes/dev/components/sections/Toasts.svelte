@@ -33,7 +33,7 @@
         // Fires 6 toasts in the 'demo' group with cap 5; the first one
         // should evict instantly to demonstrate FIFO-in-group eviction.
         for (let i = 1; i <= 6; i++) {
-            addToast(`Demo notification ${i} of 6`, {
+            addToast(`Demo notification ${String(i)} of 6`, {
                 level: 'info',
                 toastGroup: 'demo',
             })

@@ -112,18 +112,18 @@ async function mountSection(): Promise<HTMLDivElement> {
   await tick()
   await Promise.resolve()
   await tick()
-  return target as HTMLDivElement
+  return target
 }
 
 describe('FileSystemWatchingSection', () => {
   it('renders all three sub-groups when FDA is granted', async () => {
     const target = await mountSection()
-    const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent?.trim())
+    const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
     expect(labels).toEqual(
       expect.arrayContaining(['Drive indexing', 'Downloads notifications', 'Reveal latest download']),
     )
     // Section title.
-    const title = target.querySelector('.section-title')?.textContent?.trim()
+    const title = target.querySelector('.section-title')?.textContent.trim()
     expect(title).toBe('File system watching')
     target.remove()
   })
@@ -154,7 +154,7 @@ describe('FileSystemWatchingSection', () => {
     const target = await mountSection()
     // ToggleGroup renders one button per option with the visible label.
     const macosButton = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'macOS notifications',
+      (b) => b.textContent.trim() === 'macOS notifications',
     )
     if (!macosButton) throw new Error('macOS notifications toggle not found')
     macosButton.click()
@@ -168,9 +168,9 @@ describe('FileSystemWatchingSection', () => {
     const target = await mountSection()
     // Reset between the mount-time refreshShortcutStatus call and the toggle.
     setGlobalRevealShortcutMock.mockClear()
-    const checkbox = target.querySelector(
+    const checkbox = target.querySelector<HTMLInputElement>(
       'input[type="checkbox"][data-test="global-shortcut-enabled"]',
-    ) as HTMLInputElement | null
+    )
     if (!checkbox) throw new Error('Global shortcut enable checkbox not found')
     checkbox.checked = false
     checkbox.dispatchEvent(new Event('change', { bubbles: true }))

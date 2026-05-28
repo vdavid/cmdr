@@ -26,7 +26,7 @@ describe('setGlobalRevealBinding', () => {
 
   it('writes both calls in the right order (binding first, ack reset second)', () => {
     setGlobalRevealBinding('⌥⌘P')
-    const calls = setSettingMock.mock.calls.map((c) => c[0])
+    const calls = setSettingMock.mock.calls.map((c) => c[0] as string)
     const bindingIdx = calls.indexOf('behavior.fileSystemWatching.globalRevealShortcut.binding')
     const ackIdx = calls.indexOf('behavior.fileSystemWatching.globalRevealShortcut.acknowledged')
     expect(bindingIdx).toBeGreaterThanOrEqual(0)

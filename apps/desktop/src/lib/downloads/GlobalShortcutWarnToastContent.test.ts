@@ -44,7 +44,7 @@ describe('GlobalShortcutWarnToastContent', () => {
     })
     flushSync()
     expect(target.textContent).toContain('⌃⌥⌘J')
-    expect(target.textContent?.toLowerCase()).toContain('keep')
+    expect(target.textContent.toLowerCase()).toContain('keep')
   })
 
   it('"Keep it on" dismisses the toast (acknowledged is set by the bridge, not the toast)', async () => {
@@ -55,7 +55,7 @@ describe('GlobalShortcutWarnToastContent', () => {
     })
     flushSync()
     const keepButton = Array.from(target.querySelectorAll('button')).find((b) =>
-      b.textContent?.toLowerCase().includes('keep'),
+      b.textContent.toLowerCase().includes('keep'),
     )
     if (!keepButton) throw new Error('Keep button not found')
     keepButton.click()
@@ -78,7 +78,7 @@ describe('GlobalShortcutWarnToastContent', () => {
     })
     flushSync()
     const offButton = Array.from(target.querySelectorAll('button')).find((b) =>
-      b.textContent?.toLowerCase().includes('turn it off'),
+      b.textContent.toLowerCase().includes('turn it off'),
     )
     if (!offButton) throw new Error('Turn-it-off button not found')
     offButton.click()

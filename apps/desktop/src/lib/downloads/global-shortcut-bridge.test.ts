@@ -102,9 +102,7 @@ describe('startGlobalShortcutBridge', () => {
     await fire()
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
-    const firstCall = addToastMock.mock.calls[0]
-    if (!firstCall) throw new Error('addToast was not called')
-    const [content, options] = firstCall
+    const [content, options] = addToastMock.mock.calls[0]
     expect(content).toBe(GlobalShortcutWarnToastContent)
     expect(options?.level).toBe('warn')
     expect(options?.dismissal).toBe('persistent')

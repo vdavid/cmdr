@@ -21,11 +21,15 @@
     } from './notifications-mode'
     import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
+    /**
+     * Subset of the `download-detected` Tauri payload this toast actually
+     * reads. The event-bridge passes a wider object; eslint's
+     * `svelte/no-unused-props` flags any field not consumed in the template,
+     * so the prop type lists only what's rendered.
+     */
     interface DownloadDetectedPayload {
-        path: string
         parentDir: string
         fileName: string
-        observedAtMs: number
         inSubdir: boolean
         sizeBytes: number | null
     }

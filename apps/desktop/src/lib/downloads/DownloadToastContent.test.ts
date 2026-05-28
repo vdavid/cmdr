@@ -39,10 +39,8 @@ function makeProps(overrides: Partial<DownloadToastProps> = {}): DownloadToastPr
     toastId: 'downloads:test-id',
     explorer: undefined as ExplorerAPI | undefined,
     event: {
-      path: '/Users/me/Downloads/report.pdf',
       parentDir: '/Users/me/Downloads',
       fileName: 'report.pdf',
-      observedAtMs: 1_700_000_000_000,
       inSubdir: false,
       sizeBytes: 1024,
     },
@@ -79,10 +77,8 @@ describe('DownloadToastContent', () => {
       target,
       props: makeProps({
         event: {
-          path: '/Users/me/Downloads/Chrome/setup.dmg',
           parentDir: '/Users/me/Downloads/Chrome',
           fileName: 'setup.dmg',
-          observedAtMs: 1_700_000_000_000,
           inSubdir: true,
           sizeBytes: null,
         },
@@ -90,7 +86,7 @@ describe('DownloadToastContent', () => {
     })
     await tick()
 
-    expect(target.textContent?.toLowerCase()).toContain('chrome')
+    expect(target.textContent.toLowerCase()).toContain('chrome')
   })
 
   it('clicking the "Jump to file" button reveals the specific file by path', async () => {
@@ -99,7 +95,7 @@ describe('DownloadToastContent', () => {
     mount(DownloadToastContent, { target, props: makeProps() })
     await tick()
 
-    const jumpButton = Array.from(target.querySelectorAll('button')).find((b) => /jump/i.test(b.textContent ?? ''))
+    const jumpButton = Array.from(target.querySelectorAll('button')).find((b) => /jump/i.test(b.textContent))
     if (!jumpButton) throw new Error('Jump button not found')
     jumpButton.click()
     await tick()
@@ -133,9 +129,7 @@ describe('DownloadToastContent', () => {
     mount(DownloadToastContent, { target, props: makeProps() })
     await tick()
 
-    const stopButton = Array.from(target.querySelectorAll('button')).find((b) =>
-      /stop showing/i.test(b.textContent ?? ''),
-    )
+    const stopButton = Array.from(target.querySelectorAll('button')).find((b) => /stop showing/i.test(b.textContent))
     if (!stopButton) throw new Error('Stop button not found')
     stopButton.click()
     await tick()

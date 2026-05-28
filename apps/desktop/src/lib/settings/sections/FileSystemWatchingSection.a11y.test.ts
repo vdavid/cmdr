@@ -101,7 +101,7 @@ async function mountSection(): Promise<HTMLDivElement> {
   await tick()
   await Promise.resolve()
   await tick()
-  return target as HTMLDivElement
+  return target
 }
 
 describe('FileSystemWatchingSection a11y', () => {
