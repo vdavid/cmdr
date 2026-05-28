@@ -3,7 +3,7 @@
      * INFO toast shown when ⌘J / palette / MCP reveal can't find any
      * eligible download. Pure-prop-driven: the "Go to Downloads" action and
      * the toast id arrive as props, captured at toast-creation time and
-     * never re-read. Same shape as `DownloadToastContent` (M5).
+     * never re-read. Same shape as `DownloadToastContent`.
      */
     import { dismissToast } from '$lib/ui/toast'
 

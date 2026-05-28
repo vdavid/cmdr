@@ -60,11 +60,12 @@ export interface ToastOptions {
    * Props forwarded to a component-shaped `content`. Ignored for string content.
    *
    * The toast ID is appended to the props object under the `toastId` key so the
-   * content component can self-dismiss without a module-state bridge. (M4's
-   * earlier toasts used a module-state setter pattern for their single
-   * callback; once a toast carries structured data per instance — a burst of
-   * downloads each with different filenames — props-forwarding is the right
-   * shape, since module state would clobber across consecutive toasts.)
+   * content component can self-dismiss without a module-state bridge.
+   * (Earlier component-content toasts used a module-state setter pattern for
+   * their single callback; once a toast carries structured data per instance
+   * — a burst of downloads each with different filenames — props-forwarding
+   * is the right shape, since module state would clobber across consecutive
+   * toasts.)
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Svelte component prop maps are heterogenous
   props?: Record<string, any>

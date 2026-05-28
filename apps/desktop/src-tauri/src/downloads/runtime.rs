@@ -239,10 +239,10 @@ pub fn note_pending_write_for_cmdr_with_ttl(path: &Path, ttl: Duration) {
 
 /// Bulk version of [`note_pending_write_for_cmdr`]. One mutex acquire for
 /// the whole batch. Reserved for future call sites that know their full
-/// destination list up front; M3 wires per-file callers.
+/// destination list up front; per-file callers are what's wired today.
 #[allow(
     dead_code,
-    reason = "M3 hook contract surface; per-file note_pending_write_for_cmdr is what's wired today"
+    reason = "Hook contract surface; per-file note_pending_write_for_cmdr is what's wired today"
 )]
 pub fn note_pending_writes_for_cmdr<I>(paths: I)
 where
@@ -257,7 +257,8 @@ where
 
 /// Test-only: install `watcher` as the process-global handle and return a
 /// guard that uninstalls (and stops) it on drop. Used by write-op tests to
-/// drive the M3 hook contract end-to-end against a tempdir-backed watcher.
+/// drive the Cmdr-own-write hook contract end-to-end against a tempdir-backed
+/// watcher.
 ///
 /// Asserts that no watcher is currently installed; mixing two install
 /// scopes in the same process would silently overwrite. The guard's drop
@@ -294,7 +295,7 @@ impl Drop for TestInstallGuard {
 
 #[cfg(test)]
 mod tests {
-    //! Tests for the M3 hook helpers. The process-global `RUNTIME` is
+    //! Tests for the Cmdr-own-write hook helpers. The process-global `RUNTIME` is
     //! shared across all tests in this crate; serialize installs through
     //! `INSTALL_LOCK` so concurrent threads (nextest defaults to
     //! `test-threads = num-cpus`) don't race on the `assert!(guard.is_none())`
@@ -322,7 +323,7 @@ mod tests {
 
     fn unhidden_tempdir() -> tempfile::TempDir {
         tempfile::Builder::new()
-            .prefix("cmdr-m3-runtime-test-")
+            .prefix("cmdr-downloads-runtime-test-")
             .tempdir()
             .expect("tempdir")
     }
@@ -351,7 +352,7 @@ mod tests {
 
     #[test]
     fn note_pending_write_for_cmdr_suppresses_watcher_event_end_to_end() {
-        // End-to-end safety net for the M3 hook contract. Mirrors the
+        // End-to-end safety net for the Cmdr-own-write hook contract. Mirrors the
         // headline regression case from the plan: a Cmdr-own write into the
         // watched dir, registered via the public helper, must NOT produce a
         // `download-detected` event.

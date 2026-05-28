@@ -342,7 +342,7 @@ impl DownloadsWatcher {
 
     /// Bulk version of [`Self::note_pending_write`]. Reserved for future
     /// call sites with a known full destination list (transfer driver,
-    /// etc.); the per-file [`Self::note_pending_write`] is what M3 wires.
+    /// etc.); the per-file [`Self::note_pending_write`] is what's wired today.
     #[allow(
         dead_code,
         reason = "Hook contract surface; per-file note_pending_write is what's wired today"
@@ -369,7 +369,7 @@ impl DownloadsWatcher {
     /// Resolved Downloads root the watcher was started against.
     #[allow(
         dead_code,
-        reason = "Exposed for the Settings pane / debug surfaces; M2b leaves it unconsumed"
+        reason = "Exposed for the Settings pane / debug surfaces; not consumed today"
     )]
     pub fn downloads_root(&self) -> &Path {
         &self.downloads_root

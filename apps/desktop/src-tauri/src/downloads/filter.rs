@@ -1,9 +1,9 @@
 //! Eligibility filter for downloads-watcher events.
 //!
 //! Decides whether a path observed under the watched root looks like a "real"
-//! completed download we should surface. The watcher (M2b) passes only paths
-//! that are already under the resolved Downloads root, so this function
-//! doesn't re-check that boundary.
+//! completed download we should surface. The watcher passes only paths that
+//! are already under the resolved Downloads root, so this function doesn't
+//! re-check that boundary.
 
 use std::fs;
 use std::path::{Component, Path};

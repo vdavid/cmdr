@@ -365,7 +365,7 @@ export const settingsRegistry: SettingDefinition[] = [
 
   // ========================================================================
   // Behavior › File system watching
-  // (formerly "Drive indexing"; renamed in M7 so the indexer and the downloads
+  // (formerly "Drive indexing"; renamed so the indexer and the downloads
   // watcher both live under one umbrella that shares the FDA gate)
   // ========================================================================
   {

@@ -21,7 +21,7 @@ export const DOWNLOADS_NOTIFICATIONS_SETTING_KEY = 'behavior.fileSystemWatching.
 /**
  * Anchor id of the **Downloads notifications** sub-group inside
  * `FileSystemWatchingSection.svelte`. Used by `openSettingsToDownloadsNotifications`
- * to land the M5 "Stop showing these" deep-link on the right row.
+ * to land the downloads-toast "Stop showing these" deep-link on the right row.
  */
 export const DOWNLOADS_NOTIFICATIONS_ANCHOR_ID = 'settings-downloads-notifications'
 
@@ -51,8 +51,9 @@ export function getDownloadsNotificationsMode(): DownloadsNotificationsMode {
 
 /**
  * Write the current downloads-notifications mode. Wraps `setSetting` in a
- * try/catch as a defensive log so the M5 "Stop showing these" button never
- * throws even if the registry entry temporarily disappears (mid-rename, etc.).
+ * try/catch as a defensive log so the downloads-toast "Stop showing these"
+ * button never throws even if the registry entry temporarily disappears
+ * (mid-rename, etc.).
  */
 export function setDownloadsNotificationsMode(value: DownloadsNotificationsMode): void {
   try {
@@ -64,8 +65,8 @@ export function setDownloadsNotificationsMode(value: DownloadsNotificationsMode)
 
 /**
  * Deep-link to **Settings > Behavior > File system watching**, scrolled to the
- * Downloads notifications sub-group. M5's "Stop showing these" button calls
- * this after flipping the setting to `'neither'`.
+ * Downloads notifications sub-group. The downloads-toast "Stop showing these"
+ * button calls this after flipping the setting to `'neither'`.
  */
 export async function openSettingsToDownloadsNotifications(): Promise<void> {
   await openSettingsWindow(['Behavior', 'File system watching'], DOWNLOADS_NOTIFICATIONS_ANCHOR_ID)

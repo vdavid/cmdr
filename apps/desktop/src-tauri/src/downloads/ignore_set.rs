@@ -102,10 +102,10 @@ impl IgnoreSet {
 
     /// Bulk version of [`Self::note_pending`]. Reserved for future call
     /// sites with a full destination list up front (transfer driver, etc.);
-    /// the per-file path is what M3 wires today.
+    /// the per-file path is what hook sites wire today.
     #[allow(
         dead_code,
-        reason = "M3 hook contract surface; per-file note_pending is what's wired today"
+        reason = "Hook contract surface; per-file note_pending is what's wired today"
     )]
     pub fn note_pending_batch(&self, paths: Vec<PathBuf>, ttl: Duration) {
         for p in paths {

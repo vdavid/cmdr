@@ -29,7 +29,7 @@
 //! `Focused(true)` event; the Settings pane re-checks on mount as a
 //! belt-and-braces. Logic lives in [`desired_running`].
 //!
-//! ## Cmdr-own-write ignore set (M3 hook contract)
+//! ## Cmdr-own-write ignore set
 //!
 //! Write operations call [`DownloadsWatcher::note_pending_write`] (or
 //! `note_pending_writes` for batches) just before issuing the syscall. The

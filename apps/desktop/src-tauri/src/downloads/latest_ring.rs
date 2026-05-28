@@ -1,6 +1,6 @@
 //! Bounded ring of recently-observed downloads.
 //!
-//! The watcher (M2b) pushes every eligible download here; the "reveal latest
+//! The watcher pushes every eligible download here; the "reveal latest
 //! download" action reads from the back. Capacity 10 by default, oldest
 //! drops off the front. Re-pushing the same path moves it to the back so
 //! the most-recent occurrence wins; we never want a stale entry to shadow
@@ -8,8 +8,8 @@
 //!
 //! The ring survives across hotkey presses and is cleared only on Cmdr
 //! restart. Persisting it to disk would risk pointing the user at a file
-//! that was deleted while Cmdr was closed; the scan-fallback in M2b covers
-//! the cold-start path.
+//! that was deleted while Cmdr was closed; the watcher's scan-fallback
+//! covers the cold-start path.
 
 use std::collections::VecDeque;
 use std::path::PathBuf;
@@ -29,7 +29,7 @@ pub struct LatestRing {
 
 #[allow(
     dead_code,
-    reason = "clear/len are reserved for future ring management; M2b uses push + latest only"
+    reason = "clear/len are reserved for future ring management; the watcher uses push + latest only"
 )]
 impl LatestRing {
     pub fn new() -> Self {

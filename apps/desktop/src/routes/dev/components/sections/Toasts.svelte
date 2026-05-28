@@ -27,7 +27,7 @@
         addToast('Persistent toast (catalog preview).', { level: 'info', dismissal: 'persistent' })
     }
 
-    // Group + hover demos for M1.
+    // Group + hover demos.
 
     function triggerGroupBurst() {
         // Fires 6 toasts in the 'demo' group with cap 5; the first one

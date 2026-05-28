@@ -13,7 +13,7 @@
      *   2. **Downloads notifications** — the 4-option ToggleGroup driving
      *      `behavior.fileSystemWatching.downloadsNotifications`. Greyed out
      *      when the FDA gate is closed. Carries a stable anchor id so the
-     *      M5 "Stop showing these" toast button can deep-link here.
+     *      downloads-toast "Stop showing these" button can deep-link here.
      *   3. **Reveal latest download** — the global hotkey on/off toggle,
      *      the binding picker (v1 text input; recorder follow-up tracked in
      *      `docs/specs/downloads-watcher-plan.md`), and the registration-

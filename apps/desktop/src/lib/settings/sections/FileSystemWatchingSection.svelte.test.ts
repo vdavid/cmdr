@@ -1,5 +1,5 @@
 /**
- * Tier-3 tests for `FileSystemWatchingSection.svelte` (M7).
+ * Tier-3 tests for `FileSystemWatchingSection.svelte`.
  *
  * Pins the contract:
  *   - Three sub-groups render: Drive indexing, Downloads notifications, Reveal

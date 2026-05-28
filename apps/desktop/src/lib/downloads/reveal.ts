@@ -2,7 +2,7 @@
  * Frontend handler for the "Reveal latest download" command (⌘J, command
  * palette, and the `reveal_latest_download` MCP tool).
  *
- * Calls the typed M2b IPC and branches on the typed `RevealError` enum — no
+ * Calls the typed backend IPC and branches on the typed `RevealError` enum — no
  * string matching. On success, navigates the focused pane to the file's
  * parent dir and moves the cursor to the file. On any error, surfaces a
  * single INFO toast using a stable dedup id so spamming ⌘J doesn't stack
@@ -65,7 +65,7 @@ export async function revealLatestDownload(explorer: ExplorerAPI | undefined): P
  * pane, bypassing the latest-in-ring lookup.
  *
  * `revealLatestDownload` consults the watcher's ring + scan fallback. The
- * downloads toast (M5) already knows the path it's for; revealing the
+ * downloads toast already knows the path it's for; revealing the
  * specific file matters because by the time the user clicks the toast a
  * newer download may have landed and become "latest." We want the toast
  * to take the user to the file it advertised, not whatever is most recent

@@ -111,7 +111,7 @@ file-system watchers, and they share the same FDA gate. One header, one shared F
 (Drive indexing, Downloads notifications, Reveal latest download). The indexer setting still carries the label "Drive
 indexing" — that's the per-toggle name and stays accurate; what changed is the umbrella section's name.
 
-The sub-group sits inside a `<div id="settings-downloads-notifications">` so M5's "Stop showing these" deep-link lands
-on the right row instead of the section top. `openSettingsWindow(section, anchor)` accepts an optional `anchor` arg that
-the settings page (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section`
-event on already-open windows, then `scrollIntoView`s the matching element.
+The sub-group sits inside a `<div id="settings-downloads-notifications">` so the downloads-toast "Stop showing these"
+deep-link lands on the right row instead of the section top. `openSettingsWindow(section, anchor)` accepts an optional
+`anchor` arg that the settings page (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the
+`navigate-to-section` event on already-open windows, then `scrollIntoView`s the matching element.

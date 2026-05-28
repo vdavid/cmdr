@@ -1,10 +1,12 @@
 /**
- * Tests for `notifications-mode.ts` (M7).
+ * Tests for `notifications-mode.ts`.
  *
- * Pins the deep-link contract that M5's "Stop showing these" button relies on:
+ * Pins the deep-link contract that the downloads-toast "Stop showing these"
+ * button relies on:
  *   - `setDownloadsNotificationsMode('neither')` writes the registry key.
- *   - `openSettingsToDownloadsNotifications()` navigates to the renamed section
- *     path AND carries the sub-group anchor so the link lands on the right row.
+ *   - `openSettingsToDownloadsNotifications()` navigates to the File system
+ *     watching section AND carries the sub-group anchor so the link lands on
+ *     the right row.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -47,7 +49,7 @@ describe('getDownloadsNotificationsMode', () => {
     expect(getDownloadsNotificationsMode()).toBe('in-app')
   })
 
-  it("falls back to 'in-app' when getSetting throws (pre-M7 registry-miss path)", () => {
+  it("falls back to 'in-app' when getSetting throws (registry-miss safety path)", () => {
     getSettingMock.mockImplementation(() => {
       throw new Error('unknown setting')
     })

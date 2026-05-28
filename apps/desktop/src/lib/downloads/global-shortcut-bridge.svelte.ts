@@ -7,7 +7,7 @@
  *    AND opens the first-trigger warn toast. If `true`, skips the toast.
  * 2. Calls `revealLatestDownload(explorer)` so the user lands on the file.
  *
- * Mounted from `routes/(main)/+page.svelte` alongside the M5 event bridge.
+ * Mounted from `routes/(main)/+page.svelte` alongside the downloads event bridge.
  * The unsubscribe is returned so the layout can clean up on destroy.
  *
  * ## Why flip `acknowledged` BEFORE opening the toast (not inside the toast)
