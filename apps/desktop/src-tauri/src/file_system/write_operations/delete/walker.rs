@@ -230,10 +230,16 @@ pub(super) fn delete_files_with_progress_inner(
 // Volume-aware delete implementation (for MTP and other non-local volumes)
 // ============================================================================
 
-/// Entry collected during the volume scan phase: path, size, and whether it's a directory.
+/// Entry collected during the volume scan phase. We don't carry the raw
+/// `size` because the delete pipeline only ever needs the progress
+/// contribution: equals `size` for the first occurrence of an inode in the
+/// scan, `0` for hardlink dupes. Mirrors `FileInfo::progress_bytes` on the
+/// local-FS walker. Volume backends without inode info (MTP, SMB) populate
+/// this as `size` for every entry — they never produce hardlinks, so no
+/// dedup happens and the count is correct.
 struct VolumeDeleteEntry {
     path: PathBuf,
-    size: u64,
+    progress_bytes: u64,
     is_dir: bool,
 }
 
@@ -303,6 +309,7 @@ async fn scan_volume_recursive(
     is_dir_hint: Option<bool>,
     entries: &mut Vec<VolumeDeleteEntry>,
     total_bytes: &mut u64,
+    seen_inodes: &mut std::collections::HashSet<u64>,
     state: &Arc<WriteOperationState>,
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -421,6 +428,7 @@ async fn scan_volume_recursive(
                     Some(true),
                     entries,
                     total_bytes,
+                    seen_inodes,
                     state,
                     events,
                     operation_id,
@@ -429,12 +437,28 @@ async fn scan_volume_recursive(
                 .await?;
             } else {
                 let size = child.size.unwrap_or(0);
-                *total_bytes += size;
+                // Hardlink dedup: when the backend reports an inode, only
+                // count the first occurrence toward `total_bytes` and the
+                // tracker's running byte total. Subsequent hardlinks
+                // contribute `progress_bytes = 0` so the delete loop's
+                // numerator stays aligned with the denominator. Backends
+                // without inode info (MTP, SMB) leave `inode = None` and
+                // every entry is treated as unique — they never produce
+                // hardlinks anyway. Mirrors `FileInfo::progress_bytes` on
+                // the local-FS walker.
+                let counts = match child.inode {
+                    Some(ino) => seen_inodes.insert(ino),
+                    None => true,
+                };
+                let progress_bytes = if counts { size } else { 0 };
+                if counts {
+                    *total_bytes += size;
+                    tracker.bytes_so_far.fetch_add(size, Ordering::Relaxed);
+                }
                 tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
-                tracker.bytes_so_far.fetch_add(size, Ordering::Relaxed);
                 entries.push(VolumeDeleteEntry {
                     path: child_path,
-                    size,
+                    progress_bytes,
                     is_dir: false,
                 });
             }
@@ -444,7 +468,7 @@ async fn scan_volume_recursive(
         tracker.dirs_so_far.fetch_add(1, Ordering::Relaxed);
         entries.push(VolumeDeleteEntry {
             path: path.to_path_buf(),
-            size: 0,
+            progress_bytes: 0,
             is_dir: true,
         });
     } else {
@@ -453,7 +477,7 @@ async fn scan_volume_recursive(
         tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
         entries.push(VolumeDeleteEntry {
             path: path.to_path_buf(),
-            size: 0,
+            progress_bytes: 0,
             is_dir: false,
         });
     }
@@ -560,6 +584,11 @@ pub(super) async fn delete_volume_files_with_progress_inner(
 
     let mut entries: Vec<VolumeDeleteEntry> = Vec::new();
     let mut total_bytes = 0u64;
+    // Operation-scoped hardlink dedup. Shared across all top-level sources
+    // so a hardlink that spans two different sources still counts once
+    // (matches the local-FS walker's contract — `seen_inodes` in
+    // `scan.rs::walk_dir_recursive`). Empty for backends without inode info.
+    let mut seen_inodes: std::collections::HashSet<u64> = std::collections::HashSet::new();
     let tracker = Arc::new(VolumeScanTracker::new(state.progress_interval));
     let mut last_scan_emit = Instant::now();
 
@@ -594,13 +623,18 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                 Some(per_path_scan) if !per_path_scan.top_level_is_directory => {
                     // Top-level file: size comes straight from the cache. No
                     // `is_directory` probe and no `list_directory` round-trip.
+                    // No inode info on the cache-hit path (`CopyScanResult`
+                    // doesn't carry it), so each top-level cached file is
+                    // treated as a unique inode. Cross-source hardlinks at
+                    // the top level aren't dedup'd; within-source recursion
+                    // still dedupes via the walker's `seen_inodes`.
                     let size = per_path_scan.total_bytes;
                     tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
                     tracker.bytes_so_far.fetch_add(size, Ordering::Relaxed);
                     total_bytes += size;
                     entries.push(VolumeDeleteEntry {
                         path: source.to_path_buf(),
-                        size,
+                        progress_bytes: size,
                         is_dir: false,
                     });
                 }
@@ -616,6 +650,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                         Some(true),
                         &mut entries,
                         &mut total_bytes,
+                        &mut seen_inodes,
                         state,
                         events,
                         operation_id,
@@ -636,6 +671,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                         None,
                         &mut entries,
                         &mut total_bytes,
+                        &mut seen_inodes,
                         state,
                         events,
                         operation_id,
@@ -714,6 +750,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                     Some(true),
                     &mut entries,
                     &mut total_bytes,
+                    &mut seen_inodes,
                     state,
                     events,
                     operation_id,
@@ -729,7 +766,7 @@ pub(super) async fn delete_volume_files_with_progress_inner(
                 tracker.files_so_far.fetch_add(1, Ordering::Relaxed);
                 entries.push(VolumeDeleteEntry {
                     path: source.to_path_buf(),
-                    size: 0,
+                    progress_bytes: 0,
                     is_dir: false,
                 });
             }
@@ -826,7 +863,10 @@ pub(super) async fn delete_volume_files_with_progress_inner(
         }
 
         files_done += 1;
-        bytes_done += entry.size;
+        // `progress_bytes` (not `size`) so the numerator stays in lockstep
+        // with the dedup'd `total_bytes` denominator. See
+        // `VolumeDeleteEntry::progress_bytes` for the contract.
+        bytes_done += entry.progress_bytes;
 
         if last_progress_time.elapsed() >= state.progress_interval {
             let current_file = entry.path.file_name().map(|n| n.to_string_lossy().to_string());

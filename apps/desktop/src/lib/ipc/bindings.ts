@@ -98,6 +98,17 @@ export const commands = {
         size: number | null
         // Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
         physicalSize: number | null
+        /**
+         *  Inode number, when known. Populated by `LocalPosixVolume` from
+         *  `MetadataExt::ino()`; left `None` by MTP, SMB, and InMemory backends
+         *  because their protocols have no inode concept. Consumed by the
+         *  volume-aware delete / copy walkers to dedupe hardlinks the same way
+         *  the local-FS walker does (see `seen_inodes` in
+         *  `write_operations/scan.rs`). Non-local backends never produce
+         *  hardlinks, so `None` is the safe default — the dedup loop just treats
+         *  every entry as a unique inode.
+         */
+        inode: number | null
         modifiedAt: number | null
         createdAt: number | null
         // When the file was added to its current directory (macOS only)
@@ -2331,6 +2342,17 @@ export type FileEntry = {
   size: number | null
   // Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
   physicalSize: number | null
+  /**
+   *  Inode number, when known. Populated by `LocalPosixVolume` from
+   *  `MetadataExt::ino()`; left `None` by MTP, SMB, and InMemory backends
+   *  because their protocols have no inode concept. Consumed by the
+   *  volume-aware delete / copy walkers to dedupe hardlinks the same way
+   *  the local-FS walker does (see `seen_inodes` in
+   *  `write_operations/scan.rs`). Non-local backends never produce
+   *  hardlinks, so `None` is the safe default — the dedup loop just treats
+   *  every entry as a unique inode.
+   */
+  inode: number | null
   modifiedAt: number | null
   createdAt: number | null
   // When the file was added to its current directory (macOS only)

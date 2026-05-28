@@ -205,19 +205,29 @@ fn walk_cached_entries<E>(
         } else {
             // File or symlink: record from the cache, no I/O. We can't build a
             // full `FileInfo` (no `std::fs::Metadata`), but we have everything
-            // the scan-preview caller actually consumes: path, size, and the
-            // symlink flag.
+            // the scan-preview caller actually consumes: path, size, the
+            // symlink flag, and inode for hardlink dedup.
             let size = entry.size.unwrap_or(0);
-            *total_bytes += size;
-            // Oracle path has no inode to feed `seen_inodes` with, so this
-            // file is treated as a unique inode (`progress_bytes == size`).
-            // Documented overshoot when a hardlink pair straddles the
-            // oracle/walk boundary — see write_operations CLAUDE.md gotcha.
+            // Mirrors `walk_dir_recursive`'s inode dedup: when the backend
+            // supplied an inode (`LocalPosixVolume` populates it for files
+            // with `nlink > 1`), only count the first occurrence toward
+            // `total_bytes` and set `progress_bytes` to match. Backends
+            // without inode info leave `inode = None` and every entry counts
+            // as unique. Closes the cross-boundary overshoot the previous
+            // gotcha documented.
+            let counts = match entry.inode {
+                Some(ino) => seen_inodes.insert(ino),
+                None => true,
+            };
+            let progress_bytes = if counts { size } else { 0 };
+            if counts {
+                *total_bytes += size;
+            }
             files.push(FileInfo {
                 path: child_path,
                 source_root: source_root.to_path_buf(),
                 size,
-                progress_bytes: size,
+                progress_bytes,
                 modified: entry.modified_at.unwrap_or(0),
                 created: entry.created_at.unwrap_or(0),
                 is_symlink: entry.is_symlink,

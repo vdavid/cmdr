@@ -215,9 +215,20 @@ pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
         None
     };
 
+    // `inode` is populated from `st_ino` for files only. Hardlink dedup in
+    // write-op walkers uses this to spot multiple paths pointing at the same
+    // inode. Directories don't share inodes the way files do, so leaving
+    // them `None` keeps the dedup decision file-shaped.
+    let inode = if metadata.is_file() && metadata.nlink() > 1 {
+        Some(metadata.ino())
+    } else {
+        None
+    };
+
     Ok(FileEntry {
         size: if metadata.is_file() { Some(metadata.len()) } else { None },
         physical_size,
+        inode,
         modified_at: modified,
         created_at: created,
         permissions: metadata.permissions().mode(),
@@ -271,9 +282,19 @@ pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
         None
     };
 
+    // See `get_single_entry`: inode populated for hardlinked files only so
+    // the write-op walkers can dedupe; standalone files and dirs leave it
+    // `None` to keep the dedup loop's fast path branchless.
+    let inode = if metadata.is_file() && metadata.nlink() > 1 {
+        Some(metadata.ino())
+    } else {
+        None
+    };
+
     Some(FileEntry {
         size: if metadata.is_file() { Some(metadata.len()) } else { None },
         physical_size,
+        inode,
         modified_at: modified,
         created_at: created,
         permissions: metadata.permissions().mode(),

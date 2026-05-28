@@ -80,6 +80,15 @@ pub struct FileEntry {
     pub size: Option<u64>,
     /// Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
     pub physical_size: Option<u64>,
+    /// Inode number, when known. Populated by `LocalPosixVolume` from
+    /// `MetadataExt::ino()`; left `None` by MTP, SMB, and InMemory backends
+    /// because their protocols have no inode concept. Consumed by the
+    /// volume-aware delete / copy walkers to dedupe hardlinks the same way
+    /// the local-FS walker does (see `seen_inodes` in
+    /// `write_operations/scan.rs`). Non-local backends never produce
+    /// hardlinks, so `None` is the safe default — the dedup loop just treats
+    /// every entry as a unique inode.
+    pub inode: Option<u64>,
     pub modified_at: Option<u64>,
     pub created_at: Option<u64>,
     /// When the file was added to its current directory (macOS only)
@@ -138,6 +147,7 @@ impl FileEntry {
             is_symlink,
             size: None,
             physical_size: None,
+            inode: None,
             modified_at: None,
             created_at: None,
             added_at: None,
