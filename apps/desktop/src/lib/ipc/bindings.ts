@@ -436,11 +436,6 @@ export const commands = {
       filesTotal: number
       dirsTotal: number
       bytesTotal: number
-      /**
-       *  `du`-equivalent source footprint (hardlinks counted once). See
-       *  `ScanPreviewCompleteEvent::dedup_bytes_total`.
-       */
-      dedupBytesTotal: number
     } | null>('check_scan_preview_status', { previewId }),
   // In Stop mode, the operation pauses on conflict and waits for this call to proceed.
   resolveWriteConflict: (operationId: string, resolution: ConflictResolution, applyToAll: boolean) =>
@@ -684,15 +679,9 @@ export const commands = {
   /**
    *  Starts a background search in the viewer session.
    *  Poll with `viewer_search_poll` to get results.
-   *
-   *  `mode` carries the case-sensitivity and literal-vs-regex toggles. Invalid regex
-   *  patterns and multiline patterns surface via `viewer_search_poll` as
-   *  `SearchStatus::InvalidQuery`, not as a command-level error: the session moves
-   *  into a "you typed something the engine can't run" state, and the FE renders the
-   *  typed message.
    */
-  viewerSearchStart: (sessionId: string, query: string, mode: SearchMode) =>
-    typedError<null, string>(__TAURI_INVOKE('viewer_search_start', { sessionId, query, mode })),
+  viewerSearchStart: (sessionId: string, query: string) =>
+    typedError<null, string>(__TAURI_INVOKE('viewer_search_start', { sessionId, query })),
   // Polls search progress and new matches since `since_index`.
   viewerSearchPoll: (sessionId: string, sinceIndex: number) =>
     typedError<SearchPollResult, string>(__TAURI_INVOKE('viewer_search_poll', { sessionId, sinceIndex })),
@@ -735,33 +724,6 @@ export const commands = {
   // Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard).
   viewerSetWordWrap: (label: string, checked: boolean) =>
     typedError<null, string>(__TAURI_INVOKE('viewer_set_word_wrap', { label, checked })),
-  /**
-   *  Returns the encoding dropdown payload: current selection, detected encoding, and the
-   *  full list of selectable encodings (with their labels and groups). The FE renders the
-   *  dropdown directly from this payload — no encoding list lives on the FE.
-   */
-  viewerGetEncodingOptions: (sessionId: string) =>
-    typedError<EncodingOptions, string>(__TAURI_INVOKE('viewer_get_encoding_options', { sessionId })),
-  /**
-   *  Switches the active encoding for a session. Returns immediately; if the swap
-   *  requires a background reindex (most cases except UTF-8 ↔ Windows-1252-family),
-   *  the FE polls `viewer_get_status` for `is_indexing` to track completion.
-   */
-  viewerSetEncoding: (sessionId: string, encoding: FileEncoding) =>
-    typedError<null, string>(__TAURI_INVOKE('viewer_set_encoding', { sessionId, encoding })),
-  /**
-   *  Toggles tail mode for a viewer session. When enabled, the backend extends its line index
-   *  in response to filesystem `Grew` events so the viewport can auto-follow new bytes.
-   *  When disabled, the FE still receives `viewer:file-changed:<sid>` events and renders a
-   *  persistent reload toast.
-   */
-  viewerSetTailMode: (sessionId: string, enabled: boolean) =>
-    typedError<null, string>(__TAURI_INVOKE('viewer_set_tail_mode', { sessionId, enabled })),
-  /**
-   *  Reopens the viewer's backend against the file on disk under the session's current
-   *  encoding. Called by the FE reload toast and on file rotation.
-   */
-  viewerReload: (sessionId: string) => typedError<null, string>(__TAURI_INVOKE('viewer_reload', { sessionId })),
   /**
    *  Checks if font metrics are available for a font ID.
    *
@@ -1186,6 +1148,28 @@ export const commands = {
    *  stays at Debug regardless, so error report bundles always carry useful context.
    */
   setLogLevel: (level: string) => __TAURI_INVOKE<void>('set_log_level', { level }),
+  /**
+   *  Reveal the most recently observed eligible download.
+   *
+   *  Tries the ring first; falls back to a recursive Downloads-dir scan when
+   *  the ring is empty (cold start). Returns a typed [`RevealError`] for the
+   *  frontend to branch on — no string matching.
+   */
+  revealLatestDownload: () => typedError<RevealedDownload, RevealError>(__TAURI_INVOKE('reveal_latest_download')),
+  /**
+   *  Read-only snapshot of the watcher's state. Used by debug / MCP surfaces
+   *  and the Settings pane to render the "watcher is running" indicator.
+   */
+  downloadsWatcherStatus: () => typedError<DownloadsWatcherStatus, string>(__TAURI_INVOKE('downloads_watcher_status')),
+  /**
+   *  Settings-pane belt-and-braces hook. Re-evaluates the FDA gate and
+   *  starts/stops the watcher accordingly. Idempotent.
+   *
+   *  Returns `Err(String)` only if the watcher couldn't start due to a
+   *  `notify` error; the frontend logs and moves on. Most call sites won't
+   *  flip the gate state, in which case this is a no-op.
+   */
+  recheckDownloadsWatcherGate: () => typedError<null, string>(__TAURI_INVOKE('recheck_downloads_watcher_gate')),
   startDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('start_drive_index')),
   stopDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('stop_drive_index')),
   getIndexStatus: () => typedError<IndexStatusResponse, string>(__TAURI_INVOKE('get_index_status')),
@@ -2313,24 +2297,52 @@ export type DiscoveryState =
   // Initial burst is complete, still listening.
   | 'active'
 
-// One row in the encoding dropdown.
-export type EncodingChoice = {
-  encoding: FileEncoding
-  label: string
-  group: EncodingGroup
+/**
+ *  Payload of the `download-detected` Tauri event.
+ *
+ *  `specta::Type` is derived so the TS binding picks the shape up. The type is
+ *  referenced from `DownloadsWatcherStatus::last_detected` so it lands in
+ *  `bindings.ts` even though Tauri events themselves aren't on the typed-event
+ *  surface yet.
+ */
+export type DownloadDetectedEvent = {
+  path: string
+  parentDir: string
+  fileName: string
+  // Milliseconds since the Unix epoch.
+  observedAtMs: number
+  /**
+   *  `true` when the file sits in a subdirectory under the Downloads root,
+   *  `false` when it's a direct child.
+   */
+  inSubdir: boolean
+  /**
+   *  Best-effort file size. `None` if the stat failed (file already gone,
+   *  permission denied, etc.).
+   */
+  sizeBytes: number | null
 }
 
-// Coarse grouping for the encoding dropdown's `<optgroup>` split.
-export type EncodingGroup = 'unicode' | 'western'
-
-/**
- *  Returned by `viewer_get_encoding_options`: current selection, detected encoding, and
- *  the full list of dropdown rows. The FE shows `detected` with a "(Detected)" suffix.
- */
-export type EncodingOptions = {
-  current: FileEncoding
-  detected: FileEncoding
-  all: EncodingChoice[]
+// Status snapshot for the FE / debug surface.
+export type DownloadsWatcherStatus = {
+  // `true` when the watcher is currently active.
+  running: boolean
+  /**
+   *  Resolved Downloads root. `None` if `dirs::download_dir()` + `$HOME`
+   *  fallback both failed.
+   */
+  downloadsDir: string | null
+  /**
+   *  Mirrors `crate::fda_gate::is_fda_pending_runtime()` at call time so
+   *  the FE doesn't need a second IPC.
+   */
+  fdaPending: boolean
+  /**
+   *  Carries the [`DownloadDetectedEvent`] type into the type graph so its
+   *  shape lands in `bindings.ts`. Always `None` today; reserved for a
+   *  future "last detected" surface (M5 territory).
+   */
+  lastDetected: DownloadDetectedEvent | null
 }
 
 export type EncryptionInfoDto = {
@@ -2384,25 +2396,6 @@ export type ErrorCategory =
   | 'needs_action'
   // Something is genuinely broken (I/O hardware issues, corrupted data).
   | 'serious'
-
-/**
- *  User-selectable text encoding for the file viewer.
- *
- *  The variants are deliberately narrow: every entry is something a user is
- *  likely to need (UTF-8 + BOM, the Western single-byte family, UTF-16 in both
- *  orders). EBCDIC, UTF-32, UTF-7, and the various DOS / Mac code pages are
- *  out of scope until requested; `encoding_rs` supports them so extending later
- *  is just an enum + dropdown addition.
- */
-export type FileEncoding =
-  | 'utf8'
-  | 'utf8WithBom'
-  | 'windows1252'
-  | 'iso8859_1'
-  | 'macRoman'
-  | 'usAscii'
-  | 'utf16Le'
-  | 'utf16Be'
 
 /**
  *  Represents a file or directory entry with extended metadata.
@@ -3159,6 +3152,35 @@ export type ResortResult = {
 }
 
 /**
+ *  Typed errors returned by [`reveal_latest_download`].
+ *
+ *  Tagged enum — `kind` discriminator, no string matching at the call site.
+ */
+export type RevealError =
+  /**
+   *  The watcher hasn't started yet (FDA gate closed, or startup not done).
+   *  Frontend should show the "Cmdr needs FDA" toast.
+   */
+  | { kind: 'watcherUnavailable' }
+  /**
+   *  No eligible download exists. Frontend shows the empty-Downloads INFO
+   *  toast offering navigation to the Downloads dir.
+   */
+  | { kind: 'empty' }
+  // Downloads dir couldn't be resolved (no `HOME`, no `dirs::download_dir`).
+  | { kind: 'downloadsDirUnresolved' }
+
+/**
+ *  Successful reveal: the path to surface plus the pre-split parent dir +
+ *  file name so the frontend doesn't have to parse the path itself.
+ */
+export type RevealedDownload = {
+  path: string
+  parentDir: string
+  fileName: string
+}
+
+/**
  *  A conflict detected during pre-copy scanning: a source item that already exists at the
  *  destination.
  */
@@ -3193,11 +3215,6 @@ export type ScanPreviewTotals = {
   filesTotal: number
   dirsTotal: number
   bytesTotal: number
-  /**
-   *  `du`-equivalent source footprint (hardlinks counted once). See
-   *  `ScanPreviewCompleteEvent::dedup_bytes_total`.
-   */
-  dedupBytesTotal: number
 }
 
 // A search match found by a backend.
@@ -3214,15 +3231,6 @@ export type SearchMatch = {
    *  don't map to the virtual scroll coordinate system.
    */
   byteOffset: number
-}
-
-/**
- *  Mode flags for building a `Matcher`. Crosses the IPC boundary via serde +
- *  specta with camelCase field names (`useRegex` and `caseSensitive`).
- */
-export type SearchMode = {
-  useRegex: boolean
-  caseSensitive: boolean
 }
 
 // Result from polling search progress.
@@ -3282,20 +3290,8 @@ export type SearchResultEntry = {
   iconId: string
 }
 
-/**
- *  Status of an ongoing search.
- *
- *  `InvalidQuery` carries the user-facing reason (invalid regex syntax, multiline
- *  pattern, regex exceeds size limits). Surfaced via `search_poll`; the FE renders
- *  the message as plain text without inspecting its contents (per the
- *  no-error-string-match rule).
- */
-export type SearchStatus =
-  | { status: 'running' }
-  | { status: 'done' }
-  | { status: 'cancelled' }
-  | { status: 'idle' }
-  | { status: 'invalidQuery'; message: string }
+// Status of an ongoing search.
+export type SearchStatus = 'running' | 'done' | 'cancelled' | 'idle'
 
 // A single recent-selection entry, persisted verbatim.
 export type SelectionHistoryEntry = {
@@ -3694,8 +3690,6 @@ export type ViewerOpenResult = {
   initialLines: LineChunk
   // ByteSeek -> LineIndex upgrade in progress.
   isIndexing: boolean
-  // Auto-detected encoding (also the initial selection of the picker).
-  encoding: FileEncoding
 }
 
 // Current status of a viewer session.
