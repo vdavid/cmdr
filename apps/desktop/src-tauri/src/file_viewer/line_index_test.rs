@@ -428,3 +428,98 @@ fn search_on_last_line_without_newline_utf16() {
 
     cleanup(&dir);
 }
+
+// ─── extend_to: tail-mode index extension ───────────────────────────────
+
+#[test]
+fn extend_to_matches_open_at_target_size() {
+    // Property check: extend_to(N) starting from a backend that opened at
+    // size S should yield the same total_lines and a get_lines(...) result
+    // equivalent to one from a fresh open at N.
+    let dir = create_test_dir("extend_match");
+    let initial = "alpha\nbeta\ngamma\n";
+    let appended = "delta\nepsilon\nzeta\n";
+    let path = write_test_file(&dir, "log.txt", initial);
+
+    let cancel = AtomicBool::new(false);
+    let small = LineIndexBackend::open(&path, &cancel).unwrap();
+    assert_eq!(small.total_lines(), Some(4));
+
+    // Append on disk, then call extend_to.
+    let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+    use std::io::Write;
+    f.write_all(appended.as_bytes()).unwrap();
+    drop(f);
+
+    let new_size = fs::metadata(&path).unwrap().len();
+    let extended = small.extend_to(new_size, &cancel).unwrap();
+    let fresh = LineIndexBackend::open(&path, &cancel).unwrap();
+
+    assert_eq!(extended.total_lines(), fresh.total_lines());
+    assert_eq!(extended.total_bytes(), fresh.total_bytes());
+
+    let ext_chunk = extended.get_lines(&SeekTarget::Line(0), 10).unwrap();
+    let fresh_chunk = fresh.get_lines(&SeekTarget::Line(0), 10).unwrap();
+    assert_eq!(ext_chunk.lines, fresh_chunk.lines);
+
+    cleanup(&dir);
+}
+
+#[test]
+fn extend_to_appends_checkpoints_past_interval() {
+    let dir = create_test_dir("extend_ckpt");
+    let initial: String = (0..(INDEX_CHECKPOINT_INTERVAL * 2))
+        .map(|i| format!("line {:06}\n", i))
+        .collect();
+    let path = write_test_file(&dir, "log.txt", &initial);
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&path, &cancel).unwrap();
+    let before_lines = backend.total_lines().unwrap();
+
+    let extra: String = (0..(INDEX_CHECKPOINT_INTERVAL * 2))
+        .map(|i| format!("more  {:06}\n", i))
+        .collect();
+    let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+    use std::io::Write;
+    f.write_all(extra.as_bytes()).unwrap();
+    drop(f);
+
+    let new_size = fs::metadata(&path).unwrap().len();
+    let extended = backend.extend_to(new_size, &cancel).unwrap();
+    assert_eq!(
+        extended.total_lines(),
+        Some(before_lines + INDEX_CHECKPOINT_INTERVAL * 2)
+    );
+
+    // Spot check: a line that lives past the original EOF is correctly seekable.
+    let target = INDEX_CHECKPOINT_INTERVAL * 2 + 5;
+    let chunk = extended.get_lines(&SeekTarget::Line(target), 1).unwrap();
+    assert_eq!(chunk.first_line_number, target);
+    assert_eq!(chunk.lines[0], format!("more  {:06}", 5));
+
+    cleanup(&dir);
+}
+
+#[test]
+fn extend_to_observes_cancel() {
+    let dir = create_test_dir("extend_cancel");
+    // Create a fairly long appended range so the scanner has work to bail out of.
+    let initial = "x\n";
+    let path = write_test_file(&dir, "log.txt", initial);
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&path, &cancel).unwrap();
+
+    let extra: String = "abcdefg\n".repeat(50_000);
+    let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+    use std::io::Write;
+    f.write_all(extra.as_bytes()).unwrap();
+    drop(f);
+
+    let new_size = fs::metadata(&path).unwrap().len();
+    let pre_cancel = AtomicBool::new(true);
+    let result = backend.extend_to(new_size, &pre_cancel);
+    assert!(matches!(result, Err(super::ViewerError::Cancelled)));
+
+    cleanup(&dir);
+}

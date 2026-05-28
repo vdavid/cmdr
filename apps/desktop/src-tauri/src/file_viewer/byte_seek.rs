@@ -266,6 +266,10 @@ impl ByteSeekBackend {
 }
 
 impl FileViewerBackend for ByteSeekBackend {
+    fn extend_to_boxed(&self, new_size: u64, cancel: &AtomicBool) -> Result<Box<dyn FileViewerBackend>, ViewerError> {
+        Ok(Box::new(self.extend_to(new_size, cancel)))
+    }
+
     fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
         let raw_offset = self.resolve_byte_offset(target);
 

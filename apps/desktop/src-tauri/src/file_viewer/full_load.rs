@@ -114,6 +114,17 @@ impl FullLoadBackend {
         self.encoding
     }
 
+    /// `extend_to` doesn't apply to FullLoad: the session escalates to
+    /// ByteSeek/LineIndex on the first append that crosses
+    /// `FULL_LOAD_THRESHOLD`. Calling it is a bug; we panic so the call site
+    /// surfaces fast rather than silently dropping the append.
+    #[allow(dead_code, reason = "called by session::tail_mode_extend defensively")]
+    pub fn extend_to(&self, _new_size: u64, _cancel: &AtomicBool) -> Self {
+        unreachable!(
+            "FullLoadBackend::extend_to should never be called: sessions escalate to ByteSeek before extending"
+        )
+    }
+
     /// Create from in-memory UTF-8 content (for testing). Always opens as UTF-8 with
     /// the legacy split-on-`\n` semantics that pre-encoding tests rely on.
     #[cfg(test)]
@@ -146,6 +157,16 @@ impl FullLoadBackend {
 }
 
 impl FileViewerBackend for FullLoadBackend {
+    fn extend_to_boxed(&self, _new_size: u64, _cancel: &AtomicBool) -> Result<Box<dyn FileViewerBackend>, ViewerError> {
+        // The session is responsible for escalating FullLoad → ByteSeek before
+        // calling extend_to. Reaching here means the caller violated that
+        // contract; surface a typed error rather than panicking inside a
+        // watcher thread.
+        Err(ViewerError::Io {
+            message: "FullLoadBackend cannot extend in place; session must escalate first".to_string(),
+        })
+    }
+
     fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
         let start = self.resolve_target(target);
         let end = (start + count).min(self.lines.len());

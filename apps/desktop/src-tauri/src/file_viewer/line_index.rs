@@ -383,6 +383,11 @@ impl LineIndexBackend {
 }
 
 impl FileViewerBackend for LineIndexBackend {
+    fn extend_to_boxed(&self, new_size: u64, cancel: &AtomicBool) -> Result<Box<dyn FileViewerBackend>, ViewerError> {
+        let extended = self.extend_to(new_size, cancel)?;
+        Ok(Box::new(extended))
+    }
+
     fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
         let target_line = self.resolve_target(target);
         let checkpoint = self.find_checkpoint(target_line);

@@ -12,6 +12,7 @@ mod line_index;
 mod range_read;
 mod search_matcher;
 mod session;
+mod watcher;
 
 #[cfg(test)]
 mod byte_seek_test;
@@ -25,14 +26,16 @@ mod line_index_test;
 mod search_matcher_test;
 #[cfg(test)]
 mod session_test;
+#[cfg(test)]
+mod watcher_test;
 
 pub use encoding::FileEncoding;
 pub use range_read::RangeEnd;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
     EncodingOptions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session,
-    get_encoding_options, get_lines, get_session_status, open_session, read_range, search_cancel, search_poll,
-    search_start, set_encoding, write_range_to_file,
+    get_encoding_options, get_lines, get_session_status, init_app_handle, open_session, read_range, reload,
+    search_cancel, search_poll, search_start, set_encoding, set_tail_mode, write_range_to_file,
 };
 
 use serde::Serialize;
@@ -152,6 +155,23 @@ impl From<std::io::Error> for ViewerError {
 pub trait FileViewerBackend: Send + Sync {
     /// Fetch a range of lines starting from the given target.
     fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError>;
+
+    /// Returns a fresh boxed backend whose internal state covers bytes up to
+    /// `new_size`. Cancellable. Default is `Err(ViewerError::Cancelled)` so
+    /// backends that don't support extension (today's `FullLoadBackend`) cause
+    /// the session to escalate to a different backend instead.
+    ///
+    /// Concrete impls override; the trait-level default panics rather than
+    /// silently dropping the append.
+    fn extend_to_boxed(
+        &self,
+        _new_size: u64,
+        _cancel: &std::sync::atomic::AtomicBool,
+    ) -> Result<Box<dyn FileViewerBackend>, ViewerError> {
+        Err(ViewerError::Io {
+            message: "backend does not support extend_to".to_string(),
+        })
+    }
 
     /// Search the file with the given `Matcher`, populating matches into the provided vec.
     /// Checks the cancel flag at chunk, line, and match granularity and stops early if set.
