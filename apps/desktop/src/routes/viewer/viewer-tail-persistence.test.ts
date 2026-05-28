@@ -101,7 +101,7 @@ describe('setLastTailMode + getLastTailMode round-trip', () => {
     await setLastTailMode('/tmp/log.txt', true)
     await setLastTailMode('/tmp/log.txt', false)
     const cache = _testOnlyGetCache()
-    const occurrences = cache.filter((e) => e.enabled === false).length
+    const occurrences = cache.filter((e) => !e.enabled).length
     expect(occurrences).toBeGreaterThanOrEqual(1)
     expect(cache[cache.length - 1].enabled).toBe(false)
   })
