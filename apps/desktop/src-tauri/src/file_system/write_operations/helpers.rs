@@ -23,6 +23,76 @@ use super::types::{
 // Validation helpers
 // ============================================================================
 
+// ============================================================================
+// Apply-to-all state (two-bucket latches)
+// ============================================================================
+
+/// Per-operation "apply to all" latch state for conflict resolution.
+///
+/// Splits into two buckets so the destructive file-to-folder clash variant
+/// (replacing a directory with a file) can be tracked separately from the
+/// normal (file↔file / folder↔folder / folder↔file) variants. See
+/// `apply_to_all_tests` for the full rule set; the short version:
+///
+/// - A choice latched on a *normal* clash applies to subsequent normal
+///   clashes. Only Skip / Rename carry over to file-to-folder; Overwrite
+///   variants don't.
+/// - A choice latched on a *file-to-folder* clash applies to subsequent
+///   file-to-folder clashes. If it was the **first** clash of the whole
+///   operation, the latch spreads to the normal bucket too.
+#[derive(Debug, Default, Clone, Copy)]
+pub(super) struct ApplyToAll {
+    normal: Option<ConflictResolution>,
+    file_to_folder: Option<ConflictResolution>,
+    /// `false` until the first clash (any kind) has been resolved. Used to
+    /// decide whether a "* all" choice in a file-to-folder dialog should
+    /// spread to the normal bucket — only if the file-to-folder clash was
+    /// the very first one the user saw.
+    has_seen_clash: bool,
+}
+
+/// Returns the latched resolution that applies to the next clash, or `None`
+/// if there's nothing latched yet for the given clash type. Encodes the
+/// Skip/Rename carry-over rule: when looking up a file-to-folder clash, fall
+/// back to the normal bucket only when the latched value there is one of
+/// the safe variants.
+pub(super) fn apply_to_all_effective(state: &ApplyToAll, is_file_to_folder: bool) -> Option<ConflictResolution> {
+    if is_file_to_folder {
+        state.file_to_folder.or_else(|| match state.normal {
+            Some(r @ (ConflictResolution::Skip | ConflictResolution::Rename)) => Some(r),
+            _ => None,
+        })
+    } else {
+        state.normal
+    }
+}
+
+/// Records a user response. `apply_to_all == false` doesn't latch but still
+/// flips `has_seen_clash`, so a later file-to-folder "* all" choice won't be
+/// considered "first" and won't spread to the normal bucket.
+pub(super) fn apply_to_all_record(
+    state: &mut ApplyToAll,
+    is_file_to_folder: bool,
+    resolution: ConflictResolution,
+    apply_to_all: bool,
+) {
+    let was_first_clash = !state.has_seen_clash;
+    state.has_seen_clash = true;
+    if !apply_to_all {
+        return;
+    }
+    if is_file_to_folder {
+        state.file_to_folder = Some(resolution);
+        // File-to-folder clash + "* all" + first-ever clash → spread to
+        // normal too. After this point both buckets agree.
+        if was_first_clash {
+            state.normal = Some(resolution);
+        }
+    } else {
+        state.normal = Some(resolution);
+    }
+}
+
 pub(crate) fn validate_sources(sources: &[PathBuf]) -> Result<(), WriteOperationError> {
     for source in sources {
         // Use symlink_metadata to check existence without following symlinks
@@ -388,12 +458,21 @@ pub(super) fn resolve_conflict(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
-    apply_to_all_resolution: &mut Option<ConflictResolution>,
+    apply_to_all_resolution: &mut ApplyToAll,
 ) -> Result<Option<ResolvedDestination>, WriteOperationError> {
+    // Pre-fetch metadata once; reused for the conflict event, the "is file →
+    // folder?" classification, and the conditional-variant reduction.
+    let source_meta = fs::metadata(source).ok();
+    let dest_meta = fs::metadata(dest_path).ok();
+    let is_file_to_folder = matches!(
+        (source_meta.as_ref().map(|m| m.is_dir()), dest_meta.as_ref().map(|m| m.is_dir())),
+        (Some(false), Some(true)),
+    );
+
     // Determine effective conflict resolution
-    let resolution = if let Some(saved_resolution) = apply_to_all_resolution {
+    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder) {
         // Use saved "apply to all" resolution
-        *saved_resolution
+        saved_resolution
     } else if config.overwrite {
         ConflictResolution::Overwrite
     } else {
@@ -402,15 +481,28 @@ pub(super) fn resolve_conflict(
 
     match resolution {
         ConflictResolution::Stop => {
-            // Emit conflict event for frontend to handle
-            let source_meta = fs::metadata(source).ok();
-            let dest_meta = fs::metadata(dest_path).ok();
+            // Emit conflict event for frontend to handle. Folder sizes come
+            // from the drive index — we never walk the destination tree
+            // synchronously to compute one. `None` is the legitimate
+            // "(unknown)" rendering on the FE.
+            let source_size_for_dir = if matches!(source_meta.as_ref().map(|m| m.is_dir()), Some(true)) {
+                lookup_indexed_size(source)
+            } else {
+                None
+            };
+            let destination_size_for_dir = if matches!(dest_meta.as_ref().map(|m| m.is_dir()), Some(true)) {
+                lookup_indexed_size(dest_path)
+            } else {
+                None
+            };
             let event = build_conflict_event(
                 operation_id,
                 source,
                 dest_path,
                 source_meta.as_ref(),
                 dest_meta.as_ref(),
+                source_size_for_dir,
+                destination_size_for_dir,
             );
             events.emit_conflict(event);
 
@@ -426,13 +518,15 @@ pub(super) fn resolve_conflict(
             // Will become rx.await in milestone 2 full async migration.
             match rx.blocking_recv() {
                 Ok(response) => {
-                    // Save for future conflicts if apply_to_all. The conditional
-                    // variants (OverwriteSmaller / OverwriteOlder) are stored as-is
-                    // so each subsequent conflict re-evaluates against its own
-                    // source/dest, not against the file that originally prompted.
-                    if response.apply_to_all {
-                        *apply_to_all_resolution = Some(response.resolution);
-                    }
+                    // Save the original (unreduced) variant under the right bucket so
+                    // subsequent conflicts re-evaluate the conditional variants against
+                    // their own metadata, not the file that originally prompted.
+                    apply_to_all_record(
+                        apply_to_all_resolution,
+                        is_file_to_folder,
+                        response.resolution,
+                        response.apply_to_all,
+                    );
                     // Reduce conditional variants to Overwrite / Skip against this
                     // file's already-fetched metadata, then apply.
                     let effective =
@@ -451,8 +545,6 @@ pub(super) fn resolve_conflict(
         ConflictResolution::Overwrite => apply_resolution(ConflictResolution::Overwrite, dest_path),
         ConflictResolution::Rename => apply_resolution(ConflictResolution::Rename, dest_path),
         ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
-            let source_meta = fs::metadata(source).ok();
-            let dest_meta = fs::metadata(dest_path).ok();
             let effective = reduce_conditional_resolution(resolution, source_meta.as_ref(), dest_meta.as_ref());
             apply_resolution(effective, dest_path)
         }
@@ -673,6 +765,18 @@ pub(super) fn safe_overwrite_file(
     Ok(bytes)
 }
 
+/// Looks up a directory's recursive size from the drive index. Returns `None`
+/// when the index doesn't cover the path (network mount, MTP, outside-scope
+/// path, indexer not yet initialised). The BE intentionally never *walks*
+/// the tree to compute this — `(unknown)` on the FE is the legitimate
+/// fallback when the cached value isn't available.
+fn lookup_indexed_size(path: &Path) -> Option<u64> {
+    crate::indexing::get_dir_stats(&path.to_string_lossy())
+        .ok()
+        .flatten()
+        .map(|s| s.recursive_size)
+}
+
 /// Builds a `WriteConflictEvent` from the source / destination metadata pair.
 /// Extracted from `resolve_conflict` so the source/destination type-mismatch
 /// flags can be unit-tested in isolation. Pre-fix the inline event omitted
@@ -686,6 +790,18 @@ fn build_conflict_event(
     dest_path: &Path,
     source_meta: Option<&fs::Metadata>,
     dest_meta: Option<&fs::Metadata>,
+    // Recursive size of the *source* when it's a directory (from the
+    // pre-flight scan's per-source-root total). Ignored when source is a
+    // file — files use `metadata.len()` directly. Always `Some` for folder
+    // sources after pre-flight; the rare MCP / skip-preflight path may pass
+    // `None`, in which case source_size falls back to 0.
+    source_size_for_dir: Option<u64>,
+    // Recursive size of the *destination* when it's a directory. The caller
+    // looks it up in the drive index; `None` means "the index doesn't cover
+    // this path" (network mount, MTP, paths outside the index scope) and
+    // surfaces to the FE as the `(unknown)` rendering. Files always use
+    // `metadata.len()` and this override is ignored.
+    destination_size_for_dir: Option<u64>,
 ) -> WriteConflictEvent {
     let destination_is_newer = match (source_meta, dest_meta) {
         (Some(s), Some(d)) => {
@@ -696,9 +812,22 @@ fn build_conflict_event(
         _ => false,
     };
 
-    let source_size = source_meta.map(|m| m.len()).unwrap_or(0);
-    let destination_size = dest_meta.map(|m| m.len()).unwrap_or(0);
-    let size_difference = destination_size as i64 - source_size as i64;
+    let source_is_directory = source_meta.map(|m| m.is_dir()).unwrap_or(false);
+    let destination_is_directory = dest_meta.map(|m| m.is_dir()).unwrap_or(false);
+
+    // Files: use `metadata.len()` directly. Directories: use the caller-
+    // supplied recursive total (the BE never walks a destination tree).
+    let source_size = if source_is_directory {
+        source_size_for_dir.unwrap_or(0)
+    } else {
+        source_meta.map(|m| m.len()).unwrap_or(0)
+    };
+    let destination_size = if destination_is_directory {
+        destination_size_for_dir
+    } else {
+        dest_meta.map(|m| m.len())
+    };
+    let size_difference = destination_size.map(|d| d as i64 - source_size as i64);
 
     let unix_secs = |m: Option<&fs::Metadata>| -> Option<i64> {
         m?.modified()
@@ -718,8 +847,8 @@ fn build_conflict_event(
         destination_modified: unix_secs(dest_meta),
         destination_is_newer,
         size_difference,
-        source_is_directory: source_meta.map(|m| m.is_dir()).unwrap_or(false),
-        destination_is_directory: dest_meta.map(|m| m.is_dir()).unwrap_or(false),
+        source_is_directory,
+        destination_is_directory,
     }
 }
 
@@ -1276,7 +1405,15 @@ mod build_conflict_event_tests {
         let source_meta = fs::metadata(&source).unwrap();
         let dest_meta = fs::metadata(&dest).unwrap();
 
-        let event = build_conflict_event("op-1", &source, &dest, Some(&source_meta), Some(&dest_meta));
+        let event = build_conflict_event(
+            "op-1",
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            None,
+            Some(12345),
+        );
 
         assert!(!event.source_is_directory, "source is a file");
         assert!(event.destination_is_directory, "destination is a directory");
@@ -1293,7 +1430,15 @@ mod build_conflict_event_tests {
         let source_meta = fs::metadata(&source).unwrap();
         let dest_meta = fs::metadata(&dest).unwrap();
 
-        let event = build_conflict_event("op-2", &source, &dest, Some(&source_meta), Some(&dest_meta));
+        let event = build_conflict_event(
+            "op-2",
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            Some(67890),
+            None,
+        );
 
         assert!(event.source_is_directory, "source is a directory");
         assert!(!event.destination_is_directory, "destination is a file");
@@ -1310,10 +1455,133 @@ mod build_conflict_event_tests {
         let source_meta = fs::metadata(&source).unwrap();
         let dest_meta = fs::metadata(&dest).unwrap();
 
-        let event = build_conflict_event("op-3", &source, &dest, Some(&source_meta), Some(&dest_meta));
+        let event = build_conflict_event(
+            "op-3",
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            None,
+            None,
+        );
 
         assert!(!event.source_is_directory);
         assert!(!event.destination_is_directory);
+    }
+
+    #[test]
+    fn file_dest_uses_metadata_len_ignoring_override() {
+        // Files always have a known size via metadata. The override exists
+        // only for directories (where metadata.len() is the inode entry
+        // size, not the recursive content size).
+        let temp = TempDir::new().unwrap();
+        let source = temp.path().join("a.txt");
+        let dest = temp.path().join("b.txt");
+        fs::write(&source, b"hello").unwrap();
+        fs::write(&dest, b"world!").unwrap();
+
+        let source_meta = fs::metadata(&source).unwrap();
+        let dest_meta = fs::metadata(&dest).unwrap();
+
+        let event = build_conflict_event(
+            "op",
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            Some(99999),
+            Some(99999),
+        );
+
+        assert_eq!(event.source_size, 5);
+        assert_eq!(event.destination_size, Some(6));
+        assert_eq!(event.size_difference, Some(1));
+    }
+
+    #[test]
+    fn folder_dest_uses_override_size() {
+        // For dir destinations the recursive size lives in the drive index;
+        // the caller fetches it (or `None` when the index doesn't cover the
+        // path) and hands it to us.
+        let temp = TempDir::new().unwrap();
+        let source = temp.path().join("notes.txt");
+        let dest = temp.path().join("conflicting");
+        fs::write(&source, b"a").unwrap();
+        fs::create_dir(&dest).unwrap();
+
+        let source_meta = fs::metadata(&source).unwrap();
+        let dest_meta = fs::metadata(&dest).unwrap();
+
+        let event = build_conflict_event(
+            "op",
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            None,
+            Some(4_096_000),
+        );
+
+        assert_eq!(event.source_size, 1);
+        assert_eq!(event.destination_size, Some(4_096_000));
+        assert_eq!(event.size_difference, Some(4_095_999));
+    }
+
+    #[test]
+    fn folder_dest_with_unknown_size_surfaces_none() {
+        // The index doesn't cover the destination (network mount, MTP, …).
+        // Report `(unknown)` on the wire as `None`; size_difference also
+        // collapses to `None` since one side is unknown.
+        let temp = TempDir::new().unwrap();
+        let source = temp.path().join("notes.txt");
+        let dest = temp.path().join("conflicting");
+        fs::write(&source, b"a").unwrap();
+        fs::create_dir(&dest).unwrap();
+
+        let source_meta = fs::metadata(&source).unwrap();
+        let dest_meta = fs::metadata(&dest).unwrap();
+
+        let event = build_conflict_event(
+            "op",
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            None,
+            None,
+        );
+
+        assert_eq!(event.source_size, 1);
+        assert_eq!(event.destination_size, None);
+        assert_eq!(event.size_difference, None);
+    }
+
+    #[test]
+    fn folder_source_uses_override_size() {
+        // Folder-source sizes come from the pre-flight scan's per-source-root
+        // total. The override is always Some for source-folder clashes.
+        let temp = TempDir::new().unwrap();
+        let source = temp.path().join("payload");
+        let dest = temp.path().join("notes.txt");
+        fs::create_dir(&source).unwrap();
+        fs::write(&dest, b"hi").unwrap();
+
+        let source_meta = fs::metadata(&source).unwrap();
+        let dest_meta = fs::metadata(&dest).unwrap();
+
+        let event = build_conflict_event(
+            "op",
+            &source,
+            &dest,
+            Some(&source_meta),
+            Some(&dest_meta),
+            Some(123_456),
+            None,
+        );
+
+        assert_eq!(event.source_size, 123_456);
+        assert_eq!(event.destination_size, Some(2));
+        assert_eq!(event.size_difference, Some(2 - 123_456));
     }
 }
 
@@ -1409,5 +1677,128 @@ mod path_exists_or_is_symlink_tests {
     fn returns_false_for_missing_path() {
         let temp = TempDir::new().unwrap();
         assert!(!path_exists_or_is_symlink(&temp.path().join("absent")));
+    }
+}
+
+#[cfg(test)]
+mod apply_to_all_tests {
+    //! Pure-state tests for the two-bucket `ApplyToAll` latch model.
+    //!
+    //! Rules (per UX spec):
+    //!   1. Normal clash → choice lands in the `normal` bucket only.
+    //!   2. File-to-folder clash → choice lands in the `file_to_folder` bucket
+    //!      only.
+    //!   3. Special case: if the FIRST clash of the operation is a
+    //!      file-to-folder one, a "* all" choice spreads to both buckets.
+    //!   4. Carry-over: Skip/Rename in the `normal` bucket apply to subsequent
+    //!      file-to-folder clashes too (these are universally safe). Overwrite
+    //!      variants never carry over from normal → file-to-folder.
+    use super::*;
+
+    fn fresh() -> ApplyToAll {
+        ApplyToAll::default()
+    }
+
+    #[test]
+    fn default_state_is_empty() {
+        let state = fresh();
+        assert!(apply_to_all_effective(&state, false).is_none());
+        assert!(apply_to_all_effective(&state, true).is_none());
+    }
+
+    #[test]
+    fn normal_overwrite_all_stays_in_normal_bucket() {
+        let mut state = fresh();
+        apply_to_all_record(&mut state, false, ConflictResolution::Overwrite, true);
+        assert_eq!(apply_to_all_effective(&state, false), Some(ConflictResolution::Overwrite));
+        // Does NOT spread to file-to-folder — user has to be re-prompted.
+        assert_eq!(apply_to_all_effective(&state, true), None);
+    }
+
+    #[test]
+    fn normal_skip_all_carries_over_to_file_to_folder() {
+        let mut state = fresh();
+        apply_to_all_record(&mut state, false, ConflictResolution::Skip, true);
+        assert_eq!(apply_to_all_effective(&state, false), Some(ConflictResolution::Skip));
+        // Safe action: skip the file-to-folder one too without re-prompting.
+        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Skip));
+    }
+
+    #[test]
+    fn normal_rename_all_carries_over_to_file_to_folder() {
+        let mut state = fresh();
+        apply_to_all_record(&mut state, false, ConflictResolution::Rename, true);
+        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Rename));
+    }
+
+    #[test]
+    fn normal_conditional_variants_do_not_carry_over() {
+        // OverwriteSmaller / OverwriteOlder are destructive — same rule as
+        // Overwrite. They never reach file-to-folder without an explicit prompt.
+        let mut state = fresh();
+        apply_to_all_record(&mut state, false, ConflictResolution::OverwriteSmaller, true);
+        assert_eq!(apply_to_all_effective(&state, true), None);
+
+        let mut state = fresh();
+        apply_to_all_record(&mut state, false, ConflictResolution::OverwriteOlder, true);
+        assert_eq!(apply_to_all_effective(&state, true), None);
+    }
+
+    #[test]
+    fn file_to_folder_first_overwrite_all_spreads_to_normal() {
+        // Spec: "if a file-to-folder clash is the first one, then any '* all'
+        // choices should apply to ALL types of clashes."
+        let mut state = fresh();
+        apply_to_all_record(&mut state, true, ConflictResolution::Overwrite, true);
+        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Overwrite));
+        assert_eq!(apply_to_all_effective(&state, false), Some(ConflictResolution::Overwrite));
+    }
+
+    #[test]
+    fn file_to_folder_later_overwrite_all_does_not_spread() {
+        // Spec example: user picks Overwrite all on a normal clash; later a
+        // file-to-folder clash comes up and the user picks Skip all in it —
+        // that Skip all applies to file-to-folder only.
+        let mut state = fresh();
+        apply_to_all_record(&mut state, false, ConflictResolution::Overwrite, true);
+        // Now a file-to-folder clash arrives. Even though a normal "Overwrite all"
+        // is set, file-to-folder is destructive enough to re-prompt → user picks
+        // Skip all in the file-to-folder dialog.
+        apply_to_all_record(&mut state, true, ConflictResolution::Skip, true);
+
+        // Normal bucket keeps the original Overwrite — the new Skip is
+        // file-to-folder-only.
+        assert_eq!(apply_to_all_effective(&state, false), Some(ConflictResolution::Overwrite));
+        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Skip));
+    }
+
+    #[test]
+    fn single_choice_does_not_set_apply_to_all_but_still_seeds_first_clash_flag() {
+        // A non-"apply to all" choice doesn't latch, but it DOES mean the next
+        // file-to-folder clash isn't "the first" any more, so its "* all"
+        // choice shouldn't spread to normal.
+        let mut state = fresh();
+        apply_to_all_record(&mut state, false, ConflictResolution::Overwrite, /* apply_to_all */ false);
+
+        // Nothing latched yet.
+        assert_eq!(apply_to_all_effective(&state, false), None);
+        assert_eq!(apply_to_all_effective(&state, true), None);
+
+        // Now a file-to-folder clash; user picks Overwrite all. Because a
+        // normal clash already happened, this is NOT the first clash any more
+        // → don't spread.
+        apply_to_all_record(&mut state, true, ConflictResolution::Overwrite, true);
+        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Overwrite));
+        assert_eq!(apply_to_all_effective(&state, false), None);
+    }
+
+    #[test]
+    fn file_to_folder_latch_wins_over_normal_carry_over() {
+        // If both buckets have a value, the directly-set file-to-folder one
+        // wins (don't fall back to the normal-bucket Skip/Rename carry-over).
+        let mut state = fresh();
+        apply_to_all_record(&mut state, false, ConflictResolution::Skip, true);
+        apply_to_all_record(&mut state, true, ConflictResolution::Overwrite, true);
+        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Overwrite));
     }
 }

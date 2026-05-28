@@ -6,14 +6,15 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::helpers::{
-    is_same_filesystem, path_exists_or_is_symlink, remove_dir_all_in_background, resolve_conflict, spawn_async_sync,
+    ApplyToAll, is_same_filesystem, path_exists_or_is_symlink, remove_dir_all_in_background, resolve_conflict,
+    spawn_async_sync,
 };
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use super::super::types::{
-    ConflictResolution, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
+    IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
     WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent, WriteSourceItemDoneEvent,
 };
@@ -117,7 +118,7 @@ fn move_with_rename(
 ) -> Result<(), WriteOperationError> {
     let mut files_done = 0;
     let mut files_skipped = 0usize;
-    let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+    let mut apply_to_all_resolution = ApplyToAll::default();
     let mut move_tx = MoveTransaction::new();
 
     let result: Result<(), WriteOperationError> = (|| {
@@ -248,7 +249,7 @@ fn merge_move_directory(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
-    apply_to_all_resolution: &mut Option<ConflictResolution>,
+    apply_to_all_resolution: &mut ApplyToAll,
     move_tx: &mut MoveTransaction,
     files_skipped: &mut usize,
 ) -> Result<(), WriteOperationError> {
@@ -392,7 +393,7 @@ fn move_with_staging(
     let mut files_done = 0;
     let mut bytes_done = 0u64;
     let mut files_skipped = 0usize;
-    let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+    let mut apply_to_all_resolution = ApplyToAll::default();
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
     // Emit initial copying phase event

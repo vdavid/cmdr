@@ -317,17 +317,23 @@ pub struct WriteConflictEvent {
     pub operation_id: String,
     pub source_path: String,
     pub destination_path: String,
-    /// In bytes.
+    /// Source size in bytes. Files use `metadata.len()`; folder sources use
+    /// the recursive total from the pre-flight scan. Always known.
     pub source_size: u64,
-    /// In bytes.
-    pub destination_size: u64,
+    /// Destination size in bytes. `Some` for files (always from
+    /// `metadata.len()`) and for folders covered by the drive index;
+    /// `None` ("unknown") for folders the index doesn't cover (network mounts,
+    /// MTP, paths outside the index scope). The FE renders `(unknown)` for
+    /// `None` and disables the "Overwrite all smaller" bulk action.
+    pub destination_size: Option<u64>,
     /// Unix timestamp in seconds.
     pub source_modified: Option<i64>,
     /// Unix timestamp in seconds.
     pub destination_modified: Option<i64>,
     pub destination_is_newer: bool,
-    /// Positive = destination is larger.
-    pub size_difference: i64,
+    /// `destination_size - source_size` when both are known. `None` collapses
+    /// the difference when `destination_size` is unknown.
+    pub size_difference: Option<i64>,
     /// `true` when the source side is a directory. Lets the FE render the
     /// distinct "replace a folder with a file" / "replace a file with a folder"
     /// warning instead of the generic file-over-file dialog.

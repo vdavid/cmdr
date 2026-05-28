@@ -10,8 +10,8 @@ use std::time::{Duration, Instant};
 use super::macos_copy::copy_symlink;
 
 use super::super::helpers::{
-    find_unique_name, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable, spawn_async_sync,
-    validate_disk_space, validate_path_length,
+    ApplyToAll, find_unique_name, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable,
+    spawn_async_sync, validate_disk_space, validate_path_length,
 };
 use super::super::scan::{
     SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path,
@@ -151,7 +151,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
 
     // Phase 2: Copy files in sorted order with rollback support
     let mut transaction = CopyTransaction::new();
-    let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+    let mut apply_to_all_resolution = ApplyToAll::default();
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
     // Emit initial copying phase event (important when reusing cached scan - no scanning events were
@@ -563,7 +563,7 @@ pub(super) fn copy_single_item(
     progress_interval: &Duration,
     config: &WriteOperationConfig,
     transaction: &mut CopyTransaction,
-    apply_to_all_resolution: &mut Option<ConflictResolution>,
+    apply_to_all_resolution: &mut ApplyToAll,
     created_dirs: &mut HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
     let progress_ctx = PerFileCtx {

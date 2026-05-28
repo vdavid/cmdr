@@ -17,7 +17,7 @@ use super::super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,
 };
 use super::super::types::{
-    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
+    OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
     WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
     WriteOperationType,
 };
@@ -25,6 +25,7 @@ use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
     build_pre_skip_set, drive_transfer_serial_async, make_serial_per_file_progress,
 };
+use super::super::helpers::ApplyToAll;
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
 use super::volume_preflight::{SourceHint, scan_volume_sources};
@@ -272,7 +273,7 @@ pub(super) async fn move_volumes_with_progress(
     // (the driver's `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send +
     // 'a>>` bound rejects `&mut` captures of outer-fn locals).
     let failure_ctx_cell: Arc<std::sync::Mutex<Option<(VolumeError, PathBuf)>>> = Arc::new(std::sync::Mutex::new(None));
-    let apply_to_all_cell: Arc<std::sync::Mutex<Option<ConflictResolution>>> = Arc::new(std::sync::Mutex::new(None));
+    let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> = Arc::new(std::sync::Mutex::new(ApplyToAll::default()));
 
     // Closure captures: `config` and `operation_id` clone cheaply; `events`
     // is already an `Arc<dyn OperationEventSink>` on entry, so each closure
@@ -337,7 +338,7 @@ pub(super) async fn move_volumes_with_progress(
                     // doesn't re-list the parent dir per conflict on MTP.
                     let source_hint = source_hints.get(&source_path_owned).copied();
                     let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
-                    let mut latched = apply_to_all.lock_ignore_poison().take();
+                    let mut latched = *apply_to_all.lock_ignore_poison();
                     let resolved = resolve_volume_conflict(
                         &source_volume,
                         &source_path_owned,
@@ -709,7 +710,7 @@ pub(super) async fn move_within_same_volume_with_progress(
     // the conflict resolver stays `Fn`-shaped (the driver's
     // `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` bound rejects
     // `&mut` captures of outer-fn locals).
-    let apply_to_all_cell: Arc<std::sync::Mutex<Option<ConflictResolution>>> = Arc::new(std::sync::Mutex::new(None));
+    let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> = Arc::new(std::sync::Mutex::new(ApplyToAll::default()));
 
     let config_owned: VolumeCopyConfig = config.clone();
     let operation_id_owned: String = operation_id.to_string();
@@ -760,7 +761,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                     );
                     let source_hint = source_hints.get(&source_path_owned).copied();
                     let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
-                    let mut latched = apply_to_all.lock_ignore_poison().take();
+                    let mut latched = *apply_to_all.lock_ignore_poison();
                     // Same volume on both sides; pass `&volume` twice.
                     let resolved = resolve_volume_conflict(
                         &volume,

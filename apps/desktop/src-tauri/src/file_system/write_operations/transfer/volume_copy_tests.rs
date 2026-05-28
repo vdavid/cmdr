@@ -1,6 +1,8 @@
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume};
-use crate::file_system::write_operations::types::{CollectorEventSink, WriteConflictEvent, WriteSourceItemDoneEvent};
+use crate::file_system::write_operations::types::{
+    CollectorEventSink, ConflictResolution, WriteConflictEvent, WriteSourceItemDoneEvent,
+};
 use std::sync::atomic::AtomicU8;
 
 #[test]
@@ -1198,7 +1200,8 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
         "conflict event must carry the hint's size",
     );
     assert_eq!(
-        conflicts[0].destination_size, 3,
+        conflicts[0].destination_size,
+        Some(3),
         "conflict event must carry the dest_meta size",
     );
 }

@@ -9,6 +9,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use super::super::helpers::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
 use super::super::state::WriteOperationState;
 use super::super::types::{
     ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError,
@@ -30,7 +31,7 @@ pub(super) async fn resolve_volume_conflict(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
-    apply_to_all_resolution: &mut Option<ConflictResolution>,
+    apply_to_all_resolution: &mut ApplyToAll,
     // Size hints for the conflict dialog. `Some` skips a `scan_for_copy` call
     // on that side. The copy path already has both: source size in
     // `source_hints` (from the cached preview scan), dest size in `dest_meta`
@@ -42,34 +43,39 @@ pub(super) async fn resolve_volume_conflict(
     source_size_hint: Option<u64>,
     dest_size_hint: Option<u64>,
 ) -> Result<Option<PathBuf>, WriteOperationError> {
+    // Classify the clash up front so the two-bucket lookup and store stay
+    // consistent. `is_directory` errors fall back to `false`, same as the
+    // dialog-side default — we'd rather over-prompt than route an unknown
+    // clash into the destructive file→folder latch.
+    let source_is_directory = source_volume.is_directory(source_path).await.unwrap_or(false);
+    let destination_is_directory = dest_volume.is_directory(dest_path).await.unwrap_or(false);
+    let is_file_to_folder = !source_is_directory && destination_is_directory;
+
     // Determine effective conflict resolution
-    let resolution = if let Some(saved_resolution) = apply_to_all_resolution {
+    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder) {
         // Use saved "apply to all" resolution
-        *saved_resolution
+        saved_resolution
     } else {
         config.conflict_resolution
     };
 
     match resolution {
         ConflictResolution::Stop => {
-            // Need to prompt user - gather metadata for the conflict event
-            let source_size = if let Some(s) = source_size_hint {
-                s
-            } else {
-                let source_scan = source_volume.scan_for_copy(source_path).await.ok();
-                source_scan.as_ref().map(|s| s.total_bytes).unwrap_or(0)
-            };
+            // Need to prompt user - gather metadata for the conflict event.
+            // Source size: the pre-flight scan hint is authoritative for both
+            // file and folder sources. Fall back to 0 when the source is a
+            // file with no hint (rare MCP / skip-preflight path); folders
+            // without a hint shouldn't happen post-preflight.
+            let source_size = source_size_hint.unwrap_or(0);
 
-            // Try to get destination size; prefer the hint to avoid a scan.
-            let dest_size = if let Some(s) = dest_size_hint {
-                s
+            // Destination size: prefer the hint (already populated from the
+            // caller's stat for file destinations). For folder destinations
+            // the hint is `None` because the volume layer never walks the
+            // remote tree — leave it `None` so the FE renders "(unknown)".
+            let dest_size: Option<u64> = if destination_is_directory {
+                dest_size_hint
             } else {
-                dest_volume
-                    .scan_for_copy(dest_path)
-                    .await
-                    .ok()
-                    .map(|s| s.total_bytes)
-                    .unwrap_or(0)
+                Some(dest_size_hint.unwrap_or(0))
             };
 
             // Pull mtimes via `get_metadata` so the per-file conflict dialog
@@ -95,13 +101,7 @@ pub(super) async fn resolve_volume_conflict(
                 .and_then(|m| m.modified_at)
                 .map(|s| s as i64);
             let destination_is_newer = matches!((source_modified, destination_modified), (Some(s), Some(d)) if d > s);
-            let size_difference = dest_size as i64 - source_size as i64;
-
-            // Type flags via `is_directory`; same Stop-only cost rationale as
-            // the mtimes above. Best-effort: a backend that errors here just
-            // reports `false`, falling back to file-over-file dialog shape.
-            let source_is_directory = source_volume.is_directory(source_path).await.unwrap_or(false);
-            let destination_is_directory = dest_volume.is_directory(dest_path).await.unwrap_or(false);
+            let size_difference = dest_size.map(|d| d as i64 - source_size as i64);
 
             events.emit_conflict(WriteConflictEvent {
                 operation_id: operation_id.to_string(),
@@ -124,12 +124,18 @@ pub(super) async fn resolve_volume_conflict(
             // Wait for user to call resolve_write_conflict.
             match rx.await {
                 Ok(response) => {
-                    // Save for future conflicts if apply_to_all. Conditional variants
-                    // (OverwriteSmaller / OverwriteOlder) are stored as-is so each
-                    // subsequent conflict re-evaluates against its own source/dest.
-                    if response.apply_to_all {
-                        *apply_to_all_resolution = Some(response.resolution);
-                    }
+                    // Save the original (unreduced) variant under the right bucket so
+                    // subsequent clashes re-evaluate the conditional variants against
+                    // their own metadata. `apply_to_all_record` also flips the
+                    // "first-clash" flag whether or not the user picked an apply-to-all
+                    // option, so a later file→folder "* all" choice won't be considered
+                    // "first" if a regular clash happened earlier in this op.
+                    apply_to_all_record(
+                        apply_to_all_resolution,
+                        is_file_to_folder,
+                        response.resolution,
+                        response.apply_to_all,
+                    );
                     let effective = reduce_volume_conditional_resolution(
                         response.resolution,
                         source_volume,
@@ -137,7 +143,7 @@ pub(super) async fn resolve_volume_conflict(
                         dest_volume,
                         dest_path,
                         Some(source_size),
-                        Some(dest_size),
+                        dest_size,
                     )
                     .await;
                     apply_volume_conflict_resolution(effective, dest_volume, dest_path).await

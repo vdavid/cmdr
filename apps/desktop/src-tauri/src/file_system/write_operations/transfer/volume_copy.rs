@@ -32,7 +32,7 @@ use super::super::state::{
     unregister_operation_status, update_operation_status,
 };
 use super::super::types::{
-    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult,
+    OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult,
     WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
     WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
@@ -41,6 +41,7 @@ use super::transfer_driver::{
     build_pre_skip_set, drive_transfer_serial_async, make_concurrent_per_file_progress, make_serial_per_file_progress,
 };
 use super::volume_conflict::resolve_volume_conflict;
+use super::super::helpers::ApplyToAll;
 use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{SourceItemInfo, Volume, VolumeError};
@@ -582,7 +583,7 @@ pub(crate) async fn copy_volumes_with_progress(
     }
 
     // Track "apply to all" resolution for conflicts
-    let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+    let mut apply_to_all_resolution = ApplyToAll::default();
 
     // Track successfully copied destination paths for rollback/cleanup.
     // Wrapped in Arc<Mutex> so concurrent tasks can push independently. The
@@ -878,7 +879,7 @@ pub(crate) async fn copy_volumes_with_progress(
         let last_dest_cell: Arc<std::sync::Mutex<Option<PathBuf>>> = Arc::new(std::sync::Mutex::new(None));
         let failure_ctx_cell: Arc<std::sync::Mutex<Option<(VolumeError, PathBuf)>>> =
             Arc::new(std::sync::Mutex::new(None));
-        let apply_to_all_cell: Arc<std::sync::Mutex<Option<ConflictResolution>>> =
+        let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> =
             Arc::new(std::sync::Mutex::new(apply_to_all_resolution));
         let copied_paths_for_closure = Arc::clone(&copied_paths);
         let source_hints_arc: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(std::mem::take(&mut source_hints));
@@ -949,8 +950,9 @@ pub(crate) async fn copy_volumes_with_progress(
                         // the `&mut`-bounded resolver, then store it back.
                         // The serial driver guarantees single-threaded
                         // sequencing; the Mutex just keeps the closure
-                        // `Fn`-shaped.
-                        let mut latched = apply_to_all.lock_ignore_poison().take();
+                        // `Fn`-shaped. `ApplyToAll` is `Copy`, so this is a
+                        // value swap, not an option-take.
+                        let mut latched = *apply_to_all.lock_ignore_poison();
                         let resolved = resolve_volume_conflict(
                             &source_volume,
                             &source_path_owned,
@@ -1087,7 +1089,9 @@ pub(crate) async fn copy_volumes_with_progress(
         // driver and never read post-loop — silenced with `_ =` rather than
         // assigned back to dead locals (which `#[deny(unused_assignments)]`
         // would flag).
-        let _ = apply_to_all_cell.lock_ignore_poison().take();
+        // ApplyToAll is `Copy + Default`; replace with default to drop the
+        // latch (this is the legacy `.take()` shape preserved for symmetry).
+        let _ = std::mem::take(&mut *apply_to_all_cell.lock_ignore_poison());
         if let Some(p) = last_dest_cell.lock_ignore_poison().take() {
             last_dest_path = Some(p);
         }
