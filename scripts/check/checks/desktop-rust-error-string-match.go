@@ -33,6 +33,20 @@ var errorStringMatchPatterns = []*regexp.Regexp{
 	// `err.to_string().contains(...)`: classifying an error by its Display impl.
 	regexp.MustCompile(`\.to_string\(\)\.contains\(`),
 	regexp.MustCompile(`\.to_string\(\)\.starts_with\(`),
+	// `.to_lowercase().contains(...)` and `.to_lowercase().starts_with(...)`
+	// are the canonical "classify by case-insensitive substring" anti-pattern.
+	// Catches an audit-finding-style introduction even before the lowered
+	// String gets bound to a `let lower = ...`. The May 2026 audit hit this
+	// shape three times (installer / keychain / write_operations).
+	//
+	// Known gap: `let lower = msg.to_lowercase(); lower.contains(...)` is the
+	// same bug but split across two lines. Widening to `\blower\.contains\(`
+	// would also flag a handful of pre-existing, documented sites (Linux
+	// mount-CLI output parsing, MTP USB-permission detection); fixing those
+	// is out of scope here and review/CLAUDE.md guidance remains the second
+	// line of defense.
+	regexp.MustCompile(`\.to_lowercase\(\)\.contains\(`),
+	regexp.MustCompile(`\.to_lowercase\(\)\.starts_with\(`),
 }
 
 type errorStringMatchSite struct {

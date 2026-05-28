@@ -504,11 +504,18 @@ pub enum WriteOperationError {
     },
 }
 
-/// Classifies a raw `std::io::Error` into a specific `WriteOperationError` variant based on its
-/// errno code, `ErrorKind`, and message content. Used by both `IoResultExt::with_path` and the
-/// `From` impl.
+/// Classifies a raw `std::io::Error` into a specific `WriteOperationError` variant.
+///
+/// Only `errno` and `ErrorKind` are consulted — never the formatted message.
+/// Backend errors (SMB, MTP, etc.) are typed and flow through
+/// `transfer/volume_copy.rs::map_volume_error`, so this function only sees
+/// `std::io::Error` values produced by local-FS calls, which always carry a
+/// `raw_os_error()` on Unix. Pre-fix the function had a lowercase-substring
+/// fallback (`"disconnect"`, `"read-only"`, `"connection"`, `"operation not
+/// permitted"`, …) that quietly misclassified errors on localized macOS
+/// (the wording localizes; the substrings don't match) and was the exact
+/// shape AGENTS.md bans.
 fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
-    // Prefer errno when available (local FS operations always have one)
     #[cfg(unix)]
     if let Some(code) = e.raw_os_error() {
         match code {
@@ -523,46 +530,21 @@ fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
                 return WriteOperationError::ConnectionInterrupted { path };
             }
             libc::ENODEV => return WriteOperationError::DeviceDisconnected { path },
-            _ => {} // Fall through to ErrorKind/message-based classification
+            _ => {} // Fall through to ErrorKind classification
         }
     }
 
-    let msg = e.to_string();
-    let lower = msg.to_lowercase();
-
-    // Message-based heuristics as fallback for errors without raw OS codes
-    // (synthetic/wrapped errors from libraries)
-    if lower.contains("disconnect") || lower.contains("no such device") {
-        return WriteOperationError::DeviceDisconnected { path };
-    }
-    if lower.contains("read-only") || lower.contains("read only") {
-        return WriteOperationError::ReadOnlyDevice {
-            path,
-            device_name: None,
-        };
-    }
-    if lower.contains("connection") || lower.contains("timed out") || lower.contains("timeout") {
-        return WriteOperationError::ConnectionInterrupted { path };
-    }
-    if lower.contains("name too long") || lower.contains("file name too long") {
-        return WriteOperationError::NameTooLong { path };
-    }
-    if lower.contains("invalid") && lower.contains("name") {
-        return WriteOperationError::InvalidName { path, message: msg };
-    }
-
-    // ErrorKind-based fallback, with one kind-specific heuristic
     match e.kind() {
         std::io::ErrorKind::NotFound => WriteOperationError::SourceNotFound { path },
-        std::io::ErrorKind::PermissionDenied => {
-            // macOS immutable flag manifests as PermissionDenied + "operation not permitted"
-            if lower.contains("immutable") || lower.contains("operation not permitted") {
-                return WriteOperationError::FileLocked { path };
-            }
-            WriteOperationError::PermissionDenied { path, message: msg }
-        }
+        std::io::ErrorKind::PermissionDenied => WriteOperationError::PermissionDenied {
+            path,
+            message: e.to_string(),
+        },
         std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path },
-        _ => WriteOperationError::IoError { path, message: msg },
+        _ => WriteOperationError::IoError {
+            path,
+            message: e.to_string(),
+        },
     }
 }
 

@@ -94,6 +94,7 @@ fn keyword_redundant_with_type(kw_pattern: &str, type_pattern: &str) -> bool {
     let clean = clean.strip_prefix("\\").unwrap_or(clean);
 
     // Check if keyword is a known extension that appears in the type's pattern
+    // allowed-error-string-match: deliberate case-insensitive lookup of an extension keyword inside a search type's pattern; not error classification.
     if EXTENSION_KEYWORDS.contains(&clean) && type_pattern.to_lowercase().contains(clean) {
         return true;
     }

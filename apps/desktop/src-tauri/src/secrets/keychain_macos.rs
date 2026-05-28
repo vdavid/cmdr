@@ -56,14 +56,21 @@ impl SecretStore for KeychainStore {
     }
 }
 
+/// Stable OSStatus codes from Apple's `SecBase.h`. Match on these instead of
+/// the `security-framework` `Display` impl, which localizes on non-English
+/// systems and could be reformatted in any minor crate bump.
+const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+const ERR_SEC_AUTH_FAILED: i32 = -25293;
+const ERR_SEC_USER_CANCELED: i32 = -128;
+const ERR_SEC_INTERACTION_NOT_ALLOWED: i32 = -25308;
+
 fn classify_security_error(key: &str, error: security_framework::base::Error) -> SecretStoreError {
-    let msg = format!("{}", error);
-    if msg.contains("not found") || msg.contains("No such") || msg.contains("errSecItemNotFound") {
-        SecretStoreError::NotFound(format!("No secret found for key: {}", key))
-    } else if msg.contains("denied") || msg.contains("cancelled") {
-        SecretStoreError::AccessDenied(msg)
-    } else {
-        SecretStoreError::Other(msg)
+    match error.code() {
+        ERR_SEC_ITEM_NOT_FOUND => SecretStoreError::NotFound(format!("No secret found for key: {}", key)),
+        ERR_SEC_AUTH_FAILED | ERR_SEC_USER_CANCELED | ERR_SEC_INTERACTION_NOT_ALLOWED => {
+            SecretStoreError::AccessDenied(format!("{}", error))
+        }
+        _ => SecretStoreError::Other(format!("{}", error)),
     }
 }
 
@@ -83,6 +90,39 @@ mod tests {
         // `Cmdr-` and silently fork off prod credentials.
         assert_eq!(compute_service_name(Some("")), "Cmdr");
         assert_eq!(compute_service_name(Some("   ")), "Cmdr");
+    }
+
+    #[test]
+    fn classify_security_error_uses_osstatus_not_message() {
+        // Regression for the medium-severity audit finding: the classifier
+        // used to substring-match the localized `Display` of the error, so
+        // `errSecItemNotFound` on a non-English macOS came back as `Other`
+        // and broke the "missing key → empty default" fallback in the AI
+        // API-key + SMB credential flows.
+        let not_found = security_framework::base::Error::from(ERR_SEC_ITEM_NOT_FOUND);
+        assert!(matches!(
+            classify_security_error("ai.apiKey.openai", not_found),
+            SecretStoreError::NotFound(_)
+        ));
+
+        let auth_failed = security_framework::base::Error::from(ERR_SEC_AUTH_FAILED);
+        assert!(matches!(
+            classify_security_error("ai.apiKey.openai", auth_failed),
+            SecretStoreError::AccessDenied(_)
+        ));
+
+        let user_canceled = security_framework::base::Error::from(ERR_SEC_USER_CANCELED);
+        assert!(matches!(
+            classify_security_error("ai.apiKey.openai", user_canceled),
+            SecretStoreError::AccessDenied(_)
+        ));
+
+        // Unknown OSStatus must NOT collapse into `NotFound`/`AccessDenied`.
+        let unknown = security_framework::base::Error::from(-99999);
+        assert!(matches!(
+            classify_security_error("ai.apiKey.openai", unknown),
+            SecretStoreError::Other(_)
+        ));
     }
 
     #[test]

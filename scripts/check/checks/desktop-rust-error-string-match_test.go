@@ -186,6 +186,28 @@ fn ok() {}
 	}
 }
 
+func TestErrorStringMatch_FlagsLowercaseContainsInline(t *testing.T) {
+	// Regression for the May 2026 audit: write_operations/types.rs had an
+	// inline `.to_string().to_lowercase()` followed by `.contains(...)`-style
+	// classification. The new pattern flags this canonical chain even
+	// without a `let lower = ...` binding.
+	_, err := runErrorStringMatchOn(t, map[string]string{
+		"write_classify.rs": `
+fn classify(e: &io::Error) {
+    if e.to_string().to_lowercase().contains("disconnect") {
+        return WriteOperationError::DeviceDisconnected { path };
+    }
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected violation for to_lowercase().contains chain")
+	}
+	if !strings.Contains(err.Error(), "to_lowercase") {
+		t.Errorf("expected the chain text in the error, got: %s", err.Error())
+	}
+}
+
 func TestErrorStringMatch_PassesOnCleanCode(t *testing.T) {
 	res, err := runErrorStringMatchOn(t, map[string]string{
 		"foo.rs": `

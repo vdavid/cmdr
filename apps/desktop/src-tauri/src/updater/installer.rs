@@ -6,8 +6,52 @@
 use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+/// Error type for the sync pipeline (`sync_bundle` + its inner helpers).
+///
+/// Carries both a formatted user-facing `message` and the original
+/// `io::ErrorKind` so the caller can decide to escalate to admin privileges
+/// on `PermissionDenied` without resorting to substring-matching the
+/// formatted text. Pre-fix the helpers stringified `io::Error` at every
+/// boundary and the caller substring-matched English `"Permission denied"` /
+/// `"Operation not permitted"`, which silently failed on localized macOS.
+#[derive(Debug)]
+struct SyncError {
+    message: String,
+    kind: io::ErrorKind,
+}
+
+impl SyncError {
+    fn from_io<F>(context: F, err: io::Error) -> Self
+    where
+        F: FnOnce() -> String,
+    {
+        Self {
+            kind: err.kind(),
+            message: format!("{}: {err}", context()),
+        }
+    }
+
+    fn other(message: impl Into<String>) -> Self {
+        Self {
+            kind: io::ErrorKind::Other,
+            message: message.into(),
+        }
+    }
+
+    fn is_permission_denied(&self) -> bool {
+        matches!(self.kind, io::ErrorKind::PermissionDenied)
+    }
+}
+
+impl std::fmt::Display for SyncError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
 
 /// Returns the per-instance staging dir. Each dev/worktree instance gets its own subdir so
 /// concurrent `Cmdr` processes (main repo + worktree sessions) don't race on a shared
@@ -67,11 +111,11 @@ pub fn install(tarball_path: &Path) -> Result<(), String> {
     // Try direct sync first; escalate to admin privileges if permission denied
     match sync_bundle(&staged_contents, &bundle_contents) {
         Ok(()) => {}
-        Err(e) if is_permission_error(&e) => {
+        Err(e) if e.is_permission_denied() => {
             log::info!("Direct write denied, escalating with admin privileges");
             sync_with_admin_privileges(&staged_contents, &bundle_contents)?;
         }
-        Err(e) => return Err(e),
+        Err(e) => return Err(e.to_string()),
     }
 
     // Touch the .app bundle to trigger LaunchServices refresh
@@ -120,7 +164,7 @@ fn find_app_bundle_above(start: &Path) -> Option<PathBuf> {
 ///
 /// Order: Resources first, then Info.plist, then _CodeSignature, then binary last.
 /// After syncing, deletes files in `dest` that don't exist in `src`.
-fn sync_bundle(src: &Path, dest: &Path) -> Result<(), String> {
+fn sync_bundle(src: &Path, dest: &Path) -> Result<(), SyncError> {
     // Collect all relative paths from the source for deletion pass
     let src_paths = collect_relative_paths(src)?;
 
@@ -141,7 +185,7 @@ fn sync_bundle(src: &Path, dest: &Path) -> Result<(), String> {
 }
 
 /// Recursively syncs a subtree from src to dest.
-fn sync_subtree(src_root: &Path, dest_root: &Path, relative: &Path) -> Result<(), String> {
+fn sync_subtree(src_root: &Path, dest_root: &Path, relative: &Path) -> Result<(), SyncError> {
     let src_path = src_root.join(relative);
     if !src_path.exists() {
         return Ok(());
@@ -152,9 +196,11 @@ fn sync_subtree(src_root: &Path, dest_root: &Path, relative: &Path) -> Result<()
     }
 
     if src_path.is_dir() {
-        let entries = fs::read_dir(&src_path).map_err(|e| format!("Couldn't read dir {}: {e}", src_path.display()))?;
+        let entries = fs::read_dir(&src_path)
+            .map_err(|e| SyncError::from_io(|| format!("Couldn't read dir {}", src_path.display()), e))?;
         for entry in entries {
-            let entry = entry.map_err(|e| format!("Couldn't read dir entry in {}: {e}", src_path.display()))?;
+            let entry = entry
+                .map_err(|e| SyncError::from_io(|| format!("Couldn't read dir entry in {}", src_path.display()), e))?;
             let child_relative = relative.join(entry.file_name());
             sync_subtree(src_root, dest_root, &child_relative)?;
         }
@@ -164,7 +210,7 @@ fn sync_subtree(src_root: &Path, dest_root: &Path, relative: &Path) -> Result<()
 }
 
 /// Syncs a single file if it exists in src.
-fn sync_file_if_exists(src_root: &Path, dest_root: &Path, relative: &Path) -> Result<(), String> {
+fn sync_file_if_exists(src_root: &Path, dest_root: &Path, relative: &Path) -> Result<(), SyncError> {
     let src_path = src_root.join(relative);
     if src_path.exists() {
         copy_file_creating_dirs(&src_path, &dest_root.join(relative))?;
@@ -173,7 +219,7 @@ fn sync_file_if_exists(src_root: &Path, dest_root: &Path, relative: &Path) -> Re
 }
 
 /// Syncs files that weren't already handled by the ordered phases.
-fn sync_remaining(src_root: &Path, dest_root: &Path, all_src_paths: &HashSet<PathBuf>) -> Result<(), String> {
+fn sync_remaining(src_root: &Path, dest_root: &Path, all_src_paths: &HashSet<PathBuf>) -> Result<(), SyncError> {
     for relative in all_src_paths {
         let src_path = src_root.join(relative);
         if !src_path.is_file() && !src_path.is_symlink() {
@@ -198,40 +244,51 @@ fn sync_remaining(src_root: &Path, dest_root: &Path, all_src_paths: &HashSet<Pat
 /// Uses atomic rename (write to temp file, then rename) instead of in-place overwrite.
 /// This creates a new inode, which prevents macOS's kernel code signing cache from
 /// validating the new binary's pages against the old binary's cached code directory.
-fn copy_file_creating_dirs(src: &Path, dest: &Path) -> Result<(), String> {
+fn copy_file_creating_dirs(src: &Path, dest: &Path) -> Result<(), SyncError> {
     if let Some(parent) = dest.parent()
         && !parent.exists()
     {
-        fs::create_dir_all(parent).map_err(|e| format!("Couldn't create dir {}: {e}", parent.display()))?;
+        fs::create_dir_all(parent)
+            .map_err(|e| SyncError::from_io(|| format!("Couldn't create dir {}", parent.display()), e))?;
     }
 
     // Write to a temp file in the same directory, then atomically rename.
     // This ensures the destination gets a new inode, avoiding stale kernel code signing cache.
     let temp = dest.with_extension("cmdr-update-tmp");
-    fs::copy(src, &temp).map_err(|e| format!("Couldn't copy {} -> {}: {e}", src.display(), temp.display()))?;
+    fs::copy(src, &temp)
+        .map_err(|e| SyncError::from_io(|| format!("Couldn't copy {} -> {}", src.display(), temp.display()), e))?;
     fs::rename(&temp, dest).map_err(|e| {
         // Clean up temp file on rename failure
         let _ = fs::remove_file(&temp);
-        format!("Couldn't rename {} -> {}: {e}", temp.display(), dest.display())
+        SyncError::from_io(
+            || format!("Couldn't rename {} -> {}", temp.display(), dest.display()),
+            e,
+        )
     })?;
     Ok(())
 }
 
 /// Collects all relative file paths under `root` into a `HashSet`.
-fn collect_relative_paths(root: &Path) -> Result<HashSet<PathBuf>, String> {
+fn collect_relative_paths(root: &Path) -> Result<HashSet<PathBuf>, SyncError> {
     let mut paths = HashSet::new();
     collect_relative_paths_recursive(root, root, &mut paths)?;
     Ok(paths)
 }
 
-fn collect_relative_paths_recursive(base: &Path, current: &Path, paths: &mut HashSet<PathBuf>) -> Result<(), String> {
-    let entries = fs::read_dir(current).map_err(|e| format!("Couldn't read dir {}: {e}", current.display()))?;
+fn collect_relative_paths_recursive(
+    base: &Path,
+    current: &Path,
+    paths: &mut HashSet<PathBuf>,
+) -> Result<(), SyncError> {
+    let entries = fs::read_dir(current)
+        .map_err(|e| SyncError::from_io(|| format!("Couldn't read dir {}", current.display()), e))?;
     for entry in entries {
-        let entry = entry.map_err(|e| format!("Couldn't read dir entry in {}: {e}", current.display()))?;
+        let entry =
+            entry.map_err(|e| SyncError::from_io(|| format!("Couldn't read dir entry in {}", current.display()), e))?;
         let path = entry.path();
         let relative = path
             .strip_prefix(base)
-            .map_err(|e| format!("Couldn't strip prefix: {e}"))?
+            .map_err(|e| SyncError::other(format!("Couldn't strip prefix: {e}")))?
             .to_path_buf();
         if path.is_dir() && !path.is_symlink() {
             collect_relative_paths_recursive(base, &path, paths)?;
@@ -243,7 +300,7 @@ fn collect_relative_paths_recursive(base: &Path, current: &Path, paths: &mut Has
 }
 
 /// Deletes files and empty directories in `dest` that aren't present in `src_paths`.
-fn delete_stale_files(dest: &Path, src_paths: &HashSet<PathBuf>) -> Result<(), String> {
+fn delete_stale_files(dest: &Path, src_paths: &HashSet<PathBuf>) -> Result<(), SyncError> {
     let dest_paths = collect_relative_paths(dest)?;
     for relative in &dest_paths {
         if !src_paths.contains(relative) {
@@ -272,11 +329,6 @@ fn remove_empty_dirs(dir: &Path) {
             let _ = fs::remove_dir(&path);
         }
     }
-}
-
-/// Checks whether an error message indicates a permission denial.
-fn is_permission_error(error: &str) -> bool {
-    error.contains("Permission denied") || error.contains("Operation not permitted")
 }
 
 /// AppleScript that reads two positional arguments and feeds them through
@@ -393,6 +445,32 @@ mod tests {
     fn find_app_bundle_above_returns_none_for_worktree_target_layout() {
         let exe = Path::new("/Users/jane/code/cmdr/.claude/worktrees/feature/target/aarch64-apple-darwin/release/Cmdr");
         assert_eq!(find_app_bundle_above(exe), None);
+    }
+
+    #[test]
+    fn sync_error_classifies_permission_denied_by_io_kind_not_message() {
+        // Regression for the medium-severity audit finding: pre-fix the
+        // installer substring-matched English `"Permission denied"` and
+        // `"Operation not permitted"`, so localized macOS systems never
+        // reached the admin-escalation arm and updates silently failed.
+        // The typed variant must trigger regardless of message wording.
+        let err = SyncError::from_io(
+            || "Couldn't copy /a -> /b".to_string(),
+            io::Error::from(io::ErrorKind::PermissionDenied),
+        );
+        assert!(err.is_permission_denied());
+
+        // Localized French wording from a real `EACCES` on macOS — the old
+        // substring check would have returned false on this exact string.
+        let localized_message_err = SyncError {
+            message: "Couldn't rename /a -> /b: Permission refusée".to_string(),
+            kind: io::ErrorKind::PermissionDenied,
+        };
+        assert!(localized_message_err.is_permission_denied());
+
+        // Other I/O failures must NOT escalate.
+        let other = SyncError::from_io(|| "Couldn't copy".to_string(), io::Error::from(io::ErrorKind::NotFound));
+        assert!(!other.is_permission_denied());
     }
 
     #[test]
