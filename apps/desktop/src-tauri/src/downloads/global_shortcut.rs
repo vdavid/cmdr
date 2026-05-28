@@ -27,36 +27,45 @@
 //! which is distinct from key-logging APIs that need TCC grants. The user
 //! sees no extra prompt.
 
+use std::str::FromStr;
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutEvent, ShortcutState};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutEvent, ShortcutState};
 
 /// Typed errors from a registration attempt. The FE branches on `kind`;
 /// never match on the message string.
+///
+/// Two variants is deliberately the whole surface. `InvalidBinding` is the
+/// only failure we can disambiguate cheaply (via `Shortcut::from_str` BEFORE
+/// the plugin call). Every other plugin failure — including the "another app
+/// holds it" case — lands in `PluginError` carrying the underlying message.
+/// The Settings row renders the message tail when one is present; there's no
+/// user action that depends on distinguishing "in use by another app" from
+/// "allocation failure" (both mean "pick a different combo or move on"), so a
+/// single bucket keeps us off the brittle string-match path.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum RegistrationError {
-    /// Another app already holds the combo. Surface the message
-    /// "Couldn't register: in use by another app." in the Settings row.
-    Conflict,
-    /// The accelerator string couldn't be parsed by the plugin.
+    /// The accelerator string couldn't be parsed. Detected pre-plugin via
+    /// `Shortcut::from_str` so we never reach the plugin's stringly error
+    /// surface for the one failure mode the user can act on directly
+    /// ("typo in the combo").
     InvalidBinding {
         /// The rejected binding so the FE can surface it (for debugging only;
         /// the row already shows the binding the user picked).
         binding: String,
     },
-    /// Any other plugin failure (allocation, IO with the OS, etc.). Carries
-    /// the underlying message for the log line; the FE shows a generic
-    /// fallback string.
+    /// Any plugin failure: conflict with another app, allocation, OS IO, etc.
+    /// Carries the underlying message for both the log line and the Settings
+    /// row's "Couldn't register: …" tail.
     PluginError { message: String },
 }
 
 impl std::fmt::Display for RegistrationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Conflict => write!(f, "Global shortcut conflict (already in use)"),
             Self::InvalidBinding { binding } => write!(f, "Invalid global shortcut binding: {binding}"),
             Self::PluginError { message } => write!(f, "Global shortcut plugin error: {message}"),
         }
@@ -69,13 +78,9 @@ impl std::fmt::Display for RegistrationError {
 pub enum RegistrationStatus {
     /// The binding is live; the hotkey will fire from any app.
     Registered,
-    /// Nothing is currently registered (disabled, FDA gate closed, or empty
-    /// binding).
+    /// Nothing is currently registered (disabled, FDA gate closed, empty
+    /// binding, or the most recent attempt failed).
     NotRegistered,
-    /// Last attempt failed because another app holds the combo. The FE
-    /// surfaces the conflict copy; nothing fires until the user picks a
-    /// different combo.
-    Conflict,
 }
 
 /// Abstraction over the plugin so the state-machine tests don't need a real
@@ -107,34 +112,23 @@ impl TauriRegistrar {
 
 impl Registrar for TauriRegistrar {
     fn plugin_register(&self, binding: &str) -> Result<(), RegistrationError> {
-        // The plugin doesn't expose typed error codes; we have to introspect
-        // the error string ONCE here to map conflict vs invalid-binding.
-        // This is the locked-in single string-match site; the rest of the
-        // crate branches on `RegistrationError::kind` instead.
-        //
-        // Allowed because (a) the plugin's `tauri_plugin_global_shortcut::Error`
-        // is `#[non_exhaustive]` with no `code()`/`kind()` accessor, and (b)
-        // the matched substrings are stable plugin-internal English (no user
-        // locale, no upstream copy churn beyond breaking-change bumps).
-        // allowed-error-string-match: tauri-plugin-global-shortcut has no typed error codes
-        match self.app.global_shortcut().register(binding) {
-            Ok(()) => Ok(()),
-            Err(err) => {
-                let msg = err.to_string();
-                let lower = msg.to_lowercase();
-                // allowed-error-string-match: see module comment
-                if lower.contains("already") || lower.contains("in use") || lower.contains("registered") {
-                    Err(RegistrationError::Conflict)
-                // allowed-error-string-match: see module comment
-                } else if lower.contains("parse") || lower.contains("invalid") || lower.contains("accelerator") {
-                    Err(RegistrationError::InvalidBinding {
-                        binding: binding.to_string(),
-                    })
-                } else {
-                    Err(RegistrationError::PluginError { message: msg })
-                }
-            }
+        // Pre-parse via `Shortcut::from_str` so the one user-actionable
+        // failure mode (typo in the combo) is detected cheaply before we
+        // touch the plugin. Everything that survives the parse but fails to
+        // register lands in `PluginError` carrying the plugin's own message,
+        // which the Settings row renders verbatim under "Couldn't register".
+        // No substring branching, no locale-dependent string match.
+        if Shortcut::from_str(binding).is_err() {
+            return Err(RegistrationError::InvalidBinding {
+                binding: binding.to_string(),
+            });
         }
+        self.app
+            .global_shortcut()
+            .register(binding)
+            .map_err(|err| RegistrationError::PluginError {
+                message: err.to_string(),
+            })
     }
 
     fn plugin_unregister(&self, binding: &str) {
@@ -151,8 +145,7 @@ impl Registrar for TauriRegistrar {
 }
 
 /// State machine on top of any [`Registrar`]. Holds at most one active
-/// binding + a remembered conflict so the Settings row can show "couldn't
-/// register" without re-attempting.
+/// binding.
 pub struct GlobalShortcutManager<R: Registrar> {
     registrar: R,
     state: Mutex<ManagerState>,
@@ -163,9 +156,6 @@ struct ManagerState {
     /// `Some(binding)` when we've successfully registered it. `None` when
     /// we're not currently holding any binding.
     active: Option<String>,
-    /// `Some(binding)` when our most recent attempt at `binding` failed with
-    /// `Conflict`. Drives the [`RegistrationStatus::Conflict`] surface.
-    conflicting: Option<String>,
 }
 
 impl<R: Registrar> GlobalShortcutManager<R> {
@@ -182,10 +172,8 @@ impl<R: Registrar> GlobalShortcutManager<R> {
         let mut state = self.state.lock().expect("global_shortcut state poisoned");
 
         if state.active.as_deref() == Some(binding) {
-            // Already active — clear any conflict memory for OTHER bindings
-            // (a stale conflict for the previous binding is irrelevant once
-            // we've successfully attached to this one). Idempotent re-call.
-            state.conflicting = None;
+            // Already active — re-registering would re-acquire and risk
+            // double-events. Idempotent re-call.
             return Ok(());
         }
 
@@ -198,31 +186,18 @@ impl<R: Registrar> GlobalShortcutManager<R> {
         match self.registrar.plugin_register(binding) {
             Ok(()) => {
                 state.active = Some(binding.to_string());
-                state.conflicting = None;
                 log::info!(
                     target: "downloads::global_shortcut",
                     "Registered global shortcut: {binding}",
                 );
                 Ok(())
             }
-            Err(RegistrationError::Conflict) => {
-                state.conflicting = Some(binding.to_string());
+            Err(err) => {
                 log::warn!(
                     target: "downloads::global_shortcut",
-                    "Global shortcut conflict for {binding}; another app holds it",
+                    "Global shortcut register({binding}) failed: {err}",
                 );
-                Err(RegistrationError::Conflict)
-            }
-            Err(other) => {
-                // Invalid binding / generic plugin error: don't remember as a
-                // "conflict" since the situation is "this binding is broken,"
-                // not "another app holds it."
-                state.conflicting = None;
-                log::warn!(
-                    target: "downloads::global_shortcut",
-                    "Global shortcut register({binding}) failed: {other}",
-                );
-                Err(other)
+                Err(err)
             }
         }
     }
@@ -237,7 +212,6 @@ impl<R: Registrar> GlobalShortcutManager<R> {
                 "Unregistered global shortcut: {prev}",
             );
         }
-        state.conflicting = None;
     }
 
     /// Status for the requested `binding`. The Settings row consults this on
@@ -246,8 +220,6 @@ impl<R: Registrar> GlobalShortcutManager<R> {
         let state = self.state.lock().expect("global_shortcut state poisoned");
         if state.active.as_deref() == Some(binding) {
             RegistrationStatus::Registered
-        } else if state.conflicting.as_deref() == Some(binding) {
-            RegistrationStatus::Conflict
         } else {
             RegistrationStatus::NotRegistered
         }
@@ -358,16 +330,38 @@ mod tests {
         ));
     }
 
+    /// Wrap `FakeRegistrar` in an `Arc` and `impl Registrar` on a small
+    /// newtype so both the manager and the test body see the same backing
+    /// store. Used by tests that need to assert on `register_calls` /
+    /// `unregister_calls` after the manager has consumed the registrar.
+    fn shared_registrar() -> (std::sync::Arc<FakeRegistrar>, GlobalShortcutManager<SharedRegistrar>) {
+        let shared = std::sync::Arc::new(FakeRegistrar::new());
+        let mgr = GlobalShortcutManager::new(SharedRegistrar(std::sync::Arc::clone(&shared)));
+        (shared, mgr)
+    }
+
+    struct SharedRegistrar(std::sync::Arc<FakeRegistrar>);
+    impl Registrar for SharedRegistrar {
+        fn plugin_register(&self, binding: &str) -> Result<(), RegistrationError> {
+            self.0.plugin_register(binding)
+        }
+        fn plugin_unregister(&self, binding: &str) {
+            self.0.plugin_unregister(binding)
+        }
+    }
+
     #[test]
     fn register_same_binding_twice_is_idempotent() {
-        let registrar = FakeRegistrar::new();
-        let mgr = GlobalShortcutManager::new(registrar);
+        // The second `register` of the same binding must NOT hit the plugin
+        // again — re-registering would re-acquire and risk double-events on
+        // some platforms. Directly probe `register_calls` via the shared
+        // registrar so the assertion is a true idempotency contract, not just
+        // a status read.
+        let (shared, mgr) = shared_registrar();
         mgr.register("Control+Alt+Meta+J").expect("first");
         mgr.register("Control+Alt+Meta+J").expect("idempotent");
-        // The second call must NOT hit the plugin again — registering the
-        // same binding twice would re-acquire and risk double-events.
-        // Direct field probe via fresh registrar would lose state; assert
-        // via status instead: still Registered, no conflict promoted.
+        assert_eq!(shared.register_calls(), vec!["Control+Alt+Meta+J"]);
+        assert!(shared.unregister_calls().is_empty());
         assert!(matches!(
             mgr.registration_status("Control+Alt+Meta+J"),
             RegistrationStatus::Registered
@@ -376,45 +370,33 @@ mod tests {
 
     #[test]
     fn register_new_binding_unregisters_previous() {
-        // Wrap the FakeRegistrar in an Arc and have it impl Registrar on
-        // `Arc<FakeRegistrar>` so both manager and test see the same backing
-        // store. Done via a small newtype.
-        use std::sync::Arc;
-
-        struct SharedRegistrar(Arc<FakeRegistrar>);
-        impl Registrar for SharedRegistrar {
-            fn plugin_register(&self, binding: &str) -> Result<(), RegistrationError> {
-                self.0.plugin_register(binding)
-            }
-            fn plugin_unregister(&self, binding: &str) {
-                self.0.plugin_unregister(binding)
-            }
-        }
-
-        let shared = Arc::new(FakeRegistrar::new());
-        let mgr = GlobalShortcutManager::new(SharedRegistrar(Arc::clone(&shared)));
+        let (shared, mgr) = shared_registrar();
 
         mgr.register("Control+Alt+Meta+J").expect("first");
         mgr.register("Meta+Shift+K").expect("swap");
 
-        let register_calls = shared.register_calls();
-        let unregister_calls = shared.unregister_calls();
-        assert_eq!(register_calls, vec!["Control+Alt+Meta+J", "Meta+Shift+K"]);
-        assert_eq!(unregister_calls, vec!["Control+Alt+Meta+J"]);
+        assert_eq!(shared.register_calls(), vec!["Control+Alt+Meta+J", "Meta+Shift+K"]);
+        assert_eq!(shared.unregister_calls(), vec!["Control+Alt+Meta+J"]);
         assert_eq!(shared.active().as_deref(), Some("Meta+Shift+K"));
     }
 
     #[test]
-    fn register_conflict_records_status_and_clears_active() {
+    fn plugin_error_does_not_promote_to_registered() {
+        // Any plugin failure (conflict, allocation, OS IO) lands in
+        // `PluginError`; the Settings row renders the message tail under
+        // "Couldn't register". Status stays `NotRegistered` so a re-attempt
+        // happens cleanly on the next user flip.
         let registrar = FakeRegistrar::new();
-        registrar.set_next_error(RegistrationError::Conflict);
+        registrar.set_next_error(RegistrationError::PluginError {
+            message: "HotKey already registered".to_string(),
+        });
         let mgr = GlobalShortcutManager::new(registrar);
 
         let result = mgr.register("Control+Alt+Meta+J");
-        assert!(matches!(result, Err(RegistrationError::Conflict)));
+        assert!(matches!(result, Err(RegistrationError::PluginError { .. })));
         assert!(matches!(
             mgr.registration_status("Control+Alt+Meta+J"),
-            RegistrationStatus::Conflict
+            RegistrationStatus::NotRegistered
         ));
     }
 
@@ -447,7 +429,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_binding_error_does_not_promote_to_conflict() {
+    fn invalid_binding_error_leaves_status_not_registered() {
         let registrar = FakeRegistrar::new();
         registrar.set_next_error(RegistrationError::InvalidBinding {
             binding: "Garbage+@".to_string(),
@@ -456,7 +438,6 @@ mod tests {
 
         let result = mgr.register("Garbage+@");
         assert!(matches!(result, Err(RegistrationError::InvalidBinding { .. })));
-        // Invalid is its own failure mode; status must NOT report Conflict.
         assert!(matches!(
             mgr.registration_status("Garbage+@"),
             RegistrationStatus::NotRegistered

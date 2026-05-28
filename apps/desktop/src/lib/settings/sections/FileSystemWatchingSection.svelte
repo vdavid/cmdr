@@ -95,7 +95,12 @@
             fdaPending = statusResult.data.fdaPending
             watcherRunning = statusResult.data.running
         }
-        await commands.recheckDownloadsWatcherGate()
+        const recheck = await commands.recheckDownloadsWatcherGate()
+        if (recheck.status === 'error') {
+            log.warn('recheckDownloadsWatcherGate failed: {message}', {
+                message: recheck.error.message,
+            })
+        }
 
         if (fdaPending) {
             shortcutStatusText = 'Cmdr needs Full Disk Access'
@@ -104,15 +109,17 @@
         // Ask the backend to apply the current setting and report the resulting status.
         const result = await commands.setGlobalRevealShortcut(shortcutEnabled, shortcutBinding)
         if (result.status === 'ok') {
-            const s = result.data.status
-            shortcutStatusText =
-                s === 'registered'
-                    ? 'Registered'
-                    : s === 'conflict'
-                      ? "Couldn't register: in use by another app"
-                      : 'Not registered'
+            shortcutStatusText = result.data.status === 'registered' ? 'Registered' : 'Not registered'
         } else {
-            shortcutStatusText = "Couldn't register"
+            // Two error kinds: `invalidBinding` (typo in the combo) and
+            // `pluginError` (conflict with another app, allocation, OS IO,
+            // …). Render the underlying message tail when present so the
+            // user sees something actionable.
+            if (result.error.kind === 'invalidBinding') {
+                shortcutStatusText = `Couldn't register: invalid combo`
+            } else {
+                shortcutStatusText = `Couldn't register: ${result.error.message}`
+            }
         }
     }
 

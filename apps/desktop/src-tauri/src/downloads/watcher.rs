@@ -40,6 +40,14 @@ use super::{IgnoreSet, LatestRing, is_eligible};
 /// within a few hundred ms of the syscall; 5 s is plenty of headroom.
 pub const DEFAULT_IGNORE_TTL: Duration = Duration::from_secs(5);
 
+/// Recursion cap for the cold-start [`scan_latest`] fallback. Six levels
+/// covers realistic browser landings (`~/Downloads/Chrome/extracted/a/b/c/file`)
+/// without devolving into a worst-case full-tree walk when a user has
+/// stockpiled deep archives. The cold path is rare (ring empty AND fallback
+/// requested), but the scan runs in a `spawn_blocking` task — the cap keeps
+/// that task short-lived even in the pathological case.
+pub(crate) const SCAN_MAX_DEPTH: usize = 6;
+
 /// `notify-debouncer-full` window. Matches the listing watcher's default
 /// (200 ms), small enough that the toast feels prompt but big enough that the
 /// rename pair from a browser's `.crdownload` → final dance collapses into
@@ -48,10 +56,11 @@ const DEBOUNCE_MS: u64 = 200;
 
 /// Payload of the `download-detected` Tauri event.
 ///
-/// `specta::Type` is derived so the TS binding picks the shape up. The type is
-/// referenced from `DownloadsWatcherStatus::last_detected` so it lands in
-/// `bindings.ts` even though Tauri events themselves aren't on the typed-event
-/// surface yet.
+/// `specta::Type` stays derived so the type info is available if a future
+/// IPC surface needs it; the event itself crosses the wire via Tauri's
+/// untyped event channel, and the FE bridge defines a narrow
+/// `DownloadDetectedPayload` interface that mirrors the fields it actually
+/// reads.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadDetectedEvent {
@@ -430,11 +439,13 @@ fn build_payload(path: &Path, downloads_root: &Path) -> DownloadDetectedEvent {
     }
 }
 
-/// Walk `root` recursively and return the path with the greatest mtime among
-/// eligible files. `None` if no eligible file is found or `root` is missing.
-fn scan_latest(root: &Path) -> Option<PathBuf> {
+/// Walk `root` recursively (capped at [`SCAN_MAX_DEPTH`]) and return the path
+/// with the greatest mtime among eligible files. `None` if no eligible file is
+/// found or `root` is missing.
+pub(crate) fn scan_latest(root: &Path) -> Option<PathBuf> {
     let mut best: Option<(PathBuf, SystemTime)> = None;
     for entry in walkdir::WalkDir::new(root)
+        .max_depth(SCAN_MAX_DEPTH)
         .follow_links(false)
         .into_iter()
         .filter_map(Result::ok)
@@ -478,7 +489,14 @@ fn canonicalize_for_match(path: &Path) -> PathBuf {
     };
     match std::fs::canonicalize(parent) {
         Ok(canon_parent) => canon_parent.join(name),
-        Err(_) => path.to_path_buf(),
+        Err(err) => {
+            log::debug!(
+                target: "downloads::watcher",
+                "canonicalize_for_match: parent {} failed ({err}); falling back to raw path",
+                parent.display(),
+            );
+            path.to_path_buf()
+        }
     }
 }
 
@@ -722,6 +740,46 @@ mod tests {
         let b = touch(td.path(), "b.txt");
         let latest = scan_latest(td.path()).unwrap();
         assert_eq!(latest, b);
+    }
+
+    #[test]
+    fn scan_latest_caps_at_max_depth() {
+        // SCAN_MAX_DEPTH is `6` so that browser-style landings like
+        // `~/Downloads/Chrome/extracted/a/b/c/file` (5 levels under root) are
+        // covered. A file SEVEN levels deep is past the cap and must be
+        // ignored even if it's the most recent eligible file in the tree.
+        let td = unhidden_tempdir();
+        // Shallow file: directly under root.
+        let shallow = touch(td.path(), "shallow.bin");
+
+        // Deep file: 7 levels under root (root/d1/d2/d3/d4/d5/d6/d7/deep.bin).
+        let mut deep_dir = td.path().to_path_buf();
+        for n in 1..=7 {
+            deep_dir.push(format!("d{n}"));
+        }
+        fs::create_dir_all(&deep_dir).unwrap();
+        // Make sure the deep file is newer than the shallow one.
+        thread::sleep(Duration::from_millis(20));
+        let deep = deep_dir.join("deep.bin");
+        fs::write(&deep, b"deep").unwrap();
+
+        let latest = scan_latest(td.path()).expect("expected at least the shallow file");
+        // The cap means the deep file isn't visited, so the shallow one wins
+        // despite being older.
+        assert_eq!(latest, shallow, "expected shallow within cap, got {latest:?}");
+        assert_ne!(latest, deep, "deep file must be skipped past the cap");
+    }
+
+    #[test]
+    fn scan_latest_finds_file_within_cap() {
+        // Sanity: a file at SCAN_MAX_DEPTH minus a couple levels (browser-typical
+        // `Downloads/Chrome/extracted/file.bin`, 3 levels) is found.
+        let td = unhidden_tempdir();
+        let nested = td.path().join("Chrome").join("extracted");
+        fs::create_dir_all(&nested).unwrap();
+        let file = nested.join("file.bin");
+        fs::write(&file, b"hi").unwrap();
+        assert_eq!(scan_latest(td.path()), Some(file));
     }
 
     #[test]

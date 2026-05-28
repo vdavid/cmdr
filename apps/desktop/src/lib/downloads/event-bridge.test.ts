@@ -119,7 +119,7 @@ describe('startDownloadsEventBridge', () => {
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
     downloadsWatcherStatusMock.mockReset().mockResolvedValue({
       status: 'ok',
-      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false, lastDetected: null },
+      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
     __resetPermissionCacheForTests()
   })
@@ -212,7 +212,7 @@ describe('startDownloadsEventBridge', () => {
     // before the gate clears.
     downloadsWatcherStatusMock.mockResolvedValue({
       status: 'ok',
-      data: { running: false, downloadsDir: null, fdaPending: true, lastDetected: null },
+      data: { running: false, downloadsDir: null, fdaPending: true },
     })
     getDownloadsNotificationsModeMock.mockReturnValue('both')
     const listener = await startBridgeAndCaptureListener()
@@ -235,7 +235,7 @@ describe('startDownloadsEventBridge — permission flow', () => {
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
     downloadsWatcherStatusMock.mockReset().mockResolvedValue({
       status: 'ok',
-      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false, lastDetected: null },
+      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
     __resetPermissionCacheForTests()
   })

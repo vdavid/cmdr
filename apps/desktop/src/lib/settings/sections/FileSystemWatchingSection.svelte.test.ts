@@ -81,7 +81,7 @@ function setDefaultSettings(): void {
 function setStatus(fdaPending: boolean, running = true): void {
   downloadsWatcherStatusMock.mockResolvedValue({
     status: 'ok',
-    data: { running, downloadsDir: '/Users/me/Downloads', fdaPending, lastDetected: null },
+    data: { running, downloadsDir: '/Users/me/Downloads', fdaPending },
   })
 }
 

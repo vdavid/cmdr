@@ -32,6 +32,29 @@ static RUNTIME: Mutex<Option<DownloadsWatcher>> = Mutex::new(None);
 /// `AppHandle`.
 static GLOBAL_SHORTCUT: Mutex<Option<GlobalShortcutManager<TauriRegistrar>>> = Mutex::new(None);
 
+/// Last `(enabled, binding)` pair `refresh_global_reveal_shortcut` applied.
+/// Lets the focus-event refresh short-circuit when nothing changed since the
+/// previous call. The headline path is `Cmd-Tab Chrome → Cmdr`: focus fires,
+/// settings on disk haven't moved, no disk read or plugin round-trip needed.
+static LAST_APPLIED_SHORTCUT: Mutex<Option<(bool, String)>> = Mutex::new(None);
+
+/// Pure helper: compare `(enabled, binding)` against `cache`. Returns `true`
+/// when the cache mismatches (or is empty) and updates it to the new value;
+/// returns `false` when the cache already matches (caller should skip the
+/// re-apply). Extracted so the cache-skip logic is unit-testable without an
+/// `AppHandle` or the process-global cache.
+fn cache_changed_and_update(cache: &Mutex<Option<(bool, String)>>, enabled: bool, binding: &str) -> bool {
+    let mut guard = cache.lock().expect("last-applied shortcut cache poisoned");
+    if let Some((cached_enabled, cached_binding)) = guard.as_ref()
+        && *cached_enabled == enabled
+        && cached_binding == binding
+    {
+        return false;
+    }
+    *guard = Some((enabled, binding.to_string()));
+    true
+}
+
 fn global_shortcut_manager(
     app: &AppHandle,
 ) -> std::sync::MutexGuard<'_, Option<GlobalShortcutManager<TauriRegistrar>>> {
@@ -129,8 +152,7 @@ pub fn apply_global_reveal_shortcut(
         let accel = accelerator.as_deref().expect("should_run implies accelerator present");
         match mgr.register(accel) {
             Ok(()) => (RegistrationStatus::Registered, None),
-            Err(RegistrationError::Conflict) => (RegistrationStatus::Conflict, None),
-            Err(other) => (mgr.registration_status(accel), Some(other)),
+            Err(err) => (mgr.registration_status(accel), Some(err)),
         }
     } else {
         mgr.unregister();
@@ -140,6 +162,10 @@ pub fn apply_global_reveal_shortcut(
     if let Some(err) = register_error {
         return Err(err);
     }
+
+    // Sync the focus-refresh cache so a subsequent focus event doesn't undo
+    // (or pointlessly re-run) what the FE just applied.
+    cache_changed_and_update(&LAST_APPLIED_SHORTCUT, enabled, binding);
 
     Ok(super::commands::GlobalRevealShortcutState {
         status,
@@ -156,6 +182,16 @@ pub fn apply_global_reveal_shortcut(
 pub fn refresh_global_reveal_shortcut(app: &AppHandle) {
     let (enabled, binding) = crate::settings::early_load_global_reveal_shortcut()
         .unwrap_or((true, String::from("\u{2303}\u{2325}\u{2318}J")));
+    if !cache_changed_and_update(&LAST_APPLIED_SHORTCUT, enabled, &binding) {
+        // Cmd-Tab back from another app is the headline trigger; settings on
+        // disk haven't moved since the previous refresh, so skip the plugin
+        // round-trip.
+        log::debug!(
+            target: "downloads::global_shortcut",
+            "Refresh skipped: cached (enabled={enabled}, binding={binding}) matches",
+        );
+        return;
+    }
     if let Err(err) = apply_global_reveal_shortcut(app, enabled, &binding) {
         log::warn!(
             target: "downloads::global_shortcut",
@@ -353,6 +389,28 @@ mod tests {
             Err(mpsc::TryRecvError::Empty) => { /* expected */ }
             Err(mpsc::TryRecvError::Disconnected) => panic!("sink disconnected"),
         }
+    }
+
+    #[test]
+    fn cache_changed_and_update_returns_true_first_time_and_false_when_unchanged() {
+        // Headline contract: the focus-refresh fast path skips the plugin
+        // round-trip when nothing has moved. Two refreshes in a row with the
+        // same (enabled, binding) must return `true` then `false`, so the
+        // caller calls `apply_global_reveal_shortcut` only once.
+        let cache: Mutex<Option<(bool, String)>> = Mutex::new(None);
+
+        // First refresh: cache empty → caller should apply.
+        assert!(cache_changed_and_update(&cache, true, "\u{2303}\u{2325}\u{2318}J"));
+        // Second refresh with same args: cache hit → caller should skip.
+        assert!(!cache_changed_and_update(&cache, true, "\u{2303}\u{2325}\u{2318}J"));
+
+        // Toggle changes → re-apply.
+        assert!(cache_changed_and_update(&cache, false, "\u{2303}\u{2325}\u{2318}J"));
+        assert!(!cache_changed_and_update(&cache, false, "\u{2303}\u{2325}\u{2318}J"));
+
+        // Binding changes → re-apply.
+        assert!(cache_changed_and_update(&cache, false, "\u{2318}\u{21E7}K"));
+        assert!(!cache_changed_and_update(&cache, false, "\u{2318}\u{21E7}K"));
     }
 
     #[test]

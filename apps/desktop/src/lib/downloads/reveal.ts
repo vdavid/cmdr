@@ -14,15 +14,9 @@ import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
-import RevealEmptyToastContent, {
-  setEmptyToastHandler as setEmptyToastHandlerUntyped,
-} from './RevealEmptyToastContent.svelte'
+import RevealEmptyToastContent from './RevealEmptyToastContent.svelte'
 import RevealFdaToastContent from './RevealFdaToastContent.svelte'
 import { REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID } from './reveal-ids'
-
-// Svelte component module-level exports come through as `any` at the `.svelte`
-// boundary. Re-pin the signature locally so the call site stays type-safe.
-const setEmptyToastHandler = setEmptyToastHandlerUntyped as (action: () => void) => void
 
 export { REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID }
 
@@ -114,13 +108,13 @@ async function navigateToRevealedFile(explorer: ExplorerAPI, parentDir: string, 
 async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
   // Resolve the Downloads dir up front so the toast's "Go to Downloads"
   // button knows where to navigate. Best-effort: if the status call fails
-  // we show the toast with a no-op action (logged in the component).
+  // the prop closure logs and bails.
   const status = await commands.downloadsWatcherStatus()
   const downloadsDir = status.status === 'ok' ? status.data.downloadsDir : null
   // Snapshot the focused pane + Downloads dir at toast-add time so a later
   // pane focus change doesn't redirect the action somewhere unexpected.
   const focusedPane = explorer.getFocusedPane()
-  setEmptyToastHandler(() => {
+  const onGoToDownloads = () => {
     if (!downloadsDir) {
       log.warn('Go to Downloads pressed but Downloads dir is unresolved; no action')
       return
@@ -129,11 +123,14 @@ async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
     if (typeof result === 'string') {
       log.warn('Go to Downloads: navigateToPath refused: {reason}', { reason: result })
     }
-  })
+  }
   addToast(RevealEmptyToastContent, {
     id: REVEAL_EMPTY_TOAST_ID,
     level: 'info',
     toastGroup: 'downloads-reveal',
+    props: {
+      onGoToDownloads,
+    },
   })
 }
 

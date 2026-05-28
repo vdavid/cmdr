@@ -40,7 +40,6 @@ vi.mock('$lib/tauri-commands', () => ({
 // reference is passed to `addToast` (proves the dedup id wires the right toast).
 vi.mock('./RevealEmptyToastContent.svelte', () => ({
   default: { __toastContent: 'RevealEmptyToastContent' },
-  setEmptyToastHandler: vi.fn(),
 }))
 vi.mock('./RevealFdaToastContent.svelte', () => ({
   default: { __toastContent: 'RevealFdaToastContent' },
@@ -98,19 +97,27 @@ describe('revealLatestDownload', () => {
     })
     downloadsWatcherStatusMock.mockResolvedValue({
       status: 'ok',
-      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false, lastDetected: null },
+      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
 
     await revealLatestDownload(makeExplorerStub())
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
-    const [content, options] = addToastMock.mock.calls[0] as unknown as [unknown, Record<string, unknown>]
+    const [content, options] = addToastMock.mock.calls[0] as unknown as [
+      unknown,
+      Record<string, unknown> & { props?: { onGoToDownloads: () => void } },
+    ]
     expect(content).toBe(RevealEmptyToastContent)
     expect(options).toMatchObject({
       id: REVEAL_EMPTY_TOAST_ID,
       level: 'info',
     })
-    expect(navigateToPathMock).not.toHaveBeenCalled()
+    // The "Go to Downloads" handler arrives as a prop (snapshotted closure
+    // over the focused pane + Downloads dir), not via a module-state shim.
+    expect(typeof options.props?.onGoToDownloads).toBe('function')
+    // Invoking the prop triggers the snapshotted navigation.
+    options.props?.onGoToDownloads()
+    expect(navigateToPathMock).toHaveBeenCalledWith('left', '/Users/me/Downloads')
     expect(moveCursorMock).not.toHaveBeenCalled()
   })
 
@@ -154,7 +161,7 @@ describe('revealLatestDownload', () => {
     })
     downloadsWatcherStatusMock.mockResolvedValue({
       status: 'ok',
-      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false, lastDetected: null },
+      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
 
     await revealLatestDownload(makeExplorerStub())

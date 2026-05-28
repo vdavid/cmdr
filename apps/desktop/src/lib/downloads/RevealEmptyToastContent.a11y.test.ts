@@ -12,7 +12,10 @@ describe('RevealEmptyToastContent a11y', () => {
   it('renders with no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(RevealEmptyToastContent, { target, props: {} })
+    mount(RevealEmptyToastContent, {
+      target,
+      props: { toastId: 'test-empty-toast', onGoToDownloads: () => {} },
+    })
     await tick()
     await expectNoA11yViolations(target)
   })

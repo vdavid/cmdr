@@ -1165,11 +1165,12 @@ export const commands = {
    *  Settings-pane belt-and-braces hook. Re-evaluates the FDA gate and
    *  starts/stops the watcher accordingly. Idempotent.
    *
-   *  Returns `Err(String)` only if the watcher couldn't start due to a
-   *  `notify` error; the frontend logs and moves on. Most call sites won't
-   *  flip the gate state, in which case this is a no-op.
+   *  Returns `Err` only if the watcher couldn't start due to a `notify` error;
+   *  the frontend logs and moves on. Most call sites won't flip the gate
+   *  state, in which case this is a no-op.
    */
-  recheckDownloadsWatcherGate: () => typedError<null, string>(__TAURI_INVOKE('recheck_downloads_watcher_gate')),
+  recheckDownloadsWatcherGate: () =>
+    typedError<null, WatcherGateError>(__TAURI_INVOKE('recheck_downloads_watcher_gate')),
   /**
    *  Apply a Settings change (toggle + binding) to the live global-shortcut
    *  registration. Idempotent; safe to call repeatedly with the same args.
@@ -2309,32 +2310,6 @@ export type DiscoveryState =
   // Initial burst is complete, still listening.
   | 'active'
 
-/**
- *  Payload of the `download-detected` Tauri event.
- *
- *  `specta::Type` is derived so the TS binding picks the shape up. The type is
- *  referenced from `DownloadsWatcherStatus::last_detected` so it lands in
- *  `bindings.ts` even though Tauri events themselves aren't on the typed-event
- *  surface yet.
- */
-export type DownloadDetectedEvent = {
-  path: string
-  parentDir: string
-  fileName: string
-  // Milliseconds since the Unix epoch.
-  observedAtMs: number
-  /**
-   *  `true` when the file sits in a subdirectory under the Downloads root,
-   *  `false` when it's a direct child.
-   */
-  inSubdir: boolean
-  /**
-   *  Best-effort file size. `None` if the stat failed (file already gone,
-   *  permission denied, etc.).
-   */
-  sizeBytes: number | null
-}
-
 // Status snapshot for the FE / debug surface.
 export type DownloadsWatcherStatus = {
   // `true` when the watcher is currently active.
@@ -2349,12 +2324,6 @@ export type DownloadsWatcherStatus = {
    *  the FE doesn't need a second IPC.
    */
   fdaPending: boolean
-  /**
-   *  Carries the [`DownloadDetectedEvent`] type into the type graph so its
-   *  shape lands in `bindings.ts`. Always `None` today; reserved for a
-   *  future "last detected" surface (M5 territory).
-   */
-  lastDetected: DownloadDetectedEvent | null
 }
 
 export type EncryptionInfoDto = {
@@ -3121,14 +3090,23 @@ export type RangeEnd = { kind: 'line'; line: number; offset: number } | { kind: 
 /**
  *  Typed errors from a registration attempt. The FE branches on `kind`;
  *  never match on the message string.
+ *
+ *  Two variants is deliberately the whole surface. `InvalidBinding` is the
+ *  only failure we can disambiguate cheaply (via `Shortcut::from_str` BEFORE
+ *  the plugin call). Every other plugin failure — including the "another app
+ *  holds it" case — lands in `PluginError` carrying the underlying message.
+ *  The Settings row renders the message tail when one is present; there's no
+ *  user action that depends on distinguishing "in use by another app" from
+ *  "allocation failure" (both mean "pick a different combo or move on"), so a
+ *  single bucket keeps us off the brittle string-match path.
  */
 export type RegistrationError =
   /**
-   *  Another app already holds the combo. Surface the message
-   *  "Couldn't register: in use by another app." in the Settings row.
+   *  The accelerator string couldn't be parsed. Detected pre-plugin via
+   *  `Shortcut::from_str` so we never reach the plugin's stringly error
+   *  surface for the one failure mode the user can act on directly
+   *  ("typo in the combo").
    */
-  | { kind: 'conflict' }
-  // The accelerator string couldn't be parsed by the plugin.
   | {
       kind: 'invalidBinding'
       /**
@@ -3138,9 +3116,9 @@ export type RegistrationError =
       binding: string
     }
   /**
-   *  Any other plugin failure (allocation, IO with the OS, etc.). Carries
-   *  the underlying message for the log line; the FE shows a generic
-   *  fallback string.
+   *  Any plugin failure: conflict with another app, allocation, OS IO, etc.
+   *  Carries the underlying message for both the log line and the Settings
+   *  row's "Couldn't register: …" tail.
    */
   | { kind: 'pluginError'; message: string }
 
@@ -3149,16 +3127,10 @@ export type RegistrationStatus =
   // The binding is live; the hotkey will fire from any app.
   | 'registered'
   /**
-   *  Nothing is currently registered (disabled, FDA gate closed, or empty
-   *  binding).
+   *  Nothing is currently registered (disabled, FDA gate closed, empty
+   *  binding, or the most recent attempt failed).
    */
   | 'notRegistered'
-  /**
-   *  Last attempt failed because another app holds the combo. The FE
-   *  surfaces the conflict copy; nothing fires until the user picks a
-   *  different combo.
-   */
-  | 'conflict'
 
 // Result of a rename validity check.
 export type RenameValidityResult = {
@@ -3803,6 +3775,19 @@ export type VolumeSpaceInfo = {
   // In bytes.
   availableBytes: number
 }
+
+/**
+ *  Typed error returned by [`recheck_downloads_watcher_gate`]. Only one
+ *  variant today: starting the underlying `notify` watcher failed (missing
+ *  Downloads dir, permission denied, OS-level limits). The FE logs and moves
+ *  on — the next focus event retries.
+ */
+export type WatcherGateError =
+  /**
+   *  `notify-debouncer-full` couldn't attach to the resolved Downloads dir.
+   *  `message` carries the underlying error for the log line.
+   */
+  { kind: 'watcherStartFailed'; message: string }
 
 // Configuration for write operations.
 export type WriteOperationConfig = {

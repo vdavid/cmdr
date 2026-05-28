@@ -1,34 +1,33 @@
-<script module lang="ts">
-    /**
-     * Module-level slots for the action callback + dismiss id. The reveal
-     * helper assigns these right before `addToast(RevealEmptyToastContent, ...)`
-     * so the "Go to Downloads" button can act without props (the toast store's
-     * `ToastContent` type doesn't carry props).
-     *
-     * Same prop-bridging pattern as `BundleSavedToastContent`. The callback is
-     * a closure over the focused-pane + Downloads dir captured at toast-add
-     * time, so a remap of the focused pane after the toast appears doesn't
-     * change the destination — the user sees the same destination they would
-     * have seen when they pressed ⌘J.
-     */
-    let goToDownloads = $state<(() => void) | null>(null)
-
-    export function setEmptyToastHandler(action: () => void): void {
-        goToDownloads = action
-    }
-</script>
-
 <script lang="ts">
+    /**
+     * INFO toast shown when ⌘J / palette / MCP reveal can't find any
+     * eligible download. Pure-prop-driven: the "Go to Downloads" action and
+     * the toast id arrive as props, captured at toast-creation time and
+     * never re-read. Same shape as `DownloadToastContent` (M5).
+     */
     import { dismissToast } from '$lib/ui/toast'
-    import { REVEAL_EMPTY_TOAST_ID } from './reveal-ids'
+
+    interface Props {
+        /** Dedup id of this toast; lets the component self-dismiss on action. */
+        toastId: string
+        /**
+         * Closure over the focused-pane + Downloads dir captured at toast-add
+         * time. A remap of the focused pane after the toast appears does NOT
+         * change the destination — the user sees the same target they would
+         * have seen when they pressed ⌘J.
+         */
+        onGoToDownloads: () => void
+    }
+
+    const { toastId, onGoToDownloads }: Props = $props()
 
     function handleGoToDownloads() {
-        goToDownloads?.()
-        dismissToast(REVEAL_EMPTY_TOAST_ID)
+        onGoToDownloads()
+        dismissToast(toastId)
     }
 
     function handleDismiss() {
-        dismissToast(REVEAL_EMPTY_TOAST_ID)
+        dismissToast(toastId)
     }
 </script>
 

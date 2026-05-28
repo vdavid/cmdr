@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
-use super::watcher::{DownloadDetectedEvent, resolved_downloads_dir};
+use super::watcher::resolved_downloads_dir;
 
 /// Successful reveal: the path to surface plus the pre-split parent dir +
 /// file name so the frontend doesn't have to parse the path itself.
@@ -62,10 +62,6 @@ pub struct DownloadsWatcherStatus {
     /// Mirrors `crate::fda_gate::is_fda_pending_runtime()` at call time so
     /// the FE doesn't need a second IPC.
     pub fda_pending: bool,
-    /// Carries the [`DownloadDetectedEvent`] type into the type graph so its
-    /// shape lands in `bindings.ts`. Always `None` today; reserved for a
-    /// future "last detected" surface (M5 territory).
-    pub last_detected: Option<DownloadDetectedEvent>,
 }
 
 /// Reveal the most recently observed eligible download.
@@ -77,8 +73,27 @@ pub struct DownloadsWatcherStatus {
 #[specta::specta]
 pub async fn reveal_latest_download() -> Result<RevealedDownload, RevealError> {
     let from_ring = super::runtime::with_watcher(|w| w.latest_download()).flatten();
-    let fallback = || super::runtime::with_watcher(|w| w.scan_latest_fallback()).flatten();
-    let path = from_ring.or_else(fallback);
+    let path = match from_ring {
+        Some(p) => Some(p),
+        None => {
+            // Cold-start fallback: the ring is empty (no event landed yet),
+            // so walk the Downloads dir. The walk is bounded by
+            // `SCAN_MAX_DEPTH`, but it's still I/O and we don't want the IPC
+            // handler thread to block on it for thousands of entries. Move
+            // it off via `spawn_blocking`.
+            tauri::async_runtime::spawn_blocking(|| {
+                super::runtime::with_watcher(|w| w.scan_latest_fallback()).flatten()
+            })
+            .await
+            .unwrap_or_else(|err| {
+                log::warn!(
+                    target: "downloads::watcher",
+                    "scan_latest_fallback spawn_blocking failed: {err}",
+                );
+                None
+            })
+        }
+    };
     let Some(path) = path else {
         // Distinguish "watcher dormant" from "watcher running but ring +
         // scan turned up nothing." Without the runtime we have no resolved
@@ -115,20 +130,39 @@ pub async fn downloads_watcher_status() -> Result<DownloadsWatcherStatus, String
         running: super::runtime::is_running(),
         downloads_dir: resolved_downloads_dir().map(|p| p.to_string_lossy().to_string()),
         fda_pending: crate::fda_gate::is_fda_pending_runtime(),
-        last_detected: None,
     })
+}
+
+/// Typed error returned by [`recheck_downloads_watcher_gate`]. Only one
+/// variant today: starting the underlying `notify` watcher failed (missing
+/// Downloads dir, permission denied, OS-level limits). The FE logs and moves
+/// on — the next focus event retries.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum WatcherGateError {
+    /// `notify-debouncer-full` couldn't attach to the resolved Downloads dir.
+    /// `message` carries the underlying error for the log line.
+    WatcherStartFailed { message: String },
+}
+
+impl std::fmt::Display for WatcherGateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::WatcherStartFailed { message } => write!(f, "Watcher start failed: {message}"),
+        }
+    }
 }
 
 /// Settings-pane belt-and-braces hook. Re-evaluates the FDA gate and
 /// starts/stops the watcher accordingly. Idempotent.
 ///
-/// Returns `Err(String)` only if the watcher couldn't start due to a
-/// `notify` error; the frontend logs and moves on. Most call sites won't
-/// flip the gate state, in which case this is a no-op.
+/// Returns `Err` only if the watcher couldn't start due to a `notify` error;
+/// the frontend logs and moves on. Most call sites won't flip the gate
+/// state, in which case this is a no-op.
 #[tauri::command]
 #[specta::specta]
-pub async fn recheck_downloads_watcher_gate(app: AppHandle) -> Result<(), String> {
-    super::runtime::refresh_runtime(&app).map_err(|e| e.to_string())
+pub async fn recheck_downloads_watcher_gate(app: AppHandle) -> Result<(), WatcherGateError> {
+    super::runtime::refresh_runtime(&app).map_err(|e| WatcherGateError::WatcherStartFailed { message: e.to_string() })
 }
 
 /// Result of [`set_global_reveal_shortcut`]: the new status the Settings row
