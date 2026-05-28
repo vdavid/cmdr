@@ -4,6 +4,7 @@
 //! (Full Disk Access) permissions intact across updates.
 
 use std::collections::HashSet;
+use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -278,20 +279,35 @@ fn is_permission_error(error: &str) -> bool {
     error.contains("Permission denied") || error.contains("Operation not permitted")
 }
 
+/// AppleScript that reads two positional arguments and feeds them through
+/// `quoted form of` before splicing into the shell command. This is the only safe way
+/// to forward filesystem paths into `do shell script` — interpolating the paths into
+/// the script text leaves them open to shell-injection (a `'` in any ancestor folder
+/// name escapes the single-quote wrapping and the rest of the path runs as root).
+const ADMIN_SYNC_SCRIPT: &str = "on run argv\n\
+    set src to item 1 of argv\n\
+    set dst to item 2 of argv\n\
+    do shell script \"rsync -a --delete \" & quoted form of src & \" \" & quoted form of dst with administrator privileges\n\
+end run";
+
+/// Builds the argv passed to `osascript`. Split out from [`sync_with_admin_privileges`]
+/// so it can be unit-tested without invoking the auth dialog.
+fn build_admin_sync_argv(staged_contents: &Path, bundle_contents: &Path) -> Vec<OsString> {
+    let mut src: OsString = staged_contents.as_os_str().to_os_string();
+    src.push("/"); // trailing slash for rsync
+    let mut dst: OsString = bundle_contents.as_os_str().to_os_string();
+    dst.push("/");
+    vec!["-e".into(), ADMIN_SYNC_SCRIPT.into(), src, dst]
+}
+
 /// Performs the file sync using `osascript` with admin privileges.
 /// Uses `rsync -a --delete` because it's the simplest way to express the full sync in a
 /// single shell command that macOS's `do shell script` can execute.
 fn sync_with_admin_privileges(staged_contents: &Path, bundle_contents: &Path) -> Result<(), String> {
-    let src = format!("{}/", staged_contents.display()); // trailing slash for rsync
-    let dest = format!("{}/", bundle_contents.display());
-    let script = format!(
-        "do shell script \"rsync -a --delete '{}' '{}'\" with administrator privileges",
-        src, dest
-    );
+    let argv = build_admin_sync_argv(staged_contents, bundle_contents);
 
     let output = Command::new("osascript")
-        .arg("-e")
-        .arg(&script)
+        .args(&argv)
         .output()
         .map_err(|e| format!("Couldn't run osascript: {e}"))?;
 
@@ -377,5 +393,44 @@ mod tests {
     fn find_app_bundle_above_returns_none_for_worktree_target_layout() {
         let exe = Path::new("/Users/jane/code/cmdr/.claude/worktrees/feature/target/aarch64-apple-darwin/release/Cmdr");
         assert_eq!(find_app_bundle_above(exe), None);
+    }
+
+    #[test]
+    fn build_admin_sync_argv_keeps_malicious_dest_as_single_argument() {
+        // Bundle path with an embedded single quote and a shell metacharacter sequence
+        // that would inject a command if the path were splatted into the script text.
+        let staged = Path::new("/private/tmp/cmdr-update-staging-default/Cmdr.app/Contents");
+        let dest = Path::new("/Applications/Don't '; touch /tmp/pwned; '.app/Contents");
+
+        let argv = build_admin_sync_argv(staged, dest);
+
+        assert_eq!(argv[0], "-e", "first arg must be the -e flag");
+        assert_eq!(argv[1], ADMIN_SYNC_SCRIPT, "second arg must be the constant script");
+        // The malicious dest stays a single argv entry; nothing from the path leaks into
+        // the script template, so `quoted form of` (inside the script) handles the quote
+        // safely at runtime.
+        assert_eq!(
+            argv[3].to_string_lossy(),
+            "/Applications/Don't '; touch /tmp/pwned; '.app/Contents/"
+        );
+        // Script template must NOT mention the dest path; it must reference positional args only.
+        assert!(
+            !ADMIN_SYNC_SCRIPT.contains("pwned") && !ADMIN_SYNC_SCRIPT.contains("Don't"),
+            "script template must be a constant, not built from path strings"
+        );
+        // And it MUST use AppleScript's own quoter (defense against future edits).
+        assert!(
+            ADMIN_SYNC_SCRIPT.contains("quoted form of"),
+            "script must pass paths through `quoted form of` before shelling out"
+        );
+    }
+
+    #[test]
+    fn build_admin_sync_argv_appends_trailing_slash_for_rsync() {
+        let staged = Path::new("/tmp/staged/Contents");
+        let dest = Path::new("/Applications/Cmdr.app/Contents");
+        let argv = build_admin_sync_argv(staged, dest);
+        assert!(argv[2].to_string_lossy().ends_with("/Contents/"));
+        assert!(argv[3].to_string_lossy().ends_with("/Contents/"));
     }
 }
