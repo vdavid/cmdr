@@ -96,7 +96,7 @@ Three tables:
 - `dir_stats` (entry_id INTEGER PK, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks)
 - `meta` (key TEXT PK, value TEXT) WITHOUT ROWID
 
-WAL mode, 16 MB page cache, `auto_vacuum = INCREMENTAL` (free pages reclaimed via `PRAGMA incremental_vacuum` after truncation). Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
+WAL mode, 16 MB page cache, `auto_vacuum = INCREMENTAL`. Free pages reclaimed both inline after `TruncateData` and on a 30 s background timer in `state.rs` that sends `WriteMessage::IncrementalVacuum` + `WriteMessage::WalCheckpoint` to the writer. The vacuum handler uses a tiered cap (`pick_vacuum_cap`): skip when freelist < 1 000, 2 000-page cap up to 20 000, 20 000-page cap above — keeps steady-state lock holds tiny while draining real backlog in tens of minutes instead of hours. The WAL checkpoint handler runs `PRAGMA wal_checkpoint(TRUNCATE)`, which shrinks the on-disk WAL file when readers permit (degrades to PASSIVE semantics otherwise, no-op error path). The scanner fires an explicit `WalCheckpoint` after `ComputeAllAggregates` so the GB-scale post-scan WAL spike trims immediately instead of waiting up to 30 s. Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
 
 Key column rationales:
 

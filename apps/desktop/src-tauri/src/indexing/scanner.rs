@@ -204,12 +204,19 @@ pub fn scan_volume(
                 true, // volume scan: root always maps to ROOT_ID
             );
 
-            // Trigger full aggregation if scan completed without cancellation
+            // Trigger full aggregation if scan completed without cancellation.
+            // Follow it immediately with a WAL checkpoint so the GB-scale
+            // post-scan WAL spike gets trimmed right away instead of waiting
+            // up to 30 s for the maintenance ticker. Both messages are
+            // processed in order by the single writer thread.
             if let Ok(ref s) = summary
                 && !s.was_cancelled
-                && let Err(e) = writer.send(WriteMessage::ComputeAllAggregates)
             {
-                log::warn!("Scanner: failed to send ComputeAllAggregates: {e}");
+                if let Err(e) = writer.send(WriteMessage::ComputeAllAggregates) {
+                    log::warn!("Scanner: failed to send ComputeAllAggregates: {e}");
+                } else if let Err(e) = writer.send(WriteMessage::WalCheckpoint) {
+                    log::warn!("Scanner: failed to send post-scan WalCheckpoint: {e}");
+                }
             }
 
             summary
