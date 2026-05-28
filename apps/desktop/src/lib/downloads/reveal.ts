@@ -60,6 +60,31 @@ export async function revealLatestDownload(explorer: ExplorerAPI | undefined): P
   }
 }
 
+/**
+ * Reveal a SPECIFIC downloaded file (parent dir + file name) in the focused
+ * pane, bypassing the latest-in-ring lookup.
+ *
+ * `revealLatestDownload` consults the watcher's ring + scan fallback. The
+ * downloads toast (M5) already knows the path it's for; revealing the
+ * specific file matters because by the time the user clicks the toast a
+ * newer download may have landed and become "latest." We want the toast
+ * to take the user to the file it advertised, not whatever is most recent
+ * now.
+ *
+ * The helper is a no-op when `explorer` is `undefined` (HMR or pre-mount).
+ */
+export async function revealPath(
+  explorer: ExplorerAPI | undefined,
+  parentDir: string,
+  fileName: string,
+): Promise<void> {
+  if (!explorer) {
+    log.debug('revealPath: no explorer; skipping (HMR or pre-mount)')
+    return
+  }
+  await navigateToRevealedFile(explorer, parentDir, fileName)
+}
+
 async function navigateToRevealedFile(explorer: ExplorerAPI, parentDir: string, fileName: string): Promise<void> {
   const pane = explorer.getFocusedPane()
   // `navigateToPath` returns a sync error string when navigation can't even

@@ -37,6 +37,7 @@
     import { getSetting, setSetting } from '$lib/settings'
     import { addToast } from '$lib/ui/toast'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
+    import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
     import {
         handleCommandExecute as dispatchCommand,
         type CommandDispatchContext,
@@ -597,6 +598,11 @@
         // to close).
         const unlistenQuickLook = await initQuickLookListeners(() => explorerRef)
         tauriUnlistenFns.push(unlistenQuickLook)
+        // Downloads notifications event bridge: one `download-detected`
+        // listener that fans out to the in-app toast and/or the macOS
+        // native notification per the current settings value.
+        const unlistenDownloads = await startDownloadsEventBridge(explorerRef)
+        tauriUnlistenFns.push(unlistenDownloads)
     }
 
     /** Sync file-scoped menu items with main window focus state. */

@@ -35,6 +35,7 @@
         "fs:allow-remove",
         "updater:default",
         "process:allow-restart",
-        "dialog:allow-ask"
+        "dialog:allow-ask",
+        "notification:default"
     ]
 }
