@@ -957,7 +957,10 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
 /// volume (the override calls `self.list_directory` via static dispatch on
 /// `MtpVolume`, so a wrapper Volume can't intercept it).
 #[cfg(test)]
-pub(super) mod test_hooks {
+// Visible at `crate::file_system::volume::mtp_scan_oracle_tests`. The neighbouring
+// in-file `#[cfg(test)] mod tests` is fine with anything ≥ `pub(super)`; the
+// sibling oracle tests live one level up, so they need the wider scope.
+pub(in crate::file_system::volume) mod test_hooks {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     static LIST_DIRECTORY_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
