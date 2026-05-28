@@ -19,7 +19,7 @@ use super::byte_seek::ByteSeekBackend;
 use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::range_read::{RangeEnd, read_range as do_read_range};
-use super::search_matcher::{Matcher, MatcherBuildError, SearchMode};
+use super::search_matcher::{Matcher, SearchMode};
 use super::{
     BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch,
     SeekTarget, ViewerError,
@@ -325,12 +325,9 @@ pub fn search_start(session_id: &str, query: String, mode: SearchMode) -> Result
     let matcher = match Matcher::build(&query, mode) {
         Ok(m) => m,
         Err(err) => {
-            let message = match err {
-                MatcherBuildError::InvalidRegex(msg) => format!("Invalid regex: {}", msg),
-                MatcherBuildError::MultilineNotSupported => {
-                    "Multiline patterns aren't supported. The viewer searches line by line.".to_string()
-                }
-            };
+            // `MatcherBuildError`'s Display impl owns the user-facing copy; we just
+            // forward it through. Keeps the wording in one place.
+            let message = err.to_string();
             let status: Arc<Mutex<SearchStatus>> = Arc::new(Mutex::new(SearchStatus::InvalidQuery { message }));
             let search_state = SearchState {
                 cancel: cancel.clone(),

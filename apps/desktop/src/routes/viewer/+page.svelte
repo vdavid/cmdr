@@ -963,7 +963,7 @@
                 class:active={search.caseSensitive}
                 aria-pressed={search.caseSensitive}
                 aria-label="Case sensitive"
-                onclick={() => search.toggleCaseSensitive()}
+                onclick={() => { search.toggleCaseSensitive(); }}
                 use:tooltip={{ text: 'Case sensitive', shortcut: '⌘⌥C' }}
             >
                 Aa
@@ -974,7 +974,7 @@
                 class:active={search.useRegex}
                 aria-pressed={search.useRegex}
                 aria-label="Regex"
-                onclick={() => search.toggleUseRegex()}
+                onclick={() => { search.toggleUseRegex(); }}
                 use:tooltip={{ text: 'Regex', shortcut: '⌘⌥R' }}
             >
                 .*
