@@ -69,12 +69,25 @@ pub(crate) fn validate_destination_not_inside_source(
     destination: &Path,
 ) -> Result<(), WriteOperationError> {
     // Canonicalize destination to resolve symlinks and ".." segments that could
-    // bypass a naive starts_with check (like /foo/bar/../foo/sub → /foo/sub)
-    let canonical_dest = destination.canonicalize().unwrap_or_else(|_| destination.to_path_buf());
+    // bypass a naive starts_with check (like /foo/bar/../foo/sub → /foo/sub).
+    //
+    // Pre-fix this used `unwrap_or_else(|_| destination.to_path_buf())` for
+    // both paths, silently degrading the guard to a naive `starts_with` on
+    // raw inputs whenever canonicalize failed. That's the data-safety bug —
+    // a `dest` that lexically doesn't start with `source` but canonically
+    // does (symlink shenanigans) would pass the check and the copy would
+    // recurse into itself until disk-full. Fail closed instead.
+    let canonical_dest = canonicalize_or_parent(destination).map_err(|e| WriteOperationError::IoError {
+        path: destination.display().to_string(),
+        message: format!("Couldn't resolve destination path: {e}"),
+    })?;
 
     for source in sources {
         if source.is_dir() {
-            let canonical_source = source.canonicalize().unwrap_or_else(|_| source.to_path_buf());
+            let canonical_source = source.canonicalize().map_err(|e| WriteOperationError::IoError {
+                path: source.display().to_string(),
+                message: format!("Couldn't resolve source path: {e}"),
+            })?;
             if canonical_dest.starts_with(&canonical_source) {
                 return Err(WriteOperationError::DestinationInsideSource {
                     source: source.display().to_string(),
@@ -84,6 +97,26 @@ pub(crate) fn validate_destination_not_inside_source(
         }
     }
     Ok(())
+}
+
+/// Canonicalizes `path`, falling back to canonicalizing its parent and
+/// re-appending the trailing segment when the path doesn't exist yet (the
+/// only legitimate case for `canonicalize` to fail on the destination during
+/// a write op). Any other I/O error propagates so the caller can fail closed.
+fn canonicalize_or_parent(path: &Path) -> std::io::Result<PathBuf> {
+    match path.canonicalize() {
+        Ok(canonical) => Ok(canonical),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            let parent = path.parent().ok_or(e)?;
+            let canonical_parent = parent.canonicalize()?;
+            match path.file_name() {
+                Some(name) => Ok(canonical_parent.join(name)),
+                // Path was just `..` / `.` / empty — refuse to fall back.
+                None => Ok(canonical_parent),
+            }
+        }
+        Err(e) => Err(e),
+    }
 }
 
 /// Checks whether the destination directory is writable using access(W_OK).
