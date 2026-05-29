@@ -122,6 +122,7 @@ impl Volume for ProgressEmittingVolume {
                 file_count: emit.files,
                 dir_count: emit.dirs,
                 total_bytes: emit.bytes,
+                dedup_bytes: emit.bytes,
                 top_level_is_directory: false,
             };
             let per_path = paths
@@ -133,6 +134,7 @@ impl Volume for ProgressEmittingVolume {
                             file_count: 1,
                             dir_count: 0,
                             total_bytes: 0,
+                            dedup_bytes: 0,
                             top_level_is_directory: false,
                         },
                     )

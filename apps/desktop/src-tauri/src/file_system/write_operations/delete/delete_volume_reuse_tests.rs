@@ -219,6 +219,7 @@ async fn delete_consumes_preview_id_skips_rescan() {
             dirs: Vec::new(),
             file_count: 2,
             total_bytes: 11,
+            dedup_bytes: 11,
             per_path: vec![
                 (
                     PathBuf::from("/a.jpg"),
@@ -226,6 +227,7 @@ async fn delete_consumes_preview_id_skips_rescan() {
                         file_count: 1,
                         dir_count: 0,
                         total_bytes: 5,
+                        dedup_bytes: 5,
                         top_level_is_directory: false,
                     },
                 ),
@@ -235,6 +237,7 @@ async fn delete_consumes_preview_id_skips_rescan() {
                         file_count: 1,
                         dir_count: 0,
                         total_bytes: 6,
+                        dedup_bytes: 6,
                         top_level_is_directory: false,
                     },
                 ),

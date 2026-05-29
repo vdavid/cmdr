@@ -433,6 +433,8 @@ impl Volume for InMemoryVolume {
                     file_count: 1,
                     dir_count: 0,
                     total_bytes: entry.metadata.size.unwrap_or(0),
+                    // In-memory volume has no hardlinks: footprints are equal.
+                    dedup_bytes: entry.metadata.size.unwrap_or(0),
                     top_level_is_directory: false,
                 });
             }
@@ -462,6 +464,8 @@ impl Volume for InMemoryVolume {
                 file_count,
                 dir_count,
                 total_bytes,
+                // In-memory volume has no hardlinks: footprints are equal.
+                dedup_bytes: total_bytes,
                 // We only reach this branch if the path isn't a known file
                 // entry. In-memory roots and unknown paths both report `true`
                 // to match how callers use the flag (fall through to the

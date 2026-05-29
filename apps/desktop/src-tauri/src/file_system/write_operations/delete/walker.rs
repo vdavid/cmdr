@@ -87,7 +87,10 @@ pub(super) fn delete_files_with_progress_inner(
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Delete,
             files_total: scan_result.file_count,
-            bytes_total: scan_result.total_bytes,
+            // Delete frees the `du`-equivalent source footprint (a hardlinked
+            // inode survives until its last link is removed), so report
+            // `dedup_bytes`, not the write footprint.
+            bytes_total: scan_result.dedup_bytes,
             conflicts_total: 0,
             conflicts: Vec::new(),
             conflicts_sampled: false,
@@ -104,6 +107,8 @@ pub(super) fn delete_files_with_progress_inner(
     // cached preview: no scanning events were emitted by the BE, so the FE
     // still has scan-phase tallies on screen. This event flips the FE to the
     // active-phase UI with the correct denominator on file/byte progress.
+    // The byte denominator is `dedup_bytes`: delete frees each inode once, and
+    // the per-file numerator below sums `progress_bytes` (also dedup'd).
     state.emit_progress_via_sink(
         events,
         WriteProgressEvent::new(
@@ -114,7 +119,7 @@ pub(super) fn delete_files_with_progress_inner(
             0,
             scan_result.file_count,
             0,
-            scan_result.total_bytes,
+            scan_result.dedup_bytes,
         ),
     );
     update_operation_status(
@@ -124,7 +129,7 @@ pub(super) fn delete_files_with_progress_inner(
         0,
         scan_result.file_count,
         0,
-        scan_result.total_bytes,
+        scan_result.dedup_bytes,
     );
 
     let mut tracker = SourceItemTracker::new(&scan_result.files);
@@ -144,11 +149,10 @@ pub(super) fn delete_files_with_progress_inner(
             });
         }
 
-        // Use `progress_bytes` (not `size`) so the delete numerator stays in
-        // lockstep with the scan denominator on hardlink-heavy trees: scan
-        // sets `progress_bytes = 0` for the second+ entry of each shared
-        // inode while `total_bytes` already counted the first one. See
-        // `state.rs::FileInfo::progress_bytes` for the contract.
+        // Use `progress_bytes` (dedup'd per file) so the numerator stays in
+        // lockstep with the `dedup_bytes` denominator: a hardlinked inode is
+        // freed once, on its last unlink. See `state.rs::FileInfo` and
+        // `ScanResult::dedup_bytes`.
         let progress_bytes = file_info.progress_bytes;
 
         fs::remove_file(&file_info.path).with_path(&file_info.path)?;
@@ -176,7 +180,7 @@ pub(super) fn delete_files_with_progress_inner(
                     files_done,
                     scan_result.file_count,
                     bytes_done,
-                    scan_result.total_bytes,
+                    scan_result.dedup_bytes,
                 ),
             );
             update_operation_status(
@@ -186,7 +190,7 @@ pub(super) fn delete_files_with_progress_inner(
                 files_done,
                 scan_result.file_count,
                 bytes_done,
-                scan_result.total_bytes,
+                scan_result.dedup_bytes,
             );
             last_progress_time = Instant::now();
         }

@@ -436,6 +436,11 @@ export const commands = {
       filesTotal: number
       dirsTotal: number
       bytesTotal: number
+      /**
+       *  `du`-equivalent source footprint (hardlinks counted once). See
+       *  `ScanPreviewCompleteEvent::dedup_bytes_total`.
+       */
+      dedupBytesTotal: number
     } | null>('check_scan_preview_status', { previewId }),
   // In Stop mode, the operation pauses on conflict and waits for this call to proceed.
   resolveWriteConflict: (operationId: string, resolution: ConflictResolution, applyToAll: boolean) =>
@@ -3188,6 +3193,11 @@ export type ScanPreviewTotals = {
   filesTotal: number
   dirsTotal: number
   bytesTotal: number
+  /**
+   *  `du`-equivalent source footprint (hardlinks counted once). See
+   *  `ScanPreviewCompleteEvent::dedup_bytes_total`.
+   */
+  dedupBytesTotal: number
 }
 
 // A search match found by a backend.

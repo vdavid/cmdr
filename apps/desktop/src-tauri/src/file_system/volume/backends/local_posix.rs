@@ -401,9 +401,18 @@ impl Volume for LocalPosixVolume {
         let abs_path = self.resolve(path);
         Box::pin(async move {
             spawn_blocking(move || {
+                use std::os::unix::fs::MetadataExt;
+
                 let mut file_count = 0;
                 let mut dir_count = 0;
                 let mut total_bytes = 0u64;
+                // `dedup_bytes` is the source's on-disk (`du`) footprint:
+                // each inode counted once. `total_bytes` keeps counting every
+                // hardlink (the cross-volume write footprint). The set is
+                // scoped to this one top-level source; cross-source hardlinks
+                // aren't deduped (rare; see `CopyScanResult::dedup_bytes`).
+                let mut dedup_bytes = 0u64;
+                let mut seen_inodes: std::collections::HashSet<u64> = std::collections::HashSet::new();
 
                 for entry in WalkDir::new(&abs_path).min_depth(0) {
                     let entry = entry.map_err(|e| VolumeError::IoError {
@@ -414,7 +423,14 @@ impl Volume for LocalPosixVolume {
                     if ft.is_file() {
                         file_count += 1;
                         if let Ok(meta) = entry.metadata() {
-                            total_bytes += meta.len();
+                            let len = meta.len();
+                            total_bytes += len;
+                            // `nlink == 1` is the overwhelmingly common case
+                            // (no hardlinks): skip the set entirely. Only
+                            // multiply-linked inodes pay the lookup.
+                            if meta.nlink() <= 1 || seen_inodes.insert(meta.ino()) {
+                                dedup_bytes += len;
+                            }
                         }
                     } else if ft.is_dir() {
                         // Don't count the root itself if it's the starting point
@@ -435,6 +451,7 @@ impl Volume for LocalPosixVolume {
                     if meta.is_file() && file_count == 0 {
                         file_count = 1;
                         total_bytes = meta.len();
+                        dedup_bytes = meta.len();
                     } else if meta.is_dir() && dir_count == 0 && file_count == 0 {
                         dir_count = 1;
                     }
@@ -444,6 +461,7 @@ impl Volume for LocalPosixVolume {
                     file_count,
                     dir_count,
                     total_bytes,
+                    dedup_bytes,
                     top_level_is_directory,
                 })
             })

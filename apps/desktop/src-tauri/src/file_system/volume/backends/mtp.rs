@@ -573,6 +573,7 @@ impl Volume for MtpVolume {
                         file_count: 0,
                         dir_count: 0,
                         total_bytes: 0,
+                        dedup_bytes: 0,
                         top_level_is_directory: false,
                     },
                     per_path: Vec::new(),
@@ -624,6 +625,8 @@ impl Volume for MtpVolume {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
+                // MTP has no hardlinks: source footprint == write footprint.
+                dedup_bytes: 0,
                 // Aggregate over multiple paths: not meaningful for a batch.
                 top_level_is_directory: false,
             };
@@ -676,17 +679,20 @@ impl Volume for MtpVolume {
                             aggregate.file_count += scan.file_count;
                             aggregate.dir_count += scan.dir_count;
                             aggregate.total_bytes += scan.total_bytes;
+                            aggregate.dedup_bytes += scan.dedup_bytes;
                             per_path_results.insert((*child_path).clone(), scan);
                         } else {
                             let size = entry.size.unwrap_or(0);
                             aggregate.file_count += 1;
                             aggregate.total_bytes += size;
+                            aggregate.dedup_bytes += size;
                             per_path_results.insert(
                                 (*child_path).clone(),
                                 CopyScanResult {
                                     file_count: 1,
                                     dir_count: 0,
                                     total_bytes: size,
+                                    dedup_bytes: size,
                                     top_level_is_directory: false,
                                 },
                             );

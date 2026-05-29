@@ -425,7 +425,9 @@ fn move_with_staging(
                 &file_info.path,
                 file_info.dest_path(&staging_dir),
                 file_info.is_symlink,
-                file_info.progress_bytes,
+                // Write footprint: a cross-FS move stages a full copy of every
+                // file (including hardlink dupes) before deleting the sources.
+                file_info.size,
                 &mut files_done,
                 &mut bytes_done,
                 scan_result.file_count,

@@ -138,8 +138,22 @@ pub enum MutationEvent {
 pub struct CopyScanResult {
     pub file_count: usize,
     pub dir_count: usize,
-    /// Total size in bytes.
+    /// Total size in bytes — the **write footprint**. Counts every file at
+    /// full size, including each hardlink, because hardlinks don't survive a
+    /// cross-volume copy (every link materializes as an independent file at
+    /// the destination). This is the number the progress bar fills against
+    /// and the disk-space check requires.
     pub total_bytes: u64,
+    /// Source on-disk footprint, `du`-equivalent: each inode counted once.
+    /// Equals `total_bytes` on backends without hardlinks (MTP, SMB,
+    /// InMemory) or trees with none. `LocalPosixVolume` dedupes by inode so
+    /// the Copy dialog can show "X will be written (source is Y)" when the
+    /// two differ. **Informational only** — never feeds the progress bar or
+    /// the space check. Dedup is scan-scoped per top-level source; a hardlink
+    /// pair spanning two separately-selected sources counts twice (rare;
+    /// over-counts the source size slightly, which is the safe direction for
+    /// an informational hint).
+    pub dedup_bytes: u64,
     /// Whether the scanned top-level path is a directory (vs a single file).
     ///
     /// Populated by each volume's `scan_for_copy` using the stat it already does
@@ -751,6 +765,7 @@ pub trait Volume: Send + Sync {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
+                dedup_bytes: 0,
                 // Aggregate over multiple paths: meaningless for a batch.
                 // Callers that need per-path type should read `per_path`.
                 top_level_is_directory: false,
@@ -761,6 +776,7 @@ pub trait Volume: Send + Sync {
                 aggregate.file_count += scan.file_count;
                 aggregate.dir_count += scan.dir_count;
                 aggregate.total_bytes += scan.total_bytes;
+                aggregate.dedup_bytes += scan.dedup_bytes;
                 per_path.push((path.clone(), scan));
                 if let Some(cb) = on_progress {
                     cb(ListingProgress {

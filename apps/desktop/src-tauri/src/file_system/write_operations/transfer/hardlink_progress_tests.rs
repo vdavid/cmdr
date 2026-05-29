@@ -90,8 +90,14 @@ fn assert_no_mid_flight_overshoot(sink: &CollectorEventSink) {
     }
 }
 
+/// Copy counts the **write footprint** (every hardlink at full size), because
+/// a copy materializes each link as an independent file — that's the bytes it
+/// actually writes and the bar it fills. The dedup'd `du`-size is surfaced
+/// separately to the dialog as context (see the scan-preview path). So both
+/// the Copying-phase denominator and the final `bytes_processed` are 7168
+/// (3 × 1024 hardlinks + 4096 standalone), NOT the dedup'd 5120.
 #[test]
-fn copy_hardlinked_files_does_not_overshoot_progress() {
+fn copy_counts_write_footprint_for_hardlinks() {
     let root = create_temp_dir("copy_hardlinks");
     let src = build_hardlink_tree(&root, "src");
     let dest = root.join("dest");
@@ -117,11 +123,14 @@ fn copy_hardlinked_files_does_not_overshoot_progress() {
         .map(|e| e.bytes_processed)
         .expect("write-complete must fire");
 
-    let msg = format!(
-        "copy numerator overshoots scan denominator on hardlink-heavy trees: \
-         scan reported {bytes_total} byte(s), copy reported {bytes_processed} byte(s)."
+    assert_eq!(
+        bytes_total, 7168,
+        "copy denominator should be the write footprint (every hardlink at full size)"
     );
-    assert_eq!(bytes_processed, bytes_total, "{msg}");
+    assert_eq!(
+        bytes_processed, bytes_total,
+        "copy numerator must reach the write-footprint denominator exactly"
+    );
     assert_no_mid_flight_overshoot(&sink);
 
     cleanup(&root);

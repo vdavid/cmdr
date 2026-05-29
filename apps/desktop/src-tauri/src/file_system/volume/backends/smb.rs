@@ -395,6 +395,10 @@ impl SmbVolume {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
+                // SMB exposes no hardlinks, so the source footprint always
+                // equals the write footprint. Kept in lockstep with
+                // `total_bytes` at every accumulation site below.
+                dedup_bytes: 0,
                 // Root path is always a directory; the file branch below
                 // overwrites this to `false`. Subdirectory recursions also
                 // return `true`; only the leaf file branch sets `false`.
@@ -414,6 +418,7 @@ impl SmbVolume {
                 if !info.is_directory {
                     result.file_count = 1;
                     result.total_bytes = info.size;
+                    result.dedup_bytes = info.size;
                     result.top_level_is_directory = false;
                     return Ok(result);
                 }
@@ -436,9 +441,11 @@ impl SmbVolume {
                     result.file_count += sub.file_count;
                     result.dir_count += sub.dir_count;
                     result.total_bytes += sub.total_bytes;
+                    result.dedup_bytes += sub.dedup_bytes;
                 } else {
                     result.file_count += 1;
                     result.total_bytes += entry.size.unwrap_or(0);
+                    result.dedup_bytes += entry.size.unwrap_or(0);
                 }
             }
 
@@ -1551,6 +1558,7 @@ impl Volume for SmbVolume {
                         file_count: 0,
                         dir_count: 0,
                         total_bytes: 0,
+                        dedup_bytes: 0,
                         top_level_is_directory: false,
                     },
                     per_path: Vec::new(),
@@ -1619,6 +1627,7 @@ impl Volume for SmbVolume {
                             file_count: 1,
                             dir_count: 0,
                             total_bytes: entry.size.unwrap_or(0),
+                            dedup_bytes: entry.size.unwrap_or(0),
                             top_level_is_directory: false,
                         });
                     }
@@ -1642,6 +1651,7 @@ impl Volume for SmbVolume {
                     file_count: 0,
                     dir_count: 0,
                     total_bytes: 0,
+                    dedup_bytes: 0,
                     top_level_is_directory: false,
                 };
                 let mut per_path = Vec::with_capacity(paths.len());
@@ -1650,6 +1660,7 @@ impl Volume for SmbVolume {
                     aggregate.file_count += scan.file_count;
                     aggregate.dir_count += scan.dir_count;
                     aggregate.total_bytes += scan.total_bytes;
+                    aggregate.dedup_bytes += scan.dedup_bytes;
                     per_path.push((paths[i].clone(), scan));
                 }
                 return Ok(BatchScanResult { aggregate, per_path });
@@ -1736,6 +1747,7 @@ impl Volume for SmbVolume {
                                 file_count: 1,
                                 dir_count: 0,
                                 total_bytes: info.size,
+                                dedup_bytes: info.size,
                                 top_level_is_directory: false,
                             });
                         }
@@ -1781,6 +1793,7 @@ impl Volume for SmbVolume {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
+                dedup_bytes: 0,
                 top_level_is_directory: false,
             };
             let mut per_path = Vec::with_capacity(paths.len());
@@ -1789,6 +1802,7 @@ impl Volume for SmbVolume {
                 aggregate.file_count += scan.file_count;
                 aggregate.dir_count += scan.dir_count;
                 aggregate.total_bytes += scan.total_bytes;
+                aggregate.dedup_bytes += scan.dedup_bytes;
                 per_path.push((paths[i].clone(), scan));
             }
 

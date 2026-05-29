@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest'
 import {
   generateTitle,
   getFolderName,
+  shouldShowHardlinkNote,
   toBackendIndices,
   toBackendCursorIndex,
   toVolumeRelativePath,
@@ -199,5 +200,33 @@ describe('toVolumeRelativePath', () => {
 
   it('returns / when path does not match volume', () => {
     expect(toVolumeRelativePath('/some/path', '/Volumes/USB')).toBe('/')
+  })
+})
+
+describe('shouldShowHardlinkNote', () => {
+  const base = { operationType: 'copy' as const, scanComplete: true, writeBytes: 7168, dedupBytes: 5120 }
+
+  it('shows for a completed copy scan with a hardlink gap', () => {
+    expect(shouldShowHardlinkNote(base)).toBe(true)
+  })
+
+  it('hides when write footprint equals source size (no hardlinks)', () => {
+    expect(shouldShowHardlinkNote({ ...base, dedupBytes: 7168 })).toBe(false)
+  })
+
+  it('hides for move (a same-fs rename writes nothing; cross-fs is unknown here)', () => {
+    expect(shouldShowHardlinkNote({ ...base, operationType: 'move' })).toBe(false)
+  })
+
+  it('hides until the scan completes', () => {
+    expect(shouldShowHardlinkNote({ ...base, scanComplete: false })).toBe(false)
+  })
+
+  it('hides when the dedup size is zero (no scan data yet)', () => {
+    expect(shouldShowHardlinkNote({ ...base, dedupBytes: 0 })).toBe(false)
+  })
+
+  it('hides if dedup somehow exceeds write footprint (defensive)', () => {
+    expect(shouldShowHardlinkNote({ ...base, dedupBytes: 9000 })).toBe(false)
   })
 })

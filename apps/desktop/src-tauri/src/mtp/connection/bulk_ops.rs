@@ -49,6 +49,8 @@ impl MtpConnectionManager {
                     file_count: 0,
                     dir_count: 1,
                     total_bytes: 0,
+                    // MTP has no hardlinks: source footprint == write footprint.
+                    dedup_bytes: 0,
                     top_level_is_directory: true,
                 })
             }
@@ -111,6 +113,8 @@ impl MtpConnectionManager {
             file_count,
             dir_count,
             total_bytes,
+            // MTP has no hardlinks: source footprint == write footprint.
+            dedup_bytes: total_bytes,
             // `scan_entries_recursive` is only called on known-directory input
             // (caller already listed the path). Setting `true` keeps downstream
             // callers from re-issuing a type probe.
@@ -147,6 +151,8 @@ impl MtpConnectionManager {
             file_count: 1,
             dir_count: 0,
             total_bytes: entry.size.unwrap_or(0),
+            // MTP has no hardlinks: source footprint == write footprint.
+            dedup_bytes: entry.size.unwrap_or(0),
             top_level_is_directory: false,
         })
     }

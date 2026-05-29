@@ -47,14 +47,16 @@ pub(super) struct WalkContext<'a, E> {
 /// freshness contract. Pass `None` for `volume_id` to opt out (no listing
 /// lookup is performed, behavior is identical to the pre-oracle walker).
 ///
-/// **Hardlink dedup**: `total_bytes` counts each inode at most once. Cargo's
-/// `target/` (and similar trees: snapshots, sccache caches, deduplicated
-/// backups) hardlinks files heavily, so a naïve `metadata.len()` per direntry
-/// over-counts the bytes that would actually be freed. The indexer
-/// (`indexing/scanner.rs`) already dedupes by inode for `dir_stats`, so
-/// matching that policy here keeps the FE's "X% of estimated" progress bar
-/// converging to ~100% on indexed sources. Unix-only (non-Unix has no
-/// `nlink()` in `std::fs::Metadata`), so it falls back to the old behavior.
+/// **Two byte totals**: `total_bytes` is the **write footprint** — every file
+/// at full size, including each hardlink, because hardlinks don't survive a
+/// cross-volume copy. It's what a copy actually writes and what the
+/// disk-space check must reserve. `dedup_bytes` is the **`du`-equivalent
+/// source footprint** — each inode counted once. It's what a delete frees and
+/// what the scan-phase progress bar compares against the indexer's inode-
+/// dedup'd `dir_stats` estimate (so "X% of estimated" converges to ~100% on
+/// hardlink-heavy trees like cargo's `target/`). Dedup is Unix-only (non-Unix
+/// has no `nlink()`), where `dedup_bytes == total_bytes`. Copy consumes
+/// `total_bytes`; delete consumes `dedup_bytes`; the Copy dialog shows both.
 #[allow(
     clippy::too_many_arguments,
     reason = "Recursive fn requires passing state through multiple levels"
@@ -65,6 +67,7 @@ pub(super) fn walk_dir_recursive<E>(
     files: &mut Vec<FileInfo>,
     dirs: &mut Vec<PathBuf>,
     total_bytes: &mut u64,
+    dedup_bytes: &mut u64,
     last_progress_time: &mut Instant,
     visited: &mut HashSet<PathBuf>,
     seen_inodes: &mut HashSet<u64>,
@@ -81,16 +84,21 @@ pub(super) fn walk_dir_recursive<E>(
         // Symlinks contribute their own (tiny) target-string length, never
         // the target's bytes. No hardlink dedup: symlinks have distinct inodes.
         *total_bytes += metadata.len();
+        *dedup_bytes += metadata.len();
         files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
     } else if metadata.is_file() {
-        // Same inode-dedup decision feeds both `total_bytes` (scan denominator)
-        // and the per-file `progress_bytes` (numerator the active phase sums).
-        // Keeping the two in lockstep is the contract that stops the progress
-        // bar overshooting on hardlink-heavy trees like cargo's `target/`.
+        // `total_bytes` is the write footprint (every file at full size, the
+        // bytes a copy actually writes and the disk-space check must reserve).
+        // `dedup_bytes` is the `du`-equivalent source footprint (each inode
+        // once) — what delete frees and what the scan-phase progress bar
+        // compares against the inode-dedup'd index estimate. `progress_bytes`
+        // mirrors `dedup_bytes` per file so the delete active phase can sum a
+        // running dedup'd total. See `CopyScanResult` for the consumer split.
         let counts = file_bytes_count_toward_total(&metadata, seen_inodes);
         let size = metadata.len();
+        *total_bytes += size;
         if counts {
-            *total_bytes += size;
+            *dedup_bytes += size;
         }
         let info = FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata)
             .with_progress_bytes(if counts { size } else { 0 });
@@ -120,6 +128,7 @@ pub(super) fn walk_dir_recursive<E>(
                 files,
                 dirs,
                 total_bytes,
+                dedup_bytes,
                 last_progress_time,
                 visited,
                 seen_inodes,
@@ -135,6 +144,7 @@ pub(super) fn walk_dir_recursive<E>(
                     files,
                     dirs,
                     total_bytes,
+                    dedup_bytes,
                     last_progress_time,
                     visited,
                     seen_inodes,
@@ -150,7 +160,10 @@ pub(super) fn walk_dir_recursive<E>(
     if last_progress_time.elapsed() >= ctx.progress_interval {
         let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
         let current_dir = path.parent().map(|p| p.display().to_string());
-        (ctx.on_progress)(files.len(), dirs.len(), *total_bytes, current_file, current_dir);
+        // Report the dedup'd running total: the scan-phase bar compares this
+        // against the index's inode-dedup'd estimate, so reporting the raw
+        // write footprint would overshoot 100% on hardlink-heavy trees.
+        (ctx.on_progress)(files.len(), dirs.len(), *dedup_bytes, current_file, current_dir);
         *last_progress_time = Instant::now();
     }
 
@@ -176,6 +189,7 @@ fn walk_cached_entries<E>(
     files: &mut Vec<FileInfo>,
     dirs: &mut Vec<PathBuf>,
     total_bytes: &mut u64,
+    dedup_bytes: &mut u64,
     last_progress_time: &mut Instant,
     visited: &mut HashSet<PathBuf>,
     seen_inodes: &mut HashSet<u64>,
@@ -196,6 +210,7 @@ fn walk_cached_entries<E>(
                 files,
                 dirs,
                 total_bytes,
+                dedup_bytes,
                 last_progress_time,
                 visited,
                 seen_inodes,
@@ -208,20 +223,20 @@ fn walk_cached_entries<E>(
             // the scan-preview caller actually consumes: path, size, the
             // symlink flag, and inode for hardlink dedup.
             let size = entry.size.unwrap_or(0);
-            // Mirrors `walk_dir_recursive`'s inode dedup: when the backend
-            // supplied an inode (`LocalPosixVolume` populates it for files
-            // with `nlink > 1`), only count the first occurrence toward
-            // `total_bytes` and set `progress_bytes` to match. Backends
-            // without inode info leave `inode = None` and every entry counts
-            // as unique. Closes the cross-boundary overshoot the previous
-            // gotcha documented.
+            // `total_bytes` (write footprint) counts every entry at full size.
+            // `dedup_bytes` (source footprint) counts each inode once: when the
+            // backend supplied an inode (`LocalPosixVolume` populates it for
+            // files with `nlink > 1`), only the first occurrence contributes.
+            // Backends without inode info leave `inode = None` so every entry
+            // is unique. `progress_bytes` mirrors `dedup_bytes` per file.
             let counts = match entry.inode {
                 Some(ino) => seen_inodes.insert(ino),
                 None => true,
             };
             let progress_bytes = if counts { size } else { 0 };
+            *total_bytes += size;
             if counts {
-                *total_bytes += size;
+                *dedup_bytes += size;
             }
             files.push(FileInfo {
                 path: child_path,
@@ -237,7 +252,8 @@ fn walk_cached_entries<E>(
 
     if last_progress_time.elapsed() >= ctx.progress_interval {
         let current_dir = Some(parent_path.display().to_string());
-        (ctx.on_progress)(files.len(), dirs.len(), *total_bytes, None, current_dir);
+        // Dedup'd running total — see the matching note in `walk_dir_recursive`.
+        (ctx.on_progress)(files.len(), dirs.len(), *dedup_bytes, None, current_dir);
         *last_progress_time = Instant::now();
     }
 
@@ -254,6 +270,10 @@ pub(super) struct SubtreeTotals {
     pub file_count: usize,
     pub dir_count: usize,
     pub total_bytes: u64,
+    /// Source on-disk footprint, hardlinks counted once. See
+    /// `CopyScanResult::dedup_bytes`. Equal to `total_bytes` when the cached
+    /// `FileEntry`s carry no inode (non-local backends).
+    pub dedup_bytes: u64,
     /// Per-direct-child results so the scan-preview can populate the
     /// `BatchScanResult::per_path` slot the copy engine reads later.
     pub per_path: Vec<(PathBuf, CopyScanResult)>,
@@ -276,6 +296,7 @@ pub(super) async fn scan_subtree_with_oracle(
     path: &Path,
     is_cancelled: &(dyn Fn() -> bool + Sync),
     on_progress: Option<&(dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+    seen_inodes: &mut HashSet<u64>,
 ) -> Result<SubtreeTotals, VolumeError> {
     use crate::file_system::volume::ListingProgress;
 
@@ -323,6 +344,7 @@ pub(super) async fn scan_subtree_with_oracle(
                         &child_path,
                         is_cancelled,
                         Some(&shifted),
+                        seen_inodes,
                     ))
                     .await?
                 }
@@ -333,6 +355,7 @@ pub(super) async fn scan_subtree_with_oracle(
                         &child_path,
                         is_cancelled,
                         None,
+                        seen_inodes,
                     ))
                     .await?
                 }
@@ -341,15 +364,20 @@ pub(super) async fn scan_subtree_with_oracle(
             // The directory itself plus all its descendant dirs.
             totals.dir_count += 1 + child_totals.dir_count;
             totals.total_bytes += child_totals.total_bytes;
+            totals.dedup_bytes += child_totals.dedup_bytes;
             tally.files += child_totals.file_count;
             tally.dirs += 1 + child_totals.dir_count;
-            tally.bytes += child_totals.total_bytes;
+            // The scan-phase climbing display is dedup'd so it converges with
+            // the inode-dedup'd index estimate (the copy headline shows the
+            // write footprint separately).
+            tally.bytes += child_totals.dedup_bytes;
             totals.per_path.push((
                 child_path,
                 CopyScanResult {
                     file_count: child_totals.file_count,
                     dir_count: child_totals.dir_count,
                     total_bytes: child_totals.total_bytes,
+                    dedup_bytes: child_totals.dedup_bytes,
                     top_level_is_directory: true,
                 },
             ));
@@ -358,16 +386,27 @@ pub(super) async fn scan_subtree_with_oracle(
             }
         } else {
             let size = entry.size.unwrap_or(0);
+            // Hardlink dedup for the source-footprint number. `FileEntry.inode`
+            // is `Some` only for `LocalPosixVolume` files with `nlink > 1`;
+            // non-local backends leave it `None` so every file counts as
+            // unique. Mirrors `LocalPosixVolume::scan_for_copy`.
+            let dedup_contribution = match entry.inode {
+                Some(ino) if !seen_inodes.insert(ino) => 0,
+                _ => size,
+            };
             totals.file_count += 1;
             totals.total_bytes += size;
+            totals.dedup_bytes += dedup_contribution;
             tally.files += 1;
-            tally.bytes += size;
+            // Dedup'd climbing display — see the dir branch above.
+            tally.bytes += dedup_contribution;
             totals.per_path.push((
                 child_path,
                 CopyScanResult {
                     file_count: 1,
                     dir_count: 0,
                     total_bytes: size,
+                    dedup_bytes: dedup_contribution,
                     top_level_is_directory: false,
                 },
             ));
@@ -468,6 +507,7 @@ pub(super) fn take_cached_scan_result(preview_id: &str) -> Option<ScanResult> {
             dirs: cached.dirs,
             file_count: cached.file_count,
             total_bytes: cached.total_bytes,
+            dedup_bytes: cached.dedup_bytes,
             per_path: cached.per_path,
         })
     } else {
@@ -551,7 +591,10 @@ fn scan_sources_internal(
 ) -> Result<ScanResult, WriteOperationError> {
     let mut files = Vec::new();
     let mut dirs = Vec::new();
+    // Write footprint (every file at full size) and `du`-equivalent source
+    // footprint (each inode once). See `walk_dir_recursive`.
     let mut total_bytes = 0u64;
+    let mut dedup_bytes = 0u64;
     let mut last_progress_time = Instant::now();
     let mut visited = HashSet::new();
     // Shared across all sources in this scan so a file hardlinked between
@@ -632,6 +675,7 @@ fn scan_sources_internal(
             &mut files,
             &mut dirs,
             &mut total_bytes,
+            &mut dedup_bytes,
             &mut last_progress_time,
             &mut visited,
             &mut seen_inodes,
@@ -643,12 +687,15 @@ fn scan_sources_internal(
     // Sort files according to configuration
     sort_files(&mut files, sort_column, sort_order);
 
-    // Emit final scanning progress
+    // Emit final scanning progress. The scan-phase bar reports the dedup'd
+    // running total (matches the inode-dedup'd index estimate); the final
+    // snapshot does the same so it lands exactly on the estimate.
     log::debug!(
-        "scan: emitting final write-progress op={} phase=scanning files={} bytes={}",
+        "scan: emitting final write-progress op={} phase=scanning files={} write_bytes={} dedup_bytes={}",
         operation_id,
         files.len(),
-        total_bytes
+        total_bytes,
+        dedup_bytes
     );
     state.emit_progress_via_sink(
         events,
@@ -659,8 +706,8 @@ fn scan_sources_internal(
             None,
             files.len(),
             files.len(),
-            total_bytes,
-            total_bytes,
+            dedup_bytes,
+            dedup_bytes,
         )
         .with_scan_meta(None, dirs.len(), expected),
     );
@@ -670,6 +717,7 @@ fn scan_sources_internal(
         files,
         dirs,
         total_bytes,
+        dedup_bytes,
         per_path: Vec::new(),
     })
 }
@@ -995,7 +1043,10 @@ mod tests {
     /// fields avoid `clippy::type_complexity` on the helper's return type.
     struct WalkOutcome {
         files: Vec<FileInfo>,
+        /// Write footprint (every file at full size).
         bytes: u64,
+        /// `du`-equivalent source footprint (each inode once).
+        dedup_bytes: u64,
         /// Captured `(current_file, current_dir)` pairs from each `on_progress` call.
         progress: Vec<(Option<String>, Option<String>)>,
     }
@@ -1010,6 +1061,7 @@ mod tests {
         let mut files = Vec::new();
         let mut dirs = Vec::new();
         let mut total_bytes = 0u64;
+        let mut dedup_bytes = 0u64;
         let mut last_progress = Instant::now() - Duration::from_secs(60);
         let mut visited = HashSet::new();
         let mut seen_inodes = HashSet::new();
@@ -1032,6 +1084,7 @@ mod tests {
                 &mut files,
                 &mut dirs,
                 &mut total_bytes,
+                &mut dedup_bytes,
                 &mut last_progress,
                 &mut visited,
                 &mut seen_inodes,
@@ -1043,6 +1096,7 @@ mod tests {
         WalkOutcome {
             files,
             bytes: total_bytes,
+            dedup_bytes,
             progress: captured.into_inner(),
         }
     }
@@ -1092,10 +1146,15 @@ mod tests {
         let outcome = run_walker(root);
         // Both directory entries are visited (the delete/copy op must unlink both)…
         assert_eq!(outcome.files.len(), 2, "both hardlinked entries should be enumerated");
-        // …but the bytes are counted once (per inode), matching the indexer.
+        // …the write footprint counts both (a cross-volume copy writes both)…
         assert_eq!(
-            outcome.bytes, 1000,
-            "hardlinked file's bytes should count once, not twice"
+            outcome.bytes, 2000,
+            "write footprint should count both hardlinked entries"
+        );
+        // …but the source footprint counts the inode once (what delete frees).
+        assert_eq!(
+            outcome.dedup_bytes, 1000,
+            "source footprint should count the shared inode once"
         );
     }
 
@@ -1117,8 +1176,12 @@ mod tests {
         let outcome = run_walker_with_sources(&[dir_a.clone(), dir_b.clone()]);
         assert_eq!(outcome.files.len(), 2);
         assert_eq!(
-            outcome.bytes, 5000,
-            "hardlink across source roots should still count once"
+            outcome.bytes, 10000,
+            "write footprint counts both copies (cross-volume copy writes both)"
+        );
+        assert_eq!(
+            outcome.dedup_bytes, 5000,
+            "source footprint counts the shared inode once across source roots"
         );
     }
 

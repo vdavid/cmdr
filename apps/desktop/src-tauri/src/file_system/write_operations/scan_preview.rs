@@ -83,6 +83,7 @@ pub fn get_scan_preview_totals(preview_id: &str) -> Option<super::types::ScanPre
         files_total: cached.file_count,
         dirs_total: cached.dirs.len(),
         bytes_total: cached.total_bytes,
+        dedup_bytes_total: cached.dedup_bytes,
     })
 }
 
@@ -108,7 +109,11 @@ fn run_scan_preview(
 
     let mut files: Vec<FileInfo> = Vec::new();
     let mut dirs: Vec<PathBuf> = Vec::new();
+    // Write footprint (un-dedup'd) and `du`-equivalent source footprint. The
+    // dialog shows the first as the headline transfer size, the second as
+    // hardlink context. See `walk_dir_recursive`.
     let mut total_bytes = 0u64;
+    let mut dedup_bytes = 0u64;
     let mut last_progress_time = Instant::now();
     let mut visited = HashSet::new();
     // Shared across sources so hardlinks crossing source roots count once,
@@ -154,6 +159,7 @@ fn run_scan_preview(
                 &mut files,
                 &mut dirs,
                 &mut total_bytes,
+                &mut dedup_bytes,
                 &mut last_progress_time,
                 &mut visited,
                 &mut seen_inodes,
@@ -194,6 +200,7 @@ fn run_scan_preview(
                             dirs,
                             file_count,
                             total_bytes,
+                            dedup_bytes,
                             per_path: Vec::new(),
                         },
                     );
@@ -207,6 +214,7 @@ fn run_scan_preview(
                         files_total: file_count,
                         dirs_total: dirs_count,
                         bytes_total: total_bytes,
+                        dedup_bytes_total: dedup_bytes,
                     },
                 );
             }
@@ -298,13 +306,14 @@ async fn run_volume_scan_preview(
     .await;
 
     // Extract stats from the result for the completion event
-    let (total_files, total_dirs, total_bytes) = match &result {
+    let (total_files, total_dirs, total_bytes, dedup_bytes) = match &result {
         Ok(batch) => (
             batch.aggregate.file_count,
             batch.aggregate.dir_count,
             batch.aggregate.total_bytes,
+            batch.aggregate.dedup_bytes,
         ),
-        Err(_) => (0, 0, 0),
+        Err(_) => (0, 0, 0, 0),
     };
 
     // Clean up state
@@ -333,6 +342,7 @@ async fn run_volume_scan_preview(
                             dirs: Vec::new(),
                             file_count: total_files,
                             total_bytes,
+                            dedup_bytes,
                             per_path: batch.per_path,
                         },
                     );
@@ -345,6 +355,7 @@ async fn run_volume_scan_preview(
                         files_total: total_files,
                         dirs_total: total_dirs,
                         bytes_total: total_bytes,
+                        dedup_bytes_total: dedup_bytes,
                     },
                 );
             }
@@ -391,10 +402,16 @@ pub(super) async fn run_oracle_aware_batch_scan(
         file_count: 0,
         dir_count: 0,
         total_bytes: 0,
+        dedup_bytes: 0,
         // Aggregate across multiple paths — meaningless, per the BatchScanResult contract.
         top_level_is_directory: false,
     };
     let mut per_path_unordered: HashMap<PathBuf, CopyScanResult> = HashMap::new();
+    // Batch-scoped hardlink dedup for the source-footprint number. Shared
+    // across all groups so a hardlink spanning two selected sources counts
+    // once. Only `LocalPosixVolume` cached entries carry inodes; other
+    // backends leave them `None` (no dedup, source == write footprint).
+    let mut seen_inodes: HashSet<u64> = HashSet::new();
 
     for parent in &group_order {
         if is_cancelled() {
@@ -439,11 +456,12 @@ pub(super) async fn run_oracle_aware_batch_scan(
                     aggregate.file_count += scan.file_count;
                     aggregate.dir_count += scan.dir_count;
                     aggregate.total_bytes += scan.total_bytes;
+                    aggregate.dedup_bytes += scan.dedup_bytes;
                     per_path_unordered.insert(source.clone(), scan);
                     on_progress(ListingProgress {
                         files: aggregate.file_count,
                         dirs: aggregate.dir_count,
-                        bytes: aggregate.total_bytes,
+                        bytes: aggregate.dedup_bytes,
                     });
                     continue;
                 };
@@ -453,10 +471,13 @@ pub(super) async fn run_oracle_aware_batch_scan(
                     // subtree (starting at 1). Shift by the current aggregate
                     // so the FE display stays cumulative across multiple
                     // top-level dirs in this call — files, dirs, AND bytes.
+                    // Scan-phase byte baseline is dedup'd (converges with the
+                    // index estimate); the headline write footprint is tracked
+                    // separately in `aggregate.total_bytes`.
                     let baseline = ListingProgress {
                         files: aggregate.file_count,
                         dirs: aggregate.dir_count,
-                        bytes: aggregate.total_bytes,
+                        bytes: aggregate.dedup_bytes,
                     };
                     let shifted = |p: ListingProgress| {
                         on_progress(ListingProgress {
@@ -465,40 +486,58 @@ pub(super) async fn run_oracle_aware_batch_scan(
                             bytes: baseline.bytes + p.bytes,
                         })
                     };
-                    let subtree: SubtreeTotals =
-                        scan_subtree_with_oracle(volume, volume_id, source, is_cancelled, Some(&shifted)).await?;
+                    let subtree: SubtreeTotals = scan_subtree_with_oracle(
+                        volume,
+                        volume_id,
+                        source,
+                        is_cancelled,
+                        Some(&shifted),
+                        &mut seen_inodes,
+                    )
+                    .await?;
                     aggregate.file_count += subtree.file_count;
                     // `scan_for_copy_batch`'s aggregate.dir_count counts descendants
                     // only, not the top-level path itself. Match that convention
                     // so the FE's "X dirs" number is consistent across paths.
                     aggregate.dir_count += subtree.dir_count;
                     aggregate.total_bytes += subtree.total_bytes;
+                    aggregate.dedup_bytes += subtree.dedup_bytes;
                     per_path_unordered.insert(
                         source.clone(),
                         CopyScanResult {
                             file_count: subtree.file_count,
                             dir_count: subtree.dir_count,
                             total_bytes: subtree.total_bytes,
+                            dedup_bytes: subtree.dedup_bytes,
                             top_level_is_directory: true,
                         },
                     );
                 } else {
                     let size = entry.size.unwrap_or(0);
+                    // Top-level cached file: dedupe by inode for the source
+                    // footprint. Single top-level files rarely collide, but a
+                    // hardlink also selected inside a sibling dir would.
+                    let dedup_contribution = match entry.inode {
+                        Some(ino) if !seen_inodes.insert(ino) => 0,
+                        _ => size,
+                    };
                     aggregate.file_count += 1;
                     aggregate.total_bytes += size;
+                    aggregate.dedup_bytes += dedup_contribution;
                     per_path_unordered.insert(
                         source.clone(),
                         CopyScanResult {
                             file_count: 1,
                             dir_count: 0,
                             total_bytes: size,
+                            dedup_bytes: dedup_contribution,
                             top_level_is_directory: false,
                         },
                     );
                     on_progress(ListingProgress {
                         files: aggregate.file_count,
                         dirs: aggregate.dir_count,
-                        bytes: aggregate.total_bytes,
+                        bytes: aggregate.dedup_bytes,
                     });
                 }
             }
@@ -514,10 +553,12 @@ pub(super) async fn run_oracle_aware_batch_scan(
             // multiple parent groups — without this, every new group's first
             // entry drops the visible counts back to local values, then climbs
             // to the group's local totals before the next group restarts.
+            // Cold-cache backends (MTP, SMB) report dedup_bytes == total_bytes
+            // (no hardlinks), so the dedup'd baseline matches their stream.
             let baseline = ListingProgress {
                 files: aggregate.file_count,
                 dirs: aggregate.dir_count,
-                bytes: aggregate.total_bytes,
+                bytes: aggregate.dedup_bytes,
             };
             let shifted = |p: ListingProgress| {
                 on_progress(ListingProgress {
@@ -532,6 +573,7 @@ pub(super) async fn run_oracle_aware_batch_scan(
             aggregate.file_count += group_result.aggregate.file_count;
             aggregate.dir_count += group_result.aggregate.dir_count;
             aggregate.total_bytes += group_result.aggregate.total_bytes;
+            aggregate.dedup_bytes += group_result.aggregate.dedup_bytes;
             for (path, scan) in group_result.per_path {
                 per_path_unordered.insert(path, scan);
             }
@@ -567,6 +609,7 @@ mod tests {
                 dirs: vec![PathBuf::from("/d1"), PathBuf::from("/d2")],
                 file_count: 7,
                 total_bytes: 12_345,
+                dedup_bytes: 12_345,
                 per_path: Vec::new(),
             },
         );

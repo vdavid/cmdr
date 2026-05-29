@@ -682,7 +682,13 @@ pub struct ScanPreviewCompleteEvent {
     pub preview_id: String,
     pub files_total: usize,
     pub dirs_total: usize,
+    /// Write footprint (un-dedup'd): the bytes a copy actually writes and the
+    /// headline the Copy dialog shows. See `CopyScanResult::total_bytes`.
     pub bytes_total: u64,
+    /// `du`-equivalent source footprint (hardlinks counted once). Equals
+    /// `bytes_total` when there are no hardlinks; when it's smaller, the
+    /// dialog shows a "X will be written, source is Y" hint.
+    pub dedup_bytes_total: u64,
 }
 
 /// Error event for scan preview.
@@ -718,6 +724,9 @@ pub struct ScanPreviewTotals {
     pub files_total: usize,
     pub dirs_total: usize,
     pub bytes_total: u64,
+    /// `du`-equivalent source footprint (hardlinks counted once). See
+    /// `ScanPreviewCompleteEvent::dedup_bytes_total`.
+    pub dedup_bytes_total: u64,
 }
 
 // ============================================================================

@@ -702,7 +702,11 @@ export interface ScanPreviewCompleteEvent {
   previewId: string
   filesTotal: number
   dirsTotal: number
+  /** Write footprint (un-dedup'd): the bytes a copy actually writes. */
   bytesTotal: number
+  /** `du`-equivalent source footprint (hardlinks counted once). Smaller than
+   * `bytesTotal` only when the source has hardlinks. */
+  dedupBytesTotal: number
 }
 
 /** Error event for scan preview. */
@@ -721,4 +725,6 @@ export interface ScanPreviewTotals {
   filesTotal: number
   dirsTotal: number
   bytesTotal: number
+  /** `du`-equivalent source footprint (hardlinks counted once). */
+  dedupBytesTotal: number
 }

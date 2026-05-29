@@ -26,7 +26,7 @@
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import { generateTitle, toVolumeRelativePath } from './transfer-dialog-utils'
+    import { generateTitle, shouldShowHardlinkNote, toVolumeRelativePath } from './transfer-dialog-utils'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import Size from '$lib/ui/Size.svelte'
@@ -113,7 +113,12 @@
     let previewId = $state<string | null>(null)
     let filesFound = $state(0)
     let dirsFound = $state(0)
+    // `bytesFound` is the write footprint (what the copy writes). `dedupBytesFound`
+    // is the `du`-equivalent source size; the two differ only when the source has
+    // hardlinks (cargo `target/`, Time Machine, deduped backups), in which case we
+    // show a one-line note clarifying the gap.
     let bytesFound = $state(0)
+    let dedupBytesFound = $state(0)
     let isScanning = $state(false)
     let scanComplete = $state(false)
     let unlisteners: UnlistenFn[] = []
@@ -159,6 +164,14 @@
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === selectedVolumeId))
 
     const dialogTitle = $derived(generateTitle(activeOperationType, fileCount, folderCount))
+    const showHardlinkNote = $derived(
+        shouldShowHardlinkNote({
+            operationType: activeOperationType,
+            scanComplete,
+            writeBytes: bytesFound,
+            dedupBytes: dedupBytesFound,
+        }),
+    )
 
     const confirmLabel = $derived(activeOperationType === 'copy' ? 'Copy' : 'Move')
 
@@ -315,6 +328,7 @@
                 filesFound = event.filesTotal
                 dirsFound = event.dirsTotal
                 bytesFound = event.bytesTotal
+                dedupBytesFound = event.dedupBytesTotal
                 isScanning = false
                 scanComplete = true
                 // After source scan completes, check for conflicts
@@ -353,6 +367,7 @@
                 filesFound = totals.filesTotal
                 dirsFound = totals.dirsTotal
                 bytesFound = totals.bytesTotal
+                dedupBytesFound = totals.dedupBytesTotal
                 isScanning = false
                 scanComplete = true
                 conflictCheckPromise = checkConflicts()
@@ -527,6 +542,18 @@
         {/if}
     </div>
 
+    <!-- Hardlink note: copy writes every hardlink as a full file, so the bytes
+         written exceed the source's on-disk size. Clarify the gap so the
+         headline size doesn't look wrong against Finder's number. Copy-only:
+         a same-filesystem move renames in place and writes nothing. -->
+    {#if showHardlinkNote}
+        <p class="hardlink-note">
+            <Size bytes={bytesFound} /> will be written. The source is
+            <Size bytes={dedupBytesFound} /> on disk &ndash; the extra is hardlinked files, which can't
+            stay linked across drives.
+        </p>
+    {/if}
+
     <!-- Conflicts section -->
     {#if isCheckingConflicts}
         <div class="conflicts-checking">
@@ -681,6 +708,13 @@
 
     .scan-label {
         color: var(--color-text-tertiary);
+    }
+
+    .hardlink-note {
+        margin: var(--spacing-xs) 0 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        line-height: 1.4;
     }
 
     .scan-divider {

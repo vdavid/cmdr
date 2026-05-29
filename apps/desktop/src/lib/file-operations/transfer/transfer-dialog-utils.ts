@@ -99,3 +99,25 @@ export function toVolumeRelativePath(fullPath: string, volumePath: string): stri
   }
   return '/'
 }
+
+/**
+ * Whether to show the "X will be written, source is Y" hardlink note in the
+ * transfer dialog. A copy materializes every hardlink as a full independent
+ * file, so the bytes written (`writeBytes`, the write footprint) exceed the
+ * source's on-disk size (`dedupBytes`, the `du`-equivalent). We surface the
+ * gap so the headline size doesn't look wrong against Finder's number.
+ *
+ * Copy-only: a same-filesystem move renames in place and writes nothing, and
+ * the dialog can't know source/dest filesystem-sameness upfront — so we never
+ * show a potentially-wrong note for a move. Gated on a completed scan with a
+ * real gap (`0 < dedupBytes < writeBytes`); equal values mean no hardlinks.
+ */
+export function shouldShowHardlinkNote(args: {
+  operationType: TransferOperationType
+  scanComplete: boolean
+  writeBytes: number
+  dedupBytes: number
+}): boolean {
+  const { operationType, scanComplete, writeBytes, dedupBytes } = args
+  return operationType === 'copy' && scanComplete && dedupBytes > 0 && dedupBytes < writeBytes
+}

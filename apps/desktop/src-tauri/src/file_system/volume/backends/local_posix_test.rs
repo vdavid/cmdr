@@ -378,6 +378,46 @@ async fn test_scan_for_copy_directory() {
     assert_eq!(result.file_count, 3);
     assert_eq!(result.dir_count, 1); // Just the nested dir (root not counted)
     assert_eq!(result.total_bytes, 10); // 3 + 6 + 1
+    // No hardlinks: dedup'd source size equals the write footprint.
+    assert_eq!(result.dedup_bytes, 10);
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+/// A tree where one 1 KiB inode is shared by three hardlinks plus one
+/// standalone 4 KiB file. `total_bytes` is the cross-volume write footprint
+/// (every link materializes separately at the destination): 3 * 1024 + 4096
+/// = 7168. `dedup_bytes` is the source's on-disk footprint (`du`-equivalent,
+/// each inode once): 1024 + 4096 = 5120. The Copy dialog shows the first as
+/// the headline transfer size and the second as informational context.
+#[tokio::test]
+async fn test_scan_for_copy_dedupes_hardlinks_for_source_size_only() {
+    use std::fs;
+
+    let test_dir = std::env::temp_dir().join("cmdr_scan_copy_hardlink_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let tree = test_dir.join("tree");
+    fs::create_dir(&tree).unwrap();
+    let original = tree.join("original");
+    fs::write(&original, vec![0u8; 1024]).unwrap();
+    fs::hard_link(&original, tree.join("hardlink_a")).unwrap();
+    fs::hard_link(&original, tree.join("hardlink_b")).unwrap();
+    fs::write(tree.join("standalone"), vec![0u8; 4096]).unwrap();
+
+    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let result = volume.scan_for_copy(Path::new("tree")).await.unwrap();
+
+    assert_eq!(result.file_count, 4);
+    assert_eq!(
+        result.total_bytes, 7168,
+        "write footprint counts every hardlink (none survive a cross-volume copy)"
+    );
+    assert_eq!(
+        result.dedup_bytes, 5120,
+        "source size counts each inode once, matching `du`"
+    );
 
     let _ = fs::remove_dir_all(&test_dir);
 }

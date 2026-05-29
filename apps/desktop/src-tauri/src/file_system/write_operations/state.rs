@@ -479,7 +479,11 @@ pub(super) struct CachedScanResult {
     pub files: Vec<FileInfo>,
     pub dirs: Vec<PathBuf>,
     pub file_count: usize,
+    /// Write footprint (un-dedup'd). See `CopyScanResult::total_bytes`.
     pub total_bytes: u64,
+    /// `du`-equivalent source footprint (hardlinks counted once). See
+    /// `CopyScanResult::dedup_bytes`.
+    pub dedup_bytes: u64,
     /// Per-source-path scan results from volume scans. Empty for local-FS
     /// previews (the `files` Vec already carries everything the local copy
     /// engine needs). Populated by `run_volume_scan_preview` so the copy
@@ -600,7 +604,14 @@ pub(super) struct ScanResult {
     pub dirs: Vec<PathBuf>,
     /// Not including directories.
     pub file_count: usize,
+    /// Write footprint (un-dedup'd): every file at full size. Copy's
+    /// disk-space check and active-phase bar use this. See
+    /// `CopyScanResult::total_bytes`.
     pub total_bytes: u64,
+    /// `du`-equivalent source footprint (hardlinks counted once). Delete's
+    /// active phase uses this; the Copy dialog shows it as context. See
+    /// `CopyScanResult::dedup_bytes`.
+    pub dedup_bytes: u64,
     /// Per-source-path scan results, populated by volume scan previews so the
     /// copy pipeline can seed `source_hints` without re-statting. Empty for
     /// local-FS scans.

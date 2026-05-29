@@ -1068,12 +1068,14 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
             dirs: Vec::new(),
             file_count: 1,
             total_bytes: 15,
+            dedup_bytes: 15,
             per_path: vec![(
                 PathBuf::from("/photo.jpg"),
                 CSR {
                     file_count: 1,
                     dir_count: 0,
                     total_bytes: 15,
+                    dedup_bytes: 15,
                     top_level_is_directory: false,
                 },
             )],
@@ -1125,12 +1127,14 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
             dirs: Vec::new(),
             file_count: 1,
             total_bytes: 15,
+            dedup_bytes: 15,
             per_path: vec![(
                 PathBuf::from("/photo.jpg"),
                 CSR {
                     file_count: 1,
                     dir_count: 0,
                     total_bytes: 15,
+                    dedup_bytes: 15,
                     top_level_is_directory: false,
                 },
             )],
