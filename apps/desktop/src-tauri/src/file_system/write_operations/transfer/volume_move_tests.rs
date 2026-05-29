@@ -179,6 +179,48 @@ async fn cross_volume_move_conflict_overwrite_replaces_dest_and_deletes_source()
     assert!(!source.exists(Path::new("/f.txt")).await, "source must be deleted");
 }
 
+/// Conflict + Rename (matrix cell): the original dest is kept untouched, the
+/// incoming source lands under `name (1)`, and the source is deleted (it moved).
+/// Closes the cross-volume Rename cell of the move conflict×resolution matrix.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_conflict_rename_keeps_dest_and_renames_incoming() {
+    let (source, dest) = make_volumes();
+    source.create_file(Path::new("/notes.txt"), b"incoming").await.unwrap();
+    dest.create_file(Path::new("/notes.txt"), b"existing").await.unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Rename,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-rename",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/notes.txt")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    // Original dest kept untouched.
+    let mut keep = dest.open_read_stream(Path::new("/notes.txt")).await.unwrap();
+    assert_eq!(keep.next_chunk().await.unwrap().unwrap(), b"existing");
+
+    // Incoming landed under the renamed name.
+    let mut renamed = dest.open_read_stream(Path::new("/notes (1).txt")).await.unwrap();
+    assert_eq!(renamed.next_chunk().await.unwrap().unwrap(), b"incoming");
+
+    // Source moved => deleted.
+    assert!(!source.exists(Path::new("/notes.txt")).await, "source must be deleted after Rename");
+}
+
 /// Stop mode emits `write-conflict` and waits on the oneshot. Drive a Skip-all
 /// resolution from the test side to verify the chosen path applies.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
