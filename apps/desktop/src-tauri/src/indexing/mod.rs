@@ -21,6 +21,7 @@ pub mod writer;
 
 mod memory_watchdog;
 mod metadata;
+mod pending_sizes;
 mod reconciler;
 pub(crate) mod scanner;
 mod verifier;
@@ -582,6 +583,37 @@ mod tests {
         *enrichment::READ_POOL.lock().unwrap() = None;
     }
 
+    /// `get_dir_stats` reflects the in-memory pending-size tracker: a directory
+    /// with unprocessed writes in flight comes back `recursive_size_pending`,
+    /// and clears once the tracker is reset (writer drained).
+    #[test]
+    fn dir_stats_carry_pending_flag() {
+        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
+        let _pending_guard = pending_sizes::PENDING_SIZES_TEST_MUTEX.lock().unwrap();
+
+        let (db_path, _dir) = setup_db_for_pool();
+        let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
+        *enrichment::READ_POOL.lock().unwrap() = Some(pool);
+        *pending_sizes::PENDING_SIZES.lock().unwrap() = Some(Arc::new(pending_sizes::PendingSizes::new()));
+
+        // Nothing marked yet: not pending.
+        let before = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
+        assert!(!before.recursive_size_pending, "no pending work => flag false");
+
+        // A descendant change marks /projects (and its ancestors) as pending.
+        pending_sizes::get_pending_sizes().unwrap().mark("/projects/file.txt");
+        let during = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
+        assert!(during.recursive_size_pending, "pending work => flag true");
+
+        // Draining clears the flag.
+        pending_sizes::get_pending_sizes().unwrap().clear();
+        let after = get_dir_stats("/projects").expect("get_dir_stats").expect("dir indexed");
+        assert!(!after.recursive_size_pending, "after drain => flag false");
+
+        *enrichment::READ_POOL.lock().unwrap() = None;
+        *pending_sizes::PENDING_SIZES.lock().unwrap() = None;
+    }
+
     /// Thread-local connection reuse: calling `with_conn` twice from the same
     /// thread should reuse the cached connection (same raw pointer).
     #[test]
@@ -756,6 +788,7 @@ mod tests {
         // The stop/clear paths invalidate READ_POOL; mirror that so we
         // don't carry a stale pool from a prior test.
         *enrichment::READ_POOL.lock().unwrap() = None;
+        *pending_sizes::PENDING_SIZES.lock().unwrap() = None;
     }
 
     fn install_initializing_phase() -> tempfile::TempDir {

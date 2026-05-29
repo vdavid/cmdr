@@ -321,24 +321,28 @@ export type DirSizeDisplayState = 'dir' | 'scanning' | 'size' | 'size-stale'
 /**
  * Determine the display state for a directory's size column.
  *
- * Rules:
- * - Has recursiveSize + indexing active -> 'size-stale' (show size with stale warning)
- * - Has recursiveSize + not indexing    -> 'size' (show formatted size)
- * - No recursiveSize + indexing active  -> 'scanning' (show spinner)
- * - No recursiveSize + not indexing     -> 'dir' (show <dir> placeholder)
+ * Rules (where "active" = global `indexing` OR this dir's own `pending` flag):
+ * - Has recursiveSize + active     -> 'size-stale' (show size with hourglass)
+ * - Has recursiveSize + not active -> 'size' (show formatted size)
+ * - No recursiveSize + active      -> 'scanning' (show spinner)
+ * - No recursiveSize + not active  -> 'dir' (show <dir> placeholder)
  *
- * "Indexing active" means scanning OR aggregating; sizes aren't ready until aggregation finishes.
+ * Global `indexing` means a full scan/aggregation is running (every size in
+ * flux); per-dir `pending` means this dir has live writes in flight (a big
+ * delete/copy) even when no full scan is active. See `indexing/pending_sizes.rs`.
  */
 export function getDirSizeDisplayState(
   recursiveSize: number | null | undefined,
   indexing: boolean,
+  pending = false,
 ): DirSizeDisplayState {
+  const active = indexing || pending
   // `!= null` covers both `null` (post-Group-A wire format) and `undefined`
   // (legacy/tests). See `getDisplaySize` for the migration context.
   if (recursiveSize != null) {
-    return indexing ? 'size-stale' : 'size'
+    return active ? 'size-stale' : 'size'
   }
-  return indexing ? 'scanning' : 'dir'
+  return active ? 'scanning' : 'dir'
 }
 
 /**

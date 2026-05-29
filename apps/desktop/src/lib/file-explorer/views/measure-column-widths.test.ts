@@ -192,6 +192,20 @@ describe('computeFullListColumnWidths', () => {
     expect(busy.size).toBeGreaterThanOrEqual(idle.size)
   })
 
+  it('reserves icon width when a directory is per-dir pending without global indexing', () => {
+    _setMeasureForTests(fakeMeasure)
+    const idle = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [entry({ name: 'd', isDirectory: true, recursiveSize: 12345 })],
+    })
+    const pending = computeFullListColumnWidths({
+      ...baseArgs,
+      indexing: false,
+      entries: [entry({ name: 'd', isDirectory: true, recursiveSize: 12345, recursiveSizePending: true })],
+    })
+    expect(pending.size).toBeGreaterThanOrEqual(idle.size)
+  })
+
   it('includes parentDirStats size when provided', () => {
     _setMeasureForTests(fakeMeasure)
     const without = computeFullListColumnWidths({

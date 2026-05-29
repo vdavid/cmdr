@@ -60,6 +60,27 @@ describe('getDirSizeDisplayState', () => {
     expect(getDirSizeDisplayState(undefined, false)).toBe('dir')
     expect(getDirSizeDisplayState(undefined, true)).toBe('scanning')
   })
+
+  // Per-directory pending flag: drives the hourglass when a live delete/copy is
+  // in flight for this dir, even with no global scan running.
+  it('returns "size-stale" when per-dir pending even if not globally indexing', () => {
+    expect(getDirSizeDisplayState(1234, false, true)).toBe('size-stale')
+  })
+
+  it('returns "size" when per-dir pending is false and not indexing', () => {
+    expect(getDirSizeDisplayState(1234, false, false)).toBe('size')
+    // Default (omitted) pending arg behaves as false, preserving old callers.
+    expect(getDirSizeDisplayState(1234, false)).toBe('size')
+  })
+
+  it('returns "scanning" when no data and only per-dir pending is set', () => {
+    expect(getDirSizeDisplayState(undefined, false, true)).toBe('scanning')
+  })
+
+  it('stays "size-stale" when global indexing and per-dir pending disagree', () => {
+    expect(getDirSizeDisplayState(1234, true, false)).toBe('size-stale')
+    expect(getDirSizeDisplayState(1234, false, true)).toBe('size-stale')
+  })
 })
 
 // ============================================================================

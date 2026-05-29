@@ -136,6 +136,24 @@ async fn open_read_conn_with_retry(db_path: &Path) -> Result<Connection, store::
     }
 }
 
+/// Mark every affected directory (and its ancestors) as having a recursive-size
+/// update in flight, then drain the set for the `index-dir-updated` emit.
+///
+/// Marking rides the exact paths that drive the UI refresh, so the "size
+/// updating" hourglass shows on precisely the directories whose sizes are about
+/// to change. The flags clear wholesale once the writer drains (see
+/// `writer::writer_loop` and `indexing/pending_sizes.rs`). Live-path only — the
+/// shared `process_fs_event` is deliberately not instrumented, so replay doesn't
+/// flag everything during startup (the global indexing flag covers scans).
+fn mark_pending_and_drain(pending_paths: &mut HashSet<String>) -> Vec<String> {
+    if let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes() {
+        for path in pending_paths.iter() {
+            tracker.mark(path);
+        }
+    }
+    pending_paths.drain().collect()
+}
+
 /// Process FSEvents in real time after scan + reconciliation completes.
 ///
 /// Runs as a tokio task, reading events from the watcher channel and
@@ -223,7 +241,7 @@ pub(super) async fn run_live_event_loop(
                         );
                         if !pending_paths.is_empty() {
                             let _ = writer.send(WriteMessage::EmitDirUpdated(
-                                pending_paths.drain().collect(),
+                                mark_pending_and_drain(&mut pending_paths),
                             ));
                         }
                         break;
@@ -275,7 +293,7 @@ pub(super) async fn run_live_event_loop(
                     // Without this, multi-message operations (e.g. rename =
                     // delete + insert) show intermediate dir_stats to the UI.
                     let _ = writer.send(WriteMessage::EmitDirUpdated(
-                        pending_paths.drain().collect(),
+                        mark_pending_and_drain(&mut pending_paths),
                     ));
                 }
             }
@@ -906,7 +924,7 @@ pub(super) async fn run_replay_event_loop(
                             &writer, &mut live_pending_paths,
                         );
                         if !live_pending_paths.is_empty() {
-                            reconciler::emit_dir_updated(&app, live_pending_paths.drain().collect());
+                            reconciler::emit_dir_updated(&app, mark_pending_and_drain(&mut live_pending_paths));
                         }
                         break;
                     }
@@ -940,7 +958,7 @@ pub(super) async fn run_replay_event_loop(
                     &writer, &mut live_pending_paths,
                 );
                 if !live_pending_paths.is_empty() {
-                    reconciler::emit_dir_updated(&app, live_pending_paths.drain().collect());
+                    reconciler::emit_dir_updated(&app, mark_pending_and_drain(&mut live_pending_paths));
                 }
             }
         }

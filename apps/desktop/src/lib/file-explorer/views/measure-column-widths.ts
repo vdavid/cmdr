@@ -227,7 +227,8 @@ function foldDate(current: DateMaxima, formatted: FormattedDate, measure: (text:
 /** Pixel width of the size-column icons that follow the text for this row. */
 function sizeIconSuffixForEntry(entry: FileEntry, indexing: boolean, showSizeMismatchWarning: boolean): number {
   let suffix = 0
-  if (entry.isDirectory && indexing && entry.recursiveSize != null) suffix += SIZE_ICON_WIDTH
+  if (entry.isDirectory && (indexing || entry.recursiveSizePending) && entry.recursiveSize != null)
+    suffix += SIZE_ICON_WIDTH
   if (showSizeMismatchWarning) {
     const logical = entry.isDirectory ? entry.recursiveSize : entry.size
     const physical = entry.isDirectory ? entry.recursivePhysicalSize : entry.physicalSize

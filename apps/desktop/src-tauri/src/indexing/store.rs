@@ -40,6 +40,12 @@ pub struct DirStats {
     /// `true` if any descendant entry (or direct child) is a symlink.
     /// Used by the UI to surface "size omits symlinked content" hints.
     pub recursive_has_symlinks: bool,
+    /// `true` while the indexer still has unprocessed writes affecting this
+    /// directory or a descendant (a big delete/copy in flight). The frontend
+    /// shows a "size updating" hourglass so the number isn't read as settled.
+    /// Sourced from the in-memory `pending_sizes` tracker at build time, not the
+    /// DB. See `indexing/pending_sizes.rs`.
+    pub recursive_size_pending: bool,
 }
 
 /// Dir stats keyed by entry ID. Used internally by the integer-keyed store.

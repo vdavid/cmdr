@@ -591,6 +591,19 @@ fn writer_loop(
         }
         stats.maybe_log_summary();
         probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
+
+        // Pending-size hourglass: once the writer has fully caught up (no more
+        // queued work), every directory's `dir_stats` reflects all known
+        // changes, so the "size updating" flags are correct to clear wholesale.
+        // Done here (end of iteration, after the message's DB effect is applied)
+        // rather than at recv time — at recv the depth hits 0 *before* the
+        // delete/propagate runs, which would briefly show a settled flag against
+        // a not-yet-updated size. See `indexing/pending_sizes.rs`.
+        if queue_depth.load(Ordering::Relaxed) == 0
+            && let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes()
+        {
+            tracker.clear();
+        }
     }
 
     log::debug!(
@@ -1728,6 +1741,48 @@ mod tests {
         let result = writer.send(WriteMessage::Shutdown);
         // Might succeed or fail depending on timing, but shouldn't panic
         let _ = result;
+    }
+
+    /// The writer clears the pending-size tracker once its queue drains to empty
+    /// (the "size updating" hourglass turns off when the indexer catches up).
+    ///
+    /// Guarded by `PENDING_SIZES_TEST_MUTEX`: the tracker is a process-global,
+    /// but it's `None` for every test that doesn't install it, so other writers
+    /// no-op the clear. Only installers race, and they all hold this mutex.
+    #[test]
+    fn clears_pending_sizes_when_queue_drains() {
+        use crate::indexing::pending_sizes::{
+            PENDING_SIZES, PENDING_SIZES_TEST_MUTEX, PendingSizes, get_pending_sizes,
+        };
+        let _guard = PENDING_SIZES_TEST_MUTEX.lock().unwrap();
+
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Install a tracker and mark a path. The writer is idle (no message
+        // processed yet) so it hasn't cleared; the mark is observable.
+        *PENDING_SIZES.lock().unwrap() = Some(Arc::new(PendingSizes::new()));
+        let tracker = get_pending_sizes().expect("tracker installed");
+        tracker.mark("/aaa/bbb/ccc");
+        assert!(tracker.is_pending("/aaa/bbb"), "mark should register before any drain");
+
+        // Send a message and let the writer drain. The end-of-iteration hook
+        // clears the tracker once `queue_depth` hits 0. The clear runs a hair
+        // after the flush reply is delivered, so poll for the result (it always
+        // happens within microseconds on an idle writer).
+        writer.flush_blocking().unwrap();
+        let mut cleared = false;
+        for _ in 0..200 {
+            if !tracker.is_pending("/aaa/bbb") {
+                cleared = true;
+                break;
+            }
+            thread::sleep(Duration::from_millis(5));
+        }
+        assert!(cleared, "tracker should clear once the writer queue drains");
+
+        *PENDING_SIZES.lock().unwrap() = None;
+        writer.shutdown();
     }
 
     // ── Integer-keyed variant tests ──────────────────────────────────

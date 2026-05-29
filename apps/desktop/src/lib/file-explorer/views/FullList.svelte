@@ -902,7 +902,7 @@
                                         file.recursivePhysicalSize,
                                         file.recursiveFileCount ?? 0,
                                         file.recursiveDirCount ?? 0,
-                                        indexing,
+                                        indexing || (file.recursiveSizePending ?? false),
                                         formatFileSize,
                                         formatNumber,
                                         pluralize,
@@ -918,7 +918,7 @@
                                                 class={triad.tierClass}>{triad.value}</span
                                             >{/each}</span
                                     >
-                                    {#if indexing}
+                                    {#if indexing || file.recursiveSizePending}
                                         <span class="size-stale icon-indicator" use:tooltip={'Updating index: size may change.'}
                                             ><IconHourglass width="12" height="12" /></span
                                         >
@@ -929,7 +929,7 @@
                                             file.recursivePhysicalSize,
                                             file.recursiveFileCount ?? 0,
                                             file.recursiveDirCount ?? 0,
-                                            indexing,
+                                            indexing || (file.recursiveSizePending ?? false),
                                             formatFileSize,
                                             formatNumber,
                                             pluralize,

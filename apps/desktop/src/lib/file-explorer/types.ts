@@ -26,6 +26,16 @@ export interface FileEntry {
   /** True when the subtree contains symlinks (whose content is omitted from the recursive size). */
   recursiveHasSymlinks?: boolean
   /**
+   * True while the indexer still has unprocessed writes affecting this directory
+   * or a descendant (a big delete/copy in flight), so its recursive size is
+   * mid-update. Drives the per-row "size updating" hourglass. Carried on
+   * `DirStats` and copied here by `updateIndexSizesInPlace` / `createParentEntry`
+   * — NOT populated by the initial `get_file_range` render (the Rust `FileEntry`
+   * deliberately doesn't carry it), so a folder navigated into mid-storm lights
+   * up on the first throttled refresh rather than first paint.
+   */
+  recursiveSizePending?: boolean
+  /**
    * When set on a virtual entry, the frontend navigates to this path instead
    * of treating the entry as a normal directory listing. Currently set on
    * `worktrees/` and `submodules/` entries inside the git portal. Lives on

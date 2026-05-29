@@ -182,6 +182,14 @@ export interface DirStats {
   recursiveDirCount: number
   /** `true` if the subtree contains any symlinks (whose content is omitted from the recursive size). */
   recursiveHasSymlinks: boolean
+  /**
+   * `true` while the indexer still has unprocessed writes affecting this
+   * directory or a descendant (a big delete/copy in flight), so its recursive
+   * size is mid-update. Drives the per-row "size updating" hourglass. Optional
+   * so test fixtures and pre-field callers stay valid; the backend always sets
+   * it, and consumers treat absent as `false`.
+   */
+  recursiveSizePending?: boolean
 }
 
 /**

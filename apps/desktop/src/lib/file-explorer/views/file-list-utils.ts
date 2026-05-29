@@ -48,6 +48,10 @@ export function createParentEntry(parentPath: string, stats?: DirStats): FileEnt
     recursivePhysicalSize: stats?.recursivePhysicalSize,
     recursiveFileCount: stats?.recursiveFileCount,
     recursiveDirCount: stats?.recursiveDirCount,
+    // The ".." row shows the CURRENT folder's size — the exact dir the user
+    // watches drain — so carry its pending flag on first paint, not just after
+    // the first in-place refresh tick.
+    recursiveSizePending: stats?.recursiveSizePending,
   }
 }
 
@@ -257,6 +261,10 @@ export async function updateIndexSizesInPlace(
       entry.recursiveFileCount = stat.recursiveFileCount
       entry.recursiveDirCount = stat.recursiveDirCount
     }
+    // Update the hourglass flag every refresh, even when `stat` is null, so a
+    // dir that has drained clears back to false instead of staying stuck-on
+    // from a prior tick.
+    entry.recursiveSizePending = stat?.recursiveSizePending ?? false
   }
 
   return hasCurrent ? (stats[stats.length - 1] ?? null) : null

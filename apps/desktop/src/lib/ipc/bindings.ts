@@ -1237,6 +1237,14 @@ export const commands = {
          *  Used by the UI to surface "size omits symlinked content" hints.
          */
         recursiveHasSymlinks: boolean
+        /**
+         *  `true` while the indexer still has unprocessed writes affecting this
+         *  directory or a descendant (a big delete/copy in flight). The frontend
+         *  shows a "size updating" hourglass so the number isn't read as settled.
+         *  Sourced from the in-memory `pending_sizes` tracker at build time, not the
+         *  DB. See `indexing/pending_sizes.rs`.
+         */
+        recursiveSizePending: boolean
       } | null,
       string
     >(__TAURI_INVOKE('get_dir_stats', { path })),
@@ -2332,6 +2340,14 @@ export type DirStats = {
    *  Used by the UI to surface "size omits symlinked content" hints.
    */
   recursiveHasSymlinks: boolean
+  /**
+   *  `true` while the indexer still has unprocessed writes affecting this
+   *  directory or a descendant (a big delete/copy in flight). The frontend
+   *  shows a "size updating" hourglass so the number isn't read as settled.
+   *  Sourced from the in-memory `pending_sizes` tracker at build time, not the
+   *  DB. See `indexing/pending_sizes.rs`.
+   */
+  recursiveSizePending: boolean
 }
 
 // How to sort directories relative to the current sort column.

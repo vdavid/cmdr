@@ -20,6 +20,7 @@ use super::enrichment::{READ_POOL, ReadPool, get_read_pool};
 use super::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse};
 use super::firmlinks;
 use super::manager::IndexManager;
+use super::pending_sizes::{PENDING_SIZES, PendingSizes, get_pending_sizes};
 use super::store::{self, DirStats, IndexStore};
 use super::verifier;
 use super::writer::WriteMessage;
@@ -124,6 +125,7 @@ pub fn stop_indexing() -> Result<(), String> {
     if let Some(pool) = READ_POOL.lock().unwrap().take() {
         pool.invalidate();
     }
+    *PENDING_SIZES.lock().unwrap() = None;
 
     let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
 
@@ -204,6 +206,8 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
     // Install ReadPool early so enrichment works during the Initializing phase.
     let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
     *READ_POOL.lock().unwrap() = Some(pool);
+    // Install the pending-size tracker in lockstep with the ReadPool.
+    *PENDING_SIZES.lock().unwrap() = Some(Arc::new(PendingSizes::new()));
 
     let mut manager = match IndexManager::new("root".to_string(), PathBuf::from("/"), app.clone()) {
         Ok(m) => m,
@@ -215,6 +219,7 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
             if let Some(pool) = READ_POOL.lock().unwrap().take() {
                 pool.invalidate();
             }
+            *PENDING_SIZES.lock().unwrap() = None;
             return Err(e);
         }
     };
@@ -255,6 +260,7 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
             if let Some(pool) = READ_POOL.lock().unwrap().take() {
                 pool.invalidate();
             }
+            *PENDING_SIZES.lock().unwrap() = None;
             return Err(e);
         }
         (false, Ok(())) => {
@@ -281,6 +287,7 @@ pub fn clear_index() -> Result<(), String> {
     if let Some(pool) = READ_POOL.lock().unwrap().take() {
         pool.invalidate();
     }
+    *PENDING_SIZES.lock().unwrap() = None;
 
     let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
 
@@ -436,6 +443,7 @@ pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
         let stats =
             IndexStore::get_dir_stats_by_id(conn, entry_id).map_err(|e| format!("Couldn't get dir stats: {e}"))?;
 
+        let pending = get_pending_sizes().is_some_and(|t| t.is_pending(&normalized));
         Ok(stats.map(|s| DirStats {
             path: normalized.clone(),
             recursive_size: s.recursive_logical_size,
@@ -443,6 +451,7 @@ pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
             recursive_file_count: s.recursive_file_count,
             recursive_dir_count: s.recursive_dir_count,
             recursive_has_symlinks: s.recursive_has_symlinks,
+            recursive_size_pending: pending,
         }))
     })?
 }
@@ -471,7 +480,9 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
             let stats_batch = IndexStore::get_dir_stats_batch_by_ids(conn, &ids)
                 .map_err(|e| format!("Couldn't get dir stats batch: {e}"))?;
 
+            let tracker = get_pending_sizes();
             for ((_, idx, normalized), stats_opt) in id_to_idx.into_iter().zip(stats_batch) {
+                let pending = tracker.as_ref().is_some_and(|t| t.is_pending(&normalized));
                 results[idx] = stats_opt.map(|s| DirStats {
                     path: normalized,
                     recursive_size: s.recursive_logical_size,
@@ -479,6 +490,7 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
                     recursive_file_count: s.recursive_file_count,
                     recursive_dir_count: s.recursive_dir_count,
                     recursive_has_symlinks: s.recursive_has_symlinks,
+                    recursive_size_pending: pending,
                 });
             }
         }
