@@ -41,17 +41,15 @@
     import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
     import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
     import ViewerContextMenu from './ViewerContextMenu.svelte'
-    import EncodingPicker from './EncodingPicker.svelte'
-    import ViewModePicker from './ViewModePicker.svelte'
+    import ViewerToolbar from './ViewerToolbar.svelte'
+    import ViewerStatusBar from './ViewerStatusBar.svelte'
+    import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
     import { findWordBoundsAt } from './viewer-word'
     import { commands } from '$lib/ipc/bindings'
     import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
     import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
     import { formatBytes, type RangeEnd } from '$lib/tauri-commands'
-    import ModalDialog from '$lib/ui/ModalDialog.svelte'
-    import Button from '$lib/ui/Button.svelte'
-    import Size from '$lib/ui/Size.svelte'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
 
@@ -1061,50 +1059,22 @@
     }}
 >
     <h1 class="sr-only">File viewer</h1>
-    <!--
-        Title-bar overlay toolbar: matches the main window's overlay style
-        (see `tauri.conf.json` § titleBarStyle and `open-viewer.ts` mirror).
-        Reserves 80 px on the left for the macOS traffic lights and lets the
-        empty space remain draggable via `data-tauri-drag-region`. The pickers
-        opt out of the drag region with their own click handlers so the user
-        can interact with them. Indexing progress sits next to the pickers
-        instead of stealing space in the status bar.
-    -->
-    <header class="viewer-toolbar" data-tauri-drag-region>
-        <span class="viewer-toolbar-title" data-tauri-drag-region>{fileName}</span>
-        <div class="viewer-toolbar-pickers">
-            <ViewModePicker
-                value={viewMode}
-                onChange={(mode: 'text') => {
-                    viewMode = mode
-                }}
-            />
-            <EncodingPicker
-                value={currentEncoding}
-                detected={detectedEncoding}
-                options={encodingChoices}
-                disabled={isIndexing}
-                onChange={(enc: FileEncoding) => void handleEncodingChange(enc)}
-            />
-            <button
-                type="button"
-                class="viewer-toolbar-toggle"
-                class:active={tailMode}
-                role="switch"
-                aria-checked={tailMode}
-                aria-label="Tail mode: follow file changes"
-                onclick={() => {
-                    void toggleTailMode()
-                }}
-                use:tooltip={{ text: 'Auto-follow file changes', shortcut: 'F' }}
-            >
-                Tail
-            </button>
-            {#if isIndexing}
-                <span class="viewer-toolbar-indexing" role="status" aria-live="polite">Reindexing…</span>
-            {/if}
-        </div>
-    </header>
+    <ViewerToolbar
+        {fileName}
+        {viewMode}
+        {currentEncoding}
+        {detectedEncoding}
+        {encodingChoices}
+        {isIndexing}
+        {tailMode}
+        onViewModeChange={(mode: 'text') => {
+            viewMode = mode
+        }}
+        onEncodingChange={(enc: FileEncoding) => void handleEncodingChange(enc)}
+        onToggleTail={() => {
+            void toggleTailMode()
+        }}
+    />
     <!--
         ARIA live region: announces selection state to assistive tech. Updates whenever
         the selection changes via any gesture (⌘A, drag, shift-click, double / triple-
@@ -1295,46 +1265,15 @@
         </div>
     {/if}
 
-    <div class="status-bar" aria-label="File information">
-        <span>{fileName}</span>
-        {#if totalLines !== null}
-            <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
-        {/if}
-        <span><Size bytes={totalBytes} /></span>
-        {#if currentMode === 'fullLoad'}
-            <span
-                class="backend-badge"
-                use:tooltip={'You have the file entirely in memory. You can quickly scroll to any line.'}
-                >in memory</span
-            >
-        {:else if currentMode === 'lineIndex'}
-            <span
-                class="backend-badge"
-                use:tooltip={'You have the file indexed, so the line numbers are accurate, and you can quickly scroll to any point.'}
-                >indexed</span
-            >
-        {:else if isIndexing}
-            <span
-                class="backend-badge"
-                use:tooltip={`This is a large file in streaming mode. We're building an index in background (max ${String(INDEXING_TIMEOUT_SECS)} sec)... Line numbers are currently approximate.`}
-                >streaming, indexing...</span
-            >
-        {:else}
-            <span
-                class="backend-badge"
-                use:tooltip={`This is a large file in streaming mode. Indexing would've taken longer than ${String(INDEXING_TIMEOUT_SECS)} sec, so we didn't do it. The line numbers are estimates.`}
-                >streaming</span
-            >
-        {/if}
-        {#if scroll.wordWrap}
-            <span class="backend-badge" use:tooltip={{ text: 'Lines wrap at the window edge', shortcut: 'W' }}
-                >wrap</span
-            >
-        {/if}
-        <span class="shortcut-hint"
-            >W wrap &middot; F tail &middot; ⌘A select all &middot; ⌘C copy &middot; ⌘F search &middot; Esc close</span
-        >
-    </div>
+    <ViewerStatusBar
+        {fileName}
+        {totalLines}
+        {totalBytes}
+        {currentMode}
+        {isIndexing}
+        wordWrap={scroll.wordWrap}
+        indexingTimeoutSecs={INDEXING_TIMEOUT_SECS}
+    />
 </main>
 
 {#if contextMenuPos !== null}
@@ -1350,78 +1289,18 @@
     />
 {/if}
 
-{#if copyConfirmBytes !== null}
-    {@const confirmBytes = copyConfirmBytes}
-    <ModalDialog
-        dialogId="viewer-copy-confirm"
-        titleId="viewer-copy-confirm-title"
-        onclose={cancelCopyConfirm}
-        containerStyle="max-width: 480px"
-    >
-        {#snippet title()}
-            <h2 id="viewer-copy-confirm-title" class="copy-dialog-title">
-                {#if confirmBytes === -1}
-                    Copy this selection to the clipboard?
-                {:else}
-                    Copy {formatBytes(confirmBytes)} to the clipboard?
-                {/if}
-            </h2>
-        {/snippet}
-        <div class="copy-dialog-body-wrap">
-            <p class="copy-dialog-body">
-                Large pastes can slow down other apps. Try search (⌘F) to narrow it down.
-            </p>
-            <div class="copy-dialog-actions">
-                <Button variant="secondary" onclick={cancelCopyConfirm}>Cancel</Button>
-                <Button
-                    variant="secondary"
-                    onclick={() => {
-                        void handleSaveAs()
-                    }}>Save as file…</Button
-                >
-                <Button
-                    variant="primary"
-                    autoFocus
-                    onclick={() => {
-                        if (copyConfirmProceed) void copyConfirmProceed()
-                    }}>Copy</Button
-                >
-            </div>
-        </div>
-    </ModalDialog>
-{/if}
-
-{#if copyRefuseBytes !== null}
-    {@const refuseBytes = copyRefuseBytes}
-    <ModalDialog
-        dialogId="viewer-copy-refuse"
-        titleId="viewer-copy-refuse-title"
-        onclose={dismissCopyRefuse}
-        containerStyle="max-width: 480px"
-    >
-        {#snippet title()}
-            <h2 id="viewer-copy-refuse-title" class="copy-dialog-title">
-                Copy {formatBytes(refuseBytes)} to the clipboard?
-            </h2>
-        {/snippet}
-        <div class="copy-dialog-body-wrap">
-            <p class="copy-dialog-body">
-                That's larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the
-                selection as a file.
-            </p>
-            <div class="copy-dialog-actions">
-                <Button variant="secondary" onclick={dismissCopyRefuse}>Cancel</Button>
-                <Button
-                    variant="primary"
-                    autoFocus
-                    onclick={() => {
-                        void handleSaveAs()
-                    }}>Save as file…</Button
-                >
-            </div>
-        </div>
-    </ModalDialog>
-{/if}
+<ViewerCopyDialogs
+    confirmBytes={copyConfirmBytes}
+    refuseBytes={copyRefuseBytes}
+    onCancelConfirm={cancelCopyConfirm}
+    onProceedConfirm={() => {
+        if (copyConfirmProceed) void copyConfirmProceed()
+    }}
+    onDismissRefuse={dismissCopyRefuse}
+    onSaveAs={() => {
+        void handleSaveAs()
+    }}
+/>
 
 <style>
     .viewer-container {
@@ -1432,81 +1311,6 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         outline: none;
-    }
-
-    .viewer-toolbar {
-        /* The 80 px wide left gutter reserves space for the macOS traffic
-           lights, which sit at trafficLightPosition { x: 9, y: 17 } per
-           open-viewer.ts. Stylelint forbids raw px in `padding` shorthand,
-           so the gutter goes on a pseudo-element instead. */
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-xs) var(--spacing-sm);
-        background: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border-strong);
-        flex-shrink: 0;
-        min-height: 38px;
-    }
-
-    .viewer-toolbar::before {
-        content: '';
-        display: block;
-        width: 72px;
-        flex-shrink: 0;
-    }
-
-    .viewer-toolbar-title {
-        flex: 1;
-        min-width: 0;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        user-select: none;
-    }
-
-    .viewer-toolbar-pickers {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        flex-shrink: 0;
-    }
-
-    .viewer-toolbar-indexing {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-secondary);
-        font-style: italic;
-    }
-
-    /* Tail toggle: same chrome as the search-bar toggles, sized for the toolbar. */
-    .viewer-toolbar-toggle {
-        background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- compact toolbar button */
-        padding: 2px 10px;
-        line-height: 1.4;
-        transition: all var(--transition-base);
-    }
-
-    .viewer-toolbar-toggle:hover {
-        background: var(--color-bg-secondary);
-    }
-
-    .viewer-toolbar-toggle:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 1px;
-    }
-
-    .viewer-toolbar-toggle.active {
-        background: var(--color-accent-subtle);
-        border-color: var(--color-accent);
-        color: var(--color-accent-text);
     }
 
     .search-bar {
@@ -1785,37 +1589,6 @@
         background: var(--color-highlight-active);
     }
 
-    .status-bar {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-lg);
-        padding: var(--spacing-xs) var(--spacing-sm);
-        background: var(--color-bg-secondary);
-        border-top: 1px solid var(--color-border-strong);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        flex-shrink: 0;
-        /* Opt back in to native selection here so users can copy the file name or line
-         * count. The global reset is `user-select: none`, and `.file-content` keeps
-         * that for its custom selection model; the status bar is plain chrome. */
-        user-select: text;
-        -webkit-user-select: text;
-    }
-
-    .backend-badge {
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 1px 4px;
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
-    }
-
-    .shortcut-hint {
-        margin-left: auto;
-        color: var(--color-text-tertiary);
-    }
-
     .status-message {
         display: flex;
         align-items: center;
@@ -1880,30 +1653,5 @@
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
         filter: none;
-    }
-
-    .copy-dialog-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        text-align: center;
-        margin: 0;
-    }
-
-    /* Matches the AlertDialog body wrapper: design-system § Dialogs body padding 0 24px 24px. */
-    .copy-dialog-body-wrap {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
-    }
-
-    .copy-dialog-body {
-        font-size: var(--font-size-md);
-        line-height: 1.4;
-        color: var(--color-text-secondary);
-        margin: 0 0 var(--spacing-xl);
-    }
-
-    .copy-dialog-actions {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: flex-end;
     }
 </style>

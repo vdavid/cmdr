@@ -26,6 +26,9 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
 | `viewer-autoscroll.svelte.ts`   | Autoscroll RAF controller: start / stop / self-terminate                                                                                        |
 | `viewer-word.ts`                | Pure word-boundary finder via `Intl.Segmenter` for double-click selection                                                                       |
 | `ViewerContextMenu.svelte`      | Minimal in-app right-click menu (Copy, Select all)                                                                                              |
+| `ViewerToolbar.svelte`          | Presentational title-bar overlay: file name, view-mode + encoding pickers, tail toggle, reindexing indicator. Owns `data-tauri-drag-region`.    |
+| `ViewerStatusBar.svelte`        | Presentational bottom bar: line / byte counts, backend badge, word-wrap badge, shortcut hint. Keeps `user-select: text` (see Gotchas).          |
+| `ViewerCopyDialogs.svelte`      | Presentational copy-confirm (10 to 100 MiB) and refuse (> 100 MiB) modals. The page owns the copy-flow state and IPC handlers.                  |
 | `EncodingPicker.svelte`         | `<select>` + `<optgroup>` Unicode / Western. Reactive to backend `EncodingChoice[]`. The detected encoding gets a "(Detected)" suffix.          |
 | `ViewModePicker.svelte`         | `<select>` placeholder for future view modes (today: only "Text", disabled).                                                                    |
 | `viewer-tail.svelte.ts`         | `createViewerTail()` composable: listens to `viewer:file-changed:<sid>` events and dispatches to reload toasts or a side effect.                |
