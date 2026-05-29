@@ -8,7 +8,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
-use super::super::helpers::spawn_async_sync;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::types::{
     OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
@@ -188,8 +187,11 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
         }
     }
 
-    // Spawn async sync for durability (non-blocking)
-    spawn_async_sync();
+    // No fsync after trashing: like delete, a non-durable trash fails
+    // annoyance-class (a trashed file could reappear after a crash, the user
+    // re-trashes; never data loss), so targeted fsync isn't worth its cost, and
+    // dropping the old whole-machine global sync (`sync(2)`) removes the stall
+    // it caused on unrelated apps. See `CLAUDE.md` § "Durability".
 
     // If all items failed, emit error
     if items_done == 0 && !errors.is_empty() {

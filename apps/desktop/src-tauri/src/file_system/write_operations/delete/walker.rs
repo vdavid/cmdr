@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use super::super::helpers::spawn_async_sync;
 use super::super::scan::{SourceItemTracker, scan_sources, take_cached_scan_result};
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::transfer::volume_copy::map_volume_error;
@@ -220,8 +219,13 @@ pub(super) fn delete_files_with_progress_inner(
         let _ = fs::remove_dir(dir);
     }
 
-    // Spawn async sync for durability (non-blocking)
-    spawn_async_sync();
+    // No fsync after a delete: a non-durable delete fails annoyance-class (a
+    // deleted file can reappear after a crash → the user re-deletes; never data
+    // loss), so targeted fsync isn't worth its cost — and dropping the old
+    // whole-machine global sync (`sync(2)`) also removes the stall it caused on
+    // unrelated apps (AGENTS.md principle #5). This is a deliberate, slight
+    // reduction of an already-weak fire-and-forget guarantee, not an accident.
+    // See `CLAUDE.md` § "Durability".
 
     // Emit completion
     events.emit_complete(WriteCompleteEvent {

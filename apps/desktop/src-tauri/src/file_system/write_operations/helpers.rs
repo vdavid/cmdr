@@ -520,7 +520,7 @@ fn fsync_dir(dir: &Path) -> std::io::Result<()> {
 }
 
 // ============================================================================
-// Async sync for durability
+// Background cleanup (detached, best-effort)
 // ============================================================================
 
 /// Deletes a file on a detached thread. Returns immediately. Best-effort.
@@ -538,19 +538,6 @@ pub(super) fn remove_dir_all_in_background(path: PathBuf) {
         if let Err(e) = fs::remove_dir_all(&path) {
             log::warn!("background cleanup: failed to remove {}: {}", path.display(), e);
         }
-    });
-}
-
-/// Spawns a background thread to call sync() for durability.
-/// This ensures writes are flushed to disk without blocking the completion event.
-pub(super) fn spawn_async_sync() {
-    std::thread::spawn(|| {
-        // On Unix, call sync() to flush all filesystem buffers
-        #[cfg(unix)]
-        unsafe {
-            libc::sync();
-        }
-        // On other platforms, this is a no-op (sync is not easily available)
     });
 }
 

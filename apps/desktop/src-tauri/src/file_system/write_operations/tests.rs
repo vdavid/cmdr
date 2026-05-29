@@ -721,3 +721,57 @@ fn test_safe_overwrite_dir_over_folder_dest_replaces_contents() {
 
     cleanup_temp_dir(&temp_dir);
 }
+
+/// Delete and trash deliberately don't flush after deleting, and copy/move
+/// flush their own destinations (`helpers::flush_created_destinations`) rather
+/// than firing a whole-machine `libc::sync()`. This pins that there are no
+/// remaining `spawn_async_sync` callers and no raw `libc::sync()` anywhere in
+/// the `write_operations` module, so the global-sync approach can't creep back
+/// in. (A non-durable delete fails annoyance-class — a deleted file reappears
+/// after a crash, the user re-deletes; never data loss — so targeted fsync
+/// isn't worth its cost there.)
+#[test]
+fn no_global_sync_or_spawn_async_sync_in_write_operations() {
+    fn walk(dir: &std::path::Path, hits: &mut Vec<String>) {
+        let entries = match fs::read_dir(dir) {
+            Ok(e) => e,
+            Err(_) => return,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path, hits);
+                continue;
+            }
+            if path.extension().and_then(|e| e.to_str()) != Some("rs") {
+                continue;
+            }
+            // Skip this very file: it names the forbidden symbols in prose.
+            if path.file_name().and_then(|n| n.to_str()) == Some("tests.rs")
+                && path.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str()) == Some("write_operations")
+            {
+                continue;
+            }
+            let src = match fs::read_to_string(&path) {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            // `spawn_async_sync` (the deleted helper) and a raw whole-machine
+            // `libc::sync()` are both banned.
+            if src.contains("spawn_async_sync") || src.contains("libc::sync(") {
+                hits.push(path.display().to_string());
+            }
+        }
+    }
+
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("file_system")
+        .join("write_operations");
+    let mut hits = Vec::new();
+    walk(&root, &mut hits);
+    assert!(
+        hits.is_empty(),
+        "found banned global-sync references (spawn_async_sync / libc::sync()) in: {hits:?}"
+    );
+}
