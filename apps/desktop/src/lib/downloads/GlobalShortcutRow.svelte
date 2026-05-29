@@ -116,7 +116,7 @@
         // warn-toast path). The acknowledged-reset rule is enforced by the
         // setter, not here.
         const unsub = onSpecificSettingChange(GLOBAL_REVEAL_BINDING_KEY, (_id, value) => {
-            binding = value as string
+            binding = value
         })
 
         return () => {
@@ -140,7 +140,10 @@
                 class="shortcut-pill"
                 class:editing
                 data-test="global-reveal-binding"
-                onclick={() => (editing ? cancelEditing() : startEditing())}
+                onclick={() => {
+                    if (editing) cancelEditing()
+                    else startEditing()
+                }}
             >
                 {#if editing}
                     {pendingKey || 'Press keys...'}
