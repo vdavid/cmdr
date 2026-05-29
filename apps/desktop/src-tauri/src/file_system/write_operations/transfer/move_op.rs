@@ -41,6 +41,13 @@ impl MoveTransaction {
 
     /// Reverses all recorded renames (dest → source) in reverse order.
     /// Same-FS rename is instant, so this runs synchronously.
+    ///
+    /// Intentional: this reverses the moves THIS op made; it does NOT restore a
+    /// destination that an Overwrite-with-rename replaced (no per-file backup is
+    /// kept — see `helpers::safe_overwrite_file` step 4). Keeping backups for the
+    /// whole operation risks unexpectedly filling the user's drive on a large
+    /// Overwrite. Revisit if users complain. See transfer/CLAUDE.md
+    /// § "Overwrite isn't reversible".
     fn rollback(&self) {
         for (original_source, moved_to_dest) in self.renames.iter().rev() {
             if let Err(e) = fs::rename(moved_to_dest, original_source) {

@@ -705,6 +705,13 @@ impl CopyTransaction {
     }
 
     /// Rolls back all created files and directories.
+    ///
+    /// Intentional: rollback removes the files THIS operation created; it does
+    /// NOT restore an original that an Overwrite replaced (we keep no per-file
+    /// backup — see `helpers::safe_overwrite_file` step 4). Keeping backups for
+    /// the whole operation risks unexpectedly filling the user's drive on a
+    /// large Overwrite. Revisit if users complain. See transfer/CLAUDE.md
+    /// § "Overwrite isn't reversible".
     pub fn rollback(&self) {
         // Delete files first (in reverse order)
         for file in self.created_files.iter().rev() {

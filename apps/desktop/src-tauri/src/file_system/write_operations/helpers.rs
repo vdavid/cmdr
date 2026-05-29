@@ -886,6 +886,12 @@ pub(super) fn safe_overwrite_file(
 
     // Step 4: Delete the renamed-aside original (non-critical, ignore errors).
     // Use remove_dir_all for directory asides (file-over-folder overwrite).
+    //
+    // Intentional: we do NOT retain a backup of the overwritten original for
+    // rollback. Keeping per-file backups for the whole operation risks
+    // unexpectedly filling the user's drive on a large Overwrite. Consequence:
+    // rollback removes new files but can't restore overwritten originals.
+    // Revisit if users complain. See transfer/CLAUDE.md § "Overwrite isn't reversible".
     if aside_path.is_dir() {
         let _ = fs::remove_dir_all(&aside_path);
     } else {

@@ -94,6 +94,14 @@ The flush is best-effort on error (logged under `target: "write_durability"`, no
 
 **Volume copy/move must skip `write-error` emit on `Cancelled`.** `copy_volumes_with_progress` / `move_*` inner handlers already emit `write-cancelled` before returning `Err(Cancelled)`, so the outer `copy_between_volumes` / `move_between_volumes` wrapper must match on `WriteOperationError::Cancelled { .. }` and NOT also emit `write-error`, otherwise the frontend logs a user-initiated cancel as an error. This mirrors `../mod.rs`'s `Ok(Err(Cancelled)) ⇒ no-op` branch for the generic `start_write_operation` path; the volume paths don't go through `../mod.rs`, so they carry their own version of the check. Related: cancellation must propagate as `VolumeError::Cancelled(msg)`, not `VolumeError::IoError { message: "Operation cancelled" }`; the `matches!(WriteOperationError::Cancelled)` check at the outer layer relies on the typed variant. `SmbVolume`'s streaming reader and `map_smb_error`'s `ErrorKind::Cancelled` arm both return `VolumeError::Cancelled` to stay consistent.
 
+## Overwrite isn't reversible
+
+**Decision**: Overwrite does NOT keep a backup of the replaced original. Rollback removes the files the operation created, but it can't restore an original that an Overwrite (or Overwrite-with-rename) replaced.
+
+**Why**: The obvious "make it reversible" fix is to retain a `.cmdr-backup-<uuid>` of every overwritten file for the operation's duration and delete the backups on commit. But that backup consumes drive space the user doesn't expect: a large multi-file Overwrite would briefly hold a full second copy of everything it overwrites, and on a near-full disk that can fail the operation — or fill the drive — exactly when the user is trying to free space. We judge "rollback can't undo an overwrite" to be the lesser surprise than "Overwrite filled my disk," so we accept the current behavior until users actually ask for reversible overwrites. The mechanics today: `safe_overwrite_file` uses temp+rename-aside+rename (the original is intact until the new content is fully in place), then **deletes** the aside in step 4 rather than retaining it. `CopyTransaction::rollback` and `MoveTransaction::rollback` therefore only un-create new files / reverse new renames.
+
+**If you revisit this**: the three sites that would need backups are `helpers::safe_overwrite_file` (step 4, the aside deletion), `state::CopyTransaction::rollback`, and `transfer/move_op.rs::MoveTransaction::rollback`. Each carries a pointer comment back here. Any future "retain backup" design must bound the extra disk footprint (for example, a size cap that falls back to no-backup, or an explicit pre-flight space check that reserves 2× the overwrite footprint) — don't reintroduce the unbounded-backup footgun this decision exists to avoid.
+
 ## Key decisions
 
 **Decision**: `copy_volumes_with_progress` scan phase calls `scan_for_copy_batch` once instead of `scan_for_copy` per source
