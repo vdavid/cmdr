@@ -554,18 +554,21 @@ export interface WriteConflictEvent {
   operationId: string
   sourcePath: string
   destinationPath: string
-  /** Source file size in bytes */
+  /** Source file size in bytes. Always known from the pre-flight scan. */
   sourceSize: number
-  /** Destination file size in bytes */
-  destinationSize: number
+  /** Destination size in bytes. `null` when the destination is a folder whose
+   *  size the drive index hasn't crawled yet (network mount, MTP, fresh paths) —
+   *  rendered as `(unknown)` in the UI. */
+  destinationSize: number | null
   /** Source modification time (Unix timestamp in seconds), if available */
   sourceModified: number | null
   /** Destination modification time (Unix timestamp in seconds), if available */
   destinationModified: number | null
   /** Whether destination is newer than source */
   destinationIsNewer: boolean
-  /** Size difference (positive = destination is larger) */
-  sizeDifference: number
+  /** `destinationSize - sourceSize` when both are known. Collapses to `null`
+   *  when `destinationSize` is `null` (no folder size to subtract against). */
+  sizeDifference: number | null
   /** Whether the source side is a directory. Renders the type-mismatch warning when this differs from `destinationIsDirectory`. */
   sourceIsDirectory: boolean
   /** Whether the destination side is a directory. See `sourceIsDirectory`. */

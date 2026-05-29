@@ -1,22 +1,26 @@
 /**
- * Conflict-dialog layout: when `WriteConflictEvent.sourceIsDirectory` and
- * `destinationIsDirectory` disagree, the dialog renders the type-mismatch
- * variant (two cards + danger-styled "Replace folder/file" buttons) and
- * disables the conditional bulk variants (Overwrite smaller / older).
- * When they agree, it falls back to the standard size-and-date comparison
- * with the secondary-styled "Overwrite" buttons.
+ * Conflict-dialog rendering matrix for `TransferProgressDialog.svelte`.
  *
- * We drive the dialog by capturing the conflict callback and synthesising
- * events with each shape. Then we assert what's in the DOM and which
- * buttons are disabled. We also run axe-core against each variant so the
- * tier-3 a11y contract holds.
+ * The dialog reuses one shape (filename, Existing/New rows, 4×2 button grid,
+ * Rollback row) across every clash type. The four variants differ in:
+ *   - Row labels (the type tag inside the "Existing:" / "New:" prefix)
+ *   - A red warning block above the filename (file → folder only)
+ *   - The "Overwrite" / "Overwrite all" button copy (file → folder only)
+ *   - Whether the destination size is known (renders normally or "(unknown)")
+ *   - Whether "Overwrite all smaller" is enabled (depends on destination size)
+ *
+ * We drive the dialog by capturing the `onWriteConflict` callback and firing
+ * synthetic events that walk a 4-variant × known/unknown axis (with a single
+ * a11y check per variant). describe.each over the axes keeps the matrix flat
+ * and the runtime well under the per-test budget — each case mounts the
+ * dialog component directly and asserts on the DOM.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import type { WriteConflictEvent } from '$lib/file-explorer/types'
 import { expectNoA11yViolations } from '$lib/test-a11y'
-import TransferProgressDialogStatic from './TransferProgressDialog.svelte'
+import TransferProgressDialog from './TransferProgressDialog.svelte'
 
 let conflictCb: ((e: WriteConflictEvent) => void) | null = null
 
@@ -67,7 +71,12 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
   getVolumes: () => [{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false }],
 }))
 
-async function flushPromises(): Promise<void> {
+async function flushMicrotasks(): Promise<void> {
+  // The dialog's onMount runs ~6 `await onWriteX(...)` subscribers before it
+  // reaches `await dispatchOperation()` and the conflict callback gets wired
+  // up. We need enough microtask turns to walk the entire chain. Each round
+  // here yields exactly one macrotask + one microtask flush + a Svelte tick;
+  // 10 rounds is heavy overkill but still under 10 ms in jsdom.
   for (let i = 0; i < 10; i++) {
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 0)
@@ -80,7 +89,7 @@ async function mountDialogWithConflict(event: WriteConflictEvent): Promise<HTMLD
   conflictCb = null
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(TransferProgressDialogStatic, {
+  mount(TransferProgressDialog, {
     target,
     props: {
       operationType: 'copy',
@@ -99,10 +108,10 @@ async function mountDialogWithConflict(event: WriteConflictEvent): Promise<HTMLD
       onError: () => {},
     },
   })
-  await flushPromises()
-  // Capture into a const so TS narrowing doesn't get widened back to nullable
-  // across the async helper's let-binding closure (a real risk: another await
-  // could in theory reassign `conflictCb`, even though we control the mock).
+  await flushMicrotasks()
+  // Cast into a const so TS narrowing doesn't get widened back to nullable
+  // across any future await further down (another await could in theory
+  // reassign `conflictCb`, even though we control the mock here).
   const cb = conflictCb as ((e: WriteConflictEvent) => void) | null
   if (cb === null) throw new Error('conflict subscriber never registered')
   cb(event)
@@ -115,141 +124,239 @@ function buttonByText(target: HTMLElement, text: string): HTMLButtonElement | nu
   return buttons.find((b) => b.textContent.trim() === text) ?? null
 }
 
-describe('TransferProgressDialog conflict layout', () => {
-  it('file-vs-file shows the size/date comparison and a plain "Overwrite" button', async () => {
-    const target = await mountDialogWithConflict({
-      operationId: 'op-1',
-      sourcePath: '/Users/test/things/report.pdf',
-      destinationPath: '/Users/test/dest/report.pdf',
-      sourceSize: 2048,
-      destinationSize: 1024,
-      sourceModified: 1_710_000_000,
-      destinationModified: 1_700_000_000,
-      destinationIsNewer: false,
-      sizeDifference: -1024,
-      sourceIsDirectory: false,
-      destinationIsDirectory: false,
-    })
+function makeEvent(overrides: Partial<WriteConflictEvent> = {}): WriteConflictEvent {
+  return {
+    operationId: 'op-1',
+    sourcePath: '/Users/test/things/report.pdf',
+    destinationPath: '/Users/test/dest/report.pdf',
+    sourceSize: 2048,
+    destinationSize: 1024,
+    sourceModified: 1_710_000_000,
+    destinationModified: 1_700_000_000,
+    destinationIsNewer: false,
+    sizeDifference: -1024,
+    sourceIsDirectory: false,
+    destinationIsDirectory: false,
+    ...overrides,
+  }
+}
 
+beforeEach(() => {
+  conflictCb = null
+  document.body.innerHTML = ''
+})
+
+/* ------------------------------------------------------------------------- */
+/* Clash-type axis × destination-size-known axis                             */
+/* ------------------------------------------------------------------------- */
+
+interface VariantCase {
+  name: string
+  sourceIsDirectory: boolean
+  destinationIsDirectory: boolean
+  existingLabel: string
+  newLabel: string
+  hasWarning: boolean
+  overwriteLabel: string
+  overwriteAllLabel: string
+}
+
+const variants: VariantCase[] = [
+  {
+    name: 'file → file',
+    sourceIsDirectory: false,
+    destinationIsDirectory: false,
+    existingLabel: 'Existing:',
+    newLabel: 'New:',
+    hasWarning: false,
+    overwriteLabel: 'Overwrite',
+    overwriteAllLabel: 'Overwrite all',
+  },
+  {
+    name: 'folder → folder',
+    sourceIsDirectory: true,
+    destinationIsDirectory: true,
+    existingLabel: 'Existing (folder):',
+    newLabel: 'New (folder):',
+    hasWarning: false,
+    overwriteLabel: 'Overwrite',
+    overwriteAllLabel: 'Overwrite all',
+  },
+  {
+    name: 'folder → file',
+    sourceIsDirectory: true,
+    destinationIsDirectory: false,
+    existingLabel: 'Existing (file):',
+    newLabel: 'New (folder):',
+    hasWarning: false,
+    overwriteLabel: 'Overwrite',
+    overwriteAllLabel: 'Overwrite all',
+  },
+  {
+    name: 'file → folder',
+    sourceIsDirectory: false,
+    destinationIsDirectory: true,
+    existingLabel: 'Existing (folder):',
+    newLabel: 'New (file):',
+    hasWarning: true,
+    overwriteLabel: 'Overwrite folder with file',
+    overwriteAllLabel: 'Overwrite folders with files',
+  },
+]
+
+describe.each(variants)('TransferProgressDialog conflict — $name', (variant) => {
+  it('shows the baseline title and filename', async () => {
+    const target = await mountDialogWithConflict(
+      makeEvent({
+        sourceIsDirectory: variant.sourceIsDirectory,
+        destinationIsDirectory: variant.destinationIsDirectory,
+      }),
+    )
     expect(target.textContent).toContain('File already exists')
     expect(target.textContent).toContain('report.pdf')
-    // No type-mismatch lede.
-    expect(target.querySelector('.conflict-lede')).toBeNull()
-    expect(target.querySelector('.mismatch-cards')).toBeNull()
-    // Plain "Overwrite" buttons (secondary variant).
-    const overwrite = buttonByText(target, 'Overwrite')
-    expect(overwrite, '"Overwrite" button exists').toBeTruthy()
-    expect(overwrite?.classList.contains('btn-secondary'), 'secondary variant').toBe(true)
-    expect(overwrite?.disabled).toBe(false)
-    // Conditional bulk variants enabled.
+  })
+
+  it('renders Existing/New row labels with the right type tags', async () => {
+    const target = await mountDialogWithConflict(
+      makeEvent({
+        sourceIsDirectory: variant.sourceIsDirectory,
+        destinationIsDirectory: variant.destinationIsDirectory,
+      }),
+    )
+    const labels = Array.from(target.querySelectorAll('.conflict-file-label')).map((l) => l.textContent.trim())
+    expect(labels).toEqual([variant.existingLabel, variant.newLabel])
+  })
+
+  it(`${variant.hasWarning ? 'shows' : 'omits'} the red warning block`, async () => {
+    const target = await mountDialogWithConflict(
+      makeEvent({
+        sourceIsDirectory: variant.sourceIsDirectory,
+        destinationIsDirectory: variant.destinationIsDirectory,
+      }),
+    )
+    const warning = target.querySelector('.conflict-warning')
+    if (variant.hasWarning) {
+      expect(warning, 'red warning block present').not.toBeNull()
+      // Both bold spans render as real <strong> elements with the right text.
+      const strongs = Array.from(warning?.querySelectorAll('strong') ?? []).map((s) => s.textContent.trim())
+      expect(strongs).toEqual(['folder', 'file'])
+      // Role + content sanity-check matches the spec verbiage.
+      expect(warning?.getAttribute('role')).toBe('alert')
+      expect(warning?.textContent).toContain('overwrite it with a')
+      expect(warning?.textContent).toContain('What to do?')
+    } else {
+      expect(warning, 'no red warning block').toBeNull()
+    }
+  })
+
+  it('uses the correct "Overwrite" button labels', async () => {
+    const target = await mountDialogWithConflict(
+      makeEvent({
+        sourceIsDirectory: variant.sourceIsDirectory,
+        destinationIsDirectory: variant.destinationIsDirectory,
+      }),
+    )
+    expect(buttonByText(target, variant.overwriteLabel), variant.overwriteLabel).toBeTruthy()
+    expect(buttonByText(target, variant.overwriteAllLabel), variant.overwriteAllLabel).toBeTruthy()
+    // Both stay on the secondary variant — danger styling moved out per spec.
+    expect(buttonByText(target, variant.overwriteLabel)?.classList.contains('btn-secondary')).toBe(true)
+  })
+
+  it('keeps Skip / Skip all / Rename / Rename all unchanged and enabled', async () => {
+    const target = await mountDialogWithConflict(
+      makeEvent({
+        sourceIsDirectory: variant.sourceIsDirectory,
+        destinationIsDirectory: variant.destinationIsDirectory,
+      }),
+    )
+    for (const label of ['Skip', 'Skip all', 'Rename', 'Rename all']) {
+      const btn = buttonByText(target, label)
+      expect(btn, label).toBeTruthy()
+      expect(btn?.disabled).toBe(false)
+    }
+  })
+
+  it('has no a11y violations', async () => {
+    const target = await mountDialogWithConflict(
+      makeEvent({
+        sourceIsDirectory: variant.sourceIsDirectory,
+        destinationIsDirectory: variant.destinationIsDirectory,
+      }),
+    )
+    await expectNoA11yViolations(target)
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* destinationSize known vs null — only meaningful for file → folder, where  */
+/* the BE can legitimately fail to look up the destination folder size.      */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferProgressDialog conflict — file → folder, destinationSize known', () => {
+  const event = makeEvent({
+    sourceIsDirectory: false,
+    destinationIsDirectory: true,
+    destinationSize: 4096,
+    sizeDifference: 2048,
+  })
+
+  it('renders the destination size in the Existing slot (not "(unknown)")', async () => {
+    const target = await mountDialogWithConflict(event)
+    const existingSize = target.querySelector('.conflict-file .conflict-file-size')
+    expect(existingSize?.textContent.trim()).toBe('4096 B')
+    expect(existingSize?.classList.contains('unknown')).toBe(false)
+  })
+
+  it('keeps "Overwrite all smaller" enabled', async () => {
+    const target = await mountDialogWithConflict(event)
     expect(buttonByText(target, 'Overwrite all smaller')?.disabled).toBe(false)
+  })
+
+  it('keeps "Overwrite all older" enabled', async () => {
+    const target = await mountDialogWithConflict(event)
+    expect(buttonByText(target, 'Overwrite all older')?.disabled).toBe(false)
+  })
+})
+
+describe('TransferProgressDialog conflict — file → folder, destinationSize null', () => {
+  const event = makeEvent({
+    sourceIsDirectory: false,
+    destinationIsDirectory: true,
+    destinationSize: null,
+    sizeDifference: null,
+  })
+
+  it('renders "(unknown)" in the Existing slot using the muted color class', async () => {
+    const target = await mountDialogWithConflict(event)
+    const existingSize = target.querySelector('.conflict-file .conflict-file-size')
+    expect(existingSize?.textContent.trim()).toBe('(unknown)')
+    expect(existingSize?.classList.contains('unknown')).toBe(true)
+  })
+
+  it('disables "Overwrite all smaller" and wraps it in a tooltip host', async () => {
+    const target = await mountDialogWithConflict(event)
+    const smaller = buttonByText(target, 'Overwrite all smaller')
+    expect(smaller?.disabled).toBe(true)
+    // The disabled button is wrapped in a `.conflict-button-wrap` so the
+    // tooltip action has a host to attach hover handlers to (disabled buttons
+    // don't fire pointer events themselves). The tooltip text isn't reflected
+    // in the DOM until hover, so we only assert the wrap is there.
+    const wrap = smaller?.closest('.conflict-button-wrap')
+    expect(wrap, 'tooltip host wrap present').not.toBeNull()
+  })
+
+  it('keeps "Overwrite all older" enabled (mtime is always known)', async () => {
+    const target = await mountDialogWithConflict(event)
     expect(buttonByText(target, 'Overwrite all older')?.disabled).toBe(false)
   })
 
-  it('file replacing folder shows "Replace folder" as the destructive primary', async () => {
-    const target = await mountDialogWithConflict({
-      operationId: 'op-1',
-      sourcePath: '/Users/test/things/notes',
-      destinationPath: '/Users/test/dest/notes',
-      sourceSize: 512,
-      destinationSize: 0,
-      sourceModified: 1_710_000_000,
-      destinationModified: 1_700_000_000,
-      destinationIsNewer: false,
-      sizeDifference: 0,
-      // Source is a file, destination is a folder: clobbering the folder.
-      sourceIsDirectory: false,
-      destinationIsDirectory: true,
-    })
-
-    expect(target.textContent).toContain('Replace this folder with a file?')
-    // Mismatch lede appears and explains the destructive nature.
-    expect(target.querySelector('.conflict-lede')).not.toBeNull()
-    expect(target.textContent).toContain('whole folder')
-    // Two cards present.
-    expect(target.querySelectorAll('.mismatch-card').length).toBe(2)
-    expect(target.querySelector('.mismatch-card--at-risk')).not.toBeNull()
-    // Primary button reads "Replace folder" and uses the danger variant.
-    const replace = buttonByText(target, 'Replace folder')
-    expect(replace, '"Replace folder" button exists').toBeTruthy()
-    expect(replace?.classList.contains('btn-danger'), 'danger variant').toBe(true)
-    // Conditional bulk variants disabled with tooltip hint.
-    expect(buttonByText(target, 'Overwrite all smaller')?.disabled).toBe(true)
-    expect(buttonByText(target, 'Overwrite all older')?.disabled).toBe(true)
-    // No file-vs-file size/date row.
-    expect(target.querySelector('.conflict-comparison')).toBeNull()
+  it('still shows the red warning block (this is the file → folder variant)', async () => {
+    const target = await mountDialogWithConflict(event)
+    expect(target.querySelector('.conflict-warning')).not.toBeNull()
   })
 
-  it('folder replacing file shows "Replace file" as the destructive primary', async () => {
-    const target = await mountDialogWithConflict({
-      operationId: 'op-1',
-      sourcePath: '/Users/test/things/archive',
-      destinationPath: '/Users/test/dest/archive',
-      sourceSize: 0,
-      destinationSize: 4096,
-      sourceModified: 1_710_000_000,
-      destinationModified: 1_700_000_000,
-      destinationIsNewer: false,
-      sizeDifference: 0,
-      // Source is a folder, destination is a file: clobbering the file.
-      sourceIsDirectory: true,
-      destinationIsDirectory: false,
-    })
-
-    expect(target.textContent).toContain('Replace this file with a folder?')
-    expect(target.textContent).toContain('would be replaced by a folder')
-    expect(buttonByText(target, 'Replace file')?.classList.contains('btn-danger')).toBe(true)
-    expect(buttonByText(target, 'Overwrite all smaller')?.disabled).toBe(true)
-  })
-
-  it('file-vs-file conflict has no a11y violations', async () => {
-    const target = await mountDialogWithConflict({
-      operationId: 'op-1',
-      sourcePath: '/Users/test/things/report.pdf',
-      destinationPath: '/Users/test/dest/report.pdf',
-      sourceSize: 2048,
-      destinationSize: 1024,
-      sourceModified: 1_710_000_000,
-      destinationModified: 1_700_000_000,
-      destinationIsNewer: false,
-      sizeDifference: -1024,
-      sourceIsDirectory: false,
-      destinationIsDirectory: false,
-    })
-    await expectNoA11yViolations(target)
-  })
-
-  it('file-replacing-folder conflict has no a11y violations', async () => {
-    const target = await mountDialogWithConflict({
-      operationId: 'op-1',
-      sourcePath: '/Users/test/things/notes',
-      destinationPath: '/Users/test/dest/notes',
-      sourceSize: 512,
-      destinationSize: 0,
-      sourceModified: 1_710_000_000,
-      destinationModified: 1_700_000_000,
-      destinationIsNewer: false,
-      sizeDifference: 0,
-      sourceIsDirectory: false,
-      destinationIsDirectory: true,
-    })
-    await expectNoA11yViolations(target)
-  })
-
-  it('folder-replacing-file conflict has no a11y violations', async () => {
-    const target = await mountDialogWithConflict({
-      operationId: 'op-1',
-      sourcePath: '/Users/test/things/archive',
-      destinationPath: '/Users/test/dest/archive',
-      sourceSize: 0,
-      destinationSize: 4096,
-      sourceModified: 1_710_000_000,
-      destinationModified: 1_700_000_000,
-      destinationIsNewer: false,
-      sizeDifference: 0,
-      sourceIsDirectory: true,
-      destinationIsDirectory: false,
-    })
+  it('has no a11y violations with (unknown) destination size', async () => {
+    const target = await mountDialogWithConflict(event)
     await expectNoA11yViolations(target)
   })
 })

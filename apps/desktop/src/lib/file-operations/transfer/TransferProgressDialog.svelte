@@ -55,9 +55,6 @@
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { ScanThroughput } from '../scan-throughput'
-    import IconFile from '~icons/lucide/file'
-    import IconFolder from '~icons/lucide/folder'
-    import IconArrowRight from '~icons/lucide/arrow-right'
     import IconTriangleAlert from '~icons/lucide/triangle-alert'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
@@ -981,19 +978,7 @@
                 Cancelling...
             {/if}
         {:else if conflictEvent}
-            {@const cSrcDir = conflictEvent.sourceIsDirectory}
-            {@const cDestDir = conflictEvent.destinationIsDirectory}
-            {#if cSrcDir !== cDestDir}
-                {#if cDestDir}
-                    Replace this folder with a file?
-                {:else}
-                    Replace this file with a folder?
-                {/if}
-            {:else if cDestDir}
-                Folder already exists
-            {:else}
-                File already exists
-            {/if}
+            File already exists
         {:else}
             {operationGerund}...
         {/if}
@@ -1027,38 +1012,44 @@
             >
         </div>
     {:else if !isDeleteOrTrash && conflictEvent}
-        <!-- Conflict resolution (copy/move only). Two layout variants share the
-             same backend resolution path; the type-mismatch variant trades the
-             size/date comparison for type pictograms + a destructive primary
-             action, because a folder has no "smaller" or "older" the user can
-             pick a policy against. -->
+        <!-- Conflict resolution (copy/move only). The same shape — filename,
+             "Existing:" / "New:" rows, the 4×2 button grid, the Rollback row —
+             is used for every clash type. Variants only differ in row labels,
+             a red warning block above the filename for file→folder, and the
+             "Overwrite" button copy in that one case. -->
         {@const fileName = conflictEvent.destinationPath.split('/').pop() ?? ''}
         {@const existingIsNewer = conflictEvent.destinationIsNewer}
         {@const newIsNewer = !existingIsNewer && conflictEvent.sourceModified !== conflictEvent.destinationModified}
-        {@const existingIsLarger = conflictEvent.sizeDifference > 0}
-        {@const newIsLarger = conflictEvent.sizeDifference < 0}
+        {@const sizeDiff = conflictEvent.sizeDifference}
+        {@const existingIsLarger = sizeDiff !== null && sizeDiff > 0}
+        {@const newIsLarger = sizeDiff !== null && sizeDiff < 0}
         {@const sourceIsDir = conflictEvent.sourceIsDirectory}
         {@const destIsDir = conflictEvent.destinationIsDirectory}
         {@const isTypeMismatch = sourceIsDir !== destIsDir}
-        {@const replacingFolder = isTypeMismatch && destIsDir}
-        {@const replaceLabel = destIsDir ? 'Replace folder' : 'Replace file'}
-        {@const replaceAllLabel = destIsDir ? 'Replace folders' : 'Replace files'}
-        {@const conditionalTooltip = isTypeMismatch
-            ? 'Not available when a file and a folder collide. Their sizes and dates can\'t be compared meaningfully.'
+        {@const isFileOverFolder = isTypeMismatch && destIsDir}
+        {@const existingLabel = destIsDir ? 'Existing (folder):' : sourceIsDir ? 'Existing (file):' : 'Existing:'}
+        {@const newLabel = sourceIsDir ? 'New (folder):' : isFileOverFolder ? 'New (file):' : 'New:'}
+        {@const overwriteLabel = isFileOverFolder ? 'Overwrite folder with file' : 'Overwrite'}
+        {@const overwriteAllLabel = isFileOverFolder ? 'Overwrite folders with files' : 'Overwrite all'}
+        {@const destSize = conflictEvent.destinationSize}
+        {@const destSizeUnknown = destSize === null}
+        {@const smallerDisabledTooltip = destSizeUnknown
+            ? "Can't compare — target folder size is unknown."
             : undefined}
         <div class="conflict-section">
-            {#if isTypeMismatch}
-                <!-- Type-mismatch banner: spells out the swap above the cards so
-                     the user sees the destructive nature before any button. -->
-                <p class="conflict-lede">
-                    <span class="conflict-lede-icon" aria-hidden="true">
+            {#if isFileOverFolder}
+                <!-- Red warning sits below the title and above the filename.
+                     The "boring" title is `File already exists`; the destructive
+                     swap gets called out here so the user can't miss it. -->
+                <p class="conflict-warning" role="alert">
+                    <span class="conflict-warning-icon" aria-hidden="true">
                         <IconTriangleAlert width="16" height="16" />
                     </span>
-                    {#if replacingFolder}
-                        The whole folder and everything inside would be replaced by a file.
-                    {:else}
-                        The file would be replaced by a folder and its contents.
-                    {/if}
+                    <span>
+                        The target exists and is a <strong>folder</strong>. You're about to overwrite it with a
+                        <strong>file</strong> by the same name. All contents of the target folder would be deleted and
+                        replaced by the file. What to do?
+                    </span>
                 </p>
             {/if}
 
@@ -1067,88 +1058,48 @@
                 {fileName}
             </p>
 
-            {#if isTypeMismatch}
-                <!-- Two visual cards: "Currently" (with destructive-warning chrome
-                     if it's a folder being clobbered) and "Incoming". Arrow points
-                     from old to new so it reads left-to-right. -->
-                <div class="mismatch-cards" role="group" aria-label="Item type comparison">
-                    <div
-                        class="mismatch-card"
-                        class:mismatch-card--at-risk={replacingFolder}
+            <!-- File comparison: same shape across all variants. Type tags
+                 (`Existing (file):` / `New (folder):` etc.) flag the mismatch
+                 without breaking the layout. Size renders normally when known
+                 and substitutes `(unknown)` in muted color when the BE could
+                 not look the destination folder size up. -->
+            <div class="conflict-comparison">
+                <div class="conflict-file">
+                    <span class="conflict-file-label">{existingLabel}</span>
+                    {#if destSizeUnknown}
+                        <span class="conflict-file-size unknown">(unknown)</span>
+                    {:else}
+                        <span class="conflict-file-size {getSizeColorClass(destSize)}"
+                            >{formatFileSize(destSize)}</span
+                        >
+                    {/if}
+                    {#if existingIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
+                    <span class="conflict-file-date"
+                        >{conflictEvent.destinationModified
+                            ? formatDate(conflictEvent.destinationModified)
+                            : ''}</span
                     >
-                        <span class="mismatch-card-label">Currently</span>
-                        <span class="mismatch-card-icon" aria-hidden="true">
-                            {#if destIsDir}
-                                <IconFolder width="28" height="28" />
-                            {:else}
-                                <IconFile width="28" height="28" />
-                            {/if}
-                        </span>
-                        <span class="mismatch-card-type">{destIsDir ? 'Folder' : 'File'}</span>
-                        {#if !destIsDir && conflictEvent.destinationSize > 0}
-                            <span class="mismatch-card-meta {getSizeColorClass(conflictEvent.destinationSize)}">
-                                {formatFileSize(conflictEvent.destinationSize)}
-                            </span>
-                        {/if}
-                    </div>
-                    <span class="mismatch-arrow" aria-hidden="true">
-                        <IconArrowRight width="20" height="20" />
-                    </span>
-                    <div
-                        class="mismatch-card"
-                        class:mismatch-card--at-risk={!replacingFolder}
+                    {#if existingIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
+                </div>
+                <div class="conflict-file">
+                    <span class="conflict-file-label">{newLabel}</span>
+                    <span class="conflict-file-size {getSizeColorClass(conflictEvent.sourceSize)}"
+                        >{formatFileSize(conflictEvent.sourceSize)}</span
                     >
-                        <span class="mismatch-card-label">Incoming</span>
-                        <span class="mismatch-card-icon" aria-hidden="true">
-                            {#if sourceIsDir}
-                                <IconFolder width="28" height="28" />
-                            {:else}
-                                <IconFile width="28" height="28" />
-                            {/if}
-                        </span>
-                        <span class="mismatch-card-type">{sourceIsDir ? 'Folder' : 'File'}</span>
-                        {#if !sourceIsDir && conflictEvent.sourceSize > 0}
-                            <span class="mismatch-card-meta {getSizeColorClass(conflictEvent.sourceSize)}">
-                                {formatFileSize(conflictEvent.sourceSize)}
-                            </span>
-                        {/if}
-                    </div>
+                    {#if newIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
+                    <span class="conflict-file-date"
+                        >{conflictEvent.sourceModified ? formatDate(conflictEvent.sourceModified) : ''}</span
+                    >
+                    {#if newIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
                 </div>
-            {:else}
-                <!-- File-vs-file comparison: size + date side by side. -->
-                <div class="conflict-comparison">
-                    <div class="conflict-file">
-                        <span class="conflict-file-label">Existing:</span>
-                        <span class="conflict-file-size {getSizeColorClass(conflictEvent.destinationSize)}"
-                            >{formatFileSize(conflictEvent.destinationSize)}</span
-                        >
-                        {#if existingIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
-                        <span class="conflict-file-date"
-                            >{conflictEvent.destinationModified
-                                ? formatDate(conflictEvent.destinationModified)
-                                : ''}</span
-                        >
-                        {#if existingIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
-                    </div>
-                    <div class="conflict-file">
-                        <span class="conflict-file-label">New:</span>
-                        <span class="conflict-file-size {getSizeColorClass(conflictEvent.sourceSize)}"
-                            >{formatFileSize(conflictEvent.sourceSize)}</span
-                        >
-                        {#if newIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
-                        <span class="conflict-file-date"
-                            >{conflictEvent.sourceModified ? formatDate(conflictEvent.sourceModified) : ''}</span
-                        >
-                        {#if newIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
-                    </div>
-                </div>
-            {/if}
+            </div>
 
             <!-- Buttons. Two columns: left = this-item, right = apply-to-all.
-                 Last row holds conditional bulk variants, which only make
-                 sense when both sides are files (folder has no size/mtime
-                 the user picked a policy against), so we disable them in
-                 the type-mismatch layout with a tooltip explaining why. -->
+                 Last row holds the conditional bulk variants: `Overwrite all
+                 smaller` only works when the destination size is known
+                 (a folder dest with no index size disables it with a tooltip);
+                 `Overwrite all older` always stays enabled (mtime is always
+                 available even for folder destinations). -->
             <div class="conflict-buttons">
                 <div class="conflict-buttons-row">
                     <Button
@@ -1184,39 +1135,37 @@
                 </div>
                 <div class="conflict-buttons-row">
                     <Button
-                        variant={isTypeMismatch ? 'danger' : 'secondary'}
+                        variant="secondary"
                         onclick={() => handleConflictResolution('overwrite', false)}
                         disabled={isResolvingConflict}
                     >
-                        {isTypeMismatch ? replaceLabel : 'Overwrite'}
+                        {overwriteLabel}
                     </Button>
                     <Button
-                        variant={isTypeMismatch ? 'danger' : 'secondary'}
+                        variant="secondary"
                         onclick={() => handleConflictResolution('overwrite', true)}
                         disabled={isResolvingConflict}
                     >
-                        {isTypeMismatch ? replaceAllLabel : 'Overwrite all'}
+                        {overwriteAllLabel}
                     </Button>
                 </div>
                 <div class="conflict-buttons-row">
-                    <span use:tooltip={conditionalTooltip} class="conflict-button-wrap">
+                    <span use:tooltip={smallerDisabledTooltip} class="conflict-button-wrap">
                         <Button
                             variant="secondary"
                             onclick={() => handleConflictResolution('overwrite_smaller', true)}
-                            disabled={isResolvingConflict || isTypeMismatch}
+                            disabled={isResolvingConflict || destSizeUnknown}
                         >
                             Overwrite all smaller
                         </Button>
                     </span>
-                    <span use:tooltip={conditionalTooltip} class="conflict-button-wrap">
-                        <Button
-                            variant="secondary"
-                            onclick={() => handleConflictResolution('overwrite_older', true)}
-                            disabled={isResolvingConflict || isTypeMismatch}
-                        >
-                            Overwrite all older
-                        </Button>
-                    </span>
+                    <Button
+                        variant="secondary"
+                        onclick={() => handleConflictResolution('overwrite_older', true)}
+                        disabled={isResolvingConflict}
+                    >
+                        Overwrite all older
+                    </Button>
                 </div>
             </div>
 
@@ -1525,103 +1474,52 @@
         font-size: var(--font-size-sm);
     }
 
-    /* Type-mismatch lede: small icon + sentence describing the destructive
-       swap. Sits above the filename so it's the first thing read. */
-    .conflict-lede {
+    /* Red warning block for file→folder clashes. Sits below the title and
+       above the filename so the user sees the destructive nature before any
+       button. Mirrors the warning-callout visual vocabulary used elsewhere
+       (icon + sentence in a tinted block) but in red, not yellow, to mark
+       the higher destructive stakes. */
+    .conflict-warning {
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-sm);
         margin: 0 0 var(--spacing-md);
         padding: var(--spacing-sm) var(--spacing-md);
-        background: var(--color-warning-bg);
-        color: var(--color-warning-text);
+        background: var(--color-error-bg);
+        color: var(--color-error-text);
+        border: 1px solid var(--color-error-border);
         border-radius: var(--radius-md);
         font-size: var(--font-size-sm);
         line-height: 1.4;
     }
 
-    .conflict-lede-icon {
+    .conflict-warning strong {
+        font-weight: 600;
+    }
+
+    .conflict-warning-icon {
         flex-shrink: 0;
         display: inline-flex;
         align-items: center;
-        color: var(--color-warning);
+        color: var(--color-error-text);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list -- align icon with first line of text */
         margin-top: 1px;
     }
 
-    /* Two-card comparison for the type-mismatch variant. Cards visually pair
-       a type pictogram with a tiny label so the user reads "Currently: Folder
-       → Incoming: File" without having to parse prose. The at-risk side gets
-       a warning-tinted border so the destructive side is the eye-catcher. */
-    .mismatch-cards {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        align-items: center;
-        gap: var(--spacing-md);
-        margin: 0 0 var(--spacing-lg);
-    }
-
-    .mismatch-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--spacing-xs);
-        padding: var(--spacing-md) var(--spacing-sm);
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        min-width: 0;
-    }
-
-    .mismatch-card--at-risk {
-        background: var(--color-warning-bg);
-        border-color: var(--color-warning);
-    }
-
-    .mismatch-card-label {
-        font-size: var(--font-size-xs);
-        font-weight: 500;
+    /* `(unknown)` placeholder used in the Existing-size slot when the BE
+       couldn't look up the destination folder's size (no drive-index entry).
+       Muted so it reads as "no value" rather than masquerading as a real
+       byte-range color. */
+    .conflict-file-size.unknown {
         color: var(--color-text-tertiary);
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-    }
-
-    .mismatch-card-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--color-text-secondary);
-    }
-
-    .mismatch-card--at-risk .mismatch-card-icon {
-        color: var(--color-warning);
-    }
-
-    .mismatch-card-type {
-        font-size: var(--font-size-md);
-        font-weight: 600;
-        color: var(--color-text-primary);
-    }
-
-    .mismatch-card-meta {
-        font-size: var(--font-size-sm);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .mismatch-arrow {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--color-text-tertiary);
+        font-style: italic;
     }
 
     /* Wrap so the tooltip has a host element when the inner Button is
        disabled (disabled buttons don't fire pointer events themselves).
        The inner button still gets `flex: 1` via the existing
-       `.conflict-buttons :global(button)` rule below — but that selector
-       only matches direct-or-nested buttons inside the buttons container,
-       so to keep the row alignment identical between mismatch-disabled
-       and file-vs-file rows we have to set flex on the wrap too. */
+       `.conflict-buttons :global(button)` rule below, so this wrap matches
+       button-row width. */
     .conflict-button-wrap {
         display: flex;
         flex: 1;
