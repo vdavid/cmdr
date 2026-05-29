@@ -351,7 +351,11 @@ fn assert_single_file_cell(
     // Force a deterministic mtime ordering for the conditional cells.
     set_mtimes(&src_file, &dst_file, src_mtime_newer);
 
-    let op_id = format!("matrix-single-{}-{:?}", if cross_fs { "xfs" } else { "samefs" }, cell.resolution);
+    let op_id = format!(
+        "matrix-single-{}-{:?}",
+        if cross_fs { "xfs" } else { "samefs" },
+        cell.resolution
+    );
     let result = if cross_fs {
         run_cross_fs_move(std::slice::from_ref(&src_file), &dst_dir, cell.resolution, &op_id)
     } else {
@@ -363,13 +367,28 @@ fn assert_single_file_cell(
         None => {
             // Skip-equivalent: source survives, dest unchanged.
             assert!(src_file.exists(), "{op_id}: Skip-equivalent must preserve the source");
-            assert_eq!(fs::read(&src_file).unwrap(), src_bytes, "{op_id}: source content intact");
-            assert_eq!(fs::read(&dst_file).unwrap(), dst_bytes, "{op_id}: dest must be unchanged");
+            assert_eq!(
+                fs::read(&src_file).unwrap(),
+                src_bytes,
+                "{op_id}: source content intact"
+            );
+            assert_eq!(
+                fs::read(&dst_file).unwrap(),
+                dst_bytes,
+                "{op_id}: dest must be unchanged"
+            );
         }
         Some(true) => {
             // Overwrite: source moved, dest now holds the source's content.
-            assert!(!src_file.exists(), "{op_id}: Overwrite that landed must delete the source");
-            assert_eq!(fs::read(&dst_file).unwrap(), src_bytes, "{op_id}: dest := source content");
+            assert!(
+                !src_file.exists(),
+                "{op_id}: Overwrite that landed must delete the source"
+            );
+            assert_eq!(
+                fs::read(&dst_file).unwrap(),
+                src_bytes,
+                "{op_id}: dest := source content"
+            );
         }
         Some(false) => {
             // Rename: source moved, original dest kept, renamed incoming present.
@@ -377,7 +396,11 @@ fn assert_single_file_cell(
             assert_eq!(fs::read(&dst_file).unwrap(), dst_bytes, "{op_id}: original dest kept");
             let renamed = dst_dir.join("f (1).bin");
             assert!(renamed.exists(), "{op_id}: renamed incoming must exist");
-            assert_eq!(fs::read(&renamed).unwrap(), src_bytes, "{op_id}: renamed incoming has source bytes");
+            assert_eq!(
+                fs::read(&renamed).unwrap(),
+                src_bytes,
+                "{op_id}: renamed incoming has source bytes"
+            );
         }
     }
 }
@@ -489,7 +512,11 @@ fn assert_dir_one_skipped_child(cross_fs: bool, resolution: ConflictResolution, 
         src_newer_for_collide,
     );
 
-    let op_id = format!("matrix-dir-{}-{:?}", if cross_fs { "xfs" } else { "samefs" }, resolution);
+    let op_id = format!(
+        "matrix-dir-{}-{:?}",
+        if cross_fs { "xfs" } else { "samefs" },
+        resolution
+    );
     let result = if cross_fs {
         run_cross_fs_move(std::slice::from_ref(&src_dir), &dst_root, resolution, &op_id)
     } else {
@@ -498,8 +525,14 @@ fn assert_dir_one_skipped_child(cross_fs: bool, resolution: ConflictResolution, 
     assert!(result.is_ok(), "{op_id}: {:?}", result.err());
 
     // The non-colliding child moved.
-    assert!(dst_dir.join("keep.bin").exists(), "{op_id}: new child should land at dest");
-    assert!(!src_dir.join("keep.bin").exists(), "{op_id}: new child should leave the source");
+    assert!(
+        dst_dir.join("keep.bin").exists(),
+        "{op_id}: new child should land at dest"
+    );
+    assert!(
+        !src_dir.join("keep.bin").exists(),
+        "{op_id}: new child should leave the source"
+    );
 
     // The colliding child is Skip-equivalent: dest unchanged, source survives.
     assert_eq!(

@@ -1060,7 +1060,10 @@ mod tests {
 
         assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (1).txt");
         // The O_EXCL placeholder must already exist on disk after the call.
-        assert!(unique.exists(), "reservation must create the placeholder on a local-FS dest");
+        assert!(
+            unique.exists(),
+            "reservation must create the placeholder on a local-FS dest"
+        );
         // A second call escalates to (2), proving the first reservation persisted.
         let next = find_unique_volume_name(&vol, &target).await;
         assert_eq!(next.file_name().unwrap().to_string_lossy(), "notes (2).txt");

@@ -218,7 +218,10 @@ async fn cross_volume_move_conflict_rename_keeps_dest_and_renames_incoming() {
     assert_eq!(renamed.next_chunk().await.unwrap().unwrap(), b"incoming");
 
     // Source moved => deleted.
-    assert!(!source.exists(Path::new("/notes.txt")).await, "source must be deleted after Rename");
+    assert!(
+        !source.exists(Path::new("/notes.txt")).await,
+        "source must be deleted after Rename"
+    );
 }
 
 /// Stop mode emits `write-conflict` and waits on the oneshot. Drive a Skip-all
