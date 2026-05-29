@@ -243,10 +243,10 @@ pub fn upgrade_existing_smb_mounts(app_handle: tauri::AppHandle) {
         volumes_to_upgrade.len()
     );
 
-    // Kick off mDNS so `resolve_ip_to_hostname` can find the host. Without this,
-    // the Keychain lookup misses on auth-required shares (creds are keyed by
-    // hostname like `smb://naspolya/share`, not by IP). Same pattern as the
-    // manual `upgrade_to_smb_volume` and mount-time `try_upgrade_smb_mount`
+    // Kick off mDNS so the per-volume hostname resolution can find the host.
+    // Without this, the Keychain lookup misses on auth-required shares (creds are
+    // keyed by hostname like `smb://naspolya/share`, not by IP). Same pattern as
+    // the manual `upgrade_to_smb_volume` and mount-time `try_upgrade_smb_mount`
     // paths. Idempotent: no-op if mDNS is already running.
     crate::network::ensure_mdns_started(app_handle);
 
@@ -263,25 +263,15 @@ pub fn upgrade_existing_smb_mounts(app_handle: tauri::AppHandle) {
                 None => continue,
             };
 
-            // Resolve hostname from mDNS for Keychain lookup
-            let hostname = crate::network::smb_upgrade::resolve_ip_to_hostname(&info.server);
-
-            // Try Keychain creds
-            let creds =
-                crate::network::smb_upgrade::get_keychain_password(&info.server, hostname.as_deref(), &info.share)
-                    .await;
-
-            let (username, password) = match &creds {
-                Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
-                None => (None, None),
-            };
-
-            crate::network::smb_upgrade::register_smb_volume(
+            // Shared with the mount-time auto-upgrade path. Uses the mDNS
+            // host-cache wait so creds keyed by hostname (the common case) are
+            // found instead of falling back to guest. (Previously this path used
+            // the one-shot resolver and looked creds up by LAN IP — a miss for
+            // hostname-keyed creds, hence the startup STATUS_LOGON_FAILURE.)
+            crate::network::smb_upgrade::resolve_and_register_smb_volume(
                 &info.server,
                 &info.share,
                 &mount_path,
-                username,
-                password,
                 info.port,
             )
             .await;

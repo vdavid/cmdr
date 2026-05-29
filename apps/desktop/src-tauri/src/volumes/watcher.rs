@@ -258,26 +258,8 @@ fn try_upgrade_smb_mount(volume_path: &str) {
 
     let mount_path = volume_path.to_string();
     tauri::async_runtime::spawn(async move {
-        let hostname = crate::network::smb_upgrade::resolve_ip_to_hostname_with_wait(
-            &info.server,
-            std::time::Duration::from_millis(1500),
-        )
-        .await;
-        let creds =
-            crate::network::smb_upgrade::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
-        let (username, password) = match &creds {
-            Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
-            None => (None, None),
-        };
-        crate::network::smb_upgrade::register_smb_volume(
-            &info.server,
-            &info.share,
-            &mount_path,
-            username,
-            password,
-            info.port,
-        )
-        .await;
+        crate::network::smb_upgrade::resolve_and_register_smb_volume(&info.server, &info.share, &mount_path, info.port)
+            .await;
     });
 }
 

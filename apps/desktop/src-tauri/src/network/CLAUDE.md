@@ -18,7 +18,7 @@ Frontend counterpart: [`apps/desktop/src/lib/file-explorer/network/CLAUDE.md`](.
   - `linux_distro.rs`: Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
   - `smb_types.rs`: Shared types (`ShareInfo`, `AuthMode`, `ShareListError`, etc.)
   - `smb_util.rs`: Helpers: error classification (`classify_error`, `is_auth_error`) and `convert_shares` (maps `smb2::ShareInfo` to Cmdr's `ShareInfo`)
-  - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `try_smb_upgrade`, `UpgradeResult`/`UpgradeError` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
+  - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by both fire-and-forget auto-upgrade paths), `try_smb_upgrade`, `UpgradeResult`/`UpgradeError` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
   - `mount_linux.rs`: Linux `gio mount` for GVFS-based user-space mounts
@@ -183,6 +183,11 @@ convention) and passes it as an explicit mount point to `NetFSMountURLSync`. The
   every 100ms up to 1500ms for private-range IPv4. Non-private IPs (Tailscale, public DNS) skip the wait — mDNS won't
   help there. The wait fails open: if mDNS never warms, the IP-only Keychain lookup still runs. Only relevant in dev,
   where `network.firstTriggerDone == false` keeps mDNS off at launch; prod users hit this once on the very first install
-  but never afterwards. Both entry points are covered: `commands::network::upgrade_to_smb_volume` (manual "Connect
-  directly") and `volumes::watcher::try_upgrade_smb_mount` (FSEvents auto-upgrade).
+  but never afterwards. **All three upgrade paths are covered.** The two fire-and-forget paths — startup
+  (`file_system::upgrade_existing_smb_mounts`) and mount-time (`volumes::watcher::try_upgrade_smb_mount`) — both go
+  through the shared `smb_upgrade::resolve_and_register_smb_volume`, so the resolver choice can't drift between them
+  again (the startup copy previously used the one-shot `resolve_ip_to_hostname`, looked creds up by LAN IP, missed
+  hostname-keyed creds, and fell back to guest → `STATUS_LOGON_FAILURE`). The manual "Connect directly" path
+  (`commands::network::upgrade_to_smb_volume`) stays separate because it surfaces `CredentialsNeeded` to prompt the
+  user, but uses the same `resolve_ip_to_hostname_with_wait` + `get_keychain_password` pair.
 - **`statfs` can return mDNS service names instead of IPs**: When macOS auto-reconnects an SMB mount on login, `statfs.f_mntfromname` may contain `//user@Naspolya._smb._tcp.local/share` instead of `//user@192.168.1.111/share`. These service names are not DNS-resolvable. `resolve_server_address()` in `commands/network.rs` detects these (by checking for `._tcp`/`._udp`) and resolves them to IPs via `get_discovered_hosts()`. All upgrade paths (startup, mount-time, manual) go through this resolution. Similarly, `friendly_server_name()` extracts the display name (e.g., `Naspolya`) for UI display.

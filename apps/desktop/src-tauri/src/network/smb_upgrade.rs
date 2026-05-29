@@ -147,6 +147,33 @@ pub(crate) async fn register_smb_volume(
     }
 }
 
+/// Resolve the mount's hostname (with mDNS wait), look up stored Keychain
+/// credentials, and register the OS-mounted SMB share as a direct smb2 volume.
+///
+/// Single entry point for the two fire-and-forget auto-upgrade paths — startup
+/// (`file_system::upgrade_existing_smb_mounts`) and mount-time
+/// (`volumes::watcher::try_upgrade_smb_mount`). They were byte-for-byte
+/// identical except the startup copy used the one-shot `resolve_ip_to_hostname`,
+/// so it looked up creds by LAN IP and missed hostname-keyed creds → guest →
+/// `STATUS_LOGON_FAILURE`. Keeping both callers here means the resolver choice
+/// can't drift between them again. (The manual "Connect directly" path uses
+/// `try_smb_upgrade` instead, because it surfaces `CredentialsNeeded` to prompt.)
+///
+/// Uses `resolve_ip_to_hostname_with_wait` (polls the mDNS host cache up to
+/// 1500 ms), not the one-shot resolver: macOS auto-remounts give us the LAN IP
+/// via statfs, but stored creds are keyed by the mDNS hostname (e.g.
+/// `smb://naspolya/share`). A no-wait lookup races mDNS and misses. Fails open —
+/// if mDNS never warms, the IP-keyed lookup still runs, then guest.
+pub(crate) async fn resolve_and_register_smb_volume(server: &str, share: &str, mount_path: &str, port: u16) {
+    let hostname = resolve_ip_to_hostname_with_wait(server, std::time::Duration::from_millis(1500)).await;
+    let creds = get_keychain_password(server, hostname.as_deref(), share).await;
+    let (username, password) = match &creds {
+        Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
+        None => (None, None),
+    };
+    register_smb_volume(server, share, mount_path, username, password, port).await;
+}
+
 /// Attempts the smb2 connection and registers the volume. Returns `Ok(())` on success.
 pub(crate) async fn try_smb_upgrade(
     server: &str,
