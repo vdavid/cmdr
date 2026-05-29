@@ -17,7 +17,7 @@ import { createPretextMeasure } from '$lib/utils/shorten-middle'
 import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 
 import type { DirStats } from './file-list-utils'
-import { getDisplayExtension, getDisplaySize, hasSizeMismatch } from './full-list-utils'
+import { getDirSizeDisplayState, getDisplayExtension, getDisplaySize, hasSizeMismatch } from './full-list-utils'
 
 export interface ColumnWidths {
   ext: number
@@ -191,7 +191,9 @@ function sizeTextForEntry(
   if (entry.isDirectory) {
     const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
     if (s !== undefined) return sizeCellText(s, sizeFormatOpts)
-    return indexing ? 'Scanning...' : '<dir>'
+    // Mirror FullList's render decision (same `getDirSizeDisplayState`) so the
+    // measured text matches what's drawn for the no-size case.
+    return getDirSizeDisplayState(s, indexing, entry.recursiveSizePending) === 'scanning' ? 'Scanning...' : '<dir>'
   }
   const s = getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode)
   return s !== undefined ? sizeCellText(s, sizeFormatOpts) : ''

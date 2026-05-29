@@ -36,6 +36,7 @@
         buildDirSizeTooltip,
         buildFileSizeTooltip,
         getDisplaySize,
+        getDirSizeDisplayState,
         hasSizeMismatch,
         getDisplayExtension,
         getDisplayName,
@@ -912,13 +913,18 @@
                             {#if sizeOverride.override !== undefined}
                                 <span class="size-text">{sizeOverride.override}</span>
                             {:else if file.isDirectory}
+                                {@const dirSizeState = getDirSizeDisplayState(
+                                    dirDisplaySize,
+                                    indexing,
+                                    file.recursiveSizePending,
+                                )}
                                 {#if dirDisplaySize != null}
                                     <span class="size-text"
                                         >{#each formatSizeForDisplay(dirDisplaySize, sizeFormatOpts) as triad, i (i)}<span
                                                 class={triad.tierClass}>{triad.value}</span
                                             >{/each}</span
                                     >
-                                    {#if indexing || file.recursiveSizePending}
+                                    {#if dirSizeState === 'size-stale'}
                                         <span class="size-stale icon-indicator" use:tooltip={'Updating index: size may change.'}
                                             ><IconHourglass width="12" height="12" /></span
                                         >
@@ -929,7 +935,7 @@
                                             file.recursivePhysicalSize,
                                             file.recursiveFileCount ?? 0,
                                             file.recursiveDirCount ?? 0,
-                                            indexing || (file.recursiveSizePending ?? false),
+                                            dirSizeState === 'size-stale',
                                             formatFileSize,
                                             formatNumber,
                                             pluralize,
@@ -947,7 +953,7 @@
                                             <IconCircleAlert width="12" height="12" />
                                         </span>
                                     {/if}
-                                {:else if indexing}
+                                {:else if dirSizeState === 'scanning'}
                                     <span class="size-scanning">Scanning...</span>
                                 {:else}
                                     <span class="size-dir">&lt;dir&gt;</span>
