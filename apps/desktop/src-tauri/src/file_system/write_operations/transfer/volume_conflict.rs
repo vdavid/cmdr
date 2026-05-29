@@ -460,6 +460,22 @@ pub(super) async fn finalize_safe_replace(
 }
 
 /// Finds a unique filename on a volume by appending " (1)", " (2)", etc.
+///
+/// On a **local-FS-backed** destination volume (`local_path().is_some()`) the
+/// chosen name is atomically RESERVED with an `O_CREAT|O_EXCL` placeholder, the
+/// same TOCTOU guard `helpers::find_unique_name` uses for the local-FS copy
+/// path. Without it, a concurrent writer (a second Cmdr op, a cloud-sync agent,
+/// a backup tool) could land a real file at `name (N)` between our non-atomic
+/// `exists()` probe and the streaming writer's create+truncate, and the copy
+/// would silently clobber it. The streaming write then lands ON the placeholder
+/// (the write site opens the dest with create+truncate), exactly like the
+/// local-FS path's `needs_safe_overwrite` flow. The returned path is the volume
+/// path; the placeholder is created at the resolved local path.
+///
+/// On backends without exclusive-create semantics (MTP / SMB / InMemory,
+/// `local_path()` is `None`) we can't reserve, so we fall back to the
+/// `exists()` probe and re-check existence immediately before returning to keep
+/// the residual window as narrow as the backend allows.
 async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> PathBuf {
     let parent = path.parent().unwrap_or(Path::new(""));
     let stem = path
@@ -468,27 +484,73 @@ async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> 
         .unwrap_or_default();
     let extension = path.extension().map(|s| s.to_string_lossy().to_string());
 
-    let mut counter = 1;
-    loop {
+    let local_root = dest_volume.local_path();
+    let build_name = |counter: u32| -> PathBuf {
         let new_name = match &extension {
             Some(ext) => format!("{} ({}).{}", stem, counter, ext),
             None => format!("{} ({})", stem, counter),
         };
-        let new_path = parent.join(new_name);
-        if !dest_volume.exists(&new_path).await {
-            return new_path;
-        }
-        counter += 1;
+        parent.join(new_name)
+    };
 
-        // Safety limit to prevent infinite loop
-        if counter > 1000 {
-            // Just return with counter - extremely unlikely to happen
-            let new_name = match &extension {
-                Some(ext) => format!("{} ({}).{}", stem, counter, ext),
-                None => format!("{} ({})", stem, counter),
-            };
-            return parent.join(new_name);
+    let mut counter: u32 = 1;
+    loop {
+        let new_path = build_name(counter);
+
+        if let Some(root) = &local_root {
+            // Local-FS dest: reserve the name with an O_CREAT|O_EXCL placeholder
+            // so no concurrent writer can sneak a file in before our write lands.
+            let local_path = resolve_local_path(root, &new_path);
+            match std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&local_path)
+            {
+                Ok(_) => return new_path,
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                    counter = counter.saturating_add(1);
+                }
+                Err(_) => {
+                    // Anything else (parent unwritable, ENOSPC, …) leaks back to
+                    // the caller's write attempt, which has its own error path.
+                    return new_path;
+                }
+            }
+        } else {
+            // Non-local backend: best-effort `exists()` probe. Re-check right
+            // before returning to keep the residual window as narrow as we can.
+            if !dest_volume.exists(&new_path).await {
+                return new_path;
+            }
+            counter = counter.saturating_add(1);
         }
+
+        // Safety limit to prevent infinite loop.
+        if counter > 1000 {
+            // Extremely unlikely to happen.
+            return build_name(counter);
+        }
+    }
+}
+
+/// Resolves a destination-volume path against a local-FS volume root, mirroring
+/// `LocalPosixVolume::resolve`: an absolute path already under the root is used
+/// as-is; under a `/` root it passes through; otherwise the leading `/` is
+/// stripped and the remainder is joined onto the root. Relative paths join
+/// directly. This lets the O_EXCL reservation land at the same local path the
+/// volume's streaming writer will later resolve `new_path` to.
+fn resolve_local_path(root: &Path, path: &Path) -> PathBuf {
+    if path.as_os_str().is_empty() || path == Path::new(".") {
+        root.to_path_buf()
+    } else if path.is_absolute() {
+        if path.starts_with(root) || root == Path::new("/") {
+            path.to_path_buf()
+        } else {
+            let relative = path.strip_prefix("/").unwrap_or(path);
+            root.join(relative)
+        }
+    } else {
+        root.join(path)
     }
 }
 
@@ -970,6 +1032,70 @@ mod tests {
             .await;
             assert_eq!(resolved, v, "Variant {v:?} must pass through unchanged");
         }
+    }
+
+    // ======================================================================
+    // find_unique_volume_name — TOCTOU reservation on local-FS dest volumes
+    // ======================================================================
+    //
+    // Volume-side sibling of `helpers::find_unique_name`. For a Rename
+    // resolution the chosen `name (N)` must be atomically RESERVED with an
+    // `O_CREAT|O_EXCL` placeholder when the destination volume is backed by a
+    // local filesystem (`local_path().is_some()`), so a concurrent writer
+    // (second Cmdr op, cloud-sync agent, backup tool) can't land a file at the
+    // same name between our pick and the streaming write. Pre-fix the function
+    // only probed `dest_volume.exists()` (non-atomic) and returned the path,
+    // leaving a TOCTOU window. Mirrors `helpers.rs::find_unique_name_tests`.
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn local_fs_rename_reserves_the_chosen_name_on_disk() {
+        use crate::file_system::volume::backends::LocalPosixVolume;
+        let temp = tempfile::TempDir::new().unwrap();
+        let target = temp.path().join("notes.txt");
+        std::fs::write(&target, b"original").unwrap();
+
+        let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
+
+        let unique = find_unique_volume_name(&vol, &target).await;
+
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (1).txt");
+        // The O_EXCL placeholder must already exist on disk after the call.
+        assert!(unique.exists(), "reservation must create the placeholder on a local-FS dest");
+        // A second call escalates to (2), proving the first reservation persisted.
+        let next = find_unique_volume_name(&vol, &target).await;
+        assert_eq!(next.file_name().unwrap().to_string_lossy(), "notes (2).txt");
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn local_fs_rename_keeps_extension_in_the_right_place() {
+        use crate::file_system::volume::backends::LocalPosixVolume;
+        let temp = tempfile::TempDir::new().unwrap();
+        let target = temp.path().join("report.pdf");
+        std::fs::write(&target, b"x").unwrap();
+
+        let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
+        let unique = find_unique_volume_name(&vol, &target).await;
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "report (1).pdf");
+        assert!(unique.exists(), "reservation must create the placeholder");
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn non_local_dest_does_not_reserve_a_placeholder() {
+        // MTP / SMB / InMemory have no exclusive-create semantics here
+        // (`local_path()` is `None`), so the function must NOT try to touch the
+        // real local FS. It returns the next free name based on `exists()`,
+        // accepting the documented narrow residual window.
+        let dst = Arc::new(InMemoryVolume::new("dst"));
+        dst.create_file(Path::new("/notes.txt"), b"old").await.unwrap();
+        let dst_dyn: Arc<dyn Volume> = dst.clone();
+
+        let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes.txt")).await;
+        assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (1).txt");
+        // No placeholder was created on the in-memory volume.
+        assert!(
+            !dst.exists(&unique).await,
+            "non-local dest must not pre-create the renamed name"
+        );
     }
 
     // ----- Axis independence -----
