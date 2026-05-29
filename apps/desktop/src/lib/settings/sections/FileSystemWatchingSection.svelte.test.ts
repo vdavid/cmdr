@@ -172,8 +172,7 @@ describe('FileSystemWatchingSection', () => {
       'input[type="checkbox"][data-test="global-shortcut-enabled"]',
     )
     if (!checkbox) throw new Error('Global shortcut enable checkbox not found')
-    checkbox.checked = false
-    checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    checkbox.click()
     await tick()
     await Promise.resolve()
     await tick()
@@ -181,6 +180,24 @@ describe('FileSystemWatchingSection', () => {
     expect(setGlobalRevealShortcutMock).toHaveBeenCalled()
     // The same flip writes the enabled setting through the helper.
     expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalRevealShortcut.enabled', false)
+    target.remove()
+  })
+
+  it('shows a Switch (not a binding text input) for the reveal toggle', async () => {
+    const target = await mountSection()
+    // The toggle is an Ark Switch with a hidden checkbox; there is no binding
+    // text input here anymore (that moved to Keyboard shortcuts).
+    expect(target.querySelector('input[type="checkbox"][data-test="global-shortcut-enabled"]')).not.toBeNull()
+    expect(target.querySelector('input[type="text"]')).toBeNull()
+    target.remove()
+  })
+
+  it('describes the toggle with the LIVE binding (updates the helper text on rebind)', async () => {
+    const target = await mountSection()
+    // The Reveal latest download sub-group's description references the
+    // current binding (⌃⌥⌘J by default).
+    expect(target.textContent).toContain('\u{2303}\u{2325}\u{2318}J')
+    expect(target.textContent).toMatch(/Press .* from any app to jump to your most recent download\./)
     target.remove()
   })
 

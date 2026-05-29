@@ -14,16 +14,18 @@
      *      `behavior.fileSystemWatching.downloadsNotifications`. Greyed out
      *      when the FDA gate is closed. Carries a stable anchor id so the
      *      downloads-toast "Stop showing these" button can deep-link here.
-     *   3. **Reveal latest download** — the global hotkey on/off toggle,
-     *      the binding picker (v1 text input; recorder follow-up tracked in
-     *      `docs/specs/downloads-watcher-plan.md`), and the registration-
-     *      status indicator. Greyed out when the FDA gate is closed.
+     *   3. **Reveal latest download** — a single on/off `Switch` for the
+     *      global hotkey, whose description references the LIVE binding (so
+     *      it updates the moment the user rebinds in `Keyboard shortcuts`,
+     *      where the combo is actually edited). Greyed out when the FDA gate
+     *      is closed.
      *
      * Sub-groups 2 and 3 share ONE FDA hint, not one per sub-group, per the
      * plan's "Locked copy" decision.
      */
     import { commands } from '$lib/ipc/bindings'
     import { onMount } from 'svelte'
+    import { Switch } from '@ark-ui/svelte/switch'
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
@@ -31,7 +33,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
-    import { getSettingDefinition } from '$lib/settings'
+    import { getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import Size from '$lib/ui/Size.svelte'
     import { getAppLogger } from '$lib/logging/logger'
@@ -40,9 +42,10 @@
         getGlobalRevealEnabled,
         getGlobalRevealBinding,
         setGlobalRevealEnabled,
-        setGlobalRevealBinding,
         GLOBAL_REVEAL_ENABLED_KEY,
+        GLOBAL_REVEAL_BINDING_KEY,
     } from '$lib/downloads/global-shortcut-setting'
+    import { globalRevealDescription } from '$lib/downloads/global-shortcut-description'
     import {
         DOWNLOADS_NOTIFICATIONS_SETTING_KEY,
         DOWNLOADS_NOTIFICATIONS_ANCHOR_ID,
@@ -68,18 +71,20 @@
         description: '',
     }
 
-    // Inline status indicator for the global-shortcut row. Updated via the
-    // backend's `set_global_reveal_shortcut` ack on every flip plus a mount-time
-    // refresh.
+    // The on/off state lives here; the binding is edited in `Keyboard
+    // shortcuts`. We track the binding only so this toggle's description can
+    // reference the live combo, updating the moment the user rebinds there.
     let shortcutEnabled = $state(true)
     let shortcutBinding = $state('\u{2303}\u{2325}\u{2318}J')
-    let shortcutStatusText = $state('Registered')
     let fdaPending = $state(false)
     /** Watcher dormant. FDA-closed is the common cause; either way we surface the same hint. */
     let watcherRunning = $state(true)
 
     /** Sub-groups 2 + 3 grey out when the FDA gate is closed or the watcher is dormant. */
     const downloadsGated = $derived(fdaPending || !watcherRunning)
+
+    /** Description references the live binding, so a rebind elsewhere updates the helper text. */
+    const shortcutDescription = $derived(globalRevealDescription(shortcutBinding))
 
     async function refreshShortcutStatus() {
         try {
@@ -101,39 +106,24 @@
                 message: recheck.error.message,
             })
         }
+    }
 
-        if (fdaPending) {
-            shortcutStatusText = 'Cmdr needs Full Disk Access'
-            return
-        }
-        // Ask the backend to apply the current setting and report the resulting status.
+    async function applyShortcut() {
+        if (fdaPending) return
+        // Ask the backend to apply the current enabled/binding to the live
+        // registration. The returned status drives nothing in this row anymore
+        // (the binding + its registration feedback live in `Keyboard
+        // shortcuts`); we just keep the live-apply contract on the toggle.
         const result = await commands.setGlobalRevealShortcut(shortcutEnabled, shortcutBinding)
-        if (result.status === 'ok') {
-            shortcutStatusText = result.data.status === 'registered' ? 'Registered' : 'Not registered'
-        } else {
-            // Two error kinds: `invalidBinding` (typo in the combo) and
-            // `pluginError` (conflict with another app, allocation, OS IO,
-            // …). Render the underlying message tail when present so the
-            // user sees something actionable.
-            if (result.error.kind === 'invalidBinding') {
-                shortcutStatusText = `Couldn't register: invalid combo`
-            } else {
-                shortcutStatusText = `Couldn't register: ${result.error.message}`
-            }
+        if (result.status === 'error') {
+            log.warn('setGlobalRevealShortcut failed: {error}', { error: JSON.stringify(result.error) })
         }
     }
 
     async function handleShortcutEnabledChange(next: boolean) {
         setGlobalRevealEnabled(next)
         shortcutEnabled = next
-        await refreshShortcutStatus()
-    }
-
-    async function handleBindingChange(next: string) {
-        if (!next || next === shortcutBinding) return
-        setGlobalRevealBinding(next)
-        shortcutBinding = next
-        await refreshShortcutStatus()
+        await applyShortcut()
     }
 
     async function handleOpenSystemSettings() {
@@ -177,12 +167,26 @@
 
     onMount(() => {
         void refreshDbSize()
-        void refreshShortcutStatus()
+        void (async () => {
+            await refreshShortcutStatus()
+            await applyShortcut()
+        })()
+        // Keep the description in sync when the binding is rebound in the
+        // Keyboard shortcuts section (same window or another), and keep the
+        // toggle state in sync if `enabled` changes elsewhere.
+        const unsubBinding = onSpecificSettingChange(GLOBAL_REVEAL_BINDING_KEY, (_id, value) => {
+            shortcutBinding = value as string
+        })
+        const unsubEnabled = onSpecificSettingChange(GLOBAL_REVEAL_ENABLED_KEY, (_id, value) => {
+            shortcutEnabled = value as boolean
+        })
         // Refresh DB size every 2 seconds while visible
         refreshTimer = setInterval(() => void refreshDbSize(), 2000)
 
         return () => {
             clearInterval(refreshTimer)
+            unsubBinding()
+            unsubEnabled()
         }
     })
 </script>
@@ -257,42 +261,24 @@
                 <SettingRow
                     id={GLOBAL_REVEAL_ENABLED_KEY}
                     label={globalShortcutDef.label}
-                    description={globalShortcutDef.description}
+                    description={shortcutDescription}
                     {searchQuery}
                 >
-                    <div class="shortcut-row">
-                        <label class="shortcut-label">
-                            <input
-                                data-test="global-shortcut-enabled"
-                                type="checkbox"
-                                checked={shortcutEnabled}
-                                onchange={(e) =>
-                                    void handleShortcutEnabledChange(
-                                        (e.currentTarget).checked,
-                                    )}
-                                disabled={downloadsGated}
-                            />
-                            <span>Global shortcut</span>
-                        </label>
-                        <label class="shortcut-label">
-                            <span>Combo</span>
-                            <input
-                                class="shortcut-binding"
-                                type="text"
-                                value={shortcutBinding}
-                                onchange={(e) =>
-                                    void handleBindingChange((e.currentTarget).value)}
-                                disabled={downloadsGated || !shortcutEnabled}
-                                spellcheck="false"
-                            />
-                        </label>
-                        <span
-                            class="shortcut-status"
-                            class:warn={shortcutStatusText.toLowerCase().includes("couldn't")}
-                            >{shortcutStatusText}</span
-                        >
-                    </div>
+                    <Switch.Root
+                        checked={shortcutEnabled}
+                        onCheckedChange={(details) => void handleShortcutEnabledChange(details.checked)}
+                        disabled={downloadsGated}
+                        aria-label={globalShortcutDef.label}
+                    >
+                        <Switch.Control class="reveal-switch-control">
+                            <Switch.Thumb class="reveal-switch-thumb" />
+                        </Switch.Control>
+                        <Switch.HiddenInput data-test="global-shortcut-enabled" />
+                    </Switch.Root>
                 </SettingRow>
+                <p class="shortcut-hint">
+                    Change the shortcut under Keyboard shortcuts → Reveal latest download (global).
+                </p>
             {/if}
         </SectionCard>
     </div>
@@ -366,37 +352,58 @@
         opacity: 0.5;
     }
 
-    .shortcut-row {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--spacing-md);
+    .shortcut-hint {
+        margin: var(--spacing-xs) 0 0;
+        color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
+        line-height: 1.4;
     }
 
-    .shortcut-label {
+    /* Ark UI Switch used inline here (not the registry `SettingSwitch`, because
+       the toggle's live-apply runs a custom IPC handler rather than a plain
+       `setSetting`). Styling mirrors `SettingSwitch.svelte`; class names are
+       local to keep the rules scoped to this component. */
+    :global(.reveal-switch-control) {
         display: inline-flex;
         align-items: center;
-        gap: var(--spacing-xs);
-        color: var(--color-text-secondary);
-    }
-
-    .shortcut-binding {
-        font-family: var(--font-mono);
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-sm);
+        width: 36px;
+        height: 20px;
         background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-        min-width: 80px;
+        border-radius: var(--radius-full);
+        padding: var(--spacing-xxs);
+        cursor: default;
+        transition: background-color var(--transition-base);
     }
 
-    .shortcut-status {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
+    :global(.reveal-switch-control[data-state='checked']) {
+        background: var(--color-accent);
     }
 
-    .shortcut-status.warn {
-        color: var(--color-warning-text);
+    :global(.reveal-switch-control[data-disabled]) {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    :global(.reveal-switch-thumb) {
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-radius: var(--radius-full);
+        transition: transform var(--transition-base);
+        box-shadow: var(--shadow-sm);
+    }
+
+    :global(.reveal-switch-control[data-state='checked'] .reveal-switch-thumb) {
+        transform: translateX(16px);
+    }
+
+    :global(.reveal-switch-control[data-state='checked']:hover) {
+        background: var(--color-accent-hover);
+    }
+
+    :global(.reveal-switch-control[data-focus]) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+        box-shadow: var(--shadow-focus);
     }
 </style>

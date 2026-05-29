@@ -19,8 +19,10 @@ Backend counterpart: [`src-tauri/src/downloads/CLAUDE.md`](../../../src-tauri/sr
 | `notifications-mode.ts`                 | Reader, writer, and deep-link helper for `behavior.fileSystemWatching.downloadsNotifications`.                                                                                                           |
 | `global-shortcut-bridge.svelte.ts`      | One `global-shortcut-fired` Tauri event subscription. Calls `revealLatestDownload` plus, on first un-acknowledged trigger, the warn toast.                                                               |
 | `GlobalShortcutWarnToastContent.svelte` | First-trigger persistent warn toast for ⌃⌥⌘J. "Keep it on" / "Turn it off" buttons. Snapshotted binding prop.                                                                                            |
-| `global-shortcut-binding.ts`            | Translates the macOS-symbol binding (`'⌃⌥⌘J'`) into the accelerator string the plugin understands (`'Control+Alt+Super+J'`). ⌘ maps to `Super` (global-hotkey rejects `Meta`).                            |
+| `global-shortcut-binding.ts`            | Translates the macOS-symbol binding (`'⌃⌥⌘J'`) into the accelerator string the plugin understands (`'Control+Alt+Super+J'`). ⌘ maps to `Super` (global-hotkey rejects `Meta`).                           |
 | `global-shortcut-setting.ts`            | Narrow getters/setters for `behavior.fileSystemWatching.globalRevealShortcut.*`. **`setGlobalRevealBinding` resets `acknowledged` to `false`** — the new combo deserves the first-trigger warning again. |
+| `global-shortcut-description.ts`        | Pure builder for the on/off toggle's helper text. Given the live binding, returns "Press ⌃⌥⌘J from any app to jump to your most recent download." so the description tracks rebinds.                     |
+| `GlobalShortcutRow.svelte`              | The reveal hotkey as a shortcut row in `Keyboard shortcuts`, marked `(global)`. Recorder pill + reset. Writes via `setGlobalRevealBinding`, then `set_global_reveal_shortcut` for live-apply.            |
 
 ## Settings-gated dispatch
 
@@ -78,6 +80,14 @@ underneath (otherwise "Stop showing these" would navigate to the file before the
 The default global hotkey is `⌃⌥⌘J`. Registration lifecycle lives in the backend (`refresh_global_reveal_shortcut` runs
 at startup, on focus, and when the Settings UI toggles); the FE bridge owns the trigger handler.
 
+**Where the user controls it.** The on/off switch lives under `Behavior > File system watching > Reveal latest download`
+(a plain `Switch`; its description references the live binding via `global-shortcut-description.ts`). The combo itself
+is edited under `Keyboard shortcuts`, rendered by `GlobalShortcutRow.svelte` as a row marked `(global)`. Both surfaces
+call the `set_global_reveal_shortcut(enabled, binding)` IPC on change for live-apply. The binding's persistent home
+stays in `settings.json` (key `behavior.fileSystemWatching.globalRevealShortcut.binding`, `hidden` in the registry)
+because the Rust startup/focus refresh reads it from disk before any window loads — `shortcuts.json` isn't reachable
+from that path.
+
 **First-trigger warn toast.** Persistent, level `warn`. Fires only when the hotkey triggered AND
 `acknowledged === false`. The bridge flips `acknowledged = true` BEFORE opening the toast so back-to-back presses don't
 queue duplicates. The toast itself only carries the binding string snapshot and the two buttons — "Keep it on" (dismiss)
@@ -126,10 +136,11 @@ settings rows. Each step is independent; you can stop after the ones that cover 
 10. Pick "Both" → expect both surfaces. Pick "Neither" → expect neither.
 11. Click "Stop showing these" on a Downloads toast → the setting flips to "Neither" and Settings opens scrolled to the
     right sub-group.
-12. In Settings, toggle "Global shortcut" off → press `⌃⌥⌘J` from Chrome, expect nothing. Toggle on again → expect the
-    reveal to work.
-13. Change the binding in the "Combo" field (for example to `⌃⌥⌘K`) → the warn toast re-fires on the next trigger
-    because `acknowledged` resets on rebind.
+12. In **Settings > Behavior > File system watching**, toggle "Reveal latest download" off → press `⌃⌥⌘J` from Chrome,
+    expect nothing. Toggle on again → expect the reveal to work. The toggle's description should read the live binding.
+13. In **Settings > Keyboard shortcuts**, find "Reveal latest download (global)", click its pill, press a new combo (for
+    example `⌃⌥⌘K`) → the description in File system watching updates to the new combo, and the warn toast re-fires on
+    the next trigger because `acknowledged` resets on rebind. The `↩` reset returns it to `⌃⌥⌘J`.
 14. Revoke FDA in System Settings → return to Cmdr. The two sub-groups grey out with the shared FDA hint. The global
     hotkey unregisters. Pressing `⌘J` from Cmdr shows the FDA INFO toast (with a stable dedup id so spamming `⌘J`
     doesn't stack toasts).

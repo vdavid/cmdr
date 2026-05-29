@@ -26,6 +26,7 @@
         type CommandScope,
     } from '$lib/shortcuts'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
+    import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
 
     interface Props {
         searchQuery: string
@@ -108,6 +109,17 @@
         }
 
         return cmds
+    })
+
+    // The global reveal hotkey is a bespoke row (its binding lives in
+    // settings.json, not shortcuts.json — see `GlobalShortcutRow.svelte`). It
+    // shows whenever there's no active filter, or the name filter matches its
+    // label. The key filter doesn't apply (we don't index its combo here).
+    const showGlobalRevealRow = $derived.by(() => {
+        if (activeFilter === 'modified' || activeFilter === 'conflicts') return false
+        if (keySearchQuery.trim()) return false
+        if (!nameSearchQuery.trim()) return true
+        return 'reveal latest download global'.includes(nameSearchQuery.trim().toLowerCase())
     })
 
     // Group filtered commands by scope
@@ -539,6 +551,9 @@
                 {/each}
             </div>
         {/each}
+        {#if showGlobalRevealRow}
+            <GlobalShortcutRow />
+        {/if}
     </div>
 
     <div class="shortcuts-footer">

@@ -399,22 +399,28 @@ export const settingsRegistry: SettingDefinition[] = [
   {
     id: 'behavior.fileSystemWatching.globalRevealShortcut.enabled',
     section: ['Behavior', 'File system watching'],
-    label: 'Global reveal-latest-download shortcut',
-    description: 'Press ⌃⌥⌘J from anywhere to jump to your latest download. Requires Full Disk Access.',
+    label: 'Reveal latest download',
+    description: 'Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.',
     keywords: ['shortcut', 'hotkey', 'global', 'reveal', 'download', 'downloads', 'jump'],
     type: 'boolean',
     default: true,
     component: 'switch',
   },
   {
+    // The combo is edited in `Keyboard shortcuts` (see
+    // `lib/downloads/GlobalShortcutRow.svelte`), not as a row here. Kept in the
+    // registry because it's persisted in settings.json and the Rust
+    // startup/focus refresh reads it from there before any window loads.
+    // Hidden so it doesn't surface as an orphan row in search / Advanced.
     id: 'behavior.fileSystemWatching.globalRevealShortcut.binding',
     section: ['Behavior', 'File system watching'],
     label: 'Global reveal-latest-download binding',
-    description: 'The system-wide combo that triggers reveal-latest-download.',
+    description: 'The system-wide combo that triggers reveal-latest-download. Edited under Keyboard shortcuts.',
     keywords: ['shortcut', 'hotkey', 'global', 'binding', 'combo'],
     type: 'string',
     default: '\u{2303}\u{2325}\u{2318}J', // ⌃⌥⌘J
-    component: 'text-input', // v1 uses a plain string; recorder follow-up tracked in plan.
+    component: 'text-input',
+    hidden: true,
   },
   {
     // Internal: hidden from the Settings UI. Drives the first-trigger warn-toast
