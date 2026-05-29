@@ -45,6 +45,7 @@
         type PaneFileEntry,
     } from '$lib/tauri-commands'
     import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
+    import { updateIndexSizesInPlace } from '../views/file-list-utils'
     import { classifySelectionDialogKey } from './selection-dialog-keys'
     import { createTypeToJumpState } from './type-to-jump-state.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
@@ -985,6 +986,9 @@
         if (listingId) {
             void refreshListingIndexSizes(listingId).then(() => fetchListingStats())
         }
+        // Refresh the cursor entry too so SelectionInfo's Brief size readout (and
+        // its "size updating" hourglass) tracks the storm live, not just on cursor moves.
+        void fetchEntryUnderCursor()
         // Mirror the refreshed sizes (and the `recursiveSizePending` hourglass flag)
         // into the MCP pane state so agents see `[size-pending]` update live during
         // an index storm, not just on cursor/nav changes. Debounced (300ms), so a
@@ -1657,6 +1661,18 @@
             entryUnderCursor = await getFileAt(listingId, backendIndex, includeHidden)
         } catch {
             entryUnderCursor = null
+        }
+
+        // Overlay the per-folder `recursiveSizePending` flag (and refresh the
+        // recursive size) onto the cursor entry. It lives only on `DirStats`, not
+        // on `get_file_range`, so SelectionInfo's Brief readout couldn't show the
+        // "size updating" hourglass without this. Reuses the same enrichment the
+        // list rows get; no-op for files. Fire-and-forget (mutates in place, so
+        // Svelte reactivity updates SelectionInfo); re-runs on `index-dir-updated`
+        // via `refreshIndexSizes`. Skips "..", whose entry path is the *parent*
+        // folder, so enriching it would fetch the wrong folder's stats.
+        if (entryUnderCursor?.isDirectory && entryUnderCursor.name !== '..') {
+            void updateIndexSizesInPlace([entryUnderCursor])
         }
     }
 
