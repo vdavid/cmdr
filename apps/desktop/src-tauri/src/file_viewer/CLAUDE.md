@@ -77,6 +77,13 @@ if file_size < 1MB {
 - `viewer_reload(session_id)`: reopens the active backend against the file on disk under the session's current
   encoding. Called by the FE's reload toast and on rotation (`Shrunk` / `Replaced`).
 
+**`viewer_set_encoding`, `viewer_set_tail_mode`, and `viewer_reload` are `async` + `spawn_blocking` + 2 s timeout**
+(via `blocking_viewer_op` in `commands/file_viewer.rs`), not synchronous. They each touch the filesystem — a reopen, an
+encoding rebuild snap, or the tail catch-up `extend_to` scan — and a synchronous call would block the viewer window's
+IPC handler thread, freezing concurrent scroll / search IPC behind it (the platform-constraints rule in
+`docs/architecture.md`). Don't convert them back to plain `fn`. The watcher manager thread calls `reload` /
+`apply_tail_extend` directly (off the IPC thread already), so those paths stay synchronous.
+
 ## Tail mode + external-change watcher
 
 The viewer watcher (`watcher.rs`) is a shared singleton modelled on the existing

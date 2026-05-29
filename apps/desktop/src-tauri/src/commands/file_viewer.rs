@@ -199,13 +199,31 @@ pub fn viewer_get_encoding_options(session_id: String) -> Result<EncodingOptions
     file_viewer::get_encoding_options(&session_id).map_err(|e| e.to_string())
 }
 
+/// Runs a filesystem-touching viewer op off the IPC handler thread (`spawn_blocking`)
+/// under a timeout. Without this, a synchronous reopen / encoding swap / tail catch-up
+/// scan on a slow disk would block the viewer window's IPC thread and freeze the other
+/// in-flight calls (scroll, search) behind it. Mirrors `blocking_result_with_timeout`
+/// but keeps the plain `String` error the FE call sites already expect. On timeout the
+/// detached blocking task still finishes its work; the next FS event or reload settles
+/// the backend.
+async fn blocking_viewer_op<F>(op: F) -> Result<(), String>
+where
+    F: FnOnce() -> Result<(), String> + Send + 'static,
+{
+    match tokio::time::timeout(VIEWER_TIMEOUT, tokio::task::spawn_blocking(op)).await {
+        Ok(Ok(result)) => result,
+        Ok(Err(join_err)) => Err(join_err.to_string()),
+        Err(_) => Err("Viewer operation timed out".to_string()),
+    }
+}
+
 /// Switches the active encoding for a session. Returns immediately; if the swap
 /// requires a background reindex (most cases except UTF-8 ↔ Windows-1252-family),
 /// the FE polls `viewer_get_status` for `is_indexing` to track completion.
 #[tauri::command]
 #[specta::specta]
-pub fn viewer_set_encoding(session_id: String, encoding: FileEncoding) -> Result<(), String> {
-    file_viewer::set_encoding(&session_id, encoding).map_err(|e| e.to_string())
+pub async fn viewer_set_encoding(session_id: String, encoding: FileEncoding) -> Result<(), String> {
+    blocking_viewer_op(move || file_viewer::set_encoding(&session_id, encoding).map_err(|e| e.to_string())).await
 }
 
 /// Toggles tail mode for a viewer session. When enabled, the backend extends its line index
@@ -214,16 +232,16 @@ pub fn viewer_set_encoding(session_id: String, encoding: FileEncoding) -> Result
 /// persistent reload toast.
 #[tauri::command]
 #[specta::specta]
-pub fn viewer_set_tail_mode(session_id: String, enabled: bool) -> Result<(), String> {
-    file_viewer::set_tail_mode(&session_id, enabled).map_err(|e| e.to_string())
+pub async fn viewer_set_tail_mode(session_id: String, enabled: bool) -> Result<(), String> {
+    blocking_viewer_op(move || file_viewer::set_tail_mode(&session_id, enabled).map_err(|e| e.to_string())).await
 }
 
 /// Reopens the viewer's backend against the file on disk under the session's current
 /// encoding. Called by the FE reload toast and on file rotation.
 #[tauri::command]
 #[specta::specta]
-pub fn viewer_reload(session_id: String) -> Result<(), String> {
-    file_viewer::reload(&session_id).map_err(|e| e.to_string())
+pub async fn viewer_reload(session_id: String) -> Result<(), String> {
+    blocking_viewer_op(move || file_viewer::reload(&session_id).map_err(|e| e.to_string())).await
 }
 
 /// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
