@@ -1,7 +1,7 @@
 /**
  * Adapter between the user-facing macOS-symbol shortcut form (the storage
  * format and what the rest of Cmdr uses, like `'⌃⌥⌘J'`) and the accelerator
- * string `tauri-plugin-global-shortcut` understands (`'Control+Alt+Meta+J'`).
+ * string `tauri-plugin-global-shortcut` understands (`'Control+Alt+Super+J'`).
  *
  * We store the symbol form so settings.json reads naturally, the command
  * registry stays consistent, and the warn-toast copy can drop the binding in
@@ -18,16 +18,16 @@ const SYMBOL_TO_MODIFIER: ReadonlyArray<readonly [string, string]> = [
   ['⌃', 'Control'], // ⌃
   ['⌥', 'Alt'], // ⌥
   ['⇧', 'Shift'], // ⇧
-  ['⌘', 'Meta'], // ⌘
+  ['⌘', 'Super'], // ⌘ — global-hotkey accepts Command/Cmd/Super for the Cmd key, NOT "Meta"
 ]
 
 /**
  * Translate a macOS-symbol binding like `'⌃⌥⌘J'` into the accelerator format
- * the plugin expects (`'Control+Alt+Meta+J'`). Returns `null` for empty or
+ * the plugin expects (`'Control+Alt+Super+J'`). Returns `null` for empty or
  * malformed input — callers treat that as "unbound" (don't register).
  *
  * The key (everything after the trailing modifier symbol) is uppercased so
- * `j` and `J` both produce `Meta+J`. The plugin's parser is case-insensitive
+ * `j` and `J` both produce `Super+J`. The plugin's parser is case-insensitive
  * for the key but case-sensitive for the modifier names; we always emit the
  * canonical capitalization.
  */

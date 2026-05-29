@@ -80,6 +80,13 @@ lives FE-side, keyed on the `acknowledged` settings flag.
 The plugin uses Carbon's `RegisterEventHotKey` on macOS, so no Accessibility / Input
 Monitoring TCC grant is needed; the user sees no extra prompt for the hotkey.
 
+**Gotcha: ⌘ maps to `Super`, not `Meta`, in the accelerator string.** `binding_to_accelerator`
+(and its FE mirror `global-shortcut-binding.ts`) translate `⌘` to `Super`. The underlying
+`global-hotkey` crate's accelerator parser accepts `COMMAND` / `CMD` / `SUPER` for the Cmd key
+but rejects `META` (it falls through to the key-code parser and errors with `UnsupportedKey`).
+An earlier `Meta` mapping made the default `⌃⌥⌘J` fail to register at startup with "Invalid
+global shortcut binding: Control+Alt+Meta+J". Keep both adapters on `Super`.
+
 The `register/unregister` state machine in `GlobalShortcutManager` is idempotent: re-registering
 the same binding is a no-op, swapping to a new binding unregisters the previous one first, and
 a `Conflict` error stays remembered until the next successful register so the Settings row can

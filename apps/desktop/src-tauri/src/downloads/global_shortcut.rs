@@ -235,12 +235,28 @@ impl<R: Registrar> GlobalShortcutManager<R> {
 /// callback"; the FE bridge doesn't care which binding triggered (there's
 /// only ever one active for now), so the routing is trivial.
 pub fn plugin_builder() -> tauri::plugin::TauriPlugin<tauri::Wry> {
-    use tauri::Emitter as _;
+    use tauri::{Emitter as _, Manager as _};
     tauri_plugin_global_shortcut::Builder::new()
         .with_handler(|app: &AppHandle, _shortcut, event: ShortcutEvent| {
             // Fire on key-down only; key-up would double-trigger.
             if event.state() != ShortcutState::Pressed {
                 return;
+            }
+            // The whole point of the global hotkey is "I'm in Chrome, take me
+            // to my download." Reveal alone isn't enough — the user can't see
+            // the result behind the foreground app. Raise the main window
+            // before emitting so the reveal lands on a visible, focused pane.
+            // unminimize → show covers the minimized / hidden cases; set_focus
+            // brings it in front of the current app and onto the active Space.
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                if let Err(err) = window.set_focus() {
+                    log::warn!(
+                        target: "downloads::global_shortcut",
+                        "Failed to focus main window on global shortcut: {err}",
+                    );
+                }
             }
             // The payload is currently empty: the FE bridge calls
             // `revealLatestDownload(explorer)` directly. We pass an empty
@@ -323,9 +339,9 @@ mod tests {
     #[test]
     fn register_attaches_and_reports_registered() {
         let mgr = GlobalShortcutManager::new(FakeRegistrar::new());
-        mgr.register("Control+Alt+Meta+J").expect("first register");
+        mgr.register("Control+Alt+Super+J").expect("first register");
         assert!(matches!(
-            mgr.registration_status("Control+Alt+Meta+J"),
+            mgr.registration_status("Control+Alt+Super+J"),
             RegistrationStatus::Registered
         ));
     }
@@ -358,12 +374,12 @@ mod tests {
         // registrar so the assertion is a true idempotency contract, not just
         // a status read.
         let (shared, mgr) = shared_registrar();
-        mgr.register("Control+Alt+Meta+J").expect("first");
-        mgr.register("Control+Alt+Meta+J").expect("idempotent");
-        assert_eq!(shared.register_calls(), vec!["Control+Alt+Meta+J"]);
+        mgr.register("Control+Alt+Super+J").expect("first");
+        mgr.register("Control+Alt+Super+J").expect("idempotent");
+        assert_eq!(shared.register_calls(), vec!["Control+Alt+Super+J"]);
         assert!(shared.unregister_calls().is_empty());
         assert!(matches!(
-            mgr.registration_status("Control+Alt+Meta+J"),
+            mgr.registration_status("Control+Alt+Super+J"),
             RegistrationStatus::Registered
         ));
     }
@@ -372,12 +388,12 @@ mod tests {
     fn register_new_binding_unregisters_previous() {
         let (shared, mgr) = shared_registrar();
 
-        mgr.register("Control+Alt+Meta+J").expect("first");
-        mgr.register("Meta+Shift+K").expect("swap");
+        mgr.register("Control+Alt+Super+J").expect("first");
+        mgr.register("Super+Shift+K").expect("swap");
 
-        assert_eq!(shared.register_calls(), vec!["Control+Alt+Meta+J", "Meta+Shift+K"]);
-        assert_eq!(shared.unregister_calls(), vec!["Control+Alt+Meta+J"]);
-        assert_eq!(shared.active().as_deref(), Some("Meta+Shift+K"));
+        assert_eq!(shared.register_calls(), vec!["Control+Alt+Super+J", "Super+Shift+K"]);
+        assert_eq!(shared.unregister_calls(), vec!["Control+Alt+Super+J"]);
+        assert_eq!(shared.active().as_deref(), Some("Super+Shift+K"));
     }
 
     #[test]
@@ -392,10 +408,10 @@ mod tests {
         });
         let mgr = GlobalShortcutManager::new(registrar);
 
-        let result = mgr.register("Control+Alt+Meta+J");
+        let result = mgr.register("Control+Alt+Super+J");
         assert!(matches!(result, Err(RegistrationError::PluginError { .. })));
         assert!(matches!(
-            mgr.registration_status("Control+Alt+Meta+J"),
+            mgr.registration_status("Control+Alt+Super+J"),
             RegistrationStatus::NotRegistered
         ));
     }
@@ -403,16 +419,16 @@ mod tests {
     #[test]
     fn unregister_clears_active_state_idempotently() {
         let mgr = GlobalShortcutManager::new(FakeRegistrar::new());
-        mgr.register("Control+Alt+Meta+J").expect("register");
+        mgr.register("Control+Alt+Super+J").expect("register");
         mgr.unregister();
         assert!(matches!(
-            mgr.registration_status("Control+Alt+Meta+J"),
+            mgr.registration_status("Control+Alt+Super+J"),
             RegistrationStatus::NotRegistered
         ));
         // Second unregister: no panic, still NotRegistered.
         mgr.unregister();
         assert!(matches!(
-            mgr.registration_status("Control+Alt+Meta+J"),
+            mgr.registration_status("Control+Alt+Super+J"),
             RegistrationStatus::NotRegistered
         ));
     }
@@ -420,10 +436,10 @@ mod tests {
     #[test]
     fn registration_status_for_unknown_binding_is_not_registered() {
         let mgr = GlobalShortcutManager::new(FakeRegistrar::new());
-        mgr.register("Control+Alt+Meta+J").expect("register");
+        mgr.register("Control+Alt+Super+J").expect("register");
         // A different binding was never touched: NotRegistered.
         assert!(matches!(
-            mgr.registration_status("Meta+Shift+K"),
+            mgr.registration_status("Super+Shift+K"),
             RegistrationStatus::NotRegistered
         ));
     }

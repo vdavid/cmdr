@@ -95,7 +95,7 @@ pub fn refresh_runtime(app: &AppHandle) -> Result<(), WatcherError> {
 
 /// Translate the user-facing macOS-symbol binding (`'⌃⌥⌘J'`, what we store
 /// in settings) into the accelerator string the Tauri global-shortcut
-/// plugin understands (`'Control+Alt+Meta+J'`). Returns `None` for empty or
+/// plugin understands (`'Control+Alt+Super+J'`). Returns `None` for empty or
 /// modifier-only input — global shortcuts always need a non-modifier key.
 ///
 /// Mirrors `apps/desktop/src/lib/downloads/global-shortcut-binding.ts`. The
@@ -111,7 +111,7 @@ pub fn binding_to_accelerator(binding: &str) -> Option<String> {
             '\u{2303}' => "Control", // ⌃
             '\u{2325}' => "Alt",     // ⌥
             '\u{21E7}' => "Shift",   // ⇧
-            '\u{2318}' => "Meta",    // ⌘
+            '\u{2318}' => "Super",   // ⌘
             _ => break,
         };
         if !modifiers.contains(&name) {

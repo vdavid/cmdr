@@ -19,7 +19,7 @@ Backend counterpart: [`src-tauri/src/downloads/CLAUDE.md`](../../../src-tauri/sr
 | `notifications-mode.ts`                 | Reader, writer, and deep-link helper for `behavior.fileSystemWatching.downloadsNotifications`.                                                                                                           |
 | `global-shortcut-bridge.svelte.ts`      | One `global-shortcut-fired` Tauri event subscription. Calls `revealLatestDownload` plus, on first un-acknowledged trigger, the warn toast.                                                               |
 | `GlobalShortcutWarnToastContent.svelte` | First-trigger persistent warn toast for ⌃⌥⌘J. "Keep it on" / "Turn it off" buttons. Snapshotted binding prop.                                                                                            |
-| `global-shortcut-binding.ts`            | Translates the macOS-symbol binding (`'⌃⌥⌘J'`) into the accelerator string the plugin understands (`'Control+Alt+Meta+J'`).                                                                              |
+| `global-shortcut-binding.ts`            | Translates the macOS-symbol binding (`'⌃⌥⌘J'`) into the accelerator string the plugin understands (`'Control+Alt+Super+J'`). ⌘ maps to `Super` (global-hotkey rejects `Meta`).                            |
 | `global-shortcut-setting.ts`            | Narrow getters/setters for `behavior.fileSystemWatching.globalRevealShortcut.*`. **`setGlobalRevealBinding` resets `acknowledged` to `false`** — the new combo deserves the first-trigger warning again. |
 
 ## Settings-gated dispatch
