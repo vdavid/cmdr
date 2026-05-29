@@ -130,6 +130,7 @@ fn test_null_bytes_in_paths() {
         size: None,
         recursive_size: None,
         modified: None,
+        recursive_size_pending: None,
     };
 
     // Should serialize without panic

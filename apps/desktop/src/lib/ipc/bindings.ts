@@ -3097,6 +3097,14 @@ export type PaneFileEntry = {
   size: number | null
   recursiveSize: number | null
   modified: string | null
+  /**
+   *  `Some(true)` while the indexer still has unprocessed writes affecting
+   *  this directory or a descendant, so its recursive size is mid-update.
+   *  Surfaced in `cmdr://state` as a `[size-pending]` marker so agents can
+   *  observe the "size updating" hourglass without DOM access. `None`/`false`
+   *  once the writer drains. Only meaningful for directories.
+   */
+  recursiveSizePending: boolean | null
 }
 
 // State of a single pane.

@@ -129,7 +129,7 @@
                 size: null,
                 recursiveSize: null,
                 modified: null,
-            }))
+                recursiveSizePending: null,            }))
 
             const state: PaneState = {
                 path: `smb://${host.ipAddress ?? host.name}/`,

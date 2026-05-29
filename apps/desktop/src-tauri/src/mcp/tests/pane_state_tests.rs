@@ -27,6 +27,7 @@ fn test_pane_state_store_update_left() {
             size: Some(1024),
             recursive_size: None,
             modified: Some("2024-01-01T00:00:00Z".to_string()),
+            recursive_size_pending: None,
         }],
         cursor_index: 0,
         view_mode: "brief".to_string(),
@@ -89,6 +90,7 @@ fn test_pane_state_cursor_index_bounds() {
             size: None,
             recursive_size: None,
             modified: None,
+            recursive_size_pending: None,
         }],
         cursor_index: 999, // Out of bounds
         view_mode: "brief".to_string(),
@@ -123,6 +125,7 @@ fn test_file_entry_serialization() {
         size: Some(42),
         recursive_size: None,
         modified: Some("2024-01-01T00:00:00Z".to_string()),
+        recursive_size_pending: None,
     };
 
     let json = serde_json::to_value(&entry).unwrap();
@@ -140,6 +143,7 @@ fn test_file_entry_optional_fields_serialize_as_null() {
         size: None,
         recursive_size: None,
         modified: None,
+        recursive_size_pending: None,
     };
 
     let json = serde_json::to_value(&entry).unwrap();
@@ -174,6 +178,7 @@ fn test_unicode_in_file_entries() {
         size: Some(100),
         recursive_size: None,
         modified: None,
+        recursive_size_pending: None,
     };
 
     let json = serde_json::to_value(&entry).unwrap();
@@ -191,6 +196,7 @@ fn test_special_chars_in_file_paths() {
             size: None,
             recursive_size: None,
             modified: None,
+            recursive_size_pending: None,
         },
         PaneFileEntry {
             name: "file'with'quotes.txt".to_string(),
@@ -199,6 +205,7 @@ fn test_special_chars_in_file_paths() {
             size: None,
             recursive_size: None,
             modified: None,
+            recursive_size_pending: None,
         },
         PaneFileEntry {
             name: "file\"doublequotes\".txt".to_string(),
@@ -207,6 +214,7 @@ fn test_special_chars_in_file_paths() {
             size: None,
             recursive_size: None,
             modified: None,
+            recursive_size_pending: None,
         },
     ];
 
@@ -252,6 +260,7 @@ fn test_large_file_count() {
             size: Some(i as u64 * 100),
             recursive_size: None,
             modified: None,
+            recursive_size_pending: None,
         })
         .collect();
 

@@ -216,6 +216,11 @@ fn format_file_compact(
     if is_selected {
         parts.push("[sel]".to_string());
     }
+    // The recursive size is mid-update (indexer still draining writes for this
+    // dir or a descendant). Mirrors the per-row "size updating" hourglass.
+    if file.recursive_size_pending == Some(true) {
+        parts.push("[size-pending]".to_string());
+    }
 
     parts.join(" ")
 }
@@ -966,6 +971,7 @@ mod tests {
             size: Some(1024),
             recursive_size: None,
             modified: Some("2024-01-15".to_string()),
+            recursive_size_pending: None,
         };
 
         // Without details
@@ -992,6 +998,7 @@ mod tests {
             size: None,
             recursive_size: None,
             modified: None,
+            recursive_size_pending: None,
         };
         let formatted = format_file_compact(&dir, 1, false, false, false);
         assert_eq!(formatted, "i:1 d docs");
@@ -1004,9 +1011,27 @@ mod tests {
             size: None,
             recursive_size: Some(169),
             modified: Some("2026-03-19T17:33:53.000Z".to_string()),
+            recursive_size_pending: None,
         };
         let formatted = format_file_compact(&dir_with_size, 5, false, false, true);
         assert_eq!(formatted, "i:5 d src 169 B 2026-03-19T17:33:53.000Z");
+
+        // Directory whose recursive size is mid-update gets a [size-pending] marker
+        // (the "size updating" hourglass, observable without DOM access).
+        let pending_dir = PaneFileEntry {
+            name: "target".to_string(),
+            path: "/tmp/target".to_string(),
+            is_directory: true,
+            size: None,
+            recursive_size: Some(4096),
+            modified: None,
+            recursive_size_pending: Some(true),
+        };
+        let formatted = format_file_compact(&pending_dir, 2, false, false, true);
+        assert_eq!(formatted, "i:2 d target 4 KB [size-pending]");
+        // The marker shows even without details (it's a status, not a detail).
+        let formatted = format_file_compact(&pending_dir, 2, false, false, false);
+        assert_eq!(formatted, "i:2 d target [size-pending]");
     }
 
     #[test]
@@ -1023,6 +1048,7 @@ mod tests {
                     size: Some(100),
                     recursive_size: None,
                     modified: Some("2024-01-15".to_string()),
+                    recursive_size_pending: None,
                 },
                 PaneFileEntry {
                     name: "folder".to_string(),
@@ -1031,6 +1057,7 @@ mod tests {
                     size: None,
                     recursive_size: None,
                     modified: None,
+                    recursive_size_pending: None,
                 },
             ],
             cursor_index: 0,

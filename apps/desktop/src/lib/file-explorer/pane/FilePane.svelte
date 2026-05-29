@@ -985,6 +985,11 @@
         if (listingId) {
             void refreshListingIndexSizes(listingId).then(() => fetchListingStats())
         }
+        // Mirror the refreshed sizes (and the `recursiveSizePending` hourglass flag)
+        // into the MCP pane state so agents see `[size-pending]` update live during
+        // an index storm, not just on cursor/nav changes. Debounced (300ms), so a
+        // burst of index-dir-updated refreshes coalesces into one sync.
+        debouncedSyncMcp.call()
     }
 
     export function getSwapState(): SwapState {
@@ -1163,7 +1168,15 @@
         // Include ".." entry if it's in the visible range
         if (hasParent && visibleRangeStart === 0 && canonicalPath) {
             const parentPath = parentOf(canonicalPath)
-            files.push({ name: '..', path: parentPath, isDirectory: true, size: null, recursiveSize: null, modified: null })
+            files.push({
+                name: '..',
+                path: parentPath,
+                isDirectory: true,
+                size: null,
+                recursiveSize: null,
+                modified: null,
+                recursiveSizePending: null,
+            })
         }
 
         // Limit to 100 files max for performance
@@ -1186,6 +1199,7 @@
                 size: entry.size ?? null,
                 recursiveSize: entry.recursiveSize ?? null,
                 modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
+                recursiveSizePending: entry.recursiveSizePending ?? null,
             })
         }
         return files

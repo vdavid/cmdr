@@ -28,6 +28,12 @@ pub struct PaneFileEntry {
     pub size: Option<u64>,
     pub recursive_size: Option<u64>,
     pub modified: Option<String>,
+    /// `Some(true)` while the indexer still has unprocessed writes affecting
+    /// this directory or a descendant, so its recursive size is mid-update.
+    /// Surfaced in `cmdr://state` as a `[size-pending]` marker so agents can
+    /// observe the "size updating" hourglass without DOM access. `None`/`false`
+    /// once the writer drains. Only meaningful for directories.
+    pub recursive_size_pending: Option<bool>,
 }
 
 /// State of a single pane.
@@ -239,6 +245,7 @@ mod tests {
                 size: Some(100),
                 recursive_size: None,
                 modified: None,
+                recursive_size_pending: None,
             }],
             cursor_index: 0,
             view_mode: "brief".to_string(),
