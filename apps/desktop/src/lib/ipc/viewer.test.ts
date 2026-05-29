@@ -50,14 +50,14 @@ const openResult: ViewerOpenResult = {
 }
 
 describe('commands.viewerOpen', () => {
-  it('invokes viewer_open with the path positional arg', async () => {
+  it('invokes viewer_open with the path and window-label positional args', async () => {
     const ipc = installIpcMock()
     ipc.mock('viewer_open', () => openResult)
 
-    const result = await commands.viewerOpen('/path/to/README.md')
+    const result = await commands.viewerOpen('/path/to/README.md', 'viewer-123')
 
     expect(result).toEqual({ status: 'ok', data: openResult })
-    expect(ipc.lastCall('viewer_open')?.payload).toEqual({ path: '/path/to/README.md' })
+    expect(ipc.lastCall('viewer_open')?.payload).toEqual({ path: '/path/to/README.md', windowLabel: 'viewer-123' })
   })
 
   it('surfaces IpcError on the error branch (timedOut: false for non-blocking errors)', async () => {
@@ -67,7 +67,7 @@ describe('commands.viewerOpen', () => {
       throw { message: 'File not found', timedOut: false }
     })
 
-    const result = await commands.viewerOpen('/nope.txt')
+    const result = await commands.viewerOpen('/nope.txt', 'viewer-123')
 
     expect(result.status).toBe('error')
     if (result.status === 'error') {
