@@ -10,8 +10,8 @@ use std::time::{Duration, Instant};
 use super::macos_copy::copy_symlink;
 
 use super::super::helpers::{
-    ApplyToAll, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable, safe_overwrite_dir,
-    spawn_async_sync, validate_disk_space, validate_path_length,
+    ApplyToAll, flush_created_destinations, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable,
+    safe_overwrite_dir, validate_disk_space, validate_path_length,
 };
 use super::super::scan::{
     SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path,
@@ -154,6 +154,9 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
     let mut apply_to_all_resolution = ApplyToAll::default();
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
     let mut dir_remap: HashMap<PathBuf, PathBuf> = HashMap::new();
+    // Destinations the copy strategy already flushed (chunked) or for which a
+    // flush is moot (clonefile/reflink); the end-of-op flush pass skips these.
+    let mut already_synced: HashSet<PathBuf> = HashSet::new();
 
     // Emit initial copying phase event (important when reusing cached scan - no scanning events were
     // emitted)
@@ -323,6 +326,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 &mut apply_to_all_resolution,
                 &mut created_dirs,
                 &mut dir_remap,
+                &mut already_synced,
             )?;
             let bytes_delta = local_bytes.saturating_sub(ctx.bytes_done_so_far);
 
@@ -387,8 +391,24 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 return Ok(());
             }
 
+            // Flush every created destination to disk before reporting
+            // complete, so "complete" means durable. Reuses the transaction's
+            // own `created_files`; skips paths the strategy already flushed.
+            // Emits a `Flushing`-phase event first so the FE shows "Writing the
+            // last piece…" instead of a bar frozen at 100% on slow media.
+            flush_created_destinations(
+                events,
+                operation_id,
+                WriteOperationType::Copy,
+                state,
+                files_done,
+                file_count,
+                bytes_done,
+                total_bytes,
+                &transaction.created_files,
+                &already_synced,
+            );
             transaction.commit();
-            spawn_async_sync();
 
             log::info!(
                 "copy_files_with_progress: completed op={} files={} bytes={}",
@@ -599,6 +619,11 @@ pub(super) fn copy_single_item(
     // `<dest>/name` (a file is there) to `<dest>/name (1)`; every subsequent
     // child of that subtree must follow the redirect. Empty in the common case.
     dir_remap: &mut HashMap<PathBuf, PathBuf>,
+    // Destinations already made durable by the copy strategy (chunked copy's
+    // inline `sync_data`) or for which a flush is moot (APFS clonefile /
+    // reflink). The end-of-op flush pass skips these so a long chunked batch
+    // isn't fsynced twice. See `helpers::flush_created_destinations`.
+    already_synced: &mut HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
     let progress_ctx = PerFileCtx {
         events,
@@ -950,13 +975,26 @@ pub(super) fn copy_single_item(
             }
         };
 
-        let _bytes = copy_file_with_strategy(
+        let outcome = copy_file_with_strategy(
             source,
             &actual_dest,
             needs_safe_overwrite,
             &state.intent,
             Some(progress_cb),
         )?;
+        // Byte accounting uses `write_weight` below (matches the scan's
+        // `total_bytes` even when a clonefile reports 0 copied bytes), so the
+        // strategy's own byte count is intentionally unused here.
+        let _ = outcome.bytes;
+
+        // If the strategy already flushed this file (chunked copy) or a flush
+        // is moot (APFS clonefile / reflink), record it so the end-of-op flush
+        // pass skips it. Strategies that leave bytes in the page cache
+        // (Linux `copy_file_range`, the std fallback) are NOT recorded, so the
+        // pass `fdatasync`s them before we report complete.
+        if outcome.already_durable {
+            already_synced.insert(actual_dest.clone());
+        }
 
         // Final accounting credits the full write weight (the file's size).
         // We use `write_weight` rather than the strategy's returned byte count

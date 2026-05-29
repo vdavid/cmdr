@@ -69,3 +69,50 @@ fn local_copy_single_file_reaches_files_done_n() {
     assert_eq!(complete[0].files_processed, 1);
     assert_eq!(complete[0].bytes_processed, 1_048_576);
 }
+
+/// A local-FS copy must emit a `Flushing`-phase progress event before the
+/// `write-complete` fires. This is the user-visible "Writing the last piece…"
+/// state: on slow media the end-of-op `fdatasync` over the created
+/// destinations is a real multi-second pause, and the bar must not sit frozen
+/// at 100% pretending the work is done. The event is the observable proxy for
+/// the durability contract (the fsync itself isn't power-loss-testable in a
+/// unit test).
+#[test]
+fn local_copy_emits_flushing_phase_before_complete() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let src_file = src_dir.join("file.bin");
+    fs::write(&src_file, vec![0u8; 4096]).unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(200);
+    let config = WriteOperationConfig::default();
+
+    let result = copy_files_with_progress_inner(
+        &*events,
+        "op-local-copy-flushing",
+        &state,
+        std::slice::from_ref(&src_file),
+        &dst_dir,
+        &config,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let saw_flushing = progress.iter().any(|p| p.phase == WriteOperationPhase::Flushing);
+    assert!(
+        saw_flushing,
+        "local-FS copy: expected a Flushing-phase progress event, got phases {:?}",
+        progress.iter().map(|p| p.phase).collect::<Vec<_>>(),
+    );
+
+    // The flush pass made the created destination durable; we can read it back.
+    let dst_file = dst_dir.join("file.bin");
+    assert!(dst_file.exists(), "destination should hold the copied file");
+    let complete = events.complete.lock().unwrap();
+    assert_eq!(complete.len(), 1, "exactly one write-complete");
+}

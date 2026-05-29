@@ -100,6 +100,23 @@ fn is_apfs(path: &Path) -> bool {
 // Strategy selection
 // ============================================================================
 
+/// Outcome of a single-file copy: bytes written, plus whether the destination
+/// is already durable on disk.
+///
+/// `already_durable` is `true` when the strategy either flushed the file itself
+/// (chunked copy's inline `sync_data`) or when a flush is moot because the data
+/// shares copy-on-write extents with the source (APFS clonefile / btrfs-XFS
+/// reflink). The caller skips those in the end-of-op `fdatasync` pass so a long
+/// chunked batch isn't fsynced twice. `false` means the bytes may still live
+/// only in the page cache (Linux `copy_file_range` without reflink, the
+/// `std::fs::copy` fallback), so the caller must flush the destination before
+/// reporting completion.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct StrategyCopyOutcome {
+    pub bytes: u64,
+    pub already_durable: bool,
+}
+
 /// Copies file contents using the best strategy for the source/destination combination.
 ///
 /// On macOS, uses `copyfile(3)` only for same-APFS-volume copies (APFS clonefile: instant,
@@ -112,7 +129,7 @@ pub(super) fn copy_file_with_strategy(
     needs_safe_overwrite: bool,
     cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
-) -> Result<u64, WriteOperationError> {
+) -> Result<StrategyCopyOutcome, WriteOperationError> {
     if is_same_apfs_volume(source, dest) {
         log::debug!(
             "copy_file_with_strategy: same APFS volume, using copyfile for clonefile (src={}, dest={})",
@@ -120,18 +137,28 @@ pub(super) fn copy_file_with_strategy(
             dest.display()
         );
         let context = CopyProgressContext::with_cancellation(Arc::clone(cancelled));
-        if needs_safe_overwrite {
-            safe_overwrite_file(source, dest, Some(&context))
+        let bytes = if needs_safe_overwrite {
+            safe_overwrite_file(source, dest, Some(&context))?
         } else {
-            copy_single_file_native(source, dest, false, Some(&context))
-        }
+            copy_single_file_native(source, dest, false, Some(&context))?
+        };
+        // Clonefile shares CoW extents with the source: flushing is moot.
+        Ok(StrategyCopyOutcome {
+            bytes,
+            already_durable: true,
+        })
     } else {
         log::debug!(
             "copy_file_with_strategy: different volumes or non-APFS, using chunked copy (src={}, dest={})",
             source.display(),
             dest.display()
         );
-        chunked_copy_with_metadata(source, dest, cancelled, progress_callback)
+        // Chunked copy `sync_data`s the file itself before returning.
+        let bytes = chunked_copy_with_metadata(source, dest, cancelled, progress_callback)?;
+        Ok(StrategyCopyOutcome {
+            bytes,
+            already_durable: true,
+        })
     }
 }
 
@@ -142,18 +169,35 @@ pub(super) fn copy_file_with_strategy(
     needs_safe_overwrite: bool,
     cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
-) -> Result<u64, WriteOperationError> {
+) -> Result<StrategyCopyOutcome, WriteOperationError> {
     if is_network_filesystem(source) || is_network_filesystem(dest) {
         log::debug!(
             "copy_file_with_strategy: using chunked copy for network path (src={}, dest={})",
             source.display(),
             dest.display()
         );
-        chunked_copy_with_metadata(source, dest, cancelled, progress_callback)
+        // Chunked copy `sync_data`s the file itself before returning.
+        let bytes = chunked_copy_with_metadata(source, dest, cancelled, progress_callback)?;
+        Ok(StrategyCopyOutcome {
+            bytes,
+            already_durable: true,
+        })
     } else if needs_safe_overwrite {
-        safe_overwrite_file(source, dest)
+        // `safe_overwrite_file` uses `std::fs::copy` on Linux, which leaves the
+        // bytes in the page cache; the caller flushes in the end-of-op pass.
+        let bytes = safe_overwrite_file(source, dest)?;
+        Ok(StrategyCopyOutcome {
+            bytes,
+            already_durable: false,
+        })
     } else {
-        copy_single_file_linux(source, dest, false, cancelled, progress_callback)
+        // `copy_file_range(2)` doesn't flush (and reflink shares CoW extents,
+        // but we can't cheaply tell here), so the caller flushes the dest.
+        let bytes = copy_single_file_linux(source, dest, false, cancelled, progress_callback)?;
+        Ok(StrategyCopyOutcome {
+            bytes,
+            already_durable: false,
+        })
     }
 }
 
@@ -164,13 +208,18 @@ pub(super) fn copy_file_with_strategy(
     needs_safe_overwrite: bool,
     cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
-) -> Result<u64, WriteOperationError> {
+) -> Result<StrategyCopyOutcome, WriteOperationError> {
     let _ = (cancelled, progress_callback); // Unused on this platform
-    if needs_safe_overwrite {
-        safe_overwrite_file(source, dest)
+    let bytes = if needs_safe_overwrite {
+        safe_overwrite_file(source, dest)?
     } else {
-        fs::copy(source, dest).with_path(source)
-    }
+        fs::copy(source, dest).with_path(source)?
+    };
+    // The std fallback doesn't flush; the caller's end-of-op pass does.
+    Ok(StrategyCopyOutcome {
+        bytes,
+        already_durable: false,
+    })
 }
 
 #[cfg(test)]
@@ -202,7 +251,7 @@ mod tests {
         let result = copy_file_with_strategy(&src, &dst, false, &cancelled, None);
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 21);
+        assert_eq!(result.unwrap().bytes, 21);
         assert!(dst.exists());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "Hello, copy strategy!");
 
@@ -334,7 +383,7 @@ mod tests {
         let result = copy_file_with_strategy(&src, &dst, false, &cancelled, None);
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 0);
+        assert_eq!(result.unwrap().bytes, 0);
         assert!(dst.exists());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "");
 

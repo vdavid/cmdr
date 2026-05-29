@@ -38,6 +38,12 @@ pub enum WriteOperationPhase {
     Trashing,
     /// Rolling back: deleting files created during a cancelled copy/move
     RollingBack,
+    /// Flushing freshly-written destinations to disk (`fdatasync`) before
+    /// reporting the copy/move complete. On slow media (USB sticks, SD cards)
+    /// this is a real multi-second pause; the FE renders "Writing the last
+    /// piece…" so the bar doesn't sit frozen at 100% pretending the work is
+    /// done. See `transfer/CLAUDE.md` § "Durability".
+    Flushing,
 }
 
 // ============================================================================

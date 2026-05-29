@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::helpers::{
-    ApplyToAll, is_same_filesystem, path_exists_or_is_symlink, remove_dir_all_in_background, resolve_conflict,
-    safe_overwrite_dir, spawn_async_sync,
+    ApplyToAll, flush_created_destinations, is_same_filesystem, path_exists_or_is_symlink,
+    remove_dir_all_in_background, resolve_conflict, safe_overwrite_dir,
 };
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::super::state::{
@@ -273,8 +273,27 @@ fn move_with_rename(
 
     result?;
 
-    // Spawn async sync for durability (non-blocking)
-    spawn_async_sync();
+    // Durability: a same-FS rename moves no data blocks (the file's contents
+    // were already durable before the move), but the new directory entries
+    // still need flushing. `flush_created_destinations` emits a `Flushing`
+    // event (so the FE shows "Writing the last piece…" for moves too) and
+    // `fdatasync`s each moved file plus its parent directory, making the
+    // rename-into-place durable. `already_synced` is empty: an `fdatasync` on
+    // an already-durable file is cheap, and the parent-dir fsync is the point.
+    let renamed_dests: Vec<PathBuf> = move_tx.renames.iter().map(|(_, dest)| dest.clone()).collect();
+    let empty_synced: HashSet<PathBuf> = HashSet::new();
+    flush_created_destinations(
+        events,
+        operation_id,
+        WriteOperationType::Move,
+        state,
+        files_done,
+        files_done,
+        0,
+        0,
+        &renamed_dests,
+        &empty_synced,
+    );
 
     // Emit completion (instant, no progress needed)
     events.emit_complete(WriteCompleteEvent {
@@ -450,6 +469,18 @@ fn move_with_staging(
     let mut apply_to_all_resolution = ApplyToAll::default();
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
     let mut dir_remap: std::collections::HashMap<PathBuf, PathBuf> = std::collections::HashMap::new();
+    // Durability bookkeeping. The Phase-2 copy records each per-file STAGING
+    // dest into `transaction.created_files` and (when the strategy already
+    // flushed it) into `already_synced`. Phase 3 renames the staging tree into
+    // place, so by flush time the staging paths are gone. After Phase 3 we
+    // remap both sets from the staging prefix to the final `destination` prefix
+    // and flush the FINAL per-file dests — this closes the gap where the
+    // Phase-3 renames-into-place (including the `throwaway_tx` path) aren't in
+    // the real transaction. A same-volume rename leaves data blocks in place,
+    // so on macOS the bytes are already durable (chunked) and the remapped
+    // `fdatasync` is a cheap no-op that still makes the new directory entry
+    // durable; on Linux (`copy_file_range` to staging) it's the real flush.
+    let mut already_synced: HashSet<PathBuf> = HashSet::new();
 
     // Emit initial copying phase event
     state.emit_progress_via_sink(
@@ -512,6 +543,7 @@ fn move_with_staging(
                 &mut apply_to_all_resolution,
                 &mut created_dirs,
                 &mut dir_remap,
+                &mut already_synced,
             )?;
 
             if let Some(source_path) = tracker.record(file_info) {
@@ -625,8 +657,32 @@ fn move_with_staging(
     // Phase 5: Remove empty staging directory
     let _ = fs::remove_dir(&staging_dir);
 
-    // Spawn async sync for durability (non-blocking)
-    spawn_async_sync();
+    // Durability: remap the Phase-2 staging dests to their final paths (Phase 3
+    // renamed staging → destination), then flush the final per-file dests
+    // before reporting complete. Emits a `Flushing`-phase event first so the FE
+    // shows "Writing the last piece…".
+    let remap = |p: &Path| -> PathBuf {
+        match p.strip_prefix(&staging_dir) {
+            Ok(rel) => destination.join(rel),
+            // Shouldn't happen (every staging dest is under staging_dir), but
+            // fall back to the original path rather than dropping it.
+            Err(_) => p.to_path_buf(),
+        }
+    };
+    let final_dests: Vec<PathBuf> = transaction.created_files.iter().map(|p| remap(p)).collect();
+    let final_already_synced: HashSet<PathBuf> = already_synced.iter().map(|p| remap(p)).collect();
+    flush_created_destinations(
+        events,
+        operation_id,
+        WriteOperationType::Move,
+        state,
+        files_done,
+        scan_result.file_count,
+        bytes_done,
+        scan_result.total_bytes,
+        &final_dests,
+        &final_already_synced,
+    );
 
     // Emit completion
     events.emit_complete(WriteCompleteEvent {

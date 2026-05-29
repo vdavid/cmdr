@@ -313,8 +313,10 @@
     ])
 
     function getStageStatus(stageId: WriteOperationPhase): 'done' | 'active' | 'pending' {
-        // During rollback, show the active phase (copying/moving) as still active
-        const effectivePhase = phase === 'rolling_back' ? activePhaseId : phase
+        // During rollback OR the closing flush, keep the active phase
+        // (copying/moving) marked as still active — flushing is the tail of the
+        // copy, not a separate stage chip, so both map back to `activePhaseId`.
+        const effectivePhase = phase === 'rolling_back' || phase === 'flushing' ? activePhaseId : phase
         const currentIndex = stages.findIndex((s) => s.id === effectivePhase)
         const stageIndex = stages.findIndex((s) => s.id === stageId)
 
@@ -979,6 +981,8 @@
             {/if}
         {:else if conflictEvent}
             File already exists
+        {:else if phase === 'flushing'}
+            Writing the last piece...
         {:else}
             {operationGerund}...
         {/if}
