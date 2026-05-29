@@ -175,10 +175,10 @@
         // Keyboard shortcuts section (same window or another), and keep the
         // toggle state in sync if `enabled` changes elsewhere.
         const unsubBinding = onSpecificSettingChange(GLOBAL_REVEAL_BINDING_KEY, (_id, value) => {
-            shortcutBinding = value as string
+            shortcutBinding = value
         })
         const unsubEnabled = onSpecificSettingChange(GLOBAL_REVEAL_ENABLED_KEY, (_id, value) => {
-            shortcutEnabled = value as boolean
+            shortcutEnabled = value
         })
         // Refresh DB size every 2 seconds while visible
         refreshTimer = setInterval(() => void refreshDbSize(), 2000)
