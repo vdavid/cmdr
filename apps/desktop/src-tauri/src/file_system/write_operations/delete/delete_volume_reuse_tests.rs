@@ -242,6 +242,7 @@ async fn delete_consumes_preview_id_skips_rescan() {
                     },
                 ),
             ],
+            inserted_at: std::time::Instant::now(),
         },
     );
 

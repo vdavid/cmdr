@@ -34,8 +34,9 @@ pub use range_read::RangeEnd;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
     EncodingOptions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session,
-    get_encoding_options, get_lines, get_session_status, init_app_handle, open_session, read_range, reload,
-    search_cancel, search_poll, search_start, set_encoding, set_tail_mode, write_range_to_file,
+    close_session_for_window, get_encoding_options, get_lines, get_session_status, init_app_handle, open_session,
+    read_range, register_window_session, reload, search_cancel, search_poll, search_start, set_encoding, set_tail_mode,
+    write_range_to_file,
 };
 
 use serde::Serialize;

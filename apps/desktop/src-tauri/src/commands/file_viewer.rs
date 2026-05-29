@@ -20,11 +20,19 @@ const READ_RANGE_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Opens a viewer session for the given file.
 /// Returns session metadata + initial lines from the start of the file.
+///
+/// `window_label` is the opening viewer window's label (`viewer-<timestamp>`).
+/// It links the window to the session so the Rust window-destroyed handler can
+/// free the session when the user closes the window via the titlebar X (a path
+/// that never fires the FE `viewer_close` IPC). Pass an empty string when there's
+/// no owning window (no mapping is recorded).
 #[tauri::command]
 #[specta::specta]
-pub async fn viewer_open(path: String) -> Result<ViewerOpenResult, IpcError> {
+pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpenResult, IpcError> {
     blocking_result_with_timeout(VIEWER_TIMEOUT, move || {
-        file_viewer::open_session(&path).map_err(|e| e.to_string())
+        let result = file_viewer::open_session(&path).map_err(|e| e.to_string())?;
+        file_viewer::register_window_session(&window_label, &result.session_id);
+        Ok(result)
     })
     .await
 }

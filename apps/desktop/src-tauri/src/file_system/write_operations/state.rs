@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use super::eta::EtaEstimator;
 use super::types::{
@@ -113,7 +113,7 @@ impl WriteOperationState {
     pub fn enrich_progress(&self, event: &mut WriteProgressEvent) {
         let stats = match self.estimator.lock() {
             Ok(mut est) => est.update(
-                std::time::Instant::now(),
+                Instant::now(),
                 event.phase,
                 event.bytes_done,
                 event.bytes_total,
@@ -490,6 +490,56 @@ pub(super) struct CachedScanResult {
     /// pipeline's cached branch can rebuild `source_hints` without per-path
     /// `is_directory` probes (which on MTP each list the parent dir).
     pub per_path: Vec<(PathBuf, CopyScanResult)>,
+    /// When this result was inserted into `SCAN_PREVIEW_RESULTS`. Drives the
+    /// TTL safety net (`prune_expired_scan_results`): a forgetful caller that
+    /// never consumes the cache (dialog dismissed, op never started) can't leak
+    /// tens of thousands of `FileInfo` unbounded — entries older than
+    /// `SCAN_RESULT_TTL` are evicted on the next insert.
+    pub inserted_at: Instant,
+}
+
+/// How long a cached scan result lives before the TTL safety net evicts it.
+/// The normal lifecycle frees results far sooner (`take_cached_scan_result` at
+/// op start, or `release_scan_preview` on dialog teardown); this only catches
+/// the case where neither fires.
+pub(super) const SCAN_RESULT_TTL: Duration = Duration::from_secs(300);
+
+/// Returns the preview ids in `entries` whose `inserted_at` is older than
+/// `ttl` relative to `now`. Pure so it's unit-testable without touching the
+/// global cache. Callers remove the returned ids under the write lock.
+pub(super) fn expired_scan_result_ids<'a>(
+    entries: impl IntoIterator<Item = (&'a String, Instant)>,
+    now: Instant,
+    ttl: Duration,
+) -> Vec<String> {
+    entries
+        .into_iter()
+        .filter(|(_, inserted_at)| now.duration_since(*inserted_at) > ttl)
+        .map(|(id, _)| id.clone())
+        .collect()
+}
+
+/// Evicts cache entries older than `SCAN_RESULT_TTL`, then inserts `result`
+/// under `preview_id`. The single choke point for `SCAN_PREVIEW_RESULTS`
+/// inserts so the TTL sweep can't be forgotten by a new call site.
+pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
+    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
+        let now = Instant::now();
+        let expired = expired_scan_result_ids(cache.iter().map(|(k, v)| (k, v.inserted_at)), now, SCAN_RESULT_TTL);
+        for id in expired {
+            cache.remove(&id);
+        }
+        cache.insert(preview_id, result);
+    }
+}
+
+/// Drops the cached scan result for `preview_id`, if any. Called on dialog
+/// teardown (`release_scan_preview`) so a result that finished scanning but was
+/// never consumed by a started op doesn't linger until quit.
+pub(super) fn release_scan_result(preview_id: &str) {
+    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
+        cache.remove(preview_id);
+    }
 }
 
 /// Global cache for scan preview states.
@@ -721,6 +771,53 @@ mod tests {
         // Pins the catch-all arm. If a future variant is added, this should fail.
         assert_eq!(OperationIntent::from_u8(3), OperationIntent::Running);
         assert_eq!(OperationIntent::from_u8(255), OperationIntent::Running);
+    }
+
+    // ---- expired_scan_result_ids (TTL safety net) ----
+
+    #[test]
+    fn expired_scan_result_ids_returns_only_stale_entries() {
+        let now = Instant::now();
+        let ttl = Duration::from_secs(300);
+        let fresh = now - Duration::from_secs(10);
+        let stale = now - Duration::from_secs(400);
+        let fresh_id = String::from("fresh");
+        let stale_id = String::from("stale");
+        let entries = vec![(&fresh_id, fresh), (&stale_id, stale)];
+
+        let expired = expired_scan_result_ids(entries, now, ttl);
+
+        assert_eq!(expired, vec![String::from("stale")]);
+    }
+
+    #[test]
+    fn expired_scan_result_ids_empty_when_all_fresh() {
+        let now = Instant::now();
+        let ttl = Duration::from_secs(300);
+        let a = String::from("a");
+        let b = String::from("b");
+        let entries = vec![(&a, now), (&b, now - Duration::from_secs(299))];
+
+        let expired = expired_scan_result_ids(entries, now, ttl);
+
+        assert!(expired.is_empty());
+    }
+
+    #[test]
+    fn expired_scan_result_ids_boundary_is_strictly_greater_than_ttl() {
+        // Exactly at the TTL is NOT expired; one tick past it is.
+        let now = Instant::now();
+        let ttl = Duration::from_secs(300);
+        let at_ttl = String::from("at-ttl");
+        let past_ttl = String::from("past-ttl");
+        let entries = vec![
+            (&at_ttl, now - Duration::from_secs(300)),
+            (&past_ttl, now - Duration::from_secs(301)),
+        ];
+
+        let expired = expired_scan_result_ids(entries, now, ttl);
+
+        assert_eq!(expired, vec![String::from("past-ttl")]);
     }
 
     // ---- load_intent / is_cancelled ----

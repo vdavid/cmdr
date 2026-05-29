@@ -396,9 +396,13 @@
 
     onDestroy(() => {
         destroyed = true
-        // Cancel scan preview if still running, but only if the user cancelled, not confirmed.
-        // On confirm, the TransferProgressDialog takes over listening to the same scan.
-        if (previewId && isScanning && !confirmed) {
+        // Free the scan preview unless the user confirmed (then the
+        // TransferProgressDialog / the started op takes over the same scan and
+        // consumes the cached result). We call this regardless of `isScanning`:
+        // `cancelScanPreview` also evicts the cached `CachedScanResult`, so a
+        // dialog dismissed AFTER the scan completed doesn't leak the cache until
+        // quit.
+        if (previewId && !confirmed) {
             void cancelScanPreview(previewId)
         }
         cleanup()
@@ -432,8 +436,10 @@
     }
 
     function handleCancel() {
-        // Cancel scan preview if still running
-        if (previewId && isScanning) {
+        // Free the scan preview (cancels an in-flight scan and evicts any cached
+        // result). Regardless of `isScanning`, so a dismiss after the scan
+        // completed doesn't leak the cache.
+        if (previewId) {
             void cancelScanPreview(previewId)
         }
         cleanup()

@@ -80,9 +80,16 @@ export interface SearchPollResult {
   matchLimitReached: boolean
 }
 
-/** Opens a viewer session for a file. Returns session metadata + initial lines. */
-export async function viewerOpen(path: string): Promise<ViewerOpenResult> {
-  const res = await commands.viewerOpen(path)
+/**
+ * Opens a viewer session for a file. Returns session metadata + initial lines.
+ *
+ * `windowLabel` links the session to the owning viewer window so the backend can
+ * free the session when the window is closed via the titlebar X (a path that never
+ * fires `viewerClose`). Pass `getCurrentWindow().label`. Defaults to `''` (no
+ * mapping) for callers without an owning window.
+ */
+export async function viewerOpen(path: string, windowLabel = ''): Promise<ViewerOpenResult> {
+  const res = await commands.viewerOpen(path, windowLabel)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

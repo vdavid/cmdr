@@ -221,6 +221,39 @@ impl ViewerSession {
 /// Global session cache.
 static SESSIONS: LazyLock<Mutex<HashMap<String, ViewerSession>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
+/// Maps a viewer window label (`viewer-<timestamp>`) to its session id.
+///
+/// The FE creates the window and then opens the session, so the only link
+/// between a window and its session is the FE. We record it here at
+/// `open_session` time so the Rust-side window-destroyed handler can free the
+/// session when the user closes the window via the titlebar X — a path that
+/// never fires the FE `viewer_close` IPC. Without this, those sessions (and
+/// their backends, watcher threads, line indexes) leaked until app quit.
+static WINDOW_TO_SESSION: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Records the window-label → session-id link. Called from `viewer_open` with
+/// the opening window's label. A label with no session (empty string) is ignored.
+pub fn register_window_session(window_label: &str, session_id: &str) {
+    if window_label.is_empty() {
+        return;
+    }
+    WINDOW_TO_SESSION
+        .lock_ignore_poison()
+        .insert(window_label.to_string(), session_id.to_string());
+}
+
+/// Frees the session owned by `window_label`, if any. Called from the window
+/// `Destroyed`/`CloseRequested` handler for `viewer-*` windows. Idempotent: a
+/// window with no recorded session (or an already-closed session) is a no-op.
+pub fn close_session_for_window(window_label: &str) {
+    let session_id = WINDOW_TO_SESSION.lock_ignore_poison().remove(window_label);
+    if let Some(session_id) = session_id {
+        // Reuse the normal teardown; ignore SessionNotFound (the FE may have
+        // already closed it via `viewer_close`).
+        let _ = close_session(&session_id);
+    }
+}
+
 /// Number of initial lines to return on open.
 const INITIAL_LINE_COUNT: usize = 200;
 
@@ -1053,6 +1086,14 @@ pub fn active_read_count(session_id: &str) -> usize {
 
 /// Closes a viewer session and frees resources.
 pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
+    // Drop any window→session mapping pointing at this session so the map
+    // doesn't accumulate stale entries when the FE closes via the `viewer_close`
+    // IPC (the common in-app close path). The map holds one entry per open
+    // viewer window, so the linear scan is cheap.
+    WINDOW_TO_SESSION
+        .lock_ignore_poison()
+        .retain(|_, sid| sid != session_id);
+
     let mut sessions = SESSIONS.lock_ignore_poison();
     if let Some(session) = sessions.remove(session_id) {
         // Cancel any ongoing search

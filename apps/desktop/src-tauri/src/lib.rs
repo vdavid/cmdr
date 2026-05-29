@@ -1032,6 +1032,17 @@ pub fn run() {
                 #[cfg(any(target_os = "macos", target_os = "linux"))]
                 network::mdns_discovery::stop_discovery();
             }
+            // Free a viewer session when its window is destroyed. Closing a viewer
+            // via the titlebar X never fires the FE `viewer_close` IPC (that only
+            // runs from the in-app close path), so without this the `ViewerSession`
+            // (backend, line index, watcher thread) leaked until app quit.
+            // `close_session_for_window` is idempotent: if the FE already closed the
+            // session via IPC, the lookup is a no-op.
+            if let tauri::WindowEvent::Destroyed = event
+                && window.label().starts_with("viewer-")
+            {
+                file_viewer::close_session_for_window(window.label());
+            }
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

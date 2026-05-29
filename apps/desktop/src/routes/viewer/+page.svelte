@@ -825,7 +825,9 @@
 
     async function openViewerSession(path: string) {
         const t0 = performance.now()
-        const result = await viewerOpen(path)
+        // Pass the window label so the backend can free this session when the
+        // window is closed via the titlebar X (which never fires `viewerClose`).
+        const result = await viewerOpen(path, getCurrentWindow().label)
         log.debug('viewer_open IPC took {ms}ms', { ms: Math.round(performance.now() - t0) })
 
         sessionId = result.sessionId

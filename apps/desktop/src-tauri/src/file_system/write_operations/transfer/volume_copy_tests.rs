@@ -1170,6 +1170,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
                     top_level_is_directory: false,
                 },
             )],
+            inserted_at: Instant::now(),
         },
     );
 
@@ -1229,6 +1230,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
                     top_level_is_directory: false,
                 },
             )],
+            inserted_at: Instant::now(),
         },
     );
     let stop_config = VolumeCopyConfig {

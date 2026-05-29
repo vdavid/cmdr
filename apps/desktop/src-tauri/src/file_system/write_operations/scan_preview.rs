@@ -12,7 +12,10 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use super::scan::{SubtreeTotals, WalkContext, scan_subtree_with_oracle, sort_files, walk_dir_recursive};
-use super::state::{CachedScanResult, FileInfo, SCAN_PREVIEW_RESULTS, SCAN_PREVIEW_STATE, ScanPreviewState};
+use super::state::{
+    CachedScanResult, FileInfo, SCAN_PREVIEW_RESULTS, SCAN_PREVIEW_STATE, ScanPreviewState, insert_scan_result,
+    release_scan_result,
+};
 use super::types::{
     ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
     ScanPreviewStartResult,
@@ -87,13 +90,22 @@ pub fn get_scan_preview_totals(preview_id: &str) -> Option<super::types::ScanPre
     })
 }
 
-/// Cancels a running scan preview.
+/// Cancels a running scan preview AND frees any cached result.
+///
+/// Cancelling sets the in-flight cancel flag (a still-running scan exits
+/// promptly). Freeing the cached result covers the dialog-dismissed-after-scan-
+/// completed case: the FE calls this on every dialog teardown, regardless of
+/// whether the scan was still running, so a completed-but-unconsumed
+/// `CachedScanResult` (tens of thousands of `FileInfo`) doesn't linger until
+/// quit. Consuming the result for a started op goes through
+/// `take_cached_scan_result` instead, which already removes it.
 pub fn cancel_scan_preview(preview_id: &str) {
     if let Ok(cache) = SCAN_PREVIEW_STATE.read()
         && let Some(state) = cache.get(preview_id)
     {
         state.cancelled.store(true, Ordering::Relaxed);
     }
+    release_scan_result(preview_id);
 }
 
 /// Internal function that runs the scan preview in a background thread.
@@ -192,19 +204,18 @@ fn run_scan_preview(
                 // Cache the results
                 let file_count = files.len();
                 let dirs_count = dirs.len();
-                if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
-                    cache.insert(
-                        preview_id.clone(),
-                        CachedScanResult {
-                            files,
-                            dirs,
-                            file_count,
-                            total_bytes,
-                            dedup_bytes,
-                            per_path: Vec::new(),
-                        },
-                    );
-                }
+                insert_scan_result(
+                    preview_id.clone(),
+                    CachedScanResult {
+                        files,
+                        dirs,
+                        file_count,
+                        total_bytes,
+                        dedup_bytes,
+                        per_path: Vec::new(),
+                        inserted_at: Instant::now(),
+                    },
+                );
 
                 // Emit completion
                 let _ = app.emit(
@@ -334,19 +345,18 @@ async fn run_volume_scan_preview(
                 // Cache results: volume scans don't produce per-file FileInfo, but
                 // the cache stores aggregate stats AND per-path scan results so
                 // copy_between_volumes can reuse both without re-statting.
-                if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
-                    cache.insert(
-                        preview_id.clone(),
-                        CachedScanResult {
-                            files: Vec::new(),
-                            dirs: Vec::new(),
-                            file_count: total_files,
-                            total_bytes,
-                            dedup_bytes,
-                            per_path: batch.per_path,
-                        },
-                    );
-                }
+                insert_scan_result(
+                    preview_id.clone(),
+                    CachedScanResult {
+                        files: Vec::new(),
+                        dirs: Vec::new(),
+                        file_count: total_files,
+                        total_bytes,
+                        dedup_bytes,
+                        per_path: batch.per_path,
+                        inserted_at: Instant::now(),
+                    },
+                );
 
                 let _ = app.emit(
                     "scan-preview-complete",
@@ -611,6 +621,7 @@ mod tests {
                 total_bytes: 12_345,
                 dedup_bytes: 12_345,
                 per_path: Vec::new(),
+                inserted_at: Instant::now(),
             },
         );
 

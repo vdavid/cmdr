@@ -81,6 +81,10 @@
 
     // Scan preview state
     let previewId = $state<string | null>(null)
+    // True once the user confirms. On confirm the delete/trash op (or the
+    // progress dialog) takes over the same scan and consumes the cached result,
+    // so teardown must NOT free it then.
+    let confirmed = false
     let filesFound = $state(0)
     let dirsFound = $state(0)
     let bytesFound = $state(0)
@@ -166,13 +170,18 @@
     })
 
     onDestroy(() => {
-        if (previewId && isScanning) {
+        // Free the scan preview unless the user confirmed (the op then consumes
+        // the cached result). Regardless of `isScanning`: `cancelScanPreview`
+        // also evicts the cached `CachedScanResult`, so a dismiss AFTER the scan
+        // completed doesn't leak the cache until quit.
+        if (previewId && !confirmed) {
             void cancelScanPreview(previewId)
         }
         cleanup()
     })
 
     function handleConfirm() {
+        confirmed = true
         log.info('Delete confirmed: isPermanent={isPermanent}, items={count}', {
             isPermanent,
             count: sourceItems.length,
@@ -181,7 +190,9 @@
     }
 
     function handleCancel() {
-        if (previewId && isScanning) {
+        // Free the scan preview (cancels an in-flight scan and evicts any cached
+        // result). Regardless of `isScanning`.
+        if (previewId) {
             void cancelScanPreview(previewId)
         }
         cleanup()

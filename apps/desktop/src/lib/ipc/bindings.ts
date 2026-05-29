@@ -665,8 +665,15 @@ export const commands = {
   /**
    *  Opens a viewer session for the given file.
    *  Returns session metadata + initial lines from the start of the file.
+   *
+   *  `window_label` is the opening viewer window's label (`viewer-<timestamp>`).
+   *  It links the window to the session so the Rust window-destroyed handler can
+   *  free the session when the user closes the window via the titlebar X (a path
+   *  that never fires the FE `viewer_close` IPC). Pass an empty string when there's
+   *  no owning window (no mapping is recorded).
    */
-  viewerOpen: (path: string) => typedError<ViewerOpenResult, IpcError>(__TAURI_INVOKE('viewer_open', { path })),
+  viewerOpen: (path: string, windowLabel: string) =>
+    typedError<ViewerOpenResult, IpcError>(__TAURI_INVOKE('viewer_open', { path, windowLabel })),
   /**
    *  Fetches a range of lines from a viewer session.
    *
