@@ -72,10 +72,14 @@ The default global combo is `⌃⌥⌘J`. `apps/desktop/src-tauri/src/lib.rs` ca
 3. **Settings UI flip** via the `set_global_reveal_shortcut(enabled, binding)` IPC command,
    which the FE calls from the Settings row's change handlers.
 
-The trigger handler (`global_shortcut::plugin_builder`) emits a `global-shortcut-fired` Tauri
-event on every key-down. The FE bridge in `lib/downloads/global-shortcut-bridge.svelte.ts`
-subscribes and routes through `revealLatestDownload`. The first-trigger warn toast logic
-lives FE-side, keyed on the `acknowledged` settings flag.
+The trigger handler (`global_shortcut::plugin_builder`) **raises the main window**
+(`unminimize` + `show` + `set_focus`) and THEN emits a `global-shortcut-fired` Tauri event on
+every key-down. The window-raise is load-bearing: the user fires this hotkey from another app
+(the whole point is "I'm in Chrome, take me to my download"), so revealing the file without
+foregrounding Cmdr would leave the result hidden behind the active app. Don't drop the raise.
+The FE bridge in `lib/downloads/global-shortcut-bridge.svelte.ts` subscribes and routes through
+`revealLatestDownload`. The first-trigger warn toast logic lives FE-side, keyed on the
+`acknowledged` settings flag.
 
 The plugin uses Carbon's `RegisterEventHotKey` on macOS, so no Accessibility / Input
 Monitoring TCC grant is needed; the user sees no extra prompt for the hotkey.
