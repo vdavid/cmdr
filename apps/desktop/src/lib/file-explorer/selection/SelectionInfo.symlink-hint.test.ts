@@ -13,6 +13,7 @@ import SelectionInfo from './SelectionInfo.svelte'
 
 vi.mock('$lib/indexing/index-state.svelte', () => ({
   isScanning: () => false,
+  isAggregating: () => false,
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({

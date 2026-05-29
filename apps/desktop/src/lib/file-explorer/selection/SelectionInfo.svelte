@@ -24,11 +24,12 @@
     import DateLabel from '$lib/ui/DateLabel.svelte'
     import {
         getDisplaySize,
+        getDirSizeDisplayState,
         buildFileSizeTooltip,
         buildDirSizeTooltip,
         buildSelectionSizeTooltip,
     } from '../views/full-list-utils'
-    import { isScanning } from '$lib/indexing/index-state.svelte'
+    import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
@@ -88,8 +89,11 @@
     // File info mode (Brief mode without selection)
     // ========================================================================
 
-    // Drive index scanning state (used for stale indicator when dirs are shown)
+    // Drive index scanning state (used for the selection-summary stale indicator).
     const scanning = $derived(isScanning())
+    // Full index activity (scan OR aggregation) for the per-folder file-info
+    // readout, matching FullList. `scanning` alone misses the aggregation phase.
+    const indexing = $derived(isScanning() || isAggregating())
 
     const sizeDisplayMode = $derived(getSizeDisplayMode())
     const sizeFormatOpts = $derived({
@@ -112,6 +116,13 @@
     const sizeDisplay = $derived(
         getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied, displaySize, sizeFormatOpts),
     )
+    // Per-folder size-column state, shared with FullList via getDirSizeDisplayState.
+    // `dirActive` = the folder's size is unsettled: a full scan/aggregation is
+    // running, OR this folder has live index writes in flight (recursiveSizePending).
+    const dirActive = $derived(isDirectory && (indexing || (entry?.recursiveSizePending ?? false)))
+    const dirSizeState = $derived(
+        isDirectory ? getDirSizeDisplayState(displaySize, indexing, entry?.recursiveSizePending) : null,
+    )
     const sizeTooltip = $derived(
         entry
             ? isDirectory
@@ -120,7 +131,7 @@
                       entry.recursivePhysicalSize,
                       entry.recursiveFileCount ?? 0,
                       entry.recursiveDirCount ?? 0,
-                      scanning,
+                      dirActive,
                       formatFileSize,
                       formatNumber,
                       pluralize,
@@ -226,11 +237,21 @@
         <span class="name" use:tooltip={displayName} use:useShortenMiddle={{ text: displayName, preferBreakAt: '.', startRatio: 0.7 }}></span>
         <span class="size" use:tooltip={sizeTooltip}>
             {#if sizeDisplay === 'DIR'}
-                DIR
+                {#if dirSizeState === 'scanning'}Scanning...{:else}DIR{/if}
             {:else if sizeDisplay}
                 {#each sizeDisplay as triad, i (i)}
                     <span class={triad.tierClass}>{triad.value}</span>
                 {/each}
+                {#if dirSizeState === 'size-stale'}
+                    <span
+                        class="stale-indicator stale-icon"
+                        role="img"
+                        aria-label="Size updating"
+                        use:tooltip={'Updating index, size may change.'}
+                    >
+                        <IconHourglass width="12" height="12" />
+                    </span>
+                {/if}
             {/if}
             {#if showSymlinkHint}
                 <span
