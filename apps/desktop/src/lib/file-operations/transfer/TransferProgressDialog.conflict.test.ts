@@ -112,7 +112,7 @@ async function mountDialogWithConflict(event: WriteConflictEvent): Promise<HTMLD
 
 function buttonByText(target: HTMLElement, text: string): HTMLButtonElement | null {
   const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('button'))
-  return buttons.find((b) => b.textContent?.trim() === text) ?? null
+  return buttons.find((b) => b.textContent.trim() === text) ?? null
 }
 
 describe('TransferProgressDialog conflict layout', () => {

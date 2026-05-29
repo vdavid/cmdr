@@ -41,7 +41,9 @@
                 semantics="tabs"
                 value={tabsValue}
                 options={tabsOptions}
-                onChange={(v) => (tabsValue = v)}
+                onChange={(v: string) => {
+                    tabsValue = v
+                }}
                 ariaLabel="Search mode"
             />
         </div>
@@ -52,7 +54,9 @@
                 semantics="toggles"
                 value={togglesValue}
                 options={togglesOptions}
-                onChange={(v) => (togglesValue = v)}
+                onChange={(v: string) => {
+                    togglesValue = v
+                }}
                 ariaLabel="UI density"
             />
         </div>
@@ -63,7 +67,9 @@
                 semantics="toggles"
                 value={withFeaturesValue}
                 options={withFeaturesOptions}
-                onChange={(v) => (withFeaturesValue = v)}
+                onChange={(v: string) => {
+                    withFeaturesValue = v
+                }}
                 ariaLabel="AI provider"
             />
         </div>
@@ -74,7 +80,9 @@
                 semantics="toggles"
                 value={disabledValue}
                 options={togglesOptions}
-                onChange={(v) => (disabledValue = v)}
+                onChange={(v: string) => {
+                    disabledValue = v
+                }}
                 ariaLabel="UI density (disabled)"
                 disabled
             />
