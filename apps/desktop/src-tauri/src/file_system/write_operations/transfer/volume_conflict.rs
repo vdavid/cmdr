@@ -3,7 +3,11 @@
 //! Handles what to do when a destination file already exists:
 //! - Stop: Emit conflict event, wait for user input via oneshot channel
 //! - Skip: Return None to skip this file
-//! - Overwrite: Delete existing, return same path
+//! - Overwrite (file→file): safe-replace — write into a temp sibling, then
+//!   delete the original and rename the temp in (`finalize_safe_replace`), so a
+//!   mid-stream failure can't lose both the old and the new copy
+//! - Overwrite (dir→dir): merge into the existing tree (no delete)
+//! - Overwrite (cross-type): delete the dest first, then write
 //! - Rename: Find unique name like "file (1).txt"
 
 use std::path::{Path, PathBuf};
@@ -14,7 +18,24 @@ use super::super::state::WriteOperationState;
 use super::super::types::{
     ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError,
 };
-use crate::file_system::volume::Volume;
+use crate::file_system::volume::{Volume, VolumeError};
+
+/// Outcome of resolving a volume conflict.
+///
+/// The caller writes streaming bytes to `write_path`. When `replace_after_write`
+/// is `Some(orig)`, `write_path` is a temp sibling on the destination volume:
+/// after the streaming write fully succeeds, the caller must call
+/// [`finalize_safe_replace`] to delete `orig` (which survived the whole write)
+/// and rename `write_path` → `orig`. When `replace_after_write` is `None`,
+/// `write_path` is the final destination and the caller writes directly.
+pub(super) struct ResolvedConflict {
+    /// Where the streaming writer should land bytes.
+    pub write_path: PathBuf,
+    /// `Some(orig)` ⇒ `write_path` is a temp sibling; after a successful write the
+    /// caller must delete `orig` (it survived the full write) then rename
+    /// `write_path` → `orig`. `None` ⇒ `write_path` is final, write directly.
+    pub replace_after_write: Option<PathBuf>,
+}
 
 /// Resolves a file conflict for volume-to-volume copy.
 /// Returns None if file should be skipped, or Some(path) with the resolved destination path.
@@ -42,7 +63,7 @@ pub(super) async fn resolve_volume_conflict(
     // falls through to `scan_for_copy` for unknown hints.
     source_size_hint: Option<u64>,
     dest_size_hint: Option<u64>,
-) -> Result<Option<PathBuf>, WriteOperationError> {
+) -> Result<Option<ResolvedConflict>, WriteOperationError> {
     // Classify the clash up front so the two-bucket lookup and store stay
     // consistent. `is_directory` errors fall back to `false`, same as the
     // dialog-side default — we'd rather over-prompt than route an unknown
@@ -271,13 +292,14 @@ async fn reduce_volume_conditional_resolution(
 }
 
 /// Applies a specific conflict resolution for volume copy.
-/// Returns None for Skip, or Some(path) with the path to write to.
+/// Returns `None` for Skip, or `Some(ResolvedConflict)` describing where to
+/// write and whether a post-write safe-replace finalize is needed.
 async fn apply_volume_conflict_resolution(
     resolution: ConflictResolution,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     source_is_directory: bool,
-) -> Result<Option<PathBuf>, WriteOperationError> {
+) -> Result<Option<ResolvedConflict>, WriteOperationError> {
     match resolution {
         ConflictResolution::Stop => {
             // Should not happen - Stop waits for user input
@@ -289,16 +311,21 @@ async fn apply_volume_conflict_resolution(
         ConflictResolution::Overwrite => {
             // Cmdr's UX promise is "Overwrite means merge for dirs, replace for files":
             //
-            // - For files: delete the dest first so the streaming writer lands a fresh copy. Same-named files
-            //   in dest get genuinely replaced, byte-for-byte.
-            // - For directories (same type): SKIP the delete entirely. The recursive copy merges into the existing
-            //   tree; same-named files inside get overwritten by the streaming writers, files in dest that
-            //   aren't in source are preserved.
+            // - For files (file→file): SAFE-REPLACE. Stream into a temp sibling on the dest volume
+            //   and return `replace_after_write: Some(dest_path)`. The original survives the entire
+            //   write; only after the temp is fully written does the caller delete the original and
+            //   rename the temp into place (see `finalize_safe_replace`). A mid-stream failure
+            //   (network drop, USB yank, cancel) leaves the original intact — we never lose both the
+            //   old and the new copy. DO NOT delete the dest here.
+            // - For directories (same type): SKIP the delete entirely. The recursive copy merges into
+            //   the existing tree; same-named files inside get overwritten by the streaming writers,
+            //   files in dest that aren't in source are preserved.
             // - For cross-type clashes (file→folder or folder→file): the dest type is wrong, so we
             //   must delete it before the source materializes. There's no volume-level temp+rename
-            //   atomicity (cross-backend), so a recursive delete is the best we can do; backends
-            //   that support it (LocalPosix, MTP, SMB) handle the delete safely under their own
-            //   semantics.
+            //   atomicity (cross-backend) for a type swap, so a recursive delete is the best we can
+            //   do; backends that support it (LocalPosix, MTP, SMB) handle the delete safely under
+            //   their own semantics. These are rare and lower-stakes (a type mismatch already means
+            //   the dest content is being intentionally replaced wholesale).
             //
             // The same-type dir branch is enforced HERE rather than relying on `Volume::delete`'s
             // "file or empty directory" trait contract. Today every backend honors
@@ -311,9 +338,19 @@ async fn apply_volume_conflict_resolution(
             // in the test module; it pins this with a wrapper Volume that violates
             // the contract.
             let dest_is_dir = dest_volume.is_directory(dest_path).await.unwrap_or(false);
+
+            if !dest_is_dir && !source_is_directory {
+                // file→file: safe-replace via a temp sibling. No delete here.
+                let temp = temp_sibling_path(dest_path);
+                return Ok(Some(ResolvedConflict {
+                    write_path: temp,
+                    replace_after_write: Some(dest_path.to_path_buf()),
+                }));
+            }
+
             let same_type_dir = dest_is_dir && source_is_directory;
             if !same_type_dir {
-                // Cross-type or both-files: clear the dest first.
+                // Cross-type (file→folder or folder→file): clear the dest first.
                 if dest_is_dir {
                     // File→folder overwrite: recursively delete the dest folder.
                     if let Err(e) = super::volume_copy::delete_volume_path_recursive(dest_volume, dest_path).await {
@@ -333,12 +370,18 @@ async fn apply_volume_conflict_resolution(
                     // was transient.
                 }
             }
-            Ok(Some(dest_path.to_path_buf()))
+            Ok(Some(ResolvedConflict {
+                write_path: dest_path.to_path_buf(),
+                replace_after_write: None,
+            }))
         }
         ConflictResolution::Rename => {
             // Find a unique name - we need to check what exists on the volume
             let unique_path = find_unique_volume_name(dest_volume, dest_path).await;
-            Ok(Some(unique_path))
+            Ok(Some(ResolvedConflict {
+                write_path: unique_path,
+                replace_after_write: None,
+            }))
         }
         ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
             // Reduced to Overwrite / Skip by `reduce_volume_conditional_resolution`
@@ -346,6 +389,74 @@ async fn apply_volume_conflict_resolution(
             unreachable!("conditional conflict resolutions must be reduced before apply_volume_conflict_resolution")
         }
     }
+}
+
+/// Builds a temp sibling path next to `dest_path` for the safe-replace write.
+///
+/// Uses the recognizable `.cmdr-tmp-<uuid>` marker (matches the project's temp
+/// convention, so a leftover after a crash is identifiable and cleanup helpers
+/// recognize it). The temp lives in the same parent directory as the original
+/// so the finalize step's `rename` stays within one directory (no cross-dir
+/// rename, which some backends refuse).
+fn temp_sibling_path(dest_path: &Path) -> PathBuf {
+    let parent = dest_path.parent().unwrap_or(Path::new(""));
+    let filename = dest_path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    parent.join(format!("{filename}.cmdr-tmp-{}", uuid::Uuid::new_v4()))
+}
+
+/// Finalizes a file→file safe-replace: deletes the original `orig` (which
+/// survived the entire streaming write) and renames the fully-written temp into
+/// its place.
+///
+/// Order matters and is the whole point of safe-replace: the temp holds the
+/// COMPLETE new data the moment this is called, and `orig` still holds the
+/// complete old data. We delete `orig` first, then `rename(temp, orig, false)`
+/// into the now-absent slot. We do NOT use `rename(force=true)` to replace:
+/// MTP's `rename(force=true)` does NOT delete an existing destination (it can
+/// create a duplicate), so an explicit delete-then-rename is the only shape
+/// that's correct and uniform across Local / SMB / MTP / InMemory.
+///
+/// There is a tiny window between the delete and the rename where neither name
+/// resolves to a file on disk — but the complete new data lives in `temp`
+/// throughout, so a crash in that window leaves a recoverable `.cmdr-tmp-*`
+/// sibling rather than data loss. We tolerate `NotFound` on the delete (the
+/// original may have vanished out from under us). If the delete fails for any
+/// other reason we return the error WITHOUT deleting the temp — the new data
+/// must survive so the user (or a retry) can recover it.
+///
+/// CALLER CONTRACT: when this returns `Err` (either the delete failed, or — the
+/// nastier case — the delete SUCCEEDED and the rename failed), `temp` holds the
+/// only complete copy of the new data and the original may already be gone. The
+/// caller MUST NOT delete `temp` on this error path: leaving it as a recoverable
+/// `.cmdr-tmp-*` artifact is the safe outcome; cleaning it would be total data
+/// loss. The three write sites enforce this by stopping their partial-cleanup
+/// tracking from designating the temp the moment the streaming write succeeded,
+/// before this function runs. See `transfer/CLAUDE.md` § "The post-write temp is
+/// committed data" and the `*_preserves_new_data_on_finalize_failure` tests.
+pub(super) async fn finalize_safe_replace(
+    dest_volume: &Arc<dyn Volume>,
+    temp: &Path,
+    orig: &Path,
+) -> Result<(), VolumeError> {
+    match dest_volume.delete(orig).await {
+        Ok(()) => {}
+        Err(VolumeError::NotFound(_)) => {
+            // Already gone; the rename below will land the new data anyway.
+        }
+        Err(e) => {
+            log::warn!(
+                "finalize_safe_replace: failed to delete original {} before rename (temp {} holds the complete new data and is preserved): {}",
+                orig.display(),
+                temp.display(),
+                e
+            );
+            return Err(e);
+        }
+    }
+    dest_volume.rename(temp, orig, false).await
 }
 
 /// Finds a unique filename on a volume by appending " (1)", " (2)", etc.
@@ -477,10 +588,13 @@ mod tests {
             true,
         )
         .await
-        .unwrap();
+        .unwrap()
+        .expect("dir→dir Overwrite must resolve to a merge target, not Skip");
 
-        // The resolver should hand back the same path (caller will write to it).
-        assert_eq!(result, Some(PathBuf::from("/photos")));
+        // The resolver should hand back the same path (caller will merge into it)
+        // and must NOT request a safe-replace finalize (dirs merge, not replace).
+        assert_eq!(result.write_path, PathBuf::from("/photos"));
+        assert_eq!(result.replace_after_write, None);
 
         // CRITICAL: files unique to dest must still be there. If this fails, the
         // resolver wholesale-deleted the dest tree. Cmdr's "Overwrite means merge
@@ -501,27 +615,72 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn file_overwrite_still_deletes_the_existing_file() {
-        // Sanity: for files (not dirs), Overwrite SHOULD delete first so the
-        // recursive writer lands a fresh copy. The dir-merge guarantee must
-        // not regress this case.
+    async fn file_overwrite_keeps_original_until_temp_is_written() {
+        // For a file→file Overwrite, the resolver must NOT delete the existing
+        // destination. Instead it hands back a temp sibling to write into plus
+        // `replace_after_write: Some(orig)`, so the original survives the full
+        // streaming write and is only swapped out at finalize time. This is the
+        // safe-replace contract that protects data on a mid-stream failure.
         let dest = Arc::new(InMemoryVolume::new("dest"));
         dest.create_file(Path::new("/notes.txt"), b"old content").await.unwrap();
         let dest_dyn: Arc<dyn Volume> = dest.clone();
 
-        let result =
+        let resolved =
             apply_volume_conflict_resolution(ConflictResolution::Overwrite, &dest_dyn, Path::new("/notes.txt"), false)
                 .await
-                .unwrap();
+                .unwrap()
+                .expect("file→file Overwrite must resolve to a write path, not Skip");
 
-        assert_eq!(result, Some(PathBuf::from("/notes.txt")));
-        // After resolution, before the recursive copy runs, the file should be gone
-        // (so the writer creates a fresh one rather than appending or failing).
+        // (a) The original MUST still exist after resolution — current code
+        // deletes it here, so this assertion is RED against the buggy version.
         assert!(
-            !dest.exists(Path::new("/notes.txt")).await,
-            "Overwrite resolution must delete an existing FILE so the writer can \
-             create a fresh copy. Skipping delete only applies to directories."
+            dest.exists(Path::new("/notes.txt")).await,
+            "Overwrite resolution must NOT delete the existing FILE before the \
+             streaming write. The original must survive so a mid-stream failure \
+             can't lose both the old and the new copy."
         );
+
+        // (b) The caller is told to replace `/notes.txt` after the write lands.
+        assert_eq!(
+            resolved.replace_after_write,
+            Some(PathBuf::from("/notes.txt")),
+            "file→file Overwrite must request a post-write replace of the original"
+        );
+
+        // (c) The write lands in a temp sibling, not directly on the original.
+        assert_ne!(resolved.write_path, PathBuf::from("/notes.txt"));
+        assert_eq!(resolved.write_path.parent(), Path::new("/notes.txt").parent());
+        assert!(
+            resolved
+                .write_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .map(|n| n.contains(".cmdr-tmp-"))
+                .unwrap_or(false),
+            "temp sibling should carry the recognizable .cmdr-tmp- marker, got {:?}",
+            resolved.write_path
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn finalize_safe_replace_swaps_temp_over_original() {
+        // After the streaming write lands the new bytes in the temp sibling,
+        // `finalize_safe_replace` must delete the original and rename the temp
+        // into its place — leaving exactly the new content and no temp behind.
+        let dest = Arc::new(InMemoryVolume::new("dest"));
+        dest.create_file(Path::new("/notes.txt"), b"OLD").await.unwrap();
+        dest.create_file(Path::new("/notes.txt.cmdr-tmp-abc"), b"NEW")
+            .await
+            .unwrap();
+        let dest_dyn: Arc<dyn Volume> = dest.clone();
+
+        finalize_safe_replace(&dest_dyn, Path::new("/notes.txt.cmdr-tmp-abc"), Path::new("/notes.txt"))
+            .await
+            .unwrap();
+
+        assert!(!dest.exists(Path::new("/notes.txt.cmdr-tmp-abc")).await);
+        let mut stream = dest.open_read_stream(Path::new("/notes.txt")).await.unwrap();
+        assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"NEW");
     }
 
     // ======================================================================

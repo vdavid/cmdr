@@ -17,8 +17,8 @@ without DOM performance issues.
 - **file-list-utils.ts** – Shared helpers: entry caching, icon prefetching, sync status
 - **brief-list-utils.ts** / **full-list-utils.ts** – Mode-specific rendering logic. `full-list-utils.ts` includes
   dual-size display helpers: `getDisplaySize()` (picks logical/physical/smart), `hasSizeMismatch()`,
-  `buildFileSizeTooltip()`, `buildDirSizeTooltip()`, `buildSelectionSizeTooltip()`, and `getDirSizeDisplayState()` —
-  the single source of truth for a directory's size-column state (`'dir' | 'scanning' | 'size' | 'size-stale'`, where
+  `buildFileSizeTooltip()`, `buildDirSizeTooltip()`, `buildSelectionSizeTooltip()`, and `getDirSizeDisplayState()` — the
+  single source of truth for a directory's size-column state (`'dir' | 'scanning' | 'size' | 'size-stale'`, where
   stale/scanning fold in the global `indexing` flag and the per-row `recursiveSizePending`). Both `FullList.svelte`'s
   size cell and `measure-column-widths.ts` consume it so the rendered text and the pre-measured column width agree;
   don't re-inline the dir/scanning/stale decision in either.

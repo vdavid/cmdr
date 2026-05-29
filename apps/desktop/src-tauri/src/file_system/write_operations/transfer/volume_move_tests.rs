@@ -1095,3 +1095,164 @@ async fn cross_volume_move_emits_intra_file_progress() {
     assert_eq!(last.bytes_done, payload.len() as u64);
     assert_eq!(last.files_done, 1);
 }
+
+/// Wraps an `InMemoryVolume` destination whose `rename` ALWAYS fails: models a
+/// disconnect at the exact instant `finalize_safe_replace` swaps the
+/// fully-written temp over the original. Everything else delegates.
+struct MoveRenameFailsDestVolume {
+    inner: Arc<InMemoryVolume>,
+}
+
+impl Volume for MoveRenameFailsDestVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn supports_export(&self) -> bool {
+        true
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
+    {
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::listing::FileEntry, VolumeError>> + Send + 'a>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        self.inner.is_directory(path)
+    }
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.create_file(path, content)
+    }
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.delete(path)
+    }
+    fn get_space_info<'a>(
+        &'a self,
+    ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::volume::SpaceInfo, VolumeError>> + Send + 'a>> {
+        self.inner.get_space_info()
+    }
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<
+        Box<
+            dyn Future<Output = Result<Box<dyn crate::file_system::volume::VolumeReadStream>, VolumeError>> + Send + 'a,
+        >,
+    > {
+        self.inner.open_read_stream(path)
+    }
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        size: u64,
+        stream: Box<dyn crate::file_system::volume::VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        self.inner.write_from_stream(dest, size, stream, on_progress)
+    }
+    fn rename<'a>(
+        &'a self,
+        _from: &'a Path,
+        _to: &'a Path,
+        _force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async {
+            Err(VolumeError::IoError {
+                message: "simulated disconnect during finalize rename".to_string(),
+                raw_os_error: None,
+            })
+        })
+    }
+}
+
+/// Cross-volume MOVE, file→file Overwrite, streaming write SUCCEEDS but the
+/// finalize rename FAILS. The move path has no dest partial-cleanup, so the
+/// temp (holding the only complete copy of the new data after finalize deleted
+/// the original) must survive. The source must also stay (the move never
+/// completed). Regression guard so a future "clean up the temp on move error"
+/// refactor can't reintroduce the data-loss hole.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_preserves_new_data_on_finalize_failure() {
+    let source = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source.create_file(Path::new("/f.txt"), b"NEW").await.unwrap();
+    let source: Arc<dyn Volume> = source;
+
+    let dest_inner = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+    dest_inner.create_file(Path::new("/f.txt"), b"OLD").await.unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(MoveRenameFailsDestVolume {
+        inner: Arc::clone(&dest_inner),
+    });
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-finalize-fail",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/f.txt")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_err(), "a finalize-rename failure must surface as an error");
+
+    // The NEW data must survive somewhere on dest (orig slot or a temp sibling).
+    let entries = dest_inner.list_directory(Path::new("/"), None).await.unwrap();
+    let mut found_new = false;
+    for e in &entries {
+        if let Ok(mut s) = dest_inner.open_read_stream(&PathBuf::from(&e.path)).await {
+            let mut buf = Vec::new();
+            while let Some(Ok(chunk)) = s.next_chunk().await {
+                buf.extend_from_slice(&chunk);
+            }
+            if buf == b"NEW" {
+                found_new = true;
+                break;
+            }
+        }
+    }
+    assert!(
+        found_new,
+        "new data must survive on dest after a move finalize failure; entries: {:?}",
+        entries.iter().map(|e| &e.name).collect::<Vec<_>>()
+    );
+    // The source must remain, since the move did not complete.
+    assert!(
+        source.exists(Path::new("/f.txt")).await,
+        "source must stay when the move's finalize fails"
+    );
+}

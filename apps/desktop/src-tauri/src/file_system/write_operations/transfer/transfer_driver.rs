@@ -150,6 +150,14 @@ pub(super) struct TransferContext<'a> {
     /// Rename). For the sync driver this is `None` (the closure derives the
     /// destination from its own destination root + `source_path`).
     pub dest_path: Option<&'a Path>,
+    /// File→file safe-replace target. When `Some(orig)`, `dest_path` is a temp
+    /// sibling: after a successful streaming write, the closure must finalize by
+    /// deleting `orig` and renaming `dest_path` → `orig` (see
+    /// `volume_conflict::finalize_safe_replace`). `None` ⇒ write `dest_path`
+    /// directly. Only set by the async driver from
+    /// `ConflictDecision::Proceed`; always `None` for the sync driver and for
+    /// no-conflict paths.
+    pub replace_after_write: Option<&'a Path>,
     /// Cumulative files processed BEFORE this iteration. Lets the closure
     /// compute `effective_bytes_done` for intra-file progress callbacks
     /// without having to thread the counter through itself. Snapshotted by the
@@ -616,6 +624,7 @@ where
             operation_type: config.operation_type,
             source_path,
             dest_path: None,
+            replace_after_write: None,
             files_done_so_far: files_done,
             bytes_done_so_far: bytes_done,
             total_files,
@@ -715,7 +724,19 @@ pub(super) enum ConflictDecision {
     Skip { bytes_accounted: u64 },
     /// Proceed with the given (possibly rewritten) destination path. Driver
     /// calls `transfer_one` with `dest_path = Some(this)`.
-    Proceed { dest_path: PathBuf },
+    ///
+    /// `replace_after_write` carries the file→file safe-replace contract: when
+    /// `Some(orig)`, `dest_path` is a temp sibling the closure streams into,
+    /// and after a successful write the closure must finalize by deleting
+    /// `orig` and renaming the temp into place (see
+    /// `volume_conflict::finalize_safe_replace`). `None` ⇒ write `dest_path`
+    /// directly. The driver passes `dest_path` through `TransferContext`
+    /// unchanged; only the closure acts on `replace_after_write`, so the driver
+    /// stays agnostic to the safe-replace mechanism.
+    Proceed {
+        dest_path: PathBuf,
+        replace_after_write: Option<PathBuf>,
+    },
 }
 
 /// Async serial driver for volume operations.
@@ -866,7 +887,7 @@ where
         // `copy_volumes_with_progress`).
         let dest_size_hint = dest_meta_fetcher(&initial_dest_path).await;
 
-        let resolved_dest = if dest_size_hint.is_some() {
+        let (resolved_dest, replace_after_write) = if dest_size_hint.is_some() {
             log::debug!(
                 "drive_transfer_serial_async: conflict detected at {}",
                 initial_dest_path.display()
@@ -906,7 +927,10 @@ where
                     }
                     continue;
                 }
-                Ok(ConflictDecision::Proceed { dest_path }) => dest_path,
+                Ok(ConflictDecision::Proceed {
+                    dest_path,
+                    replace_after_write,
+                }) => (dest_path, replace_after_write),
                 Err(e) => {
                     return TransferLoopOutcome {
                         files_done,
@@ -918,7 +942,7 @@ where
                 }
             }
         } else {
-            initial_dest_path
+            (initial_dest_path, None)
         };
 
         let ctx = TransferContext {
@@ -928,6 +952,7 @@ where
             operation_type: config.operation_type,
             source_path,
             dest_path: Some(&resolved_dest),
+            replace_after_write: replace_after_write.as_deref(),
             files_done_so_far: files_done,
             bytes_done_so_far: bytes_done,
             total_files,

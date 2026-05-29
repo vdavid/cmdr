@@ -602,8 +602,22 @@ pub(crate) async fn copy_volumes_with_progress(
         // Conflict resolution runs synchronously on this driver before the task
         // is spawned (F14) so the whole batch blocks on a single Stop prompt
         // instead of racing per-task prompts.
+        // Ok payload is `(partial_path, recorded_path, bytes)`: `partial_path`
+        // is the path the task pushed into `in_flight_partials` (the temp
+        // sibling under safe-replace, else the dest itself) so the result
+        // handler can remove the right entry; `recorded_path` is the final
+        // landed path for rollback bookkeeping (the original after a
+        // safe-replace finalize, else the dest).
+        //
+        // Err payload is `(failed_path, error, cleanup_temp)`: `cleanup_temp`
+        // distinguishes a STREAM failure (`true` — the dest/temp is a partial
+        // and must be cleaned) from a FINALIZE failure after a SUCCESSFUL write
+        // (`false` — the temp now holds the only complete copy of the new data
+        // and MUST be left on disk; the original was already deleted by
+        // `finalize_safe_replace`'s delete step). Deleting the temp in the
+        // finalize-failure case would be total data loss.
         type CopyTaskFuture<'a> =
-            Pin<Box<dyn Future<Output = Result<(PathBuf, u64), (PathBuf, VolumeError)>> + Send + 'a>>;
+            Pin<Box<dyn Future<Output = Result<(PathBuf, PathBuf, u64), (PathBuf, VolumeError, bool)>> + Send + 'a>>;
         let mut in_flight: FuturesUnordered<CopyTaskFuture<'_>> = FuturesUnordered::new();
 
         // Inline helper: drains ONE future from `in_flight`, updates tracking.
@@ -633,6 +647,11 @@ pub(crate) async fn copy_volumes_with_progress(
                 } else {
                     dest_path.to_path_buf()
                 };
+                // For a file→file Overwrite, conflict resolution hands back a
+                // temp sibling to stream into plus the original path to swap in
+                // after the write fully lands (safe-replace). `None` ⇒ write
+                // `dest_item_path` directly.
+                let mut replace_after_write: Option<PathBuf> = None;
                 if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
                     // Reuse the per-source hint from the scan instead of re-statting.
                     let source_hint = source_hints.get(source_path).copied();
@@ -686,7 +705,10 @@ pub(crate) async fn copy_volumes_with_progress(
                             );
                             continue;
                         }
-                        Some(p) => dest_item_path = p,
+                        Some(rc) => {
+                            dest_item_path = rc.write_path;
+                            replace_after_write = rc.replace_after_write;
+                        }
                     }
                 }
 
@@ -710,6 +732,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 let last_prog_a = Arc::clone(&last_progress_mutex);
                 let source_owned = source_path.clone();
                 let dest_owned = dest_item_path.clone();
+                let replace_after_write_owned = replace_after_write.clone();
                 let file_name_owned = file_name.clone();
                 let hint = source_hints.get(source_path).copied().unwrap_or_default();
                 let source_is_dir_hint = hint.is_directory;
@@ -760,9 +783,32 @@ pub(crate) async fn copy_volumes_with_progress(
                             if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes > 0 {
                                 bytes_done_a.fetch_add(bytes, Ordering::Relaxed);
                             }
-                            Ok((dest_owned, bytes))
+                            // Safe-replace finalize: the temp now holds the
+                            // complete new data; delete the original and rename
+                            // the temp into place. On finalize error, surface
+                            // it as this file's failure with `cleanup_temp =
+                            // false` — the write SUCCEEDED, so the temp is
+                            // committed data (the only complete copy, since
+                            // finalize's delete step may already have removed
+                            // the original). It must survive as a recoverable
+                            // `.cmdr-tmp-*` artifact, NOT be cleaned.
+                            if let Some(orig) = replace_after_write_owned {
+                                if let Err(e) =
+                                    super::volume_conflict::finalize_safe_replace(&dst_vol, &dest_owned, &orig).await
+                                {
+                                    return Err((dest_owned, e, false));
+                                }
+                                // Landed at `orig`; the temp `dest_owned` is
+                                // gone after the rename. Report the temp as the
+                                // partial to remove and `orig` as the recorded
+                                // path for rollback bookkeeping.
+                                return Ok((dest_owned, orig, bytes));
+                            }
+                            Ok((dest_owned.clone(), dest_owned, bytes))
                         }
-                        Err(e) => Err((dest_owned, e)),
+                        // Stream failure: the dest/temp is a half-written
+                        // partial → clean it (`cleanup_temp = true`).
+                        Err(e) => Err((dest_owned, e, true)),
                     }
                 }));
             }
@@ -772,15 +818,18 @@ pub(crate) async fn copy_volumes_with_progress(
             }
 
             match in_flight.next().await {
-                Some(Ok((completed_dest, _bytes))) => {
-                    // Remove from in-flight partials and record as completed.
+                Some(Ok((partial_path, recorded_path, _bytes))) => {
+                    // Remove the in-flight partial (the temp under safe-replace,
+                    // else the dest) and record the landed path as completed
+                    // (the original after a safe-replace finalize, else the
+                    // dest) so rollback targets the real file, never the temp.
                     let mut partials = in_flight_partials.lock_ignore_poison();
-                    if let Some(pos) = partials.iter().position(|p| p == &completed_dest) {
+                    if let Some(pos) = partials.iter().position(|p| p == &partial_path) {
                         partials.swap_remove(pos);
                     }
                     drop(partials);
-                    let file_name_done = completed_dest.file_name().map(|n| n.to_string_lossy().to_string());
-                    copied_paths.lock_ignore_poison().push(completed_dest);
+                    let file_name_done = recorded_path.file_name().map(|n| n.to_string_lossy().to_string());
+                    copied_paths.lock_ignore_poison().push(recorded_path);
                     // Per-file milestone emit. The task's `on_file_complete`
                     // bumped `files_done_atomic`; the FE's files-axis needs
                     // a Copying event that observes the bumped value, but
@@ -813,15 +862,24 @@ pub(crate) async fn copy_volumes_with_progress(
                         total_bytes,
                     );
                 }
-                Some(Err((failed_dest, e))) => {
-                    // Remove from in-flight partials; this one's its own
-                    // partial cleanup the post-loop logic will do.
+                Some(Err((failed_dest, e, cleanup_temp))) => {
+                    // Remove from in-flight partials; this one's own partial
+                    // cleanup (if any) the post-loop logic will do.
                     let mut partials = in_flight_partials.lock_ignore_poison();
                     if let Some(pos) = partials.iter().position(|p| p == &failed_dest) {
                         partials.swap_remove(pos);
                     }
                     drop(partials);
-                    last_dest_path = Some(failed_dest.clone());
+                    // `cleanup_temp == false` ⇒ finalize failed AFTER a
+                    // successful write: `failed_dest` is the temp holding the
+                    // ONLY complete copy of the new data (finalize already
+                    // deleted the original). Do NOT designate it for cleanup —
+                    // leaving it on disk as a `.cmdr-tmp-*` artifact is the
+                    // correct, safe outcome. Cleaning it would be total data
+                    // loss.
+                    if cleanup_temp {
+                        last_dest_path = Some(failed_dest.clone());
+                    }
                     copy_error = Some(WriteFailure::from_volume(&failed_dest, e));
                     // Drop remaining in-flight tasks; their streams close,
                     // temp files get cleaned up by the per-backend write
@@ -984,7 +1042,10 @@ pub(crate) async fn copy_volumes_with_progress(
                                 let bytes_accounted = source_hint.map(|h| h.size).unwrap_or(0);
                                 ConflictDecision::Skip { bytes_accounted }
                             }
-                            Some(dest_path) => ConflictDecision::Proceed { dest_path },
+                            Some(rc) => ConflictDecision::Proceed {
+                                dest_path: rc.write_path,
+                                replace_after_write: rc.replace_after_write,
+                            },
                         })
                     })
                 }
@@ -1014,6 +1075,10 @@ pub(crate) async fn copy_volumes_with_progress(
                         .dest_path
                         .expect("async driver always supplies dest_path")
                         .to_path_buf();
+                    // `Some(orig)` ⇒ `dest_item_path` is a temp sibling; after a
+                    // successful write we delete `orig` and rename the temp into
+                    // place (safe-replace for file→file Overwrite).
+                    let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
                     let bytes_done_so_far = ctx.bytes_done_so_far;
                     let files_done_so_far = ctx.files_done_so_far;
                     Box::pin(async move {
@@ -1064,8 +1129,38 @@ pub(crate) async fn copy_volumes_with_progress(
                         .await
                         {
                             Ok(bytes_copied) => {
-                                copied_paths.lock_ignore_poison().push(dest_item_path);
+                                // The write SUCCEEDED: the temp is now committed
+                                // data, not a partial. Clear it from the
+                                // partial-cleanup slot BEFORE finalize runs, so
+                                // a finalize failure can't trigger the post-loop
+                                // sweep to delete it. `finalize_safe_replace`
+                                // deletes the original first, so if its rename
+                                // then fails the temp is the ONLY complete copy
+                                // of the new data — it must survive on disk as a
+                                // recoverable `.cmdr-tmp-*` artifact.
                                 *last_dest_cell.lock_ignore_poison() = None;
+                                let landed_path = match replace_after_write {
+                                    Some(orig) => {
+                                        if let Err(e) = super::volume_conflict::finalize_safe_replace(
+                                            &dest_volume,
+                                            &dest_item_path,
+                                            &orig,
+                                        )
+                                        .await
+                                        {
+                                            let mapped =
+                                                map_volume_error(&source_path.display().to_string(), e.clone());
+                                            *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
+                                            return Err(mapped);
+                                        }
+                                        orig
+                                    }
+                                    None => dest_item_path,
+                                };
+                                // Record the landed path (the original after a
+                                // safe-replace, else the dest) for rollback;
+                                // never the temp.
+                                copied_paths.lock_ignore_poison().push(landed_path);
                                 Ok(TransferOutcome::Transferred { bytes: bytes_copied })
                             }
                             Err(e) => {

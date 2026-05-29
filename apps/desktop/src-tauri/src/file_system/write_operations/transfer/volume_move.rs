@@ -367,7 +367,10 @@ pub(super) async fn move_volumes_with_progress(
                             let bytes_accounted = source_hint.map(|h| h.size).unwrap_or(0);
                             ConflictDecision::Skip { bytes_accounted }
                         }
-                        Some(dest_path) => ConflictDecision::Proceed { dest_path },
+                        Some(rc) => ConflictDecision::Proceed {
+                            dest_path: rc.write_path,
+                            replace_after_write: rc.replace_after_write,
+                        },
                     })
                 })
             }
@@ -396,6 +399,11 @@ pub(super) async fn move_volumes_with_progress(
                     .dest_path
                     .expect("async driver always supplies dest_path")
                     .to_path_buf();
+                // `Some(orig)` ⇒ `dest_item_path` is a temp sibling on the dest
+                // volume; after the copy lands, swap it over `orig` BEFORE
+                // deleting the source (a move must never delete the source if
+                // the destination isn't fully in place).
+                let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
                 let bytes_done_so_far = ctx.bytes_done_so_far;
                 let files_done_so_far = ctx.files_done_so_far;
                 Box::pin(async move {
@@ -451,6 +459,29 @@ pub(super) async fn move_volumes_with_progress(
                             return Err(mapped);
                         }
                     };
+
+                    // Safe-replace finalize (file→file Overwrite): the temp on
+                    // the dest volume now holds the complete new data. Delete
+                    // the original dest and rename the temp into place. This
+                    // MUST happen before deleting the source: if the finalize
+                    // fails, the source is untouched, the original dest is
+                    // intact, and the new data survives in the temp.
+                    if let Some(orig) = replace_after_write
+                        && let Err(e) =
+                            super::volume_conflict::finalize_safe_replace(&dest_volume, &dest_item_path, &orig).await
+                        {
+                            log::warn!(
+                                target: "move",
+                                "move_between_volumes: safe-replace finalize failed for {} (temp {} preserved, source {} untouched): {}",
+                                orig.display(),
+                                dest_item_path.display(),
+                                source_path.display(),
+                                e
+                            );
+                            let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
+                            *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
+                            return Err(mapped);
+                        }
 
                     // Delete source. `Volume::delete` is contractually for
                     // files or *empty* directories (LocalPosix uses
@@ -790,7 +821,35 @@ pub(super) async fn move_within_same_volume_with_progress(
                             let bytes_accounted = source_hint.map(|h| h.size).unwrap_or(0);
                             ConflictDecision::Skip { bytes_accounted }
                         }
-                        Some(dest_path) => ConflictDecision::Proceed { dest_path },
+                        Some(rc) => {
+                            // Same-volume move uses `volume.rename` (atomic-ish,
+                            // no streaming), so it keeps the legacy delete-first
+                            // overwrite shape — NOT the cross-volume safe-replace
+                            // temp dance. When the resolver hands back a temp +
+                            // `replace_after_write` (file→file Overwrite), delete
+                            // the original here and rename straight onto it. (We
+                            // can't rely on `rename(force=true)`: MTP's variant
+                            // doesn't delete an existing dest.) For dir-merge /
+                            // Rename, `replace_after_write` is `None` and we use
+                            // the resolved path as-is.
+                            match rc.replace_after_write {
+                                Some(orig) => {
+                                    match volume.delete(&orig).await {
+                                        Ok(()) => {}
+                                        Err(VolumeError::NotFound(_)) => {}
+                                        Err(e) => return Err(map_volume_error(&orig.display().to_string(), e)),
+                                    }
+                                    ConflictDecision::Proceed {
+                                        dest_path: orig,
+                                        replace_after_write: None,
+                                    }
+                                }
+                                None => ConflictDecision::Proceed {
+                                    dest_path: rc.write_path,
+                                    replace_after_write: None,
+                                },
+                            }
+                        }
                     })
                 })
             }

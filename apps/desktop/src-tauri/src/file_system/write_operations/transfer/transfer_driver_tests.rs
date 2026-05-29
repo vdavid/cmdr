@@ -975,6 +975,7 @@ async fn async_driver_proceed_with_rewritten_dest_reaches_closure() {
             Box::pin(async {
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::from("/dest/a (1).txt"),
+                    replace_after_write: None,
                 })
             })
         },
@@ -1070,6 +1071,7 @@ async fn async_driver_no_conflict_skips_resolver_entirely() {
                 r.fetch_add(1, Ordering::SeqCst);
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::new(),
+                    replace_after_write: None,
                 })
             })
         },
@@ -1232,6 +1234,7 @@ async fn async_driver_skip_counters_zero_when_nothing_skipped() {
             Box::pin(async {
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::from("/never"),
+                    replace_after_write: None,
                 })
             })
         },
