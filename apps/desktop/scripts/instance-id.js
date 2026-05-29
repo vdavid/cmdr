@@ -281,7 +281,11 @@ export function writePortFile(dir, name, port) {
   const tmpPath = join(dir, `${name}.tmp.${String(process.pid)}`)
   let fd = null
   try {
-    fd = openSync(tmpPath, 'w')
+    // 0o600 (owner-only) baked in at create time (no umask 0o644 window). The atomic
+    // rename below preserves the mode, so the final file is owner-only too. Mirrors the
+    // Rust `port_file.rs` hardening. The third `openSync` arg is ignored on platforms
+    // without POSIX mode bits (Windows).
+    fd = openSync(tmpPath, 'w', 0o600)
     writeSync(fd, `${String(port)}\n`)
     fsyncSync(fd)
   } finally {

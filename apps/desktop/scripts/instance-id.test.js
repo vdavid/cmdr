@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mkdtempSync, readFileSync, existsSync, writeFileSync, readdirSync } from 'fs'
+import { mkdtempSync, readFileSync, existsSync, writeFileSync, readdirSync, statSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import {
@@ -299,6 +299,13 @@ describe('writePortFile + removePortFile', () => {
     writePortFile(dir, 'tauri-mcp.port', 9999)
     const stragglers = readdirSync(dir).filter((name) => name.startsWith('tauri-mcp.port.tmp.'))
     expect(stragglers).toEqual([])
+  })
+
+  it.skipIf(process.platform === 'win32')('writes the port file owner-only (0o600)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cmdr-port-file-test-'))
+    writePortFile(dir, 'tauri-mcp.port', 54321)
+    const mode = statSync(join(dir, 'tauri-mcp.port')).mode & 0o777
+    expect(mode).toBe(0o600)
   })
 
   it('rejects out-of-range port values', () => {

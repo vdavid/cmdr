@@ -45,3 +45,13 @@ pub fn get_mcp_running() -> bool {
 pub fn get_mcp_port() -> Option<u16> {
     mcp::get_mcp_actual_port()
 }
+
+/// Returns the per-instance MCP bearer token, or null if the server isn't running.
+/// Used by the E2E harness (which runs outside the app) to authenticate `/mcp` requests
+/// after fetching it via the Tauri page. The in-app frontend never talks to the HTTP
+/// server (it uses the Tauri MCP bridge), so it doesn't need this.
+#[tauri::command]
+#[specta::specta]
+pub fn get_mcp_token() -> Option<String> {
+    mcp::current_mcp_token()
+}

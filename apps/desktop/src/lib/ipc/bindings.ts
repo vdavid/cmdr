@@ -1097,6 +1097,13 @@ export const commands = {
   getMcpRunning: () => __TAURI_INVOKE<boolean>('get_mcp_running'),
   // Returns the port the MCP server is actually listening on, or null if not running.
   getMcpPort: () => __TAURI_INVOKE<number | null>('get_mcp_port'),
+  /**
+   *  Returns the per-instance MCP bearer token, or null if the server isn't running.
+   *  Used by the E2E harness (which runs outside the app) to authenticate `/mcp` requests
+   *  after fetching it via the Tauri page. The in-app frontend never talks to the HTTP
+   *  server (it uses the Tauri MCP bridge), so it doesn't need this.
+   */
+  getMcpToken: () => __TAURI_INVOKE<string | null>('get_mcp_token'),
   // Check if a port is available for binding.
   checkPortAvailable: (port: number) => __TAURI_INVOKE<boolean>('check_port_available', { port }),
   /**

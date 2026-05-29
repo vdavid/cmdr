@@ -10,13 +10,22 @@ import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 type PageLike = TauriPage | BrowserPageAdapter
 
 let mcpPort: number | null = null
+let mcpToken: string | null = null
 
 // ── Initialization ──────────────────────────────────────────────────────────
 
-/** Discovers the actual MCP port from the running app via Tauri IPC. */
+/** Discovers the actual MCP port and bearer token from the running app via Tauri IPC. */
 export async function initMcpClient(tauriPage: PageLike): Promise<void> {
   mcpPort = await tauriPage.evaluate<number>(`window.__TAURI_INTERNALS__.invoke('get_mcp_port')`)
   if (!mcpPort) throw new Error('MCP server not running: enable it in Settings > Developer')
+  mcpToken = await tauriPage.evaluate<string>(`window.__TAURI_INTERNALS__.invoke('get_mcp_token')`)
+  if (!mcpToken) throw new Error('MCP server has no auth token: is it running?')
+}
+
+/** Authorization header for every authenticated `/mcp` request. */
+function authHeaders(): Record<string, string> {
+  if (!mcpToken) throw new Error('Call initMcpClient() first')
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${mcpToken}` }
 }
 
 /** Idempotent init: calls `initMcpClient` only if the port hasn't been discovered yet. */
@@ -31,7 +40,7 @@ export async function mcpCall(tool: string, args: Record<string, unknown>): Prom
   if (!mcpPort) throw new Error('Call initMcpClient() first')
   const res = await fetch(`http://localhost:${String(mcpPort)}/mcp`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({
       jsonrpc: '2.0',
       id: Date.now(),
@@ -50,7 +59,7 @@ export async function mcpReadResource(uri: string): Promise<string> {
   if (!mcpPort) throw new Error('Call initMcpClient() first')
   const res = await fetch(`http://localhost:${String(mcpPort)}/mcp`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({
       jsonrpc: '2.0',
       id: Date.now(),

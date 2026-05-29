@@ -15,6 +15,9 @@ use super::{AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResul
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
 pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    // `autoConfirm: true` skips the user's confirmation dialog. This is safe because the
+    // whole MCP HTTP server is token-gated (see `mcp/server.rs::validate_token`): any caller
+    // already proved filesystem access by reading the 0o600 `<data_dir>/mcp.token`.
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
     let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
 
@@ -57,6 +60,8 @@ pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
 pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    // `autoConfirm: true` skips the user's confirmation dialog; the server-level token gate
+    // (`mcp/server.rs::validate_token`) is what protects this now.
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
     let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
 
@@ -101,6 +106,8 @@ pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
 pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    // `autoConfirm: true` skips the user's confirmation dialog; the server-level token gate
+    // (`mcp/server.rs::validate_token`) is what protects this now.
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
 
     let pre_gen = snapshot_generation(app);

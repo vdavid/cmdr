@@ -464,6 +464,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::mcp::set_mcp_port,
         crate::commands::mcp::get_mcp_running,
         crate::commands::mcp::get_mcp_port,
+        crate::commands::mcp::get_mcp_token,
         crate::commands::settings::check_port_available,
         crate::commands::settings::find_available_port,
         crate::commands::settings::update_file_watcher_debounce,

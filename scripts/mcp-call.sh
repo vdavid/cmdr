@@ -61,13 +61,78 @@ read_port_file() {
     echo "$raw"
 }
 
+# Read the per-instance bearer token the server writes (0o600) next to mcp.port. Required:
+# every /mcp request must carry `Authorization: Bearer <token>` (see mcp/server.rs). A
+# missing token file means the server hasn't written it yet (or crashed) — fail loudly
+# rather than send an unauthenticated request that would 401.
+read_token_file() {
+    local data_dir="$1"
+    local token_file="${data_dir}/mcp.token"
+    if [[ ! -f "$token_file" ]]; then
+        echo "Error: MCP token file not found at ${token_file}. Is Cmdr running and the MCP server enabled?" >&2
+        exit 1
+    fi
+    local raw
+    raw="$(<"$token_file")"
+    raw="${raw//[[:space:]]/}"
+    if [[ -z "$raw" ]]; then
+        echo "Error: MCP token file ${token_file} is empty." >&2
+        exit 1
+    fi
+    echo "$raw"
+}
+
+# Print help without needing a running server (no port/token resolution).
+case "${1:-}" in
+    -h|--help|"")
+        echo "Usage:"
+        echo "  ./scripts/mcp-call.sh <tool_name> [json_args]"
+        echo "  ./scripts/mcp-call.sh --list-tools"
+        echo "  ./scripts/mcp-call.sh --read-resource <uri>"
+        echo "  ./scripts/mcp-call.sh --raw <json-rpc-body>"
+        echo ""
+        echo "Environment:"
+        echo "  CMDR_MCP_PORT     Pin a specific port; wins over the file."
+        echo "  CMDR_MCP_TOKEN    Pin the bearer token; wins over <data_dir>/mcp.token."
+        echo "  CMDR_INSTANCE_ID  Reads <data_dir>/mcp.port + mcp.token for discovery."
+        echo "  CMDR_DATA_DIR     Overrides the data-dir derivation when set with the instance."
+        echo "  (Falls back to port 19225 (dev default) and the dev data dir when unset.)"
+        echo ""
+        echo "Examples:"
+        echo "  ./scripts/mcp-call.sh search '{\"pattern\":\"*.pdf\",\"limit\":5}'"
+        echo "  ./scripts/mcp-call.sh ai_search '{\"query\":\"recent invoices\"}'"
+        echo "  ./scripts/mcp-call.sh --list-tools"
+        echo "  ./scripts/mcp-call.sh --read-resource 'cmdr://state'"
+        exit 0
+        ;;
+esac
+
+# Resolve the data dir (when discoverable) so we can read both the port file and the token
+# file. Precedence mirrors the port logic: an explicit CMDR_DATA_DIR or CMDR_INSTANCE_ID
+# pins the dir; a bare CMDR_MCP_PORT pin or the bare default both fall back to the dev
+# instance ("dev") so a stock `pnpm dev` session works out of the box.
+if [[ -n "${CMDR_DATA_DIR:-}" ]]; then
+    DATA_DIR="$CMDR_DATA_DIR"
+elif [[ -n "${CMDR_INSTANCE_ID:-}" ]]; then
+    DATA_DIR="$(resolve_data_dir "$CMDR_INSTANCE_ID")"
+else
+    DATA_DIR="$(resolve_data_dir "dev")"
+fi
+
 if [[ -n "${CMDR_MCP_PORT:-}" ]]; then
     PORT="$CMDR_MCP_PORT"
 elif [[ -n "${CMDR_INSTANCE_ID:-}" ]]; then
-    DATA_DIR="${CMDR_DATA_DIR:-$(resolve_data_dir "$CMDR_INSTANCE_ID")}"
     PORT="$(read_port_file "$DATA_DIR")"
 else
     PORT=19225
+fi
+
+# The token is mandatory. CMDR_MCP_TOKEN env wins (handy when you pinned a port/dir);
+# otherwise read <data_dir>/mcp.token.
+if [[ -n "${CMDR_MCP_TOKEN:-}" ]]; then
+    TOKEN="$CMDR_MCP_TOKEN"
+else
+    TOKEN="$(read_token_file "$DATA_DIR")"
 fi
 
 BASE_URL="http://${HOST}:${PORT}/mcp"
@@ -79,6 +144,7 @@ rpc() {
     local body="$1"
     curl -sf --max-time "$TIMEOUT" -X POST "$BASE_URL" \
         -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer ${TOKEN}" \
         -d "$body" 2>/dev/null
 }
 
@@ -104,26 +170,6 @@ JSON
 }
 
 case "${1:-}" in
-    -h|--help|"")
-        echo "Usage:"
-        echo "  ./scripts/mcp-call.sh <tool_name> [json_args]"
-        echo "  ./scripts/mcp-call.sh --list-tools"
-        echo "  ./scripts/mcp-call.sh --read-resource <uri>"
-        echo "  ./scripts/mcp-call.sh --raw <json-rpc-body>"
-        echo ""
-        echo "Environment:"
-        echo "  CMDR_MCP_PORT     Pin a specific port; wins over the file."
-        echo "  CMDR_INSTANCE_ID  Reads <data_dir>/mcp.port for ephemeral port discovery."
-        echo "  CMDR_DATA_DIR     Overrides the data-dir derivation when set with the instance."
-        echo "  (Falls back to port 19225 (dev default) when neither is set.)"
-        echo ""
-        echo "Examples:"
-        echo "  ./scripts/mcp-call.sh search '{\"pattern\":\"*.pdf\",\"limit\":5}'"
-        echo "  ./scripts/mcp-call.sh ai_search '{\"query\":\"recent invoices\"}'"
-        echo "  ./scripts/mcp-call.sh --list-tools"
-        echo "  ./scripts/mcp-call.sh --read-resource 'cmdr://state'"
-        exit 0
-        ;;
     --list-tools)
         init
         rpc_pretty '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
