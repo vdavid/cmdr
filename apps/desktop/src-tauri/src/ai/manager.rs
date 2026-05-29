@@ -756,7 +756,9 @@ fn host_is_loopback(parsed: &reqwest::Url) -> bool {
     }
     // `host_str()` returns IPv6 hosts wrapped in brackets, e.g. `[::1]`.
     let bare = host.strip_prefix('[').and_then(|h| h.strip_suffix(']')).unwrap_or(host);
-    bare.parse::<std::net::IpAddr>().map(|ip| ip.is_loopback()).unwrap_or(false)
+    bare.parse::<std::net::IpAddr>()
+        .map(|ip| ip.is_loopback())
+        .unwrap_or(false)
 }
 
 /// Parses model IDs from an OpenAI-compatible /models response.
