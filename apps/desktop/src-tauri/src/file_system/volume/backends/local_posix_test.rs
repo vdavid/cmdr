@@ -499,6 +499,44 @@ async fn test_write_from_stream_creates_file() {
 }
 
 #[tokio::test]
+async fn test_write_from_stream_multichunk_is_durable_and_correct() {
+    use super::InMemoryVolume;
+    use std::fs;
+
+    // A multi-chunk payload (> InMemory's 64 KiB chunk) exercises the chunk
+    // loop and the durable finish (`sync_data` + parent-dir fsync) that lands
+    // after it. We can't spy on `fdatasync` from a unit test, so this pins the
+    // regression that matters: the function returns normally and the file is
+    // fully + correctly written through the durable finish path. A panic or an
+    // error mishandled in the `sync_data` / parent-dir fsync logic would
+    // surface here.
+    let vol_dir = std::env::temp_dir().join("cmdr_write_from_stream_durable_test");
+    let _ = fs::remove_dir_all(&vol_dir);
+    fs::create_dir_all(&vol_dir).unwrap();
+
+    // 200 KiB of deterministic bytes => ~4 chunks at 64 KiB each.
+    let payload: Vec<u8> = (0..200 * 1024).map(|i| (i % 251) as u8).collect();
+
+    let source = InMemoryVolume::new("Source");
+    source.create_file(Path::new("/big.bin"), &payload).await.unwrap();
+
+    let stream = source.open_read_stream(Path::new("/big.bin")).await.unwrap();
+    let size = stream.total_size();
+    let volume = LocalPosixVolume::new("Test", vol_dir.to_str().unwrap());
+    let bytes = volume
+        .write_from_stream(Path::new("imported.bin"), size, stream, &|_, _| {
+            std::ops::ControlFlow::Continue(())
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(bytes, payload.len() as u64);
+    assert_eq!(fs::read(vol_dir.join("imported.bin")).unwrap(), payload);
+
+    let _ = fs::remove_dir_all(&vol_dir);
+}
+
+#[tokio::test]
 async fn test_scan_for_conflicts_no_conflicts() {
     use std::fs;
 

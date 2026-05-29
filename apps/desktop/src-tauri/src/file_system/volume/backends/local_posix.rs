@@ -573,14 +573,58 @@ impl Volume for LocalPosixVolume {
                 }
             }
 
-            // Flush and close on the blocking pool.
-            let flush_res = spawn_blocking(move || {
+            // Make the file durable before signalling success. A bare
+            // `file.flush()` is a userspace no-op on a raw `std::fs::File`, so
+            // without `sync_data` the bytes would live only in the OS page
+            // cache. A cross-volume copy/move landing on a local disk (MTP →
+            // Local, SMB → Local, USB import) all flows through this method, so
+            // reporting "complete" here without an fdatasync would let the user
+            // eject / sleep and lose data (on a move, from both sides). This
+            // gives the same "durable as each file completes" property the
+            // local-FS chunked copy path already has (`transfer/chunked_copy.rs`
+            // → `dst_file.sync_data()`): a crash mid-batch leaves earlier files
+            // safe.
+            //
+            // Best-effort on error, matching `helpers::flush_created_destinations`:
+            // a failed `sync_data` is logged under `target: "write_durability"`,
+            // NOT propagated. The bytes are written either way, and failing a
+            // completed multi-GB transfer at the final fsync is worse UX than
+            // accepting a small durability-window risk on a filesystem that
+            // can't sync.
+            let dest_for_sync = dest_abs.clone();
+            file = spawn_blocking(move || {
                 use std::io::Write;
-                file.flush()
+                // Userspace flush first (harmless no-op on a raw File, but
+                // correct if the writer is ever wrapped in a BufWriter).
+                let _ = file.flush();
+                if let Err(e) = file.sync_data() {
+                    log::warn!(
+                        target: "write_durability",
+                        "write_from_stream: fdatasync failed for {}: {e}",
+                        dest_for_sync.display()
+                    );
+                }
+                file
             })
             .await
             .unwrap();
-            flush_res.map_err(VolumeError::from)?;
+            drop(file);
+
+            // Best-effort: fsync the parent directory so the new file's
+            // directory entry (the create) is durable too. Some filesystems
+            // reject directory fsync; log and continue.
+            if let Some(parent) = dest_abs.parent() {
+                let parent = parent.to_path_buf();
+                let _ = spawn_blocking(move || match std::fs::File::open(&parent).and_then(|d| d.sync_all()) {
+                    Ok(()) => {}
+                    Err(e) => log::debug!(
+                        target: "write_durability",
+                        "write_from_stream: parent dir fsync skipped for {}: {e}",
+                        parent.display()
+                    ),
+                })
+                .await;
+            }
 
             // No `notify_mutation` call here: `LocalPosixVolume`'s mutation
             // methods (create_file/delete/rename) all rely on FSEvents to
