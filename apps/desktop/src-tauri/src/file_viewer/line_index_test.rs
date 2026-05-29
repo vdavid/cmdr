@@ -529,6 +529,12 @@ fn extend_to_observes_cancel() {
 use proptest::prelude::*;
 
 proptest! {
+    // Each case does real filesystem I/O (write + 4 `LineIndexBackend::open`s + an
+    // `extend_to` scan), so the default 256 cases can blow nextest's 8 s per-test
+    // budget under full-suite CPU contention. 48 cases still spreads across buffer
+    // sizes and split points enough to catch the counting-drift bug class.
+    #![proptest_config(ProptestConfig::with_cases(48))]
+
     /// Plan property inventory (last row): given a random newline-rich buffer
     /// and a split point N, fresh-open + `extend_to(N)` produces the same
     /// `total_lines` and `total_bytes` as opening directly at size N. This
