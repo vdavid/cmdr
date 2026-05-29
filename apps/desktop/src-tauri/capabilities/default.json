@@ -3,8 +3,7 @@
     "identifier": "default",
     "description": "Capability for the main window",
     "windows": [
-        "main",
-        "debug"
+        "main"
     ],
     "permissions": [
         "core:default",
@@ -31,8 +30,28 @@
         "store:default",
         "clipboard-manager:default",
         "mcp-bridge:default",
-        "fs:allow-temp-write",
-        "fs:allow-remove",
+        {
+            "identifier": "fs:allow-write-file",
+            "allow": [
+                {
+                    "path": "$TEMP/drag-icon.png"
+                },
+                {
+                    "path": "$TEMP/drag-image.png"
+                }
+            ]
+        },
+        {
+            "identifier": "fs:allow-remove",
+            "allow": [
+                {
+                    "path": "$TEMP/drag-icon.png"
+                },
+                {
+                    "path": "$TEMP/drag-image.png"
+                }
+            ]
+        },
         "updater:default",
         "process:allow-restart",
         "dialog:allow-ask",
