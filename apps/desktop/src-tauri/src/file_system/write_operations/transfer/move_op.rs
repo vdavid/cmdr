@@ -202,6 +202,9 @@ fn move_with_rename(
             // When both source and dest are directories, merge recursively
             // instead of replacing (which would destroy dest-only files).
             if source.is_dir() && dest_path.exists() && dest_path.is_dir() {
+                // Same-FS merge operates on the original tree directly, so a
+                // skipped child just leaves the source non-empty; no skip-set
+                // bookkeeping is needed (there's no later source-delete phase).
                 merge_move_directory(
                     source,
                     &dest_path,
@@ -212,6 +215,7 @@ fn move_with_rename(
                     &mut apply_to_all_resolution,
                     &mut move_tx,
                     &mut files_skipped,
+                    &mut None,
                 )?;
             } else if path_exists_or_is_symlink(&dest_path) {
                 // File-to-file (or type mismatch) conflict
@@ -318,6 +322,16 @@ fn move_with_rename(
 /// using rename() for individual files. Dest-only files are preserved.
 /// After all contents are moved, removes the now-empty source directory.
 ///
+/// `skipped_paths`, when `Some`, collects the `source_dir`-rooted paths of every
+/// child that was skipped (conflict resolved as Skip). The cross-FS Phase-3
+/// caller passes the STAGED tree as `source_dir`, so the staged child paths it
+/// collects map back to the originals by swapping the staging prefix for the
+/// real source prefix. Phase 4 then knows NOT to delete those originals (they
+/// never landed at the destination) — without this, a skipped child would be
+/// silently lost when Phase 4 deletes the source. The same-FS caller passes
+/// `None`: it operates on the original tree directly and a skipped child simply
+/// leaves the source dir non-empty, so the `remove_dir` below won't fire.
+///
 /// Note: This duplicates the recursive-merge-with-conflict-resolution pattern from `copy.rs`.
 /// The two look similar in structure but differ in every detail (copy has progress tracking,
 /// symlink handling, byte counting, transaction recording, strategy selection). A shared
@@ -333,6 +347,7 @@ fn merge_move_directory(
     apply_to_all_resolution: &mut ApplyToAll,
     move_tx: &mut MoveTransaction,
     files_skipped: &mut usize,
+    skipped_paths: &mut Option<&mut HashSet<PathBuf>>,
 ) -> Result<(), WriteOperationError> {
     let entries = fs::read_dir(source_dir).with_path(source_dir)?;
 
@@ -364,6 +379,7 @@ fn merge_move_directory(
                 apply_to_all_resolution,
                 move_tx,
                 files_skipped,
+                skipped_paths,
             )?;
         } else if path_exists_or_is_symlink(&dest_child) {
             // File conflict (or type mismatch)
@@ -384,7 +400,11 @@ fn merge_move_directory(
                     move_resolved_into_place(&source_child, &dest_child, &resolved, move_tx)?;
                 }
                 None => {
-                    // Skip: source file stays in place
+                    // Skip: source file stays in place. Record it so a cross-FS
+                    // Phase 4 won't delete the original that never landed.
+                    if let Some(set) = skipped_paths.as_deref_mut() {
+                        set.insert(source_child.clone());
+                    }
                     *files_skipped += 1;
                     continue;
                 }
@@ -574,6 +594,14 @@ fn move_with_staging(
         return Err(e);
     }
 
+    // Original source paths whose staged copy was discarded on Skip (the file
+    // never reached the destination). Phase 4 consults this so it deletes ONLY
+    // sources that actually landed — deleting a skipped source's original would
+    // be silent data loss (the user clicked Skip to keep both copies). Holds
+    // both whole top-level sources (single-file / type-mismatch skip) and
+    // per-child paths inside a directory merge.
+    let mut skipped_source_paths: HashSet<PathBuf> = HashSet::new();
+
     // Phase 3: Atomic rename from staging to final destination
     let rename_result: Result<(), WriteOperationError> = (|| {
         for source in sources {
@@ -589,6 +617,10 @@ fn move_with_staging(
             // No MoveTransaction needed here: staging cleanup handles rollback.
             let mut staging_move_tx = MoveTransaction::new();
             if staged_path.is_dir() && final_path.exists() && final_path.is_dir() {
+                // Collect skipped children as STAGED paths, then remap each from
+                // the staging prefix back to its original source path so Phase 4
+                // preserves the originals that never landed.
+                let mut staged_skips: HashSet<PathBuf> = HashSet::new();
                 merge_move_directory(
                     &staged_path,
                     &final_path,
@@ -599,7 +631,13 @@ fn move_with_staging(
                     &mut apply_to_all_resolution,
                     &mut staging_move_tx,
                     &mut files_skipped,
+                    &mut Some(&mut staged_skips),
                 )?;
+                for staged_skip in staged_skips {
+                    if let Ok(rel) = staged_skip.strip_prefix(&staged_path) {
+                        skipped_source_paths.insert(source.join(rel));
+                    }
+                }
             } else if final_path.exists() {
                 // File conflict (or type mismatch)
                 match resolve_conflict(
@@ -625,12 +663,14 @@ fn move_with_staging(
                         move_resolved_into_place(&staged_path, &final_path, &resolved, &mut throwaway_tx)?;
                     }
                     None => {
-                        // Skip - remove from staging
+                        // Skip: discard the staged copy and remember the original
+                        // so Phase 4 doesn't delete it (it never landed).
                         if staged_path.is_dir() {
                             let _ = fs::remove_dir_all(&staged_path);
                         } else {
                             let _ = fs::remove_file(&staged_path);
                         }
+                        skipped_source_paths.insert(source.clone());
                         files_skipped += 1;
                         continue;
                     }
@@ -658,8 +698,9 @@ fn move_with_staging(
         return Err(e);
     }
 
-    // Phase 4: Delete source files (only after successful copy+rename)
-    delete_sources_after_move(events, operation_id, state, sources, files_done)?;
+    // Phase 4: Delete source files (only after successful copy+rename), skipping
+    // any source (or source child) whose copy was discarded on Skip.
+    delete_sources_after_move(events, operation_id, state, sources, files_done, &skipped_source_paths)?;
 
     // Phase 5: Remove empty staging directory
     let _ = fs::remove_dir(&staging_dir);
@@ -703,12 +744,23 @@ fn move_with_staging(
     Ok(())
 }
 
+/// Deletes the originals after a successful cross-FS copy+rename, preserving any
+/// source (or source child) listed in `skipped_source_paths` — those never
+/// reached the destination, so deleting them would be data loss.
+///
+/// A whole top-level source in the skip set (single-file / type-mismatch Skip)
+/// is left untouched. A directory source with NO skipped descendants is removed
+/// wholesale via `remove_dir_all`. A directory source WITH skipped descendants
+/// is walked: every non-skipped child is deleted and directories are removed
+/// only once they're empty, so the skipped child's original survives inside a
+/// surviving source directory.
 fn delete_sources_after_move(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     sources: &[PathBuf],
     files_done: usize,
+    skipped_source_paths: &HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
     for source in sources {
         // Check cancellation
@@ -724,10 +776,23 @@ fn delete_sources_after_move(
             });
         }
 
+        // A whole top-level source skipped on a file / type-mismatch conflict:
+        // leave the original exactly where it is.
+        if skipped_source_paths.contains(source) {
+            continue;
+        }
+
         // Use symlink_metadata to check if it still exists
         if fs::symlink_metadata(source).is_ok() {
             if source.is_dir() {
-                fs::remove_dir_all(source).with_path(source)?;
+                // Fast path: nothing under this source was skipped, so the whole
+                // tree landed and can be removed wholesale.
+                let has_skipped_descendant = skipped_source_paths.iter().any(|p| p.starts_with(source));
+                if has_skipped_descendant {
+                    delete_dir_preserving_skipped(source, skipped_source_paths)?;
+                } else {
+                    fs::remove_dir_all(source).with_path(source)?;
+                }
             } else {
                 fs::remove_file(source).with_path(source)?;
             }
@@ -739,6 +804,40 @@ fn delete_sources_after_move(
         }
     }
 
+    Ok(())
+}
+
+/// Recursively deletes `dir`'s contents, skipping any path in
+/// `skipped_source_paths`, and removes a directory only once it's empty. A
+/// directory that still holds a skipped child (directly or transitively) is
+/// left in place. Used by the cross-FS source-delete phase when some children
+/// were Skipped and the parent therefore can't be removed wholesale.
+fn delete_dir_preserving_skipped(
+    dir: &Path,
+    skipped_source_paths: &HashSet<PathBuf>,
+) -> Result<(), WriteOperationError> {
+    let entries = fs::read_dir(dir).with_path(dir)?;
+    for entry in entries {
+        let child = entry.with_path(dir)?.path();
+        if skipped_source_paths.contains(&child) {
+            continue;
+        }
+        if fs::symlink_metadata(&child).map(|m| m.is_dir()).unwrap_or(false) {
+            let has_skipped_descendant = skipped_source_paths.iter().any(|p| p.starts_with(&child));
+            if has_skipped_descendant {
+                delete_dir_preserving_skipped(&child, skipped_source_paths)?;
+            } else {
+                fs::remove_dir_all(&child).with_path(&child)?;
+            }
+        } else {
+            fs::remove_file(&child).with_path(&child)?;
+        }
+    }
+
+    // Remove the directory only if it's now empty (a skipped child keeps it).
+    if fs::read_dir(dir).map(|mut d| d.next().is_none()).unwrap_or(false) {
+        fs::remove_dir(dir).with_path(dir)?;
+    }
     Ok(())
 }
 
