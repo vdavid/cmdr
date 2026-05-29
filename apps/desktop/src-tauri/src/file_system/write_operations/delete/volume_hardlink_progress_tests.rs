@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::super::state::{WRITE_OPERATION_STATE, WriteOperationState};
-use super::super::types::{CollectorEventSink, WriteOperationConfig};
+use super::super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationPhase};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::{LocalPosixVolume, Volume};
@@ -120,8 +120,20 @@ async fn volume_delete_hardlinked_files_reports_dedup_d_bytes() {
 
     // Final progress event's denominator must also be dedup'd; mid-flight
     // events must never exceed their reported denominator.
+    //
+    // Scanning-phase events are excluded: during the scan the total is still
+    // being discovered, so `bytes_total` is the provisional (0 until the scan
+    // finishes) denominator while `bytes_done` already carries the running
+    // tally. The FE renders the scan phase from the running tally + the index
+    // `expected_*` fields, not from `bytes_done / bytes_total`, so a transient
+    // scan snapshot where the tally leads the not-yet-final total is expected.
+    // The overshoot invariant this guards (the hardlink dedup bug) is about the
+    // active Deleting phase, where `bytes_total` is the dedup'd total.
     let progress = sink.progress.lock().unwrap();
     for event in progress.iter() {
+        if event.phase == WriteOperationPhase::Scanning {
+            continue;
+        }
         assert!(
             event.bytes_done <= event.bytes_total,
             "mid-flight overshoot: bytes_done={} > bytes_total={} (phase={:?})",
