@@ -519,11 +519,16 @@ pub fn open_in_editor(path: String) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn cloud_make_available_offline(path: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || {
+    // 30s timeout like every other fs-touching command: a wedged File Provider
+    // extension can hang the blocking call indefinitely. The download request is
+    // fire-and-forget server-side, so releasing the IPC on timeout is correct.
+    let work = tokio::task::spawn_blocking(move || {
         crate::file_system::cloud_actions::request_download(std::path::Path::new(&path))
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    });
+    match tokio::time::timeout(tokio::time::Duration::from_secs(30), work).await {
+        Ok(joined) => joined.map_err(|e| e.to_string())?,
+        Err(_elapsed) => Err("Timed out reaching iCloud — give it another try".to_string()),
+    }
 }
 
 /// Evict a cloud-managed file's local copy, leaving a placeholder. Counterpart to
@@ -531,9 +536,14 @@ pub async fn cloud_make_available_offline(path: String) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn cloud_remove_download(path: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || crate::file_system::cloud_actions::evict_item(std::path::Path::new(&path)))
-        .await
-        .map_err(|e| e.to_string())?
+    // 30s timeout: same hung-File-Provider risk as `cloud_make_available_offline`.
+    // Eviction is fire-and-forget server-side, so releasing the IPC on timeout is fine.
+    let work =
+        tokio::task::spawn_blocking(move || crate::file_system::cloud_actions::evict_item(std::path::Path::new(&path)));
+    match tokio::time::timeout(tokio::time::Duration::from_secs(30), work).await {
+        Ok(joined) => joined.map_err(|e| e.to_string())?,
+        Err(_elapsed) => Err("Timed out reaching iCloud — give it another try".to_string()),
+    }
 }
 
 #[tauri::command]

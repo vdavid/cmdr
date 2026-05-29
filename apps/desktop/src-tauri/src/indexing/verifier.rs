@@ -134,10 +134,58 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
         _ => return Vec::new(),
     };
 
-    // Phase 2: read disk entries
-    let disk_entries = match std::fs::read_dir(&normalized) {
-        Ok(rd) => rd,
-        Err(_) => return Vec::new(),
+    // Phase 2: read disk entries.
+    // Offload the `read_dir` + per-entry `symlink_metadata` loop onto a blocking
+    // thread. This task runs on a plain tokio worker (spawned via
+    // `tauri::async_runtime::spawn`, not `spawn_blocking`), so a slow/hung disk
+    // here would otherwise stall an async executor thread. The diff that follows
+    // is pure CPU and stays on the async path.
+    let disk_map: HashMap<String, DiskEntry> = {
+        let scan_path = normalized.clone();
+        // The closure returns `Option`: `None` distinguishes a `read_dir` failure
+        // (bail, exactly as the old synchronous code did) from a genuinely empty
+        // directory (`Some(empty map)`, which the diff below treats as "all DB
+        // children are stale").
+        let joined = tokio::task::spawn_blocking(move || {
+            let disk_entries = std::fs::read_dir(&scan_path).ok()?;
+            let mut disk_map: HashMap<String, DiskEntry> = HashMap::new();
+            for dir_entry in disk_entries.flatten() {
+                let name = dir_entry.file_name().to_string_lossy().to_string();
+                let metadata = match std::fs::symlink_metadata(dir_entry.path()) {
+                    Ok(m) => m,
+                    Err(_) => continue,
+                };
+
+                let is_dir = metadata.is_dir();
+                let is_symlink = metadata.is_symlink();
+                let snap = extract_metadata(&metadata, is_dir, is_symlink);
+
+                let key = store::normalize_for_comparison(&name);
+                disk_map.insert(
+                    key,
+                    DiskEntry {
+                        name,
+                        is_dir,
+                        is_symlink,
+                        logical_size: snap.logical_size,
+                        physical_size: snap.physical_size,
+                        modified_at: snap.modified_at,
+                        inode: snap.inode,
+                        nlink: snap.nlink,
+                    },
+                );
+            }
+            Some(disk_map)
+        })
+        .await;
+        match joined {
+            Ok(Some(map)) => map,
+            Ok(None) => return Vec::new(),
+            Err(e) => {
+                log::warn!("Verifier: disk-scan task failed: {e}");
+                return Vec::new();
+            }
+        }
     };
 
     // Build name-keyed map of DB children
@@ -145,35 +193,6 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
     for child in &db_children {
         let key = store::normalize_for_comparison(&child.name);
         db_map.insert(key, child);
-    }
-
-    // Build name-keyed map of disk entries
-    let mut disk_map: HashMap<String, DiskEntry> = HashMap::new();
-    for dir_entry in disk_entries.flatten() {
-        let name = dir_entry.file_name().to_string_lossy().to_string();
-        let metadata = match std::fs::symlink_metadata(dir_entry.path()) {
-            Ok(m) => m,
-            Err(_) => continue,
-        };
-
-        let is_dir = metadata.is_dir();
-        let is_symlink = metadata.is_symlink();
-        let snap = extract_metadata(&metadata, is_dir, is_symlink);
-
-        let key = store::normalize_for_comparison(&name);
-        disk_map.insert(
-            key,
-            DiskEntry {
-                name,
-                is_dir,
-                is_symlink,
-                logical_size: snap.logical_size,
-                physical_size: snap.physical_size,
-                modified_at: snap.modified_at,
-                inode: snap.inode,
-                nlink: snap.nlink,
-            },
-        );
     }
 
     // Phase 3: diff
