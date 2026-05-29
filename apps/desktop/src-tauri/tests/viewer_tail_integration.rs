@@ -10,13 +10,9 @@
 //! the subscription channel. Asserting on the subscription is the closest
 //! BE-side check we can do without standing up Tauri runtime.
 //!
-//! Marked `#[ignore]` so the suite stays fast: filesystem-event tests on
-//! macOS can take seconds to settle under load. Run on demand via
-//!
-//! ```bash
-//! cargo nextest run --release -p cmdr --run-ignored only \
-//!     -E 'package(cmdr) and test(viewer_tail_*)'
-//! ```
+//! Runs in the default suite. The test self-bounds its wait at 5 s (12+ debounce
+//! windows of settle time), comfortably under nextest's 8 s per-test hard cap, so
+//! it fails fast and cleanly if the watcher pipeline ever breaks instead of hanging.
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -25,7 +21,6 @@ use std::time::{Duration, Instant};
 use cmdr_lib::file_viewer::watcher::{VIEWER_WATCHER_MANAGER, WatcherEvent};
 
 #[tokio::test(flavor = "multi_thread")]
-#[ignore = "real FS-event integration test; run on demand"]
 async fn tail_watcher_sees_appender_task_events_within_debounce() {
     let dir = tempfile::tempdir().expect("tempdir");
     let path = dir.path().join("log.txt");
