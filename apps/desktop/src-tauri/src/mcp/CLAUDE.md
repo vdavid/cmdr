@@ -11,7 +11,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - Runs in a background tokio task spawned at app startup
 - Binds `127.0.0.1` only (localhost). Port defaults to ephemeral: when `developer.mcpPort` (the user setting) is 0 (the new default), the server binds `127.0.0.1:0` and asks the kernel for an unused port. When the setting (or `CMDR_MCP_PORT` env) is non-zero, the server binds that port and probes upward up to 100 ports on collision. The `resolve_bind_strategy` helper turns the resolved port into `BindStrategy::Ephemeral` or `BindStrategy::Pinned(port)` and is unit-tested in `server.rs`. The legacy fixed defaults (`19224` prod / `19225` dev) still live in `config.rs::DEFAULT_PORT` as the fallback for `CMDR_MCP_PORT` parse failures and are mirrored in the FE registry for users who want to pin a port.
 - Writes the actual bound port to `<data_dir>/mcp.port` atomically (tempfile + fsync + rename, mode 0o600) after `bind`, plus a fresh per-instance bearer token to `<data_dir>/mcp.token` (same atomic write, 0o600). External readers (the `scripts/mcp-call.sh` CLI, E2E fixtures, agent helpers) discover the port and token from those files and send `Authorization: Bearer <token>` on every request; the FE still uses the `get_mcp_port` / `get_mcp_token` IPC to read the same in-process state. On clean shutdown both files are removed and the in-process token is cleared; on crash they stay and readers discover staleness via `ECONNREFUSED`. See `port_file.rs` for the `write_port_file` / `write_secret_file` / read / remove API and typed `PortDiscoveryError`.
-- **Auth**: every `/mcp` request (POST + GET) is gated by `validate_origin` (browser layer) then `validate_token` (the real local-process gate). `validate_token` reads `Authorization: Bearer <token>`, compares against the in-process token in constant time, and rejects missing/empty/mismatched with 401. It fails closed if no token is set. `GET /mcp/health` is intentionally unauthenticated.
+- **Auth**: every `/mcp` request runs `validate_origin` (browser-CSRF / DNS-rebinding layer). The bearer token is then required only for the narrow set of calls that bypass the user's in-app confirmation dialog — see the Authentication section below. `validate_token` reads `Authorization: Bearer <token>`, compares against the in-process token in constant time, and returns `Err(())` on missing/empty/mismatched; the POST handler turns that into a friendly in-band JSON-RPC error via `auto_confirm_token_required_response` (HTTP 200, **not** 401 — see Authentication for why). It fails closed if no token is set. `GET /mcp/health` and `GET /mcp` (SSE) are unauthenticated.
 - Streamable HTTP transport (MCP spec 2025-11-25)
 - Endpoints: `POST /mcp` (JSON-RPC), `GET /mcp` (optional SSE), `GET /mcp/health`
 
@@ -108,13 +108,60 @@ Without state, resources would need to query the frontend on every read (slow, a
 
 Security via parity: agents can only do what users can do. Giving agents `fs.read`/`fs.write` would violate this. Agents navigate the UI just like users, using `move_cursor`, `open_under_cursor`, etc.
 
-### Why localhost only, and why a bearer token on top?
+### Why localhost only?
 
-Binding to `0.0.0.0` would expose the server to the network, so we bind `127.0.0.1` only. But localhost binding alone is **not** a security boundary against the real threat: a local non-Cmdr process. macOS doesn't isolate loopback between local processes, and a non-browser process can set any HTTP header (or none), so `validate_origin` (a browser-CSRF / DNS-rebinding defense) is no barrier to it. Without more, any local process that read the (formerly world-readable) `mcp.port` could POST a destructive `delete`/`move`/`copy` with `autoConfirm: true` and bypass the user's confirmation dialog.
+Binding to `0.0.0.0` would expose the server to the network, so we bind `127.0.0.1` only. But localhost binding alone is **not** a security boundary against the real threat: a local non-Cmdr process. macOS doesn't isolate loopback between local processes, and a non-browser process can set any HTTP header (or none), so `validate_origin` (a browser-CSRF / DNS-rebinding defense) is no barrier to it. That's why the bearer token exists — see Authentication.
 
-The real gate is a **per-instance bearer token**: every `/mcp` request (POST and GET) must carry `Authorization: Bearer <token>`, validated in constant time against the in-process token (`validate_token` in `server.rs`). The token is a fresh CSPRNG value (`Uuid::new_v4`, 122 random bits) generated on every server start and written to `<data_dir>/mcp.token` at mode 0o600 (owner-only). Reading it therefore requires the user's own filesystem access — the same access an attacker would need to do damage directly. The port file (`mcp.port`) is also written 0o600 now. `GET /mcp/health` stays open (no token) so liveness probes work. With the whole server token-gated, `autoConfirm` is transitively protected: the caller already proved filesystem access by reading the token.
+## Authentication
 
-Legit clients send the token: `scripts/mcp-call.sh` reads `<data_dir>/mcp.token` (or `CMDR_MCP_TOKEN`); the E2E harness fetches it via the `get_mcp_token` Tauri IPC. The app's own frontend does NOT talk to this HTTP server (it uses the separate Tauri MCP bridge), so it needs no token.
+### What's gated
+
+The bearer token is required for **only the calls that bypass the user's in-app confirmation dialog**:
+
+- `delete` / `move` / `copy` with `autoConfirm: true`, and
+- the `dialog` tool with `action: "confirm"` (programmatically confirming an open dialog).
+
+**Everything else needs no token**: resource reads (`cmdr://state`, `cmdr://logs`, etc.), navigation, search, and the destructive ops that still pop the confirmation dialog (`autoConfirm` absent/false). The decision lives in one pure, unit-tested predicate, `tool_call_requires_token(method, params)` in `server.rs`: true iff `method == "tools/call"` and the tool+args match one of the two cases above.
+
+The POST handler runs `if tool_call_requires_token(..) && validate_token(..).is_err() { reject }`. `GET /mcp` (SSE) carries no tool call, so it's never gated. `GET /mcp/health` stays open for liveness probes.
+
+### Why only those
+
+The threat is a **local non-Cmdr process silently auto-confirming a destructive op** — POSTing `delete`/`move`/`copy` with `autoConfirm: true` (or a `dialog` confirm) to wipe files without the user ever seeing the dialog. `validate_origin` is browser-CSRF defense only; it's no barrier to a local process that sets its own headers. Gating reads/nav/search bought no security (those mirror what the user can already do in the UI) while making the server annoying to drive — so the gate is now exactly the auto-confirm bypass, nothing more.
+
+### How a client obtains and sends the token
+
+The token is a fresh CSPRNG value (`Uuid::new_v4`, 122 random bits), generated on every server start and written to `<data_dir>/mcp.token` at mode 0o600 (owner-only). The port file (`mcp.port`) is 0o600 too. A client gets the token by either:
+
+- reading `<data_dir>/mcp.token` (the same filesystem access an attacker would need to do damage directly), or
+- reading the `CMDR_MCP_TOKEN` env var (see override below).
+
+It then sends `Authorization: Bearer <token>` on the gated calls. `scripts/mcp-call.sh` already does this (reads `<data_dir>/mcp.token`, or `CMDR_MCP_TOKEN`); the E2E harness fetches it via the `get_mcp_token` Tauri IPC. The app's own frontend does NOT talk to this HTTP server (it uses the separate Tauri MCP bridge), so it needs no token.
+
+The rejection is returned as an **in-band JSON-RPC error at HTTP 200, not a 401**. The MCP Streamable-HTTP spec reserves HTTP 401 for an OAuth challenge, so a 401 makes clients (Claude Code, etc.) launch an OAuth discovery flow and surface a confusing "Invalid OAuth error response" instead of our message. A 200 + JSON-RPC `error` is the canonical application-error shape and renders client-side as `MCP error <code>: <message>` (the same path `nav_to_path`'s "path does not exist" takes). Our bearer gate isn't OAuth, so it must not look like one.
+
+The message tells the caller exactly where the token lives (the `CMDR_MCP_TOKEN` env var and the resolved `<data_dir>/mcp.token` path). That's safe: the secret is the file's 0o600 contents and the env value, not the path, which is already discoverable. The message never echoes the token, and it's one uniform message for missing-vs-wrong token (no oracle).
+
+### `CMDR_MCP_TOKEN` override
+
+If `CMDR_MCP_TOKEN` is set and non-empty (after trim) when the server starts, that value is used as the token instead of a random one. The token file is still written 0o600 with the chosen value. Tradeoff: a fixed env token is **stable across restarts** (so a static `Authorization: Bearer ${CMDR_MCP_TOKEN}` client header keeps working) but **loses the per-launch replay protection** the random token gives. It's opt-in for the dev workflow, not the default.
+
+### Letting an external MCP client auto-confirm
+
+To let an external MCP client (for example Claude Code) issue auto-confirming destructive ops, export `CMDR_MCP_TOKEN` for the running Cmdr and add a matching header to the server entry in `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "cmdr": {
+      "url": "http://127.0.0.1:<port>/mcp",
+      "headers": { "Authorization": "Bearer ${CMDR_MCP_TOKEN}" }
+    }
+  }
+}
+```
+
+Without that header the client still works for everything else (reads, nav, search, and destructive ops that prompt in the app); only auto-confirm and `dialog` confirm are rejected (as the in-band JSON-RPC error above).
 
 ### Why separate state stores?
 
@@ -124,7 +171,7 @@ Legit clients send the token: `scripts/mcp-call.sh` reads `<data_dir>/mcp.token`
 
 ### Server lifecycle is managed at runtime
 
-`start_mcp_server()` binds the port and spawns a tokio task, storing the `JoinHandle` in a static `MCP_HANDLE`. Port-binding strategy comes from `resolve_bind_strategy(port)`: a 0 setting (the new default) means `BindStrategy::Ephemeral`, which binds `127.0.0.1:0` and reads the assigned port via `local_addr()`. A non-zero setting means `BindStrategy::Pinned(port)`, which uses `bind_with_probe()` to try tokio `TcpListener::bind` directly and retry up to 100 ports on collision (avoids the TOCTOU race of checking with a sync listener then re-binding async). The actual bound port is stored in `MCP_ACTUAL_PORT`. After `bind`, `write_port_file` lands `<data_dir>/mcp.port` (0o600) atomically (tempfile + fsync + rename, see `port_file.rs`) so external readers can discover the port without IPC; the data dir is cached in `MCP_PORT_FILE_DIR` for the shutdown path. A fresh CSPRNG bearer token is also generated and stored in the `MCP_TOKEN` static and written to `<data_dir>/mcp.token` (0o600) via `write_secret_file`, regenerated on every start. `stop_mcp_server()` and the crash path both clear `MCP_TOKEN` to None (so `validate_token` fails closed) and remove the token file alongside the port file. The frontend queries the in-process atomic via `get_mcp_port()` and shows "(ephemeral)" when the setting was 0 or "(port N was in use)" when the pinned port differs from the bound one. The server can be started/stopped live via `set_mcp_enabled` and `set_mcp_port` Tauri commands, no app restart needed. `stop_mcp_server()` aborts the task, resets `MCP_ACTUAL_PORT` to 0, and removes `<data_dir>/mcp.port` (best-effort: stale file is not a correctness bug). `is_mcp_running()` checks whether the handle exists. At startup, `start_mcp_server_background()` wraps the async start in a fire-and-forget spawn. If the server crashes mid-serve, `MCP_ACTUAL_PORT` resets to 0 but the on-disk file may linger; external readers retry on `ECONNREFUSED`. Check logs for "MCP server crashed" errors.
+`start_mcp_server()` binds the port and spawns a tokio task, storing the `JoinHandle` in a static `MCP_HANDLE`. Port-binding strategy comes from `resolve_bind_strategy(port)`: a 0 setting (the new default) means `BindStrategy::Ephemeral`, which binds `127.0.0.1:0` and reads the assigned port via `local_addr()`. A non-zero setting means `BindStrategy::Pinned(port)`, which uses `bind_with_probe()` to try tokio `TcpListener::bind` directly and retry up to 100 ports on collision (avoids the TOCTOU race of checking with a sync listener then re-binding async). The actual bound port is stored in `MCP_ACTUAL_PORT`. After `bind`, `write_port_file` lands `<data_dir>/mcp.port` (0o600) atomically (tempfile + fsync + rename, see `port_file.rs`) so external readers can discover the port without IPC; the data dir is cached in `MCP_PORT_FILE_DIR` for the shutdown path. A bearer token is also stored in the `MCP_TOKEN` static and written to `<data_dir>/mcp.token` (0o600) via `write_secret_file` on every start. It's a fresh CSPRNG value by default, or the `CMDR_MCP_TOKEN` env value when that's set non-empty (see Authentication § override). `stop_mcp_server()` and the crash path both clear `MCP_TOKEN` to None (so `validate_token` fails closed) and remove the token file alongside the port file. The frontend queries the in-process atomic via `get_mcp_port()` and shows "(ephemeral)" when the setting was 0 or "(port N was in use)" when the pinned port differs from the bound one. The server can be started/stopped live via `set_mcp_enabled` and `set_mcp_port` Tauri commands, no app restart needed. `stop_mcp_server()` aborts the task, resets `MCP_ACTUAL_PORT` to 0, and removes `<data_dir>/mcp.port` (best-effort: stale file is not a correctness bug). `is_mcp_running()` checks whether the handle exists. At startup, `start_mcp_server_background()` wraps the async start in a fire-and-forget spawn. If the server crashes mid-serve, `MCP_ACTUAL_PORT` resets to 0 but the on-disk file may linger; external readers retry on `ECONNREFUSED`. Check logs for "MCP server crashed" errors.
 
 ### Live MCP control only works from the settings window
 

@@ -243,7 +243,16 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
     // Generate a fresh per-instance bearer token and store it in-process BEFORE the serve
     // task starts handling requests, so the very first request is already gated. The token
     // is regenerated on every start; a leaked token from a prior run can't be replayed.
-    let token = generate_token();
+    //
+    // `CMDR_MCP_TOKEN` overrides the random token with a fixed value. That makes the token
+    // stable across restarts, so an external client can pin a static
+    // `Authorization: Bearer ${CMDR_MCP_TOKEN}` header (handy for a `.mcp.json` server
+    // entry). The tradeoff: a fixed token loses the per-launch replay protection the random
+    // token gives, so this is opt-in for the dev workflow, not the default.
+    let token = match std::env::var("CMDR_MCP_TOKEN") {
+        Ok(env_token) if !env_token.trim().is_empty() => env_token.trim().to_string(),
+        _ => generate_token(),
+    };
     set_mcp_token(Some(token.clone()));
 
     // Write the token file 0o600 (owner-only). Unlike the port, the token has no in-process
@@ -380,27 +389,47 @@ pub fn validate_origin(headers: &HeaderMap) -> Result<(), Box<Response>> {
     Ok(())
 }
 
-/// Validate the per-instance bearer token on `/mcp` requests. This is the real gate
-/// against local non-Cmdr processes: macOS doesn't isolate loopback between processes, so
-/// `validate_origin` (browser-CSRF defense) is no barrier to a process that can set any
-/// header. The token lives in `<data_dir>/mcp.token` at 0o600, so reading it requires the
-/// user's filesystem access.
+/// Pure predicate: does this JSON-RPC call bypass the user's in-app confirmation dialog,
+/// and therefore require the bearer token? True iff `method == "tools/call"` AND either:
+///   - the tool is `delete`/`move`/`copy` with `arguments.autoConfirm == true`, OR
+///   - the tool is `dialog` with `arguments.action == "confirm"`.
+///
+/// Everything else (resource reads, nav, search, and destructive ops that STILL pop the
+/// dialog) returns false and needs no token. `autoConfirm` and `action` live under
+/// `params.arguments`. No I/O, so it's directly unit-testable.
+pub fn tool_call_requires_token(method: &str, params: &Value) -> bool {
+    if method != "tools/call" {
+        return false;
+    }
+    let Some(name) = params.get("name").and_then(|v| v.as_str()) else {
+        return false;
+    };
+    let args = params.get("arguments");
+    match name {
+        "delete" | "move" | "copy" => args
+            .and_then(|a| a.get("autoConfirm"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false),
+        "dialog" => args.and_then(|a| a.get("action")).and_then(|v| v.as_str()) == Some("confirm"),
+        _ => false,
+    }
+}
+
+/// Validate the per-instance bearer token. This gates only the calls that bypass the
+/// user's in-app confirmation dialog (see `tool_call_requires_token`): the threat is a
+/// local non-Cmdr process silently auto-confirming a destructive op. macOS doesn't isolate
+/// loopback between processes, so `validate_origin` (browser-CSRF defense) is no barrier to
+/// a process that can set any header. The token lives in `<data_dir>/mcp.token` at 0o600,
+/// so reading it requires the user's filesystem access.
 ///
 /// Reads `Authorization: Bearer <token>`, compares against the stored token in constant
-/// time, and rejects with 401 on any miss. Fails closed if the server somehow has no
-/// token set (shouldn't happen while serving).
-pub fn validate_token(headers: &HeaderMap) -> Result<(), Box<Response>> {
-    let reject = || {
-        let error_response = McpResponse::error(None, INVALID_REQUEST, "Missing or invalid Authorization token");
-        Err(Box::new(
-            (StatusCode::UNAUTHORIZED, Json(error_response)).into_response(),
-        ))
-    };
-
+/// time, and rejects on any miss. Fails closed if the server somehow has no token set
+/// (shouldn't happen while serving). The caller wraps the `Err` into the friendly 401.
+pub fn validate_token(headers: &HeaderMap) -> Result<(), ()> {
     let Some(expected) = current_mcp_token() else {
         // Fail closed: no token set means we can't authenticate anyone.
         log::warn!(target: "mcp::server", "MCP: rejecting request, no auth token configured");
-        return reject();
+        return Err(());
     };
 
     let presented = headers
@@ -411,10 +440,43 @@ pub fn validate_token(headers: &HeaderMap) -> Result<(), Box<Response>> {
 
     if presented.is_empty() || !constant_time_eq(presented.as_bytes(), expected.as_bytes()) {
         log::warn!(target: "mcp::server", "MCP: rejected request with missing/invalid bearer token");
-        return reject();
+        return Err(());
     }
 
     Ok(())
+}
+
+/// Build the response returned when a token-gated call (destructive auto-confirm or a
+/// programmatic `dialog` confirm) arrives without a valid bearer token. The message tells
+/// the caller exactly where to get the token — both the `CMDR_MCP_TOKEN` env var and the
+/// resolved `<data_dir>/mcp.token` path. That's safe: the secret is the file's 0o600
+/// contents (and the env value), not the path, which is already discoverable. We never
+/// echo the token itself. One uniform message for missing-vs-wrong token (no oracle).
+///
+/// Returns the rejection in the EXACT shape of a normal tool error (the path the
+/// `nav_to_path` "path does not exist" error takes), so clients render it as
+/// `MCP error -32602: <message>` and resolve their pending call. Two things matter:
+///
+/// 1. **Echo the request's `id`.** A JSON-RPC response with `id: null` can't be correlated
+///    to a pending request, so the client never resolves it and the tool call HANGS. The
+///    `id` must be the caller's request id.
+/// 2. **HTTP 200 + code `INVALID_PARAMS`, not 401 / `INVALID_REQUEST`.** The MCP
+///    Streamable-HTTP spec reserves HTTP 401 for an OAuth challenge (a 401 makes clients
+///    launch OAuth discovery and surface "Invalid OAuth error response"), and `-32600`
+///    (Invalid Request) signals a malformed request envelope, which clients may treat as a
+///    protocol desync. `-32602` at HTTP 200 is the same per-call error shape the executor's
+///    `ToolError` uses, which clients handle cleanly. Our bearer gate is not OAuth and the
+///    request envelope is valid, so it must look like an ordinary tool error.
+fn auto_confirm_token_required_response<R: Runtime>(app: &AppHandle<R>, id: Option<Value>) -> Response {
+    let token_path = match crate::config::resolved_app_data_dir(app) {
+        Ok(dir) => dir.join(TOKEN_FILE_NAME).display().to_string(),
+        Err(_) => "<data_dir>/mcp.token".to_string(),
+    };
+    let message = format!(
+        "This tool auto-confirms a destructive file operation, which requires the Cmdr MCP auth token. Send it as an `Authorization: Bearer <token>` header. Get the token from the `CMDR_MCP_TOKEN` environment variable of the running Cmdr, or read `{token_path}` (owner-only). Reads, navigation, search, and destructive ops that prompt you in the app all work without it."
+    );
+    let error_response = McpResponse::error(id, INVALID_PARAMS, message);
+    (StatusCode::OK, Json(error_response)).into_response()
 }
 
 /// Check if an origin is a localhost origin (prevents DNS rebinding attacks).
@@ -507,10 +569,8 @@ async fn handle_mcp_get(headers: HeaderMap) -> Response {
         return *response;
     }
 
-    // Validate the per-instance bearer token (the real local-process gate)
-    if let Err(response) = validate_token(&headers) {
-        return *response;
-    }
+    // No token gate on the SSE stream: GET carries no tool call, so it can't bypass a
+    // confirmation dialog. The token is enforced per-request in the POST handler only.
 
     // For backwards compatibility with 2024-11-05 transport, we send an SSE stream
     // that starts with an 'endpoint' event pointing to the same URL for POST
@@ -585,9 +645,11 @@ async fn handle_mcp_post<R: Runtime>(
         return *response;
     }
 
-    // 1b. Validate the per-instance bearer token (the real local-process gate)
-    if let Err(response) = validate_token(&headers) {
-        return *response;
+    // 1b. Token gate, but only for calls that bypass the user's confirmation dialog
+    // (destructive auto-confirm + programmatic dialog confirm). Reads, nav, search, and
+    // destructive ops that still prompt the user all pass without a token.
+    if tool_call_requires_token(&request.method, &request.params) && validate_token(&headers).is_err() {
+        return auto_confirm_token_required_response(&state.app, request.id.clone());
     }
 
     // 2. Validate Accept header (recommended but we're lenient)
@@ -910,6 +972,66 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(header::AUTHORIZATION, HeaderValue::from_static("Bearer anything"));
         assert!(validate_token(&headers).is_err());
+    }
+
+    // ── tool_call_requires_token predicate ───────────────────────────────────
+    // The token is required only for calls that bypass the user's in-app confirmation
+    // dialog: destructive ops with autoConfirm, and a programmatic dialog confirm.
+
+    fn params_with(name: &str, arguments: Value) -> Value {
+        json!({"name": name, "arguments": arguments})
+    }
+
+    #[test]
+    fn requires_token_delete_autoconfirm() {
+        let p = params_with("delete", json!({"autoConfirm": true}));
+        assert!(tool_call_requires_token("tools/call", &p));
+    }
+
+    #[test]
+    fn requires_token_move_autoconfirm() {
+        let p = params_with("move", json!({"autoConfirm": true}));
+        assert!(tool_call_requires_token("tools/call", &p));
+    }
+
+    #[test]
+    fn requires_token_copy_autoconfirm() {
+        let p = params_with("copy", json!({"autoConfirm": true}));
+        assert!(tool_call_requires_token("tools/call", &p));
+    }
+
+    #[test]
+    fn no_token_delete_without_autoconfirm() {
+        let p = params_with("delete", json!({}));
+        assert!(!tool_call_requires_token("tools/call", &p));
+        let p2 = params_with("delete", json!({"autoConfirm": false}));
+        assert!(!tool_call_requires_token("tools/call", &p2));
+    }
+
+    #[test]
+    fn requires_token_dialog_confirm() {
+        let p = params_with("dialog", json!({"action": "confirm"}));
+        assert!(tool_call_requires_token("tools/call", &p));
+    }
+
+    #[test]
+    fn no_token_dialog_open() {
+        let p = params_with("dialog", json!({"action": "open"}));
+        assert!(!tool_call_requires_token("tools/call", &p));
+    }
+
+    #[test]
+    fn no_token_read_nav_tools() {
+        let nav = params_with("nav_to_path", json!({"pane": "left", "path": "/Users"}));
+        assert!(!tool_call_requires_token("tools/call", &nav));
+        let search = params_with("search", json!({"pattern": "*.pdf"}));
+        assert!(!tool_call_requires_token("tools/call", &search));
+    }
+
+    #[test]
+    fn no_token_resources_read_method() {
+        let p = json!({"uri": "cmdr://state"});
+        assert!(!tool_call_requires_token("resources/read", &p));
     }
 
     #[test]
