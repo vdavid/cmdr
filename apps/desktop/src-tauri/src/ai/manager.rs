@@ -462,16 +462,23 @@ pub fn configure_ai<R: Runtime>(
     cloud_api_key: String,
     cloud_base_url: String,
     cloud_model: String,
-) {
+) -> Result<(), String> {
     log::debug!(
         "AI configure: provider={provider}, context_size={context_size}, base_url={cloud_base_url}, model={cloud_model}"
     );
+
+    // Guard the BYOK key against plaintext exfiltration before we store config that
+    // suggestions.rs / search will later send with an Authorization header. Only
+    // enforced for the cloud provider with a non-empty base URL.
+    if provider == "cloud" && !cloud_base_url.is_empty() {
+        validate_ai_base_url(&cloud_base_url, &cloud_api_key)?;
+    }
 
     // Single lock: decide, stop, spawn (no race window for orphan processes)
     let spawn_result;
     {
         let mut manager = MANAGER.lock_ignore_poison();
-        let Some(ref mut m) = *manager else { return };
+        let Some(ref mut m) = *manager else { return Ok(()) };
 
         // Stop server if switching away from local while one is running
         if provider != "local"
@@ -527,6 +534,8 @@ pub fn configure_ai<R: Runtime>(
             }
         });
     }
+
+    Ok(())
 }
 
 /// Stops the local llama-server without uninstalling.
@@ -618,6 +627,17 @@ pub struct AiConnectionCheckResult {
 #[tauri::command]
 #[specta::specta]
 pub async fn check_ai_connection(base_url: String, api_key: String) -> AiConnectionCheckResult {
+    // Same plaintext-key guard as `configure_ai`: never send the BYOK key over
+    // `http://` to a non-loopback host.
+    if let Err(message) = validate_ai_base_url(&base_url, &api_key) {
+        return AiConnectionCheckResult {
+            connected: false,
+            auth_error: false,
+            models: vec![],
+            error: Some(message),
+        };
+    }
+
     let url = format!("{}/models", base_url.trim_end_matches('/'));
 
     let client = match reqwest::Client::builder()
@@ -695,6 +715,48 @@ pub async fn check_ai_connection(base_url: String, api_key: String) -> AiConnect
         models: vec![],
         error: Some(format!("HTTP {status}: {body_preview}")),
     }
+}
+
+/// Validates a cloud-AI base URL before we attach the BYOK API key to a request.
+///
+/// We attach the key as an `Authorization: Bearer ...` header. Sending that over
+/// plaintext `http://` to a host we don't control would leak the secret on the
+/// wire, so we require `https://` unless the host is loopback. Loopback `http://`
+/// stays allowed because the Ollama / LM Studio presets are `http://localhost:*`.
+///
+/// An empty `api_key` means there's no secret to leak, so plaintext to any host is
+/// fine (used for local OpenAI-compatible servers that don't require auth).
+///
+/// Never logs `api_key`.
+fn validate_ai_base_url(url: &str, api_key: &str) -> Result<(), String> {
+    let parsed = reqwest::Url::parse(url).map_err(|_| String::from("That endpoint URL doesn't look valid."))?;
+
+    match parsed.scheme() {
+        "https" => Ok(()),
+        "http" => {
+            if api_key.is_empty() || host_is_loopback(&parsed) {
+                Ok(())
+            } else {
+                Err(String::from(
+                    "We only send your API key over HTTPS — use https:// or clear the key first.",
+                ))
+            }
+        }
+        _ => Err(String::from("That endpoint URL doesn't look valid.")),
+    }
+}
+
+/// True when the URL's host is a loopback address (`localhost`, `127.0.0.1`, `::1`).
+fn host_is_loopback(parsed: &reqwest::Url) -> bool {
+    let Some(host) = parsed.host_str() else {
+        return false;
+    };
+    if host.eq_ignore_ascii_case("localhost") {
+        return true;
+    }
+    // `host_str()` returns IPv6 hosts wrapped in brackets, e.g. `[::1]`.
+    let bare = host.strip_prefix('[').and_then(|h| h.strip_suffix(']')).unwrap_or(host);
+    bare.parse::<std::net::IpAddr>().map(|ip| ip.is_loopback()).unwrap_or(false)
 }
 
 /// Parses model IDs from an OpenAI-compatible /models response.
@@ -1017,6 +1079,41 @@ fn cleanup_failed_server(pid: u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn validate_url_allows_https() {
+        assert!(validate_ai_base_url("https://api.openai.com/v1", "sk-secret").is_ok());
+        assert!(validate_ai_base_url("https://api.openai.com/v1", "").is_ok());
+    }
+
+    #[test]
+    fn validate_url_allows_http_loopback() {
+        // Ollama / LM Studio presets, with or without a key.
+        assert!(validate_ai_base_url("http://localhost:11434/v1", "key").is_ok());
+        assert!(validate_ai_base_url("http://127.0.0.1:1234/v1", "key").is_ok());
+        assert!(validate_ai_base_url("http://[::1]:8080/v1", "key").is_ok());
+        assert!(validate_ai_base_url("http://localhost:11434/v1", "").is_ok());
+    }
+
+    #[test]
+    fn validate_url_rejects_http_remote_with_key() {
+        assert!(validate_ai_base_url("http://api.openai.com/v1", "sk-secret").is_err());
+        assert!(validate_ai_base_url("http://10.0.0.5:1234/v1", "key").is_err());
+    }
+
+    #[test]
+    fn validate_url_allows_http_remote_without_key() {
+        // No secret to leak, so plaintext to a remote host is allowed.
+        assert!(validate_ai_base_url("http://api.openai.com/v1", "").is_ok());
+        assert!(validate_ai_base_url("http://10.0.0.5:1234/v1", "").is_ok());
+    }
+
+    #[test]
+    fn validate_url_rejects_garbage() {
+        assert!(validate_ai_base_url("not a url", "key").is_err());
+        assert!(validate_ai_base_url("ftp://example.com", "key").is_err());
+        assert!(validate_ai_base_url("", "key").is_err());
+    }
 
     #[test]
     fn test_default_ai_state() {
