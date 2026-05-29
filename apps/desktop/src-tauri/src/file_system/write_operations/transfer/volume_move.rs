@@ -13,19 +13,18 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
+use super::super::helpers::ApplyToAll;
 use super::super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,
 };
 use super::super::types::{
-    OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
-    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
-    WriteOperationType,
+    OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
 };
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
     build_pre_skip_set, drive_transfer_serial_async, make_serial_per_file_progress,
 };
-use super::super::helpers::ApplyToAll;
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
 use super::volume_preflight::{SourceHint, scan_volume_sources};

@@ -11,7 +11,7 @@ use super::macos_copy::copy_symlink;
 
 use super::super::helpers::{
     ApplyToAll, find_unique_name, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable,
-    spawn_async_sync, validate_disk_space, validate_path_length,
+    safe_overwrite_dir, spawn_async_sync, validate_disk_space, validate_path_length,
 };
 use super::super::scan::{
     SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path,
@@ -630,29 +630,27 @@ pub(super) fn copy_single_item(
                     apply_to_all_resolution,
                 )? {
                     Some(resolved) if resolved.needs_safe_overwrite => {
-                        // Overwrite: rename blocking file to backup, create directory, then delete backup.
-                        // This is safe: if create_dir_all fails, we can restore the backup.
-                        let backup_path = blocking.with_extension(format!(
-                            "{}.cmdr-backup-{}",
-                            blocking
-                                .extension()
-                                .map(|e| e.to_string_lossy().to_string())
-                                .unwrap_or_default(),
-                            uuid::Uuid::new_v4()
-                        ));
-                        fs::rename(&blocking, &backup_path).with_path(&blocking)?;
-
-                        if let Err(e) = fs::create_dir_all(parent) {
-                            // Restore backup on failure
-                            let _ = fs::rename(&backup_path, &blocking);
-                            return Err(WriteOperationError::IoError {
-                                path: parent.display().to_string(),
+                        // Folder→file overwrite at a parent-creation site: the dest tree wants a
+                        // directory at `blocking` but a file is there. Route through
+                        // `safe_overwrite_dir` so the dest file is renamed aside, the directory
+                        // is created in its place, and on `create_dir_all` failure the aside is
+                        // rolled back. The whole subtree the caller still needs to populate is
+                        // created lazily by subsequent iterations.
+                        safe_overwrite_dir(&blocking, |target| {
+                            fs::create_dir_all(target).map_err(|e| WriteOperationError::IoError {
+                                path: target.display().to_string(),
                                 message: format!("Failed to create directory after removing blocking file: {}", e),
-                            });
-                        }
-
-                        // Directory created successfully; delete backup in background
-                        super::super::helpers::remove_file_in_background(backup_path);
+                            })?;
+                            // Honor the caller's full parent chain (we may have been called
+                            // for a deeper blocker than `target == parent`).
+                            if parent != target {
+                                fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
+                                    path: parent.display().to_string(),
+                                    message: format!("Failed to create child directory: {}", e),
+                                })?;
+                            }
+                            Ok(())
+                        })?;
                         log::debug!(
                             "copy: replaced file with directory at {} (type mismatch)",
                             blocking.display()
@@ -741,32 +739,42 @@ pub(super) fn copy_single_item(
         // Validate destination path length limits
         validate_path_length(&actual_dest)?;
 
-        if needs_safe_overwrite {
-            if actual_dest.is_dir() {
-                fs::remove_dir_all(&actual_dest).with_path(&actual_dest)?;
-            } else {
+        // Materializer closure: create the symlink at the target path.
+        let source_for_symlink = source.to_path_buf();
+        let create_symlink = |target: &Path| -> Result<(), WriteOperationError> {
+            // Register the symlink destination with the downloads watcher's
+            // ignore set before issuing the syscall; no-ops outside ~/Downloads.
+            crate::downloads::note_pending_write_for_cmdr(target);
+            #[cfg(target_os = "macos")]
+            {
+                copy_symlink(&source_for_symlink, target)?;
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                let link_target = fs::read_link(&source_for_symlink).map_err(|e| WriteOperationError::IoError {
+                    path: source_for_symlink.display().to_string(),
+                    message: format!("Failed to read symlink: {}", e),
+                })?;
+                std::os::unix::fs::symlink(&link_target, target).map_err(|e| WriteOperationError::IoError {
+                    path: target.display().to_string(),
+                    message: format!("Failed to create symlink: {}", e),
+                })?;
+            }
+            Ok(())
+        };
+
+        if needs_safe_overwrite && actual_dest.is_dir() {
+            // File→folder overwrite for the symlink branch: route the existing
+            // dest folder through `safe_overwrite_dir` so a mid-delete crash
+            // can't lose the folder. Pre-fix this branch did a direct
+            // `fs::remove_dir_all` then created the symlink, which had no
+            // crash-recoverable intermediate state.
+            safe_overwrite_dir(&actual_dest, create_symlink)?;
+        } else {
+            if needs_safe_overwrite {
                 fs::remove_file(&actual_dest).with_path(&actual_dest)?;
             }
-        }
-
-        // Register the symlink destination with the downloads watcher's
-        // ignore set before issuing the syscall; no-ops outside ~/Downloads.
-        crate::downloads::note_pending_write_for_cmdr(&actual_dest);
-
-        #[cfg(target_os = "macos")]
-        {
-            copy_symlink(source, &actual_dest)?;
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            let target = fs::read_link(source).map_err(|e| WriteOperationError::IoError {
-                path: source.display().to_string(),
-                message: format!("Failed to read symlink: {}", e),
-            })?;
-            std::os::unix::fs::symlink(&target, &actual_dest).map_err(|e| WriteOperationError::IoError {
-                path: actual_dest.display().to_string(),
-                message: format!("Failed to create symlink: {}", e),
-            })?;
+            create_symlink(&actual_dest)?;
         }
 
         transaction.record_file(actual_dest);

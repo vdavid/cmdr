@@ -7,16 +7,16 @@ use std::sync::Arc;
 
 use super::super::helpers::{
     ApplyToAll, is_same_filesystem, path_exists_or_is_symlink, remove_dir_all_in_background, resolve_conflict,
-    spawn_async_sync,
+    safe_overwrite_dir, spawn_async_sync,
 };
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use super::super::types::{
-    IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
-    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
-    WriteProgressEvent, WriteSourceItemDoneEvent,
+    IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 };
 use super::copy::copy_single_item;
 
@@ -168,8 +168,28 @@ fn move_with_rename(
                         // is also suppressed. No-ops outside ~/Downloads.
                         crate::downloads::note_pending_write_for_cmdr(source);
                         crate::downloads::note_pending_write_for_cmdr(&resolved.path);
-                        fs::rename(source, &resolved.path).with_path(source)?;
-                        move_tx.record(source.clone(), resolved.path);
+                        // Type-mismatch overwrite: a plain `rename(2)` from a file source onto
+                        // a directory dest (or vice versa) fails. Route through
+                        // `safe_overwrite_dir` so the dest is renamed aside, the source is
+                        // moved into place inside the closure, and the aside is removed on
+                        // success / rolled back on failure.
+                        let source_is_dir = source.is_dir();
+                        let dest_is_dir = resolved.path.is_dir();
+                        let type_mismatch = resolved.needs_safe_overwrite && (source_is_dir != dest_is_dir);
+                        if type_mismatch {
+                            let source_path = source.clone();
+                            let resolved_path = resolved.path.clone();
+                            safe_overwrite_dir(&resolved.path, |target| {
+                                fs::rename(&source_path, target).map_err(|e| WriteOperationError::IoError {
+                                    path: source_path.display().to_string(),
+                                    message: format!("Failed to rename across types: {}", e),
+                                })
+                            })?;
+                            move_tx.record(source.clone(), resolved_path);
+                        } else {
+                            fs::rename(source, &resolved.path).with_path(source)?;
+                            move_tx.record(source.clone(), resolved.path);
+                        }
                     }
                     None => {
                         // Skip this file
@@ -300,8 +320,23 @@ fn merge_move_directory(
                     // halves of the rename; no-ops outside ~/Downloads.
                     crate::downloads::note_pending_write_for_cmdr(&source_child);
                     crate::downloads::note_pending_write_for_cmdr(&resolved.path);
-                    fs::rename(&source_child, &resolved.path).with_path(&source_child)?;
-                    move_tx.record(source_child, resolved.path);
+                    let source_is_dir = source_child.is_dir();
+                    let dest_is_dir = resolved.path.is_dir();
+                    let type_mismatch = resolved.needs_safe_overwrite && (source_is_dir != dest_is_dir);
+                    if type_mismatch {
+                        let source_path = source_child.clone();
+                        let resolved_path = resolved.path.clone();
+                        safe_overwrite_dir(&resolved.path, |target| {
+                            fs::rename(&source_path, target).map_err(|e| WriteOperationError::IoError {
+                                path: source_path.display().to_string(),
+                                message: format!("Failed to rename across types: {}", e),
+                            })
+                        })?;
+                        move_tx.record(source_child, resolved_path);
+                    } else {
+                        fs::rename(&source_child, &resolved.path).with_path(&source_child)?;
+                        move_tx.record(source_child, resolved.path);
+                    }
                 }
                 None => {
                     // Skip: source file stays in place

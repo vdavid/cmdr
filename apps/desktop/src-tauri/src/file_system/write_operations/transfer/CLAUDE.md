@@ -40,6 +40,11 @@ Frontend counterpart: [`apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`
 
 **Intentional duplication: `merge_move_directory` vs `copy_single_item`.** Both implement recursive merge with conflict resolution, but differ in every detail: copy has progress tracking, symlink handling, byte counting, strategy selection, and `CopyTransaction` recording. Move uses simple `fs::rename`. A shared abstraction would be forced and fragile. Cross-references are in the doc comments of both functions.
 
+**Cross-type overwrites (file↔folder).** Both copy and move route Overwrite-with-type-mismatch through `helpers::safe_overwrite_dir`:
+- Local copy `copy_single_item`'s parent-creation site: when the source tree wants a directory at a path holding a file (folder→file overwrite), the closure does `create_dir_all` while the helper sets the file aside as `<name>.cmdr-temp-<uuid>`. The symlink branch's file→folder overwrite goes through the same helper.
+- Local move `move_with_rename` / `merge_move_directory`: when `resolve_conflict` returns Overwrite for a type-mismatched pair, the closure does `fs::rename(source, target)`.
+- Volume copy/move via `volume_conflict::apply_volume_conflict_resolution`: directories can't temp-rename across backends, so cross-type Overwrite deletes the dest first (`delete_volume_path_recursive` for folder dests, `Volume::delete` for file dests) before the streaming writer / recursive copy lands the source. Same-type dir-vs-dir still skips the delete to honor the merge-not-replace guarantee. Pinned by `volume_copy_tests::test_volume_overwrite_{file_over_existing_folder,folder_over_existing_file}`.
+
 **Copy strategy selection** (`copy_strategy.rs`):
 - macOS, same APFS volume → `copyfile(3)` with `COPYFILE_CLONE` for instant clonefile
 - macOS, everything else → `chunked_copy_with_metadata` (1 MB chunks, cancellation between chunks)

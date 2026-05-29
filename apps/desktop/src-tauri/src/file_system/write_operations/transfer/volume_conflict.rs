@@ -52,7 +52,8 @@ pub(super) async fn resolve_volume_conflict(
     let is_file_to_folder = !source_is_directory && destination_is_directory;
 
     // Determine effective conflict resolution
-    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder) {
+    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder)
+    {
         // Use saved "apply to all" resolution
         saved_resolution
     } else {
@@ -146,7 +147,7 @@ pub(super) async fn resolve_volume_conflict(
                         dest_size,
                     )
                     .await;
-                    apply_volume_conflict_resolution(effective, dest_volume, dest_path).await
+                    apply_volume_conflict_resolution(effective, dest_volume, dest_path, source_is_directory).await
                 }
                 Err(_) => {
                     // Sender dropped = operation cancelled
@@ -158,10 +159,17 @@ pub(super) async fn resolve_volume_conflict(
         }
         ConflictResolution::Skip => Ok(None),
         ConflictResolution::Overwrite => {
-            apply_volume_conflict_resolution(ConflictResolution::Overwrite, dest_volume, dest_path).await
+            apply_volume_conflict_resolution(
+                ConflictResolution::Overwrite,
+                dest_volume,
+                dest_path,
+                source_is_directory,
+            )
+            .await
         }
         ConflictResolution::Rename => {
-            apply_volume_conflict_resolution(ConflictResolution::Rename, dest_volume, dest_path).await
+            apply_volume_conflict_resolution(ConflictResolution::Rename, dest_volume, dest_path, source_is_directory)
+                .await
         }
         ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
             let effective = reduce_volume_conditional_resolution(
@@ -174,7 +182,7 @@ pub(super) async fn resolve_volume_conflict(
                 dest_size_hint,
             )
             .await;
-            apply_volume_conflict_resolution(effective, dest_volume, dest_path).await
+            apply_volume_conflict_resolution(effective, dest_volume, dest_path, source_is_directory).await
         }
     }
 }
@@ -268,6 +276,7 @@ async fn apply_volume_conflict_resolution(
     resolution: ConflictResolution,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
+    source_is_directory: bool,
 ) -> Result<Option<PathBuf>, WriteOperationError> {
     match resolution {
         ConflictResolution::Stop => {
@@ -282,11 +291,16 @@ async fn apply_volume_conflict_resolution(
             //
             // - For files: delete the dest first so the streaming writer lands a fresh copy. Same-named files
             //   in dest get genuinely replaced, byte-for-byte.
-            // - For directories: SKIP the delete entirely. The recursive copy will merge into the existing
+            // - For directories (same type): SKIP the delete entirely. The recursive copy merges into the existing
             //   tree; same-named files inside get overwritten by the streaming writers, files in dest that
             //   aren't in source are preserved.
+            // - For cross-type clashes (file→folder or folder→file): the dest type is wrong, so we
+            //   must delete it before the source materializes. There's no volume-level temp+rename
+            //   atomicity (cross-backend), so a recursive delete is the best we can do; backends
+            //   that support it (LocalPosix, MTP, SMB) handle the delete safely under their own
+            //   semantics.
             //
-            // The dir branch is enforced HERE rather than relying on `Volume::delete`'s
+            // The same-type dir branch is enforced HERE rather than relying on `Volume::delete`'s
             // "file or empty directory" trait contract. Today every backend honors
             // that contract (delete of a non-empty dir fails benignly), but a future
             // backend with recursive delete semantics, or a refactor that consolidates
@@ -296,15 +310,28 @@ async fn apply_volume_conflict_resolution(
             // emergent. See `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`
             // in the test module; it pins this with a wrapper Volume that violates
             // the contract.
-            let is_dir = dest_volume.is_directory(dest_path).await.unwrap_or(false);
-            if !is_dir && let Err(e) = dest_volume.delete(dest_path).await {
-                log::warn!(
-                    "apply_volume_conflict_resolution(Overwrite): delete of file {} failed: {}",
-                    dest_path.display(),
-                    e
-                );
-                // Continue: the streaming writer might still succeed if the failure
-                // was transient.
+            let dest_is_dir = dest_volume.is_directory(dest_path).await.unwrap_or(false);
+            let same_type_dir = dest_is_dir && source_is_directory;
+            if !same_type_dir {
+                // Cross-type or both-files: clear the dest first.
+                if dest_is_dir {
+                    // File→folder overwrite: recursively delete the dest folder.
+                    if let Err(e) = super::volume_copy::delete_volume_path_recursive(dest_volume, dest_path).await {
+                        log::warn!(
+                            "apply_volume_conflict_resolution(Overwrite): recursive delete of folder {} failed: {}",
+                            dest_path.display(),
+                            e
+                        );
+                    }
+                } else if let Err(e) = dest_volume.delete(dest_path).await {
+                    log::warn!(
+                        "apply_volume_conflict_resolution(Overwrite): delete of file {} failed: {}",
+                        dest_path.display(),
+                        e
+                    );
+                    // Continue: the streaming writer might still succeed if the failure
+                    // was transient.
+                }
             }
             Ok(Some(dest_path.to_path_buf()))
         }
@@ -442,11 +469,15 @@ mod tests {
             inner: Arc::clone(&inner),
         });
 
-        // Resolve an Overwrite conflict for `/photos`.
-        let result =
-            apply_volume_conflict_resolution(ConflictResolution::Overwrite, &dest_recursive, Path::new("/photos"))
-                .await
-                .unwrap();
+        // Resolve an Overwrite conflict for `/photos` (source is also a directory).
+        let result = apply_volume_conflict_resolution(
+            ConflictResolution::Overwrite,
+            &dest_recursive,
+            Path::new("/photos"),
+            true,
+        )
+        .await
+        .unwrap();
 
         // The resolver should hand back the same path (caller will write to it).
         assert_eq!(result, Some(PathBuf::from("/photos")));
@@ -479,7 +510,7 @@ mod tests {
         let dest_dyn: Arc<dyn Volume> = dest.clone();
 
         let result =
-            apply_volume_conflict_resolution(ConflictResolution::Overwrite, &dest_dyn, Path::new("/notes.txt"))
+            apply_volume_conflict_resolution(ConflictResolution::Overwrite, &dest_dyn, Path::new("/notes.txt"), false)
                 .await
                 .unwrap();
 

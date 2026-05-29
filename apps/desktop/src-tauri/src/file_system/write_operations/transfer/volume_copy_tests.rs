@@ -888,6 +888,98 @@ async fn test_multi_file_copy_overwrite_conflict() {
     assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"new version");
 }
 
+/// File→folder overwrite (volume copy): source is a file, dest holds a folder
+/// at the same path. Picking Overwrite must delete the dest folder (recursively)
+/// before the streaming writer lands the source file, otherwise the writer
+/// fails or no-ops because the path isn't writable as a file.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_volume_overwrite_file_over_existing_folder() {
+    let (source, dest) = make_volumes();
+
+    source
+        .create_file(Path::new("/clash"), b"I am the new file")
+        .await
+        .unwrap();
+    // Dest is a folder with children at the same path
+    dest.create_directory(Path::new("/clash")).await.unwrap();
+    dest.create_file(Path::new("/clash/inner.txt"), b"inner").await.unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-file-over-folder",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/clash")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "copy should succeed: {:?}", result);
+    // Old folder + its child gone, replaced by the source's file bytes
+    assert!(
+        !dest.is_directory(Path::new("/clash")).await.unwrap_or(false),
+        "dest should no longer be a directory"
+    );
+    let mut stream = dest.open_read_stream(Path::new("/clash")).await.unwrap();
+    assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"I am the new file");
+    assert!(!dest.exists(Path::new("/clash/inner.txt")).await);
+}
+
+/// Folder→file overwrite (volume copy): source is a folder, dest is a file at
+/// the same path. Overwrite must delete the dest file before the recursive
+/// copy creates the directory tree.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_volume_overwrite_folder_over_existing_file() {
+    let (source, dest) = make_volumes();
+
+    source.create_directory(Path::new("/clash")).await.unwrap();
+    source
+        .create_file(Path::new("/clash/inside.txt"), b"inside content")
+        .await
+        .unwrap();
+    // Dest is a file at the same top-level path
+    dest.create_file(Path::new("/clash"), b"i am the old file")
+        .await
+        .unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-folder-over-file",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/clash")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "copy should succeed: {:?}", result);
+    // Dest is now a directory containing the source's file
+    assert!(
+        dest.is_directory(Path::new("/clash")).await.unwrap_or(false),
+        "dest should now be a directory"
+    );
+    let mut stream = dest.open_read_stream(Path::new("/clash/inside.txt")).await.unwrap();
+    assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"inside content");
+}
+
 /// Skipped files must count toward `files_processed` and bump `bytes_done` by the
 /// source's size, so the progress bar reflects them. Before this fix, "Skip all"
 /// silently ran through dozens of conflicts with the bar pinned at 0%, even though

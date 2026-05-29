@@ -27,21 +27,21 @@ use uuid::Uuid;
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
+use super::super::helpers::ApplyToAll;
 use super::super::state::{
     OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, load_intent, register_operation_status,
     unregister_operation_status, update_operation_status,
 };
 use super::super::types::{
-    OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult,
-    WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
+    OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent,
+    WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase,
+    WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
     build_pre_skip_set, drive_transfer_serial_async, make_concurrent_per_file_progress, make_serial_per_file_progress,
 };
 use super::volume_conflict::resolve_volume_conflict;
-use super::super::helpers::ApplyToAll;
 use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{SourceItemInfo, Volume, VolumeError};

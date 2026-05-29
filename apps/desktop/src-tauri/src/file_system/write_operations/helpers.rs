@@ -58,7 +58,7 @@ pub(super) struct ApplyToAll {
 /// the safe variants.
 pub(super) fn apply_to_all_effective(state: &ApplyToAll, is_file_to_folder: bool) -> Option<ConflictResolution> {
     if is_file_to_folder {
-        state.file_to_folder.or_else(|| match state.normal {
+        state.file_to_folder.or(match state.normal {
             Some(r @ (ConflictResolution::Skip | ConflictResolution::Rename)) => Some(r),
             _ => None,
         })
@@ -465,12 +465,16 @@ pub(super) fn resolve_conflict(
     let source_meta = fs::metadata(source).ok();
     let dest_meta = fs::metadata(dest_path).ok();
     let is_file_to_folder = matches!(
-        (source_meta.as_ref().map(|m| m.is_dir()), dest_meta.as_ref().map(|m| m.is_dir())),
+        (
+            source_meta.as_ref().map(|m| m.is_dir()),
+            dest_meta.as_ref().map(|m| m.is_dir())
+        ),
         (Some(false), Some(true)),
     );
 
     // Determine effective conflict resolution
-    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder) {
+    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder)
+    {
         // Use saved "apply to all" resolution
         saved_resolution
     } else if config.overwrite {
@@ -707,11 +711,19 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
 ///
 /// Steps:
 /// 1. Copy source to `dest.cmdr-tmp-{uuid}` (temp file in same directory)
-/// 2. Rename original dest to `dest.cmdr-backup-{uuid}`
+/// 2. Rename original dest to `dest.cmdr-temp-{uuid}` (aside)
 /// 3. Rename temp to final dest path
-/// 4. Delete backup
+/// 4. Delete the renamed-aside original
 ///
 /// If any step fails before step 3 completes, the original dest is intact.
+///
+/// **File→folder overwrite (incoming source file, existing dest folder).**
+/// Local FS `rename(2)` happily swaps a directory aside under a new name, and
+/// the streaming writer lands the source file at the original path. The aside
+/// is then removed via `remove_dir_all`. The window during which the original
+/// directory is gone-but-replaceable is bounded by step 3 (a single `rename`
+/// syscall). A crash between step 2 and step 3 leaves a stray
+/// `dest.cmdr-temp-<uuid>/` that a user can recognize and restore from.
 pub(super) fn safe_overwrite_file(
     source: &Path,
     dest: &Path,
@@ -725,7 +737,7 @@ pub(super) fn safe_overwrite_file(
         .unwrap_or_default();
 
     let temp_path = parent.join(format!("{}.cmdr-tmp-{}", file_name, uuid));
-    let backup_path = parent.join(format!("{}.cmdr-backup-{}", file_name, uuid));
+    let aside_path = parent.join(format!("{}.cmdr-temp-{}", file_name, uuid));
 
     // Step 1: Copy source to temp
     #[cfg(target_os = "macos")]
@@ -733,20 +745,20 @@ pub(super) fn safe_overwrite_file(
     #[cfg(not(target_os = "macos"))]
     let bytes = fs::copy(source, &temp_path).with_path(source)?;
 
-    // Step 2: Rename original dest to backup
-    if let Err(e) = fs::rename(dest, &backup_path) {
-        // Failed to backup - clean up temp and return error
+    // Step 2: Rename original dest aside
+    if let Err(e) = fs::rename(dest, &aside_path) {
+        // Failed to rename aside - clean up temp and return error
         let _ = fs::remove_file(&temp_path);
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
-            message: format!("Failed to backup existing file: {}", e),
+            message: format!("Failed to set aside existing destination: {}", e),
         });
     }
 
     // Step 3: Rename temp to final dest
     if let Err(e) = fs::rename(&temp_path, dest) {
-        // Failed to rename - restore backup and clean up
-        let _ = fs::rename(&backup_path, dest);
+        // Failed to rename - restore aside and clean up
+        let _ = fs::rename(&aside_path, dest);
         let _ = fs::remove_file(&temp_path);
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
@@ -754,15 +766,107 @@ pub(super) fn safe_overwrite_file(
         });
     }
 
-    // Step 4: Delete backup (non-critical, ignore errors)
-    // Use remove_dir_all for directory backups (type mismatch: file overwrites directory)
-    if backup_path.is_dir() {
-        let _ = fs::remove_dir_all(&backup_path);
+    // Step 4: Delete the renamed-aside original (non-critical, ignore errors).
+    // Use remove_dir_all for directory asides (file-over-folder overwrite).
+    if aside_path.is_dir() {
+        let _ = fs::remove_dir_all(&aside_path);
     } else {
-        let _ = fs::remove_file(&backup_path);
+        let _ = fs::remove_file(&aside_path);
     }
 
     Ok(bytes)
+}
+
+/// Performs a safe overwrite of `dest` by setting the existing entry aside
+/// under `dest.cmdr-temp-{uuid}`, then running the caller's `materialize`
+/// closure to land the new content at `dest`. On materialize failure or
+/// cancellation the aside is rolled back, restoring the original entry.
+///
+/// The helper is type-agnostic: `dest` may hold a file or a directory before
+/// the call, and `materialize` may create either a file or a directory. The
+/// two cmdr-cross-type cases that motivated it:
+///
+/// - **Folder→file overwrite (copy/move):** source is a directory whose
+///   contents will be materialized at `dest`, which currently holds a file.
+///   The closure creates a fresh directory and populates it; on success the
+///   blocking file is removed via `remove_file`.
+/// - **File→folder overwrite (copy/move):** source is a file whose bytes
+///   will be materialized at `dest`, which currently holds a directory. The
+///   closure writes the file; on success the existing folder is removed via
+///   `remove_dir_all`.
+///
+/// Steps:
+/// 1. Sets aside the existing `dest` as `dest.cmdr-temp-{uuid}` via a single
+///    `rename(2)`.
+/// 2. Runs `materialize(dest)` to land the new content. The closure decides
+///    whether `dest` becomes a file or a directory.
+/// 3. On `Ok`, removes the aside (`remove_dir_all` for directory asides,
+///    `remove_file` for file asides).
+/// 4. On `Err`, removes whatever the closure left at `dest` and renames the
+///    aside back to `dest`, then propagates the error.
+///
+/// **Atomicity guarantee:** at every observable moment after this function
+/// is called and before it returns, `dest` is either the original
+/// (untouched) or the new materialized content. The closure may briefly
+/// leave a half-written entry at `dest`, but the original is recoverable
+/// from the aside even on a crash — the aside has the recognizable
+/// `cmdr-temp-` prefix so a user can restore it by hand.
+pub(super) fn safe_overwrite_dir<F>(dest: &Path, materialize: F) -> Result<(), WriteOperationError>
+where
+    F: FnOnce(&Path) -> Result<(), WriteOperationError>,
+{
+    let uuid = Uuid::new_v4();
+    let parent = dest.parent().unwrap_or(Path::new("."));
+    let file_name = dest
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let aside_path = parent.join(format!("{}.cmdr-temp-{}", file_name, uuid));
+
+    // Step 1: Rename existing dest aside. This survives a crash: the original
+    // is recognizable on next launch and the user can rename it back by hand.
+    if let Err(e) = fs::rename(dest, &aside_path) {
+        return Err(WriteOperationError::IoError {
+            path: dest.display().to_string(),
+            message: format!("Failed to set aside existing destination: {}", e),
+        });
+    }
+
+    // Step 2: Run the caller's materialize step. The caller is responsible
+    // for creating the dest directory and populating it.
+    let materialize_result = materialize(dest);
+
+    match materialize_result {
+        Ok(()) => {
+            // Step 3: Remove the aside. Best-effort; a leftover is recognizable.
+            if aside_path.is_dir() {
+                let _ = fs::remove_dir_all(&aside_path);
+            } else {
+                let _ = fs::remove_file(&aside_path);
+            }
+            Ok(())
+        }
+        Err(e) => {
+            // Failure or cancellation: clean up whatever materialize created at
+            // dest and rename the aside back.
+            if dest.exists() {
+                if dest.is_dir() {
+                    let _ = fs::remove_dir_all(dest);
+                } else {
+                    let _ = fs::remove_file(dest);
+                }
+            }
+            if let Err(restore_err) = fs::rename(&aside_path, dest) {
+                crate::log_error!(
+                    "safe_overwrite_dir: failed to restore aside {} -> {}: {}",
+                    aside_path.display(),
+                    dest.display(),
+                    restore_err
+                );
+            }
+            Err(e)
+        }
+    }
 }
 
 /// Looks up a directory's recursive size from the drive index. Returns `None`
@@ -1455,15 +1559,7 @@ mod build_conflict_event_tests {
         let source_meta = fs::metadata(&source).unwrap();
         let dest_meta = fs::metadata(&dest).unwrap();
 
-        let event = build_conflict_event(
-            "op-3",
-            &source,
-            &dest,
-            Some(&source_meta),
-            Some(&dest_meta),
-            None,
-            None,
-        );
+        let event = build_conflict_event("op-3", &source, &dest, Some(&source_meta), Some(&dest_meta), None, None);
 
         assert!(!event.source_is_directory);
         assert!(!event.destination_is_directory);
@@ -1541,15 +1637,7 @@ mod build_conflict_event_tests {
         let source_meta = fs::metadata(&source).unwrap();
         let dest_meta = fs::metadata(&dest).unwrap();
 
-        let event = build_conflict_event(
-            "op",
-            &source,
-            &dest,
-            Some(&source_meta),
-            Some(&dest_meta),
-            None,
-            None,
-        );
+        let event = build_conflict_event("op", &source, &dest, Some(&source_meta), Some(&dest_meta), None, None);
 
         assert_eq!(event.source_size, 1);
         assert_eq!(event.destination_size, None);
@@ -1710,7 +1798,10 @@ mod apply_to_all_tests {
     fn normal_overwrite_all_stays_in_normal_bucket() {
         let mut state = fresh();
         apply_to_all_record(&mut state, false, ConflictResolution::Overwrite, true);
-        assert_eq!(apply_to_all_effective(&state, false), Some(ConflictResolution::Overwrite));
+        assert_eq!(
+            apply_to_all_effective(&state, false),
+            Some(ConflictResolution::Overwrite)
+        );
         // Does NOT spread to file-to-folder — user has to be re-prompted.
         assert_eq!(apply_to_all_effective(&state, true), None);
     }
@@ -1750,8 +1841,14 @@ mod apply_to_all_tests {
         // choices should apply to ALL types of clashes."
         let mut state = fresh();
         apply_to_all_record(&mut state, true, ConflictResolution::Overwrite, true);
-        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Overwrite));
-        assert_eq!(apply_to_all_effective(&state, false), Some(ConflictResolution::Overwrite));
+        assert_eq!(
+            apply_to_all_effective(&state, true),
+            Some(ConflictResolution::Overwrite)
+        );
+        assert_eq!(
+            apply_to_all_effective(&state, false),
+            Some(ConflictResolution::Overwrite)
+        );
     }
 
     #[test]
@@ -1768,7 +1865,10 @@ mod apply_to_all_tests {
 
         // Normal bucket keeps the original Overwrite — the new Skip is
         // file-to-folder-only.
-        assert_eq!(apply_to_all_effective(&state, false), Some(ConflictResolution::Overwrite));
+        assert_eq!(
+            apply_to_all_effective(&state, false),
+            Some(ConflictResolution::Overwrite)
+        );
         assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Skip));
     }
 
@@ -1778,7 +1878,12 @@ mod apply_to_all_tests {
         // file-to-folder clash isn't "the first" any more, so its "* all"
         // choice shouldn't spread to normal.
         let mut state = fresh();
-        apply_to_all_record(&mut state, false, ConflictResolution::Overwrite, /* apply_to_all */ false);
+        apply_to_all_record(
+            &mut state,
+            false,
+            ConflictResolution::Overwrite,
+            /* apply_to_all */ false,
+        );
 
         // Nothing latched yet.
         assert_eq!(apply_to_all_effective(&state, false), None);
@@ -1788,7 +1893,10 @@ mod apply_to_all_tests {
         // normal clash already happened, this is NOT the first clash any more
         // → don't spread.
         apply_to_all_record(&mut state, true, ConflictResolution::Overwrite, true);
-        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Overwrite));
+        assert_eq!(
+            apply_to_all_effective(&state, true),
+            Some(ConflictResolution::Overwrite)
+        );
         assert_eq!(apply_to_all_effective(&state, false), None);
     }
 
@@ -1799,6 +1907,9 @@ mod apply_to_all_tests {
         let mut state = fresh();
         apply_to_all_record(&mut state, false, ConflictResolution::Skip, true);
         apply_to_all_record(&mut state, true, ConflictResolution::Overwrite, true);
-        assert_eq!(apply_to_all_effective(&state, true), Some(ConflictResolution::Overwrite));
+        assert_eq!(
+            apply_to_all_effective(&state, true),
+            Some(ConflictResolution::Overwrite)
+        );
     }
 }

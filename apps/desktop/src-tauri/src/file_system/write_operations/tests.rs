@@ -441,14 +441,11 @@ fn test_safe_overwrite_basic() {
     assert_eq!(fs::read_to_string(&dest).unwrap(), "new-data!!");
     assert!(source.exists(), "source should still exist");
 
-    // No leftover temp/backup files
+    // No leftover temp / set-aside files
     for entry in fs::read_dir(&temp_dir).unwrap() {
         let name = entry.unwrap().file_name().to_string_lossy().to_string();
         assert!(!name.contains(".cmdr-tmp-"), "temp file should be cleaned up: {name}");
-        assert!(
-            !name.contains(".cmdr-backup-"),
-            "backup file should be cleaned up: {name}"
-        );
+        assert!(!name.contains(".cmdr-temp-"), "aside file should be cleaned up: {name}");
     }
 
     cleanup_temp_dir(&temp_dir);
@@ -533,6 +530,194 @@ fn test_safe_overwrite_different_sizes() {
 
     result.expect("small-to-large overwrite should succeed");
     assert_eq!(fs::read_to_string(&dest_large).unwrap(), "tiny");
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+// ============================================================================
+// safe_overwrite_file: cross-type overwrites (file source → folder dest)
+// ============================================================================
+
+#[test]
+fn test_safe_overwrite_file_replaces_existing_folder() {
+    // Source = file. Dest = existing folder with contents. After overwrite the
+    // dest path holds the source's bytes and the old folder tree is gone, with
+    // no stray cmdr-temp artifacts left behind. Pre-fix the caller did a direct
+    // `fs::remove_dir_all` before the copy, so a crash mid-delete would lose
+    // the folder forever.
+    let temp_dir = create_temp_dir("safe_overwrite_file_over_folder");
+    let source = temp_dir.join("source.txt");
+    let dest = temp_dir.join("dest");
+
+    fs::write(&source, "I am a file now").unwrap();
+    fs::create_dir_all(&dest).unwrap();
+    fs::write(dest.join("inner-a.txt"), "inner a").unwrap();
+    fs::write(dest.join("inner-b.txt"), "inner b").unwrap();
+    fs::create_dir_all(dest.join("sub")).unwrap();
+    fs::write(dest.join("sub").join("deep.txt"), "deep").unwrap();
+
+    #[cfg(target_os = "macos")]
+    let result = safe_overwrite_file(&source, &dest, None);
+    #[cfg(not(target_os = "macos"))]
+    let result = safe_overwrite_file(&source, &dest);
+
+    result.expect("safe_overwrite_file should succeed when dest is an existing folder");
+
+    // Dest is now a file with the source's contents
+    let dest_meta = fs::symlink_metadata(&dest).unwrap();
+    assert!(dest_meta.is_file(), "dest should be a file after overwrite");
+    assert_eq!(fs::read_to_string(&dest).unwrap(), "I am a file now");
+
+    // No cmdr-temp / cmdr-tmp artifacts remain
+    for entry in fs::read_dir(&temp_dir).unwrap() {
+        let name = entry.unwrap().file_name().to_string_lossy().to_string();
+        assert!(
+            !name.contains(".cmdr-tmp-") && !name.contains(".cmdr-temp-"),
+            "no temp / aside artifacts should remain: {name}"
+        );
+    }
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+// ============================================================================
+// safe_overwrite_dir tests (folder materialized over existing file or folder)
+// ============================================================================
+
+use super::helpers::safe_overwrite_dir;
+use super::types::WriteOperationError;
+
+#[test]
+fn test_safe_overwrite_dir_materializes_folder_over_existing_file() {
+    // Source intent = folder. Dest = existing file. After materialization the
+    // dest path is a folder containing the materialized contents, and the
+    // original file is gone with no cmdr-temp artifact left.
+    let temp_dir = create_temp_dir("safe_overwrite_dir_over_file");
+    let dest = temp_dir.join("dest");
+    fs::write(&dest, "I am the existing file").unwrap();
+
+    let result = safe_overwrite_dir(&dest, |target| {
+        fs::create_dir_all(target).map_err(|e| WriteOperationError::IoError {
+            path: target.display().to_string(),
+            message: format!("create_dir_all: {e}"),
+        })?;
+        fs::write(target.join("a.txt"), "a").map_err(|e| WriteOperationError::IoError {
+            path: target.display().to_string(),
+            message: format!("write a: {e}"),
+        })?;
+        fs::write(target.join("b.txt"), "b").map_err(|e| WriteOperationError::IoError {
+            path: target.display().to_string(),
+            message: format!("write b: {e}"),
+        })?;
+        Ok(())
+    });
+    result.expect("safe_overwrite_dir should materialize the folder");
+
+    let dest_meta = fs::symlink_metadata(&dest).unwrap();
+    assert!(dest_meta.is_dir(), "dest should be a directory after overwrite");
+    assert_eq!(fs::read_to_string(dest.join("a.txt")).unwrap(), "a");
+    assert_eq!(fs::read_to_string(dest.join("b.txt")).unwrap(), "b");
+
+    // No cmdr-temp artifacts remain in parent
+    for entry in fs::read_dir(&temp_dir).unwrap() {
+        let name = entry.unwrap().file_name().to_string_lossy().to_string();
+        assert!(
+            !name.contains(".cmdr-temp-") && !name.contains(".cmdr-tmp-"),
+            "no aside artifacts should remain: {name}"
+        );
+    }
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_safe_overwrite_dir_restores_original_on_materialize_failure() {
+    // Cancellation / materialize failure must restore the original dest. No
+    // data loss when the closure returns an error after the rename-aside step.
+    let temp_dir = create_temp_dir("safe_overwrite_dir_restore");
+    let dest = temp_dir.join("dest_folder");
+    fs::create_dir_all(&dest).unwrap();
+    fs::write(dest.join("keep-me.txt"), "do not lose this").unwrap();
+    fs::write(dest.join("also-keep.txt"), "also important").unwrap();
+
+    let result: Result<(), WriteOperationError> = safe_overwrite_dir(&dest, |target| {
+        // Pretend the caller got partway through and then was cancelled.
+        fs::create_dir_all(target).ok();
+        fs::write(target.join("partial.txt"), "half-written").ok();
+        Err(WriteOperationError::Cancelled {
+            message: "user cancelled".to_string(),
+        })
+    });
+
+    assert!(result.is_err(), "should propagate the materialize failure");
+    assert!(
+        matches!(result.unwrap_err(), WriteOperationError::Cancelled { .. }),
+        "should preserve the Cancelled variant"
+    );
+
+    // Original dest survives untouched
+    let dest_meta = fs::symlink_metadata(&dest).unwrap();
+    assert!(dest_meta.is_dir(), "dest should still be the original folder");
+    assert_eq!(
+        fs::read_to_string(dest.join("keep-me.txt")).unwrap(),
+        "do not lose this"
+    );
+    assert_eq!(
+        fs::read_to_string(dest.join("also-keep.txt")).unwrap(),
+        "also important"
+    );
+    assert!(
+        !dest.join("partial.txt").exists(),
+        "partial materialize artifact should be gone after restore"
+    );
+
+    // No cmdr-temp aside remains
+    for entry in fs::read_dir(&temp_dir).unwrap() {
+        let name = entry.unwrap().file_name().to_string_lossy().to_string();
+        assert!(
+            !name.contains(".cmdr-temp-"),
+            "aside should be rolled back, not left on disk: {name}"
+        );
+    }
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_safe_overwrite_dir_over_folder_dest_replaces_contents() {
+    // Source intent = folder. Dest = existing folder with different contents.
+    // After successful materialization, the dest path holds the newly
+    // materialized contents (no merge), and the original folder is gone with
+    // no cmdr-temp artifacts left.
+    let temp_dir = create_temp_dir("safe_overwrite_dir_over_folder");
+    let dest = temp_dir.join("dest");
+    fs::create_dir_all(&dest).unwrap();
+    fs::write(dest.join("old.txt"), "old").unwrap();
+
+    let result = safe_overwrite_dir(&dest, |target| {
+        fs::create_dir_all(target).map_err(|e| WriteOperationError::IoError {
+            path: target.display().to_string(),
+            message: format!("create_dir_all: {e}"),
+        })?;
+        fs::write(target.join("new.txt"), "new").map_err(|e| WriteOperationError::IoError {
+            path: target.display().to_string(),
+            message: format!("write new: {e}"),
+        })?;
+        Ok(())
+    });
+    result.expect("safe_overwrite_dir should succeed over existing folder");
+
+    assert!(dest.is_dir(), "dest should be a directory");
+    assert!(dest.join("new.txt").exists(), "new file should be present");
+    assert!(!dest.join("old.txt").exists(), "old file should be gone (no merge)");
+
+    for entry in fs::read_dir(&temp_dir).unwrap() {
+        let name = entry.unwrap().file_name().to_string_lossy().to_string();
+        assert!(
+            !name.contains(".cmdr-temp-"),
+            "no aside artifacts should remain: {name}"
+        );
+    }
 
     cleanup_temp_dir(&temp_dir);
 }
