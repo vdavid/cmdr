@@ -637,11 +637,19 @@ fn apply_resolution(
             }))
         }
         ConflictResolution::Rename => {
-            // Find a unique name by appending " (1)", " (2)", etc.
+            // Find a unique name by appending " (1)", " (2)", etc. `find_unique_name`
+            // atomically RESERVES the chosen name by creating a 0-byte placeholder
+            // file (TOCTOU guard, see its doc comment). The caller's write must
+            // therefore land *on* that placeholder, overwriting it — so we flag
+            // `needs_safe_overwrite`. Without it the same-APFS-volume copy path
+            // (`copyfile(3)` with `COPYFILE_EXCL`) refuses to write over the
+            // existing placeholder and fails with `DestinationExists`, losing the
+            // incoming bytes. The overwrite path consumes the placeholder cleanly
+            // and the reservation still closes the race window.
             let unique_path = find_unique_name(dest_path);
             Ok(Some(ResolvedDestination {
                 path: unique_path,
-                needs_safe_overwrite: false,
+                needs_safe_overwrite: true,
             }))
         }
         ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {

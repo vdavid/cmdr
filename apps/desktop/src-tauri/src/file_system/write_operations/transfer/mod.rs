@@ -38,3 +38,5 @@ mod hardlink_progress_tests;
 mod move_integration_test;
 #[cfg(test)]
 mod transaction_integration_test;
+#[cfg(test)]
+mod type_mismatch_rename_tests;

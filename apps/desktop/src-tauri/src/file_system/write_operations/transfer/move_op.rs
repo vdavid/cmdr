@@ -55,6 +55,62 @@ impl MoveTransaction {
     }
 }
 
+/// Lands a move source at the path a `resolve_conflict` result chose, honoring
+/// cmdr's Rename / Overwrite semantics including the type-mismatch directions.
+///
+/// `resolve_conflict` distinguishes its two non-skip outcomes by path:
+/// - **Overwrite** returns `resolved.path == dest_path` (replace in place). A
+///   plain `rename(2)` from a file source onto a directory dest (or vice versa)
+///   fails, so type-mismatch Overwrite routes through `safe_overwrite_dir`: the
+///   dest is set aside, the source is renamed into place inside the closure, and
+///   the aside is removed on success / rolled back on failure. Same-type
+///   Overwrite renames directly (atomic replace).
+/// - **Rename** returns `resolved.path == find_unique_name(dest_path)` — a fresh
+///   `name (N)` that `find_unique_name` reserved with a 0-byte placeholder file.
+///   The existing dest is kept untouched; the source lands at the reserved name.
+///   A file source `rename`s atomically over the placeholder; a directory source
+///   can't rename over a file, so we remove the placeholder first (the
+///   reservation still holds the name against concurrent writers).
+fn move_resolved_into_place(
+    source: &Path,
+    dest_path: &Path,
+    resolved: &super::super::helpers::ResolvedDestination,
+    move_tx: &mut MoveTransaction,
+) -> Result<(), WriteOperationError> {
+    let source_is_dir = source.is_dir();
+    let is_rename = resolved.path != dest_path;
+
+    if is_rename {
+        // Rename: keep the existing dest, land the source at the reserved name.
+        if source_is_dir {
+            // A directory can't `rename` over the reserved placeholder file;
+            // remove it first. The name stays reserved logically.
+            let _ = fs::remove_file(&resolved.path);
+        }
+        fs::rename(source, &resolved.path).with_path(source)?;
+        move_tx.record(source.to_path_buf(), resolved.path.clone());
+        return Ok(());
+    }
+
+    // Overwrite (`resolved.path == dest_path`).
+    let dest_is_dir = resolved.path.is_dir();
+    if source_is_dir != dest_is_dir {
+        // Type-mismatch overwrite: set the dest aside, move the source in.
+        let source_path = source.to_path_buf();
+        safe_overwrite_dir(&resolved.path, |target| {
+            fs::rename(&source_path, target).map_err(|e| WriteOperationError::IoError {
+                path: source_path.display().to_string(),
+                message: format!("Failed to rename across types: {}", e),
+            })
+        })?;
+        move_tx.record(source.to_path_buf(), resolved.path.clone());
+    } else {
+        fs::rename(source, &resolved.path).with_path(source)?;
+        move_tx.record(source.to_path_buf(), resolved.path.clone());
+    }
+    Ok(())
+}
+
 // ============================================================================
 // Move implementation
 // ============================================================================
@@ -168,28 +224,7 @@ fn move_with_rename(
                         // is also suppressed. No-ops outside ~/Downloads.
                         crate::downloads::note_pending_write_for_cmdr(source);
                         crate::downloads::note_pending_write_for_cmdr(&resolved.path);
-                        // Type-mismatch overwrite: a plain `rename(2)` from a file source onto
-                        // a directory dest (or vice versa) fails. Route through
-                        // `safe_overwrite_dir` so the dest is renamed aside, the source is
-                        // moved into place inside the closure, and the aside is removed on
-                        // success / rolled back on failure.
-                        let source_is_dir = source.is_dir();
-                        let dest_is_dir = resolved.path.is_dir();
-                        let type_mismatch = resolved.needs_safe_overwrite && (source_is_dir != dest_is_dir);
-                        if type_mismatch {
-                            let source_path = source.clone();
-                            let resolved_path = resolved.path.clone();
-                            safe_overwrite_dir(&resolved.path, |target| {
-                                fs::rename(&source_path, target).map_err(|e| WriteOperationError::IoError {
-                                    path: source_path.display().to_string(),
-                                    message: format!("Failed to rename across types: {}", e),
-                                })
-                            })?;
-                            move_tx.record(source.clone(), resolved_path);
-                        } else {
-                            fs::rename(source, &resolved.path).with_path(source)?;
-                            move_tx.record(source.clone(), resolved.path);
-                        }
+                        move_resolved_into_place(source, &dest_path, &resolved, &mut move_tx)?;
                     }
                     None => {
                         // Skip this file
@@ -320,23 +355,7 @@ fn merge_move_directory(
                     // halves of the rename; no-ops outside ~/Downloads.
                     crate::downloads::note_pending_write_for_cmdr(&source_child);
                     crate::downloads::note_pending_write_for_cmdr(&resolved.path);
-                    let source_is_dir = source_child.is_dir();
-                    let dest_is_dir = resolved.path.is_dir();
-                    let type_mismatch = resolved.needs_safe_overwrite && (source_is_dir != dest_is_dir);
-                    if type_mismatch {
-                        let source_path = source_child.clone();
-                        let resolved_path = resolved.path.clone();
-                        safe_overwrite_dir(&resolved.path, |target| {
-                            fs::rename(&source_path, target).map_err(|e| WriteOperationError::IoError {
-                                path: source_path.display().to_string(),
-                                message: format!("Failed to rename across types: {}", e),
-                            })
-                        })?;
-                        move_tx.record(source_child, resolved_path);
-                    } else {
-                        fs::rename(&source_child, &resolved.path).with_path(&source_child)?;
-                        move_tx.record(source_child, resolved.path);
-                    }
+                    move_resolved_into_place(&source_child, &dest_child, &resolved, move_tx)?;
                 }
                 None => {
                     // Skip: source file stays in place
@@ -430,6 +449,7 @@ fn move_with_staging(
     let mut files_skipped = 0usize;
     let mut apply_to_all_resolution = ApplyToAll::default();
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
+    let mut dir_remap: std::collections::HashMap<PathBuf, PathBuf> = std::collections::HashMap::new();
 
     // Emit initial copying phase event
     state.emit_progress_via_sink(
@@ -491,6 +511,7 @@ fn move_with_staging(
                 &mut transaction,
                 &mut apply_to_all_resolution,
                 &mut created_dirs,
+                &mut dir_remap,
             )?;
 
             if let Some(source_path) = tracker.record(file_info) {
@@ -556,10 +577,13 @@ fn move_with_staging(
                         // final visible name. Register so the watcher
                         // suppresses; no-ops outside ~/Downloads.
                         crate::downloads::note_pending_write_for_cmdr(&resolved.path);
-                        fs::rename(&staged_path, &resolved.path).map_err(|e| WriteOperationError::IoError {
-                            path: staged_path.display().to_string(),
-                            message: format!("Failed to move from staging: {}", e),
-                        })?;
+                        // Reuse the same Rename / Overwrite / type-mismatch logic the
+                        // same-FS path uses, operating on the staged copy. The staged
+                        // item mirrors the source's type, so `staged_path` drives the
+                        // file-vs-dir decision correctly. The local `staging_move_tx`
+                        // is throwaway here (staging cleanup handles rollback).
+                        let mut throwaway_tx = MoveTransaction::new();
+                        move_resolved_into_place(&staged_path, &final_path, &resolved, &mut throwaway_tx)?;
                     }
                     None => {
                         // Skip - remove from staging

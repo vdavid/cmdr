@@ -1,6 +1,6 @@
 //! Copy implementation for write operations.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -10,8 +10,8 @@ use std::time::{Duration, Instant};
 use super::macos_copy::copy_symlink;
 
 use super::super::helpers::{
-    ApplyToAll, find_unique_name, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable,
-    safe_overwrite_dir, spawn_async_sync, validate_disk_space, validate_path_length,
+    ApplyToAll, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable, safe_overwrite_dir,
+    spawn_async_sync, validate_disk_space, validate_path_length,
 };
 use super::super::scan::{
     SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path,
@@ -153,6 +153,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
     let mut transaction = CopyTransaction::new();
     let mut apply_to_all_resolution = ApplyToAll::default();
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
+    let mut dir_remap: HashMap<PathBuf, PathBuf> = HashMap::new();
 
     // Emit initial copying phase event (important when reusing cached scan - no scanning events were
     // emitted)
@@ -321,6 +322,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 &mut transaction,
                 &mut apply_to_all_resolution,
                 &mut created_dirs,
+                &mut dir_remap,
             )?;
             let bytes_delta = local_bytes.saturating_sub(ctx.bytes_done_so_far);
 
@@ -530,6 +532,33 @@ fn record_file_done(
     );
 }
 
+/// Rewrites `dest` by replacing the longest ancestor that appears as a key in
+/// `dir_remap` with its mapped value. Used to follow a folder→file Rename
+/// redirect: once the subtree root `<dest>/name` is redirected to
+/// `<dest>/name (1)`, every child path `<dest>/name/child` becomes
+/// `<dest>/name (1)/child`. Returns `dest` unchanged when no ancestor is
+/// remapped (the common case, so the map is almost always empty).
+fn apply_dir_remap(dest: &Path, dir_remap: &HashMap<PathBuf, PathBuf>) -> PathBuf {
+    if dir_remap.is_empty() {
+        return dest.to_path_buf();
+    }
+    // Find the longest mapped ancestor so nested redirects compose correctly.
+    let mut best: Option<(&PathBuf, &PathBuf)> = None;
+    for (from, to) in dir_remap {
+        if dest.starts_with(from) && best.is_none_or(|(b, _)| from.as_os_str().len() > b.as_os_str().len()) {
+            best = Some((from, to));
+        }
+    }
+    match best {
+        Some((from, to)) => {
+            // `strip_prefix` can't fail here: `starts_with(from)` held above.
+            let suffix = dest.strip_prefix(from).unwrap_or(Path::new(""));
+            to.join(suffix)
+        }
+        None => dest.to_path_buf(),
+    }
+}
+
 /// Copies a single file or symlink to its destination.
 /// Ensures parent directories exist before copying.
 /// Used by both copy and cross-filesystem move operations.
@@ -565,6 +594,11 @@ pub(super) fn copy_single_item(
     transaction: &mut CopyTransaction,
     apply_to_all_resolution: &mut ApplyToAll,
     created_dirs: &mut HashSet<PathBuf>,
+    // Maps an intended dest-subtree root to the path it was actually landed at.
+    // Populated when a folder→file Rename redirects the incoming folder from
+    // `<dest>/name` (a file is there) to `<dest>/name (1)`; every subsequent
+    // child of that subtree must follow the redirect. Empty in the common case.
+    dir_remap: &mut HashMap<PathBuf, PathBuf>,
 ) -> Result<(), WriteOperationError> {
     let progress_ctx = PerFileCtx {
         events,
@@ -587,10 +621,17 @@ pub(super) fn copy_single_item(
         });
     }
 
+    // Apply any active subtree redirect (folder→file Rename) so the rest of
+    // this function — parent creation, conflict resolution, the copy itself —
+    // operates on the remapped path. `apply_dir_remap` is a no-op when no
+    // ancestor of `dest_path` was redirected (the overwhelmingly common case).
+    let mut dest_path = apply_dir_remap(&dest_path, dir_remap);
+
     // Ensure parent directories exist
-    if let Some(parent) = dest_path.parent()
-        && !created_dirs.contains(parent)
+    if let Some(parent) = dest_path.parent().map(Path::to_path_buf)
+        && !created_dirs.contains(&parent)
     {
+        let parent = parent.as_path();
         // Fast path: parent already exists and is a directory; record it and skip the ancestor walk
         if parent.is_dir() {
             created_dirs.insert(parent.to_path_buf());
@@ -618,8 +659,17 @@ pub(super) fn copy_single_item(
             };
 
             if let Some(blocking) = blocking_file {
-                // A file exists where we need a directory: resolve as a conflict.
-                // Use the blocking file path (not source) so the conflict dialog shows correct metadata.
+                // A file exists where we need a directory (folder→file clash):
+                // resolve it. We pass the blocking file path (not source) so the
+                // conflict dialog shows the existing file's metadata.
+                //
+                // `apply_resolution` distinguishes the two non-skip outcomes by
+                // path: Overwrite returns `path == blocking` (replace in place),
+                // Rename returns `path == find_unique_name(blocking)` (land the
+                // incoming folder aside, keep the existing file). We branch on
+                // that difference rather than on `needs_safe_overwrite`, which is
+                // now `true` for both (Rename also reserves a placeholder it must
+                // consume).
                 match resolve_conflict(
                     &blocking,
                     &blocking,
@@ -629,13 +679,13 @@ pub(super) fn copy_single_item(
                     state,
                     apply_to_all_resolution,
                 )? {
-                    Some(resolved) if resolved.needs_safe_overwrite => {
-                        // Folder→file overwrite at a parent-creation site: the dest tree wants a
-                        // directory at `blocking` but a file is there. Route through
-                        // `safe_overwrite_dir` so the dest file is renamed aside, the directory
-                        // is created in its place, and on `create_dir_all` failure the aside is
-                        // rolled back. The whole subtree the caller still needs to populate is
-                        // created lazily by subsequent iterations.
+                    Some(resolved) if resolved.path == blocking => {
+                        // Folder→file OVERWRITE: the dest tree wants a directory at
+                        // `blocking` but a file is there. Route through
+                        // `safe_overwrite_dir` so the dest file is renamed aside, the
+                        // directory is created in its place, and on `create_dir_all`
+                        // failure the aside is rolled back. The subtree is populated
+                        // lazily by subsequent iterations.
                         safe_overwrite_dir(&blocking, |target| {
                             fs::create_dir_all(target).map_err(|e| WriteOperationError::IoError {
                                 path: target.display().to_string(),
@@ -652,19 +702,34 @@ pub(super) fn copy_single_item(
                             Ok(())
                         })?;
                         log::debug!(
-                            "copy: replaced file with directory at {} (type mismatch)",
+                            "copy: replaced file with directory at {} (type mismatch overwrite)",
                             blocking.display()
                         );
                     }
-                    Some(_) => {
-                        // Rename: preserve the blocking file by renaming it, then create directory
-                        let unique_path = find_unique_name(&blocking);
-                        fs::rename(&blocking, &unique_path).with_path(&blocking)?;
+                    Some(resolved) => {
+                        // Folder→file RENAME: keep the existing file at `blocking`,
+                        // land the incoming folder (and its whole subtree) at the
+                        // reserved unique name. `resolved.path` is a 0-byte placeholder
+                        // file that `find_unique_name` reserved; consume it by removing
+                        // it and creating the directory in its place (the reservation
+                        // still holds the name against concurrent writers). Record the
+                        // redirect so every later child of this subtree follows it.
+                        let renamed_root = resolved.path;
+                        let _ = fs::remove_file(&renamed_root);
+                        fs::create_dir_all(&renamed_root).map_err(|e| WriteOperationError::IoError {
+                            path: renamed_root.display().to_string(),
+                            message: format!("Failed to create renamed directory: {}", e),
+                        })?;
+                        transaction.record_dir(renamed_root.clone());
+                        created_dirs.insert(renamed_root.clone());
                         log::debug!(
-                            "copy: renamed blocking file {} to {} (type mismatch)",
-                            blocking.display(),
-                            unique_path.display()
+                            "copy: landing incoming folder at {} (type mismatch rename; existing file {} kept)",
+                            renamed_root.display(),
+                            blocking.display()
                         );
+                        dir_remap.insert(blocking.clone(), renamed_root.clone());
+                        // Redirect the current item and recompute its parent.
+                        dest_path = apply_dir_remap(&dest_path, dir_remap);
                     }
                     None => {
                         // Skip: don't copy this file. Use `write_weight`
@@ -676,6 +741,12 @@ pub(super) fn copy_single_item(
                     }
                 }
             }
+
+            // Honor any redirect applied above: the child's effective parent may
+            // now be the renamed subtree root (folder→file Rename) instead of the
+            // original `parent` (which still holds the kept dest file).
+            let effective_parent = dest_path.parent().map(Path::to_path_buf);
+            let parent = effective_parent.as_deref().unwrap_or(parent);
 
             if !parent.exists() {
                 // Collect directories that don't exist BEFORE creating them
