@@ -14,10 +14,12 @@ use super::process::{
 use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, is_local_ai_supported};
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
+use regex::Regex;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::{LazyLock, Mutex};
+use std::sync::{LazyLock, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Emitter, Runtime};
@@ -704,11 +706,7 @@ pub async fn check_ai_connection(base_url: String, api_key: String) -> AiConnect
 
     // Other HTTP error
     let body = response.text().await.unwrap_or_default();
-    let body_preview = if body.len() > 200 {
-        format!("{}...", &body[..200])
-    } else {
-        body
-    };
+    let body_preview = truncate_body_preview(&body, 200);
     AiConnectionCheckResult {
         connected: true,
         auth_error: false,
@@ -776,6 +774,34 @@ fn parse_model_ids(body: &str) -> Vec<String> {
     serde_json::from_str::<ModelsResponse>(body)
         .map(|r| r.data.into_iter().map(|m| m.id).collect())
         .unwrap_or_default()
+}
+
+/// Truncate an error-response body to at most `max` characters for a log/error preview,
+/// appending `...` only when truncation actually happened.
+///
+/// Char-based (not byte-based): slicing `&body[..max]` panics when byte `max` lands inside
+/// a multibyte UTF-8 sequence, which is trivially reachable with a non-ASCII error body from
+/// a user-configured AI endpoint. We also scrub `Bearer <token>`-shaped substrings as
+/// belt-and-suspenders in case a misbehaving proxy reflects the `Authorization` header back
+/// in its error body.
+fn truncate_body_preview(body: &str, max: usize) -> String {
+    let scrubbed = scrub_bearer_tokens(body);
+    let mut chars = scrubbed.chars();
+    let preview: String = chars.by_ref().take(max).collect();
+    // `chars` still has at least one item left iff the body was longer than `max` chars.
+    if chars.next().is_some() {
+        format!("{preview}...")
+    } else {
+        preview
+    }
+}
+
+/// Replace the token in any `Bearer <token>` substring with `<redacted>`, leaving the rest
+/// of the text intact. Case-insensitive on the `Bearer` keyword.
+fn scrub_bearer_tokens(text: &str) -> Cow<'_, str> {
+    static BEARER_RE: OnceLock<Regex> = OnceLock::new();
+    let re = BEARER_RE.get_or_init(|| Regex::new(r"(?i)\bBearer\s+\S+").expect("valid bearer regex"));
+    re.replace_all(text, "Bearer <redacted>")
 }
 
 /// Formats bytes as GB with one decimal place (like "4.3 GB").
@@ -1081,6 +1107,46 @@ fn cleanup_failed_server(pid: u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn truncate_body_preview_is_char_safe_on_multibyte_boundary() {
+        // '€' is 3 bytes in UTF-8. A string of 300 of them is 900 bytes; byte 200 lands
+        // mid-codepoint (200 % 3 != 0), so the old `&body[..200]` form would panic here.
+        let body = "€".repeat(300);
+        // The point is simply that this does NOT panic.
+        let out = truncate_body_preview(&body, 200);
+        // 200 chars kept (each still a full '€'), plus the "..." marker.
+        assert_eq!(out.chars().filter(|&c| c == '€').count(), 200);
+        assert!(out.ends_with("..."));
+
+        // '日' is also 3 bytes; same boundary hazard, different codepoint.
+        let body = "日".repeat(300);
+        let out = truncate_body_preview(&body, 200);
+        assert_eq!(out.chars().filter(|&c| c == '日').count(), 200);
+    }
+
+    #[test]
+    fn truncate_body_preview_truncates_ascii() {
+        let body = "a".repeat(500);
+        let out = truncate_body_preview(&body, 200);
+        assert_eq!(out, format!("{}...", "a".repeat(200)));
+    }
+
+    #[test]
+    fn truncate_body_preview_no_ellipsis_when_short() {
+        assert_eq!(truncate_body_preview("short body", 200), "short body");
+        // Exactly `max` chars: no truncation, so no ellipsis.
+        let exact = "x".repeat(200);
+        assert_eq!(truncate_body_preview(&exact, 200), exact);
+    }
+
+    #[test]
+    fn truncate_body_preview_scrubs_bearer_tokens() {
+        let body = "error: invalid auth Bearer sk-abc123secret rejected";
+        let out = truncate_body_preview(body, 200);
+        assert!(out.contains("Bearer <redacted>"), "got: {out}");
+        assert!(!out.contains("sk-abc123secret"), "token leaked: {out}");
+    }
 
     #[test]
     fn validate_url_allows_https() {
