@@ -923,7 +923,11 @@ export async function pollUntil(
   _page: PageLike,
   condition: () => Promise<boolean>,
   timeout: number,
-  interval = 50,
+  // 20 ms: the polled DOM/state reads are sub-millisecond, so the only cost of a
+  // tighter interval is more cheap checks; the win is exiting ~one poll-tick after
+  // the awaited event instead of overshooting by up to 50 ms. With 5-8 sequential
+  // polls per conflict/mtp test, that overshoot was a real chunk of wall-clock.
+  interval = 20,
 ): Promise<boolean> {
   const deadline = Date.now() + timeout
   while (Date.now() < deadline) {

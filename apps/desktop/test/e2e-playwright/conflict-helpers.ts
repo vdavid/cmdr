@@ -10,7 +10,7 @@ import fs from 'fs'
 import path from 'path'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { expect } from './fixtures.js'
-import { findFileIndex, pollUntil, sleep, TRANSFER_DIALOG } from './helpers.js'
+import { findFileIndex, pollUntil, TRANSFER_DIALOG } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 
 /** Union type for tauriPage (works in both Tauri and browser mode). */
@@ -206,7 +206,11 @@ export async function selectAll(tauriPage: PageLike): Promise<void> {
     var el=document.activeElement||document.body;
     el.dispatchEvent(new KeyboardEvent('keydown',{key:'a',bubbles:true,metaKey:${String(process.platform === 'darwin')},ctrlKey:${String(process.platform !== 'darwin')}}));
   })()`)
-  await sleep(200)
+  // Wait for the selection to actually register rather than a fixed settle:
+  // selected rows carry `.is-selected`, so polling for one is the real signal.
+  await expect
+    .poll(async () => tauriPage.evaluate<number>(`document.querySelectorAll('.is-selected').length`), { timeout: 2000 })
+    .toBeGreaterThan(0)
 }
 
 /** Waits for the dry-run scan to detect conflicts and show the policy radio buttons. */
@@ -223,8 +227,15 @@ export async function selectConflictPolicy(
   tauriPage: PageLike,
   policy: 'skip' | 'overwrite' | 'overwrite_smaller' | 'overwrite_older' | 'stop',
 ): Promise<void> {
-  await tauriPage.click(`${TRANSFER_DIALOG} .conflict-policy input[value="${policy}"]`)
-  await sleep(100)
+  const radio = `${TRANSFER_DIALOG} .conflict-policy input[value="${policy}"]`
+  await tauriPage.click(radio)
+  // Confirm the radio registered as checked rather than a fixed settle.
+  const radioSel = JSON.stringify(radio)
+  await expect
+    .poll(async () => tauriPage.evaluate<boolean>(`!!document.querySelector(${radioSel}) && document.querySelector(${radioSel}).checked`), {
+      timeout: 2000,
+    })
+    .toBeTruthy()
 }
 
 /** Clicks the primary action button in the transfer dialog. */
