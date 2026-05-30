@@ -8,6 +8,7 @@
 //! `register_known_dialogs`, so the MCP "available dialogs" resource
 //! stays in sync with the actual Svelte components automatically.
 
+use crate::ignore_poison::RwLockIgnorePoison;
 use serde::Deserialize;
 use std::collections::HashSet;
 use std::sync::RwLock;
@@ -37,23 +38,23 @@ impl SoftDialogTracker {
     }
 
     pub fn open(&self, dialog_type: String) {
-        self.open.write().unwrap().insert(dialog_type);
+        self.open.write_ignore_poison().insert(dialog_type);
     }
 
     pub fn close(&self, dialog_type: &str) {
-        self.open.write().unwrap().remove(dialog_type);
+        self.open.write_ignore_poison().remove(dialog_type);
     }
 
     pub fn get_open_types(&self) -> Vec<String> {
-        self.open.read().unwrap().iter().cloned().collect()
+        self.open.read_ignore_poison().iter().cloned().collect()
     }
 
     pub fn register_known(&self, dialogs: Vec<KnownDialog>) {
-        *self.known.write().unwrap() = dialogs;
+        *self.known.write_ignore_poison() = dialogs;
     }
 
     pub fn get_known_dialogs(&self) -> Vec<KnownDialog> {
-        self.known.read().unwrap().clone()
+        self.known.read_ignore_poison().clone()
     }
 }
 

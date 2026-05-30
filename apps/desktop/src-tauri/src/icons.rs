@@ -5,6 +5,7 @@
 //! Custom thread counts showed no improvement, so we use auto-detect.
 
 use crate::config::ICON_SIZE;
+use crate::ignore_poison::RwLockIgnorePoison;
 use base64::Engine;
 use image::{DynamicImage, ImageFormat, imageops::FilterType};
 #[cfg(target_os = "macos")]
@@ -25,19 +26,21 @@ static ICON_CACHE: LazyLock<RwLock<HashMap<String, String>>> = LazyLock::new(|| 
 
 /// Gets cached icon data URL for the given icon ID, if available.
 fn get_cached_icon(icon_id: &str) -> Option<String> {
-    ICON_CACHE.read().unwrap().get(icon_id).cloned()
+    ICON_CACHE.read_ignore_poison().get(icon_id).cloned()
 }
 
 /// Caches an icon data URL.
 fn cache_icon(icon_id: String, data_url: String) {
-    ICON_CACHE.write().unwrap().insert(icon_id, data_url);
+    ICON_CACHE.write_ignore_poison().insert(icon_id, data_url);
 }
 
 /// Clears all cached icons for extension-based entries.
 /// Called when the "use app icons for documents" setting changes.
 pub fn clear_extension_icon_cache() {
     // Only remove extension-based icons (ext:xxx), keep directory icons
-    ICON_CACHE.write().unwrap().retain(|key, _| !key.starts_with("ext:"));
+    ICON_CACHE
+        .write_ignore_poison()
+        .retain(|key, _| !key.starts_with("ext:"));
 }
 
 /// Clears all cached icons for directory entries (`dir`, `symlink-dir`, `path:*`).
@@ -45,8 +48,7 @@ pub fn clear_extension_icon_cache() {
 /// are tinted by the current appearance.
 pub fn clear_directory_icon_cache() {
     ICON_CACHE
-        .write()
-        .unwrap()
+        .write_ignore_poison()
         .retain(|key, _| key != "dir" && key != "symlink-dir" && !key.starts_with("path:"));
 }
 

@@ -2,6 +2,7 @@
 //!
 //! Contains validation, conflict resolution, and utility functions.
 
+use crate::ignore_poison::IgnorePoison;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -622,7 +623,7 @@ pub(super) fn resolve_conflict(
 
             // Create a oneshot channel for this conflict resolution
             let (tx, rx) = tokio::sync::oneshot::channel();
-            *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+            *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
 
             // Wait for user to call resolve_write_conflict.
             // The sender is dropped on cancel_write_operation, which unblocks the

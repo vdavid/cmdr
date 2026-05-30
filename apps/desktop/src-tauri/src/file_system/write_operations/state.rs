@@ -2,6 +2,7 @@
 //!
 //! Contains state tracking for in-progress operations and status caches for query APIs.
 
+use crate::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
@@ -414,7 +415,7 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
         // I/O (per-handle MTP loops, etc.) — not just the loop above it.
         state.backend_cancel.store(true, Ordering::Release);
         // Drop the conflict resolution sender to unblock any waiting receiver
-        let _ = state.conflict_resolution_tx.lock().unwrap().take();
+        let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
     }
 }
 
@@ -432,7 +433,7 @@ pub fn cancel_all_write_operations() {
                 state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
                 state.backend_cancel.store(true, Ordering::Release);
                 // Drop the conflict resolution sender to unblock any waiting receiver
-                let _ = state.conflict_resolution_tx.lock().unwrap().take();
+                let _ = state.conflict_resolution_tx.lock_ignore_poison().take();
             }
         }
     }
@@ -453,7 +454,7 @@ pub fn resolve_write_conflict(operation_id: &str, resolution: ConflictResolution
         && let Some(state) = cache.get(operation_id)
     {
         // Take the sender and send the resolution through the oneshot channel
-        let tx = state.conflict_resolution_tx.lock().unwrap().take();
+        let tx = state.conflict_resolution_tx.lock_ignore_poison().take();
         if let Some(tx) = tx {
             let _ = tx.send(ConflictResolutionResponse {
                 resolution,

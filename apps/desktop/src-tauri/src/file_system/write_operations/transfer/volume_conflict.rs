@@ -10,6 +10,7 @@
 //! - Overwrite (cross-type): delete the dest first, then write
 //! - Rename: Find unique name like "file (1).txt"
 
+use crate::ignore_poison::IgnorePoison;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -141,7 +142,7 @@ pub(super) async fn resolve_volume_conflict(
 
             // Create a oneshot channel for this conflict resolution
             let (tx, rx) = tokio::sync::oneshot::channel();
-            *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+            *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
 
             // Wait for user to call resolve_write_conflict.
             match rx.await {
