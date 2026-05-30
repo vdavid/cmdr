@@ -876,8 +876,18 @@ pub(super) fn safe_overwrite_file(
 
     // Step 3: Rename temp to final dest
     if let Err(e) = fs::rename(&temp_path, dest) {
-        // Failed to rename - restore aside and clean up
-        let _ = fs::rename(&aside_path, dest);
+        // Failed to rename - restore aside and clean up. If the restore ALSO
+        // fails, the user's original survives orphaned under the recognizable
+        // `.cmdr-temp-<uuid>` aside name; log so the trail tells anyone it's
+        // recoverable (AGENTS.md principle #4: protect the user's data).
+        if let Err(restore_err) = fs::rename(&aside_path, dest) {
+            crate::log_error!(
+                "safe_overwrite_file: failed to restore aside {} -> {}: {}",
+                aside_path.display(),
+                dest.display(),
+                restore_err
+            );
+        }
         let _ = fs::remove_file(&temp_path);
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
