@@ -127,22 +127,39 @@ pub fn stop_indexing() -> Result<(), String> {
     }
     *PENDING_SIZES.lock().unwrap() = None;
 
-    let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+    // Swap the phase to `ShuttingDown` under the lock, then release the lock
+    // BEFORE the blocking drain. `mgr.shutdown()` blocks up to 5 s draining the
+    // live-event task; holding `INDEXING` across it would stall every concurrent
+    // `get_status`/`is_active`/`trigger_verification` caller and park a tokio
+    // worker. The live event loop reads via `ReadPool` and never reacquires
+    // `INDEXING`, so dropping the guard while `ShuttingDown` is published is safe:
+    // concurrent callers see `ShuttingDown` and proceed.
+    let owned_mgr = {
+        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+        match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mgr) => mgr,
+            IndexPhase::Initializing { .. } => {
+                *guard = IndexPhase::Disabled;
+                log::info!("Indexing stopped during initialization");
+                return Ok(());
+            }
+            other => {
+                *guard = other; // put it back, wasn't running
+                return Ok(());
+            }
+        }
+    };
 
-    match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
-        IndexPhase::Running(mut mgr) => {
-            mgr.shutdown();
-            *guard = IndexPhase::Disabled;
-            log::info!("Indexing stopped (DB preserved on disk)");
-        }
-        IndexPhase::Initializing { .. } => {
-            *guard = IndexPhase::Disabled;
-            log::info!("Indexing stopped during initialization");
-        }
-        other => {
-            *guard = other; // put it back, wasn't running
-        }
+    // Guard released: run the blocking drain without holding `INDEXING`.
+    let mut mgr = owned_mgr;
+    mgr.shutdown();
+
+    // Re-lock only to publish the final phase.
+    {
+        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+        *guard = IndexPhase::Disabled;
     }
+    log::info!("Indexing stopped (DB preserved on disk)");
 
     Ok(())
 }
@@ -289,31 +306,46 @@ pub fn clear_index() -> Result<(), String> {
     }
     *PENDING_SIZES.lock().unwrap() = None;
 
-    let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-
-    match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
-        IndexPhase::Running(mut mgr) => {
-            let db_path = mgr.db_path().to_path_buf();
-            mgr.shutdown();
-            *guard = IndexPhase::Disabled;
-
-            // Delete DB file and WAL/SHM sidecars
-            for path in [
-                db_path.clone(),
-                db_path.with_extension("db-wal"),
-                db_path.with_extension("db-shm"),
-            ] {
-                if path.exists() {
-                    std::fs::remove_file(&path).map_err(|e| format!("Failed to delete {}: {e}", path.display()))?;
-                }
+    // Swap the phase to `ShuttingDown` under the lock, then release the lock
+    // BEFORE the blocking drain (same reasoning as `stop_indexing`: the up-to-5 s
+    // `mgr.shutdown()` drain must not stall concurrent `INDEXING` readers or park
+    // a tokio worker). The live event loop reads via `ReadPool` and never
+    // reacquires `INDEXING`, so dropping the guard while `ShuttingDown` is
+    // published is safe.
+    let owned_mgr = {
+        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+        match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mgr) => mgr,
+            other => {
+                *guard = other;
+                log::info!("Drive index clear requested but indexing was not active");
+                return Ok(());
             }
-            log::info!("Drive index cleared (DB deleted)");
         }
-        other => {
-            *guard = other;
-            log::info!("Drive index clear requested but indexing was not active");
+    };
+
+    // Guard released: run the blocking drain without holding `INDEXING`.
+    let mut mgr = owned_mgr;
+    let db_path = mgr.db_path().to_path_buf();
+    mgr.shutdown();
+
+    // Re-lock only to publish the final phase.
+    {
+        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+        *guard = IndexPhase::Disabled;
+    }
+
+    // Delete DB file and WAL/SHM sidecars
+    for path in [
+        db_path.clone(),
+        db_path.with_extension("db-wal"),
+        db_path.with_extension("db-shm"),
+    ] {
+        if path.exists() {
+            std::fs::remove_file(&path).map_err(|e| format!("Failed to delete {}: {e}", path.display()))?;
         }
     }
+    log::info!("Drive index cleared (DB deleted)");
 
     Ok(())
 }

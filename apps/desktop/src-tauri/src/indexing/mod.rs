@@ -923,6 +923,68 @@ mod tests {
         reset_indexing_for_test();
     }
 
+    /// Concurrency: the shutdown drain must NOT hold `INDEXING`.
+    ///
+    /// `stop_indexing`/`clear_index` publish `IndexPhase::ShuttingDown`, release
+    /// the lock, and only THEN run `mgr.shutdown()` (a blocking up-to-5 s drain of
+    /// the live-event task). This test models that exact lock discipline against
+    /// the real `INDEXING` static and the real `get_status()`: it publishes
+    /// `ShuttingDown`, drops the guard, spawns a thread that simulates the slow
+    /// drain (holding NO lock), and asserts a concurrent `get_status()` returns
+    /// promptly — far under the 5 s drain budget. With the buggy
+    /// lock-held-across-drain shape, `get_status()` would block for the whole
+    /// drain; here it returns immediately and reports the `ShuttingDown` phase as
+    /// not-initialized, the coherent intermediate state concurrent callers see.
+    ///
+    /// This is a true concurrency assertion on the load-bearing property (the
+    /// lock is free during the drain), but it drives the lock/phase contract
+    /// directly rather than `stop_indexing`'s `Running` arm end-to-end: that arm
+    /// needs a real `IndexManager`, which needs a `tauri::AppHandle` (not
+    /// constructable in unit tests without the `tauri/test` feature — see this
+    /// module's IndexPhase test note and `indexing/CLAUDE.md`).
+    #[test]
+    fn shutdown_drain_does_not_hold_indexing_lock() {
+        let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        reset_indexing_for_test();
+
+        // Publish the intermediate phase and release the lock, mirroring the
+        // fixed `stop_indexing`/`clear_index` shape.
+        {
+            let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
+            *guard = IndexPhase::ShuttingDown;
+        }
+
+        // Simulate the blocking drain on another thread WITHOUT holding INDEXING.
+        let drain_done = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let drain_done_bg = Arc::clone(&drain_done);
+        let drain = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(800));
+            drain_done_bg.store(true, std::sync::atomic::Ordering::SeqCst);
+        });
+
+        // Concurrent status poll must return promptly (well under the drain), and
+        // must observe the published `ShuttingDown` phase as not-initialized.
+        let start = std::time::Instant::now();
+        let status = get_status().expect("get_status during shutdown drain");
+        let elapsed = start.elapsed();
+
+        assert!(
+            elapsed < Duration::from_millis(300),
+            "get_status must not block on the drain; took {elapsed:?}"
+        );
+        assert!(
+            !status.initialized,
+            "ShuttingDown phase must report not-initialized to concurrent callers"
+        );
+        assert!(
+            !drain_done.load(std::sync::atomic::Ordering::SeqCst),
+            "status returned while the drain was still in flight (proves no lock contention)"
+        );
+
+        drain.join().expect("drain thread should not panic");
+        reset_indexing_for_test();
+    }
+
     /// After clearing READ_POOL, `enrich_entries_with_index` returns early
     /// without panic and leaves entries unenriched.
     #[test]
