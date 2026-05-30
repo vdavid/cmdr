@@ -119,6 +119,22 @@ pub fn copy_single_file_linux(
         );
     }
 
+    // Preserve timestamps from source (parity with the macOS chunked path;
+    // `copy_file_range` only moves data, not mtime/atime). Without this a Linux
+    // copy or cross-FS move stamps the destination with "now", which loses the
+    // file's real modification time and breaks the `OverwriteOlder` conditional:
+    // Phase 3 of `move_with_staging` compares the staged copy's mtime against the
+    // dest, so a freshly-stamped staged file looks newer and wrongly overwrites.
+    let mtime = filetime::FileTime::from_last_modification_time(&src_metadata);
+    let atime = filetime::FileTime::from_last_access_time(&src_metadata);
+    if let Err(e) = filetime::set_file_times(destination, atime, mtime) {
+        log::warn!(
+            "linux_copy: failed to set timestamps on {}: {}",
+            destination.display(),
+            e
+        );
+    }
+
     log::debug!(
         "linux_copy: copied {} bytes from {} to {}",
         bytes_copied,
