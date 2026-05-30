@@ -109,13 +109,13 @@ describe('SelectionInfo Brief file-info dir size state', () => {
     idx.scanning = true
     const t = mountFileInfo(makeDir({ recursiveSize: undefined, recursivePhysicalSize: undefined }))
     await tick()
-    expect(t.textContent ?? '').toMatch(/Scanning/i)
+    expect(t.textContent).toMatch(/Scanning/i)
   })
 
   it('shows the dir placeholder for an unindexed dir when idle', async () => {
     const t = mountFileInfo(makeDir({ recursiveSize: undefined, recursivePhysicalSize: undefined }))
     await tick()
-    expect(t.textContent ?? '').toMatch(/DIR|<dir>/i)
+    expect(t.textContent).toMatch(/DIR|<dir>/i)
     expect(t.querySelector('.stale-indicator')).toBeNull()
   })
 })
