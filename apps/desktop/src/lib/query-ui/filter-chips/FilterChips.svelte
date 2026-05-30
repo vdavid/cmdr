@@ -205,6 +205,17 @@
     /** Set of ISO date strings that match a preset. Used for the custom-isolation rule. */
     const datePresetSet = $derived(new Set<string>(datePresets.map((p) => p.resolved)))
 
+    /**
+     * The key of the FIRST preset whose `resolved` ISO date equals the current
+     * lower / upper bound. Two presets can resolve to the same date (on a
+     * Sunday with a Sunday-first locale, "today" and "this Sunday" both land on
+     * today; on the 1st of a month, "today" and "1st of <month>" collide). The
+     * cell renders selected only when its own key matches this one, so exactly
+     * one preset cell ever lights up instead of every preset sharing that date.
+     */
+    const selectedDateLowerKey = $derived(datePresets.find((p) => p.resolved === dateValue)?.key)
+    const selectedDateUpperKey = $derived(datePresets.find((p) => p.resolved === dateValueMax)?.key)
+
     /** Re-sync the "custom" flag against an externally-set value (AI mode, MCP prefill). */
     $effect(() => {
         // If the dialog or AI lands a value that exactly matches a preset, drop out of custom mode
@@ -857,10 +868,10 @@
                         <button
                             type="button"
                             class="list-cell"
-                            class:is-selected={dateValue === preset.resolved && !dateIsCustomLower}
+                            class:is-selected={selectedDateLowerKey === preset.key && !dateIsCustomLower}
                             class:is-disabled-look={isDateRangeDisabled(dateFilter)}
                             role="radio"
-                            aria-checked={dateValue === preset.resolved && !dateIsCustomLower}
+                            aria-checked={selectedDateLowerKey === preset.key && !dateIsCustomLower}
                             onclick={() => {
                                 pickDateValue(preset.resolved)
                             }}
@@ -907,9 +918,9 @@
                             <button
                                 type="button"
                                 class="list-cell"
-                                class:is-selected={dateValueMax === preset.resolved && !dateIsCustomUpper}
+                                class:is-selected={selectedDateUpperKey === preset.key && !dateIsCustomUpper}
                                 role="radio"
-                                aria-checked={dateValueMax === preset.resolved && !dateIsCustomUpper}
+                                aria-checked={selectedDateUpperKey === preset.key && !dateIsCustomUpper}
                                 onclick={() => {
                                     pickDateValueMax(preset.resolved)
                                 }}

@@ -110,6 +110,11 @@ lives in `SearchDialog.svelte::matchKey` for the mode-chip ⌥A / ⌥F / ⌥R sh
 - `FilterChips.svelte` keeps `dateIsCustomLower` / `dateIsCustomUpper` in sync via an `$effect` that flips them OFF when
   `dateValue` matches a preset (mirrors the size flow). The Modified popover never shows both a preset AND Custom as
   selected.
+- A Modified preset cell lights up only when its `key` matches `selectedDateLowerKey` / `selectedDateUpperKey` (the key
+  of the FIRST preset whose `resolved` date equals the bound), NOT a bare `dateValue === preset.resolved` compare. Two
+  presets can resolve to the same ISO date (on a Sunday with a Sunday-first locale, "today" and "this Sunday" both land
+  on today; on the 1st of a month, "today" and "1st of <month>" collide), so the bare compare would light up every
+  colliding cell at once. The first-match key keeps exactly one cell selected.
 - Size > Custom input lives INSIDE the Custom cell (one click selects + focuses).
 - Modified presets are dynamic ("today 0:00", "1st of May 0:00", …) — see `filter-popover-helpers.ts::buildDatePresets`.
 - Value + unit cells in the Size and Modified popovers stay clickable while comparator = `any`; they render with
