@@ -7,9 +7,13 @@
     import { onMount } from 'svelte'
     import '../app.css'
     import { initLogger } from '$lib/logging/logger'
+    import { installClipboardShimIfE2e } from '$lib/clipboard-shim'
 
     onMount(() => {
         void initLogger()
+        // E2E-only: keep webview clipboard writes off the real OS clipboard.
+        // No-op in dev/prod. Runs for every window (main, viewer, debug).
+        void installClipboardShimIfE2e()
     })
 </script>
 
