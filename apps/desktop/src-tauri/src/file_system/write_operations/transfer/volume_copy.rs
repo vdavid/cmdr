@@ -76,6 +76,30 @@ struct CopyTaskSuccess {
     created_dirs: Vec<PathBuf>,
 }
 
+/// Failure payload for one concurrent copy task.
+///
+/// `failed_path` is the in-flight partial entry to remove from
+/// `in_flight_partials` (the temp sibling under safe-replace, else the dest
+/// item path). `cleanup_temp` distinguishes a STREAM failure (`true` — the
+/// dest/temp is a half-written partial and must be cleaned) from a FINALIZE
+/// failure after a SUCCESSFUL write (`false` — the temp holds the only complete
+/// copy of the new data and MUST be left on disk).
+///
+/// `source_is_dir` plus `created_files` / `created_dirs` carry the per-file
+/// rollback ledger for a DIRECTORY source interrupted mid-stream. Without it the
+/// post-loop cleanup/rollback would fall back to recursively deleting the dest
+/// directory ROOT — which on a merge destroys pre-existing dest-only files. With
+/// it, the partials are cleaned per-file and the newly-created dirs pruned
+/// empty-only, so a merged dir holding a sentinel survives.
+struct CopyTaskFailure {
+    failed_path: PathBuf,
+    error: VolumeError,
+    cleanup_temp: bool,
+    source_is_dir: bool,
+    created_files: Vec<PathBuf>,
+    created_dirs: Vec<PathBuf>,
+}
+
 /// Starts a copy operation between two volumes.
 ///
 /// This is the unified entry point for all copy operations:
@@ -668,15 +692,16 @@ pub(crate) async fn copy_volumes_with_progress(
         // landed path for rollback bookkeeping (the original after a
         // safe-replace finalize, else the dest).
         //
-        // Err payload is `(failed_path, error, cleanup_temp)`: `cleanup_temp`
-        // distinguishes a STREAM failure (`true` — the dest/temp is a partial
-        // and must be cleaned) from a FINALIZE failure after a SUCCESSFUL write
-        // (`false` — the temp now holds the only complete copy of the new data
-        // and MUST be left on disk; the original was already deleted by
+        // Err payload is a `CopyTaskFailure`: `cleanup_temp` distinguishes a
+        // STREAM failure (`true` — the dest/temp is a partial and must be
+        // cleaned) from a FINALIZE failure after a SUCCESSFUL write (`false` —
+        // the temp now holds the only complete copy of the new data and MUST be
+        // left on disk; the original was already deleted by
         // `finalize_safe_replace`'s delete step). Deleting the temp in the
-        // finalize-failure case would be total data loss.
-        type CopyTaskFuture<'a> =
-            Pin<Box<dyn Future<Output = Result<CopyTaskSuccess, (PathBuf, VolumeError, bool)>> + Send + 'a>>;
+        // finalize-failure case would be total data loss. The `created_*` ledger
+        // carries a DIRECTORY source's per-file partials out of the error arm so
+        // post-loop cleanup never recursively deletes a merged dest dir root.
+        type CopyTaskFuture<'a> = Pin<Box<dyn Future<Output = Result<CopyTaskSuccess, CopyTaskFailure>> + Send + 'a>>;
         let mut in_flight: FuturesUnordered<CopyTaskFuture<'_>> = FuturesUnordered::new();
 
         // Inline helper: drains ONE future from `in_flight`, updates tracking.
@@ -861,7 +886,16 @@ pub(crate) async fn copy_volumes_with_progress(
                                 if let Err(e) =
                                     super::volume_conflict::finalize_safe_replace(&dst_vol, &dest_owned, &orig).await
                                 {
-                                    return Err((dest_owned, e, false));
+                                    // Finalize is file→file only (safe-replace),
+                                    // so there's no directory ledger to carry.
+                                    return Err(CopyTaskFailure {
+                                        failed_path: dest_owned,
+                                        error: e,
+                                        cleanup_temp: false,
+                                        source_is_dir: false,
+                                        created_files,
+                                        created_dirs,
+                                    });
                                 }
                                 // Landed at `orig`; the temp `dest_owned` is
                                 // gone after the rename. Report the temp as the
@@ -886,9 +920,21 @@ pub(crate) async fn copy_volumes_with_progress(
                                 created_dirs,
                             })
                         }
-                        // Stream failure: the dest/temp is a half-written
-                        // partial → clean it (`cleanup_temp = true`).
-                        Err(e) => Err((dest_owned, e, true)),
+                        // Stream failure (incl. mid-stream cancel): the dest/temp
+                        // is a half-written partial → clean it
+                        // (`cleanup_temp = true`). For a DIRECTORY source, carry
+                        // the per-file ledger so the result handler records the
+                        // individual partials instead of the dir root — the
+                        // post-loop must never recursively delete a merged dest
+                        // dir and destroy pre-existing dest-only files.
+                        Err(e) => Err(CopyTaskFailure {
+                            failed_path: dest_owned,
+                            error: e,
+                            cleanup_temp: true,
+                            source_is_dir: source_is_dir_hint,
+                            created_files,
+                            created_dirs,
+                        }),
                     }
                 }));
             }
@@ -958,7 +1004,14 @@ pub(crate) async fn copy_volumes_with_progress(
                         total_bytes,
                     );
                 }
-                Some(Err((failed_dest, e, cleanup_temp))) => {
+                Some(Err(CopyTaskFailure {
+                    failed_path: failed_dest,
+                    error: e,
+                    cleanup_temp,
+                    source_is_dir,
+                    created_files,
+                    created_dirs: task_created_dirs,
+                })) => {
                     // Remove from in-flight partials; this one's own partial
                     // cleanup (if any) the post-loop logic will do.
                     let mut partials = in_flight_partials.lock_ignore_poison();
@@ -966,14 +1019,27 @@ pub(crate) async fn copy_volumes_with_progress(
                         partials.swap_remove(pos);
                     }
                     drop(partials);
-                    // `cleanup_temp == false` ⇒ finalize failed AFTER a
-                    // successful write: `failed_dest` is the temp holding the
-                    // ONLY complete copy of the new data (finalize already
-                    // deleted the original). Do NOT designate it for cleanup —
-                    // leaving it on disk as a `.cmdr-tmp-*` artifact is the
-                    // correct, safe outcome. Cleaning it would be total data
-                    // loss.
-                    if cleanup_temp {
+                    if source_is_dir {
+                        // DIRECTORY source interrupted mid-stream. Record the
+                        // per-file partials and newly-created subdirs the op
+                        // wrote, NOT the dir root `failed_dest`. The post-loop
+                        // then cleans/rolls back per-file (and prunes created
+                        // dirs empty-only), so a merged dir holding a
+                        // pre-existing dest-only file survives — recursively
+                        // deleting the root would be silent data loss.
+                        copied_paths.lock_ignore_poison().extend(created_files);
+                        created_dirs.lock_ignore_poison().extend(task_created_dirs);
+                    } else if cleanup_temp {
+                        // FILE source stream failure: `failed_dest` is the single
+                        // half-written partial. Clean it.
+                        //
+                        // `cleanup_temp == false` ⇒ finalize failed AFTER a
+                        // successful write: `failed_dest` is the temp holding the
+                        // ONLY complete copy of the new data (finalize already
+                        // deleted the original). Do NOT designate it for cleanup —
+                        // leaving it on disk as a `.cmdr-tmp-*` artifact is the
+                        // correct, safe outcome. Cleaning it would be total data
+                        // loss.
                         last_dest_path = Some(failed_dest.clone());
                     }
                     copy_error = Some(WriteFailure::from_volume(&failed_dest, e));
@@ -1280,6 +1346,32 @@ pub(crate) async fn copy_volumes_with_progress(
                                 Ok(TransferOutcome::Transferred { bytes: bytes_copied })
                             }
                             Err(e) => {
+                                // For a DIRECTORY source interrupted mid-stream
+                                // (cancel/rollback/error while still copying its
+                                // children), hand the per-file ledger to the
+                                // post-loop bookkeeping just like the success
+                                // arm — record the individual files this op
+                                // streamed and the subdirs it newly created, and
+                                // CLEAR `last_dest_cell` so the post-loop cleanup
+                                // never recursively deletes the dest directory
+                                // ROOT. On a merge that root holds pre-existing
+                                // dest-only files; recursively deleting it is
+                                // silent data loss (the same class of bug the
+                                // HIGH-A fix closed for the completed-copy path).
+                                // The recorded per-file partials are cleaned
+                                // individually (Stopped/error) or rolled back
+                                // per-file (RollingBack); created dirs are pruned
+                                // empty-only, so a dir still holding a sentinel
+                                // survives. A FILE source keeps `last_dest_cell`
+                                // pointing at its single partial dest/temp — a
+                                // genuine partial that's safe to remove.
+                                if source_is_dir_hint {
+                                    *last_dest_cell.lock_ignore_poison() = None;
+                                    let files = std::mem::take(&mut *created.files.lock_ignore_poison());
+                                    let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
+                                    copied_paths.lock_ignore_poison().extend(files);
+                                    created_dirs.lock_ignore_poison().extend(dirs);
+                                }
                                 let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
                                 *failure_ctx_cell.lock_ignore_poison() = Some((e, source_path));
                                 Err(mapped)
