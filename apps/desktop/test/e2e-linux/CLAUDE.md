@@ -52,10 +52,10 @@ All four volume names are overridable via `CARGO_VOLUME`, `TARGET_VOLUME`, `ROOT
 
 ## Files
 
-| File                   | Purpose                                                 |
-| ---------------------- | ------------------------------------------------------- |
-| `docker/Dockerfile`    | Ubuntu 24.04 image with Tauri prereqs, Xvfb, Rust, Node |
-| `docker/entrypoint.sh` | Xvfb/dbus/GVFS/VNC setup for headless GUI               |
+| File                   | Purpose                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `docker/Dockerfile`    | Ubuntu 26.04 image with Tauri prereqs, Xvfb, Rust, Node, and Playwright chromium libs |
+| `docker/entrypoint.sh` | Xvfb/dbus/GVFS/VNC setup for headless GUI, plus the Playwright host-platform override |
 
 ## SMB E2E networking
 
@@ -126,6 +126,39 @@ and 26.04); GDK backend (Wayland-vs-X11 isn't the lever — Xwayland and Xvfb bo
 (Wayland or X11 with a real display server) were never affected, only the synthetic-pointer-event test path was. **If
 you ever want to drop back to an older base image**, you'll need to skip this single test or replace the production
 caret-from-point with a JS-side `Range.getClientRects()`-based binary search that bypasses the buggy API.
+
+## Playwright on the 26.04 base image (and bumping Playwright)
+
+The `ubuntu:26.04` base is **newer than Playwright knows about**. Playwright 1.59's bundled platform registry
+(`node_modules/playwright-core/.../server/registry/index.js`) only lists `ubuntu20.04` / `22.04` / `24.04` (each with a
+`-x64` and `-arm64` variant). On 26.04, an unguarded `playwright install chromium` fails at the platform check with
+`Error: Playwright does not support chromium on ubuntu26.04`. Two workarounds are wired up, and both must stay in sync
+when you bump Playwright:
+
+1. **Host-platform override (`entrypoint.sh`).** Exports `PLAYWRIGHT_HOST_PLATFORM_OVERRIDE` so Playwright downloads the
+   24.04 fallback build (libc-compatible, runs fine on 26.04). It MUST carry the arch suffix and match the runtime arch:
+   `ubuntu24.04-arm64` on Apple Silicon (local), `ubuntu24.04-x64` on x86_64 CI runners. The bare `ubuntu24.04` (no
+   suffix) matches no registry key and reproduces the same "does not support chromium" error — that exact bug kept Linux
+   CI red until the amd64 branch was corrected to `-x64`. A local arm64 run uses `-arm64` and passes, which masks an
+   amd64-only break: **reproduce override changes under `docker run --platform linux/amd64` before trusting them.**
+
+2. **Chromium runtime libs (`Dockerfile`).** We run `playwright install chromium` (binary only), NOT `--with-deps`. The
+   `--with-deps` apt step re-derives the distro from `/etc/os-release` (sees 26.04, has no dep list, fails) regardless
+   of the override. So the chromium runtime libs that `--with-deps` would install (`libnss3`, `libnspr4`, `libgbm1`,
+   `libdrm2`, `libcups2t64`, `libxkbcommon0`, `libatspi2.0-0`, `libatk-bridge2.0-0`, `libasound2t64`, `libxcb1`) are
+   apt-installed explicitly in the Dockerfile instead, where plain apt on 26.04 has no Playwright version gate. Keep
+   that list in sync with Playwright's `registry/nativeDeps.js` (`ubuntu24.04-x64` chromium deps) on a version bump.
+
+**Why a browser at all — the tests never drive one.** Every spec runs the single `tauri` project (socket bridge to the
+real Tauri webview); none opens chromium, and trace/screenshot are off. But `@playwright/test` still launches a headless
+chromium (`chromium_headless_shell`) per worker as a runtime dependency of the runner. Remove the install and all ~196
+tests fail at setup with `browserType.launch: Executable doesn't exist`. Don't "optimize away" the chromium install —
+it's load-bearing for the runner even though no test uses it.
+
+**On a Playwright bump:** first check whether the new version's registry natively lists `ubuntu26.04`. If it does,
+delete both workarounds (the `entrypoint.sh` override block and the chromium-libs stanza in the Dockerfile) and switch
+back to plain `playwright install --with-deps chromium`. If it doesn't, just re-confirm the override arch tags still
+match a registry key and re-sync the Dockerfile lib list against the new `nativeDeps.js`.
 
 ## CI integration
 
