@@ -1211,4 +1211,170 @@ mod tests {
             "expected false after disconnect"
         );
     }
+
+    /// Source stream that yields one good chunk, then errors. Drives the
+    /// upload's data phase far enough that `SendObjectInfo` has created the
+    /// object on the device, then fails the transfer mid-stream. The library
+    /// surfaces the created object as `UploadError.partial`; cmdr must
+    /// best-effort delete it so no corrupt artifact lingers on the device.
+    #[cfg(feature = "virtual-mtp")]
+    struct ErroringStream {
+        emitted: bool,
+    }
+
+    #[cfg(feature = "virtual-mtp")]
+    impl futures_util::Stream for ErroringStream {
+        type Item = Result<bytes::Bytes, std::io::Error>;
+
+        fn poll_next(
+            mut self: Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<Option<Self::Item>> {
+            if self.emitted {
+                std::task::Poll::Ready(Some(Err(std::io::Error::other("simulated mid-stream read failure"))))
+            } else {
+                self.emitted = true;
+                std::task::Poll::Ready(Some(Ok(bytes::Bytes::from_static(b"partial-bytes"))))
+            }
+        }
+    }
+
+    /// Connects the virtual device, starts an upload whose source stream errors
+    /// mid-transfer, and asserts the destination object does NOT exist on the
+    /// device afterward (cmdr deleted the partial via `UploadError.partial`).
+    #[cfg(feature = "virtual-mtp")]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn upload_failure_deletes_partial_object_on_device() {
+        use crate::mtp::virtual_device::setup_virtual_mtp_device;
+
+        let location_id = setup_virtual_mtp_device();
+        let device_id = format!("mtp-{}", location_id);
+
+        let info = connection_manager()
+            .connect(&device_id, None)
+            .await
+            .expect("virtual-mtp connect should succeed");
+        let storage_id = info.storages.first().expect("virtual device should have storages").id;
+
+        // Prime the path cache so the upload can resolve "Documents" to a handle.
+        connection_manager()
+            .list_directory(&device_id, storage_id, "/")
+            .await
+            .expect("list root should succeed");
+
+        let filename = "will-fail.txt";
+        // Declared size is larger than the single emitted chunk, so the data
+        // phase keeps pulling and hits the error after the object already
+        // exists on the device.
+        let size = 4096;
+        let stream = Box::pin(ErroringStream { emitted: false });
+
+        let result = connection_manager()
+            .upload_from_stream(&device_id, storage_id, "Documents", filename, size, stream)
+            .await;
+
+        assert!(result.is_err(), "upload with a mid-stream source error must fail");
+
+        // The partial object must be gone: a fresh listing of /Documents must
+        // not contain the destination name.
+        let entries = connection_manager()
+            .list_directory(&device_id, storage_id, "/Documents")
+            .await
+            .expect("list Documents should succeed");
+        assert!(
+            !entries.iter().any(|e| e.name == filename),
+            "partial object {filename} must not linger on the device after a failed upload; \
+             found entries: {:?}",
+            entries.iter().map(|e| &e.name).collect::<Vec<_>>()
+        );
+
+        connection_manager()
+            .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+            .await
+            .expect("virtual-mtp disconnect should succeed");
+    }
+
+    /// Like the error test, but the source stream signals cancellation
+    /// (`io::ErrorKind::Interrupted` — exactly what the cancel adapter in
+    /// `volume_read_stream_to_chunk_stream` produces on `ControlFlow::Break`).
+    /// Asserts two things: (1) the partial is still deleted (the user
+    /// cancelled — don't leave a half-file on their phone), and (2) the error
+    /// still surfaces as `Cancelled`, not a generic error, so the write-op
+    /// layer classifies it as a cancel.
+    #[cfg(feature = "virtual-mtp")]
+    struct CancellingStream {
+        emitted: bool,
+    }
+
+    #[cfg(feature = "virtual-mtp")]
+    impl futures_util::Stream for CancellingStream {
+        type Item = Result<bytes::Bytes, std::io::Error>;
+
+        fn poll_next(
+            mut self: Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<Option<Self::Item>> {
+            if self.emitted {
+                std::task::Poll::Ready(Some(Err(std::io::Error::new(
+                    std::io::ErrorKind::Interrupted,
+                    "Operation cancelled",
+                ))))
+            } else {
+                self.emitted = true;
+                std::task::Poll::Ready(Some(Ok(bytes::Bytes::from_static(b"partial-bytes"))))
+            }
+        }
+    }
+
+    #[cfg(feature = "virtual-mtp")]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
+        use crate::mtp::virtual_device::setup_virtual_mtp_device;
+
+        let location_id = setup_virtual_mtp_device();
+        let device_id = format!("mtp-{}", location_id);
+
+        let info = connection_manager()
+            .connect(&device_id, None)
+            .await
+            .expect("virtual-mtp connect should succeed");
+        let storage_id = info.storages.first().expect("virtual device should have storages").id;
+
+        connection_manager()
+            .list_directory(&device_id, storage_id, "/")
+            .await
+            .expect("list root should succeed");
+
+        let filename = "cancelled.txt";
+        let size = 4096;
+        let stream = Box::pin(CancellingStream { emitted: false });
+
+        let result = connection_manager()
+            .upload_from_stream(&device_id, storage_id, "Documents", filename, size, stream)
+            .await;
+
+        // Cancel classification preserved: the error must be Cancelled, not a
+        // generic Other/Protocol error.
+        assert!(
+            matches!(result, Err(MtpConnectionError::Cancelled { .. })),
+            "a cancelled upload must surface as MtpConnectionError::Cancelled, got: {result:?}"
+        );
+
+        // Partial deleted on cancel too.
+        let entries = connection_manager()
+            .list_directory(&device_id, storage_id, "/Documents")
+            .await
+            .expect("list Documents should succeed");
+        assert!(
+            !entries.iter().any(|e| e.name == filename),
+            "partial object {filename} must not linger on the device after a cancelled upload; \
+             found entries: {:?}",
+            entries.iter().map(|e| &e.name).collect::<Vec<_>>()
+        );
+
+        connection_manager()
+            .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+            .await
+            .expect("virtual-mtp disconnect should succeed");
+    }
 }

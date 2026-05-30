@@ -331,15 +331,40 @@ impl MtpConnectionManager {
         // Using iter instead of once because iter's items are ready, making it Unpin
         let data_stream = futures_util::stream::iter(vec![Ok::<_, std::io::Error>(bytes::Bytes::from(data))]);
 
-        let new_handle = tokio::time::timeout(
+        let upload_result = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS * 10), // Longer timeout for large files
             storage.upload(parent_opt, object_info, data_stream),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
             device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        })?;
+
+        let new_handle = match upload_result {
+            Ok(handle) => handle,
+            Err(upload_err) => {
+                // See `upload_from_stream` for the full rationale: mtp-rs
+                // surfaces a created-but-incomplete object as `partial` and does
+                // NOT auto-delete it. cmdr best-effort deletes it so no corrupt
+                // artifact lingers, then surfaces the original (mapped) error.
+                // A failed delete (e.g. dead device) never masks the upload
+                // error.
+                if let Some(partial) = upload_err.partial {
+                    if let Err(delete_err) = storage.delete(partial).await {
+                        log::warn!(
+                            target: "mtp_upload",
+                            "Failed to delete partial object after upload error (device={device_id}, dest={dest_folder}/{filename}): {delete_err}"
+                        );
+                    } else {
+                        log::debug!(
+                            target: "mtp_upload",
+                            "Deleted partial object after upload error (device={device_id}, dest={dest_folder}/{filename})"
+                        );
+                    }
+                }
+                return Err(map_mtp_error(upload_err.source, device_id));
+            }
+        };
 
         // Release device lock
         drop(storage);
@@ -541,15 +566,52 @@ impl MtpConnectionManager {
             Some(parent_handle)
         };
 
-        let new_handle = tokio::time::timeout(
+        let upload_result = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS * 10),
             storage.upload(parent_opt, object_info, data_stream),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
             device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+        })?;
+
+        let new_handle = match upload_result {
+            Ok(handle) => handle,
+            Err(upload_err) => {
+                // PTP uploads are two-phase: SendObjectInfo creates the object,
+                // then SendObject streams the data. When the data phase fails
+                // (genuine error OR user cancel), mtp-rs surfaces the created
+                // object as `upload_err.partial` instead of auto-deleting it —
+                // the caller owns the cleanup-or-resume decision. cmdr's
+                // no-corrupt-artifact policy: best-effort delete the partial so
+                // no half-file lingers on the user's phone. This covers the
+                // cancel path too: `source` is `Error::Cancelled` and `partial`
+                // is `Some`, so a cancelled upload also gets cleaned up, then
+                // maps back to `MtpConnectionError::Cancelled` below (cancel
+                // classification preserved).
+                if let Some(partial) = upload_err.partial {
+                    // Best-effort: a failed delete must NOT mask the upload
+                    // error. The delete needs a live device/session; if the
+                    // device just disconnected, this fails and the partial
+                    // lingers (recognizable, nothing we can do with a dead
+                    // device) — we log and move on.
+                    if let Err(delete_err) = storage.delete(partial).await {
+                        log::warn!(
+                            target: "mtp_upload",
+                            "Failed to delete partial object after upload error (device={device_id}, dest={dest_folder}/{filename}): {delete_err}"
+                        );
+                    } else {
+                        log::debug!(
+                            target: "mtp_upload",
+                            "Deleted partial object after upload error (device={device_id}, dest={dest_folder}/{filename})"
+                        );
+                    }
+                }
+                // Always surface the original upload error (mapped), never the
+                // cleanup outcome.
+                return Err(map_mtp_error(upload_err.source, device_id));
+            }
+        };
 
         // Release device lock
         drop(storage);

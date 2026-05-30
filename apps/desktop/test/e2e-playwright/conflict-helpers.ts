@@ -232,9 +232,15 @@ export async function selectConflictPolicy(
   // Confirm the radio registered as checked rather than a fixed settle.
   const radioSel = JSON.stringify(radio)
   await expect
-    .poll(async () => tauriPage.evaluate<boolean>(`!!document.querySelector(${radioSel}) && document.querySelector(${radioSel}).checked`), {
-      timeout: 2000,
-    })
+    .poll(
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `!!document.querySelector(${radioSel}) && document.querySelector(${radioSel}).checked`,
+        ),
+      {
+        timeout: 2000,
+      },
+    )
     .toBeTruthy()
 }
 
