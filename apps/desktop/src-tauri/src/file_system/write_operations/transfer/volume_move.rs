@@ -432,6 +432,10 @@ pub(super) async fn move_volumes_with_progress(
                         Arc::clone(&last_progress_time),
                         progress_interval,
                     );
+                    // Cross-volume move's copy phase doesn't use the granular
+                    // rollback ledger (move rollback reverses renames / cleans
+                    // staging separately), so a throwaway ledger is fine here.
+                    let created = super::volume_strategy::CreatedPaths::default();
                     let bytes = match copy_single_path(
                         &source_volume,
                         &source_path,
@@ -440,6 +444,7 @@ pub(super) async fn move_volumes_with_progress(
                         &dest_volume,
                         &dest_item_path,
                         &state,
+                        &created,
                         &on_file_progress,
                         &|| {},
                     )

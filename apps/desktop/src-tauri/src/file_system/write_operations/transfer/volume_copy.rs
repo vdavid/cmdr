@@ -56,6 +56,26 @@ type ResolveFut<'a> = Pin<Box<dyn Future<Output = Result<ConflictDecision, Write
 /// Per-call future shape for the driver's `transfer_one` closure.
 type TransferFut<'a> = Pin<Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>>;
 
+/// Success payload for one concurrent copy task.
+///
+/// `partial_path` is the path the task pushed into `in_flight_partials` (the
+/// temp sibling under safe-replace, else the dest) so the result handler can
+/// remove the right entry. `recorded_path` is the top-level landed path (the
+/// original after a safe-replace finalize, else the dest) — recorded for
+/// rollback ONLY for a top-level file source. `created_files` / `created_dirs`
+/// carry the per-file destinations and newly-created subdirectories from a
+/// DIRECTORY source's recursive copy, so rollback removes exactly what the op
+/// wrote into a (possibly pre-existing, merged) dest directory and never the
+/// directory root.
+struct CopyTaskSuccess {
+    partial_path: PathBuf,
+    recorded_path: PathBuf,
+    source_is_dir: bool,
+    bytes: u64,
+    created_files: Vec<PathBuf>,
+    created_dirs: Vec<PathBuf>,
+}
+
 /// Starts a copy operation between two volumes.
 ///
 /// This is the unified entry point for all copy operations:
@@ -585,10 +605,20 @@ pub(crate) async fn copy_volumes_with_progress(
     // Track "apply to all" resolution for conflicts
     let mut apply_to_all_resolution = ApplyToAll::default();
 
-    // Track successfully copied destination paths for rollback/cleanup.
+    // Track successfully copied destination FILE paths for rollback/cleanup.
     // Wrapped in Arc<Mutex> so concurrent tasks can push independently. The
     // sequential path uses the same container for a uniform post-loop flow.
+    // For a directory source these are the individual files the op streamed
+    // into the (possibly pre-existing) dest directory — NOT the directory root
+    // — so rollback never recursively deletes a merged directory and destroys
+    // dest-only files the user already had there.
     let copied_paths: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+    // Destination directories this operation NEWLY created (create_directory
+    // returned Ok, not AlreadyExists), in creation order (shallowest first).
+    // Rollback removes these AFTER the files, deepest first, with a
+    // non-recursive empty-only delete — so a dir we created but which still
+    // holds a pre-existing sibling (or a kept-partial under cancel) survives.
+    let created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
     // In concurrent mode, in-flight tasks each pin down their own partial
     // destination path so a cancel/error can delete all of them. Sequential
     // mode keeps the legacy single-slot behavior via a 1-element vec.
@@ -617,7 +647,7 @@ pub(crate) async fn copy_volumes_with_progress(
         // `finalize_safe_replace`'s delete step). Deleting the temp in the
         // finalize-failure case would be total data loss.
         type CopyTaskFuture<'a> =
-            Pin<Box<dyn Future<Output = Result<(PathBuf, PathBuf, u64), (PathBuf, VolumeError, bool)>> + Send + 'a>>;
+            Pin<Box<dyn Future<Output = Result<CopyTaskSuccess, (PathBuf, VolumeError, bool)>> + Send + 'a>>;
         let mut in_flight: FuturesUnordered<CopyTaskFuture<'_>> = FuturesUnordered::new();
 
         // Inline helper: drains ONE future from `in_flight`, updates tracking.
@@ -746,6 +776,9 @@ pub(crate) async fn copy_volumes_with_progress(
                     // Arc clone, the post-call compensation reads the same
                     // counter to detect "volume never invoked on_progress."
                     let last_file_bytes = Arc::new(AtomicU64::new(0));
+                    // Per-source rollback ledger: the files this task streams
+                    // and the dirs it newly creates inside a directory source.
+                    let created = super::volume_strategy::CreatedPaths::default();
                     let on_file_progress = make_concurrent_per_file_progress(
                         Arc::clone(&events_task),
                         Arc::clone(&state_clone),
@@ -771,10 +804,13 @@ pub(crate) async fn copy_volumes_with_progress(
                         &dst_vol,
                         &dest_owned,
                         &state_clone,
+                        &created,
                         &on_file_progress,
                         &on_file_complete,
                     )
                     .await;
+                    let created_files = std::mem::take(&mut *created.files.lock_ignore_poison());
+                    let created_dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
                     match result {
                         Ok(bytes) => {
                             // If the volume didn't call the progress callback,
@@ -801,10 +837,25 @@ pub(crate) async fn copy_volumes_with_progress(
                                 // Landed at `orig`; the temp `dest_owned` is
                                 // gone after the rename. Report the temp as the
                                 // partial to remove and `orig` as the recorded
-                                // path for rollback bookkeeping.
-                                return Ok((dest_owned, orig, bytes));
+                                // path for rollback bookkeeping. Safe-replace is
+                                // file→file only, so there are no created dirs.
+                                return Ok(CopyTaskSuccess {
+                                    partial_path: dest_owned,
+                                    recorded_path: orig,
+                                    source_is_dir: false,
+                                    bytes,
+                                    created_files,
+                                    created_dirs,
+                                });
                             }
-                            Ok((dest_owned.clone(), dest_owned, bytes))
+                            Ok(CopyTaskSuccess {
+                                partial_path: dest_owned.clone(),
+                                recorded_path: dest_owned,
+                                source_is_dir: source_is_dir_hint,
+                                bytes,
+                                created_files,
+                                created_dirs,
+                            })
                         }
                         // Stream failure: the dest/temp is a half-written
                         // partial → clean it (`cleanup_temp = true`).
@@ -818,18 +869,34 @@ pub(crate) async fn copy_volumes_with_progress(
             }
 
             match in_flight.next().await {
-                Some(Ok((partial_path, recorded_path, _bytes))) => {
+                Some(Ok(CopyTaskSuccess {
+                    partial_path,
+                    recorded_path,
+                    source_is_dir,
+                    bytes: _bytes,
+                    created_files,
+                    created_dirs: task_created_dirs,
+                })) => {
                     // Remove the in-flight partial (the temp under safe-replace,
-                    // else the dest) and record the landed path as completed
-                    // (the original after a safe-replace finalize, else the
-                    // dest) so rollback targets the real file, never the temp.
+                    // else the dest) and record what the op wrote for rollback.
                     let mut partials = in_flight_partials.lock_ignore_poison();
                     if let Some(pos) = partials.iter().position(|p| p == &partial_path) {
                         partials.swap_remove(pos);
                     }
                     drop(partials);
                     let file_name_done = recorded_path.file_name().map(|n| n.to_string_lossy().to_string());
-                    copied_paths.lock_ignore_poison().push(recorded_path);
+                    // For a DIRECTORY source, record the individual files and the
+                    // newly-created subdirs the op wrote — never the directory
+                    // root — so rollback can't recursively delete a merged
+                    // directory and destroy dest-only files. For a FILE source,
+                    // record the landed path (the original after a safe-replace
+                    // finalize, else the dest); `created_*` are empty.
+                    if source_is_dir {
+                        copied_paths.lock_ignore_poison().extend(created_files);
+                        created_dirs.lock_ignore_poison().extend(task_created_dirs);
+                    } else {
+                        copied_paths.lock_ignore_poison().push(recorded_path);
+                    }
                     // Per-file milestone emit. The task's `on_file_complete`
                     // bumped `files_done_atomic`; the FE's files-axis needs
                     // a Copying event that observes the bumped value, but
@@ -940,6 +1007,7 @@ pub(crate) async fn copy_volumes_with_progress(
         let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> =
             Arc::new(std::sync::Mutex::new(apply_to_all_resolution));
         let copied_paths_for_closure = Arc::clone(&copied_paths);
+        let created_dirs_for_closure = Arc::clone(&created_dirs);
         let source_hints_arc: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(std::mem::take(&mut source_hints));
 
         let outcome = drive_transfer_serial_async(
@@ -1058,6 +1126,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 let last_dest_cell = Arc::clone(&last_dest_cell);
                 let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                 let copied_paths = Arc::clone(&copied_paths_for_closure);
+                let created_dirs = Arc::clone(&created_dirs_for_closure);
                 let source_hints = Arc::clone(&source_hints_arc);
                 let operation_id = operation_id_owned.clone();
                 move |ctx: TransferContext<'_>| -> TransferFut<'_> {
@@ -1068,6 +1137,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     let last_dest_cell = Arc::clone(&last_dest_cell);
                     let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                     let copied_paths = Arc::clone(&copied_paths);
+                    let created_dirs = Arc::clone(&created_dirs);
                     let source_hints = Arc::clone(&source_hints);
                     let operation_id = operation_id.clone();
                     let source_path = ctx.source_path.to_path_buf();
@@ -1113,6 +1183,11 @@ pub(crate) async fn copy_volumes_with_progress(
                         );
                         let on_file_complete = || {};
 
+                        // Per-source rollback ledger: the files this transfer
+                        // streams and the dirs it newly creates inside a
+                        // directory source.
+                        let created = super::volume_strategy::CreatedPaths::default();
+
                         *last_dest_cell.lock_ignore_poison() = Some(dest_item_path.clone());
 
                         match copy_single_path(
@@ -1123,6 +1198,7 @@ pub(crate) async fn copy_volumes_with_progress(
                             &dest_volume,
                             &dest_item_path,
                             &state,
+                            &created,
                             &on_file_progress,
                             &on_file_complete,
                         )
@@ -1157,10 +1233,21 @@ pub(crate) async fn copy_volumes_with_progress(
                                     }
                                     None => dest_item_path,
                                 };
-                                // Record the landed path (the original after a
-                                // safe-replace, else the dest) for rollback;
-                                // never the temp.
-                                copied_paths.lock_ignore_poison().push(landed_path);
+                                // For a DIRECTORY source, record the individual
+                                // files and newly-created subdirs the op wrote —
+                                // never the directory root — so rollback can't
+                                // recursively delete a merged directory and
+                                // destroy dest-only files. For a FILE source,
+                                // record the landed path (the original after a
+                                // safe-replace, else the dest); never the temp.
+                                if source_is_dir_hint {
+                                    let files = std::mem::take(&mut *created.files.lock_ignore_poison());
+                                    let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
+                                    copied_paths.lock_ignore_poison().extend(files);
+                                    created_dirs.lock_ignore_poison().extend(dirs);
+                                } else {
+                                    copied_paths.lock_ignore_poison().push(landed_path);
+                                }
                                 Ok(TransferOutcome::Transferred { bytes: bytes_copied })
                             }
                             Err(e) => {
@@ -1222,6 +1309,9 @@ pub(crate) async fn copy_volumes_with_progress(
 
     // Unwrap shared containers for post-loop logic.
     let mut copied_paths: Vec<PathBuf> = Arc::try_unwrap(copied_paths)
+        .map(|m| m.into_inner().unwrap_or_default())
+        .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
+    let created_dirs: Vec<PathBuf> = Arc::try_unwrap(created_dirs)
         .map(|m| m.into_inner().unwrap_or_default())
         .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
     let in_flight_partials: Vec<PathBuf> = Arc::try_unwrap(in_flight_partials)
@@ -1294,6 +1384,7 @@ pub(crate) async fn copy_volumes_with_progress(
         let rollback_completed = volume_rollback_with_progress(
             &dest_volume,
             &copied_paths,
+            &created_dirs,
             &*events,
             operation_id,
             state,
@@ -1372,6 +1463,13 @@ pub(crate) async fn copy_volumes_with_progress(
 /// `rollback_with_progress` pattern. Deletes paths in reverse order so that files inside
 /// directories are removed before the directories themselves.
 ///
+/// `copied_paths` are the individual destination FILES the operation wrote (never a merged
+/// directory root). After deleting them, `created_dirs` — the directories this operation
+/// NEWLY created — are removed deepest-first with a non-recursive, empty-only delete. A
+/// directory that still holds a pre-existing sibling (a dest-only file the user already had,
+/// or a kept-partial under cancel) is left in place, so rollback never destroys data this
+/// operation didn't write.
+///
 /// Returns `true` if rollback completed fully, `false` if the user cancelled it.
 #[allow(
     clippy::too_many_arguments,
@@ -1380,6 +1478,7 @@ pub(crate) async fn copy_volumes_with_progress(
 async fn volume_rollback_with_progress(
     volume: &Arc<dyn Volume>,
     copied_paths: &[PathBuf],
+    created_dirs: &[PathBuf],
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -1474,6 +1573,28 @@ async fn volume_rollback_with_progress(
                 bytes_total,
             );
             last_progress_time = Instant::now();
+        }
+    }
+
+    // Prune the directories this operation newly created, deepest-first, with a
+    // non-recursive empty-only delete. `created_dirs` is in creation order
+    // (shallowest first), so iterating in reverse hits leaves before their
+    // parents. A directory that still holds a pre-existing sibling (a dest-only
+    // file the user already had) won't be empty, so its `delete` fails with
+    // NotFound/IoError on real backends and we leave it standing — exactly the
+    // protection that keeps rollback from destroying untouched user data. We
+    // deliberately do NOT use `delete_volume_path_recursive` here: that would
+    // recurse into and delete those pre-existing siblings.
+    for dir in created_dirs.iter().rev() {
+        if load_intent(&state.intent) == OperationIntent::Stopped {
+            return false;
+        }
+        if let Err(e) = volume.delete(dir).await {
+            log::debug!(
+                "volume_rollback_with_progress: not removing created dir {} (likely non-empty, kept): {:?}",
+                dir.display(),
+                e
+            );
         }
     }
 

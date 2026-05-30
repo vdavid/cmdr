@@ -11,9 +11,42 @@
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use super::super::state::WriteOperationState;
 use crate::file_system::volume::{Volume, VolumeError};
+use crate::ignore_poison::IgnorePoison;
+
+/// Records exactly what a single `copy_single_path` call wrote to the
+/// destination, so rollback can remove only what this operation created — never
+/// dest-only files that pre-existed a merged destination directory.
+///
+/// A directory source merges into an existing dest directory ("Overwrite means
+/// merge for dirs"), so recording the top-level dest directory and recursively
+/// deleting it on rollback would destroy the user's untouched files. Instead we
+/// record:
+/// - `files`: every destination FILE path the copy streamed, in write order.
+///   Rollback deletes these individually.
+/// - `dirs`: every destination DIRECTORY this copy newly created (i.e. the
+///   `create_directory` call returned `Ok`, not `AlreadyExists`), in
+///   creation order (shallowest first). Rollback removes these with a
+///   non-recursive delete (empty-only on real backends), deepest first, so a
+///   directory that still holds a pre-existing sibling survives.
+#[derive(Default)]
+pub(super) struct CreatedPaths {
+    pub files: Mutex<Vec<PathBuf>>,
+    pub dirs: Mutex<Vec<PathBuf>>,
+}
+
+impl CreatedPaths {
+    fn record_file(&self, path: PathBuf) {
+        self.files.lock_ignore_poison().push(path);
+    }
+
+    fn record_dir(&self, path: PathBuf) {
+        self.dirs.lock_ignore_poison().push(path);
+    }
+}
 
 /// Copies a single path from source volume to destination volume.
 ///
@@ -25,7 +58,7 @@ use crate::file_system::volume::{Volume, VolumeError};
 ///   directories recursively so the user can cancel between files.
 #[allow(
     clippy::too_many_arguments,
-    reason = "Cross-volume copy needs source/dest volumes, paths, the source type hint, the size hint, shared state, and two progress callbacks. Bundling into a struct adds ceremony without cleaning anything up."
+    reason = "Cross-volume copy needs source/dest volumes, paths, the source type hint, the size hint, shared state, the rollback ledger, and two progress callbacks. Bundling into a struct adds ceremony without cleaning anything up."
 )]
 pub(super) async fn copy_single_path(
     source_volume: &Arc<dyn Volume>,
@@ -35,6 +68,7 @@ pub(super) async fn copy_single_path(
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
+    created: &CreatedPaths,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     on_file_complete: &(dyn Fn() + Sync),
 ) -> Result<u64, VolumeError> {
@@ -50,11 +84,20 @@ pub(super) async fn copy_single_path(
             dest_volume,
             dest_path,
             state,
+            created,
             on_file_progress,
             on_file_complete,
         ))
         .await
     } else {
+        // A top-level FILE source records nothing into `created` here: the
+        // caller owns that path's rollback bookkeeping because it may be a
+        // safe-replace temp sibling (`write_path`) that gets renamed onto the
+        // original after the write lands — the caller records the ORIGINAL, not
+        // the temp. `created` is for the directory-merge case, where the
+        // recursive copy below is the only place that knows which files and
+        // newly-created subdirs landed inside a (possibly pre-existing) dest
+        // directory.
         let bytes = stream_pipe_file(
             source_volume,
             source_path,
@@ -126,12 +169,17 @@ fn note_pending_for_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: &Path) 
 
 /// Recursively copies a directory tree from source to destination, streaming
 /// each file through `write_from_stream`. Checks cancellation between entries.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Mirrors copy_single_path's argument list plus the rollback ledger; bundling into a struct adds ceremony without cleaning anything up."
+)]
 async fn copy_directory_streaming(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
+    created: &CreatedPaths,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     on_file_complete: &(dyn Fn() + Sync),
 ) -> Result<u64, VolumeError> {
@@ -140,9 +188,15 @@ async fn copy_directory_streaming(
     // because that's the merge-into-existing-directory signal, not a failure.
     // (SMB needed smb2 ≥ 0.8.0 to typed-classify STATUS_OBJECT_NAME_COLLISION;
     // older versions leaked it as IoError and the merge path blew up.)
+    //
+    // `Ok(())` means WE created this directory, so rollback may remove it (once
+    // empty). `AlreadyExists` means we merged into the user's pre-existing
+    // directory, so rollback must NOT remove it — only the files we wrote into
+    // it. This distinction is what keeps rollback from destroying dest-only
+    // files that legitimately coexist in a merged directory.
     note_pending_for_local_dest(dest_volume, dest_path);
     match dest_volume.create_directory(dest_path).await {
-        Ok(()) => {}
+        Ok(()) => created.record_dir(dest_path.to_path_buf()),
         Err(VolumeError::AlreadyExists(_)) => {}
         Err(VolumeError::NotSupported) => {
             // Backend can't create directories at all; assume `write_from_stream`
@@ -170,6 +224,7 @@ async fn copy_directory_streaming(
                 dest_volume,
                 &child_dest,
                 state,
+                created,
                 on_file_progress,
                 on_file_complete,
             ))
@@ -184,6 +239,7 @@ async fn copy_directory_streaming(
                 on_file_progress,
             )
             .await?;
+            created.record_file(child_dest);
             total_bytes += bytes;
             on_file_complete();
         }
@@ -229,6 +285,7 @@ mod tests {
             &dest,
             Path::new("dest.txt"),
             &state,
+            &CreatedPaths::default(),
             &|_, _| ControlFlow::Continue(()),
             &|| {},
         )
@@ -269,6 +326,7 @@ mod tests {
             &dest,
             Path::new("dest.txt"),
             &state,
+            &CreatedPaths::default(),
             &|_, _| ControlFlow::Continue(()),
             &|| {},
         )
@@ -310,6 +368,7 @@ mod tests {
             &dest,
             Path::new("/photo.jpg"),
             &state,
+            &CreatedPaths::default(),
             &|_, _| ControlFlow::Continue(()),
             &|| {},
         )
@@ -343,6 +402,7 @@ mod tests {
             &dest,
             Path::new("/big.bin"),
             &state,
+            &CreatedPaths::default(),
             &|bytes_done, total| {
                 progress_calls.fetch_add(1, Ordering::Relaxed);
                 total_bytes_reported.store(bytes_done, Ordering::Relaxed);
@@ -391,6 +451,7 @@ mod tests {
             &dest,
             Path::new("/big.bin"),
             &state,
+            &CreatedPaths::default(),
             &|_, _| {
                 let n = call_count.fetch_add(1, Ordering::Relaxed);
                 if n >= 1 {
@@ -423,6 +484,7 @@ mod tests {
             &dest,
             Path::new("/empty.txt"),
             &state,
+            &CreatedPaths::default(),
             &|_, _| ControlFlow::Continue(()),
             &|| {},
         )
@@ -447,6 +509,7 @@ mod tests {
             &dest,
             Path::new("/nope.txt"),
             &state,
+            &CreatedPaths::default(),
             &|_, _| ControlFlow::Continue(()),
             &|| {},
         )
@@ -482,6 +545,7 @@ mod tests {
             &dest,
             Path::new("/test.txt"),
             &state,
+            &CreatedPaths::default(),
             &|_, _| ControlFlow::Continue(()),
             &|| {
                 file_complete.fetch_add(1, Ordering::Relaxed);
@@ -523,6 +587,7 @@ mod tests {
             &dest,
             Path::new("/docs"),
             &state,
+            &CreatedPaths::default(),
             &|_, _| ControlFlow::Continue(()),
             &|| {
                 file_complete.fetch_add(1, Ordering::Relaxed);

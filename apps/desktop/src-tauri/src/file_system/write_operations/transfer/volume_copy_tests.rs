@@ -2688,3 +2688,120 @@ async fn cross_volume_overwrite_concurrent_preserves_new_data_on_finalize_failur
     // The /b.txt new content must survive (orig slot or a temp sibling).
     assert_new_data_survives(&dest_inner, b"BBB-new").await;
 }
+
+/// Sink that flips the operation's intent to `RollingBack` once it sees a
+/// `Copying`-phase progress event reporting at least one fully-copied file.
+/// For a single directory source, `files_done` only reaches 1 after the whole
+/// directory has been copied (the post-source milestone), so this fires the
+/// user-initiated Rollback AFTER the merge completed — the finding's scenario.
+struct RollbackAfterFirstFileSink {
+    inner: CollectorEventSink,
+    intent: Arc<AtomicU8>,
+}
+
+impl OperationEventSink for RollbackAfterFirstFileSink {
+    fn emit_progress(&self, event: WriteProgressEvent) {
+        if event.phase == WriteOperationPhase::Copying && event.files_done >= 1 {
+            // RollingBack = 1
+            self.intent.store(1, Ordering::Relaxed);
+        }
+        self.inner.emit_progress(event);
+    }
+    fn emit_complete(&self, e: WriteCompleteEvent) {
+        self.inner.emit_complete(e);
+    }
+    fn emit_cancelled(&self, e: WriteCancelledEvent) {
+        self.inner.emit_cancelled(e);
+    }
+    fn emit_error(&self, e: WriteErrorEvent) {
+        self.inner.emit_error(e);
+    }
+    fn emit_conflict(&self, e: WriteConflictEvent) {
+        self.inner.emit_conflict(e);
+    }
+    fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
+    fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}
+    fn emit_scan_conflict(&self, _c: crate::file_system::write_operations::types::ConflictInfo) {}
+    fn emit_dry_run_complete(&self, _r: crate::file_system::write_operations::types::DryRunResult) {}
+}
+
+/// Rollback of a directory source that MERGED into a pre-existing destination
+/// directory must delete only the files this operation wrote — never dest-only
+/// files that pre-existed the copy.
+///
+/// Regression for the cross-volume rollback bug: a directory source recorded the
+/// top-level dest directory in `copied_paths`, so Rollback recursively deleted
+/// the whole merged tree, including a sentinel file the operation never touched.
+/// "Overwrite means merge for dirs," so dest-only files legitimately coexist in a
+/// merged directory — and Rollback (the advertised safe undo) was destroying them.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn rollback_of_merged_directory_preserves_preexisting_dest_files() {
+    let (source, dest) = make_volumes();
+
+    // Source directory with two new files the op will write.
+    source.create_directory(Path::new("/album")).await.unwrap();
+    source
+        .create_file(Path::new("/album/new1.bin"), &vec![0u8; 200_000])
+        .await
+        .unwrap();
+    source
+        .create_file(Path::new("/album/new2.bin"), &vec![0u8; 200_000])
+        .await
+        .unwrap();
+
+    // Pre-existing dest directory of the same name, holding a unique sentinel
+    // file that the operation must never touch.
+    dest.create_directory(Path::new("/album")).await.unwrap();
+    dest.create_file(Path::new("/album/sentinel.txt"), b"precious user data")
+        .await
+        .unwrap();
+
+    let state = make_state();
+    let events = Arc::new(RollbackAfterFirstFileSink {
+        inner: CollectorEventSink::new(),
+        intent: Arc::clone(&state.intent),
+    });
+    // Overwrite ⇒ dir-vs-dir merges into the existing dest directory.
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-rollback-merge",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/album")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    // The operation ended via Rollback (cancellation-shaped result).
+    assert!(
+        result.is_err(),
+        "expected a cancelled/rolled-back result, got {:?}",
+        result
+    );
+
+    // THE BUG: the pre-existing sentinel must still be on the destination after
+    // rollback. Rollback may delete only what the op created (new1/new2), never
+    // the dest-only sentinel.
+    assert!(
+        dest.exists(Path::new("/album/sentinel.txt")).await,
+        "rollback wrongly deleted a pre-existing dest-only file in the merged directory",
+    );
+
+    // And the files the op actually wrote should be gone (rollback removed them).
+    assert!(
+        !dest.exists(Path::new("/album/new1.bin")).await,
+        "rollback should have removed the file the op created",
+    );
+    assert!(
+        !dest.exists(Path::new("/album/new2.bin")).await,
+        "rollback should have removed the file the op created",
+    );
+}
