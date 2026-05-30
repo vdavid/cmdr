@@ -25,6 +25,7 @@ The bundle builder mints a fresh 16-byte random salt per build; the salt itself 
 | `smb_uri`       | `smb://host/share/...`                               | `smb://<host>/<share>/<redacted tail>`                  |
 | `unc`           | `\\host\share\...`                                   | `\\<host>\<share>\<redacted tail>`                      |
 | `url_userinfo`  | `scheme://user[:pass]@host/...`                      | `scheme://<userinfo>@host/...` (host preserved)         |
+| `bare_userinfo` | `//user[:pass]@host/...` (no scheme)                 | `//<userinfo>@host/...` (host preserved)                |
 | `email`         | `local@domain.tld` (loose RFC 5321 ish)              | `<email>`                                               |
 | `mdns`          | `<label>.local` bare hostnames                       | `<host>.local`                                          |
 | `ipv4`          | dotted-quad with valid octet ranges                  | `<ipv4>`                                                |
@@ -114,3 +115,9 @@ Three steps:
 - The `url_userinfo` pattern preserves the host on purpose: the assumption is that the host
   is part of a well-known service URL the developer needs to see. If we ever store private
   hosts in URLs, revisit this.
+- `bare_userinfo` covers the scheme-less `//user:pass@host` shape that the macOS `smbutil`
+  and Linux `smbclient` share-listing fallbacks build (and a server can reflect in stderr).
+  The regex crate has no lookbehind, so we can't say "`//` not preceded by `:`". Instead the
+  pattern captures a leading delimiter (`^` or one whitespace char) into `bare_lead` and
+  re-emits it; this anchors the match so it can't grab the `//user@host` tail inside a
+  scheme'd `http://user@host` (which `url_userinfo` handles, listed earlier).

@@ -144,6 +144,17 @@ fn redactor_regex() -> &'static Regex {
                                   @
                                   (?P<host_rest>[^\s"'<>|`]*)
             )
+            # Scheme-less userinfo URL: `//user:pass@host[:port][/...]`. The macOS `smbutil`
+            # and Linux `smbclient` fallbacks build exactly this shape and a misbehaving
+            # server can reflect it in stderr. The regex crate has no lookbehind, so we
+            # capture the leading delimiter (start-of-text or a single whitespace char) and
+            # re-emit it in the rewriter; this stops us from matching the `//user@host` tail
+            # inside a scheme'd `http://user@host` (which `url_userinfo` already handles).
+            | (?P<bare_lead>^|\s) (?P<bare_userinfo> //
+                                  [^\s@/:"'<>|`]+ (?: : [^\s@/"'<>|`]* )?
+                                  @
+                                  (?P<bare_host_rest>[^\s"'<>|`]*)
+            )
             | (?P<email>          [A-Za-z0-9][A-Za-z0-9._%+-]* @ [A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,} )
             | (?P<mdns>           [A-Za-z0-9][A-Za-z0-9-]{0,62} \. local\b )
             | (?P<ipv6>
@@ -225,6 +236,13 @@ fn dispatch(caps: &Captures<'_>, salt: Option<&[u8]>) -> String {
         let scheme = caps.name("scheme").map(|m| m.as_str()).unwrap_or("");
         let host_rest = caps.name("host_rest").map(|m| m.as_str()).unwrap_or("");
         return format!("{scheme}://<userinfo>@{host_rest}");
+    }
+    if caps.name("bare_userinfo").is_some() {
+        // Scheme-less `//user:pass@host`: drop the userinfo, keep the leading delimiter
+        // and everything after the `@`.
+        let lead = caps.name("bare_lead").map(|m| m.as_str()).unwrap_or("");
+        let host_rest = caps.name("bare_host_rest").map(|m| m.as_str()).unwrap_or("");
+        return format!("{lead}//<userinfo>@{host_rest}");
     }
     if caps.name("email").is_some() {
         return "<email>".to_string();

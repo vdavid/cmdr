@@ -299,11 +299,13 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stdout = String::from_utf8_lossy(&output.stdout);
+        // smbutil runs with a credential-bearing `//user:pass@host` URL and can reflect it
+        // in stderr/stdout, so scrub both through the redactor before logging.
         debug!(
             "smbutil failed: exit={:?}, stderr={}, stdout={}",
             output.status.code(),
-            stderr,
-            stdout
+            crate::redact::redact_text(&stderr),
+            crate::redact::redact_text(&stdout)
         );
 
         return match classify_smbutil_stderr(&stderr) {

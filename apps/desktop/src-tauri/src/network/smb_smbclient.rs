@@ -79,14 +79,16 @@ pub async fn run_smbclient_list(
         } else {
             format!(":{}", port)
         };
+        // smbclient runs with `-U user%pass` and can reflect a credential-bearing URL in
+        // its output, so scrub stderr/stdout through the redactor before logging.
         warn!(
             "smbclient -L //{}{} failed (exit={:?}, has_creds={}). stderr: {} | stdout: {}",
             host,
             port_suffix,
             output.status.code(),
             credentials.is_some(),
-            truncate_for_log(&stderr, 1024),
-            truncate_for_log(&stdout, 1024),
+            crate::redact::redact_text(&truncate_for_log(&stderr, 1024)),
+            crate::redact::redact_text(&truncate_for_log(&stdout, 1024)),
         );
         return Err(classify_smbclient_error(&stdout, &stderr, host, credentials.is_some()));
     }

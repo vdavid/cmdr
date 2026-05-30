@@ -249,6 +249,33 @@ fn url_userinfo() {
 }
 
 #[test]
+fn bare_userinfo_no_scheme() {
+    // The macOS `smbutil` and Linux `smbclient` fallbacks build `//user:pass@host` URLs
+    // (no scheme). A misbehaving server can reflect them in stderr, so the redactor must
+    // strip the userinfo on this scheme-less shape too.
+    let cases = [
+        // Host is preserved verbatim, mirroring `url_userinfo` (the host is assumed to be
+        // diagnostically useful; only the secret userinfo is stripped).
+        ("//alice:s3cret@192.168.1.10", "//<userinfo>@192.168.1.10"),
+        ("//bob@nas.example.com/share", "//<userinfo>@nas.example.com/share"),
+        (
+            "smbutil failed for //user:pass@host:10480",
+            "smbutil failed for //<userinfo>@host:10480",
+        ),
+        ("stderr: //admin:hunter2@server now", "stderr: //<userinfo>@server now"),
+        // A scheme'd URL must still go through url_userinfo, not double-match the bare tail.
+        ("http://alice:s3cret@example.com/x", "http://<userinfo>@example.com/x"),
+        (
+            "connect //u:p@a and //x:y@b",
+            "connect //<userinfo>@a and //<userinfo>@b",
+        ),
+    ];
+    for (input, expected) in cases {
+        assert_eq!(r(input), expected, "input: {input:?}");
+    }
+}
+
+#[test]
 fn mtp_device_owner_names() {
     let cases = [
         (
