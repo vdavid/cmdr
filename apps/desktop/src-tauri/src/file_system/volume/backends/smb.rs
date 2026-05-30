@@ -1952,6 +1952,22 @@ impl Volume for SmbVolume {
             // this same clone — no second `clone_session` needed.
             let (tree, conn) = self.clone_session().await?;
 
+            // Best-effort delete of a partial file on a FRESH cloned session.
+            // Once a `FileWriter` is open and bytes have streamed into it, an
+            // early error (source read error, `write_chunk` / `finish`
+            // failure) would otherwise leave a half-written file at the real
+            // destination name (AGENTS.md principle #4: a failed copy must not
+            // leave corrupt bytes under the user's intended name). The delete
+            // runs on a fresh session because the writer's own connection may
+            // be gone. The caller MUST close the leaked write handle first
+            // (`writer.abort()` where the writer is still owned), else this
+            // delete hits a sharing violation against the still-open handle.
+            let delete_partial = || async {
+                if let Ok((tree_for_delete, mut conn_for_delete)) = self.clone_session().await {
+                    let _ = tree_for_delete.delete_file(&mut conn_for_delete, &smb_path).await;
+                }
+            };
+
             // Compound fast-path: when the caller promised a size that fits
             // in one WRITE, drain the source stream into a buffer and send
             // CREATE+WRITE+FLUSH+CLOSE as a single compound frame (1 RTT
@@ -1964,6 +1980,9 @@ impl Volume for SmbVolume {
                     if size <= max_write {
                         let mut buffer = Vec::with_capacity(size as usize);
                         while let Some(chunk_result) = stream.next_chunk().await {
+                            // Compound drain buffers in memory; no writer/handle
+                            // is open yet, so a source error here can't leave a
+                            // partial on the server. Just propagate.
                             let chunk = chunk_result?;
                             buffer.extend_from_slice(&chunk);
                             // Fire progress per chunk AND honor cancellation, so
@@ -1996,12 +2015,24 @@ impl Volume for SmbVolume {
                         let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
                         if !buffer.is_empty() {
                             let write_result = writer.write_chunk(&buffer).await;
-                            self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
+                            if let Err(ve) = self.handle_smb_result("write_from_stream(write_chunk)", write_result) {
+                                // Writer still owned: abort (closes the leaked
+                                // handle) then delete the partial, mirroring the
+                                // cancel branch, then propagate the original error.
+                                let _ = writer.abort().await;
+                                delete_partial().await;
+                                return Err(ve);
+                            }
                         }
                         // The source signalled end-of-stream by returning None
                         // above (we exited the drain loop). No further chunks.
+                        // `finish()` consumes the writer, so on failure the
+                        // handle is already gone (best-effort delete only).
                         let finish_result = writer.finish().await;
-                        self.handle_smb_result("write_from_stream(finish)", finish_result)?;
+                        if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", finish_result) {
+                            delete_partial().await;
+                            return Err(ve);
+                        }
                         break 'write buffer.len() as u64;
                     }
                 }
@@ -2015,14 +2046,29 @@ impl Volume for SmbVolume {
 
                 let mut bytes_read = 0u64;
 
-                while let Some(chunk_result) = stream.next_chunk().await {
-                    let chunk = chunk_result?;
+                loop {
+                    let chunk = match stream.next_chunk().await {
+                        None => break,
+                        Some(Ok(chunk)) => chunk,
+                        Some(Err(e)) => {
+                            // Source read error with the writer already open:
+                            // abort (closes the leaked handle), delete the
+                            // partial, then propagate the original error.
+                            let _ = writer.abort().await;
+                            delete_partial().await;
+                            return Err(e);
+                        }
+                    };
                     if chunk.is_empty() {
                         continue;
                     }
 
                     let write_result = writer.write_chunk(&chunk).await;
-                    self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
+                    if let Err(ve) = self.handle_smb_result("write_from_stream(write_chunk)", write_result) {
+                        let _ = writer.abort().await;
+                        delete_partial().await;
+                        return Err(ve);
+                    }
 
                     bytes_read += chunk.len() as u64;
 
@@ -2035,15 +2081,18 @@ impl Volume for SmbVolume {
                         let _ = writer.abort().await;
                         // Best-effort delete of the partial file on its own
                         // cloned connection (the writer's connection is gone).
-                        if let Ok((tree_for_delete, mut conn_for_delete)) = self.clone_session().await {
-                            let _ = tree_for_delete.delete_file(&mut conn_for_delete, &smb_path).await;
-                        }
+                        delete_partial().await;
                         return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
                     }
                 }
 
+                // `finish()` consumes the writer; on failure the handle is
+                // already gone, so we can only best-effort delete the partial.
                 let finish_result = writer.finish().await;
-                self.handle_smb_result("write_from_stream(finish)", finish_result)?;
+                if let Err(ve) = self.handle_smb_result("write_from_stream(finish)", finish_result) {
+                    delete_partial().await;
+                    return Err(ve);
+                }
 
                 bytes_read
             };
@@ -3852,6 +3901,95 @@ mod tests {
         );
 
         // The session must still work after cancel.
+        let _ = vol.list_directory(Path::new(&dir), None).await.unwrap();
+
+        ensure_clean(&vol, &dir).await;
+    }
+
+    /// A read stream that yields a fixed number of good chunks, then a source
+    /// read error on the next pull. Used to exercise the partial-file cleanup
+    /// on the write_from_stream ERROR path: once the SMB `FileWriter` is open
+    /// and a chunk has streamed into it, the source error must propagate AND
+    /// the half-written file must be deleted from the destination.
+    struct ErroringReadStream {
+        good_chunks: usize,
+        chunk: Vec<u8>,
+        total_size: u64,
+        bytes_read: u64,
+        yielded: usize,
+    }
+
+    impl VolumeReadStream for ErroringReadStream {
+        fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+            Box::pin(async move {
+                if self.yielded < self.good_chunks {
+                    self.yielded += 1;
+                    self.bytes_read += self.chunk.len() as u64;
+                    Some(Ok(self.chunk.clone()))
+                } else {
+                    Some(Err(VolumeError::IoError {
+                        message: "Injected source read error".to_string(),
+                        raw_os_error: None,
+                    }))
+                }
+            })
+        }
+
+        fn total_size(&self) -> u64 {
+            self.total_size
+        }
+
+        fn bytes_read(&self) -> u64 {
+            self.bytes_read
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_write_from_stream_source_error_deletes_partial() {
+        // Mid-stream source read error on the streaming path leaves a partial
+        // file open on the server. The write_from_stream ERROR path must
+        // delete that partial (mirroring the cancel branch) and propagate the
+        // ORIGINAL error (NOT Cancelled). Without the fix, the destination
+        // keeps a half-written file under the user's intended name.
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+
+        // `size` larger than any plausible max_write_size forces the streaming
+        // writer path (not the compound fast-path), so the writer is genuinely
+        // open when the source errors on the second pull.
+        let chunk = vec![0xA7u8; 256 * 1024]; // 256 KB good chunk
+        let size = 64 * 1024 * 1024u64; // 64 MB promised, far above max_write
+        let stream = ErroringReadStream {
+            good_chunks: 1,
+            chunk,
+            total_size: size,
+            bytes_read: 0,
+            yielded: 0,
+        };
+
+        let smb_path = format!("{}/partial-on-error.bin", dir);
+        let result = vol
+            .write_from_stream(Path::new(&smb_path), size, Box::new(stream), &|_, _| {
+                std::ops::ControlFlow::Continue(())
+            })
+            .await;
+
+        // The original IoError must propagate, NOT Cancelled.
+        assert!(
+            matches!(result, Err(VolumeError::IoError { .. })),
+            "expected the source IoError to propagate, got {result:?}"
+        );
+
+        // The partial must be gone: cleanup deleted it on a fresh session.
+        assert!(
+            !vol.exists(Path::new(&smb_path)).await,
+            "partial file was left at the destination after a source-read error"
+        );
+
+        // The session must still be usable for subsequent ops.
         let _ = vol.list_directory(Path::new(&dir), None).await.unwrap();
 
         ensure_clean(&vol, &dir).await;
