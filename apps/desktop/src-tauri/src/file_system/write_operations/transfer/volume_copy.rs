@@ -433,6 +433,35 @@ pub(crate) async fn copy_volumes_with_progress(
         source_paths.len()
     );
 
+    // Phase 0: Reject copying a directory into its own descendant on the SAME
+    // volume. `copy_directory_streaming` re-lists each subdirectory live, so a
+    // dest inside the source subtree (e.g. copy `/A` into `/A/sub` on one
+    // share/device) would re-discover and re-copy the files it just wrote —
+    // unbounded recursion that grows the tree until the volume fills (or the
+    // streaming copy overflows its own stack). The local-FS copy path already
+    // rejects this via `validate_destination_not_inside_source`; this brings
+    // the volume path to parity. Cross-DEVICE copies can't hit it (different
+    // path spaces), so the guard only fires when source and dest are the same
+    // volume.
+    if Arc::ptr_eq(&source_volume, &dest_volume) {
+        for source in source_paths {
+            // The copied item lands under `dest_path` (e.g. `/A/sub/A` for
+            // source `/A` into dest dir `/A/sub`), so an overlap means
+            // `dest_path` is at or below the source directory.
+            // Only a DIRECTORY source can contain the destination; a file source
+            // can't, and a missing source surfaces later as a per-source copy
+            // error, so `Ok(false)` / `Err(_)` fall through without rejecting.
+            if (dest_path == source.as_path() || dest_path.starts_with(source))
+                && matches!(dest_volume.is_directory(source).await, Ok(true))
+            {
+                return Err(WriteFailure::synthetic(WriteOperationError::DestinationInsideSource {
+                    source: source.display().to_string(),
+                    destination: dest_path.display().to_string(),
+                }));
+            }
+        }
+    }
+
     // Phase 1: Preflight scan (reuses the dialog's cached preview when one is
     // available). Populates `total_files`, `total_bytes`, and per-source
     // `is_directory` / `size` hints so the copy loop doesn't have to re-probe

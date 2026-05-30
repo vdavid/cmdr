@@ -2805,3 +2805,82 @@ async fn rollback_of_merged_directory_preserves_preexisting_dest_files() {
         "rollback should have removed the file the op created",
     );
 }
+
+/// Copying a directory into its own descendant on the SAME volume must be
+/// rejected up front with `DestinationInsideSource`, not recurse unboundedly.
+///
+/// Regression for the missing volume-path guard: the local copy path rejects
+/// this via `validate_destination_not_inside_source`, but the cross-volume /
+/// same-volume path had no equivalent. `copy_directory_streaming` re-lists each
+/// subdir live, so copying folder `A` into `A/sub` on one share/device would
+/// re-discover and re-copy the files it just wrote, growing the tree until the
+/// volume fills.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn same_volume_copy_into_own_descendant_is_rejected() {
+    // One volume used as BOTH source and dest (same Arc ⇒ Arc::ptr_eq is true,
+    // matching how the command layer resolves a same-volume-id copy).
+    let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("V").with_space_info(10_000_000, 10_000_000));
+    vol.create_directory(Path::new("/A")).await.unwrap();
+    vol.create_directory(Path::new("/A/sub")).await.unwrap();
+    vol.create_file(Path::new("/A/file.txt"), b"payload").await.unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig::default();
+
+    // Copy `/A` INTO `/A/sub` (its own descendant). Dest dir is `/A/sub`, so the
+    // copied item lands at `/A/sub/A` — inside the source subtree.
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-dest-inside-source",
+        &state,
+        Arc::clone(&vol),
+        &[PathBuf::from("/A")],
+        Arc::clone(&vol),
+        Path::new("/A/sub"),
+        &config,
+    )
+    .await;
+
+    assert!(
+        matches!(
+            result,
+            Err(WriteFailure {
+                error: WriteOperationError::DestinationInsideSource { .. },
+                ..
+            })
+        ),
+        "expected DestinationInsideSource, got {:?}",
+        result
+    );
+}
+
+/// The dest-inside-source guard must NOT over-fire: a same-volume copy of a
+/// directory into a SIBLING (not a descendant) is legitimate and must proceed.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn same_volume_copy_into_sibling_dir_is_allowed() {
+    let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("V").with_space_info(10_000_000, 10_000_000));
+    vol.create_directory(Path::new("/A")).await.unwrap();
+    vol.create_file(Path::new("/A/file.txt"), b"payload").await.unwrap();
+    vol.create_directory(Path::new("/dest")).await.unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig::default();
+
+    // Copy `/A` into `/dest` (a sibling, not inside `/A`). Lands at `/dest/A`.
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-sibling-dest",
+        &state,
+        Arc::clone(&vol),
+        &[PathBuf::from("/A")],
+        Arc::clone(&vol),
+        Path::new("/dest"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "sibling-dir copy should succeed: {:?}", result);
+    assert!(vol.exists(Path::new("/dest/A/file.txt")).await);
+}
