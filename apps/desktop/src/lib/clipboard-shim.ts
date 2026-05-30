@@ -27,25 +27,17 @@ export async function installClipboardShimIfE2e(): Promise<void> {
 
   let store = ''
   const writeText = (text: string): Promise<void> => {
-    store = String(text)
+    store = text
     return Promise.resolve()
   }
   const readText = (): Promise<string> => Promise.resolve(store)
 
-  const clipboard: Clipboard | undefined = navigator.clipboard
-  if (clipboard) {
-    // Shadow the prototype methods on the live Clipboard instance so every
-    // existing `navigator.clipboard.writeText(...)` call site hits the store.
-    Object.defineProperty(clipboard, 'writeText', { value: writeText, configurable: true, writable: true })
-    Object.defineProperty(clipboard, 'readText', { value: readText, configurable: true, writable: true })
-    return
-  }
-
-  // No Clipboard object (for example, an insecure context): define a stand-in.
-  Object.defineProperty(navigator, 'clipboard', {
-    value: { writeText, readText },
-    configurable: true,
-  })
+  // Shadow the methods on the live Clipboard instance so every existing
+  // `navigator.clipboard.writeText(...)` call site hits the in-memory store.
+  // The Tauri webview is always a secure context, so `navigator.clipboard` is
+  // present (the type system agrees: it's non-nullable here).
+  Object.defineProperty(navigator.clipboard, 'writeText', { value: writeText, configurable: true, writable: true })
+  Object.defineProperty(navigator.clipboard, 'readText', { value: readText, configurable: true, writable: true })
 }
 
 /** Test-only: clears the install latch so each test re-evaluates the guard. */
