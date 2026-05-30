@@ -421,9 +421,30 @@ else
                 echo "$LOCK_HASH" > /app/node_modules/.linux-installed
             fi
 
+            # Install the chromium browser binary, but NOT its apt deps.
             # Playwright browsers live in /root/.cache (ephemeral), not in the
-            # node_modules volume, so they must be reinstalled each container run.
-            npx playwright install --with-deps chromium
+            # node_modules volume, so they are reinstalled each container run.
+            # The tauri-playwright fixture still launches a real headless
+            # chromium under the hood even though no spec drives a browser
+            # directly, so the binary must be present or every test errors with
+            # "browserType.launch: Executable does not exist".
+            #
+            # We drop --with-deps because the apt step fails on the 26.04 base
+            # image: Playwright 1.59 only knows ubuntu 20.04/22.04/24.04, so
+            # playwright install --with-deps chromium errors with "does not
+            # support chromium on ubuntu24.04". The browser-binary download is
+            # fine: PLAYWRIGHT_HOST_PLATFORM_OVERRIDE (entrypoint.sh) maps it to
+            # the 24.04 build. The chromium runtime libs --with-deps would add
+            # (libnss3, libnspr4, libgbm1, libdrm2, libcups2, libxkbcommon0,
+            # libatspi2.0-0, libasound2t64, ...) are apt-installed directly in
+            # the Dockerfile instead, where plain apt on 26.04 has no Playwright
+            # version gate. Keep that Dockerfile list in sync with Playwright
+            # chromium deps if you bump the Playwright version.
+            #
+            # NOTE: this whole block runs inside a single-quoted bash -c string,
+            # so any apostrophe in these comments would close the quote and break
+            # the script. Keep comment prose apostrophe-free.
+            npx playwright install chromium
 
             SOCKET_PATH="/tmp/tauri-playwright.sock"
 

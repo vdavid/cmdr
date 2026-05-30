@@ -42,6 +42,23 @@ RUN apt-get update && apt-get install -y \
     libcairo2 \
     libatk1.0-0 \
     libgdk-pixbuf-2.0-0 \
+    # Chromium runtime libs for Playwright's headless_shell. The tauri-playwright
+    # fixture launches a real headless chromium even though no spec drives a
+    # browser directly, so the binary needs these to start. We install them here
+    # (plain apt on 26.04) instead of via `playwright install --with-deps`, which
+    # fails on 26.04 because Playwright 1.59 only knows ubuntu <=24.04. Keep this
+    # list in sync with Playwright's chromium deps when bumping the version (see
+    # node_modules/playwright-core/.../registry/nativeDeps.js, ubuntu24.04-x64).
+    libnss3 \
+    libnspr4 \
+    libgbm1 \
+    libdrm2 \
+    libcups2t64 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
+    libatk-bridge2.0-0 \
+    libasound2t64 \
+    libxcb1 \
     # Go (needed by beforeBuildCommand for llama-server placeholder)
     golang-go \
     # VNC for interactive debugging (--vnc mode)

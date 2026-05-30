@@ -10,6 +10,7 @@ import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   dispatchMenuCommand,
   ensureAppReady,
+  expectAndDismissToast,
   getFixtureRoot,
   moveCursorToFile,
   pollUntil,
@@ -209,6 +210,12 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     }
 
     await waitForDialogsToClose(tauriPage)
+    // The copy fires a transient "Copy complete" toast. Assert + dismiss it so
+    // the afterEach leak-detector does not fail on a still-visible toast (these
+    // per-file-conflict flows finish slower than the upfront-policy tests, so
+    // the toast is still on screen when afterEach probes — it does not reliably
+    // auto-dismiss in time on Linux).
+    await expectAndDismissToast(tauriPage, 'Copy complete')
 
     // We overwrote the first conflict and skipped the rest.
     // Since filesystem traversal order is unpredictable, verify that
@@ -256,6 +263,7 @@ test.describe('Rename conflict resolution', () => {
     await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename')
 
     await waitForDialogsToClose(tauriPage)
+    await expectAndDismissToast(tauriPage, 'Copy complete')
 
     // Original dest file preserved
     expect(readFile(fixtureRoot, 'right/file-a.txt')).toBe('original-dest')
@@ -286,6 +294,7 @@ test.describe('Rename conflict resolution', () => {
     await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename all')
 
     await waitForDialogsToClose(tauriPage)
+    await expectAndDismissToast(tauriPage, 'Copy complete')
 
     // All original dest files preserved
     expect(readFile(fixtureRoot, 'right/readme.txt')).toBe('dest-readme')
