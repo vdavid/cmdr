@@ -123,25 +123,22 @@ test.describe('File viewer encoding picker', () => {
       )
       .toBe('utf8')
 
-    // The viewport must stay interactive. Scrolling the content element while
-    // the rebuild runs is the contract. We assert that scrolling works by
-    // dispatching a wheel event and checking scrollTop changes.
-    await viewer.evaluate(`
-      (function () {
-        const content = document.querySelector('.file-content')
-        if (content) {
-          content.scrollTop = 400
-        }
-      })()
-    `)
-
+    // The viewport must stay interactive during the rebuild: setting scrollTop
+    // must take. Re-apply the gesture on every poll iteration rather than once
+    // up front — mid-rebuild the virtualized content can briefly have no
+    // scrollable height (scrollHeight <= clientHeight clamps scrollTop back to
+    // 0), so a single pre-poll set could latch a permanent 0 on a slow host
+    // (the Docker flake). Once the rows are back the assignment sticks and
+    // scrollTop reads > 0.
     await expect
       .poll(
         async () => {
           return await viewer.evaluate<number | null>(`
             (function () {
               const content = document.querySelector('.file-content')
-              return content ? content.scrollTop : null
+              if (!content) return null
+              content.scrollTop = 400
+              return content.scrollTop
             })()
           `)
         },
