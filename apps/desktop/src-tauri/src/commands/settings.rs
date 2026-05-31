@@ -36,30 +36,58 @@ pub fn update_file_watcher_debounce(debounce_ms: u64) {
     update_debounce_ms(debounce_ms);
 }
 
-/// Returns the absolute `settings.json` path the frontend's `tauri-plugin-store`
-/// should load, but ONLY when this is an isolated instance (dev, per-worktree
-/// dev, or E2E — anything that sets `CMDR_DATA_DIR`). Returns `None` for
-/// production so the store keeps resolving via `BaseDirectory::AppData` exactly
-/// as before.
+/// Returns the absolute path the frontend's `tauri-plugin-store` should load for
+/// a given store file (for example `settings.json`, `shortcuts.json`,
+/// `app-status.json`, `viewer-tail.json`), but ONLY when this is an isolated
+/// instance (dev, per-worktree dev, or E2E — anything that sets
+/// `CMDR_DATA_DIR`). Returns `None` for production so each store keeps resolving
+/// via `BaseDirectory::AppData` exactly as before.
 ///
-/// Why this exists: `tauri-plugin-store` resolves its path against Tauri's
-/// `app_data_dir()` (identifier-driven), which ignores `CMDR_DATA_DIR`. The
-/// Rust-side settings loader (`settings::load_settings`) already honors
-/// `CMDR_DATA_DIR` via `resolved_app_data_dir`, so without this the frontend
-/// store and the backend loader read *different* `settings.json` files in any
-/// isolated instance. In E2E that means the suite reads the developer's real
-/// `~/Library/Application Support/com.veszelovszki.cmdr/settings.json` — so a
-/// locally-flipped setting (for example `fileExplorer.suppressQuickLookHint`)
-/// leaks into tests and makes them fail on that machine while passing in CI
-/// (which has no such file). Pointing the store at the resolved data dir closes
-/// that gap. Production is unaffected: `CMDR_DATA_DIR` is unset there, so this
-/// returns `None` and the store path is byte-identical to before.
+/// Why this exists: `tauri-plugin-store` resolves a bare store name against
+/// Tauri's `app_data_dir()` (identifier-driven), which ignores `CMDR_DATA_DIR`.
+/// The Rust-side data dir (`resolved_app_data_dir`) already honors
+/// `CMDR_DATA_DIR`, so without this the frontend stores and the backend read
+/// *different* files in any isolated instance. In E2E that means the suite reads
+/// the developer's real `~/Library/Application Support/com.veszelovszki.cmdr/…`
+/// files — so a locally-flipped setting (for example
+/// `fileExplorer.suppressQuickLookHint`) or a remapped shortcut leaks into tests
+/// and makes them fail on that machine while passing in CI (which has no such
+/// file). Pointing each store at the resolved data dir closes that gap.
+/// Production is unaffected: `CMDR_DATA_DIR` is unset there, so this returns
+/// `None` and the store path is byte-identical to before.
+///
+/// Security: `store_name` crosses the IPC boundary from the frontend. The
+/// returned path must always land *inside* the resolved data dir, so we reject
+/// anything that isn't a plain filename — see `sanitize_store_name`. A rejected
+/// name yields `None`, which the frontend treats exactly like production (it
+/// falls back to the bare name), so a bad input can never escape the data dir.
 #[tauri::command]
 #[specta::specta]
-pub fn get_isolated_settings_path(app: AppHandle) -> Option<String> {
+pub fn get_isolated_store_path(app: AppHandle, store_name: String) -> Option<String> {
     std::env::var("CMDR_DATA_DIR").ok().filter(|s| !s.is_empty())?;
+    let name = sanitize_store_name(&store_name)?;
     let dir = crate::config::resolved_app_data_dir(&app).ok()?;
-    Some(dir.join("settings.json").to_string_lossy().into_owned())
+    Some(dir.join(name).to_string_lossy().into_owned())
+}
+
+/// Validates that `store_name` is a single plain filename safe to join onto the
+/// data dir, returning it unchanged on success. Rejects absolute paths, any name
+/// containing a path separator (`/` or `\`) or a `..` component, and the special
+/// `.`/`..` names — anything that could let the joined path escape the data dir.
+/// We don't strip to the last component; a name with separators is a frontend
+/// bug or an attack, so we reject outright rather than silently reinterpret it.
+fn sanitize_store_name(store_name: &str) -> Option<&str> {
+    let trimmed = store_name.trim();
+    if trimmed.is_empty() || trimmed.contains('/') || trimmed.contains('\\') || trimmed.contains("..") || trimmed == "."
+    {
+        return None;
+    }
+    // Final guard: the OS-level parse must yield exactly one normal component.
+    let mut components = std::path::Path::new(trimmed).components();
+    match (components.next(), components.next()) {
+        (Some(std::path::Component::Normal(c)), None) if c == trimmed => Some(trimmed),
+        _ => None,
+    }
 }
 
 /// Updates the mDNS service resolve timeout in milliseconds.
@@ -254,6 +282,41 @@ mod tests {
 
         // Restore defaults so later tests see a predictable state.
         set_smb_concurrency_cmd(10);
+    }
+
+    #[test]
+    fn test_sanitize_store_name_accepts_plain_filenames() {
+        for name in [
+            "settings.json",
+            "shortcuts.json",
+            "app-status.json",
+            "viewer-tail.json",
+            "no-extension",
+        ] {
+            assert_eq!(sanitize_store_name(name), Some(name), "should accept {name}");
+        }
+    }
+
+    #[test]
+    fn test_sanitize_store_name_rejects_traversal_and_absolute() {
+        // None of these may produce a path that escapes the data dir, so all are rejected.
+        for name in [
+            "",
+            "   ",
+            ".",
+            "..",
+            "../settings.json",
+            "../../etc/passwd",
+            "foo/bar.json",
+            "/etc/passwd",
+            "/absolute.json",
+            "sub/settings.json",
+            r"..\windows.json",
+            r"C:\windows.json",
+            "a/../b.json",
+        ] {
+            assert_eq!(sanitize_store_name(name), None, "should reject {name:?}");
+        }
     }
 
     #[test]

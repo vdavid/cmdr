@@ -1129,26 +1129,33 @@ export const commands = {
    */
   findAvailablePort: (startPort: number) => __TAURI_INVOKE<number | null>('find_available_port', { startPort }),
   /**
-   *  Returns the absolute `settings.json` path the frontend's `tauri-plugin-store`
-   *  should load, but ONLY when this is an isolated instance (dev, per-worktree
-   *  dev, or E2E — anything that sets `CMDR_DATA_DIR`). Returns `None` for
-   *  production so the store keeps resolving via `BaseDirectory::AppData` exactly
-   *  as before.
+   *  Returns the absolute path the frontend's `tauri-plugin-store` should load for
+   *  a given store file (for example `settings.json`, `shortcuts.json`,
+   *  `app-status.json`, `viewer-tail.json`), but ONLY when this is an isolated
+   *  instance (dev, per-worktree dev, or E2E — anything that sets
+   *  `CMDR_DATA_DIR`). Returns `None` for production so each store keeps resolving
+   *  via `BaseDirectory::AppData` exactly as before.
    *
-   *  Why this exists: `tauri-plugin-store` resolves its path against Tauri's
-   *  `app_data_dir()` (identifier-driven), which ignores `CMDR_DATA_DIR`. The
-   *  Rust-side settings loader (`settings::load_settings`) already honors
-   *  `CMDR_DATA_DIR` via `resolved_app_data_dir`, so without this the frontend
-   *  store and the backend loader read *different* `settings.json` files in any
-   *  isolated instance. In E2E that means the suite reads the developer's real
-   *  `~/Library/Application Support/com.veszelovszki.cmdr/settings.json` — so a
-   *  locally-flipped setting (for example `fileExplorer.suppressQuickLookHint`)
-   *  leaks into tests and makes them fail on that machine while passing in CI
-   *  (which has no such file). Pointing the store at the resolved data dir closes
-   *  that gap. Production is unaffected: `CMDR_DATA_DIR` is unset there, so this
-   *  returns `None` and the store path is byte-identical to before.
+   *  Why this exists: `tauri-plugin-store` resolves a bare store name against
+   *  Tauri's `app_data_dir()` (identifier-driven), which ignores `CMDR_DATA_DIR`.
+   *  The Rust-side data dir (`resolved_app_data_dir`) already honors
+   *  `CMDR_DATA_DIR`, so without this the frontend stores and the backend read
+   *  *different* files in any isolated instance. In E2E that means the suite reads
+   *  the developer's real `~/Library/Application Support/com.veszelovszki.cmdr/…`
+   *  files — so a locally-flipped setting (for example
+   *  `fileExplorer.suppressQuickLookHint`) or a remapped shortcut leaks into tests
+   *  and makes them fail on that machine while passing in CI (which has no such
+   *  file). Pointing each store at the resolved data dir closes that gap.
+   *  Production is unaffected: `CMDR_DATA_DIR` is unset there, so this returns
+   *  `None` and the store path is byte-identical to before.
+   *
+   *  Security: `store_name` crosses the IPC boundary from the frontend. The
+   *  returned path must always land *inside* the resolved data dir, so we reject
+   *  anything that isn't a plain filename — see `sanitize_store_name`. A rejected
+   *  name yields `None`, which the frontend treats exactly like production (it
+   *  falls back to the bare name), so a bad input can never escape the data dir.
    */
-  getIsolatedSettingsPath: () => __TAURI_INVOKE<string | null>('get_isolated_settings_path'),
+  getIsolatedStorePath: (storeName: string) => __TAURI_INVOKE<string | null>('get_isolated_store_path', { storeName }),
   /**
    *  Updates the file watcher debounce duration in milliseconds.
    *  This affects newly created watchers; existing watchers keep their original duration.

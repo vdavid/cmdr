@@ -7,7 +7,7 @@ import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
-import { resolveSettingsStorePath } from './settings-store-path'
+import { resolveStorePath } from './store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import { commands } from '$lib/ipc/bindings'
@@ -46,10 +46,10 @@ let crossWindowUnlisten: UnlistenFn | null = null
 async function getStore(): Promise<Store> {
   if (!storeInstance) {
     // Resolve the store path so isolated instances (dev, per-worktree dev, E2E)
-    // don't read the real production `settings.json`. See `settings-store-path.ts`.
-    const storePath = await resolveSettingsStorePath((e) =>
-      log.warn('Could not resolve isolated settings path, using default: {error}', { error: String(e) }),
-    )
+    // don't read the real production `settings.json`. See `store-path.ts`.
+    const storePath = await resolveStorePath('settings.json', (e) => {
+      log.warn('Could not resolve isolated settings path, using default: {error}', { error: String(e) })
+    })
     log.debug('Creating new store instance for {storeName}', { storeName: storePath })
     // Build defaults from registry
     const defaults: Record<string, unknown> = {}

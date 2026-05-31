@@ -27,7 +27,7 @@ import { configure, getConsoleSink, getLogger as getLogTapeLogger, withFilter } 
 import type { Logger } from '@logtape/logtape'
 import { commands } from '$lib/ipc/bindings'
 import { load, type Store } from '@tauri-apps/plugin-store'
-import { resolveSettingsStorePath } from '$lib/settings/settings-store-path'
+import { resolveStorePath } from '$lib/settings/store-path'
 import { getTauriBridgeSink, startBridge } from './log-bridge'
 
 // Re-export getLogger for convenience
@@ -74,8 +74,8 @@ let loggerInitialized = false
 async function getVerboseLoggingSetting(): Promise<boolean> {
   try {
     // Resolve the store path so isolated instances (dev, per-worktree dev, E2E)
-    // don't read the real production `settings.json`. See `settings-store-path.ts`.
-    const storePath = await resolveSettingsStorePath()
+    // don't read the real production `settings.json`. See `settings/store-path.ts`.
+    const storePath = await resolveStorePath('settings.json')
     // Use empty defaults since we just want to read existing values
     const store: Store = await load(storePath, {
       autoSave: false,

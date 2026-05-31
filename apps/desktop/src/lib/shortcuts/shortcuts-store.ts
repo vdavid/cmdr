@@ -5,6 +5,7 @@
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { commands as ipcCommands } from '$lib/ipc/bindings'
 import { commands } from '$lib/commands/command-registry'
+import { resolveStorePath } from '$lib/settings/store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import { toPlatformShortcut } from './key-capture'
@@ -30,7 +31,12 @@ let initialized = false
 
 async function getStore(): Promise<Store> {
   if (!storeInstance) {
-    storeInstance = await load(STORE_NAME, {
+    // Resolve the store path so isolated instances (dev, per-worktree dev, E2E)
+    // don't read the real production `shortcuts.json`. See `settings/store-path.ts`.
+    const storePath = await resolveStorePath(STORE_NAME, (e) => {
+      log.warn('Could not resolve isolated shortcuts path, using default: {error}', { error: String(e) })
+    })
+    storeInstance = await load(storePath, {
       defaults: { _schemaVersion: SCHEMA_VERSION },
       autoSave: false,
     })

@@ -163,7 +163,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::mcp::get_mcp_token,
         crate::commands::settings::check_port_available,
         crate::commands::settings::find_available_port,
-        crate::commands::settings::get_isolated_settings_path,
+        crate::commands::settings::get_isolated_store_path,
         crate::commands::settings::update_file_watcher_debounce,
         crate::commands::settings::update_service_resolve_timeout,
         crate::commands::settings::update_menu_accelerator,

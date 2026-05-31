@@ -15,6 +15,7 @@
  */
 
 import { load, type Store } from '@tauri-apps/plugin-store'
+import { resolveStorePath } from '$lib/settings/store-path'
 
 const STORE_NAME = 'viewer-tail.json'
 const STORE_KEY = 'pathTailMode'
@@ -34,7 +35,10 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null
 
 async function getStore(): Promise<Store> {
   if (storeInstance) return storeInstance
-  storeInstance = await load(STORE_NAME, { defaults: { [STORE_KEY]: [] }, autoSave: false })
+  // Resolve the store path so isolated instances (dev, per-worktree dev, E2E)
+  // don't read the real production `viewer-tail.json`. See `$lib/settings/store-path.ts`.
+  const storePath = await resolveStorePath(STORE_NAME)
+  storeInstance = await load(storePath, { defaults: { [STORE_KEY]: [] }, autoSave: false })
   return storeInstance
 }
 

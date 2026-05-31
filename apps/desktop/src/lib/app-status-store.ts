@@ -6,6 +6,7 @@ import type { SortColumn } from './file-explorer/types'
 import { defaultSortOrders } from './file-explorer/types'
 import type { PersistedTab, PersistedPaneTabs } from './file-explorer/tabs/tab-types'
 import { resolveValidPath } from './file-explorer/navigation/path-resolution'
+import { resolveStorePath } from './settings/store-path'
 
 const STORE_NAME = 'app-status.json'
 const DEFAULT_PATH = '~'
@@ -47,7 +48,10 @@ let storeInstance: Store | null = null
 
 async function getStore(): Promise<Store> {
   if (!storeInstance) {
-    storeInstance = await load(STORE_NAME)
+    // Resolve the store path so isolated instances (dev, per-worktree dev, E2E)
+    // don't read the real production `app-status.json`. See `settings/store-path.ts`.
+    const storePath = await resolveStorePath(STORE_NAME)
+    storeInstance = await load(storePath)
   }
   return storeInstance
 }
