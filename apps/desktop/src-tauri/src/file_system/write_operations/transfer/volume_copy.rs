@@ -744,6 +744,10 @@ pub(crate) async fn copy_volumes_with_progress(
                     // re-scan to populate the conflict dialog (an MTP `scan_for_copy`
                     // lists the parent dir, ~18 s for 1046 photos on a cold cache).
                     let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                    // `Some` only when the preflight actually produced a hint, so
+                    // `resolve_volume_conflict` keeps its trait-call fallback for
+                    // the no-hint case instead of trusting a defaulted `false`.
+                    let source_is_directory_hint = source_hint.map(|h| h.is_directory);
                     let dest_size_hint = dest_meta.size;
                     log::debug!(
                         "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
@@ -763,6 +767,7 @@ pub(crate) async fn copy_volumes_with_progress(
                         &mut apply_to_all_resolution,
                         source_size_hint,
                         dest_size_hint,
+                        source_is_directory_hint,
                     )
                     .await
                     .map_err(WriteFailure::synthetic)?;
@@ -1162,6 +1167,10 @@ pub(crate) async fn copy_volumes_with_progress(
                         let source_hint = source_hints.get(&source_path_owned).copied();
                         let source_is_dir = source_hint.map(|h| h.is_directory).unwrap_or(false);
                         let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                        // `Some` only when the preflight produced a hint, so the
+                        // resolver keeps its trait-call fallback rather than
+                        // trusting a defaulted `false`.
+                        let source_is_directory_hint = source_hint.map(|h| h.is_directory);
                         log::debug!(
                             "copy_volumes_with_progress: conflict detected at {} (source_is_dir={})",
                             initial_dest_owned.display(),
@@ -1186,6 +1195,7 @@ pub(crate) async fn copy_volumes_with_progress(
                             &mut latched,
                             source_size_hint,
                             dest_size_hint,
+                            source_is_directory_hint,
                         )
                         .await;
                         *apply_to_all.lock_ignore_poison() = latched;

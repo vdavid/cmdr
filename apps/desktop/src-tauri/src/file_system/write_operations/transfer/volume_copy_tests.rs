@@ -1081,12 +1081,15 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     use std::pin::Pin;
     use std::sync::atomic::AtomicUsize;
 
-    /// Wraps `InMemoryVolume` and counts `scan_for_copy` invocations. Skipped
-    /// files never get their source opened, so we only need to delegate the
-    /// read-path methods + `scan_for_copy`.
+    /// Wraps `InMemoryVolume` and counts `scan_for_copy`, `is_directory`, and
+    /// `get_metadata` invocations. On MTP each of these lists the parent dir
+    /// (a device-lock acquisition), so the conflict-emit path must not call
+    /// them when the preflight already supplies the source size + type.
     struct ScanCountingVolume {
         inner: Arc<InMemoryVolume>,
         scan_calls: Arc<AtomicUsize>,
+        is_directory_calls: Arc<AtomicUsize>,
+        get_metadata_calls: Arc<AtomicUsize>,
     }
 
     impl Volume for ScanCountingVolume {
@@ -1110,6 +1113,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
             &'a self,
             path: &'a Path,
         ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+            self.get_metadata_calls.fetch_add(1, Ordering::Relaxed);
             self.inner.get_metadata(path)
         }
         fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
@@ -1119,6 +1123,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
             &'a self,
             path: &'a Path,
         ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+            self.is_directory_calls.fetch_add(1, Ordering::Relaxed);
             self.inner.is_directory(path)
         }
         fn scan_for_copy<'a>(
@@ -1137,9 +1142,13 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
         .await
         .unwrap();
     let scan_calls = Arc::new(AtomicUsize::new(0));
+    let is_directory_calls = Arc::new(AtomicUsize::new(0));
+    let get_metadata_calls = Arc::new(AtomicUsize::new(0));
     let source: Arc<dyn Volume> = Arc::new(ScanCountingVolume {
         inner: Arc::clone(&source_inner),
         scan_calls: Arc::clone(&scan_calls),
+        is_directory_calls: Arc::clone(&is_directory_calls),
+        get_metadata_calls: Arc::clone(&get_metadata_calls),
     });
 
     let dest_inner = Arc::new(InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000));
@@ -1283,6 +1292,23 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     assert_eq!(
         scans_after_stop, 0,
         "Stop mode must not call scan_for_copy on the source when a size hint is supplied",
+    );
+    // The preflight hint also classifies the source type, so the conflict
+    // resolver must NOT call `is_directory` on the source — on MTP that's a
+    // parent-directory listing (device-lock acquisition) on the conflict-emit
+    // critical path, paid per conflict, and entirely redundant with the hint.
+    assert_eq!(
+        is_directory_calls.load(Ordering::Relaxed),
+        0,
+        "Stop mode must not call is_directory on the source when a directory hint is supplied",
+    );
+    // The only remaining source round-trip in Stop mode is the single
+    // `get_metadata` for the dialog's "(newer)/(older)" mtime annotation —
+    // not the previous TWO (is_directory + get_metadata).
+    assert_eq!(
+        get_metadata_calls.load(Ordering::Relaxed),
+        1,
+        "Stop mode should make exactly one source get_metadata call (mtime for the dialog)",
     );
     let conflicts = stop_events.conflicts.lock().unwrap();
     assert_eq!(conflicts.len(), 1);

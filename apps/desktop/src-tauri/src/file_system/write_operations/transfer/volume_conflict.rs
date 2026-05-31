@@ -64,12 +64,21 @@ pub(super) async fn resolve_volume_conflict(
     // falls through to `scan_for_copy` for unknown hints.
     source_size_hint: Option<u64>,
     dest_size_hint: Option<u64>,
+    // Whether the source is a directory, known from the caller's preflight
+    // `source_hints`. `Some` skips a redundant `source_volume.is_directory`
+    // round-trip; on MTP that's a parent-directory listing (device-lock
+    // acquisition) on the conflict-emit critical path, paid per conflict.
+    // `None` falls back to the trait call for callers without the hint.
+    source_is_directory_hint: Option<bool>,
 ) -> Result<Option<ResolvedConflict>, WriteOperationError> {
     // Classify the clash up front so the two-bucket lookup and store stay
     // consistent. `is_directory` errors fall back to `false`, same as the
     // dialog-side default — we'd rather over-prompt than route an unknown
     // clash into the destructive file→folder latch.
-    let source_is_directory = source_volume.is_directory(source_path).await.unwrap_or(false);
+    let source_is_directory = match source_is_directory_hint {
+        Some(is_dir) => is_dir,
+        None => source_volume.is_directory(source_path).await.unwrap_or(false),
+    };
     let destination_is_directory = dest_volume.is_directory(dest_path).await.unwrap_or(false);
     let is_file_to_folder = !source_is_directory && destination_is_directory;
 

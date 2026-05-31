@@ -337,6 +337,9 @@ pub(super) async fn move_volumes_with_progress(
                     // doesn't re-list the parent dir per conflict on MTP.
                     let source_hint = source_hints.get(&source_path_owned).copied();
                     let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                    // `Some` only when the preflight produced a hint, so the
+                    // resolver keeps its trait-call fallback for the no-hint case.
+                    let source_is_directory_hint = source_hint.map(|h| h.is_directory);
                     let mut latched = *apply_to_all.lock_ignore_poison();
                     let resolved = resolve_volume_conflict(
                         &source_volume,
@@ -350,6 +353,7 @@ pub(super) async fn move_volumes_with_progress(
                         &mut latched,
                         source_size_hint,
                         dest_size_hint,
+                        source_is_directory_hint,
                     )
                     .await;
                     *apply_to_all.lock_ignore_poison() = latched;
@@ -796,6 +800,9 @@ pub(super) async fn move_within_same_volume_with_progress(
                     );
                     let source_hint = source_hints.get(&source_path_owned).copied();
                     let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                    // `Some` only when the preflight produced a hint, so the
+                    // resolver keeps its trait-call fallback for the no-hint case.
+                    let source_is_directory_hint = source_hint.map(|h| h.is_directory);
                     let mut latched = *apply_to_all.lock_ignore_poison();
                     // Same volume on both sides; pass `&volume` twice.
                     let resolved = resolve_volume_conflict(
@@ -810,6 +817,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                         &mut latched,
                         source_size_hint,
                         dest_size_hint,
+                        source_is_directory_hint,
                     )
                     .await;
                     *apply_to_all.lock_ignore_poison() = latched;
