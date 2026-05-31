@@ -27,7 +27,6 @@
     import { createIndexingPoll } from './viewer-indexing-poll'
     import { handleNavigationKey, handleSearchToggleKey, handleTailToggleKey, handleToggleKey } from './viewer-keyboard'
     import { createViewerTail } from './viewer-tail.svelte'
-    import { flush as flushTailPersistence, getLastTailMode, setLastTailMode } from './viewer-tail-persistence'
     import {
         createViewerSelection,
         describeSelectionForAt,
@@ -116,9 +115,10 @@
     })
 
     /**
-     * Flip the tail-mode flag, push the new value down to the backend, and
-     * persist it for next time we open this file. Calling without a sessionId
-     * (during startup) is a no-op.
+     * Flip the tail-mode flag and push the new value down to the backend. Tail
+     * mode is per-session only: it defaults off on every viewer open and isn't
+     * persisted across sessions. Calling without a sessionId (during startup)
+     * is a no-op.
      */
     async function toggleTailMode(): Promise<void> {
         if (!sessionId) return
@@ -134,10 +134,6 @@
         } catch (e) {
             log.warn('viewer_set_tail_mode threw: {error}', { error: String(e) })
             tailMode = !next
-            return
-        }
-        if (filePath) {
-            void setLastTailMode(filePath, next).catch(() => {})
         }
     }
 
@@ -868,22 +864,9 @@
             indexingPoll.start()
         }
 
-        // Subscribe to the watcher event stream first, then apply persisted
-        // tail mode (which may also push the flag into the backend).
+        // Subscribe to the watcher event stream. Tail mode itself starts off on
+        // every open; the user re-enables it per session.
         await viewerTail.init()
-        try {
-            const persisted = await getLastTailMode(path)
-            if (persisted === true) {
-                tailMode = true
-                const res = await commands.viewerSetTailMode(result.sessionId, true)
-                if (res.status === 'error') {
-                    log.warn('persisted tail-on failed: {error}', { error: res.error })
-                    tailMode = false
-                }
-            }
-        } catch (e) {
-            log.warn('reading persisted tail mode failed: {error}', { error: String(e) })
-        }
 
         scroll.lineCache.clear()
         for (let i = 0; i < result.initialLines.lines.length; i++) {
@@ -1037,7 +1020,6 @@
         scroll.destroy()
         indexingPoll.stop()
         viewerTail.destroy()
-        void flushTailPersistence().catch(() => {})
     })
 </script>
 

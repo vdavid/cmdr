@@ -41,11 +41,11 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
   (`get_isolated_store_path`) for an absolute path under the resolved data dir so the frontend store agrees with the
   Rust side. Production returns the bare name, byte-identical. **Every `tauri-plugin-store` reader must go through this
   helper** — `settings.json` (this store, plus `lib/settings-store.ts`'s FDA/onboarding store and
-  `lib/logging/logger.ts`'s verbose-logging probe), `shortcuts.json` (`lib/shortcuts/shortcuts-store.ts`),
-  `app-status.json` (`lib/app-status-store.ts`), and `viewer-tail.json` (`routes/viewer/viewer-tail-persistence.ts`) all
-  do. The backend command takes `store_name` from the frontend and sanitizes it (`sanitize_store_name` in
-  `commands/settings.rs`): it rejects anything that isn't a plain filename (path separators, `..`, absolute paths) and
-  returns `None`, which the helper treats like production, so a bad name can never escape the data dir.
+  `lib/logging/logger.ts`'s verbose-logging probe), `shortcuts.json` (`lib/shortcuts/shortcuts-store.ts`), and
+  `app-status.json` (`lib/app-status-store.ts`) all do. The backend command takes `store_name` from the frontend and
+  sanitizes it (`sanitize_store_name` in `commands/settings.rs`): it rejects anything that isn't a plain filename (path
+  separators, `..`, absolute paths) and returns `None`, which the helper treats like production, so a bad name can never
+  escape the data dir.
 
 ### Text size (`appearance.textSize`)
 

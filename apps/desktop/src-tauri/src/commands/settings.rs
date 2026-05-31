@@ -38,7 +38,7 @@ pub fn update_file_watcher_debounce(debounce_ms: u64) {
 
 /// Returns the absolute path the frontend's `tauri-plugin-store` should load for
 /// a given store file (for example `settings.json`, `shortcuts.json`,
-/// `app-status.json`, `viewer-tail.json`), but ONLY when this is an isolated
+/// `app-status.json`), but ONLY when this is an isolated
 /// instance (dev, per-worktree dev, or E2E — anything that sets
 /// `CMDR_DATA_DIR`). Returns `None` for production so each store keeps resolving
 /// via `BaseDirectory::AppData` exactly as before.
@@ -286,13 +286,7 @@ mod tests {
 
     #[test]
     fn test_sanitize_store_name_accepts_plain_filenames() {
-        for name in [
-            "settings.json",
-            "shortcuts.json",
-            "app-status.json",
-            "viewer-tail.json",
-            "no-extension",
-        ] {
+        for name in ["settings.json", "shortcuts.json", "app-status.json", "no-extension"] {
             assert_eq!(sanitize_store_name(name), Some(name), "should accept {name}");
         }
     }

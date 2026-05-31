@@ -330,12 +330,12 @@ identifier `com.veszelovszki.cmdr` and `tauri-plugin-store` would resolve a bare
 `fileExplorer.suppressQuickLookHint: true` (set by clicking "Don't show again" on the Quick Look hint toast in your real
 app) suppressed the hint, so every spec asserting `expectAndDismissToast(tauriPage, 'Space')` timed out on that machine
 while CI Linux stayed green (no such file there). The same class of leak applied to a remapped shortcut
-(`shortcuts.json`), persisted pane state (`app-status.json`), and viewer tail-mode (`viewer-tail.json`). The fix: every
-store's `getStore()` resolves its path through `resolveStorePath(name)` (`lib/settings/store-path.ts`), which loads from
-an absolute `<resolved_data_dir>/<name>` when the backend `get_isolated_store_path` returns one (any `CMDR_DATA_DIR`
-instance). If a spec asserting on persisted UI state fails locally but passes in CI, suspect a stale value in your real
-store file, not the test. A runtime `-c <config>` identifier override does NOT fix this: `app_data_dir()` ignores it for
-a pre-built binary.
+(`shortcuts.json`) and persisted pane state (`app-status.json`). The fix: every store's `getStore()` resolves its path
+through `resolveStorePath(name)` (`lib/settings/store-path.ts`), which loads from an absolute
+`<resolved_data_dir>/<name>` when the backend `get_isolated_store_path` returns one (any `CMDR_DATA_DIR` instance). If a
+spec asserting on persisted UI state fails locally but passes in CI, suspect a stale value in your real store file, not
+the test. A runtime `-c <config>` identifier override does NOT fix this: `app_data_dir()` ignores it for a pre-built
+binary.
 
 **Gotcha**: Navigation destroys page context. **Why**: After triggering SvelteKit navigation (settings, viewer), any
 in-flight `evaluate()` result will be lost. Always `waitForSelector()` on the target page's element before evaluating

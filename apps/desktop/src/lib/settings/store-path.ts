@@ -2,8 +2,7 @@ import { commands } from '$lib/ipc/bindings'
 
 /**
  * Resolve the path `tauri-plugin-store` should load for a given store file
- * (for example `settings.json`, `shortcuts.json`, `app-status.json`,
- * `viewer-tail.json`).
+ * (for example `settings.json`, `shortcuts.json`, `app-status.json`).
  *
  * In isolated instances (dev, per-worktree dev, E2E — anything that sets
  * `CMDR_DATA_DIR`), the backend returns an absolute path under the resolved

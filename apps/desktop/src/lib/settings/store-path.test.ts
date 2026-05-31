@@ -40,7 +40,7 @@ describe('resolveStorePath', () => {
     // The backend maps traversal / absolute names to `null`; the FE treats that
     // exactly like production, so a bad name can never escape the data dir.
     vi.mocked(commands.getIsolatedStorePath).mockResolvedValueOnce(null)
-    expect(await resolveStorePath('viewer-tail.json')).toBe('viewer-tail.json')
+    expect(await resolveStorePath('../../escape.json')).toBe('../../escape.json')
   })
 
   it('falls back to the bare store name and reports when the command rejects', async () => {

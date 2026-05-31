@@ -1131,7 +1131,7 @@ export const commands = {
   /**
    *  Returns the absolute path the frontend's `tauri-plugin-store` should load for
    *  a given store file (for example `settings.json`, `shortcuts.json`,
-   *  `app-status.json`, `viewer-tail.json`), but ONLY when this is an isolated
+   *  `app-status.json`), but ONLY when this is an isolated
    *  instance (dev, per-worktree dev, or E2E — anything that sets
    *  `CMDR_DATA_DIR`). Returns `None` for production so each store keeps resolving
    *  via `BaseDirectory::AppData` exactly as before.

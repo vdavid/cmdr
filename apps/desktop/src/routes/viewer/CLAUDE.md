@@ -33,7 +33,6 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
 | `ViewModePicker.svelte`         | `<select>` placeholder for future view modes (today: only "Text", disabled).                                                                    |
 | `viewer-tail.svelte.ts`         | `createViewerTail()` composable: listens to `viewer:file-changed:<sid>` events and dispatches to reload toasts or a side effect.                |
 | `ViewerReloadToast.svelte`      | Component content for the persistent reload toast. Reads its session id from `setReloadToastContext()` (the toast system mounts without props). |
-| `viewer-tail-persistence.ts`    | SHA-256-keyed LRU (100 entries) of per-path tail-mode flags. Promoted on read; debounced 5 s persist; flushed on session close.                 |
 
 ## Architecture
 
@@ -110,10 +109,11 @@ Toast deduplication: ids include the kind (`viewer-file-changed-<sid>-grew`, `โ€
 coalesce into one toast. A rotated event explicitly dismisses any open grew toast: the older "reload to catch up"
 message is no longer accurate.
 
-Per-path persistence: the user's last tail-mode choice is stored under a SHA-256-truncated key in `viewer-tail.json`.
-Cap 100 entries; LRU is access-promoted (reading promotes recency). Writes debounce 5 s in memory; the session also
-flushes on close for crash safety. Cross-mount aliases (same content via two paths) keep separate entries on purpose:
-from Cmdr's point of view those are two files.
+Tail mode is **not persisted** across sessions: it defaults off on every viewer open and the user re-enables it per
+session. The viewer window has no `store:default` capability by security design (it renders arbitrary, possibly-hostile
+file content), so it can't write a per-path store. If a viewer setting ever needs to persist, route it through a typed
+backend command for that specific value, never by re-granting store access to the window. See
+`src-tauri/src/capabilities/CLAUDE.md` ยง viewer.
 
 ## Search modes
 
