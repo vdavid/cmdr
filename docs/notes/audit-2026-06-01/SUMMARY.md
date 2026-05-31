@@ -15,21 +15,21 @@ each finding reflect that.
 
 ## All findings
 
-| File | Severity | Lens | Title |
-| --- | --- | --- | --- |
-| `high-G-git-watcher-subscription-leak.md` | high | G — Resource hygiene | Concurrent git subscribe leaks watcher subscriptions over a long session |
-| `medium-C-savesettings-silent-swallow.md` | medium | C — Error handling | `saveSettings` swallows persist failures with no log, losing FDA + onboarding state |
-| `medium-F-smb-password-in-process-argv.md` | medium | F — Security | SMB password leaks into the process argument list on the CLI fallback paths |
-| `medium-G-listing-cache-no-backstop-eviction.md` | medium | G — Resource hygiene | `LISTING_CACHE` / `WATCHER_MANAGER` have no backstop eviction for orphaned listings |
-| `medium-D-smb-upgrade-orchestration-in-command-layer.md` | medium | D — IPC boundary | SMB-upgrade orchestration lives in the command layer, breaking the thin-pass-through contract |
-| `medium-D-untyped-event-payloads.md` | medium | D — IPC boundary | IPC event payloads are entirely untyped — no specta link between Rust emit and FE listen |
-| `low-A-atomic-json-no-fsync.md` | low | A — Data safety | `atomic_write_json` renames a temp it never fsync'd, so power loss can leave a zero-length config file |
-| `low-F-download-update-url-unvalidated.md` | low | F — Security | `download_update` fetches a frontend-supplied URL with no scheme/host check (signature still verified) |
-| `low-E-entitlements-library-validation-disabled.md` | low | E — macOS platform | Hardened-runtime exceptions: unsigned-executable-memory + disabled library validation |
-| `low-C-thread-join-panic-propagation.md` | low | C — Error handling | Worker-thread panic re-propagates and crashes the calling command (icons / sync-status fan-out) |
-| `low-G-icon-disk-cache-unbounded.md` | low | G — Resource hygiene | On-disk icon cache grows without bound across sessions |
-| `low-D-excluded-commands-table-incomplete.md` | low | D — IPC boundary | `ipc/CLAUDE.md` "Excluded commands" table omits ~13 raw-invoke survivors |
-| `low-C-panic-inventory.md` | (baseline) | C — Error handling | Panic-pattern inventory: ~174 non-test `unwrap`/`expect`/`unreachable`, 0 judged risky |
+| File                                                     | Severity   | Lens                 | Title                                                                                                  |
+| -------------------------------------------------------- | ---------- | -------------------- | ------------------------------------------------------------------------------------------------------ |
+| `high-G-git-watcher-subscription-leak.md`                | high       | G — Resource hygiene | Concurrent git subscribe leaks watcher subscriptions over a long session                               |
+| `medium-C-savesettings-silent-swallow.md`                | medium     | C — Error handling   | `saveSettings` swallows persist failures with no log, losing FDA + onboarding state                    |
+| `medium-F-smb-password-in-process-argv.md`               | medium     | F — Security         | SMB password leaks into the process argument list on the CLI fallback paths                            |
+| `medium-G-listing-cache-no-backstop-eviction.md`         | medium     | G — Resource hygiene | `LISTING_CACHE` / `WATCHER_MANAGER` have no backstop eviction for orphaned listings                    |
+| `medium-D-smb-upgrade-orchestration-in-command-layer.md` | medium     | D — IPC boundary     | SMB-upgrade orchestration lives in the command layer, breaking the thin-pass-through contract          |
+| `medium-D-untyped-event-payloads.md`                     | medium     | D — IPC boundary     | IPC event payloads are entirely untyped — no specta link between Rust emit and FE listen               |
+| `low-A-atomic-json-no-fsync.md`                          | low        | A — Data safety      | `atomic_write_json` renames a temp it never fsync'd, so power loss can leave a zero-length config file |
+| `low-F-download-update-url-unvalidated.md`               | low        | F — Security         | `download_update` fetches a frontend-supplied URL with no scheme/host check (signature still verified) |
+| `low-E-entitlements-library-validation-disabled.md`      | low        | E — macOS platform   | Hardened-runtime exceptions: unsigned-executable-memory + disabled library validation                  |
+| `low-C-thread-join-panic-propagation.md`                 | low        | C — Error handling   | Worker-thread panic re-propagates and crashes the calling command (icons / sync-status fan-out)        |
+| `low-G-icon-disk-cache-unbounded.md`                     | low        | G — Resource hygiene | On-disk icon cache grows without bound across sessions                                                 |
+| `low-D-excluded-commands-table-incomplete.md`            | low        | D — IPC boundary     | `ipc/CLAUDE.md` "Excluded commands" table omits ~13 raw-invoke survivors                               |
+| `low-C-panic-inventory.md`                               | (baseline) | C — Error handling   | Panic-pattern inventory: ~174 non-test `unwrap`/`expect`/`unreachable`, 0 judged risky                 |
 
 ## Top 5 to fix before launch
 
@@ -50,9 +50,9 @@ each finding reflect that.
 
 3. **`saveSettings` silently swallows persistence failures** (`medium-C-savesettings-silent-swallow.md`). An empty
    `catch {}` around the store write that persists `fullDiskAccessChoice` and `isOnboarded`. If the write fails, the FDA
-   decision and onboarding-complete flag vanish with no log, and the next launch re-runs onboarding / re-prompts for Full
-   Disk Access. At minimum log the error; better, surface it. Trivial fix, and it touches the most user-visible state in
-   the app. **Verified against code.**
+   decision and onboarding-complete flag vanish with no log, and the next launch re-runs onboarding / re-prompts for
+   Full Disk Access. At minimum log the error; better, surface it. Trivial fix, and it touches the most user-visible
+   state in the app. **Verified against code.**
 
 4. **No backstop eviction for orphaned listings** (`medium-G-listing-cache-no-backstop-eviction.md`). `LISTING_CACHE`
    (full `Vec<FileEntry>`, up to 50k+) and `WATCHER_MANAGER` (live OS watcher) only shrink via an explicit frontend
@@ -90,8 +90,8 @@ scoping rule:
 - **Cross-volume file→file safe-replace**, **cross-FS move flush-before-source-delete**, **TOCTOU placeholder
   reservation**, **per-file cross-volume rollback granularity**, **dest-inside-source guard** — all documented, and all
   verified present in code as described.
-- **`settings.json` / `license.json` / `shortcuts.json` atomicity** is owned by `tauri-plugin-store`; secrets live in the
-  OS secret store, never these files.
+- **`settings.json` / `license.json` / `shortcuts.json` atomicity** is owned by `tauri-plugin-store`; secrets live in
+  the OS secret store, never these files.
 - **Lock-poison `expect`/`unwrap`** across the shared-state mutexes is a deliberate "poison ⇒ abort" stance. Whether to
   migrate to the existing `lock_ignore_poison()` helper is an open question (see note below), not a documented decision
   per se — flagged in the panic inventory, not double-filed.
@@ -103,9 +103,9 @@ scoping rule:
   widens.
 - **`mcp-*` bridge events stay loose JSON** (automation round-trip channel) — the untyped-events finding explicitly
   excludes them.
-- **Several uncapped caches are inherently bounded** (`OWNER_CACHE`/`GROUP_CACHE` by system user count, `CREDENTIAL_CACHE`
-  by shares, `EXT_CACHE` by extension and wiped on launch, in-memory `ext:`/`dir:` icons), and `RepoCache` has no idle
-  TTL by documented decision.
+- **Several uncapped caches are inherently bounded** (`OWNER_CACHE`/`GROUP_CACHE` by system user count,
+  `CREDENTIAL_CACHE` by shares, `EXT_CACHE` by extension and wiped on launch, in-memory `ext:`/`dir:` icons), and
+  `RepoCache` has no idle TTL by documented decision.
 
 ## Security controls checked and found solid
 
@@ -114,10 +114,11 @@ So the summary records what's verified-good, not just what's wrong:
 - **`withGlobalTauri`**: `false` in `tauri.conf.json`; the wrapper only flips it to `true` when an `instanceId` is set
   (dev/E2E/worktree), and prod builds skip wrapper composition entirely. The Tauri MCP bridge plugin is
   `#[cfg(debug_assertions)]`-gated. Prod cannot expose `__TAURI__`.
-- **Updater**: minisign signature verified with a compiled-in pubkey **before** anything is written to disk; atomic-rename
-  install; the admin-escalation shell-out is injection-safe (quoted, with a regression test). Not an RCE path.
-- **License**: Ed25519 with compiled-in pubkey, genuinely enforced (tamper + wrong-key tests present); `CMDR_MOCK_LICENSE`
-  is debug-only.
+- **Updater**: minisign signature verified with a compiled-in pubkey **before** anything is written to disk;
+  atomic-rename install; the admin-escalation shell-out is injection-safe (quoted, with a regression test). Not an RCE
+  path.
+- **License**: Ed25519 with compiled-in pubkey, genuinely enforced (tamper + wrong-key tests present);
+  `CMDR_MOCK_LICENSE` is debug-only.
 - **MCP server**: binds `127.0.0.1` only, default-disabled in prod, per-launch CSPRNG bearer token (`0600` file, fresh
   each start, cleared on stop → fails closed), constant-time compare, Origin validation, and the token gate covers
   exactly the confirmation-bypass tools (auto-confirm delete/move/copy, `dialog confirm`, all `set_setting`). No
@@ -164,7 +165,8 @@ Not filed because it's a design stance, not a bug.
 - **Linux paths** (`volumes_linux/`, `mount_linux.rs`, inotify watch-limit handling) — spot-checked at the CLAUDE.md /
   grep level only; the launch target is macOS, so depth went to macOS paths.
 - **Exhaustive frontend review** — only the lens-targeted areas (IPC, error handling, resource teardown, data-write
-  wiring). Not a component-by-component Svelte audit; UI correctness, accessibility, and visual polish were out of scope.
+  wiring). Not a component-by-component Svelte audit; UI correctness, accessibility, and visual polish were out of
+  scope.
 - **`file_viewer` large-file/encoding correctness** — touched only for handle-leak purposes.
 - **Drag-and-drop drop-target write wiring** — confirmed it reuses the safe `copy_files`/`move_files` IPCs; the native
   drag-drop-into-a-write path wasn't traced end-to-end.

@@ -1,14 +1,13 @@
 # Panic-pattern inventory (Lens C — Error handling)
 
-**Lens:** C — Error handling discipline
-**Scope:** Non-test code under `apps/desktop/src-tauri/src`. Excludes `#[cfg(test)]` modules
-(detected by brace-counting), `*_test.rs`, `*_tests.rs`, `tests.rs`, `bench.rs`, `/tests/`,
+**Lens:** C — Error handling discipline **Scope:** Non-test code under `apps/desktop/src-tauri/src`. Excludes
+`#[cfg(test)]` modules (detected by brace-counting), `*_test.rs`, `*_tests.rs`, `tests.rs`, `bench.rs`, `/tests/`,
 `*_oracle*`, `stress_test*`, and test-helper files.
 
 ## Totals (non-test code)
 
 | Pattern          | Count |
-|------------------|-------|
+| ---------------- | ----- |
 | `unwrap(`        | ~70   |
 | `expect(`        | ~91   |
 | `panic!`         | 0     |
@@ -16,61 +15,55 @@
 | `todo!`          | 0     |
 | `unimplemented!` | 0     |
 
-Total flagged sites: ~174. **Judged risky/wrong: 0.** Every site is one of: a lock-poison
-`expect`/`unwrap` (a deliberate "poison ⇒ abort" choice, cross-referenced to Lens B), a
-local-invariant assertion guarded by the immediately surrounding control flow, an infallible
-serialization of a static struct, a `MainThreadMarker::new()` on a call site documented to run
-on the main thread, a graceful `Arc::try_unwrap(...).unwrap_or_*` fallback (not a panic), or a
-library method literally named `unwrap` (Cocoon's decrypt).
+Total flagged sites: ~174. **Judged risky/wrong: 0.** Every site is one of: a lock-poison `expect`/`unwrap` (a
+deliberate "poison ⇒ abort" choice, cross-referenced to Lens B), a local-invariant assertion guarded by the immediately
+surrounding control flow, an infallible serialization of a static struct, a `MainThreadMarker::new()` on a call site
+documented to run on the main thread, a graceful `Arc::try_unwrap(...).unwrap_or_*` fallback (not a panic), or a library
+method literally named `unwrap` (Cocoon's decrypt).
 
 `panic!` count is 0 in shipping code — clippy/discipline holding. `todo!`/`unimplemented!` are 0.
 
 ## Per-module verdict table
 
-| Module             | unwrap | expect | unreachable | Verdict | Notes |
-|--------------------|--------|--------|-------------|---------|-------|
-| (root) `lib.rs`, `native_drag.rs` | 0 | 5 | 1 | justified | `lib.rs:758` guarded by `if id == ...`; `lib.rs:1048` Tauri build (fatal-by-design at startup); `MainThreadMarker`/`AnyClass::get`/`ClassBuilder` are AppKit-init invariants. |
-| ai                 | 0      | 2      | 0           | justified | `BEARER_RE` static regex on a const pattern; `DEFAULT_MODEL_ID` exists in the const model table. |
-| commands           | 0      | 0      | 1           | justified | `network.rs:432 unreachable!()` is preceded by a `match &creds` that returns early on `None`. |
-| downloads          | 0      | 16     | 0           | justified (lock) | All 16 are `.lock().expect("... poisoned")` plus a few "manager initialized / accelerator present" invariants in `runtime.rs`. Lock-poison ⇒ abort. Cross-ref Lens B. |
-| file_system        | ~37    | ~18    | 2           | justified | `virtual_listing.rs` unwraps are each one line below their `Some(...)` assignment; SMB oracle `expect`s are slot-population invariants (network errors handled via `map_smb_error`); write-path `expect`s (`eta`, `scan_preview`, `copy`, `volume_copy`) are iterator/driver-contract invariants; `Arc::try_unwrap(...).unwrap_or_*` are graceful fallbacks; `git/watcher.rs`, `open_with.rs` locks; `helpers.rs:769`/`volume_conflict.rs:399` `unreachable!` guarded by upstream resolution reduction. |
-| file_viewer        | 0      | 1      | 2           | justified | `encoding.rs:122`/`full_load.rs:123` are documented "should never reach" defensive arms (one is dead_code with a doc comment); `watcher.rs:233` reads a key inserted on the line above. |
-| icons              | 0      | 2      | 0           | justified (see low-C-thread-join) | `spawn_scoped().expect()` (OS thread-create) + `join().expect("thread panicked")` re-propagation. Worker body is panic-free. |
-| indexing           | ~20    | 2      | 0           | justified (lock) | All `Mutex`/global-lock `unwrap`/`expect` (`state.rs`, `manager.rs`, `reconciler.rs`); `enrichment.rs:64` and `writer.rs` `inode.unwrap()` are gated by a preceding `is_some()`/`should_dedup` check. Cross-ref Lens B. |
-| mcp                | 3      | 0      | 6           | justified | `executor/*` and `nav/search/app` `unreachable!()` arms match exhaustively on internal enums; `*.lock().unwrap()` on oneshot-sender slots; `server.rs:784` serializes a static `ServerCapabilities::default()` (infallible). |
-| menu               | 0      | 2      | 0           | justified | `MainThreadMarker::new()` on documented main-thread call sites. |
-| mtp                | 6      | 9      | 0           | justified | `connection/*` `RwLock`/`Mutex` `unwrap`s (lock-poison); `virtual_device.rs` `expect`s are in the test-fixture builder (feature-gated, not on the user path). Cross-ref Lens B. |
-| network            | 2      | 3      | 0           | justified | `manual_servers.rs` `split_once(':').expect` guarded by `colon_count == 1`; `parse_smb_url`'s `find("://").unwrap()` only reached after `extract_protocol` matched `://`; `mod.rs:270` reads a host just inserted; `mdns_discovery.rs` thread spawn. |
-| quick_look         | 1      | 3      | 0           | justified | `controller.rs:429 first.unwrap()` guarded by `first.is_some()`; the rest are `MainThreadMarker` on main-thread call sites. |
-| redact             | 0      | 1      | 0           | justified | Static redactor regex on a const pattern. |
-| restricted_paths   | 0      | 4      | 0           | justified (lock) | `state().read()/write().expect("... poisoned")`. Cross-ref Lens B. |
-| search             | 0      | ~21    | 1           | justified | `time_mapping.rs` `with_hms(0,0,0).expect("valid")` — midnight is always a valid time; `from_calendar_date(_, _, 28)` — day 28 valid in every month; `prompt.rs`/`query_builder.rs` date `.format().expect()` on a const format string; `unreachable!()` on an exhaustive internal enum. |
-| secrets            | 1      | 0      | 0           | justified | `encrypted_file.rs:54 cocoon.unwrap(&encrypted)` is the Cocoon crate's *decrypt* method (returns `Result`, mapped via `.map_err`), not `Option::unwrap` — false positive. |
-| selection          | 0      | 2      | 0           | justified | Date `.format().expect()` on a const format string. |
+| Module                            | unwrap | expect | unreachable | Verdict                           | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------- | ------ | ------ | ----------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (root) `lib.rs`, `native_drag.rs` | 0      | 5      | 1           | justified                         | `lib.rs:758` guarded by `if id == ...`; `lib.rs:1048` Tauri build (fatal-by-design at startup); `MainThreadMarker`/`AnyClass::get`/`ClassBuilder` are AppKit-init invariants.                                                                                                                                                                                                                                                                                                                           |
+| ai                                | 0      | 2      | 0           | justified                         | `BEARER_RE` static regex on a const pattern; `DEFAULT_MODEL_ID` exists in the const model table.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| commands                          | 0      | 0      | 1           | justified                         | `network.rs:432 unreachable!()` is preceded by a `match &creds` that returns early on `None`.                                                                                                                                                                                                                                                                                                                                                                                                           |
+| downloads                         | 0      | 16     | 0           | justified (lock)                  | All 16 are `.lock().expect("... poisoned")` plus a few "manager initialized / accelerator present" invariants in `runtime.rs`. Lock-poison ⇒ abort. Cross-ref Lens B.                                                                                                                                                                                                                                                                                                                                   |
+| file_system                       | ~37    | ~18    | 2           | justified                         | `virtual_listing.rs` unwraps are each one line below their `Some(...)` assignment; SMB oracle `expect`s are slot-population invariants (network errors handled via `map_smb_error`); write-path `expect`s (`eta`, `scan_preview`, `copy`, `volume_copy`) are iterator/driver-contract invariants; `Arc::try_unwrap(...).unwrap_or_*` are graceful fallbacks; `git/watcher.rs`, `open_with.rs` locks; `helpers.rs:769`/`volume_conflict.rs:399` `unreachable!` guarded by upstream resolution reduction. |
+| file_viewer                       | 0      | 1      | 2           | justified                         | `encoding.rs:122`/`full_load.rs:123` are documented "should never reach" defensive arms (one is dead_code with a doc comment); `watcher.rs:233` reads a key inserted on the line above.                                                                                                                                                                                                                                                                                                                 |
+| icons                             | 0      | 2      | 0           | justified (see low-C-thread-join) | `spawn_scoped().expect()` (OS thread-create) + `join().expect("thread panicked")` re-propagation. Worker body is panic-free.                                                                                                                                                                                                                                                                                                                                                                            |
+| indexing                          | ~20    | 2      | 0           | justified (lock)                  | All `Mutex`/global-lock `unwrap`/`expect` (`state.rs`, `manager.rs`, `reconciler.rs`); `enrichment.rs:64` and `writer.rs` `inode.unwrap()` are gated by a preceding `is_some()`/`should_dedup` check. Cross-ref Lens B.                                                                                                                                                                                                                                                                                 |
+| mcp                               | 3      | 0      | 6           | justified                         | `executor/*` and `nav/search/app` `unreachable!()` arms match exhaustively on internal enums; `*.lock().unwrap()` on oneshot-sender slots; `server.rs:784` serializes a static `ServerCapabilities::default()` (infallible).                                                                                                                                                                                                                                                                            |
+| menu                              | 0      | 2      | 0           | justified                         | `MainThreadMarker::new()` on documented main-thread call sites.                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| mtp                               | 6      | 9      | 0           | justified                         | `connection/*` `RwLock`/`Mutex` `unwrap`s (lock-poison); `virtual_device.rs` `expect`s are in the test-fixture builder (feature-gated, not on the user path). Cross-ref Lens B.                                                                                                                                                                                                                                                                                                                         |
+| network                           | 2      | 3      | 0           | justified                         | `manual_servers.rs` `split_once(':').expect` guarded by `colon_count == 1`; `parse_smb_url`'s `find("://").unwrap()` only reached after `extract_protocol` matched `://`; `mod.rs:270` reads a host just inserted; `mdns_discovery.rs` thread spawn.                                                                                                                                                                                                                                                    |
+| quick_look                        | 1      | 3      | 0           | justified                         | `controller.rs:429 first.unwrap()` guarded by `first.is_some()`; the rest are `MainThreadMarker` on main-thread call sites.                                                                                                                                                                                                                                                                                                                                                                             |
+| redact                            | 0      | 1      | 0           | justified                         | Static redactor regex on a const pattern.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| restricted_paths                  | 0      | 4      | 0           | justified (lock)                  | `state().read()/write().expect("... poisoned")`. Cross-ref Lens B.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| search                            | 0      | ~21    | 1           | justified                         | `time_mapping.rs` `with_hms(0,0,0).expect("valid")` — midnight is always a valid time; `from_calendar_date(_, _, 28)` — day 28 valid in every month; `prompt.rs`/`query_builder.rs` date `.format().expect()` on a const format string; `unreachable!()` on an exhaustive internal enum.                                                                                                                                                                                                                |
+| secrets                           | 1      | 0      | 0           | justified                         | `encrypted_file.rs:54 cocoon.unwrap(&encrypted)` is the Cocoon crate's _decrypt_ method (returns `Result`, mapped via `.map_err`), not `Option::unwrap` — false positive.                                                                                                                                                                                                                                                                                                                               |
+| selection                         | 0      | 2      | 0           | justified                         | Date `.format().expect()` on a const format string.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## Lock-poison sites (cross-ref Lens B — NOT double-filed here)
 
-`.lock()/.read()/.write().expect("... poisoned")` / `.unwrap()` on shared `Mutex`/`RwLock`
-appears across `downloads/*`, `indexing/{state,manager,reconciler}.rs`, `mtp/connection/*`,
-`restricted_paths/mod.rs`, `file_system/git/watcher.rs`, `file_system/open_with.rs`, and the
-`mcp/executor` oneshot slots. These are a deliberate "a poisoned lock means another thread
-already panicked, so abort" stance. Whether that should instead be `lock_ignore_poison()` (the
-project already has that helper, used in `volume_copy.rs` and `lib.rs`) is a Lens-B concern;
-noted, not filed here.
+`.lock()/.read()/.write().expect("... poisoned")` / `.unwrap()` on shared `Mutex`/`RwLock` appears across `downloads/*`,
+`indexing/{state,manager,reconciler}.rs`, `mtp/connection/*`, `restricted_paths/mod.rs`, `file_system/git/watcher.rs`,
+`file_system/open_with.rs`, and the `mcp/executor` oneshot slots. These are a deliberate "a poisoned lock means another
+thread already panicked, so abort" stance. Whether that should instead be `lock_ignore_poison()` (the project already
+has that helper, used in `volume_copy.rs` and `lib.rs`) is a Lens-B concern; noted, not filed here.
 
 ## Banned-pattern survivors
 
 **None.**
 
-- `eprintln!`/`println!`/`dbg!`: every hit is inside `#[cfg(test)]` (`macos_icons.rs`,
-  `updater/mod.rs` ignored harnesses), inside a documented crate-level
-  `#![allow(clippy::print_stderr)]` benchmark module (`benchmark.rs`, `git/bench.rs`), or a
-  per-site `#[allow(clippy::print_stderr, reason = ...)]` with a real justification
-  (`crash_reporter/mod.rs:129` — "log may be the thing that panicked"; `listing.rs:409`
-  `benchmark_log` command gated on `benchmark::is_enabled()`). `build.rs` uses `println!`
-  legitimately for cargo directives.
-- Error-string-matching: production `// allowed-error-string-match` opt-outs
-  (`network/mount_linux.rs`, `network/smb_smbutil.rs`, `search/ai/mappings/keyword_mapping.rs`,
-  `file_system/volume/backends/smb.rs` log routing) are all justified (subprocess stderr with
-  `LC_ALL=C` + snapshot tests, or self-owned log-prefix routing). The remaining opt-outs are in
-  `#[cfg(test)]` modules asserting on `Display` content. No un-opted-out survivors.
+- `eprintln!`/`println!`/`dbg!`: every hit is inside `#[cfg(test)]` (`macos_icons.rs`, `updater/mod.rs` ignored
+  harnesses), inside a documented crate-level `#![allow(clippy::print_stderr)]` benchmark module (`benchmark.rs`,
+  `git/bench.rs`), or a per-site `#[allow(clippy::print_stderr, reason = ...)]` with a real justification
+  (`crash_reporter/mod.rs:129` — "log may be the thing that panicked"; `listing.rs:409` `benchmark_log` command gated on
+  `benchmark::is_enabled()`). `build.rs` uses `println!` legitimately for cargo directives.
+- Error-string-matching: production `// allowed-error-string-match` opt-outs (`network/mount_linux.rs`,
+  `network/smb_smbutil.rs`, `search/ai/mappings/keyword_mapping.rs`, `file_system/volume/backends/smb.rs` log routing)
+  are all justified (subprocess stderr with `LC_ALL=C` + snapshot tests, or self-owned log-prefix routing). The
+  remaining opt-outs are in `#[cfg(test)]` modules asserting on `Display` content. No un-opted-out survivors.
