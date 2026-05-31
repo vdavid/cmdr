@@ -79,7 +79,13 @@ export {
 } from './file-actions'
 
 // Icons (fetching and cache management)
-export { getIcons, refreshDirectoryIcons, clearExtensionIconCache, clearDirectoryIconCache } from './icons'
+export {
+  getIcons,
+  getCustomFolderIconIds,
+  refreshDirectoryIcons,
+  clearExtensionIconCache,
+  clearDirectoryIconCache,
+} from './icons'
 
 // App state (MCP pane state, dialog tracking, menu context, window lifecycle)
 export {

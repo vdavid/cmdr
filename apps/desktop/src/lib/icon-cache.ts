@@ -4,6 +4,7 @@
 import { writable } from 'svelte/store'
 import {
   getIcons,
+  getCustomFolderIconIds,
   refreshDirectoryIcons as refreshIconsCommand,
   clearExtensionIconCache as clearExtensionIconCacheCommand,
   clearDirectoryIconCache as clearDirectoryIconCacheCommand,
@@ -198,6 +199,72 @@ export async function prefetchIcons(iconIds: string[], useAppIconsForDocuments: 
         })
     }, retryDelayMs)
   }
+}
+
+/**
+ * Detects and fetches custom-folder icons for the VISIBLE directory rows.
+ *
+ * Custom-icon detection (`kHasCustomIcon` xattr) is a `getxattr` per directory, so
+ * the backend deliberately does NOT run it during the bulk listing — it'd regress
+ * a 100k-entry directory. Instead the frontend calls this for the bounded set of
+ * directory paths actually on screen: the backend filters down to the few that
+ * truly carry a custom icon (returning their `path:{dir}` ids), and we then fetch
+ * those through the normal `prefetchIcons` path. Folders without a custom icon
+ * keep their generic `dir` glyph — purely additive.
+ *
+ * Best-effort: errors and timeouts are swallowed (the folder just stays generic).
+ *
+ * @param directoryPaths - Full paths of the visible directory rows
+ * @param useAppIconsForDocuments - Passed through to the icon fetch
+ */
+export async function prefetchCustomFolderIcons(
+  directoryPaths: string[],
+  useAppIconsForDocuments: boolean,
+): Promise<void> {
+  if (directoryPaths.length === 0) return
+  // Only ask about dirs we don't already have a per-path icon for, to keep the
+  // getxattr batch small on re-scroll over the same rows.
+  const unknown = directoryPaths.filter((p) => !memoryCache.has(`${PATH_KEY_PREFIX}${p}`))
+  if (unknown.length === 0) return
+
+  let ids: string[]
+  try {
+    const { data } = await getCustomFolderIconIds(unknown)
+    ids = data
+  } catch {
+    return // Best-effort: keep the generic dir glyph.
+  }
+  if (ids.length === 0) return
+  await prefetchIcons(ids, useAppIconsForDocuments)
+}
+
+/**
+ * Evicts the per-path icon keys (`path:*` + `pkg:*`) for the direct children of a
+ * directory that's no longer visible (a pane navigated away / closed its listing).
+ * The in-memory LRU already bounds these as a backstop; this keeps the working set
+ * tight and ensures a re-icon is re-detected next time the folder is shown rather
+ * than served from a now-stale session entry.
+ *
+ * Matches a key's embedded path against `${dirPath}/`-prefixed children so sibling
+ * directories' icons are untouched. The Rust on-disk cache is the durable tier and
+ * is unaffected (it invalidates by mtime).
+ *
+ * @param dirPath - The directory whose listing ended
+ */
+export function evictPerPathIconsForDir(dirPath: string): void {
+  if (!dirPath) return
+  // Normalize to a child-prefix: keys are `path:/abs/child` or `pkg:/abs/child`.
+  const childPrefix = dirPath.endsWith('/') ? dirPath : `${dirPath}/`
+  let removed = false
+  for (const key of memoryCache.keys()) {
+    if (!isPerPathKey(key)) continue
+    const embeddedPath = key.slice(key.indexOf(':') + 1)
+    if (embeddedPath.startsWith(childPrefix)) {
+      memoryCache.delete(key)
+      removed = true
+    }
+  }
+  if (removed) iconCacheVersion.update((v) => v + 1)
 }
 
 /**

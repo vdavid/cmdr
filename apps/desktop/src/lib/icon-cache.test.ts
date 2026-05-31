@@ -5,12 +5,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // as mocks so the import resolves without a real Tauri runtime.
 vi.mock('./tauri-commands', () => ({
   getIcons: vi.fn(),
+  getCustomFolderIconIds: vi.fn(),
   refreshDirectoryIcons: vi.fn(),
   clearExtensionIconCache: vi.fn(),
   clearDirectoryIconCache: vi.fn(),
 }))
 
-import { getCachedIcon, _resetIconCacheForTests, _applyIconsToCacheForTests, _pathKeyCapForTests } from './icon-cache'
+import {
+  getCachedIcon,
+  evictPerPathIconsForDir,
+  prefetchCustomFolderIcons,
+  _resetIconCacheForTests,
+  _applyIconsToCacheForTests,
+  _pathKeyCapForTests,
+} from './icon-cache'
+import { getIcons, getCustomFolderIconIds } from './tauri-commands'
 
 const STORAGE_KEY = 'cmdr-icon-cache'
 
@@ -118,6 +127,83 @@ describe('icon-cache pkg: keys (Tier C packages)', () => {
     _applyIconsToCacheForTests({ 'path:/Users/me/Custom': 'custom-url' })
     expect(getCachedIcon('pkg:/Applications/App0.app')).toBeUndefined()
     expect(getCachedIcon('path:/Users/me/Custom')).toBe('custom-url')
+  })
+})
+
+describe('evictPerPathIconsForDir', () => {
+  beforeEach(() => {
+    _resetIconCacheForTests()
+    localStorage.clear()
+  })
+
+  it('evicts only the direct children of the ended directory', () => {
+    _applyIconsToCacheForTests({
+      'path:/Users/me/Work/CustomA': 'a',
+      'pkg:/Users/me/Work/Foo.app': 'foo',
+      'path:/Users/me/Other/CustomB': 'b', // a sibling dir, must survive
+      dir: 'dir-url',
+    })
+
+    evictPerPathIconsForDir('/Users/me/Work')
+
+    expect(getCachedIcon('path:/Users/me/Work/CustomA')).toBeUndefined()
+    expect(getCachedIcon('pkg:/Users/me/Work/Foo.app')).toBeUndefined()
+    // Sibling dir's icon and bounded keys untouched.
+    expect(getCachedIcon('path:/Users/me/Other/CustomB')).toBe('b')
+    expect(getCachedIcon('dir')).toBe('dir-url')
+  })
+
+  it('handles a trailing slash and a no-op empty path', () => {
+    _applyIconsToCacheForTests({ 'path:/a/b/C': 'c' })
+    evictPerPathIconsForDir('') // no-op
+    expect(getCachedIcon('path:/a/b/C')).toBe('c')
+    evictPerPathIconsForDir('/a/b/')
+    expect(getCachedIcon('path:/a/b/C')).toBeUndefined()
+  })
+})
+
+describe('prefetchCustomFolderIcons', () => {
+  beforeEach(() => {
+    _resetIconCacheForTests()
+    localStorage.clear()
+    vi.mocked(getCustomFolderIconIds).mockReset()
+    vi.mocked(getIcons).mockReset()
+  })
+
+  it('asks the backend only about dirs without a cached path: icon', async () => {
+    // Pre-seed one dir as already having a custom icon.
+    _applyIconsToCacheForTests({ 'path:/Users/me/Known': 'known' })
+    vi.mocked(getCustomFolderIconIds).mockResolvedValue({ data: [], timedOut: false })
+
+    await prefetchCustomFolderIcons(['/Users/me/Known', '/Users/me/Unknown'], true)
+
+    expect(getCustomFolderIconIds).toHaveBeenCalledTimes(1)
+    // Only the uncached dir is queried.
+    expect(getCustomFolderIconIds).toHaveBeenCalledWith(['/Users/me/Unknown'])
+  })
+
+  it('fetches the returned custom-folder ids through getIcons', async () => {
+    vi.mocked(getCustomFolderIconIds).mockResolvedValue({
+      data: ['path:/Users/me/Custom'],
+      timedOut: false,
+    })
+    vi.mocked(getIcons).mockResolvedValue({
+      data: { 'path:/Users/me/Custom': 'custom-url' },
+      timedOut: false,
+    })
+
+    await prefetchCustomFolderIcons(['/Users/me/Custom'], false)
+
+    expect(getIcons).toHaveBeenCalledWith(['path:/Users/me/Custom'], false)
+    expect(getCachedIcon('path:/Users/me/Custom')).toBe('custom-url')
+  })
+
+  it('does nothing on an empty input and never throws on backend error', async () => {
+    await prefetchCustomFolderIcons([], true)
+    expect(getCustomFolderIconIds).not.toHaveBeenCalled()
+
+    vi.mocked(getCustomFolderIconIds).mockRejectedValue(new Error('boom'))
+    await expect(prefetchCustomFolderIcons(['/x'], true)).resolves.toBeUndefined()
   })
 })
 

@@ -46,6 +46,7 @@
     } from '$lib/tauri-commands'
     import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
     import { updateIndexSizesInPlace } from '../views/file-list-utils'
+    import { evictPerPathIconsForDir } from '$lib/icon-cache'
     import { classifySelectionDialogKey } from './selection-dialog-keys'
     import { createTypeToJumpState } from './type-to-jump-state.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
@@ -193,6 +194,11 @@
 
     // New architecture: store listingId and totalCount, not files
     let listingId = $state('')
+    // The directory path of the currently active listing. Plain bookkeeping (not
+    // reactive): used to evict this directory's per-path icons (`path:*` / `pkg:*`)
+    // when the listing ends, so a folder re-iconed while away is re-detected next
+    // time it's shown rather than served stale from the session cache.
+    let loadedPath = ''
     let totalCount = $state(0)
     let loading = $state(true)
     let error = $state<string | null>(null)
@@ -1407,7 +1413,10 @@
             log.debug('[FilePane] loadDirectory: cancelling previous listing {listingId}', { listingId })
             void cancelListing(listingId)
             void listDirectoryEnd(listingId)
+            // Evict the closed directory's per-path icons (no longer visible).
+            evictPerPathIconsForDir(loadedPath)
             listingId = ''
+            loadedPath = ''
             lastSequence = 0
         }
 
@@ -1448,6 +1457,7 @@
             // This prevents a race condition where fast folders complete before listeners are ready
             const newListingId = crypto.randomUUID()
             listingId = newListingId
+            loadedPath = path
             lastSequence = 0
 
             // Register all event listeners in parallel (no ordering dependency between them)
@@ -2786,6 +2796,7 @@
         if (listingId) {
             void cancelListing(listingId)
             void listDirectoryEnd(listingId)
+            evictPerPathIconsForDir(loadedPath)
         }
         clearInterval(syncPollInterval)
         clearTimeout(syncRetryTimer)

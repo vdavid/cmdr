@@ -77,6 +77,12 @@ FDA-gated, or timed out — purely additive.
 `pkg:*` shares the `path:*` lifecycle: both are matched by `is_per_path_key`, LRU-capped together under one
 `PATH_KEY_CAP` budget, and never persisted to localStorage on the FE.
 
+**FE wiring** (`file-explorer/views/file-list-utils.ts` + `icon-cache.ts`): the visible-range fetch collects the
+on-screen directory rows' paths and calls `prefetchCustomFolderIcons` → `get_custom_folder_icon_ids`, then fetches the
+returned `path:` ids through the normal `prefetchIcons` path (packages already arrive as `pkg:` ids from the listing).
+`FilePane` evicts a directory's `path:*` / `pkg:*` keys via `evictPerPathIconsForDir` when its listing ends (navigation
+away / unmount), keeping the working set tight and re-detecting a re-icon next time the folder is shown.
+
 ## Persistent on-disk cache (`disk_cache.rs`)
 
 Real-folder icons (`special:*`, `pkg:*`, `path:*`) rarely change, so they persist across restarts in a warm on-disk

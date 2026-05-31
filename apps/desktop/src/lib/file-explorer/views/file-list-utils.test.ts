@@ -24,6 +24,7 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 vi.mock('$lib/icon-cache', () => ({
   prefetchIcons: vi.fn(),
+  prefetchCustomFolderIcons: vi.fn().mockResolvedValue(undefined),
 }))
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),

@@ -104,6 +104,8 @@ vi.mock('$lib/icon-cache', async () => {
     iconCacheVersion: writable(0),
     iconCacheCleared: writable(0),
     prefetchIcons: vi.fn().mockResolvedValue(undefined),
+    prefetchCustomFolderIcons: vi.fn().mockResolvedValue(undefined),
+    evictPerPathIconsForDir: vi.fn(),
   }
 })
 

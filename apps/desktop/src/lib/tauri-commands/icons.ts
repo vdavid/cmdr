@@ -33,6 +33,18 @@ export async function refreshDirectoryIcons(
 }
 
 /**
+ * Detects which of the given VISIBLE directory paths carry a Finder custom-icon
+ * flag, returning the `path:{dir}` icon id for each. Called for visible directory
+ * rows so the bulk listing never pays the `getxattr` per entry. Feed the result
+ * into `getIcons` / `prefetchIcons` to fetch the real icons.
+ * @param directoryPaths - Directory paths of the visible rows
+ * @returns `path:{dir}` ids for the folders that have a custom icon, with timeout flag
+ */
+export async function getCustomFolderIconIds(directoryPaths: string[]): Promise<TimedOut<string[]>> {
+  return commands.getCustomFolderIconIds(directoryPaths)
+}
+
+/**
  * Clears cached extension icons.
  * Called when the "use app icons for documents" setting changes.
  */
@@ -41,7 +53,8 @@ export async function clearExtensionIconCache(): Promise<void> {
 }
 
 /**
- * Clears cached directory icons (`dir`, `symlink-dir`, `path:*`).
+ * Clears cached directory icons (`dir`, `symlink-dir`, `path:*`, `pkg:*`, `special:*`)
+ * from both the in-memory cache and the on-disk warm tier.
  * Called when the system theme or accent color changes.
  */
 export async function clearDirectoryIconCache(): Promise<void> {

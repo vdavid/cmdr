@@ -4,7 +4,7 @@
 
 import type { FileEntry, SyncStatus } from '../types'
 import { getFileRange, getDirStatsBatch, type DirStats } from '$lib/tauri-commands'
-import { prefetchIcons } from '$lib/icon-cache'
+import { prefetchIcons, prefetchCustomFolderIcons } from '$lib/icon-cache'
 import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
 import { getSetting } from '$lib/settings/settings-store'
 
@@ -172,6 +172,13 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
   const iconIds = entries.map((e) => e.iconId).filter((id) => id)
   const useAppIcons = getUseAppIconsForDocuments()
   void prefetchIcons(iconIds, useAppIcons)
+
+  // Detect + fetch custom-folder icons for the visible directory rows. The
+  // backend defers the kHasCustomIcon getxattr off the bulk-listing hot path, so
+  // we drive it here only for the bounded set of directories on screen. Plain
+  // folders stay generic; packages already arrive as `pkg:` ids above.
+  const visibleDirPaths = entries.filter((e) => e.isDirectory && !e.isSymlink).map((e) => e.path)
+  void prefetchCustomFolderIcons(visibleDirPaths, useAppIcons)
 
   // Request sync status for visible paths
   const paths = entries.map((e) => e.path)

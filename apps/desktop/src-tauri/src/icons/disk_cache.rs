@@ -151,12 +151,13 @@ fn store_in(dir: &Path, icon_id: &str, real_path: &str, data_url: &str) {
 /// is enough; it's recreated on the next `store`. Best-effort, never panics.
 pub fn clear_all() {
     if let Some(dir) = CACHE_DIR.as_ref()
-        && let Err(e) = fs::remove_dir_all(dir) {
-            // ENOENT (already gone) is fine; anything else is logged and ignored.
-            if e.kind() != std::io::ErrorKind::NotFound {
-                log::debug!(target: "icons", "icon-cache clear failed: {e}");
-            }
+        && let Err(e) = fs::remove_dir_all(dir)
+    {
+        // ENOENT (already gone) is fine; anything else is logged and ignored.
+        if e.kind() != std::io::ErrorKind::NotFound {
+            log::debug!(target: "icons", "icon-cache clear failed: {e}");
         }
+    }
 }
 
 /// Writes bytes to `path` via a temp-file + rename so a crash mid-write can't

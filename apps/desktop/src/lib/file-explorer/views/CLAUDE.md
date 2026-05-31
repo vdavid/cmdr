@@ -113,7 +113,13 @@ Buffer balances memory (small) vs. IPC latency (reduces fetches).
 window requires fresh data. Parent bumps `cacheGeneration`, triggering re-fetch. Uses `$effect()` to react.
 
 **Decision**: Icon prefetching only for visible entries **Why**: With 50k files, prefetching all icons = 50k IPC calls.
-Virtual scrolling renders only ~50 items, so prefetch only visible. Re-fetch on scroll.
+Virtual scrolling renders only ~50 items, so prefetch only visible. Re-fetch on scroll. The same visible-range pass in
+`fetchVisibleRange` also drives Tier-C custom-folder icons: it collects the visible directory rows' paths and calls
+`prefetchCustomFolderIcons` (→ backend `get_custom_folder_icon_ids`), which runs the `kHasCustomIcon` `getxattr` only
+for that bounded on-screen set and returns `path:{dir}` ids to fetch. The bulk listing never pays the per-entry syscall;
+packages already arrive as `pkg:` ids from `get_icon_id`. `FilePane` evicts a directory's `path:*` / `pkg:*` icons via
+`evictPerPathIconsForDir(loadedPath)` when its listing ends (navigation away / unmount), so a folder re-iconed while
+away is re-detected next time it's shown.
 
 **Decision**: Brief columns shrink-wrap to the widest filename in each column, with the backend measuring widths and the
 frontend rendering to those measurements **Why**: Long filenames deserve their full width while short ones let the user
