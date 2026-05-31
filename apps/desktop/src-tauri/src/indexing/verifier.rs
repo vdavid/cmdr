@@ -35,6 +35,27 @@ static VERIFIER_STATE: LazyLock<Mutex<VerifierState>> = LazyLock::new(|| {
 const VERIFY_DEBOUNCE_SECS: u64 = 30;
 const MAX_CONCURRENT_VERIFICATIONS: usize = 2;
 
+/// RAII guard that frees a path's `in_flight` slot when dropped.
+///
+/// Constructed right after `in_flight.insert(dir_path)`. The verification body
+/// (`verify_and_correct` + `emit_dir_updated`) runs in a spawned task that the
+/// tokio runtime catches on panic, so a panic there would otherwise skip the
+/// post-`await` `in_flight.remove` and permanently leak the slot against
+/// `MAX_CONCURRENT_VERIFICATIONS`. Routing the removal through `Drop` frees the
+/// slot on unwind too. Mirrors `write_operations`'s `WriteSettledGuard` pattern.
+struct InFlightGuard {
+    dir_path: String,
+}
+
+impl Drop for InFlightGuard {
+    fn drop(&mut self) {
+        if let Ok(mut state) = VERIFIER_STATE.lock() {
+            state.in_flight.remove(&self.dir_path);
+            state.recent.push((self.dir_path.clone(), Instant::now()));
+        }
+    }
+}
+
 // ── Public API ───────────────────────────────────────────────────────
 
 /// Attempt to verify a directory against the index. Checks dedup/debounce,
@@ -74,15 +95,16 @@ pub(super) fn maybe_verify(dir_path: String, writer: IndexWriter, app: AppHandle
     drop(state);
 
     tauri::async_runtime::spawn(async move {
+        // Free the `in_flight` slot (and record the debounce) on every exit
+        // path, including a panic inside the body that the runtime catches.
+        let _slot = InFlightGuard {
+            dir_path: dir_path.clone(),
+        };
+
         let affected_paths = verify_and_correct(&dir_path, &writer).await;
 
         if !affected_paths.is_empty() {
             reconciler::emit_dir_updated(&app, affected_paths);
-        }
-
-        if let Ok(mut state) = VERIFIER_STATE.lock() {
-            state.in_flight.remove(&dir_path);
-            state.recent.push((dir_path, Instant::now()));
         }
     });
 }
@@ -762,6 +784,43 @@ mod tests {
         let state = VERIFIER_STATE.lock().unwrap();
         assert!(state.recent.iter().any(|(p, _)| p == &dir_path));
         assert!(state.in_flight.is_empty());
+        drop(state);
+
+        invalidate();
+    }
+
+    #[test]
+    fn in_flight_slot_is_freed_on_panic_unwind() {
+        // A panic inside the verification body (which runs in a spawned task the
+        // runtime catches) must still free the `in_flight` slot, or the path
+        // permanently counts against MAX_CONCURRENT_VERIFICATIONS. The guard's
+        // Drop runs during unwinding; this pins that contract.
+        invalidate();
+
+        let dir_path = "/fake/panic/unwind".to_string();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            {
+                let mut state = VERIFIER_STATE.lock().unwrap();
+                state.in_flight.insert(dir_path.clone());
+            }
+            let _slot = InFlightGuard {
+                dir_path: dir_path.clone(),
+            };
+            panic!("simulated verification panic");
+        }));
+
+        assert!(result.is_err(), "the closure must have panicked");
+
+        let state = VERIFIER_STATE.lock().unwrap();
+        assert!(
+            !state.in_flight.contains(&dir_path),
+            "in_flight slot must be freed even when the verification body panicked"
+        );
+        assert!(
+            state.recent.iter().any(|(p, _)| p == &dir_path),
+            "the path should be recorded as recently-verified (debounced) after the guard fires"
+        );
         drop(state);
 
         invalidate();

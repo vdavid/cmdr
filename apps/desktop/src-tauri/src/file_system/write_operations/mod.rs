@@ -47,7 +47,10 @@ use helpers::{
 };
 #[cfg(not(test))]
 use state::WriteOperationState;
-use state::{WRITE_OPERATION_STATE, WriteSettledGuard, register_operation_status, unregister_operation_status};
+use state::{
+    OperationStateGuard, WRITE_OPERATION_STATE, WriteSettledGuard, register_operation_status,
+    unregister_operation_status,
+};
 use transfer::copy::copy_files_with_progress_inner;
 use transfer::move_op::move_files_with_progress;
 use trash::trash_files_with_progress;
@@ -291,6 +294,14 @@ pub async fn delete_files_start(
                 WriteOperationType::Delete,
                 Some(volume_id_str.clone()),
             );
+            // RAII guard: removes the op from `WRITE_OPERATION_STATE` and
+            // `OPERATION_STATUS_CACHE` on every exit path, including a panic
+            // inside `delete_volume_files_with_progress` that the runtime
+            // catches (the cleanup lives after the `.await`, so an unwind would
+            // otherwise skip it and leak both map entries). Drops before
+            // `_settled_guard`, so cache removal runs before `write-settled`,
+            // matching the `start_write_operation` ordering.
+            let _state_guard = OperationStateGuard::new(operation_id_for_cleanup.clone());
 
             let volume = match crate::file_system::get_volume_manager().get(&volume_id_str) {
                 Some(v) => v,
@@ -307,10 +318,6 @@ pub async fn delete_files_start(
                             },
                         ),
                     );
-                    if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-                        cache.remove(&operation_id_for_cleanup);
-                    }
-                    unregister_operation_status(&operation_id_for_cleanup);
                     return;
                 }
             };
@@ -337,11 +344,6 @@ pub async fn delete_files_start(
                     );
                 }
             }
-
-            if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-                cache.remove(&operation_id_for_cleanup);
-            }
-            unregister_operation_status(&operation_id_for_cleanup);
         });
 
         Ok(WriteOperationStartResult {
