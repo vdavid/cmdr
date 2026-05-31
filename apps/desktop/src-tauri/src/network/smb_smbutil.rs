@@ -286,6 +286,17 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
         if use_guest {
             cmd.arg("-G");
         }
+        // SECURITY: When `url_owned` carries credentials it has the shape
+        // `//user:password@host`, so the cleartext password rides in argv here and is
+        // readable by any local process via `ps aux` for the brief lifetime of the child.
+        // `smbutil view` has no argv-free channel for an explicit password: the URL is the
+        // only documented way to pass one (see `man smbutil`), `nsmb.conf`/`~/.nsmbrc` has no
+        // password keyword (see `man nsmb.conf`), there's no password env var, and the only
+        // alternative — omitting `-N` to make smbutil prompt — reads via `getpass()`/`/dev/tty`,
+        // which our TTY-less spawned child can't feed reliably. The Linux `smbclient` fallback
+        // (`smb_smbclient.rs`) avoids the leak with a 0o600 auth file (`-A`); smbutil has no
+        // equivalent. The primary macOS mount path (`NetFSMountURLSync`) also avoids argv (see
+        // `network/CLAUDE.md`); only this rare fallback for older Samba servers is exposed.
         cmd.arg(&url_owned).output()
     })
     .await

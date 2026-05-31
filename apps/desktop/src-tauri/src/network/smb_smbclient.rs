@@ -6,12 +6,17 @@
 
 use crate::network::smb_types::{ShareInfo, ShareListError};
 use log::{debug, warn};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Lists shares using `smbclient -L` and returns parsed disk shares.
 ///
 /// Guest mode: pass `credentials: None` → uses `-N` (no password).
-/// Authenticated: pass `credentials: Some((user, pass))` → uses `-U user%pass`.
+/// Authenticated: pass `credentials: Some((user, pass))` → writes the credentials to a
+/// 0o600 temp authentication file and passes `-A <file>`. The password never lands in argv
+/// (which is world-readable via `ps aux` / `/proc/<pid>/cmdline`), unlike the older
+/// `-U user%pass` form.
 pub async fn run_smbclient_list(
     host: &str,
     port: u16,
@@ -22,20 +27,37 @@ pub async fn run_smbclient_list(
     let creds_owned = credentials.map(|(u, p)| (u.to_string(), p.to_string()));
 
     let output = tokio::task::spawn_blocking(move || {
+        // The auth file is created inside the blocking task and dropped at the end of it,
+        // so the secret-bearing file lives only for the duration of the smbclient call and
+        // is removed even if `cmd.output()` errors (tempfile's `Drop` unlinks it).
+        let auth_file = match &creds_owned {
+            Some((username, password)) => match write_smbclient_auth_file(username, password) {
+                Ok(file) => Some(file),
+                Err(e) => {
+                    return Err(std::io::Error::other(format!(
+                        "Failed to write smbclient auth file: {}",
+                        e
+                    )));
+                }
+            },
+            None => None,
+        };
+
         let mut cmd = Command::new("smbclient");
         cmd.arg("-L").arg(&server);
         if port_str != "445" {
             cmd.arg("-p").arg(&port_str);
         }
-        match &creds_owned {
-            Some((username, password)) => {
-                cmd.arg("-U").arg(format!("{}%{}", username, password));
+        match &auth_file {
+            Some(file) => {
+                cmd.arg("-A").arg(file.path());
             }
             None => {
                 cmd.arg("-N");
             }
         }
         cmd.output()
+        // `auth_file` drops here, unlinking the temp file regardless of success or error.
     })
     .await
     .map_err(|e| ShareListError::ProtocolError {
@@ -79,8 +101,8 @@ pub async fn run_smbclient_list(
         } else {
             format!(":{}", port)
         };
-        // smbclient runs with `-U user%pass` and can reflect a credential-bearing URL in
-        // its output, so scrub stderr/stdout through the redactor before logging.
+        // smbclient can reflect a credential-bearing URL in its output, so scrub
+        // stderr/stdout through the redactor before logging.
         warn!(
             "smbclient -L //{}{} failed (exit={:?}, has_creds={}). stderr: {} | stdout: {}",
             host,
@@ -94,6 +116,74 @@ pub async fn run_smbclient_list(
     }
 
     Ok(parse_smbclient_output(&stdout))
+}
+
+/// Builds the contents of an smbclient authentication file (`-A`).
+///
+/// smbclient's auth-file format is line-based `key = value` pairs. We emit `username`,
+/// `password`, and `domain`. A `DOMAIN\user` or `DOMAIN/user` username is split so the
+/// domain lands on its own line (smbclient otherwise treats the backslash as part of the
+/// username). Pure function so the format can be pinned by a unit test without touching the
+/// filesystem.
+fn build_smbclient_auth_file_contents(username: &str, password: &str) -> String {
+    let (domain, user) = match username.split_once('\\').or_else(|| username.split_once('/')) {
+        Some((d, u)) => (d, u),
+        None => ("", username),
+    };
+    format!("username = {}\npassword = {}\ndomain = {}\n", user, password, domain)
+}
+
+/// RAII handle to the temp authentication file. Unlinks the file on drop, so the
+/// secret-bearing file lives only as long as the handle (even if the smbclient call panics or
+/// errors). `tempfile` is a dev-dependency only, so we roll a minimal std-only guard here.
+struct AuthFile {
+    path: PathBuf,
+}
+
+impl AuthFile {
+    fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl Drop for AuthFile {
+    fn drop(&mut self) {
+        // Best-effort unlink; if it's already gone, nothing to do.
+        let _ = std::fs::remove_file(&self.path);
+    }
+}
+
+/// Writes SMB credentials to a 0o600 temp file for `smbclient -A`, keeping the password out of
+/// argv (which is world-readable via `ps aux` / `/proc/<pid>/cmdline`). The returned `AuthFile`
+/// unlinks the file on drop, so the secret-bearing file lives only as long as the handle.
+///
+/// The file is created with `O_CREAT | O_EXCL` (via `create_new`) so we never reuse or clobber
+/// an existing path, and on Unix the create mode is 0o600 so it's owner-only from the first byte
+/// (no world-readable window between create and chmod).
+fn write_smbclient_auth_file(username: &str, password: &str) -> std::io::Result<AuthFile> {
+    // Unique filename: PID + a monotonic counter keep concurrent callers in the same process
+    // from colliding, and `create_new` guarantees we fail rather than reuse if the name exists.
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let filename = format!("cmdr-smb-auth-{}-{}", std::process::id(), seq);
+    let path = std::env::temp_dir().join(filename);
+
+    let mut opts = std::fs::OpenOptions::new();
+    opts.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        opts.mode(0o600);
+    }
+
+    let mut file = opts.open(&path)?;
+    let guard = AuthFile { path };
+
+    file.write_all(build_smbclient_auth_file_contents(username, password).as_bytes())?;
+    file.flush()?;
+    // `file` (the handle) drops here; `guard` keeps the path alive and unlinks it on drop.
+    Ok(guard)
 }
 
 /// Truncates a string to at most `max` bytes for log output, appending an
@@ -317,6 +407,44 @@ mod tests {
         let out = truncate_for_log(&s, 4);
         // Byte 3 is 'c'; byte 4 starts '中' (multi-byte). We must back off to 3.
         assert_eq!(out, "abc…[truncated, 9 bytes total]");
+    }
+
+    #[test]
+    fn auth_file_contents_plain_username() {
+        let contents = build_smbclient_auth_file_contents("alice", "s3cret");
+        assert_eq!(contents, "username = alice\npassword = s3cret\ndomain = \n");
+    }
+
+    #[test]
+    fn auth_file_contents_splits_backslash_domain() {
+        let contents = build_smbclient_auth_file_contents("WORKGROUP\\bob", "pw");
+        assert_eq!(contents, "username = bob\npassword = pw\ndomain = WORKGROUP\n");
+    }
+
+    #[test]
+    fn auth_file_contents_splits_forward_slash_domain() {
+        let contents = build_smbclient_auth_file_contents("CORP/carol", "pw");
+        assert_eq!(contents, "username = carol\npassword = pw\ndomain = CORP\n");
+    }
+
+    #[test]
+    fn write_auth_file_is_owner_only_and_unlinks_on_drop() {
+        let path = {
+            let file = write_smbclient_auth_file("dave", "hunter2").expect("write auth file");
+            let path = file.path().to_path_buf();
+            let contents = std::fs::read_to_string(&path).expect("read back");
+            assert_eq!(contents, "username = dave\npassword = hunter2\ndomain = \n");
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+                // Only the owner bits may be set; group/other must be zero.
+                assert_eq!(mode & 0o077, 0, "auth file must not be group/other readable");
+            }
+            path
+            // `file` drops here.
+        };
+        assert!(!path.exists(), "temp auth file should be unlinked on drop");
     }
 
     #[test]

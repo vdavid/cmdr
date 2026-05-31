@@ -109,6 +109,18 @@ available. If IP unavailable, use derived hostname with `.local` stripped.
 - **Linux:** `smbclient -L` (from `samba-client` package). If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
 - **Other platforms:** stubs return `ProtocolError`.
 
+**Credential channel (keeping the password out of argv):** `smbclient` gets credentials via a 0o600 temp
+authentication file passed as `-A <file>` (`smb_smbclient.rs::write_smbclient_auth_file`), never `-U user%pass`, so the
+password never lands in the world-readable process argument list (`ps aux` / `/proc/<pid>/cmdline`). The temp file is a
+`NamedTempFile` created inside the blocking task and dropped (unlinked) the moment the call returns, success or error.
+`smbutil` has **no argv-free channel** for an explicit password: `smbutil view` only accepts the password embedded in the
+`//user:password@host` URL (per `man smbutil`), `nsmb.conf`/`~/.nsmbrc` has no password keyword (per `man nsmb.conf`),
+there's no password env var, and the interactive prompt (omit `-N`) reads via `getpass()`/`/dev/tty` which a TTY-less
+spawned child can't feed reliably. So smbutil's authenticated fallback keeps the password in argv — a documented residual
+exposure (see the `// SECURITY:` comment at the `cmd.arg(&url_owned)` site in `smb_smbutil.rs`). The window is brief and
+only this rare fallback (older Samba servers where smb2's RPC fails) is affected; the primary macOS mount path
+(`NetFSMountURLSync`) and smb2 share enumeration never expose the password.
+
 ### No persistent connection pool
 
 smb2 connections are lightweight (one `SmbClient` per connection) and created on-demand. Caching is at the share list level (30s TTL), not TCP connection level.
