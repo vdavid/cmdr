@@ -19,10 +19,12 @@ data URL. The id namespace, by tier:
 | C | `path:{dir}` / `pkg:{dir}` | per-path icons (volumes, packages, custom-icon folders) | the real path (8 MB thread) |
 | — | `git:{branch,tag,commit,fork}` | git-portal virtual entries | rendered by the FE via Lucide, never here |
 
-`dir` / `ext:*` / `file` / `symlink*` / `special:*` are inherently **bounded**, so they're uncapped and persist to
-localStorage. `path:*` / `pkg:*` are **unbounded** (grow with folders visited), so they're LRU-capped (`PATH_KEY_CAP`)
-and never persisted. See `clear_directory_icon_cache` for which keys a theme/accent change drops (`dir`, `symlink-dir`,
-`path:*`, `special:*` — all appearance-tinted by macOS).
+`dir` / `ext:*` / `file` / `symlink*` / `special:*` are inherently **bounded**, so they're uncapped in the in-memory
+cache and persist to localStorage on the FE. `path:*` / `pkg:*` are **unbounded** (grow with folders visited), so
+they're LRU-capped (`PATH_KEY_CAP`) and never persisted to localStorage. The Rust side also keeps a persistent on-disk
+warm tier for the real-folder ids (`special:*` / `pkg:*` / `path:*`), keyed by folder mtime — see § Persistent on-disk
+cache. See `clear_directory_icon_cache` for which keys a theme/accent change drops (`dir`, `symlink-dir`, `path:*`,
+`pkg:*`, `special:*` — all appearance-tinted by macOS — plus the whole disk cache).
 
 ## Tier B — special system folders (`special_folders.rs`)
 
@@ -74,6 +76,28 @@ FDA-gated, or timed out — purely additive.
 
 `pkg:*` shares the `path:*` lifecycle: both are matched by `is_per_path_key`, LRU-capped together under one
 `PATH_KEY_CAP` budget, and never persisted to localStorage on the FE.
+
+## Persistent on-disk cache (`disk_cache.rs`)
+
+Real-folder icons (`special:*`, `pkg:*`, `path:*`) rarely change, so they persist across restarts in a warm on-disk
+tier under `<data_dir>/icon-cache/` (env-resolved via `CMDR_DATA_DIR`, like the secret store). Each entry is a small
+JSON sidecar named by an FNV-1a digest of the icon id (so arbitrary path characters never produce an unsafe filename),
+holding `{ token, data_url }`.
+
+**Staleness token = the folder's own mtime** (whole epoch seconds). On a hot-cache miss, `get_icons` calls
+`disk_cache::load` BEFORE the cold NSWorkspace fetch; a hit promotes the icon into the in-memory LRU. When the user
+re-icons a folder in Finder, the folder's mtime bumps (Finder rewrites the icon resource / `com.apple.FinderInfo`), so
+the stored token no longer matches and we re-fetch — durability plus correct invalidation without watching anything. A
+missing/corrupt sidecar, an unresolvable mtime (dead mount), or any I/O error is a graceful miss; writes are temp+rename
+atomic and best-effort.
+
+**Theme/accent change wipes the disk cache too** (`disk_cache::clear_all`, called from `clear_directory_icon_cache`):
+macOS tints folder glyphs by appearance, which the mtime token can't catch (the folder didn't change, the system did),
+so we drop the warm tier wholesale and let icons re-fetch with the new tint. The tier (in-memory hot LRU → on-disk warm
+→ NSWorkspace cold) keeps the common case instant while staying honest about appearance and re-icon changes.
+
+The pure `load_in` / `store_in` (explicit cache dir) underpin the public `load` / `store` (process-wide `CACHE_DIR`),
+so tests run hermetically against a temp dir instead of the real data dir.
 
 ## Threading + FDA
 

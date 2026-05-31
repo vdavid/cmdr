@@ -4,6 +4,7 @@
 //! Benchmarked on M1 Mac: 10 files→3.7ms, 50→8ms, 100→12.8ms, 200→21ms.
 //! Custom thread counts showed no improvement, so we use auto-detect.
 
+mod disk_cache;
 pub mod per_path;
 pub mod special_folders;
 
@@ -131,6 +132,11 @@ pub fn clear_directory_icon_cache() {
             && !is_per_path_key(key)
             && !key.starts_with(special_folders::SPECIAL_KEY_PREFIX)
     });
+    // The on-disk warm tier holds the same appearance-tinted `special:*` / `path:*`
+    // / `pkg:*` icons. Its mtime token can't catch a theme/accent change (the
+    // folder didn't change, the system did), so drop it wholesale too; the icons
+    // re-fetch lazily with the new tint.
+    disk_cache::clear_all();
 }
 
 /// Converts an image to a base64 WebP data URL.
@@ -261,6 +267,11 @@ pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> Ha
     // generic per-id loop below, which runs on the calling thread with a normal
     // stack. Each result is re-keyed back to its ORIGINAL icon id (the bounded
     // `special:{name}` or the per-path `pkg:`/`path:` key), not the raw path.
+    //
+    // Before the cold NSWorkspace fetch, consult the on-disk persistent cache
+    // (keyed by path + folder mtime): a folder whose icon we fetched in a prior
+    // session reloads instantly and skips NSWorkspace entirely until the user
+    // re-icons it (which bumps the folder mtime → cache miss → re-fetch).
     let mut remaining = Vec::with_capacity(icon_ids.len());
     // (original_icon_id, real_path) pairs to fetch via the 8 MB threads.
     let mut per_path_to_fetch: Vec<(String, String)> = Vec::new();
@@ -270,7 +281,13 @@ pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> Ha
             continue;
         }
         if let Some(real_path) = real_path_for_real_folder_id(&icon_id) {
-            per_path_to_fetch.push((icon_id, real_path));
+            if let Some(url) = disk_cache::load(&icon_id, &real_path) {
+                // Warm-tier hit: promote into the hot in-memory cache and return.
+                cache_icon(icon_id.clone(), url.clone());
+                result.insert(icon_id, url);
+            } else {
+                per_path_to_fetch.push((icon_id, real_path));
+            }
             continue;
         }
         if icon_id.starts_with(special_folders::SPECIAL_KEY_PREFIX) {
@@ -285,10 +302,12 @@ pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> Ha
         let paths: Vec<String> = per_path_to_fetch.iter().map(|(_, path)| path.clone()).collect();
         let fetched = fetch_path_icons(paths);
         // `fetch_path_icons` returns `(path:{real_path}, data_url)` in input
-        // order; re-key each back to its original id, cache it, and return it.
-        for ((original_id, _real_path), (_, data_url)) in per_path_to_fetch.into_iter().zip(fetched) {
+        // order; re-key each back to its original id, cache it (memory + on-disk),
+        // and return it.
+        for ((original_id, real_path), (_, data_url)) in per_path_to_fetch.into_iter().zip(fetched) {
             if let Some(url) = data_url {
                 cache_icon(original_id.clone(), url.clone());
+                disk_cache::store(&original_id, &real_path, &url);
                 result.insert(original_id, url);
             }
         }
