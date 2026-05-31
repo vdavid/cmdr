@@ -414,6 +414,14 @@ pub fn run() {
             // Initialize the file watcher manager with app handle for events
             file_system::init_watcher_manager(app.handle().clone());
 
+            // Backstop reaper for orphaned directory listings. The primary, fast
+            // eviction is the FE-fired `list_directory_end` IPC; this only catches
+            // listings whose close IPC was never delivered (a thrown FE handler, an
+            // `$effect` teardown that threw), so their entry vector + OS watcher would
+            // otherwise pin for the rest of the session. Mirrors the search index's
+            // backstop timer and the viewer's window-`Destroyed` net.
+            file_system::start_orphan_listing_reaper();
+
             // Stash the AppHandle for the viewer's per-session watcher manager
             // threads so they can emit `viewer:file-changed:<sid>` events.
             file_viewer::init_app_handle(app.handle().clone());

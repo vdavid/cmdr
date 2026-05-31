@@ -408,6 +408,7 @@ fn watcher_invalidates_branches_listing_on_new_branch() {
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: AtomicU64::new(0),
                 created_at: std::time::Instant::now(),
+                last_accessed_ms: AtomicU64::new(0),
             },
         );
     }

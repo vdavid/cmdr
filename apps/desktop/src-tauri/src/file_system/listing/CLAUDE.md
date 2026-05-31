@@ -50,7 +50,7 @@ Frontend                          Backend
 
 **LISTING_CACHE**: Global `RwLock<HashMap<String, CachedListing>>`
 **Key**: `listing_id` (UUID per navigation)
-**Value**: `CachedListing { volume_id, path, entries, sort_by, sort_order, directory_sort_mode, sequence, created_at }`
+**Value**: `CachedListing { volume_id, path, entries, sort_by, sort_order, directory_sort_mode, sequence, created_at, last_accessed_ms }`
 
 **Triage helper**: `caching::snapshot_listings()` returns a lightweight summary of every active listing (id, volume, path, entry count, age). Used by `cmdr://state` so error reports surface orphan listings (started but not bound to a pane).
 
@@ -60,7 +60,9 @@ Frontend                          Backend
 3. Frontend calls `get_file_range()` for visible entries (on-demand)
 4. Frontend calls `find_file_indices()` to batch-resolve file names to indices (used by selection adjustment during operations)
 5. Frontend calls `get_paths_at_indices()` or `get_files_at_indices()` for batch selection lookups (transfer dialogs, delete dialog, drag, clipboard)
-6. `list_directory_end()` stops watcher, removes from cache
+6. `list_directory_end()` stops watcher, removes from cache (**primary, fast eviction**)
+
+**Backstop reaper (defense-in-depth)**: a periodic task (`start_orphan_listing_reaper`, spawned in `lib.rs` setup, sweeps every `REAPER_SWEEP_INTERVAL` = 30 min) tears down any listing idle past `ORPHAN_IDLE_WINDOW` (6 h) via the same `list_directory_end` path, so a leaked listing (close IPC never delivered) can't pin its entry vector + OS watcher for the whole session. It keys on `last_accessed_ms`, NOT `created_at` (see the Decision below). Mirrors the search index's idle/backstop timers and the file viewer's window-`Destroyed` net. Pure, clock-injectable seam: `orphan_ids(now_ms, window_ms, …)` and `reap_orphaned_listings_at(now_ms, window_ms)`.
 
 **Concurrency**: Multiple listings can coexist (different panes, rapid navigation). Each has unique ID.
 
@@ -99,6 +101,9 @@ widest filename.
 
 **Decision**: `ListingEventSink` trait decouples streaming from Tauri (same pattern as `OperationEventSink` in write_operations)
 **Why**: `read_directory_with_progress` needs to emit events, but `tauri::AppHandle` can't be created in tests. The trait allows `CollectorListingEventSink` to capture events for assertions. `Arc<dyn ListingEventSink>` is used (not `&dyn`) because the sink is cloned into `tokio::spawn` for progress callbacks.
+
+**Decision**: Orphan reaper keys on `last_accessed_ms`, not `created_at`; window is 6 h.
+**Why**: `created_at` is stamped once at listing creation and never refreshed, so an age-based reaper keyed on it would evict a pane that's been legitimately open all session. Instead, `last_accessed_ms` (an `AtomicU64` of ms-since-a-process-epoch) is bumped by every operation that proves the listing still backs a live pane: the read accessors (`get_file_range`, `get_total_count`, `get_file_at`, `get_listing_stats`, the index/path/batch lookups), `resort_listing`, and every watcher/notify cache patch (`insert_entry_sorted`/`remove_entry_by_path`/`update_entry_sorted`/`update_listing_entries`). `AtomicU64` so the read accessors can stamp it lock-free while holding only a shared `LISTING_CACHE.read()`. The reaper therefore only ever sees a stale stamp on a listing nobody has touched for hours — a genuine leak. The 6 h window is deliberately generous: we'd rather never evict a live listing than aggressively reclaim. `refresh_listing_index_sizes` intentionally does NOT touch: it's driven by background indexing, not user/FS activity, so touching there could keep a truly-orphaned listing alive indefinitely.
 
 **Decision**: File watcher starts AFTER listing complete
 **Why**: Watcher diffs rely on cached entries. Starting before cache is populated would miss initial state.

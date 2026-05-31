@@ -516,6 +516,9 @@ pub(crate) async fn read_directory_with_progress(
                 directory_sort_mode: dir_sort_mode,
                 sequence: std::sync::atomic::AtomicU64::new(0),
                 created_at: std::time::Instant::now(),
+                last_accessed_ms: std::sync::atomic::AtomicU64::new(
+                    crate::file_system::listing::caching::epoch_millis_now(),
+                ),
             },
         );
     }

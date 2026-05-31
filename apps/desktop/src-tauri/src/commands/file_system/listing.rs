@@ -518,6 +518,7 @@ mod refresh_listing_tests {
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: AtomicU64::new(1),
                 created_at: std::time::Instant::now(),
+                last_accessed_ms: AtomicU64::new(0),
             },
         );
     }

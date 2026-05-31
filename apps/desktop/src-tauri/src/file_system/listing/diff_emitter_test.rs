@@ -26,6 +26,7 @@ fn install_listing(id: &str) {
             directory_sort_mode: DirectorySortMode::default(),
             sequence: std::sync::atomic::AtomicU64::new(0),
             created_at: std::time::Instant::now(),
+            last_accessed_ms: std::sync::atomic::AtomicU64::new(0),
         },
     );
 }

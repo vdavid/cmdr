@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
@@ -40,6 +40,41 @@ pub enum ModifyResult {
 pub(crate) static LISTING_CACHE: LazyLock<RwLock<HashMap<String, CachedListing>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
+/// Process-start reference point for the `last_accessed_ms` field on `CachedListing`.
+///
+/// `Instant` isn't an integer, so we can't store it in an `AtomicU64` for lock-free
+/// touch-on-read. Instead we store milliseconds elapsed since this epoch. Monotonic,
+/// never affected by wall-clock jumps, and good for ~584 million years before the
+/// `u64` overflows.
+static LISTING_EPOCH: LazyLock<Instant> = LazyLock::new(Instant::now);
+
+/// Milliseconds elapsed since `LISTING_EPOCH`. Used to stamp `last_accessed_ms`.
+pub(crate) fn epoch_millis_now() -> u64 {
+    LISTING_EPOCH.elapsed().as_millis() as u64
+}
+
+/// Idle window after which an untouched listing is treated as orphaned and reaped.
+///
+/// **Deliberately generous (six hours).** A listing legitimately lives for the entire
+/// time a pane shows its directory, which can be the whole multi-day session. The
+/// primary, fast eviction path is the explicit `list_directory_end` IPC; this backstop
+/// only catches listings that genuinely leaked (a thrown FE handler skipped the close
+/// IPC, an `$effect` teardown that threw, a future code path that forgot the call).
+/// Every read accessor that proves a pane is still alive (`get_file_range`,
+/// `get_total_count`, `get_file_at`, `get_listing_stats`, resort, watcher-diff patches,
+/// …) refreshes `last_accessed_ms`, so a pane the user is interacting with — or that is
+/// receiving FS-change diffs — is never six continuous hours idle. We err strongly
+/// toward NOT evicting: six hours of zero interaction AND zero FS activity on a path is
+/// overwhelmingly a leak, not a pane the user is actively using.
+pub(crate) const ORPHAN_IDLE_WINDOW: Duration = Duration::from_secs(6 * 60 * 60);
+
+/// How often the backstop reaper task wakes up to scan for orphaned listings.
+///
+/// Coarse on purpose: the reaper is defense-in-depth for a multi-day session, not a
+/// hot-path reclaimer, so a 30-minute cadence keeps it effectively free while still
+/// bounding orphan accumulation well under a day.
+pub(crate) const REAPER_SWEEP_INTERVAL: Duration = Duration::from_secs(30 * 60);
+
 /// Cached directory listing for on-demand virtual scrolling.
 pub(crate) struct CachedListing {
     /// Volume ID this listing belongs to (like "root", "dropbox")
@@ -62,6 +97,111 @@ pub(crate) struct CachedListing {
     /// When this listing was created. Used by `snapshot_listings` for triage,
     /// surfacing orphan listings (e.g., volume dropdown previews) in error reports.
     pub created_at: Instant,
+    /// Milliseconds since `LISTING_EPOCH` at the last access (read accessor, resort, or
+    /// watcher/notify cache patch).
+    ///
+    /// **Decision**: track last-access for the orphan reaper, NOT `created_at`.
+    /// **Why**: `created_at` is stamped once at creation and never refreshed, so an
+    /// age-based reaper keyed on it would wrongly evict a long-open pane (a pane
+    /// legitimately backs the same listing for the whole session). `last_accessed_ms` is
+    /// bumped on every operation that proves the listing is still backing a live pane —
+    /// `get_file_range`, `get_total_count`, `get_file_at`, `get_listing_stats`, resort,
+    /// and every watcher/notify diff that patches the cache. So the reaper only ever
+    /// sees a stale timestamp on a listing nobody has touched for hours: a genuine leak.
+    /// `AtomicU64` (not `Mutex<Instant>`) so the read accessors, which already hold a
+    /// shared `LISTING_CACHE.read()` lock, can stamp it lock-free.
+    pub last_accessed_ms: AtomicU64,
+}
+
+impl CachedListing {
+    /// Refreshes `last_accessed_ms` to now. Cheap, lock-free; safe to call under a shared
+    /// `LISTING_CACHE.read()` lock. Every accessor that proves a live pane calls this so
+    /// the orphan reaper never evicts a listing in active use.
+    pub(crate) fn touch(&self) {
+        self.last_accessed_ms.store(epoch_millis_now(), Ordering::Relaxed);
+    }
+}
+
+/// Pure helper: given the current time, the idle window, and an iterator of
+/// `(listing_id, last_accessed_ms)`, returns the IDs whose idle time meets or exceeds
+/// `window_ms`.
+///
+/// Split out from the cache walk so the reaper logic is deterministically testable
+/// without sleeping or touching the real (process-start-relative) clock: feed it a
+/// synthetic `now_ms`, `window_ms`, and a list of stamps.
+pub(crate) fn orphan_ids<'a>(
+    now_ms: u64,
+    window_ms: u64,
+    listings: impl Iterator<Item = (&'a str, u64)>,
+) -> Vec<String> {
+    listings
+        .filter(|(_, last_ms)| now_ms.saturating_sub(*last_ms) >= window_ms)
+        .map(|(id, _)| id.to_string())
+        .collect()
+}
+
+/// Scans the cache for orphaned listings (idle past `ORPHAN_IDLE_WINDOW`) and tears each
+/// down via the same path as the explicit `list_directory_end` IPC: cache entry removed,
+/// `WATCHER_MANAGER` watcher dropped, pending coalesced diff dropped.
+///
+/// This is the backstop reaper. The fast, primary eviction is still the FE-fired
+/// `list_directory_end`; this only catches listings whose close IPC was never delivered.
+/// Returns the IDs it reaped (empty in the common case), for logging/tests.
+pub(crate) fn reap_orphaned_listings() -> Vec<String> {
+    reap_orphaned_listings_at(epoch_millis_now(), ORPHAN_IDLE_WINDOW.as_millis() as u64)
+}
+
+/// `reap_orphaned_listings` with the clock and idle window injected, so tests can
+/// simulate "6 hours idle" deterministically (the real epoch clock starts at process
+/// launch, so a real 6 h gap can't be produced in a unit test without sleeping).
+pub(crate) fn reap_orphaned_listings_at(now_ms: u64, window_ms: u64) -> Vec<String> {
+    let ids = {
+        let cache = match LISTING_CACHE.read() {
+            Ok(c) => c,
+            Err(_) => return Vec::new(),
+        };
+        orphan_ids(
+            now_ms,
+            window_ms,
+            cache
+                .iter()
+                .map(|(id, listing)| (id.as_str(), listing.last_accessed_ms.load(Ordering::Relaxed))),
+        )
+    };
+
+    for id in &ids {
+        // Reuse the exact teardown the explicit close IPC uses, so the cache entry AND
+        // its watcher (and any pending diff) are released together.
+        crate::file_system::listing::operations::list_directory_end(id);
+        log::warn!(
+            target: "listing_cache",
+            "Reaped orphaned listing `{id}`: no access for >= {} min. Its `list_directory_end` IPC was likely never delivered (a skipped FE cleanup).",
+            ORPHAN_IDLE_WINDOW.as_secs() / 60,
+        );
+    }
+
+    ids
+}
+
+/// Spawns the periodic backstop reaper task. Call once during app setup.
+///
+/// Wakes every `REAPER_SWEEP_INTERVAL` and calls `reap_orphaned_listings`. Runs on
+/// Tauri's async runtime so it survives for the process lifetime; the task ends only
+/// when the runtime shuts down at app exit.
+pub(crate) fn start_orphan_listing_reaper() {
+    tauri::async_runtime::spawn(async {
+        loop {
+            tokio::time::sleep(REAPER_SWEEP_INTERVAL).await;
+            let reaped = reap_orphaned_listings();
+            if !reaped.is_empty() {
+                log::info!(
+                    target: "listing_cache",
+                    "Orphan-listing reaper swept {} leaked listing(s)",
+                    reaped.len(),
+                );
+            }
+        }
+    });
 }
 
 /// Lightweight summary of one cached listing, for `snapshot_listings`.
@@ -168,6 +308,7 @@ pub(crate) fn find_listings_on_volume(
 pub fn insert_entry_sorted(listing_id: &str, entry: FileEntry) -> Option<usize> {
     let mut cache = LISTING_CACHE.write().ok()?;
     let listing = cache.get_mut(listing_id)?;
+    listing.touch();
 
     // Don't insert if an entry with this path already exists
     if listing.entries.iter().any(|e| e.path == entry.path) {
@@ -205,6 +346,7 @@ pub fn get_listing_volume_id_and_path(listing_id: &str) -> Option<(String, PathB
 pub fn remove_entry_by_path(listing_id: &str, path: &Path) -> Option<(usize, FileEntry)> {
     let mut cache = LISTING_CACHE.write().ok()?;
     let listing = cache.get_mut(listing_id)?;
+    listing.touch();
     let path_str = path.to_string_lossy();
 
     let idx = listing.entries.iter().position(|e| e.path == *path_str)?;
@@ -231,6 +373,7 @@ pub fn has_entry(listing_id: &str, path: &str) -> bool {
 pub fn update_entry_sorted(listing_id: &str, new_entry: FileEntry) -> Option<ModifyResult> {
     let mut cache = LISTING_CACHE.write().ok()?;
     let listing = cache.get_mut(listing_id)?;
+    listing.touch();
 
     let idx = listing.entries.iter().position(|e| e.path == new_entry.path)?;
     let old = &listing.entries[idx];

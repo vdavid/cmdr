@@ -703,6 +703,7 @@ fn test_listing_is_watched_flips_with_watcher_lifecycle() {
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: AtomicU64::new(0),
                 created_at: std::time::Instant::now(),
+                last_accessed_ms: AtomicU64::new(0),
             },
         );
     }

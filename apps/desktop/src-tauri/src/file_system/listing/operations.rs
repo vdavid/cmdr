@@ -96,6 +96,9 @@ pub async fn list_directory_start_with_volume(
                 directory_sort_mode: dir_sort_mode,
                 sequence: std::sync::atomic::AtomicU64::new(0),
                 created_at: std::time::Instant::now(),
+                last_accessed_ms: std::sync::atomic::AtomicU64::new(
+                    crate::file_system::listing::caching::epoch_millis_now(),
+                ),
             },
         );
     }
@@ -147,6 +150,8 @@ pub fn get_file_range(
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
+    listing.touch();
+
     let entries: Vec<FileEntry> = visible_entries(&listing.entries, include_hidden)
         .skip(start)
         .take(count)
@@ -164,6 +169,8 @@ pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, 
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
+    listing.touch();
+
     Ok(visible_entries(&listing.entries, include_hidden).count())
 }
 
@@ -174,6 +181,8 @@ pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Re
     let listing = cache
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    listing.touch();
 
     Ok(visible_entries(&listing.entries, include_hidden).position(|e| e.name == name))
 }
@@ -192,6 +201,8 @@ pub fn find_file_indices(
     let listing = cache
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    listing.touch();
 
     let lookup: std::collections::HashSet<&str> = names.iter().map(|n| n.as_str()).collect();
     let mut result = HashMap::with_capacity(names.len());
@@ -212,6 +223,8 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
     let listing = cache
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    listing.touch();
 
     let result = visible_entries(&listing.entries, include_hidden).nth(index).cloned();
     if result.is_none() {
@@ -248,6 +261,8 @@ pub fn get_paths_at_indices(
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
+    listing.touch();
+
     let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
 
     let mut paths = Vec::with_capacity(selected_indices.len());
@@ -283,6 +298,8 @@ pub fn get_files_at_indices(
     let listing = cache
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    listing.touch();
 
     let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
 
@@ -334,6 +351,8 @@ pub fn resort_listing(
     let listing = cache
         .get_mut(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    listing.touch();
 
     // Collect filenames of selected files before re-sorting
     let selected_filenames: Option<Vec<String>> = if all_selected {
@@ -400,6 +419,7 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
     if let Ok(mut cache) = LISTING_CACHE.write()
         && let Some(listing) = cache.get_mut(listing_id)
     {
+        listing.touch();
         let mut entries = entries;
         crate::indexing::enrich_entries_with_index(&mut entries);
         sort_entries(
@@ -480,6 +500,8 @@ pub fn get_listing_stats(
     let listing = cache
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    listing.touch();
 
     let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
 

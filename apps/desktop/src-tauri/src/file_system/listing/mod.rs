@@ -30,7 +30,7 @@ pub use operations::{get_files_at_indices, get_paths_at_indices};
 // Internal re-exports for file_system module internals (pub(crate) for crate-internal use)
 pub(crate) use caching::{
     ModifyResult, find_listings_for_path, get_listing_path, get_listing_volume_id_and_path, has_entry,
-    increment_sequence, insert_entry_sorted, remove_entry_by_path, update_entry_sorted,
+    increment_sequence, insert_entry_sorted, remove_entry_by_path, start_orphan_listing_reaper, update_entry_sorted,
 };
 // Notification API for volume mutations
 #[cfg(any(target_os = "macos", target_os = "linux"))]

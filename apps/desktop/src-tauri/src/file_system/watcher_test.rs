@@ -241,6 +241,7 @@ async fn test_handle_directory_change_refreshes_from_volume() {
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
                 created_at: std::time::Instant::now(),
+                last_accessed_ms: std::sync::atomic::AtomicU64::new(0),
             },
         );
     }
@@ -304,6 +305,7 @@ async fn test_handle_directory_change_detects_new_entries() {
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
                 created_at: std::time::Instant::now(),
+                last_accessed_ms: std::sync::atomic::AtomicU64::new(0),
             },
         );
     }

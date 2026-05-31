@@ -188,6 +188,7 @@ fn insert_listing(id: &str, volume_id: &str, path: &str, entries: Vec<FileEntry>
             directory_sort_mode: DirectorySortMode::LikeFiles,
             sequence: AtomicU64::new(1),
             created_at: std::time::Instant::now(),
+            last_accessed_ms: AtomicU64::new(0),
         },
     );
     id.to_string()

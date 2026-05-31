@@ -37,6 +37,8 @@ pub use listing::{
 };
 // Batch accessors (used by drag, clipboard, and transfer dialogs)
 pub use listing::{get_files_at_indices, get_paths_at_indices};
+// Backstop reaper for orphaned listings - start_orphan_listing_reaper must be called from lib.rs
+pub(crate) use listing::start_orphan_listing_reaper;
 // Re-export volume types (some not used externally yet)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
