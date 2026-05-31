@@ -86,3 +86,31 @@ describe('icon-cache path: key bounding', () => {
     expect(getCachedIcon('file')).toBe('file-url')
   })
 })
+
+describe('icon-cache special: keys (Tier B)', () => {
+  beforeEach(() => {
+    _resetIconCacheForTests()
+    localStorage.clear()
+  })
+
+  it('persists special: keys to localStorage alongside the bounded keys', () => {
+    _applyIconsToCacheForTests({
+      'special:downloads': 'dl-url',
+      'special:applications': 'apps-url',
+      dir: 'dir-url',
+    })
+
+    const keys = storedKeys()
+    expect(keys).toEqual(expect.arrayContaining(['special:downloads', 'special:applications', 'dir']))
+  })
+
+  it('never evicts special: keys when many path: keys arrive (they are not LRU-capped)', () => {
+    _applyIconsToCacheForTests({ 'special:downloads': 'dl-url' })
+
+    for (let n = 0; n < _pathKeyCapForTests * 3; n++) {
+      _applyIconsToCacheForTests({ [`path:/folder/${n}`]: `url-${n}` })
+    }
+
+    expect(getCachedIcon('special:downloads')).toBe('dl-url')
+  })
+})

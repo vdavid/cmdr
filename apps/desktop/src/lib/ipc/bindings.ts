@@ -817,7 +817,7 @@ export const commands = {
    */
   clearExtensionIconCache: () => __TAURI_INVOKE<void>('clear_extension_icon_cache'),
   /**
-   *  Clears cached directory icons (`dir`, `symlink-dir`, `path:*`).
+   *  Clears cached directory icons (`dir`, `symlink-dir`, `path:*`, `special:*`).
    *  Called when the system theme or accent color changes.
    */
   clearDirectoryIconCache: () => __TAURI_INVOKE<void>('clear_directory_icon_cache'),

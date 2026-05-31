@@ -4,6 +4,8 @@
 //! Benchmarked on M1 Mac: 10 files→3.7ms, 50→8ms, 100→12.8ms, 200→21ms.
 //! Custom thread counts showed no improvement, so we use auto-detect.
 
+pub mod special_folders;
+
 use crate::config::ICON_SIZE;
 use crate::ignore_poison::RwLockIgnorePoison;
 use base64::Engine;
@@ -103,13 +105,17 @@ pub fn clear_extension_icon_cache() {
     ICON_CACHE.write_ignore_poison().retain(|key| !key.starts_with("ext:"));
 }
 
-/// Clears all cached icons for directory entries (`dir`, `symlink-dir`, `path:*`).
-/// Called when the system theme or accent color changes, since macOS folder icons
-/// are tinted by the current appearance.
+/// Clears all cached icons for directory entries (`dir`, `symlink-dir`,
+/// `path:*`, `special:*`). Called when the system theme or accent color changes,
+/// since macOS folder icons (including the special-folder glyphs) are tinted by
+/// the current appearance.
 pub fn clear_directory_icon_cache() {
-    ICON_CACHE
-        .write_ignore_poison()
-        .retain(|key| key != "dir" && key != "symlink-dir" && !key.starts_with(PATH_KEY_PREFIX));
+    ICON_CACHE.write_ignore_poison().retain(|key| {
+        key != "dir"
+            && key != "symlink-dir"
+            && !key.starts_with(PATH_KEY_PREFIX)
+            && !key.starts_with(special_folders::SPECIAL_KEY_PREFIX)
+    });
 }
 
 /// Converts an image to a base64 WebP data URL.
@@ -192,12 +198,47 @@ fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
 pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> HashMap<String, String> {
     let mut result = HashMap::new();
 
+    // Special system folders (`special:downloads`, …) fetch their icon from the
+    // folder's REAL path, which can be a cloud-synced location (Desktop &
+    // Documents iCloud sync) whose NSWorkspace lookup descends into
+    // `fileproviderd`. Route them through the dedicated 8 MB-stack fetch (same as
+    // the `path:` branch), NOT the generic per-id loop below, which runs on the
+    // calling thread. The result stays keyed by `special:{name}` (bounded), not
+    // by the real path.
+    let mut remaining = Vec::with_capacity(icon_ids.len());
+    let mut special_to_fetch: Vec<(String, String)> = Vec::new();
     for icon_id in icon_ids {
-        // Check cache first
         if let Some(cached) = get_cached_icon(&icon_id) {
             result.insert(icon_id, cached);
             continue;
         }
+        if icon_id.starts_with(special_folders::SPECIAL_KEY_PREFIX) {
+            if let Some(real_path) = special_folders::real_path_for_icon_id(&icon_id) {
+                special_to_fetch.push((icon_id, real_path.to_string_lossy().into_owned()));
+            }
+            // Unknown special name (no resolved standard location): skip; the
+            // frontend keeps the `dir` fallback.
+            continue;
+        }
+        remaining.push(icon_id);
+    }
+
+    if !special_to_fetch.is_empty() {
+        let paths: Vec<String> = special_to_fetch.iter().map(|(_, path)| path.clone()).collect();
+        let fetched = fetch_path_icons(paths);
+        // `fetch_path_icons` returns `(path:{real_path}, data_url)` in input
+        // order; re-key each back to its `special:{name}` id and cache under the
+        // bounded key.
+        for ((special_id, _), (_, data_url)) in special_to_fetch.into_iter().zip(fetched) {
+            if let Some(url) = data_url {
+                cache_icon(special_id.clone(), url.clone());
+                result.insert(special_id, url);
+            }
+        }
+    }
+
+    for icon_id in remaining {
+        // Cache was already checked above for this batch.
 
         // macOS: drain autoreleased ObjC objects per iteration
         // (fetch_fresh_extension_icon and fetch_icon_for_path call ObjC APIs)

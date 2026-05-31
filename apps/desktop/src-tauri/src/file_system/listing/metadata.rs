@@ -45,8 +45,20 @@ pub(crate) fn get_group_name(gid: u32) -> String {
     name
 }
 
-/// Generates icon ID based on file type and extension.
-pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str) -> String {
+/// Generates icon ID based on file type, extension, and (for directories) the
+/// folder's well-known path.
+///
+/// `path` is the entry's full path. It's used to detect the finite set of
+/// special system folders (Downloads, Applications, the home folder, …) by
+/// canonical path — NOT by name, since any folder can be named "Downloads". A
+/// real special folder gets a bounded `special:{name}` key (Tier B); every other
+/// directory keeps the shared `dir` icon (Tier A). Detection is a cheap path
+/// comparison (no NSWorkspace, no TCC), so it's safe to run per entry.
+///
+/// Symlinks (even to a special location) keep their `symlink-dir` icon: the link
+/// badge is the salient signal, and following a symlink to classify it would
+/// cost a syscall per entry.
+pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str, path: &str) -> String {
     if is_symlink {
         // Distinguish symlinks to directories vs files
         return if is_dir {
@@ -56,6 +68,9 @@ pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str) -> String 
         };
     }
     if is_dir {
+        if let Some(special_id) = crate::icons::special_folders::icon_id_for_path(Path::new(path)) {
+            return special_id;
+        }
         return "dir".to_string();
     }
     // Extract extension
@@ -140,7 +155,7 @@ impl FileEntry {
     /// Creates a `FileEntry` with the four essential fields set and everything else defaulted.
     pub(crate) fn new(name: String, path: String, is_dir: bool, is_symlink: bool) -> Self {
         Self {
-            icon_id: get_icon_id(is_dir, is_symlink, &name),
+            icon_id: get_icon_id(is_dir, is_symlink, &name, &path),
             name,
             path,
             is_directory: is_dir,
@@ -165,6 +180,55 @@ impl FileEntry {
             display_size: None,
             display_size_tooltip: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod icon_id_tests {
+    use super::*;
+
+    #[test]
+    fn plain_directory_gets_the_generic_dir_icon() {
+        let home = dirs::home_dir().expect("home_dir resolves");
+        let project = home.join("Projects").join("foo");
+        assert_eq!(get_icon_id(true, false, "foo", &project.to_string_lossy()), "dir");
+    }
+
+    #[test]
+    fn real_downloads_folder_gets_the_special_key() {
+        let downloads = dirs::download_dir().expect("download_dir resolves");
+        assert_eq!(
+            get_icon_id(true, false, "Downloads", &downloads.to_string_lossy()),
+            "special:downloads"
+        );
+    }
+
+    #[test]
+    fn a_folder_merely_named_downloads_elsewhere_stays_generic() {
+        let home = dirs::home_dir().expect("home_dir resolves");
+        let fake = home.join("Projects").join("Downloads");
+        assert_eq!(get_icon_id(true, false, "Downloads", &fake.to_string_lossy()), "dir");
+    }
+
+    #[test]
+    fn a_symlink_to_a_special_path_keeps_the_symlink_dir_icon() {
+        // Symlinks keep the link badge; we don't promote them to `special:*`.
+        let downloads = dirs::download_dir().expect("download_dir resolves");
+        assert_eq!(
+            get_icon_id(true, true, "Downloads", &downloads.to_string_lossy()),
+            "symlink-dir"
+        );
+    }
+
+    #[test]
+    fn files_are_unaffected_by_special_folder_detection() {
+        // Even a file sitting at a path that string-matches a special folder must
+        // route by extension, never to `special:*`.
+        let downloads = dirs::download_dir().expect("download_dir resolves");
+        assert_eq!(
+            get_icon_id(false, false, "notes.txt", &downloads.to_string_lossy()),
+            "ext:txt"
+        );
     }
 }
 

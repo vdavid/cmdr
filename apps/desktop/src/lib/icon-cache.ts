@@ -21,6 +21,16 @@ const retryDelayMs = 5000
 const PATH_KEY_PREFIX = 'path:'
 
 /**
+ * Prefix marking special-system-folder icon keys (`special:downloads`, …). The
+ * set is finite and stable (Downloads, Applications, the home folder, …), so —
+ * unlike `path:` keys — these are uncapped and DO persist to localStorage
+ * alongside `dir` / `ext:`. They're only cleared on theme/accent change, since
+ * macOS tints the special-folder glyphs by the current appearance. Mirrors the
+ * Rust `special_folders::SPECIAL_KEY_PREFIX`.
+ */
+const SPECIAL_KEY_PREFIX = 'special:'
+
+/**
  * Backstop LRU cap for `path:`-keyed entries in `memoryCache`. A long session
  * browsing thousands of distinct folders would otherwise accumulate one base64 WebP
  * data-URL per folder forever. A few hundred covers any plausible visible/recent
@@ -276,7 +286,12 @@ export async function clearDirectoryIconCache(): Promise<void> {
   await clearDirectoryIconCacheCommand()
 
   for (const key of memoryCache.keys()) {
-    if (key === 'dir' || key === 'symlink-dir' || key.startsWith(PATH_KEY_PREFIX)) {
+    if (
+      key === 'dir' ||
+      key === 'symlink-dir' ||
+      key.startsWith(PATH_KEY_PREFIX) ||
+      key.startsWith(SPECIAL_KEY_PREFIX)
+    ) {
       memoryCache.delete(key)
     }
   }

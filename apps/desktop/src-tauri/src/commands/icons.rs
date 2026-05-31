@@ -73,7 +73,7 @@ pub fn clear_extension_icon_cache() {
     icons::clear_extension_icon_cache();
 }
 
-/// Clears cached directory icons (`dir`, `symlink-dir`, `path:*`).
+/// Clears cached directory icons (`dir`, `symlink-dir`, `path:*`, `special:*`).
 /// Called when the system theme or accent color changes.
 #[tauri::command]
 #[specta::specta]
