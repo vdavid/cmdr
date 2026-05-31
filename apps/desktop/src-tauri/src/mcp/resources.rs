@@ -616,9 +616,15 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
         } else {
             yaml.push_str("recentErrors:\n");
             for e in &errors {
+                // `path` / `message` come from failed directory listings and can
+                // carry SMB URIs or home paths the user never saw rendered.
+                // Redact them so `cmdr://state` matches the same contract as
+                // `cmdr://logs` and the crash/error reporters.
+                let path = crate::redact::redact_line(&e.path);
+                let message = crate::redact::redact_line(&e.message);
                 yaml.push_str(&format!(
                     "  - atUnixMs: {}\n    listingId: {}\n    volumeId: {}\n    path: {:?}\n    message: {:?}\n",
-                    e.at_unix_ms, e.listing_id, e.volume_id, e.path, e.message
+                    e.at_unix_ms, e.listing_id, e.volume_id, path, message
                 ));
             }
         }
@@ -656,10 +662,27 @@ fn read_log_tail(opts: &LogOptions) -> Result<String, String> {
     // Drop a possibly-partial leading line so the first surviving line is
     // structurally intact. Only do this if we didn't read from byte 0.
     let text = String::from_utf8_lossy(&buf);
-    let mut lines: Vec<&str> = if start_pos == 0 {
-        text.lines().collect()
-    } else {
+    Ok(select_log_lines(&text, start_pos == 0, opts))
+}
+
+/// Apply the `since` / `filter` / `limit` selection and per-line redaction to a
+/// raw log-tail chunk, returning the joined, oldest-first result.
+///
+/// `skip_partial_first` is `false` when the chunk starts at byte 0 (the whole
+/// file fit in the window, so the first line is intact) and `true` otherwise
+/// (we read mid-file, so the leading line may be truncated).
+///
+/// **Redaction is mandatory.** The MCP logs resource is a third consumer of the
+/// same log data the crash + error reporters scrub, so it must honor the same
+/// contract: a loopback caller without filesystem read shouldn't be able to
+/// exfiltrate home paths, SMB URIs, emails, or device names through
+/// `cmdr://logs`. `redact_line` is a per-line `Cow` hot path (zero alloc on the
+/// no-PII case), built for exactly this. Pure (no I/O), so it's unit-testable.
+fn select_log_lines(text: &str, skip_partial_first: bool, opts: &LogOptions) -> String {
+    let mut lines: Vec<&str> = if skip_partial_first {
         text.lines().skip(1).collect()
+    } else {
+        text.lines().collect()
     };
 
     if let Some(since) = opts.since_iso.as_deref() {
@@ -671,7 +694,11 @@ fn read_log_tail(opts: &LogOptions) -> Result<String, String> {
 
     let take = opts.limit.min(lines.len());
     let start = lines.len() - take;
-    Ok(lines[start..].join("\n"))
+    let redacted: Vec<String> = lines[start..]
+        .iter()
+        .map(|line| crate::redact::redact_line(line).into_owned())
+        .collect();
+    redacted.join("\n")
 }
 
 /// Returns true when `line`'s leading ISO-8601 timestamp is strictly greater
@@ -830,6 +857,34 @@ mod tests {
     fn test_resource_count() {
         let resources = get_all_resources();
         assert_eq!(resources.len(), 5);
+    }
+
+    /// The `cmdr://logs` resource must redact PII before returning, matching the
+    /// crash + error reporters. A loopback caller with no filesystem read
+    /// shouldn't be able to lift home paths, emails, or SMB URIs out of the log.
+    #[test]
+    fn select_log_lines_redacts_pii() {
+        let opts = LogOptions {
+            since_iso: None,
+            filter: None,
+            limit: LOG_DEFAULT_LIMIT,
+        };
+        let raw = "2026-05-31T08:30:02.000+02:00 INFO listing /Users/dorka/SecretProject/budget.pdf\n\
+                   2026-05-31T08:30:03.000+02:00 WARN contact jane.doe@example.com about smb://nas.local/share/private/file.txt";
+
+        let out = select_log_lines(raw, false, &opts);
+
+        // Raw PII must be gone.
+        assert!(!out.contains("/Users/dorka/"), "home path leaked: {out}");
+        assert!(!out.contains("SecretProject"), "custom dir name leaked: {out}");
+        assert!(!out.contains("jane.doe@example.com"), "email leaked: {out}");
+        assert!(!out.contains("/share/private/"), "SMB share tail leaked: {out}");
+        // Redaction tokens present (path-shape preserved).
+        assert!(out.contains("$HOME/"), "expected redacted home token: {out}");
+        assert!(out.contains("<email>"), "expected redacted email token: {out}");
+        // Non-PII log structure survives.
+        assert!(out.contains("INFO listing"), "log structure dropped: {out}");
+        assert!(out.contains("WARN contact"), "log structure dropped: {out}");
     }
 
     #[test]

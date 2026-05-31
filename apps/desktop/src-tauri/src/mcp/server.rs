@@ -392,11 +392,17 @@ pub fn validate_origin(headers: &HeaderMap) -> Result<(), Box<Response>> {
 /// Pure predicate: does this JSON-RPC call bypass the user's in-app confirmation dialog,
 /// and therefore require the bearer token? True iff `method == "tools/call"` AND either:
 ///   - the tool is `delete`/`move`/`copy` with `arguments.autoConfirm == true`, OR
-///   - the tool is `dialog` with `arguments.action == "confirm"`.
+///   - the tool is `dialog` with `arguments.action == "confirm"`, OR
+///   - the tool is `set_setting` (config mutation that applies with no user confirmation).
 ///
 /// Everything else (resource reads, nav, search, and destructive ops that STILL pop the
 /// dialog) returns false and needs no token. `autoConfirm` and `action` live under
 /// `params.arguments`. No I/O, so it's directly unit-testable.
+///
+/// `set_setting` is gated as a whole tool: it applies any registry setting with no
+/// confirmation, so an unauthenticated local process could otherwise silently flip
+/// `updates.errorReports`, `network.*`, `developer.mcp*`, etc. That's the same
+/// confirmation-bypass class as the auto-confirm file ops, so it belongs in the gated set.
 pub fn tool_call_requires_token(method: &str, params: &Value) -> bool {
     if method != "tools/call" {
         return false;
@@ -411,6 +417,7 @@ pub fn tool_call_requires_token(method: &str, params: &Value) -> bool {
             .and_then(|v| v.as_bool())
             .unwrap_or(false),
         "dialog" => args.and_then(|a| a.get("action")).and_then(|v| v.as_str()) == Some("confirm"),
+        "set_setting" => true,
         _ => false,
     }
 }
@@ -1032,6 +1039,25 @@ mod tests {
     fn no_token_resources_read_method() {
         let p = json!({"uri": "cmdr://state"});
         assert!(!tool_call_requires_token("resources/read", &p));
+    }
+
+    #[test]
+    fn requires_token_set_setting() {
+        // `set_setting` applies any registry setting with no user confirmation
+        // (updates.errorReports, network.*, developer.mcp*, …), so it's gated
+        // as a whole tool regardless of which setting it targets.
+        let p = params_with("set_setting", json!({"id": "updates.errorReports", "value": true}));
+        assert!(tool_call_requires_token("tools/call", &p));
+        // Even with no arguments at all, the tool itself is gated.
+        let bare = json!({"name": "set_setting"});
+        assert!(tool_call_requires_token("tools/call", &bare));
+    }
+
+    #[test]
+    fn no_token_unrelated_tool() {
+        // A non-mutating tool stays open even with a set_setting-shaped arg blob.
+        let p = params_with("nav_to_path", json!({"id": "updates.errorReports", "value": true}));
+        assert!(!tool_call_requires_token("tools/call", &p));
     }
 
     #[test]
