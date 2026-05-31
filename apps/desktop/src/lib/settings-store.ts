@@ -4,6 +4,9 @@ import { load } from '@tauri-apps/plugin-store'
 import type { Store } from '@tauri-apps/plugin-store'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { resolveStorePath } from './settings/store-path'
+import { getAppLogger } from './logging/logger'
+
+const log = getAppLogger('settings-store')
 
 export type FullDiskAccessChoice = 'allow' | 'deny' | 'notAskedYet'
 
@@ -58,8 +61,15 @@ export async function loadSettings(): Promise<Settings> {
 
 /**
  * Saves user settings to persistent storage.
+ *
+ * Returns `true` if the write reached disk, `false` if it failed. A failed
+ * write is logged (not thrown) so existing fire-and-forget callers keep
+ * working, while callers that gate real behaviour on the persisted value
+ * (`fullDiskAccessChoice`, `isOnboarded`) can branch on the result. Without
+ * this, a dropped write silently re-runs onboarding / re-prompts for Full Disk
+ * Access on next launch with no log trail.
  */
-export async function saveSettings(settings: Partial<Settings>): Promise<void> {
+export async function saveSettings(settings: Partial<Settings>): Promise<boolean> {
   try {
     const store = await getStore()
     if (settings.showHiddenFiles !== undefined) {
@@ -72,8 +82,10 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
       await store.set('isOnboarded', settings.isOnboarded)
     }
     await store.save()
-  } catch {
-    // Silently fail - persistence is nice-to-have
+    return true
+  } catch (error) {
+    log.error('Failed to persist settings {keys}: {error}', { keys: Object.keys(settings), error })
+    return false
   }
 }
 

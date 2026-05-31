@@ -74,10 +74,8 @@
         } catch (error) {
             log.warn('FDA re-probe before opening Settings failed: {error}', { error })
         }
-        try {
-            await saveSettings({ fullDiskAccessChoice: 'allow' })
-        } catch (error) {
-            log.warn('Failed to persist fullDiskAccessChoice=allow: {error}', { error })
+        if (!(await saveSettings({ fullDiskAccessChoice: 'allow' }))) {
+            log.warn('Could not persist fullDiskAccessChoice=allow; the choice may not survive a restart')
         }
         try {
             await openPrivacySettings()
@@ -93,10 +91,8 @@
     }
 
     async function handleDeny() {
-        try {
-            await saveSettings({ fullDiskAccessChoice: 'deny' })
-        } catch (error) {
-            log.warn('Failed to persist fullDiskAccessChoice=deny: {error}', { error })
+        if (!(await saveSettings({ fullDiskAccessChoice: 'deny' }))) {
+            log.warn('Could not persist fullDiskAccessChoice=deny; the choice may not survive a restart')
         }
         // Indexing was deferred at app launch (FDA gate). Now that the user has decided,
         // start it within this session so they don't need to restart for the index to

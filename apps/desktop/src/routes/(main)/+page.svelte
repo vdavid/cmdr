@@ -31,6 +31,7 @@
     } from '$lib/tauri-commands'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { loadSettings, saveSettings } from '$lib/settings-store'
+    import { getAppLogger } from '$lib/logging/logger'
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
@@ -54,6 +55,8 @@
     import { updateLicenseCommandName } from '$lib/commands/command-registry'
     import type { FriendlyError } from '$lib/file-explorer/types'
     import type { ExplorerAPI } from './explorer-api'
+
+    const log = getAppLogger('main-page')
 
     /**
      * Onboarding wizard visibility. The wizard owns the first-launch path: FDA, AI consent,
@@ -412,7 +415,9 @@
             // Granted-now: mirror the setting if it diverged (covers OS-side toggles), then
             // either skip or mark onboarded based on the `isOnboarded` flag.
             if (settings.fullDiskAccessChoice !== 'allow') {
-                await saveSettings({ fullDiskAccessChoice: 'allow' })
+                if (!(await saveSettings({ fullDiskAccessChoice: 'allow' }))) {
+                    log.warn('Could not mirror fullDiskAccessChoice=allow; FDA may re-prompt on next launch')
+                }
             }
             if (!settings.isOnboarded) {
                 // Pre-wizard users who granted FDA before the wizard existed: unblock the

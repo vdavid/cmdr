@@ -60,7 +60,9 @@ function showUpdateToast(): void {
  */
 export async function notifyOnboardingComplete(): Promise<void> {
   onboarded = true
-  await saveSettings({ isOnboarded: true })
+  if (!(await saveSettings({ isOnboarded: true }))) {
+    log.warn('Could not persist isOnboarded=true; onboarding may re-run on next launch')
+  }
   showUpdateToast()
 }
 
