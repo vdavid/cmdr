@@ -100,21 +100,13 @@ pub(super) async fn create_directory_core(
         return Ok((new_path, expanded_path));
     }
 
-    // Fallback for unknown volumes (shouldn't happen in practice)
-    let mut new_path = PathBuf::from(&expanded_path);
-    new_path.push(name);
-    crate::downloads::note_pending_write_for_cmdr(&new_path);
-    std::fs::create_dir(&new_path)
-        .map_err(|e| match e.kind() {
-            std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),
-            std::io::ErrorKind::PermissionDenied => {
-                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
-            }
-            _ => format!("Couldn't create folder: {}", e),
-        })
-        .map_err(IpcError::from_err)?;
-
-    Ok((new_path, expanded_path))
+    // "root" and every mounted volume is always registered in `VolumeManager`,
+    // so reaching here means the volume was unregistered out from under us (e.g.
+    // an unmount race). Error out instead of falling back to an untimed
+    // synchronous `std::fs::create_dir` on the async executor, which would
+    // violate this module's "every FS-touching command is timed" contract on a
+    // hung mount.
+    Err(IpcError::from_err(format!("Volume not found: {}", volume_id)))
 }
 
 /// Core file creation logic, separated from the Tauri command so it can be tested without
@@ -168,21 +160,13 @@ pub(super) async fn create_file_core(
         return Ok((new_path, expanded_path));
     }
 
-    // Fallback for unknown volumes (shouldn't happen in practice)
-    let mut new_path = PathBuf::from(&expanded_path);
-    new_path.push(name);
-    crate::downloads::note_pending_write_for_cmdr(&new_path);
-    std::fs::File::create_new(&new_path)
-        .map_err(|e| match e.kind() {
-            std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),
-            std::io::ErrorKind::PermissionDenied => {
-                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
-            }
-            _ => format!("Couldn't create file: {}", e),
-        })
-        .map_err(IpcError::from_err)?;
-
-    Ok((new_path, expanded_path))
+    // "root" and every mounted volume is always registered in `VolumeManager`,
+    // so reaching here means the volume was unregistered out from under us (e.g.
+    // an unmount race). Error out instead of falling back to an untimed
+    // synchronous `std::fs::File::create_new` on the async executor, which would
+    // violate this module's "every FS-touching command is timed" contract on a
+    // hung mount.
+    Err(IpcError::from_err(format!("Volume not found: {}", volume_id)))
 }
 
 // ============================================================================

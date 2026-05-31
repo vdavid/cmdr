@@ -45,6 +45,19 @@ mod tests {
         let _ = fs::remove_dir_all(path);
     }
 
+    /// Registers a real local-FS "root" volume in the global `VolumeManager` so
+    /// `create_*_core` with `volume_id = None` (→ "root") exercises the timed
+    /// `Volume` path, the same one production hits. In production
+    /// `init_volume_manager()` registers "root" at startup; unit tests never
+    /// call it, so without this the create-core calls would find no volume.
+    /// Idempotent via `register_if_absent`.
+    fn ensure_root_volume() {
+        use crate::file_system::get_volume_manager;
+        use crate::file_system::volume::LocalPosixVolume;
+        use std::sync::Arc;
+        get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
+    }
+
     #[test]
     fn test_expand_tilde() {
         let expanded = expand_tilde("~/Documents");
@@ -68,6 +81,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_directory_success() {
+        ensure_root_volume();
         let tmp = create_test_dir("create_success");
         let parent = tmp.to_string_lossy().to_string();
         let result = create_directory_core(None, &parent, "new-folder").await;
@@ -80,6 +94,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_directory_already_exists() {
+        ensure_root_volume();
         let tmp = create_test_dir("create_exists");
         let parent = tmp.to_string_lossy().to_string();
         fs::create_dir(tmp.join("existing")).unwrap();
@@ -124,7 +139,43 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_create_directory_unregistered_volume_errors_without_fs_write() {
+        // An unregistered volume_id used to fall back to an untimed synchronous
+        // `std::fs::create_dir` on the async executor. Now it returns a typed
+        // "Volume not found" error and writes nothing.
+        let tmp = create_test_dir("create_unregistered_vol");
+        let parent = tmp.to_string_lossy().to_string();
+        let result = create_directory_core(Some("no-such-volume-xyz".to_string()), &parent, "would-be-folder").await;
+        assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct; message is the signal
+        assert!(result.unwrap_err().message.contains("Volume not found"));
+        assert!(
+            !tmp.join("would-be-folder").exists(),
+            "no directory should be created when the volume isn't registered"
+        );
+        cleanup_test_dir(&tmp);
+    }
+
+    #[tokio::test]
+    async fn test_create_file_unregistered_volume_errors_without_fs_write() {
+        // Same contract as the directory case: an unregistered volume_id returns
+        // a typed error instead of an untimed `std::fs::File::create_new`.
+        let tmp = create_test_dir("create_file_unregistered_vol");
+        let parent = tmp.to_string_lossy().to_string();
+        let result = create_file_core(Some("no-such-volume-xyz".to_string()), &parent, "would-be-file.txt").await;
+        assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct; message is the signal
+        assert!(result.unwrap_err().message.contains("Volume not found"));
+        assert!(
+            !tmp.join("would-be-file.txt").exists(),
+            "no file should be created when the volume isn't registered"
+        );
+        cleanup_test_dir(&tmp);
+    }
+
+    #[tokio::test]
     async fn test_create_file_success() {
+        ensure_root_volume();
         let tmp = create_test_dir("create_file_success");
         let parent = tmp.to_string_lossy().to_string();
         let result = create_file_core(None, &parent, "new-file.txt").await;
@@ -138,6 +189,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_file_already_exists() {
+        ensure_root_volume();
         let tmp = create_test_dir("create_file_exists");
         let parent = tmp.to_string_lossy().to_string();
         fs::write(tmp.join("existing.txt"), b"hello").unwrap();
