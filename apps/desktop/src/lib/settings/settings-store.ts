@@ -45,7 +45,21 @@ let crossWindowUnlisten: UnlistenFn | null = null
 
 async function getStore(): Promise<Store> {
   if (!storeInstance) {
-    log.debug('Creating new store instance for {storeName}', { storeName: STORE_NAME })
+    // In isolated instances (dev, per-worktree dev, E2E — anything that sets
+    // `CMDR_DATA_DIR`), `tauri-plugin-store` would otherwise resolve
+    // `settings.json` against Tauri's identifier-driven `app_data_dir()`, which
+    // ignores `CMDR_DATA_DIR` and lands on the real production settings file.
+    // The backend returns an absolute path under the resolved data dir so the
+    // frontend store and the Rust-side loader agree. Returns `null` in
+    // production, where the plain store name keeps the path byte-identical.
+    let storePath = STORE_NAME
+    try {
+      const isolated = await commands.getIsolatedSettingsPath()
+      if (isolated) storePath = isolated
+    } catch (e) {
+      log.warn('Could not resolve isolated settings path, using default: {error}', { error: String(e) })
+    }
+    log.debug('Creating new store instance for {storeName}', { storeName: storePath })
     // Build defaults from registry
     const defaults: Record<string, unknown> = {}
     for (const def of settingsRegistry) {
@@ -53,7 +67,7 @@ async function getStore(): Promise<Store> {
     }
     // allowed-pluralize-noun: settingsRegistry is a fixed const with many entries.
     log.debug('Loading store with {count} default settings', { count: Object.keys(defaults).length })
-    storeInstance = await load(STORE_NAME, { defaults, autoSave: false })
+    storeInstance = await load(storePath, { defaults, autoSave: false })
     log.debug('Store instance created successfully')
   }
   return storeInstance

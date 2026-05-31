@@ -323,6 +323,17 @@ binary. It connects to an already-running app via `/tmp/tauri-playwright.sock`. 
 `./scripts/check.sh --check desktop-e2e-playwright` which handles the full lifecycle (build → launch → test → cleanup),
 or start the app manually first (see "Manually" section above).
 
+**Gotcha**: The frontend settings store reads the developer's REAL `settings.json` unless redirected. **Why**: the
+checker launches the pre-built binary directly (no `tauri-wrapper.js`), so Tauri's `app_data_dir()` keeps the prod
+identifier `com.veszelovszki.cmdr` and `tauri-plugin-store` would resolve `settings.json` to
+`~/Library/Application Support/com.veszelovszki.cmdr/settings.json`. That leaked a locally-flipped setting into tests:
+`fileExplorer.suppressQuickLookHint: true` (set by clicking "Don't show again" on the Quick Look hint toast in your real
+app) suppressed the hint, so every spec asserting `expectAndDismissToast(tauriPage, 'Space')` timed out on that machine
+while CI Linux stayed green (no such file there). The fix: `getStore()` in `settings-store.ts` loads from an absolute
+`<resolved_data_dir>/settings.json` when `get_isolated_settings_path` returns one (any `CMDR_DATA_DIR` instance). If a
+toast-assertion spec fails locally but passes in CI, suspect a stale value in your real `settings.json`, not the test. A
+runtime `-c <config>` identifier override does NOT fix this: `app_data_dir()` ignores it for a pre-built binary.
+
 **Gotcha**: Navigation destroys page context. **Why**: After triggering SvelteKit navigation (settings, viewer), any
 in-flight `evaluate()` result will be lost. Always `waitForSelector()` on the target page's element before evaluating
 further JS.

@@ -1119,6 +1119,27 @@ export const commands = {
    */
   findAvailablePort: (startPort: number) => __TAURI_INVOKE<number | null>('find_available_port', { startPort }),
   /**
+   *  Returns the absolute `settings.json` path the frontend's `tauri-plugin-store`
+   *  should load, but ONLY when this is an isolated instance (dev, per-worktree
+   *  dev, or E2E — anything that sets `CMDR_DATA_DIR`). Returns `None` for
+   *  production so the store keeps resolving via `BaseDirectory::AppData` exactly
+   *  as before.
+   *
+   *  Why this exists: `tauri-plugin-store` resolves its path against Tauri's
+   *  `app_data_dir()` (identifier-driven), which ignores `CMDR_DATA_DIR`. The
+   *  Rust-side settings loader (`settings::load_settings`) already honors
+   *  `CMDR_DATA_DIR` via `resolved_app_data_dir`, so without this the frontend
+   *  store and the backend loader read *different* `settings.json` files in any
+   *  isolated instance. In E2E that means the suite reads the developer's real
+   *  `~/Library/Application Support/com.veszelovszki.cmdr/settings.json` — so a
+   *  locally-flipped setting (for example `fileExplorer.suppressQuickLookHint`)
+   *  leaks into tests and makes them fail on that machine while passing in CI
+   *  (which has no such file). Pointing the store at the resolved data dir closes
+   *  that gap. Production is unaffected: `CMDR_DATA_DIR` is unset there, so this
+   *  returns `None` and the store path is byte-identical to before.
+   */
+  getIsolatedSettingsPath: () => __TAURI_INVOKE<string | null>('get_isolated_settings_path'),
+  /**
    *  Updates the file watcher debounce duration in milliseconds.
    *  This affects newly created watchers; existing watchers keep their original duration.
    */

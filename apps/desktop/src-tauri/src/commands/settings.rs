@@ -36,6 +36,32 @@ pub fn update_file_watcher_debounce(debounce_ms: u64) {
     update_debounce_ms(debounce_ms);
 }
 
+/// Returns the absolute `settings.json` path the frontend's `tauri-plugin-store`
+/// should load, but ONLY when this is an isolated instance (dev, per-worktree
+/// dev, or E2E — anything that sets `CMDR_DATA_DIR`). Returns `None` for
+/// production so the store keeps resolving via `BaseDirectory::AppData` exactly
+/// as before.
+///
+/// Why this exists: `tauri-plugin-store` resolves its path against Tauri's
+/// `app_data_dir()` (identifier-driven), which ignores `CMDR_DATA_DIR`. The
+/// Rust-side settings loader (`settings::load_settings`) already honors
+/// `CMDR_DATA_DIR` via `resolved_app_data_dir`, so without this the frontend
+/// store and the backend loader read *different* `settings.json` files in any
+/// isolated instance. In E2E that means the suite reads the developer's real
+/// `~/Library/Application Support/com.veszelovszki.cmdr/settings.json` — so a
+/// locally-flipped setting (for example `fileExplorer.suppressQuickLookHint`)
+/// leaks into tests and makes them fail on that machine while passing in CI
+/// (which has no such file). Pointing the store at the resolved data dir closes
+/// that gap. Production is unaffected: `CMDR_DATA_DIR` is unset there, so this
+/// returns `None` and the store path is byte-identical to before.
+#[tauri::command]
+#[specta::specta]
+pub fn get_isolated_settings_path(app: AppHandle) -> Option<String> {
+    std::env::var("CMDR_DATA_DIR").ok().filter(|s| !s.is_empty())?;
+    let dir = crate::config::resolved_app_data_dir(&app).ok()?;
+    Some(dir.join("settings.json").to_string_lossy().into_owned())
+}
+
 /// Updates the mDNS service resolve timeout in milliseconds.
 /// This affects future service resolutions; ongoing resolutions keep their original timeout.
 #[cfg(target_os = "macos")]
