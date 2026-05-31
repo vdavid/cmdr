@@ -5,6 +5,7 @@
 //!
 //! Gated behind `--features virtual-mtp`. Never enable in production builds.
 
+use crate::ignore_poison::IgnorePoison;
 use log::info;
 use mtp_rs::{VirtualDeviceConfig, VirtualStorageConfig, WatcherGuard};
 use std::fs;
@@ -120,7 +121,7 @@ pub fn pause_virtual_watcher() -> bool {
     let guard = mtp_rs::pause_watcher(VIRTUAL_DEVICE_SERIAL);
     let paused = guard.is_some();
     if paused {
-        *WATCHER_GUARD.lock().unwrap() = guard;
+        *WATCHER_GUARD.lock_ignore_poison() = guard;
         info!("Virtual MTP watcher paused");
     }
     paused
@@ -130,7 +131,7 @@ pub fn pause_virtual_watcher() -> bool {
 /// underlying mtp-rs pause is refcounted so this only flips the watcher back
 /// on when no other concurrent drain still holds a guard.
 pub fn resume_virtual_watcher() {
-    let had_guard = WATCHER_GUARD.lock().unwrap().take().is_some();
+    let had_guard = WATCHER_GUARD.lock_ignore_poison().take().is_some();
     if had_guard {
         info!("Virtual MTP watcher resumed");
     }

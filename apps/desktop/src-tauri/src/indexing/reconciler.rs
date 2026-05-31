@@ -25,6 +25,7 @@ use std::time::Instant;
 use rusqlite::Connection;
 use tauri::{AppHandle, Emitter};
 
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::firmlinks;
 use crate::indexing::metadata::extract_metadata;
@@ -262,7 +263,7 @@ impl EventReconciler {
     /// Queue a MustScanSubDirs rescan, throttled to max 1 concurrent.
     pub(super) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
         DEBUG_STATS.record_must_scan(&path.to_string_lossy());
-        self.pending_rescans.lock().unwrap().insert(path.clone());
+        self.pending_rescans.lock_ignore_poison().insert(path.clone());
 
         if self.rescan_active.load(Ordering::Relaxed) {
             log::debug!(
@@ -307,7 +308,7 @@ fn start_next_rescan(
     writer: &IndexWriter,
 ) {
     let path = {
-        let mut pending = pending_rescans.lock().unwrap();
+        let mut pending = pending_rescans.lock_ignore_poison();
         match pending.iter().next().cloned() {
             Some(p) => {
                 pending.remove(&p);

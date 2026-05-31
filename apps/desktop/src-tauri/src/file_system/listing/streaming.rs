@@ -17,6 +17,8 @@ use crate::file_system::volume::friendly_error::{
     FriendlyError, enrich_with_provider, friendly_error_for_restricted_empty_root, friendly_error_from_volume_error,
 };
 use crate::file_system::watcher::start_watching;
+#[cfg(test)]
+use crate::ignore_poison::IgnorePoison;
 
 // ============================================================================
 // Types and state
@@ -226,36 +228,33 @@ impl CollectorListingEventSink {
 #[cfg(test)]
 impl ListingEventSink for CollectorListingEventSink {
     fn emit_opening(&self, listing_id: &str) {
-        self.opening.lock().unwrap().push(listing_id.to_string());
+        self.opening.lock_ignore_poison().push(listing_id.to_string());
     }
 
     fn emit_progress(&self, listing_id: &str, loaded_count: usize) {
         self.progress
-            .lock()
-            .unwrap()
+            .lock_ignore_poison()
             .push((listing_id.to_string(), loaded_count));
     }
 
     fn emit_read_complete(&self, listing_id: &str, total_count: usize) {
         self.read_complete
-            .lock()
-            .unwrap()
+            .lock_ignore_poison()
             .push((listing_id.to_string(), total_count));
     }
 
     fn emit_complete(&self, listing_id: &str, total_count: usize, _volume_root: String) {
         self.complete
-            .lock()
-            .unwrap()
+            .lock_ignore_poison()
             .push((listing_id.to_string(), total_count));
     }
 
     fn emit_error(&self, listing_id: &str, message: String, _friendly: Option<FriendlyError>) {
-        self.errors.lock().unwrap().push((listing_id.to_string(), message));
+        self.errors.lock_ignore_poison().push((listing_id.to_string(), message));
     }
 
     fn emit_cancelled(&self, listing_id: &str) {
-        self.cancelled.lock().unwrap().push(listing_id.to_string());
+        self.cancelled.lock_ignore_poison().push(listing_id.to_string());
     }
 }
 

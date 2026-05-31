@@ -25,6 +25,7 @@ use super::store::{self, DirStats, IndexStore};
 use super::verifier;
 use super::writer::WriteMessage;
 
+use crate::ignore_poison::IgnorePoison;
 use crate::settings::FullDiskAccessChoice;
 
 // ── Indexing state machine ────────────────────────────────────────────
@@ -122,10 +123,10 @@ pub fn stop_indexing() -> Result<(), String> {
     verifier::invalidate();
 
     // Invalidate ReadPool before shutdown so thread-local connections are discarded.
-    if let Some(pool) = READ_POOL.lock().unwrap().take() {
+    if let Some(pool) = READ_POOL.lock_ignore_poison().take() {
         pool.invalidate();
     }
-    *PENDING_SIZES.lock().unwrap() = None;
+    *PENDING_SIZES.lock_ignore_poison() = None;
 
     // Swap the phase to `ShuttingDown` under the lock, then release the lock
     // BEFORE the blocking drain. `mgr.shutdown()` blocks up to 5 s draining the
@@ -222,9 +223,9 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
 
     // Install ReadPool early so enrichment works during the Initializing phase.
     let pool = Arc::new(ReadPool::new(db_path.clone()).map_err(|e| format!("Failed to create read pool: {e}"))?);
-    *READ_POOL.lock().unwrap() = Some(pool);
+    *READ_POOL.lock_ignore_poison() = Some(pool);
     // Install the pending-size tracker in lockstep with the ReadPool.
-    *PENDING_SIZES.lock().unwrap() = Some(Arc::new(PendingSizes::new()));
+    *PENDING_SIZES.lock_ignore_poison() = Some(Arc::new(PendingSizes::new()));
 
     let mut manager = match IndexManager::new("root".to_string(), PathBuf::from("/"), app.clone()) {
         Ok(m) => m,
@@ -233,10 +234,10 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
             // phase back to Disabled so a subsequent call can retry cleanly.
             let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
             *guard = IndexPhase::Disabled;
-            if let Some(pool) = READ_POOL.lock().unwrap().take() {
+            if let Some(pool) = READ_POOL.lock_ignore_poison().take() {
                 pool.invalidate();
             }
-            *PENDING_SIZES.lock().unwrap() = None;
+            *PENDING_SIZES.lock_ignore_poison() = None;
             return Err(e);
         }
     };
@@ -274,10 +275,10 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
         }
         (true, Err(e)) => {
             *guard = IndexPhase::Disabled;
-            if let Some(pool) = READ_POOL.lock().unwrap().take() {
+            if let Some(pool) = READ_POOL.lock_ignore_poison().take() {
                 pool.invalidate();
             }
-            *PENDING_SIZES.lock().unwrap() = None;
+            *PENDING_SIZES.lock_ignore_poison() = None;
             return Err(e);
         }
         (false, Ok(())) => {
@@ -301,10 +302,10 @@ pub fn clear_index() -> Result<(), String> {
     verifier::invalidate();
 
     // Invalidate ReadPool before deleting DB files so thread-local connections are discarded.
-    if let Some(pool) = READ_POOL.lock().unwrap().take() {
+    if let Some(pool) = READ_POOL.lock_ignore_poison().take() {
         pool.invalidate();
     }
-    *PENDING_SIZES.lock().unwrap() = None;
+    *PENDING_SIZES.lock_ignore_poison() = None;
 
     // Swap the phase to `ShuttingDown` under the lock, then release the lock
     // BEFORE the blocking drain (same reasoning as `stop_indexing`: the up-to-5 s

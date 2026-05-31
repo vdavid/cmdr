@@ -14,6 +14,7 @@ use super::cache::EVENT_DEBOUNCE_MS;
 use super::{MtpConnectionManager, connection_manager, normalize_mtp_path};
 use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
 use crate::file_system::{FileEntry, compute_diff};
+use crate::ignore_poison::RwLockIgnorePoison;
 use std::path::PathBuf;
 
 impl MtpConnectionManager {
@@ -26,7 +27,7 @@ impl MtpConnectionManager {
 
         // Store shutdown sender
         {
-            let mut shutdown_map = self.event_loop_shutdown.write().unwrap();
+            let mut shutdown_map = self.event_loop_shutdown.write_ignore_poison();
             shutdown_map.insert(device_id.clone(), shutdown_tx.clone());
         }
 
@@ -100,7 +101,7 @@ impl MtpConnectionManager {
     /// Stops the event loop for a device.
     pub(super) fn stop_event_loop(&self, device_id: &str) {
         // Remove and signal shutdown
-        if let Some(tx) = self.event_loop_shutdown.write().unwrap().remove(device_id) {
+        if let Some(tx) = self.event_loop_shutdown.write_ignore_poison().remove(device_id) {
             let _ = tx.send(()); // Signal shutdown - ignore error if receiver is gone
             debug!("MTP event loop shutdown signaled for device: {}", device_id);
         }

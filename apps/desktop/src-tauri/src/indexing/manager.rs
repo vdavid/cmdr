@@ -21,6 +21,7 @@ use super::state::{INDEXING, IndexPhase};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
 use super::writer::{IndexWriter, WriteMessage};
+use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
 // ── IndexManager ─────────────────────────────────────────────────────
@@ -249,7 +250,7 @@ impl IndexManager {
             }
         });
         {
-            let mut guard = live_event_task_slot.lock().unwrap();
+            let mut guard = live_event_task_slot.lock_ignore_poison();
             *guard = Some(handle);
         }
 
@@ -271,7 +272,7 @@ impl IndexManager {
                     }
                     mgr.drive_watcher = None;
                     {
-                        let mut task_guard = mgr.live_event_task.lock().unwrap();
+                        let mut task_guard = mgr.live_event_task.lock_ignore_poison();
                         if let Some(task) = task_guard.take() {
                             task.abort();
                         }
@@ -603,7 +604,7 @@ impl IndexManager {
 
                     // Store the handle so shutdown() can wait for it to drain
                     {
-                        let mut guard = live_event_task_slot.lock().unwrap();
+                        let mut guard = live_event_task_slot.lock_ignore_poison();
                         *guard = Some(handle);
                     }
                 }
@@ -640,7 +641,7 @@ impl IndexManager {
 
         // Abort the live event processing task
         {
-            let mut guard = self.live_event_task.lock().unwrap();
+            let mut guard = self.live_event_task.lock_ignore_poison();
             if let Some(task) = guard.take() {
                 task.abort();
             }
@@ -765,7 +766,7 @@ impl IndexManager {
 
         // 3. Wait for the event loop to drain (process final batch + UpdateLastEventId). Use block_in_place
         //    so we can .await the join handle without blocking the tokio runtime thread pool.
-        let task = self.live_event_task.lock().unwrap().take();
+        let task = self.live_event_task.lock_ignore_poison().take();
         if let Some(task) = task {
             tokio::task::block_in_place(|| {
                 tauri::async_runtime::block_on(async {

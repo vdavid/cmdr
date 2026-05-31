@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use crate::file_system::volume::{ScanConflict, SpaceInfo};
+#[cfg(test)]
+use crate::ignore_poison::IgnorePoison;
 
 // Re-export sort types from sorting module
 pub use crate::file_system::listing::{SortColumn, SortOrder};
@@ -875,32 +877,32 @@ impl CollectorEventSink {
 #[cfg(test)]
 impl OperationEventSink for CollectorEventSink {
     fn emit_progress(&self, event: WriteProgressEvent) {
-        self.progress.lock().unwrap().push(event);
+        self.progress.lock_ignore_poison().push(event);
     }
     fn emit_complete(&self, event: WriteCompleteEvent) {
-        self.complete.lock().unwrap().push(event);
+        self.complete.lock_ignore_poison().push(event);
     }
     fn emit_cancelled(&self, event: WriteCancelledEvent) {
-        self.cancelled.lock().unwrap().push(event);
+        self.cancelled.lock_ignore_poison().push(event);
     }
     fn emit_error(&self, event: WriteErrorEvent) {
-        self.errors.lock().unwrap().push(event);
+        self.errors.lock_ignore_poison().push(event);
     }
     fn emit_conflict(&self, event: WriteConflictEvent) {
-        self.conflicts.lock().unwrap().push(event);
+        self.conflicts.lock_ignore_poison().push(event);
     }
     fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {}
     fn emit_scan_progress(&self, event: ScanProgressEvent) {
-        self.scan_progress.lock().unwrap().push(event);
+        self.scan_progress.lock_ignore_poison().push(event);
     }
     fn emit_scan_conflict(&self, conflict: ConflictInfo) {
-        self.scan_conflicts.lock().unwrap().push(conflict);
+        self.scan_conflicts.lock_ignore_poison().push(conflict);
     }
     fn emit_dry_run_complete(&self, result: DryRunResult) {
-        self.dry_run.lock().unwrap().push(result);
+        self.dry_run.lock_ignore_poison().push(result);
     }
     fn emit_settled(&self, event: WriteSettledEvent) {
-        self.settled.lock().unwrap().push(event);
+        self.settled.lock_ignore_poison().push(event);
     }
 }
 

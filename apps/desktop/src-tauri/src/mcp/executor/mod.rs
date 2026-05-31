@@ -27,6 +27,7 @@ use tauri::{AppHandle, Emitter, Listener, Runtime};
 
 use super::pane_state::PaneStateStore;
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
+use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
 /// Result of tool execution.
@@ -93,7 +94,7 @@ async fn mcp_round_trip_with_timeout<R: Runtime>(
     let listener_id = app.listen("mcp-response", move |event| {
         if let Ok(resp) = serde_json::from_str::<Value>(event.payload())
             && resp.get("requestId").and_then(|v| v.as_str()) == Some(&expected_id)
-            && let Some(tx) = tx.lock().unwrap().take()
+            && let Some(tx) = tx.lock_ignore_poison().take()
         {
             let result = if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
                 Ok(())

@@ -6,6 +6,9 @@
 
 use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::file_system::listing::FileEntry;
+#[cfg(feature = "playwright-e2e")]
+use crate::ignore_poison::IgnorePoison;
+use crate::ignore_poison::RwLockIgnorePoison;
 use std::collections::HashMap;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -65,7 +68,7 @@ impl InMemoryVolume {
     pub fn with_entries(name: impl Into<String>, entries: Vec<FileEntry>) -> Self {
         let volume = Self::new(name);
         {
-            let mut map = volume.entries.write().unwrap();
+            let mut map = volume.entries.write_ignore_poison();
             for entry in entries {
                 let path = PathBuf::from(&entry.path);
                 map.insert(
@@ -187,7 +190,7 @@ impl Volume for InMemoryVolume {
             // Check for injected error (E2E testing). Cleared after one use to enable retry testing.
             #[cfg(feature = "playwright-e2e")]
             {
-                let mut injected = self.injected_error.lock().unwrap();
+                let mut injected = self.injected_error.lock_ignore_poison();
                 if let Some(errno) = injected.take() {
                     return Err(VolumeError::IoError {
                         message: format!("Injected error for testing (os error {})", errno),
@@ -546,7 +549,7 @@ impl Volume for InMemoryVolume {
 
     #[cfg(feature = "playwright-e2e")]
     fn inject_error(&self, errno: i32) {
-        *self.injected_error.lock().unwrap() = Some(errno);
+        *self.injected_error.lock_ignore_poison() = Some(errno);
     }
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {

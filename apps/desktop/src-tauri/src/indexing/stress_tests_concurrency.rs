@@ -8,6 +8,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::enrichment::{self, ReadPool};
 use crate::indexing::reconciler::{self, EventReconciler};
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
@@ -946,7 +947,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
                     entries.len(),
                     elapsed_ms,
                 );
-                results.lock().unwrap().push(result);
+                results.lock_ignore_poison().push(result);
             })
         })
         .collect();
@@ -966,7 +967,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
 
     // ── Assertion: each listing must complete within the SLA ──────────
     const SLA_MS: u128 = 2_000;
-    let results = results.lock().unwrap();
+    let results = results.lock_ignore_poison();
     let violators: Vec<&ListingResult> = results.iter().filter(|r| r.elapsed_ms > SLA_MS).collect();
     if !violators.is_empty() {
         let summary: String = violators

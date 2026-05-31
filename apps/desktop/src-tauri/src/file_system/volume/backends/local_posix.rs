@@ -6,6 +6,8 @@ use super::{
 };
 use crate::file_system::git;
 use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
+#[cfg(feature = "playwright-e2e")]
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSummary};
 use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;
@@ -104,7 +106,7 @@ impl Volume for LocalPosixVolume {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         #[cfg(feature = "playwright-e2e")]
         {
-            let mut injected = self.injected_error.lock().unwrap();
+            let mut injected = self.injected_error.lock_ignore_poison();
             if let Some(errno) = injected.take() {
                 return Box::pin(async move {
                     Err(VolumeError::IoError {
@@ -132,7 +134,7 @@ impl Volume for LocalPosixVolume {
 
     #[cfg(feature = "playwright-e2e")]
     fn inject_error(&self, errno: i32) {
-        *self.injected_error.lock().unwrap() = Some(errno);
+        *self.injected_error.lock_ignore_poison() = Some(errno);
     }
 
     fn get_metadata<'a>(

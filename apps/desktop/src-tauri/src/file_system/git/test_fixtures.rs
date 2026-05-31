@@ -248,6 +248,7 @@ impl Fixture {
             let blob = self.repo.write_blob(content).expect("write_blob").detach();
             editor.upsert(rel.to_string(), *kind, blob).expect("upsert into tree");
         }
+        // allowed-lock-poison: test fixture; this is a gix tree write, not a std-lock acquire
         let tree_id = editor.write().expect("write tree").detach();
 
         // SignatureRef takes the time as a raw string in git's internal

@@ -69,6 +69,7 @@ pub fn extension_cache_key(path: &Path) -> Option<String> {
 #[cfg(target_os = "macos")]
 mod imp {
     use super::*;
+    use crate::ignore_poison::IgnorePoison;
     use objc2::rc::{Retained, autoreleasepool};
     use objc2_app_kit::{NSWorkspace, NSWorkspaceOpenConfiguration};
     use objc2_foundation::{NSArray, NSBundle, NSString, NSURL};
@@ -101,7 +102,7 @@ mod imp {
     /// Clears the candidate cache. Called from the NSWorkspace notification observer
     /// when an app launches or terminates.
     fn invalidate_cache() {
-        let mut cache = EXT_CACHE.lock().expect("open_with cache mutex poisoned");
+        let mut cache = EXT_CACHE.lock_ignore_poison();
         cache.clear();
     }
 
@@ -163,13 +164,13 @@ mod imp {
         let Some(key) = extension_cache_key(path) else {
             return fetch_candidates_for_path(path);
         };
-        if let Some(entry) = EXT_CACHE.lock().expect("open_with cache").get(&key)
+        if let Some(entry) = EXT_CACHE.lock_ignore_poison().get(&key)
             && entry.fetched_at.elapsed() < CACHE_TTL
         {
             return entry.candidates.clone();
         }
         let candidates = fetch_candidates_for_path(path);
-        EXT_CACHE.lock().expect("open_with cache").insert(
+        EXT_CACHE.lock_ignore_poison().insert(
             key,
             CacheEntry {
                 candidates: candidates.clone(),

@@ -8,6 +8,7 @@ use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
 use crate::file_system::FileEntry;
+use crate::ignore_poison::RwLockIgnorePoison;
 
 /// Cache for mapping paths to MTP object handles.
 #[derive(Default)]
@@ -62,7 +63,7 @@ impl EventDebouncer {
     /// Updates the last emit time if we should emit.
     pub(super) fn should_emit(&self, device_id: &str) -> bool {
         let now = Instant::now();
-        let mut last_emit = self.last_emit.write().unwrap();
+        let mut last_emit = self.last_emit.write_ignore_poison();
 
         if let Some(last) = last_emit.get(device_id)
             && now.duration_since(*last) < self.debounce_duration
@@ -76,7 +77,7 @@ impl EventDebouncer {
 
     /// Clears the debounce state for a device (called on disconnect).
     pub(super) fn clear(&self, device_id: &str) {
-        let mut last_emit = self.last_emit.write().unwrap();
+        let mut last_emit = self.last_emit.write_ignore_poison();
         last_emit.remove(device_id);
     }
 }

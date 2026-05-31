@@ -9,6 +9,7 @@ use tauri::{Emitter, Listener, Manager, Runtime, WebviewWindow};
 
 use super::dialog_state::SoftDialogTracker;
 use super::pane_state::{PaneFileEntry, PaneState, PaneStateStore, TabInfo};
+use crate::ignore_poison::IgnorePoison;
 use crate::search::format_size;
 #[cfg(target_os = "macos")]
 use crate::volumes;
@@ -413,7 +414,7 @@ async fn resource_round_trip<R: Runtime>(
     let listener_id = app.listen("mcp-response", move |event| {
         if let Ok(resp) = serde_json::from_str::<Value>(event.payload())
             && resp.get("requestId").and_then(|v| v.as_str()) == Some(&expected_id)
-            && let Some(tx) = tx.lock().unwrap().take()
+            && let Some(tx) = tx.lock_ignore_poison().take()
         {
             let result = if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
                 let data = resp.get("data").and_then(|v| v.as_str()).unwrap_or("").to_string();
