@@ -362,13 +362,14 @@ pub async fn check_reachability(host: &str, port: u16) -> Result<(), String> {
 // Atomic file writes
 // ---------------------------------------------------------------------------
 
-/// Atomically writes content to a file using write-to-temp + rename.
-/// On failure, the original file (if any) remains intact.
+/// Durably writes content to a file using write-to-temp + fsync + rename + parent-dir fsync.
+/// On failure, the original file (if any) remains intact. The fsyncs make the write survive a
+/// power loss, not just process death: `manual-servers.json` holds user-entered SMB servers that
+/// aren't rediscoverable via mDNS, so a torn / zero-length write here loses real config. See
+/// `crate::config::durable_write_json` for the durability rationale.
 fn atomic_write_json(path: &Path, content: &str) -> std::io::Result<()> {
     let tmp = path.with_extension("json.tmp");
-    fs::write(&tmp, content)?;
-    fs::rename(&tmp, path)?;
-    Ok(())
+    crate::config::durable_write_json(path, &tmp, content)
 }
 
 /// Removes a stale `.tmp` file left over from a crash during atomic write.

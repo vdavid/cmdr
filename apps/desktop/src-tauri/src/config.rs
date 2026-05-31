@@ -2,7 +2,8 @@
 //!
 //! These can be extracted to environment variables or a config file in the future.
 
-use std::path::PathBuf;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, Runtime};
 
 /// Icon size in pixels (32x32 for retina display)
@@ -58,6 +59,47 @@ pub fn log_app_data_dir<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
+/// Writes `content` to `path` durably: write the bytes to `tmp`, fsync the temp file, rename
+/// it over `path`, then fsync the parent directory so the rename itself survives a power loss.
+///
+/// `fs::write(tmp) + fs::rename(tmp, path)` alone is atomic against *process* death (the rename
+/// swaps the directory entry as a unit) but NOT against a power loss / hard crash: the rename can
+/// land in the filesystem journal while the temp's data blocks are still only in the page cache,
+/// leaving the destination zero-length or torn. The two fsyncs close that window. This mirrors the
+/// data-loss-class write discipline in `LocalPosixVolume::write_from_stream` (the
+/// copy/move path that survives eject/sleep/power-loss).
+///
+/// The caller owns the temp-path convention (it picks `tmp`) so each store keeps its existing
+/// `cleanup_tmp_file` stale-temp recovery. The parent-directory fsync is best-effort: some
+/// filesystems reject opening a directory for fsync, so a failure there is logged and ignored
+/// rather than failing the whole write (the file's data is already durable at that point).
+pub fn durable_write_json(path: &Path, tmp: &Path, content: &str) -> std::io::Result<()> {
+    {
+        let mut file = std::fs::File::create(tmp)?;
+        file.write_all(content.as_bytes())?;
+        // fsync the temp's data + metadata before the rename so the bytes are on disk, not just
+        // in the page cache, when the directory entry swaps.
+        file.sync_all()?;
+    }
+
+    std::fs::rename(tmp, path)?;
+
+    // Best-effort: fsync the parent directory so the rename (the new directory entry) is durable
+    // too. Logged and ignored on failure, matching `LocalPosixVolume`'s parent-dir fsync.
+    if let Some(parent) = path.parent() {
+        match std::fs::File::open(parent).and_then(|dir| dir.sync_all()) {
+            Ok(()) => {}
+            Err(e) => log::debug!(
+                target: "write_durability",
+                "durable_write_json: parent dir fsync skipped for {}: {e}",
+                parent.display()
+            ),
+        }
+    }
+
+    Ok(())
+}
+
 // MCP Server Security Design:
 // --------------------------
 // The MCP (Model Context Protocol) bridge allows AI assistants to control the app.
@@ -92,5 +134,31 @@ mod tests {
         // An empty CMDR_DATA_DIR should not silently land us in cwd-equivalent paths.
         // Falling through to the Tauri default is the documented behavior.
         assert_eq!(data_dir_from_env(Some("")), None);
+    }
+
+    #[test]
+    fn durable_write_json_round_trips_content() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let path = dir.path().join("store.json");
+        let tmp = path.with_extension("json.tmp");
+
+        durable_write_json(&path, &tmp, r#"{"a":1}"#).expect("durable write");
+
+        let read_back = std::fs::read_to_string(&path).expect("read back");
+        assert_eq!(read_back, r#"{"a":1}"#);
+        // The temp file must be consumed by the rename, not left behind.
+        assert!(!tmp.exists(), "temp file should be renamed away, not left behind");
+    }
+
+    #[test]
+    fn durable_write_json_overwrites_existing_file() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let path = dir.path().join("store.json");
+        let tmp = path.with_extension("json.tmp");
+
+        std::fs::write(&path, "old contents that are much longer").expect("seed file");
+        durable_write_json(&path, &tmp, "new").expect("durable write");
+
+        assert_eq!(std::fs::read_to_string(&path).expect("read back"), "new");
     }
 }

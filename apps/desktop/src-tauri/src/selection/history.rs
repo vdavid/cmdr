@@ -142,11 +142,11 @@ fn canonical_key(entry: &SelectionHistoryEntry) -> String {
 // Atomic file I/O helpers (mirrors `crate::search::history`).
 // ---------------------------------------------------------------------------
 
+/// Durably writes content to a file: write-to-temp + fsync + rename + parent-dir fsync, so the
+/// write survives a power loss, not just process death. See `crate::config::durable_write_json`.
 fn atomic_write_json(path: &Path, content: &str) -> std::io::Result<()> {
     let tmp = path.with_extension("json.tmp");
-    fs::write(&tmp, content)?;
-    fs::rename(&tmp, path)?;
-    Ok(())
+    crate::config::durable_write_json(path, &tmp, content)
 }
 
 fn cleanup_tmp_file(path: &Path) {
