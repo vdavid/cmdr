@@ -65,6 +65,21 @@ pub async fn refresh_directory_icons(
     .await
 }
 
+/// Detects which of the given VISIBLE directory paths carry a Finder custom-icon
+/// flag, returning the `path:{dir}` icon id for each. The frontend calls this for
+/// visible directory rows, then feeds the returned ids into `get_icons` to fetch
+/// the real icons. The `getxattr` check is cheap (no NSWorkspace, no TCC), but
+/// still deferred off the bulk-listing hot path, so it's safe to run without the
+/// FDA gate. Empty result while there's nothing to report.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_custom_folder_icon_ids(directory_paths: Vec<String>) -> TimedOut<Vec<String>> {
+    blocking_with_timeout_flag(ICONS_TIMEOUT, Vec::new(), move || {
+        icons::custom_folder_icon_ids(directory_paths)
+    })
+    .await
+}
+
 /// Clears cached extension icons.
 /// Called when the "use app icons for documents" setting changes.
 #[tauri::command]

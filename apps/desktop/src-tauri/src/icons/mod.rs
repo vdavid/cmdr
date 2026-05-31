@@ -4,6 +4,7 @@
 //! Benchmarked on M1 Mac: 10 files→3.7ms, 50→8ms, 100→12.8ms, 200→21ms.
 //! Custom thread counts showed no improvement, so we use auto-detect.
 
+pub mod per_path;
 pub mod special_folders;
 
 use crate::config::ICON_SIZE;
@@ -28,23 +29,34 @@ use file_icon_provider::get_file_icon;
 /// directories visited, so they're capped by an LRU backstop (see `PATH_KEY_CAP`).
 const PATH_KEY_PREFIX: &str = "path:";
 
-/// Backstop LRU cap for `path:`-keyed entries. Folder icons are unbounded in the
-/// number of directories a user can visit; without a cap, a long session browsing
-/// thousands of distinct folders would accumulate one base64 WebP data-URL per
-/// folder forever (only cleared wholesale on theme/accent change). A few hundred
-/// covers any plausible visible/recent working set; the rest evict oldest-first.
-/// `dir` / `ext:*` / `file` / `symlink*` keys stay uncapped (inherently bounded).
+/// True for the unbounded Tier-C keys (`path:*` custom-icon folders + `pkg:*`
+/// package bundles). Both share the same lifecycle: LRU-capped in memory, backed
+/// by the on-disk cache, never persisted to localStorage on the FE. `.app` icons
+/// are per-app and custom-folder icons are per-folder, so both grow with browsing.
+fn is_per_path_key(icon_id: &str) -> bool {
+    icon_id.starts_with(PATH_KEY_PREFIX) || icon_id.starts_with(per_path::PKG_KEY_PREFIX)
+}
+
+/// Backstop LRU cap for the unbounded Tier-C keys (`path:*` + `pkg:*`). Folder and
+/// package icons are unbounded in the number of directories/bundles a user can
+/// visit; without a cap, a long session browsing thousands of distinct folders
+/// would accumulate one base64 WebP data-URL per folder forever (only cleared
+/// wholesale on theme/accent change). A few hundred covers any plausible
+/// visible/recent working set; the rest evict oldest-first. `dir` / `ext:*` /
+/// `file` / `symlink*` / `special:*` keys stay uncapped (inherently bounded).
 const PATH_KEY_CAP: usize = 256;
 
-/// In-memory icon cache plus an LRU recency queue for the `path:` subset.
+/// In-memory icon cache plus an LRU recency queue for the per-path subset.
 ///
-/// `entries` holds every icon (`dir`, `ext:*`, `path:*`, …) keyed by icon id.
-/// `path_lru` tracks the insertion/refresh order of *only* the `path:` keys so we
-/// can evict the oldest when their count exceeds `PATH_KEY_CAP`. Non-`path:` keys
-/// never enter `path_lru` and are never evicted by the cap.
+/// `entries` holds every icon (`dir`, `ext:*`, `path:*`, `pkg:*`, …) keyed by icon
+/// id. `path_lru` tracks the insertion/refresh order of *only* the per-path keys
+/// (`path:*` + `pkg:*`) so we can evict the oldest when their count exceeds
+/// `PATH_KEY_CAP`. Bounded keys never enter `path_lru` and are never evicted by
+/// the cap.
 struct IconCache {
     entries: HashMap<String, String>,
-    /// `path:` keys in least-recently-inserted-first order. Front = oldest.
+    /// Per-path keys (`path:*` + `pkg:*`) in least-recently-inserted-first order.
+    /// Front = oldest.
     path_lru: VecDeque<String>,
 }
 
@@ -56,10 +68,11 @@ impl IconCache {
         }
     }
 
-    /// Inserts or refreshes an icon. For `path:` keys, maintains the LRU order and
-    /// evicts the oldest `path:` entries once the cap is exceeded.
+    /// Inserts or refreshes an icon. For per-path keys (`path:*` + `pkg:*`),
+    /// maintains the LRU order and evicts the oldest entries once the cap is
+    /// exceeded.
     fn insert(&mut self, icon_id: String, data_url: String) {
-        if icon_id.starts_with(PATH_KEY_PREFIX) {
+        if is_per_path_key(&icon_id) {
             // Refresh recency: drop any existing position, then push to the back.
             if self.entries.contains_key(&icon_id) {
                 self.path_lru.retain(|k| k != &icon_id);
@@ -106,14 +119,16 @@ pub fn clear_extension_icon_cache() {
 }
 
 /// Clears all cached icons for directory entries (`dir`, `symlink-dir`,
-/// `path:*`, `special:*`). Called when the system theme or accent color changes,
-/// since macOS folder icons (including the special-folder glyphs) are tinted by
-/// the current appearance.
+/// `path:*`, `pkg:*`, `special:*`). Called when the system theme or accent color
+/// changes, since macOS folder icons (including the special-folder glyphs) are
+/// tinted by the current appearance. Package icons (`.app`, …) carry no folder
+/// tint, but dropping them on a theme change is harmless — they re-fetch lazily —
+/// and keeps the predicate simple.
 pub fn clear_directory_icon_cache() {
     ICON_CACHE.write_ignore_poison().retain(|key| {
         key != "dir"
             && key != "symlink-dir"
-            && !key.starts_with(PATH_KEY_PREFIX)
+            && !is_per_path_key(key)
             && !key.starts_with(special_folders::SPECIAL_KEY_PREFIX)
     });
 }
@@ -188,6 +203,46 @@ fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
     None
 }
 
+/// Resolves a real-folder icon id (one fetched from an actual filesystem path) to
+/// that path. Covers all three Tier-B/C kinds:
+///
+/// - `special:{name}` → the special folder's resolved standard location.
+/// - `pkg:{path}` / `path:{path}` → the embedded path verbatim.
+///
+/// Returns `None` for the bounded sample-based ids (`dir`, `ext:*`, `file`,
+/// `symlink*`), which fetch from sample paths, not real user folders.
+fn real_path_for_real_folder_id(icon_id: &str) -> Option<String> {
+    if icon_id.starts_with(special_folders::SPECIAL_KEY_PREFIX) {
+        return special_folders::real_path_for_icon_id(icon_id).map(|p| p.to_string_lossy().into_owned());
+    }
+    if let Some(path) = icon_id.strip_prefix(per_path::PKG_KEY_PREFIX) {
+        return Some(path.to_string());
+    }
+    if let Some(path) = icon_id.strip_prefix(PATH_KEY_PREFIX) {
+        return Some(path.to_string());
+    }
+    None
+}
+
+/// Detects which of the given VISIBLE directory paths carry a Finder custom-icon
+/// flag, and returns the `path:{dir}` icon id for each that does.
+///
+/// This is the deferred half of Tier-C custom-icon detection: the `getxattr`
+/// check is too costly to run for every entry during a bulk listing, so the
+/// frontend calls this only for the bounded set of directory rows actually on
+/// screen. Each returned id can then be fed straight into `get_icons` to fetch
+/// the real icon (FDA-gated, 8 MB thread).
+///
+/// Packages aren't included here — they're detected during listing by the pure
+/// suffix check in `get_icon_id` and already arrive as `pkg:` ids.
+pub fn custom_folder_icon_ids(directory_paths: Vec<String>) -> Vec<String> {
+    directory_paths
+        .into_iter()
+        .filter(|path| per_path::has_custom_folder_icon(Path::new(path)))
+        .map(|path| format!("{PATH_KEY_PREFIX}{path}"))
+        .collect()
+}
+
 /// Fetches icons for the given icon IDs that are not already cached.
 ///
 /// When `use_app_icons_for_documents` is true and on macOS, extension-based icons
@@ -198,41 +253,43 @@ fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
 pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> HashMap<String, String> {
     let mut result = HashMap::new();
 
-    // Special system folders (`special:downloads`, …) fetch their icon from the
-    // folder's REAL path, which can be a cloud-synced location (Desktop &
-    // Documents iCloud sync) whose NSWorkspace lookup descends into
-    // `fileproviderd`. Route them through the dedicated 8 MB-stack fetch (same as
-    // the `path:` branch), NOT the generic per-id loop below, which runs on the
-    // calling thread. The result stays keyed by `special:{name}` (bounded), not
-    // by the real path.
+    // Real-folder icon ids (`special:downloads`, `pkg:/Applications/Safari.app`,
+    // `path:/Users/x/CustomFolder`) all fetch their icon from a REAL filesystem
+    // path, which can be a cloud-synced location (Desktop/Documents iCloud sync)
+    // whose NSWorkspace lookup descends into `fileproviderd`. Route every one of
+    // them through the dedicated 8 MB-stack fetch (`fetch_path_icons`), NOT the
+    // generic per-id loop below, which runs on the calling thread with a normal
+    // stack. Each result is re-keyed back to its ORIGINAL icon id (the bounded
+    // `special:{name}` or the per-path `pkg:`/`path:` key), not the raw path.
     let mut remaining = Vec::with_capacity(icon_ids.len());
-    let mut special_to_fetch: Vec<(String, String)> = Vec::new();
+    // (original_icon_id, real_path) pairs to fetch via the 8 MB threads.
+    let mut per_path_to_fetch: Vec<(String, String)> = Vec::new();
     for icon_id in icon_ids {
         if let Some(cached) = get_cached_icon(&icon_id) {
             result.insert(icon_id, cached);
             continue;
         }
+        if let Some(real_path) = real_path_for_real_folder_id(&icon_id) {
+            per_path_to_fetch.push((icon_id, real_path));
+            continue;
+        }
         if icon_id.starts_with(special_folders::SPECIAL_KEY_PREFIX) {
-            if let Some(real_path) = special_folders::real_path_for_icon_id(&icon_id) {
-                special_to_fetch.push((icon_id, real_path.to_string_lossy().into_owned()));
-            }
-            // Unknown special name (no resolved standard location): skip; the
-            // frontend keeps the `dir` fallback.
+            // A `special:` id whose standard location didn't resolve on this
+            // platform: skip; the frontend keeps the `dir` fallback.
             continue;
         }
         remaining.push(icon_id);
     }
 
-    if !special_to_fetch.is_empty() {
-        let paths: Vec<String> = special_to_fetch.iter().map(|(_, path)| path.clone()).collect();
+    if !per_path_to_fetch.is_empty() {
+        let paths: Vec<String> = per_path_to_fetch.iter().map(|(_, path)| path.clone()).collect();
         let fetched = fetch_path_icons(paths);
         // `fetch_path_icons` returns `(path:{real_path}, data_url)` in input
-        // order; re-key each back to its `special:{name}` id and cache under the
-        // bounded key.
-        for ((special_id, _), (_, data_url)) in special_to_fetch.into_iter().zip(fetched) {
+        // order; re-key each back to its original id, cache it, and return it.
+        for ((original_id, _real_path), (_, data_url)) in per_path_to_fetch.into_iter().zip(fetched) {
             if let Some(url) = data_url {
-                cache_icon(special_id.clone(), url.clone());
-                result.insert(special_id, url);
+                cache_icon(original_id.clone(), url.clone());
+                result.insert(original_id, url);
             }
         }
     }
@@ -466,6 +523,59 @@ mod tests {
 
     fn path_key(n: usize) -> String {
         format!("path:/folder/{n}")
+    }
+
+    #[test]
+    fn real_path_resolves_per_path_and_pkg_keys() {
+        assert_eq!(
+            real_path_for_real_folder_id("pkg:/Applications/Safari.app").as_deref(),
+            Some("/Applications/Safari.app")
+        );
+        assert_eq!(
+            real_path_for_real_folder_id("path:/Users/x/Custom Folder").as_deref(),
+            Some("/Users/x/Custom Folder")
+        );
+        // Sample-based ids have no real folder path.
+        assert_eq!(real_path_for_real_folder_id("dir"), None);
+        assert_eq!(real_path_for_real_folder_id("ext:txt"), None);
+        assert_eq!(real_path_for_real_folder_id("file"), None);
+    }
+
+    #[test]
+    fn real_path_resolves_special_keys() {
+        let downloads = dirs::download_dir().expect("download_dir resolves");
+        assert_eq!(
+            real_path_for_real_folder_id("special:downloads").as_deref(),
+            Some(downloads.to_string_lossy().as_ref())
+        );
+    }
+
+    #[test]
+    fn pkg_keys_share_the_per_path_lru_cap() {
+        let mut cache = IconCache::new();
+        // Fill the cap entirely with pkg: keys.
+        for n in 0..PATH_KEY_CAP {
+            cache.insert(format!("pkg:/Applications/App{n}.app"), format!("url-{n}"));
+        }
+        // One more pkg: key evicts the oldest, keeping the cap.
+        cache.insert("pkg:/Applications/Overflow.app".to_string(), "new".to_string());
+        assert_eq!(cache.path_lru.len(), PATH_KEY_CAP);
+        assert!(!cache.entries.contains_key("pkg:/Applications/App0.app"));
+        assert!(cache.entries.contains_key("pkg:/Applications/Overflow.app"));
+    }
+
+    #[test]
+    fn path_and_pkg_keys_share_one_lru_budget() {
+        let mut cache = IconCache::new();
+        // Mix path: and pkg: keys up to the cap.
+        for n in 0..(PATH_KEY_CAP / 2) {
+            cache.insert(path_key(n), format!("p-{n}"));
+            cache.insert(format!("pkg:/A/B{n}.app"), format!("k-{n}"));
+        }
+        // Both kinds count toward the same budget, so total per-path keys == cap.
+        let per_path = cache.entries.keys().filter(|k| is_per_path_key(k)).count();
+        assert_eq!(per_path, PATH_KEY_CAP);
+        assert_eq!(cache.path_lru.len(), PATH_KEY_CAP);
     }
 
     #[test]

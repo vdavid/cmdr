@@ -88,6 +88,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         // store_font_metrics is generic (<R: tauri::Runtime>): excluded from specta collection
         crate::commands::font_metrics::has_font_metrics,
         crate::commands::icons::get_icons,
+        crate::commands::icons::get_custom_folder_icon_ids,
         crate::commands::icons::refresh_directory_icons,
         crate::commands::icons::clear_extension_icon_cache,
         crate::commands::icons::clear_directory_icon_cache,

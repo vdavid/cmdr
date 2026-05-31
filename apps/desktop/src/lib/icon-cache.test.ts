@@ -87,6 +87,40 @@ describe('icon-cache path: key bounding', () => {
   })
 })
 
+describe('icon-cache pkg: keys (Tier C packages)', () => {
+  beforeEach(() => {
+    _resetIconCacheForTests()
+    localStorage.clear()
+  })
+
+  it('does not persist pkg: keys to localStorage', () => {
+    _applyIconsToCacheForTests({
+      'pkg:/Applications/Safari.app': 'safari-url',
+      dir: 'dir-url',
+    })
+    const keys = storedKeys()
+    expect(keys.some((k) => k.startsWith('pkg:'))).toBe(false)
+    expect(keys).toContain('dir')
+  })
+
+  it('keeps pkg: keys available in memory', () => {
+    _applyIconsToCacheForTests({ 'pkg:/Applications/Safari.app': 'safari-url' })
+    expect(getCachedIcon('pkg:/Applications/Safari.app')).toBe('safari-url')
+  })
+
+  it('shares one LRU budget across path: and pkg: keys', () => {
+    const cap = _pathKeyCapForTests
+    // Fill the whole budget with pkg: keys.
+    for (let n = 0; n < cap; n++) {
+      _applyIconsToCacheForTests({ [`pkg:/Applications/App${n}.app`]: `url-${n}` })
+    }
+    // A single path: key now evicts the oldest pkg: key — both share the cap.
+    _applyIconsToCacheForTests({ 'path:/Users/me/Custom': 'custom-url' })
+    expect(getCachedIcon('pkg:/Applications/App0.app')).toBeUndefined()
+    expect(getCachedIcon('path:/Users/me/Custom')).toBe('custom-url')
+  })
+})
+
 describe('icon-cache special: keys (Tier B)', () => {
   beforeEach(() => {
     _resetIconCacheForTests()

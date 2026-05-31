@@ -13,12 +13,20 @@ const STORAGE_KEY = 'cmdr-icon-cache'
 const retryDelayMs = 5000
 
 /**
- * Prefix marking per-path (per-folder) icon keys. Unlike `dir` / `ext:*` / `file`
- * (an inherently bounded set), `path:` keys grow with the number of distinct folders
- * visited. They're LRU-capped in `memoryCache` and never persisted to localStorage —
- * the bounded `dir` / `ext:` keys still persist. Mirrors the Rust `ICON_CACHE` backstop.
+ * Prefixes marking per-path (per-folder/per-package) icon keys. Unlike `dir` /
+ * `ext:*` / `file` (an inherently bounded set), `path:` (custom-icon folders) and
+ * `pkg:` (app/bundle packages) keys grow with the number of distinct folders and
+ * bundles visited. They're LRU-capped in `memoryCache` and never persisted to
+ * localStorage — the bounded `dir` / `ext:` / `special:` keys still persist.
+ * Mirrors the Rust `ICON_CACHE` backstop (`is_per_path_key`).
  */
 const PATH_KEY_PREFIX = 'path:'
+const PKG_KEY_PREFIX = 'pkg:'
+
+/** True for the unbounded per-path keys (`path:*` custom-icon folders + `pkg:*` packages). */
+function isPerPathKey(id: string): boolean {
+  return id.startsWith(PATH_KEY_PREFIX) || id.startsWith(PKG_KEY_PREFIX)
+}
 
 /**
  * Prefix marking special-system-folder icon keys (`special:downloads`, …). The
@@ -46,29 +54,29 @@ const pathKeyCap = 256
  */
 const memoryCache = new Map<string, string>()
 
-/** Number of `path:` keys currently held in `memoryCache`. */
+/** Number of per-path keys (`path:*` + `pkg:*`) currently held in `memoryCache`. */
 function countPathKeys(): number {
   let count = 0
   for (const key of memoryCache.keys()) {
-    if (key.startsWith(PATH_KEY_PREFIX)) count++
+    if (isPerPathKey(key)) count++
   }
   return count
 }
 
 /**
- * Sets a cache entry, maintaining the `path:`-key LRU. For `path:` keys, deletes any
- * existing entry first so the re-insert lands at the back (most recent), then evicts
- * the oldest `path:` keys until the count is within `pathKeyCap`. Non-`path:` keys are
- * inserted as-is and never evicted by the cap.
+ * Sets a cache entry, maintaining the per-path-key LRU. For `path:`/`pkg:` keys,
+ * deletes any existing entry first so the re-insert lands at the back (most recent),
+ * then evicts the oldest per-path keys until the count is within `pathKeyCap`. Bounded
+ * keys are inserted as-is and never evicted by the cap.
  */
 function setCacheEntry(id: string, url: string): void {
-  if (id.startsWith(PATH_KEY_PREFIX)) {
+  if (isPerPathKey(id)) {
     memoryCache.delete(id)
     memoryCache.set(id, url)
     while (countPathKeys() > pathKeyCap) {
-      // Front-most `path:` key is the oldest; evict it.
+      // Front-most per-path key is the oldest; evict it.
       for (const key of memoryCache.keys()) {
-        if (key.startsWith(PATH_KEY_PREFIX)) {
+        if (isPerPathKey(key)) {
           memoryCache.delete(key)
           break
         }
@@ -105,9 +113,10 @@ function loadFromStorage(): void {
     if (stored) {
       const parsed = JSON.parse(stored) as Record<string, string>
       for (const [id, url] of Object.entries(parsed)) {
-        // Defensive: skip any `path:` keys left by an older build. They're no longer
-        // persisted, and feeding them in would seed the bounded-keys-only cache.
-        if (id.startsWith(PATH_KEY_PREFIX)) continue
+        // Defensive: skip any per-path (`path:`/`pkg:`) keys left by an older build.
+        // They're no longer persisted, and feeding them in would seed the
+        // bounded-keys-only cache.
+        if (isPerPathKey(id)) continue
         memoryCache.set(id, url)
       }
     }
@@ -121,9 +130,11 @@ function saveToStorage(): void {
   try {
     const obj: Record<string, string> = {}
     for (const [id, url] of memoryCache) {
-      // Don't persist `path:` keys — they're unbounded and session-scoped. Only the
-      // bounded `dir` / `ext:` keys survive restarts.
-      if (id.startsWith(PATH_KEY_PREFIX)) continue
+      // Don't persist per-path (`path:`/`pkg:`) keys — they're unbounded and
+      // session-scoped, and the Rust on-disk cache already persists them keyed by
+      // folder mtime. Only the bounded `dir` / `ext:` / `special:` keys survive
+      // restarts in localStorage.
+      if (isPerPathKey(id)) continue
       obj[id] = url
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(obj))
@@ -286,12 +297,7 @@ export async function clearDirectoryIconCache(): Promise<void> {
   await clearDirectoryIconCacheCommand()
 
   for (const key of memoryCache.keys()) {
-    if (
-      key === 'dir' ||
-      key === 'symlink-dir' ||
-      key.startsWith(PATH_KEY_PREFIX) ||
-      key.startsWith(SPECIAL_KEY_PREFIX)
-    ) {
+    if (key === 'dir' || key === 'symlink-dir' || isPerPathKey(key) || key.startsWith(SPECIAL_KEY_PREFIX)) {
       memoryCache.delete(key)
     }
   }

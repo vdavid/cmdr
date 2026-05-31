@@ -795,6 +795,16 @@ export const commands = {
   getIcons: (iconIds: string[], useAppIconsForDocuments: boolean) =>
     __TAURI_INVOKE<TimedOut<{ [key in string]: string }>>('get_icons', { iconIds, useAppIconsForDocuments }),
   /**
+   *  Detects which of the given VISIBLE directory paths carry a Finder custom-icon
+   *  flag, returning the `path:{dir}` icon id for each. The frontend calls this for
+   *  visible directory rows, then feeds the returned ids into `get_icons` to fetch
+   *  the real icons. The `getxattr` check is cheap (no NSWorkspace, no TCC), but
+   *  still deferred off the bulk-listing hot path, so it's safe to run without the
+   *  FDA gate. Empty result while there's nothing to report.
+   */
+  getCustomFolderIconIds: (directoryPaths: string[]) =>
+    __TAURI_INVOKE<TimedOut<string[]>>('get_custom_folder_icon_ids', { directoryPaths }),
+  /**
    *  Refreshes icons for a directory listing.
    *  Fetches icons in parallel for all directories and extensions.
    *  Returns all fetched icons (frontend can compare with cache to detect changes).

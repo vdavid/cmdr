@@ -41,6 +41,40 @@ the fetch is pending, FDA-gated, or timed out — the feature is purely additive
 Symlinks to a special location keep `symlink-dir` (the link badge is the salient signal; following the link to classify
 would cost a syscall per entry).
 
+## Tier C — genuinely per-path icons (`per_path.rs`)
+
+Packages and custom-icon folders. Both are unbounded by nature, so the expensive NSWorkspace fetch is gated to folders
+that actually deviate, detected cheaply. Two independent signals with **deliberately different detection timing**:
+
+- **Packages** (`Safari.app`, `Foo.bundle`, …) — `is_package_dir` is a pure, no-I/O suffix check on the directory name
+  against a bounded extension list (`.app`, `.bundle`, `.framework`, `.plugin`, `.kext`, `.prefpane`, …). Cheap enough to
+  run for every entry, so `get_icon_id` routes packages straight to a `pkg:{path}` key **during listing**. `.app` icons
+  are per-app (each distinct), so the key carries the full path — they can't share a bounded `special:`-style key.
+- **Custom-icon folders** — the `kHasCustomIcon` flag (`0x0400`) in the folder's `com.apple.FinderInfo` xattr (one
+  `getxattr`, no NSWorkspace, no TCC). `has_custom_folder_icon` needs a syscall, so it is **NOT** run during bulk
+  listing — a `getxattr` per directory in a 100k-entry listing would regress the hot path. Instead the FE asks about the
+  bounded set of **visible** directory paths via `get_custom_folder_icon_ids` (→ `icons::custom_folder_icon_ids`), which
+  runs the `getxattr` only for those and returns a `path:{dir}` id for each folder that truly has the flag. The
+  `finder_info_has_custom_icon` byte-buffer parser is split out pure for testing (flag at offset 8, big-endian `u16`).
+
+**Why the detection split (perf decision):** the bulk `list_directory` path runs `get_icon_id` per entry. The package
+suffix check is free (string op, no syscall), so it stays inline. The custom-icon `getxattr` is a syscall per dir, so it
+is deferred to the bounded visible set the FE asks about. Net: a 100k-entry directory pays zero extra syscalls for
+custom-icon detection during listing; the cost is bounded to the ~50 visible rows.
+
+**Volumes** carry their own per-path icon through a separate, already-wired path: `volumes/mod.rs` calls
+`icons::get_icon_for_path` at volume-enumeration time and stores the data URL directly on the volume struct (FDA-gated,
+returns `None` while pending). That's independent of the `iconId` registry used for file-list rows, so no Tier-C wiring
+is needed for volumes — they were already done before this phase.
+
+`get_icons` treats every real-folder id uniformly: `real_path_for_real_folder_id` maps `special:{name}` → its resolved
+location and `pkg:{path}` / `path:{path}` → the embedded path, fetches each via the 8 MB `fetch_path_icons` thread, and
+re-keys the result back to the original id. The FE falls back to the generic `dir` glyph while the fetch is pending,
+FDA-gated, or timed out — purely additive.
+
+`pkg:*` shares the `path:*` lifecycle: both are matched by `is_per_path_key`, LRU-capped together under one
+`PATH_KEY_CAP` budget, and never persisted to localStorage on the FE.
+
 ## Threading + FDA
 
 Per-path / per-special NSWorkspace fetches run on dedicated 8 MB-stack OS threads (`fetch_path_icons`), never rayon —

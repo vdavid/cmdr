@@ -46,7 +46,7 @@ pub(crate) fn get_group_name(gid: u32) -> String {
 }
 
 /// Generates icon ID based on file type, extension, and (for directories) the
-/// folder's well-known path.
+/// folder's well-known path and package extension.
 ///
 /// `path` is the entry's full path. It's used to detect the finite set of
 /// special system folders (Downloads, Applications, the home folder, …) by
@@ -54,6 +54,14 @@ pub(crate) fn get_group_name(gid: u32) -> String {
 /// real special folder gets a bounded `special:{name}` key (Tier B); every other
 /// directory keeps the shared `dir` icon (Tier A). Detection is a cheap path
 /// comparison (no NSWorkspace, no TCC), so it's safe to run per entry.
+///
+/// Package/bundle directories (`Safari.app`, `Foo.bundle`, …) route to a
+/// `pkg:{path}` key (Tier C) by a pure suffix check on the name — also no I/O, so
+/// safe per entry. Custom-icon folders (the `kHasCustomIcon` xattr) are NOT
+/// detected here: that check is a `getxattr` syscall, too costly to run for every
+/// entry in a 100k-directory listing, so it's deferred to the visible-range fetch
+/// (`icons::custom_folder_icon_ids`), which the frontend drives only for visible
+/// directory rows.
 ///
 /// Symlinks (even to a special location) keep their `symlink-dir` icon: the link
 /// badge is the salient signal, and following a symlink to classify it would
@@ -70,6 +78,9 @@ pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str, path: &str
     if is_dir {
         if let Some(special_id) = crate::icons::special_folders::icon_id_for_path(Path::new(path)) {
             return special_id;
+        }
+        if let Some(pkg_id) = crate::icons::per_path::package_icon_id(name, path) {
+            return pkg_id;
         }
         return "dir".to_string();
     }
@@ -218,6 +229,33 @@ mod icon_id_tests {
             get_icon_id(true, true, "Downloads", &downloads.to_string_lossy()),
             "symlink-dir"
         );
+    }
+
+    #[test]
+    fn an_app_bundle_gets_a_pkg_key() {
+        assert_eq!(
+            get_icon_id(true, false, "Safari.app", "/Applications/Safari.app"),
+            "pkg:/Applications/Safari.app"
+        );
+    }
+
+    #[test]
+    fn a_plain_folder_with_a_dot_is_not_a_package() {
+        assert_eq!(get_icon_id(true, false, "my.project", "/Users/x/my.project"), "dir");
+    }
+
+    #[test]
+    fn a_symlink_to_an_app_bundle_keeps_the_symlink_dir_icon() {
+        assert_eq!(
+            get_icon_id(true, true, "Safari.app", "/Applications/Safari.app"),
+            "symlink-dir"
+        );
+    }
+
+    #[test]
+    fn a_file_named_like_a_bundle_routes_by_extension_not_pkg() {
+        // A regular file "thing.app" (not a directory) is just an `ext:app` file.
+        assert_eq!(get_icon_id(false, false, "thing.app", "/tmp/thing.app"), "ext:app");
     }
 
     #[test]
