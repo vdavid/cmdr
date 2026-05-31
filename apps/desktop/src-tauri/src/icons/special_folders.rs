@@ -185,28 +185,36 @@ mod tests {
         }
     }
 
+    // `special:*` classification is a macOS concept (Linux falls back to the XDG
+    // theme path and never classifies special folders), and the standard-location
+    // resolvers (`dirs::download_dir`, …) return `None` in a headless Linux CI
+    // container with no XDG user-dirs configured. So the tests that assert a
+    // specific `special:*` classification are macOS-only; the OS-neutral ones
+    // (the "named but not the real one" negative cases, the round-trip rejection)
+    // run everywhere and never depend on a `dirs::*` resolver returning `Some`.
+
+    #[cfg(target_os = "macos")]
     #[test]
     fn home_downloads_classifies_to_downloads() {
-        // Downloads resolves on every supported platform.
         let downloads = dirs::download_dir().expect("download_dir resolves");
         assert_eq!(classify(&downloads), Some("downloads"));
     }
 
     #[test]
     fn a_folder_merely_named_downloads_elsewhere_is_not_special() {
-        let home = dirs::home_dir().expect("home_dir resolves");
-        // `~/Projects/Downloads` is named "Downloads" but isn't the real one.
-        let fake = home.join("Projects").join("Downloads");
-        assert_eq!(classify(&fake), None);
+        // `/some/where/Downloads` is named "Downloads" but isn't the real one. A
+        // fixed path keeps this independent of whether `dirs::*` resolves.
+        let fake = Path::new("/some/where/Projects/Downloads");
+        assert_eq!(classify(fake), None);
     }
 
     #[test]
     fn an_arbitrary_project_folder_is_not_special() {
-        let home = dirs::home_dir().expect("home_dir resolves");
-        let project = home.join("Projects").join("foo");
-        assert_eq!(classify(&project), None);
+        let project = Path::new("/some/where/Projects/foo");
+        assert_eq!(classify(project), None);
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn trailing_slash_does_not_defeat_detection() {
         let downloads = dirs::download_dir().expect("download_dir resolves");
@@ -214,16 +222,17 @@ mod tests {
         assert_eq!(classify(Path::new(&with_slash)), Some("downloads"));
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn icon_id_for_path_builds_the_special_key() {
         let downloads = dirs::download_dir().expect("download_dir resolves");
         assert_eq!(icon_id_for_path(&downloads).as_deref(), Some("special:downloads"));
 
-        let home = dirs::home_dir().expect("home_dir resolves");
-        let project = home.join("Projects").join("foo");
-        assert_eq!(icon_id_for_path(&project), None);
+        let project = Path::new("/some/where/Projects/foo");
+        assert_eq!(icon_id_for_path(project), None);
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn real_path_round_trips_from_icon_id() {
         let downloads = dirs::download_dir().expect("download_dir resolves");

@@ -198,13 +198,19 @@ impl FileEntry {
 mod icon_id_tests {
     use super::*;
 
+    // `special:*` routing is a macOS concept (Linux falls back to the XDG theme
+    // path and never classifies special folders), and the standard-location
+    // resolvers (`dirs::download_dir`, …) return `None` in a headless Linux CI
+    // container with no XDG user-dirs configured. So the test that asserts a
+    // `special:*` id is macOS-only; the OS-neutral routing tests use fixed paths
+    // and never depend on a `dirs::*` resolver returning `Some`.
+
     #[test]
     fn plain_directory_gets_the_generic_dir_icon() {
-        let home = dirs::home_dir().expect("home_dir resolves");
-        let project = home.join("Projects").join("foo");
-        assert_eq!(get_icon_id(true, false, "foo", &project.to_string_lossy()), "dir");
+        assert_eq!(get_icon_id(true, false, "foo", "/some/where/Projects/foo"), "dir");
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn real_downloads_folder_gets_the_special_key() {
         let downloads = dirs::download_dir().expect("download_dir resolves");
@@ -216,17 +222,17 @@ mod icon_id_tests {
 
     #[test]
     fn a_folder_merely_named_downloads_elsewhere_stays_generic() {
-        let home = dirs::home_dir().expect("home_dir resolves");
-        let fake = home.join("Projects").join("Downloads");
-        assert_eq!(get_icon_id(true, false, "Downloads", &fake.to_string_lossy()), "dir");
+        let fake = "/some/where/Projects/Downloads";
+        assert_eq!(get_icon_id(true, false, "Downloads", fake), "dir");
     }
 
     #[test]
     fn a_symlink_to_a_special_path_keeps_the_symlink_dir_icon() {
-        // Symlinks keep the link badge; we don't promote them to `special:*`.
-        let downloads = dirs::download_dir().expect("download_dir resolves");
+        // Symlinks keep the link badge; we don't promote them to `special:*`. The
+        // symlink branch short-circuits before any special-path lookup, so a fixed
+        // path is enough and this holds on every platform.
         assert_eq!(
-            get_icon_id(true, true, "Downloads", &downloads.to_string_lossy()),
+            get_icon_id(true, true, "Downloads", "/some/where/Downloads"),
             "symlink-dir"
         );
     }
@@ -260,11 +266,11 @@ mod icon_id_tests {
 
     #[test]
     fn files_are_unaffected_by_special_folder_detection() {
-        // Even a file sitting at a path that string-matches a special folder must
-        // route by extension, never to `special:*`.
-        let downloads = dirs::download_dir().expect("download_dir resolves");
+        // A file (not a directory) always routes by extension, never to `special:*`
+        // — the file branch runs after the dir branch, so even a file sitting
+        // inside a special folder gets `ext:*`. A fixed path keeps this OS-neutral.
         assert_eq!(
-            get_icon_id(false, false, "notes.txt", &downloads.to_string_lossy()),
+            get_icon_id(false, false, "notes.txt", "/some/where/Downloads/notes.txt"),
             "ext:txt"
         );
     }

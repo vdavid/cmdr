@@ -560,6 +560,11 @@ mod tests {
         assert_eq!(real_path_for_real_folder_id("file"), None);
     }
 
+    // `special:*` resolves to a real standard location only on macOS; in a
+    // headless Linux CI container `dirs::download_dir()` returns `None`, so the
+    // key never resolves there. This is macOS-only; Linux falls back to the XDG
+    // theme path and never produces `special:*` ids.
+    #[cfg(target_os = "macos")]
     #[test]
     fn real_path_resolves_special_keys() {
         let downloads = dirs::download_dir().expect("download_dir resolves");
