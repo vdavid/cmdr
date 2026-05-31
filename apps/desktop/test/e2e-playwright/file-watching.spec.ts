@@ -16,6 +16,7 @@ import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   dispatchMenuCommand,
   ensureAppReady,
+  expectAndDismissToast,
   flushFileWatcher,
   getFixtureRoot,
   fileExistsInFocusedPane,
@@ -275,6 +276,13 @@ test.describe('File watching', () => {
     await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
     await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+    // The copy fires a "Copy complete: copied 1 file." toast. Assert + dismiss
+    // it so the wording stays pinned as user-facing contract AND the persistent
+    // success toast doesn't sit through the test and trip the afterEach leak
+    // guard. Without this the toast lingers (4s transient auto-dismiss never
+    // beats this fast test), and the leak fires non-deterministically depending
+    // on machine speed.
+    await expectAndDismissToast(tauriPage, 'Copy complete')
     await flushFileWatcher(tauriPage)
 
     // File should appear in right pane, and after the watcher fires there
