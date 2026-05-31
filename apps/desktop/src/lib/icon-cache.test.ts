@@ -63,7 +63,7 @@ describe('icon-cache path: key bounding', () => {
     const icons: Record<string, string> = {}
     // Insert one more than the cap. Map preserves insertion order, so /folder/0 is oldest.
     for (let n = 0; n <= cap; n++) {
-      icons[`path:/folder/${n}`] = `url-${n}`
+      icons[`path:/folder/${String(n)}`] = `url-${String(n)}`
     }
     // Apply one at a time so insertion order is deterministic (a single object would
     // preserve order anyway, but per-call mirrors real batched fetches).
@@ -73,12 +73,12 @@ describe('icon-cache path: key bounding', () => {
 
     // Oldest evicted, newest retained.
     expect(getCachedIcon('path:/folder/0')).toBeUndefined()
-    expect(getCachedIcon(`path:/folder/${cap}`)).toBe(`url-${cap}`)
+    expect(getCachedIcon(`path:/folder/${String(cap)}`)).toBe(`url-${String(cap)}`)
 
     // Exactly `cap` path: keys remain (count via a fresh probe set).
     let remaining = 0
     for (let n = 0; n <= cap; n++) {
-      if (getCachedIcon(`path:/folder/${n}`) !== undefined) remaining++
+      if (getCachedIcon(`path:/folder/${String(n)}`) !== undefined) remaining++
     }
     expect(remaining).toBe(cap)
   })
@@ -87,7 +87,7 @@ describe('icon-cache path: key bounding', () => {
     _applyIconsToCacheForTests({ dir: 'dir-url', 'ext:png': 'png-url', file: 'file-url' })
 
     for (let n = 0; n < _pathKeyCapForTests * 3; n++) {
-      _applyIconsToCacheForTests({ [`path:/folder/${n}`]: `url-${n}` })
+      _applyIconsToCacheForTests({ [`path:/folder/${String(n)}`]: `url-${String(n)}` })
     }
 
     expect(getCachedIcon('dir')).toBe('dir-url')
@@ -121,7 +121,7 @@ describe('icon-cache pkg: keys (Tier C packages)', () => {
     const cap = _pathKeyCapForTests
     // Fill the whole budget with pkg: keys.
     for (let n = 0; n < cap; n++) {
-      _applyIconsToCacheForTests({ [`pkg:/Applications/App${n}.app`]: `url-${n}` })
+      _applyIconsToCacheForTests({ [`pkg:/Applications/App${String(n)}.app`]: `url-${String(n)}` })
     }
     // A single path: key now evicts the oldest pkg: key — both share the cap.
     _applyIconsToCacheForTests({ 'path:/Users/me/Custom': 'custom-url' })
@@ -228,7 +228,7 @@ describe('icon-cache special: keys (Tier B)', () => {
     _applyIconsToCacheForTests({ 'special:downloads': 'dl-url' })
 
     for (let n = 0; n < _pathKeyCapForTests * 3; n++) {
-      _applyIconsToCacheForTests({ [`path:/folder/${n}`]: `url-${n}` })
+      _applyIconsToCacheForTests({ [`path:/folder/${String(n)}`]: `url-${String(n)}` })
     }
 
     expect(getCachedIcon('special:downloads')).toBe('dl-url')
