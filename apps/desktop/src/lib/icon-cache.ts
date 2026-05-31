@@ -12,8 +12,62 @@ import {
 const STORAGE_KEY = 'cmdr-icon-cache'
 const retryDelayMs = 5000
 
-/** In-memory cache for current session */
+/**
+ * Prefix marking per-path (per-folder) icon keys. Unlike `dir` / `ext:*` / `file`
+ * (an inherently bounded set), `path:` keys grow with the number of distinct folders
+ * visited. They're LRU-capped in `memoryCache` and never persisted to localStorage —
+ * the bounded `dir` / `ext:` keys still persist. Mirrors the Rust `ICON_CACHE` backstop.
+ */
+const PATH_KEY_PREFIX = 'path:'
+
+/**
+ * Backstop LRU cap for `path:`-keyed entries in `memoryCache`. A long session
+ * browsing thousands of distinct folders would otherwise accumulate one base64 WebP
+ * data-URL per folder forever. A few hundred covers any plausible visible/recent
+ * working set; the rest evict oldest-first. Kept in sync with the Rust-side
+ * `PATH_KEY_CAP`.
+ */
+const pathKeyCap = 256
+
+/**
+ * In-memory cache for current session. A `Map` preserves insertion order, which we
+ * lean on for `path:`-key LRU eviction: re-setting a key moves it to the back, so the
+ * front is always the oldest. See `setCacheEntry`.
+ */
 const memoryCache = new Map<string, string>()
+
+/** Number of `path:` keys currently held in `memoryCache`. */
+function countPathKeys(): number {
+  let count = 0
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith(PATH_KEY_PREFIX)) count++
+  }
+  return count
+}
+
+/**
+ * Sets a cache entry, maintaining the `path:`-key LRU. For `path:` keys, deletes any
+ * existing entry first so the re-insert lands at the back (most recent), then evicts
+ * the oldest `path:` keys until the count is within `pathKeyCap`. Non-`path:` keys are
+ * inserted as-is and never evicted by the cap.
+ */
+function setCacheEntry(id: string, url: string): void {
+  if (id.startsWith(PATH_KEY_PREFIX)) {
+    memoryCache.delete(id)
+    memoryCache.set(id, url)
+    while (countPathKeys() > pathKeyCap) {
+      // Front-most `path:` key is the oldest; evict it.
+      for (const key of memoryCache.keys()) {
+        if (key.startsWith(PATH_KEY_PREFIX)) {
+          memoryCache.delete(key)
+          break
+        }
+      }
+    }
+  } else {
+    memoryCache.set(id, url)
+  }
+}
 
 /** Pending retry timer for timed-out prefetchIcons calls */
 let prefetchRetryTimer: ReturnType<typeof setTimeout> | undefined
@@ -41,6 +95,9 @@ function loadFromStorage(): void {
     if (stored) {
       const parsed = JSON.parse(stored) as Record<string, string>
       for (const [id, url] of Object.entries(parsed)) {
+        // Defensive: skip any `path:` keys left by an older build. They're no longer
+        // persisted, and feeding them in would seed the bounded-keys-only cache.
+        if (id.startsWith(PATH_KEY_PREFIX)) continue
         memoryCache.set(id, url)
       }
     }
@@ -54,6 +111,9 @@ function saveToStorage(): void {
   try {
     const obj: Record<string, string> = {}
     for (const [id, url] of memoryCache) {
+      // Don't persist `path:` keys — they're unbounded and session-scoped. Only the
+      // bounded `dir` / `ext:` keys survive restarts.
+      if (id.startsWith(PATH_KEY_PREFIX)) continue
       obj[id] = url
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(obj))
@@ -73,7 +133,7 @@ function applyIconsToCache(icons: Record<string, string>): boolean {
   for (const [id, url] of Object.entries(icons)) {
     const existing = memoryCache.get(id)
     if (existing !== url) {
-      memoryCache.set(id, url)
+      setCacheEntry(id, url)
       changed = true
     }
   }
@@ -216,7 +276,7 @@ export async function clearDirectoryIconCache(): Promise<void> {
   await clearDirectoryIconCacheCommand()
 
   for (const key of memoryCache.keys()) {
-    if (key === 'dir' || key === 'symlink-dir' || key.startsWith('path:')) {
+    if (key === 'dir' || key === 'symlink-dir' || key.startsWith(PATH_KEY_PREFIX)) {
       memoryCache.delete(key)
     }
   }
@@ -225,3 +285,16 @@ export async function clearDirectoryIconCache(): Promise<void> {
   iconCacheCleared.update((v) => v + 1)
   iconCacheVersion.update((v) => v + 1)
 }
+
+/** Test-only: clears the in-memory cache so each test starts from a known state. */
+export function _resetIconCacheForTests(): void {
+  memoryCache.clear()
+}
+
+/** Test-only: applies fetched icons through the normal cache path (LRU + persist). */
+export function _applyIconsToCacheForTests(icons: Record<string, string>): void {
+  applyIconsToCache(icons)
+}
+
+/** Test-only: the `path:`-key LRU cap, exposed so tests don't hard-code the value. */
+export const _pathKeyCapForTests = pathKeyCap

@@ -11,7 +11,7 @@ use image::{DynamicImage, ImageFormat, imageops::FilterType};
 #[cfg(target_os = "macos")]
 use objc2::rc::autoreleasepool;
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, RwLock};
@@ -21,12 +21,74 @@ use std::sync::{LazyLock, RwLock};
 #[cfg(target_os = "macos")]
 use file_icon_provider::get_file_icon;
 
-/// Cache for generated icons (icon_id -> base64 WebP data URL)
-static ICON_CACHE: LazyLock<RwLock<HashMap<String, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+/// Prefix marking per-path (per-folder) icon keys. Unlike `dir` / `ext:*` / `file`
+/// (an inherently bounded set), `path:` keys grow with the number of distinct
+/// directories visited, so they're capped by an LRU backstop (see `PATH_KEY_CAP`).
+const PATH_KEY_PREFIX: &str = "path:";
+
+/// Backstop LRU cap for `path:`-keyed entries. Folder icons are unbounded in the
+/// number of directories a user can visit; without a cap, a long session browsing
+/// thousands of distinct folders would accumulate one base64 WebP data-URL per
+/// folder forever (only cleared wholesale on theme/accent change). A few hundred
+/// covers any plausible visible/recent working set; the rest evict oldest-first.
+/// `dir` / `ext:*` / `file` / `symlink*` keys stay uncapped (inherently bounded).
+const PATH_KEY_CAP: usize = 256;
+
+/// In-memory icon cache plus an LRU recency queue for the `path:` subset.
+///
+/// `entries` holds every icon (`dir`, `ext:*`, `path:*`, …) keyed by icon id.
+/// `path_lru` tracks the insertion/refresh order of *only* the `path:` keys so we
+/// can evict the oldest when their count exceeds `PATH_KEY_CAP`. Non-`path:` keys
+/// never enter `path_lru` and are never evicted by the cap.
+struct IconCache {
+    entries: HashMap<String, String>,
+    /// `path:` keys in least-recently-inserted-first order. Front = oldest.
+    path_lru: VecDeque<String>,
+}
+
+impl IconCache {
+    fn new() -> Self {
+        Self {
+            entries: HashMap::new(),
+            path_lru: VecDeque::new(),
+        }
+    }
+
+    /// Inserts or refreshes an icon. For `path:` keys, maintains the LRU order and
+    /// evicts the oldest `path:` entries once the cap is exceeded.
+    fn insert(&mut self, icon_id: String, data_url: String) {
+        if icon_id.starts_with(PATH_KEY_PREFIX) {
+            // Refresh recency: drop any existing position, then push to the back.
+            if self.entries.contains_key(&icon_id) {
+                self.path_lru.retain(|k| k != &icon_id);
+            }
+            self.path_lru.push_back(icon_id.clone());
+            self.entries.insert(icon_id, data_url);
+            // Evict oldest `path:` entries beyond the cap.
+            while self.path_lru.len() > PATH_KEY_CAP {
+                if let Some(evicted) = self.path_lru.pop_front() {
+                    self.entries.remove(&evicted);
+                }
+            }
+        } else {
+            self.entries.insert(icon_id, data_url);
+        }
+    }
+
+    /// Removes entries (and their LRU bookkeeping) matching `pred`.
+    fn retain(&mut self, pred: impl Fn(&str) -> bool) {
+        self.entries.retain(|key, _| pred(key));
+        self.path_lru.retain(|key| pred(key));
+    }
+}
+
+/// Cache for generated icons (icon_id -> base64 WebP data URL), with an LRU cap on
+/// the unbounded `path:` subset.
+static ICON_CACHE: LazyLock<RwLock<IconCache>> = LazyLock::new(|| RwLock::new(IconCache::new()));
 
 /// Gets cached icon data URL for the given icon ID, if available.
 fn get_cached_icon(icon_id: &str) -> Option<String> {
-    ICON_CACHE.read_ignore_poison().get(icon_id).cloned()
+    ICON_CACHE.read_ignore_poison().entries.get(icon_id).cloned()
 }
 
 /// Caches an icon data URL.
@@ -38,9 +100,7 @@ fn cache_icon(icon_id: String, data_url: String) {
 /// Called when the "use app icons for documents" setting changes.
 pub fn clear_extension_icon_cache() {
     // Only remove extension-based icons (ext:xxx), keep directory icons
-    ICON_CACHE
-        .write_ignore_poison()
-        .retain(|key, _| !key.starts_with("ext:"));
+    ICON_CACHE.write_ignore_poison().retain(|key| !key.starts_with("ext:"));
 }
 
 /// Clears all cached icons for directory entries (`dir`, `symlink-dir`, `path:*`).
@@ -49,7 +109,7 @@ pub fn clear_extension_icon_cache() {
 pub fn clear_directory_icon_cache() {
     ICON_CACHE
         .write_ignore_poison()
-        .retain(|key, _| key != "dir" && key != "symlink-dir" && !key.starts_with("path:"));
+        .retain(|key| key != "dir" && key != "symlink-dir" && !key.starts_with(PATH_KEY_PREFIX));
 }
 
 /// Converts an image to a base64 WebP data URL.
@@ -275,30 +335,15 @@ pub fn refresh_icons_for_directory(
         }
     }
 
-    // Fetch directory icons by exact path in parallel
+    // Fetch directory icons by exact REAL path. These descend into NSWorkspace on
+    // real user folders, which for iCloud/Dropbox folders make synchronous XPC
+    // round-trips into `fileproviderd` with deep override chains — enough to
+    // overflow rayon's default 2 MB worker stack. So this branch runs on dedicated
+    // 8 MB-stack OS threads (same pattern as `file_system/sync_status.rs` and
+    // `open_with.rs`), NOT rayon. The extension branch above stays on rayon because
+    // it fetches from sample temp paths that never descend into a cloud provider.
     if !directory_paths.is_empty() {
-        let dir_results: Vec<(String, Option<String>)> = directory_paths
-            .par_iter()
-            .map(|path| {
-                // macOS: drain autoreleased ObjC objects per rayon thread iteration
-                // (NSWorkspace.iconForFile calls accumulate otherwise)
-                #[cfg(target_os = "macos")]
-                {
-                    autoreleasepool(|_| {
-                        let path_buf = PathBuf::from(path);
-                        let data_url = fetch_icon_for_path(&path_buf);
-                        (format!("path:{}", path), data_url)
-                    })
-                }
-                #[cfg(not(target_os = "macos"))]
-                {
-                    let path_buf = PathBuf::from(path);
-                    let data_url = fetch_icon_for_path(&path_buf);
-                    (format!("path:{}", path), data_url)
-                }
-            })
-            .collect();
-
+        let dir_results = fetch_path_icons(directory_paths);
         for (icon_id, data_url) in dir_results {
             if let Some(url) = data_url {
                 // Update cache
@@ -309,4 +354,174 @@ pub fn refresh_icons_for_directory(
     }
 
     result
+}
+
+/// 8 MB stack per thread: enough for deep FileProvider XPC chains that
+/// NSWorkspace's per-path icon lookup descends into on cloud folders.
+#[cfg(target_os = "macos")]
+const ICON_THREAD_STACK_SIZE: usize = 8 * 1024 * 1024;
+
+/// Fetches per-path folder icons, keyed `path:{path}`, on dedicated 8 MB-stack OS
+/// threads (macOS) to survive `fileproviderd` XPC depth on cloud folders. The
+/// `data_url` is `None` when the OS returned no icon.
+#[cfg(target_os = "macos")]
+fn fetch_path_icons(paths: Vec<String>) -> Vec<(String, Option<String>)> {
+    let num_threads = paths
+        .len()
+        .min(std::thread::available_parallelism().map_or(4, |n| n.get()));
+
+    std::thread::scope(|scope| {
+        let chunk_size = paths.len().div_ceil(num_threads);
+        let handles: Vec<_> = paths
+            .chunks(chunk_size)
+            .map(|chunk| {
+                let chunk = chunk.to_vec();
+                std::thread::Builder::new()
+                    .stack_size(ICON_THREAD_STACK_SIZE)
+                    .name("icon_path_fetch".into())
+                    .spawn_scoped(scope, move || {
+                        chunk
+                            .into_iter()
+                            .map(|path| {
+                                // Drain autoreleased ObjC objects per path (NSWorkspace
+                                // calls accumulate otherwise) on these threads, which
+                                // lack AppKit's autorelease pool.
+                                autoreleasepool(|_| {
+                                    let data_url = fetch_icon_for_path(&PathBuf::from(&path));
+                                    (format!("path:{}", path), data_url)
+                                })
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .expect("failed to spawn icon path-fetch thread")
+            })
+            .collect();
+
+        let mut results = Vec::with_capacity(paths.len());
+        for handle in handles {
+            results.extend(handle.join().expect("icon path-fetch thread panicked"));
+        }
+        results
+    })
+}
+
+/// Non-macOS path-icon fetch. Linux resolves icons via the XDG theme lookup, which
+/// makes no XPC calls and can't descend into a cloud provider, so rayon's pool is
+/// fine here.
+#[cfg(not(target_os = "macos"))]
+fn fetch_path_icons(paths: Vec<String>) -> Vec<(String, Option<String>)> {
+    paths
+        .par_iter()
+        .map(|path| {
+            let data_url = fetch_icon_for_path(&PathBuf::from(path));
+            (format!("path:{}", path), data_url)
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn path_key(n: usize) -> String {
+        format!("path:/folder/{n}")
+    }
+
+    #[test]
+    fn path_keys_respect_lru_cap_and_evict_oldest_first() {
+        let mut cache = IconCache::new();
+
+        // Insert one more than the cap.
+        for n in 0..=PATH_KEY_CAP {
+            cache.insert(path_key(n), format!("url-{n}"));
+        }
+
+        // Cap is respected.
+        assert_eq!(cache.path_lru.len(), PATH_KEY_CAP);
+        let path_entries = cache.entries.keys().filter(|k| k.starts_with(PATH_KEY_PREFIX)).count();
+        assert_eq!(path_entries, PATH_KEY_CAP);
+
+        // The very first (oldest) inserted key was evicted.
+        assert!(
+            !cache.entries.contains_key(&path_key(0)),
+            "oldest path: key should evict"
+        );
+        // The newest key survives.
+        assert!(cache.entries.contains_key(&path_key(PATH_KEY_CAP)));
+    }
+
+    #[test]
+    fn non_path_keys_are_never_evicted_by_the_cap() {
+        let mut cache = IconCache::new();
+
+        // Seed a handful of inherently-bounded keys.
+        cache.insert("dir".to_string(), "dir-url".to_string());
+        cache.insert("symlink-dir".to_string(), "symlink-dir-url".to_string());
+        cache.insert("ext:txt".to_string(), "txt-url".to_string());
+        cache.insert("file".to_string(), "file-url".to_string());
+
+        // Overflow the path: keys well past the cap.
+        for n in 0..(PATH_KEY_CAP * 3) {
+            cache.insert(path_key(n), format!("url-{n}"));
+        }
+
+        // None of the bounded keys got evicted, and none leaked into the LRU queue.
+        assert_eq!(cache.entries.get("dir").map(String::as_str), Some("dir-url"));
+        assert_eq!(
+            cache.entries.get("symlink-dir").map(String::as_str),
+            Some("symlink-dir-url")
+        );
+        assert_eq!(cache.entries.get("ext:txt").map(String::as_str), Some("txt-url"));
+        assert_eq!(cache.entries.get("file").map(String::as_str), Some("file-url"));
+        assert_eq!(cache.path_lru.len(), PATH_KEY_CAP);
+    }
+
+    #[test]
+    fn reinserting_a_path_key_refreshes_its_recency() {
+        let mut cache = IconCache::new();
+
+        // Fill exactly to the cap.
+        for n in 0..PATH_KEY_CAP {
+            cache.insert(path_key(n), format!("url-{n}"));
+        }
+
+        // Touch the oldest key again — it should move to the back (most recent).
+        cache.insert(path_key(0), "refreshed".to_string());
+
+        // Insert a new key, forcing one eviction. The refreshed key must survive;
+        // the now-oldest (key 1) should be the one evicted.
+        cache.insert(path_key(PATH_KEY_CAP), "new".to_string());
+
+        assert_eq!(cache.path_lru.len(), PATH_KEY_CAP);
+        assert_eq!(
+            cache.entries.get(&path_key(0)).map(String::as_str),
+            Some("refreshed"),
+            "refreshed key should survive eviction"
+        );
+        assert!(
+            !cache.entries.contains_key(&path_key(1)),
+            "the now-oldest key should be evicted"
+        );
+        // No duplicate LRU entries after the refresh.
+        let occurrences = cache.path_lru.iter().filter(|k| **k == path_key(0)).count();
+        assert_eq!(occurrences, 1, "refreshed key must appear exactly once in the LRU");
+    }
+
+    #[test]
+    fn retain_drops_path_lru_bookkeeping_too() {
+        let mut cache = IconCache::new();
+        cache.insert("dir".to_string(), "dir-url".to_string());
+        for n in 0..10 {
+            cache.insert(path_key(n), format!("url-{n}"));
+        }
+
+        // Mirror `clear_directory_icon_cache`: drop dir + path: keys.
+        cache.retain(|key| key != "dir" && !key.starts_with(PATH_KEY_PREFIX));
+
+        assert!(cache.entries.is_empty());
+        assert!(
+            cache.path_lru.is_empty(),
+            "path_lru must not retain keys removed from entries"
+        );
+    }
 }
