@@ -35,6 +35,15 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 - Debounced saves: 500ms after last change, atomic write (temp file + rename)
 - In-memory cache for synchronous reads via `getSetting()`
 - Cross-window sync: emits `settings:changed` events when values change
+- **Store path goes through `resolveSettingsStorePath()`** (`settings-store-path.ts`). `tauri-plugin-store` resolves a
+  bare name against Tauri's identifier-driven `app_data_dir()`, which ignores `CMDR_DATA_DIR`. In isolated instances
+  (dev, per-worktree dev, E2E) that would read the real production `settings.json`; the helper asks the backend
+  (`get_isolated_settings_path`) for an absolute path under the resolved data dir so the frontend store agrees with the
+  Rust loader (`src-tauri/src/settings/loader.rs`). Production returns the bare `'settings.json'`, byte-identical. **Any
+  reader of `settings.json` must use this helper** — `lib/settings-store.ts` (the smaller FDA/onboarding store) and
+  `lib/logging/logger.ts`'s verbose-logging probe both do. The other plugin-stores (`shortcuts.json`, `app-status.json`,
+  `viewer-tail.json`) carry the same identifier-resolution gap but aren't routed through this `settings.json`-specific
+  helper.
 
 ### Text size (`appearance.textSize`)
 

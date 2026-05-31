@@ -3,8 +3,7 @@
 import { load } from '@tauri-apps/plugin-store'
 import type { Store } from '@tauri-apps/plugin-store'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-
-const STORE_NAME = 'settings.json'
+import { resolveSettingsStorePath } from './settings/settings-store-path'
 
 export type FullDiskAccessChoice = 'allow' | 'deny' | 'notAskedYet'
 
@@ -24,7 +23,10 @@ let storeInstance: Store | null = null
 
 async function getStore(): Promise<Store> {
   if (!storeInstance) {
-    storeInstance = await load(STORE_NAME)
+    // Resolve the store path so isolated instances (dev, per-worktree dev, E2E)
+    // don't read the real production `settings.json`. See `settings-store-path.ts`.
+    const storePath = await resolveSettingsStorePath()
+    storeInstance = await load(storePath)
   }
   return storeInstance
 }

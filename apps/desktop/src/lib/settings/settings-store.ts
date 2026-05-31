@@ -7,6 +7,7 @@ import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
+import { resolveSettingsStorePath } from './settings-store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import { commands } from '$lib/ipc/bindings'
@@ -26,7 +27,6 @@ interface SettingChangedPayload {
 // Store Configuration
 // ============================================================================
 
-const STORE_NAME = 'settings.json'
 const SCHEMA_VERSION = 2
 
 let storeInstance: Store | null = null
@@ -45,20 +45,11 @@ let crossWindowUnlisten: UnlistenFn | null = null
 
 async function getStore(): Promise<Store> {
   if (!storeInstance) {
-    // In isolated instances (dev, per-worktree dev, E2E — anything that sets
-    // `CMDR_DATA_DIR`), `tauri-plugin-store` would otherwise resolve
-    // `settings.json` against Tauri's identifier-driven `app_data_dir()`, which
-    // ignores `CMDR_DATA_DIR` and lands on the real production settings file.
-    // The backend returns an absolute path under the resolved data dir so the
-    // frontend store and the Rust-side loader agree. Returns `null` in
-    // production, where the plain store name keeps the path byte-identical.
-    let storePath = STORE_NAME
-    try {
-      const isolated = await commands.getIsolatedSettingsPath()
-      if (isolated) storePath = isolated
-    } catch (e) {
-      log.warn('Could not resolve isolated settings path, using default: {error}', { error: String(e) })
-    }
+    // Resolve the store path so isolated instances (dev, per-worktree dev, E2E)
+    // don't read the real production `settings.json`. See `settings-store-path.ts`.
+    const storePath = await resolveSettingsStorePath((e) =>
+      log.warn('Could not resolve isolated settings path, using default: {error}', { error: String(e) }),
+    )
     log.debug('Creating new store instance for {storeName}', { storeName: storePath })
     // Build defaults from registry
     const defaults: Record<string, unknown> = {}
