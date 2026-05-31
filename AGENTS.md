@@ -280,6 +280,16 @@ common pitfalls.
   - **Enforced by**: `bare-poll` (Go check, fast lane). Scans `apps/desktop/test/`.
   - **Opt out** for genuine best-effort cleanups (for example, dismissing an overlay that might or might not be there)
     with `// allowed-bare-poll: <reason>` on the line above OR as a trailing comment on the same line. Use sparingly.
+- ❌ **No bare `.lock().unwrap()` / `.read().unwrap()` / `.write().unwrap()` on a std `Mutex`/`RwLock` in `src-tauri`.**
+  A bare `unwrap`/`expect` aborts the whole app when the lock is poisoned (some background-thread panicked while
+  holding it), and a bare call records no intent. Every std-lock acquisition must be a deliberate, documented choice:
+  `lock_ignore_poison()` / `read_ignore_poison()` / `write_ignore_poison()` (recover — the default for simple value
+  stores) **or** `.expect("<lock> poisoned: <why aborting is correct>")` (abort — only for locks guarding a real
+  cross-field invariant; the message must contain "poison"). The full rule and the value-store-vs-invariant decision
+  test live in the module doc of [`apps/desktop/src-tauri/src/ignore_poison.rs`](apps/desktop/src-tauri/src/ignore_poison.rs).
+  - **Enforced by**: `lock-poison` (Go check, fast lane). Scans `apps/desktop/src-tauri/src/`, skips test files.
+  - **Opt out** (rare; e.g. a lock proven unpoisonable because nothing panics under it) with
+    `// allowed-lock-poison: <reason>` on the line above or as a trailing comment.
 - ❌ **Type-safe IPC: no raw `invoke('...')` outside the typed bindings folder.** Tauri command names are duplicated
   across the Rust `#[tauri::command]` site and every TS call site, with no compile-time link. Renaming the Rust side
   silently breaks runtime IPC with a generic "not allowed" error. The repo wires `tauri-specta` to generate typed
