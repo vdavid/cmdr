@@ -698,16 +698,18 @@ fn move_with_staging(
         return Err(e);
     }
 
-    // Phase 4: Delete source files (only after successful copy+rename), skipping
-    // any source (or source child) whose copy was discarded on Skip.
-    delete_sources_after_move(events, operation_id, state, sources, files_done, &skipped_source_paths)?;
-
-    // Phase 5: Remove empty staging directory
-    let _ = fs::remove_dir(&staging_dir);
-
-    // Durability: remap the Phase-2 staging dests to their final paths (Phase 3
-    // renamed staging → destination), then flush the final per-file dests
-    // before reporting complete. Emits a `Flushing`-phase event first so the FE
+    // Durability MUST run BEFORE Phase 4's source delete. The source originals
+    // are the only other copy of the data; deleting them before the Phase-3
+    // rename-into-place is durable on disk widens the crash window — on power
+    // loss in that gap the file could be absent from its final path while the
+    // source is already gone. So we flush the final dests (and fsync their
+    // parent dir entries) here, upholding the move invariant "never delete the
+    // source if the destination isn't fully in place." Zero happy-path cost:
+    // the files were already data-synced in Phase 2; this only reorders the
+    // dir-entry fsync ahead of the delete.
+    //
+    // Remap the Phase-2 staging dests to their final paths (Phase 3 renamed
+    // staging → destination). Emits a `Flushing`-phase event first so the FE
     // shows "Writing the last piece…".
     let remap = |p: &Path| -> PathBuf {
         match p.strip_prefix(&staging_dir) {
@@ -731,6 +733,14 @@ fn move_with_staging(
         &final_dests,
         &final_already_synced,
     );
+
+    // Phase 4: Delete source files (only after the destination is durable on
+    // disk), skipping any source (or source child) whose copy was discarded on
+    // Skip.
+    delete_sources_after_move(events, operation_id, state, sources, files_done, &skipped_source_paths)?;
+
+    // Phase 5: Remove empty staging directory
+    let _ = fs::remove_dir(&staging_dir);
 
     // Emit completion
     events.emit_complete(WriteCompleteEvent {

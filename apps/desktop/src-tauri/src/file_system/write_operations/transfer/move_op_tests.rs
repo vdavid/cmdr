@@ -126,6 +126,90 @@ fn cross_fs_local_move_emits_flushing_phase_before_complete() {
     assert_eq!(complete.len(), 1, "exactly one write-complete");
 }
 
+/// CRITICAL ordering invariant. The final destination's dir entry must be
+/// fsynced (the `Flushing` pass) BEFORE the source originals are deleted.
+/// The source is the only other copy of the data; deleting it before the
+/// rename-into-place is durable widens the crash window (file absent from its
+/// final path AND source already gone on power loss). This sink snapshots
+/// whether the source still exists at the instant the `Flushing`-phase event
+/// fires. Pre-reorder the flush ran AFTER Phase 4's delete, so the source
+/// would already be gone here; post-reorder it must still exist.
+#[test]
+fn cross_fs_local_move_flushes_final_dests_before_deleting_sources() {
+    use crate::file_system::write_operations::types::{
+        ConflictInfo, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
+        WriteErrorEvent, WriteSourceItemDoneEvent,
+    };
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    /// Records the source's existence the first time a `Flushing`-phase event
+    /// is emitted. `saw_flushing` confirms the observation actually happened.
+    struct FlushOrderSink {
+        source: PathBuf,
+        source_existed_at_flush: AtomicBool,
+        saw_flushing: AtomicBool,
+    }
+
+    impl OperationEventSink for FlushOrderSink {
+        fn emit_progress(&self, event: WriteProgressEvent) {
+            if event.phase == WriteOperationPhase::Flushing && !self.saw_flushing.swap(true, Ordering::SeqCst) {
+                self.source_existed_at_flush
+                    .store(self.source.exists(), Ordering::SeqCst);
+            }
+        }
+        fn emit_complete(&self, _event: WriteCompleteEvent) {}
+        fn emit_cancelled(&self, _event: WriteCancelledEvent) {}
+        fn emit_error(&self, _event: WriteErrorEvent) {}
+        fn emit_conflict(&self, _event: WriteConflictEvent) {}
+        fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {}
+        fn emit_scan_progress(&self, _event: ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _conflict: ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _result: DryRunResult) {}
+    }
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let src_file = src_dir.join("file.bin");
+    fs::write(&src_file, vec![0u8; 4096]).unwrap();
+
+    let events = Arc::new(FlushOrderSink {
+        source: src_file.clone(),
+        source_existed_at_flush: AtomicBool::new(false),
+        saw_flushing: AtomicBool::new(false),
+    });
+    let state = make_state(200);
+    let config = WriteOperationConfig::default();
+
+    let result = move_with_staging(
+        &*events,
+        "op-cross-fs-move-flush-before-delete",
+        &state,
+        std::slice::from_ref(&src_file),
+        &dst_dir,
+        &config,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    assert!(
+        events.saw_flushing.load(Ordering::SeqCst),
+        "expected a Flushing-phase event to observe ordering against"
+    );
+    assert!(
+        events.source_existed_at_flush.load(Ordering::SeqCst),
+        "source must still exist when the Flushing pass runs — the durable dir-entry fsync must precede the source delete"
+    );
+    // Sanity: the move still completed (source gone, dest present).
+    assert!(!src_file.exists(), "source should be removed after move");
+    assert!(
+        dst_dir.join("file.bin").exists(),
+        "destination should hold the moved file"
+    );
+}
+
 /// CRITICAL data-loss regression. A cross-FS move of a single file onto an
 /// existing same-named destination, resolved as Skip, must leave the user's
 /// ORIGINAL file intact at the source and the existing destination unchanged.
