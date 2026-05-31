@@ -126,16 +126,16 @@ consent.
 
 ## Apps and check counts
 
-| App        | Tech     | Checks                                                                                                                                                                                                                      |
-| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)   |
-| Desktop    | Svelte   | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
-| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                                                      |
-| Website    | Docker   | docker-build                                                                                                                                                                                                                |
-| API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                             |
-| Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                        |
-| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows)                                                                      |
-| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                   |
+| App        | Tech     | Checks                                                                                                                                                                                                                                 |
+| ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, lock-poison, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow) |
+| Desktop    | Svelte   | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)            |
+| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                                                                 |
+| Website    | Docker   | docker-build                                                                                                                                                                                                                           |
+| API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                                        |
+| Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                                   |
+| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows)                                                                                 |
+| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                              |
 
 ## Key decisions
 
@@ -189,6 +189,19 @@ pattern: `^\s*await\s+(pollUntil|pollFs|…)\s*\(` only matches the bare-express
 might or might not be there) with `// allowed-bare-poll: <reason>` on the line above or as a trailing comment. The
 preferred migration target is Playwright's `expect.poll(() => …).toBeTruthy()`, which fuses the wait with the assertion
 so the bug class is structurally impossible.
+
+**Decision**: `lock-poison` check to force a deliberate poison-handling choice at every std-lock acquisition. **Why**: A
+bare `.lock().unwrap()` / `.read().unwrap()` / `.write().unwrap()` aborts the whole app when the lock is poisoned (a
+background thread panicked while holding it), and records no intent — a reader can't tell a considered abort from a
+thoughtless one. The policy (recover-by-default for value stores via `lock_ignore_poison()`; abort only for
+invariant-guarding locks, marked by an `.expect("… poison …")` whose message names poison) lives in the module doc of
+`apps/desktop/src-tauri/src/ignore_poison.rs`. The check is a fast-lane Go scanner (`apps/desktop/src-tauri/src/`,
+modeled on `error-string-match`) that flags bare unwraps and non-poison `.expect(…)`. Its matcher requires empty parens
+(`.lock()` / `.read()` / `.write()` with nothing between) immediately followed by `.unwrap()` / `.expect(`, so
+`io::Read::read(&mut buf).unwrap()`, `io::Write::write(buf).unwrap()`, and tokio's `mutex.lock().await` all pass
+through; `try_lock` / `try_read` / `try_write` are out of scope by name. Opt out with `// allowed-lock-poison: <reason>`
+on the line above or as a trailing comment. Unlike `error-string-match`, it skips in-file `#[cfg(test)]` mods (tracked
+by brace depth): a poisoned lock in a test means the test already panicked, so aborting there is harmless.
 
 **Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks. **Why**: Type-aware rules
 (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to TypeScript project service startup. The fast

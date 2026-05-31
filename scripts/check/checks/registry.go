@@ -125,6 +125,17 @@ var AllChecks = []CheckDefinition{
 		Run:               RunErrorStringMatch,
 	},
 	{
+		ID:                "desktop-rust-lock-poison",
+		Nickname:          "lock-poison",
+		DisplayName:       "lock-poison",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		IsFast:            true,
+		Run:               RunLockPoison,
+	},
+	{
 		ID:                "desktop-pluralize-noun",
 		Nickname:          "pluralize-noun",
 		DisplayName:       "pluralize-noun",
