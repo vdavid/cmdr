@@ -25,6 +25,16 @@ interface RepoEntry {
   info: RepoInfo
 }
 
+/**
+ * In-flight backend subscribes, keyed by `repoRoot`. A new subscribe registers
+ * its promise here synchronously (before any `await`) so concurrent callers for
+ * the same repo coalesce onto one `commands.subscribeGitState` round-trip
+ * instead of each issuing their own — which would leave the backend refcount
+ * one ahead of the FE map and leak the `.git` watcher for the session.
+ */
+// eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state; transient coalescing bookkeeping consumed only inside `subscribeToRepo`, never rendered.
+const inflight = new Map<string, Promise<RepoInfo>>()
+
 interface GitStateChangedPayload {
   repoRoot: string
   info: RepoInfo
@@ -51,19 +61,41 @@ async function ensureListener(): Promise<void> {
  * `RepoInfo` synchronously so the chip never sees a flash of empty state.
  */
 export async function subscribeToRepo(repoRoot: string): Promise<RepoInfo> {
-  await ensureListener()
-
+  // Already-subscribed repo: bump the refcount synchronously and we're done.
   const existing = repos.get(repoRoot)
   if (existing) {
     existing.refcount += 1
     return existing.info
   }
 
-  const res = await commands.subscribeGitState(repoRoot)
-  if (res.status === 'error') throwIpcError(res.error)
-  const info = res.data
-  repos.set(repoRoot, { refcount: 1, info })
-  return info
+  // A concurrent caller already started subscribing this repo: join its
+  // in-flight backend round-trip. We bump the refcount NOW (before awaiting),
+  // because the racer who started it will write `{ refcount: 1 }` when it
+  // resolves; our increment lands on top once that entry exists.
+  const pending = inflight.get(repoRoot)
+  if (pending) {
+    const info = await pending
+    const entry = repos.get(repoRoot)
+    if (entry) entry.refcount += 1
+    return info
+  }
+
+  // First subscriber for this repo. Register the in-flight promise
+  // synchronously, before any `await`, so concurrent callers coalesce onto it.
+  const subscribe = (async (): Promise<RepoInfo> => {
+    await ensureListener()
+    const res = await commands.subscribeGitState(repoRoot)
+    if (res.status === 'error') throwIpcError(res.error)
+    const info = res.data
+    repos.set(repoRoot, { refcount: 1, info })
+    return info
+  })()
+  inflight.set(repoRoot, subscribe)
+  try {
+    return await subscribe
+  } finally {
+    inflight.delete(repoRoot)
+  }
 }
 
 /**

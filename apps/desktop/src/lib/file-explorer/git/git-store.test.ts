@@ -58,6 +58,56 @@ describe('git-store', () => {
     expect(getRepoInfo('/repo')).toBeNull()
   })
 
+  it('coalesces concurrent subscribes for the same repo into one backend call', async () => {
+    // Hold every `subscribe_git_state` invocation on a deferred we release
+    // together, so two concurrent `subscribeToRepo` calls fully interleave
+    // across their awaits before any backend response lands. Resolving all of
+    // them (not just the first) means buggy code that issues a second backend
+    // subscribe still settles — so the test fails on the call-count assertion
+    // rather than hanging.
+    const pending: Array<(info: typeof baseInfo) => void> = []
+    vi.mocked(invoke).mockImplementation((name: string) => {
+      if (name === 'subscribe_git_state') {
+        return new Promise((resolve) => {
+          pending.push(resolve)
+        })
+      }
+      if (name === 'unsubscribe_git_state') return Promise.resolve(undefined)
+      return Promise.resolve(baseInfo)
+    })
+
+    // Fire two concurrent subscribes for the same root before either resolves.
+    const p1 = subscribeToRepo('/repo')
+    const p2 = subscribeToRepo('/repo')
+
+    // Let both run up to their first pending backend await.
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // Release every in-flight backend subscribe.
+    for (const resolve of pending) resolve(baseInfo)
+    const [a, b] = await Promise.all([p1, p2])
+
+    expect(a.repoRoot).toBe('/repo')
+    expect(b.repoRoot).toBe('/repo')
+
+    // The backend subscribe must fire exactly once even though two callers raced.
+    const subscribeCalls = vi.mocked(invoke).mock.calls.filter(([name]) => name === 'subscribe_git_state')
+    expect(subscribeCalls.length).toBe(1)
+
+    // Two subscribers means refcount 2: the first unsubscribe must NOT tear down.
+    await unsubscribeFromRepo('/repo')
+    let unsub = vi.mocked(invoke).mock.calls.filter(([name]) => name === 'unsubscribe_git_state')
+    expect(unsub.length).toBe(0)
+    expect(getRepoInfo('/repo')).not.toBeNull()
+
+    // The second unsubscribe drops refcount to 0 and tears the backend down.
+    await unsubscribeFromRepo('/repo')
+    unsub = vi.mocked(invoke).mock.calls.filter(([name]) => name === 'unsubscribe_git_state')
+    expect(unsub.length).toBe(1)
+    expect(getRepoInfo('/repo')).toBeNull()
+  })
+
   it('lookupRepoInfo unwraps `data` from the timeout-aware envelope', async () => {
     vi.mocked(invoke).mockResolvedValueOnce({ data: baseInfo, timedOut: false })
     const result = await lookupRepoInfo('/some/path')
