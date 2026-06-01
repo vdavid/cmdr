@@ -54,9 +54,15 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("svelte tests failed\n%s", indentOutput(output))
 	}
 
-	// Extract test count from output
+	// Extract test count from output. Strip ANSI first: vitest colorizes its
+	// summary when it thinks the output is a terminal (the count is wrapped in
+	// color codes like `Tests  \x1b[1m\x1b[32m3318\x1b[39m passed`), which the
+	// raw regex can't match — that's why a contended full-suite run can fall
+	// through to the "all" fallback while an isolated run shows the count.
+	ansiRe := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	clean := ansiRe.ReplaceAllString(output, "")
 	testCountRe := regexp.MustCompile(`Tests\s+(\d+) passed`)
-	testMatches := testCountRe.FindStringSubmatch(output)
+	testMatches := testCountRe.FindStringSubmatch(clean)
 	testCount := "all"
 	if len(testMatches) > 1 {
 		testCount = testMatches[1]
