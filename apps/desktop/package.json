@@ -64,6 +64,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.17.1",
     "globals": "^17.5.0",
+    "happy-dom": "^20.9.0",
     "jsdom": "^29.0.2",
     "knip": "^6.7.0",
     "oxlint": "^1.61.0",

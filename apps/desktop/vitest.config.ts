@@ -7,7 +7,12 @@ export default defineConfig({
   plugins: [Icons({ compiler: 'svelte' }), svelte()],
   test: {
     include: ['src/**/*.test.ts', 'scripts/**/*.test.js', 'test/e2e-shared/**/*.test.ts'],
-    environment: 'jsdom',
+    // happy-dom over jsdom: its per-file DOM-environment setup is roughly half
+    // the cost (the dominant phase for our ~3300 tests), ~22% faster on a plain
+    // run. All tests pass under it. Caveat: happy-dom implements a *subset* of
+    // jsdom's APIs — if a future test fails on a missing DOM API, switch that
+    // file back with `// @vitest-environment jsdom` (jsdom stays installed).
+    environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
     execArgv: ['--localstorage-file=.vitest-localstorage'],
