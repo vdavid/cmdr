@@ -14,7 +14,7 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, pollUntil, pressKey } from './helpers.js'
+import { dismissOverlay, ensureAppReady, pollUntil } from './helpers.js'
 import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
 import { SEARCH_OVERLAY, closeSearchDialog, openSearchDialog } from './search-helpers.js'
 
@@ -53,10 +53,13 @@ test.describe('Search dialog: filter chips', () => {
     expect(configured).toBe(true)
 
     // Esc closes ONLY the popover (`SearchFilterChips.svelte` capture-phase
-    // guard, see lib/search/CLAUDE.md). The dialog must stay open.
-    await pressKey(tauriPage, 'Escape')
-    const popoverGone = await pollUntil(tauriPage, async () => (await tauriPage.count(FILTER_POPOVER)) === 0, 2000)
-    expect(popoverGone).toBe(true)
+    // guard, see lib/search/CLAUDE.md); the dialog must stay open.
+    // `dismissOverlay` dispatches a synthetic Escape on the `.filter-chip-popover`
+    // element itself (first in the overlay priority list) and asserts it closed.
+    // Using it instead of `pressKey('Escape')` — which targets
+    // `document.activeElement` — removes a focus-position dependency that flaked
+    // under Linux Xvfb when focus wasn't inside the chip subtree.
+    await dismissOverlay(tauriPage)
     expect(await tauriPage.count(SEARCH_OVERLAY)).toBe(1)
 
     // Click × to clear. The chip drops `is-configured` and the value vanishes
