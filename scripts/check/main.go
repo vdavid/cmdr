@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"cmdr/scripts/check/checks"
+
+	"golang.org/x/term"
 )
 
 // stringSlice implements flag.Value for accumulating multiple flag values
@@ -46,7 +48,9 @@ type cliFlags struct {
 	noLog           bool
 	onlyFreestyle   bool
 	preferFreestyle bool
-	freestyleRemote bool // set on the VM side to filter freestyle-compatible checks
+	freestyleRemote bool   // set on the VM side to filter freestyle-compatible checks
+	graph           bool   // render the DependsOn graph (with weights + lanes) and exit
+	graphFormat     string // tree (default) | mermaid | dot
 }
 
 func main() {
@@ -102,6 +106,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// --graph renders the dependency graph of the selected checks (before the
+	// slow/fast/CI filters, so every lane is shown with its size badge) and exits.
+	if handleGraphFlag(flags, checksToRun) {
+		return
+	}
+
 	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
 	checksToRun = checks.FilterCIOnlyChecks(checksToRun, flags.ciMode, flags.checkNames)
 	checksToRun = checks.FilterFastChecks(checksToRun, flags.fast, flags.checkNames)
@@ -110,15 +120,7 @@ func main() {
 		checksToRun = checks.FilterFreestyleCompat(checksToRun)
 	}
 
-	if flags.onlySlow {
-		var slow []checks.CheckDefinition
-		for _, c := range checksToRun {
-			if c.IsSlow {
-				slow = append(slow, c)
-			}
-		}
-		checksToRun = slow
-	}
+	checksToRun = filterOnlySlow(checksToRun, flags.onlySlow)
 
 	if len(checksToRun) == 0 {
 		fmt.Println("No checks to run.")
@@ -139,6 +141,35 @@ func main() {
 	}
 
 	runChecks(ctx, checksToRun, flags.failFast, flags.noLog)
+}
+
+// handleGraphFlag renders the dependency graph and reports whether it handled
+// the run (so main returns early). Extracted from main to keep it under the
+// gocyclo threshold.
+func handleGraphFlag(flags *cliFlags, checksToRun []checks.CheckDefinition) bool {
+	if !flags.graph {
+		return false
+	}
+	if err := renderGraph(checksToRun, flags.graphFormat, term.IsTerminal(int(os.Stdout.Fd()))); err != nil {
+		printError("Error: %v", err)
+		os.Exit(1)
+	}
+	return true
+}
+
+// filterOnlySlow keeps only the slow checks when --only-slow is set, else
+// returns the input unchanged.
+func filterOnlySlow(checksToRun []checks.CheckDefinition, onlySlow bool) []checks.CheckDefinition {
+	if !onlySlow {
+		return checksToRun
+	}
+	var slow []checks.CheckDefinition
+	for _, c := range checksToRun {
+		if c.IsSlow {
+			slow = append(slow, c)
+		}
+	}
+	return slow
 }
 
 // setupSmbOrchestratorIfNeeded inspects the planned check set for any check
@@ -209,6 +240,8 @@ func parseFlags() *cliFlags {
 		onlyFreestyle   = flag.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
 		preferFreestyle = flag.Bool("prefer-freestyle", false, "Run freestyle-compatible checks on VM + the rest locally in parallel")
 		freestyleRemote = flag.Bool("freestyle-remote", false, "Filter to freestyle-compatible checks only (used internally on the VM)")
+		graph           = flag.Bool("graph", false, "Render the check dependency graph (with CPU weights + size lanes) and exit")
+		graphFormat     = flag.String("graph-format", "tree", "Graph output format: tree | mermaid | dot")
 		help            = flag.Bool("help", false, "Show help message")
 		h               = flag.Bool("h", false, "Show help message")
 	)
@@ -241,6 +274,8 @@ func parseFlags() *cliFlags {
 		onlyFreestyle:   *onlyFreestyle,
 		preferFreestyle: *preferFreestyle,
 		freestyleRemote: *freestyleRemote,
+		graph:           *graph,
+		graphFormat:     *graphFormat,
 	}
 }
 

@@ -31,6 +31,7 @@ CheckDefinition{
     IsFast:            false, // true = included in --fast (curated pre-commit lane)
     CIOnly:            false, // true = run only in --ci mode (or explicit --check)
     FreestyleIncompat: true,  // can NOT run on freestyle.sh VMs (Rust, Docker)
+    CpuWeight:         2,      // avg cores busy; 0/unset = 1. Governs concurrent admission.
     DependsOn:         []string{"desktop-svelte-prettier"},
     Run:               RunDesktopESLint,
 }
@@ -52,6 +53,12 @@ CheckDefinition{
   that needs Docker. Negative-sense default (`false` = compatible) keeps the field absent in the common case.
 - **`DependsOn`** is a flat slice of IDs. Formatters before linters, linters before tests, type checkers before tests.
   Blocked checks (dep failed) get `StatusBlocked` automatically.
+- **`CpuWeight`** is the average number of CPU cores the check keeps busy while running (cold/working profile, rounded).
+  The runner admits checks so the sum of concurrent weights stays within `NumCPU`, so two CPU-heavy checks don't
+  oversubscribe the machine. `0` (unset) counts as `1` (light). Weights are Docker-VM-aware (`rust-tests-linux` /
+  `e2e-linux` burn cores in the VM the host process never shows). Calibrate from the isolation sweep in
+  `docs/notes/check-cpu-contention.md`; visualize with `./scripts/check.sh --graph`. Only the measured non-fast checks
+  carry explicit weights today; fast/formatters default to 1.
 
 ## Adding a new check
 

@@ -47,7 +47,8 @@ type Runner struct {
 	mu          sync.Mutex
 	outputMu    sync.Mutex
 	statusLine  string
-	maxWorkers  int
+	capacity    int // CPU-core budget for concurrent checks (= NumCPU)
+	usedWeight  int // sum of EffectiveCpuWeight of currently-running checks (guarded by mu)
 	completedCh chan *CheckState
 	isTTY       bool // true if stdout is a terminal (supports status line)
 	prefixWidth int  // max width of "App: Tech / Name" prefix for alignment
@@ -61,7 +62,7 @@ func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, failFast
 		checkMap:    make(map[string]*CheckState),
 		failFast:    failFast,
 		noLog:       noLog,
-		maxWorkers:  runtime.NumCPU(),
+		capacity:    runtime.NumCPU(),
 		completedCh: make(chan *CheckState, len(defs)),
 		isTTY:       term.IsTerminal(int(os.Stdout.Fd())),
 	}
@@ -96,7 +97,6 @@ func (r *Runner) Run() (failed bool, failedChecks []string) {
 	}
 
 	var wg sync.WaitGroup
-	semaphore := make(chan struct{}, r.maxWorkers)
 
 	// Start status line updater
 	stopStatus := make(chan struct{})
@@ -109,25 +109,13 @@ func (r *Runner) Run() (failed bool, failedChecks []string) {
 		startedAny := false
 
 		for _, state := range r.checks {
-			state.mu.Lock()
-			if state.Status == StatusPending {
-				allDone = false
-				if r.canStart(state) {
-					state.Status = StatusRunning
-					startedAny = true
-					wg.Add(1)
-					go func(s *CheckState) {
-						defer wg.Done()
-						semaphore <- struct{}{}
-						r.runCheck(s)
-						<-semaphore
-						r.completedCh <- s
-					}(state)
-				}
-			} else if state.Status == StatusRunning {
+			active, started := r.tryStartPending(state, &wg)
+			if active {
 				allDone = false
 			}
-			state.mu.Unlock()
+			if started {
+				startedAny = true
+			}
 		}
 		r.mu.Unlock()
 
@@ -161,6 +149,54 @@ func (r *Runner) Run() (failed bool, failedChecks []string) {
 	}
 
 	return failed, failedChecks
+}
+
+// tryStartPending evaluates one check and starts it if it's ready. The caller
+// must hold r.mu (the weight budget and the start decision share it). Returns:
+//   - active: the check is not yet done (pending or running), so the run loop
+//     must keep iterating.
+//   - started: a goroutine was launched this call (so the loop made progress).
+//
+// Admission is two-stage: dependencies first (canStart also marks the check
+// Blocked if a dep failed), then CPU weight — a check starts only when the sum
+// of running weights stays within the core budget, so two CPU-heavy checks
+// don't oversubscribe the machine. The usedWeight==0 clause guarantees an
+// over-budget check still runs (alone) rather than deadlocking the gate. When
+// deps are ready but the budget is full, the check stays Pending and is retried
+// once a running check frees its weight.
+func (r *Runner) tryStartPending(state *CheckState, wg *sync.WaitGroup) (active, started bool) {
+	state.mu.Lock()
+	defer state.mu.Unlock()
+
+	switch state.Status {
+	case StatusRunning:
+		return true, false
+	case StatusPending:
+		// fall through to admission below
+	default:
+		return false, false
+	}
+
+	if !r.canStart(state) {
+		return true, false
+	}
+	w := state.Definition.EffectiveCpuWeight(r.capacity)
+	if r.usedWeight != 0 && r.usedWeight+w > r.capacity {
+		return true, false // budget full; retry once a running check frees weight
+	}
+
+	state.Status = StatusRunning
+	r.usedWeight += w
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		r.runCheck(state)
+		r.mu.Lock()
+		r.usedWeight -= w
+		r.mu.Unlock()
+		r.completedCh <- state
+	}()
+	return true, true
 }
 
 // canStart checks if a check can start based on its dependencies.

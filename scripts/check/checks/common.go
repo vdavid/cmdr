@@ -98,9 +98,32 @@ type CheckDefinition struct {
 	// of selected checks with this flag (see scripts/check/smb_orchestrator.go).
 	// Without it, each such check tried to own the lifecycle itself and parallel
 	// runs trampled each other via stop.sh.
-	NeedsSmb  SmbMode // "" = no SMB needed; "core" = integration tests; "e2e" = e2e tests
+	NeedsSmb SmbMode // "" = no SMB needed; "core" = integration tests; "e2e" = e2e tests
+	// CpuWeight is the average number of CPU cores this check keeps busy while it
+	// runs (cold/working profile, rounded). The runner admits checks so the sum
+	// of concurrent weights stays within the core budget, so two CPU-heavy checks
+	// don't pile on top of each other and oversubscribe the machine. 0 means
+	// unmeasured and is treated as 1 (light). Calibrated from the contention
+	// sweep in `docs/notes/check-cpu-contention.md`; weights account for Docker-VM
+	// CPU too (`rust-tests-linux` / `e2e-linux` burn cores in the VM that the host
+	// process never shows).
+	CpuWeight int
 	DependsOn []string
 	Run       CheckFunc
+}
+
+// EffectiveCpuWeight returns the scheduling weight clamped to [1, capacity], so
+// an unset weight counts as light (1) and an over-budget weight can still run
+// once nothing else holds the budget (it never deadlocks the admission gate).
+func (c *CheckDefinition) EffectiveCpuWeight(capacity int) int {
+	w := c.CpuWeight
+	if w < 1 {
+		w = 1
+	}
+	if capacity > 0 && w > capacity {
+		w = capacity
+	}
+	return w
 }
 
 // SmbMode names the SMB consumer container set a check needs. Mirrors the

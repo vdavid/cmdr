@@ -31,6 +31,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-rust-clippy",
+		CpuWeight:         8,
 		Nickname:          "clippy",
 		DisplayName:       "clippy",
 		App:               AppDesktop,
@@ -41,6 +42,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-rust-cargo-audit",
+		CpuWeight:         1,
 		Nickname:          "cargo-audit",
 		DisplayName:       "cargo-audit",
 		App:               AppDesktop,
@@ -51,6 +53,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-rust-cargo-deny",
+		CpuWeight:         1,
 		Nickname:          "cargo-deny",
 		DisplayName:       "cargo-deny",
 		App:               AppDesktop,
@@ -72,6 +75,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-rust-cargo-udeps",
+		CpuWeight:         8,
 		Nickname:          "cargo-udeps",
 		DisplayName:       "cargo-udeps",
 		App:               AppDesktop,
@@ -83,6 +87,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-rust-jscpd",
+		CpuWeight:         2,
 		Nickname:          "jscpd-rust",
 		DisplayName:       "jscpd",
 		App:               AppDesktop,
@@ -148,6 +153,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-bindings-fresh",
+		CpuWeight:         8,
 		Nickname:          "bindings-fresh",
 		DisplayName:       "bindings-fresh",
 		App:               AppDesktop,
@@ -169,6 +175,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-rust-tests",
+		CpuWeight:         6,
 		Nickname:          "rust-tests",
 		DisplayName:       "tests",
 		App:               AppDesktop,
@@ -179,6 +186,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-rust-integration-tests",
+		CpuWeight:         8,
 		Nickname:          "rust-integration-tests",
 		DisplayName:       "integration tests (SMB)",
 		App:               AppDesktop,
@@ -190,6 +198,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-rust-tests-linux",
+		CpuWeight:         6,
 		Nickname:          "rust-tests-linux",
 		DisplayName:       "tests (Linux)",
 		App:               AppDesktop,
@@ -203,6 +212,7 @@ var AllChecks = []CheckDefinition{
 	// Desktop - Svelte checks (e2e-linux is FreestyleIncompat, needs Docker)
 	{
 		ID:          "desktop-svelte-eslint",
+		CpuWeight:   2,
 		DisplayName: "eslint",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
@@ -211,6 +221,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-eslint-typecheck",
+		CpuWeight:   2,
 		Nickname:    "eslint-typecheck",
 		DisplayName: "eslint (type-aware)",
 		App:         AppDesktop,
@@ -279,6 +290,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-check",
+		CpuWeight:   2,
 		Nickname:    "svelte-check",
 		DisplayName: "svelte-check",
 		App:         AppDesktop,
@@ -318,6 +330,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-tests",
+		CpuWeight:   11,
 		Nickname:    "svelte-tests",
 		DisplayName: "tests",
 		App:         AppDesktop,
@@ -337,6 +350,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-svelte-e2e-linux",
+		CpuWeight:         4,
 		Nickname:          "desktop-e2e-linux",
 		DisplayName:       "e2e (Linux)",
 		App:               AppDesktop,
@@ -349,6 +363,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "desktop-svelte-e2e-playwright",
+		CpuWeight:         4,
 		Nickname:          "desktop-e2e-playwright",
 		DisplayName:       "e2e (Playwright)",
 		App:               AppDesktop,
@@ -361,6 +376,7 @@ var AllChecks = []CheckDefinition{
 	// Website checks (docker-build is FreestyleIncompat)
 	{
 		ID:          "website-eslint",
+		CpuWeight:   1,
 		DisplayName: "eslint",
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
@@ -369,6 +385,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "website-typecheck",
+		CpuWeight:   2,
 		DisplayName: "typecheck",
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
@@ -377,6 +394,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:                "website-docker-build",
+		CpuWeight:         2,
 		Nickname:          "docker-build",
 		DisplayName:       "docker build",
 		App:               AppWebsite,
@@ -387,6 +405,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "website-build",
+		CpuWeight:   2,
 		DisplayName: "build",
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
@@ -405,6 +424,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "website-e2e",
+		CpuWeight:   6,
 		DisplayName: "e2e",
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
@@ -415,6 +435,7 @@ var AllChecks = []CheckDefinition{
 	// API server checks
 	{
 		ID:          "api-server-eslint",
+		CpuWeight:   2,
 		DisplayName: "eslint",
 		App:         AppApiServer,
 		Tech:        "⸆⸉ TS",
@@ -504,6 +525,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-nilaway",
+		CpuWeight:   7,
 		Nickname:    "nilaway",
 		DisplayName: "nilaway",
 		App:         AppScripts,
@@ -513,6 +535,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-deadcode",
+		CpuWeight:   4,
 		Nickname:    "deadcode",
 		DisplayName: "deadcode",
 		App:         AppScripts,
@@ -532,6 +555,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-govulncheck",
+		CpuWeight:   3,
 		Nickname:    "govulncheck",
 		DisplayName: "govulncheck",
 		App:         AppScripts,

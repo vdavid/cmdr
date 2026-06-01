@@ -42,22 +42,29 @@ go run ./scripts/check --only-freestyle
 
 ## Command-line options
 
-| Option                      | Description                                             |
-| --------------------------- | ------------------------------------------------------- |
-| `--app NAME`                | Run checks for a specific app                           |
-| `--rust`, `--rust-only`     | Run only Rust checks (desktop)                          |
-| `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                        |
-| `--check ID`                | Run specific checks by ID or nickname (repeatable)      |
-| `--ci`                      | Disable auto-fixing (for CI)                            |
-| `--verbose`                 | Show detailed output                                    |
-| `--include-slow`            | Include slow checks (excluded by default)               |
-| `--only-slow`               | Run only slow checks                                    |
-| `--fast`                    | Run only the curated fast pre-commit check set          |
-| `--only-freestyle`          | Run freestyle-compatible checks on a VM (skip the rest) |
-| `--prefer-freestyle`        | Run compat checks on VM + the rest locally in parallel  |
-| `--fail-fast`               | Stop on first failure                                   |
-| `--no-log`                  | Disable CSV stats logging                               |
-| `-h`, `--help`              | Show help message                                       |
+| Option                      | Description                                                        |
+| --------------------------- | ------------------------------------------------------------------ |
+| `--app NAME`                | Run checks for a specific app                                      |
+| `--rust`, `--rust-only`     | Run only Rust checks (desktop)                                     |
+| `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                                   |
+| `--check ID`                | Run specific checks by ID or nickname (repeatable)                 |
+| `--ci`                      | Disable auto-fixing (for CI)                                       |
+| `--verbose`                 | Show detailed output                                               |
+| `--include-slow`            | Include slow checks (excluded by default)                          |
+| `--only-slow`               | Run only slow checks                                               |
+| `--fast`                    | Run only the curated fast pre-commit check set                     |
+| `--only-freestyle`          | Run freestyle-compatible checks on a VM (skip the rest)            |
+| `--prefer-freestyle`        | Run compat checks on VM + the rest locally in parallel             |
+| `--fail-fast`               | Stop on first failure                                              |
+| `--no-log`                  | Disable CSV stats logging                                          |
+| `--graph`                   | Render the check dependency graph (weights + lanes) and exit       |
+| `--graph-format`            | Graph output: `tree` (default, colored terminal), `mermaid`, `dot` |
+| `-h`, `--help`              | Show help message                                                  |
+
+`--graph` honors the same selection flags (`--rust`, `--svelte`, `--app`, `--check`), so `--graph --rust` graphs only
+the Rust checks. It renders before the slow/fast/CI filters, so every lane shows with its size badge. `mermaid` output
+pastes into a Markdown ```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`./scripts/check.sh --graph
+--graph-format dot | dot -Tpng -o checks.png`).
 
 ## Architecture
 
@@ -94,7 +101,8 @@ go run ./scripts/check --only-freestyle
 | File                  | Purpose                                                                                              |
 | --------------------- | ---------------------------------------------------------------------------------------------------- |
 | `main.go`             | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation       |
-| `runner.go`           | Parallel executor: goroutine pool, dependency graph, fail-fast, live TTY status line                 |
+| `runner.go`           | Parallel executor: CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line    |
+| `graph.go`            | `--graph` renderer: dependency forest with CPU weights + size lanes (tree / mermaid / dot)           |
 | `stats.go`            | CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`             |
 | `colors.go`           | ANSI color constants                                                                                 |
 | `utils.go`            | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                        |
@@ -105,7 +113,17 @@ go run ./scripts/check --only-freestyle
 ## Runner-level patterns
 
 **Dependency graph:** Flat `DependsOn` slice per check. Blocked checks get `StatusBlocked` on dep failure and are
-counted as failed. Dependencies not in the selected run set are treated as satisfied.
+counted as failed. Dependencies not in the selected run set are treated as satisfied. Visualize it with
+`./scripts/check.sh --graph` (every check currently has ≤1 dependency, so it renders as a clean forest rooted at `oxfmt`
+/ `rustfmt` / `gofmt`).
+
+**CPU-weighted admission:** Instead of a count semaphore, `tryStartPending` admits a check only when
+`sum(running CpuWeight) + weight ≤ NumCPU` (`runner.go`). A check first clears its dependencies (`canStart`), then the
+weight gate; if deps are ready but the budget is full it stays `Pending` and retries once a running check frees its
+weight. The `usedWeight == 0` clause lets an over-budget check run alone rather than deadlock. This keeps two CPU-heavy
+checks (e.g. `svelte-tests` w11 + `clippy`-cold w8) from piling up and oversubscribing the machine, while light/long
+checks (`eslint-typecheck` w2, the Docker checks) overlap freely. See the Key decision below and
+`docs/notes/check-cpu-contention.md`.
 
 **Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`,
 `desktop-e2e-playwright`). Named `--check` invocations implicitly include slow checks
@@ -168,6 +186,17 @@ A check shows "BLOCKED" when its dependency failed. Fix the dependency first.
 Use `CommandExists()` to check if a tool is installed, and auto-install if possible via `EnsureGoTool`.
 
 ## Key decisions
+
+**Decision**: CPU-weight-aware admission instead of a count semaphore. **Why**: The old gate allowed up to `NumCPU`
+concurrent checks, but a single check (vitest, a cold cargo compile) can itself saturate every core. So the short
+CPU-heavy checks all launched at once and oversubscribed the machine 2-3×, which starved timing-sensitive checks — the
+E2E modal/popover timeouts and the 8s-cap `file_viewer` test flaked under `--include-slow` for exactly this reason. Each
+check now carries a `CpuWeight` (avg busy cores, Docker-VM-aware) and the runner only starts a check when the running
+weights fit the core budget. Wall-clock stays bounded by the critical path (`eslint-typecheck`, which is long but ~1
+core, under `--include-slow`; cold `clippy` for the default suite) while peak oversubscription drops to ~1×. Weights
+were measured by an isolation sweep (`docs/notes/check-cpu-contention.md`); unmeasured/fast checks default to 1. The key
+insight from the sweep: the longest checks (`eslint-typecheck`, `e2e-linux`, `rust-tests-linux`) are NOT the heaviest —
+they idle ~1 core or run entirely in the Docker VM, so they make ideal backbone fillers for the CPU-heavy short checks.
 
 **Decision**: Go instead of Bash for the check script. **Why**: Cross-platform support (especially Windows), type-safe,
 better error handling, and ability to build complex logic (parallel checks, dependency graph, colored output). Go is
