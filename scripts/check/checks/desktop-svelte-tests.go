@@ -116,7 +116,18 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 		for _, f := range lowCoverageFiles {
 			errorMsg += "      " + f + "\n"
 		}
-		errorMsg += "\n      To allowlist a file, add it to coverage-allowlist.json with a reason."
+		// Make the failure self-diagnosing. A contended run has been seen (once)
+		// to leave a file that HAS a dedicated test reading 0% — i.e. the run was
+		// incomplete, not a real coverage gap. It couldn't be reproduced under
+		// CPU+memory load (see docs/notes/check-cpu-contention.md), so it's rare;
+		// surfacing vitest's run tallies + any worker-death lines tells the next
+		// occurrence apart from a genuine drop, instead of swallowing the output.
+		errorMsg += "\n      If a below-threshold file has a dedicated test, the run was likely\n" +
+			"      incomplete (rare, load-related) — re-run `--check svelte-tests` standalone\n" +
+			"      before trusting this. Genuine gap? Add it to coverage-allowlist.json with a reason."
+		if diag := vitestRunDiagnostics(clean); diag != "" {
+			errorMsg += "\n\n      vitest run context (watch the skip count + any worker errors):\n" + diag
+		}
 		return CheckResult{}, fmt.Errorf("coverage below threshold for %d files\n%s", len(lowCoverageFiles), errorMsg)
 	}
 
@@ -127,4 +138,23 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 	result := Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests")))
 	result.Total = count
 	return result, nil
+}
+
+// vitestRunDiagnostics pulls the lines that reveal whether a vitest run was
+// complete: the `Test Files` / `Tests` tallies (a skip count above the usual
+// handful means files didn't run, so coverage is unreliable) plus any
+// worker-death / heap-limit errors. Returned indented for the failure message.
+// `cleanOutput` must already have ANSI stripped.
+func vitestRunDiagnostics(cleanOutput string) string {
+	var out []string
+	for line := range strings.SplitSeq(cleanOutput, "\n") {
+		t := strings.TrimSpace(line)
+		if strings.HasPrefix(t, "Test Files ") || strings.HasPrefix(t, "Tests ") ||
+			strings.Contains(t, "Worker terminated") || strings.Contains(t, "Channel closed") ||
+			strings.Contains(t, "reached heap limit") || strings.Contains(t, "FATAL ERROR") ||
+			strings.Contains(t, "closed unexpectedly") || strings.Contains(t, "worker exited") {
+			out = append(out, "      "+t)
+		}
+	}
+	return strings.Join(out, "\n")
 }

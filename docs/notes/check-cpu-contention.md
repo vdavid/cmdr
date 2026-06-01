@@ -104,4 +104,25 @@ The four heavy normal-suite Rust checks (clippy, bindings-fresh, rust-tests, rus
   build as `rust-tests`, so they share artifacts. On a warm tree with no `src-tauri` change it should return `<100 ms`
   ("cached"); a non-cached run means the marker in `target/` didn't persist (e.g. a `cargo clean`).
 
+## svelte-tests coverage false-positive (rare, unpinned)
+
+Seen once: a full-suite run failed `svelte-tests` with ~8 files below the 70% line-coverage gate (`clipboard-shim` 0%,
+`apply-diff` 0%, `keyboard-shortcuts` 24%, `quick-look-state` 15%, …). All of them have dedicated, unconditional
+`*.test.ts` files and read **96-100% in every normal run** — so it's not a real gap.
+
+The check only reports "coverage below threshold" when vitest **exits 0** (tests passed) yet the coverage report is
+incomplete — i.e. the run was incomplete, not the code undertested.
+
+**Refuted hypothesis:** that CPU contention makes v8 drop/mis-merge coverage. Measured the 8 files' coverage (a)
+standalone, (b) under 24 CPU hogs on 16 cores, (c) under a heavy cold-clippy compile + 12 hogs (CPU + memory pressure).
+**All three: identical 96-100%, vitest exit 0, the usual 4 skipped.** So contention is NOT the trigger, and the
+single-fork "fix" (`--no-file-parallelism`) is the wrong move — it would serialize ~338 files and tank the run for a
+non-cause. Couldn't reproduce the failure at all; it's rare and the trigger is still unknown.
+
+**What's in place:** the coverage-failure message now surfaces vitest's run tallies + any worker-death lines
+(`vitestRunDiagnostics` in `desktop-svelte-tests.go`), so the next occurrence is self-diagnosing — the smoking gun will
+be the `Test Files … | N skipped` count (N above the usual handful = files didn't run → coverage unreliable) or a
+`Worker terminated` / `reached heap limit` line. Until then: a below-threshold file that has a dedicated test means
+re-run `--check svelte-tests` standalone; don't allowlist it.
+
 Render the graph with weights + lanes: `./scripts/check.sh --graph` (also `--graph-format mermaid|dot`).
