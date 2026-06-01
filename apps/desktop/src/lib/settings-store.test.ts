@@ -10,7 +10,9 @@ import { load } from '@tauri-apps/plugin-store'
 import { saveSettings } from './settings-store'
 
 // `vi.hoisted` so the spy exists when the hoisted `vi.mock` factory runs.
-const errorSpy = vi.hoisted(() => vi.fn())
+// Typed with the logger's `error(message, context)` shape so reading
+// `mock.calls[0]` stays type-safe (no `any` destructuring).
+const errorSpy = vi.hoisted(() => vi.fn<(message: string, context: { keys: string[]; error: unknown }) => void>())
 
 // One store instance backs the whole module (getStore caches it). We reconfigure
 // `set` / `save` per test rather than swapping the instance.
