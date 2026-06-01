@@ -94,6 +94,23 @@ var laneColor = map[string]string{"fast": colorGreen, "normal": colorYellow, "sl
 
 // weightColor returns the gradient color for a CPU weight: w1 green, w2 light
 // green, w3-5 yellow, w6-8 orange, w9+ red.
+// laneCounts tallies how many checks fall in each size lane and the summed weight.
+func laneCounts(defs []checks.CheckDefinition) (fast, normal, slow, totalWeight int) {
+	for i := range defs {
+		d := &defs[i]
+		totalWeight += weightOf(d)
+		switch sizeTag(d) {
+		case "fast":
+			fast++
+		case "slow":
+			slow++
+		default:
+			normal++
+		}
+	}
+	return fast, normal, slow, totalWeight
+}
+
 func weightColor(w int) string {
 	switch {
 	case w <= 1:
@@ -137,6 +154,9 @@ func renderGraphTree(defs []checks.CheckDefinition, useColor bool) {
 	}
 	nodeLabel := func(id string) string {
 		d := m.byID[id]
+		if d == nil {
+			return id // unreachable: ids come from the model built off defs
+		}
 		return fmt.Sprintf("%s %s - %s", d.CLIName(), annot(d), d.Tech)
 	}
 
@@ -182,6 +202,10 @@ func renderGraphTree(defs []checks.CheckDefinition, useColor bool) {
 		items := make([]string, len(standalone))
 		for i, id := range standalone {
 			d := m.byID[id]
+			if d == nil {
+				items[i] = id // unreachable: ids come from the model built off defs
+				continue
+			}
 			items[i] = fmt.Sprintf("%s %s", d.CLIName(), annot(d))
 		}
 		fmt.Printf("%s\n  %s\n\n",
@@ -190,19 +214,7 @@ func renderGraphTree(defs []checks.CheckDefinition, useColor bool) {
 	}
 
 	// Summary + legend.
-	var fastN, normalN, slowN, totalW int
-	for i := range defs {
-		d := &defs[i]
-		totalW += weightOf(d)
-		switch sizeTag(d) {
-		case "fast":
-			fastN++
-		case "slow":
-			slowN++
-		default:
-			normalN++
-		}
-	}
+	fastN, normalN, slowN, totalW := laneCounts(defs)
 	fmt.Printf("%s\n", c(colorDim, fmt.Sprintf(
 		"Legend: lane = %s / %s / %s; weight w1 %s, w2 %s, w3-5 %s, w6-8 %s, w9+ %s.",
 		c(colorGreen, "fast"), c(colorYellow, "normal"), c(colorRed, "slow"),
