@@ -9,7 +9,7 @@ import (
 )
 
 // RunDesktopESLint lints and fixes code with ESLint (non-type-aware rules only).
-// Type-aware rules run separately in RunDesktopESLintTypecheck to keep this check fast.
+// Type-aware rules run separately in the eslint-typecheck-{svelte,typescript} checks to keep this check fast.
 func RunDesktopESLint(ctx *CheckContext) (CheckResult, error) {
 	dir := filepath.Join(ctx.RootDir, "apps", "desktop")
 

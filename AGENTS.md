@@ -127,7 +127,7 @@ Three cadences. Pick the one that matches where you are in the work, not the one
   you're committing won't break CI.
 - **`./scripts/check.sh --include-slow` — before wrapping a milestone, declaring a feature done, or pushing a branch
   you've been sitting on.** Adds the slow lane on top of the default suite: `desktop-e2e-linux`,
-  `desktop-e2e-playwright`, `rust-tests-linux`, `eslint-typecheck`. Allow ~20 min; this is the gate before "I'm done."
+  `desktop-e2e-playwright`, `rust-tests-linux`. Allow ~20 min; this is the gate before "I'm done."
 - **`oxfmt` must always run before you call a task done.** It's monorepo-wide (markdown, YAML, JSON, JS/TS across every
   app) and takes ~1 second, so there's no reason to skip it. It's registered under `AppOther`, which means `--rust` and
   `--svelte` do NOT include it. If you only ran those, CI will catch unformatted markdown / JSON / etc. that you missed.

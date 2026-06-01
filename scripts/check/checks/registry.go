@@ -219,16 +219,30 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   []string{"oxfmt"},
 		Run:         RunDesktopESLint,
 	},
+	// Type-aware ESLint is split into a Svelte pass and a TypeScript (non-Svelte)
+	// pass: linting both in one `eslint .` invocation hits a projectService cliff
+	// (~25x slower). Split, each is ~10-15s with identical coverage, so both are
+	// normal (non-slow) and run in parallel with each other and the fast
+	// `desktop-svelte-eslint`. See docs/notes/check-cpu-contention.md.
 	{
-		ID:          "desktop-svelte-eslint-typecheck",
+		ID:          "desktop-svelte-eslint-typecheck-svelte",
 		CpuWeight:   2,
-		Nickname:    "eslint-typecheck",
-		DisplayName: "eslint (type-aware)",
+		Nickname:    "eslint-typecheck-svelte",
+		DisplayName: "eslint-typecheck (svelte)",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		IsSlow:      true,
-		DependsOn:   []string{"desktop-svelte-eslint"},
-		Run:         RunDesktopESLintTypecheck,
+		DependsOn:   []string{"oxfmt"},
+		Run:         RunDesktopESLintTypecheckSvelte,
+	},
+	{
+		ID:          "desktop-svelte-eslint-typecheck-typescript",
+		CpuWeight:   2,
+		Nickname:    "eslint-typecheck-ts",
+		DisplayName: "eslint-typecheck (typescript)",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   []string{"oxfmt"},
+		Run:         RunDesktopESLintTypecheckTypescript,
 	},
 	{
 		ID:          "desktop-svelte-stylelint",

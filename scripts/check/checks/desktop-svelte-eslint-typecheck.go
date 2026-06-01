@@ -7,16 +7,44 @@ import (
 	"strings"
 )
 
-// RunDesktopESLintTypecheck runs the full ESLint config (all rules including type-aware).
-// This is the slow counterpart to RunDesktopESLint (which skips type-aware rules).
-// Running all rules here also catches stale eslint-disable comments that the fast
-// check can't detect (since it suppresses reportUnusedDisableDirectives).
-func RunDesktopESLintTypecheck(ctx *CheckContext) (CheckResult, error) {
+// The full (type-aware) ESLint config is split into TWO passes — one over
+// `.svelte` files, one over everything else (TS + JS/config) — because linting
+// `.svelte` and `.ts` together in a single `eslint .` invocation hits a
+// typescript-eslint projectService cliff: interleaving svelte-eslint-parser
+// virtual files with `.ts` files thrashes the TS program and runs ~25x slower
+// (~616s combined vs ~15s + ~10s split). Both passes use the SAME config,
+// rules, and tsconfig-built projectService, so coverage is identical — each
+// resolves cross-file types fully (verified with planted cross-file
+// `no-floating-promises` violations). Run as two parallel checks, this keeps
+// type-aware linting in the default (non-slow) suite. See
+// docs/notes/check-cpu-contention.md.
+//
+// Running all rules here (vs the non-type-aware `desktop-svelte-eslint`) also
+// catches stale eslint-disable comments that the fast check can't detect (it
+// suppresses reportUnusedDisableDirectives).
+
+// RunDesktopESLintTypecheckSvelte runs the full type-aware ESLint config over
+// the `.svelte` files only.
+func RunDesktopESLintTypecheckSvelte(ctx *CheckContext) (CheckResult, error) {
+	return runScopedESLintTypecheck(ctx, "Svelte", []string{"**/*.svelte"}, []string{"*.svelte"})
+}
+
+// RunDesktopESLintTypecheckTypescript runs the full type-aware ESLint config
+// over everything EXCEPT `.svelte` (TS, plus the handful of JS/config files
+// `eslint .` lints). Together with the Svelte pass this is an exact partition
+// of `eslint .`'s file set, so nothing drops out of coverage.
+func RunDesktopESLintTypecheckTypescript(ctx *CheckContext) (CheckResult, error) {
+	return runScopedESLintTypecheck(ctx, "TypeScript", []string{".", "--ignore-pattern", "**/*.svelte"}, []string{"*.ts"})
+}
+
+// runScopedESLintTypecheck runs `eslint <scopeArgs>` with the full config
+// (no ESLINT_NO_TYPECHECK), auto-fixing locally and check-only in CI.
+// countExts feeds an approximate src file count for the success message.
+func runScopedESLintTypecheck(ctx *CheckContext, label string, scopeArgs, countExts []string) (CheckResult, error) {
 	dir := filepath.Join(ctx.RootDir, "apps", "desktop")
 
-	// Count lintable files
-	findArgs := buildFindArgs("src", []string{"*.ts", "*.svelte", "*.js"})
-	findCmd := exec.Command("find", findArgs...)
+	// Approximate file count for the success message (src only; informational).
+	findCmd := exec.Command("find", buildFindArgs("src", countExts)...)
 	findCmd.Dir = dir
 	findOutput, _ := RunCommand(findCmd, true)
 	fileCount := 0
@@ -24,27 +52,25 @@ func RunDesktopESLintTypecheck(ctx *CheckContext) (CheckResult, error) {
 		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
 	}
 
-	var cmd *exec.Cmd
-	if ctx.CI {
-		cmd = exec.Command("pnpm", "lint")
-	} else {
-		cmd = exec.Command("pnpm", "lint:fix")
+	args := append([]string{"exec", "eslint"}, scopeArgs...)
+	if !ctx.CI {
+		args = append(args, "--fix")
 	}
+	cmd := exec.Command("pnpm", args...)
 	cmd.Dir = dir
-	// No env var override: runs the full config with all rules + projectService.
 
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		if ctx.CI {
-			return CheckResult{}, fmt.Errorf("type-aware lint errors found, run pnpm lint:fix locally\n%s", indentOutput(output))
+			return CheckResult{}, fmt.Errorf("type-aware lint errors (%s), run pnpm lint:fix locally\n%s", label, indentOutput(output))
 		}
-		return CheckResult{}, fmt.Errorf("eslint found unfixable errors\n%s", indentOutput(output))
+		return CheckResult{}, fmt.Errorf("eslint found unfixable errors (%s)\n%s", label, indentOutput(output))
 	}
 
 	if fileCount > 0 {
-		result := Success(fmt.Sprintf("%d %s passed", fileCount, Pluralize(fileCount, "file", "files")))
+		result := Success(fmt.Sprintf("%d %s %s passed", fileCount, label, Pluralize(fileCount, "file", "files")))
 		result.Total = fileCount
 		return result, nil
 	}
-	return Success("All files passed"), nil
+	return Success(fmt.Sprintf("%s files passed", label)), nil
 }

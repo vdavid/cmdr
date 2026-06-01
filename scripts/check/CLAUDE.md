@@ -121,8 +121,8 @@ counted as failed. Dependencies not in the selected run set are treated as satis
 `sum(running CpuWeight) + weight ≤ NumCPU` (`runner.go`). A check first clears its dependencies (`canStart`), then the
 weight gate; if deps are ready but the budget is full it stays `Pending` and retries once a running check frees its
 weight. The `usedWeight == 0` clause lets an over-budget check run alone rather than deadlock. This keeps two CPU-heavy
-checks (e.g. `svelte-tests` w11 + `clippy`-cold w8) from piling up and oversubscribing the machine, while light/long
-checks (`eslint-typecheck` w2, the Docker checks) overlap freely. See the Key decision below and
+checks (e.g. `svelte-tests` w11 + `clippy`-cold w8) from piling up and oversubscribing the machine, while light checks
+(the `eslint-typecheck-{svelte,typescript}` passes w2, the Docker checks) overlap freely. See the Key decision below and
 `docs/notes/check-cpu-contention.md`.
 
 **Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`,
@@ -192,11 +192,12 @@ concurrent checks, but a single check (vitest, a cold cargo compile) can itself 
 CPU-heavy checks all launched at once and oversubscribed the machine 2-3×, which starved timing-sensitive checks — the
 E2E modal/popover timeouts and the 8s-cap `file_viewer` test flaked under `--include-slow` for exactly this reason. Each
 check now carries a `CpuWeight` (avg busy cores, Docker-VM-aware) and the runner only starts a check when the running
-weights fit the core budget. Wall-clock stays bounded by the critical path (`eslint-typecheck`, which is long but ~1
-core, under `--include-slow`; cold `clippy` for the default suite) while peak oversubscription drops to ~1×. Weights
-were measured by an isolation sweep (`docs/notes/check-cpu-contention.md`); unmeasured/fast checks default to 1. The key
-insight from the sweep: the longest checks (`eslint-typecheck`, `e2e-linux`, `rust-tests-linux`) are NOT the heaviest —
-they idle ~1 core or run entirely in the Docker VM, so they make ideal backbone fillers for the CPU-heavy short checks.
+weights fit the core budget. Wall-clock stays bounded by the critical path (the Docker E2E checks under
+`--include-slow`; cold `clippy` for the default suite) while peak oversubscription drops to ~1×. Weights were measured
+by an isolation sweep (`docs/notes/check-cpu-contention.md`); unmeasured/fast checks default to 1. The key insight from
+the sweep: the longest checks (`e2e-linux`, `rust-tests-linux`) are NOT the heaviest — they idle ~1 core or run entirely
+in the Docker VM, so they make ideal backbone fillers for the CPU-heavy short checks. (The sweep's original long pole,
+`eslint-typecheck` at ~15 min, turned out to be a projectService batching cliff and was split into two ~15 s passes.)
 
 **Decision**: Go instead of Bash for the check script. **Why**: Cross-platform support (especially Windows), type-safe,
 better error handling, and ability to build complex logic (parallel checks, dependency graph, colored output). Go is
@@ -286,7 +287,7 @@ via `[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
 
 ## Gotchas
 
-**`--only-slow` needs ~20 min timeout.** Slow checks (E2E tests, eslint-typecheck) take significantly longer than the
+**`--only-slow` needs ~20 min timeout.** Slow checks (E2E tests, `rust-tests-linux`) take significantly longer than the
 default checks. When running `--only-slow` via an agent or CI, set the timeout to at least 20 minutes (1,200,000 ms).
 
 **Never run two `./scripts/check.sh` invocations concurrently if either touches SMB.** The `SmbOrchestrator` is scoped

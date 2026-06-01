@@ -5,6 +5,13 @@ firing up to `NumCPU` checks at once, each itself multi-threaded, so the short C
 other and oversubscribed the machine 2-3×. This note records the per-check CPU measurement that calibrated
 `CheckDefinition.CpuWeight` and the weighted admission gate in `runner.go`.
 
+> **Outcome — `eslint-typecheck` (the headline finding) was a bug, not a cost.** The sweep flagged `eslint-typecheck` as
+> the dominant cost (~871 s, ~1 core, the `--include-slow` floor). Follow-up showed that was a typescript-eslint
+> projectService cliff: linting `.svelte` and `.ts` in one `eslint .` pass runs ~25× slower than two separate passes
+> (~616 s vs ~15 s + ~10 s, same config/coverage — verified with planted cross-file violations). It's now split into the
+> normal (non-slow) `eslint-typecheck-svelte` + `eslint-typecheck-typescript` checks that run in parallel (~15 s wall).
+> The sweep data below is the snapshot that motivated both the weighted scheduler and that split.
+
 ## Methodology
 
 Each non-fast check run in isolation (`./scripts/check.sh --check <id>`), 16-core macOS, two metrics:
@@ -59,19 +66,19 @@ So they make ideal **backbone fillers**: occupy wall-clock cheaply while the sho
 
 `CpuWeight` ≈ the check's working-profile average busy cores, rounded, Docker-VM-aware:
 
-| weight | checks                                                                                                   |
-| -----: | -------------------------------------------------------------------------------------------------------- |
-|     11 | svelte-tests                                                                                             |
-|      8 | clippy, cargo-udeps, bindings-fresh, integration-tests                                                   |
-|      7 | nilaway                                                                                                  |
-|      6 | rust-tests, rust-tests-linux, website-e2e                                                                |
-|      4 | deadcode, e2e-linux, e2e-playwright                                                                      |
-|      3 | govulncheck                                                                                              |
-|      2 | jscpd, svelte-eslint, eslint-typecheck, svelte-check, website-{typecheck,build,docker-build}, api-eslint |
-|      1 | cargo-audit, cargo-deny, website-eslint, everything unset (fast formatters/scanners)                     |
+| weight | checks                                                                                                                       |
+| -----: | ---------------------------------------------------------------------------------------------------------------------------- |
+|     11 | svelte-tests                                                                                                                 |
+|      8 | clippy, cargo-udeps, bindings-fresh, integration-tests                                                                       |
+|      7 | nilaway                                                                                                                      |
+|      6 | rust-tests, rust-tests-linux, website-e2e                                                                                    |
+|      4 | deadcode, e2e-linux, e2e-playwright                                                                                          |
+|      3 | govulncheck                                                                                                                  |
+|      2 | jscpd, svelte-eslint, eslint-typecheck-{svelte,typescript}, svelte-check, website-{typecheck,build,docker-build}, api-eslint |
+|      1 | cargo-audit, cargo-deny, website-eslint, everything unset (fast formatters/scanners)                                         |
 
 The runner admits a check only when `sum(running weights) + weight ≤ NumCPU` (a weight-0/unset check counts as 1; an
-over-budget check runs alone). Net effect: wall-clock stays bounded by the critical path (`eslint-typecheck` under
+over-budget check runs alone). Net effect: wall-clock stays bounded by the critical path (the Docker E2E checks under
 `--include-slow`, `clippy`-cold for the default suite) while peak oversubscription drops from ~2-3× to ~1×.
 Fast/unmeasured checks default to 1 and can be recalibrated later if the fast lane ever shows contention.
 
