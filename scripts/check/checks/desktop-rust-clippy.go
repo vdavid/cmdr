@@ -20,9 +20,14 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("failed to prepare llama-server binaries\n%s", indentOutput(output))
 	}
 
-	// Touch lib.rs to force clippy to re-lint (otherwise cached builds skip linting)
-	libPath := filepath.Join(rustDir, "src", "lib.rs")
-	_ = exec.Command("touch", libPath).Run()
+	// No source touch here: clippy runs incrementally. With `-D warnings`, a
+	// warning becomes a compile error, so a warning-laden build FAILS and cargo
+	// does NOT cache it — it's re-surfaced on every run until fixed (verified:
+	// warm re-runs of a warning all caught it). Touching lib.rs to force a
+	// re-lint of unchanged-clean code only wasted ~22s rebuilding `cmdr_lib`
+	// here AND, because the touch bumped a shared source mtime, forced the same
+	// rebuild in rust-tests / bindings-fresh / integration (they share
+	// `target/`). See docs/notes/check-cpu-contention.md.
 
 	// Run the enforcing check first. On the happy path (no warnings) this is
 	// the only build pass we do. --fix is reserved for the failure branch
@@ -41,6 +46,12 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 		fixCmd.Dir = rustDir
 		_, _ = RunCommand(fixCmd, true)
 
+		// Force a re-lint for the re-check below: `--fix` runs without `-D`, so it
+		// succeeds even with unfixable warnings and caches a clean-with-warnings
+		// build; without this touch the `-D` re-check could reuse it and miss
+		// them. Only reached locally on an already-failing clippy, so it never
+		// touches the warm-path cache the other Rust checks share.
+		libPath := filepath.Join(rustDir, "src", "lib.rs")
 		_ = exec.Command("touch", libPath).Run()
 		cmd = exec.Command("cargo", "clippy", "--all-targets", "--", "-D", "warnings")
 		cmd.Dir = rustDir

@@ -82,4 +82,26 @@ over-budget check runs alone). Net effect: wall-clock stays bounded by the criti
 `--include-slow`, `clippy`-cold for the default suite) while peak oversubscription drops from ~2-3× to ~1×.
 Fast/unmeasured checks default to 1 and can be recalibrated later if the fast lane ever shows contention.
 
+## Rust group: build-caching findings
+
+The four heavy normal-suite Rust checks (clippy, bindings-fresh, rust-tests, rust-integration-tests) share one
+`target/`, so cache invalidation in one shows up as a rebuild in the others. Findings from a warm-tree measurement
+(`cargo nextest run --no-run` = build-only):
+
+- **clippy used to `touch src/lib.rs` every run** to force a re-lint. That mtime bump invalidated `cmdr_lib` for the
+  next debug cargo invocation: a warm test build is ~1-2 s, but **24 s right after the touch** (recompiles `cmdr` + the
+  test binary). So `rust-tests`, `bindings-fresh`, and `integration` each ate a ~22 s spurious rebuild, and clippy paid
+  it too. **Removed the touch** — with `-D warnings` a lint becomes a compile error, so warnings fail the build (not
+  cached) and are re-surfaced on every run until fixed (verified: warm re-runs of an injected `needless_return` all
+  caught it; clean stays clean). clippy dropped ~32 s → ~1-2 s warm, and the others stopped rebuilding. The `--fix`
+  failure branch keeps its touch (different transition — `--fix` succeeds with unfixable warnings; only runs locally on
+  an already-failing clippy, so it never poisons the shared warm cache).
+- **`integration-tests` builds in `--release`** — a separate profile from `rust-tests`' debug, so they share no
+  artifacts and integration always pays a full release compile. Open question: if the SMB tests don't truly need `-O`,
+  switching to debug would let them reuse the test build. Left as-is pending a check that the timing-sensitive SMB tests
+  still pass in debug.
+- **`bindings-fresh` is content-hash cached** (not mtime) and runs the bindings export test in **debug** — the same
+  build as `rust-tests`, so they share artifacts. On a warm tree with no `src-tauri` change it should return `<100 ms`
+  ("cached"); a non-cached run means the marker in `target/` didn't persist (e.g. a `cargo clean`).
+
 Render the graph with weights + lanes: `./scripts/check.sh --graph` (also `--graph-format mermaid|dot`).
