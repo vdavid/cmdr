@@ -53,6 +53,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		"smb-consumer-readonly",
 		"smb-consumer-flaky",
 		"smb-consumer-slow",
+		"smb-consumer-50shares",
 	}
 	if err := waitForSmbContainers(expected, 120*time.Second); err != nil {
 		return CheckResult{}, err

@@ -41,7 +41,7 @@ case "$mode" in
         echo "Starting core SMB servers (auth scenarios + edge cases)..."
         services=(smb-consumer-guest smb-consumer-auth smb-consumer-both \
                   smb-consumer-readonly smb-consumer-flaky smb-consumer-slow \
-                  smb-consumer-maxreadsize)
+                  smb-consumer-maxreadsize smb-consumer-50shares)
         ;;
     all)
         echo "Starting all SMB servers (15 containers)..."
