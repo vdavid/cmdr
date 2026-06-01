@@ -20,8 +20,24 @@ minimumReleaseAge: 20160
 
 # Refuse to install a package whose trust level has dropped since the last
 # successful resolve (publisher loses verified status, package transferred to
-# an unknown owner). Default is `off`. The cost is an occasional manual
-# approval; the win is mitigation against the publisher-takeover class.
+# an unknown owner). Default is `off`. The win is mitigation against the
+# publisher-takeover class; the cost is a manual approval whenever a `pnpm add`
+# or update re-resolves the tree and hits a transitive dep that lost provenance.
+#
+# How to approve a downgrade you've vetted (this WILL fire on `pnpm add` — e.g.
+# we've hit chokidar@4.0.3 and semver@5.7.2, both mainstream deps whose old
+# versions simply predate npm's provenance rollout, not takeovers):
+#   1. Vet it. Open the package on npmjs.com; confirm same maintainer + repo and
+#      that the flagged version merely lacks a provenance attestation (uneven
+#      rollout), rather than a real ownership transfer.
+#   2. One-off, for a single `pnpm add`: re-run with `--trust-policy-exclude <pkg>`
+#      (repeatable, scoped to that command, nothing persists), e.g.
+#        pnpm add -D <new-dep> --trust-policy-exclude chokidar --trust-policy-exclude semver
+#   3. Persistent, for a transitive dep that trips on EVERY add: add a selector
+#      to `trustPolicyExclude` (e.g. `chokidar@4.0.3`), or set
+#      `trustPolicyIgnoreAfter: <minutes>` to auto-trust downgrades on versions
+#      published longer ago than that (still flags fresh-takeover downgrades).
+#      We set neither today — approvals stay explicit per-add on purpose.
 trustPolicy: no-downgrade
 
 # Explicit even though pnpm 11 defaults to true: only direct dependencies may
