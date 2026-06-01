@@ -61,6 +61,11 @@ func collectModes(defs []checks.CheckDefinition) []checks.SmbMode {
 func (o *SmbOrchestrator) EnsureStarted(modes []checks.SmbMode) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
+	// Pin cmdr's SMB stack to its dedicated 11480+ host ports before bringing it
+	// up, so it never collides with smb2's own harness (10480+). Set in this
+	// process so start.sh/compose and every SMB-using check inherit it. See
+	// checks/smb_ports.go.
+	checks.ApplySmbPortEnv()
 	for _, mode := range modes {
 		if mode == checks.SmbModeNone || o.startedModes[mode] {
 			continue

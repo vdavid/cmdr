@@ -229,6 +229,18 @@ runner; under check.sh their start.sh invocation just sees the orchestrator's co
 idempotent. The SIGINT handler in `main.go` captures the orchestrator via shared variable so a Ctrl+C also triggers
 `./stop.sh` with a banner before exiting 130.
 
+**Decision**: cmdr's SMB stack binds a dedicated host-port range (11480+), not smb2's default (10480+). **Why**: cmdr
+runs a _vendored copy_ of smb2's `consumer` compose under its own project name (`smb-consumer`), while smb2's own test
+harness runs the same compose under project `consumer` on 10480+. Same ports + different project = mutually exclusive: a
+stack leaked by an interrupted smb2 run (its `Drop` teardown doesn't fire on SIGKILL) squats 10480+ and blocks every
+cmdr `check.sh` with `port is already allocated`, cascading until manually cleaned. The orchestrator now calls
+`checks.ApplySmbPortEnv()` (`checks/smb_ports.go`) before bring-up, shifting cmdr to 11480+ via smb2's existing
+per-service env override. It flows by process-env inheritance — `docker compose up` (start.sh), the Rust integration
+tests (`guest_port()` reads `SMB_CONSUMER_*_PORT`), and the macOS E2E app (`SMB_E2E_*_PORT`) all pick it up; the Linux
+Docker E2E is unaffected (it talks to containers over the Docker network on internal `:445`, set explicitly in its
+`docker run -e`). Net: cmdr and smb2's harnesses coexist, and smb2's defaults/`guest_port()` contract stay untouched so
+every other smb2 consumer is unaffected.
+
 **Decision**: `IsFast` field on `CheckDefinition` and a curated `--fast` pre-commit lane. **Why**: A pre-commit run
 should finish in ~10s so it actually gets used. The list is editorially curated, not derived from CSV timings: warm
 average is what matters, but cold-cache outliers (`cargo-audit` spiking to ~3 min on advisory DB refresh) would silently
