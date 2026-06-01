@@ -13,9 +13,11 @@ pub use super::smb_types::{AuthMode, ShareListError, ShareListResult};
 // Internal imports
 use super::smb_cache::{DEFAULT_CACHE_TTL_MS, DEFAULT_LIST_SHARES_TIMEOUT_MS, cache_shares, get_cached_shares};
 use super::smb_connection::{try_list_shares_as_guest, try_list_shares_authenticated};
-use super::smb_smbutil::{
-    list_shares_smbutil, list_shares_smbutil_authenticated_from_keychain, list_shares_smbutil_with_auth,
-};
+use super::smb_smbutil::{list_shares_smbutil, list_shares_smbutil_authenticated_from_keychain};
+// macOS no longer shells out with explicit credentials (the URL-embedded password leaks into
+// argv); only the non-macOS authed fallback (smbclient `-A` authfile) still uses this.
+#[cfg(not(target_os = "macos"))]
+use super::smb_smbutil::list_shares_smbutil_with_auth;
 use super::smb_util::{classify_error, convert_shares, is_auth_error};
 
 /// Lists shares on a network host.
@@ -145,19 +147,46 @@ async fn list_shares_smb2(
                         debug!("Authenticated access succeeded, got {} shares", shares.len());
                         (shares, AuthMode::CredsRequired)
                     }
-                    Ok(Ok(_)) | Ok(Err(_)) => {
-                        // smb2 returned 0 shares or failed - fall back to smbutil with auth
-                        debug!("smb2 auth returned empty or failed, trying smbutil with credentials");
-                        return match list_shares_smbutil_with_auth(hostname, ip_address, port, user, pass).await {
-                            Ok(result) => {
-                                debug!("smbutil with auth succeeded, got {} shares", result.shares.len());
-                                Ok(result)
-                            }
-                            Err(e) => {
-                                debug!("smbutil with auth also failed: {:?}", e);
-                                Err(e)
-                            }
-                        };
+                    Ok(inner) => {
+                        // smb2 returned 0 shares or failed with creds.
+                        //
+                        // Linux: fall back to `smbclient -L -A <authfile>`. The password
+                        // rides in a 0o600 temp file, never argv, so the fallback is safe.
+                        //
+                        // macOS: there's NO argv-free way to pass an explicit password to
+                        // `smbutil view` (the URL is the only channel, which leaks the
+                        // cleartext password into `ps`-readable argv). We don't shell out
+                        // with credentials here. Surface the underlying smb2 failure instead;
+                        // the user can still mount via the secure NetFS path.
+                        #[cfg(target_os = "macos")]
+                        {
+                            let _ = &user; // keep bindings used across cfgs
+                            let _ = &pass;
+                            return match inner {
+                                Ok(_) => Err(ShareListError::AuthFailed {
+                                    message: "Invalid username or password".to_string(),
+                                }),
+                                Err(e) => {
+                                    debug!("smb2 authenticated list failed: {}", e);
+                                    Err(classify_error(&e))
+                                }
+                            };
+                        }
+                        #[cfg(not(target_os = "macos"))]
+                        {
+                            let _ = inner;
+                            debug!("smb2 auth returned empty or failed, trying smbclient with credentials");
+                            return match list_shares_smbutil_with_auth(hostname, ip_address, port, user, pass).await {
+                                Ok(result) => {
+                                    debug!("smbclient with auth succeeded, got {} shares", result.shares.len());
+                                    Ok(result)
+                                }
+                                Err(e) => {
+                                    debug!("smbclient with auth also failed: {:?}", e);
+                                    Err(e)
+                                }
+                            };
+                        }
                     }
                     Err(_timeout) => {
                         return Err(ShareListError::Timeout {
@@ -197,4 +226,67 @@ async fn list_shares_smb2(
         auth_mode,
         from_cache: false,
     })
+}
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+
+    /// Regression test for the srvsvc fragment-reassembly bug fixed in smb2 0.11.3.
+    ///
+    /// Older Samba / NAS firmware splits a `NetShareEnum` reply across multiple
+    /// DCE/RPC fragments when there are many shares (or long comments). smb2 ≤ 0.11.2
+    /// treated the resulting `STATUS_BUFFER_OVERFLOW` as fatal and returned a
+    /// `ProtocolError`, which sent Cmdr down the macOS smbutil fallback (the leaky
+    /// authed path we've since removed). 0.11.3 reassembles the fragments and follows
+    /// the overflow, so the full share list comes back over the pure-Rust path.
+    ///
+    /// The `smb-consumer-50shares` container serves exactly 50 guest-accessible disk
+    /// shares (`share_01`..`share_50`), enough to fragment the reply on a default Samba
+    /// buffer. We go through Cmdr's own `list_shares` entry point (not smb2's API) so a
+    /// regression in the fallback wiring or the smb2 pin would surface here, proving the
+    /// user-facing symptom is gone end to end.
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_many_shares_enumerate_via_smb2() {
+        // Read the port straight from the env (default matches smb2's
+        // `DEFAULT_50SHARES_PORT`) rather than `smb2::testing::many_shares_port()`,
+        // so this test compiles without the `smb-e2e` feature — the same convention
+        // the other `smb_integration_*` tests follow.
+        let port: u16 = std::env::var("SMB_CONSUMER_50SHARES_PORT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10483);
+        // Use `localhost` rather than `127.0.0.1`: the SMB test harness uses `localhost`
+        // to dodge the macOS smbutil/NetFS loopback quirk on non-standard ports.
+        let host = "localhost";
+
+        let result = list_shares(
+            "smb-integration-50shares",
+            host,
+            None,
+            port,
+            None,    // guest
+            None,    // default timeout
+            Some(0), // no caching: force a live round-trip
+        )
+        .await
+        .expect("listing 50 shares as guest should succeed via smb2");
+
+        assert_eq!(
+            result.shares.len(),
+            50,
+            "expected all 50 shares from the fragmented srvsvc reply, got {}: {:?}",
+            result.shares.len(),
+            result.shares.iter().map(|s| &s.name).collect::<Vec<_>>()
+        );
+        assert!(
+            result.shares.iter().any(|s| s.name == "share_01"),
+            "expected share_01 in the enumerated set"
+        );
+        assert!(
+            result.shares.iter().any(|s| s.name == "share_50"),
+            "expected share_50 (last fragment) in the enumerated set"
+        );
+    }
 }

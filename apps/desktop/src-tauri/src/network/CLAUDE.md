@@ -89,6 +89,26 @@ crate, a single dependency replacing the old `smb` + `smb-rpc` pair. `smb2::list
 shares with clean `String` fields (no NDR parsing needed). Fallback to `smbutil`/`smbclient` is available for older
 Samba servers where smb2's RPC fails.
 
+### Fix share-enumeration gaps in `smb2`, not via native macOS SMB SPI
+
+The dominant trigger for the smbutil/smbclient fallback was an `smb2` bug: it failed to reassemble a `NetShareEnum`
+srvsvc reply that a server split across multiple DCE/RPC fragments (older Samba / NAS firmware with many shares or long
+comments returned `STATUS_BUFFER_OVERFLOW`, which smb2 treated as fatal). `smb2 0.11.3` fixes this (fragment reassembly
++ `STATUS_BUFFER_OVERFLOW` follow), so those servers now enumerate over the pure-Rust path and never reach the fallback.
+The end-to-end regression test is `smb_client.rs::integration_tests::smb_integration_many_shares_enumerate_via_smb2`
+(lists 50 guest shares through Cmdr's own `list_shares` entry point).
+
+We considered a native macOS SMB-enumeration API to drop the smbutil shell-out entirely, and rejected it. The auth half
+exists only as **private SPI** (`SMBClient.framework`'s `SMBOpenServerEx`, no public headers), and the enumeration half
+(`NetShareEnum` srvsvc + `RapNetShareEnum` legacy RAP — the exact path old servers need) is **not a framework API at
+all**: it lives inside the `/usr/bin/smbutil` binary, so we'd link a fragile private framework for auth and still
+reimplement enumeration ourselves. Since smb2 already owns that domain (in supported, cross-platform Rust), fixing the
+root cause there is the cleaner path. Full evidence (disassembly, SDK header grep, in-memory-auth probe against the
+Docker containers, effort estimate): [`docs/notes/spike-native-smb-share-enumeration.md`](../../../../../docs/notes/spike-native-smb-share-enumeration.md).
+
+Landing the smb2 fix also let us **drop the leaky macOS authed-smbutil path** (the `//user:password@host` URL leaked the
+cleartext password into `ps`-readable argv). See the "smbutil / smbclient fallback" credential-channel note below.
+
 ### Always use IP when available
 
 smb2 uses the addr host component in UNC paths (`\\server\IPC$`). When hostname has a `.local` suffix, strip it
@@ -105,21 +125,24 @@ available. If IP unavailable, use derived hostname with `.local` stripped.
 ### smbutil / smbclient fallback
 
 `smb2` crate may fail on older Samba servers with RPC incompatibility. Classify error as `ProtocolError`, then try a platform-specific CLI fallback:
-- **macOS:** `smbutil view -G` (built-in).
-- **Linux:** `smbclient -L` (from `samba-client` package). If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
+- **macOS:** `smbutil view -G -N` (guest) or `smbutil view -N` (Keychain-backed; smbutil reads the system Keychain itself). **No authenticated smbutil fallback** — see the credential-channel note below.
+- **Linux:** `smbclient -L` (from `samba-client` package), guest or authenticated. If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
 - **Other platforms:** stubs return `ProtocolError`.
+
+When smb2's authenticated listing returns empty or errors, the fallback diverges by platform (`smb_client.rs::list_shares_smb2`): **Linux** retries via `smbclient -A` (safe authfile); **macOS** surfaces the underlying smb2 failure (classified via `classify_error`, or `AuthFailed` on an empty result) so the user gets a real error and can still mount through the secure NetFS path.
 
 **Credential channel (keeping the password out of argv):** `smbclient` gets credentials via a 0o600 temp
 authentication file passed as `-A <file>` (`smb_smbclient.rs::write_smbclient_auth_file`), never `-U user%pass`, so the
-password never lands in the world-readable process argument list (`ps aux` / `/proc/<pid>/cmdline`). The temp file is a
-`NamedTempFile` created inside the blocking task and dropped (unlinked) the moment the call returns, success or error.
+password never lands in the world-readable process argument list (`ps aux` / `/proc/<pid>/cmdline`). The temp file is
+created inside the blocking task and dropped (unlinked) the moment the call returns, success or error.
+
 `smbutil` has **no argv-free channel** for an explicit password: `smbutil view` only accepts the password embedded in the
 `//user:password@host` URL (per `man smbutil`), `nsmb.conf`/`~/.nsmbrc` has no password keyword (per `man nsmb.conf`),
 there's no password env var, and the interactive prompt (omit `-N`) reads via `getpass()`/`/dev/tty` which a TTY-less
-spawned child can't feed reliably. So smbutil's authenticated fallback keeps the password in argv — a documented residual
-exposure (see the `// SECURITY:` comment at the `cmd.arg(&url_owned)` site in `smb_smbutil.rs`). The window is brief and
-only this rare fallback (older Samba servers where smb2's RPC fails) is affected; the primary macOS mount path
-(`NetFSMountURLSync`) and smb2 share enumeration never expose the password.
+spawned child can't feed reliably. So Cmdr **never shells out to smbutil with an explicit password**: `build_smbutil_url`
+only ever builds passwordless `//host` / `//host:port` URLs, used by the guest (`-G -N`) and Keychain (`-N`) paths. The
+old URL-embedded-password leak is closed. The primary macOS mount path (`NetFSMountURLSync`) and smb2 share enumeration
+also never expose the password.
 
 ### No persistent connection pool
 

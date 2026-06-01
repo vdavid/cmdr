@@ -17,7 +17,7 @@ pub async fn list_shares_smbutil(
     ip_address: Option<&str>,
     port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    let (url, _) = build_smbutil_url(hostname, ip_address, port, None);
+    let url = build_smbutil_url(hostname, ip_address, port);
     debug!("Running smbutil view -G -N {}", url);
 
     let shares = run_smbutil_view(&url, true).await?;
@@ -39,7 +39,7 @@ pub async fn list_shares_smbutil_authenticated_from_keychain(
     ip_address: Option<&str>,
     port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    let (url, _) = build_smbutil_url(hostname, ip_address, port, None);
+    let url = build_smbutil_url(hostname, ip_address, port);
     debug!("Running smbutil view -N {} (using Keychain)", url);
 
     let shares = run_smbutil_view(&url, false).await.map_err(|e| {
@@ -94,37 +94,12 @@ pub async fn list_shares_smbutil_authenticated_from_keychain(
     })
 }
 
-/// Lists shares using macOS smbutil command WITH credentials.
-/// This is used when smb-rs authentication fails, but we have credentials.
-#[cfg(target_os = "macos")]
-pub async fn list_shares_smbutil_with_auth(
-    hostname: &str,
-    ip_address: Option<&str>,
-    port: u16,
-    username: &str,
-    password: &str,
-) -> Result<ShareListResult, ShareListError> {
-    let (url, safe_url) = build_smbutil_url(hostname, ip_address, port, Some((username, password)));
-    debug!("Running smbutil view -N {}", safe_url);
-
-    let shares = run_smbutil_view(&url, false).await.map_err(|e| {
-        // Convert auth errors to AuthFailed for explicit credential attempts
-        match e {
-            ShareListError::AuthRequired { .. } => ShareListError::AuthFailed {
-                message: "Invalid username or password".to_string(),
-            },
-            other => other,
-        }
-    })?;
-
-    debug!("smbutil with auth succeeded, got {} shares", shares.len());
-
-    Ok(ShareListResult {
-        shares,
-        auth_mode: AuthMode::CredsRequired,
-        from_cache: false,
-    })
-}
+// macOS has no `list_shares_smbutil_with_auth`: `smbutil view` has no argv-free channel for an
+// explicit password (the `//user:password@host` URL is the only one, and it leaks the cleartext
+// password into the `ps`-readable process argument list). So Cmdr never shells out to smbutil with
+// credentials; `smb_client.rs` surfaces the underlying smb2 failure on macOS instead. The guest
+// path (`list_shares_smbutil`) and the Keychain path (smbutil reads the system Keychain itself,
+// no password in argv) are kept. Linux's `smbclient -A` authfile fallback below stays argv-safe.
 
 /// Linux fallback: delegate to `smbclient -L` (guest access).
 #[cfg(target_os = "linux")]
@@ -195,15 +170,12 @@ pub async fn list_shares_smbutil_with_auth(
     })
 }
 
-/// Builds an SMB URL for smbutil commands.
-/// Returns (url_for_command, safe_url_for_logging).
+/// Builds a passwordless SMB URL for smbutil commands (guest or Keychain-backed).
+///
+/// Cmdr never embeds credentials in the smbutil URL: the cleartext password would land in the
+/// `ps`-readable argv. So this only ever builds `//host` / `//host:port`.
 #[cfg(target_os = "macos")]
-pub fn build_smbutil_url(
-    hostname: &str,
-    ip_address: Option<&str>,
-    port: u16,
-    credentials: Option<(&str, &str)>,
-) -> (String, String) {
+pub fn build_smbutil_url(hostname: &str, ip_address: Option<&str>, port: u16) -> String {
     // Prefer hostname over loopback IPs: macOS smbutil fails with //127.0.0.1:PORT
     // ("Broken pipe") but works with //localhost:PORT on non-standard ports.
     let host = match ip_address {
@@ -212,30 +184,10 @@ pub fn build_smbutil_url(
         None => hostname,
     };
 
-    match credentials {
-        Some((username, password)) => {
-            let encoded_username = urlencoding::encode(username);
-            let encoded_password = urlencoding::encode(password);
-            let url = if port == 445 {
-                format!("//{}:{}@{}", encoded_username, encoded_password, host)
-            } else {
-                format!("//{}:{}@{}:{}", encoded_username, encoded_password, host, port)
-            };
-            let safe_url = if port == 445 {
-                format!("//{}:***@{}", encoded_username, host)
-            } else {
-                format!("//{}:***@{}:{}", encoded_username, host, port)
-            };
-            (url, safe_url)
-        }
-        None => {
-            let url = if port == 445 {
-                format!("//{}", host)
-            } else {
-                format!("//{}:{}", host, port)
-            };
-            (url.clone(), url)
-        }
+    if port == 445 {
+        format!("//{}", host)
+    } else {
+        format!("//{}:{}", host, port)
     }
 }
 
@@ -286,17 +238,11 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
         if use_guest {
             cmd.arg("-G");
         }
-        // SECURITY: When `url_owned` carries credentials it has the shape
-        // `//user:password@host`, so the cleartext password rides in argv here and is
-        // readable by any local process via `ps aux` for the brief lifetime of the child.
-        // `smbutil view` has no argv-free channel for an explicit password: the URL is the
-        // only documented way to pass one (see `man smbutil`), `nsmb.conf`/`~/.nsmbrc` has no
-        // password keyword (see `man nsmb.conf`), there's no password env var, and the only
-        // alternative — omitting `-N` to make smbutil prompt — reads via `getpass()`/`/dev/tty`,
-        // which our TTY-less spawned child can't feed reliably. The Linux `smbclient` fallback
-        // (`smb_smbclient.rs`) avoids the leak with a 0o600 auth file (`-A`); smbutil has no
-        // equivalent. The primary macOS mount path (`NetFSMountURLSync`) also avoids argv (see
-        // `network/CLAUDE.md`); only this rare fallback for older Samba servers is exposed.
+        // `url_owned` is always passwordless (`//host` / `//host:port`): Cmdr never embeds
+        // credentials in the smbutil URL because the cleartext password would leak into the
+        // `ps`-readable argv, and `smbutil view` has no argv-free password channel. Authenticated
+        // share listing rides smb2 (and on Linux, smbclient's 0o600 `-A` authfile); guest and
+        // Keychain-backed listings both pass `-N` with no password. So nothing secret rides argv.
         cmd.arg(&url_owned).output()
     })
     .await
@@ -310,8 +256,8 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stdout = String::from_utf8_lossy(&output.stdout);
-        // smbutil runs with a credential-bearing `//user:pass@host` URL and can reflect it
-        // in stderr/stdout, so scrub both through the redactor before logging.
+        // The URL is passwordless now, but still scrub stderr/stdout through the redactor as
+        // defense in depth before logging (a server can echo back arbitrary text).
         debug!(
             "smbutil failed: exit={:?}, stderr={}, stdout={}",
             output.status.code(),
@@ -432,52 +378,48 @@ mod url_tests {
 
     #[test]
     fn build_smbutil_url_uses_ip_when_not_loopback() {
-        let (url, _) = build_smbutil_url("nas.local", Some("192.168.1.50"), 445, None);
+        let url = build_smbutil_url("nas.local", Some("192.168.1.50"), 445);
         assert_eq!(url, "//192.168.1.50");
     }
 
     #[test]
     fn build_smbutil_url_falls_back_to_hostname_for_127_0_0_1() {
-        let (url, _) = build_smbutil_url("localhost", Some("127.0.0.1"), 9445, None);
+        let url = build_smbutil_url("localhost", Some("127.0.0.1"), 9445);
         assert_eq!(url, "//localhost:9445");
     }
 
     #[test]
     fn build_smbutil_url_falls_back_to_hostname_for_ipv6_loopback() {
-        let (url, _) = build_smbutil_url("localhost", Some("::1"), 9445, None);
+        let url = build_smbutil_url("localhost", Some("::1"), 9445);
         assert_eq!(url, "//localhost:9445");
     }
 
     #[test]
     fn build_smbutil_url_uses_hostname_when_no_ip() {
-        let (url, _) = build_smbutil_url("mynas.local", None, 445, None);
+        let url = build_smbutil_url("mynas.local", None, 445);
         assert_eq!(url, "//mynas.local");
     }
 
     #[test]
     fn build_smbutil_url_omits_port_for_445() {
-        let (url, _) = build_smbutil_url("nas.local", Some("10.0.0.5"), 445, None);
+        let url = build_smbutil_url("nas.local", Some("10.0.0.5"), 445);
         assert_eq!(url, "//10.0.0.5");
     }
 
     #[test]
     fn build_smbutil_url_includes_non_standard_port() {
-        let (url, _) = build_smbutil_url("nas.local", Some("10.0.0.5"), 9445, None);
+        let url = build_smbutil_url("nas.local", Some("10.0.0.5"), 9445);
         assert_eq!(url, "//10.0.0.5:9445");
     }
 
+    /// The URL builder no longer accepts credentials: Cmdr never embeds a password in the
+    /// smbutil URL (it would leak into argv). This test pins that the built URL stays
+    /// passwordless regardless of host/port shape.
     #[test]
-    fn build_smbutil_url_with_credentials_and_loopback() {
-        let (url, safe) = build_smbutil_url("localhost", Some("127.0.0.1"), 9446, Some(("testuser", "testpass")));
-        assert_eq!(url, "//testuser:testpass@localhost:9446");
-        assert_eq!(safe, "//testuser:***@localhost:9446");
-    }
-
-    #[test]
-    fn build_smbutil_url_with_credentials_standard_port() {
-        let (url, safe) = build_smbutil_url("nas.local", Some("10.0.0.5"), 445, Some(("admin", "s3cret")));
-        assert_eq!(url, "//admin:s3cret@10.0.0.5");
-        assert_eq!(safe, "//admin:***@10.0.0.5");
+    fn build_smbutil_url_never_carries_credentials() {
+        let url = build_smbutil_url("nas.local", Some("10.0.0.5"), 9446);
+        assert!(!url.contains('@'), "smbutil URL must never embed credentials: {url}");
+        assert_eq!(url, "//10.0.0.5:9446");
     }
 }
 
