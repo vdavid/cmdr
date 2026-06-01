@@ -101,90 +101,105 @@ func scanForLockPoison(rootDir, srcDir string) ([]lockPoisonSite, int, error) {
 			relPath = path
 		}
 
-		f, openErr := os.Open(path)
-		if openErr != nil {
-			return openErr
+		fileViolations, scanErr := scanRustFileForLockPoison(path, relPath)
+		if scanErr != nil {
+			return scanErr
 		}
-		defer f.Close()
-
-		scanner := bufio.NewScanner(f)
-		scanner.Buffer(make([]byte, 64*1024), 1024*1024)
-		var prev string
-		lineNum := 0
-
-		// Track entry into an in-file `#[cfg(test)]` mod and skip its body.
-		// Unlike error-string-match (which scans in-file test mods to flag
-		// stringly-typed assertions), test code may freely use bare
-		// `.lock().unwrap()`: a poisoned lock in a test means the test already
-		// panicked, so aborting there is harmless. We detect a `#[cfg(test)]`
-		// attribute, arm on the next `mod ... {`, then skip until brace depth
-		// returns to the level where the mod opened.
-		inTestMod := false
-		testModDepth := 0
-		pendingCfgTest := false
-
-		for scanner.Scan() {
-			lineNum++
-			line := scanner.Text()
-
-			if inTestMod {
-				testModDepth += strings.Count(line, "{") - strings.Count(line, "}")
-				if testModDepth <= 0 {
-					inTestMod = false
-				}
-				prev = line
-				continue
-			}
-
-			trimmed := strings.TrimLeft(line, " \t")
-
-			// Comment-only lines never carry code; remember them for the
-			// previous-line opt-out lookup and move on.
-			if strings.HasPrefix(trimmed, "//") {
-				prev = line
-				continue
-			}
-
-			// Arm on a `#[cfg(test)]` attribute; the `mod ... {` that opens the
-			// test module may be on this line or a following one.
-			if strings.Contains(line, "#[cfg(test)]") {
-				pendingCfgTest = true
-			}
-			if pendingCfgTest && strings.Contains(line, "mod ") && strings.Contains(line, "{") {
-				inTestMod = true
-				pendingCfgTest = false
-				testModDepth = strings.Count(line, "{") - strings.Count(line, "}")
-				if testModDepth <= 0 {
-					// One-line mod (`mod tests { ... }`): nothing left to skip.
-					inTestMod = false
-				}
-				prev = line
-				continue
-			}
-
-			if !lineHasLockPoisonViolation(line) {
-				prev = line
-				continue
-			}
-
-			// Opt-out: `// allowed-lock-poison: <reason>` on the previous line
-			// OR as a trailing comment on the same line.
-			if hasAllowLockPoisonComment(prev) || hasAllowLockPoisonComment(line) {
-				prev = line
-				continue
-			}
-
-			violations = append(violations, lockPoisonSite{
-				relPath: relPath,
-				line:    lineNum,
-				text:    strings.TrimSpace(line),
-			})
-			prev = line
-		}
-		return scanner.Err()
+		violations = append(violations, fileViolations...)
+		return nil
 	})
 
 	return violations, scanned, err
+}
+
+// lockPoisonScanState tracks the in-file `#[cfg(test)]` mod skip across lines.
+// Unlike error-string-match (which scans in-file test mods to flag
+// stringly-typed assertions), test code may freely use bare `.lock().unwrap()`:
+// a poisoned lock in a test means the test already panicked, so aborting there
+// is harmless. We detect a `#[cfg(test)]` attribute, arm on the next `mod ... {`,
+// then skip until brace depth returns to the level where the mod opened.
+type lockPoisonScanState struct {
+	inTestMod      bool
+	testModDepth   int
+	pendingCfgTest bool
+}
+
+// scanRustFileForLockPoison scans a single Rust file for std-lock acquisitions
+// that record no poison-handling intent.
+func scanRustFileForLockPoison(path, relPath string) ([]lockPoisonSite, error) {
+	f, openErr := os.Open(path)
+	if openErr != nil {
+		return nil, openErr
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+
+	var violations []lockPoisonSite
+	var state lockPoisonScanState
+	var prev string
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := scanner.Text()
+
+		if site := classifyLockPoisonLine(line, prev, relPath, lineNum, &state); site != nil {
+			violations = append(violations, *site)
+		}
+		prev = line
+	}
+	return violations, scanner.Err()
+}
+
+// classifyLockPoisonLine evaluates one line against the lock-poison policy,
+// advancing the test-mod skip state. It returns a non-nil site only when the
+// line is a real violation (a std-lock acquisition with no recorded intent and
+// no opt-out comment).
+func classifyLockPoisonLine(line, prev, relPath string, lineNum int, state *lockPoisonScanState) *lockPoisonSite {
+	if state.inTestMod {
+		state.testModDepth += strings.Count(line, "{") - strings.Count(line, "}")
+		if state.testModDepth <= 0 {
+			state.inTestMod = false
+		}
+		return nil
+	}
+
+	// Comment-only lines never carry code; the caller still records them for
+	// the previous-line opt-out lookup.
+	if strings.HasPrefix(strings.TrimLeft(line, " \t"), "//") {
+		return nil
+	}
+
+	// Arm on a `#[cfg(test)]` attribute; the `mod ... {` that opens the test
+	// module may be on this line or a following one.
+	if strings.Contains(line, "#[cfg(test)]") {
+		state.pendingCfgTest = true
+	}
+	if state.pendingCfgTest && strings.Contains(line, "mod ") && strings.Contains(line, "{") {
+		state.pendingCfgTest = false
+		state.testModDepth = strings.Count(line, "{") - strings.Count(line, "}")
+		// One-line mod (`mod tests { ... }`) leaves nothing to skip.
+		state.inTestMod = state.testModDepth > 0
+		return nil
+	}
+
+	if !lineHasLockPoisonViolation(line) {
+		return nil
+	}
+
+	// Opt-out: `// allowed-lock-poison: <reason>` on the previous line OR as a
+	// trailing comment on the same line.
+	if hasAllowLockPoisonComment(prev) || hasAllowLockPoisonComment(line) {
+		return nil
+	}
+
+	return &lockPoisonSite{
+		relPath: relPath,
+		line:    lineNum,
+		text:    strings.TrimSpace(line),
+	}
 }
 
 // lineHasLockPoisonViolation reports whether a line acquires a std lock without
