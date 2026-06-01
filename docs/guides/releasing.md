@@ -121,6 +121,29 @@ main, and triggers a website deploy. If it fails:
 - **Website deploy webhook failed**: re-trigger manually by pushing any commit to main, or SSH into the server and run
   the deploy script.
 
+### `codesign` fails with `errSecInternalComponent` (and `gh` stops working after a release)
+
+`errSecInternalComponent` from `codesign` means the signing key can't be resolved cleanly, almost always because the
+**same Developer ID identity is reachable from more than one keychain in the search list** (ambiguous resolution). Two
+ways this happened on the self-hosted runner:
+
+- **A duplicate cert across keychains.** The Developer ID Application cert existed in both the login keychain (with its
+  private key) and the System keychain (a stray keyless copy). Check with `security find-identity -v -p codesigning`: if
+  the same identity (same SHA-1) appears twice, that's the cause. Remove the stray copy from the offending keychain, for
+  example `sudo security delete-certificate -Z <SHA1> /Library/Keychains/System.keychain`. The login keychain copy (the
+  one with the private key) is the one to keep. Verify local signing still works: `codesign -s <SHA1> --force /tmp/x`.
+- **Double import in the workflow.** An earlier version of `release.yml` imported the cert manually _and_ let
+  tauri-action's bundler import it too, putting the cert in two keychains in the search list. The bundler now owns
+  signing on its own (no manual `security import` step) so only one keychain holds the cert. Don't reintroduce a manual
+  cert-import step.
+
+The companion symptom is **`gh` reporting an invalid token after a release**. `gh` stores its OAuth token in the login
+keychain (secure storage, no `oauth_token` in `~/.config/gh/hosts.yml`). The old manual signing step ran
+`security list-keychain -d user -s <temp>`, which _replaced_ the user search list and dropped the login keychain, so
+`gh` (and any keychain-backed tool) couldn't find its token until the list was restored. The token is never actually
+lost. Restore it with `security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db"`. The workflow's
+`Restore keychain search list` cleanup step now does this automatically on every release (`if: always()`).
+
 ### `bundle_dmg.sh` hangs ~2 minutes then fails on every matrix job
 
 The `actions-runner` auto-updated to a new version and its bundled `node` at

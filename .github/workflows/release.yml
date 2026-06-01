@@ -42,25 +42,15 @@ jobs:
         run: pnpm exec svelte-kit sync
         working-directory: ./apps/desktop
 
-      - name: Import Apple certificate
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-
-          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
-
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" \
-            -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: \
-            -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+      # No manual keychain/cert-import step: tauri-action's bundler does the full signing-keychain
+      # setup itself from the APPLE_CERTIFICATE/APPLE_CERTIFICATE_PASSWORD env vars below (create a
+      # temp keychain, import the cert, set the key-partition-list, auto-detect the Developer ID).
+      # A manual `security import` on top of that put the same cert in two keychains in the search
+      # list, which made codesign fail intermittently with errSecInternalComponent (ambiguous
+      # identity). It also did `security list-keychain -d user -s`, replacing the user search list
+      # and dropping the login keychain (where `gh`'s token lives), which broke `gh` on this
+      # self-hosted runner. Letting the bundler own signing keeps exactly one cert in the search
+      # list and leaves the login keychain in place.
 
       - name: Set up notarization credentials
         env:
@@ -105,9 +95,16 @@ jobs:
           releaseBody: 'See CHANGELOG.md for details.'
           releaseDraft: false
 
-      - name: Clean up keychain
+      - name: Restore keychain search list
         if: always()
-        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+        run: |
+          # tauri-action's bundler creates a temporary signing keychain, appends it to the user
+          # keychain search list, and on teardown deletes the keychain file but never restores the
+          # search list. On this persistent self-hosted runner that leaves a stale (deleted) entry
+          # in the list across releases, which can re-introduce identity ambiguity. Reset the user
+          # search list to the canonical login keychain so `gh` (its OAuth token lives there via
+          # secure storage) and other keychain-backed tools keep working after a release.
+          security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db"
 
   publish:
     name: Publish release
