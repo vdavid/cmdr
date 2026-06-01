@@ -35,6 +35,23 @@ fn write_test_file(dir: &Path, name: &str, content: &str) -> PathBuf {
     file
 }
 
+/// Wait until a freshly-opened session's watcher subscribe has landed, so
+/// `test_only_emit` reliably reaches a subscriber. The subscribe runs on a
+/// background thread off `open_session`'s critical path (see
+/// `spawn_watcher_manager`), so tests that inject synthetic watcher events must
+/// sync on it instead of assuming the watcher is live the moment open returns.
+/// Each test runs in its own nextest process, so `watch_count() > 0` reflects
+/// only the session(s) opened in this test.
+fn wait_for_watcher_subscribed() {
+    for _ in 0..200 {
+        if super::watcher::VIEWER_WATCHER_MANAGER.watch_count() > 0 {
+            return;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    panic!("watcher subscribe did not land within 2s");
+}
+
 #[test]
 fn open_small_file_uses_full_load() {
     let dir = create_test_dir("small");
@@ -1251,6 +1268,9 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
     let result = session::open_session(path.to_str().unwrap()).unwrap();
     let sid = result.session_id.clone();
     let original_bytes = result.total_bytes;
+    // Sync on the background subscribe before mutating, so the catch-up re-stat
+    // stays a no-op and the explicit emit below is the driver under test.
+    wait_for_watcher_subscribed();
 
     // Wait for the background ByteSeek → LineIndex upgrade to finish so
     // we're testing the post-upgrade fast path (extend an existing
@@ -1496,6 +1516,9 @@ fn test_session_emits_file_changed_on_append() {
     let file = write_test_file(&dir, "emit.log", &initial);
     let result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = result.session_id.clone();
+    // Sync on the background subscribe before mutating the file, so the
+    // catch-up re-stat stays a no-op and the explicit emit below is the driver.
+    wait_for_watcher_subscribed();
     session::set_tail_mode(&sid, true).unwrap();
 
     let mut content = initial.clone();
@@ -1536,6 +1559,7 @@ fn test_session_tail_mode_off_does_not_extend_index() {
     let file = write_test_file(&dir, "tailoff.log", initial);
     let result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = result.session_id.clone();
+    wait_for_watcher_subscribed();
     assert!(!session::test_only_tail_mode(&sid));
 
     let original_lines = session::get_session_status(&sid).unwrap().total_lines;
@@ -1580,6 +1604,7 @@ fn test_session_rotation_reopens_backend() {
     let result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = result.session_id.clone();
     let original_bytes = result.total_bytes;
+    wait_for_watcher_subscribed();
 
     // Replace the file with a longer one.
     let new_path = dir.join("rot.log.new");
@@ -1619,6 +1644,7 @@ fn test_session_close_stops_watcher() {
     let result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = result.session_id.clone();
 
+    wait_for_watcher_subscribed();
     let canonical = fs::canonicalize(&file).unwrap();
     // The subscription is alive: a test-only emit reaches it.
     let sent_before = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly);

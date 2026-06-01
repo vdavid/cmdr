@@ -98,7 +98,7 @@ Classification per debounce window:
 - `Replaced` when the inode changed (rename + atomic replace, log rotation).
 - `MetadataOnly` when nothing observable changed.
 
-Per-session, a manager thread (`spawn_watcher_manager_thread`) consumes events on the subscription channel:
+Per-session, a manager thread (`spawn_watcher_manager`) does the FSEvents subscribe itself (see the gotcha below), then consumes events on the subscription channel:
 
 - Always emits `viewer:file-changed:<sid>` with `{ kind: "grew", newSize }` or `{ kind: "rotated" }`.
 - `Grew` with `upgrading` or `rebuilding` in flight: queues `pending_grew = Some(new_size.max(prev))` (drain-and-swap
@@ -118,12 +118,20 @@ Per-session, a manager thread (`spawn_watcher_manager_thread`) consumes events o
 
 ## Gotchas (tail mode)
 
-**Watcher subscribe happens AFTER `SESSIONS.insert` but BEFORE the upgrade spawn.** `notify-debouncer-full::new_debouncer`
-plus `debouncer.watch` need the session already in `SESSIONS` so the manager thread can look it up. They run before the
-upgrade thread spawn so the watcher captures any append that lands during the upgrade window; otherwise an append
-arriving between SESSIONS.insert and the watcher's first event would be observed by no one (the upgrade has already
-stored its LineIndex covering only the pre-append EOF, and no later FS event ever fires for that one append). Pinned by
-`tail_mode_on_extends_backend_when_watcher_reports_grew` and `test_append_during_upgrade_not_dropped`.
+**The FSEvents subscribe runs on the manager thread, NOT inline in `open_session`.** `notify-debouncer-full::new_debouncer`
++ `debouncer.watch` is a blocking, `fseventsd`-bound call: ~100 ms idle on macOS and seconds under load (measured: a
+0.3 s test became >8 s under the full check suite, tripping the nextest cap; a synthetic FS-event flood pushed the
+subscribe alone from 118 ms to 730 ms). Doing it inline made every viewer open pay that latency and risked the 2 s
+`viewer_open` timeout on a busy system. So `open_session` spawns `spawn_watcher_manager`, which subscribes on its own
+thread and only then runs the poll loop. Open is now sub-millisecond regardless of system load. **Don't move the
+subscribe back inline.** Because the subscribe no longer precedes the upgrade thread, an append could land in the
+open→subscribe window and fire no event (the watcher's size baseline is the on-disk EOF at subscribe time). That window
+is closed by `catch_up_after_subscribe`: right after subscribing, it re-stats the file and, if the on-disk size exceeds
+what the active backend currently covers, drives the same `Grew` path a real event would — correct whether the
+ByteSeek→LineIndex upgrade has stored yet (mid-upgrade it queues into `pending_grew`; post-upgrade it tail-extends or
+emits). Tests that inject synthetic watcher events must call `wait_for_watcher_subscribed()` after `open_session` first,
+since the watcher isn't live the instant open returns. Pinned by `tail_mode_on_extends_backend_when_watcher_reports_grew`
+and `test_append_during_upgrade_not_dropped`.
 
 **Tail-extend race against an encoding rebuild.** `apply_tail_extend` snapshots the active backend `Arc`, drops the
 SESSIONS lock, runs `extend_to_boxed` (multi-second on a multi-MB append), then re-acquires the lock. If an encoding

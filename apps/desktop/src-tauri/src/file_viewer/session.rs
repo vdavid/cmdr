@@ -4,7 +4,7 @@
 //! API for the frontend. Sessions are cached by ID and cleaned up on close.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
 use std::thread;
@@ -24,7 +24,7 @@ use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::range_read::{RangeEnd, read_range as do_read_range};
 use super::search_matcher::{Matcher, SearchMode};
-use super::watcher::{VIEWER_WATCHER_MANAGER, ViewerSubscription, WatcherEvent};
+use super::watcher::{VIEWER_WATCHER_MANAGER, WatcherEvent};
 use super::{
     BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch,
     SeekTarget, ViewerError,
@@ -361,26 +361,17 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
     let session_path = session.path.clone();
     SESSIONS.lock_ignore_poison().insert(session_id.clone(), session);
 
-    // Subscribe to filesystem events BEFORE spawning the upgrade thread.
-    // If the upgrade thread is spawned first and finishes between the spawn
-    // and the watcher subscribe, any append on disk during that window is
-    // observed by no one: the upgrade thread already stored its LineIndex
-    // (covering only the pre-append EOF), and the watcher hasn't subscribed
-    // yet so no event ever fires. Subscribing first means the watcher is
-    // live throughout the upgrade window; any append queues into
-    // `pending_grew` and the upgrade's drain-and-swap critical section
-    // picks it up.
-    //
-    // The watcher manager thread itself locks SESSIONS to look up the
-    // session on each event, so it gracefully tolerates the brief window
-    // between this insert and the manager thread's first `recv`.
+    // Attach the filesystem watcher off the critical path. The FSEvents
+    // subscribe is a blocking, `fseventsd`-bound call (~100ms idle, seconds
+    // under load), so doing it inline would make every viewer open pay that
+    // latency and risk the 2s `viewer_open` timeout on a busy system. The
+    // manager thread does the subscribe itself, then a catch-up re-stat closes
+    // the open→subscribe window for any append that landed before the watcher
+    // went live. See `spawn_watcher_manager`.
     //
     // Tests can opt out via `CMDR_VIEWER_DISABLE_WATCHER=1`.
     if std::env::var("CMDR_VIEWER_DISABLE_WATCHER").is_err() {
-        match VIEWER_WATCHER_MANAGER.subscribe(&session_path) {
-            Ok(sub) => spawn_watcher_manager_thread(session_id.clone(), sub, watcher_stop_for_thread),
-            Err(e) => debug!("viewer watcher subscribe failed for {}: {}", session_path.display(), e),
-        }
+        spawn_watcher_manager(session_id.clone(), session_path, watcher_stop_for_thread);
     }
 
     // If we're using ByteSeek, start background upgrade to LineIndex with timeout
@@ -822,7 +813,7 @@ pub fn write_range_to_file(
     read_id: u64,
     anchor: RangeEnd,
     focus: RangeEnd,
-    dest_path: &std::path::Path,
+    dest_path: &Path,
 ) -> Result<(), ViewerError> {
     let text = read_range(session_id, read_id, anchor, focus)?;
 
@@ -1189,13 +1180,38 @@ pub fn reload(session_id: &str) -> Result<(), ViewerError> {
     Ok(())
 }
 
-/// Manager thread spawned once per session. Owns the `ViewerSubscription`
-/// (kept off `ViewerSession` because the channel receiver isn't `Sync`).
-/// Drops the subscription when `stop` flips (set by `close_session`) or when
-/// the upstream channel disconnects; the subscription's `Drop` then
-/// unregisters the path from the shared singleton.
-fn spawn_watcher_manager_thread(session_id: String, sub: ViewerSubscription, stop: Arc<AtomicBool>) {
+/// Manager thread spawned once per session. Does the (blocking,
+/// `fseventsd`-bound) FSEvents subscribe itself — off `open_session`'s critical
+/// path — then owns the resulting `ViewerSubscription` (kept off `ViewerSession`
+/// because the channel receiver isn't `Sync`) and runs the event loop. Drops the
+/// subscription when `stop` flips (set by `close_session`) or when the upstream
+/// channel disconnects; the subscription's `Drop` then unregisters the path from
+/// the shared singleton.
+fn spawn_watcher_manager(session_id: String, path: PathBuf, stop: Arc<AtomicBool>) {
     thread::spawn(move || {
+        // `close_session` may have run before this thread got scheduled; skip
+        // the blocking subscribe entirely in that case (nothing registered yet,
+        // so nothing to unregister).
+        if stop.load(Ordering::Relaxed) {
+            return;
+        }
+
+        let sub = match VIEWER_WATCHER_MANAGER.subscribe(&path) {
+            Ok(sub) => sub,
+            Err(e) => {
+                debug!("viewer watcher subscribe failed for {}: {}", path.display(), e);
+                return;
+            }
+        };
+
+        // `stop` may have flipped while we were subscribing. Returning here
+        // drops `sub`, which unregisters the path.
+        if stop.load(Ordering::Relaxed) {
+            return;
+        }
+
+        catch_up_after_subscribe(&session_id, &path);
+
         // Poll with a timeout so we periodically check `stop` even if the
         // file's idle: this is the only way the manager exits when
         // `close_session` runs without the file changing first.
@@ -1212,6 +1228,33 @@ fn spawn_watcher_manager_thread(session_id: String, sub: ViewerSubscription, sto
             }
         }
     });
+}
+
+/// Closes the open→subscribe missed-append window. Because the subscribe runs
+/// in the background and blocks for an unbounded time, an append can land
+/// between open and the watcher going live — and the watcher's size baseline is
+/// the on-disk EOF *at subscribe time*, so that append would fire no event and
+/// stay invisible. We compare the current on-disk size against what the active
+/// backend covers and, if the file grew, drive the same path a real `Grew`
+/// event would. Comparing against live backend coverage (rather than a captured
+/// open-time EOF) makes this correct regardless of whether the ByteSeek →
+/// LineIndex upgrade has already stored: mid-upgrade it queues into
+/// `pending_grew` (drained by the swap), post-upgrade it tail-extends or emits.
+fn catch_up_after_subscribe(session_id: &str, path: &Path) {
+    let Ok(meta) = std::fs::metadata(path) else {
+        return;
+    };
+    let on_disk = meta.len();
+    let covered = {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let Some(session) = sessions.get(session_id) else {
+            return; // session closed while we were subscribing
+        };
+        session.backend.load_full().total_bytes()
+    };
+    if on_disk > covered {
+        handle_watcher_event(session_id, WatcherEvent::Grew(on_disk));
+    }
 }
 
 fn emit_file_changed(session_id: &str, kind: &'static str, new_size: Option<u64>) {
