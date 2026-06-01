@@ -144,7 +144,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Jan 24)</span>
-                        <span class="title">Make copy safe 🛡️</span>
+                        <span class="title">Make "copy" operation safe</span>
                         <span class="description">Check for writability, disk space, inode identity, path limits</span>
                     </li>
                     <li>
@@ -176,7 +176,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Feb 4)</span>
-                        <span class="title">Add MTP support 🦖</span>
+                        <span class="title">Add MTP support 📱</span>
                         <span class="description">Copy files to/from Android phones and cameras very fast!</span>
                     </li>
                     <li>
@@ -208,7 +208,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Feb 25)</span>
-                        <span class="title">Add tabs 📑</span>
+                        <span class="title">Add tabs</span>
                         <span class="description">For easy switching between folders</span>
                     </li>
                     <li>
@@ -234,13 +234,13 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                         <span class="date">(Mar 11)</span>
                         <span class="title">Add cloud AI support ☁️</span>
                         <span class="description"
-                            >15 providers (OpenAI, Anthropic, Gemini, and more), connection check, model picker</span
+                            >15 providers (OpenAI, Anthropic, Gemini, xAI, DeepSeek, OpenRouter, Ollama)</span
                         >
                     </li>
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Mar 16)</span>
-                        <span class="title">Find files 🔍</span>
+                        <span class="title">Find files</span>
                         <span class="description"
                             >Find files instantly on all your drives, with AI-powered natural language search</span
                         >
@@ -248,56 +248,68 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Mar 23)</span>
-                        <span class="title">Add crash reporting 🩺</span>
+                        <span class="title">Add crash reporting</span>
                         <span class="description">Opt-in crash reports to help improve stability, no PII</span>
                     </li>
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Apr 10)</span>
-                        <span class="title">Direct SMB connections ⚡</span>
+                        <span class="title">Direct SMB connections</span>
                         <span class="description">~4x faster file ops via native smb2 protocol, auto-upgrade, manual server connections</span>
                     </li>
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(Apr 28)</span>
-                        <span class="title">Browse git repos 🌿</span>
-                        <span class="description">Browse git history, branches, tags, stash, worktrees as folders. Drag a file out of any commit into your working tree.</span>
+                        <span class="title">Browse git!</span>
+                        <span class="description">Browse git history, branches, tags, stash, worktrees like normal folders. Copy out any old/alternative file versions.</span>
                     </li>
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(May 6)</span>
-                        <span class="title">Dynamic text size 🔤</span>
-                        <span class="description">75–150 % slider that compounds with macOS Accessibility text size. Rows, icons, columns, viewer all scale.</span>
-                    </li>
-                    <li>
-                        <CheckIcon checked={true} />
-                        <span class="date">(May 12)</span>
-                        <span class="title">Multi-provider AI ☁️</span>
-                        <span class="description">GPT-5, o-series, Anthropic native, Gemini, xAI, Groq, DeepSeek, OpenRouter, Ollama. Suggestions stream in as the model generates them, first one in under 500 ms.</span>
+                        <span class="title">Dynamic text size</span>
+                        <span class="description">Zoom that considers macOS Accessibility text size. Text, icons, viewer all scale.</span>
                     </li>
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(May 16)</span>
                         <span class="title">Settings 1.0 ⚙️</span>
-                        <span class="description">Settings was an absolute mess with no real structure. Now it has structure and is actually nice to use.</span>
+                        <span class="description">Settings was an absolute mess with no real structure. Now it is actually nice to use.</span>
                     </li>
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(May 19)</span>
-                        <span class="title">Functional and reliable MTP → SMB flow</span>
-                        <span class="description">MTP and SMB both work fast, avoid unnecessary loads, and cancel and auto update as needed.</span>
+                        <span class="title">Cross-volume operations</span>
+                        <span class="description">Like direct MTP → SMB. Optimized ops, precise progress, cancellation, live updates.</span>
                     </li>
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(May 21)</span>
-                        <span class="title">Polished UI 🎨</span>
+                        <span class="title">Polished UI ✨</span>
                         <span class="description">Main window is flatter and simpler. Settings window got liquid glass design.</span>
                     </li>
                     <li>
                         <CheckIcon checked={true} />
                         <span class="date">(May 22)</span>
-                        <span class="title">Search redesign 🔍</span>
+                        <span class="title">Search redesign</span>
                         <span class="description">Overall improved UX, recent searches, "Open in pane".</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="date">(May 23)</span>
+                        <span class="title">AI-powered smart selection</span>
+                        <span class="description">Support queries like "Select all error logs from last week"</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(May 24)</span>
+                        <span class="title">Onboarding revamp 🚀</span>
+                        <span class="description">Guided first-launch wizard: Full Disk Access, AI provider, and optional setup.</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(May 29)</span>
+                        <span class="title">Downloads watcher 📥</span>
+                        <span class="description">Toast or native notification when a download lands; jump to the latest with ⌘J.</span>
                     </li>
                 </ul>
             </section>
@@ -324,7 +336,6 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                 </ul>
             </section>
 
-            <!-- On the horizon -->
             <section class="year-section">
                 <h2>Also soon</h2>
                 <ul class="milestone-list">
@@ -332,11 +343,6 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                         <CheckIcon checked={false} />
                         <span class="title">Handle zips</span>
                         <span class="description">Compress/extract files, browse/modify zips</span>
-                    </li>
-                    <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">AI-powered smart selection</span>
-                        <span class="description">Support queries like "Select all error logs from last week"</span>
                     </li>
                     <li>
                         <CheckIcon checked={false} />

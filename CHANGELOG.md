@@ -5,6 +5,125 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-06-01
+
+### Added
+
+- Onboarding wizard: a multi-step soft sheet (Full Disk Access, AI provider, optional setup) replacing the single
+  permission modal, reopenable from the menu, command palette, and MCP (alpha version!)
+  ([5a21bdba](https://github.com/vdavid/cmdr/commit/5a21bdba),
+  [742ff625](https://github.com/vdavid/cmdr/commit/742ff625),
+  [963b4bf1](https://github.com/vdavid/cmdr/commit/963b4bf1),
+  [88ecdfaa](https://github.com/vdavid/cmdr/commit/88ecdfaa),
+  [7d081d2c](https://github.com/vdavid/cmdr/commit/7d081d2c),
+  [a09631c9](https://github.com/vdavid/cmdr/commit/a09631c9))
+- Downloads watcher: a toast or native notification when a download lands, and jump to the latest download with ⌘J or a
+  global ⌃⌥⌘J hotkey ([092203db](https://github.com/vdavid/cmdr/commit/092203db),
+  [a9466e5a](https://github.com/vdavid/cmdr/commit/a9466e5a),
+  [853a28a0](https://github.com/vdavid/cmdr/commit/853a28a0),
+  [d378f42f](https://github.com/vdavid/cmdr/commit/d378f42f),
+  [1484c4f0](https://github.com/vdavid/cmdr/commit/1484c4f0),
+  [2c3e36c3](https://github.com/vdavid/cmdr/commit/2c3e36c3))
+- Select or deselect files by query: a new Select menu plus a Select files… dialog with filters and AI-powered
+  natural-language selection ("select all error logs from last week") (alpha version!)
+  ([1fd163c4](https://github.com/vdavid/cmdr/commit/1fd163c4),
+  [7ce90bb3](https://github.com/vdavid/cmdr/commit/7ce90bb3),
+  [8d5bd3dc](https://github.com/vdavid/cmdr/commit/8d5bd3dc),
+  [dcb4b3a9](https://github.com/vdavid/cmdr/commit/dcb4b3a9),
+  [6d68def3](https://github.com/vdavid/cmdr/commit/6d68def3),
+  [ac68709e](https://github.com/vdavid/cmdr/commit/ac68709e))
+- File viewer tail mode (F): follow a file live as it grows ([8a6671de](https://github.com/vdavid/cmdr/commit/8a6671de),
+  [ed479d2b](https://github.com/vdavid/cmdr/commit/ed479d2b),
+  [a7eb8d87](https://github.com/vdavid/cmdr/commit/a7eb8d87),
+  [29a25ffc](https://github.com/vdavid/cmdr/commit/29a25ffc))
+- File viewer char encoding picker: switch text encoding instantly, with strict ISO-8859-1 and UTF-16 BOM detection
+  ([a2270782](https://github.com/vdavid/cmdr/commit/a2270782),
+  [0c0b8716](https://github.com/vdavid/cmdr/commit/0c0b8716),
+  [b1277906](https://github.com/vdavid/cmdr/commit/b1277906),
+  [3978ed4c](https://github.com/vdavid/cmdr/commit/3978ed4c))
+- File viewer regex and case-sensitive search toggles (⌘⌥R, ⌘⌥C)
+  ([7d424d97](https://github.com/vdavid/cmdr/commit/7d424d97),
+  [48b5de06](https://github.com/vdavid/cmdr/commit/48b5de06))
+- Real folder icons in the list: system folders (Downloads, Desktop), packages (.app), and custom-icon folders, cached
+  across restarts ([1dd439d0](https://github.com/vdavid/cmdr/commit/1dd439d0),
+  [389829bf](https://github.com/vdavid/cmdr/commit/389829bf),
+  [e50004ab](https://github.com/vdavid/cmdr/commit/e50004ab),
+  [418a86a9](https://github.com/vdavid/cmdr/commit/418a86a9))
+- Per-directory "size updating" hourglass and progressive folder-size reveal as the index fills in, instead of waiting
+  up to 5 minutes ([0afc10b4](https://github.com/vdavid/cmdr/commit/0afc10b4),
+  [f3740152](https://github.com/vdavid/cmdr/commit/f3740152),
+  [66712c2d](https://github.com/vdavid/cmdr/commit/66712c2d))
+
+### Changed
+
+- Redesign the type-mismatch conflict dialog: one consistent layout across all clash types, with a clear warning when
+  overwriting a whole folder with a file ([a3faa3d8](https://github.com/vdavid/cmdr/commit/a3faa3d8),
+  [d2b8f153](https://github.com/vdavid/cmdr/commit/d2b8f153),
+  [79024932](https://github.com/vdavid/cmdr/commit/79024932),
+  [66df6570](https://github.com/vdavid/cmdr/commit/66df6570))
+
+### Fixed
+
+- Make copy and move durable before reporting "complete". Ejecting a USB stick right after a copy no longer loses files
+  ([bdb3b61a](https://github.com/vdavid/cmdr/commit/bdb3b61a))
+- Make cross-volume Overwrite crash-safe: stream to a temp file and swap in place, so a mid-transfer disconnect keeps
+  the original ([6e99640e](https://github.com/vdavid/cmdr/commit/6e99640e))
+- Stop concurrent indexing from corrupting the index (fixes inflated folder size display) and keep the index WAL bounded
+  ([0236723d](https://github.com/vdavid/cmdr/commit/0236723d),
+  [eb692287](https://github.com/vdavid/cmdr/commit/eb692287),
+  [b849ee01](https://github.com/vdavid/cmdr/commit/b849ee01))
+- Make config and secret-store writes survive power loss, protecting saved SMB servers, passwords, and AI keys
+  ([aea4aa0b](https://github.com/vdavid/cmdr/commit/aea4aa0b),
+  [57a47b63](https://github.com/vdavid/cmdr/commit/57a47b63))
+- Stream MTP uploads instead of buffering the whole file in RAM, and make Cancel stop in-flight USB writes
+  ([a0140150](https://github.com/vdavid/cmdr/commit/a0140150))
+- Fix cross-volume moves showing "Moving... 0 bytes / 0 files" for the whole transfer (now real scan and per-file
+  progress) ([067b96db](https://github.com/vdavid/cmdr/commit/067b96db))
+- Open file viewer instantly even under heavy FS activity (was up to 730 ms and could time out)
+  ([aa9905f1](https://github.com/vdavid/cmdr/commit/aa9905f1))
+- Keep live indexing alive under database lock contention ([9e808914](https://github.com/vdavid/cmdr/commit/9e808914))
+- Fix a git-repo watcher leak during fast navigation ([a0bac502](https://github.com/vdavid/cmdr/commit/a0bac502))
+- Stop losing Full Disk Access and onboarding state on a save failure (which re-ran onboarding)
+  ([5c46d887](https://github.com/vdavid/cmdr/commit/5c46d887))
+- Error instead of silently overwriting when creating a file that already exists
+  ([25ce82f4](https://github.com/vdavid/cmdr/commit/25ce82f4))
+- Fix Enter or Backspace on ".." from "~" landing at "/" instead of "/Users"
+  ([a8096a25](https://github.com/vdavid/cmdr/commit/a8096a25))
+- Fix SMB share listing on servers with many shares (native enumeration handles fragmented replies)
+  ([fe5569cf](https://github.com/vdavid/cmdr/commit/fe5569cf))
+
+### Security
+
+- Require bearer token for destructive MCP ops ([68e337ef](https://github.com/vdavid/cmdr/commit/68e337ef),
+  [18cd4c35](https://github.com/vdavid/cmdr/commit/18cd4c35))
+- Redact PII from MCP logs and state ([8ea092ba](https://github.com/vdavid/cmdr/commit/8ea092ba))
+- Close SMB password leak through process arg list in an edge case
+  ([a190f19c](https://github.com/vdavid/cmdr/commit/a190f19c),
+  [0a154f21](https://github.com/vdavid/cmdr/commit/0a154f21))
+- Reject plaintext-HTTP AI endpoints that carry an API key ([3dd10609](https://github.com/vdavid/cmdr/commit/3dd10609))
+- Fix an updater AppleScript injection via the app bundle path
+  ([5875fb4c](https://github.com/vdavid/cmdr/commit/5875fb4c))
+- Narrow down the FS capability to actually needed files, restrict Debug window's capabilities
+  ([6cabc94c](https://github.com/vdavid/cmdr/commit/6cabc94c))
+- Redact SMB credential URLs from debug logs ([d7edb8a4](https://github.com/vdavid/cmdr/commit/d7edb8a4))
+
+### Non-app
+
+A big push on dev tooling: the check suite is roughly twice as fast overall, with some checks 30–40x.
+
+- Add CPU-weight-aware scheduling ([46bfae99](https://github.com/vdavid/cmdr/commit/46bfae99))
+- Add `--graph` arg to checker script to view the dep graph ([46bfae99](https://github.com/vdavid/cmdr/commit/46bfae99))
+- Split `eslint-typecheck` into TS / Svelte: 616s to ~15s (~40x speed-up!)
+  ([10632789](https://github.com/vdavid/cmdr/commit/10632789))
+- Stop clippy forcing full crate rebuild every run: ~32s to ~1–2s warm, also sped up other Rust checks
+  ([3318f29c](https://github.com/vdavid/cmdr/commit/3318f29c))
+- Switch Svelte tests to happy-dom (22% faster) ([ca6b13d9](https://github.com/vdavid/cmdr/commit/ca6b13d9))
+- Add per-instance isolation (`CMDR_INSTANCE_ID`). Pparallel dev sessions now get own ports, data dir, and Keychain
+  ([3bcd2ed4](https://github.com/vdavid/cmdr/commit/3bcd2ed4))
+- Add a `lock-poison` static check and pnpm install-side supply-chain guardrails (14-day cooldown, trust no-downgrade)
+  ([038c5ec2](https://github.com/vdavid/cmdr/commit/038c5ec2),
+  [d568789f](https://github.com/vdavid/cmdr/commit/d568789f))
+
 ## [0.22.0] - 2026-05-23
 
 ### Added
