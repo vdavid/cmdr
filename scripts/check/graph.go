@@ -213,6 +213,57 @@ func weightColor(w int) string {
 	}
 }
 
+// timeColor returns the gradient color for a median wall-time, mirroring the
+// weight palette: <1s green, <5s light green, <15s yellow, <60s orange, else red.
+func timeColor(seconds float64) string {
+	switch {
+	case seconds < 1:
+		return colorGreen
+	case seconds < 5:
+		return colorLightGreen
+	case seconds < 15:
+		return colorYellow
+	case seconds < 60:
+		return colorOrange
+	default:
+		return colorRed
+	}
+}
+
+// annotate renders the colored "(lane, weight[, ~time][, smb][, ci-only])"
+// suffix for a check. Lane, weight, and time carry color — weight and time
+// share the same green→red gradient (by core count / by duration). The name and
+// tech stay plain (coloring names reads as confusing). verboseWeight switches
+// the compact "w8" to "weight: 8" — used in the tree; the standalone list keeps
+// the compact "w8".
+func annotate(d *checks.CheckDefinition, verboseWeight, useColor bool, durs map[string]float64) string {
+	paint := func(code, s string) string {
+		if !useColor {
+			return s
+		}
+		return code + s + colorReset
+	}
+	w := weightOf(d)
+	weightStr := fmt.Sprintf("w%d", w)
+	if verboseWeight {
+		weightStr = fmt.Sprintf("weight: %d", w)
+	}
+	parts := []string{
+		paint(laneColor[sizeTag(d)], sizeTag(d)),
+		paint(weightColor(w), weightStr),
+	}
+	if secs := durs[d.CLIName()]; secs > 0 {
+		parts = append(parts, paint(timeColor(secs), fmtWallTime(secs)))
+	}
+	if d.NeedsSmb != "" {
+		parts = append(parts, "smb")
+	}
+	if d.CIOnly {
+		parts = append(parts, "ci-only")
+	}
+	return "(" + strings.Join(parts, ", ") + ")"
+}
+
 func renderGraphTree(defs []checks.CheckDefinition, useColor bool, durs map[string]float64) {
 	m := buildGraphModel(defs)
 	c := func(code, s string) string {
@@ -222,32 +273,12 @@ func renderGraphTree(defs []checks.CheckDefinition, useColor bool, durs map[stri
 		return code + s + colorReset
 	}
 
-	// annot renders the colored "(lane, wN[, ~time][, smb][, ci-only])" suffix.
-	// Only the lane and weight carry color; the name, time, and tech stay plain
-	// (coloring names read as confusing).
-	annot := func(d *checks.CheckDefinition) string {
-		w := weightOf(d)
-		parts := []string{
-			c(laneColor[sizeTag(d)], sizeTag(d)),
-			c(weightColor(w), fmt.Sprintf("w%d", w)),
-		}
-		if t := fmtWallTime(durs[d.CLIName()]); t != "" {
-			parts = append(parts, t)
-		}
-		if d.NeedsSmb != "" {
-			parts = append(parts, "smb")
-		}
-		if d.CIOnly {
-			parts = append(parts, "ci-only")
-		}
-		return "(" + strings.Join(parts, ", ") + ")"
-	}
 	nodeLabel := func(id string) string {
 		d := m.byID[id]
 		if d == nil {
 			return id // unreachable: ids come from the model built off defs
 		}
-		return fmt.Sprintf("%s %s - %s", d.CLIName(), annot(d), d.Tech)
+		return fmt.Sprintf("%s %s - %s", d.CLIName(), annotate(d, true, useColor, durs), d.Tech)
 	}
 
 	var printSubtree func(id, prefix string, isLast, isRoot bool)
@@ -296,7 +327,7 @@ func renderGraphTree(defs []checks.CheckDefinition, useColor bool, durs map[stri
 				items[i] = id // unreachable: ids come from the model built off defs
 				continue
 			}
-			items[i] = fmt.Sprintf("%s %s", d.CLIName(), annot(d))
+			items[i] = fmt.Sprintf("%s %s", d.CLIName(), annotate(d, false, useColor, durs))
 		}
 		fmt.Printf("%s\n  %s\n\n",
 			c(colorDim, fmt.Sprintf("Standalone (no dependencies, %d):", len(standalone))),
@@ -306,7 +337,7 @@ func renderGraphTree(defs []checks.CheckDefinition, useColor bool, durs map[stri
 	// Summary + legend.
 	fastN, normalN, slowN, totalW := laneCounts(defs)
 	fmt.Printf("%s\n", c(colorDim, fmt.Sprintf(
-		"Legend: lane = %s / %s / %s; weight w1 %s, w2 %s, w3-5 %s, w6-8 %s, w9+ %s; ~time = median of recent runs.",
+		"Legend: lane = %s / %s / %s; weight w1 %s, w2 %s, w3-5 %s, w6-8 %s, w9+ %s; ~time = median of recent runs (same color scale: <1s green … >60s red).",
 		c(colorGreen, "fast"), c(colorYellow, "normal"), c(colorRed, "slow"),
 		c(colorGreen, "green"), c(colorLightGreen, "light"), c(colorYellow, "yellow"), c(colorOrange, "orange"), c(colorRed, "red"))))
 	fmt.Printf("%s\n", c(colorDim, fmt.Sprintf(
