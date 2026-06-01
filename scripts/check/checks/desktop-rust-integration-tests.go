@@ -24,9 +24,10 @@ import (
 //     We still wait until the expected services report `running` as a
 //     cheap guard against mid-run zombies; smb2 reconnects if the server
 //     isn't ready on the first write.
-//  2. Invoke `cargo nextest run --release --run-ignored only -E 'test(smb_integration_)'`
-//     in apps/desktop/src-tauri. The expression filter matches every
-//     `smb_integration_*` test and skips other `#[ignore]` tests.
+//  2. Invoke `cargo nextest run --run-ignored only -E 'test(smb_integration_)'`
+//     (debug, reusing desktop-rust-tests' build) in apps/desktop/src-tauri. The
+//     expression filter matches every `smb_integration_*` test and skips other
+//     `#[ignore]` tests.
 func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// Docker is a hard requirement. Surface a clear message instead of a cryptic error.
 	if !CommandExists("docker") {
@@ -67,14 +68,17 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	// Use --release to match the perf profile of shipped code; compound reads
-	// and writes are sensitive to -O settings. nextest's expression filter
-	// matches only our `smb_integration_*` tests, so unrelated `#[ignore]`
+	// Run in debug (the default profile) so this reuses the warm test build from
+	// `desktop-rust-tests` instead of paying a separate full release compile.
+	// Measured: the same 35 tests are ~4s in debug vs ~1m52s in release, where
+	// ~all the release time was the disjoint compile, not the SMB execution. The
+	// tests are correctness checks (pass/fail), not benchmarks, so `-O` doesn't
+	// change their outcome — verified all 35 pass in debug. nextest's expression
+	// filter matches only our `smb_integration_*` tests, so unrelated `#[ignore]`
 	// tests are still skipped.
 	cmd := exec.Command(
 		"cargo", "nextest", "run",
 		"--locked",
-		"--release",
 		"--run-ignored", "only",
 		"-E", "test(smb_integration_)",
 	)

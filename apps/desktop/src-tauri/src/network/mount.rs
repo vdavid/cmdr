@@ -611,17 +611,29 @@ mod tests {
             .await
             .unwrap_or_else(|e| panic!("guest mount against {host}:{port} failed: {e:?}"));
 
-        // Give NetFS a moment to settle so statfs reports the SMB mount info.
-        tokio::time::sleep(Duration::from_millis(200)).await;
-
-        let volume = crate::volumes::resolve_path_volume_fast(&mount_result.mount_path);
+        // Poll for NetFS to register the mount so statfs reports the SMB info. A
+        // fixed sleep here raced the OS settling and flaked in BOTH debug and
+        // release (the magic-timer-wait anti-pattern — see docs/testing.md). We
+        // wait for the settled, SMB-shaped id: an early statfs can briefly report
+        // the path-shape id (`volumespublic`) before the SMB mount info lands.
+        let mut volume = None;
+        for _ in 0..50 {
+            if let Some(v) = crate::volumes::resolve_path_volume_fast(&mount_result.mount_path)
+                && v.id.starts_with("smb-")
+            {
+                volume = Some(v);
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
 
         // Unmount before assertions so a panic doesn't leak the mount.
         let _ = std::process::Command::new("diskutil")
             .args(["unmount", "force", &mount_result.mount_path])
             .output();
 
-        let volume = volume.expect("resolve_path_volume_fast should return Some for a fresh SMB mount");
+        let volume =
+            volume.expect("resolve_path_volume_fast should return an smb- volume within 5s of a fresh SMB mount");
 
         // The pre-fix ID was `volumespublic`, which is what `path_to_id` produces
         // for `/Volumes/public`. The new ID encodes server, port, and share.
