@@ -41,19 +41,28 @@ drops the runner connection and every in-flight matrix job fails with
 `The self-hosted runner lost communication with the server.` This bit us on the 0.13.0 release: all three jobs failed at
 exactly 11m1s each.
 
-Before pushing the tag, start `caffeinate` in the background. The release script does NOT do this automatically; the
-agent (or the human running the release) is responsible for arming and disarming it.
+Before pushing the tag, make sure `caffeinate` is holding the Mac awake. The release script does NOT do this
+automatically; the agent (or the human running the release) is responsible for it.
+
+**Check first, then arm only if needed.** A `caffeinate -dimsu` may already be running (a previous release, or the user
+started one). Don't stack a second one, and don't kill one you didn't start.
 
 ```bash
-caffeinate -dimsu &              # -d display, -i idle, -m disk, -s on AC, -u user active
-CAFFEINATE_PID=$!
-# ... push the tag, monitor the build ...
-kill $CAFFEINATE_PID             # once all matrix jobs are done (success or fail)
+if pgrep -lf 'caffeinate -dimsu' >/dev/null; then
+    echo "caffeinate already running, leaving it"
+else
+    caffeinate -dimsu &          # -d display, -i idle, -m disk, -s on AC, -u user active
+    CAFFEINATE_PID=$!
+    # ... push the tag, monitor the build ...
+    kill $CAFFEINATE_PID         # once all matrix jobs are done (success or fail)
+fi
 ```
 
-Agents: do this as a Bash `run_in_background` call right after the push, and `kill` it once the release monitor reports
-the run has finished (wait for the overall run to be `completed`, not just the build matrix). If the release fails and
-the user wants to re-run failed jobs, re-arm caffeinate first.
+Agents: check with `pgrep -lf 'caffeinate -dimsu'` right after the push. If one's already running, skip arming and skip
+the disarm at the end. Otherwise arm it as a Bash `run_in_background` call and `kill` it once the release monitor
+reports the run has finished (wait for the overall run to be `completed`, not just the build matrix) - but only if you
+armed it yourself. If the release fails and the user wants to re-run failed jobs with no caffeinate running, re-arm it
+first.
 
 ## How updates work
 

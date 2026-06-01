@@ -114,9 +114,14 @@ Prepare a release based on docs/guides/releasing.md.
    Mac; any sleep (display or system) drops the runner connection and fails every in-flight matrix job with
    `The self-hosted runner lost communication with the server`. See `docs/guides/releasing.md` § "Keep the Mac awake
    during the build".
-   - Run `caffeinate -dimsu` as a Bash `run_in_background` call. Capture the background task id so you can stop it.
-   - Disarm it once the release workflow reports `completed` (success or failure, not just when the matrix is done).
-   - If the user requests a re-run of failed jobs, re-arm caffeinate first.
+   - **First check whether `caffeinate` is already running** (`pgrep -lf 'caffeinate -dimsu'`, or the user may say so).
+     If a suitable `caffeinate` is already holding the Mac awake, skip arming a new one (don't stack duplicates), and
+     don't disarm it at the end either since you didn't start it.
+   - Otherwise run `caffeinate -dimsu` as a Bash `run_in_background` call. Capture the background task id so you can
+     stop it.
+   - Disarm it once the release workflow reports `completed` (success or failure, not just when the matrix is done) -
+     but only if you were the one who armed it.
+   - If the user requests a re-run of failed jobs and no caffeinate is running, re-arm it first.
 10. **Monitor the CI build**:
 
 - Remind the user not to close their laptop for ~15 minutes while the self-hosted runner builds.
