@@ -125,4 +125,6 @@ be the `Test Files … | N skipped` count (N above the usual handful = files did
 `Worker terminated` / `reached heap limit` line. Until then: a below-threshold file that has a dedicated test means
 re-run `--check svelte-tests` standalone; don't allowlist it.
 
-Render the graph with weights + lanes: `./scripts/check.sh --graph` (also `--graph-format mermaid|dot`).
+Render the graph with weights + lanes + median wall-time: `./scripts/check.sh --graph` (also
+`--graph-format mermaid|dot`). The wall-time comes from recent passing runs in `~/cmdr-check-log.csv`, so the graph
+doubles as a perf dashboard.

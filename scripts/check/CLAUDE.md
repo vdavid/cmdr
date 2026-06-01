@@ -42,29 +42,32 @@ go run ./scripts/check --only-freestyle
 
 ## Command-line options
 
-| Option                      | Description                                                        |
-| --------------------------- | ------------------------------------------------------------------ |
-| `--app NAME`                | Run checks for a specific app                                      |
-| `--rust`, `--rust-only`     | Run only Rust checks (desktop)                                     |
-| `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                                   |
-| `--check ID`                | Run specific checks by ID or nickname (repeatable)                 |
-| `--ci`                      | Disable auto-fixing (for CI)                                       |
-| `--verbose`                 | Show detailed output                                               |
-| `--include-slow`            | Include slow checks (excluded by default)                          |
-| `--only-slow`               | Run only slow checks                                               |
-| `--fast`                    | Run only the curated fast pre-commit check set                     |
-| `--only-freestyle`          | Run freestyle-compatible checks on a VM (skip the rest)            |
-| `--prefer-freestyle`        | Run compat checks on VM + the rest locally in parallel             |
-| `--fail-fast`               | Stop on first failure                                              |
-| `--no-log`                  | Disable CSV stats logging                                          |
-| `--graph`                   | Render the check dependency graph (weights + lanes) and exit       |
-| `--graph-format`            | Graph output: `tree` (default, colored terminal), `mermaid`, `dot` |
-| `-h`, `--help`              | Show help message                                                  |
+| Option                      | Description                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `--app NAME`                | Run checks for a specific app                                                   |
+| `--rust`, `--rust-only`     | Run only Rust checks (desktop)                                                  |
+| `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                                                |
+| `--check ID`                | Run specific checks by ID or nickname (repeatable)                              |
+| `--ci`                      | Disable auto-fixing (for CI)                                                    |
+| `--verbose`                 | Show detailed output                                                            |
+| `--include-slow`            | Include slow checks (excluded by default)                                       |
+| `--only-slow`               | Run only slow checks                                                            |
+| `--fast`                    | Run only the curated fast pre-commit check set                                  |
+| `--only-freestyle`          | Run freestyle-compatible checks on a VM (skip the rest)                         |
+| `--prefer-freestyle`        | Run compat checks on VM + the rest locally in parallel                          |
+| `--fail-fast`               | Stop on first failure                                                           |
+| `--no-log`                  | Disable CSV stats logging                                                       |
+| `--graph`                   | Render the check dependency graph (weights + lanes + median wall-time) and exit |
+| `--graph-format`            | Graph output: `tree` (default, colored terminal), `mermaid`, `dot`              |
+| `-h`, `--help`              | Show help message                                                               |
 
 `--graph` honors the same selection flags (`--rust`, `--svelte`, `--app`, `--check`), so `--graph --rust` graphs only
-the Rust checks. It renders before the slow/fast/CI filters, so every lane shows with its size badge. `mermaid` output
-pastes into a Markdown ```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`./scripts/check.sh --graph
---graph-format dot | dot -Tpng -o checks.png`).
+the Rust checks. It renders before the slow/fast/CI filters, so every lane shows with its size badge. Each node also
+shows `~<median wall-time>` from the recent (last 20) passing runs in `~/cmdr-check-log.csv`, so the graph doubles as a
+perf dashboard — pairing the CPU-weight (how heavy) with the typical duration (how long) for spotting the next
+optimization target. Missing log (CI / `--no-log` / fresh machine) just omits the times. `mermaid` output pastes into a
+Markdown ```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`./scripts/check.sh --graph --graph-format
+dot | dot -Tpng -o checks.png`).
 
 ## Architecture
 
@@ -98,17 +101,17 @@ pastes into a Markdown ```mermaid block or https://mermaid.live; `dot` pipes to 
 
 ## Key files
 
-| File                  | Purpose                                                                                              |
-| --------------------- | ---------------------------------------------------------------------------------------------------- |
-| `main.go`             | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation       |
-| `runner.go`           | Parallel executor: CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line    |
-| `graph.go`            | `--graph` renderer: dependency forest with CPU weights + size lanes (tree / mermaid / dot)           |
-| `stats.go`            | CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`             |
-| `colors.go`           | ANSI color constants                                                                                 |
-| `utils.go`            | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                        |
-| `smb_orchestrator.go` | Runner-level SMB Docker lifecycle (start once at runner init, stop at exit)                          |
-| `freestyle.go`        | All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`                           |
-| `checks/`             | One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list) |
+| File                  | Purpose                                                                                                                            |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `main.go`             | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation                                     |
+| `runner.go`           | Parallel executor: CPU-weighted admission gate, dependency graph, fail-fast, live TTY status line                                  |
+| `graph.go`            | `--graph` renderer: dependency forest with CPU weights, size lanes, and median wall-time from the stats CSV (tree / mermaid / dot) |
+| `stats.go`            | CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`                                           |
+| `colors.go`           | ANSI color constants                                                                                                               |
+| `utils.go`            | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                                                      |
+| `smb_orchestrator.go` | Runner-level SMB Docker lifecycle (start once at runner init, stop at exit)                                                        |
+| `freestyle.go`        | All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`                                                         |
+| `checks/`             | One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)                               |
 
 ## Runner-level patterns
 

@@ -1,32 +1,119 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"cmdr/scripts/check/checks"
 )
 
 // renderGraph prints the DependsOn graph of the given checks, annotated with
-// each check's CPU weight and size lane (fast / normal / slow), in one of three
+// each check's CPU weight, size lane (fast / normal / slow), and typical
+// wall-time (median of recent runs from the stats log), in one of three
 // formats: "tree" (colored terminal tree, the default), "mermaid", or "dot".
 //
 // Edges point from a dependency to its dependent (formatter → linter → tests),
 // so the graph reads top-down in execution order.
 func renderGraph(defs []checks.CheckDefinition, format string, isTTY bool) error {
+	durs := loadCheckDurations()
 	switch format {
 	case "", "tree":
-		renderGraphTree(defs, isTTY)
+		renderGraphTree(defs, isTTY, durs)
 	case "mermaid":
-		renderGraphMermaid(defs)
+		renderGraphMermaid(defs, durs)
 	case "dot":
-		renderGraphDot(defs)
+		renderGraphDot(defs, durs)
 	default:
 		return fmt.Errorf("unknown graph format %q (want: tree, mermaid, dot)", format)
 	}
 	return nil
+}
+
+// loadCheckDurations reads the stats CSV (`~/cmdr-check-log.csv`) and returns,
+// per check (keyed by CLIName — the same key the log writes and the graph
+// nodes use), the median wall-time of its most recent passing runs. Best-effort:
+// a missing/unreadable log (CI, --no-log, fresh machine) yields an empty map and
+// the graph simply omits times. Uses only `pass` rows (warns log as pass too);
+// skips fail/skip/blocked, whose durations aren't representative of a real run.
+func loadCheckDurations() map[string]float64 {
+	out := map[string]float64{}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return out
+	}
+	f, err := os.Open(filepath.Join(home, csvFileName))
+	if err != nil {
+		return out
+	}
+	defer f.Close()
+
+	r := csv.NewReader(f)
+	r.FieldsPerRecord = -1 // message field may contain commas across schema tweaks
+	r.LazyQuotes = true
+
+	byCheck := map[string][]float64{}
+	for {
+		rec, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			continue // skip a malformed line, keep going
+		}
+		// columns: timestamp, app, check, duration_s, result, ...
+		if len(rec) < 5 || rec[2] == "check" || rec[4] != "pass" {
+			continue
+		}
+		d, perr := strconv.ParseFloat(rec[3], 64)
+		if perr != nil || d <= 0 {
+			continue
+		}
+		byCheck[rec[2]] = append(byCheck[rec[2]], d)
+	}
+
+	const recent = 20 // bias toward current state, smooth cold/warm spread
+	for name, ds := range byCheck {
+		if len(ds) > recent {
+			ds = ds[len(ds)-recent:]
+		}
+		out[name] = medianFloat(ds)
+	}
+	return out
+}
+
+func medianFloat(xs []float64) float64 {
+	if len(xs) == 0 {
+		return 0
+	}
+	s := append([]float64(nil), xs...)
+	sort.Float64s(s)
+	n := len(s)
+	if n%2 == 1 {
+		return s[n/2]
+	}
+	return (s[n/2-1] + s[n/2]) / 2
+}
+
+// fmtWallTime renders a median wall-time as a compact "~1.4s" / "~840ms" /
+// "~2m3s". Returns "" when there's no data (the label then omits it).
+func fmtWallTime(seconds float64) string {
+	switch {
+	case seconds <= 0:
+		return ""
+	case seconds < 1:
+		return fmt.Sprintf("~%dms", int(seconds*1000+0.5))
+	case seconds < 60:
+		return fmt.Sprintf("~%.1fs", seconds)
+	default:
+		return fmt.Sprintf("~%dm%ds", int(seconds)/60, int(seconds)%60)
+	}
 }
 
 // graphModel holds the lookup structures shared by the renderers.
@@ -126,7 +213,7 @@ func weightColor(w int) string {
 	}
 }
 
-func renderGraphTree(defs []checks.CheckDefinition, useColor bool) {
+func renderGraphTree(defs []checks.CheckDefinition, useColor bool, durs map[string]float64) {
 	m := buildGraphModel(defs)
 	c := func(code, s string) string {
 		if !useColor {
@@ -135,14 +222,17 @@ func renderGraphTree(defs []checks.CheckDefinition, useColor bool) {
 		return code + s + colorReset
 	}
 
-	// annot renders the colored "(lane, wN[, smb][, ci-only])" suffix. Only the
-	// lane and weight carry color; the name and tech stay plain (coloring names
-	// read as confusing).
+	// annot renders the colored "(lane, wN[, ~time][, smb][, ci-only])" suffix.
+	// Only the lane and weight carry color; the name, time, and tech stay plain
+	// (coloring names read as confusing).
 	annot := func(d *checks.CheckDefinition) string {
 		w := weightOf(d)
 		parts := []string{
 			c(laneColor[sizeTag(d)], sizeTag(d)),
 			c(weightColor(w), fmt.Sprintf("w%d", w)),
+		}
+		if t := fmtWallTime(durs[d.CLIName()]); t != "" {
+			parts = append(parts, t)
 		}
 		if d.NeedsSmb != "" {
 			parts = append(parts, "smb")
@@ -216,7 +306,7 @@ func renderGraphTree(defs []checks.CheckDefinition, useColor bool) {
 	// Summary + legend.
 	fastN, normalN, slowN, totalW := laneCounts(defs)
 	fmt.Printf("%s\n", c(colorDim, fmt.Sprintf(
-		"Legend: lane = %s / %s / %s; weight w1 %s, w2 %s, w3-5 %s, w6-8 %s, w9+ %s.",
+		"Legend: lane = %s / %s / %s; weight w1 %s, w2 %s, w3-5 %s, w6-8 %s, w9+ %s; ~time = median of recent runs.",
 		c(colorGreen, "fast"), c(colorYellow, "normal"), c(colorRed, "slow"),
 		c(colorGreen, "green"), c(colorLightGreen, "light"), c(colorYellow, "yellow"), c(colorOrange, "orange"), c(colorRed, "red"))))
 	fmt.Printf("%s\n", c(colorDim, fmt.Sprintf(
@@ -231,7 +321,7 @@ func mermaidID(id string) string {
 	return strings.NewReplacer("-", "_", ".", "_", "/", "_").Replace(id)
 }
 
-func renderGraphMermaid(defs []checks.CheckDefinition) {
+func renderGraphMermaid(defs []checks.CheckDefinition, durs map[string]float64) {
 	m := buildGraphModel(defs)
 	fmt.Println("%% Cmdr check dependency graph. Paste into https://mermaid.live or a Markdown ```mermaid block.")
 	fmt.Println("graph TD")
@@ -243,6 +333,9 @@ func renderGraphMermaid(defs []checks.CheckDefinition) {
 		tags := sizeTag(d)
 		if d.CIOnly {
 			tags += " ci"
+		}
+		if t := fmtWallTime(durs[d.CLIName()]); t != "" {
+			tags += " · " + t
 		}
 		label := fmt.Sprintf("%s<br/>w%d · %s", d.CLIName(), weightOf(d), tags)
 		fmt.Printf("  %s[\"%s\"]:::%s\n", mermaidID(d.ID), label, sizeTag(d))
@@ -258,7 +351,7 @@ func renderGraphMermaid(defs []checks.CheckDefinition) {
 
 // ── Graphviz DOT ───────────────────────────────────────────────────────────
 
-func renderGraphDot(defs []checks.CheckDefinition) {
+func renderGraphDot(defs []checks.CheckDefinition, durs map[string]float64) {
 	m := buildGraphModel(defs)
 	fill := map[string]string{"fast": "#d9f2d9", "normal": "#eef2f7", "slow": "#ffe0c2"}
 	fmt.Println("// Cmdr check dependency graph. Render: dot -Tpng -o checks.png this.dot")
@@ -284,7 +377,11 @@ func renderGraphDot(defs []checks.CheckDefinition) {
 			if d.CIOnly {
 				style = ", style=\"filled,rounded,dashed\""
 			}
-			label := fmt.Sprintf("%s\\nw%d · %s", d.CLIName(), weightOf(d), sizeTag(d))
+			meta := sizeTag(d)
+			if t := fmtWallTime(durs[d.CLIName()]); t != "" {
+				meta += " · " + t
+			}
+			label := fmt.Sprintf("%s\\nw%d · %s", d.CLIName(), weightOf(d), meta)
 			fmt.Printf("    %q [label=%q, fillcolor=%q%s];\n", d.ID, label, fill[sizeTag(d)], style)
 		}
 		fmt.Println("  }")
