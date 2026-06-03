@@ -14,6 +14,8 @@ let tooltipEl: HTMLDivElement | null = null
 let tooltipIdCounter = 0
 let activeElement: HTMLElement | null = null
 let showTimer: ReturnType<typeof setTimeout> | null = null
+/** The element a pending show-timer belongs to, so we can cancel it if that element is torn down. */
+let timerNode: HTMLElement | null = null
 
 /** Shared container for tooltips (keeps them inside a landmark to satisfy axe's `region` rule). */
 let tooltipContainer: HTMLDivElement | null = null
@@ -82,7 +84,21 @@ export function escapeHtml(text: string): string {
   return div.innerHTML
 }
 
+/**
+ * A trigger removed from the DOM reports an all-zero `getBoundingClientRect()`, so positioning against
+ * it would dump the tooltip in the top-left corner. `isConnected` is the precise signal for that.
+ */
+function isTriggerDetached(el: HTMLElement): boolean {
+  return !el.isConnected
+}
+
 function positionTooltip(triggerEl: HTMLElement): void {
+  // Guards the live-update path (content changes while shown) against a trigger that vanished meanwhile.
+  if (isTriggerDetached(triggerEl)) {
+    hideTooltip()
+    return
+  }
+
   const tip = ensureTooltipElement()
   const triggerRect = triggerEl.getBoundingClientRect()
   const tipRect = tip.getBoundingClientRect()
@@ -103,6 +119,11 @@ function positionTooltip(triggerEl: HTMLElement): void {
 }
 
 function showTooltip(triggerEl: HTMLElement, param: TooltipParam): void {
+  // The trigger may have been removed from the DOM during the show delay (e.g. a virtual-scroll row
+  // recycled while hovered). Never show against a detached element: its rect is all-zero, which would
+  // place the tooltip in the top-left corner.
+  if (isTriggerDetached(triggerEl)) return
+
   const tip = ensureTooltipElement()
   setTooltipContent(tip, param)
   triggerEl.setAttribute('aria-describedby', tip.id)
@@ -132,12 +153,15 @@ function cancelTimer(): void {
     clearTimeout(showTimer)
     showTimer = null
   }
+  timerNode = null
 }
 
 function startShowTimer(triggerEl: HTMLElement, param: TooltipParam): void {
   cancelTimer()
+  timerNode = triggerEl
   showTimer = setTimeout(() => {
     showTimer = null
+    timerNode = null
     showTooltip(triggerEl, param)
   }, SHOW_DELAY_MS)
 }
@@ -212,6 +236,14 @@ export function tooltip(node: HTMLElement, param: TooltipParam): ActionReturn<To
       node.removeEventListener('focus', handleFocus)
       node.removeEventListener('blur', handleBlur)
       node.removeEventListener('keydown', handleKeyDown)
+
+      // Cancel a pending show-timer owned by this node. Svelte removes a virtual-scroll row's DOM node
+      // without firing `mouseleave`, so without this the timer would fire later against a detached node
+      // and the tooltip would land in the top-left corner. `activeElement` is still null during the
+      // delay window, so the `activeElement === node` branch below wouldn't catch it.
+      if (timerNode === node) {
+        cancelTimer()
+      }
 
       // If this element's tooltip is showing, hide it
       if (activeElement === node) {

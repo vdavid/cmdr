@@ -93,6 +93,15 @@ import { tooltip } from '$lib/tooltip/tooltip'
 The tooltip element has `white-space: pre-line` and uses global CSS classes, so `<span class="size-mb">` etc. work
 inside `{ html }` tooltips. The `html` variant renders via `innerHTML`; only use with trusted content.
 
+**Gotcha (detached trigger → corner tooltip)**: the show is deferred by a 400ms timer. A virtual-scroll row recycled
+while hovered is removed from the DOM **without** firing `mouseleave`, so the timer would otherwise survive and later
+fire against a detached node — whose `getBoundingClientRect()` is all-zero, dumping the tooltip in the window's top-left
+corner. Two guards prevent this and must both stay: (1) the action's `destroy()` cancels a pending timer it owns
+(tracked via `timerNode`), since `activeElement` is still null during the delay window; (2) `showTooltip` /
+`positionTooltip` bail when `isTriggerDetached(el)` (`!el.isConnected`). Don't replace the `isConnected` check with a
+zero-rect heuristic — happy-dom reports zero rects for every connected element, so it false-positives the whole test
+suite. Covered by `tooltip.test.ts`.
+
 ## Button
 
 Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. Extends
