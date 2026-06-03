@@ -22,7 +22,6 @@ vi.mock('$lib/ipc/bindings', () => ({
 
 import {
   getRecentPathsList,
-  getRecentPathsLoaded,
   loadRecentPaths,
   addRecentPath,
   removeRecentPath,
@@ -67,12 +66,11 @@ describe('recent-paths-state mirror', () => {
     })
   })
 
-  it('load() pulls the backend list and marks loaded', async () => {
+  it('load() pulls the backend list', async () => {
     store = [makeEntry('/a'), makeEntry('/b')]
-    expect(getRecentPathsLoaded()).toBe(false)
+    expect(getRecentPathsList()).toEqual([])
     await loadRecentPaths()
     expect(getRecentPathsList().map((e) => e.path)).toEqual(['/a', '/b'])
-    expect(getRecentPathsLoaded()).toBe(true)
   })
 
   it('load() is idempotent unless forced', async () => {

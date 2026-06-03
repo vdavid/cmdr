@@ -66,8 +66,14 @@ use crate::commands::file_system::expand_tilde;
 pub enum GoToPathResolution {
     /// The resolved path is an existing directory. Navigate into it.
     Directory { path: String },
-    /// The resolved path is an existing file. Navigate to its parent and select it.
-    File { parent_dir: String, file_name: String },
+    /// The resolved path is an existing file. `path` is the canonical normalized
+    /// full path (recorded into recents); `parent_dir` / `file_name` drive the
+    /// navigate-to-parent + select.
+    File {
+        path: String,
+        parent_dir: String,
+        file_name: String,
+    },
     /// The resolved path doesn't exist. `ancestor_dir` is the nearest existing
     /// ancestor (worst case `/`). Navigate there and fire an INFO toast.
     NearestAncestor { requested: String, ancestor_dir: String },
@@ -158,7 +164,11 @@ pub fn resolve(input: &str, base_dir: &str) -> GoToPathResolution {
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| normalized_str.clone());
-            GoToPathResolution::File { parent_dir, file_name }
+            GoToPathResolution::File {
+                path: normalized_str,
+                parent_dir,
+                file_name,
+            }
         }
         Err(_) => {
             // Doesn't exist (or unreadable): fall back to the nearest ancestor.
@@ -201,6 +211,7 @@ mod tests {
         assert_eq!(
             res,
             GoToPathResolution::File {
+                path: file.to_string_lossy().to_string(),
                 parent_dir: dir.path().to_string_lossy().to_string(),
                 file_name: "notes.txt".to_string(),
             }
@@ -309,11 +320,13 @@ mod tests {
     #[test]
     fn resolution_serializes_with_camelcase_kind_and_fields() {
         let res = GoToPathResolution::File {
+            path: "/Users/x/a.txt".to_string(),
             parent_dir: "/Users/x".to_string(),
             file_name: "a.txt".to_string(),
         };
         let json = serde_json::to_string(&res).unwrap();
         assert!(json.contains("\"kind\":\"file\""), "got {json}");
+        assert!(json.contains("\"path\""), "got {json}");
         assert!(json.contains("\"parentDir\""), "got {json}");
         assert!(json.contains("\"fileName\""), "got {json}");
 

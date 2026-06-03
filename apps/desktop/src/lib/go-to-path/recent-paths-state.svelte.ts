@@ -28,11 +28,6 @@ export function getRecentPathsList(): RecentPathEntry[] {
   return entries
 }
 
-/** Whether `loadRecentPaths()` has completed at least once this session. */
-export function getRecentPathsLoaded(): boolean {
-  return loaded
-}
-
 /**
  * Loads the persisted recent paths from the backend. Idempotent: subsequent
  * calls in the same session are no-ops unless `force` is set. The dialog calls

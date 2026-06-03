@@ -94,8 +94,8 @@ describe('goToPath handler', () => {
     expect(addRecentPathStateMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/tmp/here' }))
   })
 
-  it('file → navigateToFileInPane + records the full file path', async () => {
-    okResolve({ kind: 'file', parentDir: '/tmp', fileName: 'a.txt' })
+  it('file → navigateToFileInPane + records the backend-authoritative path', async () => {
+    okResolve({ kind: 'file', path: '/tmp/a.txt', parentDir: '/tmp', fileName: 'a.txt' })
     await goToPath(makeExplorerStub(), '/tmp/a.txt')
     expect(navigateToFileMock).toHaveBeenCalledWith(expect.anything(), 'left', '/tmp', 'a.txt')
     expect(navigateToDirMock).not.toHaveBeenCalled()
@@ -184,7 +184,7 @@ describe('digitToRecentIndex', () => {
 describe('shouldPrefillClipboard', () => {
   it('is true for directory and file resolutions', () => {
     expect(shouldPrefillClipboard({ kind: 'directory', path: '/x' })).toBe(true)
-    expect(shouldPrefillClipboard({ kind: 'file', parentDir: '/x', fileName: 'a' })).toBe(true)
+    expect(shouldPrefillClipboard({ kind: 'file', path: '/x/a', parentDir: '/x', fileName: 'a' })).toBe(true)
   })
 
   it('is false for nearestAncestor and invalid resolutions', () => {

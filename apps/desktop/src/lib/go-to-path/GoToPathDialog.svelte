@@ -223,6 +223,11 @@
             <ul class="recents" aria-label="Recent paths">
                 {#each recents as recent, index (recent.id)}
                     <li class="recent-row">
+                        <!-- Row body is out of the tab order on purpose: the digit
+                             keys (1-9, 0) are the keyboard path to jumping a recent,
+                             so tabbing through every row body would be redundant. The
+                             `[x]` remove button keeps its natural tab order so keyboard
+                             users can remove a recent (digits can't express that). -->
                         <button
                             type="button"
                             class="recent-main"
@@ -245,7 +250,6 @@
                             aria-label="Remove from list"
                             use:tooltip={'Remove from list'}
                             onclick={(event) => void handleRemoveRecent(event, recent.id)}
-                            tabindex="-1"
                         >
                             <XIcon />
                         </button>

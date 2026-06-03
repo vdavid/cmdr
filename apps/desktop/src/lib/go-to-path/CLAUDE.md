@@ -53,6 +53,10 @@ actual jump — one source of truth, no drift.
   all three; the `$state` mirror re-reads the authoritative list after each write rather than guessing the new order.
 - Rows are middle-truncated for display (`useShortenMiddle`, `preferBreakAt: '/'`) with the full path in a `title`
   tooltip (`tooltipWhenTruncated`).
+- **Keyboard access.** The row body is out of the tab order (`tabindex="-1"`): the digit keys (1-9, 0) are the keyboard
+  path to jumping a recent, so tabbing every row body would be redundant. The `[x]` remove button keeps its natural tab
+  order (a real `<button>` with `aria-label="Remove from list"` and a `--shadow-focus` `:focus-visible` ring) so
+  keyboard-only users can remove a recent — digits can't express "remove." Removing the row refocuses the textbox.
 
 ## Key decisions
 
@@ -79,8 +83,8 @@ Matches the downloads toast snapshot rule.
 
 A command with a native menu accelerator AND a `command-registry` shortcut fires both paths on macOS. The
 `showGoToPathDialog` callback in `+page.svelte` guards with `if (show && showGoToPathDialog) return`, so a double-fire
-opens the dialog exactly once. (The native Go-menu item lands in M3; this guard is already in place so it'll be correct
-when it does.)
+opens the dialog exactly once. The native `Go to path…` menu item carries ⌘G as an accelerator, so this guard is what
+keeps a single ⌘G press from opening the dialog twice.
 
 ## v1 limitations
 

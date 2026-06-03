@@ -12,8 +12,10 @@ all the path reasoning plus the recent-paths store. The IPC layer (`commands/go_
 
 ## `GoToPathResolution`
 
-The resolution outcome the frontend branches on. Four variants: `Directory { path }`, `File { parentDir, fileName }`,
-`NearestAncestor { requested, ancestorDir }`, `Invalid { reason }`. The tagged-enum attrs
+The resolution outcome the frontend branches on. Four variants: `Directory { path }`,
+`File { path, parentDir, fileName }`, `NearestAncestor { requested, ancestorDir }`, `Invalid { reason }`. The `File`
+variant carries the canonical normalized full `path` (the frontend records it into recents verbatim, no client-side
+reconstruction) alongside `parentDir` / `fileName` (which drive navigate-to-parent + select). The tagged-enum attrs
 (`#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]`) are required so the tag and the
 struct-variant fields ship camelCase through tauri-specta (enforced by `ipc-enum-camelcase`).
 

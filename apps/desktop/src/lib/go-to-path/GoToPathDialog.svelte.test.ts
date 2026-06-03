@@ -163,6 +163,27 @@ describe('GoToPathDialog', () => {
     cleanup()
   })
 
+  it('the remove button is keyboard-reachable and operable', async () => {
+    getRecentPathsListMock.mockReturnValue([{ id: 'a', path: '/first', timestamp: 1 }])
+    const onGo = goMock({ kind: 'directory', path: '/x' })
+    const { target, cleanup } = setup({ onGo })
+    await tick()
+    const removeButton = target.querySelector('.remove-button') as HTMLButtonElement
+    // A real `<button>` in the natural tab order: no negative tabindex removing
+    // it. Keyboard-only users can focus and operate it (Enter/Space dispatch a
+    // native click on a button), so it must not be excluded from tabbing.
+    expect(removeButton.getAttribute('tabindex')).toBeNull()
+    expect(removeButton.getAttribute('aria-label')).toBe('Remove from list')
+    // Enter/Space on a focused native button fire a `click`; simulate that path.
+    removeButton.focus()
+    expect(target.contains(document.activeElement)).toBe(true)
+    removeButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await tick()
+    expect(removeRecentPathMock).toHaveBeenCalledWith('a')
+    expect(onGo).not.toHaveBeenCalled()
+    cleanup()
+  })
+
   it('Enter confirms: jumps and closes on a directory outcome', async () => {
     const onGo = goMock({ kind: 'directory', path: '/typed' })
     const { target, onCancel, cleanup } = setup({ onGo })

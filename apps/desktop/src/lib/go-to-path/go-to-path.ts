@@ -69,7 +69,7 @@ export async function goToPath(
       return resolution
     case 'file':
       await navigateToFileInPane(explorer, pane, resolution.parentDir, resolution.fileName)
-      await recordRecent(`${resolution.parentDir}/${resolution.fileName}`.replace(/\/+/g, '/'))
+      await recordRecent(resolution.path)
       return resolution
     case 'nearestAncestor': {
       await navigateToDirInPane(explorer, pane, resolution.ancestorDir)

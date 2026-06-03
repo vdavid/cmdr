@@ -2703,8 +2703,12 @@ export type GoToLatestError =
 export type GoToPathResolution =
   // The resolved path is an existing directory. Navigate into it.
   | { kind: 'directory'; path: string }
-  // The resolved path is an existing file. Navigate to its parent and select it.
-  | { kind: 'file'; parentDir: string; fileName: string }
+  /**
+   *  The resolved path is an existing file. `path` is the canonical normalized
+   *  full path (recorded into recents); `parent_dir` / `file_name` drive the
+   *  navigate-to-parent + select.
+   */
+  | { kind: 'file'; path: string; parentDir: string; fileName: string }
   /**
    *  The resolved path doesn't exist. `ancestor_dir` is the nearest existing
    *  ancestor (worst case `/`). Navigate there and fire an INFO toast.
