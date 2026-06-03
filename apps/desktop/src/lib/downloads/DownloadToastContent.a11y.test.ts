@@ -2,8 +2,8 @@ import { describe, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-vi.mock('./reveal', () => ({
-  revealPath: vi.fn(() => Promise.resolve()),
+vi.mock('./go-to-latest', () => ({
+  goToDownload: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('./notifications-mode', () => ({

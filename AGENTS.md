@@ -52,6 +52,11 @@ These are general principles for the whole project. These are not just empty sen
    guarantee stability.
 8. **Invest in tooling.** We have check runners, linters, coverage, CI. Tooling must be fast so we use it, and strict so
    it doesn't allow us to make mistakes.
+9. **Name internals after the UI.** When a feature or action has a user-facing name, its internal identifiers (command
+   ids, file/function/type names, settings keys, MCP tools) use the same vocabulary. If the UI says "Go to latest
+   download", the code says `goToLatest`, not `revealLatest`. A UI "Go to…" backed by a `reveal_*` command forces every
+   reader to keep a mental translation table, and the mismatch rots as the label drifts. Rename internals when you
+   rename the UI.
 
 ## File structure
 

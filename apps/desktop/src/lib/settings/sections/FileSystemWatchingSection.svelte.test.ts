@@ -2,7 +2,7 @@
  * Tier-3 tests for `FileSystemWatchingSection.svelte`.
  *
  * Pins the contract:
- *   - Three sub-groups render: Drive indexing, Downloads notifications, Reveal
+ *   - Three sub-groups render: Drive indexing, Downloads notifications, Go to
  *     latest download.
  *   - When the FDA gate is closed (`fda_pending` is true), sub-groups 2 and 3
  *     grey out and one shared hint appears.
@@ -25,7 +25,7 @@ const {
   setSettingMock,
   downloadsWatcherStatusMock,
   recheckGateMock,
-  setGlobalRevealShortcutMock,
+  setGlobalGoToLatestShortcutMock,
   getIndexStatusMock,
   clearDriveIndexMock,
 } = vi.hoisted(() => ({
@@ -33,7 +33,7 @@ const {
   setSettingMock: vi.fn(),
   downloadsWatcherStatusMock: vi.fn(),
   recheckGateMock: vi.fn(),
-  setGlobalRevealShortcutMock: vi.fn(),
+  setGlobalGoToLatestShortcutMock: vi.fn(),
   getIndexStatusMock: vi.fn(),
   clearDriveIndexMock: vi.fn(),
 }))
@@ -51,7 +51,7 @@ vi.mock('$lib/ipc/bindings', () => ({
   commands: {
     downloadsWatcherStatus: downloadsWatcherStatusMock,
     recheckDownloadsWatcherGate: recheckGateMock,
-    setGlobalRevealShortcut: setGlobalRevealShortcutMock,
+    setGlobalGoToLatestShortcut: setGlobalGoToLatestShortcutMock,
     getIndexStatus: getIndexStatusMock,
     clearDriveIndex: clearDriveIndexMock,
   },
@@ -66,11 +66,11 @@ function setDefaultSettings(): void {
         return true
       case 'behavior.fileSystemWatching.downloadsNotifications':
         return 'in-app'
-      case 'behavior.fileSystemWatching.globalRevealShortcut.enabled':
+      case 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled':
         return true
-      case 'behavior.fileSystemWatching.globalRevealShortcut.binding':
+      case 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding':
         return '\u{2303}\u{2325}\u{2318}J'
-      case 'behavior.fileSystemWatching.globalRevealShortcut.acknowledged':
+      case 'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged':
         return true
       default:
         return undefined
@@ -90,7 +90,7 @@ beforeEach(() => {
   setSettingMock.mockReset()
   downloadsWatcherStatusMock.mockReset()
   recheckGateMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
-  setGlobalRevealShortcutMock.mockReset().mockResolvedValue({
+  setGlobalGoToLatestShortcutMock.mockReset().mockResolvedValue({
     status: 'ok',
     data: { status: 'registered', binding: '\u{2303}\u{2325}\u{2318}J', enabled: true },
   })
@@ -120,7 +120,7 @@ describe('FileSystemWatchingSection', () => {
     const target = await mountSection()
     const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
     expect(labels).toEqual(
-      expect.arrayContaining(['Drive indexing', 'Downloads notifications', 'Reveal latest download']),
+      expect.arrayContaining(['Drive indexing', 'Downloads notifications', 'Go to latest download']),
     )
     // Section title.
     const title = target.querySelector('.section-title')?.textContent.trim()
@@ -167,7 +167,7 @@ describe('FileSystemWatchingSection', () => {
   it('calls the backend IPC when the global-shortcut on/off toggle flips', async () => {
     const target = await mountSection()
     // Reset between the mount-time refreshShortcutStatus call and the toggle.
-    setGlobalRevealShortcutMock.mockClear()
+    setGlobalGoToLatestShortcutMock.mockClear()
     const checkbox = target.querySelector<HTMLInputElement>(
       'input[type="checkbox"][data-test="global-shortcut-enabled"]',
     )
@@ -177,13 +177,13 @@ describe('FileSystemWatchingSection', () => {
     await Promise.resolve()
     await tick()
 
-    expect(setGlobalRevealShortcutMock).toHaveBeenCalled()
+    expect(setGlobalGoToLatestShortcutMock).toHaveBeenCalled()
     // The same flip writes the enabled setting through the helper.
-    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalRevealShortcut.enabled', false)
+    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalGoToLatestShortcut.enabled', false)
     target.remove()
   })
 
-  it('shows a Switch (not a binding text input) for the reveal toggle', async () => {
+  it('shows a Switch (not a binding text input) for the go-to-latest toggle', async () => {
     const target = await mountSection()
     // The toggle is an Ark Switch with a hidden checkbox; there is no binding
     // text input here anymore (that moved to Keyboard shortcuts).
@@ -194,7 +194,7 @@ describe('FileSystemWatchingSection', () => {
 
   it('describes the toggle with the LIVE binding (updates the helper text on rebind)', async () => {
     const target = await mountSection()
-    // The Reveal latest download sub-group's description references the
+    // The Go to latest download sub-group's description references the
     // current binding (⌃⌥⌘J by default).
     expect(target.textContent).toContain('\u{2303}\u{2325}\u{2318}J')
     expect(target.textContent).toMatch(/Press .* from any app to jump to your most recent download\./)

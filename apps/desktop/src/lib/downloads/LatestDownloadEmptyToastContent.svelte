@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * INFO toast shown when ⌘J / palette / MCP reveal can't find any
+     * INFO toast shown when ⌘J / palette / MCP go-to-latest can't find any
      * eligible download. Pure-prop-driven: the "Go to Downloads" action and
      * the toast id arrive as props, captured at toast-creation time and
      * never re-read. Same shape as `DownloadToastContent`.

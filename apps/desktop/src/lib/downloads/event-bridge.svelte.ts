@@ -12,7 +12,7 @@
  * ## Snapshot-at-creation rule
  *
  * The shortcut hint shown on each in-app toast is captured at event-arrival
- * time and passed as a prop. A remap of the in-app reveal binding between
+ * time and passed as a prop. A remap of the in-app go-to-latest binding between
  * one toast appearing and another arriving DOES update the next toast's
  * hint — that's correct — but never the toast already on screen.
  *
@@ -21,7 +21,7 @@
  * The watcher won't emit `download-detected` when the FDA gate is closed,
  * but we re-check the gate per event before surfacing anything. This
  * guards against any stale event slipping through during a gate flip and
- * mirrors the same defensive shape `revealLatestDownload` uses.
+ * mirrors the same defensive shape `goToLatestDownload` uses.
  */
 
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
@@ -37,7 +37,7 @@ import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 const log = getAppLogger('downloads')
 
 const DOWNLOAD_DETECTED_EVENT = 'download-detected'
-const REVEAL_COMMAND_ID = 'downloads.revealLatest'
+const GO_TO_LATEST_COMMAND_ID = 'downloads.goToLatest'
 const TOAST_TIMEOUT_MS = 10_000
 const TOAST_GROUP = 'downloads'
 const PERMISSION_DENIED_TOAST_ID = 'downloads:macos-permission-denied'
@@ -111,7 +111,7 @@ function dispatchToast(payload: DownloadDetectedPayload, explorer: ExplorerAPI |
   // Snapshot the current binding at toast creation time. The component
   // receives this as a prop and never re-reads, so a remap between events
   // doesn't mutate an already-visible toast.
-  const shortcuts = getEffectiveShortcuts(REVEAL_COMMAND_ID)
+  const shortcuts = getEffectiveShortcuts(GO_TO_LATEST_COMMAND_ID)
   const shortcutHint = shortcuts[0] ?? ''
 
   addToast(DownloadToastContent, {

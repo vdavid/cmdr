@@ -1,6 +1,6 @@
 //! Tauri command surface for the downloads watcher.
 //!
-//! Two commands at this milestone: [`reveal_latest_download`] (the future
+//! Two commands at this milestone: [`go_to_latest_download`] (the future
 //! `⌘J` handler picks this up; for now MCP / dev panels can drive it) and
 //! [`downloads_watcher_status`] (FE / debug surface to inspect the running
 //! state). A third — [`recheck_downloads_watcher_gate`] — exists so the
@@ -14,22 +14,22 @@ use tauri::AppHandle;
 
 use super::watcher::resolved_downloads_dir;
 
-/// Successful reveal: the path to surface plus the pre-split parent dir +
+/// Successful resolution: the path to surface plus the pre-split parent dir +
 /// file name so the frontend doesn't have to parse the path itself.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct RevealedDownload {
+pub struct LatestDownload {
     pub path: String,
     pub parent_dir: String,
     pub file_name: String,
 }
 
-/// Typed errors returned by [`reveal_latest_download`].
+/// Typed errors returned by [`go_to_latest_download`].
 ///
 /// Tagged enum — `kind` discriminator, no string matching at the call site.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum RevealError {
+pub enum GoToLatestError {
     /// The watcher hasn't started yet (FDA gate closed, or startup not done).
     /// Frontend should show the "Cmdr needs FDA" toast.
     WatcherUnavailable,
@@ -40,7 +40,7 @@ pub enum RevealError {
     DownloadsDirUnresolved,
 }
 
-impl std::fmt::Display for RevealError {
+impl std::fmt::Display for GoToLatestError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::WatcherUnavailable => write!(f, "Downloads watcher isn't running"),
@@ -64,14 +64,14 @@ pub struct DownloadsWatcherStatus {
     pub fda_pending: bool,
 }
 
-/// Reveal the most recently observed eligible download.
+/// Go to the most recently observed eligible download.
 ///
 /// Tries the ring first; falls back to a recursive Downloads-dir scan when
-/// the ring is empty (cold start). Returns a typed [`RevealError`] for the
+/// the ring is empty (cold start). Returns a typed [`GoToLatestError`] for the
 /// frontend to branch on — no string matching.
 #[tauri::command]
 #[specta::specta]
-pub async fn reveal_latest_download() -> Result<RevealedDownload, RevealError> {
+pub async fn go_to_latest_download() -> Result<LatestDownload, GoToLatestError> {
     let from_ring = super::runtime::with_watcher(|w| w.latest_download()).flatten();
     let path = match from_ring {
         Some(p) => Some(p),
@@ -100,9 +100,9 @@ pub async fn reveal_latest_download() -> Result<RevealedDownload, RevealError> {
         // Downloads dir to scan (we wouldn't trust an unguarded scan from
         // command space anyway since that could fire TCC popups).
         if super::runtime::is_running() {
-            return Err(RevealError::Empty);
+            return Err(GoToLatestError::Empty);
         }
-        return Err(RevealError::WatcherUnavailable);
+        return Err(GoToLatestError::WatcherUnavailable);
     };
 
     let parent_dir = PathBuf::from(&path)
@@ -114,7 +114,7 @@ pub async fn reveal_latest_download() -> Result<RevealedDownload, RevealError> {
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    Ok(RevealedDownload {
+    Ok(LatestDownload {
         path: path.to_string_lossy().to_string(),
         parent_dir,
         file_name,
@@ -165,13 +165,13 @@ pub async fn recheck_downloads_watcher_gate(app: AppHandle) -> Result<(), Watche
     super::runtime::refresh_runtime(&app).map_err(|e| WatcherGateError::WatcherStartFailed { message: e.to_string() })
 }
 
-/// Result of [`set_global_reveal_shortcut`]: the new status the Settings row
+/// Result of [`set_global_go_to_latest_shortcut`]: the new status the Settings row
 /// should display. The FE caches this until the next register/unregister, so
 /// the row's "Registered" / "Couldn't register" indicator stays in sync
 /// without an extra round trip.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct GlobalRevealShortcutState {
+pub struct GlobalGoToLatestShortcutState {
     pub status: super::global_shortcut::RegistrationStatus,
     pub binding: String,
     pub enabled: bool,
@@ -185,17 +185,17 @@ pub struct GlobalRevealShortcutState {
 /// [`super::global_shortcut::RegistrationError`] enum.
 #[tauri::command]
 #[specta::specta]
-pub async fn set_global_reveal_shortcut(
+pub async fn set_global_go_to_latest_shortcut(
     app: AppHandle,
     enabled: bool,
     binding: String,
-) -> Result<GlobalRevealShortcutState, super::global_shortcut::RegistrationError> {
-    super::runtime::apply_global_reveal_shortcut(&app, enabled, &binding)
+) -> Result<GlobalGoToLatestShortcutState, super::global_shortcut::RegistrationError> {
+    super::runtime::apply_global_go_to_latest_shortcut(&app, enabled, &binding)
 }
 
 #[cfg(test)]
 mod tests {
-    //! Tests for the `reveal_latest_download` branches. The process-global
+    //! Tests for the `go_to_latest_download` branches. The process-global
     //! `runtime::RUNTIME` is shared across the crate; serialize through the
     //! same `install_lock` the runtime module uses, drained via a private
     //! `with_clean_runtime` helper so a panicking test can't leave a
@@ -223,14 +223,14 @@ mod tests {
 
     fn unhidden_tempdir() -> tempfile::TempDir {
         tempfile::Builder::new()
-            .prefix("cmdr-reveal-test-")
+            .prefix("cmdr-go-to-latest-test-")
             .tempdir()
             .expect("tempdir")
     }
 
     /// Build a single-threaded tokio runtime per test. Wrapping the `await` in
     /// `block_on` lets us hold the std `Mutex` install-lock across the
-    /// reveal future without tripping `clippy::await_holding_lock` (the lock
+    /// go-to-latest future without tripping `clippy::await_holding_lock` (the lock
     /// stays on the sync caller stack; the runtime only drives the future).
     /// The existing `runtime` module's tests use the same shape (plain
     /// `#[test]`); matching the pattern keeps the install-serialization
@@ -244,7 +244,7 @@ mod tests {
     }
 
     #[test]
-    fn reveal_returns_watcher_unavailable_when_runtime_is_dormant() {
+    fn go_to_latest_returns_watcher_unavailable_when_runtime_is_dormant() {
         // No watcher installed → distinguish "dormant" from "running but
         // empty." The FE branches on this to show the FDA-required toast
         // instead of the empty-Downloads toast.
@@ -254,12 +254,12 @@ mod tests {
             "precondition: no watcher installed"
         );
 
-        let err = block_on(reveal_latest_download()).expect_err("expected error");
-        assert!(matches!(err, RevealError::WatcherUnavailable), "got {err:?}");
+        let err = block_on(go_to_latest_download()).expect_err("expected error");
+        assert!(matches!(err, GoToLatestError::WatcherUnavailable), "got {err:?}");
     }
 
     #[test]
-    fn reveal_returns_empty_when_ring_and_scan_both_turn_up_nothing() {
+    fn go_to_latest_returns_empty_when_ring_and_scan_both_turn_up_nothing() {
         // Watcher running, no events have arrived, Downloads dir is empty.
         // This is the cold-start "you just launched Cmdr, no downloads yet"
         // path — distinct from `WatcherUnavailable` so the FE can show the
@@ -273,12 +273,12 @@ mod tests {
         let watcher = DownloadsWatcher::start_at(tempdir.path().to_path_buf(), sink).expect("watcher start");
         let _guard = install_for_test(watcher);
 
-        let err = block_on(reveal_latest_download()).expect_err("expected error");
-        assert!(matches!(err, RevealError::Empty), "got {err:?}");
+        let err = block_on(go_to_latest_download()).expect_err("expected error");
+        assert!(matches!(err, GoToLatestError::Empty), "got {err:?}");
     }
 
     #[test]
-    fn reveal_returns_revealed_download_from_scan_fallback_when_ring_is_empty() {
+    fn go_to_latest_returns_download_from_scan_fallback_when_ring_is_empty() {
         // The scan fallback finds an eligible file even though the ring is
         // empty. The returned shape splits the path into `parent_dir` and
         // `file_name` so the FE doesn't have to parse paths.
@@ -294,9 +294,9 @@ mod tests {
         let watcher = DownloadsWatcher::start_at(canonical_root.clone(), sink).expect("watcher start");
         let _guard = install_for_test(watcher);
 
-        let revealed = block_on(reveal_latest_download()).expect("expected Ok");
-        assert_eq!(revealed.path, file_path.to_string_lossy());
-        assert_eq!(revealed.parent_dir, canonical_root.to_string_lossy());
-        assert_eq!(revealed.file_name, "downloaded-from-cli.bin");
+        let latest = block_on(go_to_latest_download()).expect("expected Ok");
+        assert_eq!(latest.path, file_path.to_string_lossy());
+        assert_eq!(latest.parent_dir, canonical_root.to_string_lossy());
+        assert_eq!(latest.file_name, "downloaded-from-cli.bin");
     }
 }

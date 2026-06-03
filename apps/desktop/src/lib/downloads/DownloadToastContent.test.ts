@@ -1,23 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, type ComponentProps } from 'svelte'
 
-// Hoisted mocks: the component delegates to the reveal-by-path helper and the
+// Hoisted mocks: the component delegates to the go-to-download-by-path helper and the
 // "Stop showing these" deep-link + settings writer. We assert the exact wire
 // calls without rendering the rest of the app.
 const {
-  revealPathMock,
+  goToDownloadMock,
   setDownloadsNotificationsModeMock,
   openSettingsToDownloadsNotificationsMock,
   dismissToastMock,
 } = vi.hoisted(() => ({
-  revealPathMock: vi.fn(() => Promise.resolve()),
+  goToDownloadMock: vi.fn(() => Promise.resolve()),
   setDownloadsNotificationsModeMock: vi.fn(),
   openSettingsToDownloadsNotificationsMock: vi.fn(() => Promise.resolve()),
   dismissToastMock: vi.fn(),
 }))
 
-vi.mock('./reveal', () => ({
-  revealPath: revealPathMock,
+vi.mock('./go-to-latest', () => ({
+  goToDownload: goToDownloadMock,
 }))
 
 vi.mock('./notifications-mode', () => ({
@@ -51,7 +51,7 @@ function makeProps(overrides: Partial<DownloadToastProps> = {}): DownloadToastPr
 
 describe('DownloadToastContent', () => {
   beforeEach(() => {
-    revealPathMock.mockReset().mockResolvedValue(undefined)
+    goToDownloadMock.mockReset().mockResolvedValue(undefined)
     setDownloadsNotificationsModeMock.mockReset()
     openSettingsToDownloadsNotificationsMock.mockReset().mockResolvedValue(undefined)
     dismissToastMock.mockReset()
@@ -67,7 +67,7 @@ describe('DownloadToastContent', () => {
     expect(target.textContent).toContain('report.pdf')
     // Snapshotted shortcut hint: the prop value, not whatever the live binding is now.
     expect(target.textContent).toContain('⌘J')
-    expect(target.textContent).toContain('reveal')
+    expect(target.textContent).toContain('jump')
   })
 
   it('renders the relative-subdir hint when inSubdir is true', async () => {
@@ -89,7 +89,7 @@ describe('DownloadToastContent', () => {
     expect(target.textContent.toLowerCase()).toContain('chrome')
   })
 
-  it('clicking the "Jump to file" button reveals the specific file by path', async () => {
+  it('clicking the "Jump to file" button goes to the specific file by path', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(DownloadToastContent, { target, props: makeProps() })
@@ -100,13 +100,13 @@ describe('DownloadToastContent', () => {
     jumpButton.click()
     await tick()
 
-    expect(revealPathMock).toHaveBeenCalledTimes(1)
-    expect(revealPathMock).toHaveBeenCalledWith(undefined, '/Users/me/Downloads', 'report.pdf')
+    expect(goToDownloadMock).toHaveBeenCalledTimes(1)
+    expect(goToDownloadMock).toHaveBeenCalledWith(undefined, '/Users/me/Downloads', 'report.pdf')
     // Pressing the explicit button also dismisses the toast.
     expect(dismissToastMock).toHaveBeenCalledWith('downloads:test-id')
   })
 
-  it('clicking the toast body (outside the buttons) also triggers reveal-by-path', async () => {
+  it('clicking the toast body (outside the buttons) also triggers go-to-by-path', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(DownloadToastContent, { target, props: makeProps() })
@@ -119,8 +119,8 @@ describe('DownloadToastContent', () => {
     ;(title as HTMLElement).click()
     await tick()
 
-    expect(revealPathMock).toHaveBeenCalledTimes(1)
-    expect(revealPathMock).toHaveBeenCalledWith(undefined, '/Users/me/Downloads', 'report.pdf')
+    expect(goToDownloadMock).toHaveBeenCalledTimes(1)
+    expect(goToDownloadMock).toHaveBeenCalledWith(undefined, '/Users/me/Downloads', 'report.pdf')
   })
 
   it('clicking a button does NOT also trigger the body-click handler (stopPropagation)', async () => {
@@ -138,8 +138,8 @@ describe('DownloadToastContent', () => {
     expect(setDownloadsNotificationsModeMock).toHaveBeenCalledTimes(1)
     expect(setDownloadsNotificationsModeMock).toHaveBeenCalledWith('neither')
     expect(openSettingsToDownloadsNotificationsMock).toHaveBeenCalledTimes(1)
-    // ...but the body-click reveal MUST NOT fire (stopPropagation).
-    expect(revealPathMock).not.toHaveBeenCalled()
+    // ...but the body-click jump MUST NOT fire (stopPropagation).
+    expect(goToDownloadMock).not.toHaveBeenCalled()
   })
 
   it('the clickable body is not focusable (mouse-only convenience; buttons own keyboard focus)', async () => {

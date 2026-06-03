@@ -72,8 +72,8 @@ export const commands: Command[] = [
   // Main window - Downloads
   // ============================================================================
   {
-    id: 'downloads.revealLatest',
-    name: 'Reveal latest download',
+    id: 'downloads.goToLatest',
+    name: 'Go to latest download',
     scope: 'Main window',
     showInPalette: true,
     shortcuts: ['⌘J'],

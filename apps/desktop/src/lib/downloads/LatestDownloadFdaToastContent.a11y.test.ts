@@ -6,16 +6,17 @@ vi.mock('$lib/ui/toast', () => ({
   dismissToast: vi.fn(),
 }))
 
-import RevealEmptyToastContent from './RevealEmptyToastContent.svelte'
+vi.mock('$lib/tauri-commands', () => ({
+  openPrivacySettings: vi.fn(() => Promise.resolve()),
+}))
 
-describe('RevealEmptyToastContent a11y', () => {
+import LatestDownloadFdaToastContent from './LatestDownloadFdaToastContent.svelte'
+
+describe('LatestDownloadFdaToastContent a11y', () => {
   it('renders with no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(RevealEmptyToastContent, {
-      target,
-      props: { toastId: 'test-empty-toast', onGoToDownloads: () => {} },
-    })
+    mount(LatestDownloadFdaToastContent, { target, props: {} })
     await tick()
     await expectNoA11yViolations(target)
   })

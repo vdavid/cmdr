@@ -2,15 +2,15 @@ import { describe, it, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-const { getGlobalRevealBindingMock } = vi.hoisted(() => ({
-  getGlobalRevealBindingMock: vi.fn<() => string>(),
+const { getGlobalGoToLatestBindingMock } = vi.hoisted(() => ({
+  getGlobalGoToLatestBindingMock: vi.fn<() => string>(),
 }))
 
 vi.mock('./global-shortcut-setting', () => ({
-  getGlobalRevealBinding: getGlobalRevealBindingMock,
-  setGlobalRevealBinding: vi.fn(),
-  GLOBAL_REVEAL_BINDING_KEY: 'behavior.fileSystemWatching.globalRevealShortcut.binding',
-  GLOBAL_REVEAL_ENABLED_KEY: 'behavior.fileSystemWatching.globalRevealShortcut.enabled',
+  getGlobalGoToLatestBinding: getGlobalGoToLatestBindingMock,
+  setGlobalGoToLatestBinding: vi.fn(),
+  GLOBAL_GO_TO_LATEST_BINDING_KEY: 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding',
+  GLOBAL_GO_TO_LATEST_ENABLED_KEY: 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled',
 }))
 
 vi.mock('$lib/settings', () => ({
@@ -19,7 +19,7 @@ vi.mock('$lib/settings', () => ({
 }))
 
 vi.mock('$lib/ipc/bindings', () => ({
-  commands: { setGlobalRevealShortcut: vi.fn() },
+  commands: { setGlobalGoToLatestShortcut: vi.fn() },
 }))
 
 vi.mock('$lib/logging/logger', () => ({
@@ -30,11 +30,11 @@ import GlobalShortcutRow from './GlobalShortcutRow.svelte'
 
 describe('GlobalShortcutRow a11y', () => {
   beforeEach(() => {
-    getGlobalRevealBindingMock.mockReset()
+    getGlobalGoToLatestBindingMock.mockReset()
   })
 
   it('renders the default (unmodified) state with no a11y violations', async () => {
-    getGlobalRevealBindingMock.mockReturnValue('⌃⌥⌘J')
+    getGlobalGoToLatestBindingMock.mockReturnValue('⌃⌥⌘J')
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(GlobalShortcutRow, { target })
@@ -43,7 +43,7 @@ describe('GlobalShortcutRow a11y', () => {
   })
 
   it('renders the modified state (with reset button) with no a11y violations', async () => {
-    getGlobalRevealBindingMock.mockReturnValue('⌃⌥⌘K')
+    getGlobalGoToLatestBindingMock.mockReturnValue('⌃⌥⌘K')
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(GlobalShortcutRow, { target })

@@ -1,4 +1,4 @@
-//! System-wide reveal-latest-download hotkey (default `⌃⌥⌘J`).
+//! System-wide go-to-latest-download hotkey (default `⌃⌥⌘J`).
 //!
 //! Thin wrapper around `tauri-plugin-global-shortcut` so the rest of the
 //! crate sees a typed-error registration API and the production code path
@@ -14,10 +14,10 @@
 //! ## FDA gate
 //!
 //! The hotkey is registered iff
-//! `settings.globalRevealShortcut.enabled == true` AND
+//! `settings.globalGoToLatestShortcut.enabled == true` AND
 //! `fda_gate::is_fda_pending_runtime() == false`. The lifecycle wiring in
 //! `lib.rs` calls [`refresh_runtime`] at startup, on main-window focus, and
-//! when the FE flips the setting via [`set_global_reveal_shortcut`]; this
+//! when the FE flips the setting via [`set_global_go_to_latest_shortcut`]; this
 //! module only owns the typed register/unregister/status surface.
 //!
 //! ## macOS permission scope
@@ -243,9 +243,9 @@ pub fn plugin_builder() -> tauri::plugin::TauriPlugin<tauri::Wry> {
                 return;
             }
             // The whole point of the global hotkey is "I'm in Chrome, take me
-            // to my download." Reveal alone isn't enough — the user can't see
-            // the result behind the foreground app. Raise the main window
-            // before emitting so the reveal lands on a visible, focused pane.
+            // to my download." Going to the file alone isn't enough — the user
+            // can't see the result behind the foreground app. Raise the main
+            // window before emitting so the jump lands on a visible, focused pane.
             // unminimize → show covers the minimized / hidden cases; set_focus
             // brings it in front of the current app and onto the active Space.
             if let Some(window) = app.get_webview_window("main") {
@@ -259,7 +259,7 @@ pub fn plugin_builder() -> tauri::plugin::TauriPlugin<tauri::Wry> {
                 }
             }
             // The payload is currently empty: the FE bridge calls
-            // `revealLatestDownload(explorer)` directly. We pass an empty
+            // `goToLatestDownload(explorer)` directly. We pass an empty
             // object so future per-binding metadata (which combo, modifiers,
             // etc.) is additive without breaking the event shape.
             if let Err(err) = app.emit("global-shortcut-fired", serde_json::json!({})) {

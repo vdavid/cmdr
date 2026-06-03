@@ -11,7 +11,7 @@ vi.mock('$lib/settings', () => ({
 }))
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    setGlobalRevealShortcut: vi.fn(() => Promise.resolve({ status: 'ok', data: null })),
+    setGlobalGoToLatestShortcut: vi.fn(() => Promise.resolve({ status: 'ok', data: null })),
   },
 }))
 

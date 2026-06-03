@@ -1,9 +1,9 @@
 /**
- * Frontend handler for the "Reveal latest download" command (⌘J, command
- * palette, and the `reveal_latest_download` MCP tool).
+ * Frontend handler for the "Go to latest download" command (⌘J, command
+ * palette, and the `go_to_latest_download` MCP tool).
  *
- * Calls the typed backend IPC and branches on the typed `RevealError` enum — no
- * string matching. On success, navigates the focused pane to the file's
+ * Calls the typed backend IPC and branches on the typed `GoToLatestError` enum —
+ * no string matching. On success, navigates the focused pane to the file's
  * parent dir and moves the cursor to the file. On any error, surfaces a
  * single INFO toast using a stable dedup id so spamming ⌘J doesn't stack
  * copies.
@@ -14,16 +14,16 @@ import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
-import RevealEmptyToastContent from './RevealEmptyToastContent.svelte'
-import RevealFdaToastContent from './RevealFdaToastContent.svelte'
-import { REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID } from './reveal-ids'
+import LatestDownloadEmptyToastContent from './LatestDownloadEmptyToastContent.svelte'
+import LatestDownloadFdaToastContent from './LatestDownloadFdaToastContent.svelte'
+import { LATEST_DOWNLOAD_EMPTY_TOAST_ID, LATEST_DOWNLOAD_FDA_TOAST_ID } from './go-to-latest-ids'
 
-export { REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID }
+export { LATEST_DOWNLOAD_EMPTY_TOAST_ID, LATEST_DOWNLOAD_FDA_TOAST_ID }
 
 const log = getAppLogger('downloads')
 
 /**
- * Reveal the latest download in the focused pane.
+ * Go to the latest download in the focused pane.
  *
  * Contract:
  * - Success: navigate the focused pane to `parentDir`, then select `fileName`.
@@ -35,15 +35,15 @@ const log = getAppLogger('downloads')
  *
  * The helper is a no-op when `explorer` is `undefined` (HMR or pre-mount).
  */
-export async function revealLatestDownload(explorer: ExplorerAPI | undefined): Promise<void> {
+export async function goToLatestDownload(explorer: ExplorerAPI | undefined): Promise<void> {
   if (!explorer) {
-    log.debug('revealLatestDownload: no explorer; skipping (HMR or pre-mount)')
+    log.debug('goToLatestDownload: no explorer; skipping (HMR or pre-mount)')
     return
   }
 
-  const result = await commands.revealLatestDownload()
+  const result = await commands.goToLatestDownload()
   if (result.status === 'ok') {
-    await navigateToRevealedFile(explorer, result.data.parentDir, result.data.fileName)
+    await navigateToDownloadFile(explorer, result.data.parentDir, result.data.fileName)
     return
   }
 
@@ -61,11 +61,11 @@ export async function revealLatestDownload(explorer: ExplorerAPI | undefined): P
 }
 
 /**
- * Reveal a SPECIFIC downloaded file (parent dir + file name) in the focused
+ * Go to a SPECIFIC downloaded file (parent dir + file name) in the focused
  * pane, bypassing the latest-in-ring lookup.
  *
- * `revealLatestDownload` consults the watcher's ring + scan fallback. The
- * downloads toast already knows the path it's for; revealing the
+ * `goToLatestDownload` consults the watcher's ring + scan fallback. The
+ * downloads toast already knows the path it's for; jumping to the
  * specific file matters because by the time the user clicks the toast a
  * newer download may have landed and become "latest." We want the toast
  * to take the user to the file it advertised, not whatever is most recent
@@ -73,19 +73,19 @@ export async function revealLatestDownload(explorer: ExplorerAPI | undefined): P
  *
  * The helper is a no-op when `explorer` is `undefined` (HMR or pre-mount).
  */
-export async function revealPath(
+export async function goToDownload(
   explorer: ExplorerAPI | undefined,
   parentDir: string,
   fileName: string,
 ): Promise<void> {
   if (!explorer) {
-    log.debug('revealPath: no explorer; skipping (HMR or pre-mount)')
+    log.debug('goToDownload: no explorer; skipping (HMR or pre-mount)')
     return
   }
-  await navigateToRevealedFile(explorer, parentDir, fileName)
+  await navigateToDownloadFile(explorer, parentDir, fileName)
 }
 
-async function navigateToRevealedFile(explorer: ExplorerAPI, parentDir: string, fileName: string): Promise<void> {
+async function navigateToDownloadFile(explorer: ExplorerAPI, parentDir: string, fileName: string): Promise<void> {
   const pane = explorer.getFocusedPane()
   // `navigateToPath` returns a sync error string when navigation can't even
   // start (snapshot pane on a missing volume, etc.); otherwise it returns a
@@ -94,7 +94,7 @@ async function navigateToRevealedFile(explorer: ExplorerAPI, parentDir: string, 
   // settled, `moveCursor` would race against an empty cache.
   const navResult = explorer.navigateToPath(pane, parentDir)
   if (typeof navResult === 'string') {
-    log.warn('revealLatestDownload: navigateToPath refused {pane} {parentDir}: {reason}', {
+    log.warn('goToDownload: navigateToPath refused {pane} {parentDir}: {reason}', {
       pane,
       parentDir,
       reason: navResult,
@@ -124,10 +124,10 @@ async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
       log.warn('Go to Downloads: navigateToPath refused: {reason}', { reason: result })
     }
   }
-  addToast(RevealEmptyToastContent, {
-    id: REVEAL_EMPTY_TOAST_ID,
+  addToast(LatestDownloadEmptyToastContent, {
+    id: LATEST_DOWNLOAD_EMPTY_TOAST_ID,
     level: 'info',
-    toastGroup: 'downloads-reveal',
+    toastGroup: 'downloads-go-to-latest',
     props: {
       onGoToDownloads,
     },
@@ -135,9 +135,9 @@ async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
 }
 
 function showFdaToast(): void {
-  addToast(RevealFdaToastContent, {
-    id: REVEAL_FDA_TOAST_ID,
+  addToast(LatestDownloadFdaToastContent, {
+    id: LATEST_DOWNLOAD_FDA_TOAST_ID,
     level: 'info',
-    toastGroup: 'downloads-reveal',
+    toastGroup: 'downloads-go-to-latest',
   })
 }

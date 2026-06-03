@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * The global reveal-latest-download hotkey, shown as a shortcut row inside
+     * The global go-to-latest-download hotkey, shown as a shortcut row inside
      * the Keyboard shortcuts section. This is where users edit the combo —
      * it's a system-wide hotkey, so it lives alongside the other shortcuts but
      * is marked `(global)` to set expectations (it fires from any app, and its
@@ -25,41 +25,41 @@
     import { formatKeyCombo, isModifierKey } from '$lib/shortcuts'
     import { tooltip } from '$lib/tooltip/tooltip'
     import {
-        getGlobalRevealBinding,
-        setGlobalRevealBinding,
-        GLOBAL_REVEAL_BINDING_KEY,
-        GLOBAL_REVEAL_ENABLED_KEY,
+        getGlobalGoToLatestBinding,
+        setGlobalGoToLatestBinding,
+        GLOBAL_GO_TO_LATEST_BINDING_KEY,
+        GLOBAL_GO_TO_LATEST_ENABLED_KEY,
     } from './global-shortcut-setting'
-    import { toAccelerator, DEFAULT_GLOBAL_REVEAL_BINDING } from './global-shortcut-binding'
+    import { toAccelerator, DEFAULT_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
 
     const log = getAppLogger('downloads')
 
-    let binding = $state(getGlobalRevealBinding())
+    let binding = $state(getGlobalGoToLatestBinding())
     let editing = $state(false)
     let pendingKey = $state('')
     /** Registration feedback. Empty string hides the indicator. */
     let statusText = $state('')
 
-    const isModified = $derived(binding !== DEFAULT_GLOBAL_REVEAL_BINDING)
+    const isModified = $derived(binding !== DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
 
     async function applyBinding(next: string): Promise<void> {
-        // Reset-aware write: `setGlobalRevealBinding` also clears `acknowledged`
+        // Reset-aware write: `setGlobalGoToLatestBinding` also clears `acknowledged`
         // so the new combo gets its own first-trigger warning.
-        setGlobalRevealBinding(next)
+        setGlobalGoToLatestBinding(next)
         binding = next
         // Live-apply: re-register with the backend right away. We pass the
         // current `enabled` so toggling-off elsewhere isn't overridden.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry key
-        const enabled = getSetting(GLOBAL_REVEAL_ENABLED_KEY as any) as boolean
-        const result = await commands.setGlobalRevealShortcut(enabled, next)
+        const enabled = getSetting(GLOBAL_GO_TO_LATEST_ENABLED_KEY as any) as boolean
+        const result = await commands.setGlobalGoToLatestShortcut(enabled, next)
         if (result.status === 'ok') {
             statusText = result.data.status === 'registered' ? 'Registered' : 'Not registered'
         } else if (result.error.kind === 'invalidBinding') {
             statusText = `Couldn't register: invalid combo`
         } else {
             statusText = `Couldn't register: ${result.error.message}`
-            log.warn('setGlobalRevealShortcut failed: {error}', { error: JSON.stringify(result.error) })
+            log.warn('setGlobalGoToLatestShortcut failed: {error}', { error: JSON.stringify(result.error) })
         }
     }
 
@@ -76,7 +76,7 @@
 
     function handleReset(): void {
         cancelEditing()
-        void applyBinding(DEFAULT_GLOBAL_REVEAL_BINDING)
+        void applyBinding(DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
     }
 
     function handleKeyCapture(event: KeyboardEvent): void {
@@ -115,7 +115,7 @@
         // Keep in sync if the binding changes elsewhere (e.g. a reset, or the
         // warn-toast path). The acknowledged-reset rule is enforced by the
         // setter, not here.
-        const unsub = onSpecificSettingChange(GLOBAL_REVEAL_BINDING_KEY, (_id, value) => {
+        const unsub = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_BINDING_KEY, (_id, value) => {
             binding = value
         })
 
@@ -133,13 +133,13 @@
             {#if isModified}
                 <span class="modified-dot" use:tooltip={'Modified from default'}></span>
             {/if}
-            <span class="command-name">Reveal latest download <span class="global-marker">(global)</span></span>
+            <span class="command-name">Go to latest download <span class="global-marker">(global)</span></span>
         </div>
         <div class="command-shortcuts">
             <button
                 class="shortcut-pill"
                 class:editing
-                data-test="global-reveal-binding"
+                data-test="global-go-to-latest-binding"
                 onclick={() => {
                     if (editing) cancelEditing()
                     else startEditing()

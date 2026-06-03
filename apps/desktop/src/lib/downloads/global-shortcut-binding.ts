@@ -12,7 +12,7 @@
  * of allowed combos). The reverse direction is unused; we never decode an
  * accelerator from the plugin.
  */
-export const DEFAULT_GLOBAL_REVEAL_BINDING = '⌃⌥⌘J' // ⌃⌥⌘J
+export const DEFAULT_GLOBAL_GO_TO_LATEST_BINDING = '⌃⌥⌘J' // ⌃⌥⌘J
 
 const SYMBOL_TO_MODIFIER: ReadonlyArray<readonly [string, string]> = [
   ['⌃', 'Control'], // ⌃

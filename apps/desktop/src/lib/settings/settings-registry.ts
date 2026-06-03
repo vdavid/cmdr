@@ -397,11 +397,11 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
-    id: 'behavior.fileSystemWatching.globalRevealShortcut.enabled',
+    id: 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled',
     section: ['Behavior', 'File system watching'],
-    label: 'Reveal latest download',
+    label: 'Go to latest download',
     description: 'Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.',
-    keywords: ['shortcut', 'hotkey', 'global', 'reveal', 'download', 'downloads', 'jump'],
+    keywords: ['shortcut', 'hotkey', 'global', 'download', 'downloads', 'jump', 'go to', 'goto'],
     type: 'boolean',
     default: true,
     component: 'switch',
@@ -412,10 +412,10 @@ export const settingsRegistry: SettingDefinition[] = [
     // registry because it's persisted in settings.json and the Rust
     // startup/focus refresh reads it from there before any window loads.
     // Hidden so it doesn't surface as an orphan row in search / Advanced.
-    id: 'behavior.fileSystemWatching.globalRevealShortcut.binding',
+    id: 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding',
     section: ['Behavior', 'File system watching'],
-    label: 'Global reveal-latest-download binding',
-    description: 'The system-wide combo that triggers reveal-latest-download. Edited under Keyboard shortcuts.',
+    label: 'Global go-to-latest-download binding',
+    description: 'The system-wide combo that triggers go-to-latest-download. Edited under Keyboard shortcuts.',
     keywords: ['shortcut', 'hotkey', 'global', 'binding', 'combo'],
     type: 'string',
     default: '\u{2303}\u{2325}\u{2318}J', // ⌃⌥⌘J
@@ -424,10 +424,10 @@ export const settingsRegistry: SettingDefinition[] = [
   },
   {
     // Internal: hidden from the Settings UI. Drives the first-trigger warn-toast
-    // suppression. Reset on `binding` change via `setGlobalRevealBinding`.
-    id: 'behavior.fileSystemWatching.globalRevealShortcut.acknowledged',
+    // suppression. Reset on `binding` change via `setGlobalGoToLatestBinding`.
+    id: 'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged',
     section: ['Behavior', 'File system watching'],
-    label: 'Global reveal-latest-download warn-toast acknowledged',
+    label: 'Global go-to-latest-download warn-toast acknowledged',
     description: 'Internal. Suppresses the first-trigger warning toast.',
     keywords: [],
     type: 'boolean',

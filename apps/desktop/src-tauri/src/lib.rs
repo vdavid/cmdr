@@ -507,11 +507,11 @@ pub fn run() {
                 log::warn!(target: "downloads::watcher", "Initial start failed: {err}");
             }
 
-            // Register the global reveal-latest-download shortcut (default
-            // ⌃⌥⌘J). FDA-gated: `apply_global_reveal_shortcut` no-ops when
+            // Register the global go-to-latest-download shortcut (default
+            // ⌃⌥⌘J). FDA-gated: `apply_global_go_to_latest_shortcut` no-ops when
             // the gate is closed, and the focus-event listener below
             // re-runs the check on every transition.
-            downloads::refresh_global_reveal_shortcut(app.handle());
+            downloads::refresh_global_go_to_latest_shortcut(app.handle());
 
             // Apply the Flow B opt-in flag *before* any user-visible error path can fire.
             // Default off (opt-in by design: Flow B sends data without per-event consent).
@@ -1024,7 +1024,7 @@ pub fn run() {
                 // Re-evaluate the global-shortcut registration too: if FDA
                 // flipped between blur and focus, register/unregister to
                 // match. Idempotent when nothing changed.
-                downloads::refresh_global_reveal_shortcut(window.app_handle());
+                downloads::refresh_global_go_to_latest_shortcut(window.app_handle());
             }
             // When the main window is closed, quit the entire app (including settings/debug/viewer windows)
             if let tauri::WindowEvent::CloseRequested { .. } = event

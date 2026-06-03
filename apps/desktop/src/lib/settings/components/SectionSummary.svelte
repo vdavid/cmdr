@@ -25,7 +25,7 @@
             Listing: 'Document icons, directory sorting, and Brief mode column width.',
             'File operations': 'Behavior when renaming files (e.g. extension changes).',
             'File system watching':
-                'Drive indexing, Downloads notifications, and the global reveal-latest-download shortcut. Needs Full Disk Access.',
+                'Drive indexing, Downloads notifications, and the global go-to-latest-download shortcut. Needs Full Disk Access.',
             Search: 'Live-applied filename and regex searches, and the recent-searches cap.',
             'SMB/Network shares': 'Enable networking, direct SMB connections, share cache, and timeouts.',
             'MTP (Android/Kindle/cameras)': 'Detect Android, Kindle, and camera devices over USB.',

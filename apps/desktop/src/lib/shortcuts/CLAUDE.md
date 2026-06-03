@@ -98,10 +98,10 @@ one window and "New folder" in another if their scopes don't overlap.
 Users often mis-press keys or change their mind mid-capture. The delay lets them press multiple combos rapidly and only
 the final one (after 500ms of silence) is saved. Prevents accidental captures.
 
-### ⌘J binds to "Reveal latest download" (not Finder's "View Options")
+### ⌘J binds to "Go to latest download" (not Finder's "View Options")
 
-**Decision.** The in-app `⌘J` shortcut triggers `downloads.revealLatest`, jumping the focused pane to the most recent
-file in `~/Downloads`. We accept the deviation from Finder, which uses `⌘J` for the "View Options" inspector.
+**Decision.** The in-app `⌘J` shortcut triggers `downloads.goToLatest`, jumping the focused pane to the most recent file
+in `~/Downloads`. We accept the deviation from Finder, which uses `⌘J` for the "View Options" inspector.
 
 **Why.** Cmdr's view-mode toggles already live on dedicated single-key shortcuts (`⌘1` Full, `⌘2` Brief, plus the inline
 view-mode toggle and the appearance controls under `⌘,`), so we're not displacing an existing Cmdr action — we're

@@ -28,11 +28,11 @@ use super::{DownloadsWatcher, WatcherError, desired_running};
 static RUNTIME: Mutex<Option<DownloadsWatcher>> = Mutex::new(None);
 
 /// Process-global global-shortcut manager. Lazily constructed on first
-/// `apply_global_reveal_shortcut` call so tests don't need a real
+/// `apply_global_go_to_latest_shortcut` call so tests don't need a real
 /// `AppHandle`.
 static GLOBAL_SHORTCUT: Mutex<Option<GlobalShortcutManager<TauriRegistrar>>> = Mutex::new(None);
 
-/// Last `(enabled, binding)` pair `refresh_global_reveal_shortcut` applied.
+/// Last `(enabled, binding)` pair `refresh_global_go_to_latest_shortcut` applied.
 /// Lets the focus-event refresh short-circuit when nothing changed since the
 /// previous call. The headline path is `Cmd-Tab Chrome → Cmdr`: focus fires,
 /// settings on disk haven't moved, no disk read or plugin round-trip needed.
@@ -134,11 +134,11 @@ pub fn binding_to_accelerator(binding: &str) -> Option<String> {
 /// covers the "I just toggled FDA" path.
 ///
 /// Returns the resulting status snapshot the FE row should display.
-pub fn apply_global_reveal_shortcut(
+pub fn apply_global_go_to_latest_shortcut(
     app: &AppHandle,
     enabled: bool,
     binding: &str,
-) -> Result<super::commands::GlobalRevealShortcutState, RegistrationError> {
+) -> Result<super::commands::GlobalGoToLatestShortcutState, RegistrationError> {
     let accelerator = binding_to_accelerator(binding);
     let fda_open = !crate::fda_gate::is_fda_pending_runtime();
     let should_run = enabled && fda_open && accelerator.is_some();
@@ -167,7 +167,7 @@ pub fn apply_global_reveal_shortcut(
     // (or pointlessly re-run) what the FE just applied.
     cache_changed_and_update(&LAST_APPLIED_SHORTCUT, enabled, binding);
 
-    Ok(super::commands::GlobalRevealShortcutState {
+    Ok(super::commands::GlobalGoToLatestShortcutState {
         status,
         binding: binding.to_string(),
         enabled,
@@ -176,11 +176,11 @@ pub fn apply_global_reveal_shortcut(
 
 /// Refresh the global-shortcut registration based on the FDA gate alone.
 /// Used by the focus-event lifecycle to undo/redo the registration without
-/// the FE re-issuing a `set_global_reveal_shortcut` call. Reads the
+/// the FE re-issuing a `set_global_go_to_latest_shortcut` call. Reads the
 /// last-known `enabled` and `binding` from the Settings file via the
 /// existing settings loader.
-pub fn refresh_global_reveal_shortcut(app: &AppHandle) {
-    let (enabled, binding) = crate::settings::early_load_global_reveal_shortcut()
+pub fn refresh_global_go_to_latest_shortcut(app: &AppHandle) {
+    let (enabled, binding) = crate::settings::early_load_global_go_to_latest_shortcut()
         .unwrap_or((true, String::from("\u{2303}\u{2325}\u{2318}J")));
     if !cache_changed_and_update(&LAST_APPLIED_SHORTCUT, enabled, &binding) {
         // Cmd-Tab back from another app is the headline trigger; settings on
@@ -192,7 +192,7 @@ pub fn refresh_global_reveal_shortcut(app: &AppHandle) {
         );
         return;
     }
-    if let Err(err) = apply_global_reveal_shortcut(app, enabled, &binding) {
+    if let Err(err) = apply_global_go_to_latest_shortcut(app, enabled, &binding) {
         log::warn!(
             target: "downloads::global_shortcut",
             "Focus-driven refresh of global shortcut failed: {err}",
@@ -397,7 +397,7 @@ mod tests {
         // Headline contract: the focus-refresh fast path skips the plugin
         // round-trip when nothing has moved. Two refreshes in a row with the
         // same (enabled, binding) must return `true` then `false`, so the
-        // caller calls `apply_global_reveal_shortcut` only once.
+        // caller calls `apply_global_go_to_latest_shortcut` only once.
         let cache: Mutex<Option<(bool, String)>> = Mutex::new(None);
 
         // First refresh: cache empty → caller should apply.

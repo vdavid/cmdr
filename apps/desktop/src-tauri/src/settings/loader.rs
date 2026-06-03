@@ -235,13 +235,13 @@ pub fn early_load_verbose_logging() -> Option<bool> {
     json.get("developer.verboseLogging").and_then(|v| v.as_bool())
 }
 
-/// Reads the `behavior.fileSystemWatching.globalRevealShortcut.{enabled,binding}`
+/// Reads the `behavior.fileSystemWatching.globalGoToLatestShortcut.{enabled,binding}`
 /// pair from disk before the AppHandle is wired up. Used by the focus-event
 /// global-shortcut refresh hook in `downloads::runtime`. Returns `None` when
 /// the settings file is missing OR the user hasn't customized either key (in
 /// which case the registry defaults apply — `enabled = true`,
 /// `binding = "⌃⌥⌘J"`).
-pub fn early_load_global_reveal_shortcut() -> Option<(bool, String)> {
+pub fn early_load_global_go_to_latest_shortcut() -> Option<(bool, String)> {
     /// Bundle id from `tauri.conf.json`. Keep in sync if it ever changes.
     const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
 
@@ -260,11 +260,11 @@ pub fn early_load_global_reveal_shortcut() -> Option<(bool, String)> {
     // settings file itself is missing; partial reads (one key set, one not)
     // fall back to defaults per-field.
     let enabled = json
-        .get("behavior.fileSystemWatching.globalRevealShortcut.enabled")
+        .get("behavior.fileSystemWatching.globalGoToLatestShortcut.enabled")
         .and_then(|v| v.as_bool())
         .unwrap_or(true);
     let binding = json
-        .get("behavior.fileSystemWatching.globalRevealShortcut.binding")
+        .get("behavior.fileSystemWatching.globalGoToLatestShortcut.binding")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())
         .unwrap_or_else(|| String::from("\u{2303}\u{2325}\u{2318}J"));

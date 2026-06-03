@@ -1,6 +1,6 @@
 //! Bounded ring of recently-observed downloads.
 //!
-//! The watcher pushes every eligible download here; the "reveal latest
+//! The watcher pushes every eligible download here; the "go to latest
 //! download" action reads from the back. Capacity 10 by default, oldest
 //! drops off the front. Re-pushing the same path moves it to the back so
 //! the most-recent occurrence wins; we never want a stale entry to shadow
@@ -17,7 +17,7 @@ use std::sync::Mutex;
 use std::time::Instant;
 
 /// Default capacity. Picked from the plan; small enough to be cheap, big
-/// enough that "reveal previous" extensions (deferred) wouldn't need a
+/// enough that "go to previous" extensions (deferred) wouldn't need a
 /// data-structure swap.
 const DEFAULT_CAPACITY: usize = 10;
 

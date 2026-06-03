@@ -18,8 +18,8 @@ a partial-suffix file to a final-name file). FDA-gated.
   mpsc-backed `ChannelSink` so they don't need a running Tauri app.
 - `runtime.rs` — `Mutex<Option<DownloadsWatcher>>`. `refresh_runtime(&app)` aligns the handle
   with `desired_running(fda_pending)`. Idempotent.
-- `commands.rs` — IPC surface: `reveal_latest_download`, `downloads_watcher_status`,
-  `recheck_downloads_watcher_gate`, `set_global_reveal_shortcut`.
+- `commands.rs` — IPC surface: `go_to_latest_download`, `downloads_watcher_status`,
+  `recheck_downloads_watcher_gate`, `set_global_go_to_latest_shortcut`.
 - `global_shortcut.rs` — Wrapper around `tauri-plugin-global-shortcut`. Typed `RegistrationError`
   (`Conflict | InvalidBinding | PluginError`) + `RegistrationStatus` (`Registered | NotRegistered |
   Conflict`). The state machine sits in `GlobalShortcutManager<R: Registrar>`; production uses
@@ -62,23 +62,23 @@ the ignore set. Cmdr never writes `.crdownload` files; always register the final
 The bulk variant `note_pending_writes(paths, ttl)` exists for transfer-driver paths that know
 their destination set up front.
 
-## Global reveal hotkey
+## Global go-to-latest hotkey
 
 The default global combo is `⌃⌥⌘J`. `apps/desktop/src-tauri/src/lib.rs` calls
-`downloads::refresh_global_reveal_shortcut(app)` at:
+`downloads::refresh_global_go_to_latest_shortcut(app)` at:
 
 1. **Startup**, after `set_fda_pending(...)`, alongside the watcher refresh.
 2. **Every main-window `Focused(true)` event** — covers the FDA flip path.
-3. **Settings UI flip** via the `set_global_reveal_shortcut(enabled, binding)` IPC command,
+3. **Settings UI flip** via the `set_global_go_to_latest_shortcut(enabled, binding)` IPC command,
    which the FE calls from the Settings row's change handlers.
 
 The trigger handler (`global_shortcut::plugin_builder`) **raises the main window**
 (`unminimize` + `show` + `set_focus`) and THEN emits a `global-shortcut-fired` Tauri event on
 every key-down. The window-raise is load-bearing: the user fires this hotkey from another app
-(the whole point is "I'm in Chrome, take me to my download"), so revealing the file without
+(the whole point is "I'm in Chrome, take me to my download"), so jumping to the file without
 foregrounding Cmdr would leave the result hidden behind the active app. Don't drop the raise.
 The FE bridge in `lib/downloads/global-shortcut-bridge.svelte.ts` subscribes and routes through
-`revealLatestDownload`. The first-trigger warn toast logic lives FE-side, keyed on the
+`goToLatestDownload`. The first-trigger warn toast logic lives FE-side, keyed on the
 `acknowledged` settings flag.
 
 The plugin uses Carbon's `RegisterEventHotKey` on macOS, so no Accessibility / Input

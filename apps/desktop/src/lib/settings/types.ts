@@ -186,12 +186,12 @@ export interface SettingsValues {
   // Indexing
   'indexing.enabled': boolean
 
-  // File system watching - downloads notifications + global reveal shortcut.
+  // File system watching - downloads notifications + global go-to-latest shortcut.
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode
-  'behavior.fileSystemWatching.globalRevealShortcut.enabled': boolean
-  'behavior.fileSystemWatching.globalRevealShortcut.binding': string
+  'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled': boolean
+  'behavior.fileSystemWatching.globalGoToLatestShortcut.binding': string
   /** Internal: suppresses the first-trigger warn toast once the user acknowledges it. */
-  'behavior.fileSystemWatching.globalRevealShortcut.acknowledged': boolean
+  'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged': boolean
 
   // Viewer
   'viewer.wordWrap': boolean

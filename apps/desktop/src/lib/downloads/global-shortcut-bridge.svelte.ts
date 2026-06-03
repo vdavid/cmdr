@@ -1,11 +1,11 @@
 /**
- * Frontend bridge for the global reveal hotkey (default ⌃⌥⌘J).
+ * Frontend bridge for the global go-to-latest hotkey (default ⌃⌥⌘J).
  *
  * Subscribes ONCE to the backend `global-shortcut-fired` event. Every fire:
  *
  * 1. Reads the current `acknowledged` flag. If `false`, flips it to `true`
  *    AND opens the first-trigger warn toast. If `true`, skips the toast.
- * 2. Calls `revealLatestDownload(explorer)` so the user lands on the file.
+ * 2. Calls `goToLatestDownload(explorer)` so the user lands on the file.
  *
  * Mounted from `routes/(main)/+page.svelte` alongside the downloads event bridge.
  * The unsubscribe is returned so the layout can clean up on destroy.
@@ -23,11 +23,11 @@ import { addToast } from '$lib/ui/toast'
 import { getSetting } from '$lib/settings'
 import { getAppLogger } from '$lib/logging/logger'
 import GlobalShortcutWarnToastContent from './GlobalShortcutWarnToastContent.svelte'
-import { revealLatestDownload } from './reveal'
+import { goToLatestDownload } from './go-to-latest'
 import {
-  GLOBAL_REVEAL_ACKNOWLEDGED_KEY,
-  GLOBAL_REVEAL_BINDING_KEY,
-  setGlobalRevealAcknowledged,
+  GLOBAL_GO_TO_LATEST_ACKNOWLEDGED_KEY,
+  GLOBAL_GO_TO_LATEST_BINDING_KEY,
+  setGlobalGoToLatestAcknowledged,
 } from './global-shortcut-setting'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
@@ -52,14 +52,14 @@ async function handleFired(explorer: ExplorerAPI | undefined): Promise<void> {
   // Read the snapshot eagerly so the toast carries the binding string that
   // was active at THIS moment, even if the user remaps mid-flight.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry key
-  const acknowledged = getSetting(GLOBAL_REVEAL_ACKNOWLEDGED_KEY as any) as boolean
+  const acknowledged = getSetting(GLOBAL_GO_TO_LATEST_ACKNOWLEDGED_KEY as any) as boolean
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry key
-  const binding = getSetting(GLOBAL_REVEAL_BINDING_KEY as any) as string
+  const binding = getSetting(GLOBAL_GO_TO_LATEST_BINDING_KEY as any) as string
 
   if (!acknowledged) {
     // Flip first to collapse the back-to-back-press race. The toast itself
     // doesn't re-write this bit.
-    setGlobalRevealAcknowledged(true)
+    setGlobalGoToLatestAcknowledged(true)
     addToast(GlobalShortcutWarnToastContent, {
       id: WARN_TOAST_ID,
       level: 'warn',
@@ -68,5 +68,5 @@ async function handleFired(explorer: ExplorerAPI | undefined): Promise<void> {
     })
   }
 
-  await revealLatestDownload(explorer)
+  await goToLatestDownload(explorer)
 }

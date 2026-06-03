@@ -14,7 +14,7 @@ const {
   setSettingMock,
   downloadsWatcherStatusMock,
   recheckGateMock,
-  setGlobalRevealShortcutMock,
+  setGlobalGoToLatestShortcutMock,
   getIndexStatusMock,
   clearDriveIndexMock,
 } = vi.hoisted(() => ({
@@ -22,7 +22,7 @@ const {
   setSettingMock: vi.fn(),
   downloadsWatcherStatusMock: vi.fn(),
   recheckGateMock: vi.fn(),
-  setGlobalRevealShortcutMock: vi.fn(),
+  setGlobalGoToLatestShortcutMock: vi.fn(),
   getIndexStatusMock: vi.fn(),
   clearDriveIndexMock: vi.fn(),
 }))
@@ -40,7 +40,7 @@ vi.mock('$lib/ipc/bindings', () => ({
   commands: {
     downloadsWatcherStatus: downloadsWatcherStatusMock,
     recheckDownloadsWatcherGate: recheckGateMock,
-    setGlobalRevealShortcut: setGlobalRevealShortcutMock,
+    setGlobalGoToLatestShortcut: setGlobalGoToLatestShortcutMock,
     getIndexStatus: getIndexStatusMock,
     clearDriveIndex: clearDriveIndexMock,
   },
@@ -56,11 +56,11 @@ function setDefaultSettings(): void {
         return true
       case 'behavior.fileSystemWatching.downloadsNotifications':
         return 'in-app'
-      case 'behavior.fileSystemWatching.globalRevealShortcut.enabled':
+      case 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled':
         return true
-      case 'behavior.fileSystemWatching.globalRevealShortcut.binding':
+      case 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding':
         return '\u{2303}\u{2325}\u{2318}J'
-      case 'behavior.fileSystemWatching.globalRevealShortcut.acknowledged':
+      case 'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged':
         return true
       default:
         return undefined
@@ -80,7 +80,7 @@ beforeEach(() => {
   setSettingMock.mockReset()
   downloadsWatcherStatusMock.mockReset()
   recheckGateMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
-  setGlobalRevealShortcutMock.mockReset().mockResolvedValue({
+  setGlobalGoToLatestShortcutMock.mockReset().mockResolvedValue({
     status: 'ok',
     data: { status: 'registered', binding: '\u{2303}\u{2325}\u{2318}J', enabled: true },
   })

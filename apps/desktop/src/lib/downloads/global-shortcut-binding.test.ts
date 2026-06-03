@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { toAccelerator, DEFAULT_GLOBAL_REVEAL_BINDING } from './global-shortcut-binding'
+import { toAccelerator, DEFAULT_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
 
 describe('toAccelerator', () => {
   it('translates the default ⌃⌥⌘J to Control+Alt+Super+J', () => {
-    expect(toAccelerator(DEFAULT_GLOBAL_REVEAL_BINDING)).toBe('Control+Alt+Super+J')
+    expect(toAccelerator(DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)).toBe('Control+Alt+Super+J')
   })
 
   it('translates a Cmd+Shift+K combo', () => {

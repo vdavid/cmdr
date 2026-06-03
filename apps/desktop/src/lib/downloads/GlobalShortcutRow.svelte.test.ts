@@ -1,21 +1,21 @@
 /**
- * Contract for the global reveal-latest-download shortcut row that lives in
+ * Contract for the global go-to-latest-download shortcut row that lives in
  * the Keyboard shortcuts section.
  *
  *   - Renders the action name with a `(global)` marker.
  *   - Shows the current binding (macOS-symbol form) as a recorder pill.
- *   - Recording a new combo writes the binding through `setGlobalRevealBinding`
- *     (which resets `acknowledged`) AND calls the `set_global_reveal_shortcut`
+ *   - Recording a new combo writes the binding through `setGlobalGoToLatestBinding`
+ *     (which resets `acknowledged`) AND calls the `set_global_go_to_latest_shortcut`
  *     IPC for live-apply.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
-const { getSettingMock, setSettingMock, setGlobalRevealShortcutMock } = vi.hoisted(() => ({
+const { getSettingMock, setSettingMock, setGlobalGoToLatestShortcutMock } = vi.hoisted(() => ({
   getSettingMock: vi.fn(),
   setSettingMock: vi.fn(),
-  setGlobalRevealShortcutMock: vi.fn(),
+  setGlobalGoToLatestShortcutMock: vi.fn(),
 }))
 
 vi.mock('$lib/settings', () => ({
@@ -26,11 +26,11 @@ vi.mock('$lib/settings', () => ({
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    setGlobalRevealShortcut: setGlobalRevealShortcutMock,
+    setGlobalGoToLatestShortcut: setGlobalGoToLatestShortcutMock,
   },
 }))
 
-// The global reveal hotkey is macOS-only; force `isMacOS()` (which reads the
+// The global go-to-latest hotkey is macOS-only; force `isMacOS()` (which reads the
 // user agent) to report macOS so `formatKeyCombo` emits the symbol form.
 Object.defineProperty(navigator, 'userAgent', {
   value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
@@ -39,8 +39,8 @@ Object.defineProperty(navigator, 'userAgent', {
 
 import GlobalShortcutRow from './GlobalShortcutRow.svelte'
 
-const BINDING_KEY = 'behavior.fileSystemWatching.globalRevealShortcut.binding'
-const ACK_KEY = 'behavior.fileSystemWatching.globalRevealShortcut.acknowledged'
+const BINDING_KEY = 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding'
+const ACK_KEY = 'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged'
 
 function setBinding(binding: string): void {
   getSettingMock.mockImplementation((key: string): unknown => {
@@ -52,7 +52,7 @@ function setBinding(binding: string): void {
 beforeEach(() => {
   getSettingMock.mockReset()
   setSettingMock.mockReset()
-  setGlobalRevealShortcutMock.mockReset().mockResolvedValue({
+  setGlobalGoToLatestShortcutMock.mockReset().mockResolvedValue({
     status: 'ok',
     data: { status: 'registered', binding: '\u{2303}\u{2325}\u{2318}J', enabled: true },
   })
@@ -69,7 +69,7 @@ function mountRow(): HTMLDivElement {
 describe('GlobalShortcutRow', () => {
   it('renders the action name with a (global) marker', () => {
     const target = mountRow()
-    expect(target.textContent).toContain('Reveal latest download')
+    expect(target.textContent).toContain('Go to latest download')
     expect(target.textContent).toContain('(global)')
     target.remove()
   })
@@ -106,7 +106,7 @@ describe('GlobalShortcutRow', () => {
     expect(setSettingMock).toHaveBeenCalledWith(BINDING_KEY, expect.stringContaining('K'))
     expect(setSettingMock).toHaveBeenCalledWith(ACK_KEY, false)
     // Live-apply IPC fired.
-    expect(setGlobalRevealShortcutMock).toHaveBeenCalled()
+    expect(setGlobalGoToLatestShortcutMock).toHaveBeenCalled()
     target.remove()
   })
 

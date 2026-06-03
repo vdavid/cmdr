@@ -30,7 +30,7 @@ import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import { getAppLogger } from '$lib/logging/logger'
-import { revealLatestDownload } from '$lib/downloads/reveal'
+import { goToLatestDownload } from '$lib/downloads/go-to-latest'
 import type { ExplorerAPI } from './explorer-api'
 
 const log = getAppLogger('user-action')
@@ -384,8 +384,8 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       return
 
     // === Downloads commands ===
-    case 'downloads.revealLatest':
-      await revealLatestDownload(explorerRef)
+    case 'downloads.goToLatest':
+      await goToLatestDownload(explorerRef)
       return
 
     // === Network commands ===

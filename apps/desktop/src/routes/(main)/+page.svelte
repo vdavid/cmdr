@@ -609,8 +609,8 @@
         // native notification per the current settings value.
         const unlistenDownloads = await startDownloadsEventBridge(explorerRef)
         tauriUnlistenFns.push(unlistenDownloads)
-        // Global reveal-latest-download hotkey bridge (default ⌃⌥⌘J): one
-        // `global-shortcut-fired` listener; routes through `revealLatestDownload`
+        // Global go-to-latest-download hotkey bridge (default ⌃⌥⌘J): one
+        // `global-shortcut-fired` listener; routes through `goToLatestDownload`
         // and shows the first-trigger warn toast when `acknowledged === false`.
         const unlistenGlobalShortcut = await startGlobalShortcutBridge(explorerRef)
         tauriUnlistenFns.push(unlistenGlobalShortcut)

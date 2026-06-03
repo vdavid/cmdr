@@ -14,7 +14,7 @@
      *      `behavior.fileSystemWatching.downloadsNotifications`. Greyed out
      *      when the FDA gate is closed. Carries a stable anchor id so the
      *      downloads-toast "Stop showing these" button can deep-link here.
-     *   3. **Reveal latest download** — a single on/off `Switch` for the
+     *   3. **Go to latest download** — a single on/off `Switch` for the
      *      global hotkey, whose description references the LIVE binding (so
      *      it updates the moment the user rebinds in `Keyboard shortcuts`,
      *      where the combo is actually edited). Greyed out when the FDA gate
@@ -39,13 +39,13 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { openPrivacySettings } from '$lib/tauri-commands'
     import {
-        getGlobalRevealEnabled,
-        getGlobalRevealBinding,
-        setGlobalRevealEnabled,
-        GLOBAL_REVEAL_ENABLED_KEY,
-        GLOBAL_REVEAL_BINDING_KEY,
+        getGlobalGoToLatestEnabled,
+        getGlobalGoToLatestBinding,
+        setGlobalGoToLatestEnabled,
+        GLOBAL_GO_TO_LATEST_ENABLED_KEY,
+        GLOBAL_GO_TO_LATEST_BINDING_KEY,
     } from '$lib/downloads/global-shortcut-setting'
-    import { globalRevealDescription } from '$lib/downloads/global-shortcut-description'
+    import { globalGoToLatestDescription } from '$lib/downloads/global-shortcut-description'
     import {
         DOWNLOADS_NOTIFICATIONS_SETTING_KEY,
         DOWNLOADS_NOTIFICATIONS_ANCHOR_ID,
@@ -66,7 +66,7 @@
         label: '',
         description: '',
     }
-    const globalShortcutDef = getSettingDefinition(GLOBAL_REVEAL_ENABLED_KEY) ?? {
+    const globalShortcutDef = getSettingDefinition(GLOBAL_GO_TO_LATEST_ENABLED_KEY) ?? {
         label: '',
         description: '',
     }
@@ -84,12 +84,12 @@
     const downloadsGated = $derived(fdaPending || !watcherRunning)
 
     /** Description references the live binding, so a rebind elsewhere updates the helper text. */
-    const shortcutDescription = $derived(globalRevealDescription(shortcutBinding))
+    const shortcutDescription = $derived(globalGoToLatestDescription(shortcutBinding))
 
     async function refreshShortcutStatus() {
         try {
-            shortcutEnabled = getGlobalRevealEnabled()
-            shortcutBinding = getGlobalRevealBinding()
+            shortcutEnabled = getGlobalGoToLatestEnabled()
+            shortcutBinding = getGlobalGoToLatestBinding()
         } catch (err) {
             log.warn('Failed to read global shortcut settings: {err}', { err: String(err) })
         }
@@ -114,14 +114,14 @@
         // registration. The returned status drives nothing in this row anymore
         // (the binding + its registration feedback live in `Keyboard
         // shortcuts`); we just keep the live-apply contract on the toggle.
-        const result = await commands.setGlobalRevealShortcut(shortcutEnabled, shortcutBinding)
+        const result = await commands.setGlobalGoToLatestShortcut(shortcutEnabled, shortcutBinding)
         if (result.status === 'error') {
-            log.warn('setGlobalRevealShortcut failed: {error}', { error: JSON.stringify(result.error) })
+            log.warn('setGlobalGoToLatestShortcut failed: {error}', { error: JSON.stringify(result.error) })
         }
     }
 
     async function handleShortcutEnabledChange(next: boolean) {
-        setGlobalRevealEnabled(next)
+        setGlobalGoToLatestEnabled(next)
         shortcutEnabled = next
         await applyShortcut()
     }
@@ -174,10 +174,10 @@
         // Keep the description in sync when the binding is rebound in the
         // Keyboard shortcuts section (same window or another), and keep the
         // toggle state in sync if `enabled` changes elsewhere.
-        const unsubBinding = onSpecificSettingChange(GLOBAL_REVEAL_BINDING_KEY, (_id, value) => {
+        const unsubBinding = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_BINDING_KEY, (_id, value) => {
             shortcutBinding = value
         })
-        const unsubEnabled = onSpecificSettingChange(GLOBAL_REVEAL_ENABLED_KEY, (_id, value) => {
+        const unsubEnabled = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_ENABLED_KEY, (_id, value) => {
             shortcutEnabled = value
         })
         // Refresh DB size every 2 seconds while visible
@@ -256,10 +256,10 @@
     </div>
 
     <div data-gated={downloadsGated ? 'true' : 'false'}>
-        <SectionCard label="Reveal latest download">
-            {#if shouldShow(GLOBAL_REVEAL_ENABLED_KEY)}
+        <SectionCard label="Go to latest download">
+            {#if shouldShow(GLOBAL_GO_TO_LATEST_ENABLED_KEY)}
                 <SettingRow
-                    id={GLOBAL_REVEAL_ENABLED_KEY}
+                    id={GLOBAL_GO_TO_LATEST_ENABLED_KEY}
                     label={globalShortcutDef.label}
                     description={shortcutDescription}
                     {searchQuery}
@@ -270,14 +270,14 @@
                         disabled={downloadsGated}
                         aria-label={globalShortcutDef.label}
                     >
-                        <Switch.Control class="reveal-switch-control">
-                            <Switch.Thumb class="reveal-switch-thumb" />
+                        <Switch.Control class="go-to-latest-switch-control">
+                            <Switch.Thumb class="go-to-latest-switch-thumb" />
                         </Switch.Control>
                         <Switch.HiddenInput data-test="global-shortcut-enabled" />
                     </Switch.Root>
                 </SettingRow>
                 <p class="shortcut-hint">
-                    Change the shortcut under Keyboard shortcuts → Reveal latest download (global).
+                    Change the shortcut under Keyboard shortcuts → Go to latest download (global).
                 </p>
             {/if}
         </SectionCard>
@@ -363,7 +363,7 @@
        the toggle's live-apply runs a custom IPC handler rather than a plain
        `setSetting`). Styling mirrors `SettingSwitch.svelte`; class names are
        local to keep the rules scoped to this component. */
-    :global(.reveal-switch-control) {
+    :global(.go-to-latest-switch-control) {
         display: inline-flex;
         align-items: center;
         width: 36px;
@@ -375,16 +375,16 @@
         transition: background-color var(--transition-base);
     }
 
-    :global(.reveal-switch-control[data-state='checked']) {
+    :global(.go-to-latest-switch-control[data-state='checked']) {
         background: var(--color-accent);
     }
 
-    :global(.reveal-switch-control[data-disabled]) {
+    :global(.go-to-latest-switch-control[data-disabled]) {
         cursor: not-allowed;
         opacity: 0.5;
     }
 
-    :global(.reveal-switch-thumb) {
+    :global(.go-to-latest-switch-thumb) {
         width: 16px;
         height: 16px;
         background: white;
@@ -393,15 +393,15 @@
         box-shadow: var(--shadow-sm);
     }
 
-    :global(.reveal-switch-control[data-state='checked'] .reveal-switch-thumb) {
+    :global(.go-to-latest-switch-control[data-state='checked'] .go-to-latest-switch-thumb) {
         transform: translateX(16px);
     }
 
-    :global(.reveal-switch-control[data-state='checked']:hover) {
+    :global(.go-to-latest-switch-control[data-state='checked']:hover) {
         background: var(--color-accent-hover);
     }
 
-    :global(.reveal-switch-control[data-focus]) {
+    :global(.go-to-latest-switch-control[data-focus]) {
         outline: 2px solid var(--color-accent);
         outline-offset: 2px;
         box-shadow: var(--shadow-focus);

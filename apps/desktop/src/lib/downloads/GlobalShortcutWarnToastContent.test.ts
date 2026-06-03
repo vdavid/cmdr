@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, flushSync } from 'svelte'
 
-const { dismissToastMock, setSettingMock, setGlobalRevealShortcutMock, getSettingMock } = vi.hoisted(() => ({
+const { dismissToastMock, setSettingMock, setGlobalGoToLatestShortcutMock, getSettingMock } = vi.hoisted(() => ({
   dismissToastMock: vi.fn(),
   setSettingMock: vi.fn(),
-  setGlobalRevealShortcutMock: vi.fn(),
+  setGlobalGoToLatestShortcutMock: vi.fn(),
   getSettingMock: vi.fn(),
 }))
 
@@ -19,7 +19,7 @@ vi.mock('$lib/settings', () => ({
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    setGlobalRevealShortcut: setGlobalRevealShortcutMock,
+    setGlobalGoToLatestShortcut: setGlobalGoToLatestShortcutMock,
   },
 }))
 
@@ -29,9 +29,9 @@ describe('GlobalShortcutWarnToastContent', () => {
   beforeEach(() => {
     dismissToastMock.mockReset()
     setSettingMock.mockReset()
-    setGlobalRevealShortcutMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
+    setGlobalGoToLatestShortcutMock.mockReset().mockResolvedValue({ status: 'ok', data: null })
     getSettingMock.mockReset().mockImplementation((id: string) => {
-      if (id === 'behavior.fileSystemWatching.globalRevealShortcut.binding') return '⌃⌥⌘J'
+      if (id === 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding') return '⌃⌥⌘J'
       return undefined
     })
   })
@@ -65,12 +65,12 @@ describe('GlobalShortcutWarnToastContent', () => {
     // The acknowledged flag is already true at toast creation time (the bridge
     // sets it before opening the toast), so the toast itself doesn't re-write it.
     expect(setSettingMock).not.toHaveBeenCalledWith(
-      'behavior.fileSystemWatching.globalRevealShortcut.acknowledged',
+      'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged',
       true,
     )
   })
 
-  it('"Turn it off" flips enabled to false AND calls setGlobalRevealShortcut(false, ...)', async () => {
+  it('"Turn it off" flips enabled to false AND calls setGlobalGoToLatestShortcut(false, ...)', async () => {
     const target = document.createElement('div')
     mount(GlobalShortcutWarnToastContent, {
       target,
@@ -86,9 +86,9 @@ describe('GlobalShortcutWarnToastContent', () => {
     // Allow microtasks for awaited backend call.
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalRevealShortcut.enabled', false)
-    expect(setGlobalRevealShortcutMock).toHaveBeenCalledTimes(1)
-    const args = setGlobalRevealShortcutMock.mock.calls[0]
+    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalGoToLatestShortcut.enabled', false)
+    expect(setGlobalGoToLatestShortcutMock).toHaveBeenCalledTimes(1)
+    const args = setGlobalGoToLatestShortcutMock.mock.calls[0]
     expect(args[0]).toBe(false)
     expect(args[1]).toBe('⌃⌥⌘J')
     expect(dismissToastMock).toHaveBeenCalledWith('shortcut-warn')

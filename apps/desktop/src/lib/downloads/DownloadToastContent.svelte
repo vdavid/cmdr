@@ -14,7 +14,7 @@
      */
     import Size from '$lib/ui/Size.svelte'
     import { dismissToast } from '$lib/ui/toast'
-    import { revealPath } from './reveal'
+    import { goToDownload } from './go-to-latest'
     import {
         setDownloadsNotificationsMode,
         openSettingsToDownloadsNotifications,
@@ -39,14 +39,14 @@
         toastId: string
         /**
          * Snapshot of the focused-explorer handle at toast-creation time.
-         * Pass `undefined` outside the main window context; `revealPath` is
+         * Pass `undefined` outside the main window context; `goToDownload` is
          * a no-op without it.
          */
         explorer: ExplorerAPI | undefined
         /** The `download-detected` Tauri payload that produced this toast. */
         event: DownloadDetectedPayload
         /**
-         * Display string for the in-app reveal shortcut, snapshotted at
+         * Display string for the in-app go-to-latest shortcut, snapshotted at
          * toast-add time. NOT reactive: a remap mid-toast does not change
          * what's shown. Pass `''` to omit the hint line.
          */
@@ -71,12 +71,12 @@
     })
 
     async function handleJump() {
-        await revealPath(explorer, event.parentDir, event.fileName)
+        await goToDownload(explorer, event.parentDir, event.fileName)
         dismissToast(toastId)
     }
 
     async function handleStopShowing(e: MouseEvent) {
-        // Buttons run their own actions; the body-click reveal must NOT also
+        // Buttons run their own actions; the body-click jump must NOT also
         // fire (otherwise hitting "Stop showing these" would also navigate
         // to the file before the Settings window comes up).
         e.stopPropagation()
@@ -116,7 +116,7 @@
         <span class="subdir">in {subdirLabel}</span>
     {/if}
     {#if shortcutHint}
-        <span class="hint">Press <kbd>{shortcutHint}</kbd> to reveal</span>
+        <span class="hint">Press <kbd>{shortcutHint}</kbd> to jump</span>
     {/if}
     <div class="actions">
         <button type="button" class="jump-button" onclick={handleJumpButton}>

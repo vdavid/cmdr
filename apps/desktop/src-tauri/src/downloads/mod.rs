@@ -13,11 +13,11 @@
 //!   watcher can drop its own events. Bounded with FIFO eviction at 1000
 //!   entries.
 //! - [`LatestRing`] keeps the last ~10 observed downloads in insertion
-//!   order so [`reveal_latest_download`] returns the latest without a
+//!   order so [`go_to_latest_download`] returns the latest without a
 //!   directory scan.
 //! - [`DownloadsWatcher`] glues these to a `notify-debouncer-full` handle
 //!   and an `EventSink` (production: `AppHandle::emit`; tests: mpsc).
-//! - [`commands`] exposes the IPC surface (`reveal_latest_download`,
+//! - [`commands`] exposes the IPC surface (`go_to_latest_download`,
 //!   `downloads_watcher_status`, `recheck_downloads_watcher_gate`).
 //! - [`runtime`] holds the process-global watcher handle. `lib.rs` calls
 //!   [`refresh_runtime`] at startup and on focus events.
@@ -74,5 +74,5 @@ pub mod watcher;
 pub use filter::is_eligible;
 pub use ignore_set::IgnoreSet;
 pub use latest_ring::LatestRing;
-pub use runtime::{note_pending_write_for_cmdr, refresh_global_reveal_shortcut, refresh_runtime};
+pub use runtime::{note_pending_write_for_cmdr, refresh_global_go_to_latest_shortcut, refresh_runtime};
 pub use watcher::{DownloadsWatcher, WatcherError, desired_running};

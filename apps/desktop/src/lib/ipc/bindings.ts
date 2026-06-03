@@ -1239,13 +1239,13 @@ export const commands = {
    */
   setLogLevel: (level: string) => __TAURI_INVOKE<void>('set_log_level', { level }),
   /**
-   *  Reveal the most recently observed eligible download.
+   *  Go to the most recently observed eligible download.
    *
    *  Tries the ring first; falls back to a recursive Downloads-dir scan when
-   *  the ring is empty (cold start). Returns a typed [`RevealError`] for the
+   *  the ring is empty (cold start). Returns a typed [`GoToLatestError`] for the
    *  frontend to branch on — no string matching.
    */
-  revealLatestDownload: () => typedError<RevealedDownload, RevealError>(__TAURI_INVOKE('reveal_latest_download')),
+  goToLatestDownload: () => typedError<LatestDownload, GoToLatestError>(__TAURI_INVOKE('go_to_latest_download')),
   /**
    *  Read-only snapshot of the watcher's state. Used by debug / MCP surfaces
    *  and the Settings pane to render the "watcher is running" indicator.
@@ -1269,9 +1269,9 @@ export const commands = {
    *  without another round trip. Errors are wrapped in the typed
    *  [`super::global_shortcut::RegistrationError`] enum.
    */
-  setGlobalRevealShortcut: (enabled: boolean, binding: string) =>
-    typedError<GlobalRevealShortcutState, RegistrationError>(
-      __TAURI_INVOKE('set_global_reveal_shortcut', { enabled, binding }),
+  setGlobalGoToLatestShortcut: (enabled: boolean, binding: string) =>
+    typedError<GlobalGoToLatestShortcutState, RegistrationError>(
+      __TAURI_INVOKE('set_global_go_to_latest_shortcut', { enabled, binding }),
     ),
   startDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('start_drive_index')),
   stopDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('stop_drive_index')),
@@ -2644,16 +2644,35 @@ export type FrontendLogEntry = {
 }
 
 /**
- *  Result of [`set_global_reveal_shortcut`]: the new status the Settings row
+ *  Result of [`set_global_go_to_latest_shortcut`]: the new status the Settings row
  *  should display. The FE caches this until the next register/unregister, so
  *  the row's "Registered" / "Couldn't register" indicator stays in sync
  *  without an extra round trip.
  */
-export type GlobalRevealShortcutState = {
+export type GlobalGoToLatestShortcutState = {
   status: RegistrationStatus
   binding: string
   enabled: boolean
 }
+
+/**
+ *  Typed errors returned by [`go_to_latest_download`].
+ *
+ *  Tagged enum — `kind` discriminator, no string matching at the call site.
+ */
+export type GoToLatestError =
+  /**
+   *  The watcher hasn't started yet (FDA gate closed, or startup not done).
+   *  Frontend should show the "Cmdr needs FDA" toast.
+   */
+  | { kind: 'watcherUnavailable' }
+  /**
+   *  No eligible download exists. Frontend shows the empty-Downloads INFO
+   *  toast offering navigation to the Downloads dir.
+   */
+  | { kind: 'empty' }
+  // Downloads dir couldn't be resolved (no `HOME`, no `dirs::download_dir`).
+  | { kind: 'downloadsDirUnresolved' }
 
 // A single recent-search entry, persisted verbatim.
 export type HistoryEntry = {
@@ -2781,6 +2800,16 @@ export type KnownNetworkShare = {
   lastKnownAuthOptions: AuthOptions
   // None for guest.
   username: string | null
+}
+
+/**
+ *  Successful resolution: the path to surface plus the pre-split parent dir +
+ *  file name so the frontend doesn't have to parse the path itself.
+ */
+export type LatestDownload = {
+  path: string
+  parentDir: string
+  fileName: string
 }
 
 /**
@@ -3347,35 +3376,6 @@ export type ResortResult = {
    *  None if no selected_indices were provided.
    */
   newSelectedIndices: number[] | null
-}
-
-/**
- *  Typed errors returned by [`reveal_latest_download`].
- *
- *  Tagged enum — `kind` discriminator, no string matching at the call site.
- */
-export type RevealError =
-  /**
-   *  The watcher hasn't started yet (FDA gate closed, or startup not done).
-   *  Frontend should show the "Cmdr needs FDA" toast.
-   */
-  | { kind: 'watcherUnavailable' }
-  /**
-   *  No eligible download exists. Frontend shows the empty-Downloads INFO
-   *  toast offering navigation to the Downloads dir.
-   */
-  | { kind: 'empty' }
-  // Downloads dir couldn't be resolved (no `HOME`, no `dirs::download_dir`).
-  | { kind: 'downloadsDirUnresolved' }
-
-/**
- *  Successful reveal: the path to surface plus the pre-split parent dir +
- *  file name so the frontend doesn't have to parse the path itself.
- */
-export type RevealedDownload = {
-  path: string
-  parentDir: string
-  fileName: string
 }
 
 /**

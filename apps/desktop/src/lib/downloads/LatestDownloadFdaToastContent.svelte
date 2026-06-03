@@ -1,15 +1,15 @@
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
     import { openPrivacySettings } from '$lib/tauri-commands'
-    import { REVEAL_FDA_TOAST_ID } from './reveal-ids'
+    import { LATEST_DOWNLOAD_FDA_TOAST_ID } from './go-to-latest-ids'
 
     async function handleOpenSystemSettings() {
         await openPrivacySettings()
-        dismissToast(REVEAL_FDA_TOAST_ID)
+        dismissToast(LATEST_DOWNLOAD_FDA_TOAST_ID)
     }
 
     function handleDismiss() {
-        dismissToast(REVEAL_FDA_TOAST_ID)
+        dismissToast(LATEST_DOWNLOAD_FDA_TOAST_ID)
     }
 </script>
 

@@ -13,10 +13,10 @@
     "ui/dialog-registry.ts": { "reason": "Pure constant and type definition, no logic to test" },
     "ui/ModalDialog.svelte": { "reason": "Shared modal dialog wrapper, depends on DOM APIs and Tauri commands" },
     "updates/UpdateToastContent.svelte": { "reason": "UI component, toast content for update prompt" },
-    "downloads/RevealEmptyToastContent.svelte": {
-      "reason": "Thin UI wrapper; click handlers delegate to the setEmptyToastHandler closure tested in reveal.test.ts"
+    "downloads/LatestDownloadEmptyToastContent.svelte": {
+      "reason": "Thin UI wrapper; click handlers delegate to the setEmptyToastHandler closure tested in go-to-latest.test.ts"
     },
-    "downloads/RevealFdaToastContent.svelte": {
+    "downloads/LatestDownloadFdaToastContent.svelte": {
       "reason": "Thin UI wrapper; click delegates to openPrivacySettings (Tauri command) and dismissToast"
     },
     "app-status-store.ts": { "reason": "Depends on Tauri APIs" },

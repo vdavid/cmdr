@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * First-trigger warn toast for the global reveal hotkey (default ⌃⌥⌘J).
+     * First-trigger warn toast for the global go-to-latest hotkey (default ⌃⌥⌘J).
      *
      * Fires once per fresh binding (the `acknowledged` flag, reset whenever
      * the user rebinds, controls suppression). The toast itself is purely
@@ -15,7 +15,7 @@
      */
     import { dismissToast } from '$lib/ui/toast'
     import { commands } from '$lib/ipc/bindings'
-    import { setGlobalRevealEnabled } from './global-shortcut-setting'
+    import { setGlobalGoToLatestEnabled } from './global-shortcut-setting'
     import { getAppLogger } from '$lib/logging/logger'
 
     interface Props {
@@ -33,19 +33,19 @@
     }
 
     async function handleTurnOff(): Promise<void> {
-        setGlobalRevealEnabled(false)
+        setGlobalGoToLatestEnabled(false)
         try {
             // Tell the backend to unregister live so the next ⌃⌥⌘J in Chrome
             // doesn't still fire. The Settings UI store change also drives
             // this, but the IPC ack here is what the test asserts on.
-            const result = await commands.setGlobalRevealShortcut(false, binding)
+            const result = await commands.setGlobalGoToLatestShortcut(false, binding)
             if (result.status === 'error') {
-                log.warn('setGlobalRevealShortcut(false, ...) returned an error: {error}', {
+                log.warn('setGlobalGoToLatestShortcut(false, ...) returned an error: {error}', {
                     error: JSON.stringify(result.error),
                 })
             }
         } catch (err) {
-            log.warn('Failed to call setGlobalRevealShortcut: {err}', { err: String(err) })
+            log.warn('Failed to call setGlobalGoToLatestShortcut: {err}', { err: String(err) })
         }
         dismissToast(toastId)
     }

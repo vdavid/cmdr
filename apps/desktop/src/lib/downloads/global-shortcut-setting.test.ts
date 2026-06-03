@@ -10,25 +10,28 @@ vi.mock('$lib/settings', () => ({
   getSetting: getSettingMock,
 }))
 
-import { setGlobalRevealBinding } from './global-shortcut-setting'
+import { setGlobalGoToLatestBinding } from './global-shortcut-setting'
 
-describe('setGlobalRevealBinding', () => {
+describe('setGlobalGoToLatestBinding', () => {
   beforeEach(() => {
     setSettingMock.mockReset()
     getSettingMock.mockReset()
   })
 
   it('writes the new binding AND resets acknowledged to false', () => {
-    setGlobalRevealBinding('⌘⇧K')
-    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalRevealShortcut.binding', '⌘⇧K')
-    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalRevealShortcut.acknowledged', false)
+    setGlobalGoToLatestBinding('⌘⇧K')
+    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.globalGoToLatestShortcut.binding', '⌘⇧K')
+    expect(setSettingMock).toHaveBeenCalledWith(
+      'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged',
+      false,
+    )
   })
 
   it('writes both calls in the right order (binding first, ack reset second)', () => {
-    setGlobalRevealBinding('⌥⌘P')
+    setGlobalGoToLatestBinding('⌥⌘P')
     const calls = setSettingMock.mock.calls.map((c) => c[0] as string)
-    const bindingIdx = calls.indexOf('behavior.fileSystemWatching.globalRevealShortcut.binding')
-    const ackIdx = calls.indexOf('behavior.fileSystemWatching.globalRevealShortcut.acknowledged')
+    const bindingIdx = calls.indexOf('behavior.fileSystemWatching.globalGoToLatestShortcut.binding')
+    const ackIdx = calls.indexOf('behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged')
     expect(bindingIdx).toBeGreaterThanOrEqual(0)
     expect(ackIdx).toBeGreaterThan(bindingIdx)
   })

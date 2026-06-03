@@ -353,7 +353,7 @@ impl DownloadsWatcher {
     }
 
     /// Most-recently observed eligible download, or `None` if the ring is
-    /// empty. The "reveal latest download" action reads this first; if `None`
+    /// empty. The "go to latest download" action reads this first; if `None`
     /// it falls back to [`Self::scan_latest_fallback`].
     pub fn latest_download(&self) -> Option<PathBuf> {
         self.latest_ring.latest()

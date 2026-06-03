@@ -17,7 +17,7 @@ Up: [`../CLAUDE.md`](../CLAUDE.md) (mcp).
 | `dialogs.rs`     | Unified `dialog` tool: open / focus / close / confirm for settings, file-viewer, about, and confirmation dialogs.              |
 | `async_tools.rs` | `await`, `connect_to_server`, `remove_manual_server`, `upgrade_smb_to_direct`, `set_setting`.                                  |
 | `search.rs`      | `search` (drive index), `ai_search` (LLM-driven), and the lazy-load of the search index via `spawn_blocking`.                  |
-| `downloads.rs`   | `reveal_latest_download`: resolves via `downloads::commands::reveal_latest_download`, then `mcp-nav-to-path` + `mcp-move-cursor`.|
+| `downloads.rs`   | `go_to_latest_download`: resolves via `downloads::commands::go_to_latest_download`, then `mcp-nav-to-path` + `mcp-move-cursor`.|
 | `tests.rs`       | Unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.                            |
 
 ## Conventions

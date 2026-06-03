@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // declare the spy fns inside vi.hoisted() and reuse them from the mock factories
 // AND from the test body.
 const {
-  revealLatestDownloadMock,
+  goToLatestDownloadMock,
   downloadsWatcherStatusMock,
   addToastMock,
   openPrivacySettingsMock,
@@ -12,7 +12,7 @@ const {
   moveCursorMock,
   getFocusedPaneMock,
 } = vi.hoisted(() => ({
-  revealLatestDownloadMock: vi.fn(),
+  goToLatestDownloadMock: vi.fn(),
   downloadsWatcherStatusMock: vi.fn(),
   addToastMock: vi.fn(() => 'toast-id'),
   openPrivacySettingsMock: vi.fn(() => Promise.resolve()),
@@ -23,7 +23,7 @@ const {
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    revealLatestDownload: revealLatestDownloadMock,
+    goToLatestDownload: goToLatestDownloadMock,
     downloadsWatcherStatus: downloadsWatcherStatusMock,
   },
 }))
@@ -38,16 +38,21 @@ vi.mock('$lib/tauri-commands', () => ({
 
 // Component imports return opaque module refs; we only assert that the same
 // reference is passed to `addToast` (proves the dedup id wires the right toast).
-vi.mock('./RevealEmptyToastContent.svelte', () => ({
-  default: { __toastContent: 'RevealEmptyToastContent' },
+vi.mock('./LatestDownloadEmptyToastContent.svelte', () => ({
+  default: { __toastContent: 'LatestDownloadEmptyToastContent' },
 }))
-vi.mock('./RevealFdaToastContent.svelte', () => ({
-  default: { __toastContent: 'RevealFdaToastContent' },
+vi.mock('./LatestDownloadFdaToastContent.svelte', () => ({
+  default: { __toastContent: 'LatestDownloadFdaToastContent' },
 }))
 
-import { revealLatestDownload, revealPath, REVEAL_EMPTY_TOAST_ID, REVEAL_FDA_TOAST_ID } from './reveal'
-import RevealEmptyToastContent from './RevealEmptyToastContent.svelte'
-import RevealFdaToastContent from './RevealFdaToastContent.svelte'
+import {
+  goToLatestDownload,
+  goToDownload,
+  LATEST_DOWNLOAD_EMPTY_TOAST_ID,
+  LATEST_DOWNLOAD_FDA_TOAST_ID,
+} from './go-to-latest'
+import LatestDownloadEmptyToastContent from './LatestDownloadEmptyToastContent.svelte'
+import LatestDownloadFdaToastContent from './LatestDownloadFdaToastContent.svelte'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
 function makeExplorerStub(): ExplorerAPI {
@@ -61,9 +66,9 @@ function makeExplorerStub(): ExplorerAPI {
   } as unknown as ExplorerAPI
 }
 
-describe('revealLatestDownload', () => {
+describe('goToLatestDownload', () => {
   beforeEach(() => {
-    revealLatestDownloadMock.mockReset()
+    goToLatestDownloadMock.mockReset()
     downloadsWatcherStatusMock.mockReset()
     addToastMock.mockReset().mockReturnValue('toast-id')
     openPrivacySettingsMock.mockReset().mockResolvedValue(undefined)
@@ -73,7 +78,7 @@ describe('revealLatestDownload', () => {
   })
 
   it('navigates the focused pane and selects the file on success', async () => {
-    revealLatestDownloadMock.mockResolvedValue({
+    goToLatestDownloadMock.mockResolvedValue({
       status: 'ok',
       data: {
         path: '/Users/me/Downloads/report.pdf',
@@ -83,15 +88,15 @@ describe('revealLatestDownload', () => {
     })
     getFocusedPaneMock.mockReturnValue('right')
 
-    await revealLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub())
 
     expect(navigateToPathMock).toHaveBeenCalledWith('right', '/Users/me/Downloads')
     expect(moveCursorMock).toHaveBeenCalledWith('right', 'report.pdf')
     expect(addToastMock).not.toHaveBeenCalled()
   })
 
-  it('shows the empty INFO toast with the dedup id on RevealError::Empty', async () => {
-    revealLatestDownloadMock.mockResolvedValue({
+  it('shows the empty INFO toast with the dedup id on GoToLatestError::Empty', async () => {
+    goToLatestDownloadMock.mockResolvedValue({
       status: 'error',
       error: { kind: 'empty' },
     })
@@ -100,16 +105,16 @@ describe('revealLatestDownload', () => {
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
 
-    await revealLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub())
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
     const [content, options] = addToastMock.mock.calls[0] as unknown as [
       unknown,
       Record<string, unknown> & { props?: { onGoToDownloads: () => void } },
     ]
-    expect(content).toBe(RevealEmptyToastContent)
+    expect(content).toBe(LatestDownloadEmptyToastContent)
     expect(options).toMatchObject({
-      id: REVEAL_EMPTY_TOAST_ID,
+      id: LATEST_DOWNLOAD_EMPTY_TOAST_ID,
       level: 'info',
     })
     // The "Go to Downloads" handler arrives as a prop (snapshotted closure
@@ -121,41 +126,41 @@ describe('revealLatestDownload', () => {
     expect(moveCursorMock).not.toHaveBeenCalled()
   })
 
-  it('shows the FDA INFO toast with the dedup id on RevealError::WatcherUnavailable', async () => {
-    revealLatestDownloadMock.mockResolvedValue({
+  it('shows the FDA INFO toast with the dedup id on GoToLatestError::WatcherUnavailable', async () => {
+    goToLatestDownloadMock.mockResolvedValue({
       status: 'error',
       error: { kind: 'watcherUnavailable' },
     })
 
-    await revealLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub())
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
     const [content, options] = addToastMock.mock.calls[0] as unknown as [unknown, Record<string, unknown>]
-    expect(content).toBe(RevealFdaToastContent)
+    expect(content).toBe(LatestDownloadFdaToastContent)
     expect(options).toMatchObject({
-      id: REVEAL_FDA_TOAST_ID,
+      id: LATEST_DOWNLOAD_FDA_TOAST_ID,
       level: 'info',
     })
   })
 
-  it('shows the FDA INFO toast on RevealError::DownloadsDirUnresolved', async () => {
+  it('shows the FDA INFO toast on GoToLatestError::DownloadsDirUnresolved', async () => {
     // No `HOME`, no `dirs::download_dir`: nothing to navigate to. The user-facing
     // story is the same as the FDA case (we can't act on Downloads), so reuse the
     // toast instead of inventing a third state.
-    revealLatestDownloadMock.mockResolvedValue({
+    goToLatestDownloadMock.mockResolvedValue({
       status: 'error',
       error: { kind: 'downloadsDirUnresolved' },
     })
 
-    await revealLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub())
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
     const [content] = addToastMock.mock.calls[0] as unknown as [unknown, Record<string, unknown>]
-    expect(content).toBe(RevealFdaToastContent)
+    expect(content).toBe(LatestDownloadFdaToastContent)
   })
 
   it('dedups: two empty triggers in a row pass the same id so the toast replaces in place', async () => {
-    revealLatestDownloadMock.mockResolvedValue({
+    goToLatestDownloadMock.mockResolvedValue({
       status: 'error',
       error: { kind: 'empty' },
     })
@@ -164,8 +169,8 @@ describe('revealLatestDownload', () => {
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
 
-    await revealLatestDownload(makeExplorerStub())
-    await revealLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub())
 
     expect(addToastMock).toHaveBeenCalledTimes(2)
     // The toast store dedups by `id`: passing the same id makes the second
@@ -174,20 +179,20 @@ describe('revealLatestDownload', () => {
     const [, secondOptions] = addToastMock.mock.calls[1] as unknown as [unknown, Record<string, unknown>]
     const firstId = firstOptions.id
     const secondId = secondOptions.id
-    expect(firstId).toBe(REVEAL_EMPTY_TOAST_ID)
-    expect(secondId).toBe(REVEAL_EMPTY_TOAST_ID)
+    expect(firstId).toBe(LATEST_DOWNLOAD_EMPTY_TOAST_ID)
+    expect(secondId).toBe(LATEST_DOWNLOAD_EMPTY_TOAST_ID)
   })
 
   it('does nothing when the explorer handle is missing (HMR / pre-mount)', async () => {
-    await revealLatestDownload(undefined)
+    await goToLatestDownload(undefined)
 
-    expect(revealLatestDownloadMock).not.toHaveBeenCalled()
+    expect(goToLatestDownloadMock).not.toHaveBeenCalled()
     expect(addToastMock).not.toHaveBeenCalled()
     expect(navigateToPathMock).not.toHaveBeenCalled()
   })
 })
 
-describe('revealPath', () => {
+describe('goToDownload', () => {
   beforeEach(() => {
     addToastMock.mockReset().mockReturnValue('toast-id')
     navigateToPathMock.mockReset().mockResolvedValue(undefined)
@@ -196,14 +201,14 @@ describe('revealPath', () => {
   })
 
   it('navigates the focused pane to parentDir and selects the file', async () => {
-    await revealPath(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
+    await goToDownload(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
 
     expect(navigateToPathMock).toHaveBeenCalledWith('left', '/Users/me/Downloads')
     expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
   })
 
   it('does nothing when the explorer handle is missing (HMR / pre-mount)', async () => {
-    await revealPath(undefined, '/Users/me/Downloads', 'report.pdf')
+    await goToDownload(undefined, '/Users/me/Downloads', 'report.pdf')
 
     expect(navigateToPathMock).not.toHaveBeenCalled()
     expect(moveCursorMock).not.toHaveBeenCalled()
@@ -216,7 +221,7 @@ describe('revealPath', () => {
       'snapshot pane on a missing volume',
     )
 
-    await revealPath(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
+    await goToDownload(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
 
     expect(navigateToPathMock).toHaveBeenCalledWith('left', '/Users/me/Downloads')
     expect(moveCursorMock).not.toHaveBeenCalled()

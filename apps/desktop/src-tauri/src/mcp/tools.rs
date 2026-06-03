@@ -594,7 +594,7 @@ fn get_await_tools() -> Vec<Tool> {
 /// Get downloads tools.
 fn get_downloads_tools() -> Vec<Tool> {
     vec![Tool::no_params(
-        "reveal_latest_download",
+        "go_to_latest_download",
         "Navigate the focused pane to the most recently observed eligible file in ~/Downloads and select it. Errors if no eligible file exists or Cmdr lacks Full Disk Access.",
     )]
 }
@@ -766,7 +766,7 @@ mod tests {
     fn test_downloads_tools_count() {
         let tools = get_downloads_tools();
         assert_eq!(tools.len(), 1);
-        assert_eq!(tools[0].name, "reveal_latest_download");
+        assert_eq!(tools[0].name, "go_to_latest_download");
     }
 
     #[test]

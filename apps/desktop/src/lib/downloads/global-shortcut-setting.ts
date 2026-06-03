@@ -1,5 +1,5 @@
 /**
- * Settings helpers for `behavior.fileSystemWatching.globalRevealShortcut.*`.
+ * Settings helpers for `behavior.fileSystemWatching.globalGoToLatestShortcut.*`.
  *
  * The three settings (`enabled`, `binding`, `acknowledged`) live in the
  * registry and persist like everything else. This module exposes the
@@ -14,27 +14,27 @@
  */
 import { getSetting, setSetting } from '$lib/settings'
 
-const ENABLED_KEY = 'behavior.fileSystemWatching.globalRevealShortcut.enabled'
-const BINDING_KEY = 'behavior.fileSystemWatching.globalRevealShortcut.binding'
-const ACKNOWLEDGED_KEY = 'behavior.fileSystemWatching.globalRevealShortcut.acknowledged'
+const ENABLED_KEY = 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled'
+const BINDING_KEY = 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding'
+const ACKNOWLEDGED_KEY = 'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged'
 
 export {
-  ENABLED_KEY as GLOBAL_REVEAL_ENABLED_KEY,
-  BINDING_KEY as GLOBAL_REVEAL_BINDING_KEY,
-  ACKNOWLEDGED_KEY as GLOBAL_REVEAL_ACKNOWLEDGED_KEY,
+  ENABLED_KEY as GLOBAL_GO_TO_LATEST_ENABLED_KEY,
+  BINDING_KEY as GLOBAL_GO_TO_LATEST_BINDING_KEY,
+  ACKNOWLEDGED_KEY as GLOBAL_GO_TO_LATEST_ACKNOWLEDGED_KEY,
 }
 
-export function getGlobalRevealEnabled(): boolean {
+export function getGlobalGoToLatestEnabled(): boolean {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
   return getSetting(ENABLED_KEY as any) as boolean
 }
 
-export function getGlobalRevealBinding(): string {
+export function getGlobalGoToLatestBinding(): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
   return getSetting(BINDING_KEY as any) as string
 }
 
-export function setGlobalRevealEnabled(value: boolean): void {
+export function setGlobalGoToLatestEnabled(value: boolean): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
   setSetting(ENABLED_KEY as any, value)
 }
@@ -43,14 +43,14 @@ export function setGlobalRevealEnabled(value: boolean): void {
  * Set the binding AND reset `acknowledged` to `false`. The reset is the
  * whole point of this helper — see the module docstring.
  */
-export function setGlobalRevealBinding(value: string): void {
+export function setGlobalGoToLatestBinding(value: string): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
   setSetting(BINDING_KEY as any, value)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
   setSetting(ACKNOWLEDGED_KEY as any, false)
 }
 
-export function setGlobalRevealAcknowledged(value: boolean): void {
+export function setGlobalGoToLatestAcknowledged(value: boolean): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- key is in the registry
   setSetting(ACKNOWLEDGED_KEY as any, value)
 }

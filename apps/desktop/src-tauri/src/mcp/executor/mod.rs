@@ -169,7 +169,7 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         // Async wait
         "await" => async_tools::execute_await(app, params).await,
         // Downloads
-        "reveal_latest_download" => downloads::execute_reveal_latest_download(app).await,
+        "go_to_latest_download" => downloads::execute_go_to_latest_download(app).await,
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
