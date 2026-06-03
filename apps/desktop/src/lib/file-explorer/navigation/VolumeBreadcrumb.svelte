@@ -41,6 +41,10 @@
         isVolumeRetryFailed,
         requestVolumeRefresh,
     } from '$lib/stores/volume-store.svelte'
+    import { isVolumeBusy } from '$lib/stores/volume-busy-store.svelte'
+
+    /** Tooltip shown on a disabled Eject control while a transfer touches the volume. */
+    const EJECT_BUSY_TOOLTIP = "Can't eject while operations are in progress on this device"
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import {
@@ -424,6 +428,10 @@
 
     async function handleEjectClick(volume: VolumeInfo, event?: MouseEvent) {
         event?.stopPropagation()
+        // Guard: the eject controls are disabled while the volume is busy, but a
+        // keyboard / edge path could still reach here. Don't tear down a volume
+        // mid-transfer.
+        if (isVolumeBusy(volume.id)) return
         closeRowMenu()
         breadcrumbPopup.close()
         isOpen = false
@@ -537,8 +545,9 @@
         <button
             type="button"
             class="eject-button breadcrumb-eject-button"
-            aria-label={`Eject ${currentVolume.name}`}
-            use:tooltip={`Eject ${currentVolume.name}`}
+            aria-label={isVolumeBusy(currentVolume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${currentVolume.name}`}
+            disabled={isVolumeBusy(currentVolume.id)}
+            use:tooltip={isVolumeBusy(currentVolume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${currentVolume.name}`}
             onclick={(e: MouseEvent) => { void handleEjectClick(currentVolume, e) }}
         >
             <!-- Inline SVG: Lucide doesn't ship an `eject` icon (as of v0.477).
@@ -644,8 +653,9 @@
                             <button
                                 type="button"
                                 class="eject-button"
-                                aria-label={`Eject ${volume.name}`}
-                                use:tooltip={`Eject ${volume.name}`}
+                                aria-label={isVolumeBusy(volume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${volume.name}`}
+                                disabled={isVolumeBusy(volume.id)}
+                                use:tooltip={isVolumeBusy(volume.id) ? EJECT_BUSY_TOOLTIP : `Eject ${volume.name}`}
                                 onclick={(e: MouseEvent) => { void handleEjectClick(volume, e) }}
                             >
                                 <!-- Inline SVG: Lucide doesn't ship an `eject` icon (as of v0.477).
@@ -787,9 +797,13 @@
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <div
                     class="row-menu-item"
+                    class:row-menu-item-disabled={isVolumeBusy(rowMenuVolume.id)}
+                    use:tooltip={isVolumeBusy(rowMenuVolume.id) ? EJECT_BUSY_TOOLTIP : ''}
                     onclick={(e: MouseEvent) => { void handleEjectClick(rowMenuVolume, e) }}
                 >
-                    Eject ({rowMenuVolume.name})
+                    {isVolumeBusy(rowMenuVolume.id)
+                        ? `Eject (${rowMenuVolume.name}) (busy)`
+                        : `Eject (${rowMenuVolume.name})`}
                 </div>
             </div>
         {/if}
@@ -1325,7 +1339,7 @@
         transition: background-color var(--transition-base), color var(--transition-base);
     }
 
-    .eject-button:hover {
+    .eject-button:hover:not(:disabled) {
         background-color: var(--color-bg-tertiary);
         color: var(--color-text-primary);
     }
@@ -1333,6 +1347,13 @@
     .eject-button:focus-visible {
         outline: 2px solid var(--color-accent);
         outline-offset: 1px;
+    }
+
+    /* Busy: a write op is reading from / writing to this volume, so ejecting is
+       blocked. Greyed out, no hover affordance; the tooltip explains why. */
+    .eject-button:disabled {
+        opacity: 0.4;
+        cursor: default;
     }
 
     /* In the dropdown row, push the button to the far right when it's the only
@@ -1382,7 +1403,12 @@
         white-space: nowrap;
     }
 
-    .row-menu-item:hover {
+    .row-menu-item:hover:not(.row-menu-item-disabled) {
         background-color: var(--color-accent-subtle);
+    }
+
+    /* Busy volume: the eject action is blocked while a transfer touches it. */
+    .row-menu-item-disabled {
+        opacity: 0.4;
     }
 </style>

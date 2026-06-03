@@ -120,6 +120,7 @@ export {
   resolvePathVolume,
   getVolumeSpace,
   ejectVolume,
+  getBusyVolumeIds,
   onVolumeContextAction,
   watchVolumeSpace,
   unwatchVolumeSpace,

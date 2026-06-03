@@ -234,10 +234,15 @@ pub fn build_context_menu<R: Runtime>(
 /// the user eject the volume the breadcrumb represents. The caller is responsible
 /// for stashing the matching `volume_id` in `MenuState.volume_eject_context` so
 /// `on_menu_event` can dispatch the click.
+///
+/// When `eject_busy` is true, the item is rendered disabled with a ` (busy)`
+/// suffix, so a volume with a write op reading from / writing to it can't be
+/// ejected mid-transfer (mirrors the disabled eject button in the picker).
 pub fn build_breadcrumb_context_menu<R: Runtime>(
     app: &AppHandle<R>,
     accelerator: &str,
     eject_volume_name: Option<&str>,
+    eject_busy: bool,
 ) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
     let accel: Option<&str> = if accelerator.is_empty() {
@@ -248,8 +253,12 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
     let copy_path_item = MenuItem::with_id(app, COPY_CURRENT_DIR_PATH_ID, "Copy path", true, accel)?;
     menu.append(&copy_path_item)?;
     if let Some(name) = eject_volume_name {
-        let label = format!("Eject ({})", name);
-        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, &label, true, None::<&str>)?;
+        let label = if eject_busy {
+            format!("Eject ({}) (busy)", name)
+        } else {
+            format!("Eject ({})", name)
+        };
+        let eject_item = MenuItem::with_id(app, EJECT_VOLUME_ID, &label, !eject_busy, None::<&str>)?;
         menu.append(&eject_item)?;
     }
     Ok(menu)

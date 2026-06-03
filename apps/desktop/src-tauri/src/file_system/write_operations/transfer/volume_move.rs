@@ -70,17 +70,23 @@ type TransferFut<'a> = Pin<Box<dyn Future<Output = Result<TransferOutcome, Write
 /// - Cross-volume: copy to destination then delete sources
 ///
 /// Emits the standard write events (`write-progress`, `write-complete`, `write-error`).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "each volume travels with its ID (for the busy set) plus its Arc; bundling them would just shuffle the same fields into a struct at every call site"
+)]
 pub async fn move_between_volumes(
     app: tauri::AppHandle,
+    source_volume_id: String,
     source_volume: Arc<dyn Volume>,
     source_paths: Vec<PathBuf>,
+    dest_volume_id: String,
     dest_volume: Arc<dyn Volume>,
     dest_path: PathBuf,
     config: VolumeCopyConfig,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Same volume: use native rename/move (instant for MTP)
     if Arc::ptr_eq(&source_volume, &dest_volume) {
-        return move_within_same_volume(app, source_volume, source_paths, dest_path, config).await;
+        return move_within_same_volume(app, source_volume_id, source_volume, source_paths, dest_path, config).await;
     }
 
     // Both local: delegate to the battle-tested move implementation
@@ -103,7 +109,16 @@ pub async fn move_between_volumes(
             ..Default::default()
         };
 
-        return super::super::move_files_start(app, absolute_sources, absolute_dest, write_config).await;
+        // Pass both volume IDs so a local→USB / DMG move still marks the
+        // ejectable destination busy while it runs.
+        return super::super::move_files_start(
+            app,
+            absolute_sources,
+            absolute_dest,
+            write_config,
+            vec![source_volume_id, dest_volume_id],
+        )
+        .await;
     }
 
     // Cross-volume: copy each file to destination, then delete source
@@ -124,7 +139,11 @@ pub async fn move_between_volumes(
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
         cache.insert(operation_id.clone(), Arc::clone(&state));
     }
-    register_operation_status(&operation_id, WriteOperationType::Move);
+    register_operation_status(
+        &operation_id,
+        WriteOperationType::Move,
+        vec![source_volume_id, dest_volume_id],
+    );
 
     let source_volume_name = source_volume.name().to_string();
     tokio::spawn(async move {
@@ -589,6 +608,7 @@ pub(super) async fn move_volumes_with_progress(
 /// Runs as a background task with operation registration, progress events, and cancellation.
 async fn move_within_same_volume(
     app: tauri::AppHandle,
+    volume_id: String,
     volume: Arc<dyn Volume>,
     source_paths: Vec<PathBuf>,
     dest_path: PathBuf,
@@ -612,7 +632,7 @@ async fn move_within_same_volume(
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
         cache.insert(operation_id.clone(), Arc::clone(&state));
     }
-    register_operation_status(&operation_id, WriteOperationType::Move);
+    register_operation_status(&operation_id, WriteOperationType::Move, vec![volume_id]);
 
     let volume_name = volume.name().to_string();
     tokio::spawn(async move {

@@ -110,6 +110,16 @@ export async function ejectVolume(volumeId: string): Promise<void> {
 }
 
 /**
+ * Returns the IDs of volumes that currently have a copy / move / delete
+ * operation reading from or writing to them. The volume picker bootstraps its
+ * busy set from this, then keeps it live via the `volumes-busy-changed` event,
+ * to disable Eject for a device while a transfer touches it.
+ */
+export async function getBusyVolumeIds(): Promise<string[]> {
+  return commands.getBusyVolumeIds()
+}
+
+/**
  * Subscribes to volume-context-menu actions (currently just "eject") emitted by the
  * native breadcrumb context menu. The handler receives `{ action, volumeId, volumeName }`.
  * Returns an `UnlistenFn` — call it on component destroy to avoid leaks.

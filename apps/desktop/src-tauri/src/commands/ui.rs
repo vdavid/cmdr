@@ -127,8 +127,13 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
 ) -> Result<(), String> {
     let app = window.app_handle();
     let accelerator = frontend_shortcut_to_accelerator(&shortcut).unwrap_or_default();
-    let menu =
-        build_breadcrumb_context_menu(app, &accelerator, eject_volume_name.as_deref()).map_err(|e| e.to_string())?;
+    // Disable the eject item while a write op touches this volume (the picker's
+    // inline eject button is disabled the same way).
+    let eject_busy = eject_volume_id
+        .as_ref()
+        .is_some_and(|id| crate::file_system::busy_volume_ids().contains(id));
+    let menu = build_breadcrumb_context_menu(app, &accelerator, eject_volume_name.as_deref(), eject_busy)
+        .map_err(|e| e.to_string())?;
 
     // Stash eject target so on_menu_event can read it back when the user clicks
     // the "Eject (name)" item. If only one of the two args is present, treat as no

@@ -447,6 +447,11 @@ pub fn run() {
             // Initialize volume broadcast (must be before watchers so they can emit)
             volume_broadcast::init(app.handle());
 
+            // Wire the "busy volumes" emitter so write ops can broadcast
+            // `volumes-busy-changed` (drives disabling Eject while a transfer
+            // touches a device). Before any write op can run.
+            file_system::init_busy_volume_emitter(app.handle());
+
             // Restricted-paths tracker (TCC-gated paths the user has been
             // denied access to). Installs an NSApplicationDidBecomeActive
             // observer that re-probes the set when the user returns from

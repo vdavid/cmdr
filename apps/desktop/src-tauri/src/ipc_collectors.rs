@@ -347,6 +347,7 @@ pub(super) fn collect_network_types(types: &mut Types) -> Vec<Function> {
         crate::commands::network::reconnect_smb_volume,
         crate::commands::network::disconnect_smb_volume,
         crate::commands::eject::eject_volume,
+        crate::commands::eject::get_busy_volume_ids,
         crate::commands::network::remove_manual_server,
         crate::commands::network::disconnect_network_host,
         crate::commands::network::ensure_network_discovery_started,

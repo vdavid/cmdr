@@ -110,6 +110,7 @@
         cleanupVolumeStore,
         requestVolumeRefresh,
     } from '$lib/stores/volume-store.svelte'
+    import { initVolumeBusyStore, cleanupVolumeBusyStore } from '$lib/stores/volume-busy-store.svelte'
     import { initRestrictedPathsStore } from '$lib/stores/restricted-paths-store.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { initialize as initMtpStore } from '$lib/mtp'
@@ -1186,6 +1187,7 @@
         // and runs the per-volume backoff cycle that drives `SmbReconnectingView`.
         await Promise.all([
             initVolumeStore(),
+            initVolumeBusyStore(),
             initMtpStore(),
             smbReconnectManager.init(),
             initRestrictedPathsStore(),
@@ -1432,6 +1434,7 @@
         if (quickLookFollowTimer !== null) clearTimeout(quickLookFollowTimer)
         // No cleanup needed for throttle (no pending timers)
         cleanupVolumeStore()
+        cleanupVolumeBusyStore()
         cleanupNetworkDiscovery()
         stopModifierTracking()
         window.removeEventListener('resize', handleResizeForDevTools) // No-op in non-dev, safe to always call

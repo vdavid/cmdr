@@ -1990,6 +1990,13 @@ export const commands = {
    *  after and panes rooted at the volume redirect to root.
    */
   ejectVolume: (volumeId: string) => typedError<null, IpcError>(__TAURI_INVOKE('eject_volume', { volumeId })),
+  /**
+   *  Returns the IDs of volumes that currently have a write op (copy / move /
+   *  delete) reading from or writing to them. The volume picker bootstraps its
+   *  busy set from this once on startup, then keeps it live via the
+   *  `volumes-busy-changed` event. Used to disable Eject for a busy device.
+   */
+  getBusyVolumeIds: () => __TAURI_INVOKE<string[]>('get_busy_volume_ids'),
   // Removes a manually-added server by ID.
   removeManualServer: (serverId: string) =>
     typedError<null, string>(__TAURI_INVOKE('remove_manual_server', { serverId })),

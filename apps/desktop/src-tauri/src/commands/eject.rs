@@ -109,6 +109,17 @@ pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, EjectDecis
 pub async fn eject_volume(volume_id: String) -> Result<(), IpcError> {
     use crate::file_system::get_volume_manager;
 
+    // Safety gate: never tear down a volume while a write op is reading from or
+    // writing to it. The picker disables Eject for busy volumes, so reaching
+    // here means a race (or an MCP / automation caller); refuse rather than
+    // disconnect mid-transfer and risk a truncated file. See the volume picker's
+    // `volumes-busy-changed` wiring.
+    if crate::file_system::busy_volume_ids().contains(&volume_id) {
+        return Err(IpcError::from_err(
+            "operations are in progress on this device. Eject again once they finish",
+        ));
+    }
+
     // MTP volumes use ID format `{device_id}:{storage_id}` and aren't
     // registered in VolumeManager; check the live MTP device list first.
     let is_mtp = is_mtp_volume_id(&volume_id).await;
@@ -146,6 +157,16 @@ pub async fn eject_volume(volume_id: String) -> Result<(), IpcError> {
         EjectAction::DiskutilUnmount => diskutil_run("unmount", &mount_path).await,
         EjectAction::DiskutilEject => diskutil_run("eject", &mount_path).await,
     }
+}
+
+/// Returns the IDs of volumes that currently have a write op (copy / move /
+/// delete) reading from or writing to them. The volume picker bootstraps its
+/// busy set from this once on startup, then keeps it live via the
+/// `volumes-busy-changed` event. Used to disable Eject for a busy device.
+#[tauri::command]
+#[specta::specta]
+pub fn get_busy_volume_ids() -> Vec<String> {
+    crate::file_system::busy_volume_ids()
 }
 
 /// MTP volume IDs are shaped `{device_id}:{storage_id}` (see

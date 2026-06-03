@@ -69,6 +69,7 @@ vi.mock('$lib/tauri-commands', () => ({
     data: [{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false }],
     timedOut: false,
   }),
+  getBusyVolumeIds: vi.fn().mockResolvedValue([]),
   resolvePathVolume: vi.fn().mockResolvedValue({
     volume: {
       id: 'root',

@@ -153,12 +153,22 @@ See also: [`apps/desktop/src-tauri/src/downloads/CLAUDE.md`](../../downloads/CLA
 | `write-cancelled` | Operation cancelled (includes `rolled_back` flag) |
 | `write-error` | Operation failed. Carries `error: WriteOperationError` (typed) plus `friendly: FriendlyError` (rendered title/explanation/suggestion + category) populated by `WriteErrorEvent::new` via `friendly_from_write_error`. The FE renders the `friendly` payload directly in `TransferErrorDialog` and applies category-based colors. |
 | `write-settled` | Emitted once per op after the spawned background task fully returns. See [Settle contract](#settle-contract). |
+| `volumes-busy-changed` | The set of volume IDs with an in-flight op changed (an op started or finished). Payload is `string[]`. See [Busy-volumes set](#busy-volumes-set). |
 | `write-source-item-done` | All files for a top-level source item processed (for gradual deselection) |
 | `dry-run-complete` | `config.dry_run == true` (returns `DryRunResult`) |
 | `scan-preview-progress` | During `start_scan_preview` |
 | `scan-preview-complete` | Preview scan finished |
 | `scan-preview-error` | Preview scan failed |
 | `scan-preview-cancelled` | Preview scan cancelled |
+
+## Busy-volumes set
+
+Drives "disable Eject while an op reads from / writes to this device" so a disconnect can't truncate an in-flight file. Lives in `state.rs`.
+
+- Each op records the volume IDs it touches via `register_operation_status(op_id, type, volume_ids)`. Source **and** destination go in (a download from a phone is as corruptible as an upload to it). `OperationStateGuard`'s `Drop` clears them on unregister, so a panicking op can't leave a volume stuck busy.
+- The busy set is the union of every active op's `volume_ids`, minus `root` (never ejectable). `recompute_and_emit_busy_volumes` fires `volumes-busy-changed` only when membership changes — progress ticks don't churn it. Membership-by-union means two concurrent transfers to one device keep it busy until both finish, with no manual refcount.
+- **Where `volume_ids` come from**: the cross-volume transfer entry points (`copy_between_volumes`, `move_between_volumes`, `move_within_same_volume`) and the volume-aware `delete_files_start` carry the IDs; `copy_files_start` / `move_files_start` take a `volume_ids` param so the both-local branch of `copy_between_volumes` (which is how a local→USB / DMG copy lands) still marks the ejectable destination. The plain `copy_files` / `move_files` / `trash` commands pass `vec![]` — the unified transfer dialog only routes through them for same-`root` ops, where no ejectable volume is involved.
+- **Consumers**: `busy_volume_ids()` backs the `get_busy_volume_ids` bootstrap command, the `eject_volume` server-side guard (refuses a busy volume — the real safety net, since the picker's disable is only UX), and the native breadcrumb-menu builder (renders the Eject item disabled with a ` (busy)` suffix). The frontend `volume-busy-store.svelte.ts` subscribes to `volumes-busy-changed` and exposes `isVolumeBusy(id)` to disable the picker's eject controls. `init_busy_volume_emitter(app)` wires the emitter at startup (`lib.rs`).
 
 ## Settle contract
 

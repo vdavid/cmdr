@@ -39,7 +39,17 @@ pub async fn copy_between_volumes(
     let dest_path = PathBuf::from(dest_path);
     let config = config.unwrap_or_default();
 
-    ops_copy_between_volumes(app, source_volume, source_paths, dest_volume, dest_path, config).await
+    ops_copy_between_volumes(
+        app,
+        source_volume_id,
+        source_volume,
+        source_paths,
+        dest_volume_id,
+        dest_volume,
+        dest_path,
+        config,
+    )
+    .await
 }
 
 /// Unified move across volume types. Same events as `copy_between_volumes`.
@@ -73,7 +83,17 @@ pub async fn move_between_volumes(
     let dest_path = PathBuf::from(dest_path);
     let config = config.unwrap_or_default();
 
-    ops_move_between_volumes(app, source_volume, source_paths, dest_volume, dest_path, config).await
+    ops_move_between_volumes(
+        app,
+        source_volume_id,
+        source_volume,
+        source_paths,
+        dest_volume_id,
+        dest_volume,
+        dest_path,
+        config,
+    )
+    .await
 }
 
 /// Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.

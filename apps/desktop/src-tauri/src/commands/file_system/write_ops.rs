@@ -186,7 +186,10 @@ pub async fn copy_files(
     let destination = PathBuf::from(expand_tilde(&destination));
     let config = config.unwrap_or_default();
 
-    ops_copy_files_start(app, sources, destination, config).await
+    // The unified transfer dialog routes every cross-device copy through
+    // `copy_between_volumes`; this plain command is the same-`root` local path,
+    // so no ejectable volume is involved (empty busy set).
+    ops_copy_files_start(app, sources, destination, config, vec![]).await
 }
 
 /// Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
@@ -203,7 +206,9 @@ pub async fn move_files(
     let destination = PathBuf::from(expand_tilde(&destination));
     let config = config.unwrap_or_default();
 
-    ops_move_files_start(app, sources, destination, config).await
+    // Same-`root` local move (the FE uses `move_between_volumes` whenever the
+    // source and destination volumes differ), so no ejectable volume here.
+    ops_move_files_start(app, sources, destination, config, vec![]).await
 }
 
 /// Recursively deletes files and directories. Same events as `copy_files`.

@@ -63,8 +63,8 @@ pub(crate) use watcher::compute_diff;
 // Re-export write operation types
 pub use write_operations::{
     OperationStatus, OperationSummary, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
-    cancel_all_write_operations, cancel_write_operation, copy_files_start, delete_files_start, get_operation_status,
-    list_active_operations, move_files_start, trash_files_start,
+    busy_volume_ids, cancel_all_write_operations, cancel_write_operation, copy_files_start, delete_files_start,
+    get_operation_status, init_busy_volume_emitter, list_active_operations, move_files_start, trash_files_start,
 };
 // Re-export volume copy types and functions
 pub use write_operations::{

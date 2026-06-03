@@ -58,8 +58,8 @@ use trash::trash_files_with_progress;
 // Re-export public types
 pub use scan_preview::{cancel_scan_preview, get_scan_preview_totals, start_scan_preview};
 pub use state::{
-    cancel_all_write_operations, cancel_write_operation, get_operation_status, list_active_operations,
-    resolve_write_conflict,
+    busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
+    init_busy_volume_emitter, list_active_operations, resolve_write_conflict,
 };
 #[allow(unused_imports, reason = "Public API re-exports for consumers of this module")]
 pub use types::{
@@ -109,6 +109,7 @@ async fn start_write_operation<F>(
     app: tauri::AppHandle,
     operation_type: WriteOperationType,
     progress_interval_ms: u64,
+    volume_ids: Vec<String>,
     handler: F,
 ) -> Result<WriteOperationStartResult, WriteOperationError>
 where
@@ -120,7 +121,7 @@ where
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
         cache.insert(operation_id.clone(), Arc::clone(&state));
     }
-    register_operation_status(&operation_id, operation_type);
+    register_operation_status(&operation_id, operation_type, volume_ids);
 
     let operation_id_for_spawn = operation_id.clone();
 
@@ -185,11 +186,16 @@ where
 }
 
 /// Starts a copy operation in the background.
+///
+/// `volume_ids` lists the volumes this copy touches (source + destination), so
+/// an ejectable USB / DMG / SMB volume is marked busy while the copy runs. Pass
+/// an empty `Vec` for a same-`root` local copy (root is never ejectable).
 pub async fn copy_files_start(
     app: tauri::AppHandle,
     sources: Vec<PathBuf>,
     destination: PathBuf,
     config: WriteOperationConfig,
+    volume_ids: Vec<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!(
         "copy_files_start: sources={:?}, destination={:?}, dry_run={}",
@@ -202,6 +208,7 @@ pub async fn copy_files_start(
         app,
         WriteOperationType::Copy,
         config.progress_interval_ms,
+        volume_ids,
         move |app, op_id, state| {
             validate_sources(&sources)?;
             validate_destination(&destination)?;
@@ -224,6 +231,7 @@ pub async fn move_files_start(
     sources: Vec<PathBuf>,
     destination: PathBuf,
     config: WriteOperationConfig,
+    volume_ids: Vec<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!(
         "move_files_start: sources={:?}, destination={:?}, dry_run={}",
@@ -236,6 +244,7 @@ pub async fn move_files_start(
         app,
         WriteOperationType::Move,
         config.progress_interval_ms,
+        volume_ids,
         move |app, op_id, state| {
             validate_sources(&sources)?;
             validate_destination(&destination)?;
@@ -278,7 +287,7 @@ pub async fn delete_files_start(
         if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
             cache.insert(operation_id.clone(), Arc::clone(&state));
         }
-        register_operation_status(&operation_id, WriteOperationType::Delete);
+        register_operation_status(&operation_id, WriteOperationType::Delete, vec![volume_id_str.clone()]);
 
         let operation_id_for_spawn = operation_id.clone();
         tokio::spawn(async move {
@@ -351,10 +360,12 @@ pub async fn delete_files_start(
             operation_type: WriteOperationType::Delete,
         })
     } else {
+        // Local same-`root` delete: no ejectable volume involved.
         start_write_operation(
             app,
             WriteOperationType::Delete,
             config.progress_interval_ms,
+            vec![],
             move |app, op_id, state| {
                 validate_sources(&sources)?;
                 delete_files_with_progress(&app, &op_id, &state, &sources, &config)
@@ -377,10 +388,12 @@ pub async fn trash_files_start(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!("trash_files_start: sources={:?}", sources);
 
+    // Trash always targets the local macOS Trash; no ejectable volume involved.
     start_write_operation(
         app,
         WriteOperationType::Trash,
         config.progress_interval_ms,
+        vec![],
         move |app, op_id, state| {
             validate_sources(&sources)?;
             let events: Arc<dyn types::OperationEventSink> = Arc::new(types::TauriEventSink::new(app));

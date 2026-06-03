@@ -211,7 +211,7 @@ fn sync_driver_does_not_invoke_closure_for_pre_skipped_sources() {
     let op_id = unique_op_id("sync-pre-skip-no-closure");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -257,7 +257,7 @@ fn sync_driver_honors_cancellation_at_start_of_iteration() {
     let state = make_state();
     state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -292,7 +292,7 @@ fn sync_driver_stops_invoking_closure_after_mid_loop_cancel() {
     let op_id = unique_op_id("sync-mid-cancel");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -336,7 +336,7 @@ fn sync_driver_propagates_closure_failure_as_failed_intent() {
     let op_id = unique_op_id("sync-fail");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let outcome = drive_transfer_serial_sync(
@@ -378,7 +378,7 @@ fn sync_driver_closure_can_capture_mut_state() {
     let op_id = unique_op_id("sync-mut-capture");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     // `tracker_counter` stands in for `SourceItemTracker`; the closure mutates
@@ -418,7 +418,7 @@ fn sync_driver_skipped_outcome_bumps_counters_and_emits_progress() {
     let op_id = unique_op_id("sync-skip-outcome");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let outcome = drive_transfer_serial_sync(
@@ -464,7 +464,7 @@ fn sync_driver_bulk_skip_emits_one_progress_event() {
     let op_id = unique_op_id("sync-bulk-skip-event");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let mut pre_skip = HashSet::new();
@@ -509,7 +509,7 @@ fn sync_driver_tracks_files_skipped_across_bulk_and_per_iter() {
     let op_id = unique_op_id("sync-skip-counters");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let mut pre_skip = HashSet::new();
@@ -550,7 +550,7 @@ fn sync_driver_skip_counters_zero_when_nothing_skipped() {
     let op_id = unique_op_id("sync-skip-counters-zero");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let outcome = drive_transfer_serial_sync(
@@ -581,7 +581,7 @@ fn sync_driver_bulk_skip_zero_does_not_emit_extra_event() {
     let op_id = unique_op_id("sync-bulk-skip-zero");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let _ = drive_transfer_serial_sync(
@@ -613,7 +613,7 @@ fn sync_driver_threads_running_totals_through_transfer_context() {
     let op_id = unique_op_id("sync-totals-context");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let seen_totals: Arc<Mutex<Vec<(usize, u64)>>> = Arc::new(Mutex::new(Vec::new()));
     let seen_clone = Arc::clone(&seen_totals);
@@ -656,7 +656,7 @@ fn sync_driver_status_cache_matches_emitted_progress() {
     let op_id = unique_op_id("sync-status-cache");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let mut pre_skip = HashSet::new();
@@ -699,7 +699,7 @@ async fn async_driver_does_not_invoke_closure_for_pre_skipped_sources() {
     let op_id = unique_op_id("async-pre-skip-no-closure");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -751,7 +751,7 @@ async fn async_driver_does_not_invoke_closure_when_conflict_resolved_as_skip() {
     let op_id = unique_op_id("async-conflict-skip-no-closure");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -809,7 +809,7 @@ async fn async_driver_pre_cancel_does_not_invoke_closure_or_resolver() {
     let state = make_state();
     state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -853,7 +853,7 @@ async fn async_driver_cancel_after_first_blocks_second() {
     let op_id = unique_op_id("async-mid-cancel");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -903,7 +903,7 @@ async fn async_driver_post_loop_intent_catches_late_cancel_race() {
     let op_id = unique_op_id("async-late-cancel-race");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let state_for_closure = Arc::clone(&state);
 
@@ -953,7 +953,7 @@ async fn async_driver_proceed_with_rewritten_dest_reaches_closure() {
     let op_id = unique_op_id("async-conflict-rename");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -1004,7 +1004,7 @@ async fn async_driver_resolver_error_propagates_as_failed_intent() {
     let op_id = unique_op_id("async-resolver-err");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let outcome = drive_transfer_serial_async(
@@ -1047,7 +1047,7 @@ async fn async_driver_no_conflict_skips_resolver_entirely() {
     let op_id = unique_op_id("async-no-conflict-no-resolver");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let resolver_count: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
     let r = Arc::clone(&resolver_count);
@@ -1096,7 +1096,7 @@ async fn async_driver_apply_to_all_resolver_decision_persists_across_sources() {
     let op_id = unique_op_id("async-apply-to-all-resolver");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -1163,7 +1163,7 @@ async fn async_driver_progress_accounting_sums_correctly() {
     let op_id = unique_op_id("async-progress-sum");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let mut pre_skip = HashSet::new();
@@ -1214,7 +1214,7 @@ async fn async_driver_skip_counters_zero_when_nothing_skipped() {
     let op_id = unique_op_id("async-skip-counters-zero");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let outcome = drive_transfer_serial_async(
@@ -1258,7 +1258,7 @@ async fn async_driver_status_cache_matches_emitted_progress() {
     let op_id = unique_op_id("async-status-cache");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let outcome = drive_transfer_serial_async(
@@ -1300,7 +1300,7 @@ async fn async_driver_emitted_bytes_equal_sum_of_transferred() {
     let op_id = unique_op_id("async-bytes-sum");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let bytes_seq = Arc::new(Mutex::new(vec![10u64, 20, 30].into_iter()));
@@ -1341,7 +1341,7 @@ async fn async_driver_threads_running_totals_through_context() {
     let op_id = unique_op_id("async-totals-context");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let seen: Arc<Mutex<Vec<(usize, u64)>>> = Arc::new(Mutex::new(Vec::new()));
     let s = Arc::clone(&seen);
@@ -1385,7 +1385,7 @@ async fn async_driver_default_dest_joins_source_basename() {
     let op_id = unique_op_id("async-default-dest");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
     let log = CallLog::new();
     let log_clone = Arc::clone(&log);
@@ -1431,7 +1431,7 @@ async fn async_driver_dest_meta_fetcher_polled_exactly_once_per_non_skipped_sour
     let op_id = unique_op_id("async-fetcher-cardinality");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let probed: Arc<Mutex<Vec<PathBuf>>> = Arc::new(Mutex::new(Vec::new()));
@@ -1491,7 +1491,7 @@ async fn async_driver_cancel_check_precedes_pre_skip_check_precedes_conflict_res
     let state = make_state();
     state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let mut pre_skip = HashSet::new();
@@ -1546,7 +1546,7 @@ async fn driver_future_is_send_across_spawn() {
     let op_id = unique_op_id("async-send-across-spawn");
     let state = make_state();
     install_state(&op_id, Arc::clone(&state));
-    register_operation_status(&op_id, WriteOperationType::Copy);
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
 
     let op_id_clone = op_id.clone();
     let state_clone = Arc::clone(&state);

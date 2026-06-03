@@ -113,8 +113,10 @@ struct CopyTaskFailure {
 /// # Arguments
 ///
 /// * `app` - Tauri app handle for event emission
+/// * `source_volume_id` - Source volume ID (recorded in the "busy volumes" set)
 /// * `source_volume` - The source volume to copy from
 /// * `source_paths` - Paths of files/directories to copy (relative to source volume root)
+/// * `dest_volume_id` - Destination volume ID (recorded in the "busy volumes" set)
 /// * `dest_volume` - The destination volume to copy to
 /// * `dest_path` - Destination directory path (relative to dest volume root)
 /// * `config` - Copy operation configuration
@@ -125,10 +127,16 @@ struct CopyTaskFailure {
 /// * `write-complete` - On success with WriteCompleteEvent
 /// * `write-error` - On error with WriteErrorEvent
 /// * `write-cancelled` - If cancelled with WriteCancelledEvent
+#[allow(
+    clippy::too_many_arguments,
+    reason = "each volume travels with its ID (for the busy set) plus its Arc; bundling them would just shuffle the same fields into a struct at every call site"
+)]
 pub async fn copy_between_volumes(
     app: tauri::AppHandle,
+    source_volume_id: String,
     source_volume: Arc<dyn Volume>,
     source_paths: Vec<PathBuf>,
+    dest_volume_id: String,
     dest_volume: Arc<dyn Volume>,
     dest_path: PathBuf,
     config: VolumeCopyConfig,
@@ -166,8 +174,18 @@ pub async fn copy_between_volumes(
             ..Default::default()
         };
 
-        // Delegate to the existing copy implementation with full cancellation support
-        return super::super::copy_files_start(app, absolute_sources, absolute_dest, write_config).await;
+        // Delegate to the existing copy implementation with full cancellation
+        // support. Pass both volume IDs so a local→USB / DMG copy still marks
+        // the ejectable destination busy (this branch handles every both-local
+        // transfer, including ones whose dest is a removable local-FS volume).
+        return super::super::copy_files_start(
+            app,
+            absolute_sources,
+            absolute_dest,
+            write_config,
+            vec![source_volume_id, dest_volume_id],
+        )
+        .await;
     }
 
     let operation_id = Uuid::new_v4().to_string();
@@ -189,8 +207,14 @@ pub async fn copy_between_volumes(
         cache.insert(operation_id.clone(), Arc::clone(&state));
     }
 
-    // Register operation status for query APIs
-    register_operation_status(&operation_id, WriteOperationType::Copy);
+    // Register operation status for query APIs. Both volume IDs go in the busy
+    // set so the picker disables Eject for the source and destination devices
+    // (MTP/SMB/USB) while the copy runs.
+    register_operation_status(
+        &operation_id,
+        WriteOperationType::Copy,
+        vec![source_volume_id, dest_volume_id],
+    );
 
     let operation_id_for_spawn = operation_id.clone();
 

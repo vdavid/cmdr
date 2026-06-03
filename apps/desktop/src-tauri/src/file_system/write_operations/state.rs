@@ -3,10 +3,10 @@
 //! Contains state tracking for in-progress operations and status caches for query APIs.
 
 use crate::ignore_poison::IgnorePoison;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use std::sync::{Arc, LazyLock, RwLock};
+use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 use std::time::{Duration, Instant};
 
 use super::eta::EtaEstimator;
@@ -257,6 +257,13 @@ struct OperationStatusInternal {
     bytes_done: u64,
     bytes_total: u64,
     started_at: u64,
+    /// Volume IDs this operation reads from or writes to (source and/or
+    /// destination). Drives the "busy volumes" set the volume picker reads to
+    /// disable Eject while a transfer touches that device. Empty for pure
+    /// same-`root` local ops (root is never ejectable). Populated only for
+    /// cross-volume copy/move and volume-aware delete, where an ejectable
+    /// USB / DMG / SMB / MTP volume can be involved.
+    volume_ids: Vec<String>,
 }
 
 // ============================================================================
@@ -286,7 +293,16 @@ pub(super) fn update_operation_status(
 }
 
 /// Registers a new operation in the status cache.
-pub(super) fn register_operation_status(operation_id: &str, operation_type: WriteOperationType) {
+///
+/// `volume_ids` lists every volume the operation touches (source and/or
+/// destination). Pass an empty `Vec` for pure same-`root` local ops. Any
+/// ejectable volume in the list is marked "busy" until the op unregisters, so
+/// the volume picker can disable Eject for it (see `busy_volume_ids`).
+pub(super) fn register_operation_status(
+    operation_id: &str,
+    operation_type: WriteOperationType,
+    volume_ids: Vec<String>,
+) {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
@@ -304,15 +320,89 @@ pub(super) fn register_operation_status(operation_id: &str, operation_type: Writ
                 bytes_done: 0,
                 bytes_total: 0,
                 started_at: now,
+                volume_ids,
             },
         );
     }
+    recompute_and_emit_busy_volumes();
 }
 
 /// Removes an operation from the status cache.
 pub(super) fn unregister_operation_status(operation_id: &str) {
     if let Ok(mut cache) = OPERATION_STATUS_CACHE.write() {
         cache.remove(operation_id);
+    }
+    recompute_and_emit_busy_volumes();
+}
+
+// ============================================================================
+// Busy-volumes set (drives "disable Eject while an op touches this device")
+// ============================================================================
+
+/// App handle for emitting `volumes-busy-changed`. Set once at startup via
+/// `init_busy_volume_emitter`. Absent in unit tests, where the recompute is a
+/// no-op emit (the set is still queryable via `busy_volume_ids`).
+static BUSY_APP: OnceLock<tauri::AppHandle> = OnceLock::new();
+
+/// Last busy set we emitted, so a progress update that doesn't change
+/// membership produces no event (the cache changes on every progress tick, but
+/// the busy set only changes when an op starts or finishes).
+static LAST_EMITTED_BUSY: LazyLock<std::sync::Mutex<HashSet<String>>> =
+    LazyLock::new(|| std::sync::Mutex::new(HashSet::new()));
+
+/// Stores the app handle used to broadcast `volumes-busy-changed`. Call once at
+/// app setup, before any write op can run.
+pub fn init_busy_volume_emitter(app: &tauri::AppHandle) {
+    let _ = BUSY_APP.set(app.clone());
+}
+
+/// Computes the current set of busy volume IDs: the union of every active
+/// operation's touched volumes, minus the default `root` volume (never
+/// ejectable, so marking it busy is pointless noise).
+fn compute_busy_volume_ids() -> HashSet<String> {
+    let Ok(cache) = OPERATION_STATUS_CACHE.read() else {
+        return HashSet::new();
+    };
+    cache
+        .values()
+        .flat_map(|status| status.volume_ids.iter())
+        .filter(|id| id.as_str() != crate::file_system::volume::DEFAULT_VOLUME_ID)
+        .cloned()
+        .collect()
+}
+
+/// Returns the busy volume IDs (sorted, for a stable payload / bootstrap).
+/// Used by the `get_busy_volume_ids` bootstrap command, the `eject_volume`
+/// guard, and the native breadcrumb-menu builder.
+pub fn busy_volume_ids() -> Vec<String> {
+    let mut ids: Vec<String> = compute_busy_volume_ids().into_iter().collect();
+    ids.sort();
+    ids
+}
+
+/// Recomputes the busy set and emits `volumes-busy-changed` only when its
+/// membership changed. Called from register/unregister (the only two points
+/// where membership can change), so it's panic-safe: unregister runs from the
+/// `OperationStateGuard` / spawn-task cleanup that fires even on unwind.
+fn recompute_and_emit_busy_volumes() {
+    let current = compute_busy_volume_ids();
+
+    {
+        let mut last = LAST_EMITTED_BUSY.lock_ignore_poison();
+        if *last == current {
+            return;
+        }
+        *last = current.clone();
+    }
+
+    let Some(app) = BUSY_APP.get() else {
+        return;
+    };
+    let mut payload: Vec<String> = current.into_iter().collect();
+    payload.sort();
+    use tauri::Emitter;
+    if let Err(e) = app.emit("volumes-busy-changed", &payload) {
+        crate::log_error!(target: "eject", "Failed to emit volumes-busy-changed: {}", e);
     }
 }
 
@@ -1076,7 +1166,7 @@ mod tests {
     #[test]
     fn operation_state_guard_frees_both_caches_on_drop() {
         let id = unique_id("op-guard-normal");
-        register_operation_status(&id, WriteOperationType::Delete);
+        register_operation_status(&id, WriteOperationType::Delete, vec![]);
         let _state = install_state(&id, OperationIntent::Running);
         assert!(get_operation_status(&id).is_some(), "op should be registered");
 
@@ -1102,7 +1192,7 @@ mod tests {
         // leaks the op (it would otherwise linger forever in
         // list_active_operations). Mirrors WriteSettledGuard's panic-safety pin.
         let id = unique_id("op-guard-panic");
-        register_operation_status(&id, WriteOperationType::Delete);
+        register_operation_status(&id, WriteOperationType::Delete, vec![]);
         let _state = install_state(&id, OperationIntent::Running);
 
         let panic_id = id.clone();
@@ -1155,7 +1245,7 @@ mod tests {
     #[test]
     fn register_then_get_status_roundtrip() {
         let id = unique_id("reg-get");
-        register_operation_status(&id, WriteOperationType::Copy);
+        register_operation_status(&id, WriteOperationType::Copy, vec![]);
         let _state = install_state(&id, OperationIntent::Running);
 
         let status = get_operation_status(&id).expect("operation should be in cache");
@@ -1183,7 +1273,7 @@ mod tests {
     #[test]
     fn update_operation_status_overwrites_fields() {
         let id = unique_id("update");
-        register_operation_status(&id, WriteOperationType::Move);
+        register_operation_status(&id, WriteOperationType::Move, vec![]);
         update_operation_status(
             &id,
             WriteOperationPhase::Copying,
@@ -1214,7 +1304,7 @@ mod tests {
     fn list_active_operations_percent_uses_bytes_when_available() {
         // bytes_total > 0 → percent comes from bytes axis, not files.
         let id = unique_id("list-bytes");
-        register_operation_status(&id, WriteOperationType::Copy);
+        register_operation_status(&id, WriteOperationType::Copy, vec![]);
         update_operation_status(
             &id,
             WriteOperationPhase::Copying,
@@ -1239,7 +1329,7 @@ mod tests {
     fn list_active_operations_percent_falls_back_to_files() {
         // bytes_total == 0, files_total > 0 → use files axis.
         let id = unique_id("list-files");
-        register_operation_status(&id, WriteOperationType::Delete);
+        register_operation_status(&id, WriteOperationType::Delete, vec![]);
         update_operation_status(&id, WriteOperationPhase::Deleting, None, 3, 4, 0, 0);
         let summary = list_active_operations()
             .into_iter()
@@ -1253,7 +1343,7 @@ mod tests {
     fn list_active_operations_percent_is_zero_when_nothing_known() {
         // Both totals == 0 → percent_complete == 0 (not the files-axis path).
         let id = unique_id("list-zero");
-        register_operation_status(&id, WriteOperationType::Copy);
+        register_operation_status(&id, WriteOperationType::Copy, vec![]);
         let summary = list_active_operations()
             .into_iter()
             .find(|s| s.operation_id == id)
@@ -1267,7 +1357,7 @@ mod tests {
         // Pin the `.min(100.0)` clamp. If bytes_done > bytes_total (which can
         // happen in flight due to over-counting), the UI must never see > 100.
         let id = unique_id("list-clamp");
-        register_operation_status(&id, WriteOperationType::Copy);
+        register_operation_status(&id, WriteOperationType::Copy, vec![]);
         update_operation_status(&id, WriteOperationPhase::Copying, None, 0, 0, 1500, 1000);
         let summary = list_active_operations()
             .into_iter()
@@ -1397,5 +1487,88 @@ mod tests {
         assert_eq!(tx.created_files, vec![PathBuf::from("/a"), PathBuf::from("/b")]);
         assert_eq!(tx.created_dirs, vec![PathBuf::from("/d1")]);
         tx.commit(); // suppress Drop rollback (paths don't exist anyway, but be tidy)
+    }
+
+    // ── Busy-volumes set (drives "disable Eject while an op touches a device") ──
+    // These assert membership of the test's own unique volume IDs (not the whole
+    // set) and clean up, so they stay correct under nextest's in-process
+    // parallelism where the global `OPERATION_STATUS_CACHE` is shared.
+
+    #[test]
+    fn busy_volume_ids_reflects_registered_volumes() {
+        let op = unique_id("busy-op");
+        let usb = unique_id("usb");
+        let mtp = unique_id("mtp");
+
+        register_operation_status(&op, WriteOperationType::Copy, vec![usb.clone(), mtp.clone()]);
+        let busy = busy_volume_ids();
+        assert!(busy.contains(&usb), "source volume should be busy");
+        assert!(busy.contains(&mtp), "dest volume should be busy");
+
+        unregister_operation_status(&op);
+        let after = busy_volume_ids();
+        assert!(!after.contains(&usb), "volume should clear once the op finishes");
+        assert!(!after.contains(&mtp), "volume should clear once the op finishes");
+    }
+
+    #[test]
+    fn busy_volume_ids_excludes_root() {
+        let op = unique_id("busy-root-op");
+        let usb = unique_id("usb");
+
+        let root = crate::file_system::volume::DEFAULT_VOLUME_ID.to_string();
+        register_operation_status(&op, WriteOperationType::Move, vec![root.clone(), usb.clone()]);
+        let busy = busy_volume_ids();
+        assert!(busy.contains(&usb), "the ejectable volume should be busy");
+        assert!(
+            !busy.contains(&root),
+            "root is never ejectable, so it must not appear in the busy set"
+        );
+
+        unregister_operation_status(&op);
+    }
+
+    #[test]
+    fn busy_volume_ids_stays_busy_until_all_overlapping_ops_finish() {
+        // Two concurrent transfers touch the same device; it must stay busy
+        // until BOTH finish (refcount-by-membership, no manual counter).
+        let op_a = unique_id("overlap-a");
+        let op_b = unique_id("overlap-b");
+        let dev = unique_id("device");
+
+        register_operation_status(&op_a, WriteOperationType::Copy, vec![dev.clone()]);
+        register_operation_status(&op_b, WriteOperationType::Copy, vec![dev.clone()]);
+        assert!(busy_volume_ids().contains(&dev));
+
+        unregister_operation_status(&op_a);
+        assert!(busy_volume_ids().contains(&dev), "still busy while the second op runs");
+
+        unregister_operation_status(&op_b);
+        assert!(
+            !busy_volume_ids().contains(&dev),
+            "clears only after the last op finishes"
+        );
+    }
+
+    #[test]
+    fn busy_volume_ids_clears_on_panic_unwind_via_guard() {
+        // The Drop guard (OperationStateGuard) calls unregister on unwind, so a
+        // panicking op must not leave its volume stuck "busy" forever.
+        let op = unique_id("panic-op");
+        let dev = unique_id("panic-device");
+        let op_for_thread = op.clone();
+        let dev_for_thread = dev.clone();
+
+        let handle = std::thread::spawn(move || {
+            register_operation_status(&op_for_thread, WriteOperationType::Delete, vec![dev_for_thread]);
+            let _guard = OperationStateGuard::new(op_for_thread.clone());
+            panic!("simulated op panic while the device is busy");
+        });
+        assert!(handle.join().is_err(), "thread should have panicked");
+
+        assert!(
+            !busy_volume_ids().contains(&dev),
+            "the guard's Drop must clear the busy mark on unwind"
+        );
     }
 }

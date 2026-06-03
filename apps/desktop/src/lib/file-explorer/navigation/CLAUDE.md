@@ -186,6 +186,15 @@ alongside "Copy path". The native item routes back via the `volume-context-actio
 `DualPaneExplorer.svelte`); the Svelte popups call `ejectVolume` directly. The volume disappears via the existing
 `volume-unmounted` / `mtp-device-disconnected` flow — no extra success toast.
 
+**Busy gating.** While a copy / move / delete reads from or writes to a volume, ejecting it is blocked so a disconnect
+can't truncate an in-flight file. `$lib/stores/volume-busy-store.svelte`'s `isVolumeBusy(id)` (fed by the backend
+`volumes-busy-changed` event) disables the header eject button, the dropdown-row eject button, and the right-click row
+menu item (the latter shows a ` (busy)` suffix), each with a "Can't eject while operations are in progress on this
+device" tooltip. `handleEjectClick` also early-returns on a busy volume. The native breadcrumb menu is gated
+backend-side: `show_breadcrumb_context_menu` passes the volume ID, and the Rust builder renders the item disabled with a
+` (busy)` suffix. The real safety net is the `eject_volume` backend guard, which refuses a busy volume even if the UI is
+stale or an MCP caller bypasses it. See `src-tauri/src/file_system/write_operations/CLAUDE.md` § "Busy-volumes set".
+
 ### USB link-speed indicator (MTP)
 
 MTP volumes carry `usbSpeed: UsbSpeed` (`'low' | 'full' | 'high' | 'super' | 'super_plus'`) sourced from `mtp-rs` via
