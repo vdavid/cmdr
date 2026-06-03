@@ -490,6 +490,11 @@ keeping the same slot in the stack. Replacing in place avoids the visual flicker
 - `containerStyle` exists because stylelint blocks non-standard CSS custom properties (any not matching
   `(color|spacing|font)-` prefix). Use it for one-off sizing instead of CSS vars.
 - `blur` prop applies `backdrop-filter` which triggers GPU compositing; use sparingly.
+- The overlay starts at `inset: var(--titlebar-height) 0 0 0`, **not** `inset: 0`, so the scrim never covers the macOS
+  overlay title bar — the OS window-drag region stays live while a dialog is open. Any new full-window backdrop (a
+  bespoke overlay outside `ModalDialog`, like the command palette or query dialog) must do the same. `--titlebar-height`
+  is per-window (27px default in `app.css`; the viewer overrides it to its taller toolbar via a `display: contents`
+  wrapper in `viewer/+layout.svelte`).
 - When the toast stack is full (5 toasts) and all are persistent, new toasts are silently dropped. This is intentional:
   persistent toasts represent important state (update ready, AI installing) and should not be evicted by transient
   feedback.

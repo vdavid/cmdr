@@ -45,7 +45,7 @@ export default {
       'font-weight': ['400', '500', '600', 'normal', 'inherit'],
       opacity: ['/^(0|0\\.3|0\\.4|0\\.5|0\\.6|0\\.7|0\\.8|1|inherit)$/'],
     },
-    'custom-property-pattern': '^(color|spacing|font|radius|shadow|transition|z|sheet)-.+',
+    'custom-property-pattern': '^(color|spacing|font|radius|shadow|transition|z|sheet|titlebar)-.+',
     'declaration-block-no-duplicate-custom-properties': true,
     'selector-class-pattern': null,
     'no-descending-specificity': null,

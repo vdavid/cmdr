@@ -947,7 +947,7 @@
     }
 
     .title-bar {
-        height: 27px;
+        height: var(--titlebar-height);
         display: flex;
         align-items: center;
         justify-content: center;

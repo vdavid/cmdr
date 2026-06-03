@@ -877,7 +877,10 @@
 <style>
     .search-overlay {
         position: fixed;
-        inset: 0;
+        /* Start below the title bar so the scrim never covers the OS window-drag
+           region: the user can still drag the window while a dialog is open.
+           `--titlebar-height` is per-window (see app.css § Window chrome). */
+        inset: var(--titlebar-height) 0 0 0;
         background: var(--color-overlay-light);
         display: flex;
         justify-content: center;

@@ -97,7 +97,10 @@
         background: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-strong);
         flex-shrink: 0;
-        min-height: 35px;
+        /* Source of the value lives in `viewer/+layout.svelte`, which sets
+           `--titlebar-height` for this window so modal backdrops start exactly
+           below this bar (keeping the OS window-drag region live). */
+        min-height: var(--titlebar-height);
     }
 
     .viewer-toolbar::before {

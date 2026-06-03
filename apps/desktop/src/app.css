@@ -353,6 +353,15 @@
   --transition-base: 150ms ease;
   --transition-slow: 200ms ease;
 
+  /* === Window chrome ===
+     Height of the macOS overlay title bar. Single source of truth: the main
+     window's `.title-bar` sizes itself to this, and every full-window modal
+     backdrop starts at this offset (`inset: var(--titlebar-height) 0 0 0`) so
+     the scrim never covers the title bar — the OS window-drag region stays live
+     while a dialog is open. Windows with a taller bar (the viewer's toolbar)
+     override this on their own root so their backdrops stay precise. */
+  --titlebar-height: 27px;
+
   /* === Z-index scale === */
   --z-base: 0;
   --z-sticky: 10;

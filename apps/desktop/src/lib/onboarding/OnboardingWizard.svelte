@@ -282,7 +282,10 @@
 <style>
     .wizard-overlay {
         position: fixed;
-        inset: 0;
+        /* Start below the title bar so the scrim never covers the OS window-drag
+           region: dragging the window must always work, even mid-onboarding.
+           `--titlebar-height` is per-window (see app.css § Window chrome). */
+        inset: var(--titlebar-height) 0 0 0;
         background: var(--sheet-backdrop-color);
         backdrop-filter: blur(var(--sheet-backdrop-blur));
         display: flex;
