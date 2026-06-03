@@ -57,6 +57,10 @@ the volume was registered under. See `handle_volume_unmounted`.
 
 `ICLOUD_VOLUME_ID = "cloud-icloud"` is also exported from `mod.rs`. iCloud Drive is the only cloud-drive entry that gets a hardcoded ID (others are derived from their `~/Library/CloudStorage/<provider>` directory names). Cross-module callers should use the constant; `file_system/volume/friendly_error.rs` matches the literal string with a sync-point comment because `crate::volumes` is macOS-only and can't be imported from the cross-platform `friendly_error` module.
 
+## Resolving a path to a cloud drive
+
+`resolve_path_volume_fast()` checks `resolve_cloud_drive_for_path()` **before** falling back to `statfs`. Cloud drives (iCloud Drive at `~/Library/Mobile Documents/com~apple~CloudDocs`, providers under `~/Library/CloudStorage/<provider>`) are plain folders on the data volume, so `statfs` resolves any path inside them to `/` — which would make the volume switcher highlight "Macintosh HD" instead of the cloud drive the user is actually inside. The match is a path-prefix test (`match_cloud_drive_root`, pure + unit-tested), so it also covers arbitrarily deep subfolders, and it's free for non-cloud paths (no extra I/O until a match is found). `cloud_volume_info()` builds the `LocationInfo`; `get_cloud_drives()` (the switcher list) and the resolver share it so their IDs/categories can't drift.
+
 ## Volume space
 
 `get_volume_space(path)` uses `NSURLVolumeTotalCapacityKey` and `NSURLVolumeAvailableCapacityForImportantUsageKey` (falls back to `NSURLVolumeAvailableCapacityKey`). Returns `None` for non-existent paths.
