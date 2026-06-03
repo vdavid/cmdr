@@ -1386,6 +1386,23 @@ export const commands = {
   applyRecentSearchesMaxCount: (maxCount: number) =>
     typedError<null, string>(__TAURI_INVOKE('apply_recent_searches_max_count', { maxCount })),
   /**
+   *  Resolves a typed input against the focused pane's `base_dir`. Serves the
+   *  live as-you-type warning, the actual jump, and the clipboard-prefill check.
+   */
+  resolveGoToPath: (input: string, baseDir: string) =>
+    typedError<GoToPathResolution, IpcError>(__TAURI_INVOKE('resolve_go_to_path', { input, baseDir })),
+  // Reads the persisted recent-path entries (newest first).
+  getRecentPaths: () => __TAURI_INVOKE<RecentPathEntry[]>('get_recent_paths'),
+  /**
+   *  Adds a recent-path entry. Dedupes by resolved path, moves the match to the
+   *  top, and trims to the fixed cap.
+   */
+  addRecentPath: (entry: RecentPathEntry) => typedError<null, string>(__TAURI_INVOKE('add_recent_path', { entry })),
+  // Removes a recent-path entry by id. No-op when the id isn't present.
+  removeRecentPath: (id: string) => typedError<null, string>(__TAURI_INVOKE('remove_recent_path', { id })),
+  // Clears every recent-path entry.
+  clearRecentPaths: () => typedError<null, string>(__TAURI_INVOKE('clear_recent_paths')),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
@@ -2674,6 +2691,28 @@ export type GoToLatestError =
   // Downloads dir couldn't be resolved (no `HOME`, no `dirs::download_dir`).
   | { kind: 'downloadsDirUnresolved' }
 
+/**
+ *  The outcome of resolving a typed "go to path" input against the local
+ *  filesystem. The variant is the contract the frontend branches on; never
+ *  classify by string-matching a message (AGENTS.md § no-error-string-match).
+ *
+ *  `rename_all_fields = "camelCase"` is REQUIRED: without it, struct-variant
+ *  fields ship snake_case through tauri-specta and read `undefined` on the TS
+ *  side. Enforced by the `ipc-enum-camelcase` check.
+ */
+export type GoToPathResolution =
+  // The resolved path is an existing directory. Navigate into it.
+  | { kind: 'directory'; path: string }
+  // The resolved path is an existing file. Navigate to its parent and select it.
+  | { kind: 'file'; parentDir: string; fileName: string }
+  /**
+   *  The resolved path doesn't exist. `ancestor_dir` is the nearest existing
+   *  ancestor (worst case `/`). Navigate there and fire an INFO toast.
+   */
+  | { kind: 'nearestAncestor'; requested: string; ancestorDir: string }
+  // Defensive: the input was empty or couldn't be turned into a path.
+  | { kind: 'invalid'; reason: string }
+
 // A single recent-search entry, persisted verbatim.
 export type HistoryEntry = {
   id: string
@@ -3275,6 +3314,15 @@ export type PrepareResult = {
  *  it uses `Eof` so the backend can resolve the end without a fake line number.
  */
 export type RangeEnd = { kind: 'line'; line: number; offset: number } | { kind: 'eof' }
+
+// A single recent-path entry, persisted verbatim.
+export type RecentPathEntry = {
+  id: string
+  // Unix epoch milliseconds.
+  timestamp: number
+  // The resolved target we actually jumped to (dir, file, or ancestor).
+  path: string
+}
 
 /**
  *  Typed errors from a registration attempt. The FE branches on `kind`;

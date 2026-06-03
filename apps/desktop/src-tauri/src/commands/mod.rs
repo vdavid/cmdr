@@ -10,6 +10,7 @@ pub mod error_reporter;
 pub mod file_system;
 pub mod file_viewer;
 pub mod font_metrics;
+pub mod go_to_path;
 pub mod icons;
 pub mod indexing;
 pub mod licensing;

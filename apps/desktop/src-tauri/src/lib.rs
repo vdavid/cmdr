@@ -92,6 +92,7 @@ mod fda_gate;
 mod file_system;
 pub mod file_viewer;
 mod font_metrics;
+mod go_to_path;
 pub mod icons;
 pub mod indexing;
 pub mod licensing;
@@ -545,6 +546,9 @@ pub fn run() {
 
             // Same for recent selections (Selection dialog history).
             selection::history::load_history(app.handle());
+
+            // Same for recent paths (Go to path dialog history).
+            go_to_path::history::load_history(app.handle());
 
             // Load manually-added servers and inject into discovery state
             #[cfg(any(target_os = "macos", target_os = "linux"))]
