@@ -125,6 +125,35 @@ describe('searchCommands', () => {
     })
   })
 
+  describe('keyword matches', () => {
+    it('finds both jump commands via the "jump" keyword', () => {
+      const results = searchCommands('jump')
+      const ids = results.map((r) => r.command.id)
+      expect(ids).toContain('nav.goToPath')
+      expect(ids).toContain('downloads.goToLatest')
+    })
+
+    it('finds both jump commands via the "navigate" keyword', () => {
+      const results = searchCommands('navigate')
+      const ids = results.map((r) => r.command.id)
+      expect(ids).toContain('nav.goToPath')
+      expect(ids).toContain('downloads.goToLatest')
+    })
+
+    it('never highlights past the visible name on a keyword-only match', () => {
+      // "jump" appears only in the keywords, not the name, so any highlight indices
+      // must stay within the visible label.
+      for (const query of ['jump', 'navigate', 'goto']) {
+        const results = searchCommands(query)
+        for (const match of results) {
+          for (const index of match.matchedIndices) {
+            expect(index).toBeLessThan(match.command.name.length)
+          }
+        }
+      }
+    })
+  })
+
   describe('command filtering', () => {
     it('excludes commands with showInPalette: false', () => {
       const results = searchCommands('')

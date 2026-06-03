@@ -30,6 +30,12 @@ export interface Command {
   shortcuts: string[]
   /** Optional description for long-form help */
   description?: string
+  /**
+   * Extra search terms folded into the fuzzy-search haystack so the palette finds the command
+   * by synonyms not present in its name (like ['jump', 'navigate']). They never produce visible
+   * highlights: matches landing in keyword text are dropped (see `fuzzy-search.ts`).
+   */
+  keywords?: string[]
 }
 
 /** Result of a fuzzy search match */

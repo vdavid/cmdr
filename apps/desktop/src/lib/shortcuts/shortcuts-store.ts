@@ -155,6 +155,9 @@ export const menuCommands = [
   'nav.back',
   'nav.forward',
   'nav.parent',
+  'nav.goToPath',
+  // Downloads
+  'downloads.goToLatest',
   // Tabs
   'tab.new',
   'tab.close',

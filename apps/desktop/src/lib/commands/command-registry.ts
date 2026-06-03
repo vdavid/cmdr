@@ -78,6 +78,7 @@ export const commands: Command[] = [
     showInPalette: true,
     shortcuts: ['⌘G'],
     description: 'Jump the focused pane to a typed, pasted, or recent path.',
+    keywords: ['jump', 'navigate', 'goto'],
   },
 
   // ============================================================================
@@ -90,6 +91,7 @@ export const commands: Command[] = [
     showInPalette: true,
     shortcuts: ['⌘J'],
     description: 'Open ~/Downloads and select the most recent file.',
+    keywords: ['jump', 'navigate', 'goto'],
   },
 
   // ============================================================================

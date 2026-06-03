@@ -155,6 +155,20 @@ Selection dialog (see `apps/desktop/src/lib/selection-dialog/CLAUDE.md`); their 
 valid accelerator strings. The items are still registered in `MenuState.items` so a user-customized shortcut could flow
 into the menu via the generic update path.
 
+The **Go** submenu holds, in order: `Back` (⌘[), `Forward` (⌘]), separator, `Parent folder` (⌘↑), separator,
+`Go to path…` (⌘G), `Go to latest download` (⌘J). The two jump items are `GO_TO_PATH_ID` (`"go_to_path"`) →
+`nav.goToPath` and `GO_LATEST_DOWNLOAD_ID` (`"go_latest_download"`) → `downloads.goToLatest`, both `FileScoped` so they
+grey out in the viewer/settings windows. `Go to path…` carries the macOS ellipsis (it opens the Go-to-path dialog);
+`Go to latest download` has none (direct action). On macOS the SF Symbols are `arrow.right.to.line` (Go to path…) and
+`arrow.down.circle` (Go to latest download); the symbol map matches by exact title string, so the `\u{2026}` ellipsis
+must stay byte-identical between the `MenuItem` title and the map. On Linux the mnemonics are `Go &to path…` and
+`Go to &latest download` (B/F/P are claimed by Back/Forward/Parent).
+
+**Double-dispatch (⌘G / ⌘J).** A key combo matching a menu accelerator fires BOTH the native menu (`execute-command`)
+AND the JS keydown dispatch on macOS (see `shortcuts/CLAUDE.md` § "Modifier-key accelerators may fire twice"). This is
+safe here without any suppression hack: ⌘G's dialog-open is idempotency-guarded in `+page.svelte`, and ⌘J's re-reveal is
+naturally idempotent. Expect two `FE:user-action downloads.goToLatest` log lines on one ⌘J press — harmless.
+
 The **Zoom** submenu (`build_zoom_submenu`) holds the text-size presets (75/100/125/150 %) plus Zoom in (`Cmd+Plus`) /
 Zoom out (`Cmd+Minus`) / 100 % (`Cmd+0`). Items are `App`-scoped so the keyboard accelerators fire in any focused window.
 Linux skips the in/out accelerators because GTK intercepts `Cmd+Plus` / `Cmd+Minus` at the toolkit level; the JS

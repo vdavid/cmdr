@@ -39,8 +39,10 @@ export function searchCommands(query: string, recentCommandIds: string[] = []): 
     return [...recents, ...rest]
   }
 
-  // Build haystack from command names
-  const haystack = paletteCommands.map((c) => c.name)
+  // Build haystack from command names plus any extra keywords. A keyword match still ranks and
+  // returns the command, but its indices land past `name.length` and get clamped out below so the
+  // visible label never shows a bogus highlight.
+  const haystack = paletteCommands.map((c) => (c.keywords?.length ? `${c.name} ${c.keywords.join(' ')}` : c.name))
 
   // Perform fuzzy search
   const [idxs, info, order] = fuzzy.search(haystack, query)
@@ -60,10 +62,13 @@ export function searchCommands(query: string, recentCommandIds: string[] = []): 
 
     // uFuzzy's info.ranges contains arrays of [start, end) pairs (end is exclusive)
     const ranges = info.ranges[orderIdx]
-    // ranges is an array of [start, end, start, end, ...] pairs where end is exclusive
+    // ranges is an array of [start, end, start, end, ...] pairs where end is exclusive.
+    // Clamp to the visible name length: indices that fall in the appended keyword text
+    // (>= name.length) would highlight characters the user can't see.
+    const nameLength = command.name.length
     for (let i = 0; i < ranges.length; i += 2) {
       const start = ranges[i]
-      const end = ranges[i + 1]
+      const end = Math.min(ranges[i + 1], nameLength)
       for (let j = start; j < end; j++) {
         matchedIndices.push(j)
       }
