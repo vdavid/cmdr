@@ -133,16 +133,16 @@ consent.
 
 ## Apps and check counts
 
-| App        | Tech     | Checks                                                                                                                                                                                                                                                   |
-| ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, lock-poison, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)                   |
-| Desktop    | Svelte   | prettier, eslint, eslint-typecheck-svelte, eslint-typecheck-typescript, stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
-| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                                                                                   |
-| Website    | Docker   | docker-build                                                                                                                                                                                                                                             |
-| API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                                                          |
-| Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                                                     |
-| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows)                                                                                                   |
-| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                                                |
+| App        | Tech     | Checks                                                                                                                                                                                                                                                                    |
+| ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop    | Rust     | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, lock-poison, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)                                    |
+| Desktop    | Svelte   | prettier, eslint, svelte-kit-sync, eslint-typecheck-svelte, eslint-typecheck-typescript, stylelint, css-unused, a11y-contrast, btn-restyle, bare-poll, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
+| Website    | Astro    | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                                                                                                    |
+| Website    | Docker   | docker-build                                                                                                                                                                                                                                                              |
+| API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                                                                           |
+| Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                                                                      |
+| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows)                                                                                                                    |
+| Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                                                                 |
 
 ## Key decisions
 
@@ -216,6 +216,19 @@ check sets `ESLINT_NO_TYPECHECK=1`, which `eslint.config.js` reads to use `tsesl
 suppress `reportUnusedDisableDirectives` (since disable comments for type-aware rules would look unused). The slow check
 (`IsSlow: true`) runs the full config with all rules and `reportUnusedDisableDirectives` on, so stale disable comments
 are still caught.
+
+**Decision**: `desktop-svelte-kit-sync` runs before every check that needs the TypeScript program. **Why**:
+`apps/desktop/tsconfig.json` extends the gitignored, generated `.svelte-kit/tsconfig.json`, and on a fresh tree (new
+clone or worktree) nothing else creates it before the checks run. Without it, typescript-eslint's projectService can't
+build a program: every imported type resolves to "could not be resolved", type-aware rules go silent, their
+`eslint-disable` directives look unused, and the local `--fix` deletes them — this once stripped directives from 7
+source files in a fresh worktree. The sync check (~1 s) is the single serialized syncer: `eslint-typecheck-svelte`,
+`eslint-typecheck-ts`, and `svelte-check` depend on it. `RunSvelteCheck` calls `check:no-sync` (not `pnpm check`) so it
+doesn't rewrite `.svelte-kit/` while the parallel eslint passes read it; humans keep using `pnpm check`, which still
+syncs. As defense in depth, `runScopedESLintTypecheck` refuses to run when `.svelte-kit/tsconfig.json` is missing
+(relevant for targeted `--check eslint-typecheck-*` runs, where the dependency is treated as satisfied if not selected),
+so a degraded projectService can never strip directives again. `apps/desktop` also has `"prepare": "svelte-kit sync"` so
+plain installs and IDE flows generate the file.
 
 **Decision**: Clippy runs the enforcing pass (`-D warnings`) first, and only invokes `cargo clippy --fix` if that fails
 (and we're not in CI). **Why**: Running `--fix` speculatively before every check doubled wall time on the happy path (no

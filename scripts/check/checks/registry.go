@@ -219,6 +219,19 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   []string{"oxfmt"},
 		Run:         RunDesktopESLint,
 	},
+	// Generates `.svelte-kit/tsconfig.json` (which `tsconfig.json` extends).
+	// The type-aware checks below depend on it so a TypeScript program can be
+	// built; without it on a fresh tree, type-aware `eslint --fix` strips
+	// "unused" disable directives. See the Decision in checks/CLAUDE.md.
+	{
+		ID:          "desktop-svelte-kit-sync",
+		Nickname:    "svelte-kit-sync",
+		DisplayName: "svelte-kit sync",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   []string{"oxfmt"},
+		Run:         RunDesktopSvelteKitSync,
+	},
 	// Type-aware ESLint is split into a Svelte pass and a TypeScript (non-Svelte)
 	// pass: linting both in one `eslint .` invocation hits a projectService cliff
 	// (~25x slower). Split, each is ~10-15s with identical coverage, so both are
@@ -231,7 +244,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "eslint-typecheck (svelte)",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		DependsOn:   []string{"oxfmt"},
+		DependsOn:   []string{"desktop-svelte-kit-sync"},
 		Run:         RunDesktopESLintTypecheckSvelte,
 	},
 	{
@@ -241,7 +254,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "eslint-typecheck (typescript)",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		DependsOn:   []string{"oxfmt"},
+		DependsOn:   []string{"desktop-svelte-kit-sync"},
 		Run:         RunDesktopESLintTypecheckTypescript,
 	},
 	{
@@ -309,7 +322,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "svelte-check",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		DependsOn:   []string{"oxfmt"},
+		DependsOn:   []string{"desktop-svelte-kit-sync"},
 		Run:         RunSvelteCheck,
 	},
 	{
