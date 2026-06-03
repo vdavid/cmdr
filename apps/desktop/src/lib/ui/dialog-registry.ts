@@ -26,6 +26,7 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'delete-confirmation', description: 'Opened by the delete tool, not directly' },
   { id: 'delete-ai-model', description: 'Confirmation before deleting the local AI model' },
   { id: 'search', description: 'Whole-drive file search' },
+  { id: 'go-to-path', description: 'Jump the focused pane to a typed or recent path' },
   { id: 'connect-to-server', description: 'Manual SMB server address entry' },
   { id: 'viewer-copy-confirm', description: 'Confirms copying a 10 to 100 MB selection from the file viewer' },
   { id: 'viewer-copy-refuse', description: 'Tells the user a > 100 MB viewer selection is too large to copy' },

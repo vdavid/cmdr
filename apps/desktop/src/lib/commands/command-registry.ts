@@ -69,6 +69,18 @@ export const commands: Command[] = [
   },
 
   // ============================================================================
+  // Main window - Navigation (Go to path)
+  // ============================================================================
+  {
+    id: 'nav.goToPath',
+    name: 'Go to path…',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘G'],
+    description: 'Jump the focused pane to a typed, pasted, or recent path.',
+  },
+
+  // ============================================================================
   // Main window - Downloads
   // ============================================================================
   {

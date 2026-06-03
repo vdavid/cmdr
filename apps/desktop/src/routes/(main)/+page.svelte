@@ -12,6 +12,8 @@
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
     import SearchDialog from '$lib/search/SearchDialog.svelte'
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
+    import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
+    import { goToPath } from '$lib/go-to-path/go-to-path'
     import type { FileEntry } from '$lib/file-explorer/types'
     import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
     import ReplayStatusOverlay from '$lib/indexing/ReplayStatusOverlay.svelte'
@@ -74,6 +76,7 @@
     let showLicenseKeyDialog = $state(false)
     let showCommandPalette = $state(false)
     let showSearchDialog = $state(false)
+    let showGoToPathDialog = $state(false)
     /**
      * Selection dialog state. `'add'` opens "Select files…", `'remove'` opens
      * "Deselect files…", `null` closes. The entries + cursor snapshot is captured
@@ -342,6 +345,7 @@
         return (
             showCommandPalette ||
             showSearchDialog ||
+            showGoToPathDialog ||
             showAboutWindow ||
             showLicenseKeyDialog ||
             showExpiredModal ||
@@ -697,6 +701,16 @@
         showSearchDialog = false
     }
 
+    function handleGoToPathDialogClose() {
+        showGoToPathDialog = false
+        explorerRef?.refocus()
+    }
+
+    /** Resolve + jump for the Go-to-path dialog, in the focused pane. */
+    function handleGoToPath(input: string) {
+        return goToPath(explorerRef, input)
+    }
+
     /**
      * Opens or closes the Selection dialog. On open, snapshot the focused pane's
      * entries + cursor so the dialog has a stable list to match against per the
@@ -813,6 +827,13 @@
                 if (show && showSearchDialog) return // Already open
                 showSearchDialog = show
             },
+            showGoToPathDialog: (show: boolean) => {
+                // Idempotency guard: ⌘G's menu accelerator + JS keydown both
+                // fire on macOS (see the plan's "Menu double-dispatch"). With
+                // this guard, a double-fire opens the dialog exactly once.
+                if (show && showGoToPathDialog) return // Already open
+                showGoToPathDialog = show
+            },
             showAboutWindow: (show: boolean) => {
                 showAboutWindow = show
             },
@@ -876,6 +897,14 @@
                     disabledReason: '',
                 }}
                 onShowAllInMainWindow={handleOpenSearchInPane}
+            />
+        {/if}
+
+        {#if showGoToPathDialog}
+            <GoToPathDialog
+                baseDir={explorerRef?.getFocusedPanePath() ?? '/'}
+                onGo={handleGoToPath}
+                onCancel={handleGoToPathDialogClose}
             />
         {/if}
 

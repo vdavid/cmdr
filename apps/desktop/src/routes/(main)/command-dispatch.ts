@@ -39,6 +39,12 @@ const log = getAppLogger('user-action')
 export interface CommandDispatchDialogs {
   showCommandPalette: (show: boolean) => void
   showSearchDialog: (show: boolean) => void
+  /**
+   * Opens or closes the "Go to path" dialog. The open path is guarded against
+   * the menu double-dispatch (a ⌘G accelerator can fire both the menu event and
+   * the JS keydown); the callback no-ops when already open.
+   */
+  showGoToPathDialog: (show: boolean) => void
   showAboutWindow: (show: boolean) => void
   showLicenseKeyDialog: (show: boolean) => void
   /**
@@ -199,6 +205,10 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
 
     case 'search.open':
       ctx.dialogs.showSearchDialog(true)
+      return
+
+    case 'nav.goToPath':
+      ctx.dialogs.showGoToPathDialog(true)
       return
 
     case 'app.settings':

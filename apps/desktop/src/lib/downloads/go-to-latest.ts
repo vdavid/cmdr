@@ -12,6 +12,7 @@
 import { commands } from '$lib/ipc/bindings'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
+import { navigateToFileInPane } from '$lib/file-explorer/navigation/navigate-and-select'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
 import LatestDownloadEmptyToastContent from './LatestDownloadEmptyToastContent.svelte'
@@ -43,7 +44,7 @@ export async function goToLatestDownload(explorer: ExplorerAPI | undefined): Pro
 
   const result = await commands.goToLatestDownload()
   if (result.status === 'ok') {
-    await navigateToDownloadFile(explorer, result.data.parentDir, result.data.fileName)
+    await navigateToFileInPane(explorer, explorer.getFocusedPane(), result.data.parentDir, result.data.fileName)
     return
   }
 
@@ -82,27 +83,7 @@ export async function goToDownload(
     log.debug('goToDownload: no explorer; skipping (HMR or pre-mount)')
     return
   }
-  await navigateToDownloadFile(explorer, parentDir, fileName)
-}
-
-async function navigateToDownloadFile(explorer: ExplorerAPI, parentDir: string, fileName: string): Promise<void> {
-  const pane = explorer.getFocusedPane()
-  // `navigateToPath` returns a sync error string when navigation can't even
-  // start (snapshot pane on a missing volume, etc.); otherwise it returns a
-  // Promise that settles when the listing completes. We await the Promise
-  // but report-and-bail on the sync-error string — without the listing
-  // settled, `moveCursor` would race against an empty cache.
-  const navResult = explorer.navigateToPath(pane, parentDir)
-  if (typeof navResult === 'string') {
-    log.warn('goToDownload: navigateToPath refused {pane} {parentDir}: {reason}', {
-      pane,
-      parentDir,
-      reason: navResult,
-    })
-    return
-  }
-  await navResult
-  await explorer.moveCursor(pane, fileName)
+  await navigateToFileInPane(explorer, explorer.getFocusedPane(), parentDir, fileName)
 }
 
 async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
