@@ -53,6 +53,9 @@ try {
 
 This same pattern caught the missing `core:window:allow-set-min-size` / `allow-set-max-size` permissions when `routes/settings/+page.svelte` started using them for live text-size resizing. See `AGENTS.md` § Critical rules for the higher-level callout.
 
+**Gotcha**: `data-tauri-drag-region` needs `core:window:allow-start-dragging`.
+**Why**: The attribute drags the window by calling `window.startDragging()` under the hood, which is permission-gated like any other window command. The markup looks complete and even passes a "has the attribute" unit test, but without the permission the OS-level drag rejects silently and the title bar feels like a dead zone with no error. Every window with a custom/overlay title bar (`default.json`, `settings.json`, `viewer.json`) must carry this permission. This bit the viewer once already after its title bar was swapped for a custom one.
+
 **Gotcha**: `opener:allow-open-path` needs explicit glob patterns for hidden files.
 **Why**: The default `opener:allow-open-path` permission doesn't match dotfiles. The `"**/*"` glob excludes files starting with `.`, so a separate `"**/.*"` pattern is required. Without it, opening hidden files from the file manager would silently fail.
 

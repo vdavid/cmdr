@@ -97,7 +97,7 @@
         background: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-strong);
         flex-shrink: 0;
-        min-height: 38px;
+        min-height: 35px;
     }
 
     .viewer-toolbar::before {
