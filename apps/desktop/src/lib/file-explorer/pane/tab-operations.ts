@@ -244,20 +244,6 @@ export function newTab(
   return success
 }
 
-/** Closes the active tab. Returns 'closed' or 'last-tab'. */
-export function closeActiveTab(
-  focusedPane: 'left' | 'right',
-  getTabMgr: (pane: 'left' | 'right') => TabManager,
-  getClosedTabsCap: () => number,
-): 'closed' | 'last-tab' {
-  const mgr = getTabMgr(focusedPane)
-  const result = closeTabRecording(mgr, mgr.activeTabId, getClosedTabsCap())
-  if (result.closed) {
-    saveTabsForPane(focusedPane, getTabMgr)
-  }
-  return result.closed ? 'closed' : 'last-tab'
-}
-
 /** Closes the active tab with pinned confirmation if needed. */
 export async function closeActiveTabWithConfirmation(
   focusedPane: 'left' | 'right',
@@ -368,15 +354,6 @@ export function switchToTab(
   saveTabsForPane(pane, getTabMgr)
   if (pane === focusedPane) syncPinTabMenuForPane(focusedPane, getTabMgr)
   return true
-}
-
-/** Get all tabs for a pane (for TabBar). */
-export function getTabsForPane(
-  pane: 'left' | 'right',
-  getTabMgr: (pane: 'left' | 'right') => TabManager,
-): { tabs: TabState[]; activeTabId: TabId } {
-  const mgr = getTabMgr(pane)
-  return { tabs: getAllTabs(mgr), activeTabId: mgr.activeTabId }
 }
 
 /** Handle new tab creation for a specific pane's "+" button. */

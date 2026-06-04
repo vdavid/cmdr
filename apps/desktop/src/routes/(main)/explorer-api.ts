@@ -55,8 +55,6 @@ export interface ExplorerAPI {
     disabled: boolean
     disabledReason: string
   }
-  getVolumes: () => { id: string; name: string; path: string }[]
-  selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
   handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: string) => void
@@ -91,7 +89,6 @@ export interface ExplorerAPI {
   resetError: (pane: 'left' | 'right' | 'both') => void
   triggerTransferError: (friendly: FriendlyError) => void
   newTab: () => boolean
-  closeActiveTab: () => 'closed' | 'last-tab'
   closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>
   reopenLastClosedTab: () => 'reopened' | 'empty' | 'cap'
   cycleTab: (direction: 'next' | 'prev') => void

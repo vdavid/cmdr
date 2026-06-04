@@ -29,19 +29,12 @@
         updateFocusedPane,
         updatePaneTabs,
         findFileIndex,
-        copyFilesToClipboard,
-        cutFilesToClipboard,
-        copyPathsToClipboard,
-        cutPathsToClipboard,
-        readClipboardFiles,
-        clearClipboardCutState,
         updateViewModeMenu,
         ejectVolume,
         onVolumeContextAction,
         getIpcErrorMessage,
     } from '$lib/tauri-commands'
     import type {
-        VolumeInfo,
         SortColumn,
         SortOrder,
         NetworkHost,
@@ -54,7 +47,7 @@
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath, isPathOnVolume } from '../navigation/path-navigation'
     import { resolveValidPath } from '../navigation/path-resolution'
-    import { getSnapshot, resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
+    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
     import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
     import { resolveSearchableFolder } from '$lib/search/searchable-folder'
 
@@ -93,7 +86,6 @@
         handleTabContextMenu as tabOpsHandleTabContextMenu,
         handleNewTab as tabOpsHandleNewTab,
         newTab as tabOpsNewTab,
-        closeActiveTab as tabOpsCloseActiveTab,
         closeActiveTabWithConfirmation as tabOpsCloseActiveTabWithConfirmation,
         togglePinActiveTab as tabOpsTogglePinActiveTab,
         closeOtherTabsInFocusedPane as tabOpsCloseOtherTabs,
@@ -101,7 +93,6 @@
         syncPinTabMenuForPane,
         cycleTab as tabOpsCycleTab,
         switchToTab as tabOpsSwitchToTab,
-        getTabsForPane as tabOpsGetTabsForPane,
     } from './tab-operations'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
     import {
@@ -125,13 +116,14 @@
         buildTransferPropsFromDroppedPaths,
         buildTransferPropsFromSnapshot,
         getDestinationVolumeInfo,
-        getCommonParentPath,
     } from './transfer-operations'
     import type { TransferOperationType } from '../types'
     import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
     import { getInitialFolderName } from '$lib/file-operations/mkdir/new-folder-operations'
     import { getInitialFileName } from '$lib/file-operations/mkfile/new-file-operations'
     import { createDialogState } from './dialog-state.svelte'
+    import type { PaneAccess } from './pane-access'
+    import { createClipboardOperations } from './clipboard-operations'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
     import { recalculateWebviewOffset, toViewportPosition } from '../drag/drag-position'
     import {
@@ -162,7 +154,6 @@
         getModifierState,
         setModifiers,
     } from '../modifier-key-tracker.svelte'
-    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { addToast } from '$lib/ui/toast'
 
     const log = getAppLogger('fileExplorer')
@@ -408,6 +399,24 @@
     function paneKey(pane: 'left' | 'right', field: string): string {
         return `${pane}${field.charAt(0).toUpperCase()}${field.slice(1)}`
     }
+
+    // Read API over this explorer's navigation + UI-chrome state, handed to command
+    // factories so they don't reach into component closures. Getters return live
+    // references (never copies / snapshots) so callers inside $derived/$effect keep
+    // tracking once this state moves into a module store.
+    const paneAccess: PaneAccess = {
+        getPaneRef,
+        getPanePath,
+        getPaneVolumeId,
+        getPaneSort,
+        getFocusedPane: () => focusedPane,
+        otherPane,
+        getShowHiddenFiles: () => showHiddenFiles,
+        getVolumes: () => volumes,
+        focusContainer: () => containerElement?.focus(),
+    }
+
+    const clipboardOps = createClipboardOperations(paneAccess, dialogs)
 
     // Emit history state to debug window (dev mode only, skip in tests)
     $effect(() => {
@@ -1743,160 +1752,19 @@
         await openTransferDialog('move', autoConfirm, onConflict)
     }
 
-    /** Gathers pane state needed for clipboard copy/cut. Returns null if unavailable. */
-    function getClipboardPaneState() {
-        const sourcePaneRef = getPaneRef(focusedPane)
-        const listingId = sourcePaneRef?.getListingId()
-        if (!listingId) return null
-
-        const hasParent = sourcePaneRef?.hasParentEntry() ?? false
-        const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
-        const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-        const volumeId = getPaneVolumeId(focusedPane)
-
-        return { listingId, hasParent, selectedIndices, cursorIndex, volumeId }
-    }
-
-    /**
-     * Search-results pane copy/cut path (M8d): resolve the focused pane's
-     * cursor + selection into snapshot paths and feed the paths-by-value
-     * clipboard IPCs. Returns the resolved paths and snapshot id so the caller
-     * can write a friendly toast, or `null` if the pane isn't a snapshot pane
-     * or the snapshot is missing / empty.
-     */
-    function getSnapshotClipboardPaths(): { paths: string[]; snapshotId: string } | null {
-        const focusedVolId = getPaneVolumeId(focusedPane)
-        if (focusedVolId !== 'search-results') return null
-        const sourcePaneRef = getPaneRef(focusedPane)
-        const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-        const SEARCH_RESULTS_PREFIX = 'search-results://'
-        if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
-        const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
-        const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
-        const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-        const paths = resolveSnapshotPaths(snapshotId, selectedIndices, cursorIndex)
-        if (paths.length === 0) return null
-        return { paths, snapshotId }
-    }
-
     /** Copies selected files (or cursor file) to the system clipboard. */
     export async function copyToClipboard() {
-        // Search-results pane: paths are already absolute on the snapshot. The
-        // regular listing-id path can't apply because there's no backend listing.
-        const snapshotClip = getSnapshotClipboardPaths()
-        if (snapshotClip) {
-            try {
-                const count = await copyPathsToClipboard(snapshotClip.paths)
-                addToast(`Copied ${formatNumber(count)} ${count === 1 ? 'item' : 'items'}`, { level: 'info' })
-            } catch (error) {
-                log.error('Clipboard copy from snapshot failed: {error}', { error })
-            }
-            return
-        }
-
-        const state = getClipboardPaneState()
-        if (!state) return
-
-        if (state.volumeId.startsWith('mtp-')) {
-            addToast('Use F5 to copy files from MTP devices', { level: 'info' })
-            return
-        }
-
-        try {
-            const count = await copyFilesToClipboard(
-                state.listingId,
-                state.selectedIndices,
-                state.cursorIndex,
-                state.hasParent,
-                showHiddenFiles,
-            )
-            addToast(`Copied ${formatNumber(count)} ${count === 1 ? 'item' : 'items'}`, { level: 'info' })
-        } catch (error) {
-            log.error('Clipboard copy failed: {error}', { error })
-        }
+        await clipboardOps.copyToClipboard()
     }
 
     /** Cuts selected files (or cursor file) to the system clipboard. */
     export async function cutToClipboard() {
-        const snapshotClip = getSnapshotClipboardPaths()
-        if (snapshotClip) {
-            try {
-                const count = await cutPathsToClipboard(snapshotClip.paths)
-                addToast(`${formatNumber(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`, { level: 'info' })
-            } catch (error) {
-                log.error('Clipboard cut from snapshot failed: {error}', { error })
-            }
-            return
-        }
-
-        const state = getClipboardPaneState()
-        if (!state) return
-
-        if (state.volumeId.startsWith('mtp-')) {
-            addToast('Use F6 to move files from MTP devices', { level: 'info' })
-            return
-        }
-
-        try {
-            const count = await cutFilesToClipboard(
-                state.listingId,
-                state.selectedIndices,
-                state.cursorIndex,
-                state.hasParent,
-                showHiddenFiles,
-            )
-            addToast(`${formatNumber(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`, { level: 'info' })
-        } catch (error) {
-            log.error('Clipboard cut failed: {error}', { error })
-        }
+        await clipboardOps.cutToClipboard()
     }
 
     /** Pastes files from the system clipboard into the current directory. */
     export async function pasteFromClipboard(forceMove: boolean) {
-        try {
-            // Check MTP before reading clipboard; MTP paste is always rejected,
-            // no point reading the system clipboard just to reject it.
-            const volumeId = getPaneVolumeId(focusedPane)
-            if (volumeId.startsWith('mtp-')) {
-                addToast('Use F5 to copy files to MTP devices', { level: 'info' })
-                return
-            }
-
-            const result = await readClipboardFiles()
-
-            if (result.paths.length === 0) {
-                addToast('No files on the clipboard. Copy files first with \u2318C.', { level: 'warn' })
-                return
-            }
-
-            const operationType: TransferOperationType = result.isCut || forceMove ? 'move' : 'copy'
-            const destPath = getPanePath(focusedPane)
-            const { sortBy, sortOrder } = getPaneSort(focusedPane)
-            const destVolId = getPaneVolumeId(focusedPane)
-            const sourceFolderPath = getCommonParentPath(result.paths)
-
-            dialogs.startTransferProgress({
-                operationType,
-                sourcePaths: result.paths,
-                sourceFolderPath,
-                // Clipboard files don't belong to a specific pane; pick the opposite as best guess.
-                // Harmless if wrong: it just clears selection on the non-destination pane.
-                sourcePaneSide: focusedPane === 'left' ? 'right' : 'left',
-                destinationPath: destPath,
-                direction: focusedPane === 'left' ? 'left' : 'right',
-                sortColumn: sortBy,
-                sortOrder,
-                previewId: null,
-                sourceVolumeId: DEFAULT_VOLUME_ID,
-                destVolumeId: destVolId,
-            })
-
-            if (result.isCut) {
-                void clearClipboardCutState()
-            }
-        } catch (error) {
-            log.error('Clipboard paste failed: {error}', { error })
-        }
+        await clipboardOps.pasteFromClipboard(forceMove)
     }
 
     /**
@@ -2536,21 +2404,12 @@
     }
 
     /**
-     * Get the list of available volumes.
-     * Used by MCP volume.list tool.
-     */
-    export function getVolumes(): VolumeInfo[] {
-        return volumes
-    }
-
-    /**
      * Select a volume by index for a specific pane.
-     * Used by MCP volume.selectLeft/volume.selectRight tools.
      * Matches the behavior of VolumeBreadcrumb's handleVolumeSelect.
      * @param pane - 'left' or 'right'
      * @param index - Zero-based index into the volumes array
      */
-    export async function selectVolumeByIndex(pane: 'left' | 'right', index: number): Promise<boolean> {
+    async function selectVolumeByIndex(pane: 'left' | 'right', index: number): Promise<boolean> {
         if (index < 0 || index >= volumes.length) {
             log.warn('Invalid volume index: {index} (valid range: 0-{max})', { index, max: volumes.length - 1 })
             return false
@@ -3022,12 +2881,6 @@
         return tabOpsNewTab(focusedPane, getTabMgr, (h) => $state.snapshot(h))
     }
 
-    export function closeActiveTab(): 'closed' | 'last-tab' {
-        const result = tabOpsCloseActiveTab(focusedPane, getTabMgr, getClosedTabsCap)
-        syncReopenMenuState()
-        return result
-    }
-
     export async function closeActiveTabWithConfirmation(): Promise<'closed' | 'last-tab' | 'cancelled'> {
         const result = await tabOpsCloseActiveTabWithConfirmation(focusedPane, getTabMgr, getClosedTabsCap)
         syncReopenMenuState()
@@ -3110,12 +2963,8 @@
         tabOpsCycleTab(direction, focusedPane, getTabMgr, getPaneRef)
     }
 
-    export function switchToTab(pane: 'left' | 'right', tabId: TabId): boolean {
+    function switchToTab(pane: 'left' | 'right', tabId: TabId): boolean {
         return tabOpsSwitchToTab(pane, tabId, getTabMgr, getPaneRef, focusedPane)
-    }
-
-    export function getTabsForPane(pane: 'left' | 'right'): { tabs: TabState[]; activeTabId: TabId } {
-        return tabOpsGetTabsForPane(pane, getTabMgr)
     }
 </script>
 
