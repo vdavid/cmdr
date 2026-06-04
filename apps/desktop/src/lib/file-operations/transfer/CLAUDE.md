@@ -41,6 +41,22 @@ for the shared state machine, ETA/throughput, and settle contract.
      "Ask later" since a single conflict can't be asked "for each". The conditional policies map to the typed
      `ConflictResolution` variants `overwrite_smaller` / `overwrite_older`. See the BE doc § "Key patterns and gotchas
      (shared)" for the strict-comparison / fail-closed contract.
+   - **Folders always merge; the upfront check classifies collisions.** `checkConflicts()` runs on mount **in parallel
+     with the scan preview** (it's one cheap dest listing, not the recursive byte scan — `conflictCheckPromise` is
+     assigned synchronously in `onMount` BEFORE the auto-confirm branch so the MCP fast path dispatches with
+     `conflictNames` populated). Each collision is classified by the backend-resolved `sourceIsDirectory` /
+     `destIsDirectory` flags (the BE resolves real per-item types + sizes from the source volume via one batched stat
+     when `checkConflicts` passes `sourceVolumeId` + `sourcePaths`):
+     - **dir + dir** → a silent merge, NOT a conflict. Surfaced as an informational line ("N folders will merge with
+       existing folders"); never counted in `totalConflictCount`; never forwarded as a bulk-skip name (a merging folder
+       must not be skipped wholesale).
+     - **file + file / cross-type (file↔folder)** → a real conflict. Counts toward `totalConflictCount` and feeds the
+       `preKnownConflicts` bulk-skip list.
+     - The file-policy radios show when there's a real conflict OR a folder merge — a merge can surface file clashes
+       mid-operation the upfront (top-level-only) check can't see, and the radios pre-answer them.
+     - **Cross-type guardrail.** When a real conflict is a type mismatch AND the user selects "Overwrite all", a red
+       warning appears (mirrors the per-file dialog's file→folder warning): overwriting replaces items of a different
+       type, including folder contents.
 
 2. **TransferProgressDialog** (operation execution)
    - If `scanInProgress`, subscribes to scan preview events (`scan-preview-progress`, `scan-preview-complete`, etc.) to

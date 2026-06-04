@@ -166,3 +166,45 @@ describe('commands.cancelWriteOperation', () => {
     })
   })
 })
+
+describe('commands.scanVolumeForConflicts', () => {
+  // Five positional args, the last two added to let the backend resolve real
+  // per-item types/sizes from the source volume. Pin the ordering so a future
+  // arg swap (sourceVolumeId ↔ sourcePaths, or either landing in destPath)
+  // fails loudly rather than silently degrading the dir-merge classification.
+  it('sends all five args in order with the source-resolution pair populated', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('scan_volume_for_conflicts', () => [])
+
+    const volumeId = 'ext'
+    const sourceItems = [{ name: 'photos', size: 0, modified: null, isDirectory: false }]
+    const destPath = '/dest'
+    const sourceVolumeId = 'root'
+    const sourcePaths = ['/Users/test/photos']
+
+    await commands.scanVolumeForConflicts(volumeId, sourceItems, destPath, sourceVolumeId, sourcePaths)
+
+    expect(ipc.lastCall('scan_volume_for_conflicts')?.payload).toEqual({
+      volumeId,
+      sourceItems,
+      destPath,
+      sourceVolumeId,
+      sourcePaths,
+    })
+  })
+
+  it('passes the source-resolution pair as null when omitted (back-compat)', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('scan_volume_for_conflicts', () => [])
+
+    await commands.scanVolumeForConflicts('ext', [], '/dest', null, null)
+
+    expect(ipc.lastCall('scan_volume_for_conflicts')?.payload).toEqual({
+      volumeId: 'ext',
+      sourceItems: [],
+      destPath: '/dest',
+      sourceVolumeId: null,
+      sourcePaths: null,
+    })
+  })
+})

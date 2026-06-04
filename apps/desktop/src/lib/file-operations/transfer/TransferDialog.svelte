@@ -33,6 +33,7 @@
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
     import { getAppLogger } from '$lib/logging/logger'
+    import IconTriangleAlert from '~icons/lucide/triangle-alert'
 
     const log = getAppLogger('transferDialog')
 
@@ -132,14 +133,24 @@
     let confirmed = false
     let destroyed = false
 
-    // Conflict detection state. `totalConflictCount` is the unbounded count
-    // for the summary text — must NOT be derived from a capped slice, or the
-    // summary misleads the user about how many files will actually be skipped.
-    // The full set of conflicting names is forwarded to the backend on
-    // confirm so it can bulk-skip them upfront under `Skip all`. We never
-    // render per-conflict rows in this dialog, so we don't need to keep the
-    // full `VolumeConflictInfo[]` array around.
+    // Conflict detection state. `totalConflictCount` is the unbounded count of
+    // real conflicts (file clashes + cross-type clashes) for the summary text —
+    // must NOT be derived from a capped slice, or the summary misleads the user
+    // about how many files will actually be skipped. Dir-vs-dir collisions are
+    // NOT conflicts: they always merge silently, so they're surfaced as a
+    // separate informational count (`mergeFolderCount`) and never counted here.
+    // The conflict names (file + cross-type only, never dir-dir) are forwarded
+    // to the backend on confirm so it can bulk-skip them upfront under
+    // `Skip all`. We never render per-conflict rows in this dialog, so we don't
+    // need to keep the full `VolumeConflictInfo[]` array around.
     let totalConflictCount = $state(0)
+    // Count of source folders that will merge into an existing same-named dest
+    // folder. Informational only — never a conflict, never a radio count.
+    let mergeFolderCount = $state(0)
+    // `true` when any real conflict is a cross-type clash (file-vs-folder either
+    // direction). Drives the upfront "Overwrite all" red warning, mirroring the
+    // per-file dialog's file→folder warning.
+    let hasTypeMismatchConflict = $state(false)
     let conflictNames = $state<string[]>([])
     let isCheckingConflicts = $state(false)
     let conflictCheckComplete = $state(false)
@@ -258,6 +269,12 @@
      * + radio policy section, and the backend can't help if the user picked
      * `overwrite_all` blindly. We resolve this by gating Confirm on the check
      * completing. See `handleConfirm`.
+     *
+     * The check runs on mount, in parallel with the (potentially slow) scan
+     * preview — it's just one cheap dest listing and doesn't need the recursive
+     * byte scan. It's assigned synchronously in `onMount` BEFORE the auto-confirm
+     * branch, so the MCP fast path's `handleConfirm` await guard sees a real
+     * promise (not `undefined`) and dispatches with `conflictNames` populated.
      */
     let conflictCheckPromise: Promise<void> | null = $state(null)
 
@@ -267,38 +284,50 @@
 
         isCheckingConflicts = true
         try {
-            // Build source item info from the source paths
-            // For conflict detection, we need the name, size, and modified time of each source item
-            // We extract the filename from each path
+            // Build source item info from the source paths. We extract the
+            // filename from each path for name matching. The real per-item
+            // `is_directory` and size come from the backend, which resolves
+            // them authoritatively from the source volume (one batched stat)
+            // when we pass `sourceVolumeId` + `sourcePaths`. We still send
+            // placeholders here so name matching works even if that resolution
+            // is unavailable (e.g. the source volume vanished).
             const sourceItems: SourceItemInput[] = sourcePaths.map((path) => {
                 const name = path.split('/').pop() || path
                 return {
                     name,
-                    size: 0, // Size not known at this point, but name matching is enough for conflict detection
+                    size: 0,
                     modified: null,
-                    // Per-item directory type isn't available from `sourcePaths`
-                    // (strings) alone. The dialog's props carry only paths plus
-                    // aggregate `fileCount` / `folderCount`, so we send `false`
-                    // here for now; the conflict scan still detects collisions by
-                    // name. Plumbing the real per-item type (so dir-vs-dir
-                    // collisions classify as "will merge") is the FE wiring in M2.
                     isDirectory: false,
                 }
             })
 
-            const foundConflicts = await scanVolumeForConflicts(selectedVolumeId, sourceItems, editedPath)
+            const foundConflicts = await scanVolumeForConflicts(
+                selectedVolumeId,
+                sourceItems,
+                editedPath,
+                sourceVolumeId,
+                sourcePaths,
+            )
 
-            // The dialog only renders an aggregate ("N files already exist"),
-            // not per-conflict rows; surface the true count and forward all
-            // the names to the backend so "Skip all" can bulk-skip them.
-            totalConflictCount = foundConflicts.length
-            conflictNames = foundConflicts.map((c) => c.sourcePath)
+            // Classify each collision:
+            //  - dir + dir  → a silent merge, not a conflict (informational).
+            //  - everything else (file+file, file+dir, dir+file) → a real
+            //    conflict the file policy governs.
+            // Only real conflicts count toward `totalConflictCount` and feed
+            // the bulk-skip name list; dir-dir merges must never enter the file
+            // bulk-skip set ("Skip all" must not skip folders wholesale).
+            const realConflicts = foundConflicts.filter((c) => !(c.sourceIsDirectory && c.destIsDirectory))
+            mergeFolderCount = foundConflicts.length - realConflicts.length
+            totalConflictCount = realConflicts.length
+            hasTypeMismatchConflict = realConflicts.some((c) => c.sourceIsDirectory !== c.destIsDirectory)
+            conflictNames = realConflicts.map((c) => c.sourcePath)
             conflictCheckComplete = true
 
-            if (totalConflictCount > 0) {
-                log.info('Found {count} {conflictsNoun} at destination', {
+            if (totalConflictCount > 0 || mergeFolderCount > 0) {
+                log.info('Found {count} {conflictsNoun} and {merges} folder merges at destination', {
                     count: totalConflictCount,
                     conflictsNoun: pluralize(totalConflictCount, 'conflict'),
+                    merges: mergeFolderCount,
                 })
             }
         } catch (err) {
@@ -338,8 +367,6 @@
                 dedupBytesFound = event.dedupBytesTotal
                 isScanning = false
                 scanComplete = true
-                // After source scan completes, check for conflicts
-                conflictCheckPromise = checkConflicts()
             }),
         )
         unlisteners.push(
@@ -377,7 +404,6 @@
                 dedupBytesFound = totals.dedupBytesTotal
                 isScanning = false
                 scanComplete = true
-                conflictCheckPromise = checkConflicts()
             }
         }
     }
@@ -393,6 +419,13 @@
         // Start scanning files immediately. Track the promise so handleConfirm can
         // await it: this ensures previewId is set before onConfirm fires.
         scanStarted = startScan()
+
+        // Run the cheap top-level conflict check in parallel with the scan
+        // preview (it's one dest listing, not the recursive byte scan). MUST be
+        // assigned BEFORE the auto-confirm branch so the fast path's
+        // `handleConfirm` await guard sees a real promise and dispatches with
+        // `conflictNames` populated. Mirrors how `scanStarted` is assigned above.
+        conflictCheckPromise = checkConflicts()
 
         // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
         if (autoConfirm) {
@@ -573,12 +606,27 @@
             <span class="scan-spinner"></span>
             <span class="conflicts-checking-text">Checking for conflicts...</span>
         </div>
-    {:else if totalConflictCount > 0}
+    {:else if totalConflictCount > 0 || mergeFolderCount > 0}
         <div class="conflicts-section">
-            <p class="conflicts-summary">
-                {totalConflictCount}
-                {totalConflictCount === 1 ? 'file already exists' : 'files already exist'}
-            </p>
+            <!-- Folder merges are informational, never a question: same-named
+                 folders always merge silently. Surfaced so a user who didn't
+                 expect a same-named folder at the dest gets a visible cue. -->
+            {#if mergeFolderCount > 0}
+                <p class="merge-info">
+                    {mergeFolderCount === 1
+                        ? '1 folder will merge with an existing folder'
+                        : `${formatNumber(mergeFolderCount)} folders will merge with existing folders`}
+                </p>
+            {/if}
+            {#if totalConflictCount > 0}
+                <p class="conflicts-summary">
+                    {totalConflictCount}
+                    {totalConflictCount === 1 ? 'file already exists' : 'files already exist'}
+                </p>
+            {/if}
+            <!-- The file policy radios show whenever there's a file conflict OR
+                 a folder merge: a merge can surface file clashes mid-operation
+                 the upfront check can't see, and the radios pre-answer them. -->
             <div class="conflict-policy">
                 <label class="policy-option">
                     <input type="radio" bind:group={conflictPolicy} value="skip" />
@@ -601,6 +649,22 @@
                     <span>{totalConflictCount === 1 ? 'Ask later' : 'Ask for each'}</span>
                 </label>
             </div>
+
+            <!-- Cross-type guardrail: when a clash mixes a file and a same-named
+                 folder, "Overwrite all" replaces items of a different type and
+                 deletes folder contents. The per-file dialog already warns on
+                 this; the bulk path must not be quieter. -->
+            {#if hasTypeMismatchConflict && conflictPolicy === 'overwrite'}
+                <p class="conflict-warning" role="alert">
+                    <span class="conflict-warning-icon" aria-hidden="true">
+                        <IconTriangleAlert width="16" height="16" />
+                    </span>
+                    <span>
+                        Some clashes mix a file and a folder by the same name. Overwriting will replace items of a
+                        different type, including the entire contents of a folder.
+                    </span>
+                </p>
+            {/if}
         </div>
     {/if}
 
@@ -779,6 +843,41 @@
         color: var(--color-warning);
         text-align: center;
         font-weight: 500;
+    }
+
+    /* Folder-merge info line: neutral, not a warning. Folders always merge, so
+       this is a heads-up, not a question. */
+    .merge-info {
+        margin: 0 0 var(--spacing-md);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        text-align: center;
+    }
+
+    /* Cross-type "Overwrite all" guardrail. Mirrors the per-file dialog's red
+       warning (icon + sentence in a tinted block) to flag the destructive swap
+       before the user confirms a bulk overwrite across mixed types. */
+    .conflict-warning {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        margin: var(--spacing-md) 0 0;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--color-error-bg);
+        color: var(--color-error-text);
+        border: 1px solid var(--color-error-border);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
+    }
+
+    .conflict-warning-icon {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        color: var(--color-error-text);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- align icon with first line of text */
+        margin-top: 1px;
     }
 
     .conflict-policy {

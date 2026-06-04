@@ -199,6 +199,36 @@ fn build_pre_skip_set_excludes_known_directory_paths() {
     );
 }
 
+/// A dir-vs-dir collision (a source folder landing on a same-named dest folder)
+/// must NEVER enter the file bulk-skip set, even under `Skip all`. Folders
+/// always merge; "Skip all" governs the clashing FILES inside the merge, not
+/// the folder wholesale. The upfront FE forwards the folder's name as a
+/// pre-known conflict, but the preflight scan also reports it via
+/// `known_directory_paths`, so it falls through to per-child resolution. This
+/// pins that the merge-not-skip-wholesale semantics hold at the bulk-skip gate.
+#[test]
+fn build_pre_skip_set_never_bulk_skips_a_merging_directory() {
+    let sources = paths(&["/photos", "/notes.txt"]);
+    let mut known_dirs = HashSet::new();
+    // `/photos` is a directory (a dir-dir merge at the destination).
+    known_dirs.insert(PathBuf::from("/photos"));
+    let set = build_pre_skip_set(
+        &sources,
+        ConflictResolution::Skip,
+        // Both names arrive as pre-known conflicts from the FE.
+        &["photos".into(), "notes.txt".into()],
+        &known_dirs,
+    );
+    // Only the file is bulk-skipped; the merging folder is left to per-child
+    // resolution so its non-clashing children still copy.
+    assert_eq!(set.len(), 1);
+    assert!(set.contains(&PathBuf::from("/notes.txt")));
+    assert!(
+        !set.contains(&PathBuf::from("/photos")),
+        "a merging directory must never be bulk-skipped wholesale"
+    );
+}
+
 // ===========================================================================
 // Sync driver: data-safety
 // ===========================================================================

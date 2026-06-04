@@ -538,10 +538,26 @@ export const commands = {
     typedError<VolumeCopyScanResult, IpcError>(
       __TAURI_INVOKE('scan_volume_for_copy', { sourceVolumeId, sourcePaths, destVolumeId, destPath, maxConflicts }),
     ),
-  // Checks which source items already exist at the destination. Returns conflict details for UI.
-  scanVolumeForConflicts: (volumeId: string, sourceItems: SourceItemInput[], destPath: string) =>
+  /**
+   *  Checks which source items already exist at the destination. Returns conflict details for UI.
+   *
+   *  When `source_volume_id` and `source_paths` are both provided, each item's
+   *  `is_directory` and `size` are resolved authoritatively on the source volume
+   *  via ONE batched stat (`scan_for_copy_batch`, strictly O(top-level items),
+   *  never a subtree walk), overriding whatever the caller passed in `source_items`.
+   *  This lets the dialog classify dir-vs-dir collisions as silent merges without
+   *  the FE having to plumb per-item types. Callers that don't pass the source
+   *  volume keep the legacy name-only behavior.
+   */
+  scanVolumeForConflicts: (
+    volumeId: string,
+    sourceItems: SourceItemInput[],
+    destPath: string,
+    sourceVolumeId: string | null,
+    sourcePaths: string[] | null,
+  ) =>
     typedError<ScanConflict[], IpcError>(
-      __TAURI_INVOKE('scan_volume_for_conflicts', { volumeId, sourceItems, destPath }),
+      __TAURI_INVOKE('scan_volume_for_conflicts', { volumeId, sourceItems, destPath, sourceVolumeId, sourcePaths }),
     ),
   // Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
   getListingStats: (listingId: string, includeHidden: boolean, selectedIndices: number[] | null) =>

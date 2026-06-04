@@ -582,17 +582,33 @@ export async function scanVolumeForCopy(
  * Scans destination volume for conflicts with source items.
  * Checks if any of the source item names already exist at the destination path.
  *
+ * When `sourceVolumeId` and `sourcePaths` are both provided, the backend
+ * resolves each item's real `is_directory` and size authoritatively from the
+ * source volume (one batched stat, never a subtree walk), so the FE can
+ * classify dir-vs-dir collisions as silent merges. Omit them for the legacy
+ * name-only check.
+ *
  * @param volumeId - ID of the destination volume to scan
  * @param sourceItems - List of source items to check
  * @param destPath - Destination directory path on the volume
+ * @param sourceVolumeId - ID of the source volume, for authoritative type/size resolution
+ * @param sourcePaths - Source paths on `sourceVolumeId`, aligned with `sourceItems` by name
  * @returns List of conflicts found
  */
 export async function scanVolumeForConflicts(
   volumeId: string,
   sourceItems: SourceItemInput[],
   destPath: string,
+  sourceVolumeId?: string,
+  sourcePaths?: string[],
 ): Promise<VolumeConflictInfo[]> {
-  const res = await commands.scanVolumeForConflicts(volumeId, sourceItems, destPath)
+  const res = await commands.scanVolumeForConflicts(
+    volumeId,
+    sourceItems,
+    destPath,
+    sourceVolumeId ?? null,
+    sourcePaths ?? null,
+  )
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
