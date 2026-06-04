@@ -19,11 +19,6 @@ export interface ExplorerAPI {
   setViewMode: (mode: ViewMode, pane?: 'left' | 'right') => void
   navigate: (action: 'back' | 'forward' | 'parent') => void
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null
-  /**
-   * Volume id of the focused pane's current tab. Used by Quick Look's open/setPath
-   * IPC, which gates non-local-fs volumes (MTP) on the backend.
-   */
-  getFocusedPaneVolumeId: () => string
   sendKeyToFocusedPane: (key: string) => void
   /**
    * Routes a key event received from the native Quick Look panel back into the
@@ -43,18 +38,6 @@ export interface ExplorerAPI {
     pane: 'left' | 'right',
   ) => Promise<void>
   getFocusedPane: () => 'left' | 'right'
-  getFocusedPanePath: () => string
-  /**
-   * "Smart current folder" for the Search-in popover. When the focused pane is a
-   * `search-results://` snapshot the host walks back through history to find the most
-   * recent real folder; when none is reachable it surfaces a disabled state with
-   * `disabledReason` as the tooltip. See `lib/search/searchable-folder.ts`.
-   */
-  getFocusedPaneSearchableFolder: () => {
-    path: string | null
-    disabled: boolean
-    disabledReason: string
-  }
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
   handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: string) => void

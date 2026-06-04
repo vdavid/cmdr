@@ -14,6 +14,7 @@ import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
 import { navigateToDirInPane, navigateToFileInPane } from '$lib/file-explorer/navigation/navigate-and-select'
+import { getFocusedPanePath } from '$lib/file-explorer/pane/focused-pane-reads'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
 import GoToPathAncestorToastContent from './GoToPathAncestorToastContent.svelte'
@@ -50,7 +51,7 @@ export async function goToPath(
     return undefined
   }
 
-  const baseDir = explorer.getFocusedPanePath()
+  const baseDir = getFocusedPanePath()
   const result = await commands.resolveGoToPath(input, baseDir)
   if (result.status === 'error') {
     log.warn('goToPath: resolve failed for {input}: {error}', { input, error: result.error.message })

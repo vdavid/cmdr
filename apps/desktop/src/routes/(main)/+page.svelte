@@ -14,6 +14,7 @@
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import { goToPath } from '$lib/go-to-path/go-to-path'
+    import { getFocusedPanePath, getFocusedPaneSearchableFolder } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
     import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
     import ReplayStatusOverlay from '$lib/indexing/ReplayStatusOverlay.svelte'
@@ -884,18 +885,14 @@
             <SearchDialog
                 onNavigate={handleSearchNavigate}
                 onClose={handleSearchDialogClose}
-                searchableFolder={explorerRef?.getFocusedPaneSearchableFolder() ?? {
-                    path: explorerRef?.getFocusedPanePath() ?? '/',
-                    disabled: false,
-                    disabledReason: '',
-                }}
+                searchableFolder={getFocusedPaneSearchableFolder()}
                 onShowAllInMainWindow={handleOpenSearchInPane}
             />
         {/if}
 
         {#if showGoToPathDialog}
             <GoToPathDialog
-                baseDir={explorerRef?.getFocusedPanePath() ?? '/'}
+                baseDir={getFocusedPanePath()}
                 onGo={handleGoToPath}
                 onCancel={handleGoToPathDialogClose}
             />

@@ -1492,23 +1492,6 @@
         return paneCommands.getFocusedPane()
     }
 
-    export function getFocusedPanePath(): string {
-        return paneCommands.getFocusedPanePath()
-    }
-
-    // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte via explorerRef
-    export function getFocusedPaneSearchableFolder(): {
-        path: string | null
-        disabled: boolean
-        disabledReason: string
-    } {
-        return paneCommands.getFocusedPaneSearchableFolder()
-    }
-
-    export function getFocusedPaneVolumeId(): string {
-        return paneCommands.getFocusedPaneVolumeId()
-    }
-
     // noinspection JSUnusedGlobalSymbols -- consumed by quick-look-state
     export function routePanelKey(payload: {
         key: string

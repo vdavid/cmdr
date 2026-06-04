@@ -31,6 +31,7 @@ import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.sve
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { goToLatestDownload } from '$lib/downloads/go-to-latest'
+import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
 import type { ExplorerAPI } from './explorer-api'
 
 const log = getAppLogger('user-action')
@@ -94,7 +95,7 @@ function activeTextRegion(): Element | null {
  */
 function blockedBySearchResultsPane(commandId: string, explorer: ExplorerAPI | undefined): boolean {
   if (!explorer) return false
-  if (explorer.getFocusedPaneVolumeId() !== 'search-results') return false
+  if (getFocusedPaneVolumeId() !== 'search-results') return false
 
   const isBlocked =
     commandId === 'edit.paste' ||
@@ -494,7 +495,7 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
     }
 
     case 'file.copyCurrentDirectoryPath': {
-      const currentPath = explorerRef?.getFocusedPanePath()
+      const currentPath = getFocusedPanePath()
       if (currentPath) {
         await copyToClipboard(currentPath)
       }
@@ -531,7 +532,7 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       }
       const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
       if (!entryUnderCursor) return
-      const volumeId = explorerRef?.getFocusedPaneVolumeId() ?? 'root'
+      const volumeId = getFocusedPaneVolumeId()
       // Optimistically flip `isOpen` before the IPC: AppKit returns from
       // `makeKeyAndOrderFront:` synchronously and the panel is up by the time
       // the IPC resolves, but the optimistic flip means a second Shift+Space

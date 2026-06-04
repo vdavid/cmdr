@@ -165,7 +165,8 @@ non-snapshot path; if none is reachable, the dialog surfaces a `disabled: true` 
 
 The plumbing:
 
-- `DualPaneExplorer.svelte` exposes `getFocusedPaneSearchableFolder()`.
+- `getFocusedPaneSearchableFolder()` in `lib/file-explorer/pane/focused-pane-reads.ts` reads the focused pane's path +
+  history from the explorer store and delegates to `resolveSearchableFolder`.
 - `+page.svelte` calls it once per dialog mount and passes the result as the `searchableFolder` prop.
 - `FilterChips.svelte` renders the "Use current folder" footer button disabled (with tooltip) when
   `searchableFolder.disabled === true`; otherwise it uses `searchableFolder.path`.

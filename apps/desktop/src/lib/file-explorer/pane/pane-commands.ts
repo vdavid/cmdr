@@ -1,5 +1,4 @@
 import { findFileIndex } from '$lib/tauri-commands'
-import { resolveSearchableFolder } from '$lib/search/searchable-folder'
 import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import type { FilePaneAPI } from './types'
 import type { FileEntry, FriendlyError, WriteOperationError } from '../types'
@@ -100,35 +99,6 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
    */
   function getFocusedPane(): 'left' | 'right' {
     return access.getFocusedPane()
-  }
-
-  /** Returns the current directory path of the focused pane. */
-  function getFocusedPanePath(): string {
-    return access.getPanePath(access.getFocusedPane())
-  }
-
-  /**
-   * Returns the "current folder" the Search dialog's `Search in → Use current folder`
-   * action should act on. Round-2 D12: when the focused pane is a `search-results://`
-   * snapshot, walks back through history for the most recent real folder; when none is
-   * available, surfaces a disabled state with a tooltip. See
-   * `lib/search/searchable-folder.ts` for the pure helper this delegates to.
-   */
-  function getFocusedPaneSearchableFolder(): {
-    path: string | null
-    disabled: boolean
-    disabledReason: string
-  } {
-    const history = access.getPaneHistory(access.getFocusedPane())
-    return resolveSearchableFolder({
-      currentPath: access.getPanePath(access.getFocusedPane()),
-      history: history.stack.map((e) => e.path),
-    })
-  }
-
-  /** Volume id of the focused pane's active tab. Used by Quick Look's IPC gate. */
-  function getFocusedPaneVolumeId(): string {
-    return access.getPaneVolumeId(access.getFocusedPane())
   }
 
   /**
@@ -408,9 +378,6 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     sendKeyToFocusedPane,
     openItemUnderCursor,
     getFocusedPane,
-    getFocusedPanePath,
-    getFocusedPaneSearchableFolder,
-    getFocusedPaneVolumeId,
     routePanelKey,
     handleSelectionAction,
     applyIndicesToFocusedPane,

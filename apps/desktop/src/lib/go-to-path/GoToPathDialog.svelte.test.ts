@@ -21,6 +21,9 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   readClipboardText: readClipboardTextMock,
+  // `./go-to-path` now pulls in the explorer store (focused-pane reads), whose
+  // default tab manager reads this constant.
+  DEFAULT_VOLUME_ID: 'root',
 }))
 
 vi.mock('$lib/ipc/bindings', () => ({

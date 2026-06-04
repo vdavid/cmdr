@@ -3,14 +3,11 @@ import type { PaneAccess } from './pane-access'
 import type { FilePaneAPI } from './types'
 import type { FileEntry } from '../types'
 
-const { findFileIndexSpy, resolveSearchableFolderSpy } = vi.hoisted(() => ({
+const { findFileIndexSpy } = vi.hoisted(() => ({
   findFileIndexSpy: vi.fn<() => Promise<number | null>>(),
-  resolveSearchableFolderSpy: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({ findFileIndex: findFileIndexSpy }))
-
-vi.mock('$lib/search/searchable-folder', () => ({ resolveSearchableFolder: resolveSearchableFolderSpy }))
 
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
@@ -447,28 +444,9 @@ describe('delegating commands', () => {
     )
   })
 
-  it('getFocusedPane / getFocusedPanePath / getFocusedPaneVolumeId read the focused pane', () => {
-    const cmds = create(
-      buildAccess({ focusedPane: 'right', paths: { right: '/r/dir' }, volumeIds: { right: 'vol-x' } }),
-    )
+  it('getFocusedPane reads the focused pane', () => {
+    const cmds = create(buildAccess({ focusedPane: 'right' }))
     expect(cmds.getFocusedPane()).toBe('right')
-    expect(cmds.getFocusedPanePath()).toBe('/r/dir')
-    expect(cmds.getFocusedPaneVolumeId()).toBe('vol-x')
-  })
-
-  it('getFocusedPaneSearchableFolder delegates to resolveSearchableFolder with history paths', () => {
-    resolveSearchableFolderSpy.mockReturnValue({ path: '/folder', disabled: false, disabledReason: '' })
-    const access = buildAccess({ paths: { left: '/cur' } })
-    access.getPaneHistory = () => ({
-      stack: [
-        { volumeId: 'root', path: '/a' },
-        { volumeId: 'root', path: '/b' },
-      ],
-      currentIndex: 1,
-    })
-    const result = create(access).getFocusedPaneSearchableFolder()
-    expect(resolveSearchableFolderSpy).toHaveBeenCalledWith({ currentPath: '/cur', history: ['/a', '/b'] })
-    expect(result).toEqual({ path: '/folder', disabled: false, disabledReason: '' })
   })
 
   it('applyIndicesToFocusedPane forwards indices + mode', () => {

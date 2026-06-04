@@ -46,6 +46,12 @@ vi.mock('./recent-paths-state.svelte', () => ({
   addRecentPath: addRecentPathStateMock,
 }))
 
+// `goToPath` reads the focused pane's path from the explorer store, not the
+// `explorerRef` getter, so the base dir comes through this module.
+vi.mock('$lib/file-explorer/pane/focused-pane-reads', () => ({
+  getFocusedPanePath: getFocusedPanePathMock,
+}))
+
 // The toast component import returns an opaque module ref; we only assert the
 // same reference reaches `addToast`.
 vi.mock('./GoToPathAncestorToastContent.svelte', () => ({
@@ -60,7 +66,6 @@ import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 function makeExplorerStub(): ExplorerAPI {
   return {
     getFocusedPane: getFocusedPaneMock,
-    getFocusedPanePath: getFocusedPanePathMock,
   } as unknown as ExplorerAPI
 }
 
