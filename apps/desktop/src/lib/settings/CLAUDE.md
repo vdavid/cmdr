@@ -47,6 +47,30 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
   separators, `..`, absolute paths) and returns `None`, which the helper treats like production, so a bad name can never
   escape the data dir.
 
+### Restricted-window mode (the viewer)
+
+The viewer window has no `tauri-plugin-store` capability by security design (it renders arbitrary, possibly-hostile file
+content; see `src-tauri/capabilities/CLAUDE.md` § viewer). It calls `initializeSettings({ restrictedWindow: true })`,
+which never touches the store plugin:
+
+- **Reads**: the cache seeds from the typed `get_restricted_window_settings` backend command (allowlist:
+  `viewer.wordWrap`, `fileViewer.suppressBinaryWarning`, `appearance.textSize`, `appearance.appColor`; the command reads
+  `settings.json` fresh, so the snapshot lags the main window's cache by at most the 500 ms save debounce). Live updates
+  after open arrive through the regular cross-window `settings:changed` event.
+- **Writes**: `setSetting` skips the store save and forwards allowlisted ids through the typed
+  `persist_restricted_window_setting` command (enum-validated on the Rust side), which emits to the main window;
+  `restricted-settings-bridge.ts` (mounted in the main layout) re-checks the allowlist and persists via
+  `persistSettingFromRestrictedWindow` — a deliberate `setSetting` bypass, because the viewer's own cross-window emit
+  has usually already synced the main cache and the idempotency guard would otherwise skip the save. Non-allowlisted
+  `setSetting` calls in restricted mode are session-only (debug log, no persistence).
+- **Failures degrade to registry defaults with a `log.warn`**, never `log.error`: an error-level log here fires an auto
+  error report on every viewer open, which is the regression that motivated this mode (the viewer used to call the
+  store-backed init path and hit `plugin:store|load not allowed by ACL` every time).
+
+When a new setting needs to be readable or persistable from the viewer, extend the `RestrictedWindowSettings` struct /
+`RestrictedWindowPersistableSetting` enum in `src-tauri/src/commands/settings.rs` and the mirror maps in
+`settings-store.ts` + `restricted-settings-bridge.ts`. Never grant the viewer store permissions instead.
+
 ### Text size (`appearance.textSize`)
 
 `appearance.textSize` (slider 50–200%, default 100%) compounds with the macOS Accessibility > Display > Text Size value

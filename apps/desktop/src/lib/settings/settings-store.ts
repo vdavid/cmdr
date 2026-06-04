@@ -11,7 +11,7 @@ import { resolveStorePath } from './store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import { commands } from '$lib/ipc/bindings'
-import type { SettingValue } from '$lib/ipc/bindings'
+import type { RestrictedWindowPersistableSetting, SettingValue } from '$lib/ipc/bindings'
 
 const log = getAppLogger('settings')
 
@@ -38,6 +38,22 @@ const SAVE_DEBOUNCE_MS = 500
 const settingsCache: Record<string, unknown> = {}
 let initialized = false
 let crossWindowUnlisten: UnlistenFn | null = null
+
+// True when this window runs without `tauri-plugin-store` capability (the
+// viewer; see `src-tauri/capabilities/CLAUDE.md` § viewer). The store is never
+// loaded: reads come from the `get_restricted_window_settings` snapshot plus
+// cross-window `settings:changed` events, and writes persist through the
+// `persist_restricted_window_setting` command (forwarded to the main window).
+let restrictedWindowMode = false
+
+/** The settings a restricted window may persist, mapped to the typed command
+ *  enum. Must mirror `RestrictedWindowPersistableSetting` in
+ *  `src-tauri/src/commands/settings.rs` — the backend enum is the enforced
+ *  allowlist; this map only decides which `setSetting` calls are forwarded. */
+const RESTRICTED_PERSISTABLE_SETTINGS: Partial<Record<SettingId, RestrictedWindowPersistableSetting>> = {
+  'viewer.wordWrap': 'viewerWordWrap',
+  'fileViewer.suppressBinaryWarning': 'fileViewerSuppressBinaryWarning',
+}
 
 // ============================================================================
 // Initialization
@@ -66,12 +82,26 @@ async function getStore(): Promise<Store> {
 
 /**
  * Initialize the settings store. Must be called before using getSetting/setSetting.
+ *
+ * Pass `restrictedWindow: true` from windows whose capability file deliberately
+ * has no `tauri-plugin-store` permission (the viewer). That path never touches
+ * the store plugin: it seeds the cache from the backend's typed
+ * `get_restricted_window_settings` snapshot and relies on cross-window
+ * `settings:changed` events for live updates. Failures there degrade to
+ * registry defaults with a warning — they're an expected capability boundary,
+ * not an error (an error-level log would trigger an auto error report on
+ * every viewer open, which is exactly the regression this mode fixes).
  */
-export async function initializeSettings(): Promise<void> {
+export async function initializeSettings(options?: { restrictedWindow?: boolean }): Promise<void> {
   log.debug('initializeSettings() called, initialized={initialized}', { initialized })
 
   if (initialized) {
     log.debug('Settings already initialized, returning early')
+    return
+  }
+
+  if (options?.restrictedWindow) {
+    await initializeSettingsRestricted()
     return
   }
 
@@ -137,6 +167,45 @@ export async function initializeSettings(): Promise<void> {
   } catch (error) {
     log.error('Failed to initialize settings: {error}', { error })
     throw error
+  }
+}
+
+/**
+ * Restricted-window initialization: snapshot from the backend instead of the
+ * store plugin. Non-throwing — on failure the window simply runs on registry
+ * defaults, which is the designed degradation for the viewer.
+ */
+async function initializeSettingsRestricted(): Promise<void> {
+  restrictedWindowMode = true
+  try {
+    const snapshot = await commands.getRestrictedWindowSettings()
+    // Mechanical mapping: each snapshot field name spells out its setting id.
+    const mapped: Partial<Record<SettingId, unknown>> = {
+      'viewer.wordWrap': snapshot.viewerWordWrap,
+      'fileViewer.suppressBinaryWarning': snapshot.fileViewerSuppressBinaryWarning,
+      'appearance.textSize': snapshot.appearanceTextSize,
+      'appearance.appColor': snapshot.appearanceAppColor,
+    }
+    for (const [id, value] of Object.entries(mapped)) {
+      if (value == null) continue // not persisted: registry default applies
+      try {
+        validateSettingValue(id, value)
+        settingsCache[id] = value
+      } catch {
+        log.warn('Invalid snapshot value for {id}, using default', { id })
+      }
+    }
+
+    // Live updates (text size, app color, ...) still arrive from the main and
+    // settings windows through the regular cross-window event.
+    await setupCrossWindowListener()
+
+    initialized = true
+    log.debug('Settings initialized from restricted-window snapshot')
+  } catch (error) {
+    // warn, not error: the window stays usable on registry defaults, and an
+    // error-level log would fire an auto error report on every viewer open.
+    log.warn('Restricted-window settings snapshot failed, using defaults: {error}', { error })
   }
 }
 
@@ -266,8 +335,28 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
   // Update cache immediately for synchronous access
   settingsCache[id] = value
 
-  // Debounced save to disk
-  scheduleSave()
+  if (restrictedWindowMode) {
+    // No store in this window: persistence goes through the typed backend
+    // command, which forwards to the main window's restricted-settings bridge.
+    const persistable = RESTRICTED_PERSISTABLE_SETTINGS[id]
+    if (persistable !== undefined && typeof value === 'boolean') {
+      void commands
+        .persistRestrictedWindowSetting(persistable, value)
+        .then((result) => {
+          if (result.status === 'error') {
+            log.warn('Failed to persist {id} from restricted window: {error}', { id, error: result.error })
+          }
+        })
+        .catch((error: unknown) => {
+          log.warn('Failed to persist {id} from restricted window: {error}', { id, error: String(error) })
+        })
+    } else {
+      log.debug('Restricted window: {id} change is session-only (not in the persist allowlist)', { id })
+    }
+  } else {
+    // Debounced save to disk
+    scheduleSave()
+  }
 
   // Notify local listeners
   notifyListeners(id, value)
@@ -275,6 +364,24 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
   // Emit cross-window event so other windows get the update
   void emit(SETTING_CHANGED_EVENT, { id, value } satisfies SettingChangedPayload)
   log.debug('Emitted cross-window setting change event for {id}', { id })
+}
+
+/**
+ * Persists a value on behalf of a restricted window. Called by the main
+ * window's restricted-settings bridge (see `restricted-settings-bridge.ts`)
+ * after it allowlist-checks the forwarded change.
+ *
+ * Deliberately NOT `setSetting`: the restricted window's own cross-window
+ * `settings:changed` emit has usually already synced this window's cache (and
+ * notified listeners) by the time the persist request arrives, so `setSetting`
+ * would hit the idempotency guard and skip the save. This writes the cache and
+ * schedules the save unconditionally, and skips notify/emit to avoid echoing
+ * the change back out a second time.
+ */
+export function persistSettingFromRestrictedWindow<K extends SettingId>(id: K, value: SettingsValues[K]): void {
+  validateSettingValue(id, value)
+  settingsCache[id] = value
+  scheduleSave()
 }
 
 /**

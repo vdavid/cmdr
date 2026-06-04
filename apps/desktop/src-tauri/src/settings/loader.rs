@@ -183,6 +183,57 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     })
 }
 
+/// The settings a restricted-capability window (the viewer) reads at startup via
+/// `get_restricted_window_settings`. The viewer has no `tauri-plugin-store`
+/// capability by security design (see `capabilities/CLAUDE.md` § viewer), so it
+/// can't load `settings.json` itself; this typed allowlist is its read surface.
+/// Field names spell out the full setting id so the FE mapping is mechanical.
+///
+/// Every field is `Option`: `None` means "not persisted" and the frontend falls
+/// back to the registry default, exactly like the store-backed path.
+#[derive(Debug, Clone, Default, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RestrictedWindowSettings {
+    pub viewer_word_wrap: Option<bool>,
+    pub file_viewer_suppress_binary_warning: Option<bool>,
+    pub appearance_text_size: Option<f64>,
+    pub appearance_app_color: Option<String>,
+}
+
+/// Reads the [`RestrictedWindowSettings`] allowlist from `settings.json`.
+///
+/// Reads the file fresh on every call (a viewer can open at any point in the
+/// session). The on-disk value lags the main window's in-memory cache by the
+/// store's 500 ms save debounce; live updates after open flow through the
+/// cross-window `settings:changed` event instead, so the brief staleness only
+/// affects the initial paint.
+pub fn load_restricted_window_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> RestrictedWindowSettings {
+    let Ok(data_dir) = crate::config::resolved_app_data_dir(app) else {
+        return RestrictedWindowSettings::default();
+    };
+    let settings_path = data_dir.join("settings.json");
+    let Ok(contents) = fs::read_to_string(&settings_path) else {
+        return RestrictedWindowSettings::default();
+    };
+    parse_restricted_window_settings(&contents)
+}
+
+/// Pure parse step for [`load_restricted_window_settings`], split out for unit tests.
+fn parse_restricted_window_settings(contents: &str) -> RestrictedWindowSettings {
+    let Ok(json) = serde_json::from_str::<serde_json::Value>(contents) else {
+        return RestrictedWindowSettings::default();
+    };
+    RestrictedWindowSettings {
+        viewer_word_wrap: json.get("viewer.wordWrap").and_then(|v| v.as_bool()),
+        file_viewer_suppress_binary_warning: json.get("fileViewer.suppressBinaryWarning").and_then(|v| v.as_bool()),
+        appearance_text_size: json.get("appearance.textSize").and_then(|v| v.as_f64()),
+        appearance_app_color: json
+            .get("appearance.appColor")
+            .and_then(|v| v.as_str())
+            .map(String::from),
+    }
+}
+
 /// Reads `advanced.maxLogStorageMb` from disk *before* the Tauri app handle is wired
 /// into the rest of `setup()`.
 ///
@@ -269,4 +320,49 @@ pub fn early_load_global_go_to_latest_shortcut() -> Option<(bool, String)> {
         .map(|s| s.to_string())
         .unwrap_or_else(|| String::from("\u{2303}\u{2325}\u{2318}J"));
     Some((enabled, binding))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn restricted_window_settings_parse_set_values() {
+        let json = r#"{
+            "viewer.wordWrap": true,
+            "fileViewer.suppressBinaryWarning": true,
+            "appearance.textSize": 125,
+            "appearance.appColor": "blue",
+            "developer.mcpEnabled": true
+        }"#;
+        let parsed = parse_restricted_window_settings(json);
+        assert_eq!(parsed.viewer_word_wrap, Some(true));
+        assert_eq!(parsed.file_viewer_suppress_binary_warning, Some(true));
+        assert_eq!(parsed.appearance_text_size, Some(125.0));
+        assert_eq!(parsed.appearance_app_color.as_deref(), Some("blue"));
+    }
+
+    #[test]
+    fn restricted_window_settings_missing_keys_are_none() {
+        let parsed = parse_restricted_window_settings("{}");
+        assert_eq!(parsed.viewer_word_wrap, None);
+        assert_eq!(parsed.file_viewer_suppress_binary_warning, None);
+        assert_eq!(parsed.appearance_text_size, None);
+        assert_eq!(parsed.appearance_app_color, None);
+    }
+
+    #[test]
+    fn restricted_window_settings_bad_json_yields_defaults() {
+        let parsed = parse_restricted_window_settings("not json at all");
+        assert_eq!(parsed.viewer_word_wrap, None);
+        assert_eq!(parsed.appearance_app_color, None);
+    }
+
+    #[test]
+    fn restricted_window_settings_wrong_types_are_none() {
+        let json = r#"{ "viewer.wordWrap": "yes", "appearance.textSize": "big" }"#;
+        let parsed = parse_restricted_window_settings(json);
+        assert_eq!(parsed.viewer_word_wrap, None);
+        assert_eq!(parsed.appearance_text_size, None);
+    }
 }

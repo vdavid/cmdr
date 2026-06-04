@@ -478,6 +478,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::settings::set_smb_concurrency_cmd,
         crate::commands::settings::set_max_log_storage_mb,
         crate::commands::settings::set_error_reports_enabled,
+        crate::commands::settings::get_restricted_window_settings,
+        crate::commands::settings::persist_restricted_window_setting,
         crate::commands::settings::set_show_virtual_git_portal,
         crate::commands::logging::batch_fe_logs,
         crate::commands::logging::set_log_level,

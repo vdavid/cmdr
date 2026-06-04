@@ -37,6 +37,14 @@ Settings {
 }
 ```
 
+## Restricted-window snapshot
+
+`load_restricted_window_settings` + the `RestrictedWindowSettings` struct back the `get_restricted_window_settings`
+command (in `commands/settings.rs`): the typed read allowlist for windows without store capability (the viewer). Reads
+`settings.json` fresh per call. Read-only like everything else here; the matching write path
+(`persist_restricted_window_setting`) forwards to the main window's frontend store instead of writing from Rust, keeping
+the one-way-read invariant below intact.
+
 ## Early-load helpers
 
 Two helpers in `loader.rs` read `settings.json` *before* the Tauri `AppHandle` is fully

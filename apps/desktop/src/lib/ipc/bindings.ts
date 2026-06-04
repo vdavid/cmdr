@@ -1209,6 +1209,25 @@ export const commands = {
    */
   setErrorReportsEnabled: (value: boolean) => __TAURI_INVOKE<void>('set_error_reports_enabled', { value }),
   /**
+   *  Settings snapshot for windows without `tauri-plugin-store` capability (the
+   *  viewer). The viewer can't load `settings.json` itself by security design
+   *  (see `capabilities/CLAUDE.md` § viewer); this returns the typed read
+   *  allowlist instead. Live updates after open flow through the cross-window
+   *  `settings:changed` event, so this is only the initial-paint snapshot.
+   */
+  getRestrictedWindowSettings: () => __TAURI_INVOKE<RestrictedWindowSettings>('get_restricted_window_settings'),
+  /**
+   *  Persists a setting on behalf of a restricted-capability window (the viewer).
+   *
+   *  The backend never writes `settings.json` itself (the settings loader is
+   *  one-way by design; the frontend store owns all writes), so this forwards the
+   *  change to the main window, whose `restricted-settings-bridge` listener
+   *  persists it through the normal store pipeline. The main window is always
+   *  alive while any viewer is open, so delivery is reliable.
+   */
+  persistRestrictedWindowSetting: (setting: RestrictedWindowPersistableSetting, value: boolean) =>
+    typedError<null, string>(__TAURI_INVOKE('persist_restricted_window_setting', { setting, value })),
+  /**
    *  Enable or disable the virtual `.git` portal. When off, navigating into
    *  `.git` shows the raw on-disk contents instead of the branches/tags/commits
    *  virtual folders. Pushed live from the frontend whenever
@@ -3428,6 +3447,31 @@ export type ResortResult = {
    *  None if no selected_indices were provided.
    */
   newSelectedIndices: number[] | null
+}
+
+/**
+ *  The settings a restricted-capability window may persist. A typed enum (not a
+ *  free-form id string) so the write allowlist is enforced at the IPC boundary:
+ *  a compromised viewer webview can only flip these two booleans, never touch
+ *  licensing, error-report opt-in, MCP, or any other store key.
+ */
+export type RestrictedWindowPersistableSetting = 'viewerWordWrap' | 'fileViewerSuppressBinaryWarning'
+
+/**
+ *  The settings a restricted-capability window (the viewer) reads at startup via
+ *  `get_restricted_window_settings`. The viewer has no `tauri-plugin-store`
+ *  capability by security design (see `capabilities/CLAUDE.md` § viewer), so it
+ *  can't load `settings.json` itself; this typed allowlist is its read surface.
+ *  Field names spell out the full setting id so the FE mapping is mechanical.
+ *
+ *  Every field is `Option`: `None` means "not persisted" and the frontend falls
+ *  back to the registry default, exactly like the store-backed path.
+ */
+export type RestrictedWindowSettings = {
+  viewerWordWrap: boolean | null
+  fileViewerSuppressBinaryWarning: boolean | null
+  appearanceTextSize: number | null
+  appearanceAppColor: string | null
 }
 
 /**

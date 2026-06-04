@@ -14,7 +14,12 @@
     import { initFocusWatchdog } from '$lib/focus-watchdog'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
-    import { setupMcpMainBridge, cleanupMcpMainBridge } from '$lib/settings'
+    import {
+        setupMcpMainBridge,
+        cleanupMcpMainBridge,
+        setupRestrictedSettingsBridge,
+        cleanupRestrictedSettingsBridge,
+    } from '$lib/settings'
     import {
         onMtpExclusiveAccessError,
         onMtpPermissionError,
@@ -222,6 +227,10 @@
             // Set up MCP settings bridge (allows MCP tools to query/modify settings)
             await setupMcpMainBridge()
 
+            // Set up the restricted-settings bridge (persists viewer-originated
+            // setting changes; the viewer window has no store capability)
+            await setupRestrictedSettingsBridge()
+
             // Initialize window state persistence on resize
             // This ensures window size/position survives hot reloads
             void initWindowStateListener()
@@ -285,6 +294,7 @@
         cleanupVolumeTints()
         cleanupMcpShortcutsListener()
         cleanupMcpMainBridge()
+        cleanupRestrictedSettingsBridge()
         cleanupAutoSendToastListener()
     })
 </script>

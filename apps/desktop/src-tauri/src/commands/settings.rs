@@ -173,6 +173,69 @@ pub fn set_error_reports_enabled(value: bool) {
     crate::error_reporter::auto_dispatcher::set_enabled(value);
 }
 
+/// Settings snapshot for windows without `tauri-plugin-store` capability (the
+/// viewer). The viewer can't load `settings.json` itself by security design
+/// (see `capabilities/CLAUDE.md` § viewer); this returns the typed read
+/// allowlist instead. Live updates after open flow through the cross-window
+/// `settings:changed` event, so this is only the initial-paint snapshot.
+#[tauri::command]
+#[specta::specta]
+pub fn get_restricted_window_settings(app: AppHandle) -> crate::settings::RestrictedWindowSettings {
+    crate::settings::load_restricted_window_settings(&app)
+}
+
+/// The settings a restricted-capability window may persist. A typed enum (not a
+/// free-form id string) so the write allowlist is enforced at the IPC boundary:
+/// a compromised viewer webview can only flip these two booleans, never touch
+/// licensing, error-report opt-in, MCP, or any other store key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum RestrictedWindowPersistableSetting {
+    ViewerWordWrap,
+    FileViewerSuppressBinaryWarning,
+}
+
+impl RestrictedWindowPersistableSetting {
+    /// The settings-registry id this variant maps to.
+    pub fn setting_id(self) -> &'static str {
+        match self {
+            Self::ViewerWordWrap => "viewer.wordWrap",
+            Self::FileViewerSuppressBinaryWarning => "fileViewer.suppressBinaryWarning",
+        }
+    }
+}
+
+/// Payload of the `persist-restricted-setting` event delivered to the main window.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PersistRestrictedSettingPayload {
+    id: &'static str,
+    value: bool,
+}
+
+/// Persists a setting on behalf of a restricted-capability window (the viewer).
+///
+/// The backend never writes `settings.json` itself (the settings loader is
+/// one-way by design; the frontend store owns all writes), so this forwards the
+/// change to the main window, whose `restricted-settings-bridge` listener
+/// persists it through the normal store pipeline. The main window is always
+/// alive while any viewer is open, so delivery is reliable.
+#[tauri::command]
+#[specta::specta]
+pub fn persist_restricted_window_setting(
+    app: AppHandle,
+    setting: RestrictedWindowPersistableSetting,
+    value: bool,
+) -> Result<(), String> {
+    use tauri::Emitter;
+    let payload = PersistRestrictedSettingPayload {
+        id: setting.setting_id(),
+        value,
+    };
+    app.emit_to("main", "persist-restricted-setting", payload)
+        .map_err(|e| format!("Failed to forward setting to the main window: {e}"))
+}
+
 /// Enable or disable the virtual `.git` portal. When off, navigating into
 /// `.git` shows the raw on-disk contents instead of the branches/tags/commits
 /// virtual folders. Pushed live from the frontend whenever

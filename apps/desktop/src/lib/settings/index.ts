@@ -83,3 +83,6 @@ export { getMountTimeoutMs, getNetworkTimeoutMs, getShareCacheTtlMs } from './ne
 
 // MCP main bridge (settings event handlers for the main window)
 export { setupMcpMainBridge, cleanupMcpMainBridge } from './mcp-main-bridge'
+
+// Restricted-settings bridge (persists viewer-originated changes in the main window)
+export { setupRestrictedSettingsBridge, cleanupRestrictedSettingsBridge } from './restricted-settings-bridge'

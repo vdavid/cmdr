@@ -962,13 +962,12 @@
 
         await initAccentColor()
 
-        try {
-            await initializeSettings()
-            scroll.wordWrap = getSetting('viewer.wordWrap')
-            warningSuppressed = getSetting('fileViewer.suppressBinaryWarning')
-        } catch {
-            // Settings store not available in this context, use defaults
-        }
+        // The viewer has no store capability (see `src-tauri/capabilities/CLAUDE.md`
+        // § viewer), so settings come from the restricted-window snapshot + the
+        // cross-window change events. Non-throwing: falls back to registry defaults.
+        await initializeSettings({ restrictedWindow: true })
+        scroll.wordWrap = getSetting('viewer.wordWrap')
+        warningSuppressed = getSetting('fileViewer.suppressBinaryWarning')
 
         // Apply compounded text size after settings are loaded so the user's
         // persisted slider value is honored on first paint.
