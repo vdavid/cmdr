@@ -1,20 +1,12 @@
 <script lang="ts">
     import { onMount, onDestroy, untrack } from 'svelte'
-    import { pluralize } from '$lib/utils/pluralize'
     import FilePane from './FilePane.svelte'
     import type { FilePaneAPI } from './types'
     import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
-    import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
-    import {
-        getFileAt,
-        getFilesAtIndices,
-        openInEditor,
-        quickLookSetPath,
-        setSelfDragResolvedOperation,
-    } from '$lib/tauri-commands'
+    import { openInEditor, quickLookSetPath, setSelfDragResolvedOperation } from '$lib/tauri-commands'
     import { closeFromPaneError, quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { saveAppStatus, saveLastUsedPathForVolume, type ViewMode } from '$lib/app-status-store'
     import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
@@ -47,8 +39,6 @@
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath, isPathOnVolume } from '../navigation/path-navigation'
     import { resolveValidPath } from '../navigation/path-resolution'
-    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
-    import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
     import { resolveSearchableFolder } from '$lib/search/searchable-folder'
 
     import {
@@ -106,24 +96,14 @@
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { initialize as initMtpStore } from '$lib/mtp'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
-    import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logging/logger'
     import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
-    import {
-        type TransferContext,
-        buildTransferPropsFromSelection,
-        buildTransferPropsFromCursor,
-        buildTransferPropsFromDroppedPaths,
-        buildTransferPropsFromSnapshot,
-        getDestinationVolumeInfo,
-    } from './transfer-operations'
+    import { buildTransferPropsFromDroppedPaths } from './transfer-operations'
     import type { TransferOperationType } from '../types'
-    import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
-    import { getInitialFolderName } from '$lib/file-operations/mkdir/new-folder-operations'
-    import { getInitialFileName } from '$lib/file-operations/mkfile/new-file-operations'
     import { createDialogState } from './dialog-state.svelte'
     import type { PaneAccess } from './pane-access'
     import { createClipboardOperations } from './clipboard-operations'
+    import { createFileOperationCommands } from './file-operation-commands'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
     import { recalculateWebviewOffset, toViewportPosition } from '../drag/drag-position'
     import {
@@ -417,6 +397,7 @@
     }
 
     const clipboardOps = createClipboardOperations(paneAccess, dialogs)
+    const fileOps = createFileOperationCommands(paneAccess, dialogs)
 
     // Emit history state to debug window (dev mode only, skip in tests)
     $effect(() => {
@@ -1464,251 +1445,42 @@
 
     /** Activates inline rename on the focused pane's cursor item. */
     export function startRename() {
-        // Check if the volume is read-only before starting rename
-        const volId = getPaneVolumeId(focusedPane)
-        const volumeInfo = getDestinationVolumeInfo(volId, volumes)
-        if (volumeInfo?.isReadOnly) {
-            dialogs.showAlert('Read-only volume', "This is a read-only volume. Renaming isn't possible here.")
-            return
-        }
-
-        const paneRef = getPaneRef(focusedPane)
-        paneRef?.startRename()
+        fileOps.startRename()
     }
 
     /** Cancels any active inline rename on either pane. */
     export function cancelRename() {
-        for (const side of ['left', 'right'] as const) {
-            getPaneRef(side)?.cancelRename()
-        }
+        fileOps.cancelRename()
     }
 
     /** Returns whether inline rename is active on either pane. */
     export function isRenaming(): boolean {
-        return (['left', 'right'] as const).some((side) => {
-            return getPaneRef(side)?.isRenaming()
-        })
+        return fileOps.isRenaming()
     }
 
     /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
     export async function openNewFolderDialog() {
-        const paneRef = getPaneRef(focusedPane)
-        const path = getPanePath(focusedPane)
-        const volumeIdForPane = getPaneVolumeId(focusedPane)
-
-        // Read-only volumes (MTP SD cards in some configurations, etc.) can't accept
-        // new folders. Surface that as an alert up front rather than letting the user
-        // type a name and then hit a backend error. Mirrors `startRename`.
-        const volumeInfo = getDestinationVolumeInfo(volumeIdForPane, volumes)
-        if (volumeInfo?.isReadOnly) {
-            dialogs.showAlert('Read-only volume', "This is a read-only volume. Creating folders isn't possible here.")
-            return
-        }
-
-        const paneListingId = paneRef?.getListingId()
-        if (!paneListingId) {
-            log.warn('openNewFolderDialog: no listingId, bailing')
-            return
-        }
-
-        const initialName = await getInitialFolderName(paneRef, paneListingId, showHiddenFiles, getFileAt)
-
-        dialogs.showNewFolder({
-            currentPath: path,
-            listingId: paneListingId,
-            showHiddenFiles,
-            initialName,
-            volumeId: volumeIdForPane,
-        })
+        await fileOps.openNewFolderDialog()
     }
 
     /** Opens the new file dialog. Pre-fills with the filename under cursor. */
     export async function openNewFileDialog() {
-        const paneRef = getPaneRef(focusedPane)
-        const path = getPanePath(focusedPane)
-        const volumeIdForPane = getPaneVolumeId(focusedPane)
-
-        const volumeInfo = getDestinationVolumeInfo(volumeIdForPane, volumes)
-        if (volumeInfo?.isReadOnly) {
-            dialogs.showAlert('Read-only volume', "This is a read-only volume. Creating files isn't possible here.")
-            return
-        }
-
-        const paneListingId = paneRef?.getListingId()
-        if (!paneListingId) {
-            log.warn('openNewFileDialog: no listingId, bailing')
-            return
-        }
-
-        const initialName = await getInitialFileName(paneRef, paneListingId, showHiddenFiles, getFileAt)
-
-        dialogs.showNewFile({
-            currentPath: path,
-            listingId: paneListingId,
-            showHiddenFiles,
-            initialName,
-            volumeId: volumeIdForPane,
-        })
+        await fileOps.openNewFileDialog()
     }
 
     /** Closes any confirmation dialog (new folder, new file, or transfer) if open (for MCP). */
     export function closeConfirmationDialog() {
-        dialogs.closeConfirmationDialog()
+        fileOps.closeConfirmationDialog()
     }
 
     /** Returns whether any confirmation dialog is currently open. */
     export function isConfirmationDialogOpen(): boolean {
-        return dialogs.isConfirmationDialogOpen()
+        return fileOps.isConfirmationDialogOpen()
     }
 
     /** Opens the file viewer for the file under the cursor. */
     export async function openViewerForCursor() {
-        const paneRef = getPaneRef(focusedPane)
-        const listingId = paneRef?.getListingId()
-        if (!listingId) return
-        const cursorIndex = paneRef?.getCursorIndex()
-        const hasParent = paneRef?.hasParentEntry()
-        const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent ?? false)
-        if (backendIndex === null) return
-
-        const file = await getFileAt(listingId, backendIndex, showHiddenFiles)
-        if (!file || file.isDirectory || file.name === '..') return
-
-        void openFileViewer(file.path)
-    }
-
-    /** Builds a TransferContext from pane state. */
-    function buildTransferContext(pane: 'left' | 'right'): TransferContext {
-        const other = otherPane(pane)
-        const { sortBy, sortOrder } = getPaneSort(pane)
-        return {
-            showHiddenFiles,
-            sourcePath: getPanePath(pane),
-            destPath: getPanePath(other),
-            sourceVolumeId: getPaneVolumeId(pane),
-            destVolumeId: getPaneVolumeId(other),
-            sortColumn: sortBy,
-            sortOrder,
-        }
-    }
-
-    /**
-     * Builds transfer dialog props for a search-results source pane (M8d).
-     * The snapshot view has no backend listing, so the listing-id-driven
-     * builders don't apply; we read the snapshot directly and feed
-     * absolute paths into `buildTransferPropsFromSnapshot`. Returns `null`
-     * when there's no snapshot or nothing under the cursor / selection.
-     *
-     * `isSourceOK: true` per `searchResultsVolumeCapabilities()`: source-side
-     * operations always run against the real underlying files. After a move
-     * completes, `dialog-state::handleTransferComplete` already purges moved
-     * paths from every snapshot via `removeEntryFromAllSnapshots`.
-     */
-    function buildSnapshotTransferProps(
-        operationType: TransferOperationType,
-        sourcePaneRef: FilePaneAPI | undefined,
-        pane: 'left' | 'right',
-    ) {
-        const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-        const SEARCH_RESULTS_PREFIX = 'search-results://'
-        if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
-        const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
-        const snapshot = getSnapshot(snapshotId)
-        if (!snapshot) return null
-
-        const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
-        const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-        const useIndices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
-
-        const sourcePaths: string[] = []
-        const isDirectoryFlags: boolean[] = []
-        for (const idx of useIndices) {
-            // TS doesn't model array bounds (no `noUncheckedIndexedAccess`), so
-            // `snapshot.entries[idx]` is typed as non-undefined. The guard is
-            // still load-bearing at runtime: `selectedIndices` can carry stale
-            // indices after a snapshot mutation (the M8c delete-sync rewrites
-            // the entries array, but in-flight selections may briefly point
-            // past the new end).
-             
-            const entry = snapshot.entries[idx]
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            if (!entry) continue
-            sourcePaths.push(entry.path)
-            isDirectoryFlags.push(entry.isDirectory)
-        }
-        if (sourcePaths.length === 0) return null
-
-        const other = otherPane(pane)
-        const { sortBy, sortOrder } = getPaneSort(pane)
-        return buildTransferPropsFromSnapshot(
-            operationType,
-            sourcePaths,
-            isDirectoryFlags,
-            pane === 'left',
-            getPanePath(other),
-            getPaneVolumeId(other),
-            sortBy,
-            sortOrder,
-        )
-    }
-
-    /** Opens the unified transfer dialog for all volume types (local, MTP, search-results, etc.). */
-    async function openUnifiedTransferDialog(
-        operationType: TransferOperationType,
-        sourcePaneRef: FilePaneAPI | undefined,
-        pane: 'left' | 'right',
-        autoConfirm?: boolean,
-        onConflict?: string,
-    ) {
-        // Search-results pane: the source has no backend listing. Build the
-        // transfer props from the snapshot's selected (or cursor) entries.
-        if (getPaneVolumeId(pane) === 'search-results') {
-            const snapshotProps = buildSnapshotTransferProps(operationType, sourcePaneRef, pane)
-            if (snapshotProps) {
-                if (autoConfirm) {
-                    snapshotProps.autoConfirm = true
-                    snapshotProps.autoConfirmOnConflict = onConflict
-                }
-                dialogs.showTransfer(snapshotProps)
-            }
-            return
-        }
-
-        const listingId = sourcePaneRef?.getListingId()
-        if (!listingId) return
-
-        const hasParent = sourcePaneRef?.hasParentEntry()
-        const selectedIndices = sourcePaneRef?.getSelectedIndices()
-        const hasSelection = selectedIndices && selectedIndices.length > 0
-
-        const context = buildTransferContext(pane)
-        const isLeft = pane === 'left'
-
-        const props = hasSelection
-            ? await buildTransferPropsFromSelection(
-                  operationType,
-                  listingId,
-                  selectedIndices,
-                  hasParent ?? false,
-                  isLeft,
-                  context,
-              )
-            : await buildTransferPropsFromCursor(
-                  operationType,
-                  listingId,
-                  sourcePaneRef,
-                  hasParent ?? false,
-                  isLeft,
-                  context,
-              )
-
-        if (props) {
-            if (autoConfirm) {
-                props.autoConfirm = true
-                props.autoConfirmOnConflict = onConflict
-            }
-            dialogs.showTransfer(props)
-        }
+        await fileOps.openViewerForCursor()
     }
 
     /** Opens the transfer dialog with the current selection info. */
@@ -1717,39 +1489,17 @@
         autoConfirm?: boolean,
         onConflict?: string,
     ) {
-        const sourcePaneRef = getPaneRef(focusedPane)
-        const destVolId = getPaneVolumeId(otherPane(focusedPane))
-
-        // Search-results destination panes can't accept incoming files (the
-        // snapshot is a synthetic view, not a folder). The F-key bar already
-        // disables F5/F6 when the OPPOSITE pane is a snapshot, so this is a
-        // belt-and-braces guard for the shortcut path. M8c shipped the toast
-        // string in `lib/search/capabilities`; reuse it for consistency.
-        if (destVolId === 'search-results') {
-            addToast(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'warn' })
-            return
-        }
-
-        const destVolume = getDestinationVolumeInfo(destVolId, volumes)
-        if (destVolume?.isReadOnly) {
-            dialogs.showAlert(
-                'Read-only device',
-                `"${destVolume.name}" is read-only. You can copy files from it, but not to it.`,
-            )
-            return
-        }
-
-        await openUnifiedTransferDialog(operationType, sourcePaneRef, focusedPane, autoConfirm, onConflict)
+        await fileOps.openTransferDialog(operationType, autoConfirm, onConflict)
     }
 
     /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
     export async function openCopyDialog(autoConfirm?: boolean, onConflict?: string) {
-        await openTransferDialog('copy', autoConfirm, onConflict)
+        await fileOps.openCopyDialog(autoConfirm, onConflict)
     }
 
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
     export async function openMoveDialog(autoConfirm?: boolean, onConflict?: string) {
-        await openTransferDialog('move', autoConfirm, onConflict)
+        await fileOps.openMoveDialog(autoConfirm, onConflict)
     }
 
     /** Copies selected files (or cursor file) to the system clipboard. */
@@ -1767,197 +1517,9 @@
         await clipboardOps.pasteFromClipboard(forceMove)
     }
 
-    /**
-     * Search-results pane delete path (M8c). The focused pane is on the
-     * `search-results://<id>` virtual volume, so there's no backend listing to
-     * fetch entries from; we read the snapshot directly. Today the snapshot
-     * pane doesn't expose a multi-selection of its own, so we delete the
-     * single cursor row. The volume id we report to the dialog is `'root'`:
-     * the actual file lives on the local filesystem, and the existing
-     * permanent-delete / move-to-trash IPC routes through the local path.
-     * `supportsTrash = true` because the underlying file is on a trash-capable
-     * volume (we don't have per-snapshot-row volume detection yet; if the
-     * search ever indexes external read-only volumes we'd need to look that
-     * up per entry).
-     */
-    function openDeleteFromSearchResults(permanent: boolean, autoConfirm?: boolean) {
-        const sourcePaneRef = getPaneRef(focusedPane)
-        const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-        const SEARCH_RESULTS_PREFIX = 'search-results://'
-        if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) {
-            log.warn(
-                'openDeleteFromSearchResults: focused pane volume is search-results but path is not. Bailing.',
-            )
-            return
-        }
-        const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
-        const snapshot = getSnapshot(snapshotId)
-        if (!snapshot) {
-            log.warn('openDeleteFromSearchResults: snapshot {id} not found, bailing', { id: snapshotId })
-            return
-        }
-        const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-        // Cursor might be out of range (clamping is best-effort in the search-
-        // results keyboard path); the cast lets us handle the empty case
-        // explicitly instead of crashing later in `entry.path`.
-        const entry = snapshot.entries[cursorIndex] as
-            | (typeof snapshot.entries)[number]
-            | undefined
-        if (!entry) {
-            log.warn('openDeleteFromSearchResults: no entry at cursor {idx}, bailing', { idx: cursorIndex })
-            return
-        }
-
-        const sourceItems: DeleteSourceItem[] = [
-            {
-                name: entry.name,
-                size: entry.size ?? undefined,
-                isDirectory: entry.isDirectory,
-                isSymlink: false,
-                recursiveSize: undefined,
-                recursiveFileCount: undefined,
-            },
-        ]
-        const sourcePaths = [entry.path]
-
-        const { sortBy, sortOrder } = getPaneSort(focusedPane)
-
-        // Snapshot entries are guaranteed to have parentPath set by the search
-        // backend (`SearchResultEntry::parentPath` is required, see bindings).
-        // The fallback isn't hit in practice, but `'/'` is a safe display
-        // value if the field is ever absent.
-        const sourceFolderPath = entry.parentPath !== '' ? entry.parentPath : '/'
-
-        dialogs.showDeleteConfirmation({
-            sourceItems,
-            sourcePaths,
-            sourceFolderPath,
-            isPermanent: permanent,
-            supportsTrash: true,
-            isFromCursor: true,
-            sortColumn: sortBy,
-            sortOrder,
-            sourceVolumeId: DEFAULT_VOLUME_ID,
-            autoConfirm,
-        })
-    }
-
     /** Opens the delete confirmation dialog for the current selection or cursor item. */
-    // eslint-disable-next-line complexity -- Guard chain: each early-return is an independent precondition; splitting wouldn't add clarity.
     export async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean) {
-        const sourcePaneRef = getPaneRef(focusedPane)
-        const focusedVolId = getPaneVolumeId(focusedPane)
-
-        // Search-results pane: no backend listing exists, so the listingId-driven
-        // path can't fetch entries. Build the dialog directly from the snapshot's
-        // cursor entry. Per M8c, source-side delete is allowed (`isSourceOK: true`):
-        // the underlying file IS real, the confirmation dialog shows the real path,
-        // and on success the entry is also removed from every other snapshot that
-        // contained it (see `dialog-state::handleTransferComplete`).
-        if (focusedVolId === 'search-results') {
-            openDeleteFromSearchResults(permanent, autoConfirm)
-            return
-        }
-
-        const listingId = sourcePaneRef?.getListingId()
-        if (!listingId) {
-            log.warn('openDeleteDialog: no listingId, bailing')
-            return
-        }
-
-        // Read-only volumes can't accept deletes. Surface as an alert before any
-        // dialog opens. Mirrors `startRename` and `openNewFolderDialog`.
-        const sourceVolumeIdForCheck = getPaneVolumeId(focusedPane)
-        const sourceVolumeInfo = getDestinationVolumeInfo(sourceVolumeIdForCheck, volumes)
-        if (sourceVolumeInfo?.isReadOnly) {
-            dialogs.showAlert('Read-only volume', "This is a read-only volume. Deleting files isn't possible here.")
-            return
-        }
-
-        const hasParent = sourcePaneRef?.hasParentEntry()
-        const selectedIndices = sourcePaneRef?.getSelectedIndices()
-        const hasSelection = selectedIndices && selectedIndices.length > 0
-
-        const backendIndices = hasSelection
-            ? toBackendIndices(selectedIndices, hasParent ?? false)
-            : (() => {
-                  const cursorIndex = sourcePaneRef?.getCursorIndex()
-                  const idx = toBackendCursorIndex(cursorIndex ?? -1, hasParent ?? false)
-                  return idx !== null ? [idx] : []
-              })()
-        if (backendIndices.length === 0) {
-            log.warn(
-                'openDeleteDialog: no backendIndices (hasSelection={hasSelection}, cursorIndex={cursorIndex}, hasParent={hasParent}), bailing',
-                {
-                    hasSelection,
-                    cursorIndex: sourcePaneRef?.getCursorIndex() ?? -1,
-                    hasParent: hasParent ?? false,
-                },
-            )
-            return
-        }
-
-        // Fetch full FileEntry data in a single batch IPC call
-        let entries
-        try {
-            entries = await getFilesAtIndices(listingId, backendIndices, showHiddenFiles)
-        } catch (error) {
-            log.warn('openDeleteDialog: getFilesAtIndices threw, bailing. error={error}, indices={indices}', {
-                error: error instanceof Error ? error.message : String(error),
-                indices: backendIndices.join(','),
-            })
-            return
-        }
-        const validEntries = entries.filter((e) => e.name !== '..')
-        if (validEntries.length === 0) {
-            log.warn(
-                'openDeleteDialog: no validEntries after getFilesAtIndices (got {count} {entriesNoun}, all filtered as ".." parent), bailing. backendIndices={indices}',
-                {
-                    count: entries.length,
-                    entriesNoun: pluralize(entries.length, 'entry', 'entries'),
-                    indices: backendIndices.join(','),
-                },
-            )
-            return
-        }
-        log.debug(
-            'openDeleteDialog: opening delete confirmation. {count} {entriesNoun}, sourceVolId={volId}',
-            {
-                count: validEntries.length,
-                entriesNoun: pluralize(validEntries.length, 'valid entry', 'valid entries'),
-                volId: getPaneVolumeId(focusedPane),
-            },
-        )
-
-        const sourceItems: DeleteSourceItem[] = validEntries.map((e) => ({
-            name: e.name,
-            size: e.size,
-            isDirectory: e.isDirectory,
-            isSymlink: e.isSymlink,
-            recursiveSize: e.recursiveSize,
-            recursiveFileCount: e.recursiveFileCount,
-        }))
-        const sourcePaths = validEntries.map((e) => e.path)
-
-        // Look up supportsTrash from the source volume
-        const sourceVolId = getPaneVolumeId(focusedPane)
-        const sourceVolume = volumes.find((v) => v.id === sourceVolId)
-        const supportsTrash = sourceVolume?.supportsTrash !== false
-
-        const { sortBy, sortOrder } = getPaneSort(focusedPane)
-
-        dialogs.showDeleteConfirmation({
-            sourceItems,
-            sourcePaths,
-            sourceFolderPath: getPanePath(focusedPane),
-            isPermanent: permanent,
-            supportsTrash,
-            isFromCursor: !hasSelection,
-            sortColumn: sortBy,
-            sortOrder,
-            sourceVolumeId: sourceVolId,
-            autoConfirm,
-        })
+        await fileOps.openDeleteDialog(permanent, autoConfirm)
     }
 
     // Focus the container after initialization so keyboard events work

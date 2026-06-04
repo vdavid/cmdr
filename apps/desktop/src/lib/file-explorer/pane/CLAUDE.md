@@ -47,6 +47,7 @@ list).
 | `types.ts`                    | `FilePaneAPI`, `SwapState`, `ListViewAPI`, `*BrowserAPI`, `NetworkCursorEntry`   |
 | `pane-access.ts`              | `PaneAccess`: live-reference read API over pane nav + chrome state for factories |
 | `clipboard-operations.ts`     | System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)     |
+| `file-operation-commands.ts`  | Rename / new-folder / new-file / viewer / transfer / delete openers factory      |
 | `initialization.ts`           | Load persisted tabs + status + settings; resolve volumes; apply E2E overrides    |
 | `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`          |
 | `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot variant) from a focused pane       |
