@@ -122,14 +122,21 @@ spawned detached task. This is safe because the stream always lives in an async 
 - `in_memory_test.rs`: unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
 - `local_posix_test.rs`: real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
 - `mtp.rs` inline tests: path conversion and capability flags (no device needed)
-- `smb.rs` inline tests: type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo, Error→VolumeError), connection state transitions, path conversion, capability flags (no server needed)
-- **Docker SMB integration tests**: `smb.rs` contains `#[ignore]` tests that require Docker SMB containers (start with
-  `apps/desktop/test/smb-servers/start.sh`). Connect via `smb2::testing::guest_port()` (10480, guest/no-auth),
-  `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()` (10488), `slow_port()` (10493, 200ms latency). Use
-  these for testing real SMB protocol behavior (streaming, error paths, network edge cases). See
-  `apps/desktop/test/smb-servers/README.md` for the full container list and env var overrides.
-- **SMB soak test** (`smb_soak_copy_loop` in `smb.rs`): Repeats the SMB→Local copy pipeline for hundreds to thousands
-  of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches accumulating bugs
+- `smb_test.rs`: SMB unit tests (no server needed): type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo,
+  Error→VolumeError), connection state transitions, path conversion, capability flags, and the channel-backed
+  `SmbReadStream` consumer. These run by default.
+- The SMB test suites live in sibling files (`smb_test.rs`, `smb_integration_test.rs`, `smb_soak_test.rs`) wired as
+  `#[cfg(test)] #[path = "..."] mod`s of `smb` (so `super::*` still reaches the backend's private items). Cross-suite
+  helpers (`make_docker_volume`, `test_dir_name`, `ensure_clean`, `hash_bytes`, `hash_volume_file`, `TEST_PREFIX_ROOT`,
+  `cleanup_test_prefix`) live in `smb_test_support.rs` as `pub(super)` items.
+- **Docker SMB integration tests** (`smb_integration_test.rs`): `#[ignore]` tests that require Docker SMB containers
+  (start with `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`.
+  Connect via `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`),
+  `readonly_port()` (10488), `slow_port()` (10493, 200ms latency). Use these for testing real SMB protocol behavior
+  (streaming, error paths, network edge cases). See `apps/desktop/test/smb-servers/README.md` for the full container
+  list and env var overrides.
+- **SMB soak test** (`smb_soak_copy_loop` in `smb_soak_test.rs`): Repeats the SMB→Local copy pipeline for hundreds to
+  thousands of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches accumulating bugs
   the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown). Default mode:
   `CMDR_SOAK_ITERATIONS=100` (≈5 s against Docker). Long mode: `CMDR_SOAK_DURATION_SECS=1800` (30 min, via
   `./scripts/soak-smb.sh`). CI has a `workflow_dispatch`-only job in `slow-checks.yml`.
