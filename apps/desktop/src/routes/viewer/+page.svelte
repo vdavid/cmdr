@@ -657,13 +657,21 @@
             await tick()
             scroll.containerRef?.focus()
 
-            requestAnimationFrame(() => {
+            // `setTimeout(0)`, NOT `requestAnimationFrame`: macOS WKWebView
+            // throttles (or fully starves) rAF in windows that opened without
+            // focus, and E2E opens viewer windows with `focus: false`
+            // (`open-viewer.ts`). An rAF here left `data-window-ready` stuck
+            // on "loading" whenever another window had focus, timing out every
+            // viewer E2E spec while a human used the machine. Third sighting
+            // of this trap (settings close, viewer close, now readiness) —
+            // see docs/testing.md § "rAF in unfocused windows".
+            setTimeout(() => {
                 windowReady = true
                 log.debug('Window ready, closeRequested={closeRequested}', { closeRequested })
                 if (closeRequested) {
                     closeWindow()
                 }
-            })
+            }, 0)
         }
     })
 

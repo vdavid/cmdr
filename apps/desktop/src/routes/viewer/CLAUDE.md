@@ -187,4 +187,7 @@ either duplicate work or risk a different result.
   commit `46481b29` for the original post-mortem. The defer used to be two nested `requestAnimationFrame`s; that flaked
   on macOS E2E because WKWebView throttles rAF for windows that opened without focus, pushing the deferred close past
   the test's confirmation budget. `setTimeout(0)` achieves the same "next event-loop tick" guarantee without the
-  throttling pitfall.
+  throttling pitfall. **The same trap applies to `windowReady`** (the `data-window-ready` attribute every viewer E2E
+  spec waits on): it's set via `setTimeout(0)` after session open, NOT rAF — an rAF there starved in unfocused E2E
+  windows and timed out the whole viewer suite whenever a human was using the machine. Canonical rule + recurrence
+  history: `docs/testing.md` § "rAF in unfocused windows".

@@ -155,6 +155,31 @@ Use typed enum variants, not `err.message.includes('not found')`. Enforced by `c
 
 Cargo / Vite / `beforeBuildCommand` already cache. Wrapping risks shipping stale binaries. See AGENTS.md.
 
+### ❌ `requestAnimationFrame` in unfocused windows (readiness markers, deferred closes)
+
+**The rule:** never gate anything a test (or another window) waits on behind `requestAnimationFrame` in a window that
+can open without focus. Use `setTimeout(0)` for "defer to the next event-loop tick".
+
+**Why:** macOS WKWebView throttles — and under occlusion fully starves — rAF in windows that aren't focused. E2E
+deliberately opens the viewer and settings windows with `focus: false` (so test runs don't steal the developer's
+keyboard), which means an rAF-gated signal in those windows fires late or never whenever ANY other window has focus. The
+failure looks like environment flake: specs time out only under host load or while a human uses the machine, membership
+shifts run to run, Linux (Xvfb, no occlusion) stays green, and reruns "fix" it.
+
+**Recurrences (why this entry exists):**
+
+1. Settings window deferred close — two nested rAFs pushed the close past the E2E budget
+   (`routes/settings/+page.svelte`, see `lib/settings/CLAUDE.md` § Escape-close gotcha).
+2. Viewer window deferred close — same shape (`routes/viewer/+page.svelte::closeWindow`).
+3. Viewer `windowReady` / `data-window-ready` marker — an rAF kept the attribute on `"loading"` in unfocused E2E
+   windows, timing out every viewer spec whenever the developer was at the keyboard. Cost a full evening of "load flake"
+   forensics before the pattern was recognized as this same bug, third time around.
+
+**How to spot the next one:** symptoms are E2E timeouts on `waitForSelector`/window-ready markers that correlate with
+human presence at the machine and vanish on idle hosts. Grep the involved window's code for `requestAnimationFrame`
+before blaming load. Legitimate rAF uses (animation, paint-coupled measurement like the drag-autoscroll loop) are fine —
+those want frames; readiness/lifecycle signals don't.
+
 ## When you add X, also add Y
 
 | New thing                                              | Required tests                                                                                                                                                                   |

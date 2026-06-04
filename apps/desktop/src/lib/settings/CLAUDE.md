@@ -305,3 +305,7 @@ event-loop tick, which is all the Linux fix needs.
 
 When adding a new self-closing webview (escape, close button, etc.), defer the `close()` call the same way. See commit
 `46481b29` for the original bug-fix and the subsequent settings-escape-flake hunt for the macOS-throttle follow-up.
+
+The rAF-throttling half of this gotcha is a repo-wide rule with its own recurrence history (three sightings: settings
+close, viewer close, viewer readiness marker): `docs/testing.md` § "rAF in unfocused windows". Check there before gating
+anything test-observable on `requestAnimationFrame`.
