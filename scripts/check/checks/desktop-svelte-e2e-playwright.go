@@ -290,6 +290,13 @@ func runShard(desktopDir string, s shardSpec) shardResult {
 	cmd.Dir = desktopDir
 	cmd.Env = append(os.Environ(),
 		"CMDR_E2E_START_PATH="+s.fixtureDir,
+		// Specs that assert on persisted state (for example
+		// viewer-wordwrap-persistence.spec.ts) read the instance's
+		// settings.json directly, so the test process needs the same
+		// per-shard data dir the app launch below gets. Without it, the
+		// spec's module-scope guard throws during collection and kills the
+		// whole shard before any test runs.
+		"CMDR_DATA_DIR="+s.dataDir,
 		"CMDR_MCP_PORT="+strconv.Itoa(s.mcpPort),
 		"CMDR_PLAYWRIGHT_SOCKET="+s.socketPath,
 		"CMDR_E2E_SHARD_KIND="+s.kind,

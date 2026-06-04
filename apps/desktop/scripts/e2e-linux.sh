@@ -452,6 +452,14 @@ else
             # diagnostic logging) gate on this. See docs/testing.md.
             export CMDR_E2E_MODE=1
 
+            # Isolated data dir, shared by the app (writes settings.json there
+            # via the CMDR_DATA_DIR precedence) and the test runner (specs that
+            # assert on persisted state, for example
+            # viewer-wordwrap-persistence.spec.ts, read the same path). Without
+            # it, that spec throws at collection time and no test runs at all.
+            export CMDR_DATA_DIR="/tmp/cmdr-e2e-data"
+            mkdir -p "$CMDR_DATA_DIR"
+
             # Create fixtures via the shared helper
             export CMDR_E2E_START_PATH
             CMDR_E2E_START_PATH=$(npx tsx -e "import { createFixtures } from \"./test/e2e-shared/fixtures.js\"; console.log(createFixtures())" | tail -1)
