@@ -16,7 +16,6 @@
         getDefaultVolumeId,
         resolvePathVolume,
         resortListing,
-        DEFAULT_VOLUME_ID,
         type UnlistenFn,
         updateFocusedPane,
         updatePaneTabs,
@@ -51,7 +50,6 @@
     } from '../navigation/navigation-history'
     import TabBar from '../tabs/TabBar.svelte'
     import {
-        createTabManager,
         getActiveTab,
         getAllTabs,
         getTabCount,
@@ -67,7 +65,6 @@
     } from '../tabs/tab-state-manager.svelte'
     import type { TabState, TabId } from '../tabs/tab-types'
     import {
-        createInitialTabState,
         saveTabsForPane,
         handleTabClose as tabOpsHandleTabClose,
         handleTabMiddleClick as tabOpsHandleTabMiddleClick,
@@ -98,6 +95,7 @@
     import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
     import type { TransferOperationType } from '../types'
     import { createDialogState } from './dialog-state.svelte'
+    import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
     import { createClipboardOperations } from './clipboard-operations'
     import { createFileOperationCommands } from './file-operation-commands'
@@ -132,8 +130,12 @@
         void setReopenClosedTabEnabled(enabled)
     }
 
-    let leftTabMgr = $state<TabManager>(createTabManager(createInitialTabState('~', DEFAULT_VOLUME_ID)))
-    let rightTabMgr = $state<TabManager>(createTabManager(createInitialTabState('~', DEFAULT_VOLUME_ID)))
+    // Live tab-manager holders live in the explorer store now. These `$derived`
+    // aliases read the live `$state<TabManager>` reference through the store getter,
+    // so every reader below keeps tracking both holder swaps (`setTabMgr`) and
+    // in-place manager mutations.
+    const leftTabMgr = $derived(explorerState.getTabMgr('left'))
+    const rightTabMgr = $derived(explorerState.getTabMgr('right'))
 
     // Derived active tab state: these replace the old scalar variables
     const leftPath = $derived(getActiveTab(leftTabMgr).path)
@@ -169,12 +171,15 @@
 
     const { onFocusedVolumeChange, onCommand }: Props = $props()
 
-    let focusedPane = $state<'left' | 'right'>('left')
-    let showHiddenFiles = $state(true)
+    // Focus, hidden-files, and the layout split live in the explorer store now.
+    // These `$derived` aliases read them reactively; writes go through the store's
+    // named mutators (`setFocusedPane` / `setShowHiddenFiles` / `setLeftPaneWidthPercent`).
+    const focusedPane = $derived(explorerState.getFocusedPane())
+    const showHiddenFiles = $derived(explorerState.getShowHiddenFiles())
+    const leftPaneWidthPercent = $derived(explorerState.getLeftPaneWidthPercent())
     // Volumes come from the shared store (pushed by backend via `volumes-changed` event)
     const volumes = $derived(getStoreVolumes())
     let initialized = $state(false)
-    let leftPaneWidthPercent = $state(50)
 
     let containerElement: HTMLDivElement | undefined = $state()
     const paneRefs = $state<Record<'left' | 'right', FilePaneAPI | undefined>>({ left: undefined, right: undefined })
@@ -273,7 +278,7 @@
     }
 
     function getTabMgr(pane: 'left' | 'right'): TabManager {
-        return pane === 'left' ? leftTabMgr : rightTabMgr
+        return explorerState.getTabMgr(pane)
     }
 
     function setPanePath(pane: 'left' | 'right', path: string) {
@@ -653,7 +658,7 @@
                 mgr.activeTabId = newTab.id
 
                 saveTabsForPaneSide(pane)
-                focusedPane = pane
+                explorerState.setFocusedPane(pane)
                 saveAppStatus({
                     [paneKey(pane, 'volumeId')]: volumeId,
                     [paneKey(pane, 'path')]: targetPath,
@@ -669,7 +674,7 @@
         setPaneVolumeId(pane, volumeId)
         setPanePath(pane, targetPath)
         setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId, path: targetPath }))
-        focusedPane = pane
+        explorerState.setFocusedPane(pane)
 
         saveAppStatus({
             [paneKey(pane, 'volumeId')]: volumeId,
@@ -710,7 +715,7 @@
             // A buffer that the user can no longer see (because they switched panes)
             // shouldn't keep matching.
             getPaneRef(focusedPane)?.clearJumpState()
-            focusedPane = pane
+            explorerState.setFocusedPane(pane)
             saveAppStatus({ focusedPane: pane })
             void updateFocusedPane(pane)
             syncPinTabMenu()
@@ -947,11 +952,11 @@
 
         // Load persisted state, resolve volumes, and create tab managers
         const persistedState = await loadPersistedState()
-        leftTabMgr = persistedState.leftTabMgr
-        rightTabMgr = persistedState.rightTabMgr
-        focusedPane = persistedState.focusedPane
-        showHiddenFiles = persistedState.showHiddenFiles
-        leftPaneWidthPercent = persistedState.leftPaneWidthPercent
+        explorerState.setTabMgr('left', persistedState.leftTabMgr)
+        explorerState.setTabMgr('right', persistedState.rightTabMgr)
+        explorerState.setFocusedPane(persistedState.focusedPane)
+        explorerState.setShowHiddenFiles(persistedState.showHiddenFiles)
+        explorerState.setLeftPaneWidthPercent(persistedState.leftPaneWidthPercent)
 
         initialized = true
         syncPinTabMenu()
@@ -970,7 +975,7 @@
         // Subscribe to settings changes from the backend menu
         unlistenSettings = await subscribeToSettingsChanges((newSettings) => {
             if (newSettings.showHiddenFiles !== undefined) {
-                showHiddenFiles = newSettings.showHiddenFiles
+                explorerState.setShowHiddenFiles(newSettings.showHiddenFiles)
                 // Persist to settings store
                 void saveSettings({ showHiddenFiles: newSettings.showHiddenFiles })
             }
@@ -1127,7 +1132,7 @@
     })
 
     function handlePaneResize(widthPercent: number) {
-        leftPaneWidthPercent = widthPercent
+        explorerState.setLeftPaneWidthPercent(widthPercent)
     }
 
     function handlePaneResizeEnd() {
@@ -1135,7 +1140,7 @@
     }
 
     function handlePaneResizeReset() {
-        leftPaneWidthPercent = 50
+        explorerState.setLeftPaneWidthPercent(50)
         saveAppStatus({ leftPaneWidthPercent: 50 })
     }
 
@@ -1317,7 +1322,7 @@
         getPaneRef('left')?.closeVolumeChooser()
         getPaneRef('right')?.closeVolumeChooser()
         const newFocus = otherPane(focusedPane)
-        focusedPane = newFocus
+        explorerState.setFocusedPane(newFocus)
         saveAppStatus({ focusedPane: newFocus })
         void updateFocusedPane(newFocus)
         pushViewMenuState()
@@ -1407,9 +1412,10 @@
      * @returns The new `showHiddenFiles` state.
      */
     export function toggleHiddenFiles(): boolean {
-        showHiddenFiles = !showHiddenFiles
-        void saveSettings({ showHiddenFiles })
-        return showHiddenFiles
+        explorerState.toggleHiddenFiles()
+        const next = showHiddenFiles
+        void saveSettings({ showHiddenFiles: next })
+        return next
     }
 
     /**
@@ -1646,7 +1652,7 @@
      * Used by MCP move_cursor tool.
      */
     export async function moveCursor(pane: 'left' | 'right', to: number | string) {
-        focusedPane = pane
+        explorerState.setFocusedPane(pane)
         const paneRef = getPaneRef(pane)
         if (!paneRef) return
 
@@ -1786,7 +1792,7 @@
     /** Restore focus to a pane after a target-pane state change so the user keeps working where they were. */
     function restoreFocus(pane: 'left' | 'right'): void {
         if (focusedPane !== pane) {
-            focusedPane = pane
+            explorerState.setFocusedPane(pane)
             saveAppStatus({ focusedPane: pane })
         }
     }
@@ -1833,7 +1839,7 @@
     }
 
     function handleNewTab(pane: 'left' | 'right') {
-        tabOpsHandleNewTab(pane, focusedPane, (p) => (focusedPane = p), newTab)
+        tabOpsHandleNewTab(pane, focusedPane, (p) => { explorerState.setFocusedPane(p); }, newTab)
     }
 
     function handleTabContextMenu(pane: 'left' | 'right', tabId: TabId, event: MouseEvent) {
