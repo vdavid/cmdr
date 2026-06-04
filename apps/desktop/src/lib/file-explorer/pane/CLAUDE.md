@@ -30,15 +30,16 @@ list).
 
 ### Reactive state (`*.svelte.ts`)
 
-| File                           | Purpose                                                                        |
-| ------------------------------ | ------------------------------------------------------------------------------ |
-| `dialog-state.svelte.ts`       | Dialog props + handlers (transfer, delete, mkdir, alert, error); factory       |
-| `selection-state.svelte.ts`    | `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers     |
-| `rename-flow.svelte.ts`        | Rename validation, conflict + extension dialogs, save / cancel                 |
-| `type-to-jump-state.svelte.ts` | Buffer + indicator + reset/hide timers + generation counter (race protection)  |
-| `volume-tint.svelte.ts`        | `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier   |
-| `pane-mcp-sync.svelte.ts`      | Mirrors pane state into the MCP `PaneState` store; skips network/search panes  |
-| `listing-diff-sync.svelte.ts`  | File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core) |
+| File                             | Purpose                                                                                 |
+| -------------------------------- | --------------------------------------------------------------------------------------- |
+| `dialog-state.svelte.ts`         | Dialog props + handlers (transfer, delete, mkdir, alert, error); factory                |
+| `selection-state.svelte.ts`      | `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers              |
+| `rename-flow.svelte.ts`          | Rename validation, conflict + extension dialogs, save / cancel                          |
+| `type-to-jump-state.svelte.ts`   | Buffer + indicator + reset/hide timers + generation counter (race protection)           |
+| `volume-tint.svelte.ts`          | `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier            |
+| `pane-mcp-sync.svelte.ts`        | Mirrors pane state into the MCP `PaneState` store; skips network/search panes           |
+| `listing-diff-sync.svelte.ts`    | File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core)          |
+| `drag-drop-controller.svelte.ts` | Native drag band: drop-target state, drag handlers, 3 Tauri listeners, highlight effect |
 
 ### Pure utilities (`*.ts`)
 
