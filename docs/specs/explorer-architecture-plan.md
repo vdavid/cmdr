@@ -166,7 +166,7 @@ Binding constraints:
   discriminated union (`{ status: 'started', settled: Promise<…> } | { status: 'refused', reason: NavigateRefusal }`) so
   the refusal path survives byte-identically without re-introducing the stringly-typed channel. _(Landmine L12.)_ **The
   refusal strings are themselves contract:** the MCP adapter forwards them verbatim as the `mcp-response` error payload,
-  and agents/users read them ("Pane is on the Network volume. Use select_volume…"). `NavigateRefusal` carries a
+  and agents/users read them ("Pane is on the Network volume. Use `select_volume`…"). `NavigateRefusal` carries a
   `message` field holding the exact current strings (or the adapter maps reason → string); a regression test pins the
   texts. This is also _why_ `mcp-response` stays in the adapter (Open Q2).
 - **One transaction token subsumes all three staleness mechanisms:** the `listing-complete` path-prefix forensics in
