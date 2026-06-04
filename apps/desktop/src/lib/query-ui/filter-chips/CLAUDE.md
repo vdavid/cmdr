@@ -8,13 +8,17 @@ factory.
 
 ## Files
 
-| File                        | Purpose                                                                                                                                                              |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FilterChips.svelte`        | Filter chip strip (Pattern + Size + Modified + Search in) plus Add filter dropdown. Each opens a popover. Visibility flags: `scopeChipVisible`, `patternChipVisible` |
-| `FilterChip.svelte`         | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded                                                                                    |
-| `FilterChipPopover.svelte`  | Generic popover: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog                                                                          |
-| `filter-chip-state.ts`      | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip`, `derivePatternChip` (testable in isolation)                                                     |
-| `filter-popover-helpers.ts` | Pure: `SIZE_PRESETS`, `byteUnitLabel`, `kiloByteLabel`, `isSizeRangeDisabled`, `showsUpperBound`, `isDateRangeDisabled`, `showsDateUpperBound`, `buildDatePresets`   |
+| File                        | Purpose                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FilterChips.svelte`        | Filter chip strip (Pattern + Size + Modified + Search in) plus Add filter dropdown. Owns the open-chip state and the three keyboard routers. Visibility flags: `scopeChipVisible`, `patternChipVisible`                                                                                  |
+| `SizeFilterPopover.svelte`  | Size popover body: the comparator + value + unit list grid, the lower/upper custom-input flags, and the `pickSize*` auto-promote handlers                                                                                                                                                |
+| `DateFilterPopover.svelte`  | Modified popover body: the comparator + dynamic-preset grid, the `buildDatePresets`-derived list + first-match selection keys, custom-input flags, `pickDate*` handlers                                                                                                                  |
+| `ScopeFilterPopover.svelte` | Search-in popover body: scope textarea, "Hide boring folders" / "Case-sensitive" toggles, and the ⌥C / ⌥V footer buttons                                                                                                                                                                 |
+| `filter-popover.css`        | Shared global styles for the popover bodies: `.popover-section`, `.popover-label`, the `.list-grid` / `.list-cell` / `.list-col` grid, and `.popover-input`. Imported by all three popover components (Svelte `<style>` is component-scoped, so shared classes need a global stylesheet) |
+| `FilterChip.svelte`         | Single chip: default/configured states, `×` clear, Backspace clear, aria-expanded                                                                                                                                                                                                        |
+| `FilterChipPopover.svelte`  | Generic popover shell: frosted-glass, auto-flip, focus trap, Esc closes without disrupting dialog. Wrapped by each `*FilterPopover` body and used directly for the Add filter menu                                                                                                       |
+| `filter-chip-state.ts`      | Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip`, `derivePatternChip` (testable in isolation)                                                                                                                                                                         |
+| `filter-popover-helpers.ts` | Pure: `SIZE_PRESETS`, `byteUnitLabel`, `kiloByteLabel`, `isSizeRangeDisabled`, `showsUpperBound`, `isDateRangeDisabled`, `showsDateUpperBound`, `buildDatePresets`                                                                                                                       |
 
 Companion tests (colocated):
 
@@ -69,10 +73,12 @@ in `FilterChips.svelte.test.ts`.
 
 ## Grid-style popovers
 
-The Size and Modified popovers render as a multi-column list selector. Tested via `filter-popover-helpers.test.ts` and
-`FilterChips.svelte.test.ts`.
+The Size and Modified popovers render as a multi-column list selector. Their bodies live in `SizeFilterPopover.svelte`
+and `DateFilterPopover.svelte`; the shared grid CSS lives in `filter-popover.css`. Tested via
+`filter-popover-helpers.test.ts` and `FilterChips.svelte.test.ts` (which mounts `FilterChips` and drives the real
+popover children).
 
-**Size popover** (`FilterChips.svelte`):
+**Size popover** (`SizeFilterPopover.svelte`):
 
 - Col 1: `any`, `≥`, `≤`, `between` (one selected at a time).
 - Col 2: `0`, `1`, `5`, `10`, `20`, `50`, `100`, `200`, `500`, `Custom…`. Disabled when col 1 = `any`. Selecting
@@ -81,7 +87,7 @@ The Size and Modified popovers render as a multi-column list selector. Tested vi
   `appearance.fileSizeFormat` (SI → `kB`, binary → `KB`). `MB` and `GB` are constant.
 - When col 1 = `between`: cols 4 + 5 mirror cols 2 + 3 for the upper bound.
 
-**Modified popover** (same component):
+**Modified popover** (`DateFilterPopover.svelte`):
 
 - Col 1: `any`, `after`, `before`, `between`.
 - Col 2: presets `today`, `yesterday`, `this week`, `last week`, `this month`, `last month`, `this year`, `Custom…`
@@ -107,9 +113,9 @@ lives in `SearchDialog.svelte::matchKey` for the mode-chip ⌥A / ⌥F / ⌥R sh
 
 ## Chip-side behavior
 
-- `FilterChips.svelte` keeps `dateIsCustomLower` / `dateIsCustomUpper` in sync via an `$effect` that flips them OFF when
-  `dateValue` matches a preset (mirrors the size flow). The Modified popover never shows both a preset AND Custom as
-  selected.
+- `DateFilterPopover.svelte` keeps `dateIsCustomLower` / `dateIsCustomUpper` in sync via an `$effect` that flips them
+  OFF when `dateValue` matches a preset (mirrors the size flow in `SizeFilterPopover.svelte`). The Modified popover
+  never shows both a preset AND Custom as selected.
 - A Modified preset cell lights up only when its `key` matches `selectedDateLowerKey` / `selectedDateUpperKey` (the key
   of the FIRST preset whose `resolved` date equals the bound), NOT a bare `dateValue === preset.resolved` compare. Two
   presets can resolve to the same ISO date (on a Sunday with a Sunday-first locale, "today" and "this Sunday" both land

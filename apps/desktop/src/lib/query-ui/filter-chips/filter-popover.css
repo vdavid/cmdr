@@ -1,0 +1,154 @@
+/**
+ * Shared filter-popover styles.
+ *
+ * The Size and Modified popovers (`SizeFilterPopover.svelte`, `DateFilterPopover.svelte`) render
+ * the same multi-column list-style grid, so the grid classes live here rather than duplicated
+ * across both. The Scope popover (`ScopeFilterPopover.svelte`) shares only the section + label
+ * primitives. Imported globally from each popover's `<script>` via `import './filter-popover.css'`
+ * (Svelte `<style>` blocks are component-scoped and can't reach sibling components' markup, so a
+ * shared global stylesheet is the right tool here, not a `FilterGridPopover` abstraction).
+ *
+ * All classes are used by at least one of the three popover components; the `css-unused` check
+ * matches definitions and usages globally across the app, so cross-file usage is fine.
+ */
+
+/* ===== Popover contents (shared by all three popovers) ===== */
+
+.popover-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.popover-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+/* ===== List-style grid popover (Size + Modified) ===== */
+
+.size-grid-section {
+  min-width: 320px;
+}
+
+/* Auto-sized columns so each `Custom…` text width drives the col width and
+   the upper bound (rendered conditionally) inherits the same widths via
+   the parent grid. Gap pulls the columns visually apart so the eye reads
+   them as separate axes. */
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: var(--spacing-sm);
+}
+
+.list-grid.has-upper {
+  grid-template-columns: repeat(5, auto);
+}
+
+.date-grid {
+  grid-template-columns: repeat(2, auto);
+}
+
+.date-grid.has-upper {
+  grid-template-columns: repeat(3, auto);
+}
+
+.list-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxs);
+  min-width: 0;
+}
+
+.list-cell {
+  display: block;
+  text-align: left;
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  line-height: 1.3;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.list-cell:not(:disabled):hover {
+  background: var(--color-bg-tertiary);
+}
+
+.list-cell.is-selected {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.list-cell:not(:disabled):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
+.list-cell:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Cells in the value / unit columns stay clickable while the comparator is
+   `any`. The dimmed look mirrors `:disabled` but the cell is still a real
+   button: clicking promotes the comparator and applies the value. */
+.list-cell.is-disabled-look {
+  opacity: 0.5;
+}
+
+.list-cell.is-disabled-look:not(.is-selected):hover {
+  background: var(--color-bg-tertiary);
+  opacity: 0.7;
+}
+
+/* The Custom cell holds the inline input. The cell itself stays sized for
+   the longest preset label so the column doesn't reflow when Custom expands;
+   the input fills the remaining cell width. */
+.list-cell.list-cell-custom {
+  /* Reserve enough vertical room for the inner input. */
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+}
+
+.list-cell.list-cell-custom .custom-input-inline {
+  font-size: var(--font-size-sm);
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--color-text-primary);
+  width: 100%;
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  padding: 0;
+  line-height: 1.3;
+}
+
+/* Free-form number / date input used under each "Custom…" cell in the
+   Size + Modified popovers. The list-style grid is the primary surface;
+   these are the escape hatches. */
+.popover-input {
+  font-size: var(--font-size-sm);
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.popover-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
