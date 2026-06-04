@@ -30,6 +30,7 @@ import globals from 'globals'
 import noIsolatedTests from './eslint-plugins/no-isolated-tests.js'
 import noErrorStringMatch from './eslint-plugins/no-error-string-match.js'
 import noRawTauriInvoke from './eslint-plugins/no-raw-tauri-invoke.js'
+import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 
 /* global process */
@@ -222,18 +223,22 @@ export default tseslint.config(
     // the Rust-side `error-string-match` check in `scripts/check/checks/`.
     // Raw `invoke('name', ...)` is banned outside `lib/ipc/` for the same reason:
     // command names should be type-checked, not magic strings.
+    // Assigning to the explorer store's surface is banned outside the store
+    // module: state changes go through its named mutators (invariant A2).
     files: ['src/**/*.{ts,svelte.ts,svelte}', 'src/**/*.test.ts'],
     plugins: {
       cmdr: {
         rules: {
           'no-error-string-match': noErrorStringMatch,
           'no-raw-tauri-invoke': noRawTauriInvoke,
+          'no-explorer-state-writes': noExplorerStateWrites,
         },
       },
     },
     rules: {
       'cmdr/no-error-string-match': 'error',
       'cmdr/no-raw-tauri-invoke': 'error',
+      'cmdr/no-explorer-state-writes': 'error',
     },
   },
   {

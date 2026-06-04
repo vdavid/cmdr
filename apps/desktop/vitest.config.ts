@@ -6,7 +6,12 @@ import path from 'path'
 export default defineConfig({
   plugins: [Icons({ compiler: 'svelte' }), svelte()],
   test: {
-    include: ['src/**/*.test.ts', 'scripts/**/*.test.js', 'test/e2e-shared/**/*.test.ts'],
+    include: [
+      'src/**/*.test.ts',
+      'scripts/**/*.test.js',
+      'eslint-plugins/**/*.test.js',
+      'test/e2e-shared/**/*.test.ts',
+    ],
     // happy-dom over jsdom: its per-file DOM-environment setup is roughly half
     // the cost (the dominant phase for our ~3300 tests), ~22% faster on a plain
     // run. All tests pass under it. Caveat: happy-dom implements a *subset* of

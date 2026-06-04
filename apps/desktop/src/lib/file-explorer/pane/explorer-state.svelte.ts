@@ -25,8 +25,8 @@
  * State is module-private: `createExplorerState()` closes over `$state` locals
  * and exposes only getters and one named mutator per field. There is no exported
  * writable surface — callers can't assign a field, only call a mutator. The
- * `cmdr/no-explorer-state-writes` lint rule (added in M5) makes that a hard wall;
- * until then it's convention.
+ * `cmdr/no-explorer-state-writes` lint rule makes that a hard wall: assigning to
+ * any property of the store object outside this module is a lint error.
  *
  * ## Live references (reactivity transparency)
  *

@@ -143,8 +143,9 @@ describe('getTabMgr live-reference reactivity', () => {
     let observed = ''
     const dispose = $effect.root(() => {
       // The derived reads the holder through the getter, exactly like the
-      // 12 per-pane component deriveds will after M2. If the getter returned a
-      // copy/snapshot, this would stop tracking once the holder is swapped.
+      // 12 per-pane component deriveds in `DualPaneExplorer`. If the getter
+      // returned a copy/snapshot, this would stop tracking once the holder is
+      // swapped.
       const activePath = $derived(getActiveTab(s.getTabMgr('left')).path)
       $effect(() => {
         observed = activePath

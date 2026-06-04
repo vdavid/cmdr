@@ -75,10 +75,11 @@ sweeps per alt-view component).
 
 ## Conventions
 
-**Focus contract.** Exactly one pane is focused (`focusedPane: 'left' | 'right'`); `DualPaneExplorer` is the single
-writer. Key dispatch in `DualPaneExplorer` resolves which pane handles a keystroke via this state, then delegates to
-`FilePane.handleKeyDown`. Pane-switch (Tab) clears type-to-jump and rename mode on both panes (see "Reset triggers" in
-parent § "Type-to-jump").
+**Focus contract.** Exactly one pane is focused (`focusedPane: 'left' | 'right'`). The flag lives in the explorer store
+(`explorer-state.svelte.ts`), with `setFocusedPane` its single mutator; `DualPaneExplorer` reads it via a `$derived` and
+calls the mutator on pane switch. Key dispatch in `DualPaneExplorer` resolves which pane handles a keystroke via this
+state, then delegates to `FilePane.handleKeyDown`. Pane-switch (Tab) clears type-to-jump and rename mode on both panes
+(see "Reset triggers" in parent § "Type-to-jump").
 
 **Type-to-jump factory.** One `createTypeToJumpState` instance per pane, inside `FilePane`. Reset triggers (ESC, arrows,
 Page/Home/End, Enter, Tab, Backspace, rename entry, context menu, drag start, pane switch, tab switch, dir change,
@@ -104,9 +105,10 @@ callers reach back via `paneCommands.*`.
 `DualPaneExplorer` used to trap in component closures: `focusedPane`, `showHiddenFiles`, `leftPaneWidthPercent`, and the
 two tab-manager holders. State is module-private (A1): `createExplorerState()` closes over `$state` locals and exposes
 only getters + one named mutator per field. There's no exported writable surface — callers can't assign a field, only
-call a mutator (A2; the `cmdr/no-explorer-state-writes` lint rule makes this a hard wall once it lands in M5).
-`createExplorerState()` is factory-first for testability; the module-level `explorerState` singleton is what the
-component binds, with `_resetForTesting()` for tests that touch it.
+call a mutator (A2; the `cmdr/no-explorer-state-writes` lint rule makes this a hard wall — assigning to any property of
+the store object outside `explorer-state.svelte.ts` is a lint error). `createExplorerState()` is factory-first for
+testability; the module-level `explorerState` singleton is what the component binds, with `_resetForTesting()` for tests
+that touch it.
 
 The **writers** (A2 — exactly one mutator per field, all inside the store module):
 
@@ -117,6 +119,16 @@ The **writers** (A2 — exactly one mutator per field, all inside the store modu
 | `leftPaneWidthPercent` | `setLeftPaneWidthPercent`                 |
 | `leftTabMgr`           | `setTabMgr('left', …)`                    |
 | `rightTabMgr`          | `setTabMgr('right', …)`                   |
+
+**Enforced by lint (`cmdr/no-explorer-state-writes`).** Assigning to any property of the store object outside
+`explorer-state.svelte.ts` is a lint error (`explorerState.x = …`, compound assignment, `++`, and monkey-patching a
+mutator like `explorerState.setFocusedPane = …`). The rule tracks the imported `explorerState` singleton and any
+`createExplorerState()` instance. It does NOT police direct `$state` field writes (A1 already makes those inexpressible
+from outside — nothing writable is exported) or mutator re-exports (an alias is still a named-mutator call, not a new
+writer; forbidding it would false-positive on the read wrappers in `focused-pane-reads.ts`). The rule lives in
+`apps/desktop/eslint-plugins/no-explorer-state-writes.js` with a colocated RuleTester test; the store file and test
+files are exempt. This is the durable A2 guardrail — discipline that isn't enforced decays once the component wall is
+down.
 
 **A1/A2-vs-tab-manager scope boundary.** The private-state + one-mutator rules govern the store's **own** fields only.
 The tab managers are _values the store holds_, not store fields: they keep their existing setter-based API
