@@ -361,7 +361,6 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     if (!paneRef) return
 
     // Get current selection for add/subtract modes (local Set, not reactive state)
-
     const currentSelection = new Set<number>(paneRef.getSelectedIndices())
 
     if (count === 0) {

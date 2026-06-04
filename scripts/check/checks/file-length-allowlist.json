@@ -48,7 +48,7 @@
     "apps/desktop/src/app.css": 1202,
     "apps/desktop/src/lib/file-explorer/navigation/VolumeBreadcrumb.svelte": 1414,
     "apps/desktop/src/lib/file-explorer/network/NetworkBrowser.svelte": 815,
-    "apps/desktop/src/lib/file-explorer/pane/DualPaneExplorer.svelte": 2605,
+    "apps/desktop/src/lib/file-explorer/pane/DualPaneExplorer.svelte": 2140,
     "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte": 2936,
     "apps/desktop/src/lib/file-explorer/views/BriefList.svelte": 989,
     "apps/desktop/src/lib/file-explorer/views/FullList.svelte": 1423,
