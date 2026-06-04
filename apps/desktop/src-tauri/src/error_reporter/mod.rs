@@ -344,51 +344,75 @@ pub fn generate_short_id() -> String {
 /// the live error-report channel even if a test triggers a report. Debug builds DO
 /// upload; the manifest's `buildMode: "debug"` field lets the server tag those
 /// reports `[DEV]` so triage can separate them from production traffic.
+///
+/// E2E builds (`playwright-e2e` feature) NEVER upload, compile-time. They're
+/// release builds, so without this gate their reports said `prod` and were
+/// indistinguishable from real users' — a local E2E run once flooded the live
+/// channel with 11 reports in a day. Errors during an E2E run are already
+/// visible in the test output; the report channel is for failures we can't
+/// observe directly. The feature gate beats an env-var check because the only
+/// binaries carrying the feature are purpose-built for tests, with no way to
+/// launch one "for real."
 pub async fn upload(zip_bytes: Vec<u8>, manifest: &BundleManifest, server_url: &str) -> Result<UploadResult, String> {
-    let should_skip = std::env::var("CI").is_ok();
-    if should_skip {
+    #[cfg(feature = "playwright-e2e")]
+    {
+        let _ = (zip_bytes, server_url); // the network path is compiled out below
         log::info!(
             target: "cmdr_lib::error_reporter",
-            "Skipping error report upload (CI). Local ID: {}",
+            "Skipping error report upload (E2E build). Local ID: {}",
             manifest.id,
         );
         return Ok(UploadResult {
             id: manifest.id.clone(),
         });
     }
+    #[cfg(not(feature = "playwright-e2e"))]
+    {
+        let should_skip = std::env::var("CI").is_ok();
+        if should_skip {
+            log::info!(
+                target: "cmdr_lib::error_reporter",
+                "Skipping error report upload (CI). Local ID: {}",
+                manifest.id,
+            );
+            return Ok(UploadResult {
+                id: manifest.id.clone(),
+            });
+        }
 
-    let meta_json = serde_json::to_string(manifest).map_err(|e| format!("serialize manifest: {e}"))?;
+        let meta_json = serde_json::to_string(manifest).map_err(|e| format!("serialize manifest: {e}"))?;
 
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
-        .build()
-        .map_err(|e| format!("HTTP client: {e}"))?;
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(30))
+            .build()
+            .map_err(|e| format!("HTTP client: {e}"))?;
 
-    let form = reqwest::multipart::Form::new()
-        .part(
-            "bundle",
-            reqwest::multipart::Part::bytes(zip_bytes)
-                .file_name(format!("{}.zip", manifest.id))
-                .mime_str("application/zip")
-                .map_err(|e| format!("bundle part: {e}"))?,
-        )
-        .text("meta", meta_json);
+        let form = reqwest::multipart::Form::new()
+            .part(
+                "bundle",
+                reqwest::multipart::Part::bytes(zip_bytes)
+                    .file_name(format!("{}.zip", manifest.id))
+                    .mime_str("application/zip")
+                    .map_err(|e| format!("bundle part: {e}"))?,
+            )
+            .text("meta", meta_json);
 
-    let response = client
-        .post(server_url)
-        .multipart(form)
-        .send()
-        .await
-        .map_err(|e| format!("upload request: {e}"))?;
+        let response = client
+            .post(server_url)
+            .multipart(form)
+            .send()
+            .await
+            .map_err(|e| format!("upload request: {e}"))?;
 
-    if !response.status().is_success() {
-        return Err(format!("server returned {}", response.status()));
+        if !response.status().is_success() {
+            return Err(format!("server returned {}", response.status()));
+        }
+
+        response
+            .json::<UploadResult>()
+            .await
+            .map_err(|e| format!("parse upload response: {e}"))
     }
-
-    response
-        .json::<UploadResult>()
-        .await
-        .map_err(|e| format!("parse upload response: {e}"))
 }
 
 /// Write the built bundle to the app data dir as `error-report-debug-<timestamp>.zip`.

@@ -110,11 +110,20 @@ dialog. Re-building is cheap (the heavy work is reading + redacting log lines, w
 runs on the blocking pool either way), and the inputs are deterministic enough that the
 preview hash matches what'll be uploaded.
 
-## CI bypass
+## CI and E2E bypass
 
-[`upload`] checks `std::env::var("CI").is_ok()` and short-circuits on a hit, returning
-the locally-generated ID without calling the network. CI runs shouldn't pollute the
-live error-report channel even if a test triggers a report.
+[`upload`] short-circuits in two cases, returning the locally-generated ID without
+calling the network:
+
+- **CI**: `std::env::var("CI").is_ok()`. CI runs shouldn't pollute the live
+  error-report channel even if a test triggers a report.
+- **E2E builds**: `#[cfg(feature = "playwright-e2e")]` compiles the network path out
+  entirely. E2E binaries are release builds, so without this gate their reports said
+  `prod` and were indistinguishable from real users' — a local E2E run (which doesn't
+  set `CI`) once flooded the live channel with 11 reports in a day. Errors during an
+  E2E run are already visible in the test output; the report channel is for failures
+  we can't observe directly. Compile-time beats an env-var check: the only binaries
+  carrying the feature are purpose-built for tests.
 
 Debug builds **do** upload (that's the point of "Send error report" working in dev). The
 manifest carries `buildMode: "debug"`, which the api server reads to prefix the Discord
