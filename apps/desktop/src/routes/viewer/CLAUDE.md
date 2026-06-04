@@ -8,31 +8,32 @@ FE primitives live at [`src/lib/file-viewer/CLAUDE.md`](../../lib/file-viewer/CL
 
 ## Files
 
-| File                            | Contents                                                                                                                                        |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `+page.svelte`                  | Top-level component: lifecycle, window management, UI                                                                                           |
-| `viewer-scroll.svelte.ts`       | Virtual scroll composable: line cache, fetch debounce, scroll compression, effects                                                              |
-| `viewer-search.svelte.ts`       | Search composable: start/poll/cancel/navigate, match highlighting, debounce, `useRegex` and `caseSensitive` toggles, regex-error projection     |
-| `viewer-line-heights.svelte.ts` | Height map for accurate word-wrap scrolling via pretext (FullLoad files only)                                                                   |
-| `viewer-text-width.svelte.ts`   | `ResizeObserver`-driven tracker for the rendered `.line-text` width                                                                             |
-| `viewer-indexing-poll.ts`       | Periodic `viewer_get_status` poll while the backend builds a line index                                                                         |
-| `viewer-keyboard.ts`            | Pure helpers `handleNavigationKey` / `handleToggleKey` mapping keys to scroll calls                                                             |
-| `selection.svelte.ts`           | Selection model: state + pure helpers (normalise, in-range, segment bounds, byte estimator)                                                     |
-| `line-segments.ts`              | Pure shared segmenter: merges search matches + selection bounds into render spans                                                               |
-| `viewer-pointer.ts`             | Pure caret-from-point math: `(x, y)` -> `LineOffset` with surrogate-safe sibling-offset sum                                                     |
-| `viewer-copy.ts`                | Pure three-band copy policy (silent / confirm / refuse) and threshold constants                                                                 |
-| `viewer-copy.svelte.ts`         | Copy composable: state + busy flag + per-call read_id + cancel plumbing + saveAs                                                                |
-| `viewer-autoscroll.ts`          | Pure speed curve for drag-past-edge autoscroll                                                                                                  |
-| `viewer-autoscroll.svelte.ts`   | Autoscroll RAF controller: start / stop / self-terminate                                                                                        |
-| `viewer-word.ts`                | Pure word-boundary finder via `Intl.Segmenter` for double-click selection                                                                       |
-| `ViewerContextMenu.svelte`      | Minimal in-app right-click menu (Copy, Select all)                                                                                              |
-| `ViewerToolbar.svelte`          | Presentational title-bar overlay: file name, view-mode + encoding pickers, tail toggle, reindexing indicator. Owns `data-tauri-drag-region`.    |
-| `ViewerStatusBar.svelte`        | Presentational bottom bar: line / byte counts, backend badge, word-wrap badge, shortcut hint. Keeps `user-select: text` (see Gotchas).          |
-| `ViewerCopyDialogs.svelte`      | Presentational copy-confirm (10 to 100 MiB) and refuse (> 100 MiB) modals. The page owns the copy-flow state and IPC handlers.                  |
-| `EncodingPicker.svelte`         | `<select>` + `<optgroup>` Unicode / Western. Reactive to backend `EncodingChoice[]`. The detected encoding gets a "(Detected)" suffix.          |
-| `ViewModePicker.svelte`         | `<select>` placeholder for future view modes (today: only "Text", disabled).                                                                    |
-| `viewer-tail.svelte.ts`         | `createViewerTail()` composable: listens to `viewer:file-changed:<sid>` events and dispatches to reload toasts or a side effect.                |
-| `ViewerReloadToast.svelte`      | Component content for the persistent reload toast. Reads its session id from `setReloadToastContext()` (the toast system mounts without props). |
+| File                            | Contents                                                                                                                                                                                                                               |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `+page.svelte`                  | Top-level component: lifecycle, window management, UI                                                                                                                                                                                  |
+| `viewer-scroll.svelte.ts`       | Virtual scroll composable: line cache, fetch debounce, scroll compression, effects                                                                                                                                                     |
+| `viewer-search.svelte.ts`       | Search composable: start/poll/cancel/navigate, match highlighting, debounce, `useRegex` and `caseSensitive` toggles, regex-error projection                                                                                            |
+| `viewer-line-heights.svelte.ts` | Height map for accurate word-wrap scrolling via pretext (FullLoad files only)                                                                                                                                                          |
+| `viewer-text-width.svelte.ts`   | `ResizeObserver`-driven tracker for the rendered `.line-text` width                                                                                                                                                                    |
+| `viewer-indexing-poll.ts`       | Periodic `viewer_get_status` poll while the backend builds a line index                                                                                                                                                                |
+| `viewer-keyboard.ts`            | Pure key helpers (`handleNavigationKey` / `handleToggleKey` / `handleSearchToggleKey` / `handleTailToggleKey`) plus `createViewerKeyboard`, the page's full keydown router (modifier shortcuts, Escape ladder, ⌘A, bare-key dispatch)  |
+| `selection.svelte.ts`           | Selection model: state + pure helpers (normalise, in-range, segment bounds, byte estimator)                                                                                                                                            |
+| `line-segments.ts`              | Pure shared segmenter: merges search matches + selection bounds into render spans                                                                                                                                                      |
+| `viewer-pointer.ts`             | Pure caret-from-point math: `(x, y)` -> `LineOffset` with surrogate-safe sibling-offset sum                                                                                                                                            |
+| `viewer-pointer-drag.svelte.ts` | `createViewerPointerDrag`: stateful pointer / drag / context-menu controller (drag `pointerId`, `contextMenuPos`, autoscroll wiring, double / triple-click word/line select)                                                           |
+| `viewer-copy.ts`                | Pure three-band copy policy (silent / confirm / refuse) and threshold constants                                                                                                                                                        |
+| `viewer-copy.svelte.ts`         | `createViewerCopy` (read/write composable: busy flag + per-call read_id + cancel plumbing + saveAs) and `createViewerCopyOrchestrator` (copy-flow orchestration: confirm/refuse dialog state, clipboard writes, save-as panel, toasts) |
+| `viewer-autoscroll.ts`          | Pure speed curve for drag-past-edge autoscroll                                                                                                                                                                                         |
+| `viewer-autoscroll.svelte.ts`   | Autoscroll RAF controller: start / stop / self-terminate                                                                                                                                                                               |
+| `viewer-word.ts`                | Pure word-boundary finder via `Intl.Segmenter` for double-click selection                                                                                                                                                              |
+| `ViewerContextMenu.svelte`      | Minimal in-app right-click menu (Copy, Select all)                                                                                                                                                                                     |
+| `ViewerToolbar.svelte`          | Presentational title-bar overlay: file name, view-mode + encoding pickers, tail toggle, reindexing indicator. Owns `data-tauri-drag-region`.                                                                                           |
+| `ViewerStatusBar.svelte`        | Presentational bottom bar: line / byte counts, backend badge, word-wrap badge, shortcut hint. Keeps `user-select: text` (see Gotchas).                                                                                                 |
+| `ViewerCopyDialogs.svelte`      | Presentational copy-confirm (10 to 100 MiB) and refuse (> 100 MiB) modals. `createViewerCopyOrchestrator` owns the copy-flow state and IPC handlers.                                                                                   |
+| `EncodingPicker.svelte`         | `<select>` + `<optgroup>` Unicode / Western. Reactive to backend `EncodingChoice[]`. The detected encoding gets a "(Detected)" suffix.                                                                                                 |
+| `ViewModePicker.svelte`         | `<select>` placeholder for future view modes (today: only "Text", disabled).                                                                                                                                                           |
+| `viewer-tail.svelte.ts`         | `createViewerTail()` composable: listens to `viewer:file-changed:<sid>` events and dispatches to reload toasts or a side effect.                                                                                                       |
+| `ViewerReloadToast.svelte`      | Component content for the persistent reload toast. Reads its session id from `setReloadToastContext()` (the toast system mounts without props).                                                                                        |
 
 ## Architecture
 
@@ -162,7 +163,8 @@ either duplicate work or risk a different result.
   `<svelte:window on:keydown>` listener is registered first (the menu mounts later), so the page's handler runs before
   the menu's. If the page didn't gate on `contextMenuPos !== null` first, Escape would fall through to `closeWindow()`
   and shut the whole viewer window. The menu's `stopImmediatePropagation()` is defense-in-depth for any future
-  listener-order change. See `tryConsumeEscapeForCopy` in `+page.svelte` and `handleKey` in `ViewerContextMenu.svelte`.
+  listener-order change. See `tryConsumeEscapeForCopy` in `viewer-keyboard.ts` (`createViewerKeyboard`) and `handleKey`
+  in `ViewerContextMenu.svelte`.
 - **AT announcement caps line iteration.** `describeSelectionForAt` in `selection.svelte.ts` walks per-line lengths to
   build the screen-reader announcement. ⌘A in ByteSeek-no-index mode sets `focus.line = Number.MAX_SAFE_INTEGER` (the
   sentinel that maps to `RangeEnd::Eof` at the IPC boundary), so an uncapped loop would iterate 9e15 times. The

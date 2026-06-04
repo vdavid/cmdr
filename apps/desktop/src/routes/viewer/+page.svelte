@@ -25,7 +25,7 @@
     import { createViewerScroll } from './viewer-scroll.svelte'
     import { createTextWidthTracker } from './viewer-text-width.svelte'
     import { createIndexingPoll } from './viewer-indexing-poll'
-    import { handleNavigationKey, handleSearchToggleKey, handleTailToggleKey, handleToggleKey } from './viewer-keyboard'
+    import { createViewerKeyboard } from './viewer-keyboard'
     import { createViewerTail } from './viewer-tail.svelte'
     import {
         createViewerSelection,
@@ -35,20 +35,15 @@
         isWholeFileSelection,
         normaliseSelection,
     } from './selection.svelte'
-    import { createViewerCopy } from './viewer-copy.svelte'
-    import { caretFromPoint } from './viewer-pointer'
-    import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
-    import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
+    import { createViewerCopy, createViewerCopyOrchestrator } from './viewer-copy.svelte'
+    import { createViewerPointerDrag } from './viewer-pointer-drag.svelte'
     import ViewerContextMenu from './ViewerContextMenu.svelte'
     import ViewerToolbar from './ViewerToolbar.svelte'
     import ViewerStatusBar from './ViewerStatusBar.svelte'
     import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
-    import { findWordBoundsAt } from './viewer-word'
     import { commands } from '$lib/ipc/bindings'
     import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
-    import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
-    import { addToast } from '$lib/ui/toast/toast-store.svelte'
-    import { formatBytes, type RangeEnd } from '$lib/tauri-commands'
+    import type { RangeEnd } from '$lib/tauri-commands'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
 
@@ -309,147 +304,18 @@
         getRangeEnds: getRangeEndsForCurrentSelection,
     })
 
-    /** Whether a copy confirm dialog (10 to 100 MiB band) is showing. */
-    let copyConfirmBytes = $state<number | null>(null)
-    let copyConfirmProceed: (() => Promise<void>) | null = null
-    /** Whether the > 100 MiB refuse dialog is showing. */
-    let copyRefuseBytes = $state<number | null>(null)
-
-    /**
-     * Whether a pointer drag is currently in progress. Tracks `pointerId` so we only
-     * react to moves from the same pointer that started the gesture (multi-touch is a
-     * future concern; today the viewer is a mouse-only surface but the type is
-     * correct).
-     */
-    let dragPointerId: number | null = null
-
-    /** Position of the in-app context menu while it's open, or `null`. */
-    let contextMenuPos = $state<{ x: number; y: number } | null>(null)
-
-    /** The pointer's most-recent Y position, used by the autoscroll RAF loop. */
-    let dragPointerY: number = 0
-
-    /**
-     * Re-resolves the caret after each autoscroll step. Uses the X position one px
-     * past the left edge of `.file-content` so the caret lands inside the line text
-     * (not the line-number gutter, which sits flush to the left edge).
-     */
-    function reAimAfterAutoscroll(pointerY: number): void {
-        if (!scroll.contentRef) return
-        const rect = scroll.contentRef.getBoundingClientRect()
-        const caret = caretFromPoint(document, rect.left + 1, pointerY)
-        if (caret !== null) selection.setFocus(caret)
-    }
-
-    const autoscroll = createViewerAutoscroll({
-        getContentRef: () => scroll.contentRef,
-        getPointerY: () => dragPointerY,
-        onScrollStep: reAimAfterAutoscroll,
+    const copyFlow = createViewerCopyOrchestrator({
+        copy,
+        getFileName: () => fileName,
     })
 
-    function handleContentPointerDown(e: PointerEvent): void {
-        // Left mouse button only (button 0). Right-click goes to the context menu.
-        if (e.button !== 0) return
-        const caret = caretFromPoint(document, e.clientX, e.clientY)
-        if (caret === null) return
-        e.preventDefault()
-
-        // Shift-click extends the existing selection from its anchor to the clicked
-        // position. If there's no current selection, treat shift-click as a plain click.
-        if (e.shiftKey && selection.selection !== null) {
-            selection.setFocus(caret)
-        } else {
-            selection.setAnchor(caret)
-        }
-
-        dragPointerId = e.pointerId
-        dragPointerY = e.clientY
-        // Capture so we keep receiving pointer events even if the cursor leaves the
-        // webview (the user dragged past the edge into another macOS window or the
-        // desktop). Without capture, autoscroll would never see a `pointerup` to stop.
-        try {
-            ;(e.currentTarget as Element | null)?.setPointerCapture(e.pointerId)
-        } catch {
-            // Capture can throw on some webviews if the target isn't focusable; ignoring
-            // is safe (the drag still works, just without the safety net).
-        }
-    }
-
-    function handleContentPointerMove(e: PointerEvent): void {
-        if (dragPointerId === null || e.pointerId !== dragPointerId) return
-        dragPointerY = e.clientY
-        const caret = caretFromPoint(document, e.clientX, e.clientY)
-        if (caret !== null) selection.setFocus(caret)
-
-        // Check whether the pointer is near a viewport edge; start/stop autoscroll as needed.
-        if (!scroll.contentRef) return
-        const rect = scroll.contentRef.getBoundingClientRect()
-        const delta = computeAutoscrollPxPerFrame(e.clientY, rect.top, rect.bottom)
-        if (delta !== 0) {
-            autoscroll.start()
-        } else {
-            autoscroll.stop()
-        }
-    }
-
-    function endDrag(pointerId: number): void {
-        if (dragPointerId !== pointerId) return
-        dragPointerId = null
-        autoscroll.stop()
-    }
-
-    function handleContentPointerUp(e: PointerEvent): void {
-        endDrag(e.pointerId)
-    }
-
-    function handleContentPointerCancel(e: PointerEvent): void {
-        endDrag(e.pointerId)
-    }
-
-    function handleContentContextMenu(e: MouseEvent): void {
-        // Suppress the native OS context menu so our in-app one wins.
-        e.preventDefault()
-        contextMenuPos = { x: e.clientX, y: e.clientY }
-    }
-
-    /**
-     * Selects the word under the pointer on double-click, or the whole line on
-     * triple-click. The browser delivers consecutive clicks with `detail = 2` and
-     * `detail = 3`; we read the click count from there.
-     */
-    function handleContentClick(e: MouseEvent): void {
-        if (e.detail !== 2 && e.detail !== 3) return
-        const caret = caretFromPoint(document, e.clientX, e.clientY)
-        if (caret === null) return
-        const lineText = scroll.lineCache.get(caret.line) ?? ''
-
-        if (e.detail === 2) {
-            const { start, end } = findWordBoundsAt(lineText, caret.offset)
-            selection.setAnchor({ line: caret.line, offset: start })
-            selection.setFocus({ line: caret.line, offset: end })
-            return
-        }
-
-        // Triple-click: select the whole line.
-        selection.setAnchor({ line: caret.line, offset: 0 })
-        selection.setFocus({ line: caret.line, offset: lineText.length })
-    }
-
-    function closeContextMenu(): void {
-        contextMenuPos = null
-    }
-
-    /**
-     * Window `blur` safety net: macOS may hand focus to another app mid-drag without
-     * firing a `pointerup` or `pointercancel`. Without this, the autoscroll RAF loop
-     * would keep running indefinitely.
-     */
-    function handleWindowBlur(): void {
-        if (dragPointerId !== null) {
-            dragPointerId = null
-        }
-        autoscroll.stop()
-    }
+    const pointerDrag = createViewerPointerDrag({
+        getContentRef: () => scroll.contentRef,
+        getLineText: (line) => scroll.lineCache.get(line),
+        hasSelection: () => selection.selection !== null,
+        setAnchor: selection.setAnchor,
+        setFocus: selection.setFocus,
+    })
 
     // Fetch lines when visible range changes (debounced)
     $effect(() => {
@@ -539,267 +405,57 @@
         setSetting('viewer.wordWrap', scroll.wordWrap)
     }
 
-    function handleSelectAllShortcut(): void {
-        if (totalLines !== null && totalLines > 0) {
-            const lastLineText = scroll.lineCache.get(totalLines - 1) ?? ''
-            selection.selectAll(totalLines, lastLineText.length)
-            return
-        }
-        // ByteSeek-no-index ⌘A: we don't know `totalLines`. Use a sentinel that the
-        // RangeEnd mapper translates to `RangeEnd::Eof` at the IPC boundary.
-        if (totalBytes > 0) {
-            selection.selectAll(Number.MAX_SAFE_INTEGER, 0)
-        }
-    }
-
-    async function writeToClipboard(text: string): Promise<boolean> {
-        try {
-            await navigator.clipboard.writeText(text)
-            return true
-        } catch (e) {
-            log.warn('Clipboard write rejected: {error}', { error: String(e) })
-            return false
-        }
-    }
-
-    async function handleSilentCopy(text: string, bytes: number): Promise<void> {
-        const ok = await writeToClipboard(text)
-        if (!ok) {
-            addToast("Couldn't reach the clipboard. Try again?", { level: 'warn' })
-            return
-        }
-        addToast(`${formatBytes(bytes)} on your clipboard`, { level: 'info' })
-    }
-
-    async function handleCopyShortcut(): Promise<void> {
-        const outcome = await copy.runCopy()
-        switch (outcome.kind) {
-            case 'empty':
-            case 'busy':
-                return
-            case 'silent':
-                await handleSilentCopy(outcome.text, outcome.bytes)
-                return
-            case 'silent-error':
-                if (outcome.reason === 'cancelled') return // user pressed Escape, intentional
-                log.warn('Silent-band copy read failed: reason={reason}, error={error}', {
-                    reason: outcome.reason,
-                    error: outcome.error ? JSON.stringify(outcome.error) : 'none',
-                })
-                if (outcome.reason === 'timedOut') {
-                    addToast('The read took too long. Try a smaller selection?', { level: 'warn' })
-                } else {
-                    addToast("Couldn't copy the selection. Try again?", { level: 'warn' })
-                }
-                return
-            case 'confirm':
-                copyConfirmBytes = outcome.bytes
-                copyConfirmProceed = async () => {
-                    copyConfirmBytes = null
-                    const res = await outcome.proceed()
-                    if (res.ok) {
-                        await handleSilentCopy(res.text, outcome.bytes)
-                    } else if (res.reason === 'cancelled') {
-                        // User pressed Escape; no toast.
-                    } else if (res.reason === 'timedOut') {
-                        addToast('The read took too long. Try a smaller selection?', { level: 'warn' })
-                    } else {
-                        addToast("Couldn't read the selection. Try again?", { level: 'warn' })
-                    }
-                }
-                return
-            case 'unknown-size':
-                // ByteSeek-no-index range we never scrolled through. Same UX as confirm,
-                // but with a hint that we don't know the size yet.
-                copyConfirmBytes = -1
-                copyConfirmProceed = async () => {
-                    copyConfirmBytes = null
-                    const res = await outcome.proceed()
-                    if (res.ok) {
-                        const bytes = new TextEncoder().encode(res.text).length
-                        await handleSilentCopy(res.text, bytes)
-                    }
-                }
-                return
-            case 'refuse':
-                copyRefuseBytes = outcome.bytes
-                return
-        }
-    }
-
-    function cancelCopyConfirm(): void {
-        copyConfirmBytes = null
-        copyConfirmProceed = null
-    }
-
-    function dismissCopyRefuse(): void {
-        copyRefuseBytes = null
-    }
-
-    /**
-     * Save as file flow: opens the native macOS save panel via the Tauri dialog plugin
-     * with a sensible default name (the open file's stem + ".selection.txt"), then
-     * streams the selection to the chosen path via `viewer_write_range_to_file`.
-     * Dismisses the open copy dialog and shows a success toast on completion.
-     */
-    async function handleSaveAs(): Promise<void> {
-        const defaultName = `${fileName.replace(/\.[^.]*$/, '') || 'selection'}.selection.txt`
-        let chosen: string | null
-        try {
-            chosen = await showSavePanel({ defaultPath: defaultName, title: 'Save selection' })
-        } catch (e) {
-            log.warn('Save panel rejected: {error}', { error: String(e) })
-            addToast("Couldn't open the save panel. Try again?", { level: 'warn' })
-            return
-        }
-        if (chosen === null) return // user cancelled
-
-        // Close the open copy dialog so the user can see progress.
-        copyConfirmBytes = null
-        copyConfirmProceed = null
-        copyRefuseBytes = null
-
-        const res = await copy.saveAs(chosen)
-        if (res.ok) {
-            addToast(`Selection saved to ${chosen.split('/').pop() ?? chosen}`, { level: 'info' })
-        } else if (res.reason === 'cancelled') {
-            // No toast; the user pressed Escape.
-        } else if (res.reason === 'timedOut') {
-            addToast('Saving took too long. Try a smaller selection?', { level: 'warn' })
-        } else {
-            addToast("Couldn't save the selection. Try again?", { level: 'warn' })
-        }
-    }
-
-    function handleEscapeKey(): void {
-        log.debug('ESC pressed, searchVisible={searchVisible}, windowReady={windowReady}', {
-            searchVisible: search.searchVisible,
-            windowReady,
-        })
-        if (!search.searchVisible) {
-            closeWindow()
-            return
-        }
-        if (search.searchStatus === 'running') {
-            search.stopSearch()
-        } else {
-            search.closeSearch()
-        }
-    }
-
-    /**
-     * Routes Escape to the right cancel surface in priority order: open context menu
-     * (the menu owns its own Escape too, but we short-circuit here so the page's
-     * `closeWindow()` path doesn't fire after the menu closes itself), then in-flight
-     * copy read, then any open copy dialog, then the search bar logic.
-     *
-     * Returns `true` if Escape was consumed here.
-     */
-    function tryConsumeEscapeForCopy(): boolean {
-        if (contextMenuPos !== null) {
-            closeContextMenu()
-            return true
-        }
-        if (copy.busy) {
-            void copy.cancelInFlight()
-            return true
-        }
-        if (copyConfirmBytes !== null) {
-            cancelCopyConfirm()
-            return true
-        }
-        if (copyRefuseBytes !== null) {
-            dismissCopyRefuse()
-            return true
-        }
-        return false
-    }
-
-    /**
-     * Handles ⌘/Ctrl-prefixed shortcuts inside the viewer. Returns `true` if the key
-     * was consumed; the caller falls through to other handlers when it returns `false`.
-     * Defers to the browser's native ⌘A / ⌘C when the search input is focused.
-     */
-    function handleModifierShortcut(e: KeyboardEvent, searchInputFocused: boolean): boolean {
-        if (searchInputFocused) {
-            // Only ⌘F here; ⌘A / ⌘C go to the input's native handler.
-            if (e.key === 'f') {
-                e.preventDefault()
-                search.openSearch()
-                return true
-            }
-            return false
-        }
-        if (e.key === 'a') {
-            e.preventDefault()
-            handleSelectAllShortcut()
-            return true
-        }
-        if (e.key === 'c') {
-            e.preventDefault()
-            void handleCopyShortcut()
-            return true
-        }
-        if (e.key === 'f') {
-            e.preventDefault()
-            search.openSearch()
-            return true
-        }
-        return false
-    }
-
-    /**
-     * Routes unmodified single-letter and navigation keys to their handler.
-     * Split out from `handleKeyDown` to keep the latter's cyclomatic
-     * complexity below the project lint threshold.
-     */
-    function handleBareKey(e: KeyboardEvent): boolean {
-        return (
-            handleTailToggleKey(e, () => {
-                void toggleTailMode()
-            }) ||
-            handleToggleKey(e, toggleWordWrap) ||
-            handleNavigationKey(e.key, scroll)
-        )
-    }
-
-    function handleKeyDown(e: KeyboardEvent) {
-        const searchInputFocused = search.searchVisible && document.activeElement === search.searchInputRef
-
-        // Search-mode chords (⌘⌥R for regex, ⌘⌥C for case) work whenever the search
-        // bar is visible, even if the input has focus. Checked before the generic
-        // modifier-shortcut handler so the alt-bearing chord wins.
-        if (
-            search.searchVisible &&
-            handleSearchToggleKey(e, {
-                toggleUseRegex: search.toggleUseRegex,
-                toggleCaseSensitive: search.toggleCaseSensitive,
+    const keyboard = createViewerKeyboard({
+        getTotalLines: () => totalLines,
+        getTotalBytes: () => totalBytes,
+        getLineText: (line) => scroll.lineCache.get(line),
+        selection: { selectAll: selection.selectAll },
+        scroll,
+        search: {
+            get searchVisible() {
+                return search.searchVisible
+            },
+            get searchStatus() {
+                return search.searchStatus
+            },
+            get searchInputRef() {
+                return search.searchInputRef
+            },
+            openSearch: search.openSearch,
+            closeSearch: search.closeSearch,
+            stopSearch: search.stopSearch,
+            findNext: search.findNext,
+            findPrev: search.findPrev,
+            toggleUseRegex: search.toggleUseRegex,
+            toggleCaseSensitive: search.toggleCaseSensitive,
+        },
+        copy: {
+            get busy() {
+                return copy.busy
+            },
+            cancelInFlight: copy.cancelInFlight,
+        },
+        isCopyConfirmOpen: () => copyFlow.isConfirmOpen,
+        isCopyRefuseOpen: () => copyFlow.isRefuseOpen,
+        isContextMenuOpen: () => pointerDrag.contextMenuPos !== null,
+        cancelCopyConfirm: copyFlow.cancelConfirm,
+        dismissCopyRefuse: copyFlow.dismissRefuse,
+        closeContextMenu: pointerDrag.closeContextMenu,
+        logEscape: () => {
+            log.debug('ESC pressed, searchVisible={searchVisible}, windowReady={windowReady}', {
+                searchVisible: search.searchVisible,
+                windowReady,
             })
-        ) {
-            e.preventDefault()
-            return
-        }
-
-        if ((e.metaKey || e.ctrlKey) && handleModifierShortcut(e, searchInputFocused)) return
-
-        if (e.key === 'Escape') {
-            e.preventDefault()
-            if (tryConsumeEscapeForCopy()) return
-            handleEscapeKey()
-            return
-        }
-
-        if (e.key === 'Enter' && search.searchVisible) {
-            e.preventDefault()
-            if (e.shiftKey) search.findPrev()
-            else search.findNext()
-            return
-        }
-
-        if (searchInputFocused) return
-
-        if (handleBareKey(e)) e.preventDefault()
-    }
+        },
+        runCopy: () => {
+            void copyFlow.handleCopy()
+        },
+        toggleTailMode: () => {
+            void toggleTailMode()
+        },
+        toggleWordWrap,
+        closeWindow,
+    })
 
     async function setupMcpListeners(myFilePath: string) {
         unlistenMcpClose = await listen<{ path?: string }>('mcp-viewer-close', (event) => {
@@ -1022,7 +678,7 @@
     })
 </script>
 
-<svelte:window on:keydown={handleKeyDown} on:blur={handleWindowBlur} />
+<svelte:window on:keydown={keyboard.handleKeyDown} on:blur={pointerDrag.handleWindowBlur} />
 
 <main
     class="viewer-container"
@@ -1038,7 +694,7 @@
             return
         }
         e.preventDefault()
-        void handleCopyShortcut()
+        void copyFlow.handleCopy()
     }}
 >
     <h1 class="sr-only">File viewer</h1>
@@ -1212,12 +868,12 @@
             aria-label="File content: {fileName}"
             bind:this={scroll.contentRef}
             onscroll={scroll.handleScroll}
-            onpointerdown={handleContentPointerDown}
-            onpointermove={handleContentPointerMove}
-            onpointerup={handleContentPointerUp}
-            onpointercancel={handleContentPointerCancel}
-            oncontextmenu={handleContentContextMenu}
-            onclick={handleContentClick}
+            onpointerdown={pointerDrag.handlePointerDown}
+            onpointermove={pointerDrag.handlePointerMove}
+            onpointerup={pointerDrag.handlePointerUp}
+            onpointercancel={pointerDrag.handlePointerCancel}
+            oncontextmenu={pointerDrag.handleContextMenu}
+            onclick={pointerDrag.handleClick}
         >
             <div
                 class="scroll-spacer"
@@ -1259,29 +915,27 @@
     />
 </main>
 
-{#if contextMenuPos !== null}
+{#if pointerDrag.contextMenuPos !== null}
     <ViewerContextMenu
-        x={contextMenuPos.x}
-        y={contextMenuPos.y}
+        x={pointerDrag.contextMenuPos.x}
+        y={pointerDrag.contextMenuPos.y}
         hasSelection={selection.selection !== null}
         onCopy={() => {
-            void handleCopyShortcut()
+            void copyFlow.handleCopy()
         }}
-        onSelectAll={handleSelectAllShortcut}
-        onClose={closeContextMenu}
+        onSelectAll={keyboard.handleSelectAllShortcut}
+        onClose={pointerDrag.closeContextMenu}
     />
 {/if}
 
 <ViewerCopyDialogs
-    confirmBytes={copyConfirmBytes}
-    refuseBytes={copyRefuseBytes}
-    onCancelConfirm={cancelCopyConfirm}
-    onProceedConfirm={() => {
-        if (copyConfirmProceed) void copyConfirmProceed()
-    }}
-    onDismissRefuse={dismissCopyRefuse}
+    confirmBytes={copyFlow.confirmBytes}
+    refuseBytes={copyFlow.refuseBytes}
+    onCancelConfirm={copyFlow.cancelConfirm}
+    onProceedConfirm={copyFlow.proceedConfirm}
+    onDismissRefuse={copyFlow.dismissRefuse}
     onSaveAs={() => {
-        void handleSaveAs()
+        void copyFlow.handleSaveAs()
     }}
 />
 

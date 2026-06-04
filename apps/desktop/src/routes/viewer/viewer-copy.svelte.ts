@@ -13,12 +13,17 @@
  */
 
 import {
+  formatBytes,
   viewerCancelRead,
   viewerReadRange,
   viewerWriteRangeToFile,
   type RangeEnd,
   type ViewerError,
 } from '$lib/tauri-commands'
+import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
+
+import { addToast } from '$lib/ui/toast/toast-store.svelte'
+import { getAppLogger } from '$lib/logging/logger'
 
 import { selectCopyAction, type CopyAction } from './viewer-copy'
 
@@ -167,5 +172,183 @@ export function createViewerCopy(deps: CopyDeps) {
     runCopy,
     cancelInFlight,
     saveAs,
+  }
+}
+
+type ViewerCopy = ReturnType<typeof createViewerCopy>
+
+interface CopyOrchestratorDeps {
+  /** The lower-level read/write copy composable (`createViewerCopy`). */
+  copy: ViewerCopy
+  /** The open file's name, used to build the "save as" default file name. */
+  getFileName: () => string
+}
+
+/**
+ * Copy-flow orchestration for the viewer: turns a copy gesture into the right
+ * clipboard write, confirm/refuse dialog, or "save as" panel, and surfaces toasts.
+ *
+ * Owns the dialog state the page binds to `ViewerCopyDialogs` (`confirmBytes`,
+ * `refuseBytes`) plus the deferred `proceed` callback for a confirmed read. Wraps the
+ * lower-level `createViewerCopy` read/write composable; the page calls `handleCopy()`
+ * on ⌘C / context-menu Copy and `handleSaveAs()` from the dialog's "Save as" action.
+ *
+ * Lives in `.svelte.ts` because `confirmBytes` / `refuseBytes` are `$state`.
+ */
+export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
+  const log = getAppLogger('viewer')
+  const { copy } = deps
+
+  /** Whether a copy confirm dialog (10 to 100 MiB band) is showing. */
+  let confirmBytes = $state<number | null>(null)
+  let confirmProceed: (() => Promise<void>) | null = null
+  /** Whether the > 100 MiB refuse dialog is showing. */
+  let refuseBytes = $state<number | null>(null)
+
+  async function writeToClipboard(text: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch (e) {
+      log.warn('Clipboard write rejected: {error}', { error: String(e) })
+      return false
+    }
+  }
+
+  async function handleSilentCopy(text: string, bytes: number): Promise<void> {
+    const ok = await writeToClipboard(text)
+    if (!ok) {
+      addToast("Couldn't reach the clipboard. Try again?", { level: 'warn' })
+      return
+    }
+    addToast(`${formatBytes(bytes)} on your clipboard`, { level: 'info' })
+  }
+
+  async function handleCopy(): Promise<void> {
+    const outcome = await copy.runCopy()
+    switch (outcome.kind) {
+      case 'empty':
+      case 'busy':
+        return
+      case 'silent':
+        await handleSilentCopy(outcome.text, outcome.bytes)
+        return
+      case 'silent-error':
+        if (outcome.reason === 'cancelled') return // user pressed Escape, intentional
+        log.warn('Silent-band copy read failed: reason={reason}, error={error}', {
+          reason: outcome.reason,
+          error: outcome.error ? JSON.stringify(outcome.error) : 'none',
+        })
+        if (outcome.reason === 'timedOut') {
+          addToast('The read took too long. Try a smaller selection?', { level: 'warn' })
+        } else {
+          addToast("Couldn't copy the selection. Try again?", { level: 'warn' })
+        }
+        return
+      case 'confirm':
+        confirmBytes = outcome.bytes
+        confirmProceed = async () => {
+          confirmBytes = null
+          const res = await outcome.proceed()
+          if (res.ok) {
+            await handleSilentCopy(res.text, outcome.bytes)
+          } else if (res.reason === 'cancelled') {
+            // User pressed Escape; no toast.
+          } else if (res.reason === 'timedOut') {
+            addToast('The read took too long. Try a smaller selection?', { level: 'warn' })
+          } else {
+            addToast("Couldn't read the selection. Try again?", { level: 'warn' })
+          }
+        }
+        return
+      case 'unknown-size':
+        // ByteSeek-no-index range we never scrolled through. Same UX as confirm,
+        // but with a hint that we don't know the size yet.
+        confirmBytes = -1
+        confirmProceed = async () => {
+          confirmBytes = null
+          const res = await outcome.proceed()
+          if (res.ok) {
+            const bytes = new TextEncoder().encode(res.text).length
+            await handleSilentCopy(res.text, bytes)
+          }
+        }
+        return
+      case 'refuse':
+        refuseBytes = outcome.bytes
+        return
+    }
+  }
+
+  function cancelConfirm(): void {
+    confirmBytes = null
+    confirmProceed = null
+  }
+
+  function dismissRefuse(): void {
+    refuseBytes = null
+  }
+
+  /** Runs the deferred read for a confirmed copy, if a confirm dialog is open. */
+  function proceedConfirm(): void {
+    if (confirmProceed) void confirmProceed()
+  }
+
+  /**
+   * Save as file flow: opens the native macOS save panel via the Tauri dialog plugin
+   * with a sensible default name (the open file's stem + ".selection.txt"), then
+   * streams the selection to the chosen path via `viewer_write_range_to_file`.
+   * Dismisses the open copy dialog and shows a success toast on completion.
+   */
+  async function handleSaveAs(): Promise<void> {
+    const fileName = deps.getFileName()
+    const defaultName = `${fileName.replace(/\.[^.]*$/, '') || 'selection'}.selection.txt`
+    let chosen: string | null
+    try {
+      chosen = await showSavePanel({ defaultPath: defaultName, title: 'Save selection' })
+    } catch (e) {
+      log.warn('Save panel rejected: {error}', { error: String(e) })
+      addToast("Couldn't open the save panel. Try again?", { level: 'warn' })
+      return
+    }
+    if (chosen === null) return // user cancelled
+
+    // Close the open copy dialog so the user can see progress.
+    confirmBytes = null
+    confirmProceed = null
+    refuseBytes = null
+
+    const res = await copy.saveAs(chosen)
+    if (res.ok) {
+      addToast(`Selection saved to ${chosen.split('/').pop() ?? chosen}`, { level: 'info' })
+    } else if (res.reason === 'cancelled') {
+      // No toast; the user pressed Escape.
+    } else if (res.reason === 'timedOut') {
+      addToast('Saving took too long. Try a smaller selection?', { level: 'warn' })
+    } else {
+      addToast("Couldn't save the selection. Try again?", { level: 'warn' })
+    }
+  }
+
+  return {
+    get confirmBytes() {
+      return confirmBytes
+    },
+    get refuseBytes() {
+      return refuseBytes
+    },
+    /** Whether a copy confirm dialog (10 to 100 MiB band) is currently showing. */
+    get isConfirmOpen() {
+      return confirmBytes !== null
+    },
+    /** Whether the > 100 MiB refuse dialog is currently showing. */
+    get isRefuseOpen() {
+      return refuseBytes !== null
+    },
+    handleCopy,
+    handleSaveAs,
+    cancelConfirm,
+    dismissRefuse,
+    proceedConfirm,
   }
 }
