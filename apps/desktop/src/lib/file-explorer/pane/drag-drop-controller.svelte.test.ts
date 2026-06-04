@@ -154,6 +154,7 @@ function buildAccess(config: AccessConfig = {}): PaneAccess {
     getPanePath: (pane) => config.paths?.[pane] ?? (pane === 'left' ? '/left/dir' : '/right/dir'),
     getPaneVolumeId: (pane) => config.volumeIds?.[pane] ?? 'root',
     getPaneSort: () => ({ sortBy: 'name', sortOrder: 'ascending' }),
+    getPaneHistory: () => ({ stack: [], currentIndex: 0 }),
     getFocusedPane: () => config.focusedPane ?? 'left',
     otherPane,
     getShowHiddenFiles: () => true,

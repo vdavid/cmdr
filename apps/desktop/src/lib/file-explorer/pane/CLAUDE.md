@@ -43,23 +43,25 @@ list).
 
 ### Pure utilities (`*.ts`)
 
-| File                          | Purpose                                                                          |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| `types.ts`                    | `FilePaneAPI`, `SwapState`, `ListViewAPI`, `*BrowserAPI`, `NetworkCursorEntry`   |
-| `pane-access.ts`              | `PaneAccess`: live-reference read API over pane nav + chrome state for factories |
-| `clipboard-operations.ts`     | System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)     |
-| `file-operation-commands.ts`  | Rename / new-folder / new-file / viewer / transfer / delete openers factory      |
-| `initialization.ts`           | Load persisted tabs + status + settings; resolve volumes; apply E2E overrides    |
-| `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`          |
-| `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot variant) from a focused pane       |
-| `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)        |
-| `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution        |
-| `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch   |
-| `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`    |
-| `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                              |
-| `selection-dialog-keys.ts`    | Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)   |
-| `error-pane-utils.ts`         | Tiny helper for `ErrorPane`'s technical-details rendering                        |
-| `integration-test-utils.ts`   | Shared test scaffolding for pane integration tests                               |
+| File                          | Purpose                                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| `types.ts`                    | `FilePaneAPI`, `SwapState`, `ListViewAPI`, `*BrowserAPI`, `NetworkCursorEntry`    |
+| `pane-access.ts`              | `PaneAccess`: live-reference read API over pane nav + chrome state for factories  |
+| `clipboard-operations.ts`     | System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)      |
+| `file-operation-commands.ts`  | Rename / new-folder / new-file / viewer / transfer / delete openers factory       |
+| `pane-commands.ts`            | MCP/palette read-only + delegating command bodies (selection, key-route, MTP val) |
+| `type-to-jump-keys.ts`        | Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts   |
+| `initialization.ts`           | Load persisted tabs + status + settings; resolve volumes; apply E2E overrides     |
+| `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`           |
+| `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot variant) from a focused pane        |
+| `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)         |
+| `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution         |
+| `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch    |
+| `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`     |
+| `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                               |
+| `selection-dialog-keys.ts`    | Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)    |
+| `error-pane-utils.ts`         | Tiny helper for `ErrorPane`'s technical-details rendering                         |
+| `integration-test-utils.ts`   | Shared test scaffolding for pane integration tests                                |
 
 ### Tests
 
@@ -85,6 +87,16 @@ responses. Backend match runs in `apps/desktop/src-tauri/src/file_system/listing
 returns `false` (no `..` row), and `isCrossVolumeNavigation` routes any navigation to a real path through the
 volume-change machinery (`onVolumeChange` / `handleVolumeChange`). Skipping either breaks selection (off-by-one) or
 poisons the pane with `volumeId === 'search-results'` + real path.
+
+**Command-body factories read through `PaneAccess`.** The MCP/palette command bodies live in factories
+(`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)
+plus the dialog state. The component keeps one-line `export function` delegates so the `ExplorerAPI` surface is
+unchanged. Read-only / delegating bodies move; functions that WRITE component navigation state (`switchPane`,
+`swapPanes`, `toggleHiddenFiles`, `setViewMode`, `navigate`, `setSort*`, `navigateToPath`, `moveCursor`,
+`selectVolumeBy*`, `copyPathBetweenPanes`, the `mirror*`/`restoreFocus` helpers) stay in the component — un-trapping
+that state is the explorer-store phase, not this factoring. `moveCursorByName*` and `validateMtpNavigation` moved even
+though they're called from component-resident writers (`moveCursor`, `restoreCursorByFilename`, `navigateToPath`); those
+callers reach back via `paneCommands.*`.
 
 **Cross-pane drag.** `DualPaneExplorer.getFileAndPathUnderCursor()` prefers `FilePane.getPathUnderCursor()` over
 `${currentPath}/${filename}` so snapshot-pane drags carry real filesystem paths, not `search-results://sr-N/<name>`.

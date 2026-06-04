@@ -1,4 +1,5 @@
 import type { FilePaneAPI } from './types'
+import type { NavigationHistory } from '../navigation/navigation-history'
 import type { SortColumn, SortOrder, VolumeInfo } from '../types'
 
 /**
@@ -19,6 +20,7 @@ export interface PaneAccess {
   getPanePath: (pane: 'left' | 'right') => string
   getPaneVolumeId: (pane: 'left' | 'right') => string
   getPaneSort: (pane: 'left' | 'right') => { sortBy: SortColumn; sortOrder: SortOrder }
+  getPaneHistory: (pane: 'left' | 'right') => NavigationHistory
   getFocusedPane: () => 'left' | 'right'
   otherPane: (pane: 'left' | 'right') => 'left' | 'right'
   getShowHiddenFiles: () => boolean
