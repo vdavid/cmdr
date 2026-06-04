@@ -2,7 +2,7 @@
 //!
 //! Tracks in-page overlay dialogs (about, license, transfer-confirmation, etc.).
 //! Window-based dialogs (settings, file viewers) are derived from Tauri's window manager
-//! in resources.rs; no manual tracking needed for those.
+//! in `resources/mod.rs`; no manual tracking needed for those.
 //!
 //! The frontend registers all known soft dialog IDs at startup via
 //! `register_known_dialogs`, so the MCP "available dialogs" resource

@@ -71,7 +71,7 @@ async fn execute_dialog_open<R: Runtime>(
     path: Option<&str>,
 ) -> ToolResult {
     // Window-based dialogs (settings, file-viewer) are tracked automatically
-    // via webview_windows() in resources.rs. No manual tracking needed here.
+    // via webview_windows() in `resources/mod.rs`. No manual tracking needed here.
 
     match dialog_type {
         "settings" => {

@@ -114,7 +114,7 @@ branch. See parent § "Gotchas".
   live CSS vars via `getComputedStyle` and mixes in sRGB. A reactive `mediaTick` re-fires `$derived` callers when
   `prefers-color-scheme` / `prefers-contrast` flips; without it, dark-mode swaps wouldn't repaint the tint. The branch
   is picked once at module load via `hasColorMix` from `$lib/utils/webkit-compat.ts`.
-- **`DualPaneExplorer.svelte` and `FilePane.svelte` are >3000 lines each and flagged by `file-length`.** Don't add to
+- **`DualPaneExplorer.svelte` and `FilePane.svelte` are ~3000 lines each and flagged by `file-length`.** Don't add to
   them without extracting first. New cross-cutting state goes into a `*.svelte.ts` factory; new pure logic goes into a
   `*.ts` helper with a colocated test. The `dialog-state` / `rename-flow` / `type-to-jump-state` extractions are the
   pattern to follow.
