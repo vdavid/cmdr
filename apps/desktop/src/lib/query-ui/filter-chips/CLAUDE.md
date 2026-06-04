@@ -29,6 +29,10 @@ Companion tests (colocated):
 | `FilterChip.a11y.test.ts`          | Tier-3 axe-core audit across default, configured, disabled, and open states                                                           |
 | `FilterChipPopover.svelte.test.ts` | Mount / unmount via `open` prop, Esc → onClose with stopPropagation                                                                   |
 | `FilterChipPopover.a11y.test.ts`   | Tier-3 axe-core audit for the popover surface                                                                                         |
+| `SizeFilterPopover.a11y.test.ts`   | Tier-3 axe-core audit: closed + open in `between` mode (all columns)                                                                  |
+| `DateFilterPopover.svelte.test.ts` | Preset click auto-promote, Custom… cell flow, comparator click, upper-bound column gating                                             |
+| `DateFilterPopover.a11y.test.ts`   | Tier-3 axe-core audit: closed, preset mode, and custom-bounds mode (`nested-interactive` disabled there — input inside Custom cell)   |
+| `ScopeFilterPopover.a11y.test.ts`  | Tier-3 axe-core audit: closed + open with scope text and toggles                                                                      |
 | `filter-chip-state.test.ts`        | Default → configured → cleared rules for each chip's display summary                                                                  |
 | `filter-popover-helpers.test.ts`   | Size + date preset rules, comparator gating, dynamic Modified preset labels                                                           |
 

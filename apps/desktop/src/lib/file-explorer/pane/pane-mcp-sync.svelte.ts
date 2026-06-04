@@ -116,6 +116,7 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
         // FileEntry uses `undefined`, so coerce. `?? null` handles both.
         size: entry.size ?? null,
         recursiveSize: entry.recursiveSize ?? null,
+        // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just formatting a timestamp
         modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
         recursiveSizePending: entry.recursiveSizePending ?? null,
       })

@@ -22,15 +22,15 @@ function entry(name: string): FileEntry {
   }
 }
 
-function remove(index: number, name = `f${index}`): DiffChange {
+function remove(index: number, name = `f${String(index)}`): DiffChange {
   return { type: 'remove', entry: entry(name), index }
 }
 
-function add(index: number, name = `f${index}`): DiffChange {
+function add(index: number, name = `f${String(index)}`): DiffChange {
   return { type: 'add', entry: entry(name), index }
 }
 
-function modify(index: number, name = `f${index}`): DiffChange {
+function modify(index: number, name = `f${String(index)}`): DiffChange {
   return { type: 'modify', entry: entry(name), index }
 }
 
