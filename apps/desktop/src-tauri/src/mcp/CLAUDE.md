@@ -37,7 +37,9 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - Async (1): `await` (poll PaneStateStore until a condition is met: `has_item`, `item_count_gte`, `path`, or `path_contains`. Supports `after_generation` to avoid matching stale state)
 - Downloads (1): `go_to_latest_download` (no args; navigates the focused pane to `~/Downloads` and selects the most recently observed eligible file. Errors when no eligible file exists or FDA is missing. Reuses the same backend code path as the `⌘J` shortcut and the `go_to_latest_download` Tauri command, then drives `mcp-nav-to-path` + `mcp-move-cursor` round-trips for the navigation + cursor placement)
 
-### Resources (`resources.rs`)
+### Resources (`resources/`)
+
+Directory module split by resource. `resources/mod.rs` is the shared spine: the registry (`get_all_resources`), URI/query parsing (`split_uri`, `parse_query`), the `read_resource` dispatch, the `resource_round_trip` helper, and the `cmdr://state` + `cmdr://dialogs/available` builders. The two independently-evolving plain-text builders live in their own files: `resources/logs.rs` (`cmdr://logs`: `LogOptions`, the `LOG_*` consts, `parse_log_options`, `read_log_tail`, `select_log_lines`, `line_timestamp_passes_since`) and `resources/indexing.rs` (`cmdr://indexing`: `build_indexing_status_text`, `format_duration_human`, `format_number`). Tests for each live in the `tests/` directory (see below).
 
 - `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache, `recentErrors`). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. SMB volumes appear as structured entries with `name`, `id`, and `smbConnectionState` (`direct` | `os_mount` | `disconnected`) so agents can route the `upgrade_smb_to_direct` tool at the right volumes; non-SMB volumes stay as bare `- {name}` lines. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs); `recentErrors` is the last 20 directory-listing failures with `atUnixMs`, `listingId`, `volumeId`, `path`, `message` (see `listing_errors.rs` and the freshness contract below); the `path` and `message` fields are run through `crate::redact::redact_line` before serialization, since failed-listing errors can carry SMB URIs / home paths the user never saw rendered. Supports `?include=panes,volumes,dialogs,listings,recentErrors` projection (defaults to all) and `?compact=true` (drops the `files:` list inside each pane while keeping every summary field). Example: `cmdr://state?include=listings,recentErrors` is the minimal payload for "did the last listing succeed?".
 - `cmdr://dialogs/available`: Static metadata about available dialogs
@@ -69,7 +71,10 @@ Frontend syncs state to these stores via Tauri commands (`update_left_pane_state
 
 Directory module split by test category:
 - `protocol_tests.rs`: tool name validation, schema checks, tool count
-- `resource_tests.rs`: resource URI validation, count, mime types
+- `resource_tests.rs`: resource URI validation, count, mime types (the public `get_all_resources` surface)
+- `resource_state_tests.rs`: `cmdr://state` builder — URI/query parsing, pane/tab/file formatting
+- `resource_log_tests.rs`: `cmdr://logs` builder — option parsing, line selection, `since` filter, the PII-redaction contract
+- `resource_indexing_tests.rs`: `cmdr://indexing` builder — duration/number formatting helpers
 - `tool_category_tests.rs`: tool existence by category, schema checks
 - `security_tests.rs`: shell injection, forbidden tool patterns, input injection
 - `request_response_tests.rs`: McpRequest parsing, McpResponse serialization
