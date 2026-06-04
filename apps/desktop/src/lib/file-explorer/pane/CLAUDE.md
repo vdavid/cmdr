@@ -32,6 +32,7 @@ list).
 
 | File                             | Purpose                                                                                 |
 | -------------------------------- | --------------------------------------------------------------------------------------- |
+| `explorer-state.svelte.ts`       | Explorer store: `focusedPane`, `showHiddenFiles`, layout split, the two tab-mgr holders |
 | `dialog-state.svelte.ts`         | Dialog props + handlers (transfer, delete, mkdir, alert, error); factory                |
 | `selection-state.svelte.ts`      | `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers              |
 | `rename-flow.svelte.ts`          | Rename validation, conflict + extension dialogs, save / cancel                          |
@@ -97,6 +98,35 @@ unchanged. Read-only / delegating bodies move; functions that WRITE component na
 that state is the explorer-store phase, not this factoring. `moveCursorByName*` and `validateMtpNavigation` moved even
 though they're called from component-resident writers (`moveCursor`, `restoreCursorByFilename`, `navigateToPath`); those
 callers reach back via `paneCommands.*`.
+
+**Explorer store (`explorer-state.svelte.ts`).** Module store owning the dual-pane navigation + UI-chrome state that
+`DualPaneExplorer` used to trap in component closures: `focusedPane`, `showHiddenFiles`, `leftPaneWidthPercent`, and the
+two tab-manager holders. State is module-private (A1): `createExplorerState()` closes over `$state` locals and exposes
+only getters + one named mutator per field. There's no exported writable surface — callers can't assign a field, only
+call a mutator (A2; the `cmdr/no-explorer-state-writes` lint rule makes this a hard wall once it lands in M5).
+`createExplorerState()` is factory-first for testability; the module-level `explorerState` singleton is what the
+component binds, with `_resetForTesting()` for tests that touch it.
+
+The **writers** (A2 — exactly one mutator per field, all inside the store module):
+
+| Field                  | Mutator(s)                                |
+| ---------------------- | ----------------------------------------- |
+| `focusedPane`          | `setFocusedPane`                          |
+| `showHiddenFiles`      | `setShowHiddenFiles`, `toggleHiddenFiles` |
+| `leftPaneWidthPercent` | `setLeftPaneWidthPercent`                 |
+| `leftTabMgr`           | `setTabMgr('left', …)`                    |
+| `rightTabMgr`          | `setTabMgr('right', …)`                   |
+
+**A1/A2-vs-tab-manager scope boundary.** The private-state + one-mutator rules govern the store's **own** fields only.
+The tab managers are _values the store holds_, not store fields: they keep their existing setter-based API
+(`createTabManager`) and are mutated via the free functions in `tabs/tab-state-manager.svelte` / `tab-operations`. The
+store holds the holder reference and swaps it via `setTabMgr`; it never wraps tab-manager setters behind store intents.
+
+**Live-reference getters.** `getTabMgr(pane)` returns the live `$state<TabManager>` holder, never a copy or a
+`$state.snapshot` — a `$derived` reading `getActiveTab(getTabMgr(p))` keeps tracking both when the holder is swapped and
+when the held manager mutates in place. Returning a snapshot would silently sever reactivity at the seam (the same rule
+`pane-access.ts` documents). What the store does NOT own: `cursorIndex`, selection, and listing UI state stay local to
+`FilePane` (perf invariant P3).
 
 **Cross-pane drag.** `DualPaneExplorer.getFileAndPathUnderCursor()` prefers `FilePane.getPathUnderCursor()` over
 `${currentPath}/${filename}` so snapshot-pane drags carry real filesystem paths, not `search-results://sr-N/<name>`.
