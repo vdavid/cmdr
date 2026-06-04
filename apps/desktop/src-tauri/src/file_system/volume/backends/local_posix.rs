@@ -587,7 +587,7 @@ impl Volume for LocalPosixVolume {
             // → `dst_file.sync_data()`): a crash mid-batch leaves earlier files
             // safe.
             //
-            // Best-effort on error, matching `helpers::flush_created_destinations`:
+            // Best-effort on error, matching `durability::flush_created_destinations`:
             // a failed `sync_data` is logged under `target: "write_durability"`,
             // NOT propagated. The bytes are written either way, and failing a
             // completed multi-GB transfer at the final fsync is worse UX than

@@ -13,7 +13,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-use super::super::helpers::ApplyToAll;
+use super::super::conflict::ApplyToAll;
 use super::super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,
 };

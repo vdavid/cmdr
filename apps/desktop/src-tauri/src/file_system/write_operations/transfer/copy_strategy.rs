@@ -29,7 +29,7 @@ use super::linux_copy::copy_single_file_linux;
 #[cfg(target_os = "macos")]
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
-use super::super::helpers::safe_overwrite_file;
+use super::super::overwrite::safe_overwrite_file;
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use super::super::types::IoResultExt;
 use super::super::types::WriteOperationError;

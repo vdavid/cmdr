@@ -27,7 +27,7 @@ use uuid::Uuid;
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
-use super::super::helpers::ApplyToAll;
+use super::super::conflict::ApplyToAll;
 use super::super::state::{
     OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, load_intent, register_operation_status,
     unregister_operation_status, update_operation_status,

@@ -14,7 +14,7 @@ use crate::ignore_poison::IgnorePoison;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::helpers::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
+use super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
 use super::super::state::WriteOperationState;
 use super::super::types::{
     ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError,
@@ -473,7 +473,7 @@ pub(super) async fn finalize_safe_replace(
 ///
 /// On a **local-FS-backed** destination volume (`local_path().is_some()`) the
 /// chosen name is atomically RESERVED with an `O_CREAT|O_EXCL` placeholder, the
-/// same TOCTOU guard `helpers::find_unique_name` uses for the local-FS copy
+/// same TOCTOU guard `conflict::find_unique_name` uses for the local-FS copy
 /// path. Without it, a concurrent writer (a second Cmdr op, a cloud-sync agent,
 /// a backup tool) could land a real file at `name (N)` between our non-atomic
 /// `exists()` probe and the streaming writer's create+truncate, and the copy
@@ -1048,14 +1048,14 @@ mod tests {
     // find_unique_volume_name — TOCTOU reservation on local-FS dest volumes
     // ======================================================================
     //
-    // Volume-side sibling of `helpers::find_unique_name`. For a Rename
+    // Volume-side sibling of `conflict::find_unique_name`. For a Rename
     // resolution the chosen `name (N)` must be atomically RESERVED with an
     // `O_CREAT|O_EXCL` placeholder when the destination volume is backed by a
     // local filesystem (`local_path().is_some()`), so a concurrent writer
     // (second Cmdr op, cloud-sync agent, backup tool) can't land a file at the
     // same name between our pick and the streaming write. Pre-fix the function
     // only probed `dest_volume.exists()` (non-atomic) and returned the path,
-    // leaving a TOCTOU window. Mirrors `helpers.rs::find_unique_name_tests`.
+    // leaving a TOCTOU window. Mirrors `conflict.rs::find_unique_name_tests`.
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn local_fs_rename_reserves_the_chosen_name_on_disk() {

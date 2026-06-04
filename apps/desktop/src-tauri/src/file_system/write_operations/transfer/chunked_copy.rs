@@ -126,7 +126,7 @@ fn copy_data_chunked(
             );
             // Clean up partial file in background (may block on network mounts)
             drop(dst_file);
-            super::super::helpers::remove_file_in_background(dest.to_path_buf());
+            super::super::cancellable::remove_file_in_background(dest.to_path_buf());
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });

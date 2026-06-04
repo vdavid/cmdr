@@ -16,14 +16,18 @@
 //! - Copy rollback on failure (CopyTransaction)
 //! - Atomic cross-filesystem moves using staging directory
 
+mod cancellable;
+mod conflict;
 mod delete;
+mod durability;
 mod eta;
-mod helpers;
+mod overwrite;
 mod scan;
 mod scan_preview;
 mod state;
 mod transfer;
 mod types;
+mod validation;
 
 // Re-export `macos_copy` at this level so existing call sites
 // (`crate::file_system::write_operations::macos_copy`) keep compiling.
@@ -41,11 +45,6 @@ use uuid::Uuid;
 
 use delete::{delete_files_with_progress, delete_volume_files_with_progress};
 #[cfg(not(test))]
-use helpers::{
-    validate_destination, validate_destination_not_inside_source, validate_destination_writable,
-    validate_not_same_location, validate_sources,
-};
-#[cfg(not(test))]
 use state::WriteOperationState;
 use state::{
     OperationStateGuard, WRITE_OPERATION_STATE, WriteSettledGuard, register_operation_status,
@@ -54,6 +53,11 @@ use state::{
 use transfer::copy::copy_files_with_progress_inner;
 use transfer::move_op::move_files_with_progress;
 use trash::trash_files_with_progress;
+#[cfg(not(test))]
+use validation::{
+    validate_destination, validate_destination_not_inside_source, validate_destination_writable,
+    validate_not_same_location, validate_sources,
+};
 
 // Re-export public types
 pub use scan_preview::{cancel_scan_preview, get_scan_preview_totals, start_scan_preview};
@@ -70,16 +74,16 @@ pub use types::{
     WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
 };
 
-// Re-export for tests (these are pub(crate) in helpers.rs and state.rs)
+// Re-export for tests (these are pub(crate) in validation.rs and state.rs)
+#[cfg(test)]
+pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent};
 #[cfg(test)]
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
-pub(crate) use helpers::{
+pub(crate) use validation::{
     is_same_file, is_same_filesystem, validate_destination, validate_destination_not_inside_source,
     validate_destination_writable, validate_disk_space, validate_not_same_location, validate_path_length,
     validate_sources,
 };
-#[cfg(test)]
-pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent};
 // Exposed for cross-module integration tests (for example the SMB
 // concurrent-copy cross-contamination test in
 // `file_system::volume::smb`) that drive `copy_volumes_with_progress`

@@ -8,14 +8,14 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use super::helpers::{
-    calculate_dest_path, create_conflict_info, is_symlink_loop, run_cancellable_scoped, sample_conflicts,
-};
+use super::cancellable::run_cancellable_scoped;
+use super::conflict::{calculate_dest_path, create_conflict_info, sample_conflicts};
 use super::state::{FileInfo, SCAN_PREVIEW_RESULTS, ScanResult, WriteOperationState, update_operation_status};
 use super::types::{
     ConflictInfo, IoResultExt, OperationEventSink, ScanProgressEvent, WriteOperationError, WriteOperationPhase,
     WriteOperationType, WriteProgressEvent,
 };
+use super::validation::is_symlink_loop;
 use crate::file_system::listing::caching::try_get_watched_listing;
 use crate::file_system::listing::{FileEntry, SortColumn, SortOrder};
 use crate::file_system::volume::{CopyScanResult, Volume, VolumeError};

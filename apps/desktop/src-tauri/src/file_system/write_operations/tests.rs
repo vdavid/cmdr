@@ -420,7 +420,7 @@ fn test_copy_transaction_commit_prevents_drop_rollback() {
 // safe_overwrite_file tests
 // ============================================================================
 
-use super::helpers::safe_overwrite_file;
+use super::overwrite::safe_overwrite_file;
 
 #[test]
 fn test_safe_overwrite_basic() {
@@ -584,7 +584,7 @@ fn test_safe_overwrite_file_replaces_existing_folder() {
 // safe_overwrite_dir tests (folder materialized over existing file or folder)
 // ============================================================================
 
-use super::helpers::safe_overwrite_dir;
+use super::overwrite::safe_overwrite_dir;
 use super::types::WriteOperationError;
 
 #[test]
@@ -723,7 +723,7 @@ fn test_safe_overwrite_dir_over_folder_dest_replaces_contents() {
 }
 
 /// Delete and trash deliberately don't flush after deleting, and copy/move
-/// flush their own destinations (`helpers::flush_created_destinations`) rather
+/// flush their own destinations (`durability::flush_created_destinations`) rather
 /// than firing a whole-machine `libc::sync()`. This pins that there are no
 /// remaining `spawn_async_sync` callers and no raw `libc::sync()` anywhere in
 /// the `write_operations` module, so the global-sync approach can't creep back

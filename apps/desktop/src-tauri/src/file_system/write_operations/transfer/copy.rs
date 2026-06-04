@@ -9,10 +9,10 @@ use std::time::{Duration, Instant};
 #[cfg(target_os = "macos")]
 use super::macos_copy::copy_symlink;
 
-use super::super::helpers::{
-    ApplyToAll, flush_created_destinations, is_same_file, path_exists_or_is_symlink, resolve_conflict, run_cancellable,
-    safe_overwrite_dir, validate_disk_space, validate_path_length,
-};
+use super::super::cancellable::run_cancellable;
+use super::super::conflict::{ApplyToAll, resolve_conflict};
+use super::super::durability::flush_created_destinations;
+use super::super::overwrite::safe_overwrite_dir;
 use super::super::scan::{
     SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path,
 };
@@ -24,6 +24,7 @@ use super::super::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
+use super::super::validation::{is_same_file, path_exists_or_is_symlink, validate_disk_space, validate_path_length};
 use super::chunked_copy::ChunkedCopyProgressFn;
 use super::copy_strategy::copy_file_with_strategy;
 use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
@@ -622,7 +623,7 @@ pub(super) fn copy_single_item(
     // Destinations already made durable by the copy strategy (chunked copy's
     // inline `sync_data`) or for which a flush is moot (APFS clonefile /
     // reflink). The end-of-op flush pass skips these so a long chunked batch
-    // isn't fsynced twice. See `helpers::flush_created_destinations`.
+    // isn't fsynced twice. See `durability::flush_created_destinations`.
     already_synced: &mut HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
     let progress_ctx = PerFileCtx {

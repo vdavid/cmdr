@@ -5,10 +5,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::helpers::{
-    ApplyToAll, flush_created_destinations, is_same_filesystem, path_exists_or_is_symlink,
-    remove_dir_all_in_background, resolve_conflict, safe_overwrite_dir,
-};
+use super::super::cancellable::remove_dir_all_in_background;
+use super::super::conflict::{ApplyToAll, resolve_conflict};
+use super::super::durability::flush_created_destinations;
+use super::super::overwrite::safe_overwrite_dir;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
@@ -18,6 +18,7 @@ use super::super::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
+use super::super::validation::{is_same_filesystem, path_exists_or_is_symlink};
 use super::copy::copy_single_item;
 
 // ============================================================================
@@ -44,7 +45,7 @@ impl MoveTransaction {
     ///
     /// Intentional: this reverses the moves THIS op made; it does NOT restore a
     /// destination that an Overwrite-with-rename replaced (no per-file backup is
-    /// kept — see `helpers::safe_overwrite_file` step 4). Keeping backups for the
+    /// kept — see `overwrite::safe_overwrite_file` step 4). Keeping backups for the
     /// whole operation risks unexpectedly filling the user's drive on a large
     /// Overwrite. Revisit if users complain. See transfer/CLAUDE.md
     /// § "Overwrite isn't reversible".
@@ -81,7 +82,7 @@ impl MoveTransaction {
 fn move_resolved_into_place(
     source: &Path,
     dest_path: &Path,
-    resolved: &super::super::helpers::ResolvedDestination,
+    resolved: &super::super::overwrite::ResolvedDestination,
     move_tx: &mut MoveTransaction,
 ) -> Result<(), WriteOperationError> {
     let source_is_dir = source.is_dir();
