@@ -92,13 +92,6 @@
     let windowTitle = $state('Cmdr')
     let appMode = $state<AppMode>(getAppMode())
     const showFunctionKeyBar = $state(true)
-    /**
-     * Volume id of the focused pane, mirrored from `DualPaneExplorer` via the
-     * `onFocusedVolumeChange` callback. Drives the F-key bar's capability
-     * flags so `search-results://`-pane actions render visibly disabled.
-     */
-    let focusedPaneVolumeId = $state<string>('root')
-    const isFocusedPaneSearchResults = $derived(focusedPaneVolumeId === 'search-results')
 
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
@@ -934,9 +927,6 @@
         {#if showApp}
             <DualPaneExplorer
                 bind:this={explorerRef}
-                onFocusedVolumeChange={(vid: string) => {
-                    focusedPaneVolumeId = vid
-                }}
                 onCommand={(commandId: string) => {
                     void handleCommandExecute(commandId)
                 }}
@@ -948,10 +938,6 @@
         {#if showApp}
             <FunctionKeyBar
                 visible={showFunctionKeyBar}
-                canMkdir={!isFocusedPaneSearchResults}
-                canMkfile={!isFocusedPaneSearchResults}
-                canRename={!isFocusedPaneSearchResults}
-                canPasteInto={!isFocusedPaneSearchResults}
                 canSourceOps={true}
                 onRename={handleFnRename}
                 onView={handleFnView}

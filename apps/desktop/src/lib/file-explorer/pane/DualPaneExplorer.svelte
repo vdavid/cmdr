@@ -153,15 +153,6 @@
 
     interface Props {
         /**
-         * Fires whenever the focused pane changes OR the focused pane's
-         * volumeId changes. The parent (`+page.svelte`) uses this to drive
-         * the F-key bar's capability flags reactively. Plain method calls
-         * on `explorerRef` (like `getFocusedPaneVolumeId()`) aren't reactive
-         * because they don't track Svelte runes; this callback closes the
-         * gap without exposing the runtime state map directly.
-         */
-        onFocusedVolumeChange?: (volumeId: string) => void
-        /**
          * Bubbles a high-level command id from a pane up to the route, which
          * routes it through `handleCommandExecute` (the unified dispatcher).
          * Used by the Selection dialog's bare `+` / `-` shortcuts.
@@ -169,7 +160,7 @@
         onCommand?: (commandId: string) => void
     }
 
-    const { onFocusedVolumeChange, onCommand }: Props = $props()
+    const { onCommand }: Props = $props()
 
     // Focus, hidden-files, and the layout split live in the explorer store now.
     // These `$derived` aliases read them reactively; writes go through the store's
@@ -581,18 +572,6 @@
             void resortPaneWithCurrentSort('left')
             void resortPaneWithCurrentSort('right')
         })
-    })
-
-    /**
-     * Surface the focused pane's `volumeId` to the parent (`+page.svelte`) so the
-     * F-key bar's capability flags update reactively. Fires whenever `focusedPane`
-     * flips or the active tab's `volumeId` on the focused side changes (the latter
-     * matters: a tab switch on the focused side can land on a `search-results://`
-     * pane and the F-bar should disable mkdir / rename etc. immediately).
-     */
-    $effect(() => {
-        const vid = focusedPane === 'left' ? leftVolumeId : rightVolumeId
-        onFocusedVolumeChange?.(vid)
     })
 
     // Trim both panes' closed-tab stacks when the cap setting decreases.

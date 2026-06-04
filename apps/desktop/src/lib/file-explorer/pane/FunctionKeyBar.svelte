@@ -1,17 +1,9 @@
 <script lang="ts">
+    import { explorerState } from './explorer-state.svelte'
+    import { getActiveTab } from '../tabs/tab-state-manager.svelte'
+
     interface Props {
         visible?: boolean
-        /**
-         * Capability flags for the focused pane. Default: everything allowed
-         * (a normal local-volume pane). Buttons that map to a disallowed
-         * action render visibly disabled instead of being clickable; per
-         * `docs/design-principles.md`, "disabled is better than 'you did the
-         * wrong thing' toasts."
-         */
-        canPasteInto?: boolean
-        canMkdir?: boolean
-        canMkfile?: boolean
-        canRename?: boolean
         /** Source-side actions (copy/move/delete). Always true on real folders. */
         canSourceOps?: boolean
         onRename?: () => void
@@ -27,10 +19,6 @@
 
     const {
         visible = true,
-        canPasteInto = true,
-        canMkdir = true,
-        canMkfile = true,
-        canRename = true,
         canSourceOps = true,
         onRename,
         onView,
@@ -44,12 +32,29 @@
     }: Props = $props()
 
     /**
-     * `canPasteInto` is reserved for future paste-button surfacing in the
-     * F-bar; right now the bar has no Paste entry, so the prop is consumed
-     * here purely to keep the public API uniform with the capability flag
-     * set. Reference it once so unused-import linters stay quiet.
+     * Destination-side capability flags for the focused pane, read straight off
+     * the explorer store. A `search-results://` snapshot pane has no real folder
+     * to create into / rename within, so mkdir / mkfile / rename / paste-into
+     * render visibly disabled; per `docs/design-principles.md`, "disabled is
+     * better than 'you did the wrong thing' toasts."
+     *
+     * Reading the focused pane's active-tab `volumeId` through the store keeps
+     * this reactive without the old `onFocusedVolumeChange` callback → page
+     * `$state` → prop chain (A9: a store getter inside a `$derived` is reactive;
+     * a plain `explorerRef` method call isn't). Per-pane read only (P1): we touch
+     * the focused pane's manager, never both.
+     *
+     * Known-transitional A6 exception: the `=== 'search-results'` string compare
+     * stays here for now — Phase 4 replaces it with a capability check. Only its
+     * input (the volumeId) has moved to a store read.
      */
-    void canPasteInto
+    const isSearchResultsPane = $derived(
+        getActiveTab(explorerState.getTabMgr(explorerState.getFocusedPane())).volumeId ===
+            'search-results',
+    )
+    const canMkdir = $derived(!isSearchResultsPane)
+    const canMkfile = $derived(!isSearchResultsPane)
+    const canRename = $derived(!isSearchResultsPane)
 
     let shiftHeld = $state(false)
 

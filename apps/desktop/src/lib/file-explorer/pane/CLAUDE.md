@@ -128,6 +128,15 @@ when the held manager mutates in place. Returning a snapshot would silently seve
 `pane-access.ts` documents). What the store does NOT own: `cursorIndex`, selection, and listing UI state stay local to
 `FilePane` (perf invariant P3).
 
+**`FunctionKeyBar` reads the store, not props.** The F-key bar is mounted in `+page.svelte` (a sibling of
+`DualPaneExplorer`, not a child), yet it derives its destination-side capability flags (`canMkdir` / `canMkfile` /
+`canRename`) from `explorerState` directly: `getActiveTab(getTabMgr(getFocusedPane())).volumeId === 'search-results'`.
+This is the A9 pattern — a store getter inside a `$derived` is reactive across the component boundary, so there's no
+`onFocusedVolumeChange` callback or `+page.svelte` mirror `$state` in the chain. Per-pane read only (P1): touch the
+focused pane's manager, never both. The `=== 'search-results'` string compare is a known-transitional A6 exception that
+Phase 4 replaces with a capability check; only its volumeId input is store-backed today. `canSourceOps` stays a prop
+(always `true` for now — a genuine source-op capability concept, not derived from the snapshot-pane volumeId).
+
 **Cross-pane drag.** `DualPaneExplorer.getFileAndPathUnderCursor()` prefers `FilePane.getPathUnderCursor()` over
 `${currentPath}/${filename}` so snapshot-pane drags carry real filesystem paths, not `search-results://sr-N/<name>`.
 
