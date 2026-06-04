@@ -30,13 +30,15 @@ list).
 
 ### Reactive state (`*.svelte.ts`)
 
-| File                           | Purpose                                                                       |
-| ------------------------------ | ----------------------------------------------------------------------------- |
-| `dialog-state.svelte.ts`       | Dialog props + handlers (transfer, delete, mkdir, alert, error); factory      |
-| `selection-state.svelte.ts`    | `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers    |
-| `rename-flow.svelte.ts`        | Rename validation, conflict + extension dialogs, save / cancel                |
-| `type-to-jump-state.svelte.ts` | Buffer + indicator + reset/hide timers + generation counter (race protection) |
-| `volume-tint.svelte.ts`        | `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier  |
+| File                           | Purpose                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| `dialog-state.svelte.ts`       | Dialog props + handlers (transfer, delete, mkdir, alert, error); factory       |
+| `selection-state.svelte.ts`    | `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers     |
+| `rename-flow.svelte.ts`        | Rename validation, conflict + extension dialogs, save / cancel                 |
+| `type-to-jump-state.svelte.ts` | Buffer + indicator + reset/hide timers + generation counter (race protection)  |
+| `volume-tint.svelte.ts`        | `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier   |
+| `pane-mcp-sync.svelte.ts`      | Mirrors pane state into the MCP `PaneState` store; skips network/search panes  |
+| `listing-diff-sync.svelte.ts`  | File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core) |
 
 ### Pure utilities (`*.ts`)
 
@@ -58,9 +60,10 @@ list).
 ### Tests
 
 Colocated with the code they pin. Notable cross-cutting suites: `DualPaneExplorer.test.ts`,
-`selection-consistency.test.ts` (selection survives diffs / cancel / source-item-done), `file-pane-keyboard.test.ts`,
-`volume-breadcrumb.test.ts`, `volume-tint.svelte.test.ts` (+ `volume-tint.svelte.fallback.test.ts` for the old-WebKit
-branch), `*.a11y.test.ts` (axe sweeps per alt-view component).
+`selection-consistency.test.ts` (selection survives diffs / cancel / source-item-done), `listing-diff-sync.test.ts`
+(pure `reconcileCursorAndSelection` off-by-one coverage), `file-pane-keyboard.test.ts`, `volume-breadcrumb.test.ts`,
+`volume-tint.svelte.test.ts` (+ `volume-tint.svelte.fallback.test.ts` for the old-WebKit branch), `*.a11y.test.ts` (axe
+sweeps per alt-view component).
 
 ## Conventions
 

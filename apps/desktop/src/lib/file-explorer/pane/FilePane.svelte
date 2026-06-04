@@ -1,8 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
     import type {
-        DirectoryDeletedEvent,
-        DirectoryDiff,
         FileEntry,
         FriendlyError,
         ListingCancelledEvent,
@@ -20,7 +18,6 @@
     import {
         cancelListing,
         findFileIndex,
-        findFileIndices,
         findFirstFuzzyMatch,
         getFileRange,
         pathExistsChecked,
@@ -39,10 +36,6 @@
         showFileContextMenu,
         type UnlistenFn,
         updateMenuContext,
-        updateLeftPaneState,
-        updateRightPaneState,
-        type PaneState,
-        type PaneFileEntry,
     } from '$lib/tauri-commands'
     import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
     import { updateIndexSizesInPlace } from '../views/file-list-utils'
@@ -52,9 +45,6 @@
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import { adjustSelectionIndices } from '../operations/adjust-selection-indices'
-    import { buildFrontendIndices, extractFilename } from '../operations/selection-adjustment'
-    import type { WriteSourceItemDoneEvent } from '../types'
 
     /** State snapshot for swapping panes without backend calls. */
     export interface SwapState {
@@ -86,6 +76,8 @@
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import { createSelectionState } from './selection-state.svelte'
+    import { createPaneMcpSync } from './pane-mcp-sync.svelte'
+    import { initListingDiffSync } from './listing-diff-sync.svelte'
     import { createRenameState } from '../rename/rename-state.svelte'
     import { cancelClickToRename } from '../rename/rename-activation'
     import { type DirectorySortMode } from '$lib/settings'
@@ -1147,141 +1139,36 @@
     // Derive includeHidden from showHiddenFiles prop
     const includeHidden = $derived(showHiddenFiles)
 
-    // Map sort column names to MCP format (constant, no need to recreate)
-    const sortFieldMap: Record<string, string> = {
-        name: 'name',
-        extension: 'ext',
-        size: 'size',
-        modified: 'modified',
-        created: 'created',
-    }
-
-    /**
-     * Returns true when MCP shouldn't carry a file list for this pane. Either it's
-     * a virtual-volume pane (network / search-results — the snapshot or NetworkBrowser
-     * owns that pane state) or there's no listing yet. Extracted from `buildMcpFileList`
-     * to keep that function under the cyclomatic complexity cap.
-     */
-    function skipMcpFileSync(): boolean {
-        return isNetworkView || isSearchResultsView || !listingId || totalCount === 0
-    }
-
-    /** Build file list for MCP state sync */
-    async function buildMcpFileList(): Promise<PaneFileEntry[]> {
-        const files: PaneFileEntry[] = []
-        if (skipMcpFileSync()) return files
-
-        // Calculate backend indices from visible range (frontend indices include "..")
-        const backendStart = hasParent ? Math.max(0, visibleRangeStart - 1) : visibleRangeStart
-        const backendEnd = hasParent ? Math.max(0, visibleRangeEnd - 1) : visibleRangeEnd
-
-        // Include ".." entry if it's in the visible range
-        if (hasParent && visibleRangeStart === 0 && canonicalPath) {
-            const parentPath = parentOf(canonicalPath)
-            files.push({
-                name: '..',
-                path: parentPath,
-                isDirectory: true,
-                size: null,
-                recursiveSize: null,
-                modified: null,
-                recursiveSizePending: null,
-            })
-        }
-
-        // Limit to 100 files max for performance
-        const maxToFetch = Math.min(backendEnd - backendStart, 100)
-        for (let i = 0; i < maxToFetch; i++) {
-            const backendIndex = backendStart + i
-            if (backendIndex >= totalCount) break
-            const entry = await getFileAt(listingId, backendIndex, includeHidden)
-            // Null means the listing on the BE has fewer entries than our cached
-            // `totalCount` (a directory-diff is mid-flight). Stop here: keeps the
-            // partial MCP state consistent and avoids trailing out-of-bounds calls
-            // for the rest of the visible range.
-            if (!entry) break
-            files.push({
-                name: entry.name,
-                path: entry.path,
-                isDirectory: entry.isDirectory,
-                // PaneFileEntry uses `null` for absent fields (post-Group-A wire format).
-                // FileEntry uses `undefined`, so coerce. `?? null` handles both.
-                size: entry.size ?? null,
-                recursiveSize: entry.recursiveSize ?? null,
-                modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
-                recursiveSizePending: entry.recursiveSizePending ?? null,
-            })
-        }
-        return files
-    }
-
-    /**
-     * Sync pane state to Rust for MCP context tools.
-     * Called when files load, cursor position changes, or view mode changes.
-     *
-     * Skipped entirely on the Network virtual volume: `NetworkBrowser`
-     * (mounted inside `NetworkMountView`) owns the pane-state push for that
-     * view and writes the host list as `files`. Without this guard, FilePane's
-     * own sync races NetworkBrowser's and overwrites it with stale local-pane
-     * data (empty `files`, the old fixture `path`, and a leftover
-     * `totalFiles`/`loadedRange`). That clobber is why three SMB tests
-     * (`guest host shows share count`, `auth host shows share count`,
-     * `50-share host shows correct share count`) used to time out at the 30s
-     * pollUntil deadline — `cmdr://state` never contained the host entries
-     * NetworkBrowser had just pushed.
-     *
-     * MTP volumes are not affected: their file list comes from a normal
-     * `list_directory` against the volume, so FilePane's sync is the right
-     * source of truth there.
-     */
-    async function syncPaneStateToMcp() {
-        // Search-results panes don't sync to MCP either: the snapshot is local
-        // dialog state, not a directory MCP agents are expected to query.
-        if (isNetworkView || isSearchResultsView) return
-        try {
-            const files = await buildMcpFileList()
-            const effectiveTotal = hasParent ? totalCount + 1 : totalCount
-            // Use actual visible range, clamped to valid bounds
-            const loadedStart = Math.max(0, visibleRangeStart)
-            const loadedEnd = Math.min(effectiveTotal, visibleRangeEnd)
-            // Surface type-to-jump state so MCP-driven tests can assert it.
-            // Only populated while a buffer or visible indicator exists:
-            // keeps the YAML clean in the common case (no jump active).
-            const typeToJumpInfo =
-                typeToJump.indicatorVisible || typeToJump.buffer !== ''
-                    ? {
-                          buffer: typeToJump.buffer,
-                          indicatorVisible: typeToJump.indicatorVisible,
-                          indicatorStale: typeToJump.indicatorStale,
-                          lastMatchedName: lastJumpMatchedName,
-                      }
-                    : null
-
-            const state: PaneState = {
-                path: currentPath,
-                volumeId,
-                // PaneState (typed binding) wants `string | null`; the local var is
-                // `string | undefined`. Coerce to satisfy the IPC contract.
-                volumeName: volumeName ?? null,
-                files,
-                cursorIndex,
-                viewMode,
-                selectedIndices: selection.getSelectedIndices(),
-                sortField: sortFieldMap[sortBy] ?? 'name',
-                sortOrder: sortOrder === 'ascending' ? 'asc' : 'desc',
-                totalFiles: effectiveTotal,
-                loadedStart,
-                loadedEnd,
-                showHidden: showHiddenFiles,
-                typeToJump: typeToJumpInfo,
-            }
-
-            const updateFn = paneId === 'left' ? updateLeftPaneState : updateRightPaneState
-            await updateFn(state)
-        } catch {
-            // Silently ignore sync errors - MCP is optional
-        }
-    }
+    // MCP state-sync factory: mirrors this pane into the `PaneState` store. Deps
+    // pass reactive reads via getters so the factory lives in a plain `.svelte.ts`.
+    const mcpSync = createPaneMcpSync({
+        paneId,
+        getIsNetworkView: () => isNetworkView,
+        getIsSearchResultsView: () => isSearchResultsView,
+        getListingId: () => listingId,
+        getTotalCount: () => totalCount,
+        getHasParent: () => hasParent,
+        getVisibleRangeStart: () => visibleRangeStart,
+        getVisibleRangeEnd: () => visibleRangeEnd,
+        getCanonicalPath: () => canonicalPath,
+        getIncludeHidden: () => includeHidden,
+        getCurrentPath: () => currentPath,
+        getVolumeId: () => volumeId,
+        getVolumeName: () => volumeName,
+        getCursorIndex: () => cursorIndex,
+        getViewMode: () => viewMode,
+        getSelectedIndices: () => selection.getSelectedIndices(),
+        getSortBy: () => sortBy,
+        getSortOrder: () => sortOrder,
+        getShowHiddenFiles: () => showHiddenFiles,
+        getTypeToJump: () => ({
+            buffer: typeToJump.buffer,
+            indicatorVisible: typeToJump.indicatorVisible,
+            indicatorStale: typeToJump.indicatorStale,
+        }),
+        getLastJumpMatchedName: () => lastJumpMatchedName,
+    })
+    const syncPaneStateToMcp = mcpSync.syncPaneStateToMcp
 
     // Debounced/throttled IPC wrappers to avoid flooding the backend during rapid navigation.
     // The virtual scroll (cursorIndex → scrollToIndex → DOM) is fully synchronous and unaffected.
@@ -2471,148 +2358,42 @@
         })
     })
 
-    // Listen for file watcher diff events
-    $effect(() => {
-        const listenerPromise = listen<DirectoryDiff>('directory-diff', (event) => {
-            const diff = event.payload
-            // Only process diffs for our current listing
-            if (diff.listingId !== listingId) return
-
-            // Ignore out-of-order events
-            if (diff.sequence <= lastSequence) return
-            lastSequence = diff.sequence
-
-            // If a rename is active and the file being renamed was removed
-            // externally, cancel the rename gracefully
-            if (rename.active && rename.target) {
-                const targetName = rename.target.originalName
-                const wasRemoved = diff.changes.some((c) => c.type === 'remove' && c.entry.name === targetName)
-                if (wasRemoved) {
-                    rename.cancel()
-                    onRequestFocus?.()
-                }
-            }
-
-            // Refetch total count, bump the soft-refresh tick (renames don't
-            // change totalCount, so the tick is what guarantees a refresh),
-            // and schedule a throttled column-width refetch in brief mode.
-            // We deliberately DON'T bump `cacheGeneration` here: that'd cause
-            // a destructive wipe on every diff event, flickering the source
-            // pane empty mid-bulk-op.
-            void getTotalCount(listingId, includeHidden).then(async (count) => {
-                totalCount = count
-                softRefreshTick++
-                scheduleColumnWidthRefetch()
-
-                // Post-rename cursor tracking: move cursor to the renamed file
-                const nameToFind = renameFlow.pendingCursorName
-                if (nameToFind) {
-                    renameFlow.pendingCursorName = null
-                    const foundIndex = await findFileIndex(listingId, nameToFind, includeHidden)
-                    if (foundIndex !== null) {
-                        const adjustedIndex = hasParent ? foundIndex + 1 : foundIndex
-                        await setCursorIndex(adjustedIndex)
-                        return
-                    }
-                }
-
-                // Adjust cursor and selection BEFORE fetching entry under cursor,
-                // otherwise fetchEntryUnderCursor uses the old index against the
-                // new (shorter) listing, causing "index out of bounds" errors.
-                const hasStructuralChanges = diff.changes.some((c) => c.type === 'add' || c.type === 'remove')
-                if (hasStructuralChanges) {
-                    const removeIndices = diff.changes.filter((c) => c.type === 'remove').map((c) => c.index)
-                    const addIndices = diff.changes.filter((c) => c.type === 'add').map((c) => c.index)
-
-                    const offset = hasParent ? 1 : 0
-
-                    // Cursor: always adjust (no operation-specific cursor handling exists)
-                    const backendCursor = cursorIndex - offset
-                    const adjustedCursor = adjustSelectionIndices([backendCursor], removeIndices, addIndices)
-                    if (adjustedCursor.length > 0) {
-                        cursorIndex = adjustedCursor[0] + offset
-                    } else {
-                        cursorIndex = Math.max(0, Math.min(cursorIndex, count - 1 + offset))
-                    }
-
-                    // Selection: only adjust outside operations (operations handle via findFileIndices)
-                    if (operationSelectedNames === null && selection.selectedIndices.size > 0) {
-                        const backendSelected = selection.getSelectedIndices().map((i) => i - offset)
-                        const adjusted = adjustSelectionIndices(backendSelected, removeIndices, addIndices)
-                        selection.setSelectedIndices(adjusted.map((i) => i + offset))
-                    }
-                }
-
-                void fetchEntryUnderCursor()
-                void fetchListingStats()
-
-                // Diff-driven selection adjustment: re-resolve selected names to new indices
-                if (operationSelectedNames !== null && operationSelectedNames !== 'all') {
-                    diffGeneration++
-                    const myGeneration = diffGeneration
-                    void findFileIndices(listingId, operationSelectedNames, includeHidden).then((nameToIndexMap) => {
-                        if (myGeneration !== diffGeneration) return
-                        selection.setSelectedIndices(buildFrontendIndices(nameToIndexMap, hasParent))
-                    })
-                }
-            })
-        })
-
-        return () => {
-            void listenerPromise
-                .then((unsub) => {
-                    unsub()
-                })
-                .catch(() => {})
-        }
-    })
-
-    // Listen for write-source-item-done events (gradual deselection as each source completes).
-    // No operationId filter needed: only one write op runs at a time, and only the pane with
-    // an active snapshot (operationSelectedNames) processes events.
-    $effect(() => {
-        const listenerPromise = listen<WriteSourceItemDoneEvent>('write-source-item-done', (event) => {
-            // Only process when we have an active operation with explicit name tracking
-            if (!Array.isArray(operationSelectedNames)) return
-
-            const filename = extractFilename(event.payload.sourcePath)
-            void findFileIndex(listingId, filename, includeHidden).then((backendIndex) => {
-                if (backendIndex === null) return
-                const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
-                selection.selectedIndices.delete(frontendIndex)
-            })
-        })
-
-        return () => {
-            void listenerPromise
-                .then((unsub) => {
-                    unsub()
-                })
-                .catch(() => {})
-        }
-    })
-
-    // Listen for directory-deleted events (watched directory was removed externally)
-    $effect(() => {
-        const listenerPromise = listen<DirectoryDeletedEvent>('directory-deleted', (event) => {
-            if (event.payload.listingId !== listingId) return
-
-            log.info('Directory deleted externally, navigating to nearest valid parent: {path}', {
-                path: event.payload.path,
-            })
-
-            void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
-                navigateToFallback(validPath)
-            })
-        })
-
-        return () => {
-            void listenerPromise
-                .then((unsub) => {
-                    unsub()
-                })
-                .catch(() => {})
-        }
+    // File-watcher sync: directory-diff reconciliation (cursor + selection),
+    // write-source-item-done gradual deselection, and directory-deleted fallback.
+    // Registered once during init; deps pass reactive reads via getters and the
+    // few mutations back via setters/callbacks (see `listing-diff-sync.svelte.ts`).
+    initListingDiffSync({
+        selection,
+        rename,
+        renameFlow,
+        getListingId: () => listingId,
+        getIncludeHidden: () => includeHidden,
+        getHasParent: () => hasParent,
+        getCursorIndex: () => cursorIndex,
+        setCursorIndex,
+        applyCursorIndex: (index: number) => {
+            cursorIndex = index
+        },
+        getCurrentPath: () => currentPath,
+        getVolumePath: () => volumePath,
+        getOperationSelectedNames: () => operationSelectedNames,
+        getLastSequence: () => lastSequence,
+        setLastSequence: (sequence: number) => {
+            lastSequence = sequence
+        },
+        getDiffGeneration: () => diffGeneration,
+        bumpDiffGeneration: () => ++diffGeneration,
+        setTotalCount: (count: number) => {
+            totalCount = count
+        },
+        bumpSoftRefreshTick: () => {
+            softRefreshTick++
+        },
+        scheduleColumnWidthRefetch,
+        fetchEntryUnderCursor: () => void fetchEntryUnderCursor(),
+        fetchListingStats: () => void fetchListingStats(),
+        onRequestFocus,
+        navigateToFallback,
     })
 
     // Listen for menu action events
