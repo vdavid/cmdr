@@ -542,11 +542,13 @@ async fn smb_integration_scan_for_conflicts() {
             name: "exists.txt".to_string(),
             size: 100,
             modified: Some(0),
+            is_directory: false,
         },
         SourceItemInfo {
             name: "missing.txt".to_string(),
             size: 200,
             modified: Some(0),
+            is_directory: false,
         },
     ];
 

@@ -326,8 +326,11 @@ pub struct WriteConflictEvent {
     pub source_path: String,
     pub destination_path: String,
     /// Source size in bytes. Files use `metadata.len()`; folder sources use
-    /// the recursive total from the pre-flight scan. Always known.
-    pub source_size: u64,
+    /// the recursive total from the pre-flight scan when known. `None`
+    /// ("unknown") for a folder source on a path that ran no pre-flight scan
+    /// (the same-volume move fast path), which the FE renders as `(unknown)`,
+    /// mirroring `destination_size`.
+    pub source_size: Option<u64>,
     /// Destination size in bytes. `Some` for files (always from
     /// `metadata.len()`) and for folders covered by the drive index;
     /// `None` ("unknown") for folders the index doesn't cover (network mounts,
@@ -340,7 +343,8 @@ pub struct WriteConflictEvent {
     pub destination_modified: Option<i64>,
     pub destination_is_newer: bool,
     /// `destination_size - source_size` when both are known. `None` collapses
-    /// the difference when `destination_size` is unknown.
+    /// the difference when either `destination_size` or `source_size` is
+    /// unknown.
     pub size_difference: Option<i64>,
     /// `true` when the source side is a directory. Lets the FE render the
     /// distinct "replace a folder with a file" / "replace a file with a folder"
@@ -967,4 +971,49 @@ pub struct VolumeCopyScanResult {
     pub total_bytes: u64,
     pub dest_space: SpaceInfo,
     pub conflicts: Vec<ScanConflict>,
+}
+
+#[cfg(test)]
+mod write_conflict_event_serde_tests {
+    use super::*;
+
+    fn sample_event(source_size: Option<u64>) -> WriteConflictEvent {
+        WriteConflictEvent {
+            operation_id: "op-1".to_string(),
+            source_path: "/src/photos".to_string(),
+            destination_path: "/dst/photos".to_string(),
+            source_size,
+            destination_size: Some(4_096),
+            source_modified: Some(1_700_000_000),
+            destination_modified: Some(1_700_000_001),
+            destination_is_newer: true,
+            size_difference: source_size.map(|s| 4_096_i64 - s as i64),
+            source_is_directory: true,
+            destination_is_directory: true,
+        }
+    }
+
+    #[test]
+    fn write_conflict_event_round_trips_with_known_source_size() {
+        let event = sample_event(Some(1_024));
+        let json = serde_json::to_string(&event).unwrap();
+        // camelCase on the wire (matches the FE binding).
+        assert!(json.contains("\"sourceSize\":1024"), "json was: {json}");
+        let back: WriteConflictEvent = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.source_size, Some(1_024));
+        assert_eq!(back.size_difference, Some(4_096 - 1_024));
+        assert!(back.source_is_directory);
+        assert!(back.destination_is_directory);
+    }
+
+    #[test]
+    fn write_conflict_event_round_trips_with_unknown_source_size() {
+        let event = sample_event(None);
+        let json = serde_json::to_string(&event).unwrap();
+        // `None` serializes as JSON null — the FE renders `(unknown)`.
+        assert!(json.contains("\"sourceSize\":null"), "json was: {json}");
+        let back: WriteConflictEvent = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.source_size, None);
+        assert_eq!(back.size_difference, None);
+    }
 }

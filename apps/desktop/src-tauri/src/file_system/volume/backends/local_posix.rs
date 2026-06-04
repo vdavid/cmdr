@@ -665,6 +665,8 @@ impl Volume for LocalPosixVolume {
                             dest_size: meta.len(),
                             source_modified: item.modified,
                             dest_modified,
+                            source_is_directory: item.is_directory,
+                            dest_is_directory: meta.is_dir(),
                         });
                     }
                 }

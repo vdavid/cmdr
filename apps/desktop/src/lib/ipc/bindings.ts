@@ -3491,6 +3491,17 @@ export type ScanConflict = {
   sourceModified: number | null
   // Unix timestamp in seconds.
   destModified: number | null
+  /**
+   *  `true` when the source item is a directory (from the caller-supplied
+   *  `SourceItemInfo`). Lets the FE classify a dir-vs-dir collision as a
+   *  silent merge ("will merge") instead of a conflict.
+   */
+  sourceIsDirectory: boolean
+  /**
+   *  `true` when the destination item is a directory (from the dest listing
+   *  entry). See `source_is_directory`.
+   */
+  destIsDirectory: boolean
 }
 
 // Result of starting a scan preview.
@@ -3775,6 +3786,12 @@ export type SourceItemInput = {
   size: number
   // Modification time (Unix timestamp in seconds).
   modified: number | null
+  /**
+   *  `true` when the source item is a directory. The FE has this from the
+   *  `FileEntry` it already holds; it lets `scan_for_conflicts` flag a
+   *  dir-vs-dir collision the FE can classify as a silent merge.
+   */
+  isDirectory?: boolean
 }
 
 // Space information for a volume.

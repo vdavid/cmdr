@@ -1830,6 +1830,8 @@ impl Volume for SmbVolume {
                         dest_size: existing.size.unwrap_or(0),
                         source_modified: item.modified,
                         dest_modified,
+                        source_is_directory: item.is_directory,
+                        dest_is_directory: existing.is_directory,
                     });
                 }
             }

@@ -1037,6 +1037,8 @@
         {@const overwriteAllLabel = isFileOverFolder ? 'Overwrite folders with files' : 'Overwrite all'}
         {@const destSize = conflictEvent.destinationSize}
         {@const destSizeUnknown = destSize === null}
+        {@const srcSize = conflictEvent.sourceSize}
+        {@const srcSizeUnknown = srcSize === null}
         {@const smallerDisabledTooltip = destSizeUnknown
             ? "Can't compare — target folder size is unknown."
             : undefined}
@@ -1087,9 +1089,13 @@
                 </div>
                 <div class="conflict-file">
                     <span class="conflict-file-label">{newLabel}</span>
-                    <span class="conflict-file-size {getSizeColorClass(conflictEvent.sourceSize)}"
-                        >{formatFileSize(conflictEvent.sourceSize)}</span
-                    >
+                    {#if srcSizeUnknown}
+                        <span class="conflict-file-size unknown">(unknown)</span>
+                    {:else}
+                        <span class="conflict-file-size {getSizeColorClass(srcSize)}"
+                            >{formatFileSize(srcSize)}</span
+                        >
+                    {/if}
                     {#if newIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
                     <span class="conflict-file-date"
                         >{conflictEvent.sourceModified ? formatDate(conflictEvent.sourceModified) : ''}</span

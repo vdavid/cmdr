@@ -551,11 +551,13 @@ async fn test_scan_for_conflicts_no_conflicts() {
             name: "newfile.txt".to_string(),
             size: 100,
             modified: None,
+            is_directory: false,
         },
         SourceItemInfo {
             name: "another.txt".to_string(),
             size: 200,
             modified: None,
+            is_directory: false,
         },
     ];
 
@@ -584,16 +586,19 @@ async fn test_scan_for_conflicts_with_conflicts() {
             name: "existing.txt".to_string(),
             size: 100,
             modified: Some(1_700_000_000),
+            is_directory: false,
         },
         SourceItemInfo {
             name: "newfile.txt".to_string(),
             size: 200,
             modified: None,
+            is_directory: false,
         },
         SourceItemInfo {
             name: "another.txt".to_string(),
             size: 300,
             modified: Some(1_700_000_000),
+            is_directory: false,
         },
     ];
 

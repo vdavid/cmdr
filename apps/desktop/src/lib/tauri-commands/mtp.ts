@@ -460,6 +460,12 @@ export interface VolumeConflictInfo {
   destSize: number
   sourceModified: number | null
   destModified: number | null
+  /** `true` when the source item is a directory. Lets the FE classify a
+   *  dir-vs-dir collision as a silent merge ("will merge") instead of a
+   *  conflict. */
+  sourceIsDirectory: boolean
+  /** `true` when the destination item is a directory. See `sourceIsDirectory`. */
+  destIsDirectory: boolean
 }
 
 /** Result of scanning for a volume copy operation. */

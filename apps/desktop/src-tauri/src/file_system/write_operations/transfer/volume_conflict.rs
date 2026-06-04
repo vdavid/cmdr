@@ -95,10 +95,11 @@ pub(super) async fn resolve_volume_conflict(
         ConflictResolution::Stop => {
             // Need to prompt user - gather metadata for the conflict event.
             // Source size: the pre-flight scan hint is authoritative for both
-            // file and folder sources. Fall back to 0 when the source is a
-            // file with no hint (rare MCP / skip-preflight path); folders
-            // without a hint shouldn't happen post-preflight.
-            let source_size = source_size_hint.unwrap_or(0);
+            // file and folder sources. Surface it opportunistically — `None`
+            // ("unknown") when no hint reached us (the same-volume move fast
+            // path runs no pre-flight scan), which the FE renders as
+            // `(unknown)`, mirroring the destination side.
+            let source_size: Option<u64> = source_size_hint;
 
             // Destination size: prefer the hint (already populated from the
             // caller's stat for file destinations). For folder destinations
@@ -133,7 +134,11 @@ pub(super) async fn resolve_volume_conflict(
                 .and_then(|m| m.modified_at)
                 .map(|s| s as i64);
             let destination_is_newer = matches!((source_modified, destination_modified), (Some(s), Some(d)) if d > s);
-            let size_difference = dest_size.map(|d| d as i64 - source_size as i64);
+            // Collapse to `None` when either side is unknown.
+            let size_difference = match (dest_size, source_size) {
+                (Some(d), Some(s)) => Some(d as i64 - s as i64),
+                _ => None,
+            };
 
             events.emit_conflict(WriteConflictEvent {
                 operation_id: operation_id.to_string(),
@@ -174,7 +179,7 @@ pub(super) async fn resolve_volume_conflict(
                         source_path,
                         dest_volume,
                         dest_path,
-                        Some(source_size),
+                        source_size,
                         dest_size,
                     )
                     .await;

@@ -329,6 +329,7 @@ pub async fn scan_for_volume_copy(
                 modified: metadata
                     .as_ref()
                     .and_then(|m| m.modified_at.map(|ms| (ms / 1000) as i64)),
+                is_directory: metadata.as_ref().map(|m| m.is_directory).unwrap_or(false),
             });
         }
     }

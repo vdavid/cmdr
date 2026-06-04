@@ -146,6 +146,7 @@ pub async fn scan_volume_for_conflicts(
             name: item.name,
             size: item.size,
             modified: item.modified,
+            is_directory: item.is_directory,
         })
         .collect();
     let dest_path = PathBuf::from(dest_path);
@@ -170,4 +171,9 @@ pub struct SourceItemInput {
     pub size: u64,
     /// Modification time (Unix timestamp in seconds).
     pub modified: Option<i64>,
+    /// `true` when the source item is a directory. The FE has this from the
+    /// `FileEntry` it already holds; it lets `scan_for_conflicts` flag a
+    /// dir-vs-dir collision the FE can classify as a silent merge.
+    #[serde(default)]
+    pub is_directory: bool,
 }

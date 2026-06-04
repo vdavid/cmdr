@@ -1319,7 +1319,8 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     let conflicts = stop_events.conflicts.lock().unwrap();
     assert_eq!(conflicts.len(), 1);
     assert_eq!(
-        conflicts[0].source_size, 15,
+        conflicts[0].source_size,
+        Some(15),
         "conflict event must carry the hint's size",
     );
     assert_eq!(

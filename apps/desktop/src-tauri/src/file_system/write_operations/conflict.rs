@@ -397,18 +397,26 @@ fn build_conflict_event(
     let destination_is_directory = dest_meta.map(|m| m.is_dir()).unwrap_or(false);
 
     // Files: use `metadata.len()` directly. Directories: use the caller-
-    // supplied recursive total (the BE never walks a destination tree).
-    let source_size = if source_is_directory {
-        source_size_for_dir.unwrap_or(0)
+    // supplied recursive total (the BE never walks a destination tree). On the
+    // local-FS path the source is always stat-able, so a file source is always
+    // `Some`; a folder source is `Some` post-preflight and `None` only on the
+    // rare skip-preflight path.
+    let source_size: Option<u64> = if source_is_directory {
+        source_size_for_dir
     } else {
-        source_meta.map(|m| m.len()).unwrap_or(0)
+        source_meta.map(|m| m.len())
     };
     let destination_size = if destination_is_directory {
         destination_size_for_dir
     } else {
         dest_meta.map(|m| m.len())
     };
-    let size_difference = destination_size.map(|d| d as i64 - source_size as i64);
+    // Collapse to `None` when either side is unknown — the FE can't render a
+    // meaningful "(larger)" annotation without both numbers.
+    let size_difference = match (destination_size, source_size) {
+        (Some(d), Some(s)) => Some(d as i64 - s as i64),
+        _ => None,
+    };
 
     let unix_secs = |m: Option<&fs::Metadata>| -> Option<i64> {
         m?.modified()
@@ -968,7 +976,7 @@ mod build_conflict_event_tests {
             Some(99999),
         );
 
-        assert_eq!(event.source_size, 5);
+        assert_eq!(event.source_size, Some(5));
         assert_eq!(event.destination_size, Some(6));
         assert_eq!(event.size_difference, Some(1));
     }
@@ -997,7 +1005,7 @@ mod build_conflict_event_tests {
             Some(4_096_000),
         );
 
-        assert_eq!(event.source_size, 1);
+        assert_eq!(event.source_size, Some(1));
         assert_eq!(event.destination_size, Some(4_096_000));
         assert_eq!(event.size_difference, Some(4_095_999));
     }
@@ -1018,7 +1026,7 @@ mod build_conflict_event_tests {
 
         let event = build_conflict_event("op", &source, &dest, Some(&source_meta), Some(&dest_meta), None, None);
 
-        assert_eq!(event.source_size, 1);
+        assert_eq!(event.source_size, Some(1));
         assert_eq!(event.destination_size, None);
         assert_eq!(event.size_difference, None);
     }
@@ -1046,9 +1054,30 @@ mod build_conflict_event_tests {
             None,
         );
 
-        assert_eq!(event.source_size, 123_456);
+        assert_eq!(event.source_size, Some(123_456));
         assert_eq!(event.destination_size, Some(2));
         assert_eq!(event.size_difference, Some(2 - 123_456));
+    }
+
+    #[test]
+    fn folder_source_with_unknown_size_surfaces_none() {
+        // A folder source with no pre-flight scan total (the skip-preflight /
+        // fast-path case) surfaces `source_size: None`, and `size_difference`
+        // collapses to `None` just as it does when the destination is unknown.
+        let temp = TempDir::new().unwrap();
+        let source = temp.path().join("payload");
+        let dest = temp.path().join("notes.txt");
+        fs::create_dir(&source).unwrap();
+        fs::write(&dest, b"hi").unwrap();
+
+        let source_meta = fs::metadata(&source).unwrap();
+        let dest_meta = fs::metadata(&dest).unwrap();
+
+        let event = build_conflict_event("op", &source, &dest, Some(&source_meta), Some(&dest_meta), None, None);
+
+        assert_eq!(event.source_size, None);
+        assert_eq!(event.destination_size, Some(2));
+        assert_eq!(event.size_difference, None);
     }
 }
 

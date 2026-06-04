@@ -276,6 +276,13 @@
                     name,
                     size: 0, // Size not known at this point, but name matching is enough for conflict detection
                     modified: null,
+                    // Per-item directory type isn't available from `sourcePaths`
+                    // (strings) alone. The dialog's props carry only paths plus
+                    // aggregate `fileCount` / `folderCount`, so we send `false`
+                    // here for now; the conflict scan still detects collisions by
+                    // name. Plumbing the real per-item type (so dir-vs-dir
+                    // collisions classify as "will merge") is the FE wiring in M2.
+                    isDirectory: false,
                 }
             })
 

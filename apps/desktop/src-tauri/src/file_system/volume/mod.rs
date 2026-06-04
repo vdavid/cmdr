@@ -198,6 +198,13 @@ pub struct ScanConflict {
     pub source_modified: Option<i64>,
     /// Unix timestamp in seconds.
     pub dest_modified: Option<i64>,
+    /// `true` when the source item is a directory (from the caller-supplied
+    /// `SourceItemInfo`). Lets the FE classify a dir-vs-dir collision as a
+    /// silent merge ("will merge") instead of a conflict.
+    pub source_is_directory: bool,
+    /// `true` when the destination item is a directory (from the dest listing
+    /// entry). See `source_is_directory`.
+    pub dest_is_directory: bool,
 }
 
 /// Space information for a volume.
@@ -220,6 +227,10 @@ pub struct SourceItemInfo {
     pub size: u64,
     /// Unix timestamp in seconds.
     pub modified: Option<i64>,
+    /// `true` when the source item is a directory. The caller knows this from
+    /// the `FileEntry` it already has in hand; backends copy it straight onto
+    /// the resulting `ScanConflict::source_is_directory`.
+    pub is_directory: bool,
 }
 
 /// Error type for volume operations.
@@ -1025,5 +1036,51 @@ mod id_tests {
         // Sanity: the path-based helper is unchanged for local volumes.
         assert_eq!(path_to_id("/"), "root");
         assert_eq!(path_to_id("/Volumes/External"), "volumesexternal");
+    }
+}
+
+#[cfg(test)]
+mod scan_conflict_serde_tests {
+    use super::*;
+
+    #[test]
+    fn scan_conflict_round_trips_directory_flags() {
+        let conflict = ScanConflict {
+            source_path: "photos".to_string(),
+            dest_path: "/dst/photos".to_string(),
+            source_size: 0,
+            dest_size: 4_096,
+            source_modified: Some(1_700_000_000),
+            dest_modified: Some(1_700_000_001),
+            source_is_directory: true,
+            dest_is_directory: true,
+        };
+
+        let json = serde_json::to_string(&conflict).unwrap();
+        // camelCase on the wire (matches the FE binding).
+        assert!(json.contains("\"sourceIsDirectory\":true"), "json was: {json}");
+        assert!(json.contains("\"destIsDirectory\":true"), "json was: {json}");
+
+        let back: ScanConflict = serde_json::from_str(&json).unwrap();
+        assert!(back.source_is_directory);
+        assert!(back.dest_is_directory);
+    }
+
+    #[test]
+    fn scan_conflict_round_trips_type_mismatch_flags() {
+        let conflict = ScanConflict {
+            source_path: "data".to_string(),
+            dest_path: "/dst/data".to_string(),
+            source_size: 10,
+            dest_size: 20,
+            source_modified: None,
+            dest_modified: None,
+            source_is_directory: true,
+            dest_is_directory: false,
+        };
+
+        let back: ScanConflict = serde_json::from_str(&serde_json::to_string(&conflict).unwrap()).unwrap();
+        assert!(back.source_is_directory);
+        assert!(!back.dest_is_directory);
     }
 }

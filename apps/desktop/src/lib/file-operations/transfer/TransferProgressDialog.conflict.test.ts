@@ -360,3 +360,38 @@ describe('TransferProgressDialog conflict — file → folder, destinationSize n
     await expectNoA11yViolations(target)
   })
 })
+
+describe('TransferProgressDialog conflict — folder → file, sourceSize null', () => {
+  // A folder source on a path with no pre-flight scan (the same-volume move
+  // fast path) carries `sourceSize: null`. The New slot must render `(unknown)`
+  // exactly the way the Existing slot does for a null destination size.
+  const event = makeEvent({
+    sourceIsDirectory: true,
+    destinationIsDirectory: false,
+    sourceSize: null,
+    destinationSize: 1024,
+    sizeDifference: null,
+  })
+
+  it('renders "(unknown)" in the New slot using the muted color class', async () => {
+    const target = await mountDialogWithConflict(event)
+    const sizes = target.querySelectorAll('.conflict-file .conflict-file-size')
+    // [0] = Existing (file), [1] = New (folder).
+    expect(sizes.length).toBe(2)
+    const newSize = sizes[1]
+    expect(newSize.textContent.trim()).toBe('(unknown)')
+    expect(newSize.classList.contains('unknown')).toBe(true)
+  })
+
+  it('still renders the known destination size in the Existing slot', async () => {
+    const target = await mountDialogWithConflict(event)
+    const existingSize = target.querySelector('.conflict-file .conflict-file-size')
+    expect(existingSize?.textContent.trim()).toBe('1024 B')
+    expect(existingSize?.classList.contains('unknown')).toBe(false)
+  })
+
+  it('has no a11y violations with (unknown) source size', async () => {
+    const target = await mountDialogWithConflict(event)
+    await expectNoA11yViolations(target)
+  })
+})

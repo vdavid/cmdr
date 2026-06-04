@@ -663,6 +663,7 @@ async fn test_scan_for_conflicts_no_conflicts() {
         name: "other.txt".to_string(),
         size: 100,
         modified: None,
+        is_directory: false,
     }];
 
     let conflicts = volume.scan_for_conflicts(&source_items, Path::new("/")).await.unwrap();
@@ -681,6 +682,7 @@ async fn test_scan_for_conflicts_detects_conflict() {
         name: "report.txt".to_string(),
         size: 200,
         modified: Some(1_700_000_000),
+        is_directory: false,
     }];
 
     let conflicts = volume.scan_for_conflicts(&source_items, Path::new("/")).await.unwrap();
@@ -688,6 +690,70 @@ async fn test_scan_for_conflicts_detects_conflict() {
     assert_eq!(conflicts[0].source_path, "report.txt");
     assert_eq!(conflicts[0].source_size, 200);
     assert_eq!(conflicts[0].dest_size, 11); // "old content"
+    // File vs file: both flags false.
+    assert!(!conflicts[0].source_is_directory);
+    assert!(!conflicts[0].dest_is_directory);
+}
+
+#[tokio::test]
+async fn test_scan_for_conflicts_populates_directory_flags() {
+    let volume = InMemoryVolume::new("Test");
+    // Dest holds a directory `photos` and a file `notes.txt`.
+    volume.create_directory(Path::new("/photos")).await.unwrap();
+    volume.create_file(Path::new("/notes.txt"), b"hello").await.unwrap();
+
+    // Source offers: a dir `photos` (→ dir-vs-dir merge), a file `notes.txt`
+    // (→ file-vs-file), and a file `photos.zip` that doesn't clash.
+    let source_items = vec![
+        SourceItemInfo {
+            name: "photos".to_string(),
+            size: 0,
+            modified: None,
+            is_directory: true,
+        },
+        SourceItemInfo {
+            name: "notes.txt".to_string(),
+            size: 99,
+            modified: None,
+            is_directory: false,
+        },
+        SourceItemInfo {
+            name: "photos.zip".to_string(),
+            size: 12,
+            modified: None,
+            is_directory: false,
+        },
+    ];
+
+    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("/")).await.unwrap();
+    assert_eq!(conflicts.len(), 2);
+
+    let dir_conflict = conflicts.iter().find(|c| c.source_path == "photos").unwrap();
+    assert!(dir_conflict.source_is_directory, "source dir flag");
+    assert!(dir_conflict.dest_is_directory, "dest dir flag");
+
+    let file_conflict = conflicts.iter().find(|c| c.source_path == "notes.txt").unwrap();
+    assert!(!file_conflict.source_is_directory);
+    assert!(!file_conflict.dest_is_directory);
+}
+
+#[tokio::test]
+async fn test_scan_for_conflicts_type_mismatch_flags() {
+    let volume = InMemoryVolume::new("Test");
+    // Dest `data` is a file; source `data` is a directory.
+    volume.create_file(Path::new("/data"), b"x").await.unwrap();
+
+    let source_items = vec![SourceItemInfo {
+        name: "data".to_string(),
+        size: 0,
+        modified: None,
+        is_directory: true,
+    }];
+
+    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("/")).await.unwrap();
+    assert_eq!(conflicts.len(), 1);
+    assert!(conflicts[0].source_is_directory, "source is a dir");
+    assert!(!conflicts[0].dest_is_directory, "dest is a file");
 }
 
 #[test]
