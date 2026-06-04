@@ -1918,6 +1918,19 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
     }
 }
 
+// The `volume_copy_tests.rs` suite was split for size. The crash-safety and
+// rollback suites live in their own files; both share `make_state` /
+// `make_volumes` from `tests` (`super::tests`). The bench suite is a single
+// `#[ignore]`d, network-gated test.
+#[cfg(test)]
+#[path = "volume_copy_bench.rs"]
+mod bench;
+#[cfg(test)]
+#[path = "volume_copy_crashsafe_tests.rs"]
+mod crashsafe_tests;
+#[cfg(test)]
+#[path = "volume_copy_rollback_tests.rs"]
+mod rollback_tests;
 #[cfg(test)]
 #[path = "volume_copy_tests.rs"]
 mod tests;
