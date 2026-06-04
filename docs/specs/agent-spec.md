@@ -1,6 +1,8 @@
 # Agent: v1.0 spec (with v1.5+ outlook)
 
-Status: design complete, not yet implemented. 2026-06-04.
+Status: design complete, not yet implemented. 2026-06-04. The spec went through three
+fresh-eyes review rounds (including verification of its codebase claims against the live tree)
+before landing.
 
 This spec captures a full design session between David and an AI agent. It is written so that a
 fresh agent (or human) can pick it up with no other context. Decisions below are settled unless
@@ -8,10 +10,6 @@ they appear in §18 (open questions); intentions and principles (§2) govern any
 doesn't explicitly answer. §19 is the decision log with rationale, kept as a second angle on the
 same material for future planning and implementing agents. Code paths in this spec are relative
 to `apps/desktop/src-tauri/` unless noted.
-
-Related: the data directory rename is deliberately NOT part of this work; a rough companion draft,
-[data-dir-rename-spec-draft.md](data-dir-rename-spec-draft.md), is committed alongside this spec
-(written from session knowledge only; it says so up front).
 
 ## 1. What this is
 
@@ -110,13 +108,14 @@ context, and memory.
 | `drive-index-{volume_id}.db` (per volume) | `~/Library/Caches/<bundle id>/` | Regenerable cache: the drive index (today's per-volume `index-{volume_id}.db` files, renamed and relocated) | None; Time Machine skips Caches   |
 | `main.db`                   | `<app data dir>` (Application Support) | Durable catch-all: summaries, proposals, logs, conversations, action history  | Time Machine picks it up normally |
 
-Correction from review: the existing drive index is already **per-volume**
-(`index-{volume_id}.db`, per `indexing/CLAUDE.md`), not a single file. The relocation is therefore
+The existing drive index is already **per-volume** (`index-{volume_id}.db`, per
+`indexing/CLAUDE.md`), not a single file. The relocation is therefore
 N files (or a `drive-index/` subdirectory), the naming keeps the volume id, and it composes with
 the multi-volume keying in §4.3 rather than colliding with it. Migration for existing installs
 needs a decision (§18.17): move the files, or accept that relocation orphans the old
 Application Support indexes and triggers a one-time rescan on upgrade. Note the Caches path uses
-the **current** bundle id; this is independent of the deferred data-dir rename. Hereafter "the
+the **current** bundle id (a separate effort may rename these directories to friendlier names;
+it is independent of this work). Hereafter "the
 drive index" means this per-volume DB family.
 
 Rationale: regenerable vs. valuable data, different lifecycles, different backup policies, and it
@@ -273,7 +272,7 @@ retry/backoff.
 ### 6.1 Sources
 
 - **File system events**: consume the indexer's existing event stream, not a parallel raw FSEvents
-  subscription. Review flagged that the indexer already coalesces, dedups, and batches FS events
+  subscription. The indexer already coalesces, dedups, and batches FS events
   (its own flush window, replay vs. live loops, verifier corrections, per `indexing/`); the agent's
   coalescer (§6.2) is a second, interest-oriented stage over that already-corrected stream
   (subscribe, don't poll; don't duplicate dedup machinery). Exact tap point, and how this relates
@@ -462,7 +461,7 @@ that inherits the originating wake's context.
 - Per-wake budgets: max tool turns, max wall time, max file reads. A runaway loop must be
   impossible by construction.
 - Cancellation follows the house pattern (`AtomicBool`, checked at tool-call boundaries); agent
-  activity is visible and killable like any long-running Cmdr task. One review-flagged nuance: an
+  activity is visible and killable like any long-running Cmdr task. One nuance: an
   in-flight provider HTTP call is a network round-trip an `AtomicBool` cannot interrupt, the same
   known gap architecture-patterns.md documents for blocking syscalls. The existing `ai/` layer
   already has a stream-cancel mechanism for exactly this; the agent loop reuses it so an LLM call
@@ -525,8 +524,8 @@ Single-shot prompts are interchangeable across providers; agent loops are not. T
 
 ### 10.2 Architecture
 
-**Correction from review: the provider layer already exists in the codebase.** The tree ships the
-`genai` crate (pinned `=0.6.0-beta.19` at review time; note that `src/ai/CLAUDE.md`'s version line
+**The provider layer already exists in the codebase.** The tree ships the
+`genai` crate (pinned `=0.6.0-beta.19` at the time of writing; note that `src/ai/CLAUDE.md`'s version line
 is stale and says 0.5.3, `Cargo.toml` is authoritative) wrapped by `src/ai/client.rs`, with
 `src/ai/CLAUDE.md` documenting the same per-provider quirk rationale this spec describes
 (Responses-API routing, per-provider temperature handling, ~20 providers normalized). Do NOT run an
@@ -575,7 +574,7 @@ automated tests) are the second. One tool registry serves both, capability-gated
 internal agent gets memory and notify tools; AI clients don't. AI write paths converge on
 the proposal queue (§8.1).
 
-**Current reality (per `src/mcp/CLAUDE.md`, flagged in review):** the shipped MCP server is built
+**Current reality (per `src/mcp/CLAUDE.md`):** the shipped MCP server is built
 on a different write philosophy, "security via parity": external agents act through the same UI
 actions a user performs (navigate, operate through the UI), deliberately without raw `fs.read`/
 `fs.write` tools. That is not a proposal-gated registry, and the existing server's tools are
@@ -621,8 +620,6 @@ defense remains §8 (content can at worst produce a reviewable proposal).
   Initial-index spend is shown in the preflight before it happens.
 
 ### 12.1 Enable flow and the Full Disk Access gate
-
-Flagged in review as a hard prerequisite the first draft missed entirely:
 
 - **Everything the agent reads in its home turf is TCC-protected.** Downloads, Documents, and
   Desktop are exactly the paths AGENTS.md's FDA-gate rule covers. The agent's read path (hot-folder
@@ -676,7 +673,7 @@ summaries); the spend display.
 1. **Storage**: `main.db` with migrations, retention, volumes table; relocate/rename the
    per-volume index DBs (`index-{volume_id}.db`) to `~/Library/Caches/<bundle id>/` as
    `drive-index-{volume_id}.db`, with the existing-install migration decision from §18.17. Uses
-   the current bundle id; not blocked on the deferred data-dir rename.
+   the current bundle id; not blocked on the separate directory-rename effort.
 2. **Importance scorer** (+ cache in the drive index) with thorough unit tests.
 3. **Provider layer**: the `AgentLlm` trait over the existing `genai` client; verify and extend
    the quirk handling (§10.1) against it; gap-filling adapters only where genai falls short; the
@@ -805,5 +802,5 @@ summaries); the spend display.
 | D44 | Name: "agent" (user-facing and internal); "AI" stays the capability umbrella                 | Name-internals-after-UI rule; honest and specific enough                                    |
 | D45 | Prompts as markdown + frontmatter + minijinja-as-needed; dev hot-reload; `prompt-lint` check | Iterate fast; catch template drift in CI                                                    |
 | D46 | Acceptance rate is the north-star metric                                                     | Directly measures suggestion quality                                                        |
-| D47 | Data-dir rename decoupled into its own spec                                                  | Aesthetic change with plugin/migration risk; must not block the agent                       |
+| D47 | Data-dir rename decoupled from this work                                                     | Aesthetic change with plugin/migration risk; must not block the agent                       |
 | D48 | User action log: local-only, opt-out, ~90-day retention                                      | High-signal input with a privacy posture                                                    |
