@@ -112,8 +112,9 @@ The existing drive index is already **per-volume** (`index-{volume_id}.db`, per
 `indexing/CLAUDE.md`), not a single file. The relocation is therefore
 N files (or a `drive-index/` subdirectory), the naming keeps the volume id, and it composes with
 the multi-volume keying in §4.3 rather than colliding with it. Migration for existing installs
-needs a decision (§18.17): move the files, or accept that relocation orphans the old
-Application Support indexes and triggers a one-time rescan on upgrade. Note the Caches path uses
+(decided): prefer moving the files, a same-volume rename expected to be cheap and nicer for the
+existing testers; if it turns out nontrivial, a one-time full rescan on upgrade is acceptable.
+Note the Caches path uses
 the **current** bundle id (a separate effort may rename these directories to friendlier names;
 it is independent of this work). Hereafter "the
 drive index" means this per-volume DB family.
@@ -277,7 +278,7 @@ retry/backoff.
   coalescer (§6.2) is a second, interest-oriented stage over that already-corrected stream
   (subscribe, don't poll; don't duplicate dedup machinery). Exact tap point, and how this relates
   to the standalone `downloads/` watcher (already shipped, so this is integration with an
-  existing subsystem, not co-design), is an open question (§18.19). Index roll-forward on
+  existing subsystem, not co-design), is an open question (§18.14). Index roll-forward on
   startup feeds the same path (§6.4).
 - **User actions inside Cmdr**: operations and navigation, logged to `user_action_log`. These are
   the highest-signal events because they carry intent: a user manually moving three PDFs from
@@ -370,10 +371,9 @@ markdown.
 
 ### 8.1 The contract
 
-The agent's only write path. Every AI consumer is intended to share it (§11.1; whether external
-AI clients migrate fully off UI-parity writes is open, §18.16): the internal agent, and any
+The agent's only write path, shared by every AI consumer (§11.1): the internal agent, and any
 external AI client. One review surface gates "an AI wants to touch your files," regardless of
-which AI. Capability-gated per consumer.
+which AI.
 
 ### 8.2 Freeze at creation
 
@@ -404,8 +404,9 @@ suggestion was affected.
 
 ### 8.4 Execution
 
-"Approve" means "apply". Applied batches are enqueued into the upcoming execution-queue product
-feature (not yet built; design the apply call against its API from day one) and run through the
+"Approve" means "apply". Applied batches are enqueued into the execution queue, which is a
+separate effort and an explicit **prerequisite** of the proposals milestone (design the apply call
+against its API), and run through the
 existing `write_operations` pipeline: preflight, conflict handling, progress, cancellation,
 rollback. Destructive ops default to **trash**, not delete. Batches are capped (a few hundred ops)
 to keep review usable; large cleanups chunk into multiple batches.
@@ -457,7 +458,8 @@ that inherits the originating wake's context.
 ### 9.4 Concurrency, budgets, and cancellation
 
 - **Single-flight**: one LLM job at a time per agent. Chat takes priority; wakes queue behind it
-  and their digests merge while waiting.
+  and their digests merge while waiting. A hot bundle whose deadline passes while the slot is busy
+  keeps its full priority and urgency at the next wake: late is fine, dropped is not.
 - Per-wake budgets: max tool turns, max wall time, max file reads. A runaway loop must be
   impossible by construction.
 - Cancellation follows the house pattern (`AtomicBool`, checked at tool-call boundaries); agent
@@ -471,6 +473,8 @@ that inherits the originating wake's context.
 
 - A `notify_user` tool with action buttons (review / apply / dismiss / open chat). Etiquette is
   policy: max proactive notifications per day, confidence floor, no repeats after a rejection.
+  The daily cap counts only notifications actually shown; an attempt that never reached the screen
+  didn't spend the user's attention, so it doesn't spend the cap.
 - The proactivity dial is a setting with ~4 named, hard-coded policy bundles (off / quiet / normal /
   eager) mapping to interest thresholds and caps. **Chosen during the agent-enable onboarding, no
   silent default** (a too-quiet default reads as "the feature does nothing"; too eager is noise);
@@ -558,33 +562,34 @@ adoption spike and do NOT hand-roll adapters in parallel to it. The work is:
 A supported v1 option, not a cut: agent + summaries on the on-device model. The source of truth
 for what ships is the model registry in the existing `ai` module (`AVAILABLE_MODELS` /
 `DEFAULT_MODEL_ID`), not this spec; David's recollection is "an ~8B tool-calling model chosen ~6
-months ago", and swapping in a newer one is an open task (§18.11). Documented
+months ago", and swapping in a newer one is an open task (§18.9). Documented
 tradeoffs: noticeably weaker judgment and tool use than Tier 1 cloud models. It exists because
 "nothing ever leaves your Mac" is a headline capability some users will accept the tradeoffs for.
 Settings expose **two model slots**: bulk (summarizer) and interactive (wake/chat/planner), each
 independently set to any supported provider including local.
 
+Fallback policy (decided): local is allowed in both slots, labeled honestly ("experimental, may
+underperform on agent tasks"), and degrades gracefully rather than hard-failing: summaries and
+simple chat keep working even when multi-turn tool loops struggle, and the wake/planner jobs do
+less instead of erroring. After repeated loop failures the agent shows a polite notice that the
+local model is struggling and that a cloud model would handle agent tasks better.
+
 ## 11. Tools
 
-### 11.1 One registry, multiple consumers (intent), and the current MCP reality
+### 11.1 One registry, designed for the agent
 
-**Intent (David's stated direction):** the MCP infrastructure was built with this agent as its
-**first** intended consumer; external AI clients (dev tooling, Claude Code driving the app,
-automated tests) are the second. One tool registry serves both, capability-gated per consumer: the
-internal agent gets memory and notify tools; AI clients don't. AI write paths converge on
-the proposal queue (§8.1).
+Decided: the tool registry is designed for its **primary consumer, the internal agent**; external
+AI clients (dev tooling, Claude Code driving the app, automated tests) are secondary and get the
+same surface the agent has, including the proposal-gated write path (§8.1). The interface should
+feel natural for the agent first; everything else adapts to that.
 
-**Current reality (per `src/mcp/CLAUDE.md`):** the shipped MCP server is built
-on a different write philosophy, "security via parity": external agents act through the same UI
-actions a user performs (navigate, operate through the UI), deliberately without raw `fs.read`/
-`fs.write` tools. That is not a proposal-gated registry, and the existing server's tools are
-UI-control oriented rather than knowledge oriented.
-
-These two must be reconciled during implementation, and the integration path is an open question
-(§18.16): likely shape is that the knowledge/proposal/memory/notify tools land in a registry the
-internal agent consumes, the external MCP server selectively exposes the knowledge tools and
-`create_proposal_batch`, and whether AI clients keep UI-parity writes alongside (or migrate
-to proposals) is a product/security decision to make then, not silently here.
+For context: the previously shipped MCP server was built on "security via parity" (external agents
+act through the same UI actions a user performs, deliberately without raw fs tools, per
+`src/mcp/CLAUDE.md`). That UI-control surface remains useful for UI-driving use cases (testing,
+automation), but it is the secondary surface: the agent-first registry (knowledge, proposals,
+memory, notify) is the main interface, consumed in-process by the agent and exposed over MCP to AI
+clients. Fine-grained per-consumer capability gating stays available where it genuinely matters,
+with parity as the default posture.
 
 In docs, "the agent" means this feature; external MCP consumers are "AI clients" to avoid term
 collision.
@@ -626,10 +631,12 @@ defense remains §8 (content can at worst produce a reviewable proposal).
   summarization, content peeks) MUST respect the existing `fda_gate` (`is_fda_pending_runtime()`),
   and the agent feature effectively requires FDA to be granted; enabling it without FDA must not
   stack TCC popups (the exact failure mode the gate exists to prevent).
-- **The enable flow is its own consent flow, not a new first-launch wizard step**: agent enable +
-  provider/model choice + the consent screen (§12) + the proactivity dial (§9.5) + the preflight
-  (§5.3), reachable from settings (and optionally offered after onboarding). Exact placement and
-  its relationship to the existing onboarding wizard is an open question (§18.18).
+- **The enable toggle lives in the existing onboarding wizard's AI step** (the second step):
+  "Enable built-in AI agent that helps you organize your files", disabled until a working API key
+  is entered. The FDA step precedes it in the wizard, so the gate composes naturally. Enabling
+  starts the rest of the flow: the consent screen (§12), the proactivity dial (§9.5), and the
+  preflight (§5.3). The same flow stays reachable from settings for users who skip it at
+  onboarding.
 - The user-facing copy drafted in this spec (preflight, notifications) is indicative and needs a
   style-guide pass at implementation time.
 
@@ -664,29 +671,40 @@ references match what its call site provides (catches the silent `{{folder_sumar
 
 ## 16. Settings surface (v1)
 
-Provider/model for the two slots (bulk, interactive); budget caps; proactivity dial; excluded
-paths; content-access policy; user-action-log toggle and retention; per-volume opt-ins (index,
-summaries); the spend display.
+Provider/model for the two slots (bulk, interactive); budget caps (the background-refresh budget
+defaults to ~$10/month, adjustable); proactivity dial; excluded paths; content-access policy;
+user-action-log toggle and retention; per-volume opt-ins (index, summaries); the spend display.
+
+Ownership line (decided): the settings store carries user preferences only. Agent operational
+state (throttle and snooze state, walk bookkeeping, and similar) lives in `main.db`, written by
+the backend, never in the settings store.
+
+Exposure principle (decided): every agent tunable this spec names (the proactivity dial and its
+underlying thresholds, the daily notification cap, wake deadline tiers, the digest token budget,
+the refresh budget, proposal batch caps and expiry, read budgets) is exposed in Settings from v1,
+even if it reads as too much at first. Consolidating dials into Settings > Advanced, or dropping
+some, is a later editing decision, not a v1 gate.
 
 ## 17. Build order (v1 milestones, roughly)
 
 1. **Storage**: `main.db` with migrations, retention, volumes table; relocate/rename the
    per-volume index DBs (`index-{volume_id}.db`) to `~/Library/Caches/<bundle id>/` as
-   `drive-index-{volume_id}.db`, with the existing-install migration decision from §18.17. Uses
+   `drive-index-{volume_id}.db`, migrating existing installs by moving the files where cheap (a
+   one-time full rescan is the acceptable fallback). Uses
    the current bundle id; not blocked on the separate directory-rename effort.
 2. **Importance scorer** (+ cache in the drive index) with thorough unit tests.
 3. **Provider layer**: the `AgentLlm` trait over the existing `genai` client; verify and extend
    the quirk handling (§10.1) against it; gap-filling adapters only where genai falls short; the
    two model slots. (No adoption spike; see §10.2.)
-4. **Enable flow**: consent screen, provider/model selection, proactivity dial, and the FDA-gate
-   composition (§12.1). This gates the knowledge layer's TCC-protected reads, so it lands before
-   them.
+4. **Enable flow**: the onboarding AI-step toggle, consent screen, provider/model selection,
+   proactivity dial, and the FDA-gate composition (§12.1). This gates the knowledge layer's
+   TCC-protected reads, so it lands before them.
 5. **Knowledge layer**: summarizer pipeline (hot folders first, preflight, resumable walk), FTS,
    knowledge tools. Depends on milestone 4 for FDA and consent.
 6. **Event pipeline**: coalescer, inbox, deadlines, digest compaction, restart reconciliation.
 7. **Wake loop** + budgets + single-flight + degraded modes + activity log.
 8. **Proposals**: schema, freeze-at-creation, drift, invalidation; review dialog + apply via the
-   execution queue; notify tool + dial.
+   execution queue (a separate effort and a prerequisite of this milestone); notify tool + dial.
 9. **Chat** surface wiring; `~/.cmdr` files; memory writes.
 10. **Evals v0** alongside 5-9, not after.
 
@@ -705,52 +723,23 @@ summaries); the spend display.
 4. `kMDItemLastUsedDate` sampling strategy and cost on large folders.
 5. Wake deadline tier values (2-5s / 1-5min / 1h) and the digest token budget (2-4k): initial
    guesses, tune with use.
-6. Refresh budget defaults (monthly cap value).
-7. The execution queue's API doesn't exist yet (the product feature is upcoming); proposals target
-   it by design, so its shape is a dependency.
-8. `listing_fingerprint` exact definition (proposed: hash over child names + sizes + mtimes).
-9. Conversation/thread data model details, and how a notification reply inherits wake context
+6. `listing_fingerprint` exact definition (proposed: hash over child names + sizes + mtimes).
+7. Conversation/thread data model details, and how a notification reply inherits wake context
    technically.
-10. Memory mining design (v1.5): which implicit signals, what confidence threshold, whether mined
+8. Memory mining design (v1.5): which implicit signals, what confidence threshold, whether mined
     memories need their own review affordance.
-11. Local model refresh: evaluate whether the shipped local model (see `ai` module
+9. Local model refresh: evaluate whether the shipped local model (see `ai` module
     `AVAILABLE_MODELS` / `DEFAULT_MODEL_ID` for the source of truth) should be replaced with a
     newer small tool-calling model before the agent ships.
-12. Verify Time Machine and purge semantics for `~/Library/Caches/<bundle id>/` behave as assumed.
-13. Tool-schema versioning policy for external MCP consumers as the registry grows.
-14. Cost-estimate accuracy in the preflight (tokens-per-folder model needs calibration).
-15. Whether `interest_weight` denormalization into `main.db` summaries is worth it vs. always
+10. Verify Time Machine and purge semantics for `~/Library/Caches/<bundle id>/` behave as assumed.
+11. Tool-schema versioning policy for external MCP consumers as the registry grows.
+12. Cost-estimate accuracy in the preflight (tokens-per-folder model needs calibration).
+13. Whether `interest_weight` denormalization into `main.db` summaries is worth it vs. always
     reading from the drive index. (Also keeps the "split writers" story honest: the indexer should
     not write into `main.db`; if denormalized, the agent copies the weight at summary time.)
-16. The MCP integration path (§11.1): how the agent's tool registry relates to the existing
-    UI-parity MCP server, which knowledge/proposal tools get exposed externally, and whether
-    AI clients keep UI-parity writes alongside the proposal queue. Product and security
-    decision, not just plumbing.
-17. Index DB migration for existing installs when relocating per-volume `index-{volume_id}.db`
-    files to Caches: move the files, or accept a one-time full rescan on upgrade?
-18. Enable-flow placement: standalone settings-launched flow vs. an offer after the existing
-    onboarding wizard; how it composes with the FDA gate when FDA is not yet granted.
-19. Event tap point (§6.1): exactly where the agent's coalescer subscribes on the indexer's
+14. Event tap point (§6.1): exactly where the agent's coalescer subscribes on the indexer's
     corrected event stream, and how the standalone `downloads/` watcher and the agent's
     Downloads-related detectors relate (merge? coexist?).
-20. iCloud and cloud-stub files: `read_file` or content-tier summarization on dataless files
-    triggers `fileproviderd` downloads (a cost/bandwidth landmine if the agent silently
-    materializes gigabytes). Likely policy: never materialize dataless files in background jobs,
-    treat them as metadata-only, content access on demand with user awareness. Needs a decision.
-21. Agent-state persistence vs. the settings registry: settings are frontend-owned writes per the
-    existing settings architecture, but the agent (backend) has durable operational state (for
-    example throttle/snooze state). Likely resolution: user preferences stay in settings, agent
-    operational state lives in `main.db`, never in the settings store. Confirm against the
-    settings registry's ownership rules.
-22. Local-model viability for the interactive job types: wake/planner/chat need reliable
-    multi-turn tool loops, and the local model has "noticeably weaker tool use" by the spec's own
-    admission. This is a gating functional risk, not just a model-refresh chore (§18.11): define
-    what the fallback UX is when the local model can't sustain a loop, so the feature doesn't
-    silently degrade for exactly the privacy-minded users who chose local.
-23. Single-flight interaction with deadlines and caps: when a long chat holds the slot and a hot
-    `deliver_by` passes, what happens? Does the missed hot bundle keep priority at next wake, does
-    the SLA degrade, and do attempted-but-queued notifications count against the daily cap? The
-    wake-loop milestone can't be planned without an answer.
 
 ## 19. Decision log
 
@@ -781,7 +770,7 @@ summaries); the spend display.
 | D23 | `~/.cmdr/CMDR.md` global profile + `rules/*.md` with `applies_to` globs                      | Folder-scoped rules without polluting folders                                               |
 | D24 | Folder-level `CMDR.md` cut from v1                                                           | Injection vector with authority; `applies_to` covers the need                               |
 | D25 | Agent memory in `~/.cmdr/memory/`, separate from rules, capped, writes logged                | "Told me" vs. "inferred" never blur; user can audit/edit/delete                             |
-| D26 | No direct write tools; proposals are the agent's only write path, with ALL AI consumers intended to converge on it (external migration open, §18.16) | Safety by construction; structural prompt-injection defense; one consent surface            |
+| D26 | No direct write tools; proposals are the only write path, shared by ALL AI consumers        | Safety by construction; structural prompt-injection defense; one consent surface            |
 | D27 | Freeze proposals at creation (pattern → concrete list); pattern kept as display text         | No drift between what was shown and what runs                                               |
 | D28 | Per-op child rows with own statuses; partial apply                                           | "Apply 11, skip 3 stale" beats all-or-nothing                                               |
 | D29 | Drift detection via per-op `(inode, size, mtime)` snapshot, re-verified at apply             | Creation→apply gap can be days                                                              |
@@ -804,3 +793,13 @@ summaries); the spend display.
 | D46 | Acceptance rate is the north-star metric                                                     | Directly measures suggestion quality                                                        |
 | D47 | Data-dir rename decoupled from this work                                                     | Aesthetic change with plugin/migration risk; must not block the agent                       |
 | D48 | User action log: local-only, opt-out, ~90-day retention                                      | High-signal input with a privacy posture                                                    |
+| D49 | The tool registry is agent-first; external AI clients get the same surface as the agent     | The interface stays natural for its primary consumer; one write path for all AI             |
+| D50 | Index relocation migrates by moving files when cheap; full rescan is the acceptable fallback | Kind to existing testers without committing to heavy migration code                         |
+| D51 | Agent enable is a toggle in the onboarding AI step, gated on a working API key               | Meets users where AI setup already happens; FDA step precedes it naturally                  |
+| D52 | Background jobs never materialize dataless cloud files; synced-file content is readable; dataless content only on explicit ask | No unexpected downloads; sync state is already known to the app |
+| D53 | Local model allowed in both slots with honest labeling and graceful degradation              | Local is a headline option; fail soft with a polite notice, never hard-fail                 |
+| D54 | Background-refresh budget defaults to ~$10/month, transparent and user-adjustable            | Real utility over penny-pinching; the user stays in control                                 |
+| D55 | The execution queue is a separate effort and a prerequisite for the proposals milestone      | Proposals apply through it; its design happens in its own effort                            |
+| D56 | Agent operational state lives in `main.db`; the settings store is preferences only           | Backend-writable state needs a backend home; respects settings ownership                    |
+| D57 | Late wakes keep full priority; the notification cap counts only notifications actually shown | Late is fine, dropped is not; the cap protects attention, which is only spent on screen     |
+| D58 | Every agent tunable is exposed in Settings from v1                                            | Better too many dials than hidden behavior; pruning to Advanced (or dropping) comes later   |
