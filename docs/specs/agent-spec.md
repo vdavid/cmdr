@@ -103,10 +103,18 @@ context, and memory.
 
 ### 4.1 Two databases
 
-| DB               | Location                                          | Nature                                                                       | Backup                            |
-| ---------------- | ------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------- |
-| `drive-index.db` | `~/Library/Caches/<bundle id>/`                   | Regenerable cache: the drive index (today's index DB, renamed and relocated) | None; Time Machine skips Caches   |
-| `main.db`        | `<app data dir>` (Application Support)            | Durable catch-all: summaries, proposals, logs, conversations, action history | Time Machine picks it up normally |
+| DB                          | Location                               | Nature                                                                        | Backup                            |
+| --------------------------- | -------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------- |
+| `drive-index-{volume_id}.db` (per volume) | `~/Library/Caches/<bundle id>/` | Regenerable cache: the drive index (today's per-volume `index-{volume_id}.db` files, renamed and relocated) | None; Time Machine skips Caches   |
+| `main.db`                   | `<app data dir>` (Application Support) | Durable catch-all: summaries, proposals, logs, conversations, action history  | Time Machine picks it up normally |
+
+Correction from review: the existing drive index is already **per-volume**
+(`index-{volume_id}.db`, per `indexing/CLAUDE.md`), not a single file. The relocation is therefore
+N files (or a `drive-index/` subdirectory), the naming keeps the volume id, and it composes with
+the multi-volume keying in §4.3 rather than colliding with it. Migration for existing installs
+needs a decision (§18.17): move the files, or accept that relocation orphans the old
+Application Support indexes and triggers a one-time rescan on upgrade. Note the Caches path uses
+the **current** bundle id; this is independent of the deferred data-dir rename.
 
 Rationale: regenerable vs. valuable data, different lifecycles, different backup policies, and it
 splits the writers (the indexer hammering the cache never contends with agent writes). Putting the
@@ -149,7 +157,10 @@ Names are indicative; the implementing agent owns the final DDL.
 - `agent_log`: `ts`, `source` (detector | wake | planner | chat | summarizer), `kind` (proposal |
   notify | memory_write | file_read | observation | error), `target`, `rationale`, `model`,
   `tokens_in`, `tokens_out`, `latency_ms`. This feeds the activity UI and is also context input
-  (recent rejections, §9.2).
+  (recent rejections, §9.2). Terminology mapping, since the spec uses several names: the
+  user-facing **"activity log"** IS this table; the **"read log"** is its `kind = file_read`
+  filtered view, not a separate table; `user_action_log` (below) is separate because its writer is
+  the user, not the agent.
 - `conversations` + `messages`: chat threads. A notification the user replies to becomes a thread
   carrying the originating wake's context.
 - `agent_inbox`: pending event bundles (persisted so a crash loses nothing): `bundle_id`,
@@ -258,8 +269,13 @@ retry/backoff.
 
 ### 6.1 Sources
 
-- **File system events**: the existing watcher infrastructure (FSEvents and friends), plus index
-  roll-forward on startup.
+- **File system events**: consume the indexer's existing event stream, not a parallel raw FSEvents
+  subscription. Review flagged that the indexer already coalesces, dedups, and batches FS events
+  (its own flush window, replay vs. live loops, verifier corrections, per `indexing/`); the agent's
+  coalescer (§6.2) is a second, interest-oriented stage over that already-corrected stream
+  (subscribe, don't poll; don't duplicate dedup machinery). Exact tap point, and how this relates
+  to the standalone `downloads/` watcher, is an open question (§18.19). Index roll-forward on
+  startup feeds the same path (§6.4).
 - **User actions inside Cmdr**: operations and navigation, logged to `user_action_log`. These are
   the highest-signal events because they carry intent: a user manually moving three PDFs from
   Downloads to `~/Dropbox/invoices` is a preference worth learning; a rejected proposal is implicit
@@ -294,6 +310,11 @@ The digest has a **hard token budget** (~2-4k; tune later) and the deterministic
 in importance order with hierarchical compaction: "5M changes in /tmp/log" is one line; the
 interesting tail gets per-folder granularity until the budget is full. The aggregator decides
 granularity, never the LLM.
+
+Testability seams (per the project's design-for-testability rule, name them at write time): the
+coalescer is a pure `coalesce(events, window) -> bundles`, and the compactor is a pure
+`compact(bundles, token_budget) -> digest`. Both take values in and return values out, no I/O, so
+the §15 unit tests construct inputs directly.
 
 ### 6.4 Restart, gaps, and reconciliation
 
@@ -436,7 +457,11 @@ that inherits the originating wake's context.
 - Per-wake budgets: max tool turns, max wall time, max file reads. A runaway loop must be
   impossible by construction.
 - Cancellation follows the house pattern (`AtomicBool`, checked at tool-call boundaries); agent
-  activity is visible and killable like any long-running Cmdr task.
+  activity is visible and killable like any long-running Cmdr task. One review-flagged nuance: an
+  in-flight provider HTTP call is a network round-trip an `AtomicBool` cannot interrupt, the same
+  known gap architecture-patterns.md documents for blocking syscalls. The existing `ai/` layer
+  already has a stream-cancel mechanism for exactly this; the agent loop reuses it so an LLM call
+  in flight cancels within the design budget, with the `AtomicBool` covering tool-call boundaries.
 
 ### 9.5 Notifications and the proactivity dial
 
@@ -449,6 +474,24 @@ that inherits the originating wake's context.
   every level.
 - Auto-throttling is never silent: after several consecutive dismissals the agent may *ask* "want
   me to pipe down?", which is on-brand; it never changes settings by itself.
+
+### 9.6 IPC surface (indicative)
+
+The spec body deliberately stays behavior-level, but the project is opinionated about IPC
+(typed `tauri-specta` bindings, subscribe-don't-poll), so here is the indicative surface a fresh
+agent should expect to build. Names are placeholders; the implementing agent owns the final list.
+
+- Commands: `agent_enable` / `agent_disable`, `agent_get_status`, `agent_preflight_start` /
+  `agent_preflight_cancel`, `agent_chat_send`, `agent_get_proposals`,
+  `agent_apply_proposal_batch(batch_id, op_ids)` (the op subset enables partial apply),
+  `agent_reject_proposal_batch`, `agent_get_activity_log(page)`, `agent_get_spend`,
+  `agent_set_proactivity`, `agent_mute_folder`, `agent_snooze_today`.
+- Events (push, never poll): `agent-activity` (new activity-log rows), `agent-proposal-changed`
+  (created/updated/invalidated/expired), `agent-notify` (the notification payload with actions),
+  `agent-preflight-progress`, `agent-chat-delta` (streamed replies), `agent-status-changed`
+  (degraded modes, §6.5).
+- All of it goes through the typed bindings per the AGENTS.md IPC rules; the review dialog and
+  activity panel are pure consumers of these commands and events.
 
 ## 10. The LLM provider layer
 
@@ -477,15 +520,20 @@ Single-shot prompts are interchangeable across providers; agent loops are not. T
 
 ### 10.2 Architecture
 
-- **A small owned trait** (e.g. `AgentLlm`): messages carrying an opaque per-message provider-state
-  blob, tool declarations, normalized tool calls and stop reasons. This trait is the asset;
-  adapters are commodity. Provider types never leak past it.
-- **Library spike before hand-rolling**: evaluate the `genai` crate (the closest thing Rust has to
-  a maintained multi-provider unification layer; `rig` is a full framework and likely too much).
-  The 1-day spike test is exactly the quirk list: parallel calls, schema strictness, and above all
-  opaque-state round-tripping. Pass → use it behind the trait. Fail → hand-roll three adapters
-  (roughly a day each; the Gemini one has been done before in another language in an afternoon,
-  including the quirks). Dependency rules apply (license check, release-age policy).
+**Correction from review: the provider layer already exists in the codebase.** The tree ships the
+`genai` crate (pinned `=0.6.0-beta.19` at review time) wrapped by `src/ai/client.rs`, with
+`src/ai/CLAUDE.md` documenting the same per-provider quirk rationale this spec describes
+(Responses-API routing, per-provider temperature handling, ~20 providers normalized). Do NOT run an
+adoption spike and do NOT hand-roll adapters in parallel to it. The work is:
+
+- **A small owned trait** (e.g. `AgentLlm`) as the agent-facing seam over the existing client:
+  messages carrying an opaque per-message provider-state blob, tool declarations, normalized tool
+  calls and stop reasons. Provider types never leak past it.
+- **Extend the existing genai integration to agent-loop requirements** and verify the quirk list
+  against it: multi-call turns, schema strictness per provider, and above all opaque
+  thinking-state round-tripping (§10.1 point 3). Whether genai 0.6.x handles these for multi-step
+  tool loops is the real open question (§18.1); if it falls short, the options are upstream
+  contribution, a local patch, or per-provider adapters behind the trait for the gaps only.
 
 ### 10.3 Support tiers
 
@@ -502,8 +550,10 @@ Single-shot prompts are interchangeable across providers; agent loops are not. T
 
 ### 10.4 The local model option
 
-A supported v1 option, not a cut: agent + summaries on the on-device model (currently an ~8B
-tool-calling model chosen ~6 months ago; swapping in a newer one is an open task). Documented
+A supported v1 option, not a cut: agent + summaries on the on-device model. The source of truth
+for what ships is the model registry in the existing `ai` module (`AVAILABLE_MODELS` /
+`DEFAULT_MODEL_ID`), not this spec; David's recollection is "an ~8B tool-calling model chosen ~6
+months ago", and swapping in a newer one is an open task (§18.11). Documented
 tradeoffs: noticeably weaker judgment and tool use than Tier 1 cloud models. It exists because
 "nothing ever leaves your Mac" is a headline capability some users will accept the tradeoffs for.
 Settings expose **two model slots**: bulk (summarizer) and interactive (wake/chat/planner), each
@@ -511,12 +561,25 @@ independently set to any supported provider including local.
 
 ## 11. Tools
 
-### 11.1 One registry, multiple consumers
+### 11.1 One registry, multiple consumers (intent), and the current MCP reality
 
-The MCP infrastructure was built with this agent as its **first** intended consumer; external MCP
-clients (dev tooling, Claude Code driving the app, automated tests) are the second. One tool
-registry serves both, capability-gated per consumer: the internal agent gets memory and notify
-tools; external clients don't. Every consumer's write path is the proposal queue (§8.1).
+**Intent (David's stated direction):** the MCP infrastructure was built with this agent as its
+**first** intended consumer; external MCP clients (dev tooling, Claude Code driving the app,
+automated tests) are the second. One tool registry serves both, capability-gated per consumer: the
+internal agent gets memory and notify tools; external clients don't. AI write paths converge on
+the proposal queue (§8.1).
+
+**Current reality (per `src/mcp/CLAUDE.md`, flagged in review):** the shipped MCP server is built
+on a different write philosophy, "security via parity": external agents act through the same UI
+actions a user performs (navigate, operate through the UI), deliberately without raw `fs.read`/
+`fs.write` tools. That is not a proposal-gated registry, and the existing server's tools are
+UI-control oriented rather than knowledge oriented.
+
+These two must be reconciled during implementation, and the integration path is an open question
+(§18.16): likely shape is that the knowledge/proposal/memory/notify tools land in a registry the
+internal agent consumes, the external MCP server selectively exposes the knowledge tools and
+`create_proposal_batch`, and whether external clients keep UI-parity writes alongside (or migrate
+to proposals) is a product/security decision to make then, not silently here.
 
 In docs, "the agent" means this feature; external MCP consumers are "AI clients" to avoid term
 collision.
@@ -550,6 +613,22 @@ defense remains §8 (content can at worst produce a reviewable proposal).
   with a rationale (principle 5).
 - `cost_meter` powers a visible spend display (per job type) and budget caps (daily/monthly).
   Initial-index spend is shown in the preflight before it happens.
+
+### 12.1 Enable flow and the Full Disk Access gate
+
+Flagged in review as a hard prerequisite the first draft missed entirely:
+
+- **Everything the agent reads in its home turf is TCC-protected.** Downloads, Documents, and
+  Desktop are exactly the paths AGENTS.md's FDA-gate rule covers. The agent's read path (hot-folder
+  summarization, content peeks) MUST respect the existing `fda_gate` (`is_fda_pending_runtime()`),
+  and the agent feature effectively requires FDA to be granted; enabling it without FDA must not
+  stack TCC popups (the exact failure mode the gate exists to prevent).
+- **The enable flow is its own consent flow, not a new first-launch wizard step**: agent enable +
+  provider/model choice + the consent screen (§12) + the proactivity dial (§9.5) + the preflight
+  (§5.3), reachable from settings (and optionally offered after onboarding). Exact placement and
+  its relationship to the existing onboarding wizard is an open question (§18.18).
+- The user-facing copy drafted in this spec (preflight, notifications) is indicative and needs a
+  style-guide pass at implementation time.
 
 ## 13. Naming and taxonomy
 
@@ -588,8 +667,10 @@ summaries); the spend display.
 
 ## 17. Build order (v1 milestones, roughly)
 
-1. **Storage**: `main.db` with migrations, retention, volumes table; relocate/rename the index DB to
-   `~/Library/Caches/<bundle id>/drive-index.db`.
+1. **Storage**: `main.db` with migrations, retention, volumes table; relocate/rename the
+   per-volume index DBs (`index-{volume_id}.db`) to `~/Library/Caches/<bundle id>/` as
+   `drive-index-{volume_id}.db`, with the existing-install migration decision from §18.17. Uses
+   the current bundle id; not blocked on the deferred data-dir rename.
 2. **Importance scorer** (+ cache in the drive index) with thorough unit tests.
 3. **Provider layer**: the trait, the `genai` spike, adapters for Tier 1, the two model slots.
 4. **Knowledge layer**: summarizer pipeline (hot folders first, preflight, resumable walk), FTS,
@@ -603,7 +684,10 @@ summaries); the spend display.
 
 ## 18. Open questions and investigations (honest list)
 
-1. `genai` crate spike outcome (the decision gate in §10.2). Includes license/age checks.
+1. Does the already-shipped `genai` integration (`src/ai/client.rs`, pinned 0.6.x) handle the
+   agent-loop requirements: multi-call turns, per-provider schema strictness, and opaque
+   thinking-state round-tripping in multi-step tool loops? If not: upstream contribution, local
+   patch, or gap-filling adapters behind the `AgentLlm` trait.
 2. SMB volume-identity canonicalization: same share via `nas.local`, IP, and DNS name must converge
    on one identity; is a server GUID available per protocol? (Believed not hard, but undesigned.)
 3. Importance-scorer signal weights and the exact scoring formula: needs iteration against real
@@ -619,19 +703,41 @@ summaries); the spend display.
    technically.
 10. Memory mining design (v1.5): which implicit signals, what confidence threshold, whether mined
     memories need their own review affordance.
-11. Local model refresh: pick a newer small tool-calling model than the ~6-month-old 8B currently
-    shipped.
+11. Local model refresh: evaluate whether the shipped local model (see `ai` module
+    `AVAILABLE_MODELS` / `DEFAULT_MODEL_ID` for the source of truth) should be replaced with a
+    newer small tool-calling model before the agent ships.
 12. Verify Time Machine and purge semantics for `~/Library/Caches/<bundle id>/` behave as assumed.
 13. Tool-schema versioning policy for external MCP consumers as the registry grows.
 14. Cost-estimate accuracy in the preflight (tokens-per-folder model needs calibration).
 15. Whether `interest_weight` denormalization into `main.db` summaries is worth it vs. always
-    reading from the drive index.
+    reading from the drive index. (Also keeps the "split writers" story honest: the indexer should
+    not write into `main.db`; if denormalized, the agent copies the weight at summary time.)
+16. The MCP integration path (§11.1): how the agent's tool registry relates to the existing
+    UI-parity MCP server, which knowledge/proposal tools get exposed externally, and whether
+    external clients keep UI-parity writes alongside the proposal queue. Product and security
+    decision, not just plumbing.
+17. Index DB migration for existing installs when relocating per-volume `index-{volume_id}.db`
+    files to Caches: move the files, or accept a one-time full rescan on upgrade?
+18. Enable-flow placement: standalone settings-launched flow vs. an offer after the existing
+    onboarding wizard; how it composes with the FDA gate when FDA is not yet granted.
+19. Event tap point (§6.1): exactly where the agent's coalescer subscribes on the indexer's
+    corrected event stream, and how the standalone `downloads/` watcher and the agent's
+    Downloads-related detectors relate (merge? coexist?).
+20. iCloud and cloud-stub files: `read_file` or content-tier summarization on dataless files
+    triggers `fileproviderd` downloads (a cost/bandwidth landmine if the agent silently
+    materializes gigabytes). Likely policy: never materialize dataless files in background jobs,
+    treat them as metadata-only, content access on demand with user awareness. Needs a decision.
+21. Agent-state persistence vs. the settings registry: settings are frontend-owned writes per the
+    existing settings architecture, but the agent (backend) has durable operational state (for
+    example throttle/snooze state). Likely resolution: user preferences stay in settings, agent
+    operational state lives in `main.db`, never in the settings store. Confirm against the
+    settings registry's ownership rules.
 
 ## 19. Decision log
 
 | #   | Decision                                                                                    | Rationale                                                                                  |
 | --- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| D1  | Two DBs: `drive-index.db` (cache) + `main.db` (durable catch-all)                            | Regenerable vs. valuable; separate writers; different backup policies                       |
+| D1  | Two DB families: per-volume `drive-index-{volume_id}.db` (cache) + `main.db` (durable catch-all) | Regenerable vs. valuable; separate writers; different backup policies; index is per-volume today |
 | D2  | Index DB lives in `~/Library/Caches/<bundle id>/`                                           | Platform-native "purgeable, no backup"; Time Machine skips Caches                           |
 | D3  | `main.db` is a generic catch-all, not agent-specialized                                      | Action logs and future durable state land there too                                        |
 | D4  | No custom collation in `main.db`                                                             | Stay `sqlite3`-inspectable; the index DB's collation forced a custom query tool             |
@@ -671,7 +777,7 @@ summaries); the spend display.
 | D38 | Per-wake budgets (tool turns, wall time, file reads) + house cancellation pattern            | Runaway loops impossible by construction; visible and killable                              |
 | D39 | Proactivity dial chosen at onboarding; named policy bundles; never silently self-adjusts     | No silent default; "want me to pipe down?" over creepy auto-tuning                          |
 | D40 | Tier 1 providers: Anthropic, OpenAI, Gemini, local; Tier 2: any OpenAI-compatible endpoint   | Bounded certification surface; OpenRouter (already integrated) carries the long tail        |
-| D41 | Own `AgentLlm` trait with opaque per-message provider state; spike `genai` before hand-rolling | Thinking-state round-trip is the make-or-break; trait is the asset, adapters are commodity |
+| D41 | Own `AgentLlm` trait with opaque per-message provider state, over the already-shipped `genai` integration | Thinking-state round-trip is the make-or-break; the trait is the asset; never build a parallel provider layer |
 | D42 | Pinned default models + "untested" badge + evals as regression suite                         | New-model churn becomes a button press, not a project                                       |
 | D43 | Two model slots: bulk vs. interactive                                                        | Summarization and judgment have different cost/quality needs                                |
 | D44 | Name: "agent" (user-facing and internal); "AI" stays the capability umbrella                 | Name-internals-after-UI rule; honest and specific enough                                    |
