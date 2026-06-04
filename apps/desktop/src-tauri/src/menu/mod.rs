@@ -9,7 +9,8 @@
 //!   accelerator/label platform-aware helpers, `register_item`, and `truncate_for_menu_label`.
 //! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher, context menus (file,
 //!   breadcrumb, tab, network host), viewer menu, plus `FileContextInfo` / `ContextMenuResult`.
-//! - `menu_handlers.rs`: event handlers and live-update helpers: `rebuild_view_mode_items`,
+//! - `menu_handlers.rs`: event handlers and live-update helpers: `handle_menu_event` (the
+//!   `.on_menu_event` dispatcher wired into the Tauri builder), `rebuild_view_mode_items`,
 //!   `sync_view_mode_check_states`, `update_menu_item_accelerator`,
 //!   `frontend_shortcut_to_accelerator`, and the macOS post-construction helpers
 //!   (`cleanup_macos_menus`, `set_macos_menu_icons`).
@@ -39,7 +40,7 @@ use tauri::{
 #[cfg(target_os = "macos")]
 pub use menu_handlers::{cleanup_macos_menus, set_macos_menu_icons};
 pub use menu_handlers::{
-    frontend_shortcut_to_accelerator, rebuild_view_mode_items, sync_view_mode_check_states,
+    frontend_shortcut_to_accelerator, handle_menu_event, rebuild_view_mode_items, sync_view_mode_check_states,
     update_menu_item_accelerator,
 };
 pub use menu_structure::{

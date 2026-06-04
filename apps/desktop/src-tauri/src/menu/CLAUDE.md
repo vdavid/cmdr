@@ -34,7 +34,8 @@ window focus context.
 
 ### Unified dispatch
 
-Menu clicks route through a single `"execute-command"` Tauri event. `on_menu_event` (in `lib.rs`)
+Menu clicks route through a single `"execute-command"` Tauri event. `handle_menu_event` (in
+`menu_handlers.rs`, wired into the Tauri builder via `.on_menu_event(menu::handle_menu_event)`)
 looks up the clicked menu item ID via `menu_id_to_command()`, which returns the command registry ID
 and a `CommandScope` (App or FileScoped). File-scoped commands check `main_window.is_focused()`
 before emitting. The frontend has one listener that calls `handleCommandExecute(commandId)`.
@@ -224,10 +225,10 @@ distinction is the load-bearing reason.
 - **Tab as accelerator**: Switch pane uses Tab, which could conflict with menu bar accessibility
   navigation. If issues arise, omit the accelerator and rely on JS dispatch.
 - **Custom MenuItems for Cut/Copy/Paste**: The Edit menu uses custom MenuItems (not
-  PredefinedMenuItems) for Cut, Copy, Paste, and Move here. In `on_menu_event`, these are handled
+  PredefinedMenuItems) for Cut, Copy, Paste, and Move here. In `handle_menu_event`, these are handled
   specially: if the main window is focused, they route through `execute-command` so the frontend can
   decide between file clipboard and text clipboard (via `document.activeElement` check). If a
-  non-main window is focused (viewer, settings), `send_native_clipboard_action()` in `lib.rs` sends
+  non-main window is focused (viewer, settings), `send_native_clipboard_action()` in `menu_handlers.rs` sends
   the native `copy:`/`cut:`/`paste:` selector through the responder chain via
   `NSApplication.sendAction:to:from:`, replicating what PredefinedMenuItems do internally. This
   ensures text clipboard works natively in all windows. Undo and Redo remain PredefinedMenuItems
