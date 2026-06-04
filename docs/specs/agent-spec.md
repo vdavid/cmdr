@@ -6,7 +6,8 @@ This spec captures a full design session between David and an AI agent. It is wr
 fresh agent (or human) can pick it up with no other context. Decisions below are settled unless
 they appear in §18 (open questions); intentions and principles (§2) govern anything this spec
 doesn't explicitly answer. §19 is the decision log with rationale, kept as a second angle on the
-same material for future planning and implementing agents.
+same material for future planning and implementing agents. Code paths in this spec are relative
+to `apps/desktop/src-tauri/` unless noted.
 
 Related: the data directory rename is deliberately NOT part of this work; a rough companion draft,
 [data-dir-rename-spec-draft.md](data-dir-rename-spec-draft.md), is committed alongside this spec
@@ -370,7 +371,8 @@ markdown.
 
 ### 8.1 The contract
 
-The agent's only write path. Every AI consumer shares it (§11.1): the internal agent, and any
+The agent's only write path. Every AI consumer is intended to share it (§11.1; whether external
+AI clients migrate fully off UI-parity writes is open, §18.16): the internal agent, and any
 external AI client. One review surface gates "an AI wants to touch your files," regardless of
 which AI. Capability-gated per consumer.
 
@@ -782,7 +784,7 @@ summaries); the spend display.
 | D23 | `~/.cmdr/CMDR.md` global profile + `rules/*.md` with `applies_to` globs                      | Folder-scoped rules without polluting folders                                               |
 | D24 | Folder-level `CMDR.md` cut from v1                                                           | Injection vector with authority; `applies_to` covers the need                               |
 | D25 | Agent memory in `~/.cmdr/memory/`, separate from rules, capped, writes logged                | "Told me" vs. "inferred" never blur; user can audit/edit/delete                             |
-| D26 | No direct write tools; proposals are the only write path, for ALL AI consumers               | Safety by construction; structural prompt-injection defense; one consent surface            |
+| D26 | No direct write tools; proposals are the agent's only write path, with ALL AI consumers intended to converge on it (external migration open, §18.16) | Safety by construction; structural prompt-injection defense; one consent surface            |
 | D27 | Freeze proposals at creation (pattern → concrete list); pattern kept as display text         | No drift between what was shown and what runs                                               |
 | D28 | Per-op child rows with own statuses; partial apply                                           | "Apply 11, skip 3 stale" beats all-or-nothing                                               |
 | D29 | Drift detection via per-op `(inode, size, mtime)` snapshot, re-verified at apply             | Creation→apply gap can be days                                                              |
