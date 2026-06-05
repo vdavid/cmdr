@@ -35,11 +35,23 @@ interface CommandMatch {
   matchedIndices: number[] // flat char indices in command.name for highlight rendering
 }
 
-// Dispatch arg foundation. Every command is arg-less today (→ `void`), so
-// `dispatch('file.rename')` needs no second arg. Arg-carrying commands (the
-// per-pane MCP variants in later milestones) override their `CommandArgs` entry.
-type CommandArgs = { [K in CommandId]: void }
-type CommandDispatchArgs<K extends CommandId> = CommandArgs[K] extends void ? [] : [args: CommandArgs[K]]
+// Dispatch arg foundation. Most commands are arg-less (→ `NoCommandArgs`, an
+// `undefined` marker), so `dispatch('file.rename')` needs no second arg.
+// Arg-carrying commands declare their payload in `CommandArgsOverrides`;
+// `view.setMode` ({ pane, mode }) is the first. `CommandDispatchArgs`
+// distributes over `K` so a broad `CommandId` resolves to `[] | [args]` (an
+// arg-less call stays terse) while a literal arg-carrying id requires its payload.
+interface CommandArgsOverrides {
+  'view.setMode': { pane: 'left' | 'right'; mode: ViewMode }
+}
+type CommandArgs = {
+  [K in CommandId]: K extends keyof CommandArgsOverrides ? CommandArgsOverrides[K] : NoCommandArgs
+}
+type CommandDispatchArgs<K extends CommandId> = K extends CommandId
+  ? CommandArgs[K] extends NoCommandArgs
+    ? []
+    : [args: CommandArgs[K]]
+  : never
 ```
 
 ### Typed ids and the dispatch boundary
@@ -55,9 +67,11 @@ selection-dialog `onCommand` prop. Never `as CommandId`-cast at these edges; a s
 switch `default` and silently no-op. The IPC boundary is un-typed (Rust emits a bare `json!`), so
 `rust-command-id-drift.test.ts` is the backstop that keeps Rust ids and `COMMAND_IDS` in sync.
 
-`handleCommandExecute(commandId: CommandId, ctx)` is the typed dispatch entry point. Its big `switch` stays (the flat
-`Record<CommandId, Handler>` conversion is a deferred, optional follow-up); it's already exhaustive-safe because
-`commandId` is the closed union.
+`handleCommandExecute<K extends CommandId>(commandId: K, ctx, ...args: CommandDispatchArgs<K>)` is the typed dispatch
+entry point. Arg-less ids take no third argument; arg-carrying ids (like `view.setMode`) require their payload. Inside,
+`commandId` widens to the `CommandId` union and the `switch` narrows per `case` as before (the flat
+`Record<CommandId, Handler>` conversion is a deferred, optional follow-up); it's already exhaustive-safe because the id
+is the closed union.
 
 `CommandScope` is a union of string literals: `'App'`, `'Main window'`, `'Main window/File list'`,
 `'Main window/Brief mode'`, `'Main window/Full mode'`, `'Main window/Network'`, `'Main window/Share browser'`,
@@ -121,10 +135,12 @@ added an IPC + Tauri-event + Svelte-effect hop between the keystroke and the DOM
    since `Command.id` is `CommandId`.)
 2. Add an entry to the `commands` array in `command-registry.ts`. (Skipping this fails the set-equality test in
    `command-registry.test.ts`.)
-3. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/command-dispatch.ts`.
-4. No changes needed to the palette, fuzzy search, or keyboard dispatch. Commands with `showInPalette: true` are
+3. If the command carries a dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`. Arg-less
+   commands skip this (they default to `NoCommandArgs`). The `case` then reads the payload from `dispatchArgs`.
+4. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/command-dispatch.ts`.
+5. No changes needed to the palette, fuzzy search, or keyboard dispatch. Commands with `showInPalette: true` are
    automatically dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`).
-5. If the command has a native menu item, add a mapping in `menu.rs` (`menu_id_to_command` and `command_id_to_menu_id`)
+6. If the command has a native menu item, add a mapping in `menu.rs` (`menu_id_to_command` and `command_id_to_menu_id`)
    and add its ID to the `menuCommands` array in `shortcuts-store.ts`. The `rust-command-id-drift.test.ts` test will
    fail if `menu_id_to_command` emits an id that isn't in `COMMAND_IDS`.
 

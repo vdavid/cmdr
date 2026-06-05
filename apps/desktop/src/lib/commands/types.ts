@@ -2,6 +2,7 @@
  * Command types for the command palette and shortcut configuration.
  */
 
+import type { ViewMode } from '$lib/app-status-store'
 import type { CommandId } from './command-ids'
 
 export type { CommandId } from './command-ids'
@@ -29,29 +30,49 @@ export type CommandScope =
 export type NoCommandArgs = undefined
 
 /**
- * Per-command argument map. Arg-less commands resolve to `NoCommandArgs`, so
- * `dispatch('file.rename')` needs no second argument; arg-carrying commands
- * (the per-pane MCP variants landing in later milestones) override their entry
- * with a typed payload.
+ * Override slot for the few commands that carry a typed dispatch payload. Each
+ * key is the arg-carrying command's id; its value is the payload shape. Later MCP
+ * milestones add `sort.set`, `cursor.moveTo`, etc. here without touching the
+ * arg-less defaults. PR1 forbids dead arg types, so only commands something
+ * actually dispatches with args appear.
  *
- * Today every command is arg-less (the dispatch context rides separately), so
- * the map is "all ids → NoCommandArgs". The override slot is where M3/M4 add
- * `sort.set`, `cursor.moveTo`, etc. without touching the arg-less defaults. We
- * intentionally don't pre-populate it: PR1 forbids dead arg types for commands
- * nothing dispatches yet.
+ * `view.setMode` is the first: it sets a SPECIFIC pane's view mode (unlike the
+ * focused-pane `view.briefMode` / `view.fullMode`), so it needs `{ pane, mode }`.
+ * The native-menu `view-mode-changed` event routes here.
+ */
+export interface CommandArgsOverrides {
+  'view.setMode': { pane: 'left' | 'right'; mode: ViewMode }
+}
+
+/**
+ * Per-command argument map. Commands listed in `CommandArgsOverrides` resolve to
+ * their typed payload; every other id resolves to `NoCommandArgs`, so
+ * `dispatch('file.rename')` needs no second argument. A conditional mapped type
+ * (not an intersection) keeps the arg-less default `undefined` rather than
+ * collapsing overridden keys to `never`.
  */
 export type CommandArgs = {
-  [K in CommandId]: NoCommandArgs
+  [K in CommandId]: K extends keyof CommandArgsOverrides ? CommandArgsOverrides[K] : NoCommandArgs
 }
 
 /**
  * Tuple form of a command's dispatch arguments: `[]` for arg-less commands,
  * `[args]` for arg-carrying ones. Lets a single `dispatch<K>(id, ...args)`
  * signature stay terse for the common case while type-checking the rest.
+ *
+ * Distributes over `K` (naked type param in the conditional) so a call site
+ * holding a broad `CommandId` resolves to `[] | [args]` — i.e. an arg-less
+ * dispatch (`handleCommandExecute(commandId)`) stays valid while an arg-carrying
+ * literal id (`handleCommandExecute('view.setMode', payload)`) still requires its
+ * payload. Without the distribution, `CommandArgs[CommandId]` is a union that
+ * doesn't extend `NoCommandArgs`, which would wrongly force a payload on every
+ * broad-id call site.
  */
-export type CommandDispatchArgs<K extends CommandId> = CommandArgs[K] extends NoCommandArgs
-  ? []
-  : [args: CommandArgs[K]]
+export type CommandDispatchArgs<K extends CommandId> = K extends CommandId
+  ? CommandArgs[K] extends NoCommandArgs
+    ? []
+    : [args: CommandArgs[K]]
+  : never
 
 /** A command definition */
 export interface Command {

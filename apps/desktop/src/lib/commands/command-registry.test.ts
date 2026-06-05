@@ -61,13 +61,27 @@ describe('CommandId is a closed union (compile-time)', () => {
   })
 
   it('arg-less ids resolve to an empty dispatch tuple', () => {
-    // Every command is arg-less today, so the dispatch-args tuple is `[]`.
+    // An arg-less command's dispatch-args tuple is `[]`.
     const noArgs: CommandDispatchArgs<'file.rename'> = []
     // The arg map entry for an arg-less command is the `NoCommandArgs` marker.
     const argValue: CommandArgs['file.rename'] = undefined
 
     expect(noArgs).toEqual([])
     expect(argValue).toBeUndefined()
+  })
+
+  it('arg-carrying ids resolve to a single-payload dispatch tuple', () => {
+    // `view.setMode` overrides its `CommandArgs` entry with `{ pane, mode }`, so
+    // its dispatch tuple is `[args]` (one required payload), not `[]`.
+    const withArgs: CommandDispatchArgs<'view.setMode'> = [{ pane: 'left', mode: 'full' }]
+    const argValue: CommandArgs['view.setMode'] = { pane: 'right', mode: 'brief' }
+
+    // @ts-expect-error -- an arg-carrying id can't be dispatched with no payload.
+    const missing: CommandDispatchArgs<'view.setMode'> = []
+    void missing
+
+    expect(withArgs[0]).toEqual({ pane: 'left', mode: 'full' })
+    expect(argValue.pane).toBe('right')
   })
 })
 

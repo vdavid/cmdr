@@ -9,6 +9,7 @@
     import { openInEditor, quickLookSetPath } from '$lib/tauri-commands'
     import { closeFromPaneError, quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { saveAppStatus, saveLastUsedPathForVolume, type ViewMode } from '$lib/app-status-store'
+    import type { CommandId } from '$lib/commands'
     import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import {
         pathExists,
@@ -157,7 +158,7 @@
          * routes it through `handleCommandExecute` (the unified dispatcher).
          * Used by the Selection dialog's bare `+` / `-` shortcuts.
          */
-        onCommand?: (commandId: string) => void
+        onCommand?: (commandId: CommandId) => void
     }
 
     const { onCommand }: Props = $props()
@@ -175,7 +176,6 @@
     let containerElement: HTMLDivElement | undefined = $state()
     const paneRefs = $state<Record<'left' | 'right', FilePaneAPI | undefined>>({ left: undefined, right: undefined })
     let unlistenSettings: UnlistenFn | undefined
-    let unlistenViewMode: UnlistenFn | undefined
     let unlistenVolumeUnmount: UnlistenFn | undefined
     let unlistenVolumeContextAction: UnlistenFn | undefined
     let unlistenIndexEvents: UnlistenFn | undefined
@@ -960,17 +960,6 @@
             }
         })
 
-        // Subscribe to view mode changes from the backend menu. The payload's `pane`
-        // says which pane the click targets (per-pane menu items), so an inactive-pane
-        // click changes that pane's mode without altering focus.
-        unlistenViewMode = await listen<{ mode: ViewMode; pane?: 'left' | 'right' }>('view-mode-changed', (event) => {
-            const targetPane = event.payload.pane ?? focusedPane
-            const newMode = event.payload.mode
-            setPaneViewMode(targetPane, newMode)
-            saveAppStatus({ [paneKey(targetPane, 'viewMode')]: newMode })
-            saveTabsForPaneSide(targetPane)
-        })
-
         // Subscribe to volume unmount events (redirect panes off ejected volumes)
         unlistenVolumeUnmount = await listen<{ volumePath: string }>('volume-unmounted', (event) => {
             const volume = volumes.find((v) => v.path === event.payload.volumePath)
@@ -1094,7 +1083,6 @@
 
     onDestroy(() => {
         unlistenSettings?.()
-        unlistenViewMode?.()
         unlistenVolumeUnmount?.()
         unlistenVolumeContextAction?.()
         unlistenIndexEvents?.()
@@ -1407,6 +1395,21 @@
         saveAppStatus({ [paneKey(targetPane, 'viewMode')]: mode })
         saveTabsForPaneSide(targetPane)
         pushViewMenuState()
+    }
+
+    /**
+     * Set a specific pane's view mode in response to a native-menu click
+     * (the `view.setMode` command, dispatched from `view-mode-changed`). Same
+     * set + persist as `setViewMode`, but deliberately OMITS `pushViewMenuState`:
+     * the menu click already toggled its own CheckMenuItem and Rust ran
+     * `sync_view_mode_check_states`, so pushing the state back would double-sync.
+     * Focus-preserving — the target pane changes even when the other pane is
+     * focused (an inactive-pane menu click).
+     */
+    export function setViewModeFromMenu(pane: 'left' | 'right', mode: ViewMode) {
+        setPaneViewMode(pane, mode)
+        saveAppStatus({ [paneKey(pane, 'viewMode')]: mode })
+        saveTabsForPaneSide(pane)
     }
 
     /**
@@ -1976,7 +1979,7 @@
                 unreachable={getActiveTab(tabMgr).unreachable}
                 onRetryUnreachable={() => handleRetryUnreachable(paneId)}
                 onOpenHome={() => handleOpenHome(paneId)}
-                onCommand={(commandId: string) => onCommand?.(commandId)}
+                {onCommand}
             />
         {/key}
     </div>

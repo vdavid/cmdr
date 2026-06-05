@@ -46,7 +46,8 @@
         handleCommandExecute as dispatchCommand,
         type CommandDispatchContext,
     } from './command-dispatch'
-    import { isCommandId, type CommandId } from '$lib/commands'
+    import { isCommandId, type CommandId, type CommandDispatchArgs } from '$lib/commands'
+    import type { ViewMode } from '$lib/app-status-store'
     import { setupMcpListeners } from './mcp-listeners'
     import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { initAppMode, getAppMode, type AppMode } from '$lib/app-mode'
@@ -232,6 +233,65 @@
                 void handleCommandExecute(commandId)
             }
         })
+
+        // Per-pane view change from a native-menu click. Rust emits this directly
+        // (not via `execute-command`) because the CheckMenuItem already toggled
+        // its own state; the dispatch maps it onto the `view.setMode` command. The
+        // payload is validated rather than `as`-cast: an unknown `mode` is dropped,
+        // and an absent/unknown `pane` falls back to the focused pane (matching the
+        // old in-component listener's `event.payload.pane ?? focusedPane`).
+        await listenTauri('view-mode-changed', (event) => {
+            const raw = (event.payload ?? {}) as { mode?: unknown; pane?: unknown }
+            const mode: ViewMode | undefined =
+                raw.mode === 'full' || raw.mode === 'brief' ? raw.mode : undefined
+            if (!mode) return
+            const pane: 'left' | 'right' =
+                raw.pane === 'left' || raw.pane === 'right' ? raw.pane : (explorerRef?.getFocusedPane() ?? 'left')
+            // `viewSetModeCommand` is a typed const (not an inline literal) so a
+            // registry rename breaks compilation and `cmdr/no-raw-command-dispatch`
+            // stays satisfied (A3).
+            void handleCommandExecute(viewSetModeCommand, { pane, mode })
+        })
+
+        // Native sort-menu clicks. Rust emits this directly (not via
+        // `execute-command`) with `{ action, value }`; the dispatch maps each
+        // value onto the focused-pane `sort.*` command. Validated, not `as`-cast:
+        // an unknown `action`/`value` pair is dropped.
+        await listenTauri('menu-sort', (event) => {
+            const raw = (event.payload ?? {}) as { action?: unknown; value?: unknown }
+            const command = menuSortToCommand(raw.action, raw.value)
+            if (command) void handleCommandExecute(command)
+        })
+    }
+
+    /** Typed id for the per-pane view command (keeps dispatch off raw literals; A3). */
+    const viewSetModeCommand: CommandId = 'view.setMode'
+
+    /**
+     * Maps a native `menu-sort` payload onto a focused-pane `sort.*` command id,
+     * or `undefined` for an unrecognized payload. `sortBy` selects the column;
+     * `sortOrder` selects ascending/descending (the menu never emits `toggle`).
+     */
+    function menuSortToCommand(action: unknown, value: unknown): CommandId | undefined {
+        if (action === 'sortBy') {
+            const byColumn: Record<string, CommandId> = {
+                name: 'sort.byName',
+                extension: 'sort.byExtension',
+                size: 'sort.bySize',
+                modified: 'sort.byModified',
+                created: 'sort.byCreated',
+            }
+            return typeof value === 'string' ? byColumn[value] : undefined
+        }
+        if (action === 'sortOrder') {
+            const byOrder: Record<string, CommandId> = {
+                asc: 'sort.ascending',
+                desc: 'sort.descending',
+                toggle: 'sort.toggleOrder',
+            }
+            return typeof value === 'string' ? byOrder[value] : undefined
+        }
+        return undefined
     }
 
     // Unlisten functions for MCP and dialog listeners (cleaned up on destroy, important for HMR)
@@ -810,8 +870,11 @@
         },
     }
 
-    async function handleCommandExecute(commandId: CommandId) {
-        await dispatchCommand(commandId, commandDispatchCtx)
+    async function handleCommandExecute<K extends CommandId>(
+        commandId: K,
+        ...args: CommandDispatchArgs<K>
+    ): Promise<void> {
+        await dispatchCommand(commandId, commandDispatchCtx, ...args)
     }
 </script>
 
@@ -889,17 +952,7 @@
         {/if}
 
         {#if showApp}
-            <DualPaneExplorer
-                bind:this={explorerRef}
-                onCommand={(commandId: string) => {
-                    // The selection-dialog key classifier still types its command channel as
-                    // `string` (M3 types the `onCommand` prop chain end to end). Narrow here so
-                    // the typed dispatcher only ever sees a `CommandId`.
-                    if (isCommandId(commandId)) {
-                        void handleCommandExecute(commandId)
-                    }
-                }}
-            />
+            <DualPaneExplorer bind:this={explorerRef} onCommand={handleCommandExecute} />
             <ScanStatusOverlay />
             <ReplayStatusOverlay />
         {/if}

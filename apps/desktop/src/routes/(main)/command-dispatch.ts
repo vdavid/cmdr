@@ -32,7 +32,7 @@ import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { goToLatestDownload } from '$lib/downloads/go-to-latest'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
-import type { CommandId } from '$lib/commands'
+import type { CommandId, CommandArgs, CommandDispatchArgs } from '$lib/commands'
 import type { ExplorerAPI } from './explorer-api'
 
 const log = getAppLogger('user-action')
@@ -167,24 +167,39 @@ function showZoomToast(oldSize: number, newSize: number): void {
   addToast(message, { level: 'info', id: 'zoom-change' })
 }
 
+/**
+ * Typed dispatch entry point. The generic `K` keeps the public signature
+ * arg-checked per command (arg-less ids take no second argument; arg-carrying
+ * ones like `view.setMode` require their typed payload). Inside, `commandId`
+ * widens back to the `CommandId` union so the `switch` narrows per `case` as
+ * before, and the single arg payload is read per-case from `dispatchArgs`.
+ */
 // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
-export async function handleCommandExecute(commandId: CommandId, ctx: CommandDispatchContext): Promise<void> {
+export async function handleCommandExecute<K extends CommandId>(
+  commandId: K,
+  ctx: CommandDispatchContext,
+  ...args: CommandDispatchArgs<K>
+): Promise<void> {
+  // Widen the generic so the switch narrows on the union (a generic `K` doesn't
+  // narrow per `case`). The lone arg payload, if any, is read per-case below.
+  const id: CommandId = commandId
+  const dispatchArgs: CommandArgs[CommandId] | undefined = args[0]
   const explorerRef = ctx.getExplorer()
 
   // Bail before logging if the user's intent is text manipulation in a selectable
   // region. Native menu accelerators (⌘C, ⌘A) flow through here even when focus is
   // outside the file pane, so without this guard every text copy would log
   // `edit.copy` / `selection.selectAll` and trigger file-scope behavior.
-  if (handleTextRegionShortcut(commandId)) return
+  if (handleTextRegionShortcut(id)) return
 
   // Every keyboard / palette / menu command flows through here. Two channels:
   // - Info-level structured log → LogTape → Rust bridge → fern file chain, so the
   //   line appears alongside backend logs in error-report bundles.
   // - A `kind: "command"` breadcrumb → the manifest's rolling buffer, so triagers
   //   see what the user did right before an error fired.
-  log.info(commandId)
+  log.info(id)
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  void invoke('record_breadcrumb', { kind: 'command', message: commandId, ctx: null }).catch(() => {
+  void invoke('record_breadcrumb', { kind: 'command', message: id, ctx: null }).catch(() => {
     // Best-effort: a failing breadcrumb shouldn't break the dispatch.
   })
 
@@ -193,10 +208,10 @@ export async function handleCommandExecute(commandId: CommandId, ctx: CommandDis
   // Block destination-side actions on a search-results pane with a friendly toast
   // (M8c). Menu paths are visibly disabled at the source; this catches the
   // shortcut-driven path that bypasses the UI.
-  if (blockedBySearchResultsPane(commandId, explorerRef)) return
+  if (blockedBySearchResultsPane(id, explorerRef)) return
 
   // Handle known commands by category
-  switch (commandId) {
+  switch (id) {
     // === App commands ===
     // app.quit, app.hide, app.hideOthers, app.showAll are native-only;
     // handled by PredefinedMenuItems (terminate:, hide:, etc.), not JS dispatch.
@@ -260,6 +275,19 @@ export async function handleCommandExecute(commandId: CommandId, ctx: CommandDis
       explorerRef?.setViewMode('full')
       return
 
+    case 'view.setMode': {
+      // Per-pane view change from a native-menu click (`view-mode-changed`). The
+      // `id === 'view.setMode'` narrowing doesn't reach `dispatchArgs` (it's a
+      // separate local), so read the typed payload with a single cast — the
+      // generic signature already type-checked it at the call site. Deliberately
+      // routes to `setViewModeFromMenu`, NOT `setViewMode`: the menu click already
+      // toggled its own CheckMenuItem, so the handler must skip `pushViewMenuState`
+      // to avoid double-syncing against Rust's `sync_view_mode_check_states`.
+      const { pane, mode } = dispatchArgs as CommandArgs['view.setMode']
+      explorerRef?.setViewModeFromMenu(pane, mode)
+      return
+    }
+
     // === Zoom commands ===
     // Each writes `appearance.textSize`; the settings store cross-window-syncs
     // and `lib/text-size.svelte.ts` recomputes the effective scale.
@@ -272,7 +300,7 @@ export async function handleCommandExecute(commandId: CommandId, ctx: CommandDis
         'view.zoom.set100': 100,
         'view.zoom.set125': 125,
         'view.zoom.set150': 150,
-      }[commandId]
+      }[id]
       const current = getSetting('appearance.textSize')
       setSetting('appearance.textSize', preset)
       showZoomToast(current, preset)

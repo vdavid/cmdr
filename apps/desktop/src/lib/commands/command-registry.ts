@@ -124,6 +124,18 @@ export const commands: Command[] = [
     showInPalette: true,
     shortcuts: ['⌘1'],
   },
+  {
+    // Per-pane view change carrying `{ pane, mode }` args, dispatched by the
+    // native-menu `view-mode-changed` event (a click on the inactive pane's
+    // Full/Brief item). Hidden from the palette: the focused-pane
+    // `view.briefMode` / `view.fullMode` are the user-facing entries; this one
+    // exists so an inactive-pane menu click sets that pane without stealing focus.
+    id: 'view.setMode',
+    name: 'Set pane view mode',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
 
   // ============================================================================
   // Main window - Zoom (text size) commands

@@ -58,17 +58,6 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     }
   })
 
-  await listenTauri('menu-sort', (event) => {
-    const { action, value } = event.payload as { action: string; value: string }
-    if (action === 'sortBy') {
-      const column = value as 'name' | 'extension' | 'size' | 'modified' | 'created'
-      getExplorer()?.setSortColumn(column)
-    } else if (action === 'sortOrder') {
-      const order = value as 'asc' | 'desc' | 'toggle'
-      getExplorer()?.setSortOrder(order)
-    }
-  })
-
   await listenTauri('mcp-sort', (event) => {
     const { pane, by, order } = event.payload as { pane: 'left' | 'right'; by: string; order: string }
     const column = by === 'ext' ? 'extension' : (by as 'name' | 'extension' | 'size' | 'modified' | 'created')

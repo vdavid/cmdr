@@ -17,6 +17,15 @@ export interface ExplorerAPI {
   closeVolumeChooser: () => void
   toggleHiddenFiles: () => boolean
   setViewMode: (mode: ViewMode, pane?: 'left' | 'right') => void
+  /**
+   * Sets a specific pane's view mode in response to a native-menu click
+   * (`view-mode-changed`). Same set + persist as `setViewMode`, but WITHOUT
+   * `pushViewMenuState`: the menu already toggled its own CheckMenuItem on click,
+   * so pushing the state back would double-sync against Rust's
+   * `sync_view_mode_check_states`. Focus-preserving (the target pane changes even
+   * when the other pane is focused).
+   */
+  setViewModeFromMenu: (pane: 'left' | 'right', mode: ViewMode) => void
   navigate: (action: 'back' | 'forward' | 'parent') => void
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null
   sendKeyToFocusedPane: (key: string) => void

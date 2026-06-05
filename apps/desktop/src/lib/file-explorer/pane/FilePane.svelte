@@ -44,6 +44,7 @@
     import { createTypeToJumpState } from './type-to-jump-state.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
+    import type { CommandId } from '$lib/commands'
     import { tooltip } from '$lib/tooltip/tooltip'
 
     /** State snapshot for swapping panes without backend calls. */
@@ -152,9 +153,9 @@
          * Bubbles a high-level command id out of the pane. Used by the Selection
          * dialog's `+` / `-` shortcuts so the parent route can dispatch via the
          * unified command-dispatch path without FilePane importing it. Receives
-         * the command id (`'selection.selectFiles'` / `'selection.deselectFiles'`).
+         * a `CommandId` (`'selection.selectFiles'` / `'selection.deselectFiles'`).
          */
-        onCommand?: (commandId: string) => void
+        onCommand?: (commandId: CommandId) => void
     }
 
     const {
@@ -2394,29 +2395,6 @@
         fetchListingStats: () => void fetchListingStats(),
         onRequestFocus,
         navigateToFallback,
-    })
-
-    // Listen for menu action events
-    $effect(() => {
-        const listenerPromise = listen<string>('menu-action', (event) => {
-            const action = event.payload
-            if (action === 'open') {
-                // Use the list component's cached entry for consistency
-                const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-                const entry: FileEntry | undefined = listRef?.getEntryAt(cursorIndex)
-                if (entry) {
-                    void handleNavigate(entry)
-                }
-            }
-        })
-
-        return () => {
-            void listenerPromise
-                .then((unsub) => {
-                    unsub()
-                })
-                .catch(() => {})
-        }
     })
 
     // Listen for MTP device removal events

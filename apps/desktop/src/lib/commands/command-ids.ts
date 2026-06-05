@@ -54,6 +54,7 @@ export const COMMAND_IDS = [
   'view.showHidden',
   'view.briefMode',
   'view.fullMode',
+  'view.setMode',
 
   // Zoom (text size)
   'view.zoom.set75',
