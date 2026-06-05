@@ -30,17 +30,18 @@ list).
 
 ### Reactive state (`*.svelte.ts`)
 
-| File                             | Purpose                                                                                 |
-| -------------------------------- | --------------------------------------------------------------------------------------- |
-| `explorer-state.svelte.ts`       | Explorer store: `focusedPane`, `showHiddenFiles`, layout split, the two tab-mgr holders |
-| `dialog-state.svelte.ts`         | Dialog props + handlers (transfer, delete, mkdir, alert, error); factory                |
-| `selection-state.svelte.ts`      | `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers              |
-| `rename-flow.svelte.ts`          | Rename validation, conflict + extension dialogs, save / cancel                          |
-| `type-to-jump-state.svelte.ts`   | Buffer + indicator + reset/hide timers + generation counter (race protection)           |
-| `volume-tint.svelte.ts`          | `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier            |
-| `pane-mcp-sync.svelte.ts`        | Mirrors pane state into the MCP `PaneState` store; skips network/search panes           |
-| `listing-diff-sync.svelte.ts`    | File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core)          |
-| `drag-drop-controller.svelte.ts` | Native drag band: drop-target state, drag handlers, 3 Tauri listeners, highlight effect |
+| File                               | Purpose                                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| `explorer-state.svelte.ts`         | Explorer store: `focusedPane`, `showHiddenFiles`, layout split, the two tab-mgr holders   |
+| `dialog-state.svelte.ts`           | Dialog props + handlers (transfer, delete, mkdir, alert, error); factory                  |
+| `selection-state.svelte.ts`        | `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers                |
+| `rename-flow.svelte.ts`            | Rename validation, conflict + extension dialogs, save / cancel                            |
+| `type-to-jump-state.svelte.ts`     | Buffer + indicator + reset/hide timers + generation counter (race protection)             |
+| `volume-tint.svelte.ts`            | `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier              |
+| `pane-mcp-sync.svelte.ts`          | Mirrors pane state into the MCP `PaneState` store; skips network/search panes             |
+| `persistence-subscriber.svelte.ts` | The single nav-state persistence subscriber (A5): reactive `$effect`s → `app-status.json` |
+| `listing-diff-sync.svelte.ts`      | File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core)            |
+| `drag-drop-controller.svelte.ts`   | Native drag band: drop-target state, drag handlers, 3 Tauri listeners, highlight effect   |
 
 ### Pure utilities (`*.ts`)
 
@@ -202,6 +203,45 @@ other. See parent § "Live disk space".
 the drop-foreign-listings policy in `navigate.ts::commitPathFromListing` (`smb://` prefix for `network`,
 `search-results://` prefix for snapshots, `isPathOnVolume` for everything else). Adding a new virtual-volume namespace?
 Extend the explicit prefix branch. See parent § "Gotchas".
+
+**Nav-state persistence fires from ONE subscriber (A5).** `persistence-subscriber.svelte.ts` is the single module that
+writes pane navigation state to `app-status.json`. `DualPaneExplorer` creates it synchronously during init (L3, the
+`initListingDiffSync` pattern). Its two per-pane reactive `$effect`s watch the store's active-tab nav-state (path /
+volumeId / viewMode / sortBy / sortOrder) and a third watches `focusedPane`; each diffs against the last-persisted
+snapshot and calls the already-debounced `saveAppStatus` with only the changed fields, plus `saveTabsForPane` for the
+pane whose nav-state moved. There are NO scattered `saveAppStatus` / `saveTabsForPaneSide` trigger sites in the nav /
+sort / view-mode / focus / swap / mirror paths — they all mutate the store and the subscriber reacts (subscribe, don't
+poll). Grep "where does pane nav-state persist?" → this one module.
+
+Two values can't be derived from a store snapshot, so they come in as explicit hooks on the subscriber (still the same
+single module — A5 is per concern, not per call shape):
+
+- **Layout split** (`leftPaneWidthPercent`): persisted drag-END only via `persistLayout(percent)`, called from the
+  resize-end / reset handlers. A reactive effect would persist on every drag FRAME (`handlePaneResize` sets the width
+  per frame); the 200 ms debounce would still leak intermediate widths on a slow drag.
+- **Last-used-path** (the `volumeId → path` map): a DELTA, not a snapshot — on a volume switch the OLD path of the OLD
+  volume is recorded, a value the store no longer holds by the time an effect could read it. `navigate()` owns that
+  delta (it has the old value before the swap) and forwards it through its `persist` callback →
+  `persistLastUsedPath(record)`.
+
+**The A5 per-surface split — what the subscriber does NOT own:**
+
+- **Tab-set STRUCTURE** (open / close / reorder / pin / reopen) persists from `tab-operations.ts` (`saveTabsForPane`).
+  That's tab CRUD — a separate surface. The subscriber owns active-tab NAV-state + focus; `tab-operations` owns tab
+  structure. Both write `app-status.json` tab keys through `savePaneTabs`, but a nav change and a tab-bar action are
+  distinct triggers. The same split applies to the MCP `tab` tool's CRUD branches in `handleMcpTabAction` (close /
+  close_others / set_pinned), which keep their own `saveTabsForPaneSide`.
+- **The MCP backend mirror** (`syncTabsToBackend` / `updatePaneTabs` / `updateFocusedPane`, L8): the Rust state store
+  for MCP, a different target and debounce (100 ms), NOT disk persistence. Untouched.
+- **`showHiddenFiles`**: a SETTING, persisted via the settings store (`saveSettings`), not `app-status`. Stays in
+  `toggleHiddenFiles` / the settings-change listener.
+
+**Edge-flow handlers still carry their own save calls (until folded onto `navigate()`).** `handleCancelLoading`,
+`handleMtpFatalError`, `handleRetryUnreachable`, `handleOpenHome`, and `handleVolumeUnmount` still call `saveAppStatus`
+/ `saveTabsForPaneSide` directly. Because they ALSO mutate the store, the subscriber's reactive effects cover their
+persistence too — the direct calls are redundant duplicates a later milestone removes when those handlers route through
+`navigate()`. Through the 200 ms debounce + per-field diff the double-fire is idempotent (identical persisted state), so
+it's safe to leave them until that migration.
 
 ## Gotchas
 

@@ -7,7 +7,7 @@
     import DialogManager from './DialogManager.svelte'
     import { openInEditor, quickLookSetPath } from '$lib/tauri-commands'
     import { closeFromPaneError, quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
-    import { saveAppStatus, saveLastUsedPathForVolume, type ViewMode } from '$lib/app-status-store'
+    import { saveAppStatus, type ViewMode } from '$lib/app-status-store'
     import type { CommandId, McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
     import type { SelectionAction } from '../../../routes/(main)/explorer-api'
     import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
@@ -105,6 +105,7 @@
     } from './navigate'
     import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
     import { createDragDropController } from './drag-drop-controller.svelte'
+    import { initPersistenceSubscriber } from './persistence-subscriber.svelte'
     import { recalculateWebviewOffset } from '../drag/drag-position'
     import { initIndexEvents } from '$lib/indexing/index'
     import { createIndexEventHandler } from './index-events'
@@ -370,7 +371,6 @@
         setPaneHistory,
         setFocusedPane: (pane) => {
             explorerState.setFocusedPane(pane)
-            saveAppStatus({ focusedPane: pane })
         },
         getPaneRef,
         resolveVolume: (path) => resolvePathVolume(path),
@@ -381,13 +381,14 @@
         resolveValidPath: (path, options) => resolveValidPath(path, options),
         pathExists: (path) => pathExists(path),
         persist: (event) => {
-            // M3: fan the navigate() persistence intents out to today's scattered
-            // save sites. M4 replaces this with the single debounced subscriber.
-            if (event.kind === 'pane-state') {
-                saveAppStatus(buildPaneStatus(event.pane))
-                saveTabsForPaneSide(event.pane)
-            } else {
-                void saveLastUsedPathForVolume(event.record.volumeId, event.record.path)
+            // The single nav-state persistence subscriber (A5) owns disk writes.
+            // `pane-state` is covered REACTIVELY there (the subscriber's per-pane
+            // effects watch the store), so `navigate()`'s pane-state commit doesn't
+            // trigger a save from here — the store mutation it just made does. The
+            // `last-used-path` DELTA (the old path of the old volume on a switch)
+            // can't be derived from a snapshot, so it's forwarded explicitly.
+            if (event.kind === 'last-used-path') {
+                persistence.persistLastUsedPath(event.record)
             }
         },
         focusContainer: () => containerElement?.focus(),
@@ -397,14 +398,21 @@
         correctionGen: navCorrectionGen,
     }
 
-    /** Builds the `saveAppStatus` patch for a pane's current nav-state (volume + path + focus). */
-    function buildPaneStatus(pane: 'left' | 'right'): Record<string, unknown> {
-        return {
-            [paneKey(pane, 'volumeId')]: getPaneVolumeId(pane),
-            [paneKey(pane, 'path')]: getPanePath(pane),
-            focusedPane,
-        }
-    }
+    // The single nav-state persistence subscriber (A5). Created synchronously
+    // during component init (L3): its per-pane reactive effects watch the store
+    // and write `app-status.json`. The two deltas a snapshot can't express —
+    // last-used-path (the old path on a volume switch) and the layout split
+    // (drag-end-only) — come back as explicit hooks the component calls.
+    const persistence = initPersistenceSubscriber({
+        getInitialized: () => initialized,
+        getFocusedPane: () => focusedPane,
+        getPanePath,
+        getPaneVolumeId,
+        getPaneViewMode,
+        getPaneSortBy: (pane) => getPaneSort(pane).sortBy,
+        getPaneSortOrder: (pane) => getPaneSort(pane).sortOrder,
+        saveTabsForPaneSide,
+    })
 
     /** The single coordinator-level navigation entry. Delegates to the `navigate()` transaction. */
     function navigateIntent(intent: NavigateIntent): NavigateResult {
@@ -534,8 +542,8 @@
         )
 
         setPaneSort(pane, newColumn, newOrder)
-        saveAppStatus({ [paneKey(pane, 'sortBy')]: newColumn })
-        saveTabsForPaneSide(pane)
+        // Persistence (saveAppStatus sortBy + the pane's tab set) fires from the
+        // single subscriber's per-pane effect, which reacts to this store change.
         applySortResult(paneRef, result, sortState.hasParent)
     }
 
@@ -608,7 +616,6 @@
             // shouldn't keep matching.
             getPaneRef(focusedPane)?.clearJumpState()
             explorerState.setFocusedPane(pane)
-            saveAppStatus({ focusedPane: pane })
             void updateFocusedPane(pane)
             syncPinTabMenu()
             syncReopenMenuState()
@@ -956,12 +963,14 @@
     }
 
     function handlePaneResizeEnd() {
-        saveAppStatus({ leftPaneWidthPercent })
+        // Layout persists drag-END only (never per frame) — the subscriber's
+        // explicit hook, not a reactive effect. See persistence-subscriber.svelte.ts.
+        persistence.persistLayout(leftPaneWidthPercent)
     }
 
     function handlePaneResizeReset() {
         explorerState.setLeftPaneWidthPercent(50)
-        saveAppStatus({ leftPaneWidthPercent: 50 })
+        persistence.persistLayout(50)
     }
 
     /** Activates inline rename on the focused pane's cursor item. */
@@ -1143,7 +1152,6 @@
         getPaneRef('right')?.closeVolumeChooser()
         const newFocus = otherPane(focusedPane)
         explorerState.setFocusedPane(newFocus)
-        saveAppStatus({ focusedPane: newFocus })
         void updateFocusedPane(newFocus)
         pushViewMenuState()
         containerElement?.focus()
@@ -1193,20 +1201,9 @@
         leftRef.adoptListing(rightSwap)
         rightRef.adoptListing(leftSwap)
 
-        // 4. Persist
-        saveAppStatus({
-            leftPath,
-            rightPath,
-            leftVolumeId,
-            rightVolumeId,
-            leftViewMode,
-            rightViewMode,
-            leftSortBy,
-            rightSortBy,
-        })
-        saveTabsForPaneSide('left')
-        saveTabsForPaneSide('right')
-
+        // 4. Persistence (both panes' app-status fields + tab sets) fires from the
+        // single subscriber: the swap mutates each pane's active-tab nav-state, so
+        // both per-pane effects re-run.
         containerElement?.focus()
     }
 
@@ -1245,8 +1242,8 @@
     export function setViewMode(mode: ViewMode, pane?: 'left' | 'right') {
         const targetPane = pane ?? focusedPane
         setPaneViewMode(targetPane, mode)
-        saveAppStatus({ [paneKey(targetPane, 'viewMode')]: mode })
-        saveTabsForPaneSide(targetPane)
+        // viewMode persistence (app-status + tab set) fires from the subscriber's
+        // per-pane effect, which reacts to this store change.
         pushViewMenuState()
     }
 
@@ -1261,8 +1258,7 @@
      */
     export function setViewModeFromMenu(pane: 'left' | 'right', mode: ViewMode) {
         setPaneViewMode(pane, mode)
-        saveAppStatus({ [paneKey(pane, 'viewMode')]: mode })
-        saveTabsForPaneSide(pane)
+        // viewMode persistence fires from the subscriber's per-pane effect.
     }
 
     /**
@@ -1343,8 +1339,7 @@
         )
 
         setPaneSort(pane, column, newOrder)
-        saveAppStatus({ [paneKey(pane, 'sortBy')]: column })
-        saveTabsForPaneSide(pane)
+        // Sort persistence (app-status sortBy + tab set) fires from the subscriber.
         applySortResult(paneRef, result, sortState.hasParent)
     }
 
@@ -1556,7 +1551,7 @@
     function restoreFocus(pane: 'left' | 'right'): void {
         if (focusedPane !== pane) {
             explorerState.setFocusedPane(pane)
-            saveAppStatus({ focusedPane: pane })
+            // focusedPane persistence fires from the subscriber's focus effect.
         }
     }
 
