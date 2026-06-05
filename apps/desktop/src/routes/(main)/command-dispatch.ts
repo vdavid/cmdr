@@ -32,6 +32,7 @@ import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { goToLatestDownload } from '$lib/downloads/go-to-latest'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
+import { capabilitiesFor } from '$lib/file-explorer/pane/volume-capabilities'
 import type { CommandId, CommandArgs, CommandDispatchArgs } from '$lib/commands'
 import type { ExplorerAPI } from './explorer-api'
 
@@ -83,27 +84,39 @@ function activeTextRegion(): Element | null {
 
 /**
  * Returns `true` (and surfaces a toast) when `commandId` is a destination-side
- * action that the focused pane's volume can't satisfy because it's a
- * `search-results://` virtual pane. The capability flag set is documented in
- * `lib/search/capabilities.ts`. Source-side actions (copy/move/delete with the
- * snapshot as the source) stay enabled.
+ * action the focused pane's volume capabilities can't satisfy. Reads the focused
+ * pane's `VolumeCapabilities` (one source, shared with the F-bar's `disabled`
+ * flags and the menu items) instead of a `volumeId === 'search-results'` string
+ * compare (invariant A6): paste/pasteAsMove gate on `!canPasteInto`,
+ * newFolder/newFile on `!canCreateChild`, rename on `!canRenameInPlace`.
+ * Source-side actions (copy/move/delete) stay enabled (`canBeSource: true`).
  *
- * Per the M8c plan: menu paths are disabled at the source (F-bar buttons,
- * context-menu items), so this guard exists for the shortcut-driven path
- * (⌘V paste, F7 mkdir, etc.) that bypasses the UI entirely. The toast is
- * the LAST RESORT — it's there so the user isn't left wondering whether
- * the keystroke registered.
+ * Menu paths are disabled at the source (F-bar, context-menu items), so this
+ * guard exists for the shortcut path (⌘V, F7, etc.) that bypasses the UI. The
+ * toast is the LAST RESORT — so the user isn't left wondering whether the
+ * keystroke registered.
+ *
+ * The toast fires ONLY for the `search-results` kind (PR3 byte-identical
+ * behavior). A `network`-kind pane shares the same `false` destination caps, but
+ * those ops are unreachable through the UI and the shortcut path historically
+ * fell through SILENTLY to the explorer call, which no-ops deep down (no listing
+ * id ⇒ mkdir/mkfile bail, no cursor row ⇒ rename returns, paste hits the
+ * "No files on the clipboard" path). The search-results-worded toast there would
+ * be a NEW, mis-worded toast, so network keeps its prior silence: the capability
+ * decides the BLOCK; the kind decides the TOAST.
  */
-function blockedBySearchResultsPane(commandId: CommandId, explorer: ExplorerAPI | undefined): boolean {
+function blockedByCapabilities(commandId: CommandId, explorer: ExplorerAPI | undefined): boolean {
   if (!explorer) return false
-  if (getFocusedPaneVolumeId() !== 'search-results') return false
+
+  const caps = capabilitiesFor(getFocusedPaneVolumeId())
+  // The snapshot pane is the only kind whose destination-op block produces the
+  // user-facing toast; other kinds with false caps fall through as before.
+  if (caps.kind !== 'search-results') return false
 
   const isBlocked =
-    commandId === 'edit.paste' ||
-    commandId === 'edit.pasteAsMove' ||
-    commandId === 'file.newFolder' ||
-    commandId === 'file.newFile' ||
-    commandId === 'file.rename'
+    ((commandId === 'edit.paste' || commandId === 'edit.pasteAsMove') && !caps.canPasteInto) ||
+    ((commandId === 'file.newFolder' || commandId === 'file.newFile') && !caps.canCreateChild) ||
+    (commandId === 'file.rename' && !caps.canRenameInPlace)
   if (!isBlocked) return false
 
   addToast(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'info' })
@@ -205,10 +218,10 @@ export async function handleCommandExecute<K extends CommandId>(
 
   ctx.dialogs.showCommandPalette(false)
 
-  // Block destination-side actions on a search-results pane with a friendly toast
-  // (M8c). Menu paths are visibly disabled at the source; this catches the
-  // shortcut-driven path that bypasses the UI.
-  if (blockedBySearchResultsPane(id, explorerRef)) return
+  // Block destination-side actions the focused pane's capabilities can't satisfy
+  // with a friendly toast. Menu paths are visibly disabled at the source; this
+  // catches the shortcut-driven path that bypasses the UI.
+  if (blockedByCapabilities(id, explorerRef)) return
 
   // Handle known commands by category
   switch (id) {

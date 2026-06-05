@@ -34,7 +34,7 @@ describe('FunctionKeyBar', () => {
     expect(target.querySelector('.function-key-bar')).toBeNull()
   })
 
-  it('enables the source-op buttons by default (canSourceOps defaults to true)', () => {
+  it('enables the source-op buttons by default (a real pane has canBeSource: true)', () => {
     const target = document.createElement('div')
     mount(FunctionKeyBar, { target, props: { visible: true } })
 

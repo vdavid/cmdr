@@ -307,21 +307,24 @@ is untouched. Snapshot refs therefore persist across pane recreation.
 `capabilities.ts::searchResultsVolumeCapabilities()` is a thin shim returning the `search-results` row of the per-kind
 `VolumeCapabilities` table (`lib/file-explorer/pane/volume-capabilities.ts`):
 `{ canPasteInto: false, canCreateChild: false, canRenameInPlace: false, canBeSource: true, … }`. Its one caller is
-`SearchResultsView.svelte` (the row context menu's `restrict` flag reads `!caps.canRenameInPlace`). The other consumers
-below still gate via `volumeId === 'search-results'` string compares today; they read the capability table in later
-milestones of the capabilities phase. Consumers:
+`SearchResultsView.svelte` (the row context menu's `restrict` flag reads `!caps.canRenameInPlace`). The F-bar and the
+keyboard dispatch read the capability table directly via `capabilitiesFor` (the A6 conversion); the remaining consumers
+(clipboard / file-ops / pane-commands / mcp-sync / has-parent) still gate via `volumeId === 'search-results'` string
+compares today and read the table in later milestones of the capabilities phase. Consumers:
 
-- **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): the bar takes
-  `canMkdir` / `canMkfile` / `canRename` / `canSourceOps` / `canPasteInto` props. When the focused pane is on
-  `volumeId === 'search-results'`, F2 (Rename), F7 (New folder), and Shift+F4 (New file) render visibly disabled. F5 /
-  F6 / F8 (Copy / Move / Delete) stay enabled because the snapshot row is source-OK.
+- **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): derives its
+  `canMkdir` / `canMkfile` (= `caps.canCreateChild`), `canRename` (= `caps.canRenameInPlace`), and `canSourceOps` (=
+  `caps.canBeSource`) off `capabilitiesFor(focusedVolumeId)`. On a `search-results` pane, F2 (Rename), F7 (New folder),
+  and Shift+F4 (New file) render visibly disabled; F5 / F6 / F8 (Copy / Move / Delete) stay enabled because the snapshot
+  row is source-OK.
 - **Right-click context menu**: `showFileContextMenu` IPC takes a `restrictDestinationActions` flag. When `true`, the
   Rust menu builder omits Rename and New folder. Source-side items (Open, Copy, Move, Delete, Show in Finder, Copy
   filename, Copy path) stay. The flag is set when `!canRename && !canMkdir`.
-- **Keyboard shortcut dispatch** (`routes/(main)/command-dispatch.ts::blockedBySearchResultsPane`): catches `⌘V`, `⌘⌥V`,
-  `F7`, Shift+F4, `F2` / `file.rename` when the focused pane is `search-results`. Surfaces the friendly toast
+- **Keyboard shortcut dispatch** (`routes/(main)/command-dispatch.ts::blockedByCapabilities`): catches `⌘V`, `⌘⌥V`,
+  `F7`, Shift+F4, `F2` / `file.rename` when the focused pane's capabilities can't satisfy the destination op
+  (`!canPasteInto` / `!canCreateChild` / `!canRenameInPlace`). Surfaces the friendly toast
   `"Search results aren't a folder. Paste into a real folder instead."` (canonical string
-  `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`).
+  `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) — for the `search-results` kind only; a `network` pane keeps its prior silence.
 
 ### Cross-snapshot delete sync
 
@@ -361,7 +364,7 @@ snapshot pane shares `FilePane.selection` state with normal panes. Wire path:
 
 Destination-side write ops are still blocked: pasting INTO a search-results pane shows the canonical
 `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` (via the F-bar disablement, the menu item omission, and the dispatcher's
-`blockedBySearchResultsPane` guard). `openTransferDialog` also blocks F5/F6 when the OPPOSITE pane is a snapshot, so the
+`blockedByCapabilities` guard). `openTransferDialog` also blocks F5/F6 when the OPPOSITE pane is a snapshot, so the
 shortcut path can't accidentally route a copy/move INTO a snapshot.
 
 ## Search-specific decisions

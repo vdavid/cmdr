@@ -1,12 +1,11 @@
 <script lang="ts">
     import { explorerState } from './explorer-state.svelte'
     import { getActiveTab } from '../tabs/tab-state-manager.svelte'
+    import { capabilitiesFor } from './volume-capabilities'
     import type { CommandId } from '$lib/commands'
 
     interface Props {
         visible?: boolean
-        /** Source-side actions (copy/move/delete). Always true on real folders. */
-        canSourceOps?: boolean
         /**
          * Dispatches a `file.*` command for the clicked F-key onto the command
          * bus. The buttons carry the same user intent as the keyboard / palette /
@@ -17,7 +16,7 @@
         onCommand?: (id: CommandId) => void
     }
 
-    const { visible = true, canSourceOps = true, onCommand }: Props = $props()
+    const { visible = true, onCommand }: Props = $props()
 
     /**
      * Each F-key button's command id. Held in a typed map (not inlined as a
@@ -38,29 +37,33 @@
     } as const satisfies Record<string, CommandId>
 
     /**
-     * Destination-side capability flags for the focused pane, read straight off
-     * the explorer store. A `search-results://` snapshot pane has no real folder
-     * to create into / rename within, so mkdir / mkfile / rename / paste-into
-     * render visibly disabled; per `docs/design-principles.md`, "disabled is
-     * better than 'you did the wrong thing' toasts."
+     * Capabilities for the focused pane, read straight off the explorer store.
+     * The button `disabled` flags branch on the `VolumeCapabilities` record
+     * (invariant A6 — capabilities, not a `volumeId === 'search-results'` string
+     * compare), the same source the dispatch guard and the context menu read. A
+     * `search-results://` snapshot pane has no real folder to create into /
+     * rename within, so mkdir / mkfile / rename render visibly disabled; per
+     * `docs/design-principles.md`, "disabled is better than 'you did the wrong
+     * thing' toasts." Its rows are real files, so source ops (copy/move/delete)
+     * stay enabled (`canBeSource: true`).
      *
      * Reading the focused pane's active-tab `volumeId` through the store keeps
      * this reactive without the old `onFocusedVolumeChange` callback → page
      * `$state` → prop chain (A9: a store getter inside a `$derived` is reactive;
      * a plain `explorerRef` method call isn't). Per-pane read only (P1): we touch
-     * the focused pane's manager, never both.
-     *
-     * Known-transitional A6 exception: the `=== 'search-results'` string compare
-     * stays here for now — Phase 4 replaces it with a capability check. Only its
-     * input (the volumeId) has moved to a store read.
+     * the focused pane's manager, never both. `capabilitiesFor` resolves the
+     * `fsType`/`category` from the volume store, so we pass just the volumeId.
      */
-    const isSearchResultsPane = $derived(
-        getActiveTab(explorerState.getTabMgr(explorerState.getFocusedPane())).volumeId ===
-            'search-results',
+    const caps = $derived(
+        capabilitiesFor(
+            getActiveTab(explorerState.getTabMgr(explorerState.getFocusedPane())).volumeId,
+        ),
     )
-    const canMkdir = $derived(!isSearchResultsPane)
-    const canMkfile = $derived(!isSearchResultsPane)
-    const canRename = $derived(!isSearchResultsPane)
+    const canMkdir = $derived(caps.canCreateChild)
+    const canMkfile = $derived(caps.canCreateChild)
+    const canRename = $derived(caps.canRenameInPlace)
+    /** Source-side actions (copy/move/delete). The snapshot pane's rows are real files. */
+    const canSourceOps = $derived(caps.canBeSource)
 
     let shiftHeld = $state(false)
 

@@ -38,10 +38,16 @@ from there.
 `[data-text-region]`. Without this, copying error text would log `FE:user-action edit.copy` and trigger file-scope copy.
 Opt new components into the routing by adding `data-text-region`.
 
-**Search-results pane guard.** `blockedBySearchResultsPane(commandId, explorer)` toasts and bails for destination-side
-ops (`edit.paste`, `edit.pasteAsMove`, `file.newFolder`, `file.newFile`, `file.rename`) when the focused pane is a
-`search-results://` snapshot. F-bar buttons and context menus disable visibly at the source; this catches the
-shortcut-driven path that bypasses the UI.
+**Capability guard.** `blockedByCapabilities(commandId, explorer)` reads the focused pane's `VolumeCapabilities`
+(`capabilitiesFor(getFocusedPaneVolumeId())`) and toasts + bails for destination-side ops the pane can't satisfy:
+`edit.paste` / `edit.pasteAsMove` on `!canPasteInto`, `file.newFolder` / `file.newFile` on `!canCreateChild`,
+`file.rename` on `!canRenameInPlace` (invariant A6 — capabilities, not a `volumeId === 'search-results'` string compare;
+the same source the F-bar `disabled` flags and the context menu read). F-bar buttons and context menus disable visibly
+at the source; this catches the shortcut-driven path that bypasses the UI. The toast
+(`SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) fires ONLY for the `search-results` kind: a `network` pane has the same `false`
+destination caps, but those ops are unreachable through its UI and the shortcut path historically fell through silently
+to the explorer no-op, so network keeps its prior silence (the capability decides the block; the kind decides the toast
+— PR3).
 
 **Per-command logging.** Each successful dispatch emits one `log.info(commandId)` (LogTape → fern → error-report
 bundles) and one `record_breadcrumb` invoke (rolling manifest buffer). Both are best-effort; a failing breadcrumb must
@@ -94,7 +100,7 @@ through the bus would pollute the `CommandId` union with dev-only ids for zero g
 - **`+page.svelte` is >900 lines and `command-dispatch.ts` is >670 lines, both flagged by `file-length`.** Don't pile
   new state into the page — extract another `setupXxxListeners(ctx)` module like `mcp-listeners.ts`. Don't pile new
   branches into the dispatcher's switch — group related ids and lift their bodies into small helpers (`showZoomToast`,
-  `handleTextRegionShortcut`, `blockedBySearchResultsPane` are the pattern).
+  `handleTextRegionShortcut`, `blockedByCapabilities` are the pattern).
 - **⌘A is a native menu accelerator.** macOS intercepts it before the webview, so the `selection.selectAll` branch
   routes to `active.select()` when the focused element is an `<input>` / `<textarea>` BEFORE delegating to
   `explorerRef.handleSelectionAction('selectAll')`. The keydown bail in `+page.svelte` doesn't help here — the menu

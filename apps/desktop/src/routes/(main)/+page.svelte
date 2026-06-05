@@ -966,7 +966,6 @@
         {#if showApp}
             <FunctionKeyBar
                 visible={showFunctionKeyBar}
-                canSourceOps={true}
                 onCommand={handleCommandExecute}
             />
         {/if}

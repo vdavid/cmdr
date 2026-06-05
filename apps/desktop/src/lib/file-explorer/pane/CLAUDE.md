@@ -118,8 +118,10 @@ discriminated union (`local` / `smb` / `mtp` / `network` / `search-results`) key
 
 `lib/search/capabilities.ts::searchResultsVolumeCapabilities()` is now a thin shim returning the `search-results` row;
 it (and the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` L10 string) stay there for the one remaining caller
-(`SearchResultsView.svelte`). The capability-GUARD consumers (dispatch / F-bar / clipboard / file-ops / pane-commands /
-mcp-sync / has-parent) still string-compare today; they read the table in later milestones of this phase.
+(`SearchResultsView.svelte`). Dispatch (`command-dispatch.ts::blockedByCapabilities`) and the F-bar
+(`FunctionKeyBar.svelte`) read the table via `capabilitiesFor` for the destination-op guards (paste / mkdir / mkfile /
+rename). The remaining capability-GUARD consumers (clipboard / file-ops / pane-commands / mcp-sync / has-parent) still
+string-compare today; they read the table in later milestones of this phase.
 
 **Command-body factories read through `PaneAccess`.** The MCP/palette command bodies live in factories
 (`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)
@@ -174,13 +176,15 @@ when the held manager mutates in place. Returning a snapshot would silently seve
 `FilePane` (perf invariant P3).
 
 **`FunctionKeyBar` reads the store, not props.** The F-key bar is mounted in `+page.svelte` (a sibling of
-`DualPaneExplorer`, not a child), yet it derives its destination-side capability flags (`canMkdir` / `canMkfile` /
-`canRename`) from `explorerState` directly: `getActiveTab(getTabMgr(getFocusedPane())).volumeId === 'search-results'`.
-This is the A9 pattern — a store getter inside a `$derived` is reactive across the component boundary, so there's no
-`onFocusedVolumeChange` callback or `+page.svelte` mirror `$state` in the chain. Per-pane read only (P1): touch the
-focused pane's manager, never both. The `=== 'search-results'` string compare is a known-transitional A6 exception that
-Phase 4 replaces with a capability check; only its volumeId input is store-backed today. `canSourceOps` stays a prop
-(always `true` for now — a genuine source-op capability concept, not derived from the snapshot-pane volumeId).
+`DualPaneExplorer`, not a child), yet it derives its capability flags from `explorerState` directly: one
+`caps = $derived(capabilitiesFor(getActiveTab(getTabMgr(getFocusedPane())).volumeId))`, then `canMkdir` / `canMkfile` =
+`caps.canCreateChild`, `canRename` = `caps.canRenameInPlace`, `canSourceOps` = `caps.canBeSource` (invariant A6 —
+capabilities, not a `volumeId === 'search-results'` string compare; `capabilitiesFor` resolves `fsType`/`category` from
+the volume store, so the bar passes only the volumeId). This is the A9 pattern — a store getter inside a `$derived` is
+reactive across the component boundary, so there's no `onFocusedVolumeChange` callback or `+page.svelte` mirror `$state`
+in the chain. Per-pane read only (P1): touch the focused pane's manager, never both. `canSourceOps` is no longer a prop
+(it was a dead-true `+page.svelte={true}` placeholder); a focused `network` pane now disables the source buttons too
+(`canBeSource: false`), which only makes the bar honest — those ops already no-op'd deep down on a network pane.
 
 **`FunctionKeyBar` dispatches `file.*` onto the bus.** Each button click calls a single
 `onCommand?: (id: CommandId) => void` prop, wired in `+page.svelte` to `handleCommandExecute`. The button-to-command
@@ -188,11 +192,11 @@ mapping lives in a typed `fnKeyToCommand` map inside the component (F2/⇧F6 →
 `file.edit`, F5 → `file.copy`, F6 → `file.move`, ⇧F4 → `file.newFile`, F7 → `file.newFolder`, F8 → `file.delete`, ⇧F8 →
 `file.deletePermanently`). The keys are held in a typed map (not inlined at the call site) so
 `cmdr/no-raw-command-dispatch` stays satisfied. Routing F-clicks through the bus means they now get the dispatch
-preamble (`log.info` + `record_breadcrumb` breadcrumb + the `blockedBySearchResultsPane` guard) like every other entry
-path — a deliberate telemetry gain, not a behavior change. The buttons' visible `disabled` flags (`canRename` /
-`canMkfile` / `canMkdir` / `canSourceOps`) win first: a disabled button can't be clicked, so the search-results-pane
-toast guard in dispatch never fires for an F-click (the guard set — `file.rename` / `file.newFile` / `file.newFolder` —
-matches exactly the buttons the flags disable on a snapshot pane).
+preamble (`log.info` + `record_breadcrumb` breadcrumb + the `blockedByCapabilities` guard) like every other entry path —
+a deliberate telemetry gain, not a behavior change. The buttons' visible `disabled` flags (`canRename` / `canMkfile` /
+`canMkdir` / `canSourceOps`) win first: a disabled button can't be clicked, so the dispatch capability guard never fires
+for an F-click (the guard's blocked set — `file.rename` / `file.newFile` / `file.newFolder` — matches exactly the
+buttons the flags disable on a snapshot pane).
 
 **Selection-dialog keys dispatch onto the bus.** The `+` / `-` keypresses are classified by `selection-dialog-keys.ts`
 and reach the bus through a typed `onCommand?: (commandId: CommandId) => void` prop chain: `FilePane` (the classifier at
