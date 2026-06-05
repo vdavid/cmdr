@@ -153,6 +153,35 @@ string. The guards:
   sub-state isn't a kind capability. `caps` is derived once per pane (`caps = $derived(capabilitiesFor(volumeId))`); the
   named `isNetworkView` / `isSearchResultsView` deriveds re-source off `caps.kind`.
 
+**A6 residue inventory (the sweep is DONE — don't "finish" it).** Every capability GUARD now reads `VolumeCapabilities`;
+the A6 conversion is complete. A grep for `=== 'search-results'` / `=== 'network'` / `startsWith('mtp-')` (and the `!==`
+forms) across `apps/desktop/src/` still returns hits, but each is justified residue, NOT a guard left behind. Before
+converting any of these, understand which category it's in — forcing a mechanics/display/classifier site through the
+capability table is the "differently complicated" failure mode the refactor explicitly avoids:
+
+- **Classifier internals (the inputs that FEED `volumeKindOf`).** `volume-capabilities.ts` (the two virtual-id checks),
+  `volume-tint.svelte.ts::volumeKindFor` (`category === 'network' || fsType === 'smbfs'`), `volume-grouping.ts`
+  (`category === 'network'` sidebar grouping), `mtp-path-utils.ts::isMtpVolumeId` (`startsWith('mtp-')`). These ARE the
+  classifier — converting them would be circular.
+- **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` (the on-network / on-MTP
+  refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix + `validateMtpNavigation` path
+  parse), `snapshot-pane-navigation.ts` (the cross-volume trigger), `clipboard-operations.ts:76`
+  (`pathScheme !== 'search-results'` — the snapshot-clip path resolver; reads the table but it's a scheme question),
+  `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the network-mirror / copy-path-between-panes
+  identity branches), `rename-flow.svelte.ts:166` (skip the Unix-`access()` permission check on MTP virtual paths — a
+  syscall-support mechanic, not a "may rename" capability).
+- **Display / view selection.** `VolumeBreadcrumb.svelte` (the "Network" / "Search results" labels + the
+  network-disabled gate), `FilePane.svelte` (`paneViewKind === 'network' | 'search-results'` in the `{#if}` chain — the
+  kind-driven view choice, sourced off `caps.kind`; the `isNetworkView` / `isSearchResultsView` named deriveds; the MTP
+  device-only sub-state + the `loadDirectory` skip for network/device-only panes), `MtpConnectionView.svelte`
+  (device-only sub-state).
+- **Persistence / init mechanics.** `app-status-store.ts` (skip filesystem path-resolution for the virtual `network`
+  volume on persist), `initialization.ts` (trust the stored `network` id at startup, no `resolvePathVolume`).
+- **Converted-caps scope (reads the table, kind-scopes a toast).** `command-dispatch.ts:114` +
+  `file-operation-commands.ts:300` (`caps.kind === 'search-results'` decides the toast WORDING after the capability
+  decides the block — the capability / kind split, not a string guard).
+- **Tests + debug.** `navigate.test.ts` and the other `*.test.*` fixtures, `routes/debug/DebugHistoryPanel.svelte`.
+
 **Command-body factories read through `PaneAccess`.** The MCP/palette command bodies live in factories
 (`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)
 plus the dialog state. The component keeps one-line `export function` delegates so the `ExplorerAPI` surface is

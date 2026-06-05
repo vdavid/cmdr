@@ -69,7 +69,7 @@ The per-pane MCP commands (`sort.set`, `selection.mcpSelect`, `cursor.moveTo`, `
 tab / option. They're all `showInPalette: false`. `view.setMode` is shared with the native-menu `view-mode-changed`
 path; its `fromMenu` flag picks `setViewModeFromMenu` (menu, skip `pushViewMenuState`) vs `setViewMode` (MCP, push it).
 
-**Two exceptions stay adapter-local (off the bus this phase).**
+**Two exceptions stay adapter-local (off the bus).**
 
 - **`mcp-nav-to-path`** bypasses the bus entirely. The adapter calls
   `explorerRef.navigate({ pane, to: { path }, source: 'mcp' })` directly and branches on the typed `NavigateResult`: a

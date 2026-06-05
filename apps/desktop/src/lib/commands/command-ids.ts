@@ -176,8 +176,8 @@ export const COMMAND_IDS = [
   'volume.select',
   'volume.close',
   // Select a specific pane's volume by name, carried by the MCP `select_volume`
-  // tool. Navigation-adjacent: still calls `selectVolumeByName` (Phase 3 owns
-  // volume mechanics).
+  // tool. Navigation-adjacent: the dispatch case calls `selectVolumeByName`,
+  // which routes through the `navigate()` transaction for the volume switch.
   'volume.selectByName',
 
   // About window

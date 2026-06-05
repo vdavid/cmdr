@@ -182,9 +182,12 @@ For the full module map, decisions, and gotchas, see `git/CLAUDE.md`.
 ## Search-results virtual volume (`pane/SearchResultsView.svelte`)
 
 Second virtual-volume namespace alongside `network`. `volumeId === 'search-results'` and the pane path is
-`search-results://<snapshot-id>` (opaque to filesystem APIs). FilePane gates on `isSearchResultsView` everywhere it
-already gates on `isNetworkView` (git lookups, listing watcher, dir-exists poll, MCP file sync), and renders
-`SearchResultsView` from the {#if/elseif} chain when active.
+`search-results://<snapshot-id>` (opaque to filesystem APIs). The view selection runs off the pane's
+`VolumeCapabilities`: `FilePane`'s `paneViewKind` derived (`caps.kind === 'search-results'`) picks `SearchResultsView`
+in the `{#if/elseif}` chain, and the "is there a real directory" per-feature gates (git lookups, listing watcher,
+dir-exists poll, MCP file sync) read `!caps.hasBackendListing` — the same gate that skips a `network` pane. See
+[`pane/CLAUDE.md`](pane/CLAUDE.md) § "Volume capabilities" for the per-site breakdown (invariant A6 — capabilities, not
+a `volumeId === 'search-results'` string compare).
 
 `SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`
 via `staticEntries`. No backend listing exists, no IPC traffic. Each adapted entry's `name` field is the friendly full
