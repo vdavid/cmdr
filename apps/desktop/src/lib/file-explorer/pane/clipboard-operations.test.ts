@@ -41,7 +41,17 @@ vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 
 vi.mock('$lib/search/snapshot-store.svelte', () => ({ resolveSnapshotPaths: resolveSnapshotPathsSpy }))
 
-vi.mock('./transfer-operations', () => ({ getCommonParentPath: getCommonParentPathSpy }))
+// `transfer-entry` (the shared guard chain) imports `getDestinationVolumeInfo`
+// from here too, so the mock must export it. Keep it a thin lookup matching the
+// real one so the read-only paste guard exercises real behavior off the
+// per-test volumes list.
+vi.mock('./transfer-operations', () => ({
+  getCommonParentPath: getCommonParentPathSpy,
+  getDestinationVolumeInfo: (volumeId: string, volumes: { id: string; name: string; isReadOnly?: boolean }[]) => {
+    const v = volumes.find((vol) => vol.id === volumeId)
+    return v ? { name: v.name, isReadOnly: v.isReadOnly ?? false } : undefined
+  },
+}))
 
 // The MTP / snapshot refusals read the capability table via `capabilitiesFor`,
 // which resolves fsType/category from the volume store for real ids. The two
@@ -85,6 +95,7 @@ interface AccessConfig {
   volumeId?: string
   path?: string
   showHiddenFiles?: boolean
+  volumes?: { id: string; name: string; isReadOnly?: boolean }[]
 }
 
 function buildAccess(config: AccessConfig = {}): PaneAccess {
@@ -97,12 +108,15 @@ function buildAccess(config: AccessConfig = {}): PaneAccess {
     getFocusedPane: () => config.focusedPane ?? 'left',
     otherPane: (pane) => (pane === 'left' ? 'right' : 'left'),
     getShowHiddenFiles: () => config.showHiddenFiles ?? true,
-    getVolumes: () => [],
+    getVolumes: () => (config.volumes ?? []) as unknown as ReturnType<PaneAccess['getVolumes']>,
     focusContainer: () => {},
   }
 }
 
-const dialogsStub = { startTransferProgress: vi.fn<(props: TransferProgressPropsData) => void>() }
+const dialogsStub = {
+  startTransferProgress: vi.fn<(props: TransferProgressPropsData) => void>(),
+  showAlert: vi.fn<(title: string, message: string) => void>(),
+}
 
 function buildDialogs() {
   return dialogsStub as unknown as Parameters<typeof createClipboardOperations>[1]
@@ -219,6 +233,23 @@ describe('pasteFromClipboard', () => {
     await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
 
     expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files to MTP devices', { level: 'info' })
+    expect(readClipboardFilesSpy).not.toHaveBeenCalled()
+    expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
+  })
+
+  it('refuses pasting into a read-only destination with the shared "Read-only device" alert', async () => {
+    const access = buildAccess({
+      volumeId: 'ext-ro',
+      volumes: [{ id: 'ext-ro', name: 'Backup', isReadOnly: true }],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.showAlert).toHaveBeenCalledWith(
+      'Read-only device',
+      '"Backup" is read-only. You can copy files from it, but not to it.',
+    )
+    // The shared guard fires before reading the clipboard or queueing anything.
     expect(readClipboardFilesSpy).not.toHaveBeenCalled()
     expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
   })

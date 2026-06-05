@@ -197,13 +197,14 @@ describe('getCommonParentPath', () => {
 })
 
 describe('buildTransferPropsFromDroppedPaths', () => {
-  it('returns correct props for a single dropped file', () => {
+  it('returns correct props for a single dropped file (carries the resolved source volume)', () => {
     const result = buildTransferPropsFromDroppedPaths(
       'copy',
       ['/Users/alice/file.txt'],
       '/dest',
       'right',
       'vol-dest',
+      'vol-src',
       'name',
       'ascending',
     )
@@ -219,7 +220,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
       sourceFolderPath: '/Users/alice',
       sortColumn: 'name',
       sortOrder: 'ascending',
-      sourceVolumeId: 'vol-dest',
+      sourceVolumeId: 'vol-src',
       destVolumeId: 'vol-dest',
     })
   })
@@ -230,6 +231,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
       ['/Users/alice/a.txt', '/Users/alice/b.txt', '/Users/alice/c.txt'],
       '/dest/folder',
       'left',
+      'vol-1',
       'vol-1',
       'size',
       'descending',
@@ -242,19 +244,24 @@ describe('buildTransferPropsFromDroppedPaths', () => {
     expect(result.sortOrder).toBe('descending')
   })
 
-  it('uses destVolumeId as sourceVolumeId fallback', () => {
+  it('keeps source and dest volume ids independent (bug 4: cross-volume drop)', () => {
+    // Dropping an MTP source onto a local dest: the source volume id must be the
+    // resolved MTP volume, NOT the dest volume. The hardcoded
+    // `sourceVolumeId = destVolumeId` placeholder made the scan preview stat
+    // MTP-shaped paths as local and report 0 bytes / 0 files.
     const result = buildTransferPropsFromDroppedPaths(
       'move',
-      ['/file.txt'],
-      '/dest',
+      ['mtp://dev/65538/DCIM/IMG.JPG'],
+      '/Users/alice/dest',
       'right',
-      'vol-dest',
+      'root',
+      'mtp-dev:65538',
       'name',
       'ascending',
     )
 
-    expect(result.sourceVolumeId).toBe('vol-dest')
-    expect(result.destVolumeId).toBe('vol-dest')
+    expect(result.sourceVolumeId).toBe('mtp-dev:65538')
+    expect(result.destVolumeId).toBe('root')
     expect(result.operationType).toBe('move')
   })
 
@@ -265,6 +272,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
       '/dest',
       'right',
       'vol-dest',
+      'vol-src',
       'name',
       'ascending',
       [true, true, true],
@@ -281,6 +289,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
       '/dest',
       'right',
       'vol-dest',
+      'vol-src',
       'name',
       'ascending',
       [false, true, true],
@@ -299,6 +308,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
       '/dest',
       'right',
       'vol-dest',
+      'vol-src',
       'name',
       'ascending',
       [false, true, null],
@@ -315,6 +325,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
       '/dest',
       'right',
       'vol-dest',
+      'vol-src',
       'name',
       'ascending',
       [true],

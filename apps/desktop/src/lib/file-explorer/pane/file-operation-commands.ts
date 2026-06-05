@@ -2,7 +2,6 @@ import { DEFAULT_VOLUME_ID, getFileAt, getFilesAtIndices } from '$lib/tauri-comm
 import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
 import { getSnapshot } from '$lib/search/snapshot-store.svelte'
-import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { getAppLogger } from '$lib/logging/logger'
 import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
@@ -17,6 +16,7 @@ import {
   getDestinationVolumeInfo,
 } from './transfer-operations'
 import { capabilitiesFor } from './volume-capabilities'
+import { checkTransferDestinationGuard } from './transfer-entry'
 import type { FilePaneAPI } from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
@@ -285,29 +285,16 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const destVolId = access.getPaneVolumeId(access.otherPane(access.getFocusedPane()))
 
-    // Search-results destination panes can't accept incoming files (the
-    // snapshot is a synthetic view, not a folder). The F-key bar already
-    // disables F5/F6 when the OPPOSITE pane is a snapshot, so this is a
-    // belt-and-braces guard for the shortcut path. The toast string lives in
-    // `lib/search/capabilities`; reuse it for consistency.
-    //
-    // Gated on `!canPasteInto` (A6 — capability, not a `volumeId ===` compare),
-    // scoped to the search-results KIND so the wording stays correct: a network
-    // destination also has `canPasteInto: false`, but it historically fell
-    // through here silently (the capability decides the block; the kind decides
-    // the toast — same split as the dispatch guard, PR3).
-    const destCaps = capabilitiesFor(destVolId)
-    if (!destCaps.canPasteInto && destCaps.kind === 'search-results') {
-      addToast(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'warn' })
-      return
-    }
-
-    const destVolume = getDestinationVolumeInfo(destVolId, access.getVolumes())
-    if (destVolume?.isReadOnly) {
-      dialogs.showAlert(
-        'Read-only device',
-        `"${destVolume.name}" is read-only. You can copy files from it, but not to it.`,
-      )
+    // Shared destination guard chain (search-results refusal + read-only alert).
+    // Every transfer entry path — F5/F6, drag-and-drop, clipboard paste — runs
+    // the same `checkTransferDestinationGuard`, so the refusal copy and ordering
+    // can't drift between paths. The F-key bar already disables F5/F6 when the
+    // OPPOSITE pane is a snapshot, so the search-results branch here is a
+    // belt-and-braces guard for the shortcut path.
+    const guard = checkTransferDestinationGuard(destVolId, access.getVolumes())
+    if (!guard.ok) {
+      if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
+      else dialogs.showAlert(guard.alert.title, guard.alert.message)
       return
     }
 

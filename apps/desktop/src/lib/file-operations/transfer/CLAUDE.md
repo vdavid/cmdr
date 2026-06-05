@@ -111,6 +111,37 @@ for the shared state machine, ETA/throughput, and settle contract.
 
 ## Key decisions
 
+### One transfer entry seam for F5/F6, drag-and-drop, and paste
+
+Three entry paths start a transfer, and they all prepare it through `pane/transfer-entry.ts` so they can't drift:
+
+- **F5/F6** (`pane/file-operation-commands.ts::openTransferDialog`) — real volume ids from the listing, listing-stats
+  counts, opens `TransferDialog` (destination picker).
+- **Drag-and-drop** (`pane/drag-drop-controller.svelte.ts::handleFileDrop`) — absolute dropped paths, opens
+  `TransferDialog`. See `file-explorer/drag/CLAUDE.md`.
+- **Clipboard paste** (`pane/clipboard-operations.ts::pasteFromClipboard`) — skips `TransferDialog` and goes straight to
+  the progress dialog (paste has no destination picker, that's by design), but still runs the same guard.
+
+`transfer-entry.ts` exposes two pure functions every path calls:
+
+- **`checkTransferDestinationGuard(destVolumeId, volumes)`** — the shared destination guard chain. Order: search-results
+  refusal (not-a-folder toast, gated `!canPasteInto` scoped to the `search-results` kind so the wording stays correct)
+  then read-only alert (off `VolumeInfo.isReadOnly`). Returns `{ ok: true }` or a `{ ok: false, alert | toast }` the
+  caller surfaces through its own dialog/toast plumbing. **The copy is the E2E-asserted contract — don't reword it.** An
+  unknown destination id (no `VolumeInfo`) is allowed through: we can't prove read-only, and blocking on "unknown" would
+  break a transfer to a freshly-mounted volume.
+- **`resolveSourceVolumeId(paths, volumes, resolvePathVolume)`** — resolves the REAL source volume for dropped/pasted
+  paths so they carry the same accurate `sourceVolumeId` an F5 transfer does. Frontend longest-prefix
+  (`drag/drop-operation.ts::findVolumeIdForPath`, handles MTP-shaped paths) → backend `resolve_path_volume` for the
+  common parent when no registered root matches → `root` (the honest unknown). NEVER returns a knowingly-wrong id: when
+  per-path matches disagree (sources span volumes) or resolution fails, it returns `root`, which gives today's
+  degraded-but-correct behavior. The drop path feeds the result into `startScanPreview`'s `sourceVolumeId` arg via
+  `TransferDialog`, so the byte scan stats the right volume (a cross-volume drop's counters fill instead of reading 0).
+
+The paste path keeps its MTP-specific refusal ("Use F5 to copy files to MTP devices") SEPARATE and BEFORE the shared
+guard, because that toast points the user at the F5/F6 flow paste lacks; the shared guard then handles read-only /
+search-results destinations uniformly.
+
 ### Unified components for Copy + Move
 
 Copy and Move share 95%+ of UI/flow. Differences:

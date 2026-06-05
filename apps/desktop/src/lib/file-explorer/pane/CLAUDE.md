@@ -56,7 +56,8 @@ list).
 | `type-to-jump-keys.ts`        | Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts                |
 | `initialization.ts`           | Load persisted tabs + status + settings; resolve volumes; apply E2E overrides                  |
 | `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`                        |
-| `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot variant) from a focused pane                     |
+| `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot/dropped variants) from a focused pane            |
+| `transfer-entry.ts`           | Shared transfer entry seam: `checkTransferDestinationGuard` + `resolveSourceVolumeId`          |
 | `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)                      |
 | `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution                      |
 | `navigate.ts`                 | `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry              |
@@ -129,11 +130,12 @@ string. The guards:
   system clipboard, and an MTP-worded toast on a reachable network paste would be a new, mis-worded toast (PR3). On the
   live clipboard-time pane id set this is byte-equivalent to the old `startsWith('mtp-')` gate, pinned by the
   equivalence test in `clipboard-operations.test.ts`.
-- **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`; the
-  dest-paste block off `!canPasteInto` SCOPED to the `search-results` kind (so the toast wording stays correct — a
-  network dest has the same `false` cap but historically fell through silently; the capability decides the block, the
-  kind decides the toast, same split as dispatch). The `isReadOnly` alerts stay per-`VolumeInfo` (Q4), and the
-  `search-results://` URL parses stay (namespace mechanics).
+- **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`. The
+  destination guards (search-results dest-paste block off `!canPasteInto` scoped to the `search-results` kind so the
+  toast wording stays correct; the `isReadOnly` alert per-`VolumeInfo`, Q4) live in `transfer-entry.ts`'s
+  `checkTransferDestinationGuard` so F5/F6, drag-and-drop, AND paste run the identical chain — see
+  `file-operations/transfer/CLAUDE.md` § "One transfer entry seam". The `search-results://` URL parses stay (namespace
+  mechanics).
 - **`pane-commands.ts`**: `isSnapshotPane` (the Selection-dialog banner flag) off `!hasBackendListing`.
 - **MCP sync** (`pane-mcp-sync.svelte.ts`): the network/search skip off `!syncsToMcp`. The deps interface carries a
   single `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps); the two `getIs*View()` deps retired.

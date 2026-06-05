@@ -42,6 +42,7 @@ const {
   stopModifierTrackingSpy,
   getModifierStateSpy,
   statPathsKindsSpy,
+  addToastSpy,
   listenHandlers,
   dragDropHandlerRef,
 } = vi.hoisted(() => ({
@@ -57,19 +58,28 @@ const {
   startModifierTrackingSpy: vi.fn(),
   stopModifierTrackingSpy: vi.fn(),
   getModifierStateSpy: vi.fn<() => { altHeld: boolean; cmdHeld: boolean; shiftHeld: boolean }>(),
+  addToastSpy: vi.fn(),
   // Captured event-name → handler map, for driving the native listeners in `init()`.
   listenHandlers: new Map<string, (event: { payload: unknown }) => void>(),
   dragDropHandlerRef: { current: null as ((event: { payload: DragDropPayload }) => void) | null },
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
+  DEFAULT_VOLUME_ID: 'root',
   setSelfDragResolvedOperation: setSelfDragResolvedOperationSpy,
   statPathsKinds: statPathsKindsSpy,
+  // `resolvePathVolume` is the controller's default fallback. Tests that want it
+  // to fire inject a per-test spy via `create(..., resolvePathVolume)`; this stub
+  // keeps the import resolvable for the default path (no registered-root miss in
+  // the common test volumes, so it's never actually called).
+  resolvePathVolume: vi.fn(() => Promise.resolve({ volume: null, timedOut: false })),
   listen: vi.fn((eventName: string, handler: (event: { payload: unknown }) => void) => {
     listenHandlers.set(eventName, handler)
     return Promise.resolve(vi.fn())
   }),
 }))
+
+vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 
 vi.mock('@tauri-apps/api/webview', () => ({
   getCurrentWebview: () => ({
@@ -143,6 +153,27 @@ const EXT_VOLUME: VolumeInfo = {
   supportsTrash: true,
 } as unknown as VolumeInfo
 
+// A read-only MTP SD card and a writable MTP device, both registered with
+// `mtp://…` roots so `findVolumeIdForPath` resolves a dropped MTP-shaped path
+// to them via longest-prefix.
+const SD_CARD_VOLUME: VolumeInfo = {
+  id: 'mtp-dev:65538',
+  name: 'Virtual Pixel 9 - SD Card',
+  path: 'mtp://dev/65538',
+  volumeType: 'mtp',
+  isReadOnly: true,
+  supportsTrash: false,
+} as unknown as VolumeInfo
+
+const MTP_VOLUME: VolumeInfo = {
+  id: 'mtp-dev:65537',
+  name: 'Virtual Pixel 9',
+  path: 'mtp://dev/65537',
+  volumeType: 'mtp',
+  isReadOnly: false,
+  supportsTrash: false,
+} as unknown as VolumeInfo
+
 interface AccessConfig {
   focusedPane?: 'left' | 'right'
   paths?: Partial<Record<'left' | 'right', string>>
@@ -166,10 +197,15 @@ function buildAccess(config: AccessConfig = {}): PaneAccess {
   }
 }
 
-function buildDialogs(): { dialogs: DialogState; showTransfer: ShowTransferSpy } {
+function buildDialogs(): {
+  dialogs: DialogState
+  showTransfer: ShowTransferSpy
+  showAlert: ReturnType<typeof vi.fn>
+} {
   const showTransfer = vi.fn<(props: TransferDialogPropsData) => void>()
-  const dialogs = { showTransfer } as unknown as DialogState
-  return { dialogs, showTransfer }
+  const showAlert = vi.fn<(title: string, message: string) => void>()
+  const dialogs = { showTransfer, showAlert } as unknown as DialogState
+  return { dialogs, showTransfer, showAlert }
 }
 
 /**
@@ -219,18 +255,23 @@ function folderTarget(path: string, paneId: 'left' | 'right' = 'left'): DropTarg
 describe('drag-drop-controller', () => {
   let dispose: (() => void) | undefined
 
-  function create(config: AccessConfig = {}, paneWrapperEls?: Record<'left' | 'right', HTMLDivElement | undefined>) {
+  function create(
+    config: AccessConfig = {},
+    paneWrapperEls?: Record<'left' | 'right', HTMLDivElement | undefined>,
+    resolvePathVolume?: Parameters<typeof createDragDropController>[0]['resolvePathVolume'],
+  ) {
     const access = buildAccess(config)
-    const { dialogs, showTransfer } = buildDialogs()
+    const { dialogs, showTransfer, showAlert } = buildDialogs()
     let controller!: ReturnType<typeof createDragDropController>
     dispose = $effect.root(() => {
       controller = createDragDropController({
         access,
         dialogs,
         getPaneWrapperEls: () => paneWrapperEls ?? { left: undefined, right: undefined },
+        resolvePathVolume,
       })
     })
-    return { controller, showTransfer }
+    return { controller, showTransfer, showAlert }
   }
 
   beforeEach(() => {
@@ -519,6 +560,114 @@ describe('drag-drop-controller', () => {
       const props = showTransfer.mock.calls[0][0]
       expect(props.fileCount).toBe(2)
       expect(props.folderCount).toBe(0)
+    })
+  })
+
+  describe('shared destination guard (field bug 2)', () => {
+    it('refuses a drop onto a read-only volume with the exact "Read-only device" alert and no transfer dialog', async () => {
+      const { controller, showTransfer, showAlert } = create({
+        focusedPane: 'left',
+        // Dropping onto the right pane, which is the read-only MTP SD card.
+        volumeIds: { left: 'root', right: 'mtp-dev:65538' },
+        paths: { right: 'mtp://dev/65538/DCIM' },
+        volumes: [ROOT_VOLUME, SD_CARD_VOLUME],
+      })
+
+      await controller.handleFileDrop(['/Users/x/photo.jpg'], 'right', undefined, 'copy')
+
+      expect(showAlert).toHaveBeenCalledWith(
+        'Read-only device',
+        '"Virtual Pixel 9 - SD Card" is read-only. You can copy files from it, but not to it.',
+      )
+      expect(showTransfer).not.toHaveBeenCalled()
+      // The guard short-circuits before any stat / volume-resolution work.
+      expect(statPathsKindsSpy).not.toHaveBeenCalled()
+    })
+
+    it('allows a drop onto a writable volume (guard passes, dialog opens)', async () => {
+      const { controller, showTransfer, showAlert } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'root', right: 'ext' },
+        paths: { right: EXT_VOL_PATH },
+        volumes: [ROOT_VOLUME, EXT_VOLUME],
+      })
+
+      await controller.handleFileDrop(['/Users/x/photo.jpg'], 'right', undefined, 'copy')
+
+      expect(showAlert).not.toHaveBeenCalled()
+      expect(showTransfer).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('resolved source volume (field bug 4)', () => {
+    it('resolves an MTP source dropped onto a local dest to the MTP volume (not the dest)', async () => {
+      // Drop an MTP-shaped path onto a local destination. The source volume must
+      // be the MTP volume so the scan preview stats the right shape; the old
+      // `sourceVolumeId = destVolumeId` placeholder reported the local dest and
+      // the counters came back empty.
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'root', right: 'root' },
+        paths: { right: '/Users/x/dest' },
+        volumes: [ROOT_VOLUME, MTP_VOLUME],
+      })
+
+      await controller.handleFileDrop(['mtp://dev/65537/DCIM/IMG_0001.JPG'], 'right', undefined, 'copy')
+
+      expect(showTransfer).toHaveBeenCalledTimes(1)
+      const props = showTransfer.mock.calls[0][0]
+      expect(props.sourceVolumeId).toBe('mtp-dev:65537')
+      expect(props.destVolumeId).toBe('root')
+    })
+
+    it('resolves a local source dropped onto an MTP dest to the local volume', async () => {
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'root', right: 'mtp-dev:65537' },
+        paths: { right: 'mtp://dev/65537/DCIM' },
+        volumes: [ROOT_VOLUME, MTP_VOLUME],
+      })
+
+      await controller.handleFileDrop(['/Users/x/photo.jpg'], 'right', undefined, 'copy')
+
+      const props = showTransfer.mock.calls[0][0]
+      expect(props.sourceVolumeId).toBe('root')
+      expect(props.destVolumeId).toBe('mtp-dev:65537')
+    })
+
+    it('falls back to the backend resolver when the dropped path matches no registered root', async () => {
+      const resolvePathVolume = vi.fn(() => Promise.resolve({ volume: EXT_VOLUME, timedOut: false }))
+      const { controller, showTransfer } = create(
+        {
+          focusedPane: 'left',
+          volumeIds: { left: 'root', right: 'root' },
+          paths: { right: '/Users/x/dest' },
+          // No `/`-rooted volume registered, so the FE longest-prefix can't match
+          // the SMB path; the controller asks the backend.
+          volumes: [EXT_VOLUME, MTP_VOLUME],
+        },
+        undefined,
+        resolvePathVolume,
+      )
+
+      await controller.handleFileDrop(['smb://server/share/file.txt'], 'right', undefined, 'copy')
+
+      expect(resolvePathVolume).toHaveBeenCalledWith('smb://server/share')
+      expect(showTransfer.mock.calls[0][0].sourceVolumeId).toBe('ext')
+    })
+
+    it('reports the honest unknown (root) when sources span volumes', async () => {
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'root', right: 'root' },
+        paths: { right: '/Users/x/dest' },
+        volumes: [ROOT_VOLUME, EXT_VOLUME],
+      })
+
+      // One path on Ext, one on root → spanning → honest-unknown source (root).
+      await controller.handleFileDrop(['/Volumes/Ext/a.txt', '/Users/x/b.txt'], 'right', undefined, 'copy')
+
+      expect(showTransfer.mock.calls[0][0].sourceVolumeId).toBe('root')
     })
   })
 

@@ -58,14 +58,27 @@ Key files:
 - `drag-position.ts`: Corrects Tauri coords for docked DevTools (dev-only, zero overhead in prod)
 - Integration in `DualPaneExplorer.svelte`
 
-Drop count split: on drop, `pane/drag-drop-controller.svelte.ts::handleFileDrop` fetches each dropped path's top-level
-kind (file vs. folder) in one batched `stat_paths_kinds` IPC before opening the confirmation dialog, so both the dialog
-and the completion toast report the real "N files and M folders" split. The stat runs under the backend read timeout (2
-s) and falls back to all-unknown on a hung mount, so it never blocks the drop. The split is all-or-nothing: if ANY
-path's kind is unknown (a virtual MTP/SMB path that landed on the pasteboard, a vanished entry, a stat timeout, or a
-length mismatch), `buildTransferPropsFromDroppedPaths` reverts the whole batch to the legacy approximate shape
-(`fileCount = count`, `folderCount = 0`), which makes the toast composer fall back to flattened file-count wording.
-Honest beats half-right — a partial split would misreport.
+Drop preparation runs through the shared transfer entry seam (`pane/transfer-entry.ts`), the SAME path F5/F6 and
+clipboard paste use, so all three entry points prepare a transfer identically. On drop,
+`pane/drag-drop-controller.svelte.ts::handleFileDrop`:
+
+- **Runs the shared destination guard** (`checkTransferDestinationGuard`) FIRST. Dropping onto a read-only volume shows
+  the same "Read-only device" alert F5 shows (not a copy dialog the backend would later reject); dropping onto a
+  search-results pane shows the not-a-folder toast. The guard short-circuits before any stat / volume-resolution work.
+- **Resolves the REAL source volume** via `resolveSourceVolumeId` (frontend `findVolumeIdForPath` longest-prefix →
+  backend `resolve_path_volume` for the common parent → honest-unknown `root` default) and passes it to
+  `buildTransferPropsFromDroppedPaths`. This is what feeds the dialog's byte scan (`startScanPreview`'s `sourceVolumeId`
+  arg), so an MTP→local / local→MTP drop stats the right volume and the counters fill. The old hardcoded
+  `sourceVolumeId = destVolumeId` placeholder stat'd the source paths as the wrong shape and reported 0 bytes / 0 files.
+  `resolveSourceVolumeId` NEVER ships a knowingly-wrong id — when sources span volumes or resolution fails, it returns
+  `root` (the honest unknown, today's degraded-but-correct behavior).
+- **Fetches each dropped path's top-level kind** (file vs. folder) in one batched `stat_paths_kinds` IPC before opening
+  the confirmation dialog, so both the dialog and the completion toast report the real "N files and M folders" split.
+  The stat runs under the backend read timeout (2 s) and falls back to all-unknown on a hung mount, so it never blocks
+  the drop. The split is all-or-nothing: if ANY path's kind is unknown (a virtual MTP/SMB path that landed on the
+  pasteboard, a vanished entry, a stat timeout, or a length mismatch), `buildTransferPropsFromDroppedPaths` reverts the
+  whole batch to the legacy approximate shape (`fileCount = count`, `folderCount = 0`), which makes the toast composer
+  fall back to flattened file-count wording. Honest beats half-right — a partial split would misreport.
 
 ### Drag image detection (macOS-specific hack)
 

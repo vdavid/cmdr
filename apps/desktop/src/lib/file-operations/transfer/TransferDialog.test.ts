@@ -221,6 +221,25 @@ describe('TransferDialog upfront conflict check decoupling', () => {
 })
 
 /* ------------------------------------------------------------------------- */
+/* Source-volume forwarding (field bug 4): the scan stats the right volume    */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferDialog source-volume forwarding', () => {
+  it('passes the source volume id to startScanPreview (MTP source → local dest)', async () => {
+    // A drag of MTP-shaped paths onto a local destination resolves the real MTP
+    // source volume id, which the dialog must forward to the byte scan. With the
+    // old `sourceVolumeId = destVolumeId` placeholder this was the local dest id,
+    // so the scan stat'd MTP paths as local and reported 0 bytes / 0 files.
+    mountDialog({ operationType: 'copy', sourceVolumeId: 'mtp-dev:65538', currentVolumeId: 'root' })
+    await flushMicrotasks()
+
+    expect(startScanPreviewMock).toHaveBeenCalledTimes(1)
+    // args: (sourcePaths, sortColumn, sortOrder, progressIntervalMs, sourceVolumeId)
+    expect(startScanPreviewMock.mock.calls[0][4]).toBe('mtp-dev:65538')
+  })
+})
+
+/* ------------------------------------------------------------------------- */
 /* Dir-vs-dir classifies as merge info, not a conflict                       */
 /* ------------------------------------------------------------------------- */
 

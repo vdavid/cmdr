@@ -22,8 +22,11 @@ import {
   getModifierState,
   setModifiers,
 } from '../modifier-key-tracker.svelte'
-import { statPathsKinds } from '$lib/tauri-commands'
+import { addToast } from '$lib/ui/toast'
+import { statPathsKinds, resolvePathVolume } from '$lib/tauri-commands'
 import { buildTransferPropsFromDroppedPaths } from './transfer-operations'
+import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
+import type { PathVolumeResolution } from '$lib/tauri-commands'
 import type { TransferOperationType } from '../types'
 import type { PaneAccess } from './pane-access'
 import type { createDialogState } from './dialog-state.svelte'
@@ -35,6 +38,12 @@ export interface DragDropControllerDeps {
   dialogs: DialogState
   /** Live reference to the pane-wrapper element record, used for hit-testing. */
   getPaneWrapperEls: () => Record<'left' | 'right', HTMLDivElement | undefined>
+  /**
+   * Resolves a path to its containing volume (backend `resolve_path_volume`),
+   * the fallback when a dropped path matches no registered volume root. Injected
+   * so the controller stays headless-testable; defaults to the real command.
+   */
+  resolvePathVolume?: (path: string) => Promise<PathVolumeResolution>
 }
 
 /**
@@ -56,6 +65,7 @@ export interface DragDropControllerDeps {
  */
 export function createDragDropController(deps: DragDropControllerDeps) {
   const { access, dialogs, getPaneWrapperEls } = deps
+  const resolveVolumeForPath = deps.resolvePathVolume ?? resolvePathVolume
 
   // Drag image size from the source app (macOS only, via swizzle).
   // If the source provides a large preview (like Finder), we suppress our overlay.
@@ -88,11 +98,24 @@ export function createDragDropController(deps: DragDropControllerDeps) {
 
   /**
    * Handles a file drop onto a target pane by opening the transfer confirmation
-   * dialog. Fetches each dropped path's top-level kind (file vs. folder) in one
-   * batched IPC so the dialog and completion toast report the real split. The
-   * stat runs under the backend read timeout and degrades to all-unknown on a
-   * slow mount, so this never blocks the drop; on any unknown flag the builder
-   * falls back to the approximate count shape.
+   * dialog.
+   *
+   * Runs the SHARED destination guard (`checkTransferDestinationGuard`) first —
+   * the same chain F5/F6 and paste run — so dropping onto a read-only volume
+   * shows the same "Read-only device" alert (field bug 2) instead of silently
+   * opening a copy dialog that the backend would later reject.
+   *
+   * Resolves the REAL source volume via `resolveSourceVolumeId` (frontend
+   * longest-prefix, backend fallback, honest-unknown default) instead of the old
+   * `sourceVolumeId = destVolumeId` placeholder, so an MTP→local / local→MTP
+   * drop stats the right volume and the dialog's byte/file/dir counters fill
+   * (field bug 4).
+   *
+   * Fetches each dropped path's top-level kind (file vs. folder) in one batched
+   * IPC so the dialog and completion toast report the real split. The stat runs
+   * under the backend read timeout and degrades to all-unknown on a slow mount,
+   * so this never blocks the drop; on any unknown flag the builder falls back to
+   * the approximate count shape.
    */
   async function handleFileDrop(
     paths: string[],
@@ -102,9 +125,19 @@ export function createDragDropController(deps: DragDropControllerDeps) {
   ) {
     if (paths.length === 0) return
 
+    const destVolId = access.getPaneVolumeId(targetPane)
+
+    const guard = checkTransferDestinationGuard(destVolId, access.getVolumes())
+    if (!guard.ok) {
+      if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
+      else dialogs.showAlert(guard.alert.title, guard.alert.message)
+      return
+    }
+
     const { sortBy, sortOrder } = access.getPaneSort(targetPane)
     const destPath = targetFolderPath ?? access.getPanePath(targetPane)
-    const destVolId = access.getPaneVolumeId(targetPane)
+
+    const sourceVolumeId = await resolveSourceVolumeId(paths, access.getVolumes(), resolveVolumeForPath)
 
     let isDirectoryFlags: (boolean | null)[] | undefined
     try {
@@ -122,6 +155,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
         destPath,
         targetPane,
         destVolId,
+        sourceVolumeId,
         sortBy,
         sortOrder,
         isDirectoryFlags,

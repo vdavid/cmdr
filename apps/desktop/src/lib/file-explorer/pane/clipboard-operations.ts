@@ -13,6 +13,7 @@ import { getAppLogger } from '$lib/logging/logger'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
+import { checkTransferDestinationGuard } from './transfer-entry'
 import { capabilitiesFor } from './volume-capabilities'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
@@ -192,10 +193,23 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     try {
       // Check MTP before reading clipboard; MTP paste is always rejected,
       // no point reading the system clipboard just to reject it. The capability
-      // decides the refusal, not a `startsWith('mtp-')` string (A6).
+      // decides the refusal, not a `startsWith('mtp-')` string (A6). The
+      // MTP-specific copy ("Use F5…") stays separate from the shared guard
+      // because it points the user at the F5/F6 flow MTP paste lacks.
       const volumeId = access.getPaneVolumeId(access.getFocusedPane())
       if (isMtpClipboardRefusal(volumeId)) {
         addToast('Use F5 to copy files to MTP devices', { level: 'info' })
+        return
+      }
+
+      // Shared destination guard (read-only alert + search-results refusal) —
+      // the same chain F5/F6 and drag-and-drop run, so pasting into a read-only
+      // destination gets the same "Read-only device" alert instead of silently
+      // queueing a transfer the backend would reject.
+      const guard = checkTransferDestinationGuard(volumeId, access.getVolumes())
+      if (!guard.ok) {
+        if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
+        else dialogs.showAlert(guard.alert.title, guard.alert.message)
         return
       }
 

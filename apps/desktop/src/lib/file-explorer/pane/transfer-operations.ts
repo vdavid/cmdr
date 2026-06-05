@@ -187,6 +187,13 @@ export function getCommonParentPath(paths: string[]): string {
  * Unlike the listing-based builders, this works with absolute paths directly
  * (no listing ID or pane ref needed).
  *
+ * `sourceVolumeId` is RESOLVED by the caller (drag-drop-controller) via
+ * `resolveSourceVolumeId` — the real volume the dropped paths live on, never a
+ * placeholder. It's independent of `destVolumeId`: a cross-volume drop
+ * (MTP→local, local→MTP) carries a different source and dest. Passing the dest
+ * id here was a bug — it made the scan preview stat the source paths as the
+ * wrong shape and report 0 bytes / 0 files (field bug 4).
+ *
  * `isDirectoryFlags` (optional, index-aligned with `droppedPaths`) carries each
  * path's top-level kind from `statPathsKinds`: `true` = folder, `false` = file,
  * `null` = unknown. When every flag is known (no `null`) and the length matches,
@@ -203,6 +210,7 @@ export function buildTransferPropsFromDroppedPaths(
   destPath: string,
   direction: 'left' | 'right',
   destVolumeId: string,
+  sourceVolumeId: string,
   sortColumn: SortColumn,
   sortOrder: SortOrder,
   isDirectoryFlags?: (boolean | null)[],
@@ -222,7 +230,7 @@ export function buildTransferPropsFromDroppedPaths(
     sourceFolderPath,
     sortColumn,
     sortOrder,
-    sourceVolumeId: destVolumeId,
+    sourceVolumeId,
     destVolumeId,
   }
 }
