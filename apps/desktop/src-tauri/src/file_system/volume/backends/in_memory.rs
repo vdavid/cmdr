@@ -334,6 +334,14 @@ impl Volume for InMemoryVolume {
 
             let normalized = self.normalize(path);
 
+            // Mirror `std::fs::create_dir`: error on an existing entry rather
+            // than overwriting it. This is what lets the folder-merge walker use
+            // `AlreadyExists` as the "this level pre-existed, merge into it"
+            // signal (see `Volume::create_directory_errors_on_existing_dir`).
+            if entries.contains_key(&normalized) {
+                return Err(VolumeError::AlreadyExists(normalized.display().to_string()));
+            }
+
             let name = normalized
                 .file_name()
                 .map(|s| s.to_string_lossy().to_string())

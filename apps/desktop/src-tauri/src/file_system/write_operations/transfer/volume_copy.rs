@@ -680,8 +680,11 @@ pub(crate) async fn copy_volumes_with_progress(
         );
     }
 
-    // Track "apply to all" resolution for conflicts
-    let mut apply_to_all_resolution = ApplyToAll::default();
+    // Track "apply to all" resolution for conflicts. Shared op-wide between the
+    // top-level conflict dispatch and every deep merge level (via `MergeCtx`), so
+    // a "…all" choice from any prompt applies everywhere. Both the concurrent and
+    // serial paths reuse this one cell.
+    let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> = Arc::new(std::sync::Mutex::new(ApplyToAll::default()));
 
     // Track successfully copied destination FILE paths for rollback/cleanup.
     // Wrapped in Arc<Mutex> so concurrent tasks can push independently. The
@@ -780,6 +783,16 @@ pub(crate) async fn copy_volumes_with_progress(
                         source_is_dir,
                         dest_meta.is_directory,
                     );
+                    // Copy the op-wide latch out, run the resolver on the stack
+                    // local, store it back — mirroring the serial path. The
+                    // resolver's `conflict_dispatch_lock` (acquired inside) is
+                    // what serializes the human against in-flight deep merges
+                    // spawned by earlier loop iterations; this same lock is why a
+                    // top-level prompt and a deep prompt can't race the one
+                    // oneshot slot. The known acceptable residual: an already-
+                    // emitted prompt isn't retroactively resolved by another
+                    // task's "…all" latch — a rare extra prompt, never data loss.
+                    let mut latched = *apply_to_all_cell.lock_ignore_poison();
                     let resolved = resolve_volume_conflict(
                         &source_volume,
                         source_path,
@@ -789,13 +802,15 @@ pub(crate) async fn copy_volumes_with_progress(
                         &*events,
                         operation_id,
                         state,
-                        &mut apply_to_all_resolution,
+                        &mut latched,
                         source_size_hint,
                         dest_size_hint,
                         source_is_directory_hint,
                     )
                     .await
-                    .map_err(WriteFailure::synthetic)?;
+                    .map_err(WriteFailure::synthetic);
+                    *apply_to_all_cell.lock_ignore_poison() = latched;
+                    let resolved = resolved?;
                     match resolved {
                         None => {
                             log::debug!(
@@ -851,6 +866,13 @@ pub(crate) async fn copy_volumes_with_progress(
                 let hint = source_hints.get(source_path).copied().unwrap_or_default();
                 let source_is_dir_hint = hint.is_directory;
                 let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
+                // Per-task merge context: deep file clashes inside a directory
+                // source landing on a merged dest honor the file policy, sharing
+                // the op-wide apply-to-all latch with every other task and the
+                // top-level dispatch.
+                let merge_config = config.clone();
+                let merge_op_id = operation_id.to_string();
+                let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
 
                 in_flight.push(Box::pin(async move {
                     // Per-task `last_file_bytes` tracks bytes reported for the
@@ -863,6 +885,19 @@ pub(crate) async fn copy_volumes_with_progress(
                     // Per-source rollback ledger: the files this task streams
                     // and the dirs it newly creates inside a directory source.
                     let created = super::volume_strategy::CreatedPaths::default();
+                    // Deep merge children are never top-level sources, so the
+                    // resolver never keys into per-source hints for them — an
+                    // empty map is correct (and avoids capturing the function's
+                    // `source_hints` into the `'static` task).
+                    let merge_hints: HashMap<PathBuf, SourceHint> = HashMap::new();
+                    let merge_ctx = super::volume_strategy::MergeCtx {
+                        events: &*events_task,
+                        operation_id: &merge_op_id,
+                        config: &merge_config,
+                        state: &state_clone,
+                        apply_to_all: &merge_apply_to_all,
+                        source_hints: &merge_hints,
+                    };
                     let on_file_progress = make_concurrent_per_file_progress(
                         Arc::clone(&events_task),
                         Arc::clone(&state_clone),
@@ -891,6 +926,7 @@ pub(crate) async fn copy_volumes_with_progress(
                         &created,
                         &on_file_progress,
                         &on_file_complete,
+                        Some(&merge_ctx),
                     )
                     .await;
                     let created_files = std::mem::take(&mut *created.files.lock_ignore_poison());
@@ -1129,8 +1165,9 @@ pub(crate) async fn copy_volumes_with_progress(
         let last_dest_cell: Arc<std::sync::Mutex<Option<PathBuf>>> = Arc::new(std::sync::Mutex::new(None));
         let failure_ctx_cell: Arc<std::sync::Mutex<Option<(VolumeError, PathBuf)>>> =
             Arc::new(std::sync::Mutex::new(None));
-        let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> =
-            Arc::new(std::sync::Mutex::new(apply_to_all_resolution));
+        // Reuse the op-wide latch cell created above; the serial driver and the
+        // deep merge share it so a "…all" choice propagates across both.
+        let apply_to_all_cell = Arc::clone(&apply_to_all_cell);
         let copied_paths_for_closure = Arc::clone(&copied_paths);
         let created_dirs_for_closure = Arc::clone(&created_dirs);
         let source_hints_arc: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(std::mem::take(&mut source_hints));
@@ -1259,6 +1296,8 @@ pub(crate) async fn copy_volumes_with_progress(
                 let created_dirs = Arc::clone(&created_dirs_for_closure);
                 let source_hints = Arc::clone(&source_hints_arc);
                 let operation_id = operation_id_owned.clone();
+                let config_for_merge = config_owned.clone();
+                let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
                 move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                     let source_volume = Arc::clone(&source_volume);
                     let dest_volume = Arc::clone(&dest_volume);
@@ -1270,6 +1309,8 @@ pub(crate) async fn copy_volumes_with_progress(
                     let created_dirs = Arc::clone(&created_dirs);
                     let source_hints = Arc::clone(&source_hints);
                     let operation_id = operation_id.clone();
+                    let config_for_merge = config_for_merge.clone();
+                    let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
                     let source_path = ctx.source_path.to_path_buf();
                     let dest_item_path = ctx
                         .dest_path
@@ -1318,6 +1359,19 @@ pub(crate) async fn copy_volumes_with_progress(
                         // directory source.
                         let created = super::volume_strategy::CreatedPaths::default();
 
+                        // Merge context: deep file clashes inside a merged
+                        // directory honor the file policy via the resolver,
+                        // sharing the op-wide apply-to-all latch with the
+                        // top-level dispatch.
+                        let merge_ctx = super::volume_strategy::MergeCtx {
+                            events: &*events,
+                            operation_id: &operation_id,
+                            config: &config_for_merge,
+                            state: &state,
+                            apply_to_all: &merge_apply_to_all,
+                            source_hints: &source_hints,
+                        };
+
                         *last_dest_cell.lock_ignore_poison() = Some(dest_item_path.clone());
 
                         match copy_single_path(
@@ -1331,6 +1385,7 @@ pub(crate) async fn copy_volumes_with_progress(
                             &created,
                             &on_file_progress,
                             &on_file_complete,
+                            Some(&merge_ctx),
                         )
                         .await
                         {
@@ -1929,6 +1984,9 @@ mod bench;
 #[cfg(test)]
 #[path = "volume_copy_crashsafe_tests.rs"]
 mod crashsafe_tests;
+#[cfg(test)]
+#[path = "volume_merge_tests.rs"]
+mod merge_tests;
 #[cfg(test)]
 #[path = "volume_copy_rollback_tests.rs"]
 mod rollback_tests;

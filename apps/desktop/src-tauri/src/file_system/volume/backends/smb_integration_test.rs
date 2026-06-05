@@ -1617,3 +1617,117 @@ async fn smb_integration_concurrent_streaming_writes_no_deadlock() {
         std::panic::resume_unwind(p);
     }
 }
+
+/// FOLDER MERGE on a real SMB server: a Local source directory landing on a
+/// pre-existing same-named SMB destination directory MERGES into it — with a deep
+/// file clash resolved by "Skip all", the dest-only file survives, and the
+/// non-clashing source file arrives. This pins the volume-side shape of the
+/// now-fixed gotcha ("Skip-All on a volume copy with a top-level dir conflict
+/// skipped the entire subtree"): the folder merges, only the clashing FILE is
+/// skipped, and the user's untouched files are never destroyed. It also exercises
+/// the real SMB `create_directory` → `AlreadyExists` merge trigger and the
+/// per-level dest listing.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_merge_deep_clash_skip_all_preserves_dest_only_files() {
+    use crate::file_system::write_operations::{
+        CollectorEventSink, VolumeCopyConfig, WriteOperationState, copy_volumes_with_progress,
+    };
+    use std::time::Duration;
+
+    // SMB destination: pre-create `<dir>/album` holding a dest-only sentinel and a
+    // file that will clash with the source. A nested `album/sub` adds a deep
+    // dest-only file at a second level.
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+    let dest_vol: Arc<dyn Volume> = smb_vol.clone();
+
+    let album = format!("{base}/album");
+    let sub = format!("{album}/sub");
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    smb_vol.create_directory(Path::new(&album)).await.unwrap();
+    smb_vol.create_directory(Path::new(&sub)).await.unwrap();
+    smb_vol
+        .create_file(Path::new(&format!("{album}/keep.txt")), b"DEST-keep")
+        .await
+        .unwrap();
+    smb_vol
+        .create_file(Path::new(&format!("{album}/clash.txt")), b"DEST-clash")
+        .await
+        .unwrap();
+    smb_vol
+        .create_file(Path::new(&format!("{sub}/keep2.txt")), b"DEST-keep2")
+        .await
+        .unwrap();
+
+    // Local source: `album` with a fresh file, a clashing file, and a nested
+    // fresh file.
+    let local_dir = tempfile::TempDir::new().expect("create TempDir");
+    std::fs::create_dir(local_dir.path().join("album")).unwrap();
+    std::fs::create_dir(local_dir.path().join("album/sub")).unwrap();
+    std::fs::write(local_dir.path().join("album/fresh.txt"), b"SRC-fresh").unwrap();
+    std::fs::write(local_dir.path().join("album/clash.txt"), b"SRC-clash").unwrap();
+    std::fs::write(local_dir.path().join("album/sub/fresh2.txt"), b"SRC-fresh2").unwrap();
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+        "src",
+        local_dir.path().to_path_buf(),
+    ));
+
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
+    let events = Arc::new(CollectorEventSink::new());
+    let config = VolumeCopyConfig {
+        conflict_resolution: crate::file_system::write_operations::ConflictResolution::Skip,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-smb-merge-skip-all",
+        &state,
+        Arc::clone(&source_vol),
+        &[PathBuf::from("album")],
+        Arc::clone(&dest_vol),
+        Path::new(&base),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "merge copy should succeed: {result:?}");
+
+    // Helper: read a whole SMB file into a Vec.
+    async fn read_smb(vol: &Arc<dyn Volume>, path: &str) -> Vec<u8> {
+        let mut s = vol.open_read_stream(Path::new(path)).await.unwrap();
+        let mut out = Vec::new();
+        while let Some(Ok(chunk)) = s.next_chunk().await {
+            out.extend_from_slice(&chunk);
+        }
+        out
+    }
+
+    // THE GOTCHA FIX: the folder MERGED (not skipped wholesale). Non-clashing
+    // source files arrived at both depths.
+    assert_eq!(read_smb(&dest_vol, &format!("{album}/fresh.txt")).await, b"SRC-fresh");
+    assert_eq!(read_smb(&dest_vol, &format!("{sub}/fresh2.txt")).await, b"SRC-fresh2");
+
+    // The clashing file was SKIPPED — dest keeps its own bytes.
+    assert_eq!(read_smb(&dest_vol, &format!("{album}/clash.txt")).await, b"DEST-clash");
+
+    // THE INVARIANT: dest-only files survive at every depth.
+    assert_eq!(read_smb(&dest_vol, &format!("{album}/keep.txt")).await, b"DEST-keep");
+    assert_eq!(read_smb(&dest_vol, &format!("{sub}/keep2.txt")).await, b"DEST-keep2");
+
+    // No folder-level conflict was ever emitted (folders always merge silently).
+    let folder_prompts = events
+        .conflicts
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|c| c.source_is_directory && c.destination_is_directory)
+        .count();
+    assert_eq!(
+        folder_prompts, 0,
+        "a dir-vs-dir merge must never emit a folder conflict"
+    );
+
+    ensure_clean(&smb_vol, &base).await;
+}

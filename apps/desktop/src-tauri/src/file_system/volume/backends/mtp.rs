@@ -342,6 +342,14 @@ impl Volume for MtpVolume {
         })
     }
 
+    /// MTP `create_directory` does NOT error on an existing same-name dir — the
+    /// protocol allows same-name sibling objects, so `create_folder` would make a
+    /// duplicate. The folder-merge walker pre-checks existence on MTP instead of
+    /// trusting `create_directory` to surface `AlreadyExists`.
+    fn create_directory_errors_on_existing_dir(&self) -> bool {
+        false
+    }
+
     fn create_directory<'a>(
         &'a self,
         path: &'a Path,

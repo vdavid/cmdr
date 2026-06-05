@@ -47,6 +47,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `on_unmount()`: lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()`: drive indexing hooks; `None` by default.
 - `space_poll_interval()`: recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
+- `create_directory_errors_on_existing_dir()`: whether `create_directory` reliably returns `VolumeError::AlreadyExists` for an existing same-name dir. Default `true` (LocalPosix, SMB, InMemory all do). `MtpVolume` overrides to `false` — the MTP protocol allows same-name sibling objects and `create_folder` silently makes a duplicate, so the folder-merge walker (`write_operations/transfer/volume_strategy.rs`) pre-checks existence on MTP instead of trusting the create to error. A blindly-created duplicate would make a merge target the wrong directory.
 - `listing_is_watched(path)`: returns `true` when this volume's cached listing for `path` is being kept in sync by a live watcher. Three consumers today:
     1. `file_system::listing::caching::try_get_watched_listing` (the "fresh-listing oracle") — write-op pre-flight scans reuse a cached listing instead of re-reading.
     2. `write_operations::delete::scan_volume_recursive` (the oracle-aware delete walker) — same idea, per-recursion-level.
@@ -145,6 +146,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 |
 | `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             |
 | `notify_mutation`           | default (std::fs)    | ✅ MTP `get_metadata`   | ✅ smb2 `get_metadata`    | ✅ in-memory       |
+| `create_directory_errors_on_existing_dir` | ✅ (default) | ❌ (protocol allows dup names) | ✅ (default) | ✅ (default) |
 | `scanner` / `watcher` (indexing) | ✅ / ✅          | ❌                      | ❌                        | ❌                 |
 | `on_unmount`                | default              | default                 | ✅ drops smb2 session     | default            |
 | `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             |

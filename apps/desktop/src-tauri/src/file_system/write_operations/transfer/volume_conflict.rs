@@ -82,6 +82,22 @@ pub(super) async fn resolve_volume_conflict(
     let destination_is_directory = dest_volume.is_directory(dest_path).await.unwrap_or(false);
     let is_file_to_folder = !source_is_directory && destination_is_directory;
 
+    // Dir-vs-dir is NOT a conflict — it's an unconditional merge. No policy
+    // lookup, no `write-conflict` emit, no Stop prompt: a source folder landing
+    // on an existing same-named dest folder always merges into it. The configured
+    // file policy governs every clash INSIDE the merge (handled per-child by the
+    // scan-as-you-merge walker in `volume_strategy.rs`), not the folder itself.
+    // We hand back the dest path as the merge target with no safe-replace
+    // finalize, exactly the same outcome `apply_volume_conflict_resolution`
+    // produces for a same-type-dir Overwrite — but reached without consulting
+    // `conflict_resolution`, so even Stop / Skip / Rename merge the folder.
+    if source_is_directory && destination_is_directory {
+        return Ok(Some(ResolvedConflict {
+            write_path: dest_path.to_path_buf(),
+            replace_after_write: None,
+        }));
+    }
+
     // Determine effective conflict resolution
     let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder)
     {
@@ -93,6 +109,46 @@ pub(super) async fn resolve_volume_conflict(
 
     match resolution {
         ConflictResolution::Stop => {
+            // Serialize the whole Stop-mode dispatch. There is exactly one human
+            // and one `conflict_resolution_tx` slot, so two tasks both hitting a
+            // Stop-mode clash at once (the concurrent volume-copy spawn loop, or
+            // two parallel deep directory merges) must queue here rather than race
+            // to emit a `write-conflict` and clobber each other's oneshot sender.
+            // The guard is held for the latch re-check, the emit, and the await,
+            // then dropped at the end of this step — NEVER across the subsequent
+            // file write (the caller does that after we return). See
+            // `WriteOperationState::conflict_dispatch_lock`.
+            let _dispatch_guard = state.conflict_dispatch_lock.lock().await;
+
+            // Cancel check, load-bearing: on cancel, dropping the oneshot sender
+            // unblocks only the ONE task currently awaiting `rx`. A task parked on
+            // the dispatch mutex would otherwise acquire it next and emit a fresh
+            // `write-conflict` that no one will ever answer (the dialog is tearing
+            // down) — a hang. Bail with `Cancelled` before emitting anything.
+            if super::super::state::is_cancelled(&state.intent) {
+                return Err(WriteOperationError::Cancelled {
+                    message: "Operation cancelled by user".to_string(),
+                });
+            }
+
+            // Re-check the latch under the lock. While this task waited on the
+            // mutex, the task ahead of it may have answered with an "…all" choice
+            // that resolves this clash too. If so, apply that resolution without
+            // prompting — the queued prompt silently collapses.
+            if let Some(saved) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder) {
+                let effective = reduce_volume_conditional_resolution(
+                    saved,
+                    source_volume,
+                    source_path,
+                    dest_volume,
+                    dest_path,
+                    source_size_hint,
+                    dest_size_hint,
+                )
+                .await;
+                return apply_volume_conflict_resolution(effective, dest_volume, dest_path, source_is_directory).await;
+            }
+
             // Need to prompt user - gather metadata for the conflict event.
             // Source size: the pre-flight scan hint is authoritative for both
             // file and folder sources. Surface it opportunistically — `None`
@@ -192,6 +248,7 @@ pub(super) async fn resolve_volume_conflict(
                     })
                 }
             }
+            // `_dispatch_guard` drops here, releasing the next queued task.
         }
         ConflictResolution::Skip => Ok(None),
         ConflictResolution::Overwrite => {

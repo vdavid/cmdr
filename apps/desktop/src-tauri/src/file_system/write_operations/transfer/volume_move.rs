@@ -407,6 +407,8 @@ pub(super) async fn move_volumes_with_progress(
             let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
             let source_hints = Arc::clone(&source_hints);
             let operation_id = operation_id_owned.clone();
+            let config_for_merge = config_owned.clone();
+            let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let source_volume = Arc::clone(&source_volume);
@@ -416,6 +418,8 @@ pub(super) async fn move_volumes_with_progress(
                 let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                 let source_hints = Arc::clone(&source_hints);
                 let operation_id = operation_id.clone();
+                let config_for_merge = config_for_merge.clone();
+                let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
                 let last_progress_time = Arc::clone(&last_progress_time);
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
@@ -459,6 +463,18 @@ pub(super) async fn move_volumes_with_progress(
                     // rollback ledger (move rollback reverses renames / cleans
                     // staging separately), so a throwaway ledger is fine here.
                     let created = super::volume_strategy::CreatedPaths::default();
+                    // Merge context: when a source folder lands on a same-named
+                    // dest folder, deep file clashes inside honor the file policy
+                    // (Stop-wait, latch, conditional reduce, type mismatches) —
+                    // the same granularity the top-level move already has.
+                    let merge_ctx = super::volume_strategy::MergeCtx {
+                        events: &*events,
+                        operation_id: &operation_id,
+                        config: &config_for_merge,
+                        state: &state,
+                        apply_to_all: &merge_apply_to_all,
+                        source_hints: &source_hints,
+                    };
                     let bytes = match copy_single_path(
                         &source_volume,
                         &source_path,
@@ -470,6 +486,7 @@ pub(super) async fn move_volumes_with_progress(
                         &created,
                         &on_file_progress,
                         &|| {},
+                        Some(&merge_ctx),
                     )
                     .await
                     {

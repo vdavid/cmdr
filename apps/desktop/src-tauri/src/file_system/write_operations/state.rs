@@ -72,6 +72,22 @@ pub struct WriteOperationState {
     /// the sender and sends the resolution. Dropping the sender unblocks the receiver
     /// with an error, which the waiting code interprets as cancellation.
     pub conflict_resolution_tx: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<ConflictResolutionResponse>>>,
+    /// Serializes Stop-mode conflict dispatch for this operation. There is exactly
+    /// ONE human and ONE `conflict_resolution_tx` slot, so two tasks that both hit
+    /// a Stop-mode clash at once (the concurrent volume-copy spawn loop, or two deep
+    /// directory merges running in parallel) must not race to emit a `write-conflict`
+    /// and clobber each other's oneshot sender. The whole dispatch — re-check the
+    /// latch, emit the conflict, await the response, store the latch — runs while
+    /// holding this lock, so the prompts queue. The lock is NEVER held across the
+    /// subsequent file write: we serialize the human, not the I/O.
+    ///
+    /// Lives here next to `conflict_resolution_tx` because they guard the same
+    /// concern. A `tokio::sync::Mutex` (not std) so a task can `.await` the user's
+    /// response — actually the response wait happens on the oneshot; the dispatch
+    /// guard is dropped at end of the resolve step — but the guard itself must be
+    /// held across `.await` points (the latch re-check reads volume state), which a
+    /// std mutex can't span.
+    pub conflict_dispatch_lock: tokio::sync::Mutex<()>,
     /// Per-operation ETA + throughput estimator. Fed by `enrich_progress_event`
     /// at every `write-progress` emit site, so every emitter (local copy/delete,
     /// volume copy/move, MTP, SMB) reports rates and ETA uniformly.
@@ -101,6 +117,7 @@ impl WriteOperationState {
             intent: Arc::new(AtomicU8::new(OperationIntent::Running as u8)),
             progress_interval,
             conflict_resolution_tx: std::sync::Mutex::new(None),
+            conflict_dispatch_lock: tokio::sync::Mutex::new(()),
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
             backend_cancel: Arc::new(AtomicBool::new(false)),
         }

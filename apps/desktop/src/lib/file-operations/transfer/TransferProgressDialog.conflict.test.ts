@@ -172,16 +172,11 @@ const variants: VariantCase[] = [
     overwriteLabel: 'Overwrite',
     overwriteAllLabel: 'Overwrite all',
   },
-  {
-    name: 'folder → folder',
-    sourceIsDirectory: true,
-    destinationIsDirectory: true,
-    existingLabel: 'Existing (folder):',
-    newLabel: 'New (folder):',
-    hasWarning: false,
-    overwriteLabel: 'Overwrite',
-    overwriteAllLabel: 'Overwrite all',
-  },
+  // NOTE: there is no `folder → folder` variant. Dir-vs-dir is never a conflict —
+  // the volume merge engine always merges same-named folders silently and never
+  // emits a `write-conflict` for the folder itself (see the BE merge engine and
+  // `merge_tests`). The dedicated test below pins that a dir-dir event, if one
+  // ever did arrive, would NOT render the cross-type red-warning path.
   {
     name: 'folder → file',
     sourceIsDirectory: true,
@@ -284,6 +279,25 @@ describe.each(variants)('TransferProgressDialog conflict — $name', (variant) =
       }),
     )
     await expectNoA11yViolations(target)
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* Dir-vs-dir is never a conflict (folders always merge silently).           */
+/* The BE no longer emits a folder→folder `write-conflict`; this pins that    */
+/* the FE per-file dialog has no folder-merge prompt and would not show the   */
+/* cross-type red warning even if a stray dir-dir event arrived.             */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferProgressDialog conflict — dir-vs-dir is not a conflict', () => {
+  it('never renders the red cross-type warning for a folder→folder event', async () => {
+    const target = await mountDialogWithConflict(makeEvent({ sourceIsDirectory: true, destinationIsDirectory: true }))
+    // The cross-type warning block is the file↔folder destructive cue. A
+    // dir-vs-dir clash is a merge, so it must never carry that warning.
+    expect(target.querySelector('.conflict-warning'), 'dir-vs-dir must show no red warning').toBeNull()
+    // And it never relabels Overwrite to the destructive cross-type wording.
+    expect(buttonByText(target, 'Overwrite folder with file')).toBeNull()
+    expect(buttonByText(target, 'Overwrite folders with files')).toBeNull()
   })
 })
 

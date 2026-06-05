@@ -163,21 +163,22 @@ pub async fn scan_volume_for_conflicts(
     // Resolve real per-item types and sizes from the source volume when the
     // caller supplied it. One batched stat, O(top-level items).
     if let (Some(src_volume_id), Some(src_paths)) = (source_volume_id, source_paths)
-        && let Some(src_volume) = get_volume_manager().get(&src_volume_id) {
-            let paths: Vec<PathBuf> = src_paths.iter().map(PathBuf::from).collect();
-            match tokio::time::timeout(Duration::from_secs(30), src_volume.scan_for_copy_batch(&paths)).await {
-                Ok(Ok(batch)) => merge_source_types_from_batch(&mut source_items, &batch),
-                // A failed source-side stat is non-fatal: fall back to the
-                // name-only items the caller sent. Conflict detection still
-                // works by name; only the dir/size hints degrade.
-                Ok(Err(e)) => {
-                    log::debug!(target: "conflict_scan", "Source batch stat failed, using name-only items: {}", e);
-                }
-                Err(_) => {
-                    log::debug!(target: "conflict_scan", "Source batch stat timed out, using name-only items");
-                }
+        && let Some(src_volume) = get_volume_manager().get(&src_volume_id)
+    {
+        let paths: Vec<PathBuf> = src_paths.iter().map(PathBuf::from).collect();
+        match tokio::time::timeout(Duration::from_secs(30), src_volume.scan_for_copy_batch(&paths)).await {
+            Ok(Ok(batch)) => merge_source_types_from_batch(&mut source_items, &batch),
+            // A failed source-side stat is non-fatal: fall back to the
+            // name-only items the caller sent. Conflict detection still
+            // works by name; only the dir/size hints degrade.
+            Ok(Err(e)) => {
+                log::debug!(target: "conflict_scan", "Source batch stat failed, using name-only items: {}", e);
+            }
+            Err(_) => {
+                log::debug!(target: "conflict_scan", "Source batch stat timed out, using name-only items");
             }
         }
+    }
 
     let dest_path = PathBuf::from(dest_path);
 

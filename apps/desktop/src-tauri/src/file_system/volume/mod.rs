@@ -843,6 +843,24 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// Whether `create_directory` reliably returns `VolumeError::AlreadyExists`
+    /// when a directory of the same name already exists at the path.
+    ///
+    /// The scan-as-you-merge folder-merge walker
+    /// (`write_operations/transfer/volume_strategy.rs`) uses the `AlreadyExists`
+    /// result as the signal that a destination level PRE-EXISTED and must be
+    /// merged into (list it once, resolve clashing children) rather than created
+    /// fresh. Default `true` covers LocalPosix (`std::fs::create_dir` →
+    /// `ErrorKind::AlreadyExists`), SMB (smb2 typed STATUS_OBJECT_NAME_COLLISION),
+    /// and InMemory. `MtpVolume` overrides to `false`: the MTP protocol allows
+    /// same-name sibling objects and `create_folder` silently makes a duplicate
+    /// `photos` instead of erroring, so the walker must pre-check existence on
+    /// MTP before creating — a blindly-created duplicate would make the merge
+    /// target the wrong directory.
+    fn create_directory_errors_on_existing_dir(&self) -> bool {
+        true
+    }
+
     /// Opens a streaming reader for the given path.
     ///
     /// Returns a VolumeReadStream that yields chunks of data.
