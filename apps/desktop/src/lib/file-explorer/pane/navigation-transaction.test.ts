@@ -186,9 +186,14 @@ import DualPaneExplorer from './DualPaneExplorer.svelte'
 import { explorerState, _resetForTesting } from './explorer-state.svelte'
 import { getActiveTab, pushHistoryEntry } from '../tabs/tab-state-manager.svelte'
 import { saveLastUsedPathForVolume } from '$lib/app-status-store'
+import type { NavigateResult } from './navigate'
 
 type ExplorerHandle = {
-  navigateToPath: (pane: 'left' | 'right', path: string) => string | Promise<void>
+  navigate: (intent: {
+    pane: 'left' | 'right'
+    to: { volumeId?: string; path: string }
+    source: 'user' | 'mcp'
+  }) => NavigateResult
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
 }
 
@@ -217,12 +222,13 @@ function latestListingId(): string {
  */
 async function driveLeftLoad(handle: ExplorerHandle, path: string): Promise<string> {
   listDirectoryStartMock.mockClear()
-  // The FilePane navigateToPath promise rejects with "Superseded by new
-  // navigation" when the next load supersedes this one (which happens in every
-  // test that drives a second load or unmounts before firing completion).
-  // Swallow that expected rejection so it doesn't surface as an unhandled error.
-  const r = handle.navigateToPath('left', path)
-  if (r instanceof Promise) void r.catch(() => {})
+  // The FilePane navigateToPath promise (`result.settled`) rejects with
+  // "Superseded by new navigation" when the next load supersedes this one (which
+  // happens in every test that drives a second load or unmounts before firing
+  // completion). Swallow that expected rejection so it doesn't surface as an
+  // unhandled error.
+  const result = handle.navigate({ pane: 'left', to: { path }, source: 'user' })
+  if (result.status === 'started') void result.settled.catch(() => {})
   for (let i = 0; i < 5; i++) await tick()
   await new Promise((r2) => setTimeout(r2, 10))
   return latestListingId()
@@ -371,11 +377,12 @@ describe('scenario 8: optimistic-commit ordering (P4)', () => {
 
     listDirectoryStartMock.mockClear()
 
-    // Drive an in-place path navigation. `navigateToPath` calls the FilePane
+    // Drive an in-place path navigation. `navigate()` calls the FilePane
     // primitive, which mints a new listingId and starts loading.
-    const result = handle.navigateToPath('left', '/Users/me/sub')
-    // The in-place arm returns the FilePane navigateToPath promise (not a refusal string).
-    expect(typeof result).not.toBe('string')
+    const result = handle.navigate({ pane: 'left', to: { path: '/Users/me/sub' }, source: 'user' })
+    // The in-place arm STARTS (returns the FilePane settle promise), never refuses.
+    expect(result.status).toBe('started')
+    if (result.status === 'started') void result.settled.catch(() => {})
 
     // Let the load kick off (a fresh listingId is minted) but do NOT fire its
     // completion yet.

@@ -100,9 +100,9 @@ async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
       log.warn('Go to Downloads pressed but Downloads dir is unresolved; no action')
       return
     }
-    const result = explorer.navigateToPath(focusedPane, downloadsDir)
-    if (typeof result === 'string') {
-      log.warn('Go to Downloads: navigateToPath refused: {reason}', { reason: result })
+    const result = explorer.navigate({ pane: focusedPane, to: { path: downloadsDir }, source: 'user' })
+    if (result.status === 'refused') {
+      log.warn('Go to Downloads: navigate refused: {reason}', { reason: result.reason.message })
     }
   }
   addToast(LatestDownloadEmptyToastContent, {

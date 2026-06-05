@@ -34,14 +34,19 @@
  *
  * `navigate()` mints a monotonic `txToken` per call and stores it as the pane's
  * current transaction (`deps.tokens`, a `Map<'left'|'right', number>` the caller
- * owns so it survives across `navigate()` calls). The background
- * `determineNavigationPath` correction (folding `applyVolumePathCorrection`) and
- * the in-place `onPathChange` re-entry each capture their token and bail on
- * `token !== current[pane]`. This subsumes the THREE coordinator staleness
- * mechanisms — the `applyPathChange` volume-prefix forensics (L6, the FE twin of
- * the banned `error-string-match`), the `volumeChangeGeneration` counter, and the
- * background-correction guard — into one compare. The drop-foreign-listings
- * _policy_ is identical (L6); only the _mechanism_ changes.
+ * owns so it survives across `navigate()` calls). The token gates the per-pane
+ * cross-volume resolve bail (a slow `resolveVolume` whose pane got re-navigated is
+ * dropped). The in-place `onPathChange` re-entry (`commitPathFromListing`) drops a
+ * stale listing by the foreign-path policy (L6, the FE twin of the banned
+ * `error-string-match`) — NOT by the token. The background
+ * `determineNavigationPath` correction (folding `applyVolumePathCorrection`) is
+ * gated by `deps.correctionGen`, a SINGLE GLOBAL counter shared by both panes
+ * (exactly the old `volumeChangeGeneration`): a later volume change on EITHER pane
+ * supersedes a pending correction. Per-pane gating there would let both panes'
+ * corrections run after a simultaneous two-pane reset and re-enter the
+ * listing/onPathChange cycle on both panes — a webview freeze. Together these
+ * replace the three coordinator staleness mechanisms; the drop-foreign-listings
+ * _policy_ is identical (L6), only the _mechanism_ changes.
  *
  * **Same-token self-re-entry (M3 contract, stated here so M2 doesn't violate it):**
  * `commitPathFromListing` does NOT mint a new token. A parent-nav
@@ -222,6 +227,14 @@ export interface NavigateDeps {
 
   // --- the per-pane transaction token map (caller-owned so it survives across calls) ---
   tokens: Map<'left' | 'right', number>
+  /**
+   * The GLOBAL background-correction generation (the old `volumeChangeGeneration`
+   * counter — a SINGLE counter shared by both panes, NOT per-pane). A mutable
+   * holder so it survives across `navigate()` calls. Each scheduled correction
+   * bumps `.value` and captures it; a later volume change on EITHER pane bumps it
+   * again, dropping the stale correction. Caller-owned, like `tokens`.
+   */
+  correctionGen: { value: number }
 }
 
 /**
@@ -309,42 +322,18 @@ function commit(deps: NavigateDeps, c: NavigateCommit): void {
 }
 
 /**
- * The pinned-tab fork (L7 — unified HERE, the only place it's allowed to unify).
- * When the active tab is pinned and the destination differs, open a NEW unpinned
- * tab carrying the target instead of navigating in-place. At `MAX_TABS_PER_PANE`,
- * toast "Tab limit reached" and fall through to in-place. Returns `true` when a
- * new tab was opened (caller skips the in-place commit), `false` otherwise.
- *
- * Parameterized by `{ volumeId?, path }`: `volumeId` set ⇒ the volume-switch fork
- * (DPE:618), omitted ⇒ the in-place path fork (DPE:413). The two near-identical
- * branches become one.
+ * Splice a NEW unpinned tab (carrying `{ volumeId, path }`) directly after the
+ * pinned active tab and make it active. Inherits the active tab's sort + view.
+ * Shared tab-creation for the two pinned forks (volume-switch + in-place path);
+ * each fork owns its own persistence afterward (the two differ in their
+ * last-used-path semantics, so persistence is NOT shared here — see callers).
  */
-function tryPinnedFork(
-  deps: NavigateDeps,
-  pane: 'left' | 'right',
-  target: { volumeId?: string; path: string },
-): boolean {
-  const mgr = deps.getTabMgr(pane)
-  const activeTab = getActiveTab(mgr)
-
-  const destinationDiffers =
-    target.volumeId !== undefined
-      ? target.volumeId !== activeTab.volumeId || target.path !== activeTab.path
-      : target.path !== activeTab.path
-
-  if (!activeTab.pinned || !destinationDiffers) return false
-
-  if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-    deps.addToast('Tab limit reached', { level: 'warn' })
-    return false // fall through to in-place
-  }
-
-  const volumeId = target.volumeId ?? activeTab.volumeId
+function spliceNewUnpinnedTab(mgr: TabManager, activeTab: TabState, target: { volumeId: string; path: string }): void {
   const newTab: TabState = {
     id: crypto.randomUUID(),
     path: target.path,
-    volumeId,
-    history: createHistory(volumeId, target.path),
+    volumeId: target.volumeId,
+    history: createHistory(target.volumeId, target.path),
     sortBy: activeTab.sortBy,
     sortOrder: activeTab.sortOrder,
     viewMode: activeTab.viewMode,
@@ -356,6 +345,32 @@ function tryPinnedFork(
   const activeIndex = mgr.tabs.findIndex((t) => t.id === activeTab.id)
   mgr.tabs.splice(activeIndex + 1, 0, newTab)
   mgr.activeTabId = newTab.id
+}
+
+/**
+ * The VOLUME-SWITCH half of the pinned-tab fork (L7, folds `handleVolumeChange`'s
+ * pinned branch, DPE:618). When the active tab is pinned and the destination
+ * volume/path differs, open a NEW unpinned tab; at `MAX_TABS_PER_PANE`, toast and
+ * fall through to in-place. Returns `true` when a new tab was opened (caller skips
+ * the in-place commit). The OLD path's last-used-path pre-save happens in
+ * `commitVolumeSwitch` (the OLD path), so the fork itself only persists tab state.
+ */
+function tryPinnedVolumeFork(
+  deps: NavigateDeps,
+  pane: 'left' | 'right',
+  target: { volumeId: string; path: string },
+): boolean {
+  const mgr = deps.getTabMgr(pane)
+  const activeTab = getActiveTab(mgr)
+
+  if (!activeTab.pinned || (target.volumeId === activeTab.volumeId && target.path === activeTab.path)) return false
+
+  if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
+    deps.addToast('Tab limit reached', { level: 'warn' })
+    return false // fall through to in-place
+  }
+
+  spliceNewUnpinnedTab(mgr, activeTab, target)
   deps.persist({ kind: 'pane-state', pane })
   return true
 }
@@ -373,6 +388,7 @@ function scheduleVolumePathCorrection(
   volumePath: string,
   targetPath: string,
 ): void {
+  const correctionGen = (deps.correctionGen.value += 1)
   const other = deps.otherPane(pane)
   void deps
     .determineNavigationPath(volumeId, volumePath, targetPath, {
@@ -380,7 +396,15 @@ function scheduleVolumePathCorrection(
       otherPanePath: deps.getPanePath(other),
     })
     .then((betterPath) => {
-      if (!tokenLive(deps, pane, token)) return
+      // GLOBAL supersede (matches the old `volumeChangeGeneration`, which was a
+      // single counter shared by BOTH panes): a later volume change on EITHER
+      // pane drops this pending correction. A per-pane token would let both
+      // panes' corrections run after a simultaneous two-pane reset (the E2E
+      // `ensureAppReady` double `mcp-volume-select`), which re-enters the
+      // listing/onPathChange cycle on both panes at once and freezes the
+      // webview. The cross-volume resolve bail stays per-pane (`token`); only
+      // the correction supersede is global.
+      if (correctionGen !== deps.correctionGen.value) return
       if (betterPath !== targetPath && betterPath !== deps.getPanePath(pane)) {
         deps.setPanePath(pane, betterPath)
         deps.setPaneHistory(pane, pushHistoryEntry(deps.getPaneHistory(pane), { volumeId, path: betterPath }))
@@ -409,7 +433,7 @@ function commitVolumeSwitch(
   // Record the OLD path as the last-used for the OLD volume before the swap.
   deps.persist({ kind: 'last-used-path', record: { volumeId: activeTab.volumeId, path: oldPath } })
 
-  if (tryPinnedFork(deps, pane, { volumeId, path: targetPath })) {
+  if (tryPinnedVolumeFork(deps, pane, { volumeId, path: targetPath })) {
     if (options.shiftFocus) deps.setFocusedPane(pane)
     deps.persist({ kind: 'pane-state', pane })
     scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath)
@@ -478,7 +502,17 @@ function navigateToVolumeOrPath(
   if (isCrossVolumeNavigation(currentVolumeId, to.path)) {
     const token = mintToken(deps, pane)
     const settled = (async () => {
-      const result = await deps.resolveVolume(to.path)
+      // Swallow a `resolveVolume` rejection into a no-op, exactly as the old
+      // `navigateToPath` cross-volume arm did with its try/catch. Without this,
+      // a rejected resolve surfaces as an UNHANDLED promise rejection for the
+      // fire-and-forget `mcp-nav-to-path` callers that never await `settled`
+      // (e.g. the E2E `ensureAppReady` reset), which can freeze the webview.
+      let result: { volume: { id: string; path: string } | null }
+      try {
+        result = await deps.resolveVolume(to.path)
+      } catch {
+        return
+      }
       const volume = result.volume
       if (!volume) {
         // no-volume-resolved: today this logs + returns undefined (a no-op), NOT
@@ -495,16 +529,14 @@ function navigateToVolumeOrPath(
   const mtpRefusal = validateMtpNavigation(to.path, currentVolumeId, currentVolumeName)
   if (mtpRefusal) return { status: 'refused', reason: mtpRefusal }
 
-  // Pinned-tab fork: open a new tab instead of in-place (L7).
-  if (tryPinnedFork(deps, pane, { path: to.path })) {
-    // The new tab is committed; the FilePane it mounts loads its own listing.
-    // Matches today's handlePathChange pinned branch (no paneRef.navigateToPath).
-    return { status: 'started', settled: SETTLED_NOOP }
-  }
-
-  // In-place: drive the FilePane primitive. The commit lands LATER, when the
-  // listing completes and the pane's onPathChange fires `commitPathFromListing`
-  // (P4 — in-place arm is NOT optimistic). `settled` is the FilePane promise.
+  // In-place: drive the FilePane primitive. The commit — AND the pinned-tab fork
+  // (L7) — land LATER, when the listing completes and the pane's onPathChange
+  // fires `commitPathFromListing` (P4 — in-place arm is NOT optimistic). The fork
+  // lives at the listing-completion landing, not here, because FilePane-INTERNAL
+  // navigation (Enter on a folder, breadcrumb click) bypasses `navigate()` and
+  // re-enters only through `onPathChange`; both entry paths must fork identically,
+  // so the single fork point is `commitPathFromListing`. `settled` is the FilePane
+  // promise.
   const paneRef = deps.getPaneRef(pane)
   if (!paneRef) return { status: 'refused', reason: PANE_UNAVAILABLE_REFUSAL }
   return { status: 'started', settled: paneRef.navigateToPath(to.path, intent.selectName) }
@@ -581,21 +613,43 @@ function commitHistoryWalk(
 }
 
 /**
- * The in-place path commit landed from a FilePane `onPathChange` (folds
- * `applyPathChange`, DPE:447). Drops stale listings by the token + the
- * drop-foreign-listings policy (L6 — policy identical, mechanism is the token).
+ * The path commit landed from a FilePane `onPathChange` (folds `handlePathChange`
+ * + `applyPathChange`, DPE:408/447). This is the SINGLE in-place fork+commit
+ * point: BOTH coordinator-initiated in-place navs (`navigate({ to: { path } })`
+ * drives the FilePane, which fires `onPathChange` on completion) AND
+ * FilePane-internal navigations (Enter on a folder, breadcrumb click — they
+ * bypass `navigate()` and re-enter only here) land here, so the pinned-tab fork
+ * lives here, not in `navigate()`'s in-place arm.
  *
- * **Token semantics:** this is NOT a fresh `navigate()`; it does NOT mint a token.
- * It runs at `listing-complete` for the transaction the in-place / parent-nav /
- * walk-up arm started. Because no newer `navigate()` has minted a token in the
- * meantime (the user hasn't navigated away), the pane's current token still
- * matches the one the transaction captured — a self-re-entry passes, a genuinely
- * stale listing (the user flipped volumes ⇒ a newer token) is dropped by the
- * foreign-path policy below.
+ * Order matches `handlePathChange`: the pinned fork is checked FIRST (before the
+ * foreign-path drop), then the in-place commit applies the drop policy.
  *
- * Returns whether the path was committed (for tests + M3 wiring).
+ * **The drop policy (L6):** consults ONLY the foreign-path check — a virtual
+ * volume checks its URL prefix, a real volume uses `isPathOnVolume`. The
+ * transaction token is NOT checked here; it gates the background volume-path
+ * correction (`scheduleVolumePathCorrection`), where a superseded `navigate()`
+ * drops the stale correction. The drop-foreign-listings _policy_ is identical to
+ * `applyPathChange` (L6); only the volumeChangeGeneration _mechanism_ is gone.
+ *
+ * **Token / self-re-entry semantics:** this is NOT a fresh `navigate()`; it does
+ * NOT mint a token. A parent-nav (`{ history: 'parent' }`) or deleted-folder
+ * walk-up re-enters here carrying the SAME transaction the in-place arm started —
+ * no newer `navigate()` advanced the token, so the self-re-entry commits (it
+ * isn't dropped as stale). A genuinely stale listing (the user flipped volumes ⇒
+ * a path foreign to the new volume) is dropped by the foreign-path policy.
+ *
+ * Returns `true` iff an IN-PLACE commit happened (so the caller restores the
+ * persisted cursor). A fork (new tab) or a dropped stale listing returns `false`:
+ * neither restores the cursor (matching the old `handlePathChange` fork branch,
+ * which returned before `applyPathChange`'s cursor restore).
  */
 export function commitPathFromListing(deps: NavigateDeps, pane: 'left' | 'right', path: string): boolean {
+  // Pinned-tab fork (L7) — checked FIRST, exactly as handlePathChange did. A
+  // listing landing on a pinned tab at a NEW path opens a fresh unpinned tab
+  // instead of navigating in-place. Returns `false`: a fork is not an in-place
+  // commit, so the caller does not restore the cursor.
+  if (commitPinnedPathFork(deps, pane, path)) return false
+
   const currentVolumeId = deps.getPaneVolumeId(pane)
   const currentVolumePath = deps.getPaneVolumePath(pane)
 
@@ -610,5 +664,33 @@ export function commitPathFromListing(deps: NavigateDeps, pane: 'left' | 'right'
 
   commit(deps, { pane, path, history: 'push-path' })
   deps.persist({ kind: 'last-used-path', record: { volumeId: deps.getPaneVolumeId(pane), path } })
+  return true
+}
+
+/**
+ * The pinned-tab fork for an in-place path landing (the same-volume half of L7,
+ * folded from `handlePathChange`'s pinned branch). When the active tab is pinned
+ * and the landed `path` differs, open a NEW unpinned tab (same volume) carrying
+ * the path; at `MAX_TABS_PER_PANE`, toast and fall through to in-place. Returns
+ * `true` when a new tab was opened (the caller skips the in-place commit), `false`
+ * to fall through to the in-place commit (not pinned, same path, or at cap).
+ */
+function commitPinnedPathFork(deps: NavigateDeps, pane: 'left' | 'right', path: string): boolean {
+  const mgr = deps.getTabMgr(pane)
+  const activeTab = getActiveTab(mgr)
+  if (!activeTab.pinned || path === activeTab.path) return false
+
+  if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
+    deps.addToast('Tab limit reached', { level: 'warn' })
+    return false // fall through to in-place
+  }
+
+  // The fork stays on the SAME volume (an in-place path change on a pinned tab).
+  spliceNewUnpinnedTab(mgr, activeTab, { volumeId: activeTab.volumeId, path })
+
+  deps.persist({ kind: 'pane-state', pane })
+  // Matches handlePathChange's pinned branch: record the new path as last-used for
+  // the (unchanged) volume.
+  deps.persist({ kind: 'last-used-path', record: { volumeId: activeTab.volumeId, path } })
   return true
 }

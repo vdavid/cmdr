@@ -413,15 +413,15 @@ export async function handleCommandExecute<K extends CommandId>(
       return
 
     case 'nav.parent':
-      explorerRef?.navigate('parent')
+      explorerRef?.navigate({ pane: explorerRef.getFocusedPane(), to: { history: 'parent' }, source: 'user' })
       return
 
     case 'nav.back':
-      explorerRef?.navigate('back')
+      explorerRef?.navigate({ pane: explorerRef.getFocusedPane(), to: { history: 'back' }, source: 'user' })
       return
 
     case 'nav.forward':
-      explorerRef?.navigate('forward')
+      explorerRef?.navigate({ pane: explorerRef.getFocusedPane(), to: { history: 'forward' }, source: 'user' })
       return
 
     case 'nav.home':

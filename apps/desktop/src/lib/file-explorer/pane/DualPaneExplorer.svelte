@@ -2,7 +2,6 @@
     import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
     import type { FilePaneAPI } from './types'
-    import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
@@ -37,17 +36,12 @@
     } from '../types'
     import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
-    import { determineNavigationPath, isPathOnVolume } from '../navigation/path-navigation'
+    import { determineNavigationPath } from '../navigation/path-navigation'
     import { resolveValidPath } from '../navigation/path-resolution'
 
     import {
-        createHistory,
-        pushPath,
-        back,
-        forward,
         getCurrentEntry,
         canGoBack,
-        canGoForward,
         type NavigationHistory,
     } from '../navigation/navigation-history'
     import TabBar from '../tabs/TabBar.svelte'
@@ -65,7 +59,7 @@
         unpinTab,
         type TabManager,
     } from '../tabs/tab-state-manager.svelte'
-    import type { TabState, TabId } from '../tabs/tab-types'
+    import type { TabId } from '../tabs/tab-types'
     import {
         saveTabsForPane,
         handleTabClose as tabOpsHandleTabClose,
@@ -102,6 +96,13 @@
     import { createClipboardOperations } from './clipboard-operations'
     import { createFileOperationCommands } from './file-operation-commands'
     import { createPaneCommands } from './pane-commands'
+    import {
+        navigate as runNavigate,
+        commitPathFromListing,
+        type NavigateDeps,
+        type NavigateIntent,
+        type NavigateResult,
+    } from './navigate'
     import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
     import { createDragDropController } from './drag-drop-controller.svelte'
     import { recalculateWebviewOffset } from '../drag/drag-position'
@@ -239,11 +240,6 @@
         onOpenInEditor: (path: string) => void openInEditor(path),
     })
 
-    // Guards against stale background path corrections from determineNavigationPath.
-    // Each handleVolumeChange increments this; the background callback checks its captured
-    // generation still matches before applying a correction.
-    let volumeChangeGeneration = 0
-
     // --- Pane accessor helpers ---
 
     function getPaneRef(pane: 'left' | 'right'): FilePaneAPI | undefined {
@@ -347,6 +343,74 @@
     const fileOps = createFileOperationCommands(paneAccess, dialogs)
     const paneCommands = createPaneCommands(paneAccess, dialogs)
 
+    // Per-pane transaction-token map for `navigate()`. Caller-owned (it must
+    // survive across `navigate()` calls), keyed by side. Gates the per-pane
+    // cross-volume resolve bail. The background `determineNavigationPath`
+    // correction is gated separately by `navCorrectionGen`, a SINGLE GLOBAL
+    // counter (the old `volumeChangeGeneration`): a volume change on either pane
+    // supersedes a pending correction on the other. The `onPathChange` re-entry
+    // drops stale listings by the foreign-path policy (L6), not the token.
+    const navTokens = new Map<'left' | 'right', number>()
+    const navCorrectionGen = { value: 0 }
+
+    // The store-backed `NavigateDeps`, built the same way `paneAccess` is — the
+    // component owns the construction; `navigate()` owns the transaction logic.
+    // After this milestone the ONLY caller of `setPaneVolumeId` / `setPanePath` /
+    // `setPaneHistory` is `navigate()`'s internal `commit` (plus the M5 edge flows).
+    const navigateDeps: NavigateDeps = {
+        getTabMgr,
+        getPaneVolumeId,
+        getPanePath,
+        getPaneHistory,
+        getPaneVolumePath,
+        getPaneVolumeName,
+        otherPane,
+        setPaneVolumeId,
+        setPanePath,
+        setPaneHistory,
+        setFocusedPane: (pane) => {
+            explorerState.setFocusedPane(pane)
+            saveAppStatus({ focusedPane: pane })
+        },
+        getPaneRef,
+        resolveVolume: (path) => resolvePathVolume(path),
+        getDefaultVolumeId: () => getDefaultVolumeId(),
+        getVolumePathById: (volumeId) => volumes.find((v) => v.id === volumeId)?.path,
+        determineNavigationPath: (volumeId, volumePath, targetPath, other) =>
+            determineNavigationPath(volumeId, volumePath, targetPath, other),
+        resolveValidPath: (path, options) => resolveValidPath(path, options),
+        pathExists: (path) => pathExists(path),
+        persist: (event) => {
+            // M3: fan the navigate() persistence intents out to today's scattered
+            // save sites. M4 replaces this with the single debounced subscriber.
+            if (event.kind === 'pane-state') {
+                saveAppStatus(buildPaneStatus(event.pane))
+                saveTabsForPaneSide(event.pane)
+            } else {
+                void saveLastUsedPathForVolume(event.record.volumeId, event.record.path)
+            }
+        },
+        focusContainer: () => containerElement?.focus(),
+        requestVolumeRefresh,
+        addToast: (message, opts) => addToast(message, opts),
+        tokens: navTokens,
+        correctionGen: navCorrectionGen,
+    }
+
+    /** Builds the `saveAppStatus` patch for a pane's current nav-state (volume + path + focus). */
+    function buildPaneStatus(pane: 'left' | 'right'): Record<string, unknown> {
+        return {
+            [paneKey(pane, 'volumeId')]: getPaneVolumeId(pane),
+            [paneKey(pane, 'path')]: getPanePath(pane),
+            focusedPane,
+        }
+    }
+
+    /** The single coordinator-level navigation entry. Delegates to the `navigate()` transaction. */
+    function navigateIntent(intent: NavigateIntent): NavigateResult {
+        return runNavigate(intent, navigateDeps)
+    }
+
     // Native drag-and-drop band: drop-target highlight state, the drag handlers,
     // the three Tauri drag listeners, and the folder-highlight effect. The effect
     // is created synchronously inside the factory (L3); `init()`/`cleanup()` run
@@ -405,81 +469,16 @@
 
     // --- Unified handler functions ---
 
-    function handlePathChange(pane: 'left' | 'right', path: string) {
-        const mgr = getTabMgr(pane)
-        const activeTab = getActiveTab(mgr)
-
-        // Pinned tab: open a new tab with the target path instead of navigating in-place
-        if (activeTab.pinned && path !== activeTab.path) {
-            if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-                addToast('Tab limit reached', { level: 'warn' })
-                applyPathChange(pane, path)
-                return
-            }
-
-            const newTab: TabState = {
-                id: crypto.randomUUID(),
-                path,
-                volumeId: activeTab.volumeId,
-                history: createHistory(activeTab.volumeId, path),
-                sortBy: activeTab.sortBy,
-                sortOrder: activeTab.sortOrder,
-                viewMode: activeTab.viewMode,
-                pinned: false,
-                cursorFilename: null,
-                unreachable: null,
-            }
-
-            const activeIndex = mgr.tabs.findIndex((t) => t.id === activeTab.id)
-            mgr.tabs.splice(activeIndex + 1, 0, newTab)
-            mgr.activeTabId = newTab.id
-
-            saveTabsForPaneSide(pane)
-            saveAppStatus({ [paneKey(pane, 'path')]: path })
-            void saveLastUsedPathForVolume(activeTab.volumeId, path)
-            return
-        }
-
-        applyPathChange(pane, path)
-    }
-
-    /** Applies a path change to the active tab in-place (the normal non-pinned flow). */
-    function applyPathChange(pane: 'left' | 'right', path: string) {
-        // Drop stale `onPathChange` events that arrive after the pane was switched
-        // to a different volume. Without this gate, a `listing-complete` from the
-        // previous folder lands after the user (or a command like "Copy path between
-        // panes") flips volumes, and `pushPath` / `saveLastUsedPathForVolume` end up
-        // writing a foreign path under the new `volumeId` — corrupting `pane.path`,
-        // navigation history, and persisted last-used-path state. Network is checked
-        // separately because its mount path is the `smb://` scheme, not a filesystem
-        // prefix that `isPathOnVolume` can match against.
-        const currentVolumeId = getPaneVolumeId(pane)
-        const currentVolumePath = getPaneVolumePath(pane)
-        if (currentVolumeId === 'network' || currentVolumeId === 'search-results') {
-            // Both virtual-volume namespaces use a non-filesystem URL scheme
-            // (`smb://` for network, `search-results://<snapshot-id>` for
-            // search). `isPathOnVolume` only understands real filesystem
-            // prefixes, so virtual-volume panes get explicit prefix checks.
-            const expectedPrefix = currentVolumeId === 'network' ? 'smb://' : 'search-results://'
-            if (!path.startsWith(expectedPrefix)) {
-                log.debug('Dropping stale onPathChange on {volume} pane: {path}', {
-                    volume: currentVolumeId,
-                    path,
-                })
-                return
-            }
-        } else if (!isPathOnVolume(path, currentVolumePath)) {
-            log.debug(
-                'Dropping stale onPathChange: {path} is not on volume {volumeId} ({volumePath})',
-                { path, volumeId: currentVolumeId, volumePath: currentVolumePath },
-            )
-            return
-        }
-        setPanePath(pane, path)
-        setPaneHistory(pane, pushPath(getPaneHistory(pane), path))
-        saveAppStatus({ [paneKey(pane, 'path')]: path })
-        void saveLastUsedPathForVolume(getPaneVolumeId(pane), path)
-        saveTabsForPaneSide(pane)
+    /**
+     * The pane's `onPathChange` lands here when a listing completes (the in-place
+     * path-nav arm + the parent-nav / walk-up self-re-entries). `commitPathFromListing`
+     * (in `navigate()`) owns the commit + the stale-listing drop policy (L6, token +
+     * foreign-path); on a successful commit we restore any persisted cursor from the
+     * tab state (cold-load after a tab switch). The drop case returns `false`, so a
+     * stale listing never disturbs the cursor.
+     */
+    function handlePathCommitted(pane: 'left' | 'right', path: string) {
+        if (!commitPathFromListing(navigateDeps, pane, path)) return
 
         // Restore cursor from tab state if available (happens after cold-load on tab switch)
         const activeTab = getActiveTab(getTabMgr(pane))
@@ -592,100 +591,14 @@
      * Open a search-results snapshot in the target pane (defaults to focused).
      * Called by the SearchDialog's "Open in pane" action. The caller has already
      * stored the snapshot in `snapshotStore` and set the `lastAttemptId` slot;
-     * here we route through `handleVolumeChange` so all the standard pane
-     * mechanics (new-tab-on-pinned, focus shift, history push via
-     * `pushHistoryEntry`) apply uniformly. `pushHistoryEntry` increments the
-     * snapshot's refcount via the M8a integration.
+     * here we route through `navigate({ to: { snapshot } })` (the volume-change
+     * machinery) so all the standard pane mechanics (new-tab-on-pinned, focus
+     * shift, history push via `pushHistoryEntry`) apply uniformly.
+     * `pushHistoryEntry` increments the snapshot's refcount via the M8a integration.
      */
     export function openSearchSnapshotInPane(snapshotId: string, pane?: 'left' | 'right'): void {
         const target = pane ?? focusedPane
-        const url = `search-results://${snapshotId}`
-        handleVolumeChange(target, 'search-results', url, url)
-    }
-
-    function handleVolumeChange(
-        pane: 'left' | 'right',
-        volumeId: string,
-        volumePath: string,
-        targetPath: string,
-    ) {
-        const mgr = getTabMgr(pane)
-        const activeTab = getActiveTab(mgr)
-        const oldPath = activeTab.path
-        void saveLastUsedPathForVolume(activeTab.volumeId, oldPath)
-
-        // Pinned tab: open a new tab with the target volume instead of navigating in-place
-        if (activeTab.pinned && (volumeId !== activeTab.volumeId || targetPath !== activeTab.path)) {
-            if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-                addToast('Tab limit reached', { level: 'warn' })
-            } else {
-                const newTab: TabState = {
-                    id: crypto.randomUUID(),
-                    path: targetPath,
-                    volumeId,
-                    history: createHistory(volumeId, targetPath),
-                    sortBy: activeTab.sortBy,
-                    sortOrder: activeTab.sortOrder,
-                    viewMode: activeTab.viewMode,
-                    pinned: false,
-                    cursorFilename: null,
-                    unreachable: null,
-                }
-
-                const activeIndex = mgr.tabs.findIndex((t) => t.id === activeTab.id)
-                mgr.tabs.splice(activeIndex + 1, 0, newTab)
-                mgr.activeTabId = newTab.id
-
-                saveTabsForPaneSide(pane)
-                explorerState.setFocusedPane(pane)
-                saveAppStatus({
-                    [paneKey(pane, 'volumeId')]: volumeId,
-                    [paneKey(pane, 'path')]: targetPath,
-                    focusedPane: pane,
-                })
-                // Background path correction applies to the new active tab
-                applyVolumePathCorrection(pane, volumeId, volumePath, targetPath)
-                return
-            }
-        }
-
-        // In-place navigation (normal flow or pinned tab at cap)
-        setPaneVolumeId(pane, volumeId)
-        setPanePath(pane, targetPath)
-        setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId, path: targetPath }))
-        explorerState.setFocusedPane(pane)
-
-        saveAppStatus({
-            [paneKey(pane, 'volumeId')]: volumeId,
-            [paneKey(pane, 'path')]: targetPath,
-            focusedPane: pane,
-        })
-        saveTabsForPaneSide(pane)
-
-        applyVolumePathCorrection(pane, volumeId, volumePath, targetPath)
-    }
-
-    /** Resolves the "best" path for a volume change in the background; corrects the active tab if needed. */
-    function applyVolumePathCorrection(
-        pane: 'left' | 'right',
-        volumeId: string,
-        volumePath: string,
-        targetPath: string,
-    ) {
-        const generation = ++volumeChangeGeneration
-        const other = otherPane(pane)
-        void determineNavigationPath(volumeId, volumePath, targetPath, {
-            otherPaneVolumeId: getPaneVolumeId(other),
-            otherPanePath: getPanePath(other),
-        }).then((betterPath) => {
-            if (generation !== volumeChangeGeneration) return
-            if (betterPath !== targetPath && betterPath !== getPanePath(pane)) {
-                setPanePath(pane, betterPath)
-                setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId, path: betterPath }))
-                saveAppStatus({ [paneKey(pane, 'path')]: betterPath })
-                saveTabsForPaneSide(pane)
-            }
-        })
+        navigateIntent({ pane: target, to: { snapshot: snapshotId }, source: 'user' })
     }
 
     function handleFocus(pane: 'left' | 'right') {
@@ -722,10 +635,12 @@
 
         if (entry.path === cancelledPath) {
             // Listing completed before cancel; history has the cancelled path pushed. Go back.
+            // The history-back walk + commit now lives in `navigate()`'s history arm
+            // (the M3 deletion of `updatePaneAfterHistoryNavigation` folds it here; the
+            // full edge-flow migration is M5). `navigate()` re-checks `canGoBack`, so the
+            // gate here is the cancel-specific guard, not a duplicate.
             if (canGoBack(history)) {
-                const newHistory = back(history)
-                const target = getCurrentEntry(newHistory)
-                updatePaneAfterHistoryNavigation(pane, newHistory, target.path)
+                navigateIntent({ pane, to: { history: 'back' }, source: 'cancel' })
                 return
             }
 
@@ -1018,55 +933,6 @@
         }
 
         // Volume list is now maintained reactively by the volume store
-    }
-
-    function updatePaneAfterHistoryNavigation(
-        pane: 'left' | 'right',
-        newHistory: NavigationHistory,
-        targetPath: string,
-    ) {
-        const entry = getCurrentEntry(newHistory)
-        const paneRef = getPaneRef(pane)
-
-        setPaneHistory(pane, newHistory)
-        setPanePath(pane, targetPath)
-        if (entry.volumeId !== getPaneVolumeId(pane)) {
-            setPaneVolumeId(pane, entry.volumeId)
-            saveAppStatus({ [paneKey(pane, 'volumeId')]: entry.volumeId, [paneKey(pane, 'path')]: targetPath })
-        } else {
-            saveAppStatus({ [paneKey(pane, 'path')]: targetPath })
-        }
-        saveTabsForPaneSide(pane)
-        void saveLastUsedPathForVolume(entry.volumeId, targetPath)
-
-        if (entry.volumeId === 'network') {
-            paneRef?.setNetworkHost(entry.networkHost ?? null)
-        }
-    }
-
-    async function handleNavigationAction(action: string) {
-        const pane = focusedPane
-        const paneRef = getPaneRef(pane)
-
-        if (action === 'parent') {
-            await paneRef?.navigateToParent()
-            return
-        }
-
-        const history = getPaneHistory(pane)
-        let newHistory: NavigationHistory
-
-        if (action === 'back' && canGoBack(history)) {
-            newHistory = back(history)
-        } else if (action === 'forward' && canGoForward(history)) {
-            newHistory = forward(history)
-        } else {
-            return
-        }
-
-        const targetEntry = getCurrentEntry(newHistory)
-        // Navigate immediately; if path is gone, FilePane's error handler resolves upward
-        updatePaneAfterHistoryNavigation(pane, newHistory, targetEntry.path)
     }
 
     onDestroy(() => {
@@ -1400,10 +1266,14 @@
     }
 
     /**
-     * Navigate the focused pane (back/forward/parent).
+     * The single coordinator-level navigation entry. Replaces the old
+     * `navigate(action)` + `navigateToPath(pane, path)` pair: callers now pass a
+     * typed `NavigateIntent` (volume/path, history walk, or snapshot) and get a
+     * `NavigateResult` (started + `settled`, or a typed refusal). The bus nav cases,
+     * the MCP adapter, and the four external write-callers all use this.
      */
-    export function navigate(action: 'back' | 'forward' | 'parent') {
-        void handleNavigationAction(action)
+    export function navigate(intent: NavigateIntent): NavigateResult {
+        return navigateIntent(intent)
     }
 
     export function getFileAndPathUnderCursor(): { path: string; filename: string } | null {
@@ -1508,25 +1378,21 @@
 
         const volume = volumes[index]
 
-        // Handle favorites differently from actual volumes (same as VolumeBreadcrumb)
+        // Handle favorites differently from actual volumes (same as VolumeBreadcrumb).
+        // `navigate({ source: 'user' })`'s volume-switch arm shifts STORE focus to the
+        // pane (matching the old `handleVolumeChange`), but does NOT re-anchor DOM focus
+        // on the container — doing so drops a Space press during the multi-select-then-
+        // delete sequence (regression guard: mtp.spec.ts:414).
         if (volume.category === 'favorite') {
-            // For favorites, find the actual containing volume
+            // For favorites, navigate to the favorite's path on its containing volume.
             const { volume: containingVolume } = await resolvePathVolume(volume.path)
-            if (containingVolume) {
-                // Navigate to the favorite's path, but set the volume to the containing volume
-                handleVolumeChange(pane, containingVolume.id, containingVolume.path, volume.path)
-            } else {
-                // Fallback: use root volume
-                handleVolumeChange(pane, 'root', '/', volume.path)
-            }
+            const volumeId = containingVolume?.id ?? 'root'
+            navigateIntent({ pane, to: { volumeId, path: volume.path }, source: 'user' })
         } else {
-            // For actual volumes, navigate to the volume's root
-            handleVolumeChange(pane, volume.id, volume.path, volume.path)
+            // For actual volumes, navigate to the volume's root.
+            navigateIntent({ pane, to: { volumeId: volume.id, path: volume.path }, source: 'user' })
         }
 
-        // Don't re-anchor DOM focus on the container here: doing so drops a Space press
-        // during the multi-select-then-delete sequence (regression guard:
-        // mtp.spec.ts:414).
         return true
     }
 
@@ -1545,58 +1411,6 @@
         isSnapshotPane: boolean
     }> {
         return paneCommands.getFocusedPaneEntries()
-    }
-
-    /**
-     * Navigate a pane to a specific path.
-     * Used by MCP nav_to_path tool.
-     * Returns a Promise that resolves when directory listing completes.
-     * Returns an error string synchronously if navigation can't even start.
-     */
-    export function navigateToPath(pane: 'left' | 'right', path: string): string | Promise<void> {
-        const volumeId = pane === 'left' ? leftVolumeId : rightVolumeId
-        const volumeName = pane === 'left' ? leftVolumeName : rightVolumeName
-
-        if (volumeId === 'network') {
-            return `Pane is on the ${volumeName ?? volumeId} volume. Use select_volume to switch to a local volume first.`
-        }
-
-        // R4: when the pane is on the snapshot volume and the caller asks us to navigate
-        // to a real path (the search dialog's "Go to file" exit path is the common
-        // case: `+page.svelte::handleSearchNavigate` calls us with the file's parent
-        // directory). Resolve the real volume and route through `handleVolumeChange`
-        // so the pane reconfigures BEFORE it tries to load a real path. Without this,
-        // the FilePane would loadDirectory the real path while volumeId stays as
-        // `search-results`, leaving `SearchResultsView` rendering "Search results no
-        // longer available" against a path that isn't a snapshot URL.
-        if (isCrossVolumeNavigation(volumeId, path)) {
-            return (async () => {
-                try {
-                    const result = await resolvePathVolume(path)
-                    const volume = result.volume
-                    if (!volume) {
-                        log.warn(`navigateToPath: no volume resolved for ${path}; cannot leave snapshot pane`)
-                        return
-                    }
-                    handleVolumeChange(pane, volume.id, volume.path, path)
-                } catch (err) {
-                    log.error(`navigateToPath: resolvePathVolume failed for ${path}: ${String(err)}`)
-                }
-            })()
-        }
-
-        const mtpError = paneCommands.validateMtpNavigation(path, volumeId, volumeName)
-        if (mtpError) return mtpError
-
-        const paneRef = getPaneRef(pane)
-        if (!paneRef) return 'Pane not available'
-        // Don't re-anchor DOM focus on the container after the listing settles via a
-        // fire-and-forget `.finally()`: the late callback races subsequent keystrokes
-        // and drops one of the Space presses on the floor (regression guard:
-        // mtp.spec.ts:414, `deletes multiple selected files on MTP`). If MCP/test paths
-        // actually need focus restoration here, rewire the `mcp-nav-to-path` listener
-        // to restore focus AFTER awaiting the promise instead.
-        return paneRef.navigateToPath(path)
     }
 
     /**
@@ -1639,7 +1453,7 @@
     export async function selectVolumeByName(pane: 'left' | 'right', name: string): Promise<boolean> {
         // "Network" is a virtual volume not in the volumes list
         if (name === 'Network') {
-            handleVolumeChange(pane, 'network', 'smb://', 'smb://')
+            navigateIntent({ pane, to: { volumeId: 'network', path: 'smb://' }, source: 'user' })
             return true
         }
 
@@ -1703,16 +1517,13 @@
         const originalFocused = focusedPane
         const targetVolumeId = getPaneVolumeId(target)
         if (targetVolumeId !== volumeId) {
-            const volumePath = volumes.find((v) => v.id === volumeId)?.path ?? path
-            handleVolumeChange(target, volumeId, volumePath, path)
+            // `source: 'mirror'` keeps focus on the source pane (no focus shift, L1).
+            navigateIntent({ pane: target, to: { volumeId, path }, source: 'mirror' })
         } else if (getPanePath(target) === path) {
             // Already on the same volume and path; nothing to do.
         } else {
-            setPanePath(target, path)
-            setPaneHistory(target, pushPath(getPaneHistory(target), path))
-            saveAppStatus({ [paneKey(target, 'path')]: path })
-            saveTabsForPaneSide(target)
-            void getPaneRef(target)?.navigateToPath(path)
+            // Same volume, different path: in-place nav (commit lands at listing-complete).
+            navigateIntent({ pane: target, to: { path }, source: 'mirror' })
         }
         restoreFocus(originalFocused)
     }
@@ -1726,7 +1537,7 @@
         const originalFocused = focusedPane
         const targetPaneRef = getPaneRef(target)
         if (getPaneVolumeId(target) !== 'network') {
-            handleVolumeChange(target, 'network', 'smb://', 'smb://')
+            navigateIntent({ pane: target, to: { volumeId: 'network', path: 'smb://' }, source: 'mirror' })
         }
         targetPaneRef?.setNetworkHost(host)
         setPaneHistory(
@@ -1952,10 +1763,10 @@
                 sortOrder={getPaneSort(paneId).sortOrder}
                 directorySortMode={getDirectorySortMode()}
                 onPathChange={(path: string) => {
-                    handlePathChange(paneId, path)
+                    handlePathCommitted(paneId, path)
                 }}
                 onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) => {
-                    handleVolumeChange(paneId, volumeId, volumePath, targetPath)
+                    navigateIntent({ pane: paneId, to: { volumeId, path: targetPath }, source: 'user' })
                 }}
                 onRequestFocus={() => {
                     handleFocus(paneId)

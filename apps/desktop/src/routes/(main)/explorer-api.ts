@@ -7,6 +7,7 @@ import type { ViewMode } from '$lib/app-status-store'
 import type { McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
 import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import type { FileEntry, FriendlyError } from '$lib/file-explorer/types'
+import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
 
 /**
  * Closed action set for `handleSelectionAction` (the selection sub-dispatcher).
@@ -39,7 +40,15 @@ export interface ExplorerAPI {
    * when the other pane is focused).
    */
   setViewModeFromMenu: (pane: 'left' | 'right', mode: ViewMode) => void
-  navigate: (action: 'back' | 'forward' | 'parent') => void
+  /**
+   * The single coordinator-level navigation entry. Replaces the old
+   * `navigate(action)` + `navigateToPath(pane, path)` pair: pass a typed
+   * `NavigateIntent` (volume/path change, history walk, or snapshot open) and get
+   * back a `NavigateResult` — `{ status: 'started', settled }` or
+   * `{ status: 'refused', reason }` whose `reason.message` is the exact refusal
+   * string the MCP adapter forwards verbatim (L12).
+   */
+  navigate: (intent: NavigateIntent) => NavigateResult
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null
   sendKeyToFocusedPane: (key: string) => void
   /**
@@ -82,13 +91,13 @@ export interface ExplorerAPI {
   isConfirmationDialogOpen: () => boolean
   isRenaming: () => boolean
   openViewerForCursor: () => Promise<void>
-  navigateToPath: (pane: 'left' | 'right', path: string) => string | Promise<void>
   /**
    * Open a search-results snapshot in the target pane (defaults to focused).
    * The snapshot must already exist in `$lib/search/snapshot-store.svelte`; the
    * caller is responsible for `getOrCreate` + `setLastAttemptId` (the
    * SearchDialog's "Open in pane" handler does both). Routes through
-   * `handleVolumeChange` so pinned-tab fork, focus, and history push all apply.
+   * `navigate({ to: { snapshot } })` so pinned-tab fork, focus, and history push
+   * all apply.
    */
   openSearchSnapshotInPane: (snapshotId: string, pane?: 'left' | 'right') => void
   moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>

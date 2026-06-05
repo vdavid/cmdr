@@ -184,9 +184,14 @@ vi.mock('$lib/ui/toast', () => ({
 import DualPaneExplorer from './DualPaneExplorer.svelte'
 import { explorerState, _resetForTesting } from './explorer-state.svelte'
 import { getActiveTab, pushHistoryEntry } from '../tabs/tab-state-manager.svelte'
+import type { NavigateResult } from './navigate'
 
 type ExplorerHandle = {
-  navigateToPath: (pane: 'left' | 'right', path: string) => string | Promise<void>
+  navigate: (intent: {
+    pane: 'left' | 'right'
+    to: { volumeId?: string; path: string }
+    source: 'user' | 'mcp'
+  }) => NavigateResult
   openSearchSnapshotInPane: (snapshotId: string, pane?: 'left' | 'right') => void
 }
 
@@ -323,8 +328,9 @@ describe('scenario 2: snapshot-pane poisoning (L5/R4) routes through volume-chan
     })
 
     // The dialog's "Go to file" exit / MCP nav_to_path arm.
-    const result = handle.navigateToPath('left', '/Library/Preferences')
-    expect(result).toBeInstanceOf(Promise)
+    const result = handle.navigate({ pane: 'left', to: { path: '/Library/Preferences' }, source: 'mcp' })
+    expect(result.status).toBe('started')
+    if (result.status === 'started') await result.settled
     await settle()
 
     // The pane left the snapshot volume; volumeId + path are now a real location.
@@ -341,10 +347,10 @@ describe('scenario 2: snapshot-pane poisoning (L5/R4) routes through volume-chan
 
     resolvePathVolumeMock.mockResolvedValue({ volume: null, timedOut: false })
 
-    const result = handle.navigateToPath('left', '/Library/Preferences')
-    // It still returns a Promise (the async cross-volume arm), NOT a refusal string.
-    expect(result).toBeInstanceOf(Promise)
-    await result // resolves to undefined (a no-op)
+    const result = handle.navigate({ pane: 'left', to: { path: '/Library/Preferences' }, source: 'mcp' })
+    // It still STARTS (the async cross-volume arm), NOT a refusal.
+    expect(result.status).toBe('started')
+    if (result.status === 'started') await result.settled // resolves to undefined (a no-op)
     await settle()
 
     // No navigation happened; the pane is still on the snapshot.
@@ -475,8 +481,13 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     tab.path = 'smb://'
     await tick()
 
-    const result = handle.navigateToPath('left', '/Users/me/doc')
-    expect(result).toBe('Pane is on the Network volume. Use select_volume to switch to a local volume first.')
+    const result = handle.navigate({ pane: 'left', to: { path: '/Users/me/doc' }, source: 'mcp' })
+    expect(result.status).toBe('refused')
+    if (result.status === 'refused') {
+      expect(result.reason.message).toBe(
+        'Pane is on the Network volume. Use select_volume to switch to a local volume first.',
+      )
+    }
   })
 
   it('MTP path mismatch returns the exact "not on this MTP volume" string (note the em dash)', async () => {
@@ -487,8 +498,11 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     tab.path = '/Users/me'
     await tick()
 
-    const result = handle.navigateToPath('left', 'mtp://otherdev/2/DCIM')
-    expect(result).toBe('Pane is not on this MTP volume — call select_volume first.')
+    const result = handle.navigate({ pane: 'left', to: { path: 'mtp://otherdev/2/DCIM' }, source: 'mcp' })
+    expect(result.status).toBe('refused')
+    if (result.status === 'refused') {
+      expect(result.reason.message).toBe('Pane is not on this MTP volume — call select_volume first.')
+    }
   })
 
   it('on-MTP-volume pane returns the exact "on the … MTP volume" string', async () => {
@@ -499,9 +513,14 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     tab.path = 'mtp://dev/1/DCIM'
     await tick()
 
-    const result = handle.navigateToPath('left', '/Users/me/doc')
+    const result = handle.navigate({ pane: 'left', to: { path: '/Users/me/doc' }, source: 'mcp' })
     // volumeName is undefined for this id (not in the volume list) → falls back to the id.
-    expect(result).toBe('Pane is on the mtp-dev:1 MTP volume. Use select_volume to switch to a local volume first.')
+    expect(result.status).toBe('refused')
+    if (result.status === 'refused') {
+      expect(result.reason.message).toBe(
+        'Pane is on the mtp-dev:1 MTP volume. Use select_volume to switch to a local volume first.',
+      )
+    }
   })
 
   it('pane-unavailable returns the exact "Pane not available" string', async () => {
@@ -514,7 +533,10 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     tab.path = '/Users/me'
     await tick()
 
-    const result = handle.navigateToPath('left', '/Users/me/doc')
-    expect(result).toBe('Pane not available')
+    const result = handle.navigate({ pane: 'left', to: { path: '/Users/me/doc' }, source: 'mcp' })
+    expect(result.status).toBe('refused')
+    if (result.status === 'refused') {
+      expect(result.reason.message).toBe('Pane not available')
+    }
   })
 })

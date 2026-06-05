@@ -58,6 +58,7 @@ list).
 | `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot variant) from a focused pane           |
 | `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)            |
 | `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution            |
+| `navigate.ts`                 | `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry    |
 | `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch       |
 | `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`        |
 | `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                                  |
@@ -95,11 +96,12 @@ poisons the pane with `volumeId === 'search-results'` + real path.
 (`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)
 plus the dialog state. The component keeps one-line `export function` delegates so the `ExplorerAPI` surface is
 unchanged. Read-only / delegating bodies move; functions that WRITE component navigation state (`switchPane`,
-`swapPanes`, `toggleHiddenFiles`, `setViewMode`, `navigate`, `setSort*`, `navigateToPath`, `moveCursor`,
-`selectVolumeBy*`, `copyPathBetweenPanes`, the `mirror*`/`restoreFocus` helpers) stay in the component — un-trapping
-that state is the explorer-store phase, not this factoring. `moveCursorByName*` and `validateMtpNavigation` moved even
-though they're called from component-resident writers (`moveCursor`, `restoreCursorByFilename`, `navigateToPath`); those
-callers reach back via `paneCommands.*`.
+`swapPanes`, `toggleHiddenFiles`, `setViewMode`, `navigate`, `setSort*`, `moveCursor`, `selectVolumeBy*`,
+`copyPathBetweenPanes`, the `mirror*`/`restoreFocus` helpers) stay in the component — un-trapping that state is the
+explorer-store phase, not this factoring. The `navigate(intent)` transaction itself lives in `navigate.ts` (the
+component builds its `NavigateDeps` and wraps it as the `navigate` export). `moveCursorByName*` and
+`validateMtpNavigation` moved even though they're called from component-resident writers (`moveCursor`,
+`restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
 
 **Explorer store (`explorer-state.svelte.ts`).** Module store owning the dual-pane navigation + UI-chrome state that
 `DualPaneExplorer` used to trap in component closures: `focusedPane`, `showHiddenFiles`, `leftPaneWidthPercent`, and the
@@ -196,10 +198,10 @@ other. See parent § "Live disk space".
 `PaneState.typeToJump` whenever the buffer or indicator is live, so MCP-driven E2E can assert without DOM poking. See
 `src-tauri/src/mcp/CLAUDE.md` § State stores.
 
-**Don't add `cd`-style heuristics in `applyPathChange`.** Stale `onPathChange` from a slow listing is dropped by the
-volume guard in `DualPaneExplorer.applyPathChange` (`smb://` prefix for `network`, `search-results://` prefix for
-snapshots, `isPathOnVolume` for everything else). Adding a new virtual-volume namespace? Extend the explicit prefix
-branch. See parent § "Gotchas".
+**Don't add `cd`-style heuristics in `commitPathFromListing`.** Stale `onPathChange` from a slow listing is dropped by
+the drop-foreign-listings policy in `navigate.ts::commitPathFromListing` (`smb://` prefix for `network`,
+`search-results://` prefix for snapshots, `isPathOnVolume` for everything else). Adding a new virtual-volume namespace?
+Extend the explicit prefix branch. See parent § "Gotchas".
 
 ## Gotchas
 

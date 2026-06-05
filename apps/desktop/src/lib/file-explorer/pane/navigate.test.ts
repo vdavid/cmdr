@@ -166,6 +166,7 @@ function makeHarness(opts?: HarnessOpts): Harness {
     requestVolumeRefresh: vi.fn(),
     addToast,
     tokens: new Map(),
+    correctionGen: { value: 0 },
   }
 
   return {
@@ -272,8 +273,8 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
   })
 })
 
-describe('background correction (token replaces volumeChangeGeneration)', () => {
-  it('applies a better path when the token is still live', async () => {
+describe('background correction (global correctionGen, the old volumeChangeGeneration)', () => {
+  it('applies a better path when the correction is still the latest', async () => {
     h.determineNavigationPath.mockResolvedValue('/Volumes/Ext/photos')
     navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
     await flush()
@@ -282,7 +283,7 @@ describe('background correction (token replaces volumeChangeGeneration)', () => 
     expect(h.tab('left').history.stack.at(-1)?.path).toBe('/Volumes/Ext/photos')
   })
 
-  it('DROPS a stale correction whose token was superseded by a newer navigate()', async () => {
+  it('DROPS a stale correction superseded by a newer volume change on the SAME pane', async () => {
     // First switch: its correction resolves to a "better" path but slowly.
     let resolveFirst: (p: string) => void = () => {}
     const slowCorrection = new Promise<string>((r) => {
@@ -291,29 +292,65 @@ describe('background correction (token replaces volumeChangeGeneration)', () => 
     h.determineNavigationPath.mockReturnValueOnce(slowCorrection)
     navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
 
-    // A newer navigate() supersedes the pane's token before the first correction resolves.
+    // A newer navigate() bumps the global correctionGen before the first resolves.
     h.determineNavigationPath.mockResolvedValueOnce('/')
     navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'user' }, h.deps)
     await flush()
     expect(h.tab('left').volumeId).toBe('root')
     expect(h.tab('left').path).toBe('/')
 
-    // Now the STALE first correction resolves — it must be dropped (token superseded).
+    // Now the STALE first correction resolves — it must be dropped (gen superseded).
     resolveFirst('/Volumes/Ext/should-be-dropped')
     await flush()
     expect(h.tab('left').path).toBe('/') // unchanged — stale correction dropped
     expect(h.tab('left').volumeId).toBe('root')
   })
+
+  it('DROPS a left-pane correction superseded by a volume change on the RIGHT pane (GLOBAL gen)', async () => {
+    // The correctionGen is GLOBAL (the old `volumeChangeGeneration` was a single
+    // counter shared by both panes), not per-pane: a volume change on the RIGHT
+    // pane must drop a still-pending correction on the LEFT pane. Without this, a
+    // simultaneous two-pane reset (E2E `ensureAppReady`'s double `mcp-volume-select`)
+    // runs both corrections and re-enters the listing cycle on both panes — a freeze.
+    let resolveLeft: (p: string) => void = () => {}
+    const slowLeft = new Promise<string>((r) => {
+      resolveLeft = r
+    })
+    h.determineNavigationPath.mockReturnValueOnce(slowLeft)
+    navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    const leftPathAfterSwitch = h.tab('left').path
+
+    // The RIGHT pane switches volumes — this bumps the GLOBAL correctionGen.
+    h.determineNavigationPath.mockResolvedValueOnce('/Volumes/Ext')
+    navigate({ pane: 'right', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    await flush()
+
+    // The left correction resolves late — dropped because the right switch bumped
+    // the shared gen past it.
+    resolveLeft('/Volumes/Ext/should-be-dropped')
+    await flush()
+    expect(h.tab('left').path).toBe(leftPathAfterSwitch) // unchanged — left correction dropped
+  })
 })
 
 describe('pinned-tab fork (L7 — unified, both arms)', () => {
-  it('path-change on a pinned tab opens a NEW unpinned tab; the pinned tab is unchanged', () => {
+  // The PATH fork lives at the listing-completion landing (`commitPathFromListing`),
+  // not at the `navigate()` call: both coordinator-initiated in-place navs (which
+  // drive the FilePane, then re-enter via onPathChange) and FilePane-internal navs
+  // (Enter on a folder — bypass navigate() entirely) must fork identically, so the
+  // single fork point is the onPathChange landing. The in-place `navigate()` arm
+  // just drives the FilePane primitive.
+  it('path-change landing on a pinned tab opens a NEW unpinned tab; the pinned tab is unchanged', () => {
     getActiveTab(h.mgr('left')).pinned = true
     const pinnedId = getActiveTab(h.mgr('left')).id
     const countBefore = h.mgr('left').tabs.length
 
+    // The in-place arm drives the FilePane; the fork happens when the listing lands.
     navigate({ pane: 'left', to: { path: '/Users/me/docs' }, source: 'user' }, h.deps)
+    expect(h.paneState.left.paneRef?.navigateToPath).toHaveBeenCalledWith('/Users/me/docs', undefined)
+    const committed = commitPathFromListing(h.deps, 'left', '/Users/me/docs')
 
+    expect(committed).toBe(false) // a fork is not an in-place commit
     expect(h.mgr('left').tabs.length).toBe(countBefore + 1)
     const stillPinned = h.mgr('left').tabs.find((t) => t.id === pinnedId)
     expect(stillPinned?.path).toBe('/Users/me')
@@ -322,8 +359,6 @@ describe('pinned-tab fork (L7 — unified, both arms)', () => {
     expect(active.id).not.toBe(pinnedId)
     expect(active.pinned).toBe(false)
     expect(active.path).toBe('/Users/me/docs')
-    // No FilePane primitive call: the new tab mounts and loads its own listing.
-    expect(h.paneState.left.paneRef?.navigateToPath).not.toHaveBeenCalled()
   })
 
   it('volume-change on a pinned tab opens a NEW unpinned tab with the target volume', () => {
@@ -341,7 +376,7 @@ describe('pinned-tab fork (L7 — unified, both arms)', () => {
     expect(active.path).toBe('/Volumes/Ext')
   })
 
-  it('at MAX_TABS_PER_PANE a pinned path-change navigates in-place and toasts "Tab limit reached"', () => {
+  it('at MAX_TABS_PER_PANE a pinned path landing commits in-place and toasts "Tab limit reached"', () => {
     const mgr = h.mgr('left')
     getActiveTab(mgr).pinned = true
     const activeId = getActiveTab(mgr).id
@@ -360,13 +395,14 @@ describe('pinned-tab fork (L7 — unified, both arms)', () => {
       })
     }
 
-    navigate({ pane: 'left', to: { path: '/Users/me/docs' }, source: 'user' }, h.deps)
+    // At cap, the landing falls through to an in-place commit on the pinned tab.
+    const committed = commitPathFromListing(h.deps, 'left', '/Users/me/docs')
 
+    expect(committed).toBe(true) // in-place fall-through commits
     expect(mgr.tabs.length).toBe(10) // no new tab
     expect(getActiveTab(mgr).id).toBe(activeId) // pinned tab stayed active
+    expect(getActiveTab(mgr).path).toBe('/Users/me/docs')
     expect(h.addToast).toHaveBeenCalledWith('Tab limit reached', { level: 'warn' })
-    // In-place fall-through drives the FilePane primitive (commit lands at listing-complete).
-    expect(h.paneState.left.paneRef?.navigateToPath).toHaveBeenCalledWith('/Users/me/docs', undefined)
   })
 })
 

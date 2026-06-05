@@ -812,9 +812,12 @@
         const parentDir = lastSlash > 0 ? path.slice(0, lastSlash) : '/'
         const fileName = path.slice(lastSlash + 1)
         const pane = explorerRef?.getFocusedPane() ?? 'left'
-        const result = explorerRef?.navigateToPath(pane, parentDir)
-        if (result instanceof Promise) {
-            void result.then(() => explorerRef?.moveCursor(pane, fileName))
+        const result = explorerRef?.navigate({ pane, to: { path: parentDir }, source: 'user' })
+        // On a started navigation, await `settled` then move the cursor onto the
+        // file. `moveCursor`'s own `whenLoadSettles` bridges the cross-volume arm,
+        // where `settled` resolves before the listing loads (L2-adjacent).
+        if (result?.status === 'started') {
+            void result.settled.then(() => explorerRef?.moveCursor(pane, fileName))
         }
     }
 
@@ -822,7 +825,7 @@
      * "Open in pane" handler from SearchDialog (M8b). The dialog has already stored
      * the snapshot and pinned the "last attempt" ref; we route the focused pane to
      * the search-results virtual volume. `openSearchSnapshotInPane` flows through
-     * the standard `handleVolumeChange` so new-tab-on-pinned, focus, and history
+     * `navigate({ to: { snapshot } })` so new-tab-on-pinned, focus, and history
      * push all apply uniformly — and `pushHistoryEntry` increments the snapshot
      * refcount via the M8a integration.
      */

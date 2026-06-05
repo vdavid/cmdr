@@ -7,10 +7,11 @@
  * dispatches through the bus. No business logic lives here.
  *
  * Two exceptions stay adapter-local:
- * - **`mcp-nav-to-path`** bypasses the bus entirely. `navigateToPath` returns a
- *   sync `string` refusal sentinel that fire-and-forget `dispatch` can't surface;
- *   the adapter keeps calling `explorerRef.navigateToPath` directly and forwards
- *   the sentinel verbatim (L12). It joins the bus in Phase 3 with `NavigateResult`.
+ * - **`mcp-nav-to-path`** bypasses the bus entirely. `navigate()` returns a typed
+ *   `NavigateResult` value that fire-and-forget `dispatch` can't surface; the
+ *   adapter calls `explorerRef.navigate({ … })` directly and forwards the refusal
+ *   `message` verbatim as the `mcp-response` error (L12 — byte-identical to the old
+ *   sync `string` sentinel).
  * - **`mcp-response` round-trips** (`mcp-open-under-cursor`, `mcp-move-cursor`):
  *   the bus dispatches the `void`-returning intent; the adapter owns the
  *   `requestId` correlation and the `emit('mcp-response', …)` reply. It AWAITs the
@@ -216,10 +217,12 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   })
 
   await listenTauri('mcp-nav-to-path', (event) => {
-    // STAYS OFF THE BUS (Phase 2). The sync-refusal `string` sentinel can't pass
-    // through fire-and-forget `dispatch`; the adapter calls `navigateToPath`
-    // directly and forwards the sentinel byte-identically (L12). Joins the bus in
-    // Phase 3 with `NavigateResult`.
+    // STAYS OFF THE BUS (master § Bus interplay). `navigate()` returns a typed
+    // `NavigateResult` value the fire-and-forget `dispatch` can't surface, so the
+    // adapter calls `navigate()` directly and forwards the refusal `message`
+    // verbatim as the `mcp-response` error (L12 — byte-identical to the old
+    // `typeof result === 'string'` branch). The `requestId` round-trip + `emit`
+    // stay adapter-local.
     const raw = asRecord(event.payload)
     const pane = parsePane(raw.pane)
     const path = typeof raw.path === 'string' ? raw.path : undefined
@@ -228,17 +231,18 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const explorerRef = getExplorer()
     // explorerRef may be null during HMR; skip silently, let the backend timeout handle it
     if (!explorerRef) return
-    const result = explorerRef.navigateToPath(pane, path)
+    const result = explorerRef.navigate({ pane, to: { path }, source: 'mcp' })
     if (requestId) {
       void (async () => {
         const { emit } = await import('@tauri-apps/api/event')
-        if (typeof result === 'string') {
-          // Synchronous error (pane not available, wrong volume, etc.)
-          await emit('mcp-response', { requestId, ok: false, error: result })
+        if (result.status === 'refused') {
+          // Synchronous refusal (pane not available, wrong volume, etc.) — forward
+          // the exact refusal string the user / agent reads.
+          await emit('mcp-response', { requestId, ok: false, error: result.reason.message })
         } else {
-          // Promise: wait for directory listing to complete
+          // Started: wait for the navigation to settle (the listing completes).
           try {
-            await result
+            await result.settled
             await emit('mcp-response', { requestId, ok: true })
           } catch (e) {
             const error = e instanceof Error ? e.message : String(e)
