@@ -803,3 +803,32 @@ some, is a later editing decision, not a v1 gate.
 | D56 | Agent operational state lives in `main.db`; the settings store is preferences only           | Backend-writable state needs a backend home; respects settings ownership                    |
 | D57 | Late wakes keep full priority; the notification cap counts only notifications actually shown | Late is fine, dropped is not; the cap protects attention, which is only spent on screen     |
 | D58 | Every agent tunable is exposed in Settings from v1                                            | Better too many dials than hidden behavior; pruning to Advanced (or dropping) comes later   |
+
+## 20. How to use this spec (starting sequence)
+
+This document fixes behavior, decisions, and intent. It is deliberately not a build plan. Before
+writing code, a few sequencing notes that are easy to lose otherwise:
+
+1. **Run the genai capability check first, before milestone 1.** §18.1 is the one open question
+   that can invalidate design assumptions rather than just fill in a blank: if the shipped genai
+   (`=0.6.0-beta.19`) cannot round-trip opaque thinking-state through multi-step tool loops, the
+   provider-layer effort changes shape. It is about a day of work and it de-risks everything
+   downstream, so do it ahead of the milestone sequence, not at milestone 3.
+2. **Write a per-milestone plan; do not code straight from this spec.** The spec was written to
+   make planning cheap (decisions settled, intent captured), but the planning step still exists:
+   repo context, exact DDL, module layout, migration-code shape, and IPC bindings belong in a
+   milestone plan, not here. Coding off the spec forces the implementer to make planning calls
+   mid-flight.
+3. **Start the execution-queue effort early, in parallel.** It is a prerequisite for the proposals
+   milestone (8) but unrelated to milestones 1-7, so there is runway. If it has not started by the
+   time milestones 5-6 are underway, proposals will stall behind it. Capture the agent's
+   requirements on it (batch enqueue, per-op results, cancellation) as input to that effort's own
+   design.
+4. **Pull the synthetic-home fixture generator earlier than milestone 10.** The importance scorer
+   (milestone 2) needs iteration against realistic directory trees (§18.3); fixtures plus the
+   developer's own home directory as the first corpus give it a real feedback loop from day one,
+   rather than waiting for the eval work that currently sits alongside milestones 5-9.
+5. **Fold durable intent into colocated `CLAUDE.md` files as milestones land.** `docs/specs/` is
+   wiped periodically by design (see the specs README), so the decisions and intent here must
+   migrate into code-adjacent docs as the subsystems take shape, or they evaporate with the folder.
+   The §19 decision log is the thing most worth preserving.
