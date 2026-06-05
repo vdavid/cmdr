@@ -150,6 +150,18 @@ focused pane's manager, never both. The `=== 'search-results'` string compare is
 Phase 4 replaces with a capability check; only its volumeId input is store-backed today. `canSourceOps` stays a prop
 (always `true` for now — a genuine source-op capability concept, not derived from the snapshot-pane volumeId).
 
+**`FunctionKeyBar` dispatches `file.*` onto the bus.** Each button click calls a single
+`onCommand?: (id: CommandId) => void` prop, wired in `+page.svelte` to `handleCommandExecute`. The button-to-command
+mapping lives in a typed `fnKeyToCommand` map inside the component (F2/⇧F6 → `file.rename`, F3 → `file.view`, F4 →
+`file.edit`, F5 → `file.copy`, F6 → `file.move`, ⇧F4 → `file.newFile`, F7 → `file.newFolder`, F8 → `file.delete`, ⇧F8 →
+`file.deletePermanently`). The keys are held in a typed map (not inlined at the call site) so
+`cmdr/no-raw-command-dispatch` stays satisfied. Routing F-clicks through the bus means they now get the dispatch
+preamble (`log.info` + `record_breadcrumb` breadcrumb + the `blockedBySearchResultsPane` guard) like every other entry
+path — a deliberate telemetry gain, not a behavior change. The buttons' visible `disabled` flags (`canRename` /
+`canMkfile` / `canMkdir` / `canSourceOps`) win first: a disabled button can't be clicked, so the search-results-pane
+toast guard in dispatch never fires for an F-click (the guard set — `file.rename` / `file.newFile` / `file.newFolder` —
+matches exactly the buttons the flags disable on a snapshot pane).
+
 **Focused-pane reads for externals (`focused-pane-reads.ts`).** Consumers outside `DualPaneExplorer` that need the
 focused pane's directory path, active-tab volume id, or "searchable folder" read them from the explorer store via
 `getFocusedPanePath()` / `getFocusedPaneVolumeId()` / `getFocusedPaneSearchableFolder()` instead of through

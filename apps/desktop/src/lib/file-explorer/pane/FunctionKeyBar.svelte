@@ -1,35 +1,41 @@
 <script lang="ts">
     import { explorerState } from './explorer-state.svelte'
     import { getActiveTab } from '../tabs/tab-state-manager.svelte'
+    import type { CommandId } from '$lib/commands'
 
     interface Props {
         visible?: boolean
         /** Source-side actions (copy/move/delete). Always true on real folders. */
         canSourceOps?: boolean
-        onRename?: () => void
-        onView?: () => void
-        onEdit?: () => void
-        onCopy?: () => void
-        onMove?: () => void
-        onNewFile?: () => void
-        onNewFolder?: () => void
-        onDelete?: () => void
-        onDeletePermanently?: () => void
+        /**
+         * Dispatches a `file.*` command for the clicked F-key onto the command
+         * bus. The buttons carry the same user intent as the keyboard / palette /
+         * menu paths, so they route through the one typed dispatch spine instead
+         * of duplicating the `file.*` cases (the deleted `handleFn*` closures did
+         * the latter). Wired to `handleCommandExecute` in `+page.svelte`.
+         */
+        onCommand?: (id: CommandId) => void
     }
 
-    const {
-        visible = true,
-        canSourceOps = true,
-        onRename,
-        onView,
-        onEdit,
-        onCopy,
-        onMove,
-        onNewFile,
-        onNewFolder,
-        onDelete,
-        onDeletePermanently,
-    }: Props = $props()
+    const { visible = true, canSourceOps = true, onCommand }: Props = $props()
+
+    /**
+     * Each F-key button's command id. Held in a typed map (not inlined as a
+     * string literal at the `onCommand?.(…)` call site) so the `CommandId` type
+     * is checked and `cmdr/no-raw-command-dispatch` stays satisfied: the call
+     * site passes a typed value, never a magic string.
+     */
+    const fnKeyToCommand = {
+        view: 'file.view',
+        edit: 'file.edit',
+        copy: 'file.copy',
+        move: 'file.move',
+        rename: 'file.rename',
+        newFile: 'file.newFile',
+        newFolder: 'file.newFolder',
+        delete: 'file.delete',
+        deletePermanently: 'file.deletePermanently',
+    } as const satisfies Record<string, CommandId>
 
     /**
      * Destination-side capability flags for the focused pane, read straight off
@@ -90,7 +96,7 @@
                 <kbd>F3</kbd>
             </button>
             <button
-                onclick={onNewFile}
+                onclick={() => onCommand?.(fnKeyToCommand.newFile)}
                 disabled={!canMkfile}
                 tabindex={-1}
                 aria-label="Create new file (Shift+F4)"
@@ -101,7 +107,7 @@
                 <kbd>F5</kbd>
             </button>
             <button
-                onclick={onRename}
+                onclick={() => onCommand?.(fnKeyToCommand.rename)}
                 disabled={!canRename}
                 tabindex={-1}
                 aria-label="Rename (Shift+F6)"
@@ -112,7 +118,7 @@
                 <kbd>F7</kbd>
             </button>
             <button
-                onclick={onDeletePermanently}
+                onclick={() => onCommand?.(fnKeyToCommand.deletePermanently)}
                 disabled={!canSourceOps}
                 tabindex={-1}
                 aria-label="Delete permanently (Shift+F8)"
@@ -121,21 +127,29 @@
             </button>
         {:else}
             <button
-                onclick={onRename}
+                onclick={() => onCommand?.(fnKeyToCommand.rename)}
                 disabled={!canRename}
                 tabindex={-1}
                 aria-label="Rename (F2)"
             >
                 <kbd>F2</kbd><span>Rename</span>
             </button>
-            <button onclick={onView} tabindex={-1} aria-label="View file (F3)">
+            <button
+                onclick={() => onCommand?.(fnKeyToCommand.view)}
+                tabindex={-1}
+                aria-label="View file (F3)"
+            >
                 <kbd>F3</kbd><span>View</span>
             </button>
-            <button onclick={onEdit} tabindex={-1} aria-label="Edit file (F4)">
+            <button
+                onclick={() => onCommand?.(fnKeyToCommand.edit)}
+                tabindex={-1}
+                aria-label="Edit file (F4)"
+            >
                 <kbd>F4</kbd><span>Edit</span>
             </button>
             <button
-                onclick={onCopy}
+                onclick={() => onCommand?.(fnKeyToCommand.copy)}
                 disabled={!canSourceOps}
                 tabindex={-1}
                 aria-label="Copy (F5)"
@@ -143,7 +157,7 @@
                 <kbd>F5</kbd><span>Copy</span>
             </button>
             <button
-                onclick={onMove}
+                onclick={() => onCommand?.(fnKeyToCommand.move)}
                 disabled={!canSourceOps}
                 tabindex={-1}
                 aria-label="Move (F6)"
@@ -151,7 +165,7 @@
                 <kbd>F6</kbd><span>Move</span>
             </button>
             <button
-                onclick={onNewFolder}
+                onclick={() => onCommand?.(fnKeyToCommand.newFolder)}
                 disabled={!canMkdir}
                 tabindex={-1}
                 aria-label="New folder (F7)"
@@ -159,7 +173,7 @@
                 <kbd>F7</kbd><span>New folder</span>
             </button>
             <button
-                onclick={onDelete}
+                onclick={() => onCommand?.(fnKeyToCommand.delete)}
                 disabled={!canSourceOps}
                 tabindex={-1}
                 aria-label="Delete (F8)"

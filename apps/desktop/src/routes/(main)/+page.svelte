@@ -27,7 +27,6 @@
         checkFullDiskAccess,
         listen,
         type UnlistenFn,
-        openInEditor,
         setMenuContext,
         getWindowTitle,
         registerKnownDialogs,
@@ -778,45 +777,6 @@
         })
     }
 
-    function handleFnView() {
-        void explorerRef?.openViewerForCursor()
-    }
-
-    async function handleFnEdit() {
-        const entry = explorerRef?.getFileAndPathUnderCursor()
-        if (entry) {
-            await openInEditor(entry.path)
-        }
-    }
-
-    function handleFnCopy() {
-        void explorerRef?.openCopyDialog()
-    }
-
-    function handleFnMove() {
-        void explorerRef?.openMoveDialog()
-    }
-
-    function handleFnRename() {
-        explorerRef?.startRename()
-    }
-
-    function handleFnNewFile() {
-        void explorerRef?.openNewFileDialog()
-    }
-
-    function handleFnNewFolder() {
-        void explorerRef?.openNewFolderDialog()
-    }
-
-    function handleFnDelete() {
-        void explorerRef?.openDeleteDialog(false)
-    }
-
-    function handleFnDeletePermanently() {
-        void explorerRef?.openDeleteDialog(true)
-    }
-
     /** Command dispatch context: wires reactive state to the extracted dispatch function */
     const commandDispatchCtx: CommandDispatchContext = {
         getExplorer: () => explorerRef,
@@ -948,15 +908,7 @@
             <FunctionKeyBar
                 visible={showFunctionKeyBar}
                 canSourceOps={true}
-                onRename={handleFnRename}
-                onView={handleFnView}
-                onEdit={() => void handleFnEdit()}
-                onCopy={handleFnCopy}
-                onMove={handleFnMove}
-                onNewFile={handleFnNewFile}
-                onNewFolder={handleFnNewFolder}
-                onDelete={handleFnDelete}
-                onDeletePermanently={handleFnDeletePermanently}
+                onCommand={handleCommandExecute}
             />
         {/if}
     </main>

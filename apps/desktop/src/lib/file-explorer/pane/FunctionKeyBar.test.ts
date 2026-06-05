@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushSync } from 'svelte'
 import FunctionKeyBar from './FunctionKeyBar.svelte'
+import type { CommandId } from '$lib/commands'
 
 describe('FunctionKeyBar', () => {
   /** Simulates pressing the Shift key, waits for effect and flushes Svelte reactivity. */
@@ -33,120 +34,55 @@ describe('FunctionKeyBar', () => {
     expect(target.querySelector('.function-key-bar')).toBeNull()
   })
 
-  it('enables F8 button when onDelete is provided', () => {
+  it('enables the source-op buttons by default (canSourceOps defaults to true)', () => {
     const target = document.createElement('div')
-    mount(FunctionKeyBar, { target, props: { visible: true, onDelete: () => {} } })
+    mount(FunctionKeyBar, { target, props: { visible: true } })
 
     const buttons = target.querySelectorAll('button')
-    expect(buttons[6].disabled).toBe(false)
+    // F2 (0) … F8 (6). All enabled on a real folder (default props).
+    for (const button of buttons) {
+      expect(button.disabled).toBe(false)
+    }
   })
 
-  it('enables F2, F3, F4, F5, F6, and F7 buttons', () => {
+  it('dispatches the matching file.* command for each default-state F-key', () => {
+    const onCommand = vi.fn<(id: CommandId) => void>()
     const target = document.createElement('div')
-    mount(FunctionKeyBar, {
-      target,
-      props: {
-        visible: true,
-        onRename: () => {},
-        onView: () => {},
-        onEdit: () => {},
-        onCopy: () => {},
-        onMove: () => {},
-        onNewFolder: () => {},
-      },
+    mount(FunctionKeyBar, { target, props: { visible: true, onCommand } })
+
+    const buttons = target.querySelectorAll('button')
+    // F2 Rename, F3 View, F4 Edit, F5 Copy, F6 Move, F7 New folder, F8 Delete.
+    const expected: CommandId[] = [
+      'file.rename',
+      'file.view',
+      'file.edit',
+      'file.copy',
+      'file.move',
+      'file.newFolder',
+      'file.delete',
+    ]
+    expected.forEach((commandId, index) => {
+      buttons[index].click()
+      expect(onCommand).toHaveBeenNthCalledWith(index + 1, commandId)
     })
-
-    const buttons = target.querySelectorAll('button')
-    // F2 (0), F3 (1), F4 (2), F5 (3), F6 (4), F7 (5)
-    expect(buttons[0].disabled).toBe(false)
-    expect(buttons[1].disabled).toBe(false)
-    expect(buttons[2].disabled).toBe(false)
-    expect(buttons[3].disabled).toBe(false)
-    expect(buttons[4].disabled).toBe(false)
-    expect(buttons[5].disabled).toBe(false)
   })
 
-  it('calls onRename when F2 button is clicked', () => {
-    const onRename = vi.fn()
-    const target = document.createElement('div')
-    mount(FunctionKeyBar, { target, props: { visible: true, onRename } })
-
-    const buttons = target.querySelectorAll('button')
-    buttons[0].click()
-    expect(onRename).toHaveBeenCalledOnce()
-  })
-
-  it('calls onView when F3 button is clicked', () => {
-    const onView = vi.fn()
-    const target = document.createElement('div')
-    mount(FunctionKeyBar, { target, props: { visible: true, onView } })
-
-    const buttons = target.querySelectorAll('button')
-    buttons[1].click()
-    expect(onView).toHaveBeenCalledOnce()
-  })
-
-  it('calls onEdit when F4 button is clicked', () => {
-    const onEdit = vi.fn()
-    const target = document.createElement('div')
-    mount(FunctionKeyBar, { target, props: { visible: true, onEdit } })
-
-    const buttons = target.querySelectorAll('button')
-    buttons[2].click()
-    expect(onEdit).toHaveBeenCalledOnce()
-  })
-
-  it('calls onCopy when F5 button is clicked', () => {
-    const onCopy = vi.fn()
-    const target = document.createElement('div')
-    mount(FunctionKeyBar, { target, props: { visible: true, onCopy } })
-
-    const buttons = target.querySelectorAll('button')
-    buttons[3].click()
-    expect(onCopy).toHaveBeenCalledOnce()
-  })
-
-  it('calls onMove when F6 button is clicked', () => {
-    const onMove = vi.fn()
-    const target = document.createElement('div')
-    mount(FunctionKeyBar, { target, props: { visible: true, onMove } })
-
-    const buttons = target.querySelectorAll('button')
-    buttons[4].click()
-    expect(onMove).toHaveBeenCalledOnce()
-  })
-
-  it('calls onNewFolder when F7 button is clicked', () => {
-    const onNewFolder = vi.fn()
-    const target = document.createElement('div')
-    mount(FunctionKeyBar, { target, props: { visible: true, onNewFolder } })
-
-    const buttons = target.querySelectorAll('button')
-    buttons[5].click()
-    expect(onNewFolder).toHaveBeenCalledOnce()
-  })
-
-  it('calls onDelete when F8 button is clicked', () => {
-    const onDelete = vi.fn()
-    const target = document.createElement('div')
-    mount(FunctionKeyBar, { target, props: { visible: true, onDelete } })
-
-    const buttons = target.querySelectorAll('button')
-    buttons[6].click()
-    expect(onDelete).toHaveBeenCalledOnce()
-  })
-
-  it('calls onDeletePermanently when Shift+F8 button is clicked in shift state', async () => {
-    const onDeletePermanently = vi.fn()
+  it('dispatches the matching file.* command for each shift-state F-key', async () => {
+    const onCommand = vi.fn<(id: CommandId) => void>()
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(FunctionKeyBar, { target, props: { visible: true, onDeletePermanently } })
+    mount(FunctionKeyBar, { target, props: { visible: true, onCommand } })
 
     await pressShift()
 
     const buttons = target.querySelectorAll('button')
+    // Shift+F4 New file (2), Shift+F6 Rename (4), Shift+F8 Permanently (6).
+    buttons[2].click()
+    expect(onCommand).toHaveBeenLastCalledWith('file.newFile')
+    buttons[4].click()
+    expect(onCommand).toHaveBeenLastCalledWith('file.rename')
     buttons[6].click()
-    expect(onDeletePermanently).toHaveBeenCalledOnce()
+    expect(onCommand).toHaveBeenLastCalledWith('file.deletePermanently')
 
     await releaseShift()
     document.body.removeChild(target)
@@ -179,7 +115,7 @@ describe('FunctionKeyBar', () => {
 
     const kbds = target.querySelectorAll('kbd')
     const keys = Array.from(kbds).map((kbd) => kbd.textContent)
-    expect(keys).toEqual(['F2', 'F3', '\u21E7F4', 'F5', '\u21E7F6', 'F7', '\u21E7F8'])
+    expect(keys).toEqual(['F2', 'F3', '⇧F4', 'F5', '⇧F6', 'F7', '⇧F8'])
 
     // Shift+F4, Shift+F6, and Shift+F8 should have labels
     const buttons = target.querySelectorAll('button')
@@ -205,35 +141,10 @@ describe('FunctionKeyBar', () => {
     document.body.removeChild(target)
   })
 
-  it('calls onRename when Shift+F6 button is clicked in shift state', async () => {
-    const onRename = vi.fn()
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(FunctionKeyBar, { target, props: { visible: true, onRename } })
-
-    await pressShift()
-
-    const buttons = target.querySelectorAll('button')
-    // Shift+F6 is at index 4
-    buttons[4].click()
-    expect(onRename).toHaveBeenCalledOnce()
-
-    await releaseShift()
-    document.body.removeChild(target)
-  })
-
   it('disables most buttons in shift state', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(FunctionKeyBar, {
-      target,
-      props: {
-        visible: true,
-        onNewFile: () => {},
-        onRename: () => {},
-        onDeletePermanently: () => {},
-      },
-    })
+    mount(FunctionKeyBar, { target, props: { visible: true } })
 
     await pressShift()
 

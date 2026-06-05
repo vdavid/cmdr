@@ -20,15 +20,7 @@ describe('FunctionKeyBar a11y', () => {
       target,
       props: {
         visible: true,
-        onRename: () => {},
-        onView: () => {},
-        onEdit: () => {},
-        onCopy: () => {},
-        onMove: () => {},
-        onNewFile: () => {},
-        onNewFolder: () => {},
-        onDelete: () => {},
-        onDeletePermanently: () => {},
+        onCommand: () => {},
       },
     })
     await tick()
