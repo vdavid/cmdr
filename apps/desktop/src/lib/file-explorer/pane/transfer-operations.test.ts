@@ -244,7 +244,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
     expect(result.sortOrder).toBe('descending')
   })
 
-  it('keeps source and dest volume ids independent (bug 4: cross-volume drop)', () => {
+  it('keeps source and dest volume ids independent so a cross-volume drop stats the right volume', () => {
     // Dropping an MTP source onto a local dest: the source volume id must be the
     // resolved MTP volume, NOT the dest volume. The hardcoded
     // `sourceVolumeId = destVolumeId` placeholder made the scan preview stat

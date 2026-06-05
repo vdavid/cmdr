@@ -563,7 +563,7 @@ describe('drag-drop-controller', () => {
     })
   })
 
-  describe('shared destination guard (field bug 2)', () => {
+  describe('shared destination guard (a drop must hit the same read-only guard F5 does)', () => {
     it('refuses a drop onto a read-only volume with the exact "Read-only device" alert and no transfer dialog', async () => {
       const { controller, showTransfer, showAlert } = create({
         focusedPane: 'left',
@@ -599,7 +599,7 @@ describe('drag-drop-controller', () => {
     })
   })
 
-  describe('resolved source volume (field bug 4)', () => {
+  describe('resolved source volume (a wrong source volume id makes the preview report zeros)', () => {
     it('resolves an MTP source dropped onto a local dest to the MTP volume (not the dest)', async () => {
       // Drop an MTP-shaped path onto a local destination. The source volume must
       // be the MTP volume so the scan preview stats the right shape; the old

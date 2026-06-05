@@ -102,14 +102,15 @@ export function createDragDropController(deps: DragDropControllerDeps) {
    *
    * Runs the SHARED destination guard (`checkTransferDestinationGuard`) first —
    * the same chain F5/F6 and paste run — so dropping onto a read-only volume
-   * shows the same "Read-only device" alert (field bug 2) instead of silently
-   * opening a copy dialog that the backend would later reject.
+   * shows the same "Read-only device" alert (a drop must hit the same read-only
+   * guard F5 does) instead of silently opening a copy dialog that the backend
+   * would later reject.
    *
    * Resolves the REAL source volume via `resolveSourceVolumeId` (frontend
    * longest-prefix, backend fallback, honest-unknown default) instead of the old
    * `sourceVolumeId = destVolumeId` placeholder, so an MTP→local / local→MTP
    * drop stats the right volume and the dialog's byte/file/dir counters fill
-   * (field bug 4).
+   * (a wrong source volume id makes the preview report zeros).
    *
    * Fetches each dropped path's top-level kind (file vs. folder) in one batched
    * IPC so the dialog and completion toast report the real split. The stat runs

@@ -226,7 +226,7 @@ describe('TransferDialog upfront conflict check decoupling', () => {
 })
 
 /* ------------------------------------------------------------------------- */
-/* Source-volume forwarding (field bug 4): the scan stats the right volume    */
+/* Source-volume forwarding: a wrong source volume id makes the preview zero  */
 /* ------------------------------------------------------------------------- */
 
 describe('TransferDialog source-volume forwarding', () => {
@@ -465,7 +465,8 @@ describe('TransferDialog same-volume move scan gating', () => {
 })
 
 /* ------------------------------------------------------------------------- */
-/* Local→local move: the same-volume fast path must NOT apply (BUG 1)        */
+/* Local→local move: the same-volume fast path must NOT apply, or the         */
+/* Copy→Move toggle zeroes the dialog counters                                */
 /* ------------------------------------------------------------------------- */
 
 describe('TransferDialog local→local move scan gating', () => {
@@ -621,7 +622,7 @@ describe('TransferDialog data-scan-state marker', () => {
 })
 
 /* ------------------------------------------------------------------------- */
-/* Direction header label uses the volume display name at a volume root (BUG 3) */
+/* Direction header label uses the volume display name at a volume root         */
 /* ------------------------------------------------------------------------- */
 
 describe('TransferDialog direction-header label', () => {

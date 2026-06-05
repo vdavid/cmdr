@@ -192,7 +192,7 @@ export function getCommonParentPath(paths: string[]): string {
  * placeholder. It's independent of `destVolumeId`: a cross-volume drop
  * (MTP→local, local→MTP) carries a different source and dest. Passing the dest
  * id here was a bug — it made the scan preview stat the source paths as the
- * wrong shape and report 0 bytes / 0 files (field bug 4).
+ * wrong shape and report 0 bytes / 0 files (a wrong source volume id makes the preview report zeros).
  *
  * `isDirectoryFlags` (optional, index-aligned with `droppedPaths`) carries each
  * path's top-level kind from `statPathsKinds`: `true` = folder, `false` = file,

@@ -7,12 +7,13 @@
  * drop branch runs, so OUR drop handling (the shared destination guard,
  * source-volume resolution, transfer dialog) is exercised end to end.
  *
- * The cross-volume drops are the field-bug-2 and field-bug-4 regression pins:
+ * The cross-volume drops are regression pins:
  *  - dropping onto the read-only SD Card shows the "Read-only device" alert with
- *    the exact copy and NO transfer dialog (bug 2);
+ *    the exact copy F5 shows and NO transfer dialog (a drop must hit the same
+ *    read-only guard F5 does);
  *  - an MTP→local drop resolves the real MTP source so the counters fill instead
- *    of reading 0 (bug 4);
- *  - a local→MTP drop resolves the local source for the same reason (bug 4).
+ *    of reading 0 (a wrong source volume id makes the preview report zeros);
+ *  - a local→MTP drop resolves the local source for the same reason.
  *
  * Lives on the MTP shard (`mtp-*.spec.ts`); requires `playwright-e2e,virtual-mtp`.
  */
@@ -107,7 +108,7 @@ test.beforeEach(async ({ tauriPage }) => {
 })
 
 test.describe('Programmatic drop entry (MTP)', () => {
-  test('dropping onto the read-only SD Card shows the Read-only alert, no transfer dialog (bug 2)', async ({
+  test('dropping onto the read-only SD Card shows the Read-only alert F5 shows, no transfer dialog', async ({
     tauriPage,
   }) => {
     const fixtureRoot = getFixtureRoot()
@@ -130,7 +131,7 @@ test.describe('Programmatic drop entry (MTP)', () => {
     await dismissAlert(tauriPage)
   })
 
-  test('dropping an MTP file onto local fills the counters from the resolved volume (bug 4)', async ({ tauriPage }) => {
+  test('dropping an MTP file onto local fills the counters from the resolved volume', async ({ tauriPage }) => {
     // Left pane → MTP Documents so the device + its mtp:// root are registered.
     await mcpSelectVolume('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
@@ -155,7 +156,7 @@ test.describe('Programmatic drop entry (MTP)', () => {
     await expect.poll(async () => !(await tauriPage.isVisible(TRANSFER_DIALOG)), { timeout: 3000 }).toBeTruthy()
   })
 
-  test('dropping a local file onto MTP fills the counters from the resolved volume (bug 4)', async ({ tauriPage }) => {
+  test('dropping a local file onto MTP fills the counters from the resolved volume', async ({ tauriPage }) => {
     const fixtureRoot = getFixtureRoot()
 
     // Right pane → MTP Internal Storage root (the drop destination).

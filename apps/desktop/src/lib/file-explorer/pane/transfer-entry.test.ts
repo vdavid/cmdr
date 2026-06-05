@@ -35,7 +35,7 @@ describe('checkTransferDestinationGuard', () => {
     expect(result.ok).toBe(true)
   })
 
-  it('blocks a read-only destination with the exact "Read-only device" alert (bug 2 copy)', () => {
+  it('blocks a read-only destination with the exact "Read-only device" alert F5 shows', () => {
     const result = checkTransferDestinationGuard('mtp-dev:65538', [ROOT, SD_CARD])
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('expected a block')

@@ -9,8 +9,8 @@
  *
  * Coverage here is the local-only half (no MTP):
  *  - a local→local drop opens the copy dialog with correct counters;
- *  - toggling that dialog to Move SURVIVES the counters (field-bug-1 regression
- *    pin: a local→local move must keep the deep scan, not zero the tallies).
+ *  - toggling that dialog to Move SURVIVES the counters (regression pin: a
+ *    local→local move must keep the deep scan, not zero the tallies).
  *
  * The read-only-device refusal and the MTP↔local cross-volume drops live in
  * `mtp-drag-drop-entry.spec.ts` (they need the virtual MTP device, MTP shard).
@@ -54,7 +54,9 @@ test.describe('Programmatic drop entry (local)', () => {
     await dismissOverlay(tauriPage)
   })
 
-  test('toggling the dropped copy dialog to Move keeps the counters (field bug 1)', async ({ tauriPage }) => {
+  test('toggling the dropped copy dialog to Move keeps the counters (a local→local move must keep the deep scan, not zero the tallies)', async ({
+    tauriPage,
+  }) => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
