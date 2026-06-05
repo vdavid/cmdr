@@ -55,7 +55,12 @@ case "$mode" in
         ;;
 esac
 
-docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d "${services[@]}"
+# The override (`docker-compose.override.yml`, cmdr-owned, re-vendor-safe) layers
+# `restart: unless-stopped` + `mem_limit` + `cpus` onto every non-flaky consumer.
+# Only `up` applies those keys, so the override `-f` belongs here alone — the bare
+# `compose ps`/`port`/`logs`/`down` calls reconstruct config from container labels
+# and work unchanged.
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" -f "$COMPOSE_DIR/docker-compose.override.yml" up -d "${services[@]}"
 
 # Resolve the list of running services if `all` was requested.
 if [ ${#services[@]} -eq 0 ]; then

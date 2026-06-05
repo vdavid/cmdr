@@ -1,0 +1,94 @@
+# cmdr-owned override for the vendored smb2 consumer harness.
+#
+# This file is NOT part of the vendored set (the `rsync --delete --exclude=VENDORED.md`
+# re-vendor leaves it untouched), so it's the safe place to layer cmdr-specific
+# settings onto the byte-for-byte vendored `docker-compose.yml`. Compose auto-merges
+# `-f docker-compose.yml -f docker-compose.override.yml`; start.sh wires both at the
+# single `up -d` call site.
+#
+# What it adds, per named consumer:
+#   restart: unless-stopped — a crashed `smbd` auto-recovers for the rest of the run.
+#     The image's baked-in HEALTHCHECK (nc -z localhost 445) gives Docker the liveness
+#     signal. Safe because the fixtures are baked into the image at build time (no
+#     volumes), so a mid-run restart comes back with the same seeded data — no state to lose.
+#   mem_limit: 256m + cpus: "0.5" — bound each `smbd` so a build spike in the same VM
+#     can't let one container balloon and trigger the kernel to evict another. Generous
+#     headroom (an Alpine + single smbd serving a handful of files sits at tens of MB),
+#     not a squeeze. Top-level form (not `deploy.resources`) so plain `compose up`
+#     outside swarm honors it.
+#
+# `smb-consumer-flaky` is intentionally excluded: it cycles up and down by design
+# (cycle.sh, no healthcheck), so a restart policy would fight the test it exists to serve.
+services:
+  smb-consumer-guest:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-auth:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-both:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-50shares:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-unicode:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-longnames:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-deepnest:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-manyfiles:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-readonly:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-windows:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-synology:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-linux:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  # smb-consumer-slow's entrypoint applies a `tc qdisc` netem delay at start that a
+  # restart resets. It's not in the E2E set (only the integration tests touch it), so
+  # a restart there is harmless; it still gets the override for VM-pressure protection.
+  smb-consumer-slow:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
+
+  smb-consumer-maxreadsize:
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
