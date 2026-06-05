@@ -143,7 +143,7 @@ fn get_file_op_tools() -> Vec<Tool> {
                     "onConflict": {
                         "type": "string",
                         "enum": ["skip_all", "overwrite_all", "rename_all"],
-                        "description": "Conflict resolution policy (only when autoConfirm is true). Default: skip_all"
+                        "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. Default: skip_all"
                     }
                 },
                 "required": []
@@ -162,7 +162,7 @@ fn get_file_op_tools() -> Vec<Tool> {
                     "onConflict": {
                         "type": "string",
                         "enum": ["skip_all", "overwrite_all", "rename_all"],
-                        "description": "Conflict resolution policy (only when autoConfirm is true). Default: skip_all"
+                        "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. Default: skip_all"
                     }
                 },
                 "required": []
@@ -359,7 +359,7 @@ fn get_dialog_tools() -> Vec<Tool> {
                     "onConflict": {
                         "type": "string",
                         "enum": ["skip_all", "overwrite_all", "rename_all"],
-                        "description": "For confirm action on transfer-confirmation: conflict resolution policy. Default: skip_all"
+                        "description": "For confirm action on transfer-confirmation: conflict resolution policy for clashing FILES. Folders always merge (a source folder landing on a same-named dest folder merges into it), and this policy governs the files inside. Default: skip_all"
                     }
                 },
                 "required": ["action", "type"]

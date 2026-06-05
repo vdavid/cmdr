@@ -54,6 +54,17 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
     3. The `refresh_listing` Tauri command (`commands/file_system/listing.rs`) — short-circuits the post-transfer redundant `list_directory` re-read entirely when the volume is keeping the cache fresh via `notify_mutation`. Without this, a 1k-entry MTP folder paid ~17 s + USB session collision after every transfer outcome, wedging the next user op.
   Default `false` so a new backend without a real watcher won't accidentally claim freshness. **Freshness contract**: a `true` result does NOT mean the cache is byte-perfect with the device right now. Every backend has a debounce or settling window between a real change and the cache reflecting it: local FS ≈ 10 ms (FSEvents coalesce), SMB 200 ms (watcher debounce; > 50 events/dir triggers a `FullRefresh`), MTP 500 ms (event debouncer plus per-device polling; many cameras emit no events at all, so on those `true` means only "the device is reachable"). Callers must treat the result as "fresh as our most recent observation" — the same guarantee a `list_directory` call gives. The MTP and SMB checks are volume-level, not path-level: when the gate flips true, every path on that volume becomes oracle-eligible.
 
+## Conflict classification fields
+
+`scan_for_conflicts` is what powers the upfront Transfer dialog's "N folders will merge / N conflicts" classification, so each `ScanConflict` carries the type of both sides:
+
+- `ScanConflict.source_is_directory` / `dest_is_directory`: let the FE tell a dir-vs-dir collision (a silent merge, never a conflict) from a file clash or a cross-type clash (a real conflict). The FE counts only the latter toward `totalConflictCount` and the bulk-skip set; dir-vs-dir surfaces as the "will merge" info line. The source flag comes from the caller-supplied `SourceItemInfo`; the dest flag from the dest listing entry the scan already lists.
+- `SourceItemInfo.is_directory`: the caller (the conflict-scan command) knows each source's type from the `FileEntry` it already holds and passes it in, so backends copy it straight onto `ScanConflict.source_is_directory` without a per-source `is_directory` round-trip.
+
+The sibling per-file conflict event (`write_operations::types::WriteConflictEvent`, emitted mid-operation when a deep clash needs a human) carries `source_size: Option<u64>` for the same reason: a cross-type clash can now surface on the same-volume fast path, where no pre-flight scan ran, so a folder source's size is genuinely unknown. The FE renders `(unknown)` for a `None` source size, and `size_difference` collapses to `None` when either side is unknown. (`ScanConflict.source_size` itself stays a plain `u64` — the upfront scan always has a size for the items it lists.)
+
+Folders always merge (see `write_operations/transfer/CLAUDE.md` § "Dir-vs-dir is NEVER a conflict"), so these flags exist purely to classify, never to gate a folder behind a prompt.
+
 ## Cancel-aware variants
 
 `list_directory_with_cancel(path, on_progress, cancel)` and
@@ -107,7 +118,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] After each successful mutation, call `self.notify_mutation(&volume_id, parent_path, MutationEvent::...)` so the listing cache updates immediately. Override `notify_mutation` on the trait if your backend can answer `get_metadata` faster than `std::fs::metadata` would (MTP and SMB do this).
 - [ ] Return `supports_streaming() = true` and implement `open_read_stream` + `write_from_stream`. These are the byte path for every cross-volume copy. The Copy dialog uses them for "this volume ↔ anywhere" transfers.
 - [ ] Return `supports_export() = true` if the volume should appear as a copy source in the UI.
-- [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight.
+- [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight. `scan_for_conflicts` takes a `SourceItemInfo` per source and emits a `ScanConflict` per collision; see "Conflict classification fields" below for the `is_directory` flags it must populate.
 - [ ] Map your backend's errors through a `map_*_error` function that returns `VolumeError`. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
 - [ ] **No full-file buffering in per-file transfer paths.** Don't drain the incoming `VolumeReadStream` into a `Vec<u8>` before writing, and don't collect the remote file into a `Vec<u8>` before yielding. An 8 GB copy would allocate 8 GB of RAM. See the "Streaming requirement" section on each trait method's doc comment: `open_read_stream`, `write_from_stream`.
 

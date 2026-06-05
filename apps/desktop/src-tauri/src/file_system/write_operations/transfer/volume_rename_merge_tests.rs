@@ -345,6 +345,15 @@ async fn rename_merge_all_rename_deletes_source_spine() {
 /// nested dest subdir makes the child rename fail; the source must survive.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn rename_merge_errored_child_preserves_source_spine() {
+    // Root bypasses POSIX permission bits, so the read-only dest subdir below
+    // wouldn't block the rename and the error path wouldn't trigger. The Linux
+    // CI Rust suite runs as root in Docker; skip there (mirrors the geteuid==0
+    // guards in the permission-dependent integration tests).
+    #[cfg(unix)]
+    if unsafe { libc::geteuid() } == 0 {
+        return;
+    }
+
     let (volume, dir) = local_volume();
     let root = dir.path();
 
