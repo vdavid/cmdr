@@ -142,9 +142,9 @@ test.describe('MTP cross-volume move conflicts', () => {
     // Source should be deleted from MTP
     expect(fs.existsSync(srcPath)).toBe(false)
 
-    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // Transfer fires a "Moved 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Moved 1 file.', { timeout: 30000 })
   })
 
   test('MTP-to-local move with skip preserves both files', async ({ tauriPage }) => {
@@ -225,9 +225,9 @@ test.describe('MTP cross-volume move conflicts', () => {
     // Local source should be gone (moved)
     expect(fs.existsSync(localSrc)).toBe(false)
 
-    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // Transfer fires a "Moved 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Moved 1 file.', { timeout: 30000 })
   })
 })
 
@@ -285,9 +285,9 @@ test.describe('MTP same-volume move conflicts', () => {
     // Source should be gone from Documents
     expect(fs.existsSync(docsSrc)).toBe(false)
 
-    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // Transfer fires a "Moved 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Moved 1 file.', { timeout: 30000 })
   })
 
   test('same-volume MTP move with skip preserves both files', async ({ tauriPage }) => {

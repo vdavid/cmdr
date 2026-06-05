@@ -164,5 +164,6 @@ test('same-volume MTP folder move auto-merges; file clash inside prompts; dest-o
   expect(fs.existsSync(srcAlbum)).toBe(false)
 
   await mcpCall('refresh', {})
-  await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
+  // One top-level folder moved (the inner clash was Overwritten, not skipped).
+  await expectAndDismissToast(tauriPage, 'Moved 1 folder.', { timeout: 30000 })
 })

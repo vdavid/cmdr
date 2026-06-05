@@ -12,6 +12,7 @@ import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   dispatchMenuCommand,
   ensureAppReady,
+  expectAndDismissToast,
   getFixtureRoot,
   moveCursorToFile,
   sleep,
@@ -157,6 +158,8 @@ test.describe('Edge cases', () => {
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // First copy: one cursored file landed.
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.')
 
     expect(fileExists(fixtureRoot, 'right/file-a.txt')).toBe(true)
 
@@ -168,6 +171,8 @@ test.describe('Edge cases', () => {
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // Second copy overwrote the same single file.
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.')
 
     // File still exists with source content (overwritten with same content)
     expect(fileExists(fixtureRoot, 'right/file-a.txt')).toBe(true)
@@ -189,6 +194,8 @@ test.describe('Edge cases', () => {
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // One cursored file overwrote the dest.
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.')
 
     // Source content overwrote dest (standard fixtures use 1024 'A' chars)
     const content = readFile(fixtureRoot, 'right/file-a.txt')
@@ -211,6 +218,9 @@ test.describe('Symlink conflicts', () => {
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // selectAll on the symlink fixture: 2 top-level files (link-target.txt,
+    // my-link the symlink) + 1 folder (bulk/). Overwrite skips nothing.
+    await expectAndDismissToast(tauriPage, 'Copied 2 files and 1 folder.')
 
     // Non-conflicting file copied
     expect(readFile(fixtureRoot, 'right/link-target.txt')).toBe('link-target-content')
@@ -240,6 +250,9 @@ test.describe('Symlink conflicts', () => {
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // selectAll: 2 top-level files + 1 folder (bulk/). Skip All skips the one
+    // clashing file (my-link), so 1 file + 1 folder land, 1 file skipped.
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 1 folder, skipped 1 file (already at the target).')
 
     // Non-conflicting file still copied
     expect(readFile(fixtureRoot, 'right/link-target.txt')).toBe('link-target-content')
@@ -266,6 +279,9 @@ test.describe('Type mismatch conflicts', () => {
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // selectAll on the type-mismatch fixture: 1 top-level file (reports.txt) +
+    // 2 folders (config/, bulk/). Overwrite skips nothing.
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 2 folders.')
 
     // reports.txt: source file overwrites dest directory
     const reportsPath = path.join(fixtureRoot, 'right', 'reports.txt')
@@ -340,6 +356,9 @@ test.describe('Type mismatch conflicts', () => {
     }
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // selectAll on the dir-over-file fixture: only folders top-level (config/ +
+    // bulk/), no top-level files.
+    await expectAndDismissToast(tauriPage, 'Copied 2 folders.')
 
     // config/ directory replaced the file
     const configPath = path.join(fixtureRoot, 'right', 'config')

@@ -351,9 +351,9 @@ test.describe('MTP file operations', () => {
     await mcpSwitchPane()
     await mcpAwaitItem('left', 'report.txt')
 
-    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // Transfer fires a "Copied 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.', { timeout: 30000 })
   })
 
   test('copies file from local to MTP', async ({ tauriPage }) => {
@@ -381,9 +381,9 @@ test.describe('MTP file operations', () => {
     // Verify in MTP backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt'))).toBe(true)
 
-    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // Transfer fires a "Copied 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.', { timeout: 30000 })
   })
 
   test('moves file between MTP directories', async ({ tauriPage }) => {
@@ -432,9 +432,9 @@ test.describe('MTP file operations', () => {
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt'))).toBe(false)
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Music', 'notes.txt'))).toBe(true)
 
-    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // Transfer fires a "Moved 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Moved 1 file.', { timeout: 30000 })
   })
 
   test('deletes file on MTP with "Delete permanently" dialog', async ({ tauriPage }) => {
@@ -765,9 +765,9 @@ test.describe('MTP cross-storage move', () => {
       })
       .toBeTruthy()
 
-    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // Transfer fires a "Moved 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Moved 1 file.', { timeout: 30000 })
   })
 
   test('moves file from local to MTP', async ({ tauriPage }) => {
@@ -801,9 +801,9 @@ test.describe('MTP cross-storage move', () => {
       .poll(() => !fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt')), { timeout: 15000 })
       .toBeTruthy()
 
-    // Transfer fires a "Move complete" toast on success; assert + dismiss
+    // Transfer fires a "Moved 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Move complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Moved 1 file.', { timeout: 30000 })
   })
 })
 
@@ -1071,9 +1071,9 @@ test.describe('MTP large file transfer', () => {
     const stat = fs.statSync(destPath)
     expect(stat.size).toBe(expectedSize)
 
-    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // Transfer fires a "Copied 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.', { timeout: 30000 })
   })
 
   test('copies 50 MB file from MTP to local', async ({ tauriPage }) => {
@@ -1110,8 +1110,8 @@ test.describe('MTP large file transfer', () => {
     const stat = fs.statSync(destPath)
     expect(stat.size).toBe(expectedSize)
 
-    // Transfer fires a "Copy complete" toast on success; assert + dismiss
+    // Transfer fires a "Copied 1 file." toast on success; assert + dismiss
     // pins the user-facing confirmation and clears the leak guard.
-    await expectAndDismissToast(tauriPage, 'Copy complete', { timeout: 30000 })
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.', { timeout: 30000 })
   })
 })

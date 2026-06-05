@@ -81,9 +81,9 @@ test.describe('Copy round-trip', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'right', 'file-a.txt'))).toBe(true)
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(true)
 
-    // F5 success fires a "Copy complete: copied N file" toast. Asserting on it
-    // pins the user-facing confirmation (we ship the wording on purpose).
-    await expectAndDismissToast(tauriPage, 'Copy complete')
+    // F5 of a single cursored file fires the selection-split toast. Asserting on
+    // it pins the user-facing confirmation (we ship the wording on purpose).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.')
   })
 })
 
@@ -132,8 +132,8 @@ test.describe('Move round-trip', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(false)
     expect(fs.existsSync(path.join(fixtureRoot, 'right', 'file-b.txt'))).toBe(true)
 
-    // F6 success fires a "Move complete: moved N file" toast.
-    await expectAndDismissToast(tauriPage, 'Move complete')
+    // F6 of a single cursored file fires the selection-split toast.
+    await expectAndDismissToast(tauriPage, 'Moved 1 file.')
   })
 })
 

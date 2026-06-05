@@ -98,11 +98,13 @@ async function startCopyAskForEach(tauriPage: PageLike, items: string[]): Promis
 }
 
 /** Waits for the transfer dialog to close, then asserts + dismisses the
- *  "Copy complete" toast it fires on success (the leak-detector fails the
- *  test otherwise). */
-async function finishCopy(tauriPage: PageLike): Promise<void> {
+ *  selection-split completion toast it fires on success (the leak-detector
+ *  fails the test otherwise). The exact toast reports the top-level SELECTION
+ *  split ("Copied 1 file." / "Copied 1 folder." / "Copied 2 files."), so each
+ *  call site passes the string for what it copied. */
+async function finishCopy(tauriPage: PageLike, toast: string): Promise<void> {
   await waitForDialogsToClose(tauriPage)
-  await expectAndDismissToast(tauriPage, 'Copy complete')
+  await expectAndDismissToast(tauriPage, toast)
 }
 
 /** Asserts a directory holds exactly the given child names (no extras, like temp asides). */
@@ -127,7 +129,7 @@ test.describe('Single clash: baseline file/folder smoke', () => {
     expect(conflict.isFileOverFolder).toBe(false)
     expect(conflict.filename).toBe('doc.txt')
     await resolveConflict(tauriPage, 'Overwrite')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 file.')
 
     expect(readFile(fixtureRoot, 'right/doc.txt')).toBe('source-doc.txt')
   })
@@ -139,7 +141,7 @@ test.describe('Single clash: baseline file/folder smoke', () => {
 
     await startCopyAskForEach(tauriPage, ['doc.txt'])
     await resolveConflict(tauriPage, 'Skip')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 file.')
 
     expect(readFile(fixtureRoot, 'right/doc.txt')).toBe('dest-doc.txt')
   })
@@ -155,7 +157,7 @@ test.describe('Single clash: baseline file/folder smoke', () => {
     expect(conflict.isFileOverFolder).toBe(false)
     expect(conflict.filename).toBe('shared.txt')
     await resolveConflict(tauriPage, 'Overwrite')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 folder.')
 
     // Merge: source-only, dest-only, and the overwritten shared child all present.
     expect(readFile(fixtureRoot, 'right/box/shared.txt')).toBe('source-shared-box')
@@ -174,7 +176,7 @@ test.describe('Single clash: folder→file (existing file, incoming folder)', ()
     // folder→file is NOT the red file→folder variant.
     expect(conflict.isFileOverFolder).toBe(false)
     await resolveConflict(tauriPage, 'Skip')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 folder.')
 
     const destPath = path.join(fixtureRoot, 'right', 'thing')
     expect(fs.lstatSync(destPath).isFile()).toBe(true)
@@ -188,7 +190,7 @@ test.describe('Single clash: folder→file (existing file, incoming folder)', ()
 
     await startCopyAskForEach(tauriPage, ['thing'])
     await resolveConflict(tauriPage, 'Rename')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 folder.')
 
     // Original dest file untouched; the incoming folder lands renamed.
     expect(readFile(fixtureRoot, 'right/thing')).toBe('dest-thing')
@@ -205,7 +207,7 @@ test.describe('Single clash: folder→file (existing file, incoming folder)', ()
 
     await startCopyAskForEach(tauriPage, ['thing'])
     await resolveConflict(tauriPage, 'Overwrite')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 folder.')
 
     const destPath = path.join(fixtureRoot, 'right', 'thing')
     expect(fs.lstatSync(destPath).isDirectory()).toBe(true)
@@ -224,7 +226,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     // This IS the red warning variant.
     expect(conflict.isFileOverFolder).toBe(true)
     await resolveConflict(tauriPage, 'Skip')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 file.')
 
     const destPath = path.join(fixtureRoot, 'right', 'item')
     expect(fs.lstatSync(destPath).isDirectory()).toBe(true)
@@ -239,7 +241,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     const conflict = await startCopyAskForEach(tauriPage, ['item'])
     expect(conflict.isFileOverFolder).toBe(true)
     await resolveConflict(tauriPage, 'Rename')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 file.')
 
     // Dest folder survives; incoming file lands renamed.
     expect(fs.lstatSync(path.join(fixtureRoot, 'right', 'item')).isDirectory()).toBe(true)
@@ -256,7 +258,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     expect(conflict.isFileOverFolder).toBe(true)
     // Renamed button copy for the destructive variant.
     await resolveConflict(tauriPage, 'Overwrite folder with file')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 file.')
 
     const destPath = path.join(fixtureRoot, 'right', 'item')
     expect(fs.lstatSync(destPath).isFile()).toBe(true)
@@ -281,7 +283,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     // No second prompt: both dest folders survive untouched.
     const next = await waitForNextConflictOrDone(tauriPage, first)
     expect(next).toBeNull()
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 2 files.')
 
     expect(readFile(fixtureRoot, 'right/1-item/inside.txt')).toBe('dest-inside-1')
     expect(readFile(fixtureRoot, 'right/2-item/inside.txt')).toBe('dest-inside-2')
@@ -302,7 +304,7 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
 
     const next = await waitForNextConflictOrDone(tauriPage, first)
     expect(next).toBeNull()
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 2 files.')
 
     // Both dest folders replaced by the incoming files; no temp asides survive.
     expect(fs.lstatSync(path.join(fixtureRoot, 'right', '1-item')).isFile()).toBe(true)
@@ -360,7 +362,7 @@ test.describe('Bucket spread: normal-first → file→folder', () => {
         // Resolve it so the op can finish and the dialog closes cleanly.
         await resolveConflict(tauriPage, 'Skip')
       }
-      await finishCopy(tauriPage)
+      await finishCopy(tauriPage, 'Copied 2 files.')
 
       // The dest folder stays intact in every case here (Skip carries; Overwrite*
       // prompted and we Skipped it). The contract under test is whether a SECOND
@@ -423,7 +425,7 @@ test.describe('Bucket spread: mixed independent buckets', () => {
       const third = await waitForNextConflictOrDone(tauriPage, second)
       expect(third).toBeNull()
     }
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 4 files.')
 
     // Normal bucket = Overwrite: both file→file clashes took source bytes.
     expect(readFile(fixtureRoot, 'right/1-norm.txt')).toBe('source-1-norm')
@@ -447,7 +449,7 @@ test.describe('Cross-type Overwrite atomicity', () => {
 
     await startCopyAskForEach(tauriPage, ['swap'])
     await resolveConflict(tauriPage, 'Overwrite')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 folder.')
 
     const dest = path.join(fixtureRoot, 'right', 'swap')
     expect(fs.lstatSync(dest).isDirectory()).toBe(true)
@@ -464,7 +466,7 @@ test.describe('Cross-type Overwrite atomicity', () => {
     const conflict = await startCopyAskForEach(tauriPage, ['swap'])
     expect(conflict.isFileOverFolder).toBe(true)
     await resolveConflict(tauriPage, 'Overwrite folder with file')
-    await finishCopy(tauriPage)
+    await finishCopy(tauriPage, 'Copied 1 file.')
 
     const dest = path.join(fixtureRoot, 'right', 'swap')
     expect(fs.lstatSync(dest).isFile()).toBe(true)

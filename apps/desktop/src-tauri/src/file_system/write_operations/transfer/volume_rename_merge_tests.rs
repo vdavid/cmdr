@@ -79,11 +79,19 @@ fn spawn_conflict_responder(
         loop {
             let tx = state.conflict_resolution_tx.lock().unwrap().take();
             if let Some(tx) = tx {
+                // Count the answer BEFORE sending it. `tx.send` unblocks the
+                // operation's `rx.await` synchronously, so the op can run to
+                // completion (and the test can read `answered`) before this task
+                // is rescheduled. Incrementing after the send leaves a window —
+                // widened under CPU contention — where the op finishes with the
+                // counter still reading 0, a false "no prompt" failure. Bumping
+                // the counter first establishes the happens-before: by the time
+                // the op observes its resume, the count already reflects it.
+                answered_task.fetch_add(1, Ordering::Relaxed);
                 let _ = tx.send(ConflictResolutionResponse {
                     resolution,
                     apply_to_all,
                 });
-                answered_task.fetch_add(1, Ordering::Relaxed);
             }
             tokio::time::sleep(Duration::from_millis(2)).await;
         }

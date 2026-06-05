@@ -7,7 +7,14 @@
 
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { dispatchMenuCommand, ensureAppReady, getFixtureRoot, pollUntil, TRANSFER_DIALOG } from './helpers.js'
+import {
+  dispatchMenuCommand,
+  ensureAppReady,
+  expectAndDismissToast,
+  getFixtureRoot,
+  pollUntil,
+  TRANSFER_DIALOG,
+} from './helpers.js'
 import {
   createConflictFixturesB,
   readFile,
@@ -38,6 +45,9 @@ test.describe('Move multi-item merge (Layout B)', () => {
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // Layout B selectAll: 1 top-level file (delta.txt) + 4 folders (alpha/,
+    // bravo/, charlie/, bulk/). Overwrite All skips nothing.
+    await expectAndDismissToast(tauriPage, 'Moved 1 file and 4 folders.')
 
     // Dest files correct (same as copy overwrite)
     expect(readFile(fixtureRoot, 'right/alpha/info.txt')).toBe('alpha-info')
@@ -71,6 +81,10 @@ test.describe('Move multi-item merge (Layout B)', () => {
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
+    // Layout B selectAll: 1 top-level file (delta.txt) + 4 folders. Skip All
+    // skips the one clashing file (bravo/foxtrot/golf.txt), which the toast
+    // counts against the file part, so no files land — 4 folders merge.
+    await expectAndDismissToast(tauriPage, 'Moved 4 folders, skipped 1 file (already at the target).')
 
     // Dest files correct (same as copy skip)
     expect(readFile(fixtureRoot, 'right/bravo/foxtrot/golf.txt')).toBe('dest-golf')

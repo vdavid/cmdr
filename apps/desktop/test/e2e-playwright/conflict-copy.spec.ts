@@ -210,12 +210,14 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     }
 
     await waitForDialogsToClose(tauriPage)
-    // The copy fires a transient "Copy complete" toast. Assert + dismiss it so
-    // the afterEach leak-detector does not fail on a still-visible toast (these
-    // per-file-conflict flows finish slower than the upfront-policy tests, so
-    // the toast is still on screen when afterEach probes — it does not reliably
-    // auto-dismiss in time on Linux).
-    await expectAndDismissToast(tauriPage, 'Copy complete')
+    // The copy fires a transient selection-split toast. Layout A's selectAll
+    // grabs 2 top-level files (readme.txt, only-in-source.txt) + 2 folders
+    // (docs/, bulk/); per-file Skips are not surfaced in the count. Assert +
+    // dismiss it so the afterEach leak-detector does not fail on a still-visible
+    // toast (these per-file-conflict flows finish slower than the upfront-policy
+    // tests, so the toast is still on screen when afterEach probes — it does not
+    // reliably auto-dismiss in time on Linux).
+    await expectAndDismissToast(tauriPage, 'Copied 2 files and 2 folders.')
 
     // We overwrote the first conflict and skipped the rest.
     // Since filesystem traversal order is unpredictable, verify that
@@ -263,7 +265,8 @@ test.describe('Rename conflict resolution', () => {
     await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename')
 
     await waitForDialogsToClose(tauriPage)
-    await expectAndDismissToast(tauriPage, 'Copy complete')
+    // Single cursored file copied (Rename keeps both → counts as one file).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file.')
 
     // Original dest file preserved
     expect(readFile(fixtureRoot, 'right/file-a.txt')).toBe('original-dest')
@@ -294,7 +297,8 @@ test.describe('Rename conflict resolution', () => {
     await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename all')
 
     await waitForDialogsToClose(tauriPage)
-    await expectAndDismissToast(tauriPage, 'Copy complete')
+    // Layout A selectAll: 2 top-level files + 2 folders (docs/, bulk/).
+    await expectAndDismissToast(tauriPage, 'Copied 2 files and 2 folders.')
 
     // All original dest files preserved
     expect(readFile(fixtureRoot, 'right/readme.txt')).toBe('dest-readme')
