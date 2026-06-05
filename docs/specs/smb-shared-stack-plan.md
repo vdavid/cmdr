@@ -120,8 +120,54 @@ companion linked here). No code changes in M1 — it scopes M3.
   flaky-using tests tolerate an _externally-induced_ extra down-window; if not → **needs exclusivity** for the
   flaky-using group.
 
-**Deliverable — the table** (fill during M1, one row per path):
-`path | writes-to | per-run-unique? | timing-assert? | verdict (safe / namespace / exclusive)`.
+**Deliverable — the table** (filled during M1; verified against the code, not the sketch):
+
+| Path                                                                           | Writes to                                                             | Per-run-unique?                                                                                       | Timing-assert?                                                                                   | Verdict                                         |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| Rust integration tests — the 33 `test_dir_name()` tests                        | `cmdr-test-{pid}-{ts_nanos}-{n}/` on `public` / `private` share       | **Yes** — PID + nanos + process-atomic counter (`smb_test_support.rs:38`)                             | No                                                                                               | **safe**                                        |
+| Rust integration — `smb_integration_concurrent_streaming_writes_no_deadlock`   | `_test/cmdr-regression-{ts_secs}-n{n_files}/` (NOT `test_dir_name()`) | **Weak** — only 1-second `ts` + `n_files`, no PID/nanos/counter (`smb_integration_test.rs:1437–1441`) | No (120 s `timeout` is a hang-guard, not a latency assertion)                                    | **namespace** (low-risk; see note 1)            |
+| Rust integration — read-only listing/reconnect/space tests                     | none (or writes via `test_dir_name()`)                                | n/a                                                                                                   | `noop_when_already_direct`: `elapsed < 50ms` for a **no-op**, not a slow-link assertion (`:103`) | **safe**                                        |
+| Rust soak — `smb_soak_copy_loop`                                               | `cmdr-test-{pid}-{ts}-{n}/` on `private` (auth share)                 | **Yes** — `test_dir_name()`                                                                           | Drift = last10%/first10% < 1.20×; RSS/FD deltas (relative)                                       | **safe (out-of-lane)** (see note 2)             |
+| Playwright E2E cross-storage copy (`smb.spec.ts`)                              | `e2e-playwright/` (fixed `SMB_E2E_SUITE_DIR`) on `public`             | **No** — fixed subdir + fixed filenames (`file-a.txt`, `smb-test-file.txt`)                           | No                                                                                               | **safe in practice** (see note 3)               |
+| Playwright E2E read-only (host discovery, share browse, auth/50shares/unicode) | none                                                                  | n/a                                                                                                   | No                                                                                               | **safe**                                        |
+| `virtual_smb_hosts.rs` (slow/flaky/all 14 hosts)                               | none — discovery-list injection only                                  | n/a                                                                                                   | No                                                                                               | **safe** (see note 4)                           |
+| `smb-consumer-slow` (netem 200 ms)                                             | no _lane_ test drives it; only a virtual-host entry                   | n/a                                                                                                   | **No latency/throughput assertion anywhere**                                                     | **safe**                                        |
+| `smb-consumer-flaky` (cycles up/down)                                          | no _lane_ test drives it; only a virtual-host entry                   | n/a                                                                                                   | No reconnect/timing assertion against it                                                         | **safe**                                        |
+| smb2 harness consumers (`smb2::testing`)                                       | smb2's own `consumer` project, ports 10480+                           | n/a                                                                                                   | n/a                                                                                              | **n/a** (different stack, out of scope by rule) |
+
+**Notes:**
+
+1. **`_test/cmdr-regression-*` is the one fixed-path exception the sketch missed.** `run_concurrent_write_pass` builds
+   its dest prefix from `format!("{TEST_PREFIX_ROOT}{ts}-n{n_files}")` where `ts` is `SystemTime…as_secs()` (1-second
+   granularity) — no PID, no nanos, no atomic counter, unlike `test_dir_name()`. Two concurrent runs of
+   `smb_integration_concurrent_streaming_writes_no_deadlock` that both enter `run_concurrent_write_pass` within the same
+   wall-clock second (both `n_files=200`) would target the **same** dest dir on `smb-consumer-maxreadsize` (port 10494)
+   and `cleanup_test_prefix` from one pass could delete the other's in-flight files. Real-world likelihood is low (this
+   test needs `start.sh core`, runs single-pass, and the collision window is one second), but it's the only genuine
+   cross-process write-collision in the lane. **This is M3's single namespacing candidate:** add PID + a counter to the
+   prefix (cheap, mirrors `test_dir_name()`), e.g. `format!("{TEST_PREFIX_ROOT}{pid}-{ts}-n{n_files}")`. Low priority;
+   defer-with-fix is acceptable.
+2. **Soak is out-of-lane** (`#[ignore]`, not `smb_integration_`-prefixed, manual/CI-`smb-soak`-only, single-session).
+   Its assertions are drift-relative, so a uniform concurrent slowdown won't trip it, but a concurrent run that _ramps_
+   load mid-soak could inflate the drift ratio. No lane fix needed; a human running the soak manually should take the M3
+   exclusivity lock if other SMB work is live.
+3. **The macOS-multi-E2E collision is not a real workflow — the sketch over-worried it.** The entire SMB Playwright
+   suite is gated by `const describeSmb = process.platform === 'darwin' ? test.describe.skip : test.describe`
+   (`smb.spec.ts:182`): **every SMB E2E test is skipped on macOS.** So two macOS Playwright sessions can never collide
+   in `e2e-playwright/` — neither runs SMB. The suite runs only on Linux (the `desktop-e2e-linux` Docker job), which is
+   single-job against container-internal :445. `SMB_E2E_SUITE_DIR`'s fixed name is therefore safe today. **M3 should NOT
+   namespace it** — defer per the plan's "Out of scope" note, now with a concrete reason (darwin-skip), not just "likely
+   defer."
+4. `virtual_smb_hosts.rs` registers all 14 containers (incl. slow/flaky) as synthetic `NetworkHost` discovery entries
+   for the E2E network UI flow. It performs no reads, writes, or timing assertions against them; the slow/flaky
+   containers are exercised only for host-list / share-browse UI rendering, never for latency or reconnect timing. The
+   `flaky` container's externally-induced down-windows are irrelevant because no test asserts on its availability at a
+   specific moment.
+
+**Verdict summary:** 8 safe, 1 namespace (low-risk, the `_test/cmdr-regression-*` prefix), 1 n/a (smb2 stack). **Zero
+"exclusive" rows** — no timing/latency/throughput assertion exists anywhere in the lane, so M3 needs **no** exclusivity
+lock. M3 collapses to: docs + the optional one-line `run_concurrent_write_pass` prefix hardening (note 1), which can
+also be deferred.
 
 ### Intentions
 
@@ -139,9 +185,12 @@ companion linked here). No code changes in M1 — it scopes M3.
 
 ### DONE
 
-The classification table is in this plan (or linked `docs/notes/` file), every write/timing path has a verdict, and M3's
-scope is exactly the set of red rows (expected: empty or near-empty for the lane; macOS-multi-E2E and manual-soak noted
-as conditional/deferred).
+The classification table is in this plan (above), every write/timing path has a verdict, and M3's scope is exactly the
+set of red rows. **Outcome: near-empty as expected.** The lane is all-safe except one low-risk namespacing candidate
+(the `_test/cmdr-regression-*` prefix in `run_concurrent_write_pass`, note 1) — no exclusivity lock needed since no
+timing/latency/throughput assertion exists. macOS-multi-E2E is **safe today, not deferred-with-risk**: the SMB
+Playwright suite is darwin-skipped (note 3). Manual-soak is out-of-lane (note 2). **M3 collapses to docs-only + the
+optional one-line prefix fix.**
 
 ## M2 — Lease/lock mechanism + adopt-or-start + teardown rerouting
 
