@@ -29,7 +29,10 @@ export function searchCommands(query: string, recentCommandIds: string[] = []): 
 
   // Empty query: show recents first, then the rest of the palette in registry order.
   if (!query.trim()) {
-    const byId = new Map(paletteCommands.map((c) => [c.id, c]))
+    // Keyed by plain `string`: `recentCommandIds` can hold stale ids (persisted
+    // before a command was renamed/removed), and looking those up is exactly how
+    // they get filtered out below.
+    const byId = new Map<string, (typeof paletteCommands)[number]>(paletteCommands.map((c) => [c.id, c]))
     const recents = recentCommandIds.flatMap((id) => {
       const command = byId.get(id)
       return command ? [{ command, matchedIndices: [] }] : []

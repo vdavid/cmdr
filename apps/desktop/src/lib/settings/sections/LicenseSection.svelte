@@ -34,6 +34,9 @@
     const statusText = $derived(getStatusText(licenseStatus))
 
     async function handleManageLicense() {
+        // Cross-window `execute-command` emit: this `commandId` must stay a valid frontend
+        // `COMMAND_IDS` entry (it's narrowed by `isCommandId` in `+page.svelte` before
+        // dispatch). The `rust-command-id-drift.test.ts` test pins it to the registry.
         await emitTo('main', 'execute-command', { commandId: 'app.licenseKey' })
         await getCurrentWindow().close()
     }

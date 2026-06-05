@@ -4,19 +4,25 @@ Centralized command registry and fuzzy search engine for the command palette.
 
 ## Files
 
-| File                   | Purpose                                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------------------- |
-| `types.ts`             | `Command`, `CommandMatch`, `CommandScope` types                                          |
-| `command-registry.ts`  | The `commands` array (single source of truth). `getPaletteCommands()` filter.            |
-| `fuzzy-search.ts`      | `searchCommands(query, recentCommandIds?)` using `@leeoniya/ufuzzy`                      |
-| `index.ts`             | Barrel re-export                                                                         |
-| `fuzzy-search.test.ts` | Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering |
+| File                            | Purpose                                                                                                                    |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `command-ids.ts`                | `COMMAND_IDS` (the `as const` id tuple), the derived `CommandId` union, and the `isCommandId()` boundary guard             |
+| `types.ts`                      | `Command`, `CommandMatch`, `CommandScope`, plus `CommandArgs` / `CommandDispatchArgs` (the dispatch arg-tuple shape)       |
+| `command-registry.ts`           | The `commands` array (single source of truth). `getPaletteCommands()` filter. `updateLicenseCommandName()` in-place write. |
+| `fuzzy-search.ts`               | `searchCommands(query, recentCommandIds?)` using `@leeoniya/ufuzzy`                                                        |
+| `index.ts`                      | Barrel re-export                                                                                                           |
+| `fuzzy-search.test.ts`          | Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering                                   |
+| `command-registry.test.ts`      | Set-equality guard (tuple ↔ registry), `isCommandId`, `updateLicenseCommandName` in-place mutation                         |
+| `command-types.test.ts`         | Compile-time `@ts-expect-error` guards for the `CommandId` union and arg-tuple shapes                                      |
+| `rust-command-id-drift.test.ts` | Parses `menu/mod.rs` + `LicenseSection.svelte`; asserts every Rust-emitted command id ∈ `COMMAND_IDS`                      |
 
 ## Types
 
 ```ts
+type CommandId = (typeof COMMAND_IDS)[number] // closed union of every id (command-ids.ts)
+
 interface Command {
-  id: string // dot-namespaced: 'app.quit', 'file.rename', 'nav.parent'
+  id: CommandId // dot-namespaced: 'app.quit', 'file.rename', 'nav.parent'
   name: string // shown in palette
   scope: CommandScope // hierarchical, display-only (does not enforce routing)
   showInPalette: boolean
@@ -28,7 +34,30 @@ interface CommandMatch {
   command: Command
   matchedIndices: number[] // flat char indices in command.name for highlight rendering
 }
+
+// Dispatch arg foundation. Every command is arg-less today (→ `void`), so
+// `dispatch('file.rename')` needs no second arg. Arg-carrying commands (the
+// per-pane MCP variants in later milestones) override their `CommandArgs` entry.
+type CommandArgs = { [K in CommandId]: void }
+type CommandDispatchArgs<K extends CommandId> = CommandArgs[K] extends void ? [] : [args: CommandArgs[K]]
 ```
+
+### Typed ids and the dispatch boundary
+
+`COMMAND_IDS` (in `command-ids.ts`) is an `as const` tuple; `CommandId` is its element union. The registry array stays a
+**mutable** `Command[]` — not `as const satisfies readonly Command[]` — because `updateLicenseCommandName` rewrites an
+entry's `.name` in place, and `getPaletteCommands()` plus the shortcuts conflict detector consume a mutable `Command[]`.
+`Command.id: CommandId` enforces tuple ⊇ registry at compile time; the set-equality test enforces registry ⊇ tuple.
+
+`isCommandId(value: string): value is CommandId` narrows the un-typed string edges where ids enter the frontend — the
+Rust `execute-command` event payload (`+page.svelte`), the cross-window emit from `LicenseSection.svelte`, and the
+selection-dialog `onCommand` prop. Never `as CommandId`-cast at these edges; a stale id would slip to the dispatcher's
+switch `default` and silently no-op. The IPC boundary is un-typed (Rust emits a bare `json!`), so
+`rust-command-id-drift.test.ts` is the backstop that keeps Rust ids and `COMMAND_IDS` in sync.
+
+`handleCommandExecute(commandId: CommandId, ctx)` is the typed dispatch entry point. Its big `switch` stays (the flat
+`Record<CommandId, Handler>` conversion is a deferred, optional follow-up); it's already exhaustive-safe because
+`commandId` is the closed union.
 
 `CommandScope` is a union of string literals: `'App'`, `'Main window'`, `'Main window/File list'`,
 `'Main window/Brief mode'`, `'Main window/Full mode'`, `'Main window/Network'`, `'Main window/Share browser'`,
@@ -88,12 +117,16 @@ added an IPC + Tauri-event + Svelte-effect hop between the keystroke and the DOM
 
 ## Adding a command
 
-1. Add an entry to the `commands` array in `command-registry.ts`.
-2. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/command-dispatch.ts`.
-3. No changes needed to the palette, fuzzy search, types, or keyboard dispatch. Commands with `showInPalette: true` are
+1. Add the id to the `COMMAND_IDS` tuple in `command-ids.ts`. (Skipping this makes the registry entry a compile error,
+   since `Command.id` is `CommandId`.)
+2. Add an entry to the `commands` array in `command-registry.ts`. (Skipping this fails the set-equality test in
+   `command-registry.test.ts`.)
+3. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/command-dispatch.ts`.
+4. No changes needed to the palette, fuzzy search, or keyboard dispatch. Commands with `showInPalette: true` are
    automatically dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`).
-4. If the command has a native menu item, add a mapping in `menu.rs` (`menu_id_to_command` and `command_id_to_menu_id`)
-   and add its ID to the `menuCommands` array in `shortcuts-store.ts`.
+5. If the command has a native menu item, add a mapping in `menu.rs` (`menu_id_to_command` and `command_id_to_menu_id`)
+   and add its ID to the `menuCommands` array in `shortcuts-store.ts`. The `rust-command-id-drift.test.ts` test will
+   fail if `menu_id_to_command` emits an id that isn't in `COMMAND_IDS`.
 
 ## Key decisions
 

@@ -100,7 +100,9 @@ describe('searchCommands', () => {
       const results = searchCommands('', ['definitely.not.a.real.command', 'app.about'])
       // Stale ID dropped silently; real recent leads.
       expect(results[0]?.command.id).toBe('app.about')
-      expect(results.every((r) => r.command.id !== 'definitely.not.a.real.command')).toBe(true)
+      // `command.id` is `CommandId`, so the stale literal can't appear; compare as
+      // `string` to keep the runtime assertion (and dodge a no-overlap type error).
+      expect(results.every((r) => (r.command.id as string) !== 'definitely.not.a.real.command')).toBe(true)
     })
 
     it('appends remaining palette commands after recents with no duplicates', () => {

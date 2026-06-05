@@ -9,12 +9,12 @@
      * - Blocks keyboard events from propagating to file explorer
      */
     import { onDestroy, onMount, tick } from 'svelte'
-    import { searchCommands, getPaletteCommands, type CommandMatch } from '$lib/commands'
+    import { searchCommands, getPaletteCommands, type CommandMatch, type CommandId } from '$lib/commands'
     import { pruneRecentCommands, pushRecentCommand } from '$lib/app-status-store'
 
     interface Props {
         /** Called when user selects a command */
-        onExecute: (commandId: string) => void
+        onExecute: (commandId: CommandId) => void
         /** Called when palette is closed */
         onClose: () => void
     }

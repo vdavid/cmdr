@@ -11,6 +11,12 @@
 import type { Command } from './types'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 
+// `Command.id` is the `CommandId` union derived from `COMMAND_IDS` in
+// `command-ids.ts`. Adding an entry here whose id isn't in that tuple is a
+// compile error; a tuple id with no entry here is caught by the set-equality
+// test in `command-registry.test.ts`. The array stays a mutable `Command[]`
+// (not `as const`) so `updateLicenseCommandName` can rewrite `.name` in place
+// and `getPaletteCommands()` / the conflict detector keep a mutable `Command[]`.
 export const commands: Command[] = [
   // ============================================================================
   // App scope (work everywhere, regardless of window/modal state)

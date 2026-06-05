@@ -32,6 +32,7 @@ import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { goToLatestDownload } from '$lib/downloads/go-to-latest'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
+import type { CommandId } from '$lib/commands'
 import type { ExplorerAPI } from './explorer-api'
 
 const log = getAppLogger('user-action')
@@ -93,7 +94,7 @@ function activeTextRegion(): Element | null {
  * the LAST RESORT — it's there so the user isn't left wondering whether
  * the keystroke registered.
  */
-function blockedBySearchResultsPane(commandId: string, explorer: ExplorerAPI | undefined): boolean {
+function blockedBySearchResultsPane(commandId: CommandId, explorer: ExplorerAPI | undefined): boolean {
   if (!explorer) return false
   if (getFocusedPaneVolumeId() !== 'search-results') return false
 
@@ -118,7 +119,7 @@ function blockedBySearchResultsPane(commandId: string, explorer: ExplorerAPI | u
  * For `edit.copy` we only intercept when the selection is non-collapsed (something is
  * actually selected); otherwise we fall through so the file copy path can run.
  */
-function handleTextRegionShortcut(commandId: string): boolean {
+function handleTextRegionShortcut(commandId: CommandId): boolean {
   if (commandId !== 'edit.copy' && commandId !== 'selection.selectAll') return false
   const region = activeTextRegion()
   if (!region) return false
@@ -167,7 +168,7 @@ function showZoomToast(oldSize: number, newSize: number): void {
 }
 
 // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
-export async function handleCommandExecute(commandId: string, ctx: CommandDispatchContext): Promise<void> {
+export async function handleCommandExecute(commandId: CommandId, ctx: CommandDispatchContext): Promise<void> {
   const explorerRef = ctx.getExplorer()
 
   // Bail before logging if the user's intent is text manipulation in a selectable

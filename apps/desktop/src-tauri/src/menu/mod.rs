@@ -194,6 +194,11 @@ pub enum ViewMode {
 /// Maps a menu item ID to its command registry ID and scope.
 /// Returns `None` for items handled specially (CheckMenuItems, close-tab, viewer word wrap,
 /// tab context menu, context menu file actions, sort items).
+///
+/// Each `Some(("…", …))` command id here is emitted across IPC and must exist in the
+/// frontend `COMMAND_IDS` tuple (`src/lib/commands/command-ids.ts`). The
+/// `rust-command-id-drift.test.ts` Vitest test parses this function and asserts that
+/// — the IPC boundary is un-typed, so that test is the backstop for drift.
 pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)> {
     match menu_id {
         // App-level commands (always emit)

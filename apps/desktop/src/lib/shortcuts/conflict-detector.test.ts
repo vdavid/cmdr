@@ -43,7 +43,10 @@ function setCommands(...cmds: Command[]) {
   testCommands.push(...cmds)
 }
 
-function makeCommand(partial: Omit<Partial<Command>, 'scope'> & { id: string; scope?: CommandScope }): Command {
+// Synthetic test ids ('a', 'b', …) aren't real `CommandId`s, so this helper
+// types `id` as a plain `string` and casts the result to `Command`. The
+// conflict detector only reads `id`/`scope`/`shortcuts` as opaque values.
+function makeCommand(partial: Omit<Partial<Command>, 'id' | 'scope'> & { id: string; scope?: CommandScope }): Command {
   return {
     name: partial.id,
     scope: 'App',

@@ -47,6 +47,7 @@
         handleCommandExecute as dispatchCommand,
         type CommandDispatchContext,
     } from './command-dispatch'
+    import { isCommandId, type CommandId } from '$lib/commands'
     import { setupMcpListeners } from './mcp-listeners'
     import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { initAppMode, getAppMode, type AppMode } from '$lib/app-mode'
@@ -224,7 +225,13 @@
         // Single unified listener for all menu commands routed through "execute-command"
         unlistenExecuteCommand = await safeListenTauri('execute-command', (event) => {
             const { commandId } = event.payload as { commandId: string }
-            void handleCommandExecute(commandId)
+            // The Rust menu emit (`menu_id_to_command`) and cross-window emits send a bare
+            // string across IPC; the `CommandId` union can't reach over that boundary. Narrow
+            // at the edge so a stale Rust id is dropped here rather than no-oping in the switch
+            // `default`. The Rust↔registry drift test pins the two id sets together.
+            if (isCommandId(commandId)) {
+                void handleCommandExecute(commandId)
+            }
         })
     }
 
@@ -843,7 +850,7 @@
         },
     }
 
-    async function handleCommandExecute(commandId: string) {
+    async function handleCommandExecute(commandId: CommandId) {
         await dispatchCommand(commandId, commandDispatchCtx)
     }
 </script>
@@ -925,7 +932,12 @@
             <DualPaneExplorer
                 bind:this={explorerRef}
                 onCommand={(commandId: string) => {
-                    void handleCommandExecute(commandId)
+                    // The selection-dialog key classifier still types its command channel as
+                    // `string` (M3 types the `onCommand` prop chain end to end). Narrow here so
+                    // the typed dispatcher only ever sees a `CommandId`.
+                    if (isCommandId(commandId)) {
+                        void handleCommandExecute(commandId)
+                    }
                 }}
             />
             <ScanStatusOverlay />
