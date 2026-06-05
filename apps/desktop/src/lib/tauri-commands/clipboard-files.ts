@@ -4,6 +4,10 @@ import { throwIpcError } from './ipc-types'
 export interface ClipboardReadResult {
   paths: string[]
   isCut: boolean
+  /** Per-path top-level kind, index-aligned with `paths`: `true` = directory,
+   *  `false` = file, `null` = unknown (stat failed). Lets the paste completion
+   *  toast split files vs. folders without walking trees. */
+  isDirectory: (boolean | null)[]
 }
 
 export async function copyFilesToClipboard(

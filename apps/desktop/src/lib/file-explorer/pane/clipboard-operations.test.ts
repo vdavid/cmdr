@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { PaneAccess } from './pane-access'
 import type { FilePaneAPI } from './types'
+import type { TransferProgressPropsData } from './dialog-state.svelte'
 
 const {
   copyFilesToClipboardSpy,
@@ -18,7 +19,7 @@ const {
   cutFilesToClipboardSpy: vi.fn<() => Promise<number>>(),
   copyPathsToClipboardSpy: vi.fn<() => Promise<number>>(),
   cutPathsToClipboardSpy: vi.fn<() => Promise<number>>(),
-  readClipboardFilesSpy: vi.fn<() => Promise<{ paths: string[]; isCut: boolean }>>(),
+  readClipboardFilesSpy: vi.fn<() => Promise<{ paths: string[]; isCut: boolean; isDirectory?: (boolean | null)[] }>>(),
   clearClipboardCutStateSpy: vi.fn<() => Promise<void>>(),
   addToastSpy: vi.fn<(content: unknown, options?: unknown) => string>(),
   resolveSnapshotPathsSpy: vi.fn<() => string[]>(),
@@ -101,7 +102,7 @@ function buildAccess(config: AccessConfig = {}): PaneAccess {
   }
 }
 
-const dialogsStub = { startTransferProgress: vi.fn() }
+const dialogsStub = { startTransferProgress: vi.fn<(props: TransferProgressPropsData) => void>() }
 
 function buildDialogs() {
   return dialogsStub as unknown as Parameters<typeof createClipboardOperations>[1]
@@ -276,6 +277,51 @@ describe('pasteFromClipboard', () => {
 
     expect(dialogsStub.startTransferProgress.mock.calls[0][0]).toMatchObject({ operationType: 'move' })
     expect(clearClipboardCutStateSpy).not.toHaveBeenCalled()
+  })
+
+  it('threads the file/folder split when every clipboard kind flag is known', async () => {
+    readClipboardFilesSpy.mockResolvedValue({
+      paths: ['/x/a.txt', '/x/dir1', '/x/dir2'],
+      isCut: false,
+      isDirectory: [false, true, true],
+    })
+    getCommonParentPathSpy.mockReturnValue('/x')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.startTransferProgress.mock.calls[0][0]).toMatchObject({
+      fileCount: 1,
+      folderCount: 2,
+    })
+  })
+
+  it('omits the split (composer falls back) when any clipboard kind flag is unknown', async () => {
+    readClipboardFilesSpy.mockResolvedValue({
+      paths: ['/x/a.txt', '/x/mystery'],
+      isCut: false,
+      isDirectory: [false, null],
+    })
+    getCommonParentPathSpy.mockReturnValue('/x')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    const props = dialogsStub.startTransferProgress.mock.calls[0][0]
+    expect(props.fileCount).toBeUndefined()
+    expect(props.folderCount).toBeUndefined()
+  })
+
+  it('omits the split when the clipboard carries no kind flags (legacy shape)', async () => {
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/x/a.txt'], isCut: false })
+    getCommonParentPathSpy.mockReturnValue('/x')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    const props = dialogsStub.startTransferProgress.mock.calls[0][0]
+    expect(props.fileCount).toBeUndefined()
+    expect(props.folderCount).toBeUndefined()
   })
 })
 

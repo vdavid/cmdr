@@ -345,6 +345,22 @@ export async function pathExistsChecked(path: string, volumeId?: string): Promis
 }
 
 /**
+ * Batched top-level "is this a directory?" probe for a list of absolute paths.
+ * Returns a per-path array index-aligned with `paths`: `true` = directory,
+ * `false` = file, `null` = unknown (the path doesn't resolve to the local
+ * filesystem — a virtual MTP/SMB path, a vanished entry, or a permission error).
+ *
+ * Used by the drag-and-drop transfer path to split dropped paths into files vs.
+ * folders. Never walks subtrees; one IPC regardless of count. On a batch
+ * timeout (a hung mount) every entry comes back `null`, so the caller cleanly
+ * degrades to its approximate-count fallback rather than blocking the drop.
+ */
+export async function statPathsKinds(paths: string[]): Promise<(boolean | null)[]> {
+  const result = await commands.statPathsKinds(paths)
+  return result.data
+}
+
+/**
  * Creates a new directory.
  * @param parentPath - The parent directory path.
  * @param name - The folder name to create.

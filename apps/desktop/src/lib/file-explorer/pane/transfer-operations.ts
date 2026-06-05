@@ -186,6 +186,16 @@ export function getCommonParentPath(paths: string[]): string {
  * Builds transfer dialog props from externally dropped file paths.
  * Unlike the listing-based builders, this works with absolute paths directly
  * (no listing ID or pane ref needed).
+ *
+ * `isDirectoryFlags` (optional, index-aligned with `droppedPaths`) carries each
+ * path's top-level kind from `statPathsKinds`: `true` = folder, `false` = file,
+ * `null` = unknown. When every flag is known (no `null`) and the length matches,
+ * the file/folder split flows to BOTH the confirmation dialog and the
+ * completion toast. If ANY flag is unknown (a virtual MTP/SMB path on the
+ * pasteboard, a vanished entry, a stat timeout) — or the flags are absent /
+ * length-mismatched — the whole batch falls back to the legacy approximate
+ * shape (`fileCount = count`, `folderCount = 0`). Honest beats half-right: a
+ * partial split would misreport, so we degrade the whole batch at once.
  */
 export function buildTransferPropsFromDroppedPaths(
   operationType: TransferOperationType,
@@ -195,8 +205,11 @@ export function buildTransferPropsFromDroppedPaths(
   destVolumeId: string,
   sortColumn: SortColumn,
   sortOrder: SortOrder,
+  isDirectoryFlags?: (boolean | null)[],
 ): TransferDialogPropsData {
   const sourceFolderPath = getCommonParentPath(droppedPaths)
+
+  const split = computeDroppedSplit(droppedPaths.length, isDirectoryFlags)
 
   return {
     operationType,
@@ -204,15 +217,43 @@ export function buildTransferPropsFromDroppedPaths(
     destinationPath: destPath,
     direction,
     currentVolumeId: destVolumeId,
-    // Approximate counts: the transfer dialog will scan for accurate totals
-    fileCount: droppedPaths.length,
-    folderCount: 0,
+    fileCount: split.fileCount,
+    folderCount: split.folderCount,
     sourceFolderPath,
     sortColumn,
     sortOrder,
     sourceVolumeId: destVolumeId,
     destVolumeId,
   }
+}
+
+/**
+ * Resolves the file/folder split for a dropped batch. Returns the real per-type
+ * counts only when every flag is known and the array lines up with the path
+ * count; otherwise the legacy approximate shape (all files, zero folders), which
+ * makes the composer fall back to flattened wording. See the all-or-nothing
+ * rationale on `buildTransferPropsFromDroppedPaths`.
+ */
+function computeDroppedSplit(
+  pathCount: number,
+  isDirectoryFlags?: (boolean | null)[],
+): { fileCount: number; folderCount: number } {
+  const allKnown =
+    isDirectoryFlags !== undefined &&
+    isDirectoryFlags.length === pathCount &&
+    isDirectoryFlags.every((flag) => flag !== null)
+
+  if (!allKnown) {
+    return { fileCount: pathCount, folderCount: 0 }
+  }
+
+  let fileCount = 0
+  let folderCount = 0
+  for (const isDir of isDirectoryFlags) {
+    if (isDir) folderCount += 1
+    else fileCount += 1
+  }
+  return { fileCount, folderCount }
 }
 
 export function getDestinationVolumeInfo(

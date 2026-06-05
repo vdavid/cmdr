@@ -41,6 +41,7 @@ const {
   startModifierTrackingSpy,
   stopModifierTrackingSpy,
   getModifierStateSpy,
+  statPathsKindsSpy,
   listenHandlers,
   dragDropHandlerRef,
 } = vi.hoisted(() => ({
@@ -48,6 +49,7 @@ const {
   getIsDraggingFromSelfSpy: vi.fn<() => boolean>(),
   getSelfDragFileInfosSpy: vi.fn<() => DragFileInfo[] | null>(),
   setSelfDragResolvedOperationSpy: vi.fn<() => Promise<void>>(),
+  statPathsKindsSpy: vi.fn<(paths: string[]) => Promise<(boolean | null)[]>>(),
   getCachedIconSpy: vi.fn<(iconId: string) => string | undefined>(),
   showOverlaySpy: vi.fn(),
   updateOverlaySpy: vi.fn(),
@@ -62,6 +64,7 @@ const {
 
 vi.mock('$lib/tauri-commands', () => ({
   setSelfDragResolvedOperation: setSelfDragResolvedOperationSpy,
+  statPathsKinds: statPathsKindsSpy,
   listen: vi.fn((eventName: string, handler: (event: { payload: unknown }) => void) => {
     listenHandlers.set(eventName, handler)
     return Promise.resolve(vi.fn())
@@ -169,6 +172,16 @@ function buildDialogs(): { dialogs: DialogState; showTransfer: ShowTransferSpy }
   return { dialogs, showTransfer }
 }
 
+/**
+ * `handleDrop` fires `handleFileDrop` without awaiting; `handleFileDrop` awaits
+ * `statPathsKinds` before opening the dialog. Flush a couple of microtask turns
+ * so the dialog open lands before the assertion.
+ */
+async function flushDrop(): Promise<void> {
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
 /** Returns the args of the most recent `updateOverlay` call: [x, y, targetName, canDrop, operation]. */
 function lastOverlayArgs(): [number, number, string | null, boolean, 'copy' | 'move'] {
   const calls = updateOverlaySpy.mock.calls
@@ -228,6 +241,9 @@ describe('drag-drop-controller', () => {
     getIsDraggingFromSelfSpy.mockReturnValue(false)
     getSelfDragFileInfosSpy.mockReturnValue(null)
     getCachedIconSpy.mockReturnValue(undefined)
+    // Default: kinds unknown so the props builder uses today's approximate
+    // shape unless a test opts into a specific split.
+    statPathsKindsSpy.mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -413,7 +429,7 @@ describe('drag-drop-controller', () => {
       expect(showTransfer).not.toHaveBeenCalled()
     })
 
-    it('opens the transfer dialog with a copy op for a cross-volume pane drop', () => {
+    it('opens the transfer dialog with a copy op for a cross-volume pane drop', async () => {
       resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
       const { controller, showTransfer } = create({
         focusedPane: 'left',
@@ -422,6 +438,7 @@ describe('drag-drop-controller', () => {
       })
 
       controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      await flushDrop()
 
       expect(showTransfer).toHaveBeenCalledTimes(1)
       const props = showTransfer.mock.calls[0][0]
@@ -431,7 +448,7 @@ describe('drag-drop-controller', () => {
       expect(props.direction).toBe('right')
     })
 
-    it('picks move for a same-volume drop into a folder target', () => {
+    it('picks move for a same-volume drop into a folder target', async () => {
       resolveDropTargetSpy.mockReturnValue(folderTarget(SAME_VOL_PATH_B, 'left'))
       const { controller, showTransfer } = create({
         focusedPane: 'left',
@@ -442,6 +459,7 @@ describe('drag-drop-controller', () => {
       // which handleDrop reads to address the folder row rather than the pane path.
       controller.handleDragOver({ x: 1, y: 1 })
       controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      await flushDrop()
 
       expect(showTransfer).toHaveBeenCalledTimes(1)
       const props = showTransfer.mock.calls[0][0]
@@ -449,34 +467,58 @@ describe('drag-drop-controller', () => {
       expect(props.destinationPath).toBe(SAME_VOL_PATH_B)
     })
 
-    it('forces copy when Alt is held even on a same-volume drop', () => {
+    it('forces copy when Alt is held even on a same-volume drop', async () => {
       resolveDropTargetSpy.mockReturnValue(folderTarget(SAME_VOL_PATH_B, 'left'))
       getModifierStateSpy.mockReturnValue({ altHeld: true, cmdHeld: false, shiftHeld: false })
       const { controller, showTransfer } = create()
 
       controller.handleDragOver({ x: 1, y: 1 })
       controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      await flushDrop()
 
       expect(showTransfer.mock.calls[0][0].operationType).toBe('copy')
     })
   })
 
   describe('handleFileDrop', () => {
-    it('no-ops on an empty path list', () => {
+    it('no-ops on an empty path list', async () => {
       const { controller, showTransfer } = create()
-      controller.handleFileDrop([], 'left')
+      await controller.handleFileDrop([], 'left')
       expect(showTransfer).not.toHaveBeenCalled()
     })
 
-    it('targets the folder path when one is supplied, else the pane path', () => {
+    it('targets the folder path when one is supplied, else the pane path', async () => {
       const { controller, showTransfer } = create({ paths: { right: '/right/dir' } })
 
-      controller.handleFileDrop(['/a/f'], 'right', '/right/dir/sub', 'copy')
+      await controller.handleFileDrop(['/a/f'], 'right', '/right/dir/sub', 'copy')
       expect(showTransfer.mock.calls[0][0].destinationPath).toBe('/right/dir/sub')
 
-      controller.handleFileDrop(['/a/f'], 'right', undefined, 'move')
+      await controller.handleFileDrop(['/a/f'], 'right', undefined, 'move')
       expect(showTransfer.mock.calls[1][0].destinationPath).toBe('/right/dir')
       expect(showTransfer.mock.calls[1][0].operationType).toBe('move')
+    })
+
+    it('threads the real file/folder split when statPathsKinds resolves all-known (3 folders)', async () => {
+      statPathsKindsSpy.mockResolvedValue([true, true, true])
+      const { controller, showTransfer } = create({ paths: { right: '/right/dir' } })
+
+      await controller.handleFileDrop(['/a/one', '/a/two', '/a/three'], 'right', undefined, 'copy')
+
+      expect(statPathsKindsSpy).toHaveBeenCalledWith(['/a/one', '/a/two', '/a/three'])
+      const props = showTransfer.mock.calls[0][0]
+      expect(props.fileCount).toBe(0)
+      expect(props.folderCount).toBe(3)
+    })
+
+    it('falls back to the approximate shape when statPathsKinds rejects', async () => {
+      statPathsKindsSpy.mockRejectedValue(new Error('stat failed'))
+      const { controller, showTransfer } = create({ paths: { right: '/right/dir' } })
+
+      await controller.handleFileDrop(['/a/x', '/a/y'], 'right', undefined, 'copy')
+
+      const props = showTransfer.mock.calls[0][0]
+      expect(props.fileCount).toBe(2)
+      expect(props.folderCount).toBe(0)
     })
   })
 
@@ -529,6 +571,7 @@ describe('drag-drop-controller', () => {
       fire({ payload: { type: 'over', position: { x: 2, y: 2 } } })
 
       fire({ payload: { type: 'drop', paths: [SAME_VOL_PATH_A], position: { x: 2, y: 2 } } })
+      await flushDrop()
       expect(showTransfer).toHaveBeenCalledTimes(1)
       expect(hideOverlaySpy).toHaveBeenCalled()
       // Drop clears the highlight as part of its teardown.

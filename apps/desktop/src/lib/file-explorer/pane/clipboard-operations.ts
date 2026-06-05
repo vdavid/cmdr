@@ -41,6 +41,30 @@ function isMtpClipboardRefusal(volumeId: string): boolean {
 }
 
 /**
+ * Resolves the file/folder split from `readClipboardFiles`'s per-path kind
+ * flags. Returns the per-type counts only when the flags are present, length-
+ * aligned with the paths, and every entry is known (no `null`). Otherwise
+ * returns `null`, which the caller threads as omitted counts so the completion
+ * toast falls back to the flattened file-count wording. All-or-nothing on
+ * purpose: a partial split would misreport.
+ */
+export function splitClipboardKinds(
+  isDirectory: (boolean | null)[] | undefined,
+  pathCount: number,
+): { fileCount: number; folderCount: number } | null {
+  if (isDirectory === undefined || isDirectory.length !== pathCount) return null
+  if (isDirectory.some((flag) => flag === null)) return null
+
+  let fileCount = 0
+  let folderCount = 0
+  for (const isDir of isDirectory) {
+    if (isDir) folderCount += 1
+    else fileCount += 1
+  }
+  return { fileCount, folderCount }
+}
+
+/**
  * System-clipboard copy / cut / paste for the focused pane. Lifted out of
  * `DualPaneExplorer` so the MTP-refusal, snapshot-pane, and cut-vs-copy branches
  * are headless-testable. Reads pane state through `PaneAccess`; opens the paste
@@ -188,6 +212,12 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       const destVolId = access.getPaneVolumeId(access.getFocusedPane())
       const sourceFolderPath = getCommonParentPath(result.paths)
 
+      // Per-type top-level split for the completion toast ("Copied 1 file and 2
+      // folders"). `readClipboardFiles` returns each path's kind. We surface the
+      // split only when EVERY flag is known; any `null` (stat failed) drops both
+      // counts so the composer falls back to the flattened file-count wording.
+      const split = splitClipboardKinds(result.isDirectory, result.paths.length)
+
       dialogs.startTransferProgress({
         operationType,
         sourcePaths: result.paths,
@@ -202,6 +232,8 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         previewId: null,
         sourceVolumeId: DEFAULT_VOLUME_ID,
         destVolumeId: destVolId,
+        fileCount: split?.fileCount,
+        folderCount: split?.folderCount,
       })
 
       if (result.isCut) {

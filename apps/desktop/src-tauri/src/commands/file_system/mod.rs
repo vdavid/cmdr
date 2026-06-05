@@ -5,6 +5,7 @@ mod drag;
 mod e2e_support;
 mod git;
 mod listing;
+mod stat;
 mod volume_copy;
 mod write_ops;
 
@@ -13,6 +14,7 @@ pub use drag::*;
 pub use e2e_support::*;
 pub use git::*;
 pub use listing::*;
+pub use stat::*;
 pub use volume_copy::*;
 pub use write_ops::*;
 

@@ -8,10 +8,11 @@ export interface TransferCompleteToastInput {
   filesProcessed: number
   /** Subset of `filesProcessed` that the user (or upfront policy) chose to skip via conflict resolution. */
   filesSkipped: number
-  /** Top-level files the user SELECTED (not interior counts). Omitted on the clipboard-paste path,
-   *  where the selection's per-type split isn't known. */
+  /** Top-level files the operation transferred (not interior counts). Supplied by F5/F6,
+   *  drag-and-drop, and clipboard paste; omitted only when a top-level kind probe came
+   *  back partial, where the composer falls back to the flattened file-count wording. */
   fileCount?: number
-  /** Top-level folders the user SELECTED. Folders always merge, so they're never skipped. */
+  /** Top-level folders the operation transferred. Folders always merge, so they're never skipped. */
   folderCount?: number
 }
 
@@ -24,8 +25,8 @@ export interface TransferCompleteToastInput {
  * clashing files, the skipped count appears as a suffix (skips are always file-level
  * because folders always merge).
  *
- * The clipboard-paste path has no per-type selection split, so it falls back to the
- * file-count wording ("Copy complete: copied 5 files.").
+ * When the per-type split is unknown (a top-level kind probe came back partial),
+ * it falls back to the file-count wording ("Copy complete: copied 5 files.").
  *
  * Trash and delete don't have a skip or merge concept and keep the historic short wording.
  */

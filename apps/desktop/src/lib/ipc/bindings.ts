@@ -260,6 +260,16 @@ export const commands = {
    */
   pathExists: (volumeId: string | null, path: string) =>
     __TAURI_INVOKE<TimedOut<boolean>>('path_exists', { volumeId, path }),
+  /**
+   *  Batched per-path directory probe for the drag-and-drop transfer path.
+   *
+   *  Returns a `Vec<Option<bool>>` index-aligned with `paths` (see
+   *  `stat_paths_kinds_blocking`). Runs in `spawn_blocking` under the read
+   *  timeout; on a batch timeout the whole vector falls back to `None`
+   *  (all-unknown) with `timed_out: true`, so the caller cleanly degrades to the
+   *  approximate count shape rather than freezing the drop on slow volume I/O.
+   */
+  statPathsKinds: (paths: string[]) => __TAURI_INVOKE<TimedOut<(boolean | null)[]>>('stat_paths_kinds', { paths }),
   createDirectory: (volumeId: string | null, parentPath: string, name: string) =>
     typedError<string, IpcError>(__TAURI_INVOKE('create_directory', { volumeId, parentPath, name })),
   createFile: (volumeId: string | null, parentPath: string, name: string) =>
@@ -2327,6 +2337,14 @@ export type ClientMetricsDto = {
 export type ClipboardReadResult = {
   paths: string[]
   isCut: boolean
+  /**
+   *  Per-path top-level kind, index-aligned with `paths`: `Some(true)` =
+   *  directory, `Some(false)` = file, `None` = unknown (stat failed). Lets the
+   *  paste path split the completion toast into files vs. folders without
+   *  walking trees. Clipboard file URLs are always real local paths, so in
+   *  practice these resolve; `None` falls back to the flattened wording.
+   */
+  isDirectory: (boolean | null)[]
 }
 
 export type CompressionInfoDto = {

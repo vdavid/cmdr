@@ -257,6 +257,72 @@ describe('buildTransferPropsFromDroppedPaths', () => {
     expect(result.destVolumeId).toBe('vol-dest')
     expect(result.operationType).toBe('move')
   })
+
+  it('splits files and folders when all kind flags are known (3 folders dropped)', () => {
+    const result = buildTransferPropsFromDroppedPaths(
+      'copy',
+      ['/Users/alice/one', '/Users/alice/two', '/Users/alice/three'],
+      '/dest',
+      'right',
+      'vol-dest',
+      'name',
+      'ascending',
+      [true, true, true],
+    )
+
+    expect(result.fileCount).toBe(0)
+    expect(result.folderCount).toBe(3)
+  })
+
+  it('splits a mixed drop (1 file + 2 folders) when all flags are known', () => {
+    const result = buildTransferPropsFromDroppedPaths(
+      'copy',
+      ['/Users/alice/a.txt', '/Users/alice/dir1', '/Users/alice/dir2'],
+      '/dest',
+      'right',
+      'vol-dest',
+      'name',
+      'ascending',
+      [false, true, true],
+    )
+
+    expect(result.fileCount).toBe(1)
+    expect(result.folderCount).toBe(2)
+  })
+
+  it('falls back to the approximate shape when ANY flag is unknown', () => {
+    // Honest beats half-right: one null kind ⇒ the whole batch uses today's
+    // approximate shape (all-files, zero folders) rather than a partial split.
+    const result = buildTransferPropsFromDroppedPaths(
+      'copy',
+      ['/Users/alice/a.txt', '/Users/alice/dir1', '/Users/alice/mystery'],
+      '/dest',
+      'right',
+      'vol-dest',
+      'name',
+      'ascending',
+      [false, true, null],
+    )
+
+    expect(result.fileCount).toBe(3)
+    expect(result.folderCount).toBe(0)
+  })
+
+  it('falls back to the approximate shape when the flags length disagrees', () => {
+    const result = buildTransferPropsFromDroppedPaths(
+      'copy',
+      ['/Users/alice/a.txt', '/Users/alice/dir1'],
+      '/dest',
+      'right',
+      'vol-dest',
+      'name',
+      'ascending',
+      [true],
+    )
+
+    expect(result.fileCount).toBe(2)
+    expect(result.folderCount).toBe(0)
+  })
 })
 
 describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {

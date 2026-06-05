@@ -58,6 +58,15 @@ Key files:
 - `drag-position.ts`: Corrects Tauri coords for docked DevTools (dev-only, zero overhead in prod)
 - Integration in `DualPaneExplorer.svelte`
 
+Drop count split: on drop, `pane/drag-drop-controller.svelte.ts::handleFileDrop` fetches each dropped path's top-level
+kind (file vs. folder) in one batched `stat_paths_kinds` IPC before opening the confirmation dialog, so both the dialog
+and the completion toast report the real "N files and M folders" split. The stat runs under the backend read timeout (2
+s) and falls back to all-unknown on a hung mount, so it never blocks the drop. The split is all-or-nothing: if ANY
+path's kind is unknown (a virtual MTP/SMB path that landed on the pasteboard, a vanished entry, a stat timeout, or a
+length mismatch), `buildTransferPropsFromDroppedPaths` reverts the whole batch to the legacy approximate shape
+(`fileCount = count`, `folderCount = 0`), which makes the toast composer fall back to flattened file-count wording.
+Honest beats half-right — a partial split would misreport.
+
 ### Drag image detection (macOS-specific hack)
 
 **Problem**: Tauri's `DragDropEvent` doesn't include drag image size. Need size to decide whether to suppress Cmdr's

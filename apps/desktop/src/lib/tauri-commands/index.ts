@@ -26,6 +26,7 @@ export {
   getPathLimits,
   pathExists,
   pathExistsChecked,
+  statPathsKinds,
   createDirectory,
   createFile,
   getSyncStatus,

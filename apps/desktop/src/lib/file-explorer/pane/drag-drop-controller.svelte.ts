@@ -22,6 +22,7 @@ import {
   getModifierState,
   setModifiers,
 } from '../modifier-key-tracker.svelte'
+import { statPathsKinds } from '$lib/tauri-commands'
 import { buildTransferPropsFromDroppedPaths } from './transfer-operations'
 import type { TransferOperationType } from '../types'
 import type { PaneAccess } from './pane-access'
@@ -85,8 +86,15 @@ export function createDragDropController(deps: DragDropControllerDeps) {
   let unlistenDragImageSize: UnlistenFn | undefined
   let unlistenDragModifiers: UnlistenFn | undefined
 
-  /** Handles a file drop onto a target pane by opening the transfer confirmation dialog. */
-  function handleFileDrop(
+  /**
+   * Handles a file drop onto a target pane by opening the transfer confirmation
+   * dialog. Fetches each dropped path's top-level kind (file vs. folder) in one
+   * batched IPC so the dialog and completion toast report the real split. The
+   * stat runs under the backend read timeout and degrades to all-unknown on a
+   * slow mount, so this never blocks the drop; on any unknown flag the builder
+   * falls back to the approximate count shape.
+   */
+  async function handleFileDrop(
     paths: string[],
     targetPane: 'left' | 'right',
     targetFolderPath?: string,
@@ -98,8 +106,26 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     const destPath = targetFolderPath ?? access.getPanePath(targetPane)
     const destVolId = access.getPaneVolumeId(targetPane)
 
+    let isDirectoryFlags: (boolean | null)[] | undefined
+    try {
+      isDirectoryFlags = await statPathsKinds(paths)
+    } catch {
+      // Stat failed entirely — leave flags undefined so the builder uses the
+      // approximate shape rather than blocking the drop on the error.
+      isDirectoryFlags = undefined
+    }
+
     dialogs.showTransfer(
-      buildTransferPropsFromDroppedPaths(operation, paths, destPath, targetPane, destVolId, sortBy, sortOrder),
+      buildTransferPropsFromDroppedPaths(
+        operation,
+        paths,
+        destPath,
+        targetPane,
+        destVolId,
+        sortBy,
+        sortOrder,
+        isDirectoryFlags,
+      ),
     )
   }
 
@@ -250,7 +276,12 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     // Guard against drops onto the source itself or into its descendants
     if (effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, paths)) return
 
-    handleFileDrop(paths, targetPane, resolved.type === 'folder' ? (folderPath ?? undefined) : undefined, operation)
+    void handleFileDrop(
+      paths,
+      targetPane,
+      resolved.type === 'folder' ? (folderPath ?? undefined) : undefined,
+      operation,
+    )
   }
 
   /** Clears all drop target highlight state and hides overlay. */

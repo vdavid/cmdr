@@ -43,10 +43,12 @@ export interface TransferProgressPropsData {
   /** Source filenames known to conflict at dest (from pre-flight scan).
    *  Forwarded to the BE so it can bulk-skip them upfront under `Skip all`. */
   preKnownConflicts?: string[]
-  /** Top-level files the user selected (for the completion toast's per-type split).
-   *  Absent on the clipboard-paste path, where the per-type split isn't known. */
+  /** Top-level files the operation will transfer (for the completion toast's per-type
+   *  split). Supplied by F5/F6 (real selection counts), drag-and-drop, and clipboard
+   *  paste (each from a top-level kind probe). Absent only when the split is unknown
+   *  (a kind probe came back partial), where the composer falls back to file counts. */
   fileCount?: number
-  /** Top-level folders the user selected (for the completion toast's per-type split). */
+  /** Top-level folders the operation will transfer (for the completion toast's per-type split). */
   folderCount?: number
 }
 
@@ -378,8 +380,9 @@ export function createDialogState(deps: DialogStateDeps) {
       log.info(
         `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatBytes(bytesProcessed)})`,
       )
-      // Top-level selection counts for the per-type split ("Moved 1 file and 3
-      // folders"). Absent on the clipboard-paste path → composer falls back.
+      // Top-level counts for the per-type split ("Moved 1 file and 3 folders").
+      // F5/F6, drag-and-drop, and clipboard paste all supply these now; absent
+      // only when a kind probe came back partial → composer falls back.
       const toastMessage = composeTransferCompleteToast({
         operationType: op,
         filesProcessed,

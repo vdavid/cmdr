@@ -15,6 +15,12 @@ use crate::clipboard;
 pub struct ClipboardReadResult {
     paths: Vec<String>,
     is_cut: bool,
+    /// Per-path top-level kind, index-aligned with `paths`: `Some(true)` =
+    /// directory, `Some(false)` = file, `None` = unknown (stat failed). Lets the
+    /// paste path split the completion toast into files vs. folders without
+    /// walking trees. Clipboard file URLs are always real local paths, so in
+    /// practice these resolve; `None` falls back to the flattened wording.
+    is_directory: Vec<Option<bool>>,
 }
 
 /// Resolves selected file paths and writes them to the system clipboard.
@@ -197,7 +203,21 @@ pub async fn read_clipboard_files(app: tauri::AppHandle) -> Result<ClipboardRead
         .map(|p| p.to_string_lossy().into_owned())
         .collect();
 
-    Ok(ClipboardReadResult { paths, is_cut })
+    // Resolve each path's top-level kind so the paste completion toast can split
+    // files vs. folders. One batched stat off the main thread (the pasteboard
+    // read already happened above); per-item failures map to `None`, never an
+    // error for the batch. Clipboard URLs are real local paths, so this is fast.
+    let paths_for_stat = paths.clone();
+    let is_directory =
+        tokio::task::spawn_blocking(move || crate::commands::file_system::stat_paths_kinds_blocking(&paths_for_stat))
+            .await
+            .unwrap_or_else(|_| vec![None; paths.len()]);
+
+    Ok(ClipboardReadResult {
+        paths,
+        is_cut,
+        is_directory,
+    })
 }
 
 /// Reads plain text from the system clipboard.
