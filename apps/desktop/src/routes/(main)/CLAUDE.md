@@ -65,9 +65,11 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (menu, skip `pushViewMenuS
 
 **Two exceptions stay adapter-local (off the bus this phase).**
 
-- **`mcp-nav-to-path`** bypasses the bus entirely. `navigateToPath` returns a sync `string` refusal sentinel that
-  fire-and-forget `dispatch` can't surface, so the adapter keeps calling `explorerRef.navigateToPath` directly and
-  forwards the sentinel byte-identically (L12). It joins the bus in a later phase with a typed `NavigateResult`.
+- **`mcp-nav-to-path`** bypasses the bus entirely. The adapter calls
+  `explorerRef.navigate({ pane, to: { path }, source: 'mcp' })` directly and branches on the typed `NavigateResult`: a
+  `'refused'` result forwards `result.reason.message` byte-identically as the `mcp-response` error (L12); a `'started'`
+  result awaits `result.settled` (the listing completes) before replying `ok: true`. The bus dispatch is fire-and-forget
+  and can't surface this round-trip, so it stays adapter-local.
 - **`mcp-response` round-trips** (`mcp-open-under-cursor`, `mcp-move-cursor`): the bus dispatches the `void`-returning
   intent; the adapter owns the `requestId` correlation and the `emit('mcp-response', { requestId, ok, error? })` reply.
   It **awaits** the dispatch's promise so the ack fires only after the action settles (the backend has an ack timeout) —
@@ -75,9 +77,10 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (menu, skip `pushViewMenuS
   adapter's `try/catch`, which replies `ok: false`. HMR can land these with no explorer; they reply `ok: false` rather
   than crashing.
 
-A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`, still on the OLD `navigate` mechanism);
-every other key stays a `sendKeyToFocusedPane` passthrough — a keystroke is transport, not a command, so it never rides
-the bus (invariant P2).
+A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`); those dispatch cases call
+`explorerRef.navigate({ pane, to: { history: 'back' | 'forward' }, source: 'user' })`, same as `nav.parent`
+(`to: { history: 'parent' }`). Every other key stays a `sendKeyToFocusedPane` passthrough — a keystroke is transport,
+not a command, so it never rides the bus (invariant P2).
 
 **Debug-error listeners stay off the bus (intentional, not unfinished).** The three `debug-inject-error` /
 `debug-reset-error` / `debug-trigger-transfer-error` listeners in `+page.svelte` (gated by `import.meta.env.DEV`) call

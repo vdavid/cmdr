@@ -230,33 +230,6 @@ describe('handleMcpSelect modes', () => {
   })
 })
 
-describe('validateMtpNavigation', () => {
-  const cmds = create(buildAccess())
-
-  it('passes (null) for a local path on a local volume', () => {
-    expect(cmds.validateMtpNavigation('/Users/x/dir', 'root', 'Macintosh HD')).toBeNull()
-  })
-
-  it('passes (null) for an mtp:// path that matches the pane volume', () => {
-    expect(cmds.validateMtpNavigation('mtp://dev1/65537/DCIM', 'dev1:65537', 'Phone')).toBeNull()
-  })
-
-  it('rejects an mtp:// path whose device/storage does not match the pane volume', () => {
-    const result = cmds.validateMtpNavigation('mtp://dev1/65537/DCIM', 'dev1:99999', 'Phone')
-    expect(result).toBe('Pane is not on this MTP volume — call select_volume first.')
-  })
-
-  it('rejects an mtp:// path with no parseable device/storage', () => {
-    const result = cmds.validateMtpNavigation('mtp://garbage', 'dev1:65537', 'Phone')
-    expect(result).toBe('Pane is not on this MTP volume — call select_volume first.')
-  })
-
-  it('rejects a local path while the pane sits on an MTP volume', () => {
-    const result = cmds.validateMtpNavigation('/Users/x/dir', 'mtp-dev1:65537', 'Phone')
-    expect(result).toBe('Pane is on the Phone MTP volume. Use select_volume to switch to a local volume first.')
-  })
-})
-
 describe('getFileAndPathUnderCursor path preference', () => {
   it('prefers the pane-reported path under cursor (snapshot pane)', () => {
     const ref = buildPaneRef({

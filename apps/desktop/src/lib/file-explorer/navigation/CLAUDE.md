@@ -4,23 +4,23 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 
 ## Key files
 
-| File                                   | Purpose                                                                                                                                                                          |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `navigation-history.ts`                | Purely functional immutable history stack                                                                                                                                        |
-| `path-navigation.ts`                   | Picks initial path when switching volumes                                                                                                                                        |
-| `navigate-and-select.ts`               | Shared "jump into a pane" primitives (`navigateToDirInPane` / `navigateToFileInPane`) used by Go-to-latest-download and Go-to-path; handles `navigateToPath`'s sync-error string |
-| `path-resolution.ts`                   | Walk-up `resolveValidPath` (split out to break cycle)                                                                                                                            |
-| `path-segments.ts`                     | Splits the breadcrumb display path into segments and flags any inside a `.git/...` portal (consumer: `FilePane.svelte` paints them with `--color-git-portal-text`)               |
-| `keyboard-shortcuts.ts`                | Home/End/PageUp/PageDown handling for file lists                                                                                                                                 |
-| `VolumeBreadcrumb.svelte`              | Clickable volume label + grouped dropdown                                                                                                                                        |
-| `volume-grouping.ts`                   | Pure logic: group volumes by category, get volume icons                                                                                                                          |
-| `volume-space-manager.svelte.ts`       | Reactive state machine for disk space fetch/retry/timeout                                                                                                                        |
-| `volume-breadcrumb-handlers.svelte.ts` | Submenu/breadcrumb-popup controllers, keyboard-mode tracker, and pure key-dispatch helpers for `VolumeBreadcrumb.svelte`                                                         |
-| `eject-predicate.ts`                   | Pure `isVolumeEjectable(volume)` used by the eject button gate. Returns true when NSURL says ejectable OR the volume has any SMB connection state                                |
-| `navigation-history.test.ts`           | Full unit test coverage of history functions                                                                                                                                     |
-| `path-navigation.test.ts`              | Unit tests for path resolution and timeouts                                                                                                                                      |
-| `keyboard-shortcuts.test.ts`           | Unit tests for shortcut calculations                                                                                                                                             |
-| `path-segments.test.ts`                | Unit tests for git-portal segment detection                                                                                                                                      |
+| File                                   | Purpose                                                                                                                                                                                                                       |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `navigation-history.ts`                | Purely functional immutable history stack                                                                                                                                                                                     |
+| `path-navigation.ts`                   | Picks initial path when switching volumes                                                                                                                                                                                     |
+| `navigate-and-select.ts`               | Shared "jump into a pane" primitives (`navigateToDirInPane` / `navigateToFileInPane`) used by Go-to-latest-download and Go-to-path; awaits `navigate()`'s `NavigateResult` (bails on `'refused'`, awaits `settled` otherwise) |
+| `path-resolution.ts`                   | Walk-up `resolveValidPath` (split out to break cycle)                                                                                                                                                                         |
+| `path-segments.ts`                     | Splits the breadcrumb display path into segments and flags any inside a `.git/...` portal (consumer: `FilePane.svelte` paints them with `--color-git-portal-text`)                                                            |
+| `keyboard-shortcuts.ts`                | Home/End/PageUp/PageDown handling for file lists                                                                                                                                                                              |
+| `VolumeBreadcrumb.svelte`              | Clickable volume label + grouped dropdown                                                                                                                                                                                     |
+| `volume-grouping.ts`                   | Pure logic: group volumes by category, get volume icons                                                                                                                                                                       |
+| `volume-space-manager.svelte.ts`       | Reactive state machine for disk space fetch/retry/timeout                                                                                                                                                                     |
+| `volume-breadcrumb-handlers.svelte.ts` | Submenu/breadcrumb-popup controllers, keyboard-mode tracker, and pure key-dispatch helpers for `VolumeBreadcrumb.svelte`                                                                                                      |
+| `eject-predicate.ts`                   | Pure `isVolumeEjectable(volume)` used by the eject button gate. Returns true when NSURL says ejectable OR the volume has any SMB connection state                                                                             |
+| `navigation-history.test.ts`           | Full unit test coverage of history functions                                                                                                                                                                                  |
+| `path-navigation.test.ts`              | Unit tests for path resolution and timeouts                                                                                                                                                                                   |
+| `keyboard-shortcuts.test.ts`           | Unit tests for shortcut calculations                                                                                                                                                                                          |
+| `path-segments.test.ts`                | Unit tests for git-portal segment detection                                                                                                                                                                                   |
 
 ## `navigation-history.ts`
 
@@ -63,7 +63,7 @@ fires from two branches: `handleListingComplete` (success) AND the `listing-erro
 0700, etc.) would show the `ErrorPane` while leaving the path absent from history; `Cmd+[` would then visually jump back
 two steps because the current pane state isn't in the stack. The `listing-error` handler with the auto-fallback (path
 deleted → navigate to parent) doesn't push via this callback; it relies on the fallback navigation's own
-`applyPathChange` push.
+`commitPathFromListing` push (the in-place `history: 'push-path'` commit in `pane/navigate.ts`).
 
 ## `path-navigation.ts`
 
@@ -99,12 +99,17 @@ All `pathExists` calls are guarded by two timeout layers:
 - **Frontend-side**: `withTimeout` races each `pathExists` IPC call (500ms for `determineNavigationPath`, 1s for
   `resolveValidPath`). The faster timeout wins.
 
-`handleVolumeChange` in `DualPaneExplorer.svelte` uses **optimistic navigation**: it updates pane state immediately
-(showing the loading spinner), then resolves the "best" path in the background. A `volumeChangeGeneration` counter
-guards against stale corrections when the user navigates away before resolution completes.
+`navigate()`'s volume-switch arm (in `pane/navigate.ts`) uses **optimistic navigation**: `commitVolumeSwitch` commits
+the new volumeId + path + history synchronously (showing the loading spinner), then `scheduleVolumePathCorrection`
+resolves the "best" path in the background via `determineNavigationPath`. A single GLOBAL `correctionGen` counter (the
+caller-owned holder in `NavigateDeps`, shared by both panes) guards against stale corrections: a later volume change on
+either pane bumps it, so a pending correction whose generation was superseded is dropped.
 
-`handleCancelLoading` navigates to `~` immediately on ESC (no `resolveValidPath` call). `handleNavigationAction`
-(back/forward) navigates immediately; FilePane's listing error handler resolves upward if the path is gone.
+`handleCancelLoading` (`DualPaneExplorer.svelte`) folds onto `navigate()`: on ESC it walks history back via
+`navigate({ to: { history: 'back' }, source: 'cancel' })`, or for a tab with no history resolves the nearest valid
+parent and routes a terminal `source: 'fallback'` commit. Back/forward go through `navigate({ to: { history } })`;
+parent (`{ history: 'parent' }`) delegates to `FilePane.navigateToParent`, whose `onPathChange` re-enters
+`commitPathFromListing`. FilePane's listing-error handler resolves upward if the path is gone.
 
 ## `keyboard-shortcuts.ts`
 

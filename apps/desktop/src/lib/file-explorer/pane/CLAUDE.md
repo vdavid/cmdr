@@ -100,9 +100,10 @@ unchanged. Read-only / delegating bodies move; functions that WRITE component na
 `swapPanes`, `toggleHiddenFiles`, `setViewMode`, `navigate`, `setSort*`, `moveCursor`, `selectVolumeBy*`,
 `copyPathBetweenPanes`, the `mirror*`/`restoreFocus` helpers) stay in the component — un-trapping that state is the
 explorer-store phase, not this factoring. The `navigate(intent)` transaction itself lives in `navigate.ts` (the
-component builds its `NavigateDeps` and wraps it as the `navigate` export). `moveCursorByName*` and
-`validateMtpNavigation` moved even though they're called from component-resident writers (`moveCursor`,
-`restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
+component builds its `NavigateDeps` and wraps it as the `navigate` export). The MTP capability check lives in
+`navigate.ts` (`validateMtpNavigation`, the synchronous refusal gate for the in-place path arm); its refusal strings are
+byte-pinned by `navigate.test.ts`. `moveCursorByName*` moved into `pane-commands` even though it's called from
+component-resident writers (`moveCursor`, `restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
 
 **Explorer store (`explorer-state.svelte.ts`).** Module store owning the dual-pane navigation + UI-chrome state that
 `DualPaneExplorer` used to trap in component closures: `focusedPane`, `showHiddenFiles`, `leftPaneWidthPercent`, and the

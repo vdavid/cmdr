@@ -260,9 +260,8 @@ function onNetworkRefusal(volumeLabel: string): NavigateRefusal {
 const PANE_UNAVAILABLE_REFUSAL: NavigateRefusal = { kind: 'pane-unavailable', message: 'Pane not available' }
 
 /**
- * MTP capability check (the `paneCommands.validateMtpNavigation` logic, inlined
- * so `navigate()` carries the exact strings). Returns a refusal or `null`.
- * Note the em dash in the first string — it's contract.
+ * MTP capability check. Returns a refusal or `null`. Note the em dash in the
+ * first string — it's contract (L12), byte-pinned by `navigate.test.ts`.
  */
 function validateMtpNavigation(path: string, volumeId: string, volumeName: string | undefined): NavigateRefusal | null {
   if (path.startsWith('mtp://')) {

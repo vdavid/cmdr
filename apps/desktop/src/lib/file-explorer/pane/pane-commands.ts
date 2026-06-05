@@ -230,21 +230,6 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     }
   }
 
-  /** Check if an MTP path matches the pane's current volume. Returns an error string if not. */
-  function validateMtpNavigation(path: string, volumeId: string, volumeName: string | undefined): string | null {
-    if (path.startsWith('mtp://')) {
-      const mtpMatch = path.match(/^mtp:\/\/([^/]+)\/(\d+)/)
-      const pathDeviceId = mtpMatch?.[1]
-      const pathStorageId = mtpMatch?.[2]
-      if (!pathDeviceId || !pathStorageId || volumeId !== `${pathDeviceId}:${pathStorageId}`) {
-        return `Pane is not on this MTP volume \u2014 call select_volume first.`
-      }
-    } else if (volumeId.includes(':') && volumeId.startsWith('mtp-')) {
-      return `Pane is on the ${volumeName ?? volumeId} MTP volume. Use select_volume to switch to a local volume first.`
-    }
-    return null
-  }
-
   async function moveCursorByName(paneRef: FilePaneAPI, name: string) {
     const inNetwork: boolean = paneRef.isInNetworkView()
     if (inNetwork) {
@@ -384,7 +369,6 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     handleSelectionAction,
     applyIndicesToFocusedPane,
     getFocusedPaneEntries,
-    validateMtpNavigation,
     moveCursorByName,
     moveCursorByNameInFileListing,
     scrollTo,
