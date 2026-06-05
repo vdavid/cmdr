@@ -35,8 +35,8 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 | `snapshot-store.svelte.ts.test.ts` | Create/read/no-overwrite, refcount inc/dec/delete, last-attempt slot swaps, entries-cap truncation, debug stats, `resolveSnapshotPaths`                                                                                                                                |
 | `snapshot-label.ts`                | Pure helper: `buildSnapshotLabel({ mode, query, aiPrompt? })` for breadcrumb + tab title                                                                                                                                                                               |
 | `snapshot-label.test.ts`           | Filename/regex/AI label shapes, AI prompt priority, truncation cap, fallbacks                                                                                                                                                                                          |
-| `capabilities.ts`                  | `searchResultsVolumeCapabilities()` returns the per-pane flag set and the shortcut toast text                                                                                                                                                                          |
-| `capabilities.test.ts`             | Pins the flag shape, the purity contract, and the toast string                                                                                                                                                                                                         |
+| `capabilities.ts`                  | Thin shim: `searchResultsVolumeCapabilities()` returns the `search-results` row of the per-kind table (`lib/file-explorer/pane/volume-capabilities.ts`); also owns the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` shortcut toast string                                       |
+| `capabilities.test.ts`             | Pins the shim against the table row, the purity contract, and the toast string                                                                                                                                                                                         |
 
 Shared components, helpers, and tests live in [`lib/query-ui/`](../query-ui/CLAUDE.md) — Search and Selection both
 import the unified components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `FilterChip`,
@@ -304,8 +304,12 @@ is untouched. Snapshot refs therefore persist across pane recreation.
 
 ## Capability flags
 
-`capabilities.ts::searchResultsVolumeCapabilities()` returns the per-pane flag set
-`{ canPasteInto: false, canMkdir: false, canMkfile: false, canRename: false, isSourceOK: true }`. Consumers:
+`capabilities.ts::searchResultsVolumeCapabilities()` is a thin shim returning the `search-results` row of the per-kind
+`VolumeCapabilities` table (`lib/file-explorer/pane/volume-capabilities.ts`):
+`{ canPasteInto: false, canCreateChild: false, canRenameInPlace: false, canBeSource: true, … }`. Its one caller is
+`SearchResultsView.svelte` (the row context menu's `restrict` flag reads `!caps.canRenameInPlace`). The other consumers
+below still gate via `volumeId === 'search-results'` string compares today; they read the capability table in later
+milestones of the capabilities phase. Consumers:
 
 - **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): the bar takes
   `canMkdir` / `canMkfile` / `canRename` / `canSourceOps` / `canPasteInto` props. When the focused pane is on

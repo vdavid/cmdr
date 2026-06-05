@@ -1,54 +1,33 @@
 /**
- * Per-volume capability flags for the search-results virtual volume.
+ * Search-results virtual-volume capability access.
+ *
+ * The per-kind capability table now lives in
+ * [`lib/file-explorer/pane/volume-capabilities.ts`](../file-explorer/pane/volume-capabilities.ts)
+ * (the single source of truth, keyed by `VolumeKind`). This module keeps two
+ * Search-specific things:
+ *
+ *  - `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`: the L10 user-facing toast string shown
+ *    when a keyboard shortcut tries a destination-side action (paste / mkdir /
+ *    rename) on a search-results pane. Imported by the dispatcher and tests; it
+ *    stays here so the wording lives next to its other Search consumers.
+ *  - `searchResultsVolumeCapabilities()`: a thin shim returning the
+ *    `search-results` row of the per-kind table, for the one remaining caller
+ *    (`SearchResultsView.svelte`). It yields the new `VolumeCapabilities` shape
+ *    (so `canRename` is now `canRenameInPlace`). The shim retires when that view
+ *    moves onto the FilePane `caps` descriptor.
  *
  * The search-results pane (`volumeId === 'search-results'`, path
  * `search-results://<snapshot-id>`) is a read-only view of a snapshot, not a
- * real directory. Some pane actions don't make sense there:
- *
- * - Paste into the pane (`⌘V`): there's no destination folder, only a
- *   synthetic snapshot.
- * - Make a new folder / file (`F7`, etc.): same.
- * - Rename (`F2`, click-to-rename): a snapshot row's underlying file CAN be
- *   renamed in principle, but doing it inside the snapshot view is confusing
- *   because the rename happens on disk while the snapshot stays as-is. The
- *   user can navigate to the real folder and rename there.
- *
- * The flags returned here drive disablement at the source (F-key bar, context
- * menu, dialog routing). Per the plan's principle from `docs/design-principles.md`,
- * "disabled is better than 'you did the wrong thing' toasts": menus and
- * F-keys read these flags and render visibly disabled. Keyboard shortcuts
- * (which bypass menus) fall back to a friendly toast so the action isn't
- * silently swallowed.
- *
- * Source-side flags (copy / move source, drag out, delete) stay `true`:
- * the underlying paths are real, and acting on them is the snapshot view's
- * primary point. Delete in particular runs through the existing confirmation
- * dialog; on success, the deleted entry is removed from every snapshot that
- * contains it (see `snapshot-store.svelte.ts::removeEntryFromAllSnapshots`).
+ * real directory: paste-into / mkdir / mkfile / rename don't make sense there,
+ * but source-side ops (copy/move/delete, drag out) stay enabled because the
+ * underlying paths are real.
  */
 
-export interface SearchResultsCapabilities {
-  /** Can files be pasted INTO this pane? Always false for search-results. */
-  canPasteInto: false
-  /** Can a new folder be created here? Always false. */
-  canMkdir: false
-  /** Can a new file be created here? Always false. */
-  canMkfile: false
-  /** Can the cursor row be renamed in-place here? Always false. */
-  canRename: false
-  /** Can this pane act as the SOURCE for copy / move / delete? Always true. */
-  isSourceOK: true
-}
+import { capabilitiesForKind, type VolumeCapabilities } from '$lib/file-explorer/pane/volume-capabilities'
 
 /** Returns the capability flag set for the search-results virtual volume. */
-export function searchResultsVolumeCapabilities(): SearchResultsCapabilities {
-  return {
-    canPasteInto: false,
-    canMkdir: false,
-    canMkfile: false,
-    canRename: false,
-    isSourceOK: true,
-  }
+export function searchResultsVolumeCapabilities(): VolumeCapabilities {
+  return capabilitiesForKind('search-results')
 }
 
 /**

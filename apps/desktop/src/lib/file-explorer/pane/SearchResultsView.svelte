@@ -213,7 +213,7 @@
             // instead so it reads `Copy test.md` and the underlying
             // command-dispatch (which uses `entryUnderCursor.name`, also a
             // basename) copies the same string.
-            const restrict = !caps.canRename
+            const restrict = !caps.canRenameInPlace
             void showFileContextMenu(entry.path, basename(entry.path), entry.isDirectory, [entry.path], restrict)
         }}
     />

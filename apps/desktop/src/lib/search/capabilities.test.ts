@@ -1,20 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import {
-  searchResultsVolumeCapabilities,
-  SEARCH_RESULTS_NOT_A_FOLDER_TOAST,
-  type SearchResultsCapabilities,
-} from './capabilities'
+import { searchResultsVolumeCapabilities, SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from './capabilities'
+import { capabilitiesForKind } from '$lib/file-explorer/pane/volume-capabilities'
 
 describe('searchResultsVolumeCapabilities', () => {
-  it('returns the documented flag set', () => {
+  it('returns the search-results row of the per-kind capability table', () => {
+    expect(searchResultsVolumeCapabilities()).toEqual(capabilitiesForKind('search-results'))
+  })
+
+  it('encodes the search-results pane rules (no destination ops, source ops OK)', () => {
     const caps = searchResultsVolumeCapabilities()
-    expect(caps).toEqual({
-      canPasteInto: false,
-      canMkdir: false,
-      canMkfile: false,
-      canRename: false,
-      isSourceOK: true,
-    } satisfies SearchResultsCapabilities)
+    expect(caps.canPasteInto).toBe(false)
+    expect(caps.canCreateChild).toBe(false)
+    expect(caps.canRenameInPlace).toBe(false)
+    expect(caps.canBeSource).toBe(true)
   })
 
   it('is a pure function: repeated calls return equal values', () => {

@@ -45,27 +45,28 @@ list).
 
 ### Pure utilities (`*.ts`)
 
-| File                          | Purpose                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------ |
-| `types.ts`                    | `FilePaneAPI`, `SwapState`, `ListViewAPI`, `*BrowserAPI`, `NetworkCursorEntry`       |
-| `pane-access.ts`              | `PaneAccess`: live-reference read API over pane nav + chrome state for factories     |
-| `focused-pane-reads.ts`       | Store-backed focused-pane reads (path / volume id / searchable folder) for externals |
-| `clipboard-operations.ts`     | System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)         |
-| `file-operation-commands.ts`  | Rename / new-folder / new-file / viewer / transfer / delete openers factory          |
-| `pane-commands.ts`            | MCP/palette read-only + delegating command bodies (selection, key-route, MTP val)    |
-| `type-to-jump-keys.ts`        | Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts      |
-| `initialization.ts`           | Load persisted tabs + status + settings; resolve volumes; apply E2E overrides        |
-| `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`              |
-| `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot variant) from a focused pane           |
-| `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)            |
-| `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution            |
-| `navigate.ts`                 | `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry    |
-| `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch       |
-| `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`        |
-| `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                                  |
-| `selection-dialog-keys.ts`    | Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)       |
-| `error-pane-utils.ts`         | Tiny helper for `ErrorPane`'s technical-details rendering                            |
-| `integration-test-utils.ts`   | Shared test scaffolding for pane integration tests                                   |
+| File                          | Purpose                                                                                        |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| `types.ts`                    | `FilePaneAPI`, `SwapState`, `ListViewAPI`, `*BrowserAPI`, `NetworkCursorEntry`                 |
+| `pane-access.ts`              | `PaneAccess`: live-reference read API over pane nav + chrome state for factories               |
+| `focused-pane-reads.ts`       | Store-backed focused-pane reads (path / volume id / searchable folder) for externals           |
+| `clipboard-operations.ts`     | System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)                   |
+| `file-operation-commands.ts`  | Rename / new-folder / new-file / viewer / transfer / delete openers factory                    |
+| `pane-commands.ts`            | MCP/palette read-only + delegating command bodies (selection, key-route, MTP val)              |
+| `type-to-jump-keys.ts`        | Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts                |
+| `initialization.ts`           | Load persisted tabs + status + settings; resolve volumes; apply E2E overrides                  |
+| `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`                        |
+| `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot variant) from a focused pane                     |
+| `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)                      |
+| `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution                      |
+| `navigate.ts`                 | `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry              |
+| `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch                 |
+| `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`                  |
+| `volume-capabilities.ts`      | `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` / `capabilitiesFor` |
+| `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                                            |
+| `selection-dialog-keys.ts`    | Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)                 |
+| `error-pane-utils.ts`         | Tiny helper for `ErrorPane`'s technical-details rendering                                      |
+| `integration-test-utils.ts`   | Shared test scaffolding for pane integration tests                                             |
 
 ### Tests
 
@@ -92,6 +93,33 @@ responses. Backend match runs in `apps/desktop/src-tauri/src/file_system/listing
 returns `false` (no `..` row), and `isCrossVolumeNavigation` routes any navigation to a real path through the
 volume-change machinery (`onVolumeChange` / `handleVolumeChange`). Skipping either breaks selection (off-by-one) or
 poisons the pane with `volumeId === 'search-results'` + real path.
+
+**Volume capabilities (`volume-capabilities.ts`).** The single FE source of truth for "what can a pane on a given volume
+KIND do" (invariant A6 — guard logic branches on capabilities, never on volume-id strings). A closed `VolumeKind`
+discriminated union (`local` / `smb` / `mtp` / `network` / `search-results`) keys a frozen, by-reference
+`Record<VolumeKind, VolumeCapabilities>` table; each row carries structural capabilities (`hasBackendListing`,
+`canPasteInto`, `canCreateChild`, `canRenameInPlace`, `canBeSource`, `supportsSystemClipboard`, `hasParentRow`,
+`syncsToMcp`, `pathScheme`). It's NOT a `Record<string, boolean>` bag — `kind` is the discriminant.
+
+- **Per-KIND vs per-VOLUME.** The table is structural per-kind capability. Per-volume runtime flags (`isReadOnly`,
+  `supportsTrash`, `smbConnectionState`) are NOT in the table — they stay on `VolumeInfo` and layer on top (a specific
+  USB stick is read-only; the `local` KIND is not). That's Q4's resolution: FE table keyed by kind, since `VolumeInfo`
+  carries no capability surface today and the two virtual kinds have no `VolumeInfo` at all.
+- **One classifier, not two.** `volumeKindOf` is the SUPERSET of `volume-tint.svelte.ts::volumeKindFor`: it checks the
+  two virtual ids first, then DELEGATES to `volumeKindFor` for the real kinds, overriding its `'other'` fall-through
+  (favorites + real-but-unclassified) to a `'local'` default so the kind → table lookup is TOTAL (no input can miss the
+  table; `capabilitiesFor` never returns `undefined`). The tint classifier keeps its own body and output, so tint stays
+  byte-stable — this module never feeds its `'local'` default back into tinting.
+- **`capabilitiesFor(volumeId)`** is the store-reading convenience: callers holding only a `volumeId` (F-bar, dispatch)
+  get the row without replicating the find-in-store dance. The virtual ids short-circuit before the store lookup; a
+  stale/missing real id falls to the `local` default. The pure pair (`volumeKindOf`, `capabilitiesForKind`) stays
+  store-free for the FilePane site (which already holds the `VolumeInfo`) and for tests.
+- **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch — no codebase sweep.
+
+`lib/search/capabilities.ts::searchResultsVolumeCapabilities()` is now a thin shim returning the `search-results` row;
+it (and the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` L10 string) stay there for the one remaining caller
+(`SearchResultsView.svelte`). The capability-GUARD consumers (dispatch / F-bar / clipboard / file-ops / pane-commands /
+mcp-sync / has-parent) still string-compare today; they read the table in later milestones of this phase.
 
 **Command-body factories read through `PaneAccess`.** The MCP/palette command bodies live in factories
 (`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)
