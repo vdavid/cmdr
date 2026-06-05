@@ -9,10 +9,10 @@ import { computeHasParent } from './has-parent'
 import { createSelectionState } from './selection-state.svelte'
 
 describe('computeHasParent (R3 T1)', () => {
-  it('returns false for search-results panes, regardless of path', () => {
+  it('returns false when the kind has no parent row (snapshot), regardless of path', () => {
     expect(
       computeHasParent({
-        isSearchResultsView: true,
+        hasParentRow: false,
         currentPath: 'search-results://sr-1',
         effectiveVolumeRoot: '/',
       }),
@@ -20,7 +20,7 @@ describe('computeHasParent (R3 T1)', () => {
     // Even when the synthetic path happens to "look like" a volume root.
     expect(
       computeHasParent({
-        isSearchResultsView: true,
+        hasParentRow: false,
         currentPath: 'search-results://sr-42',
         effectiveVolumeRoot: 'search-results://sr-42',
       }),
@@ -30,7 +30,7 @@ describe('computeHasParent (R3 T1)', () => {
   it('returns false at the filesystem root', () => {
     expect(
       computeHasParent({
-        isSearchResultsView: false,
+        hasParentRow: true,
         currentPath: '/',
         effectiveVolumeRoot: '/',
       }),
@@ -40,7 +40,7 @@ describe('computeHasParent (R3 T1)', () => {
   it('returns false at the volume root (non-/ volume)', () => {
     expect(
       computeHasParent({
-        isSearchResultsView: false,
+        hasParentRow: true,
         currentPath: '/Volumes/External',
         effectiveVolumeRoot: '/Volumes/External',
       }),
@@ -50,7 +50,7 @@ describe('computeHasParent (R3 T1)', () => {
   it('returns true inside a folder on the volume', () => {
     expect(
       computeHasParent({
-        isSearchResultsView: false,
+        hasParentRow: true,
         currentPath: '/Users/me/projects',
         effectiveVolumeRoot: '/',
       }),
@@ -68,7 +68,7 @@ describe('selectAll integration with computeHasParent (R3 T1)', () => {
   it('snapshot pane selectAll covers index 0 (ranges from 0..count-1)', () => {
     const sel = createSelectionState()
     const hasParent = computeHasParent({
-      isSearchResultsView: true,
+      hasParentRow: false,
       currentPath: 'search-results://sr-1',
       effectiveVolumeRoot: '/',
     })
@@ -81,7 +81,7 @@ describe('selectAll integration with computeHasParent (R3 T1)', () => {
   it('non-snapshot pane selectAll skips index 0 (the `..` row)', () => {
     const sel = createSelectionState()
     const hasParent = computeHasParent({
-      isSearchResultsView: false,
+      hasParentRow: true,
       currentPath: '/Users/me',
       effectiveVolumeRoot: '/',
     })

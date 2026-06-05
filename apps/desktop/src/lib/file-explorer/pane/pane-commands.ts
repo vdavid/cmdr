@@ -1,6 +1,7 @@
 import { findFileIndex } from '$lib/tauri-commands'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
 import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
+import { capabilitiesFor } from './volume-capabilities'
 import type { SelectionAction } from '../../../routes/(main)/explorer-api'
 import type { FilePaneAPI } from './types'
 import type { FileEntry, FriendlyError, WriteOperationError } from '../types'
@@ -209,8 +210,13 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
    * Returns a snapshot of the focused pane's entries + cursor index, for the
    * Selection dialog. The dialog uses this once at open-time; we
    * intentionally don't refresh on focused-pane change mid-dialog.
-   * `isSnapshotPane` flags `search-results://` panes so the dialog renders
-   * the banner ("Matching what is shown in the list…").
+   * `isSnapshotPane` flags snapshot panes so the dialog renders the banner
+   * ("Matching what is shown in the list…"). A snapshot pane is one whose kind
+   * has no backend listing (`!caps.hasBackendListing`), read from the capability
+   * table rather than a `volumeId === 'search-results'` string compare (A6).
+   * The network kind is also `!hasBackendListing`, but its pane never opens the
+   * Selection dialog (NetworkMountView has no file list), so this stays a
+   * snapshot-only flag in practice.
    */
   async function getFocusedPaneEntries(): Promise<{
     entries: FileEntry[]
@@ -226,7 +232,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     return {
       entries,
       cursorIndex,
-      isSnapshotPane: pane.getVolumeId() === 'search-results',
+      isSnapshotPane: !capabilitiesFor(pane.getVolumeId()).hasBackendListing,
     }
   }
 

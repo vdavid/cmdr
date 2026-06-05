@@ -10,8 +10,15 @@ import type { ViewMode } from '$lib/app-status-store'
 
 export interface PaneMcpSyncDeps {
   paneId: 'left' | 'right'
-  getIsNetworkView: () => boolean
-  getIsSearchResultsView: () => boolean
+  /**
+   * Whether this pane's kind mirrors to the MCP `PaneState` store
+   * (`VolumeCapabilities.syncsToMcp`). `false` for the network + search-results
+   * kinds — they have other owners (see `skipMcpFileSync` / `syncPaneStateToMcp`).
+   * FilePane supplies this from its derived caps, so the gate reads the kind
+   * capability, not a `getIsNetworkView() || getIsSearchResultsView()` derivation
+   * off raw `volumeId ===` deriveds (invariant A6).
+   */
+  getSyncsToMcp: () => boolean
   getListingId: () => string
   getTotalCount: () => number
   getHasParent: () => boolean
@@ -61,9 +68,7 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
    * to keep that function under the cyclomatic complexity cap.
    */
   function skipMcpFileSync(): boolean {
-    return (
-      deps.getIsNetworkView() || deps.getIsSearchResultsView() || !deps.getListingId() || deps.getTotalCount() === 0
-    )
+    return !deps.getSyncsToMcp() || !deps.getListingId() || deps.getTotalCount() === 0
   }
 
   /** Build file list for MCP state sync */
@@ -145,8 +150,10 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
    */
   async function syncPaneStateToMcp() {
     // Search-results panes don't sync to MCP either: the snapshot is local
-    // dialog state, not a directory MCP agents are expected to query.
-    if (deps.getIsNetworkView() || deps.getIsSearchResultsView()) return
+    // dialog state, not a directory MCP agents are expected to query. Both the
+    // network and search-results skips fold into the `syncsToMcp` capability
+    // (false for both kinds), supplied by FilePane's derived caps.
+    if (!deps.getSyncsToMcp()) return
     try {
       const files = await buildMcpFileList()
       const hasParent = deps.getHasParent()

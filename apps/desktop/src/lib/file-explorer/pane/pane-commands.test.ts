@@ -10,6 +10,12 @@ const { findFileIndexSpy } = vi.hoisted(() => ({
 
 vi.mock('$lib/tauri-commands', () => ({ findFileIndex: findFileIndexSpy }))
 
+// `capabilitiesFor` (used by `isSnapshotPane`) resolves fsType/category from the
+// volume store for real ids; the two virtual ids short-circuit before the lookup.
+// Empty store ⇒ a real id ('root', 'mtp-…') falls to the listable `local`/`mtp`
+// rows (hasBackendListing: true ⇒ not a snapshot pane).
+vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
+
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }))

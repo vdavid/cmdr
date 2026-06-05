@@ -16,6 +16,7 @@ import {
   buildTransferPropsFromSnapshot,
   getDestinationVolumeInfo,
 } from './transfer-operations'
+import { capabilitiesFor } from './volume-capabilities'
 import type { FilePaneAPI } from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
@@ -231,9 +232,13 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     autoConfirm?: boolean,
     onConflict?: string,
   ) {
-    // Search-results pane: the source has no backend listing. Build the
-    // transfer props from the snapshot's selected (or cursor) entries.
-    if (access.getPaneVolumeId(pane) === 'search-results') {
+    // Snapshot source pane: no backend listing exists, so the listing-id-driven
+    // builders don't apply — build from the snapshot's selected (or cursor)
+    // entries. Routed off the kind's `hasBackendListing` capability, not a
+    // `volumeId === 'search-results'` string compare (A6). Among kinds that reach
+    // this transfer opener, search-results is the only `!hasBackendListing` one
+    // (a network pane can't be a transfer source — `canBeSource: false`).
+    if (!capabilitiesFor(access.getPaneVolumeId(pane)).hasBackendListing) {
       const snapshotProps = buildSnapshotTransferProps(operationType, sourcePaneRef, pane)
       if (snapshotProps) {
         if (autoConfirm) {
@@ -283,9 +288,16 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // Search-results destination panes can't accept incoming files (the
     // snapshot is a synthetic view, not a folder). The F-key bar already
     // disables F5/F6 when the OPPOSITE pane is a snapshot, so this is a
-    // belt-and-braces guard for the shortcut path. M8c shipped the toast
-    // string in `lib/search/capabilities`; reuse it for consistency.
-    if (destVolId === 'search-results') {
+    // belt-and-braces guard for the shortcut path. The toast string lives in
+    // `lib/search/capabilities`; reuse it for consistency.
+    //
+    // Gated on `!canPasteInto` (A6 — capability, not a `volumeId ===` compare),
+    // scoped to the search-results KIND so the wording stays correct: a network
+    // destination also has `canPasteInto: false`, but it historically fell
+    // through here silently (the capability decides the block; the kind decides
+    // the toast — same split as the dispatch guard, PR3).
+    const destCaps = capabilitiesFor(destVolId)
+    if (!destCaps.canPasteInto && destCaps.kind === 'search-results') {
       addToast(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'warn' })
       return
     }
@@ -389,13 +401,15 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const focusedVolId = access.getPaneVolumeId(access.getFocusedPane())
 
-    // Search-results pane: no backend listing exists, so the listingId-driven
-    // path can't fetch entries. Build the dialog directly from the snapshot's
-    // cursor entry. Per M8c, source-side delete is allowed (`isSourceOK: true`):
-    // the underlying file IS real, the confirmation dialog shows the real path,
-    // and on success the entry is also removed from every other snapshot that
-    // contained it (see `dialog-state::handleTransferComplete`).
-    if (focusedVolId === 'search-results') {
+    // Snapshot pane: no backend listing exists, so the listingId-driven path
+    // can't fetch entries. Build the dialog directly from the snapshot's cursor
+    // entry. Source-side delete is allowed (`canBeSource: true`): the underlying
+    // file IS real, the confirmation dialog shows the real path, and on success
+    // the entry is also removed from every other snapshot that contained it (see
+    // `dialog-state::handleTransferComplete`). Routed off `hasBackendListing`,
+    // not a `volumeId === 'search-results'` string compare (A6); search-results
+    // is the only source-capable `!hasBackendListing` kind to reach here.
+    if (!capabilitiesFor(focusedVolId).hasBackendListing) {
       openDeleteFromSearchResults(permanent, autoConfirm)
       return
     }

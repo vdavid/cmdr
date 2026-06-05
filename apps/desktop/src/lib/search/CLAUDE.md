@@ -307,10 +307,12 @@ is untouched. Snapshot refs therefore persist across pane recreation.
 `capabilities.ts::searchResultsVolumeCapabilities()` is a thin shim returning the `search-results` row of the per-kind
 `VolumeCapabilities` table (`lib/file-explorer/pane/volume-capabilities.ts`):
 `{ canPasteInto: false, canCreateChild: false, canRenameInPlace: false, canBeSource: true, … }`. Its one caller is
-`SearchResultsView.svelte` (the row context menu's `restrict` flag reads `!caps.canRenameInPlace`). The F-bar and the
-keyboard dispatch read the capability table directly via `capabilitiesFor` (the A6 conversion); the remaining consumers
-(clipboard / file-ops / pane-commands / mcp-sync / has-parent) still gate via `volumeId === 'search-results'` string
-compares today and read the table in later milestones of the capabilities phase. Consumers:
+`SearchResultsView.svelte` (the row context menu's `restrict` flag reads `!caps.canRenameInPlace`). Every
+capability-GUARD consumer reads the table via `capabilitiesFor` now (the A6 conversion is complete): the F-bar +
+keyboard dispatch (destination-op guards), clipboard (snapshot-clip `pathScheme`, MTP refusal `kind === 'mtp'`),
+transfer/delete (`!hasBackendListing` source routing + the `search-results`-kind-scoped dest block), `pane-commands`
+(`isSnapshotPane` off `!hasBackendListing`), MCP sync (`!syncsToMcp`), and `has-parent` (`hasParentRow`). See
+`lib/file-explorer/pane/CLAUDE.md` § "Volume capabilities" for the per-site breakdown. Consumers:
 
 - **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): derives its
   `canMkdir` / `canMkfile` (= `caps.canCreateChild`), `canRename` (= `caps.canRenameInPlace`), and `canSourceOps` (=

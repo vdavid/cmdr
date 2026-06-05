@@ -97,6 +97,7 @@
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { computeSearchPaneKeyAction } from './search-results-keys'
     import { computeHasParent } from './has-parent'
+    import { capabilitiesFor } from './volume-capabilities'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { openInEditor } from '$lib/tauri-commands'
     import { resolveValidPath } from '../navigation/path-resolution'
@@ -1144,8 +1145,11 @@
     // pass reactive reads via getters so the factory lives in a plain `.svelte.ts`.
     const mcpSync = createPaneMcpSync({
         paneId,
-        getIsNetworkView: () => isNetworkView,
-        getIsSearchResultsView: () => isSearchResultsView,
+        // The network + search-results skip folds into the kind's `syncsToMcp`
+        // capability (false for both), read off the table rather than the two
+        // `volumeId ===` deriveds (A6). `capabilitiesFor` resolves fsType/category
+        // from the volume store, so we pass just the id.
+        getSyncsToMcp: () => capabilitiesFor(volumeId).syncsToMcp,
         getListingId: () => listingId,
         getTotalCount: () => totalCount,
         getHasParent: () => hasParent,
@@ -1216,7 +1220,10 @@
     // without spinning up the whole `FilePane` component.
     const hasParent = $derived(
         computeHasParent({
-            isSearchResultsView,
+            // The snapshot no-`..` rule comes from the kind capability, not a
+            // `volumeId === 'search-results'` string compare (A6). `capabilitiesFor`
+            // resolves fsType/category from the volume store, so we pass just the id.
+            hasParentRow: capabilitiesFor(volumeId).hasParentRow,
             currentPath,
             effectiveVolumeRoot,
         }),

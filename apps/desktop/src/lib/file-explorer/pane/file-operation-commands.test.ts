@@ -40,6 +40,13 @@ vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 
 vi.mock('$lib/search/snapshot-store.svelte', () => ({ getSnapshot: getSnapshotSpy }))
 
+// Source/dest routing reads the capability table via `capabilitiesFor`, which
+// resolves fsType/category from the volume store for real ids. The 'search-results'
+// id short-circuits before the lookup; real ids ('root', …) fall to the listable
+// `local` default with an empty store. The read-only alerts read `access.getVolumes()`
+// (the test's own `volumes` fixture), NOT the store — those stay per-VolumeInfo.
+vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
+
 vi.mock('$lib/search/capabilities', () => ({
   SEARCH_RESULTS_NOT_A_FOLDER_TOAST: "Search results aren't a folder. Pick a real destination.",
 }))
@@ -400,6 +407,25 @@ describe('openTransferDialog', () => {
       level: 'warn',
     })
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
+  })
+
+  it('does not show the search-results toast for a network destination (PR3: kind-scoped)', async () => {
+    // A network dest also has `canPasteInto: false`, but the dest-block toast is
+    // scoped to the search-results KIND. Historically a network dest fell through
+    // here silently; converting the gate to `!canPasteInto` must not start
+    // toasting it. The transfer then proceeds past the guard as before.
+    const access = buildAccess({
+      focusedPane: 'left',
+      volumeIds: { left: 'root', right: 'network' },
+      paneRefs: { left: buildPaneRef({ listingId: null }) },
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openTransferDialog('copy')
+
+    expect(addToastSpy).not.toHaveBeenCalledWith("Search results aren't a folder. Pick a real destination.", {
+      level: 'warn',
+    })
   })
 
   it('refuses a read-only destination with the device-specific alert', async () => {

@@ -118,10 +118,26 @@ discriminated union (`local` / `smb` / `mtp` / `network` / `search-results`) key
 
 `lib/search/capabilities.ts::searchResultsVolumeCapabilities()` is now a thin shim returning the `search-results` row;
 it (and the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` L10 string) stay there for the one remaining caller
-(`SearchResultsView.svelte`). Dispatch (`command-dispatch.ts::blockedByCapabilities`) and the F-bar
-(`FunctionKeyBar.svelte`) read the table via `capabilitiesFor` for the destination-op guards (paste / mkdir / mkfile /
-rename). The remaining capability-GUARD consumers (clipboard / file-ops / pane-commands / mcp-sync / has-parent) still
-string-compare today; they read the table in later milestones of this phase.
+(`SearchResultsView.svelte`). Every capability-GUARD consumer reads the table via `capabilitiesFor` now:
+
+- **Dispatch** (`command-dispatch.ts::blockedByCapabilities`) + **F-bar** (`FunctionKeyBar.svelte`): the destination-op
+  guards (paste / mkdir / mkfile / rename) off `canPasteInto` / `canCreateChild` / `canRenameInPlace`.
+- **Clipboard** (`clipboard-operations.ts`): the snapshot-clip path gate off `pathScheme === 'search-results'`; the MTP
+  copy/cut/paste refusals (the "Use F5/F6" toasts) off `caps.kind === 'mtp'` via `isMtpClipboardRefusal`. The MTP gate
+  keys on the `kind` discriminant, NOT `!supportsSystemClipboard`, because `network` + `search-results` also lack a
+  system clipboard, and an MTP-worded toast on a reachable network paste would be a new, mis-worded toast (PR3). On the
+  live clipboard-time pane id set this is byte-equivalent to the old `startsWith('mtp-')` gate, pinned by the
+  equivalence test in `clipboard-operations.test.ts`.
+- **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`; the
+  dest-paste block off `!canPasteInto` SCOPED to the `search-results` kind (so the toast wording stays correct — a
+  network dest has the same `false` cap but historically fell through silently; the capability decides the block, the
+  kind decides the toast, same split as dispatch). The `isReadOnly` alerts stay per-`VolumeInfo` (Q4), and the
+  `search-results://` URL parses stay (namespace mechanics).
+- **`pane-commands.ts`**: `isSnapshotPane` (the Selection-dialog banner flag) off `!hasBackendListing`.
+- **MCP sync** (`pane-mcp-sync.svelte.ts`): the network/search skip off `!syncsToMcp`. The deps interface carries a
+  single `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps); the two `getIs*View()` deps retired.
+- **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
+  (`=== '/'`, `=== root`) stay, and the rule stays coupled to `isCrossVolumeNavigation` (L5).
 
 **Command-body factories read through `PaneAccess`.** The MCP/palette command bodies live in factories
 (`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)

@@ -13,12 +13,32 @@ import { getAppLogger } from '$lib/logging/logger'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
+import { capabilitiesFor } from './volume-capabilities'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
 
 const log = getAppLogger('fileExplorer')
 
 type DialogState = ReturnType<typeof createDialogState>
+
+/**
+ * True when the focused pane is an MTP device, which can't use the system
+ * clipboard (virtual paths can't go on the OS clipboard) — the copy/cut/paste
+ * refusal that points the user at F5/F6 instead.
+ *
+ * Reads the kind off the capability table rather than a `startsWith('mtp-')`
+ * string compare (invariant A6). The MTP kind is what carries
+ * `supportsSystemClipboard: false`; we key on `kind === 'mtp'` rather than the
+ * raw flag because `network` and `search-results` ALSO lack a system clipboard,
+ * and an MTP-worded toast firing on a (reachable) network paste would be a new,
+ * mis-worded toast (PR3). On the live clipboard-time pane id set this is
+ * byte-equivalent to the old `volumeId.startsWith('mtp-')` gate — live MTP panes
+ * carry `mtp-{…}` ids, which classify to `kind === 'mtp'`; nothing else does
+ * (pinned by the equivalence test in `clipboard-operations.test.ts`).
+ */
+function isMtpClipboardRefusal(volumeId: string): boolean {
+  return capabilitiesFor(volumeId).kind === 'mtp'
+}
 
 /**
  * System-clipboard copy / cut / paste for the focused pane. Lifted out of
@@ -50,9 +70,13 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
    */
   function getSnapshotClipboardPaths(): { paths: string[]; snapshotId: string } | null {
     const focusedVolId = access.getPaneVolumeId(access.getFocusedPane())
-    if (focusedVolId !== 'search-results') return null
+    // The snapshot-clip path applies to the search-results namespace. Read the
+    // pane's path scheme off the capability table rather than a
+    // `volumeId === 'search-results'` string compare (A6).
+    if (capabilitiesFor(focusedVolId).pathScheme !== 'search-results') return null
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
+    // Extract the snapshot id from the URL — pure namespace mechanics, kept as-is.
     const SEARCH_RESULTS_PREFIX = 'search-results://'
     if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
     const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
@@ -81,7 +105,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     const state = getClipboardPaneState()
     if (!state) return
 
-    if (state.volumeId.startsWith('mtp-')) {
+    if (isMtpClipboardRefusal(state.volumeId)) {
       addToast('Use F5 to copy files from MTP devices', { level: 'info' })
       return
     }
@@ -118,7 +142,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     const state = getClipboardPaneState()
     if (!state) return
 
-    if (state.volumeId.startsWith('mtp-')) {
+    if (isMtpClipboardRefusal(state.volumeId)) {
       addToast('Use F6 to move files from MTP devices', { level: 'info' })
       return
     }
@@ -143,9 +167,10 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
   async function pasteFromClipboard(forceMove: boolean) {
     try {
       // Check MTP before reading clipboard; MTP paste is always rejected,
-      // no point reading the system clipboard just to reject it.
+      // no point reading the system clipboard just to reject it. The capability
+      // decides the refusal, not a `startsWith('mtp-')` string (A6).
       const volumeId = access.getPaneVolumeId(access.getFocusedPane())
-      if (volumeId.startsWith('mtp-')) {
+      if (isMtpClipboardRefusal(volumeId)) {
         addToast('Use F5 to copy files to MTP devices', { level: 'info' })
         return
       }

@@ -42,11 +42,21 @@ vi.mock('$lib/search/snapshot-store.svelte', () => ({ resolveSnapshotPaths: reso
 
 vi.mock('./transfer-operations', () => ({ getCommonParentPath: getCommonParentPathSpy }))
 
+// The MTP / snapshot refusals read the capability table via `capabilitiesFor`,
+// which resolves fsType/category from the volume store for real ids. The two
+// virtual ids ('network' / 'search-results') short-circuit before the lookup;
+// MTP ids ('mtp-…') classify via `isMtpVolumeId` without needing the store.
+// An empty store is enough for every id this suite exercises.
+vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
+
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ error: logErrorSpy, warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }))
 
 import { createClipboardOperations } from './clipboard-operations'
+// The real classifier (volume store is mocked to empty; virtual ids short-circuit,
+// MTP ids classify via `isMtpVolumeId`), used by the equivalence pin below.
+import { capabilitiesFor as capabilitiesForReal } from './volume-capabilities'
 
 /** Builds a `FilePaneAPI` stub exposing only the members the clipboard path reads. */
 function buildPaneRef(
@@ -294,5 +304,52 @@ describe('getSnapshotClipboardPaths', () => {
     const access = buildAccess({ paneRef, volumeId: 'search-results' })
 
     expect(createClipboardOperations(access, buildDialogs()).getSnapshotClipboardPaths()).toBeNull()
+  })
+})
+
+/**
+ * PR3 / A6: the MTP clipboard refusal moved from `volumeId.startsWith('mtp-')`
+ * to the capability table's `kind === 'mtp'`. Pin that the converted gate is
+ * byte-equivalent to the old string compare across every volumeId a focused
+ * pane can hold when a clipboard op fires — so no user-visible toast changes.
+ *
+ * The capability MTP arm (`isMtpVolumeId || category === 'mobile_device'`) is
+ * BROADER than `startsWith('mtp-')` (it also catches colon-form ids), but no
+ * live clipboard-time pane is colon-form-only: real MTP panes carry
+ * `mtp-{location}` / `mtp-{device}:{storage}` ids, both `startsWith('mtp-')`.
+ * And `network` / `search-results` (which also lack a system clipboard) must
+ * NOT be MTP-refused — `kind === 'mtp'` keeps them out, unlike a raw
+ * `!supportsSystemClipboard` read would.
+ */
+describe('MTP clipboard-refusal equivalence (PR3 / A6)', () => {
+  // The live set of volumeIds a focused pane can hold when copy/cut/paste fires.
+  const liveClipboardPaneIds = [
+    'root', // local main volume
+    'attached-1', // attached local volume
+    'smb-host-share', // mounted SMB share
+    'mtp-1234', // MTP device (location-id form)
+    'mtp-1234:0x00010001', // MTP storage (device:storage form)
+    'network', // the synthetic network browser (paste reaches this; copy/cut bail earlier)
+    'search-results', // the snapshot pane (clipboard blocked upstream by dispatch)
+  ]
+
+  it('matches the old startsWith("mtp-") gate on the live pane-id set', () => {
+    for (const id of liveClipboardPaneIds) {
+      const oldGate = id.startsWith('mtp-')
+      const newGate = capabilitiesForReal(id).kind === 'mtp'
+      expect(newGate, `gate mismatch for ${id}`).toBe(oldGate)
+    }
+  })
+
+  it('does not MTP-refuse a network paste (byte-identical: network falls through)', async () => {
+    readClipboardFilesSpy.mockResolvedValue({ paths: [], isCut: false })
+    const access = buildAccess({ volumeId: 'network', path: 'smb://host' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    // No MTP toast; the gate falls through to the real clipboard read, which
+    // here finds an empty clipboard — exactly the pre-conversion behavior.
+    expect(addToastSpy).not.toHaveBeenCalledWith('Use F5 to copy files to MTP devices', { level: 'info' })
+    expect(readClipboardFilesSpy).toHaveBeenCalled()
   })
 })
