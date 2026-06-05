@@ -1,7 +1,7 @@
 /**
  * Component tests for `TransferDialog.svelte`'s upfront conflict UX.
  *
- * Covers the M2 behavior: the top-level conflict check runs in parallel with
+ * Covers the decoupled conflict UX: the top-level conflict check runs in parallel with
  * the (potentially slow) scan preview, dir-vs-dir collisions classify as merge
  * info rather than conflicts, the file-policy radios show for merges too, the
  * cross-type "Overwrite all" guardrail, and the auto-confirm (MCP) payload

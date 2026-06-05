@@ -143,10 +143,14 @@ fn folder_conflict_count(events: &CollectorEventSink) -> usize {
 
 /// THE INVARIANT: a merge never deletes or overwrites a dest file the source
 /// doesn't shadow — under EVERY file policy, including ask-mode with scripted
-/// answers, and including cancel / rollback mid-merge.
+/// answers.
 ///
 /// We enumerate every file policy over the rich merge fixture and assert that
-/// every dest-only file (`keep*`) is byte-identical afterward, every time.
+/// every dest-only file (`keep*`) is byte-identical afterward, every time. The
+/// cancel / rollback mid-merge slice of the same invariant lives in the sibling
+/// tests `merge_cancel_mid_stream_preserves_unshadowed_dest_files` (this file)
+/// and the `cancel_mid_merge_stream_*` / `rollback_mid_merge_stream_*` cases in
+/// `volume_copy_rollback_tests.rs`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn merge_never_deletes_unshadowed_dest_files_under_every_policy() {
     // (policy, scripted Stop answer or None, apply_to_all)

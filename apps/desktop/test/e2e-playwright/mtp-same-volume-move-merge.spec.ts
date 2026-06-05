@@ -1,5 +1,5 @@
 /**
- * E2E test for the same-volume rename-merge fast path (M4).
+ * E2E test for the same-volume rename-merge fast path.
  *
  * Moving a folder onto an existing same-named folder on the SAME volume MERGES
  * via server-side renames: the folder itself never prompts, a clashing file

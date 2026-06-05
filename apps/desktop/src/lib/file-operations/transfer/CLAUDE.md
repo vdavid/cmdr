@@ -135,9 +135,9 @@ of "Verifying before move…" before a 100 ms rename. So:
 - `handleConfirm` for a same-volume move dispatches IMMEDIATELY with `previewId = null` and `scanInProgress = false`, so
   `TransferProgressDialog` never enters `waitForScanThenStart` — it calls `startOperation()` directly (no scan
   listeners, no gating). It still awaits the cheap conflict check for `conflictNames`.
-- The cheap top-level conflict check (M2 decoupling) keeps running independently on mount, so a same-volume move still
-  surfaces "N folders will merge" and the file-policy radios. This decoupling is the prerequisite that lets us cancel
-  the deep preview without degrading the conflict UX.
+- The cheap top-level conflict check (decoupled from the deep preview) keeps running independently on mount, so a
+  same-volume move still surfaces "N folders will merge" and the file-policy radios. This decoupling is the prerequisite
+  that lets us cancel the deep preview without degrading the conflict UX.
 - Size bar: `bytesTotal = 0` already hides it (`{#if bytesTotal > 0}`), honest for a rename. The progress dialog reads
   with Files-only progress; the complete toast counts top-level items (a moved folder counts as one item).
 - Pinned by `TransferDialog.test.ts` § "same-volume move scan gating" (no scan started for a same-volume move; the
