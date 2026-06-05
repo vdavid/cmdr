@@ -96,6 +96,14 @@ entirely (mount requires permissions a headless run can't grant); Linux uses GVF
 tests have a known GVFS race in Docker (the `UDisks2VolumeMonitor` warning, see `gio mount` failures); they flake
 ~10-20% of the time. Treated as a pre-existing environmental issue, not the test's fault.
 
+**The stack is shared machine-wide.** Concurrent SMB-touching runs across git worktrees (two `check.sh` invocations, or
+a `check.sh` plus a manual `start.sh`) now coexist: every bring-up and teardown routes through a Go lease helper
+(`scripts/check/smblease`) that refcounts holders and downs the stack only when the last one leaves. So a sibling
+worktree's teardown no longer kills your live suite. If a leaked lease keeps the stack up after everything's idle, check
+state with `(cd scripts/check && go run ./smb-lease status)` and force it down with
+`rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`. See `apps/desktop/test/smb-servers/README.md` §
+"Shared stack across worktrees" for the full model.
+
 ### MCP servers (for ad-hoc exploration during test writing)
 
 When the dev server is running (`pnpm dev` at repo root):

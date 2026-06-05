@@ -5,6 +5,13 @@
 //! `CMDR_SOAK_ITERATIONS` or `CMDR_SOAK_DURATION_SECS` set. Declared as a
 //! `#[cfg(test)]` submodule of `smb`; shared helpers come from
 //! `super::smb_test_support`.
+//!
+//! Run a manual soak alone: it shares the machine-wide `smb-consumer` stack
+//! with any other live SMB work (a sibling worktree's integration suite, an
+//! E2E run), and a concurrent load that *ramps* mid-soak can inflate the
+//! drift ratio below into a false failure. The drift assertion is relative
+//! (last-10% vs first-10%), so a *uniform* concurrent slowdown won't trip it,
+//! but a load that grows over the soak's lifetime can.
 
 use super::smb_test_support::*;
 use super::*;

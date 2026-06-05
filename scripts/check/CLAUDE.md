@@ -109,7 +109,9 @@ dot | dot -Tpng -o checks.png`).
 | `stats.go`            | CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`                                           |
 | `colors.go`           | ANSI color constants                                                                                                               |
 | `utils.go`            | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                                                      |
-| `smb_orchestrator.go` | Runner-level SMB Docker lifecycle (start once at runner init, stop at exit)                                                        |
+| `smb_orchestrator.go` | Runner-level SMB Docker lifecycle: acquires a machine-wide lease (via `smblease`) at init, releases at exit                        |
+| `smblease/`           | Library: the machine-wide flock + holder-id refcount that makes the shared `smb-consumer` stack safe across worktrees              |
+| `smb-lease/`          | Thin `package main` CLI onto `smblease` (`acquire`/`release`/`reconcile`/`status`) that the bash scripts shell out to              |
 | `freestyle.go`        | All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`                                                         |
 | `checks/`             | One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)                               |
 
@@ -218,19 +220,27 @@ when deps haven't changed. A marker file (`node_modules/.pnpm-install-marker`) s
 each successful install. On the next run, if the mtime matches, install is skipped. The marker lives inside
 `node_modules/` so it's automatically invalidated if `node_modules` is deleted. Always runs in CI (`--ci`).
 
-**Decision**: SMB Docker container lifecycle is owned by a runner-level orchestrator, not per-check. **Why**: Multiple
-checks (`desktop-rust-integration-tests`, `desktop-e2e-linux`) need the shared `smb-consumer` Docker Compose project.
-Before, each owned the lifecycle: start in entry, `defer ./stop.sh` in cleanup. When both ran in parallel under
-`--include-slow`, whichever finished first would tear down containers the other was still using, producing
-`Cannot reach smb-consumer-X` cascades. `SmbOrchestrator` (`scripts/check/smb_orchestrator.go`) lifts lifecycle one
-level up: at runner init, after `selectChecks()` resolves the planned set, the orchestrator brings up the union of
-`NeedsSmb` modes (`SmbModeCore` for integration tests, `SmbModeE2E` for e2e). At runner exit (normal, `--fail-fast`, or
-SIGINT) it tears down once. Checks marked `NeedsSmb` no longer manage their own lifecycle: they assume the containers
-are up and call `waitForSmbContainers` as a cheap mid-run zombie-guard. The smaller scripts (`start.sh`,
-`e2e-linux.sh::start_smb_containers`) keep working standalone for `pnpm test:e2e:linux` invocations outside the check
-runner; under check.sh their start.sh invocation just sees the orchestrator's containers already running and probes are
-idempotent. The SIGINT handler in `main.go` captures the orchestrator via shared variable so a Ctrl+C also triggers
-`./stop.sh` with a banner before exiting 130.
+**Decision**: SMB Docker container lifecycle is owned by a runner-level orchestrator that holds a machine-wide lease,
+not per-check and not per-process. **Why**: Multiple checks (`desktop-rust-integration-tests`, `desktop-e2e-linux`) need
+the shared `smb-consumer` Docker Compose project. Two layers of contention had to be solved:
+
+- _Intra-process_: each check used to own the lifecycle (start in entry, `defer ./stop.sh` in cleanup); two in one run
+  raced each other. `SmbOrchestrator` (`scripts/check/smb_orchestrator.go`) lifts lifecycle one level up — at runner
+  init, after `selectChecks()` resolves the planned set, it brings up the union of `NeedsSmb` modes (`SmbModeCore` for
+  integration tests, `SmbModeE2E` for e2e) once, and tears down once at runner exit. Checks marked `NeedsSmb` assume the
+  containers are up and call `waitForSmbContainers` as a cheap mid-run zombie-guard.
+- _Cross-process / cross-worktree_: two `check.sh` runs (or a `check.sh` plus a manual `start.sh`) in different
+  worktrees have independent orchestrators, so the in-process map can't stop them racing the same containers. The
+  orchestrator therefore takes a **machine-wide lease** via the `smblease` library (holder-id = its own `check.sh` PID).
+  `EnsureStarted` calls `smblease.Acquire` (adopt-or-reconcile under a flock); `Stop` calls `smblease.Release` (down
+  only at zero holders, lock held across the down). The orchestrator imports the lib in-process — no subprocess —
+  because it's already Go in the same module.
+
+The standalone scripts (`start.sh`, `e2e-linux.sh::start_smb_containers`) take their **own** leases (`manual` for
+`start.sh`, `$$` for `e2e-linux.sh`), so a manual run alongside a `check.sh` run just registers as a second holder and
+neither tears the other's stack down. The SIGINT handler in `main.go` captures the orchestrator via shared variable so a
+Ctrl+C also releases the lease (with a banner) before exiting 130. See [`smblease/smblease.go`](smblease/smblease.go)
+for the lock/lease/policy model.
 
 **Decision**: cmdr's SMB stack binds a dedicated host-port range (11480+), not smb2's default (10480+). **Why**: cmdr
 runs a _vendored copy_ of smb2's `consumer` compose under its own project name (`smb-consumer`), while smb2's own test
@@ -305,33 +315,17 @@ via `[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
 **`--only-slow` needs ~20 min timeout.** Slow checks (E2E tests, `rust-tests-linux`) take significantly longer than the
 default checks. When running `--only-slow` via an agent or CI, set the timeout to at least 20 minutes (1,200,000 ms).
 
-**Never run two `./scripts/check.sh` invocations concurrently if either touches SMB.** The `SmbOrchestrator` is scoped
-to one runner process: it starts the `smb-consumer` Docker Compose project at runner init and tears it down at runner
-exit. Two parallel invocations get two orchestrators racing the same containers. The first to finish runs `./stop.sh`
-while the other is still mid-test, producing `Cannot reach smb-consumer-X` cascades. Symptom: a previously green check
-(typically `desktop-e2e-linux` or `desktop-rust-integration-tests`) starts failing several SMB tests with 30 s timeouts
-in the second-to-finish run.
+**Concurrent SMB-touching runs across worktrees now coexist.** Two `./scripts/check.sh` invocations in different
+worktrees (or a `check.sh` alongside a manual `start.sh` / `pnpm test:e2e:linux`) each take a machine-wide `smblease`
+lease and share the same `smb-consumer` stack. Whichever finishes first releases its lease but sees a non-zero refcount,
+so it does **not** down the stack — the other run keeps serving. The stack downs only when the last holder leaves. The
+old `Cannot reach smb-consumer-X` cascade (one run's teardown killing another's mid-test) is the exact failure the lease
+closes.
 
-The right way to run two SMB-touching checks together is one invocation with multiple `--check` flags so the same
-orchestrator owns the containers, or sequentially. For example:
-
-```sh
-# Good: one orchestrator, shared SMB stack
-./scripts/check.sh --check desktop-e2e-linux --check desktop-e2e-playwright
-
-# Also fine: sequential
-./scripts/check.sh --check desktop-e2e-linux
-./scripts/check.sh --check desktop-e2e-playwright
-
-# Wrong: two orchestrators racing
-./scripts/check.sh --check desktop-e2e-linux &
-./scripts/check.sh --check desktop-e2e-playwright &
-```
-
-Same applies to running a check.sh invocation alongside a raw `pnpm test:e2e:linux` or
-`apps/desktop/test/smb-servers/start.sh` in another terminal — only one process should own the SMB stack at a time. The
-`e2e-linux.sh` and `start.sh` scripts are safe to run standalone when no `check.sh` is also running, but they don't
-coordinate with each other across processes.
+A leaked or lingering stack (a forgotten manual `start.sh`, or a numeric holder whose PID got recycled) is the benign
+direction: it stays up until a human reaps it. Check state with `(cd scripts/check && go run ./smb-lease status)`; force
+it down with `rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`. See
+`apps/desktop/test/smb-servers/README.md` § "Shared stack across worktrees" and `smblease/smblease.go`.
 
 ## Dependencies
 

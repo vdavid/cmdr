@@ -1438,7 +1438,12 @@ async fn run_concurrent_write_pass(
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    let unique_prefix = format!("{TEST_PREFIX_ROOT}{ts}-n{n_files}");
+    // Include the PID so two concurrent runs (different worktrees sharing the
+    // same `smb-consumer` container) never target the same dest dir within the
+    // same wall-clock second. Mirrors `test_dir_name()`'s uniqueness recipe;
+    // `ts`'s 1-second granularity alone is collision-prone across sessions.
+    let pid = std::process::id();
+    let unique_prefix = format!("{TEST_PREFIX_ROOT}{pid}-{ts}-n{n_files}");
 
     let dest_dir_abs = mount_path.join(unique_prefix.trim_start_matches('/'));
     let _ = vol.create_directory(&mount_path.join("_test")).await;
