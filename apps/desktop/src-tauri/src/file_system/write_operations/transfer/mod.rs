@@ -32,6 +32,8 @@ pub(super) mod volume_strategy;
 pub(crate) use super::state::CopyTransaction;
 
 #[cfg(test)]
+pub(crate) mod conflict_responder_test_support;
+#[cfg(test)]
 mod copy_integration_test;
 #[cfg(test)]
 mod hardlink_progress_tests;

@@ -9,17 +9,16 @@
 //! exactly as in production. Shared fixtures `make_state` / `make_volumes` live in
 //! `volume_copy_tests.rs` (`super::tests`).
 
+use super::super::conflict_responder_test_support::{ConflictResponderSink, file_conflict_count};
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::Volume;
-use crate::file_system::write_operations::state::{
-    ConflictResolutionResponse, WRITE_OPERATION_STATE, cancel_write_operation,
-};
+use crate::file_system::write_operations::state::{WRITE_OPERATION_STATE, cancel_write_operation};
 use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteErrorEvent, WriteSourceItemDoneEvent,
 };
-use std::sync::atomic::{AtomicU8, AtomicUsize};
+use std::sync::atomic::AtomicU8;
 
 // ============================================================================
 // Helpers
@@ -95,35 +94,6 @@ async fn make_rich_merge() -> (Arc<dyn Volume>, Arc<dyn Volume>) {
     (source, dest)
 }
 
-/// Background task that auto-answers EVERY Stop-mode `write-conflict` with a
-/// scripted response by polling `conflict_resolution_tx`. Runs until aborted by
-/// the caller (after the driven op returns), so it never blocks the test for a
-/// fixed duration — the count of prompts answered is read from the returned
-/// `Arc<AtomicUsize>`.
-fn spawn_conflict_responder(
-    state: &Arc<WriteOperationState>,
-    resolution: ConflictResolution,
-    apply_to_all: bool,
-) -> (tokio::task::JoinHandle<()>, Arc<AtomicUsize>) {
-    let state = Arc::clone(state);
-    let answered = Arc::new(AtomicUsize::new(0));
-    let answered_task = Arc::clone(&answered);
-    let handle = tokio::spawn(async move {
-        loop {
-            let tx = state.conflict_resolution_tx.lock().unwrap().take();
-            if let Some(tx) = tx {
-                let _ = tx.send(ConflictResolutionResponse {
-                    resolution,
-                    apply_to_all,
-                });
-                answered_task.fetch_add(1, Ordering::Relaxed);
-            }
-            tokio::time::sleep(Duration::from_millis(2)).await;
-        }
-    });
-    (handle, answered)
-}
-
 /// Count `write-conflict` events whose paths refer to a DIRECTORY on either side
 /// — i.e. a folder-level prompt. The contract is ZERO of these for a dir-vs-dir
 /// merge (folders always merge silently).
@@ -169,9 +139,15 @@ async fn merge_never_deletes_unshadowed_dest_files_under_every_policy() {
         let (source, dest) = make_rich_merge().await;
         let state = make_state();
 
-        let responder = scripted.map(|answer| spawn_conflict_responder(&state, answer, true));
-
-        let events = Arc::new(CollectorEventSink::new());
+        // The responder sink IS the events sink: it forwards every event to its
+        // inner collector and auto-answers any Stop-mode prompt. For non-Stop
+        // policies no prompt is ever emitted, so the scripted answer (defaulted
+        // to Skip here) never fires — the sink is a plain collector in that case.
+        let events = Arc::new(ConflictResponderSink::new(
+            &state,
+            scripted.unwrap_or(ConflictResolution::Skip),
+            true,
+        ));
         let config = VolumeCopyConfig {
             conflict_resolution: *policy,
             progress_interval_ms: 0,
@@ -190,9 +166,6 @@ async fn merge_never_deletes_unshadowed_dest_files_under_every_policy() {
         )
         .await;
 
-        if let Some((handle, _)) = responder {
-            handle.abort();
-        }
         assert!(
             result.is_ok(),
             "policy {policy:?}/{scripted:?} should complete, got {result:?}"
@@ -224,7 +197,7 @@ async fn merge_never_deletes_unshadowed_dest_files_under_every_policy() {
 
         // Zero folder-level prompts under EVERY policy, even Stop.
         assert_eq!(
-            folder_conflict_count(&events),
+            folder_conflict_count(&events.inner),
             0,
             "policy {policy:?}/{scripted:?}: a dir-vs-dir merge wrongly emitted a folder conflict"
         );
@@ -457,9 +430,7 @@ async fn stop_mode_deep_file_clash_emits_conflict_and_resumes() {
         .unwrap();
 
     let state = make_state();
-    let (responder, answered) = spawn_conflict_responder(&state, ConflictResolution::Overwrite, false);
-
-    let events = Arc::new(CollectorEventSink::new());
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Overwrite, false));
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Stop,
         progress_interval_ms: 0,
@@ -477,10 +448,11 @@ async fn stop_mode_deep_file_clash_emits_conflict_and_resumes() {
         &config,
     )
     .await;
-    responder.abort();
     assert!(result.is_ok(), "expected Ok, got {result:?}");
+    // The sink-recorded file prompts ARE the race-free count once the op future
+    // has completed — exactly one Stop prompt for the deep clash.
     assert_eq!(
-        answered.load(Ordering::Relaxed),
+        file_conflict_count(&events.inner),
         1,
         "exactly one Stop prompt expected for the deep clash"
     );
@@ -491,7 +463,7 @@ async fn stop_mode_deep_file_clash_emits_conflict_and_resumes() {
     // `await_holding_lock` flags a guard alive across `.await` even with an
     // explicit `drop`, so we end the borrow by leaving the block instead).
     let (src_path, dst_path, src_is_dir, dst_is_dir, n_conflicts) = {
-        let conflicts = events.conflicts.lock().unwrap();
+        let conflicts = events.inner.conflicts.lock().unwrap();
         let c = conflicts.first().expect("exactly one deep file conflict");
         (
             c.source_path.clone(),
@@ -725,9 +697,7 @@ async fn concurrent_merge_with_two_deep_clashes_serializes_prompts() {
     source.create_file(Path::new("/three.txt"), b"THREE").await.unwrap();
 
     let state = make_state();
-    let (responder, answered) = spawn_conflict_responder(&state, ConflictResolution::Overwrite, false);
-
-    let events = Arc::new(CollectorEventSink::new());
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Overwrite, false));
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Stop,
         progress_interval_ms: 0,
@@ -749,9 +719,10 @@ async fn concurrent_merge_with_two_deep_clashes_serializes_prompts() {
         &config,
     )
     .await;
-    responder.abort();
     assert!(result.is_ok(), "expected Ok, got {result:?}");
-    let n = answered.load(Ordering::Relaxed);
+    // Sink-derived: both deep clashes prompted (the dispatch mutex serialized
+    // them through the single oneshot slot, each answered in turn).
+    let n = file_conflict_count(&events.inner);
     assert_eq!(n, 2, "both deep clashes should prompt and be answered, got {n}");
 
     // Both clashes overwritten (50_000 bytes of 1u8), both dest-only files kept.
@@ -790,9 +761,7 @@ async fn top_level_and_deep_clash_share_the_dispatch_mutex() {
     let state = make_state();
     // One "…all" answer collapses any queued prompt via the latch double-check,
     // so at most 2 prompts ever emit (top + deep), often just 1.
-    let (responder, _answered) = spawn_conflict_responder(&state, ConflictResolution::Overwrite, true);
-
-    let events = Arc::new(CollectorEventSink::new());
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Overwrite, true));
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Stop,
         progress_interval_ms: 0,
@@ -814,7 +783,6 @@ async fn top_level_and_deep_clash_share_the_dispatch_mutex() {
         &config,
     )
     .await;
-    responder.abort();
     assert!(result.is_ok(), "expected Ok, got {result:?}");
 
     // Both clashes overwritten by the "…all" choice; dest-only file survives.

@@ -196,6 +196,16 @@ pub(super) async fn resolve_volume_conflict(
                 _ => None,
             };
 
+            // Store the oneshot sender BEFORE emitting the event. A responder
+            // (the FE's `resolve_write_conflict`, or a test responder sink that
+            // takes the sender inside its `emit_conflict` callback) can only
+            // answer a conflict it has observed; if the event reached it before
+            // the sender slot was filled, its `take()` would miss and the op's
+            // `rx.await` below would hang. Storing first makes the sender
+            // available the instant the event is in the responder's hands.
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+
             events.emit_conflict(WriteConflictEvent {
                 operation_id: operation_id.to_string(),
                 source_path: source_path.display().to_string(),
@@ -209,10 +219,6 @@ pub(super) async fn resolve_volume_conflict(
                 source_is_directory,
                 destination_is_directory,
             });
-
-            // Create a oneshot channel for this conflict resolution
-            let (tx, rx) = tokio::sync::oneshot::channel();
-            *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
 
             // Wait for user to call resolve_write_conflict.
             match rx.await {

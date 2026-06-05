@@ -17,12 +17,11 @@
 //! (CI) and macOS. The case-fold tests use a dedicated case-insensitive wrapper
 //! so they're portable regardless of the host filesystem's case sensitivity.
 
+use super::conflict_responder_test_support::{ConflictResponderSink, file_conflict_count};
 use super::volume_move::move_within_same_volume_with_progress;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
-use crate::file_system::write_operations::state::{
-    ConflictResolutionResponse, WRITE_OPERATION_STATE, WriteOperationState, cancel_write_operation,
-};
+use crate::file_system::write_operations::state::{WRITE_OPERATION_STATE, WriteOperationState, cancel_write_operation};
 use crate::file_system::write_operations::types::{
     CollectorEventSink, ConflictResolution, VolumeCopyConfig, WriteOperationError,
 };
@@ -63,40 +62,6 @@ fn read(root: &Path, rel: &str) -> Vec<u8> {
 
 fn exists(root: &Path, rel: &str) -> bool {
     root.join(rel).exists()
-}
-
-/// Background task that auto-answers EVERY Stop-mode `write-conflict` with a
-/// scripted response. Returns the count of prompts answered.
-fn spawn_conflict_responder(
-    state: &Arc<WriteOperationState>,
-    resolution: ConflictResolution,
-    apply_to_all: bool,
-) -> (tokio::task::JoinHandle<()>, Arc<AtomicUsize>) {
-    let state = Arc::clone(state);
-    let answered = Arc::new(AtomicUsize::new(0));
-    let answered_task = Arc::clone(&answered);
-    let handle = tokio::spawn(async move {
-        loop {
-            let tx = state.conflict_resolution_tx.lock().unwrap().take();
-            if let Some(tx) = tx {
-                // Count the answer BEFORE sending it. `tx.send` unblocks the
-                // operation's `rx.await` synchronously, so the op can run to
-                // completion (and the test can read `answered`) before this task
-                // is rescheduled. Incrementing after the send leaves a window —
-                // widened under CPU contention — where the op finishes with the
-                // counter still reading 0, a false "no prompt" failure. Bumping
-                // the counter first establishes the happens-before: by the time
-                // the op observes its resume, the count already reflects it.
-                answered_task.fetch_add(1, Ordering::Relaxed);
-                let _ = tx.send(ConflictResolutionResponse {
-                    resolution,
-                    apply_to_all,
-                });
-            }
-            tokio::time::sleep(Duration::from_millis(2)).await;
-        }
-    });
-    (handle, answered)
 }
 
 /// Counts `write-conflict` events that name a DIRECTORY on either side — i.e. a
@@ -272,14 +237,13 @@ async fn rename_merge_stop_file_clash_prompts_and_resumes() {
     write_file(root, "src/album/clash.txt", b"SRC-NEW");
     write_file(root, "dst/album/clash.txt", b"DEST-OLD");
 
-    let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Overwrite, false));
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Stop,
         progress_interval_ms: 0,
         ..VolumeCopyConfig::default()
     };
-    let (responder, answered) = spawn_conflict_responder(&state, ConflictResolution::Overwrite, false);
 
     let result = move_within_same_volume_with_progress(
         events.clone(),
@@ -291,12 +255,15 @@ async fn rename_merge_stop_file_clash_prompts_and_resumes() {
         &config,
     )
     .await;
-    responder.abort();
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
-    // Exactly one FILE prompt, zero FOLDER prompts.
-    assert_eq!(answered.load(Ordering::Relaxed), 1, "exactly one file clash prompted");
-    assert_eq!(folder_conflict_count(&events), 0, "the folder itself never prompts");
+    // Exactly one FILE prompt, zero FOLDER prompts — sink-derived, race-free.
+    assert_eq!(file_conflict_count(&events.inner), 1, "exactly one file clash prompted");
+    assert_eq!(
+        folder_conflict_count(&events.inner),
+        0,
+        "the folder itself never prompts"
+    );
     // The Overwrite answer landed the source bytes.
     assert_eq!(read(root, "dst/album/clash.txt"), b"SRC-NEW");
 }
@@ -773,15 +740,15 @@ async fn case_folded_file_collision_prompts_exactly_once() {
         inner: Arc::new(LocalPosixVolume::new("V", root.to_path_buf())),
     });
 
-    let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Stop,
         progress_interval_ms: 0,
         ..VolumeCopyConfig::default()
     };
-    // Answer Overwrite once; if the net re-prompted we'd see answered > 1.
-    let (responder, answered) = spawn_conflict_responder(&state, ConflictResolution::Skip, false);
+    // Answer Skip once; if the net re-prompted we'd see more than one recorded
+    // file conflict.
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Skip, false));
 
     let result = move_within_same_volume_with_progress(
         events.clone(),
@@ -793,15 +760,14 @@ async fn case_folded_file_collision_prompts_exactly_once() {
         &config,
     )
     .await;
-    responder.abort();
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
     assert_eq!(
-        answered.load(Ordering::Relaxed),
+        file_conflict_count(&events.inner),
         1,
         "a case-folded file collision must prompt exactly once"
     );
-    assert_eq!(folder_conflict_count(&events), 0);
+    assert_eq!(folder_conflict_count(&events.inner), 0);
 }
 
 /// A child resolved Overwrite that THEN collides on the case-folded name must
@@ -821,14 +787,13 @@ async fn case_folded_overwrite_does_not_prompt_twice() {
         inner: Arc::new(LocalPosixVolume::new("V", root.to_path_buf())),
     });
 
-    let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Stop,
         progress_interval_ms: 0,
         ..VolumeCopyConfig::default()
     };
-    let (responder, answered) = spawn_conflict_responder(&state, ConflictResolution::Overwrite, false);
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Overwrite, false));
 
     let result = move_within_same_volume_with_progress(
         events.clone(),
@@ -840,11 +805,10 @@ async fn case_folded_overwrite_does_not_prompt_twice() {
         &config,
     )
     .await;
-    responder.abort();
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
     assert_eq!(
-        answered.load(Ordering::Relaxed),
+        file_conflict_count(&events.inner),
         1,
         "a child resolved Overwrite must NOT re-prompt when its rename collides on case-fold"
     );
