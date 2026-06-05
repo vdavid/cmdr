@@ -10,6 +10,7 @@
         onScanPreviewError,
         onScanPreviewCancelled,
         scanVolumeForConflicts,
+        DEFAULT_VOLUME_ID,
         type VolumeSpaceInfo,
         type SourceItemInput,
         type UnlistenFn,
@@ -26,7 +27,12 @@
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import { generateTitle, shouldShowHardlinkNote, toVolumeRelativePath } from './transfer-dialog-utils'
+    import {
+        deriveTransferLabel,
+        generateTitle,
+        shouldShowHardlinkNote,
+        toVolumeRelativePath,
+    } from './transfer-dialog-utils'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import Size from '$lib/ui/Size.svelte'
@@ -174,14 +180,38 @@
     // Get selected volume info
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === selectedVolumeId))
 
-    /** A same-volume move: the source and destination are the SAME volume and the
-     *  active operation is Move. The backend handles this as a server-side rename
-     *  (instant, zero bytes), so the deep recursive scan preview — which exists
-     *  only to feed a Size bar — is pure waste here and used to cost 30–40 s of
-     *  "Verifying before move…" on a NAS. For this case we dispatch immediately
-     *  and skip the deep scan; the cheap top-level conflict check still runs.
-     *  Derived from what the dialog already knows (no extra prop). */
-    const isSameVolumeMove = $derived(activeOperationType === 'move' && sourceVolumeId === selectedVolumeId)
+    // Source/destination labels for the direction header. At a volume root the
+    // path basename isn't a user-meaningful name — for an MTP storage root it's
+    // the raw storage id (like "65538"). `deriveTransferLabel` falls back to the
+    // volume's display name in that case (like "Virtual Pixel 9 - SD Card").
+    const sourceVolume = $derived(volumes.find((v) => v.id === sourceVolumeId))
+    const sourceLabel = $derived(
+        deriveTransferLabel(sourceFolderPath, sourceVolume?.path ?? '/', sourceVolume?.name ?? ''),
+    )
+    const destinationLabel = $derived(
+        deriveTransferLabel(destinationPath, selectedVolume?.path ?? '/', selectedVolume?.name ?? ''),
+    )
+
+    /** A same-volume move: the source and destination are the SAME NON-DEFAULT
+     *  volume (one smb2 share / one MTP device) and the active operation is Move.
+     *  The backend handles this as a server-side rename (instant, zero bytes), so
+     *  the deep recursive scan preview — which exists only to feed a Size bar — is
+     *  pure waste here and used to cost 30–40 s of "Verifying before move…" on a
+     *  NAS. For this case we dispatch immediately and skip the deep scan; the
+     *  cheap top-level conflict check still runs.
+     *
+     *  The DEFAULT_VOLUME_ID exclusion is load-bearing: a local→local move (root →
+     *  root) is NOT a server-side rename. The backend's local move path CONSUMES
+     *  the preview cache via `config.preview_id`, and the dialog's own tallies come
+     *  from the preview — cancelling it both zeroes the counters and forces a BE
+     *  re-scan. So local→local must keep the deep preview running, matching the
+     *  same guard in `TransferProgressDialog`'s `isSameVolumeMove`. Derived from
+     *  what the dialog already knows (no extra prop). */
+    const isSameVolumeMove = $derived(
+        activeOperationType === 'move' &&
+            sourceVolumeId !== DEFAULT_VOLUME_ID &&
+            sourceVolumeId === selectedVolumeId,
+    )
 
     const dialogTitle = $derived(generateTitle(activeOperationType, fileCount, folderCount))
     const showHardlinkNote = $derived(
@@ -596,7 +626,13 @@
     </div>
 
     <!-- Direction indicator -->
-    <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
+    <DirectionIndicator
+        sourcePath={sourceFolderPath}
+        {destinationPath}
+        {direction}
+        {sourceLabel}
+        {destinationLabel}
+    />
 
     <!-- Volume selector -->
     <div class="volume-selector">

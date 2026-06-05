@@ -48,6 +48,31 @@ export function getFolderName(path: string): string {
 }
 
 /**
+ * Derives the user-facing label for one side of the transfer direction header.
+ *
+ * Normally the basename is the right thing to show ("photos" for
+ * `/mtp-20-5/65538/photos`). But at a volume root the last path segment isn't a
+ * user-meaningful name — for an MTP storage root the basename is the raw storage
+ * id (`65538` = 0x10002), which surfaced as "65538 <- cmdr" in the header. When
+ * the path IS the volume root (or empty / "/"), fall back to the volume's
+ * display name (like "Virtual Pixel 9 - SD Card"). A missing display name falls
+ * back to the basename so the label never blanks.
+ *
+ * @param path - The folder path for this side (source or destination)
+ * @param volumeRootPath - The root path of the volume this folder lives on
+ * @param volumeDisplayName - The volume's display name from the volume store
+ */
+export function deriveTransferLabel(path: string, volumeRootPath: string, volumeDisplayName: string): string {
+  const normPath = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path
+  const normRoot = volumeRootPath.endsWith('/') && volumeRootPath !== '/' ? volumeRootPath.slice(0, -1) : volumeRootPath
+  const atRoot = normPath === '' || normPath === '/' || normPath === normRoot
+  if (atRoot && volumeDisplayName !== '') {
+    return volumeDisplayName
+  }
+  return getFolderName(path)
+}
+
+/**
  * Converts frontend indices to backend indices.
  *
  * When a directory listing has a parent entry ("..") shown at index 0,

@@ -3,6 +3,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import {
+  deriveTransferLabel,
   generateTitle,
   getFolderName,
   shouldShowHardlinkNote,
@@ -97,6 +98,42 @@ describe('getFolderName', () => {
 
   it('handles home directory tilde expansion result', () => {
     expect(getFolderName('/Users/veszelovszki')).toBe('veszelovszki')
+  })
+})
+
+describe('deriveTransferLabel', () => {
+  it('uses the folder basename for a normal subfolder', () => {
+    // A subfolder one level below the volume root: basename is meaningful.
+    expect(deriveTransferLabel('/mtp-20-5/65538/photos', '/mtp-20-5/65538', 'Virtual Pixel 9 - SD Card')).toBe('photos')
+  })
+
+  it('falls back to the volume display name at an MTP storage root (basename is a storage id)', () => {
+    // At the MTP storage root, the basename is the raw storage id "65538"
+    // (0x10002). The label must render the volume display name instead.
+    expect(deriveTransferLabel('/mtp-20-5/65538', '/mtp-20-5/65538', 'Virtual Pixel 9 - SD Card')).toBe(
+      'Virtual Pixel 9 - SD Card',
+    )
+  })
+
+  it('ignores a trailing slash when matching the volume root', () => {
+    expect(deriveTransferLabel('/mtp-20-5/65538/', '/mtp-20-5/65538', 'SD Card')).toBe('SD Card')
+  })
+
+  it('falls back to the volume display name for an empty path', () => {
+    expect(deriveTransferLabel('', '/mtp-20-5/65538', 'SD Card')).toBe('SD Card')
+  })
+
+  it('falls back to the volume display name for a bare "/" path', () => {
+    expect(deriveTransferLabel('/', '/', 'Macintosh HD')).toBe('Macintosh HD')
+  })
+
+  it('still uses the folder basename for a deep local subfolder', () => {
+    expect(deriveTransferLabel('/Users/test/Documents', '/', 'Macintosh HD')).toBe('Documents')
+  })
+
+  it('falls back to getFolderName when the volume display name is empty at the root', () => {
+    // Defensive: a missing display name shouldn't blank the label.
+    expect(deriveTransferLabel('/mtp-20-5/65538', '/mtp-20-5/65538', '')).toBe('65538')
   })
 })
 

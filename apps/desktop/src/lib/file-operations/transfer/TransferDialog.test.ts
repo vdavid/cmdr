@@ -79,6 +79,13 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
   getVolumes: () => [
     { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
     { id: 'ext', name: 'External', path: '/Volumes/External', category: 'attached_volume', isEjectable: true },
+    {
+      id: 'mtp-336592896:65538',
+      name: 'Virtual Pixel 9 - SD Card',
+      path: '/mtp-20-5/65538',
+      category: 'mobile_device',
+      isEjectable: true,
+    },
   ],
 }))
 
@@ -117,6 +124,9 @@ interface MountOpts {
   sourceVolumeId?: string
   /** The destination volume the dialog starts on (= `selectedVolumeId`). */
   currentVolumeId?: string
+  sourceFolderPath?: string
+  destinationPath?: string
+  direction?: 'left' | 'right'
 }
 
 type ConfirmFn = (
@@ -137,12 +147,12 @@ function mountDialog(opts: MountOpts = {}): HTMLDivElement {
     props: {
       operationType: opts.operationType ?? 'copy',
       sourcePaths: ['/Users/test/photos', '/Users/test/notes.txt'],
-      destinationPath: '/Users/test/dest',
-      direction: 'right',
+      destinationPath: opts.destinationPath ?? '/Users/test/dest',
+      direction: opts.direction ?? 'right',
       currentVolumeId: opts.currentVolumeId ?? 'root',
       fileCount: 1,
       folderCount: 1,
-      sourceFolderPath: '/Users/test',
+      sourceFolderPath: opts.sourceFolderPath ?? '/Users/test',
       sortColumn: 'name',
       sortOrder: 'ascending',
       sourceVolumeId: opts.sourceVolumeId ?? 'root',
@@ -427,5 +437,128 @@ describe('TransferDialog same-volume move scan gating', () => {
 
     // Copy needs byte totals → the preview starts.
     expect(startScanPreviewMock, 'flip to copy (re)starts the byte scan').toHaveBeenCalledTimes(1)
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* Local→local move: the same-volume fast path must NOT apply (BUG 1)        */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferDialog local→local move scan gating', () => {
+  it('starts the deep scan for a local→local move (default volume is NOT a same-volume move)', async () => {
+    // Both source and dest are the default local volume (root → root). The
+    // backend has a real local move path that consumes the preview cache, so the
+    // deep scan MUST run — the same-volume rename fast path is only for
+    // non-default volumes (one SMB share / one MTP device).
+    mountDialog({ operationType: 'move', sourceVolumeId: 'root', currentVolumeId: 'root' })
+    await flushMicrotasks()
+
+    expect(startScanPreviewMock, 'a local→local move must run the deep byte scan').toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT cancel the scan or zero the tallies when toggling Copy→Move locally', async () => {
+    scanVolumeForConflictsMock.mockResolvedValue([])
+    const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'root', currentVolumeId: 'root' })
+    await flushMicrotasks()
+    expect(startScanPreviewMock).toHaveBeenCalledTimes(1)
+
+    // Feed scan-complete totals so the tallies are populated, like the field repro.
+    scanCompleteCb?.({
+      previewId: 'preview-1',
+      filesTotal: 1,
+      dirsTotal: 0,
+      bytesTotal: 3267,
+      dedupBytesTotal: 3267,
+    })
+    await flushMicrotasks()
+
+    const statsBefore = target.querySelector('.scan-stats')?.textContent ?? ''
+    expect(statsBefore).toContain('1')
+    expect(statsBefore).toContain('file')
+
+    clickToggle(target, 'Move')
+    await flushMicrotasks()
+
+    // The fast-path cancel must NOT fire for a local→local move.
+    expect(cancelScanPreviewMock, 'local→local toggle must not cancel the preview').not.toHaveBeenCalled()
+    // The tallies must be preserved (not reset to 0).
+    const statsAfter = target.querySelector('.scan-stats')?.textContent ?? ''
+    expect(statsAfter).toContain('1')
+    expect(statsAfter).toContain('file')
+  })
+
+  it('dispatches a local→local move WITH a previewId (the backend consumes the cache)', async () => {
+    const captured: { previewId: string | null; scanInProgress: boolean | null; op: string | null } = {
+      previewId: 'unset',
+      scanInProgress: null,
+      op: null,
+    }
+    const onConfirm: ConfirmFn = (_d, _v, previewId, _r, operationType, scanInProgress) => {
+      captured.previewId = previewId
+      captured.scanInProgress = scanInProgress
+      captured.op = operationType
+    }
+
+    const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'root', currentVolumeId: 'root', onConfirm })
+    await flushMicrotasks()
+    scanCompleteCb?.({
+      previewId: 'preview-1',
+      filesTotal: 1,
+      dirsTotal: 0,
+      bytesTotal: 3267,
+      dedupBytesTotal: 3267,
+    })
+    await flushMicrotasks()
+
+    clickToggle(target, 'Move')
+    await flushMicrotasks()
+
+    const dialog = target.querySelector<HTMLElement>('[role="dialog"], dialog') ?? target
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushMicrotasks()
+
+    expect(captured.op).toBe('move')
+    expect(captured.previewId, 'local→local move must carry the previewId so the BE consumes the cache').toBe(
+      'preview-1',
+    )
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* Direction header label uses the volume display name at a volume root (BUG 3) */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferDialog direction-header label', () => {
+  it('renders the volume display name (not the storage id) for an MTP storage root source', async () => {
+    // Source pane is at the MTP "SD Card" storage root, whose basename is the
+    // raw storage id "65538" (0x10002). F5/F6 must show the volume name instead.
+    const target = mountDialog({
+      operationType: 'copy',
+      sourceVolumeId: 'mtp-336592896:65538',
+      sourceFolderPath: '/mtp-20-5/65538',
+      currentVolumeId: 'root',
+      destinationPath: '/Users/test/dest',
+      direction: 'left',
+    })
+    await flushMicrotasks()
+
+    const source = target.querySelector('.folder-name.source')?.textContent.trim() ?? ''
+    expect(source).toBe('Virtual Pixel 9 - SD Card')
+    expect(source).not.toContain('65538')
+  })
+
+  it('still renders the folder basename for a normal subfolder source', async () => {
+    const target = mountDialog({
+      operationType: 'copy',
+      sourceVolumeId: 'root',
+      sourceFolderPath: '/Users/test/photos',
+      currentVolumeId: 'root',
+      destinationPath: '/Users/test/dest',
+      direction: 'left',
+    })
+    await flushMicrotasks()
+
+    const source = target.querySelector('.folder-name.source')?.textContent.trim() ?? ''
+    expect(source).toBe('photos')
   })
 })

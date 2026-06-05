@@ -7,12 +7,18 @@
         destinationPath: string
         /** Direction the arrow points: 'left' means copying to left pane, 'right' means copying to right pane */
         direction: 'left' | 'right'
+        /** Override for the source label. Used when the path basename isn't a
+         *  user-meaningful name (an MTP storage root, where the basename is a raw
+         *  storage id). Falls back to the path basename when undefined. */
+        sourceLabel?: string
+        /** Override for the destination label. Same fallback as `sourceLabel`. */
+        destinationLabel?: string
     }
 
-    const { sourcePath, destinationPath, direction }: Props = $props()
+    const { sourcePath, destinationPath, direction, sourceLabel, destinationLabel }: Props = $props()
 
-    const sourceName = $derived(getFolderName(sourcePath))
-    const destinationName = $derived(getFolderName(destinationPath))
+    const sourceName = $derived(sourceLabel ?? getFolderName(sourcePath))
+    const destinationName = $derived(destinationLabel ?? getFolderName(destinationPath))
 </script>
 
 <div class="direction-indicator">

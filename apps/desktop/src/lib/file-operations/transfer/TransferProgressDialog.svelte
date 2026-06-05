@@ -47,6 +47,7 @@
     import Size from '$lib/ui/Size.svelte'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
+    import { deriveTransferLabel } from './transfer-dialog-utils'
     import ScanPhaseBody from './ScanPhaseBody.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -150,6 +151,19 @@
     const volumes = $derived(getVolumes())
     const destUsesNativeSmb = $derived(
         volumes.find((v) => v.id === destVolumeId)?.smbConnectionState === 'os_mount',
+    )
+
+    // Source/destination labels for the direction header. At a volume root the
+    // path basename isn't a user-meaningful name — for an MTP storage root it's
+    // the raw storage id (like "65538"). `deriveTransferLabel` falls back to the
+    // volume's display name in that case (like "Virtual Pixel 9 - SD Card").
+    const sourceVolume = $derived(volumes.find((v) => v.id === sourceVolumeId))
+    const destVolume = $derived(volumes.find((v) => v.id === destVolumeId))
+    const sourceLabel = $derived(
+        deriveTransferLabel(sourceFolderPath, sourceVolume?.path ?? '/', sourceVolume?.name ?? ''),
+    )
+    const destinationLabel = $derived(
+        deriveTransferLabel(destinationPath ?? '/', destVolume?.path ?? '/', destVolume?.name ?? ''),
     )
 
     /** Whether this move involves a non-local volume (MTP, etc.); backend handles all strategy. */
@@ -1005,7 +1019,13 @@
     {#if waitingForScan}
         <!-- Scan preview in progress (picked up from TransferDialog) -->
         {#if !isDeleteOrTrash && destinationPath && direction}
-            <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
+            <DirectionIndicator
+                sourcePath={sourceFolderPath}
+                {destinationPath}
+                {direction}
+                {sourceLabel}
+                {destinationLabel}
+            />
         {/if}
 
         <div class="scan-wait-section">
@@ -1230,7 +1250,13 @@
     {:else}
         <!-- Direction indicator (copy/move only) -->
         {#if !isDeleteOrTrash && destinationPath && direction}
-            <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
+            <DirectionIndicator
+                sourcePath={sourceFolderPath}
+                {destinationPath}
+                {direction}
+                {sourceLabel}
+                {destinationLabel}
+            />
         {/if}
 
         <!-- Progress stages -->
