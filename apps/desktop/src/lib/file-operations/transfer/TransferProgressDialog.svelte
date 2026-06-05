@@ -157,6 +157,20 @@
         operationType === 'move' && (sourceVolumeId !== DEFAULT_VOLUME_ID || (destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID),
     )
 
+    /** A move where source and destination are the SAME non-default volume (one
+     *  smb2 share / one MTP device). The backend handles these as a server-side
+     *  rename-merge with NO rollback support — it stops without reversing and
+     *  reports `rolled_back: false`. Local→local same-FS moves DO have real
+     *  rollback (via `MoveTransaction`), so the default local volume is excluded.
+     *  Drives the disabled Rollback affordance + tooltip. */
+    const isSameVolumeMove = $derived(
+        operationType === 'move' &&
+            sourceVolumeId !== DEFAULT_VOLUME_ID &&
+            sourceVolumeId === (destVolumeId ?? sourceVolumeId),
+    )
+
+    const ROLLBACK_UNAVAILABLE_TOOLTIP = 'Rollback is not available for same-volume moves'
+
     /** Minimum display time (ms) to prevent jarring one-frame flash. */
     const MIN_DISPLAY_MS = 400
     /** After this many ms of waiting for the backend to settle, the
@@ -1179,9 +1193,22 @@
                 </div>
             </div>
 
-            <!-- Cancel at bottom -->
+            <!-- Cancel at bottom. Same-volume volume moves have no backend
+                 rollback, so Rollback is DISABLED (with a tooltip) and a plain
+                 Cancel sits alongside it so the user can always back out. -->
             <div class="conflict-cancel">
-                {#if isCopy || isMove}
+                {#if isSameVolumeMove}
+                    <button
+                        class="danger-text"
+                        onclick={() => handleCancel(false)}
+                        disabled={isCancelling || isResolvingConflict}
+                    >
+                        Cancel
+                    </button>
+                    <span use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP} class="disabled-button-wrap">
+                        <button class="danger-text" disabled>Rollback</button>
+                    </span>
+                {:else if isCopy || isMove}
                     <button
                         class="danger-text"
                         onclick={() => handleCancel(true)}
@@ -1302,6 +1329,13 @@
             {#if isCopy || isMove}
                 {#if isRollingBack}
                     <Button variant="danger" disabled>Rolling back...</Button>
+                {:else if isSameVolumeMove}
+                    <!-- Same-volume volume moves have no backend rollback; the
+                         button is disabled with an explanatory tooltip. Plain
+                         Cancel above stays reachable. -->
+                    <span use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP}>
+                        <Button variant="danger" disabled>Rollback</Button>
+                    </span>
                 {:else}
                     <span use:tooltip={'Cancel and delete any partial target files created'}>
                         <Button
@@ -1599,8 +1633,16 @@
     .conflict-cancel {
         display: flex;
         justify-content: center;
+        gap: var(--spacing-md);
         padding-top: var(--spacing-md);
         border-top: 1px solid var(--color-border-strong);
+    }
+
+    /* Host for the disabled Rollback button so the tooltip still fires (a
+       disabled button swallows its own pointer events). Mirrors
+       `.conflict-button-wrap`'s purpose for the smaller-disabled bulk action. */
+    .disabled-button-wrap {
+        display: inline-flex;
     }
 
     /* Text-only danger button (for less prominent cancel) */

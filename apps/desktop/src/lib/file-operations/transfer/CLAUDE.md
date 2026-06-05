@@ -90,6 +90,16 @@ for the shared state machine, ETA/throughput, and settle contract.
      (`Overwrite all smaller` / `Overwrite all older`), which are always apply-to-all by design (no single-file variant;
      the bulk semantic is the point).
    - Cancel button → rollback transaction (user chooses keep/rollback).
+   - **Rollback is DISABLED for same-volume volume moves.** `isSameVolumeMove` is a move where source and destination
+     are the SAME non-default volume (one smb2 share / one MTP device). The backend handles these as a server-side
+     `volume.rename` rename-merge with NO rollback support — it stops without reversing and reports
+     `rolled_back: false`. So both Rollback affordances (the conflict-section footer and the main footer) render the
+     Rollback button disabled with the tooltip "Rollback is not available for same-volume moves" (the disabled button is
+     wrapped in a span so the tooltip still fires — disabled buttons swallow their own pointer events). Plain Cancel
+     stays reachable in both spots; in the conflict footer, where Rollback would otherwise be the only button, a plain
+     Cancel renders alongside the disabled Rollback. Local→local same-FS moves keep a live Rollback (real
+     `MoveTransaction` rollback), so the default local volume is excluded; cross-volume moves and copies are unaffected.
+     Pinned by `TransferProgressDialog.rollback.test.ts`.
 
 3. **TransferErrorDialog** (error display)
    - Renders the backend `FriendlyError` payload from `WriteErrorEvent.friendly` when present (via
