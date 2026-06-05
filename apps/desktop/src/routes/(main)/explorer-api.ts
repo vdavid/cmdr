@@ -109,12 +109,19 @@ export interface ExplorerAPI {
   triggerTransferError: (friendly: FriendlyError) => void
   /** E2E only: drive the native drag-and-drop drop entry programmatically (real
    *  OS drag can't be synthesized in Playwright). Wired only behind the E2E gate
-   *  in `+page.svelte`; never reachable in production. */
+   *  in `+page.svelte`; never reachable in production.
+   *
+   *  `recordedIdentity` models an IN-APP self-drag: the drop builds its transfer
+   *  from the recorded source volume + the paths the volume knows (volume-relative
+   *  for MTP/SMB), exactly as a real self-drag does, instead of resolving the
+   *  pasteboard paths. Omit it to model a genuine EXTERNAL drop (local absolute
+   *  paths through the resolver). */
   triggerFileDrop: (
     paths: string[],
     targetPane: 'left' | 'right',
     targetFolderPath?: string,
     operation?: TransferOperationType,
+    recordedIdentity?: { sourceVolumeId: string; sourcePaths: string[] },
   ) => void
   newTab: () => boolean
   closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>

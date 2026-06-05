@@ -33,6 +33,8 @@ const {
   resolveDropTargetSpy,
   getIsDraggingFromSelfSpy,
   getSelfDragFileInfosSpy,
+  getSelfDragIdentitySpy,
+  clearSelfDragIdentitySpy,
   setSelfDragResolvedOperationSpy,
   getCachedIconSpy,
   showOverlaySpy,
@@ -49,6 +51,8 @@ const {
   resolveDropTargetSpy: vi.fn<() => DropTarget | null>(),
   getIsDraggingFromSelfSpy: vi.fn<() => boolean>(),
   getSelfDragFileInfosSpy: vi.fn<() => DragFileInfo[] | null>(),
+  getSelfDragIdentitySpy: vi.fn<() => { sourceVolumeId: string; sourcePaths: string[]; startedAt: number } | null>(),
+  clearSelfDragIdentitySpy: vi.fn(),
   setSelfDragResolvedOperationSpy: vi.fn<() => Promise<void>>(),
   statPathsKindsSpy: vi.fn<(paths: string[]) => Promise<(boolean | null)[]>>(),
   getCachedIconSpy: vi.fn<(iconId: string) => string | undefined>(),
@@ -102,6 +106,8 @@ vi.mock('../drag/drag-drop', () => ({
   storeSelfDragFingerprint: vi.fn(),
   clearSelfDragFingerprint: vi.fn(),
   getSelfDragFileInfos: getSelfDragFileInfosSpy,
+  getSelfDragIdentity: getSelfDragIdentitySpy,
+  clearSelfDragIdentity: clearSelfDragIdentitySpy,
   endSelfDragSession: vi.fn(() => Promise.resolve()),
 }))
 
@@ -170,6 +176,17 @@ const MTP_VOLUME: VolumeInfo = {
   name: 'Virtual Pixel 9',
   path: 'mtp://dev/65537',
   volumeType: 'mtp',
+  isReadOnly: false,
+  supportsTrash: false,
+} as unknown as VolumeInfo
+
+// An smb2-native SMB share, registered with an `smb://…` root. Its listing paths
+// are volume-relative, same class as MTP.
+const SMB_VOLUME: VolumeInfo = {
+  id: 'smb-server-share',
+  name: 'share on server',
+  path: 'smb://server/share',
+  category: 'network',
   isReadOnly: false,
   supportsTrash: false,
 } as unknown as VolumeInfo
@@ -281,6 +298,7 @@ describe('drag-drop-controller', () => {
     getModifierStateSpy.mockReturnValue({ altHeld: false, cmdHeld: false, shiftHeld: false })
     getIsDraggingFromSelfSpy.mockReturnValue(false)
     getSelfDragFileInfosSpy.mockReturnValue(null)
+    getSelfDragIdentitySpy.mockReturnValue(null)
     getCachedIconSpy.mockReturnValue(undefined)
     // Default: kinds unknown so the props builder uses today's approximate
     // shape unless a test opts into a specific split.
@@ -668,6 +686,172 @@ describe('drag-drop-controller', () => {
       await controller.handleFileDrop(['/Volumes/Ext/a.txt', '/Users/x/b.txt'], 'right', undefined, 'copy')
 
       expect(showTransfer.mock.calls[0][0].sourceVolumeId).toBe('root')
+    })
+  })
+
+  describe('self-drag identity (recorded at drag start, consumed on drop — never the pasteboard round-trip)', () => {
+    it('an MTP self-drag onto a local pane builds the transfer from the recorded MTP identity, ignoring the pasteboard paths', async () => {
+      // The live failure: in-app drag from the virtual-MTP pane. The MTP listing's
+      // RELATIVE path (`/photos/sunset.jpg`) lands on the pasteboard and round-trips
+      // through wry's drop event looking exactly like a local absolute path. The
+      // resolver can't match it to the MTP volume and falls back to local, so the
+      // dialog showed 0 bytes / 0 files. With a recorded identity, the drop builds
+      // the request from the MTP volume id + the relative paths the volume knows.
+      getIsDraggingFromSelfSpy.mockReturnValue(true)
+      getSelfDragIdentitySpy.mockReturnValue({
+        sourceVolumeId: 'mtp-dev:65537',
+        sourcePaths: ['/photos/sunset.jpg'],
+        startedAt: 1000,
+      })
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'mtp-dev:65537', right: 'root' },
+        paths: { right: '/Users/x/dest' },
+        volumes: [ROOT_VOLUME, MTP_VOLUME],
+      })
+
+      // The pasteboard carries the bare relative path (the bug's exact shape).
+      controller.handleDrop(['/photos/sunset.jpg'], { x: 1, y: 1 })
+      await flushDrop()
+
+      expect(showTransfer).toHaveBeenCalledTimes(1)
+      const props = showTransfer.mock.calls[0][0]
+      // Built from the RECORDED identity, not the resolver (which would say root).
+      expect(props.sourceVolumeId).toBe('mtp-dev:65537')
+      expect(props.sourcePaths).toEqual(['/photos/sunset.jpg'])
+      expect(props.destVolumeId).toBe('root')
+      // The resolver/stat path must NOT run for a recorded self-drag.
+      expect(statPathsKindsSpy).not.toHaveBeenCalled()
+    })
+
+    it('an SMB-native self-drag onto local uses the recorded SMB identity (same class — no local paths)', async () => {
+      getIsDraggingFromSelfSpy.mockReturnValue(true)
+      getSelfDragIdentitySpy.mockReturnValue({
+        sourceVolumeId: 'smb-server-share',
+        sourcePaths: ['/dir/report.pdf', '/dir/notes.txt'],
+        startedAt: 2000,
+      })
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'smb-server-share', right: 'root' },
+        paths: { right: '/Users/x/dest' },
+        volumes: [ROOT_VOLUME, SMB_VOLUME],
+      })
+
+      controller.handleDrop(['/dir/report.pdf', '/dir/notes.txt'], { x: 1, y: 1 })
+      await flushDrop()
+
+      const props = showTransfer.mock.calls[0][0]
+      expect(props.sourceVolumeId).toBe('smb-server-share')
+      expect(props.sourcePaths).toEqual(['/dir/report.pdf', '/dir/notes.txt'])
+    })
+
+    it('a search-results self-drag (virtual id, real absolute paths) falls through to the resolver, not the recorded identity', async () => {
+      // Search-results drags carry the snapshot's REAL absolute paths, which may
+      // span volumes. The recorded `sourceVolumeId: 'search-results'` is a virtual
+      // volume the backend can't dispatch against and isn't in the volume
+      // registry, so the consume must decline it and let the resolver match each
+      // absolute path to its real volume.
+      getIsDraggingFromSelfSpy.mockReturnValue(true)
+      getSelfDragIdentitySpy.mockReturnValue({
+        sourceVolumeId: 'search-results',
+        sourcePaths: ['/Users/x/found.txt'],
+        startedAt: 5000,
+      })
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'search-results', right: 'root' },
+        paths: { right: '/Users/y/dest' },
+        volumes: [ROOT_VOLUME], // no 'search-results' volume registered
+      })
+
+      controller.handleDrop(['/Users/x/found.txt'], { x: 1, y: 1 })
+      await flushDrop()
+
+      const props = showTransfer.mock.calls[0][0]
+      // Resolver wins: the real absolute path resolves to root, not the virtual id.
+      expect(props.sourceVolumeId).toBe('root')
+      expect(props.sourcePaths).toEqual(['/Users/x/found.txt'])
+      // The resolver path runs the kind probe; the identity path skips it.
+      expect(statPathsKindsSpy).toHaveBeenCalled()
+    })
+
+    it('a local self-drag with a recorded identity is unaffected (identity matches what the resolver would say)', async () => {
+      getIsDraggingFromSelfSpy.mockReturnValue(true)
+      getSelfDragIdentitySpy.mockReturnValue({
+        sourceVolumeId: 'root',
+        sourcePaths: [SAME_VOL_PATH_A],
+        startedAt: 3000,
+      })
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'root', right: 'ext' },
+        paths: { right: EXT_VOL_PATH },
+        volumes: [ROOT_VOLUME, EXT_VOLUME],
+      })
+
+      controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      await flushDrop()
+
+      const props = showTransfer.mock.calls[0][0]
+      expect(props.sourceVolumeId).toBe('root')
+      expect(props.sourcePaths).toEqual([SAME_VOL_PATH_A])
+      expect(props.operationType).toBe('copy') // root → ext is cross-volume
+    })
+
+    it('an external drop (no self-drag, no recorded identity) keeps the resolver path', async () => {
+      // Genuine Finder drop: not a self-drag, no recorded identity. The paths are
+      // real local absolute paths, so the resolver runs as before.
+      getIsDraggingFromSelfSpy.mockReturnValue(false)
+      getSelfDragIdentitySpy.mockReturnValue(null)
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'root', right: 'root' },
+        paths: { right: '/Users/x/dest' },
+        volumes: [ROOT_VOLUME, MTP_VOLUME],
+      })
+
+      controller.handleDrop(['mtp://dev/65537/DCIM/IMG_0001.JPG'], { x: 1, y: 1 })
+      await flushDrop()
+
+      const props = showTransfer.mock.calls[0][0]
+      // Resolver matched the MTP root via longest-prefix (the pasteboard carried a
+      // full mtp:// path, as a genuine external drop of such a path would).
+      expect(props.sourceVolumeId).toBe('mtp-dev:65537')
+      expect(props.sourcePaths).toEqual(['mtp://dev/65537/DCIM/IMG_0001.JPG'])
+      expect(statPathsKindsSpy).toHaveBeenCalled()
+    })
+
+    it('a stale-cleared record (self-drag flag reset) falls back to the resolver, never claiming a later external drop', async () => {
+      // The drag ended (resetDraggingFromSelf ran), so the flag is false even
+      // though a record might linger. The consume is tied to the self-drag flag,
+      // so the resolver runs for this genuine external drop.
+      getIsDraggingFromSelfSpy.mockReturnValue(false)
+      getSelfDragIdentitySpy.mockReturnValue({
+        sourceVolumeId: 'mtp-dev:65537',
+        sourcePaths: ['/photos/old.jpg'],
+        startedAt: 4000,
+      })
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create({
+        focusedPane: 'left',
+        volumeIds: { left: 'root', right: 'root' },
+        paths: { right: '/Users/x/dest' },
+        volumes: [ROOT_VOLUME, EXT_VOLUME],
+      })
+
+      controller.handleDrop(['/Volumes/Ext/genuine.txt'], { x: 1, y: 1 })
+      await flushDrop()
+
+      const props = showTransfer.mock.calls[0][0]
+      // Resolver wins: the real dropped path on Ext, not the stale MTP record.
+      expect(props.sourceVolumeId).toBe('ext')
+      expect(props.sourcePaths).toEqual(['/Volumes/Ext/genuine.txt'])
     })
   })
 

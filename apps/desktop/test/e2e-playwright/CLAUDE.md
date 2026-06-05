@@ -173,14 +173,25 @@ string or a RegExp, or omitted. For selections that drag in the `bulk/` tree, co
 (zero bytes), so the tallies legitimately stay at 0. The marker is derived from existing dialog state, no new wire
 event; see `file-operations/transfer/CLAUDE.md` § "`data-scan-state` marker".
 
-**`triggerFileDrop(tauriPage, paths, targetPane, { targetFolderPath?, operation? })`** (helpers.ts) drives the native
-drag-and-drop ENTRY path programmatically — real OS drag can't be synthesized in Playwright. It emits the E2E-gated
-`e2e-trigger-file-drop` Tauri event, which the app's `+page.svelte` listener (gated on `getAppMode() === 'e2e'`, set by
-`CMDR_E2E_MODE=1`, never true in prod) forwards to `ExplorerAPI.triggerFileDrop` → the SAME `dragDrop.handleFileDrop`
-the live `onDragDropEvent` 'drop' branch runs. So the shared destination guard (read-only refusal, search-results
-toast), source-volume resolution, and transfer dialog all run identically to a real drop. The dialog opens (or an
-alert/toast surfaces) exactly as a drop would; assert with the normal dialog/alert helpers. Covered by
-`drag-drop-entry.spec.ts` (local) and `mtp-drag-drop-entry.spec.ts` (cross-volume + read-only).
+**`triggerFileDrop(tauriPage, paths, targetPane, { targetFolderPath?, operation?, recordedIdentity? })`** (helpers.ts)
+drives the native drag-and-drop ENTRY path programmatically — real OS drag can't be synthesized in Playwright. It emits
+the E2E-gated `e2e-trigger-file-drop` Tauri event, which the app's `+page.svelte` listener (gated on
+`getAppMode() === 'e2e'`, set by `CMDR_E2E_MODE=1`, never true in prod) forwards to `ExplorerAPI.triggerFileDrop` → the
+SAME `dragDrop.handleFileDrop` the live `onDragDropEvent` 'drop' branch runs. So the shared destination guard (read-only
+refusal, search-results toast), source-volume resolution, and transfer dialog all run identically to a real drop. The
+dialog opens (or an alert/toast surfaces) exactly as a drop would; assert with the normal dialog/alert helpers.
+
+Two drop SHAPES, both modeled:
+
+- **External drop** (no `recordedIdentity`): the dropped `paths` are genuine local absolute paths from Finder; the
+  source-volume RESOLVER runs. The read-only / local→MTP / external-mtp-path specs use this.
+- **In-app self-drag** (`recordedIdentity = { sourceVolumeId, sourcePaths }`, or the `triggerSelfFileDrop` wrapper): the
+  drop builds its transfer from the recorded source volume + the paths the volume KNOWS (volume-relative for MTP/SMB),
+  exactly as a real self-drag does — NOT by resolving the pasteboard paths. This is the ONLY shape that reproduces the
+  live MTP/SMB self-drag failure class (a relative path round-trips through wry's drop event looking like a local
+  absolute path, and the resolver mis-resolves it to local → 0 bytes). Feeding invented full paths through the resolver
+  (the old specs' only shape) is exactly how that bug escaped. Covered by `drag-drop-entry.spec.ts` (local) and
+  `mtp-drag-drop-entry.spec.ts` (MTP self-drag + the external-drop variant + read-only).
 
 ## Multi-window testing
 

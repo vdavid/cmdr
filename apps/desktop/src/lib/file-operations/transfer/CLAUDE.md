@@ -131,12 +131,18 @@ Three entry paths start a transfer, and they all prepare it through `pane/transf
   unknown destination id (no `VolumeInfo`) is allowed through: we can't prove read-only, and blocking on "unknown" would
   break a transfer to a freshly-mounted volume.
 - **`resolveSourceVolumeId(paths, volumes, resolvePathVolume)`** — resolves the REAL source volume for dropped/pasted
-  paths so they carry the same accurate `sourceVolumeId` an F5 transfer does. Frontend longest-prefix
+  paths so they carry the same accurate `sourceVolumeId` an F5 transfer does. FAVORITES (`category === 'favorite'`) are
+  filtered out of the candidate set first: they're picker-only pseudo-volumes the backend can't dispatch against, so a
+  path under `~/Desktop` must resolve to its BACKING real volume (`root`), not the non-existent `fav-desktop` (dropping
+  a Desktop file used to fail with "Source volume 'fav-desktop' not found"). Then frontend longest-prefix
   (`drag/drop-operation.ts::findVolumeIdForPath`, handles MTP-shaped paths) → backend `resolve_path_volume` for the
   common parent when no registered root matches → `root` (the honest unknown). NEVER returns a knowingly-wrong id: when
   per-path matches disagree (sources span volumes) or resolution fails, it returns `root`, which gives today's
   degraded-but-correct behavior. The drop path feeds the result into `startScanPreview`'s `sourceVolumeId` arg via
   `TransferDialog`, so the byte scan stats the right volume (a cross-volume drop's counters fill instead of reading 0).
+  This resolver runs only for EXTERNAL drops and paste; an in-app self-drag bypasses it via the recorded self-drag
+  identity (the drop carries the source volume + volume-relative paths directly — see `file-explorer/drag/CLAUDE.md` §
+  "Self-drag identity").
 
 The paste path keeps its MTP-specific refusal ("Use F5 to copy files to MTP devices") SEPARATE and BEFORE the shared
 guard, because that toast points the user at the F5/F6 flow paste lacks; the shared guard then handles read-only /

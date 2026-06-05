@@ -54,9 +54,68 @@ Key files:
   `file-explorer/` directory)
 - `drop-operation.ts`: Pure logic: resolves the `'move' | 'copy'` operation from source/target paths, the volumes list,
   and the current modifier state. Same function feeds the overlay label and the actual drop, so the displayed and
-  executed operation can never disagree.
+  executed operation can never disagree. `findVolumeIdForPath` is a raw longest-prefix matcher; `isSameVolume` (which
+  `pickDropOperation` uses for the same-volume Move default) filters FAVORITES (`category === 'favorite'`) out of the
+  candidate set first — a favorite's root is a real local path, so a Desktop→Documents drag is local→local (Move), not
+  cross-favorite (Copy). Same favorites-blindness fix as `resolveSourceVolumeId`, kept at the affinity layer so the raw
+  matcher stays pure.
 - `drag-position.ts`: Corrects Tauri coords for docked DevTools (dev-only, zero overhead in prod)
 - Integration in `DualPaneExplorer.svelte`
+
+### Self-drag identity (in-app drops never trust the pasteboard round-trip)
+
+An in-app drag puts the source listing's paths on the pasteboard. For a virtual volume (MTP, smb2-native SMB) those
+paths are **volume-relative** (`/photos/sunset.jpg`), and after a round-trip through wry's native drop event they look
+exactly like a local absolute path. The drop resolver can't tell them apart, mis-resolves the source to the local
+volume, and the transfer dialog reports 0 bytes / 0 files (and the move-vs-copy badge can read wrong).
+
+The fix: record the drag's **true identity** at drag start and consume it on our own drop, sidestepping the lossy
+round-trip entirely.
+
+- **Record (drag start).** Each `perform{SingleFile,Selection,Paths}Drag` in `drag-drop.ts` calls
+  `recordSelfDragIdentity(sourceVolumeId, sourcePaths)`, storing `{ sourceVolumeId, sourcePaths, startedAt }` in module
+  state. `sourcePaths` are the paths AS THE SOURCE VOLUME KNOWS THEM: the single path for a `single` drag, the
+  FE-resolved paths for a `paths` drag, and the backend-resolved paths (`get_paths_at_indices`, the SAME set the drag
+  itself uses) for a `selection` drag. `sourceVolumeId` is threaded as a prop into `FullList` / `BriefList` (`'root'`
+  for a local pane, the `mtp-*` / SMB id for a virtual one, `'search-results'` for a snapshot pane).
+- **Consume (drop).** `drag-drop-controller.svelte.ts::handleDrop` reads the recorded identity via
+  `consumableSelfDragIdentity()` — but ONLY when `getIsDraggingFromSelf()` is true (the existing self-drag detection,
+  NOT a parallel one) AND the recorded `sourceVolumeId` is a REGISTERED backend-real volume (present in `getVolumes()`).
+  When trusted, `handleFileDrop` builds the transfer from `{ sourceVolumeId, sourcePaths }` and skips both the resolver
+  and the local kind probe (a volume-relative path can't be stat'd locally — the approximate count shape is the honest
+  fallback). The recorded source-volume ROOT also feeds `pickDropOperation`, so a same-volume MTP/SMB self-drag resolves
+  to Move, not Copy.
+- **Why the registry-membership gate.** It's what makes a `search-results` self-drag (virtual `'search-results'` id, but
+  real ABSOLUTE paths that span volumes, with no single dispatchable source id) fall through to the resolver — which
+  matches each absolute path to its real volume. That's a membership check, not a virtual-id string compare.
+- **Clear (every termination).** `clearSelfDragIdentity()` runs on `cancelDragTracking` (ESC / mouseup-before-threshold)
+  and on the webview 'drop' branch. It does NOT run on 'leave': the self-drag flag is reset there, so a lingering record
+  can't be consumed unless re-entry restores the flag via the fingerprint — same lifecycle as the fingerprint, which
+  keeps an exit-and-re-enter self-drag working.
+
+External drops (no in-flight self-drag) keep the resolver path: their paths are genuine local absolute paths from Finder
+et al.
+
+### Drag-out of a non-local pane to external apps (known limitation)
+
+Dragging a file from an MTP / SMB pane OUT to Finder or another external app publishes a `file://` URL built from the
+VOLUME-RELATIVE path (`file:///photos/sunset.jpg`) — a bogus local URL the source file doesn't back. Finder typically
+no-ops on it (the referenced path doesn't exist); a terminal pastes the literal escaped string.
+
+This is a **known limitation**, made deliberate rather than left undefined:
+
+- **The pasteboard payload can't simply be stripped or sentinel-ized for non-local panes.** Stock wry's `collect_paths`
+  reads only `NSFilenamesPboardType` and `unwrap()`s if it's absent (see the gotcha below), so an in-app self-drag
+  re-entry would panic without a non-empty filenames payload.
+- **A real fix is disproportionate today.** It would need the backend to either materialize the MTP/SMB file to a temp
+  local path before drag-out, or publish an `NSFilesPromisePboardType` (promised-file) provider that streams bytes on
+  drop. Both are sizable native efforts.
+- **In-app drops are already correct regardless** — they use the recorded self-drag identity above, NOT the pasteboard
+  paths. So this limitation is confined to drags whose destination is an EXTERNAL app.
+
+**Recommendation:** if/when this matters to users, implement the promised-file provider (`NSFilesPromisePboardType` +
+`draggingSession:writeToURL:`) so a drop into Finder streams the real bytes. Until then, the behavior is documented and
+non-destructive (Finder no-ops; no data loss).
 
 Drop preparation runs through the shared transfer entry seam (`pane/transfer-entry.ts`), the SAME path F5/F6 and
 clipboard paste use, so all three entry points prepare a transfer identically. On drop,

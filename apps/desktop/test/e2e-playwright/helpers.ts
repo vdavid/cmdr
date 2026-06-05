@@ -110,23 +110,60 @@ export async function dispatchMenuCommand(tauriPage: PageLike, commandId: string
  * `operation` ('copy' default, or 'move') mirrors what the modifier-resolved op
  * would be. The dialog opens (or an alert/toast surfaces) exactly as a real drop
  * would, so the caller asserts with the normal dialog/alert/toast helpers.
+ *
+ * `recordedIdentity` models an IN-APP self-drag (what `triggerSelfFileDrop`
+ * wraps): the drop builds its transfer from the recorded source volume + the
+ * paths the volume knows (volume-relative for MTP/SMB), exactly as a real
+ * self-drag does — NOT by resolving the pasteboard `paths`. This is the only
+ * shape that reproduces the live MTP/SMB self-drag failure class. Omit it for a
+ * genuine EXTERNAL drop (local absolute paths through the resolver).
  */
 export async function triggerFileDrop(
   tauriPage: PageLike,
   paths: string[],
   targetPane: 'left' | 'right',
-  options: { targetFolderPath?: string; operation?: 'copy' | 'move' } = {},
+  options: {
+    targetFolderPath?: string
+    operation?: 'copy' | 'move'
+    recordedIdentity?: { sourceVolumeId: string; sourcePaths: string[] }
+  } = {},
 ): Promise<void> {
   const payload = JSON.stringify({
     paths,
     targetPane,
     targetFolderPath: options.targetFolderPath,
     operation: options.operation,
+    recordedIdentity: options.recordedIdentity,
   })
   await tauriPage.evaluate(`(function(){
         var invoke = window.__TAURI_INTERNALS__.invoke;
         invoke('plugin:event|emit', { event: 'e2e-trigger-file-drop', payload: ${payload} });
     })()`)
+}
+
+/**
+ * Drives the native drag-and-drop entry for an IN-APP self-drag — the shape that
+ * reproduces the live MTP/SMB failure class (a virtual volume's RELATIVE listing
+ * path lands on the pasteboard and, after wry's drop round-trip, looks exactly
+ * like a local absolute path). The drop builds its transfer from the recorded
+ * `{ sourceVolumeId, sourcePaths }` (app state recorded at drag start), never by
+ * resolving the pasteboard paths, exactly as a real self-drag does.
+ *
+ * `pasteboardPaths` are the lossy paths the OS would deliver (used only for
+ * hit-testing in the real flow); the transfer uses `recordedIdentity.sourcePaths`.
+ * They're usually the same volume-relative strings, matching reality.
+ */
+export async function triggerSelfFileDrop(
+  tauriPage: PageLike,
+  recordedIdentity: { sourceVolumeId: string; sourcePaths: string[] },
+  targetPane: 'left' | 'right',
+  options: { targetFolderPath?: string; operation?: 'copy' | 'move'; pasteboardPaths?: string[] } = {},
+): Promise<void> {
+  await triggerFileDrop(tauriPage, options.pasteboardPaths ?? recordedIdentity.sourcePaths, targetPane, {
+    targetFolderPath: options.targetFolderPath,
+    operation: options.operation,
+    recordedIdentity,
+  })
 }
 
 /**

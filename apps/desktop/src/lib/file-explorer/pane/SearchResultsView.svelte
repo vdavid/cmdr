@@ -188,6 +188,7 @@
     <FullList
         bind:this={fullListRef}
         listingId=""
+        volumeId="search-results"
         totalCount={entries.length}
         includeHidden={true}
         {cursorIndex}

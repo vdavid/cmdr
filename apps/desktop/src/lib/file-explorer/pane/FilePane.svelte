@@ -2736,6 +2736,7 @@
             <BriefList
                 bind:this={briefListRef}
                 {listingId}
+                {volumeId}
                 totalCount={effectiveTotalCount}
                 {includeHidden}
                 {cacheGeneration}
@@ -2771,6 +2772,7 @@
             <FullList
                 bind:this={fullListRef}
                 {listingId}
+                {volumeId}
                 totalCount={effectiveTotalCount}
                 {includeHidden}
                 {cacheGeneration}

@@ -28,11 +28,23 @@ export function findVolumeIdForPath(path: string, volumes: readonly VolumeInfo[]
   return best?.id ?? null
 }
 
-/** True when source and target paths resolve to the same volume. False if either can't be resolved. */
+/**
+ * True when source and target paths resolve to the same volume. False if either
+ * can't be resolved.
+ *
+ * Favorites (`category === 'favorite'`) are filtered out before matching: they're
+ * picker-only pseudo-volumes whose root is a real local path, so a Desktop→
+ * Documents drag is local→local (Move), not cross-volume (Copy). Without the
+ * filter, the two favorites would resolve to distinct `fav-*` ids and the drop
+ * badge would wrongly show Copy. Same blindness as `resolveSourceVolumeId`; the
+ * fix lives at this affinity layer so the raw `findVolumeIdForPath` matcher stays
+ * a pure longest-prefix utility.
+ */
 export function isSameVolume(sourcePath: string, targetPath: string, volumes: readonly VolumeInfo[]): boolean {
-  const a = findVolumeIdForPath(sourcePath, volumes)
+  const realVolumes = volumes.filter((v) => v.category !== 'favorite')
+  const a = findVolumeIdForPath(sourcePath, realVolumes)
   if (a === null) return false
-  return a === findVolumeIdForPath(targetPath, volumes)
+  return a === findVolumeIdForPath(targetPath, realVolumes)
 }
 
 /**

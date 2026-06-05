@@ -89,9 +89,18 @@ export function checkTransferDestinationGuard(destVolumeId: string, volumes: Vol
  * (root) — the honest "unknown", which gives today's degraded-but-correct
  * behavior rather than stat'ing the wrong volume.
  *
+ * Favorites (`category === 'favorite'`) are EXCLUDED from the candidate set:
+ * they're pseudo-volumes that exist only in the volume picker, the backend
+ * VolumeManager has no record of them, so resolving a path under a favorite's
+ * root to its `fav-*` id makes dispatch fail with "Source volume 'fav-…' not
+ * found". A favorite is a location on its BACKING volume (the local fs), so a
+ * path under `~/Desktop` must resolve to `root`, not `fav-desktop`. Filtering
+ * them out lets longest-prefix fall through to the real local root.
+ *
  * Resolution order:
  * 1. Frontend longest-prefix match (`findVolumeIdForPath`) per path against the
- *    registered volume roots — handles local AND MTP-shaped paths (MTP volumes
+ *    BACKEND-REAL volume roots (favorites filtered out) — handles local AND
+ *    MTP-shaped paths (MTP volumes
  *    register an `mtp://…` root). If every path matches the SAME volume, use it
  *    (no backend round-trip).
  * 2. If the per-path matches DISAGREE, the sources span volumes — return root.
@@ -106,7 +115,12 @@ export async function resolveSourceVolumeId(
 ): Promise<string> {
   if (paths.length === 0) return DEFAULT_VOLUME_ID
 
-  const perPath = paths.map((p) => findVolumeIdForPath(p, volumes))
+  // Favorites are picker-only pseudo-volumes the backend can't dispatch against;
+  // a path under one belongs to its backing real volume, so they never qualify
+  // as a resolution candidate.
+  const realVolumes = volumes.filter((v) => v.category !== 'favorite')
+
+  const perPath = paths.map((p) => findVolumeIdForPath(p, realVolumes))
   const matched = perPath.filter((id): id is string => id !== null)
 
   if (matched.length === perPath.length) {

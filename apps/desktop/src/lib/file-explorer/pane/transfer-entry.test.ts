@@ -29,6 +29,39 @@ const SD_CARD: VolumeInfo = {
   isReadOnly: true,
 }
 
+// Favorites are pseudo-volumes that exist ONLY in the volume picker; the backend
+// VolumeManager has no such volume. Their root is a location on the local FS.
+const FAV_DESKTOP: VolumeInfo = {
+  id: 'fav-desktop',
+  name: 'Desktop',
+  path: '/Users/me/Desktop',
+  category: 'favorite',
+  isEjectable: false,
+}
+const FAV_DOCUMENTS: VolumeInfo = {
+  id: 'fav-documents',
+  name: 'Documents',
+  path: '/Users/me/Documents',
+  category: 'favorite',
+  isEjectable: false,
+}
+const SMB_SHARE: VolumeInfo = {
+  id: 'smb-server-share',
+  name: 'share on server',
+  path: 'smb://server/share',
+  category: 'network',
+  isEjectable: true,
+  isReadOnly: false,
+}
+
+/**
+ * The PRODUCTION-shaped volume list the live drop resolver actually sees: the
+ * local root, two favorites (Desktop, Documents — pseudo-volumes the backend
+ * doesn't know), an MTP storage, and an SMB share. Mirrors the real volume
+ * picker so resolution can't be fooled by a pseudo-volume root.
+ */
+const PROD_VOLUMES = [ROOT, FAV_DESKTOP, FAV_DOCUMENTS, SD_CARD, SMB_SHARE]
+
 describe('checkTransferDestinationGuard', () => {
   it('allows a writable local destination', () => {
     const result = checkTransferDestinationGuard('root', [ROOT, EXT])
@@ -136,5 +169,38 @@ describe('resolveSourceVolumeId', () => {
     const id = await resolveSourceVolumeId([], volumes, resolvePathVolume)
     expect(id).toBe('root')
     expect(resolvePathVolume).not.toHaveBeenCalled()
+  })
+
+  describe('favorites never poison resolution (production-shaped volume list)', () => {
+    it('resolves a Desktop-path drop to the backing local volume (root), NEVER fav-desktop', async () => {
+      // A file dragged from the macOS Desktop into Cmdr. The Desktop favorite's
+      // root (`/Users/me/Desktop`) is a longer prefix than `/`, so a naive
+      // longest-prefix match would pick `fav-desktop` — a pseudo-volume the
+      // backend VolumeManager has no record of, making the transfer dispatch
+      // fail with "Source volume 'fav-desktop' not found". The favorite is a
+      // location on the LOCAL fs, so it must resolve to its backing volume: root.
+      const resolvePathVolume = vi.fn<(path: string) => Promise<PathVolumeResolution>>()
+      const id = await resolveSourceVolumeId(['/Users/me/Desktop/photo.jpg'], PROD_VOLUMES, resolvePathVolume)
+      expect(id).toBe('root')
+      expect(id).not.toBe('fav-desktop')
+    })
+
+    it('resolves a Documents-path drop to root, not fav-documents', async () => {
+      const resolvePathVolume = vi.fn<(path: string) => Promise<PathVolumeResolution>>()
+      const id = await resolveSourceVolumeId(['/Users/me/Documents/report.pdf'], PROD_VOLUMES, resolvePathVolume)
+      expect(id).toBe('root')
+    })
+
+    it('still resolves a real MTP path correctly with favorites present', async () => {
+      const resolvePathVolume = vi.fn<(path: string) => Promise<PathVolumeResolution>>()
+      const id = await resolveSourceVolumeId(['mtp://dev/65538/DCIM/IMG.JPG'], PROD_VOLUMES, resolvePathVolume)
+      expect(id).toBe('mtp-dev:65538')
+    })
+
+    it('still resolves a real SMB path correctly with favorites present', async () => {
+      const resolvePathVolume = vi.fn<(path: string) => Promise<PathVolumeResolution>>()
+      const id = await resolveSourceVolumeId(['smb://server/share/dir/file.txt'], PROD_VOLUMES, resolvePathVolume)
+      expect(id).toBe('smb-server-share')
+    })
   })
 })

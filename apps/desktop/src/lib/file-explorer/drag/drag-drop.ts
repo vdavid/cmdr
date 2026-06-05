@@ -24,6 +24,7 @@ import {
   prepareSelfDragOverlay,
   clearSelfDragOverlay,
   setSelfDragResolvedOperation,
+  getPathsAtIndices,
 } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings/settings-store'
 import { cancelClickToRename } from '../rename/rename-activation'
@@ -47,12 +48,22 @@ export interface DragFileInfo {
   iconId: string
 }
 
+/**
+ * The source volume id of the dragging pane. Recorded into the self-drag
+ * identity at drag start so an in-app drop builds its transfer request from the
+ * volume the user actually dragged FROM, never from the pasteboard-derived
+ * paths. Carried on every drag context. `'root'` for a local pane.
+ */
+type SourceVolumeId = string
+
 /** Context for a single file drag (no prior selection) */
 interface SingleFileDragContext {
   type: 'single'
   path: string
   iconId: string
   index: number
+  /** Volume id of the pane this drag originates from (for the self-drag identity). */
+  sourceVolumeId: SourceVolumeId
   /** File info for the drag image renderer */
   fileInfo?: DragFileInfo
 }
@@ -64,6 +75,8 @@ interface SelectionDragContext {
   indices: number[]
   includeHidden: boolean
   hasParent: boolean
+  /** Volume id of the pane this drag originates from (for the self-drag identity). */
+  sourceVolumeId: SourceVolumeId
   /** Icon ID to use for the drag preview (first selected file) */
   iconId: string
   /** File info for the drag image renderer (first N files of selection) */
@@ -79,6 +92,8 @@ interface SelectionDragContext {
 interface PathsDragContext {
   type: 'paths'
   paths: string[]
+  /** Volume id of the pane this drag originates from (for the self-drag identity). */
+  sourceVolumeId: SourceVolumeId
   /** Icon ID to use for the drag preview (first file in `paths`). */
   iconId: string
   /** File info for the drag image renderer (first N files). */
@@ -155,6 +170,53 @@ export function getSelfDragFileInfos(): DragFileInfo[] | null {
 export function clearSelfDragFingerprint(): void {
   selfDragFingerprint = null
   selfDragFileInfos = null
+}
+
+/**
+ * The true identity of an in-flight self-drag, recorded at drag start. Lets the
+ * drop handler build the transfer request from app state instead of the
+ * pasteboard-derived paths.
+ *
+ * Why this exists: in-app drags put the source listing's paths on the pasteboard
+ * (a single-file path, or the backend-resolved selection paths). For a virtual
+ * volume (MTP, smb2-native SMB) those paths are VOLUME-RELATIVE
+ * (`/photos/sunset.jpg`), and after a round-trip through wry's native drop event
+ * they look exactly like a local absolute path. The drop resolver can't tell
+ * them apart, mis-resolves the source to the local volume, and the transfer
+ * dialog reports 0 bytes / 0 files. Recording the real `{ sourceVolumeId,
+ * sourcePaths }` at drag start and consuming it on our own drop sidesteps the
+ * lossy round-trip entirely. External drops (no in-flight self-drag) keep the
+ * resolver path — their paths are genuine local absolute paths from Finder.
+ */
+export interface SelfDragIdentity {
+  /** The volume the drag originates from (`'root'` for a local pane). */
+  sourceVolumeId: string
+  /** The source paths AS THE VOLUME KNOWS THEM (volume-relative for MTP/SMB). */
+  sourcePaths: string[]
+  /** Drag-start timestamp (epoch ms). Diagnostic only; staleness is gated by the self-drag flag, not by time. */
+  startedAt: number
+}
+
+let selfDragIdentity: SelfDragIdentity | null = null
+
+/** Records the in-flight self-drag's true identity. Called once per drag start. */
+export function recordSelfDragIdentity(sourceVolumeId: string, sourcePaths: string[]): void {
+  selfDragIdentity = { sourceVolumeId, sourcePaths, startedAt: Date.now() }
+}
+
+/** Returns the recorded self-drag identity, or null if none is in flight. */
+export function getSelfDragIdentity(): SelfDragIdentity | null {
+  return selfDragIdentity
+}
+
+/**
+ * Clears the recorded self-drag identity. Call on EVERY drag termination (drop,
+ * leave/cancel, ESC, mouseup-before-threshold) so a stale record can never be
+ * mistaken for a later external drop's identity. The consume is tied to the
+ * self-drag flag, but clearing the record too keeps the two in lockstep.
+ */
+export function clearSelfDragIdentity(): void {
+  selfDragIdentity = null
 }
 
 /** Pending temp file cleanup: stored during drag, executed when session ends. */
@@ -327,7 +389,7 @@ export function startSelectionDragTracking(
       // arbitrates the actual operation via modifier keys live during the drag (Alt → Copy,
       // Cmd → Move, Ctrl-Alt → Link), so we no longer pass mode here.
       if (ctx.type === 'single') {
-        void performSingleFileDrag(ctx.path, ctx.iconId, ctx.fileInfo)
+        void performSingleFileDrag(ctx.path, ctx.iconId, ctx.sourceVolumeId, ctx.fileInfo)
       } else if (ctx.type === 'selection') {
         void performSelectionDrag(ctx)
       } else {
@@ -383,6 +445,7 @@ export function cancelDragTracking(): void {
     activeDrag = null
   }
   draggingFromSelf = false
+  clearSelfDragIdentity()
 }
 
 /**
@@ -390,10 +453,20 @@ export function cancelDragTracking(): void {
  * Uses the rich PNG as the OS drag image (visible outside the window).
  * The native swizzle hides it over our window so the DOM overlay takes over.
  */
-async function performSingleFileDrag(filePath: string, iconId: string, fileInfo?: DragFileInfo): Promise<void> {
+async function performSingleFileDrag(
+  filePath: string,
+  iconId: string,
+  sourceVolumeId: string,
+  fileInfo?: DragFileInfo,
+): Promise<void> {
   const fileInfos = fileInfo ? [fileInfo] : undefined
   const resolved = await resolveDragIconPath(iconId, fileInfos)
   if (!resolved) return
+
+  // Record the true identity so our own drop builds the transfer from the source
+  // volume + path, not the lossy pasteboard round-trip. The single path IS the
+  // path as the source volume knows it (volume-relative for MTP/SMB).
+  recordSelfDragIdentity(sourceVolumeId, [filePath])
 
   // Store cleanup for later; the temp file must survive the entire drag session
   // because the native swizzle reads it from disk on every window exit.
@@ -424,6 +497,23 @@ async function performSelectionDrag(context: SelectionDragContext): Promise<void
   const resolved = await resolveDragIconPath(context.iconId, context.fileInfos)
   if (!resolved) return
 
+  // Record the true identity. The backend resolves the selection's paths from
+  // the listing cache for the drag itself; we resolve the SAME set here (same
+  // IPC, `get_paths_at_indices`) so the recorded identity carries the paths as
+  // the source volume knows them. On failure we leave the identity unrecorded —
+  // the drop then falls back to the resolver, which is the honest degrade.
+  try {
+    const sourcePaths = await getPathsAtIndices(
+      context.listingId,
+      context.indices,
+      context.includeHidden,
+      context.hasParent,
+    )
+    recordSelfDragIdentity(context.sourceVolumeId, sourcePaths)
+  } catch {
+    clearSelfDragIdentity()
+  }
+
   // Store cleanup for later; the temp file must survive the entire drag session
   pendingImageCleanup = resolved.usedCanvas ? cleanupTempDragImage : cleanupTempIcon
 
@@ -449,6 +539,10 @@ async function performPathsDrag(context: PathsDragContext): Promise<void> {
 
   const resolved = await resolveDragIconPath(context.iconId, context.fileInfos)
   if (!resolved) return
+
+  // The FE already holds the resolved paths (search-results snapshot), so the
+  // recorded identity carries them verbatim.
+  recordSelfDragIdentity(context.sourceVolumeId, context.paths)
 
   pendingImageCleanup = resolved.usedCanvas ? cleanupTempDragImage : cleanupTempIcon
 

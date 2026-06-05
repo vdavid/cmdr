@@ -29,6 +29,7 @@ import {
   getFixtureRoot,
   readDialogCounters,
   triggerFileDrop,
+  triggerSelfFileDrop,
   TRANSFER_DIALOG,
 } from './helpers.js'
 
@@ -49,6 +50,27 @@ test.describe('Programmatic drop entry (local)', () => {
     const title = await tauriPage.textContent(`${TRANSFER_DIALOG} h2`)
     expect(title).toContain('Copy')
 
+    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
+
+    await dismissOverlay(tauriPage)
+  })
+
+  test('a local SELF-DRAG (recorded identity, root volume) opens the copy dialog with correct counters', async ({
+    tauriPage,
+  }) => {
+    // The local self-drag path: a recorded identity with the `root` volume id and
+    // the real absolute paths. The transfer is built from the recorded identity
+    // (not the resolver), and the counters must still fill — proving the
+    // recorded-identity branch is correct for local panes, not just MTP/SMB.
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    const fileA = path.join(fixtureRoot, 'left', 'file-a.txt')
+
+    await triggerSelfFileDrop(tauriPage, { sourceVolumeId: 'root', sourcePaths: [fileA] }, 'right')
+
+    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+    // Poll the scan to terminal before reading: the byte scan over the recorded
+    // local source must fill the counters (file-a.txt is 1 KB).
     await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
 
     await dismissOverlay(tauriPage)

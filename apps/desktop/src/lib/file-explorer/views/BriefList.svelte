@@ -48,6 +48,11 @@
 
     interface Props {
         listingId: string
+        /** Volume id of the host pane. Recorded into the self-drag identity at
+         *  drag start so an in-app drop builds its transfer from the source
+         *  volume + the paths the volume knows, never the lossy pasteboard
+         *  round-trip. `'root'` for a local pane. */
+        volumeId: string
         totalCount: number
         includeHidden: boolean
         cacheGeneration?: number
@@ -93,6 +98,7 @@
 
     const {
         listingId,
+        volumeId,
         totalCount,
         includeHidden,
         cacheGeneration = 0,
@@ -473,7 +479,7 @@
             const fileInfo: DragFileInfo = { name: entry.name, isDirectory: entry.isDirectory, iconId: entry.iconId }
             startSelectionDragTracking(
                 event,
-                { type: 'single', path: entry.path, iconId: entry.iconId, index, fileInfo },
+                { type: 'single', path: entry.path, iconId: entry.iconId, index, sourceVolumeId: volumeId, fileInfo },
                 {
                     onDragStart: () => {
                         onSelect(index, event.shiftKey, event.metaKey)
@@ -510,6 +516,7 @@
                     indices: [...selectedIndices],
                     includeHidden,
                     hasParent,
+                    sourceVolumeId: volumeId,
                     iconId,
                     fileInfos,
                 },

@@ -1581,8 +1581,17 @@
         targetPane: 'left' | 'right',
         targetFolderPath?: string,
         operation: TransferOperationType = 'copy',
+        recordedIdentity?: { sourceVolumeId: string; sourcePaths: string[] },
     ): void {
-        void dragDrop.handleFileDrop(paths, targetPane, targetFolderPath, operation)
+        // `recordedIdentity` set → model an in-app self-drag: build the transfer
+        // from the recorded source volume + the paths the volume knows, exactly
+        // as the live drop's recorded-identity branch does. Absent → model a
+        // genuine external drop (resolver path). The recorded identity carries
+        // `startedAt` for shape parity with the real record.
+        const identity = recordedIdentity
+            ? { ...recordedIdentity, startedAt: Date.now() }
+            : undefined
+        void dragDrop.handleFileDrop(paths, targetPane, targetFolderPath, operation, identity)
     }
 
     /** Refresh network hosts in the focused pane (used by ⌘R shortcut). */

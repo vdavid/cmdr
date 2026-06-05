@@ -31,6 +31,7 @@ import {
   isStateClean,
   readDialogCounters,
   triggerFileDrop,
+  triggerSelfFileDrop,
   TRANSFER_DIALOG,
 } from './helpers.js'
 
@@ -55,6 +56,20 @@ async function getMtpVolumePath(storageName: string): Promise<string> {
       const id = lines[i + 1].trim().replace('id: ', '')
       const [deviceId, storageId] = id.split(':')
       return `mtp://${deviceId}/${storageId}`
+    }
+  }
+  throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
+}
+
+/** Reads the registered volume id for a named MTP storage from cmdr://state.
+ *  This is what a self-drag records as its source volume id (the dispatchable
+ *  backend volume id), distinct from the `mtp://…` path prefix. */
+async function getMtpVolumeId(storageName: string): Promise<string> {
+  const state = await mcpReadResource('cmdr://state')
+  const lines = state.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes(`name: ${storageName}`) && lines[i + 1]?.includes('id:')) {
+      return lines[i + 1].trim().replace('id: ', '')
     }
   }
   throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
@@ -131,21 +146,55 @@ test.describe('Programmatic drop entry (MTP)', () => {
     await dismissAlert(tauriPage)
   })
 
-  test('dropping an MTP file onto local fills the counters from the resolved volume', async ({ tauriPage }) => {
-    // Left pane → MTP Documents so the device + its mtp:// root are registered.
+  test('an MTP SELF-DRAG onto local builds the transfer from the recorded MTP identity (the live failure)', async ({
+    tauriPage,
+  }) => {
+    // The live bug: dragging from the virtual-MTP pane onto a local pane. The MTP
+    // listing's RELATIVE path (`/Documents/report.txt`) lands on the pasteboard
+    // and, after wry's drop round-trip, looks exactly like a local absolute path.
+    // The resolver can't match it to the MTP volume and falls back to local, so
+    // the dialog showed 0 bytes / 0 files. Entering through the self-drag flow
+    // (recorded identity = MTP volume id + relative path) is what reality does;
+    // the transfer must carry the MTP source so the 50-byte report.txt counts.
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'Documents')
+    const mtpVolumeId = await getMtpVolumeId(INTERNAL_STORAGE)
+
+    await triggerSelfFileDrop(
+      tauriPage,
+      { sourceVolumeId: mtpVolumeId, sourcePaths: ['/Documents/report.txt'] },
+      'right',
+    )
+
+    await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
+    // report.txt is 50 bytes; a self-drag that mis-resolved to local would read 0.
+    // Poll the scan to terminal first (the recorded MTP source must let the byte
+    // scan stat the right volume).
+    await expectDialogCounters(tauriPage, { bytes: '50 bytes', files: 1, dirs: 0 })
+
+    await tauriPage.evaluate(`(function(){
+        var ov = document.querySelector('${TRANSFER_DIALOG} .modal-overlay') || document.querySelector('.modal-overlay');
+        if (ov) ov.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    })()`)
+    await expect.poll(async () => !(await tauriPage.isVisible(TRANSFER_DIALOG)), { timeout: 3000 }).toBeTruthy()
+  })
+
+  test('an EXTERNAL drop of a full mtp:// path onto local resolves the MTP volume (resolver path)', async ({
+    tauriPage,
+  }) => {
+    // The external-drop-shaped variant: a genuine drop carrying a full absolute
+    // mtp:// path (no recorded identity). The resolver matches the MTP root via
+    // longest-prefix and the counters fill. Kept alongside the self-drag spec so
+    // both entry shapes stay covered.
     await mcpSelectVolume('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
-    // Drop the MTP-shaped report.txt path onto the right pane (local). The drop
-    // handler must resolve the MTP source volume so the scan stats the right
-    // place — report.txt is 50 bytes, so the counters must read non-zero.
     await triggerFileDrop(tauriPage, [`${mtpPath}/Documents/report.txt`], 'right')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await expectDialogCounters(tauriPage, { bytes: '50 bytes', files: 1, dirs: 0 })
 
-    // Belt-and-braces: the totals are genuinely non-zero (the bug read 0).
     const snapshot = await readDialogCounters(tauriPage)
     expect(snapshot?.files).toBeGreaterThan(0)
 

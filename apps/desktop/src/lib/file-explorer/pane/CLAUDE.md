@@ -280,6 +280,17 @@ write surfaces retire in a later phase, so the downloads helpers (`go-to-latest.
 **Cross-pane drag.** `DualPaneExplorer.getFileAndPathUnderCursor()` prefers `FilePane.getPathUnderCursor()` over
 `${currentPath}/${filename}` so snapshot-pane drags carry real filesystem paths, not `search-results://sr-N/<name>`.
 
+**Self-drag identity (drop builds from app state, not the pasteboard).** `drag-drop-controller.svelte.ts::handleDrop`
+consumes the self-drag identity recorded at drag start (`drag/drag-drop.ts::recordSelfDragIdentity`) instead of
+resolving the pasteboard-derived paths, but only when `getIsDraggingFromSelf()` is true AND the recorded
+`sourceVolumeId` is a registered backend-real volume (`consumableSelfDragIdentity`). This is what fixes the MTP/SMB
+self-drag: a virtual volume's relative listing path (`/photos/sunset.jpg`) round-trips through wry's drop event looking
+like a local absolute path, so the resolver would mis-resolve it to local and the dialog would read 0 bytes. The
+recorded identity carries the truth (source volume id + the paths the volume knows). External drops and search-results
+drags (virtual id, real absolute paths) fall through to `resolveSourceVolumeId`. `FilePane` threads its `volumeId` as a
+prop into `FullList` / `BriefList` so the drag-start sites can stamp the source volume onto the recorded identity. Full
+architecture in [`../drag/CLAUDE.md`](../drag/CLAUDE.md) § "Self-drag identity".
+
 **Dialog state lifecycle.** `dialog-state.svelte.ts` exposes one factory per `DualPaneExplorer`. Handlers like
 `handleTransferError(error, friendly?)` accept the typed `WriteOperationError` plus the optional `FriendlyError` from
 the backend `write-error` event so the rendered dialog can prefer the backend copy. The factory pattern keeps the giant

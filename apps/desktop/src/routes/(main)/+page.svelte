@@ -391,13 +391,14 @@
         // so production never reacts even if the event were somehow emitted.
         await listenTauri('e2e-trigger-file-drop', (event) => {
             if (getAppMode() !== 'e2e') return
-            const { paths, targetPane, targetFolderPath, operation } = event.payload as {
+            const { paths, targetPane, targetFolderPath, operation, recordedIdentity } = event.payload as {
                 paths: string[]
                 targetPane: 'left' | 'right'
                 targetFolderPath?: string
                 operation?: TransferOperationType
+                recordedIdentity?: { sourceVolumeId: string; sourcePaths: string[] }
             }
-            explorerRef?.triggerFileDrop(paths, targetPane, targetFolderPath, operation)
+            explorerRef?.triggerFileDrop(paths, targetPane, targetFolderPath, operation, recordedIdentity)
         })
     }
 

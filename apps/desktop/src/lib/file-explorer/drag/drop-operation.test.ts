@@ -19,6 +19,26 @@ const usbPrefix: VolumeInfo = {
 }
 const volumes: VolumeInfo[] = [root, usb, usbPrefix]
 
+// Favorites are picker-only pseudo-volumes living on the local fs (their root is
+// a real local path). They must never be treated as their own volume for
+// same-volume detection — a Desktop→Documents drag is local→local (Move), not
+// cross-volume (Copy).
+const favDesktop: VolumeInfo = {
+  id: 'fav-desktop',
+  name: 'Desktop',
+  path: '/Users/me/Desktop',
+  category: 'favorite',
+  isEjectable: false,
+}
+const favDocuments: VolumeInfo = {
+  id: 'fav-documents',
+  name: 'Documents',
+  path: '/Users/me/Documents',
+  category: 'favorite',
+  isEjectable: false,
+}
+const volumesWithFavorites: VolumeInfo[] = [root, favDesktop, favDocuments, usb]
+
 const noMods = { altHeld: false, cmdHeld: false, shiftHeld: false }
 
 describe('findVolumeIdForPath', () => {
@@ -55,6 +75,17 @@ describe('isSameVolume', () => {
 
   it('returns false when the source resolves to no volume', () => {
     expect(isSameVolume('/orphan', '/Users/a', [usb])).toBe(false)
+  })
+
+  it('treats two local favorites as the SAME volume (both resolve to root, not fav-*)', () => {
+    // Desktop→Documents: both live on the local root. A naive longest-prefix
+    // match would pick fav-desktop vs fav-documents → cross-volume → Copy. The
+    // badge (and the actual drop) must show Move: it's a local→local move.
+    expect(isSameVolume('/Users/me/Desktop/photo.jpg', '/Users/me/Documents', volumesWithFavorites)).toBe(true)
+  })
+
+  it('treats a favorite path and a plain root path as the same volume', () => {
+    expect(isSameVolume('/Users/me/Desktop/x', '/Users/me/notes.md', volumesWithFavorites)).toBe(true)
   })
 })
 
@@ -137,5 +168,16 @@ describe('pickDropOperation', () => {
         modifiers: noMods,
       }),
     ).toBe('copy')
+  })
+
+  it('picks Move for a Desktop→Documents drag (both local, favorites must not read as cross-volume)', () => {
+    expect(
+      pickDropOperation({
+        sourcePath: '/Users/me/Desktop/photo.jpg',
+        targetPath: '/Users/me/Documents',
+        volumes: volumesWithFavorites,
+        modifiers: noMods,
+      }),
+    ).toBe('move')
   })
 })

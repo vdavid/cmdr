@@ -9,6 +9,8 @@ import {
   storeSelfDragFingerprint,
   clearSelfDragFingerprint,
   getSelfDragFileInfos,
+  getSelfDragIdentity,
+  clearSelfDragIdentity,
   endSelfDragSession,
 } from '../drag/drag-drop'
 import { resolveDropTarget } from '../drag/drop-target-hit-testing'
@@ -26,6 +28,7 @@ import { addToast } from '$lib/ui/toast'
 import { statPathsKinds, resolvePathVolume } from '$lib/tauri-commands'
 import { buildTransferPropsFromDroppedPaths } from './transfer-operations'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
+import type { SelfDragIdentity } from '../drag/drag-drop'
 import type { PathVolumeResolution } from '$lib/tauri-commands'
 import type { TransferOperationType } from '../types'
 import type { PaneAccess } from './pane-access'
@@ -106,25 +109,38 @@ export function createDragDropController(deps: DragDropControllerDeps) {
    * guard F5 does) instead of silently opening a copy dialog that the backend
    * would later reject.
    *
-   * Resolves the REAL source volume via `resolveSourceVolumeId` (frontend
-   * longest-prefix, backend fallback, honest-unknown default) instead of the old
-   * `sourceVolumeId = destVolumeId` placeholder, so an MTP→local / local→MTP
-   * drop stats the right volume and the dialog's byte/file/dir counters fill
-   * (a wrong source volume id makes the preview report zeros).
+   * Source identity (two paths):
    *
-   * Fetches each dropped path's top-level kind (file vs. folder) in one batched
-   * IPC so the dialog and completion toast report the real split. The stat runs
-   * under the backend read timeout and degrades to all-unknown on a slow mount,
-   * so this never blocks the drop; on any unknown flag the builder falls back to
-   * the approximate count shape.
+   * - **In-app self-drag** (`recordedIdentity` set): the source volume id AND the
+   *   source paths come from app state recorded at drag start — NOT from the
+   *   pasteboard-derived `paths`. This is the only correct source for a virtual
+   *   volume (MTP, smb2-native SMB), whose volume-relative paths
+   *   (`/photos/sunset.jpg`) round-trip through wry's drop event looking exactly
+   *   like local absolute paths, defeating the resolver. The kind probe is
+   *   skipped: a relative path can't be stat'd locally (it would either
+   *   all-unknown or, worse, coincidentally stat a same-named local path), so we
+   *   use the approximate count shape — honest beats half-right.
+   * - **External drop** (`recordedIdentity` absent): the dropped `paths` are
+   *   genuine local absolute paths from Finder et al. We resolve the REAL source
+   *   volume via `resolveSourceVolumeId` (frontend longest-prefix, backend
+   *   fallback, honest-unknown default) so an MTP→local / local→MTP drop stats
+   *   the right volume and the dialog's byte/file/dir counters fill (a wrong
+   *   source volume id makes the preview report zeros). The top-level kind probe
+   *   (`statPathsKinds`) runs in one batched IPC so the dialog and completion
+   *   toast report the real file/folder split; it degrades to all-unknown on a
+   *   slow mount, so it never blocks the drop.
    */
   async function handleFileDrop(
     paths: string[],
     targetPane: 'left' | 'right',
     targetFolderPath?: string,
     operation: TransferOperationType = 'copy',
+    recordedIdentity?: SelfDragIdentity,
   ) {
-    if (paths.length === 0) return
+    // For a recorded self-drag, the source paths come from app state, never the
+    // pasteboard. The dropped `paths` are only used for hit-testing upstream.
+    const sourcePaths = recordedIdentity?.sourcePaths ?? paths
+    if (sourcePaths.length === 0) return
 
     const destVolId = access.getPaneVolumeId(targetPane)
 
@@ -138,11 +154,31 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     const { sortBy, sortOrder } = access.getPaneSort(targetPane)
     const destPath = targetFolderPath ?? access.getPanePath(targetPane)
 
-    const sourceVolumeId = await resolveSourceVolumeId(paths, access.getVolumes(), resolveVolumeForPath)
+    if (recordedIdentity) {
+      // In-app self-drag: trust the recorded identity wholesale; skip the
+      // resolver and the local kind probe (a volume-relative path can't be
+      // stat'd here). The approximate count shape is the honest fallback.
+      dialogs.showTransfer(
+        buildTransferPropsFromDroppedPaths(
+          operation,
+          sourcePaths,
+          destPath,
+          targetPane,
+          destVolId,
+          recordedIdentity.sourceVolumeId,
+          sortBy,
+          sortOrder,
+          undefined,
+        ),
+      )
+      return
+    }
+
+    const sourceVolumeId = await resolveSourceVolumeId(sourcePaths, access.getVolumes(), resolveVolumeForPath)
 
     let isDirectoryFlags: (boolean | null)[] | undefined
     try {
-      isDirectoryFlags = await statPathsKinds(paths)
+      isDirectoryFlags = await statPathsKinds(sourcePaths)
     } catch {
       // Stat failed entirely — leave flags undefined so the builder uses the
       // approximate shape rather than blocking the drop on the error.
@@ -152,7 +188,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     dialogs.showTransfer(
       buildTransferPropsFromDroppedPaths(
         operation,
-        paths,
+        sourcePaths,
         destPath,
         targetPane,
         destVolId,
@@ -289,11 +325,25 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     const folderPath = dropTargetFolderPath
     const effectiveTarget = targetPathOf(resolved)
 
+    // For our own in-flight drag, the source identity comes from app state — the
+    // volume the user dragged FROM and the paths as that volume knows them — not
+    // the lossy pasteboard round-trip. Tied to the existing self-drag flag, NOT a
+    // parallel detection: a genuine external drop has no in-flight self-drag, so
+    // its (real, local) paths flow through the resolver path below.
+    //
+    // We only trust a recorded identity whose `sourceVolumeId` is a REGISTERED
+    // backend-real volume (present in `getVolumes()`). That excludes the
+    // search-results virtual volume — its drags carry real absolute paths that
+    // span volumes, with no single dispatchable source id, so the resolver (which
+    // matches each absolute path to its real volume) is the correct path. This is
+    // a registry-membership check, not a virtual-id string compare.
+    const recordedIdentity = getIsDraggingFromSelf() ? consumableSelfDragIdentity() : undefined
+
     // Read modifiers BEFORE stopping the tracker (which resets state).
     // Same source-of-truth as the overlay (`handleDragOver`) so the displayed
     // operation matches what we actually run.
     const operation = pickDropOperation({
-      sourcePath: paths[0] ?? null,
+      sourcePath: operationSourcePath(recordedIdentity, paths),
       targetPath: effectiveTarget,
       volumes: access.getVolumes(),
       modifiers: getModifierState(),
@@ -308,15 +358,49 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     // For same-pane pane-level drops (not folder), suppress (no-op)
     if (resolved.type === 'pane' && getIsDraggingFromSelf() && targetPane === access.getFocusedPane()) return
 
-    // Guard against drops onto the source itself or into its descendants
-    if (effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, paths)) return
+    // Guard against drops onto the source itself or into its descendants. Uses
+    // the recorded source paths for a self-drag (the pasteboard paths may be
+    // volume-relative), else the dropped paths.
+    const guardPaths = recordedIdentity?.sourcePaths ?? paths
+    if (effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, guardPaths)) return
 
     void handleFileDrop(
       paths,
       targetPane,
       resolved.type === 'folder' ? (folderPath ?? undefined) : undefined,
       operation,
+      recordedIdentity,
     )
+  }
+
+  /**
+   * The source path fed to `pickDropOperation` (move-vs-copy). For a recorded
+   * self-drag the pasteboard path is volume-relative (can't be matched to a
+   * volume root), so we use the recorded source volume's ROOT path instead —
+   * that's what makes a same-volume MTP/SMB move resolve to Move, not Copy.
+   * Otherwise the first dropped path.
+   */
+  function operationSourcePath(recordedIdentity: SelfDragIdentity | undefined, paths: string[]): string | null {
+    const firstPath = paths.at(0) ?? null
+    if (recordedIdentity) {
+      return access.getVolumes().find((v) => v.id === recordedIdentity.sourceVolumeId)?.path ?? firstPath
+    }
+    return firstPath
+  }
+
+  /**
+   * The recorded self-drag identity to consume, or undefined when there's none
+   * to trust. We trust it only when its `sourceVolumeId` is a REGISTERED
+   * backend-real volume: that's what makes the MTP/SMB self-drag correct (a real
+   * volume + volume-relative paths) while letting a search-results self-drag
+   * (virtual `'search-results'` id, real absolute paths spanning volumes) fall
+   * through to the resolver. A registry-membership check, not a string compare.
+   */
+  function consumableSelfDragIdentity(): SelfDragIdentity | undefined {
+    const identity = getSelfDragIdentity()
+    if (!identity) return undefined
+    const isRegisteredVolume = access.getVolumes().some((v) => v.id === identity.sourceVolumeId)
+    return isRegisteredVolume ? identity : undefined
   }
 
   /** Clears all drop target highlight state and hides overlay. */
@@ -382,9 +466,17 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       } else if (type === 'over') {
         handleDragOver(toViewportPosition(event.payload.position))
       } else if (type === 'drop') {
+        // `handleDrop` consumes the recorded self-drag identity (if any) while
+        // the self-drag flag is still set, BEFORE the resets below clear it.
         handleDrop(event.payload.paths, toViewportPosition(event.payload.position))
         resetDraggingFromSelf()
         clearSelfDragFingerprint()
+        // Terminal: a new drag re-records its own identity. Cleared here (not on
+        // 'leave') so a self-drag that exits and re-enters the window keeps its
+        // identity for the eventual in-window drop — same lifecycle as the
+        // fingerprint. On 'leave' the self-drag flag is reset, so a lingering
+        // record can't be consumed unless re-entry restores the flag.
+        clearSelfDragIdentity()
         void endSelfDragSession()
         externalDragHasLargeImage = false
         currentDragSourcePaths = []
