@@ -54,8 +54,10 @@ import {
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
+  expectDialogCounters,
   getFixtureRoot,
   TRANSFER_DIALOG,
+  type ExpectedDialogCounters,
 } from './helpers.js'
 import {
   createFileOverFileFixture,
@@ -86,10 +88,17 @@ type PageLike = Parameters<typeof ensureAppReady>[0]
  * screen. Scopes the op to the named items so the completion toast count and
  * the dest tree stay predictable (no stray `bulk/` or standard fixtures).
  */
-async function startCopyAskForEach(tauriPage: PageLike, items: string[]): Promise<ConflictSnapshot> {
+async function startCopyAskForEach(
+  tauriPage: PageLike,
+  items: string[],
+  expectedCounters?: ExpectedDialogCounters,
+): Promise<ConflictSnapshot> {
   await selectItemsByName(tauriPage, items)
   await dispatchMenuCommand(tauriPage, 'file.copy')
   await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+  // When the caller passes expected counters, pin the dialog's tally line
+  // (recursive file/dir totals for the selection) before starting the op.
+  if (expectedCounters) await expectDialogCounters(tauriPage, expectedCounters)
   // Default policy is "stop" (Ask for each); start straight away.
   await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
   await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
@@ -125,7 +134,8 @@ test.describe('Single clash: baseline file/folder smoke', () => {
     createFileOverFileFixture(fixtureRoot, 'doc.txt')
     await ensureAppReady(tauriPage, { leftPane: ['doc.txt'] })
 
-    const conflict = await startCopyAskForEach(tauriPage, ['doc.txt'])
+    // Source doc.txt holds "source-doc.txt" (14 bytes); single file, no dirs.
+    const conflict = await startCopyAskForEach(tauriPage, ['doc.txt'], { bytes: '14 bytes', files: 1, dirs: 0 })
     expect(conflict.isFileOverFolder).toBe(false)
     expect(conflict.filename).toBe('doc.txt')
     await resolveConflict(tauriPage, 'Overwrite')
@@ -153,7 +163,8 @@ test.describe('Single clash: baseline file/folder smoke', () => {
 
     // Top-level folder→folder is a merge, not a replace, so the only prompt
     // is the inner shared.txt file→file clash. Overwrite it.
-    const conflict = await startCopyAskForEach(tauriPage, ['box'])
+    // box/ holds shared.txt + only-source.txt → 2 files inside 1 folder.
+    const conflict = await startCopyAskForEach(tauriPage, ['box'], { files: 2, dirs: 1 })
     expect(conflict.isFileOverFolder).toBe(false)
     expect(conflict.filename).toBe('shared.txt')
     await resolveConflict(tauriPage, 'Overwrite')
@@ -172,7 +183,8 @@ test.describe('Single clash: folder→file (existing file, incoming folder)', ()
     createFolderOverFileFixture(fixtureRoot, 'thing')
     await ensureAppReady(tauriPage, { leftPane: ['thing'] })
 
-    const conflict = await startCopyAskForEach(tauriPage, ['thing'])
+    // Source thing/ is a folder holding one sentinel.txt → 1 file, 1 folder.
+    const conflict = await startCopyAskForEach(tauriPage, ['thing'], { files: 1, dirs: 1 })
     // folder→file is NOT the red file→folder variant.
     expect(conflict.isFileOverFolder).toBe(false)
     await resolveConflict(tauriPage, 'Skip')
@@ -222,7 +234,8 @@ test.describe('Single clash: file→folder (existing folder, incoming file — d
     createFileOverFolderFixture(fixtureRoot, 'item')
     await ensureAppReady(tauriPage, { leftPane: ['item'] })
 
-    const conflict = await startCopyAskForEach(tauriPage, ['item'])
+    // Source item is a file holding "source-item" (11 bytes); single file, no dirs.
+    const conflict = await startCopyAskForEach(tauriPage, ['item'], { bytes: '11 bytes', files: 1, dirs: 0 })
     // This IS the red warning variant.
     expect(conflict.isFileOverFolder).toBe(true)
     await resolveConflict(tauriPage, 'Skip')

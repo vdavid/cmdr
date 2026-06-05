@@ -170,6 +170,11 @@ function radioGroup(target: HTMLElement): HTMLElement | null {
   return target.querySelector('.conflict-policy')
 }
 
+/** Reads the `data-scan-state` marker off the tallies element. */
+function scanState(target: HTMLElement): string | null {
+  return target.querySelector('.scan-stats')?.getAttribute('data-scan-state') ?? null
+}
+
 beforeEach(() => {
   scanCompleteCb = null
   scanVolumeForConflictsMock.mockReset()
@@ -540,6 +545,78 @@ describe('TransferDialog local→local move scan gating', () => {
     expect(captured.previewId, 'local→local move must carry the previewId so the BE consumes the cache').toBe(
       'preview-1',
     )
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* data-scan-state marker: race-free "counting done" signal for E2E           */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferDialog data-scan-state marker', () => {
+  it('reads "counting" while the deep scan is still running', async () => {
+    // Hold the byte scan open (no scan-complete fired). The tallies element
+    // must advertise that it's still counting so an E2E helper keeps polling.
+    const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'root', currentVolumeId: 'root' })
+    await flushMicrotasks()
+
+    expect(scanCompleteCb, 'scan still in progress (complete not fired)').not.toBeNull()
+    expect(scanState(target)).toBe('counting')
+  })
+
+  it('transitions to "done" once the scan-complete event arrives', async () => {
+    const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'root', currentVolumeId: 'root' })
+    await flushMicrotasks()
+    expect(scanState(target)).toBe('counting')
+
+    scanCompleteCb?.({
+      previewId: 'preview-1',
+      filesTotal: 1,
+      dirsTotal: 0,
+      bytesTotal: 3267,
+      dedupBytesTotal: 3267,
+    })
+    await flushMicrotasks()
+
+    expect(scanState(target)).toBe('done')
+  })
+
+  it('reads "skipped" for a same-volume move (no deep scan ever runs)', async () => {
+    // A same-volume move renames server-side (zero bytes); the deep scan is
+    // skipped, so the tallies legitimately stay at 0 and must say so.
+    const target = mountDialog({ operationType: 'move', sourceVolumeId: 'ext', currentVolumeId: 'ext' })
+    await flushMicrotasks()
+
+    expect(startScanPreviewMock, 'same-volume move skips the scan').not.toHaveBeenCalled()
+    expect(scanState(target)).toBe('skipped')
+  })
+
+  it('still reaches "done" for a same-volume COPY (copy scans even on one volume)', async () => {
+    const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'ext', currentVolumeId: 'ext' })
+    await flushMicrotasks()
+    expect(scanState(target)).toBe('counting')
+
+    scanCompleteCb?.({
+      previewId: 'preview-1',
+      filesTotal: 2,
+      dirsTotal: 1,
+      bytesTotal: 4096,
+      dedupBytesTotal: 4096,
+    })
+    await flushMicrotasks()
+
+    expect(scanState(target)).toBe('done')
+  })
+
+  it('flips counting → skipped when toggling a same-volume copy to move', async () => {
+    const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'ext', currentVolumeId: 'ext' })
+    await flushMicrotasks()
+    expect(scanState(target)).toBe('counting')
+
+    clickToggle(target, 'Move')
+    await flushMicrotasks()
+
+    // Flipping to a same-volume move cancels the deep preview → skipped.
+    expect(scanState(target)).toBe('skipped')
   })
 })
 

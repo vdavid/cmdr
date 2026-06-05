@@ -191,6 +191,21 @@ preview running.
   preview starts for a same-volume copy; toggle both directions cancels/restarts; immediate dispatch with
   `previewId = null` / `scanInProgress = false`).
 
+### `data-scan-state` marker on the tallies element
+
+`TransferDialog`'s `.scan-stats` element carries a `data-scan-state` attribute (`counting` | `done` | `skipped`) derived
+from the existing `scanComplete` / `isSameVolumeMove` state — NO new wire event. It's the race-free "counting done"
+signal E2E uses: the shared `expectDialogCounters(tauriPage, …)` helper polls it to a terminal state before asserting
+the counter line, so an assertion never fires against a partial in-flight tally.
+
+- `done` → the deep scan finished; the tallies are final. `done` wins over `skipped` (a same-volume COPY still scans).
+- `skipped` → no deep scan runs (a same-volume move renames server-side, zero bytes), so the tallies legitimately stay
+  at 0. The helper only accepts this state when the caller opts in with `allowSkipped`.
+- `counting` → a scan is in flight or about to start on mount.
+
+Pinned by `TransferDialog.test.ts` § "data-scan-state marker" (counting → done, the skipped fast path, and the counting
+→ skipped toggle).
+
 ### Index conversion for ".." entry
 
 When the directory has a parent entry shown at index 0, frontend indices are offset by +1 from backend:

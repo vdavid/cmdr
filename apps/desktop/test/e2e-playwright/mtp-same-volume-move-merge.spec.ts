@@ -29,6 +29,7 @@ import {
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
+  expectDialogCounters,
   focusPane,
   getFixtureRoot,
   isStateClean,
@@ -128,6 +129,9 @@ test('same-volume MTP folder move auto-merges; file clash inside prompts; dest-o
   // clashes), so leave the policy on Stop ("Ask for each") and start.
   await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
   await waitForConflictPolicy(tauriPage)
+  // Same-volume MTP folder move = server-side rename-merge (zero bytes), so the
+  // deep scan is skipped and the tallies legitimately stay at 0 (state=skipped).
+  await expectDialogCounters(tauriPage, { bytes: '0 bytes', files: 0, dirs: 0, allowSkipped: true })
   await selectConflictPolicy(tauriPage, 'stop')
   await clickTransferStart(tauriPage)
 

@@ -6,7 +6,7 @@
 import type { ViewMode } from '$lib/app-status-store'
 import type { McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
 import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
-import type { FileEntry, FriendlyError } from '$lib/file-explorer/types'
+import type { FileEntry, FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
 import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
 
 /**
@@ -107,6 +107,15 @@ export interface ExplorerAPI {
   injectError: (pane: 'left' | 'right', friendly: FriendlyError) => void
   resetError: (pane: 'left' | 'right' | 'both') => void
   triggerTransferError: (friendly: FriendlyError) => void
+  /** E2E only: drive the native drag-and-drop drop entry programmatically (real
+   *  OS drag can't be synthesized in Playwright). Wired only behind the E2E gate
+   *  in `+page.svelte`; never reachable in production. */
+  triggerFileDrop: (
+    paths: string[],
+    targetPane: 'left' | 'right',
+    targetFolderPath?: string,
+    operation?: TransferOperationType,
+  ) => void
   newTab: () => boolean
   closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>
   reopenLastClosedTab: () => 'reopened' | 'empty' | 'cap'

@@ -225,6 +225,20 @@
 
     const confirmLabel = $derived(activeOperationType === 'copy' ? 'Copy' : 'Move')
 
+    /** Counting state for the tallies element, exposed as `data-scan-state` so
+     *  E2E tests can wait race-free for the scan to settle before asserting the
+     *  counter line (no new wire event — this is the existing `scanComplete` /
+     *  `isSameVolumeMove` state surfaced to the DOM):
+     *   - `done`     → the deep scan finished; the tallies are final.
+     *   - `skipped`  → no deep scan runs (a same-volume move renames server-side,
+     *                  zero bytes), so the tallies legitimately stay at 0 — there's
+     *                  nothing to count.
+     *   - `counting` → a scan is in flight (or about to start on mount).
+     *  `done` wins over `skipped`: a same-volume COPY still scans and completes. */
+    const scanState = $derived<'counting' | 'done' | 'skipped'>(
+        scanComplete ? 'done' : isSameVolumeMove ? 'skipped' : 'counting',
+    )
+
     /** Checks whether the destination path is invalid relative to the source paths. */
     function getPathValidationError(sources: string[], destination: string): string | null {
         const normDest = destination.replace(/\/+$/, '')
@@ -674,7 +688,7 @@
     </div>
 
     <!-- Scan stats (live counting) -->
-    <div class="scan-stats">
+    <div class="scan-stats" data-scan-state={scanState}>
         <div class="scan-stat">
             <span class="scan-value"><Size bytes={bytesFound} /></span>
         </div>

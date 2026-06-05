@@ -57,7 +57,7 @@
         triggerValidationIfNeeded,
     } from '$lib/licensing/licensing-store.svelte'
     import { updateLicenseCommandName } from '$lib/commands/command-registry'
-    import type { FriendlyError } from '$lib/file-explorer/types'
+    import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
     import type { ExplorerAPI } from './explorer-api'
 
     const log = getAppLogger('main-page')
@@ -381,6 +381,24 @@
                 explorerRef?.triggerTransferError(friendly)
             })
         }
+
+        // E2E only: drive the native drag-and-drop drop entry programmatically.
+        // Real OS drag can't be synthesized in Playwright, so the harness emits
+        // this event to exercise OUR drop handling (the shared destination guard,
+        // source-volume resolution, and transfer dialog) through the SAME
+        // `dragDrop.handleFileDrop` the live drop branch runs. Gated on
+        // `getAppMode() === 'e2e'` (set by CMDR_E2E_MODE=1, never true in prod),
+        // so production never reacts even if the event were somehow emitted.
+        await listenTauri('e2e-trigger-file-drop', (event) => {
+            if (getAppMode() !== 'e2e') return
+            const { paths, targetPane, targetFolderPath, operation } = event.payload as {
+                paths: string[]
+                targetPane: 'left' | 'right'
+                targetFolderPath?: string
+                operation?: TransferOperationType
+            }
+            explorerRef?.triggerFileDrop(paths, targetPane, targetFolderPath, operation)
+        })
     }
 
 

@@ -11,6 +11,7 @@
  * - evaluate() takes a string expression, not a function
  */
 
+import fs from 'fs'
 import { expect } from '@playwright/test'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { ensureMcpClient, mcpCall, mcpReadResource } from '../e2e-shared/mcp-client.js'
@@ -94,6 +95,37 @@ export async function dispatchMenuCommand(tauriPage: PageLike, commandId: string
   await tauriPage.evaluate(`(function(){
         var invoke = window.__TAURI_INTERNALS__.invoke;
         invoke('plugin:event|emit', { event: 'execute-command', payload: { commandId: ${id} } });
+    })()`)
+}
+
+/**
+ * Drives the native drag-and-drop drop entry programmatically by emitting the
+ * `e2e-trigger-file-drop` Tauri event the app's E2E-gated listener forwards to
+ * `ExplorerAPI.triggerFileDrop` → `dragDrop.handleFileDrop`. Real OS drag can't
+ * be synthesized in Playwright, so this exercises OUR drop handling (the shared
+ * destination guard, source-volume resolution, and the transfer dialog) without
+ * a real drag gesture.
+ *
+ * `targetFolderPath` drops onto a specific folder row instead of the pane root;
+ * `operation` ('copy' default, or 'move') mirrors what the modifier-resolved op
+ * would be. The dialog opens (or an alert/toast surfaces) exactly as a real drop
+ * would, so the caller asserts with the normal dialog/alert/toast helpers.
+ */
+export async function triggerFileDrop(
+  tauriPage: PageLike,
+  paths: string[],
+  targetPane: 'left' | 'right',
+  options: { targetFolderPath?: string; operation?: 'copy' | 'move' } = {},
+): Promise<void> {
+  const payload = JSON.stringify({
+    paths,
+    targetPane,
+    targetFolderPath: options.targetFolderPath,
+    operation: options.operation,
+  })
+  await tauriPage.evaluate(`(function(){
+        var invoke = window.__TAURI_INTERNALS__.invoke;
+        invoke('plugin:event|emit', { event: 'e2e-trigger-file-drop', payload: ${payload} });
     })()`)
 }
 
@@ -247,6 +279,155 @@ export async function expectAndDismissToast(
       { timeout: 2000 },
     )
     .toBeTruthy()
+}
+
+// ── Transfer-dialog counters ─────────────────────────────────────────────────
+
+/**
+ * Expected counter values for {@link expectDialogCounters}.
+ *
+ * `files` / `dirs` are exact integers — the dialog renders them through
+ * `formatNumber` (`toLocaleString('en-US')`), so they read as plain digits for
+ * the small counts E2E fixtures use (no thousands separators here).
+ *
+ * `bytes` is optional and format-aware. The dialog renders the byte total via
+ * the `<Size>` component in dynamic mode, so it's the user-facing string like
+ * `"3.19 KB"` — NOT a raw byte count. Pass that exact string, or a RegExp when
+ * the fixture's size is allowed to drift within a band (e.g. /^\d+(\.\d+)? KB$/).
+ * Omit it when only the file/dir split matters. There's no substring shrug:
+ * a string is matched whole, a RegExp is `.test()`-ed against the whole cell.
+ */
+export interface ExpectedDialogCounters {
+  /** Exact byte string the FE renders (e.g. "3.19 KB"), or a RegExp to match it. Omit to skip the byte assertion. */
+  bytes?: string | RegExp
+  /** Exact top-level file count. */
+  files: number
+  /** Exact top-level directory count. */
+  dirs: number
+  /**
+   * Accept the `skipped` scan state (tallies legitimately stay at 0 because no
+   * deep scan runs — e.g. a same-non-default-volume move's server-side rename).
+   * When set, the helper waits for `done` OR `skipped`; otherwise only `done`.
+   */
+  allowSkipped?: boolean
+}
+
+/**
+ * Reads the three live counter cells out of the transfer dialog's tallies
+ * element and returns them as `{ scanState, bytes, files, dirs }` (or `null`
+ * when the dialog isn't open). `bytes` is the rendered cell text (`"3.19 KB"`);
+ * `files` / `dirs` are the parsed integer counts. Used internally by
+ * {@link expectDialogCounters}; exposed for the rare test that wants the raw
+ * snapshot.
+ */
+export async function readDialogCounters(
+  tauriPage: PageLike,
+): Promise<{ scanState: string; bytes: string; files: number; dirs: number } | null> {
+  return tauriPage.evaluate<{ scanState: string; bytes: string; files: number; dirs: number } | null>(
+    `(function(){
+        var stats = document.querySelector('${TRANSFER_DIALOG} .scan-stats');
+        if (!stats) return null;
+        var cells = stats.querySelectorAll('.scan-stat');
+        if (cells.length < 3) return null;
+        function valueOf(cell){
+            var v = cell.querySelector('.scan-value');
+            return v ? (v.textContent || '').trim() : '';
+        }
+        var filesText = valueOf(cells[1]).replace(/,/g, '');
+        var dirsText = valueOf(cells[2]).replace(/,/g, '');
+        return {
+            scanState: stats.getAttribute('data-scan-state') || '',
+            bytes: valueOf(cells[0]),
+            files: parseInt(filesText, 10),
+            dirs: parseInt(dirsText, 10),
+        };
+    })()`,
+  )
+}
+
+/**
+ * Asserts the transfer dialog's counter line ("3.19 KB / 1 file / 0 dirs"),
+ * race-free.
+ *
+ * First polls `data-scan-state` on the tallies element until it reads `done`
+ * (or `done`/`skipped` when `allowSkipped` is set), so the assertion never
+ * fires mid-scan against partial totals. Then asserts the exact file and dir
+ * counts and, if `bytes` was provided, the rendered byte string.
+ *
+ * The dialog must already be open and the destination/operation settled — call
+ * this right after `waitForSelector(TRANSFER_DIALOG, …)` and after any
+ * Copy/Move toggle the test performs (the toggle restarts the scan, so the
+ * `data-scan-state` poll re-synchronises automatically).
+ *
+ * @example
+ * await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+ * await expectDialogCounters(tauriPage, { bytes: '3.19 KB', files: 1, dirs: 0 })
+ */
+export async function expectDialogCounters(
+  tauriPage: PageLike,
+  expected: ExpectedDialogCounters,
+  options: { timeout?: number } = {},
+): Promise<void> {
+  const timeout = options.timeout ?? 10000
+  const terminalStates = expected.allowSkipped ? ['done', 'skipped'] : ['done']
+
+  // Wait for the scan to settle to a terminal state before reading counts, so
+  // we never assert against a partial in-flight tally.
+  await expect
+    .poll(
+      async () => {
+        const snapshot = await readDialogCounters(tauriPage)
+        return snapshot !== null && terminalStates.includes(snapshot.scanState)
+      },
+      { timeout },
+    )
+    .toBeTruthy()
+
+  const snapshot = await readDialogCounters(tauriPage)
+  expect(snapshot, 'transfer dialog tallies element present').not.toBeNull()
+  if (snapshot === null) return // unreachable after the poll, narrows the type
+
+  expect(snapshot.files, `top-level file count (state=${snapshot.scanState})`).toBe(expected.files)
+  expect(snapshot.dirs, `top-level dir count (state=${snapshot.scanState})`).toBe(expected.dirs)
+
+  if (expected.bytes !== undefined) {
+    if (typeof expected.bytes === 'string') {
+      expect(snapshot.bytes, 'rendered byte total').toBe(expected.bytes)
+    } else {
+      expect(
+        expected.bytes.test(snapshot.bytes),
+        `rendered byte total "${snapshot.bytes}" matches ${String(expected.bytes)}`,
+      ).toBe(true)
+    }
+  }
+}
+
+/**
+ * Walks a set of source paths (files or directories) and returns the RECURSIVE
+ * file / dir counts the transfer scan preview would report for them — the same
+ * totals the dialog's tallies show. A directory contributes itself to `dirs`
+ * and recurses into its children; a file contributes itself to `files`.
+ *
+ * Used by the sweep specs that select a folder (or `selectAll` over `bulk/`):
+ * computing the counts from the actual fixture tree keeps the assertion exact
+ * AND self-maintaining if a fixture's contents change, without hardcoding the
+ * ~23-file / ~170 MB `bulk/` shape. Node-side only (reads real disk), so call
+ * it on the absolute fixture paths the spec already has.
+ */
+export function countTree(absPaths: string[]): { files: number; dirs: number } {
+  let files = 0
+  let dirs = 0
+  const walk = (p: string): void => {
+    const stat = fs.lstatSync(p)
+    if (stat.isDirectory()) {
+      dirs++
+      for (const child of fs.readdirSync(p)) walk(`${p}/${child}`)
+    } else {
+      files++
+    }
+  }
+  for (const p of absPaths) walk(p)
+  return { files, dirs }
 }
 
 // ── App readiness ────────────────────────────────────────────────────────────

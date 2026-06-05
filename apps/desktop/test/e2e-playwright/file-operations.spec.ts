@@ -19,6 +19,7 @@ import {
   dismissOverlay,
   ensureAppReady,
   expectAndDismissToast,
+  expectDialogCounters,
   getEntryName,
   getFixtureRoot,
   fileExistsInFocusedPane,
@@ -52,6 +53,9 @@ test.describe('Copy round-trip', () => {
 
     const titleText = await tauriPage.textContent(`${TRANSFER_DIALOG} h2`)
     expect(titleText).toContain('Copy')
+
+    // The dialog's counter line must report the single 1 KB file (no dirs).
+    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
 
     // Click the Copy button
     await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
@@ -101,6 +105,10 @@ test.describe('Move round-trip', () => {
 
     const titleText = await tauriPage.textContent(`${TRANSFER_DIALOG} h2`)
     expect(titleText).toContain('Move')
+
+    // A local→local move keeps the deep scan running (NOT the same-volume rename
+    // fast path), so the counter line still reports the single 1 KB file.
+    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
 
     await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)

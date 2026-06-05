@@ -1570,6 +1570,21 @@
         paneCommands.triggerTransferError(friendly)
     }
 
+    /** E2E only: drive the native drag-and-drop entry path programmatically.
+     *  Real OS drag can't be synthesized in Playwright, so this calls the SAME
+     *  `dragDrop.handleFileDrop` the live `onDragDropEvent` 'drop' branch calls —
+     *  the shared destination guard, source-volume resolution, and transfer
+     *  dialog all run identically. Wired only behind the E2E gate in
+     *  `+page.svelte`; never invoked in production. */
+    export function triggerFileDrop(
+        paths: string[],
+        targetPane: 'left' | 'right',
+        targetFolderPath?: string,
+        operation: TransferOperationType = 'copy',
+    ): void {
+        void dragDrop.handleFileDrop(paths, targetPane, targetFolderPath, operation)
+    }
+
     /** Refresh network hosts in the focused pane (used by ⌘R shortcut). */
     export function refreshNetworkHosts() {
         paneCommands.refreshNetworkHosts()

@@ -99,6 +99,14 @@ A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`); 
 (`to: { history: 'parent' }`). Every other key stays a `sendKeyToFocusedPane` passthrough — a keystroke is transport,
 not a command, so it never rides the bus (invariant P2).
 
+**E2E drop hook stays off the bus (test-only).** `+page.svelte` registers an `e2e-trigger-file-drop` listener gated on
+`getAppMode() === 'e2e'` (set by `CMDR_E2E_MODE=1`, never true in prod). It forwards to `explorerRef.triggerFileDrop`,
+which delegates to the drag controller's `handleFileDrop` — the SAME seam the live `onDragDropEvent` 'drop' branch runs.
+Real OS drag can't be synthesized in Playwright, so the E2E harness emits this event to exercise our drop handling
+(shared destination guard, source-volume resolution, transfer dialog) end to end. It's a test hook, not a user command:
+no registry entry, no palette, no shortcut. See `test/e2e-playwright/CLAUDE.md` § "Transfer-dialog counters +
+programmatic drop entry".
+
 **Debug-error listeners stay off the bus (intentional, not unfinished).** The three `debug-inject-error` /
 `debug-reset-error` / `debug-trigger-transfer-error` listeners in `+page.svelte` (gated by `import.meta.env.DEV`) call
 `explorerRef.injectError` / `resetError` / `triggerTransferError` directly. They inject test state from the debug

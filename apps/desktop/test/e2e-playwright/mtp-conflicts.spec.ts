@@ -27,6 +27,7 @@ import {
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
+  expectDialogCounters,
   focusPane,
   getFixtureRoot,
   isStateClean,
@@ -117,6 +118,10 @@ test.describe('MTP cross-volume move conflicts', () => {
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await waitForConflictPolicy(tauriPage)
+    // Field-bug-4 regression pin: an MTP→local move must resolve the real MTP
+    // source volume so the deep scan stats it. report.txt is 50 bytes — the
+    // counters must read non-zero, not the old `0 bytes / 0 files`.
+    await expectDialogCounters(tauriPage, { bytes: '50 bytes', files: 1, dirs: 0 })
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)
@@ -198,6 +203,9 @@ test.describe('MTP cross-volume move conflicts', () => {
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await waitForConflictPolicy(tauriPage)
+    // Field-bug-4 regression pin, opposite direction: a local→MTP move resolves
+    // the local source so the deep scan reports the 1 KB file-a.txt, not 0.
+    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)
@@ -259,6 +267,10 @@ test.describe('MTP same-volume move conflicts', () => {
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await waitForConflictPolicy(tauriPage)
+    // A same-volume MTP move is a server-side rename (zero bytes), so the deep
+    // scan is legitimately skipped — the tallies stay at 0 and the marker reads
+    // `skipped`, not a bug.
+    await expectDialogCounters(tauriPage, { bytes: '0 bytes', files: 0, dirs: 0, allowSkipped: true })
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)

@@ -154,7 +154,33 @@ details.
 | `mtp.spec.ts`                         | MTP E2E tests: volume selection, navigation, file ops, large file transfer via virtual device. Uses `e2e-shared/mcp-client.ts` (MCP client helper) and `e2e-shared/mtp-fixtures.ts` (MTP fixtures). Requires `virtual-mtp` feature.                                                                                                     |
 | `mtp-conflicts.spec.ts`               | MTP conflict resolution: cross-volume move (MTP↔local) and same-volume move (MTP→MTP) with overwrite/skip policies. Requires `virtual-mtp` feature.                                                                                                                                                                                     |
 | `mtp-same-volume-move-merge.spec.ts`  | Same-volume rename-merge fast path: MTP→MTP folder move auto-merges (no folder prompt), a clashing file inside follows the file policy (prompts under Stop), and a dest-only file survives. MTP-backed (uses the real `move_within_same_volume` rename-merge), so it lives on the dedicated MTP shard. Requires `virtual-mtp` feature.  |
+| `drag-drop-entry.spec.ts`             | Programmatic drop entry, local-only: a local→local drop opens the copy dialog with correct counters; toggling that dialog to Move SURVIVES the counters (field-bug-1 regression). Drives `triggerFileDrop` (see below). Non-MTP shard.                                                                                                  |
+| `mtp-drag-drop-entry.spec.ts`         | Programmatic drop entry across MTP: dropping onto the read-only SD Card shows the exact "Read-only device" alert with no transfer dialog (bug 2); MTP→local and local→MTP drops fill the counters from the resolved source volume (bug 4). MTP shard. Requires `virtual-mtp`.                                                           |
 | `smb.spec.ts`                         | SMB E2E tests: virtual host discovery (14 hosts), share listing, mounting, cross-storage copy, 50-share enumeration, unicode share rendering. Uses `e2e-shared/smb-fixtures.ts` and smb2's consumer Docker containers. Requires `smb-e2e` feature + Docker.                                                                             |
+
+## Transfer-dialog counters + programmatic drop entry
+
+**`expectDialogCounters(tauriPage, { bytes?, files, dirs, allowSkipped? })`** (helpers.ts) asserts the transfer dialog's
+counter line ("3.19 KB / 1 file / 0 dirs") race-free. It polls the `data-scan-state` attribute on the dialog's
+`.scan-stats` element to a terminal state (`done`, or `done`/`skipped` when `allowSkipped` is set) BEFORE reading, so an
+assertion never fires mid-scan. Call it right after `waitForSelector(TRANSFER_DIALOG, …)` and after any Copy/Move toggle
+(the toggle restarts the scan; the poll re-synchronises). `files` / `dirs` are exact RECURSIVE totals; `bytes` is the
+FE-rendered string (`<Size>` dynamic mode, e.g. `"1.00 KB"`, `"50 bytes"` — NOT a raw byte count), passed as an exact
+string or a RegExp, or omitted. For selections that drag in the `bulk/` tree, compute the counts off disk with
+`countTree(absPaths)` rather than hardcoding the ~23-file / ~170 MB shape.
+
+`data-scan-state` reads `skipped` only when no deep scan runs — a same-non-default-volume move's server-side rename
+(zero bytes), so the tallies legitimately stay at 0. The marker is derived from existing dialog state, no new wire
+event; see `file-operations/transfer/CLAUDE.md` § "`data-scan-state` marker".
+
+**`triggerFileDrop(tauriPage, paths, targetPane, { targetFolderPath?, operation? })`** (helpers.ts) drives the native
+drag-and-drop ENTRY path programmatically — real OS drag can't be synthesized in Playwright. It emits the E2E-gated
+`e2e-trigger-file-drop` Tauri event, which the app's `+page.svelte` listener (gated on `getAppMode() === 'e2e'`, set by
+`CMDR_E2E_MODE=1`, never true in prod) forwards to `ExplorerAPI.triggerFileDrop` → the SAME `dragDrop.handleFileDrop`
+the live `onDragDropEvent` 'drop' branch runs. So the shared destination guard (read-only refusal, search-results
+toast), source-volume resolution, and transfer dialog all run identically to a real drop. The dialog opens (or an
+alert/toast surfaces) exactly as a drop would; assert with the normal dialog/alert helpers. Covered by
+`drag-drop-entry.spec.ts` (local) and `mtp-drag-drop-entry.spec.ts` (cross-volume + read-only).
 
 ## Multi-window testing
 
