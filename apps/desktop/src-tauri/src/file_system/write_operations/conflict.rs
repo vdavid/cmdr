@@ -156,11 +156,19 @@ pub(super) fn resolve_conflict(
                 source_size_for_dir,
                 destination_size_for_dir,
             );
-            events.emit_conflict(event);
-
-            // Create a oneshot channel for this conflict resolution
+            // Store the oneshot sender BEFORE emitting the event. A responder
+            // (the FE's `resolve_write_conflict`, which takes the stored sender)
+            // can only answer a conflict it has observed; if the event reached it
+            // before the sender slot was filled, its take would miss and the
+            // `blocking_recv` below would hang. Storing first makes the sender
+            // available the instant the event is in the responder's hands. The
+            // lock guard is released as the statement ends — never held across
+            // the emit or the recv. Mirrors the volume-side Stop branch in
+            // `transfer/volume_conflict.rs`.
             let (tx, rx) = tokio::sync::oneshot::channel();
             *state.conflict_resolution_tx.lock_ignore_poison() = Some(tx);
+
+            events.emit_conflict(event);
 
             // Wait for user to call resolve_write_conflict.
             // The sender is dropped on cancel_write_operation, which unblocks the
@@ -1270,6 +1278,114 @@ mod apply_to_all_tests {
         assert_eq!(
             apply_to_all_effective(&state, true),
             Some(ConflictResolution::Overwrite)
+        );
+    }
+}
+
+#[cfg(test)]
+mod stop_branch_store_before_emit_tests {
+    //! Pins the store-before-emit ordering of the local-FS Stop branch in
+    //! `resolve_conflict`: the oneshot sender must be stored in
+    //! `state.conflict_resolution_tx` BEFORE the `write-conflict` event is
+    //! emitted, so a responder that observes the event and answers it
+    //! synchronously (the FE's `resolve_write_conflict`, modeled here by a sink
+    //! that answers inside `emit_conflict`) finds the sender already present.
+
+    use super::*;
+    use crate::file_system::write_operations::state::{ConflictResolutionResponse, WriteOperationState};
+    use crate::file_system::write_operations::types::{
+        CollectorEventSink, ConflictInfo, ConflictResolution, DryRunResult, OperationEventSink, ScanProgressEvent,
+        WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationConfig,
+        WriteProgressEvent, WriteSourceItemDoneEvent,
+    };
+    use std::sync::Arc;
+    use std::time::Duration;
+    use tempfile::TempDir;
+
+    /// A sink that answers a Stop-mode `write-conflict` synchronously the moment
+    /// it observes it, by taking the stored oneshot sender — exactly what the
+    /// FE's `resolve_write_conflict` does, but driven from inside `emit_conflict`.
+    /// Forwards every event to an inner `CollectorEventSink` for inspection.
+    ///
+    /// This only resolves the conflict if the sender is ALREADY stored when the
+    /// event arrives. If the production code emitted before storing, the take
+    /// would miss, nothing would answer, and `resolve_conflict`'s
+    /// `rx.blocking_recv()` would deadlock — turning the ordering bug into a hang
+    /// instead of a wrong value. The store-before-emit fix is what keeps this
+    /// test from hanging.
+    struct AnswerOnConflictSink {
+        inner: CollectorEventSink,
+        state: Arc<WriteOperationState>,
+        resolution: ConflictResolution,
+    }
+
+    impl OperationEventSink for AnswerOnConflictSink {
+        fn emit_conflict(&self, e: WriteConflictEvent) {
+            self.inner.emit_conflict(e);
+            if let Some(tx) = self.state.conflict_resolution_tx.lock_ignore_poison().take() {
+                let _ = tx.send(ConflictResolutionResponse {
+                    resolution: self.resolution,
+                    apply_to_all: false,
+                });
+            }
+        }
+        fn emit_progress(&self, e: WriteProgressEvent) {
+            self.inner.emit_progress(e);
+        }
+        fn emit_complete(&self, e: WriteCompleteEvent) {
+            self.inner.emit_complete(e);
+        }
+        fn emit_cancelled(&self, e: WriteCancelledEvent) {
+            self.inner.emit_cancelled(e);
+        }
+        fn emit_error(&self, e: WriteErrorEvent) {
+            self.inner.emit_error(e);
+        }
+        fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
+        fn emit_scan_progress(&self, _e: ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _c: ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _r: DryRunResult) {}
+    }
+
+    /// THE PIN: with the sender stored before the emit, a responder answering
+    /// synchronously inside `emit_conflict` resolves the local-FS Stop clash and
+    /// `resolve_conflict` returns the scripted resolution. Run WITHOUT a Tokio
+    /// runtime so the function's `rx.blocking_recv()` is legal; the answer is
+    /// already buffered in the oneshot by the time `blocking_recv` runs, so it
+    /// returns immediately. Against the pre-fix emit-then-store ordering the take
+    /// inside `emit_conflict` would miss and this test would deadlock.
+    #[test]
+    fn stop_clash_answered_from_within_emit_resolves_without_hanging() {
+        let dir = TempDir::new().unwrap();
+        let src = dir.path().join("src.txt");
+        let dst = dir.path().join("dst.txt");
+        fs::write(&src, b"SRC").unwrap();
+        fs::write(&dst, b"DEST").unwrap();
+
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+        let events = AnswerOnConflictSink {
+            inner: CollectorEventSink::new(),
+            state: Arc::clone(&state),
+            resolution: ConflictResolution::Skip,
+        };
+        let config = WriteOperationConfig::default(); // Stop, overwrite=false
+        let mut latch = ApplyToAll::default();
+
+        let result = resolve_conflict(&src, &dst, &config, &events, "op-local-stop-pin", &state, &mut latch);
+
+        // Skip resolves to "skip this file" (None), proving the responder's
+        // answer reached the op — which is only possible if the sender was
+        // stored before the event was emitted.
+        assert!(
+            matches!(result, Ok(None)),
+            "Skip answer should resolve the clash to None, got {result:?}"
+        );
+        // Exactly one conflict event was recorded, and it's a file-vs-file clash.
+        let conflicts = events.inner.conflicts.lock_ignore_poison();
+        assert_eq!(conflicts.len(), 1, "exactly one Stop prompt for the file clash");
+        assert!(
+            !conflicts[0].source_is_directory && !conflicts[0].destination_is_directory,
+            "the clash is file-vs-file"
         );
     }
 }
