@@ -162,6 +162,13 @@ path — a deliberate telemetry gain, not a behavior change. The buttons' visibl
 toast guard in dispatch never fires for an F-click (the guard set — `file.rename` / `file.newFile` / `file.newFolder` —
 matches exactly the buttons the flags disable on a snapshot pane).
 
+**Selection-dialog keys dispatch onto the bus.** The `+` / `-` keypresses are classified by `selection-dialog-keys.ts`
+and reach the bus through a typed `onCommand?: (commandId: CommandId) => void` prop chain: `FilePane` (the classifier at
+`FilePane.svelte` emits `'selection.selectFiles'` / `'selection.deselectFiles'`) → `DualPaneExplorer` (same typed prop)
+→ `+page.svelte`, wired to `handleCommandExecute`. The prop is `CommandId`-typed end to end, so
+`cmdr/no-raw-command-dispatch` stays satisfied and a registry rename breaks compilation along the chain. See
+`$lib/file-explorer/CLAUDE.md` § Selection for the dialog itself.
+
 **Focused-pane reads for externals (`focused-pane-reads.ts`).** Consumers outside `DualPaneExplorer` that need the
 focused pane's directory path, active-tab volume id, or "searchable folder" read them from the explorer store via
 `getFocusedPanePath()` / `getFocusedPaneVolumeId()` / `getFocusedPaneSearchableFolder()` instead of through

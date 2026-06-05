@@ -12,7 +12,7 @@ Centralized command registry and fuzzy search engine for the command palette.
 | `fuzzy-search.ts`               | `searchCommands(query, recentCommandIds?)` using `@leeoniya/ufuzzy`                                                        |
 | `index.ts`                      | Barrel re-export                                                                                                           |
 | `fuzzy-search.test.ts`          | Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering                                   |
-| `command-registry.test.ts`      | Set-equality guard (tuple ↔ registry), `isCommandId`, `updateLicenseCommandName` in-place mutation                         |
+| `command-registry.test.ts`      | Set-equality guard (tuple ↔ registry), `isCommandId`, `updateLicenseCommandName`, palette-visible-set pin                  |
 | `command-types.test.ts`         | Compile-time `@ts-expect-error` guards for the `CommandId` union and arg-tuple shapes                                      |
 | `rust-command-id-drift.test.ts` | Parses `menu/mod.rs` + `LicenseSection.svelte`; asserts every Rust-emitted command id ∈ `COMMAND_IDS`                      |
 
@@ -103,7 +103,8 @@ keyboard routing is handled by each UI component.
 
 ## Command registry
 
-`command-registry.ts` holds ~60 commands grouped by scope. Key rules:
+`command-registry.ts` holds ~115 commands grouped by scope (about 77 palette-visible; the rest are
+`showInPalette: false` — low-level navigation and the MCP-only per-pane commands). Key rules:
 
 - `showInPalette: false` for low-level navigation (↑/↓, ←/→, volume/palette modal internals).
 - `app.commandPalette` has `showInPalette: false`; opening the palette from inside itself makes no sense.
@@ -164,8 +165,10 @@ added an IPC + Tauri-event + Svelte-effect hop between the keystroke and the DOM
    default to `NoCommandArgs`). The `case` then reads the payload from `dispatchArgs`. MCP-only commands are dispatched
    from the `mcp-listeners.ts` adapter after a validate-parse, and are `showInPalette: false`.
 4. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/command-dispatch.ts`.
-5. No changes needed to the palette, fuzzy search, or keyboard dispatch. Commands with `showInPalette: true` are
-   automatically dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`).
+5. No changes needed to fuzzy search or keyboard dispatch. Commands with `showInPalette: true` are automatically
+   dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`). If the command is
+   palette-visible, also add its id to `EXPECTED_PALETTE_IDS` in `command-registry.test.ts` (the palette-visible-set pin
+   fails otherwise); an MCP-only / low-level command stays `showInPalette: false` and out of that list.
 6. If the command has a native menu item, add a mapping in `menu.rs` (`menu_id_to_command` and `command_id_to_menu_id`)
    and add its ID to the `menuCommands` array in `shortcuts-store.ts`. The `rust-command-id-drift.test.ts` test will
    fail if `menu_id_to_command` emits an id that isn't in `COMMAND_IDS`.
@@ -206,7 +209,7 @@ sync to avoid double-toggling.
 
 ## Gotchas
 
-**Gotcha**: `commands` is a plain array, not a `Map` or indexed structure. **Why**: The array is ~60 items.
+**Gotcha**: `commands` is a plain array, not a `Map` or indexed structure. **Why**: The array is ~115 items.
 `getPaletteCommands()` filters it on each call, and uFuzzy needs an array of strings anyway. Indexing by ID would help
 lookup but add complexity for no measurable gain at this scale.
 

@@ -11,8 +11,8 @@
          * Dispatches a `file.*` command for the clicked F-key onto the command
          * bus. The buttons carry the same user intent as the keyboard / palette /
          * menu paths, so they route through the one typed dispatch spine instead
-         * of duplicating the `file.*` cases (the deleted `handleFn*` closures did
-         * the latter). Wired to `handleCommandExecute` in `+page.svelte`.
+         * of calling `explorerRef` directly. Wired to `handleCommandExecute` in
+         * `+page.svelte`.
          */
         onCommand?: (id: CommandId) => void
     }

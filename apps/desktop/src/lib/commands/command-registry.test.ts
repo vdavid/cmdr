@@ -1,7 +1,113 @@
 import { describe, it, expect } from 'vitest'
-import { commands, updateLicenseCommandName } from './command-registry'
+import { commands, getPaletteCommands, updateLicenseCommandName } from './command-registry'
 import { COMMAND_IDS, isCommandId, type CommandId } from './command-ids'
 import type { CommandArgs, CommandDispatchArgs } from './types'
+
+/**
+ * The exact set of commands the palette shows the user. Pinned so a new
+ * registry entry can't silently appear in (or vanish from) the palette: the MCP
+ * per-pane commands and every low-level navigation id are `showInPalette: false`
+ * on purpose, and a regression that flips one visible would otherwise slip
+ * through unnoticed. Update this list only when intentionally changing what the
+ * user can pick from the palette.
+ */
+const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
+  'app.about',
+  'app.licenseKey',
+  'app.settings',
+  'app.checkForUpdates',
+  'cmdr.openOnboarding',
+  'help.sendErrorReport',
+  'search.open',
+  'nav.goToPath',
+  'downloads.goToLatest',
+  'view.showHidden',
+  'view.briefMode',
+  'view.fullMode',
+  'view.zoom.set75',
+  'view.zoom.set100',
+  'view.zoom.set125',
+  'view.zoom.set150',
+  'view.zoom.in',
+  'view.zoom.out',
+  'sort.byName',
+  'sort.byExtension',
+  'sort.byModified',
+  'sort.bySize',
+  'sort.byCreated',
+  'sort.ascending',
+  'sort.descending',
+  'sort.toggleOrder',
+  'pane.switch',
+  'pane.swap',
+  'pane.leftVolumeChooser',
+  'pane.rightVolumeChooser',
+  'pane.copyPathLeftToRight',
+  'pane.copyPathRightToLeft',
+  'tab.new',
+  'tab.close',
+  'tab.reopen',
+  'tab.next',
+  'tab.prev',
+  'tab.togglePin',
+  'tab.closeOthers',
+  'nav.open',
+  'nav.parent',
+  'nav.home',
+  'nav.end',
+  'nav.pageUp',
+  'nav.pageDown',
+  'nav.back',
+  'nav.forward',
+  'file.rename',
+  'file.view',
+  'file.edit',
+  'file.copy',
+  'file.move',
+  'edit.copy',
+  'edit.cut',
+  'edit.paste',
+  'edit.pasteAsMove',
+  'file.newFolder',
+  'file.newFile',
+  'file.delete',
+  'file.deletePermanently',
+  'file.showInFinder',
+  'file.copyPath',
+  'file.copyCurrentDirectoryPath',
+  'file.copyFilename',
+  'file.contextMenu',
+  'selection.toggle',
+  'selection.toggleAndDown',
+  'selection.selectAll',
+  'selection.deselectAll',
+  'selection.selectFiles',
+  'selection.deselectFiles',
+  'network.refresh',
+  'share.back',
+  'share.selectShare',
+  'about.openWebsite',
+  'about.openUpgrade',
+  'about.close',
+]
+
+/**
+ * The MCP-only per-pane commands (and `nav.openUnderCursor`). These exist so the
+ * MCP adapter can target a specific pane / tab / option that the focused-pane
+ * palette commands can't express. They MUST stay out of the palette.
+ */
+const MCP_ONLY_HIDDEN_IDS: readonly CommandId[] = [
+  'view.setMode',
+  'sort.set',
+  'selection.mcpSelect',
+  'cursor.moveTo',
+  'cursor.scrollTo',
+  'volume.selectByName',
+  'tab.mcpAction',
+  'dialog.confirm',
+  'pane.refresh',
+  'nav.openUnderCursor',
+]
 
 describe('command-registry id sync', () => {
   it('COMMAND_IDS and the registry ids are the same set (both directions)', () => {
@@ -20,6 +126,25 @@ describe('command-registry id sync', () => {
 
   it('has no duplicate ids in the tuple', () => {
     expect(COMMAND_IDS.length).toBe(new Set(COMMAND_IDS).size)
+  })
+})
+
+describe('palette-visible command set', () => {
+  it('shows exactly the pinned set of commands (no silent additions or removals)', () => {
+    const paletteIds = getPaletteCommands().map((c) => c.id)
+    expect(paletteIds).toEqual(EXPECTED_PALETTE_IDS)
+  })
+
+  it('keeps the MCP-only per-pane commands out of the palette', () => {
+    const paletteIds = new Set(getPaletteCommands().map((c) => c.id))
+    for (const id of MCP_ONLY_HIDDEN_IDS) {
+      expect(paletteIds.has(id), `${id} must stay showInPalette: false`).toBe(false)
+      // The id must still be a real registry entry, just a hidden one.
+      expect(
+        commands.some((c) => c.id === id),
+        `${id} must exist in the registry`,
+      ).toBe(true)
+    }
   })
 })
 
