@@ -24,7 +24,7 @@
     import type { FileEntry, SortColumn, SortOrder } from '../types'
     import FullList from '../views/FullList.svelte'
     import { getSnapshot, getMutationTick, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
-    import { searchResultsVolumeCapabilities } from '$lib/search/capabilities'
+    import { capabilitiesForKind } from './volume-capabilities'
     import { showFileContextMenu } from '$lib/tauri-commands'
     import type { SearchResultEntry } from '$lib/ipc/bindings'
     import type { ListViewAPI } from './types'
@@ -80,8 +80,13 @@
         snapshotId ? (void getMutationTick(), getSnapshot(snapshotId)) : undefined,
     )
 
-    /** Capability flags driving the row context menu (M8c). */
-    const caps = searchResultsVolumeCapabilities()
+    /**
+     * Capability flags driving the row context menu. This view always renders a
+     * `search-results` pane, so it reads the `search-results` row of the per-kind
+     * table directly (A6 — capabilities, not a `volumeId === 'search-results'`
+     * string compare). The pure `capabilitiesForKind` needs no store lookup.
+     */
+    const caps = capabilitiesForKind('search-results')
 
     /**
      * Adapt `SearchResultEntry` (the wire-typed search result) into `FileEntry` (the
@@ -203,8 +208,8 @@
             // underlying paths are real, so Open / Copy / Move / Delete /
             // Show in Finder all still make sense, but the snapshot view
             // isn't a destination for "rename inside this folder" or
-            // "make a new folder here". `caps` is the capability flag set
-            // (`searchResultsVolumeCapabilities`) that gates this.
+            // "make a new folder here". `caps` is the `search-results` row of
+            // the per-kind capability table that gates this.
             //
             // The menu's `Copy {filename}` label uses the `filename` arg as-is.
             // Our adapted `entry.name` is the friendly full path

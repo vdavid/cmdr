@@ -111,7 +111,7 @@ describe('capabilitiesForKind — the frozen per-kind table', () => {
     })
   }
 
-  it('the search-results row is searchResultsVolumeCapabilities() generalized', () => {
+  it('the search-results row generalizes the original search-results capability seed', () => {
     // seed: { canPasteInto: false, canMkdir: false, canMkfile: false, canRename: false, isSourceOK: true }
     const caps = capabilitiesForKind('search-results')
     expect(caps.canPasteInto).toBe(false) // = seed canPasteInto

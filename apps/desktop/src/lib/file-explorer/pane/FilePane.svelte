@@ -270,8 +270,18 @@
     let networkMountViewRef: NetworkMountViewAPI | undefined = $state()
     let searchResultsViewRef: SearchResultsViewAPI | undefined = $state()
 
-    // Check if we're viewing the network (special virtual volume)
-    const isNetworkView = $derived(volumeId === 'network')
+    /**
+     * This pane's volume capabilities, the single A6 source of truth for "what
+     * can a pane on this KIND do". Resolved once from `volumeId` (the two virtual
+     * ids short-circuit in `volumeKindOf` before the store lookup; real ids read
+     * `fsType`/`category` from the volume store). The view-selection discriminant,
+     * the named view deriveds below, and the per-feature gates all read off this.
+     */
+    const caps = $derived(capabilitiesFor(volumeId))
+
+    // Check if we're viewing the network (special virtual volume). Sourced from
+    // the kind, not a `volumeId === 'network'` string compare (A6).
+    const isNetworkView = $derived(caps.kind === 'network')
 
     /**
      * Check if we're viewing a search-results snapshot (the other virtual volume,
@@ -279,9 +289,10 @@
      * no file watcher, no git lookups, no pane-state-to-MCP sync. The pane renders
      * `SearchResultsView` which pulls the snapshot from the in-memory store.
      * Most code paths that gate on `isNetworkView` also gate on this; the few
-     * exceptions are noted at each call site.
+     * exceptions are noted at each call site. Sourced from the kind, not a
+     * `volumeId === 'search-results'` string compare (A6).
      */
-    const isSearchResultsView = $derived(volumeId === 'search-results')
+    const isSearchResultsView = $derived(caps.kind === 'search-results')
 
     /**
      * Snapshot id encoded in `currentPath` for the search-results pane (`search-results://<id>`),
@@ -343,7 +354,12 @@
      */
     async function syncGitState(path: string): Promise<void> {
         const gitFeaturesNeeded = showRepoChip || showGitStatusColumn
-        if (!gitFeaturesNeeded || isMtpVolumeId(volumeId) || isNetworkView || isSearchResultsView) {
+        // The virtual-volume half (network / search-results) folds into
+        // `!caps.hasBackendListing` (no real directory to host a repo). The
+        // `isMtpVolumeId` check STAYS: MTP DOES have a backend listing
+        // (`hasBackendListing: true`) but git can't run over the MTP transport,
+        // so it's an MTP-path-specific skip, not a capability question.
+        if (!gitFeaturesNeeded || isMtpVolumeId(volumeId) || !caps.hasBackendListing) {
             if (activeRepoRoot) {
                 await unsubscribeFromRepo(activeRepoRoot)
                 activeRepoRoot = null
@@ -430,6 +446,23 @@
     // Check if this is a device-only MTP ID (needs connection)
     // Device-only IDs start with "mtp-" but don't contain ":" (no storage ID)
     const isMtpDeviceOnly = $derived(isMtpView && volumeId.startsWith('mtp-') && !volumeId.includes(':'))
+
+    /**
+     * The KIND-structural alt-view selector for the `{#if}` chain below. It picks
+     * which non-list view a pane renders purely as a function of `caps.kind` (plus
+     * the MTP device-only connection sub-state, which the kind table doesn't carry
+     * — it's a runtime connection state, not a kind). This is NOT a new component
+     * (A8): it's a derived discriminant the existing chain branches on.
+     *
+     * Only the KIND-driven branches live here. The runtime-state branches
+     * (`unreachable`, SMB reconnecting / gave-up, the inline SMB upgrade login,
+     * `loading` / `friendlyError` / `error`) stay per-feature and gate IN FRONT of
+     * this in the chain, with byte-identical precedence to before (L10): a runtime
+     * state always wins over the kind view, exactly as the string-compare chain did.
+     */
+    const paneViewKind = $derived<'network' | 'search-results' | 'mtp-connect' | 'normal'>(
+        isNetworkView ? 'network' : isSearchResultsView ? 'search-results' : isMtpDeviceOnly ? 'mtp-connect' : 'normal',
+    )
 
     // Look up the live volume info (used for the share name in the reconnecting
     // view and to decide whether subscribing to the SMB reconnect manager is
@@ -687,7 +720,11 @@
      * cache as it stands at that moment.
      */
     export function handleJumpKeystroke(char: string): void {
-        if (!listingId || loading || isNetworkView || isMtpDeviceOnly || isSearchResultsView) return
+        // No real listing to jump within (network / search-results) folds into
+        // `!caps.hasBackendListing`. `isMtpDeviceOnly` STAYS: it's the MTP
+        // not-yet-connected runtime sub-state, not a kind capability (a CONNECTED
+        // MTP pane has a backend listing and jumps fine).
+        if (!listingId || loading || !caps.hasBackendListing || isMtpDeviceOnly) return
         typeToJump.appendChar(char)
         // Surface the buffer change to MCP (`runJumpMatch` syncs again on
         // success, but a no-match keystroke would otherwise leave MCP stale).
@@ -1146,10 +1183,9 @@
     const mcpSync = createPaneMcpSync({
         paneId,
         // The network + search-results skip folds into the kind's `syncsToMcp`
-        // capability (false for both), read off the table rather than the two
-        // `volumeId ===` deriveds (A6). `capabilitiesFor` resolves fsType/category
-        // from the volume store, so we pass just the id.
-        getSyncsToMcp: () => capabilitiesFor(volumeId).syncsToMcp,
+        // capability (false for both), read off the pane's derived `caps` rather
+        // than the two `volumeId ===` deriveds (A6).
+        getSyncsToMcp: () => caps.syncsToMcp,
         getListingId: () => listingId,
         getTotalCount: () => totalCount,
         getHasParent: () => hasParent,
@@ -1221,9 +1257,9 @@
     const hasParent = $derived(
         computeHasParent({
             // The snapshot no-`..` rule comes from the kind capability, not a
-            // `volumeId === 'search-results'` string compare (A6). `capabilitiesFor`
-            // resolves fsType/category from the volume store, so we pass just the id.
-            hasParentRow: capabilitiesFor(volumeId).hasParentRow,
+            // `volumeId === 'search-results'` string compare (A6), read off the
+            // pane's derived `caps`.
+            hasParentRow: caps.hasParentRow,
             currentPath,
             effectiveVolumeRoot,
         }),
@@ -2503,8 +2539,12 @@
 
         // Poll to detect externally deleted directories (macOS FSEvents doesn't notify)
         dirExistsPollInterval = setInterval(() => {
-            // Search-results panes have no real `currentPath` on disk to poll.
-            if (!listingId || loading || isNetworkView || isMtpView || isSearchResultsView) return
+            // Network / search-results panes have no real `currentPath` on disk
+            // to poll — that folds into `!caps.hasBackendListing`. `isMtpView`
+            // STAYS: MTP has a backend listing (`hasBackendListing: true`) but no
+            // real on-disk path for `pathExists` to stat, so it's an
+            // MTP-path-specific skip, not a capability question.
+            if (!listingId || loading || !caps.hasBackendListing || isMtpView) return
             // Virtual `.git/<category>/...` paths don't exist on disk, so
             // `pathExists` always returns false and the poll would evict
             // the user back to `.git/`. The git watcher keeps these
@@ -2644,7 +2684,7 @@
                 smbGaveUp={true}
                 onDisconnect={handleSmbReconnectDisconnect}
             />
-        {:else if isNetworkView}
+        {:else if paneViewKind === 'network'}
             <NetworkMountView
                 bind:this={networkMountViewRef}
                 {paneId}
@@ -2654,7 +2694,7 @@
                 {onVolumeChange}
                 onNetworkHostChange={handleNetworkHostChange}
             />
-        {:else if isSearchResultsView}
+        {:else if paneViewKind === 'search-results'}
             <SearchResultsView
                 bind:this={searchResultsViewRef}
                 path={currentPath}
@@ -2673,7 +2713,7 @@
                 }}
                 onVisibleRangeChange={handleVisibleRangeChange}
             />
-        {:else if isMtpDeviceOnly}
+        {:else if paneViewKind === 'mtp-connect'}
             <MtpConnectionView {volumeId} {onVolumeChange} />
         {:else if smbUpgradeLogin}
             <NetworkLoginForm
@@ -2767,7 +2807,7 @@
         {/if}
     </div>
     <!-- SelectionInfo shown in both modes (not in network view, MTP connecting state, or error states) -->
-    {#if !isNetworkView && !isMtpDeviceOnly && !isSearchResultsView && !friendlyError && !error && !unreachable}
+    {#if paneViewKind === 'normal' && !friendlyError && !error && !unreachable}
         <SelectionInfo
             {viewMode}
             entry={entryUnderCursor}

@@ -116,9 +116,10 @@ discriminated union (`local` / `smb` / `mtp` / `network` / `search-results`) key
   store-free for the FilePane site (which already holds the `VolumeInfo`) and for tests.
 - **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch — no codebase sweep.
 
-`lib/search/capabilities.ts::searchResultsVolumeCapabilities()` is now a thin shim returning the `search-results` row;
-it (and the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` L10 string) stay there for the one remaining caller
-(`SearchResultsView.svelte`). Every capability-GUARD consumer reads the table via `capabilitiesFor` now:
+Consumers read the table directly: `SearchResultsView.svelte` reads `capabilitiesForKind('search-results')` (it always
+renders a search-results pane), and every capability-GUARD consumer reads the table via `capabilitiesFor`. There's no
+Search-specific capabilities shim — `lib/search/capabilities.ts` keeps only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` L10
+string. The guards:
 
 - **Dispatch** (`command-dispatch.ts::blockedByCapabilities`) + **F-bar** (`FunctionKeyBar.svelte`): the destination-op
   guards (paste / mkdir / mkfile / rename) off `canPasteInto` / `canCreateChild` / `canRenameInPlace`.
@@ -138,6 +139,19 @@ it (and the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` L10 string) stay there for the o
   single `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps); the two `getIs*View()` deps retired.
 - **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
   (`=== '/'`, `=== root`) stay, and the rule stays coupled to `isCrossVolumeNavigation` (L5).
+- **FilePane alt-view chain** (`FilePane.svelte`): the kind-structural view selection resolves through a `paneViewKind`
+  derived discriminant (`'network' | 'search-results' | 'mtp-connect' | 'normal'`) off `caps.kind` (+ the MTP
+  device-only connection sub-state, which the table doesn't carry — it's a runtime connection state, not a kind). The
+  `{#if}` chain branches on `paneViewKind` for the three alt-views (NetworkMountView / SearchResultsView /
+  MtpConnectionView) and the SelectionInfo footer (`paneViewKind === 'normal'`). The RUNTIME-state branches
+  (`unreachable`, SMB reconnecting / gave-up, the inline SMB upgrade login, `loading` / `friendlyError` / `error`) stay
+  per-feature and gate IN FRONT of the descriptor, byte-identical precedence (L10). This is a derived discriminant, NOT
+  a new component (A8). The per-feature gates (git lookup, type-to-jump keystroke, dir-exists poll) read
+  `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
+  (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for the jump) STAY — MTP has
+  a backend listing but git can't run on it, there's no on-disk path to `pathExists`-poll, and the not-yet-connected
+  sub-state isn't a kind capability. `caps` is derived once per pane (`caps = $derived(capabilitiesFor(volumeId))`); the
+  named `isNetworkView` / `isSearchResultsView` deriveds re-source off `caps.kind`.
 
 **Command-body factories read through `PaneAccess`.** The MCP/palette command bodies live in factories
 (`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)

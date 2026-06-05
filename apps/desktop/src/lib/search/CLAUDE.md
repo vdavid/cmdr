@@ -35,8 +35,8 @@ to 80vw on smaller windows, and the results region absorbs whatever vertical roo
 | `snapshot-store.svelte.ts.test.ts` | Create/read/no-overwrite, refcount inc/dec/delete, last-attempt slot swaps, entries-cap truncation, debug stats, `resolveSnapshotPaths`                                                                                                                                |
 | `snapshot-label.ts`                | Pure helper: `buildSnapshotLabel({ mode, query, aiPrompt? })` for breadcrumb + tab title                                                                                                                                                                               |
 | `snapshot-label.test.ts`           | Filename/regex/AI label shapes, AI prompt priority, truncation cap, fallbacks                                                                                                                                                                                          |
-| `capabilities.ts`                  | Thin shim: `searchResultsVolumeCapabilities()` returns the `search-results` row of the per-kind table (`lib/file-explorer/pane/volume-capabilities.ts`); also owns the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` shortcut toast string                                       |
-| `capabilities.test.ts`             | Pins the shim against the table row, the purity contract, and the toast string                                                                                                                                                                                         |
+| `capabilities.ts`                  | Owns the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` shortcut toast string. Capabilities themselves come from the per-kind table (`lib/file-explorer/pane/volume-capabilities.ts`); there's no Search-specific shim                                                            |
+| `capabilities.test.ts`             | Pins the toast string                                                                                                                                                                                                                                                  |
 
 Shared components, helpers, and tests live in [`lib/query-ui/`](../query-ui/CLAUDE.md) — Search and Selection both
 import the unified components (`QueryBar`, `ModeChips`, `AiPromptStrip`, `FilterChips`, `FilterChip`,
@@ -304,15 +304,15 @@ is untouched. Snapshot refs therefore persist across pane recreation.
 
 ## Capability flags
 
-`capabilities.ts::searchResultsVolumeCapabilities()` is a thin shim returning the `search-results` row of the per-kind
-`VolumeCapabilities` table (`lib/file-explorer/pane/volume-capabilities.ts`):
-`{ canPasteInto: false, canCreateChild: false, canRenameInPlace: false, canBeSource: true, … }`. Its one caller is
-`SearchResultsView.svelte` (the row context menu's `restrict` flag reads `!caps.canRenameInPlace`). Every
-capability-GUARD consumer reads the table via `capabilitiesFor` now (the A6 conversion is complete): the F-bar +
-keyboard dispatch (destination-op guards), clipboard (snapshot-clip `pathScheme`, MTP refusal `kind === 'mtp'`),
-transfer/delete (`!hasBackendListing` source routing + the `search-results`-kind-scoped dest block), `pane-commands`
-(`isSnapshotPane` off `!hasBackendListing`), MCP sync (`!syncsToMcp`), and `has-parent` (`hasParentRow`). See
-`lib/file-explorer/pane/CLAUDE.md` § "Volume capabilities" for the per-site breakdown. Consumers:
+The `search-results` row of the per-kind `VolumeCapabilities` table (`lib/file-explorer/pane/volume-capabilities.ts`) is
+`{ canPasteInto: false, canCreateChild: false, canRenameInPlace: false, canBeSource: true, … }`.
+`SearchResultsView.svelte` reads it directly via `capabilitiesForKind('search-results')` (the row context menu's
+`restrict` flag reads `!caps.canRenameInPlace`). Every capability-GUARD consumer reads the table via `capabilitiesFor`
+(the A6 conversion is complete): the F-bar + keyboard dispatch (destination-op guards), clipboard (snapshot-clip
+`pathScheme`, MTP refusal `kind === 'mtp'`), transfer/delete (`!hasBackendListing` source routing + the
+`search-results`-kind-scoped dest block), `pane-commands` (`isSnapshotPane` off `!hasBackendListing`), MCP sync
+(`!syncsToMcp`), and `has-parent` (`hasParentRow`). See `lib/file-explorer/pane/CLAUDE.md` § "Volume capabilities" for
+the per-site breakdown. Consumers:
 
 - **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): derives its
   `canMkdir` / `canMkfile` (= `caps.canCreateChild`), `canRename` (= `caps.canRenameInPlace`), and `canSourceOps` (=

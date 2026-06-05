@@ -171,7 +171,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * absolute paths into `buildTransferPropsFromSnapshot`. Returns `null`
    * when there's no snapshot or nothing under the cursor / selection.
    *
-   * `isSourceOK: true` per `searchResultsVolumeCapabilities()`: source-side
+   * `canBeSource: true` per the `search-results` capability row: source-side
    * operations always run against the real underlying files. After a move
    * completes, `dialog-state::handleTransferComplete` already purges moved
    * paths from every snapshot via `removeEntryFromAllSnapshots`.

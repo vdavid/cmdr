@@ -166,7 +166,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
   }),
   'search-results': Object.freeze({
     kind: 'search-results',
-    // = searchResultsVolumeCapabilities() generalized: canPasteInto/canCreateChild
+    // The original search-results capability seed, generalized: canPasteInto/canCreateChild
     // (folds canMkdir+canMkfile)/canRenameInPlace all false; canBeSource (= isSourceOK)
     // true — the snapshot rows are real files.
     hasBackendListing: false,

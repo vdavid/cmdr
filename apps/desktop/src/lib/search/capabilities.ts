@@ -1,20 +1,20 @@
 /**
  * Search-results virtual-volume capability access.
  *
- * The per-kind capability table now lives in
- * [`lib/file-explorer/pane/volume-capabilities.ts`](../file-explorer/pane/volume-capabilities.ts)
- * (the single source of truth, keyed by `VolumeKind`). This module keeps two
- * Search-specific things:
+ * The per-kind capability table is the single source of truth, keyed by
+ * `VolumeKind` in
+ * [`lib/file-explorer/pane/volume-capabilities.ts`](../file-explorer/pane/volume-capabilities.ts).
+ * Consumers that need the `search-results` row read it directly via
+ * `capabilitiesForKind('search-results')` / `capabilitiesFor(volumeId)`; there's
+ * no Search-specific capabilities shim anymore.
+ *
+ * This module keeps one Search-specific thing:
  *
  *  - `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`: the L10 user-facing toast string shown
  *    when a keyboard shortcut tries a destination-side action (paste / mkdir /
- *    rename) on a search-results pane. Imported by the dispatcher and tests; it
- *    stays here so the wording lives next to its other Search consumers.
- *  - `searchResultsVolumeCapabilities()`: a thin shim returning the
- *    `search-results` row of the per-kind table, for the one remaining caller
- *    (`SearchResultsView.svelte`). It yields the new `VolumeCapabilities` shape
- *    (so `canRename` is now `canRenameInPlace`). The shim retires when that view
- *    moves onto the FilePane `caps` descriptor.
+ *    rename) on a search-results pane. Imported by the dispatcher, the transfer
+ *    opener, and tests; it stays here so the wording lives next to its other
+ *    Search consumers.
  *
  * The search-results pane (`volumeId === 'search-results'`, path
  * `search-results://<snapshot-id>`) is a read-only view of a snapshot, not a
@@ -22,13 +22,6 @@
  * but source-side ops (copy/move/delete, drag out) stay enabled because the
  * underlying paths are real.
  */
-
-import { capabilitiesForKind, type VolumeCapabilities } from '$lib/file-explorer/pane/volume-capabilities'
-
-/** Returns the capability flag set for the search-results virtual volume. */
-export function searchResultsVolumeCapabilities(): VolumeCapabilities {
-  return capabilitiesForKind('search-results')
-}
 
 /**
  * Returns the user-facing toast text shown when a keyboard shortcut tries to
