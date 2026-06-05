@@ -7,7 +7,7 @@
     import DialogManager from './DialogManager.svelte'
     import { openInEditor, quickLookSetPath } from '$lib/tauri-commands'
     import { closeFromPaneError, quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
-    import { saveAppStatus, type ViewMode } from '$lib/app-status-store'
+    import { type ViewMode } from '$lib/app-status-store'
     import type { CommandId, McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
     import type { SelectionAction } from '../../../routes/(main)/explorer-api'
     import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
@@ -318,11 +318,6 @@
         return pane === 'left' ? 'right' : 'left'
     }
 
-    /** Builds a save-status key like 'leftPath' or 'rightVolumeId' from pane and field name. */
-    function paneKey(pane: 'left' | 'right', field: string): string {
-        return `${pane}${field.charAt(0).toUpperCase()}${field.slice(1)}`
-    }
-
     // Read API over this explorer's navigation + UI-chrome state, handed to command
     // factories so they don't reach into component closures. Getters return live
     // references (never copies / snapshots) so callers inside $derived/$effect keep
@@ -356,8 +351,9 @@
 
     // The store-backed `NavigateDeps`, built the same way `paneAccess` is — the
     // component owns the construction; `navigate()` owns the transaction logic.
-    // After this milestone the ONLY caller of `setPaneVolumeId` / `setPanePath` /
-    // `setPaneHistory` is `navigate()`'s internal `commit` (plus the M5 edge flows).
+    // The ONLY callers of `setPaneVolumeId` / `setPanePath` / `setPaneHistory` are
+    // `navigate()`'s internal `commit` and the two orthogonal network-host pushes
+    // (`handleNetworkHostChange`, `mirrorNetworkStateToPane`).
     const navigateDeps: NavigateDeps = {
         getTabMgr,
         getPaneVolumeId,
@@ -374,12 +370,9 @@
         },
         getPaneRef,
         resolveVolume: (path) => resolvePathVolume(path),
-        getDefaultVolumeId: () => getDefaultVolumeId(),
         getVolumePathById: (volumeId) => volumes.find((v) => v.id === volumeId)?.path,
         determineNavigationPath: (volumeId, volumePath, targetPath, other) =>
             determineNavigationPath(volumeId, volumePath, targetPath, other),
-        resolveValidPath: (path, options) => resolveValidPath(path, options),
-        pathExists: (path) => pathExists(path),
         persist: (event) => {
             // The single nav-state persistence subscriber (A5) owns disk writes.
             // `pane-state` is covered REACTIVELY there (the subscriber's per-pane
@@ -391,8 +384,6 @@
                 persistence.persistLastUsedPath(event.record)
             }
         },
-        focusContainer: () => containerElement?.focus(),
-        requestVolumeRefresh,
         addToast: (message, opts) => addToast(message, opts),
         tokens: navTokens,
         correctionGen: navCorrectionGen,
@@ -602,7 +593,7 @@
      * here we route through `navigate({ to: { snapshot } })` (the volume-change
      * machinery) so all the standard pane mechanics (new-tab-on-pinned, focus
      * shift, history push via `pushHistoryEntry`) apply uniformly.
-     * `pushHistoryEntry` increments the snapshot's refcount via the M8a integration.
+     * `pushHistoryEntry` increments the snapshot's refcount via the snapshot-store integration.
      */
     export function openSearchSnapshotInPane(snapshotId: string, pane?: 'left' | 'right'): void {
         const target = pane ?? focusedPane
@@ -631,21 +622,27 @@
         const paneRef = getPaneRef(pane)
 
         if (entry.volumeId === 'network') {
-            setPanePath(pane, entry.path)
-            setPaneVolumeId(pane, 'network')
-            saveAppStatus({ [paneKey(pane, 'volumeId')]: 'network', [paneKey(pane, 'path')]: entry.path })
+            // Network restore: re-commit the network entry without leaving the
+            // volume and without a load. A `'fallback'` volume "switch" to the same
+            // network volume is a terminal commit (no old-path pre-save, no
+            // correction); `pushHistory: false` keeps history put (the entry's
+            // already current). The subscriber persists the store mutation.
+            navigateIntent({
+                pane,
+                to: { volumeId: 'network', path: entry.path },
+                source: 'fallback',
+                pushHistory: false,
+            })
             paneRef?.setNetworkHost(entry.networkHost ?? null)
-            saveTabsForPaneSide(pane)
             containerElement?.focus()
             return
         }
 
         if (entry.path === cancelledPath) {
             // Listing completed before cancel; history has the cancelled path pushed. Go back.
-            // The history-back walk + commit now lives in `navigate()`'s history arm
-            // (the M3 deletion of `updatePaneAfterHistoryNavigation` folds it here; the
-            // full edge-flow migration is M5). `navigate()` re-checks `canGoBack`, so the
-            // gate here is the cancel-specific guard, not a duplicate.
+            // The history-back walk + commit lives in `navigate()`'s history arm.
+            // `navigate()` re-checks `canGoBack`, so the gate here is the
+            // cancel-specific guard, not a duplicate.
             if (canGoBack(history)) {
                 navigateIntent({ pane, to: { history: 'back' }, source: 'cancel' })
                 return
@@ -657,14 +654,17 @@
             void resolveValidPath(parentPath, { volumeRoot }).then((validPath) => {
                 const target = validPath ?? '~'
                 const isOutsideVolume = entry.volumeId !== 'root' && (target === '~' || target === '/')
-                if (isOutsideVolume) {
-                    // Volume root unreachable: switch to root volume
-                    setPaneVolumeId(pane, 'root')
-                    saveAppStatus({ [paneKey(pane, 'volumeId')]: 'root' })
-                }
-                setPanePath(pane, target)
-                saveAppStatus({ [paneKey(pane, 'path')]: target })
-                saveTabsForPaneSide(pane)
+                // Volume root unreachable ⇒ switch to root volume; otherwise stay on
+                // the current volume at the resolved parent. Either way a terminal
+                // `'fallback'` commit (no history push — the walk-up is a correction
+                // to the cancelled destination, not a new Back target). The
+                // subscriber persists the store mutation.
+                navigateIntent({
+                    pane,
+                    to: { volumeId: isOutsideVolume ? 'root' : getPaneVolumeId(pane), path: target },
+                    source: 'fallback',
+                    pushHistory: false,
+                })
                 containerElement?.focus()
             })
             return
@@ -682,11 +682,9 @@
         const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
         const defaultPath = defaultVolume?.path ?? '~'
 
-        setPaneVolumeId(pane, defaultVolumeId)
-        setPanePath(pane, defaultPath)
-        setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId: defaultVolumeId, path: defaultPath }))
-        saveAppStatus({ [paneKey(pane, 'volumeId')]: defaultVolumeId, [paneKey(pane, 'path')]: defaultPath })
-        saveTabsForPaneSide(pane)
+        // Fallback to the default volume, pushing a history entry. The subscriber
+        // persists the store mutation `navigate()`'s commit makes.
+        navigateIntent({ pane, to: { volumeId: defaultVolumeId, path: defaultPath }, source: 'fallback' })
     }
 
     async function handleRetryUnreachable(pane: 'left' | 'right') {
@@ -696,20 +694,19 @@
         const originalPath = tab.unreachable.originalPath
         tab.unreachable = { originalPath, retrying: true }
 
-        // Try to resolve the volume via statfs (backend has its own 2s timeout)
+        // Try to resolve the volume via statfs (backend has its own 2s timeout).
+        // The resolve-timeout fallback to `getDefaultVolumeId` survives.
         const result = await resolvePathVolume(originalPath)
 
         const volumeId = result.volume ? result.volume.id : await getDefaultVolumeId()
 
-        // Clear unreachable and navigate; let FilePane try to load the directory directly.
-        // Even if volume resolution timed out, the directory itself may be reachable.
+        // Clear unreachable BEFORE navigating, then commit + refresh (ordering
+        // preserved). Let FilePane try to load the directory directly: even if
+        // volume resolution timed out, the directory itself may be reachable.
         tab.unreachable = null
-        setPaneVolumeId(pane, volumeId)
-        setPanePath(pane, originalPath)
-        setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId, path: originalPath }))
-        saveTabsForPaneSide(pane)
+        navigateIntent({ pane, to: { volumeId, path: originalPath }, source: 'fallback' })
 
-        // Sync the volume selector; retry may have fixed a mount that was stale
+        // Sync the volume selector; retry may have fixed a mount that was stale.
         requestVolumeRefresh()
 
         log.info('Volume retry navigating to {path} on volume {vol}', {
@@ -724,10 +721,7 @@
 
         const defaultId = await getDefaultVolumeId()
         const homePath = '~'
-        setPaneVolumeId(pane, defaultId)
-        setPanePath(pane, homePath)
-        setPaneHistory(pane, pushHistoryEntry(getPaneHistory(pane), { volumeId: defaultId, path: homePath }))
-        saveTabsForPaneSide(pane)
+        navigateIntent({ pane, to: { volumeId: defaultId, path: homePath }, source: 'fallback' })
         log.info('Unreachable tab opened home folder for {pane} pane', { pane })
     }
 
@@ -925,18 +919,20 @@
         // Navigate to home directory, falling back to / if home doesn't exist
         const homePath = (await pathExists('~')) ? '~' : '/'
 
-        // Switch affected panes to default volume
-        if (getPaneVolumeId('left') === unmountedId) {
-            setPaneVolumeId('left', defaultVolumeId)
-            setPanePath('left', homePath)
-            saveAppStatus({ leftVolumeId: defaultVolumeId, leftPath: homePath })
-            saveTabsForPaneSide('left')
-        }
-        if (getPaneVolumeId('right') === unmountedId) {
-            setPaneVolumeId('right', defaultVolumeId)
-            setPanePath('right', homePath)
-            saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: homePath })
-            saveTabsForPaneSide('right')
+        // Redirect each affected pane (independently — left and right) to the
+        // default volume at home. `pushHistory: false` is the history-push
+        // asymmetry: an unmount must NOT grow a Back target (unlike the MTP-fatal /
+        // retry / open-home fallbacks, which DO push). The subscriber persists each
+        // store mutation `navigate()`'s commit makes.
+        for (const pane of ['left', 'right'] as const) {
+            if (getPaneVolumeId(pane) === unmountedId) {
+                navigateIntent({
+                    pane,
+                    to: { volumeId: defaultVolumeId, path: homePath },
+                    source: 'fallback',
+                    pushHistory: false,
+                })
+            }
         }
 
         // Volume list is now maintained reactively by the volume store

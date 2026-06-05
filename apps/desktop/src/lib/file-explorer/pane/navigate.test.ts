@@ -1,19 +1,20 @@
 /**
- * Phase 3 M2 — `navigate(intent, deps)` headless seam tests.
+ * `navigate(intent, deps)` headless seam tests.
  *
- * These are the M1 regression scenarios re-expressed against `navigate()`
- * DIRECTLY (no mount needed once the deps are injectable): the cross-volume
- * snapshot branch, the pinned-tab fork (both arms + `MAX_TABS_PER_PANE`), the
- * token drop of a stale background correction, every refusal kind → its exact
- * `message` (L12), the per-arm optimistic-commit ordering (P4), and the
- * same-token self-re-entry rule for the parent-nav / walk-up completion.
+ * Exercise `navigate()` DIRECTLY against injected fakes (no mount needed): the
+ * cross-volume snapshot branch, the pinned-tab fork (both arms +
+ * `MAX_TABS_PER_PANE`), the token drop of a stale background correction, the
+ * edge-flow `'fallback'` source (terminal commit + the history-push asymmetry),
+ * every refusal kind → its exact `message` (L12), the per-arm optimistic-commit
+ * ordering (P4), and the same-token self-re-entry rule for the parent-nav /
+ * walk-up completion.
  *
  * The fakes back the store reads/writes with a REAL `TabManager` per pane (so the
  * pinned-fork tab splice + the commit are observable on real tab state), a real
  * volume map, and spies for the FilePane handle, the resolver, persistence, and
  * focus. Assertions are on OBSERVABLE OUTCOMES (committed tab state, history
  * depth, persisted events, returned refusal `message`s), never internal function
- * identities — the same discipline the M1 suites use.
+ * identities — the same discipline the mounted suites use.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
@@ -65,9 +66,7 @@ interface Harness {
   paneState: Record<'left' | 'right', { paneRef?: ReturnType<typeof makePaneRefStub> }>
   resolveVolume: ReturnType<typeof vi.fn>
   determineNavigationPath: ReturnType<typeof vi.fn>
-  resolveValidPath: ReturnType<typeof vi.fn>
   setFocusedPane: ReturnType<typeof vi.fn>
-  focusContainer: ReturnType<typeof vi.fn>
   addToast: ReturnType<typeof vi.fn>
 }
 
@@ -142,9 +141,7 @@ function makeHarness(opts?: HarnessOpts): Harness {
   const determineNavigationPath = vi
     .fn()
     .mockImplementation((_v, _vp, targetPath: string) => Promise.resolve(targetPath))
-  const resolveValidPath = vi.fn().mockResolvedValue('/Users')
   const setFocusedPane = vi.fn()
-  const focusContainer = vi.fn()
   const addToast = vi.fn()
 
   const tab = (pane: 'left' | 'right') => getActiveTab(managers[pane])
@@ -153,17 +150,12 @@ function makeHarness(opts?: HarnessOpts): Harness {
     ...makeStoreDeps(managers, paneState, tab),
     setFocusedPane,
     resolveVolume,
-    getDefaultVolumeId: vi.fn().mockResolvedValue('root'),
     getVolumePathById: (volumeId) => VOLUMES.get(volumeId)?.path,
     determineNavigationPath,
-    resolveValidPath,
-    pathExists: vi.fn().mockResolvedValue(true),
     persist: (event) => {
       persistEvents.push(event)
       if (event.kind === 'last-used-path') lastUsedRecords.push(event.record)
     },
-    focusContainer,
-    requestVolumeRefresh: vi.fn(),
     addToast,
     tokens: new Map(),
     correctionGen: { value: 0 },
@@ -178,9 +170,7 @@ function makeHarness(opts?: HarnessOpts): Harness {
     paneState,
     resolveVolume,
     determineNavigationPath,
-    resolveValidPath,
     setFocusedPane,
-    focusContainer,
     addToast,
   }
 }
@@ -450,6 +440,61 @@ describe('snapshot open ({ snapshot } arm)', () => {
   })
 })
 
+describe("edge-flow fallback (source: 'fallback') — terminal commit + history-push asymmetry", () => {
+  beforeEach(() => {
+    h = makeHarness({ left: { path: '/Volumes/Ext/photos', volumeId: 'ext' } })
+  })
+
+  it('MTP-fatal / retry / open-home style: commits the recovery target AND pushes a history entry', () => {
+    const depthBefore = h.tab('left').history.stack.length
+    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'fallback' }, h.deps)
+
+    expect(h.tab('left').volumeId).toBe('root')
+    expect(h.tab('left').path).toBe('/')
+    // The three pushing fallbacks DO grow a Back target.
+    expect(h.tab('left').history.stack.length).toBe(depthBefore + 1)
+    expect(h.tab('left').history.stack.at(-1)).toMatchObject({ volumeId: 'root', path: '/' })
+  })
+
+  it('unmount style (pushHistory: false): commits the redirect WITHOUT growing a Back target', () => {
+    const depthBefore = h.tab('left').history.stack.length
+    navigate({ pane: 'left', to: { volumeId: 'root', path: '~' }, source: 'fallback', pushHistory: false }, h.deps)
+
+    expect(h.tab('left').volumeId).toBe('root')
+    expect(h.tab('left').path).toBe('~')
+    // The asymmetry: an unmount redirect must NOT push history.
+    expect(h.tab('left').history.stack.length).toBe(depthBefore)
+  })
+
+  it('is terminal: no OLD-path pre-save and no background correction', () => {
+    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'fallback' }, h.deps)
+
+    // No last-used-path pre-save of the (broken/gone) old volume.
+    expect(h.lastUsedRecords).toEqual([])
+    // No "best path" correction scheduled (the recovery target IS the answer).
+    expect(h.determineNavigationPath).not.toHaveBeenCalled()
+  })
+
+  it('does NOT shift the focused pane (L1: fallbacks re-anchor DOM focus, not the focused pane)', () => {
+    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'fallback' }, h.deps)
+    expect(h.setFocusedPane).not.toHaveBeenCalled()
+  })
+
+  it('commits in-place on a PINNED active tab (terminal skips the pinned-tab fork)', () => {
+    getActiveTab(h.mgr('left')).pinned = true
+    const pinnedId = getActiveTab(h.mgr('left')).id
+    const countBefore = h.mgr('left').tabs.length
+
+    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'fallback' }, h.deps)
+
+    // No new tab — the recovery commits on the active (pinned) tab itself.
+    expect(h.mgr('left').tabs.length).toBe(countBefore)
+    expect(getActiveTab(h.mgr('left')).id).toBe(pinnedId)
+    expect(getActiveTab(h.mgr('left')).volumeId).toBe('root')
+    expect(getActiveTab(h.mgr('left')).path).toBe('/')
+  })
+})
+
 describe('history walk ({ history } arm)', () => {
   it('back moves to the previous entry and commits path + history', () => {
     // Build a two-entry history: /Users/me -> /Users/me/deep (current).
@@ -534,7 +579,7 @@ describe('commitPathFromListing — stale-listing drop policy (L6, token + forei
   })
 })
 
-describe('same-token self-re-entry (parent-nav / walk-up completion — M3 contract)', () => {
+describe('same-token self-re-entry (parent-nav / walk-up completion)', () => {
   it('a parent-nav completion re-entering via commitPathFromListing is NOT dropped', () => {
     // Start a parent-nav (mints a token, drives the primitive).
     navigate({ pane: 'left', to: { history: 'parent' }, source: 'user' }, h.deps)

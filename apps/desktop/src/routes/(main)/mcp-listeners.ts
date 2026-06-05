@@ -178,8 +178,8 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const key = typeof raw.key === 'string' ? raw.key : undefined
     if (key === undefined) return
     if (key === 'GoBack') {
-      // Routes through the bus but keeps calling the OLD `navigate` entry (Phase-2
-      // sequencing rule — nav mechanism retires in Phase 3).
+      // Routes through the bus; the `nav.back` handler drives the `navigate()`
+      // transaction (a keystroke is transport, the resolved command is not).
       void dispatch(navBackCommand)
     } else if (key === 'GoForward') {
       void dispatch(navForwardCommand)

@@ -1,21 +1,21 @@
 /**
- * Phase 3 (transactional navigation) regression suite — the handler/render-prop
- * seam (b) + the refusal-string contract.
+ * Transactional-navigation regression suite — the handler/render-prop seam (b) +
+ * the refusal-string contract.
  *
- * Pins the CURRENT coordinator handlers that don't need a real listing event to
- * reach: the pinned-tab fork (`handlePathChange` / `handleVolumeChange`), the
+ * Pins the coordinator handlers that don't need a real listing event to reach:
+ * the pinned-tab fork (`onPathChange` / `onVolumeChange` landings), the
  * snapshot-pane cross-volume routing, the edge-flow handlers
  * (`handleCancelLoading` / `handleMtpFatalError` / `handleRetryUnreachable` /
- * `handleOpenHome` / `handleVolumeUnmount`), and the MCP `navigateToPath`
- * refusal strings (L12). It mounts `DualPaneExplorer` with `FilePane` MOCKED to
- * a prop-capturing stub, so a test can invoke the exact render-prop callback
+ * `handleOpenHome` / `handleVolumeUnmount`), and the MCP `navigate` refusal
+ * strings (L12). It mounts `DualPaneExplorer` with `FilePane` MOCKED to a
+ * prop-capturing stub, so a test can invoke the exact render-prop callback
  * `DualPaneExplorer` wired into the pane (`onPathChange`, `onVolumeChange`,
  * `onCancelLoading`, `onMtpFatalError`, `onRetryUnreachable`, `onOpenHome`) and
  * assert the coordinator's observable outcome on the explorer store.
  *
  * Assertions are on OBSERVABLE OUTCOMES (committed pane state, tab structure,
  * history depth, returned refusal strings, persisted-call spies), never internal
- * function identities, so they survive the M2–M5 re-pointing onto `navigate()`.
+ * function identities.
  *
  * The braid-layer seam (a) scenarios (stale-listing drop, optimistic-commit
  * ordering) live in the sibling `navigation-transaction.test.ts`, which mounts

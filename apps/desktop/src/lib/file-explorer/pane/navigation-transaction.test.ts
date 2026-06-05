@@ -1,11 +1,9 @@
 /**
- * Phase 3 (transactional navigation) regression suite — the braid-layer seam.
+ * Transactional-navigation regression suite — the braid-layer seam.
  *
- * Pins the CURRENT four-function navigation braid (`handlePathChange` /
- * `applyPathChange` / `handleVolumeChange` / `applyVolumePathCorrection`) so the
- * `navigate(intent)` rewrite (M2–M5) can be checked red-green against it. These
- * tests mount the REAL `DualPaneExplorer` + `FilePane` and drive listing events
- * through the capture-and-replay `listen` recorder (`createListenRecorder`,
+ * Pins the `navigate(intent)` transaction at the mounted-coordinator layer.
+ * These tests mount the REAL `DualPaneExplorer` + `FilePane` and drive listing
+ * events through the capture-and-replay `listen` recorder (`createListenRecorder`,
  * `integration-test-utils.ts`). The recorder is what lets a synthetic
  * `listing-complete` / `listing-error` flow through `FilePane`'s real
  * listing-id gate into the coordinator's `onPathChange` handler — the only way
@@ -14,7 +12,7 @@
  *
  * Assertions are on OBSERVABLE OUTCOMES (committed pane state read off the
  * explorer store, history depth, persisted-call spies), never internal function
- * identities, so they survive the M2–M5 re-pointing onto `navigate()`.
+ * identities.
  *
  * The capture-prop (mocked-FilePane) seam (b) scenarios — pinned-tab fork,
  * cancel/MTP/unreachable/unmount edge flows, and the refusal strings — live in
@@ -438,7 +436,7 @@ describe('scenario 8: optimistic-commit ordering (P4)', () => {
   })
 })
 
-describe('M5 note: volume-unmount redirect (per-pane, NO history push)', () => {
+describe('volume-unmount redirect (per-pane, NO history push)', () => {
   it('redirects each affected pane to the default volume at ~ WITHOUT pushing history', async () => {
     await mountExplorer()
 
@@ -471,8 +469,8 @@ describe('M5 note: volume-unmount redirect (per-pane, NO history push)', () => {
     expect(rightTab().volumeId).toBe('root')
     expect(rightTab().path).toBe('~')
 
-    // … and NO history entry was pushed (the redirect asymmetry M5 must preserve:
-    // a fallback redirect for an unmounted volume must not grow a Back target).
+    // … and NO history entry was pushed (the history-push asymmetry: a fallback
+    // redirect for an unmounted volume must not grow a Back target).
     expect(leftTab().history.stack.length).toBe(leftDepthBefore)
     expect(rightTab().history.stack.length).toBe(rightDepthBefore)
   })

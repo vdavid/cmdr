@@ -475,8 +475,7 @@ export async function handleCommandExecute<K extends CommandId>(
     // === Volume commands ===
     case 'volume.selectByName': {
       // MCP `select_volume` tool: select a SPECIFIC pane's volume by name.
-      // Navigation-adjacent — still calls `selectVolumeByName` (Phase 3 owns
-      // volume mechanics).
+      // `selectVolumeByName` drives the `navigate()` transaction for the switch.
       const { pane, name } = dispatchArgs as CommandArgs['volume.selectByName']
       void explorerRef?.selectVolumeByName(pane, name)
       return

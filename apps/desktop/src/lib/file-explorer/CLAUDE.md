@@ -203,19 +203,19 @@ R4 cross-volume bug fix (`pane/snapshot-pane-navigation.ts::isCrossVolumeNavigat
 folder from a snapshot pane (or the search dialog's "Go to file" exit lands on a real path while the active pane is
 still on the snapshot volume), the navigation MUST route through the volume-change machinery. Two call sites:
 `FilePane.handleNavigate` (Enter / double-click on a row) calls `resolvePathVolume` and then `onVolumeChange`;
-`DualPaneExplorer.navigateToPath` (the dialog's exit + MCP `nav_to_path`) does the same via the internal
-`handleVolumeChange`. Without this, the pane ends up with `volumeId === 'search-results'` while `path` points at a real
-filesystem location, and `SearchResultsView` shows "Search results no longer available" (the snapshot-id extractor
-returns null because the path doesn't start with `search-results://`). The fresh-logs symptom was
-`read_directory_with_progress: …, volume_id=search-results, path=/Library/…` followed by
-`Dropping stale onPathChange on search-results pane: /Library/…`.
+`navigate()`'s in-place path arm (the dialog's exit + MCP `nav_to_path`) detects the same `isCrossVolumeNavigation` case
+and routes through `resolveVolume` + the volume-switch commit. Without this, the pane ends up with
+`volumeId === 'search-results'` while `path` points at a real filesystem location, and `SearchResultsView` shows "Search
+results no longer available" (the snapshot-id extractor returns null because the path doesn't start with
+`search-results://`).
 
-DualPaneExplorer extensions:
+Navigation routing:
 
-- `applyPathChange` extends its virtual-volume branch from `currentVolumeId === 'network'` to also accept
-  `'search-results'` (with prefix `search-results://`). The two namespaces are uniformly opaque to `isPathOnVolume`.
+- `navigate()`'s `commitPathFromListing` drop-foreign-listings policy treats `'search-results'` like `'network'`: a
+  landed path that doesn't start with `search-results://` is dropped (the two virtual namespaces are uniformly opaque to
+  `isPathOnVolume`). See § "Token / policy contract" below.
 - `openSearchSnapshotInPane(snapshotId, pane?)` is the public entry point the SearchDialog calls (via +page.svelte's
-  `handleOpenSearchInPane`). It routes through `handleVolumeChange(pane, 'search-results', url, url)` so pushed history
+  `handleOpenSearchInPane`). It routes through `navigate({ to: { snapshot }, source: 'user' })` so pushed history
   entries flow through `pushHistoryEntry`, which increments the snapshot refcount via the snapshot-store integration.
 
 Breadcrumb: `VolumeBreadcrumb` recognises `volumeId === 'search-results'` and reads the friendly label from
@@ -432,19 +432,29 @@ finished importing during the rebuild. This is a SvelteKit bug (sveltejs/kit#152
 crash and forces a clean page reload. The recovery listener is imported from `+layout.ts` (a stable module that survives
 layout component re-evaluation). If sveltejs/kit#15287 gets fixed, the workaround can be removed.
 
-**Stale `onPathChange` from a slow listing can poison a pane after a volume switch.** `FilePane.onPathChange` fires on
-`listing-complete` for whatever path the pane was loading. If the user (or a command like "Copy path between panes")
-flips the pane to a different volume between `listing-start` and `listing-complete`, the stale callback lands on a pane
-whose `volumeId` no longer matches the path it carries. `applyPathChange` in `DualPaneExplorer` guards against this by
-dropping paths that don't belong on the current volume: `smb://`-prefixed for the virtual `network` volume, and via
-`isPathOnVolume(path, volumePath)` for every other (real) volume. Without the guard, `pushPath` and
-`saveLastUsedPathForVolume` would write a foreign path under the new `volumeId`, corrupting in-memory tab state, the nav
-history, and persisted last-used-path state — for example, persisting `/Users/.../project` as the "last used path" for
-an SMB share, which would then cause the next switch to that share to attempt a doomed `Create` against
-`Users\...\project` and surface as `STATUS_OBJECT_PATH_NOT_FOUND`. `determineNavigationPath` applies the same
-`isPathOnVolume` filter when reading back `lastUsedPath` so older corruption from before this guard existed can't
-re-trigger the bug. If you introduce another virtual-volume namespace with its own non-filesystem prefix (something
-`isPathOnVolume` can't match against), extend the explicit network-style branch.
+**The stale-listing token + drop-foreign-listings policy (the `navigate()` transaction contract).**
+`FilePane.onPathChange` fires on `listing-complete` for whatever path the pane was loading. If the user (or a command
+like "Copy path between panes") flips the pane to a different volume between `listing-start` and `listing-complete`, the
+stale callback lands on a pane whose `volumeId` no longer matches the path it carries. Two mechanisms keep navigation
+state uncorruptible, both inside `pane/navigate.ts`:
+
+- **Drop-foreign-listings policy (the path landing).** `commitPathFromListing` drops a landed path that doesn't belong
+  on the pane's current volume: `smb://`-prefixed for the virtual `network` volume, `search-results://`-prefixed for the
+  snapshot volume, and `isPathOnVolume(path, volumePath)` for every other (real) volume. Without the drop, `pushPath` +
+  `saveLastUsedPathForVolume` would write a foreign path under the new `volumeId`, corrupting in-memory tab state, the
+  nav history, and persisted last-used-path state — for example, persisting `/Users/.../project` as the "last used path"
+  for an SMB share, which would then attempt a doomed `Create` against `Users\...\project` and surface as
+  `STATUS_OBJECT_PATH_NOT_FOUND`. The background `determineNavigationPath` correction applies the same `isPathOnVolume`
+  filter when reading back `lastUsedPath`, so a foreign last-used-path can't re-trigger the bug.
+- **The transaction token (the volume-switch + background-correction layer).** Each `navigate()` call mints a per-pane
+  token; the cross-volume resolve bails and the background `determineNavigationPath` correction (a single GLOBAL
+  generation shared by both panes) drops when superseded by a newer volume change. A same-token self-re-entry (the
+  parent-nav / deleted-folder walk-up completion re-entering via `onPathChange`) carries the SAME token, so it commits
+  rather than looking stale — the foreign-path policy, not the token, is what drops a genuinely stale listing.
+
+If you introduce another virtual-volume namespace with its own non-filesystem prefix (something `isPathOnVolume` can't
+match against), extend the explicit prefix branch in `commitPathFromListing`. See `pane/CLAUDE.md` § "The `navigate()`
+transaction" for the full intent-arm + persistence-split contract.
 
 ## Views (`views/`)
 

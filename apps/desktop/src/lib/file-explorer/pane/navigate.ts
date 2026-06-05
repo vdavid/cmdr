@@ -1,16 +1,14 @@
 /**
- * `navigate(intent, deps)` — the transactional navigation seam (Phase 3).
+ * `navigate(intent, deps)` — the transactional navigation seam.
  *
- * One entry point for every coordinator-level pane navigation, replacing the
- * four-function braid in `DualPaneExplorer` (`handlePathChange` /
- * `applyPathChange` / `handleVolumeChange` / `applyVolumePathCorrection`) plus
- * the history walk, the snapshot-pane exit, and the five edge flows
- * (cancel / MTP-fatal / retry / open-home / unmount). It sits ON TOP of the
- * FilePane listing primitives (`navigateToPath` / `navigateToParent`); listing
- * mechanics stay pane-owned (master § Target architecture 3 scoping note).
- *
- * Built + tested in isolation against fake deps. M3 swaps the DPE callers onto
- * it and deletes the old braid + the `volumeChangeGeneration` counter.
+ * The single entry point for every coordinator-level pane navigation: the
+ * volume switch, the in-place path nav, the history walk, the snapshot-pane
+ * exit, and the five edge flows (cancel / MTP-fatal / retry / open-home /
+ * unmount). It sits ON TOP of the FilePane listing primitives
+ * (`navigateToPath` / `navigateToParent`); listing mechanics stay pane-owned
+ * (master § Target architecture 3 scoping note). `DualPaneExplorer` builds the
+ * `NavigateDeps` from its store + FilePane handles and wraps this as its
+ * `navigate` export; tests pass fakes.
  *
  * ## What `navigate()` owns vs. what stays pane-owned
  *
@@ -23,12 +21,13 @@
  *
  * ## The single commit point
  *
- * Today volumeId + path + history are written separately across each braid
- * branch (`setPaneVolumeId` / `setPanePath` / `setPaneHistory`). Here they go
- * through one `commit(pane, { volumeId?, path, historyEntry?, pushHistory })`
- * call that the pinned-tab fork, the in-place path arm, the volume switch, the
- * history walk, and every edge flow share. After M3 + M5 the ONLY caller of the
- * per-pane mutators is this `commit` (master § M3 grep-to-zero gate).
+ * volumeId + path + history go through one `commit(pane, { volumeId?, path,
+ * history, networkHost? })` call that the pinned-tab fork, the in-place path
+ * arm, the volume switch, the history walk, and every edge flow share. The ONLY
+ * caller of the per-pane mutators (`setPaneVolumeId` / `setPanePath` /
+ * `setPaneHistory`) is this `commit` — the sole exceptions are the two
+ * orthogonal network-host pushes (`handleNetworkHostChange`,
+ * `mirrorNetworkStateToPane`) that carry an SMB host onto the history entry.
  *
  * ## Transaction token (Q3 — FE-side request map keyed by side)
  *
@@ -48,7 +47,7 @@
  * replace the three coordinator staleness mechanisms; the drop-foreign-listings
  * _policy_ is identical (L6), only the _mechanism_ changes.
  *
- * **Same-token self-re-entry (M3 contract, stated here so M2 doesn't violate it):**
+ * **Same-token self-re-entry:**
  * `commitPathFromListing` does NOT mint a new token. A parent-nav
  * (`{ history: 'parent' }`) or a deleted-folder walk-up
  * (`navigateToFallback`) re-enters via `onPathChange` carrying the SAME token as
@@ -64,9 +63,9 @@
  * token between sides, and stays zero-IPC (L4). The token model relies on that
  * `isLoading()` gate; don't relax it.
  *
- * ## Per-arm optimism (P4, corrected after M1)
+ * ## Per-arm optimism (P4)
  *
- * Optimism is PER ARM — the M1 regression tests pin the split:
+ * Optimism is PER ARM — the navigation-transaction regression tests pin the split:
  * - **Volume switch** (`{ volumeId, path }` with `volumeId` set) commits
  *   volumeId + path + history SYNCHRONOUSLY before any listing (truly optimistic).
  * - **In-place path nav** (`{ path }`, same volume) does NOT commit on call: it
@@ -128,6 +127,16 @@ export interface NavigateIntent {
   source: NavigateSource
   /** Land the cursor on this entry after the listing settles (the FilePane selectName channel). */
   selectName?: string
+  /**
+   * Whether a `{ volumeId, path }` volume switch pushes a history entry. Defaults
+   * to `true`. The volume-unmount redirect sets it `false`: ejecting a volume
+   * redirects each affected pane to the default volume at `~` WITHOUT growing a
+   * Back target (the history-push asymmetry — the MTP-fatal / retry / open-home
+   * fallbacks DO push, the unmount redirect does NOT). Encoded as an intent field
+   * rather than a distinct source because the four `'fallback'` flows share their
+   * focus behavior (none shift the focused pane) and differ only in this push.
+   */
+  pushHistory?: boolean
 }
 
 /** Why a synchronous navigation refused. `message` is the exact current string — contract (L12). */
@@ -157,7 +166,7 @@ export interface NavigateCommit {
    * History push policy. `'push-path'` pushes a same-volume path entry (the
    * in-place arm). `'push-entry'` pushes `{ volumeId, path, networkHost? }` (the
    * volume-switch + edge-flow arms). `'none'` commits state without touching
-   * history (the volume-unmount redirect — its no-history-push asymmetry, M5).
+   * history (the volume-unmount redirect — its no-history-push asymmetry).
    */
   history: 'push-path' | 'push-entry' | 'none'
   /** For `'push-entry'` on the network volume: the host to carry on the entry. */
@@ -188,7 +197,7 @@ export interface NavigateDeps {
   getPaneVolumeName: (pane: 'left' | 'right') => string | undefined
   otherPane: (pane: 'left' | 'right') => 'left' | 'right'
 
-  // --- store writes (the ONLY callers of these after M3/M5 are inside this module) ---
+  // --- store writes (the only callers of these are this module's `commit`) ---
   setPaneVolumeId: (pane: 'left' | 'right', volumeId: string) => void
   setPanePath: (pane: 'left' | 'right', path: string) => void
   setPaneHistory: (pane: 'left' | 'right', history: NavigationHistory) => void
@@ -200,7 +209,6 @@ export interface NavigateDeps {
   // --- volume resolution + defaults ---
   /** `resolvePathVolume` — resolves a real path to its containing volume. Injectable for tests. */
   resolveVolume: (path: string) => Promise<{ volume: { id: string; path: string } | null }>
-  getDefaultVolumeId: () => Promise<string>
   /** The volume's mount path by id, or undefined when not in the live list. */
   getVolumePathById: (volumeId: string) => string | undefined
   /** Background "best path" resolver (`determineNavigationPath`), gated by the token. */
@@ -210,18 +218,10 @@ export interface NavigateDeps {
     targetPath: string,
     otherPane: { otherPaneVolumeId: string; otherPanePath: string },
   ) => Promise<string>
-  /** Walk-up to the nearest existing dir (`resolveValidPath`), for the cancel branch. */
-  resolveValidPath: (path: string, options: { volumeRoot?: string }) => Promise<string | null>
-  /** `pathExists`, for the unmount-redirect home/`/` fallback. */
-  pathExists: (path: string) => Promise<boolean>
 
   // --- side effects ---
-  /** Persistence trigger. In M2 a no-op spy; M4 wires the single subscriber. */
+  /** Persistence trigger fed to the single nav-state persistence subscriber (A5). */
   persist: (event: PersistEvent) => void
-  /** Re-anchor DOM focus on the explorer container (cancel / fallback flows focus; volume-select does NOT). */
-  focusContainer: () => void
-  /** Refresh the volume selector after a successful unreachable retry. */
-  requestVolumeRefresh: () => void
   /** Warn toast (the `MAX_TABS_PER_PANE` "Tab limit reached" branch). */
   addToast: (message: string, opts: { level: 'warn' }) => void
 
@@ -238,17 +238,18 @@ export interface NavigateDeps {
 }
 
 /**
- * Persistence events emitted by `navigate()`. The M2 trigger is a no-op spy that
- * tests assert on; M4 turns it into the single debounced+diffed subscriber that
- * absorbs the scattered `saveAppStatus` / `saveTabsForPaneSide` /
- * `saveLastUsedPathForVolume` sites. Until then `navigate()` emits the same
- * INTENT each old call site had, so M4 can fan them out without re-deriving them.
+ * Persistence events emitted by `navigate()`, consumed by the single nav-state
+ * persistence subscriber (A5). `pane-state` is covered REACTIVELY there (the
+ * subscriber's per-pane effects watch the store mutation `commit` makes), so the
+ * trigger is a no-op for it; `last-used-path` is a DELTA (the old path of the old
+ * volume on a switch) the subscriber can't derive from a snapshot, so it's
+ * forwarded explicitly.
  */
 export type PersistEvent =
   | { kind: 'pane-state'; pane: 'left' | 'right' }
   | { kind: 'last-used-path'; record: LastUsedPathRecord }
 
-/** Exact refusal strings — contract (L12). Pinned byte-for-byte by the M2 + M1 suites. */
+/** Exact refusal strings — contract (L12). Pinned byte-for-byte by the navigate suites. */
 function onNetworkRefusal(volumeLabel: string): NavigateRefusal {
   return {
     kind: 'on-network-volume',
@@ -300,10 +301,24 @@ function tokenLive(deps: NavigateDeps, pane: 'left' | 'right', token: number): b
 }
 
 /**
+ * Whether a volume switch shifts the focused pane (L1). A direct user/MCP/history
+ * navigation makes the navigated pane the focused one; `'mirror'` (copy-path
+ * between panes — restoreFocus semantics) and `'correction'` (a background
+ * refinement) keep focus put. The edge-flow recoveries (`'cancel'` walk-up /
+ * network-restore, `'fallback'` MTP-fatal / retry / open-home / unmount) also keep
+ * the focused pane put — they re-anchor DOM focus on the container instead, via
+ * the handler's own `focusContainer()` where today's code does.
+ */
+function shiftsFocus(source: NavigateSource): boolean {
+  return source === 'user' || source === 'mcp' || source === 'history'
+}
+
+/**
  * The single state-commit point. Writes volumeId (when switching) + path + an
  * optional history entry together, then fires the pane-state persistence intent.
- * After M3/M5 this is the ONLY caller of `setPaneVolumeId` / `setPanePath` /
- * `setPaneHistory` outside the per-pane mutators themselves.
+ * This is the ONLY caller of `setPaneVolumeId` / `setPanePath` / `setPaneHistory`
+ * outside the per-pane mutators themselves (the two orthogonal network-host
+ * pushes aside).
  */
 function commit(deps: NavigateDeps, c: NavigateCommit): void {
   if (c.volumeId !== undefined) deps.setPaneVolumeId(c.pane, c.volumeId)
@@ -416,8 +431,18 @@ function scheduleVolumePathCorrection(
 /**
  * A volume switch: the pinned fork, the single commit (volumeId + path + history),
  * focus shift, and the background correction. The shared body behind the
- * `{ volumeId, path }` arm, the snapshot arm, `selectVolumeBy*`, and the mirror
- * helpers. Commits SYNCHRONOUSLY (P4 — optimistic), then schedules the correction.
+ * `{ volumeId, path }` arm, the snapshot arm, `selectVolumeBy*`, the mirror
+ * helpers, and the edge-flow fallbacks. Commits SYNCHRONOUSLY (P4 — optimistic),
+ * then schedules the correction.
+ *
+ * `options.terminal` marks an edge-flow fallback (MTP-fatal / retry / open-home /
+ * unmount): the destination is a fixed recovery target the user/error already
+ * resolved, so there's no OLD-path pre-save (the old volume is broken/gone) and
+ * no background `determineNavigationPath` correction (no "best path" to refine —
+ * the recovery target IS the answer). Matches today's bespoke handlers, which
+ * neither save the old path nor run a correction. `options.pushHistory: false`
+ * additionally commits with `history: 'none'` (the unmount redirect's
+ * no-Back-target asymmetry); the other three fallbacks push an entry.
  */
 function commitVolumeSwitch(
   deps: NavigateDeps,
@@ -426,14 +451,20 @@ function commitVolumeSwitch(
   volumeId: string,
   volumePath: string,
   targetPath: string,
-  options: { shiftFocus: boolean; networkHost?: HistoryEntry['networkHost'] },
+  options: {
+    shiftFocus: boolean
+    networkHost?: HistoryEntry['networkHost']
+    terminal?: boolean
+    pushHistory?: boolean
+  },
 ): void {
-  const activeTab = getActiveTab(deps.getTabMgr(pane))
-  const oldPath = activeTab.path
-  // Record the OLD path as the last-used for the OLD volume before the swap.
-  deps.persist({ kind: 'last-used-path', record: { volumeId: activeTab.volumeId, path: oldPath } })
+  if (!options.terminal) {
+    const activeTab = getActiveTab(deps.getTabMgr(pane))
+    // Record the OLD path as the last-used for the OLD volume before the swap.
+    deps.persist({ kind: 'last-used-path', record: { volumeId: activeTab.volumeId, path: activeTab.path } })
+  }
 
-  if (tryPinnedVolumeFork(deps, pane, { volumeId, path: targetPath })) {
+  if (!options.terminal && tryPinnedVolumeFork(deps, pane, { volumeId, path: targetPath })) {
     if (options.shiftFocus) deps.setFocusedPane(pane)
     deps.persist({ kind: 'pane-state', pane })
     scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath)
@@ -444,11 +475,11 @@ function commitVolumeSwitch(
     pane,
     volumeId,
     path: targetPath,
-    history: 'push-entry',
+    history: options.pushHistory === false ? 'none' : 'push-entry',
     networkHost: options.networkHost,
   })
   if (options.shiftFocus) deps.setFocusedPane(pane)
-  scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath)
+  if (!options.terminal) scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath)
 }
 
 /**
@@ -484,8 +515,13 @@ function navigateToVolumeOrPath(
     const token = mintToken(deps, pane)
     const volumePath = deps.getVolumePathById(to.volumeId) ?? to.path
     commitVolumeSwitch(deps, pane, token, to.volumeId, volumePath, to.path, {
-      // Mirror/correction sources don't shift focus (L1: restoreFocus semantics).
-      shiftFocus: source !== 'mirror' && source !== 'correction',
+      shiftFocus: shiftsFocus(source),
+      // `'fallback'` is an edge-flow recovery (MTP-fatal / retry / open-home /
+      // unmount): a terminal commit with no old-path pre-save and no correction
+      // (matches today's bespoke handlers). The unmount redirect additionally
+      // suppresses the history push (`pushHistory: false`); the other three push.
+      terminal: source === 'fallback',
+      pushHistory: intent.pushHistory,
     })
     return { status: 'started', settled: SETTLED_NOOP }
   }
@@ -520,7 +556,7 @@ function navigateToVolumeOrPath(
         return
       }
       if (!tokenLive(deps, pane, token)) return
-      commitVolumeSwitch(deps, pane, token, volume.id, volume.path, to.path, { shiftFocus: source !== 'mirror' })
+      commitVolumeSwitch(deps, pane, token, volume.id, volume.path, to.path, { shiftFocus: shiftsFocus(source) })
     })()
     return { status: 'started', settled }
   }

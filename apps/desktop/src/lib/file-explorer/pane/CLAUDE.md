@@ -199,6 +199,37 @@ other. See parent § "Live disk space".
 `PaneState.typeToJump` whenever the buffer or indicator is live, so MCP-driven E2E can assert without DOM poking. See
 `src-tauri/src/mcp/CLAUDE.md` § State stores.
 
+**The `navigate()` transaction (`navigate.ts`).** Every coordinator-level pane navigation goes through one
+`navigate(intent, deps)` entry. `DualPaneExplorer` builds the `NavigateDeps` (store getters/mutators + the FilePane
+handle + `resolveVolume` + the persistence trigger + the side-keyed token map) and wraps `navigate()` as its `navigate`
+export; the bus, the MCP adapter, the four external write-callers, and the FilePane render-prop shims all call it. It
+sits ON TOP of the FilePane listing primitives (`navigateToPath` / `navigateToParent`); listing mechanics stay
+pane-owned. The only callers of `setPaneVolumeId` / `setPanePath` / `setPaneHistory` are `navigate()`'s internal
+`commit` plus the two orthogonal network-host pushes (`handleNetworkHostChange`, `mirrorNetworkStateToPane`, which carry
+an SMB host onto the history entry — they're not pane-destination changes).
+
+- **Intent arms.** `{ volumeId?, path }` is a volume switch (volumeId set) or in-place path nav (omitted);
+  `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to `FilePane.navigateToParent`);
+  `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery. The pinned-tab fork (L7) lives
+  in ONE place per arm: `commitPathFromListing` for the in-place landing, `commitVolumeSwitch` for the switch.
+- **Per-arm optimism (P4).** The volume switch commits volumeId + path + history SYNCHRONOUSLY (truly optimistic). The
+  in-place path nav does NOT commit on call — it drives the FilePane primitive, and the commit lands when the listing
+  completes and `onPathChange` re-enters `commitPathFromListing`. Don't "upgrade" the in-place arm to an immediate
+  commit (it'd change when the breadcrumb updates relative to the listing).
+- **`settled` resolve point, per arm.** In-place + real-volume switch: resolves on `listing-complete` (the FilePane
+  promise). Cross-volume snapshot exit: resolves when the volume-switch commit is DONE, BEFORE the new listing loads
+  (callers that move the cursor after — `navigate-and-select`, `handleSearchNavigate` — bridge the gap via
+  `moveCursor`'s internal `whenLoadSettles`). Network / no-volume-resolved / state-restore branches: resolve
+  immediately.
+- **`NavigateResult` (L12).** `{ status: 'started', settled }` or `{ status: 'refused', reason }`. The refusal `message`
+  strings (on-network, MTP-mismatch, on-MTP-volume, pane-unavailable) are EXACT contract — the MCP adapter forwards them
+  verbatim as the `mcp-response` error; `navigate.test.ts` + the handler suite pin them byte-for-byte.
+- **Token model (the staleness mechanism).** A per-pane `txToken` (caller-owned `Map`) gates the cross-volume resolve
+  bail; a single GLOBAL `correctionGen` (the old `volumeChangeGeneration`, shared by both panes) gates the background
+  `determineNavigationPath` correction. A same-token self-re-entry (parent-nav / walk-up completion via `onPathChange`)
+  is NOT dropped — only a fresh `navigate()` advances the token. The drop-foreign-listings policy (next note) is what
+  drops a genuinely stale listing.
+
 **Don't add `cd`-style heuristics in `commitPathFromListing`.** Stale `onPathChange` from a slow listing is dropped by
 the drop-foreign-listings policy in `navigate.ts::commitPathFromListing` (`smb://` prefix for `network`,
 `search-results://` prefix for snapshots, `isPathOnVolume` for everything else). Adding a new virtual-volume namespace?
@@ -236,12 +267,22 @@ single module — A5 is per concern, not per call shape):
 - **`showHiddenFiles`**: a SETTING, persisted via the settings store (`saveSettings`), not `app-status`. Stays in
   `toggleHiddenFiles` / the settings-change listener.
 
-**Edge-flow handlers still carry their own save calls (until folded onto `navigate()`).** `handleCancelLoading`,
-`handleMtpFatalError`, `handleRetryUnreachable`, `handleOpenHome`, and `handleVolumeUnmount` still call `saveAppStatus`
-/ `saveTabsForPaneSide` directly. Because they ALSO mutate the store, the subscriber's reactive effects cover their
-persistence too — the direct calls are redundant duplicates a later milestone removes when those handlers route through
-`navigate()`. Through the 200 ms debounce + per-field diff the double-fire is idempotent (identical persisted state), so
-it's safe to leave them until that migration.
+**The five edge-flow handlers fold onto `navigate()`.** `handleCancelLoading`, `handleMtpFatalError`,
+`handleRetryUnreachable`, `handleOpenHome`, and `handleVolumeUnmount` are thin shims: they do their flow-specific async
+orchestration (resolve the default volume, clear `tab.unreachable`, `requestVolumeRefresh`, re-anchor DOM focus) and
+route the actual state change through `navigate({ source: 'fallback' | 'cancel' })`. They carry NO direct
+`saveAppStatus` / `saveTabsForPaneSide` calls — the store mutation `navigate()`'s commit makes drives the persistence
+subscriber. Two behaviors the fold preserves byte-for-byte:
+
+- **History-push asymmetry.** MTP-fatal / retry / open-home push a history entry (`source: 'fallback'`, default
+  `pushHistory`); the volume-unmount redirect does NOT (`pushHistory: false` ⇒ `commit` history `'none'`), so ejecting a
+  volume can't inject a spurious Back target. The unmount handler redirects EACH affected pane independently (left and
+  right), not just the focused one.
+- **Per-source focus.** The `'fallback'` / `'cancel'` flows re-anchor DOM focus on the container (the cancel walk-up /
+  network-restore branches call `containerElement?.focus()` where today's code does) but do NOT shift the focused pane —
+  unlike a `'user'` / `'mcp'` volume select, which makes the navigated pane focused. `shiftsFocus(source)` in
+  `navigate.ts` is the single source of that rule. The `'fallback'` source is also `terminal`: a fixed recovery target,
+  so no old-path pre-save and no background `determineNavigationPath` correction.
 
 ## Gotchas
 

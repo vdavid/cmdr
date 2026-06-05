@@ -12,13 +12,18 @@ avoids serializing 50k+ entries. Virtual scrolling renders only ~50 visible item
 
 User navigates -> old listing cleaned up -> new listing started -> events stream back -> UI updates.
 
+Every coordinator-level pane navigation goes through one `navigate(intent, deps)` transaction (`pane/navigate.ts`) that
+decides intent, commits pane state through a single `commit()` point, fires persistence through one trigger, and then
+drives the FilePane listing primitive. Listing mechanics (`loadDirectory`, the listeners, `loadGeneration`) stay
+pane-owned. See `pane/CLAUDE.md` § "The `navigate()` transaction" for the intent-arm + token contract.
+
 **Three navigation types, same cleanup/load sequence:**
 
-| Type                | Entry point                                                                                           | Who moves history?                                                         | Timing                                                                           |
-| ------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **Enter on folder** | `FilePane.handleNavigate` -> `loadDirectory`                                                          | `DualPaneExplorer.applyPathChange` pushes history AFTER `listing-complete` | History push on success only                                                     |
-| **Back/forward**    | `DualPaneExplorer.handleNavigationAction` -> `setPanePath` -> FilePane `$effect` -> `loadDirectory`   | `updatePaneAfterHistoryNavigation` moves history BEFORE load               | Optimistic: if path is gone, error handler resolves upward                       |
-| **Volume switch**   | `VolumeBreadcrumb.onVolumeChange` -> `FilePane.loadDirectory` + `DualPaneExplorer.handleVolumeChange` | Pushed immediately in `handleVolumeChange`                                 | Optimistic: `determineNavigationPath` may correct to a better path in background |
+| Type                | Entry point                                                                               | Who moves history?                                                             | Timing                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| **Enter on folder** | `FilePane.handleNavigate` -> `loadDirectory` -> `onPathChange`                            | `navigate()`'s `commitPathFromListing` pushes history AFTER `listing-complete` | History push on success only                                                     |
+| **Back/forward**    | `navigate({ to: { history } })` -> commit -> FilePane `$effect` -> `loadDirectory`        | The history-walk commit moves history BEFORE load                              | Optimistic: if path is gone, error handler resolves upward                       |
+| **Volume switch**   | `navigate({ to: { volumeId, path } })` -> `commitVolumeSwitch` + FilePane `loadDirectory` | Pushed immediately in the synchronous commit                                   | Optimistic: `determineNavigationPath` may correct to a better path in background |
 
 **Old listing cleanup** (in `FilePane.loadDirectory`, every navigation):
 
@@ -28,9 +33,11 @@ User navigates -> old listing cleaned up -> new listing started -> events stream
 4. Unlisten all 6 event listeners
 5. Generate new `listingId` (frontend `crypto.randomUUID()`), subscribe new listeners, call `listDirectoryStart`
 
-**Volume switch specifics**: `handleVolumeChange` saves the old volume's `lastUsedPath` immediately (no debounce), then
-runs `determineNavigationPath` in background (each check has 500ms timeout). A `volumeChangeGeneration` counter guards
-against stale corrections if the user switches again.
+**Volume switch specifics**: `commitVolumeSwitch` saves the old volume's `lastUsedPath` immediately (no debounce), then
+runs `determineNavigationPath` in background (each check has 500ms timeout). A single GLOBAL correction generation (the
+`navigate()` deps' `correctionGen`) guards against stale corrections if either pane switches again. The edge-flow
+fallbacks (MTP-fatal / retry / open-home / unmount, `source: 'fallback'`) are terminal commits: no old-path pre-save and
+no correction.
 
 ## Listing lifecycle
 
@@ -63,13 +70,14 @@ Multiple listings coexist (two panes, rapid navigation). Each keyed by unique `l
 
 ## Concurrency guards
 
-| Guard                    | Defined in                                   | Incremented by                                              | Checked by                                                                  | Prevents                                                         |
-| ------------------------ | -------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `loadGeneration`         | `FilePane` (per-instance)                    | `loadDirectory()`, `adoptListing()`                         | All 6 listing event handlers; post-`listDirectoryStart` staleness check     | Stale listing events from previous navigation applied to current |
-| `listingId` match        | `FilePane` (per-instance)                    | Set to new UUID each `loadDirectory()`                      | Every event handler (belt-and-suspenders with `loadGeneration`)             | Wrong listing's events applied to a different navigation         |
-| `volumeChangeGeneration` | `DualPaneExplorer` (singleton)               | `handleVolumeChange()`                                      | `determineNavigationPath` callback                                          | Stale path corrections applied after user switched volumes again |
-| `cacheGeneration`        | `FilePane` -> prop to `FullList`/`BriefList` | `refreshView()`, `adoptListing()`, `directory-diff` handler | Virtual scroll `$effect` via `shouldResetCache()`                           | Stale frontend scroll cache after sort/filter/watcher changes    |
-| `AtomicBool` (Rust)      | `StreamingListingState` per listing          | `cancel_listing()` IPC                                      | Per-entry during read, every 100ms poll, at cache-insert (under write lock) | Cancelled listing inserting into cache or continuing I/O         |
+| Guard                    | Defined in                                   | Incremented by                                              | Checked by                                                                  | Prevents                                                                |
+| ------------------------ | -------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `loadGeneration`         | `FilePane` (per-instance)                    | `loadDirectory()`, `adoptListing()`                         | All 6 listing event handlers; post-`listDirectoryStart` staleness check     | Stale listing events from previous navigation applied to current        |
+| `listingId` match        | `FilePane` (per-instance)                    | Set to new UUID each `loadDirectory()`                      | Every event handler (belt-and-suspenders with `loadGeneration`)             | Wrong listing's events applied to a different navigation                |
+| `correctionGen` (global) | `navigate()` deps (`DualPaneExplorer`-owned) | `scheduleVolumePathCorrection()` (per volume switch)        | `determineNavigationPath` callback                                          | Stale path corrections applied after either pane switched volumes again |
+| `txToken` (per-pane)     | `navigate()` deps (`DualPaneExplorer`-owned) | Each fresh `navigate()` call                                | The cross-volume `resolveVolume` bail                                       | A slow resolve landing on a pane the user re-navigated away from        |
+| `cacheGeneration`        | `FilePane` -> prop to `FullList`/`BriefList` | `refreshView()`, `adoptListing()`, `directory-diff` handler | Virtual scroll `$effect` via `shouldResetCache()`                           | Stale frontend scroll cache after sort/filter/watcher changes           |
+| `AtomicBool` (Rust)      | `StreamingListingState` per listing          | `cancel_listing()` IPC                                      | Per-entry during read, every 100ms poll, at cache-insert (under write lock) | Cancelled listing inserting into cache or continuing I/O                |
 
 ## Cancellation patterns
 
