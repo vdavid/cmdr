@@ -174,6 +174,15 @@
     // Get selected volume info
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === selectedVolumeId))
 
+    /** A same-volume move: the source and destination are the SAME volume and the
+     *  active operation is Move. The backend handles this as a server-side rename
+     *  (instant, zero bytes), so the deep recursive scan preview — which exists
+     *  only to feed a Size bar — is pure waste here and used to cost 30–40 s of
+     *  "Verifying before move…" on a NAS. For this case we dispatch immediately
+     *  and skip the deep scan; the cheap top-level conflict check still runs.
+     *  Derived from what the dialog already knows (no extra prop). */
+    const isSameVolumeMove = $derived(activeOperationType === 'move' && sourceVolumeId === selectedVolumeId)
+
     const dialogTitle = $derived(generateTitle(activeOperationType, fileCount, folderCount))
     const showHardlinkNote = $derived(
         shouldShowHardlinkNote({
@@ -408,6 +417,49 @@
         }
     }
 
+    /** Cancels the in-flight deep scan preview and resets its state, without
+     *  touching the (independent) conflict check. Used when the user flips to a
+     *  same-volume Move, where the deep byte scan is waste — the move is a
+     *  rename. Idempotent: a no-op when no preview is running. */
+    function cancelPreview() {
+        if (previewId) {
+            void cancelScanPreview(previewId)
+        }
+        cleanup() // drop the scan-preview listeners
+        previewId = null
+        isScanning = false
+        scanComplete = false
+        filesFound = 0
+        dirsFound = 0
+        bytesFound = 0
+        dedupBytesFound = 0
+        scanStarted = Promise.resolve()
+    }
+
+    // Copy/Move toggle gating for same-volume moves. `startScan()` runs once in
+    // `onMount` for the initial operation; this effect handles LATER toggles:
+    //  - flip to a same-volume Move → cancel the deep recursive preview (a
+    //    rename moves zero bytes, so there's nothing for the Size bar to show).
+    //  - flip away (to Copy, or to a cross-volume Move) → (re)start the preview,
+    //    because Copy genuinely needs byte totals for its Size bar.
+    // The conflict check is independent (runs in `onMount`), so it's unaffected.
+    let toggleEffectInitialized = false
+    $effect(() => {
+        // Track the reactive inputs.
+        const sameVolumeMove = isSameVolumeMove
+        if (!toggleEffectInitialized) {
+            // Skip the first run: `onMount` owns the initial scan/skip decision.
+            toggleEffectInitialized = true
+            return
+        }
+        if (sameVolumeMove) {
+            cancelPreview()
+        } else if (!previewId && !confirmed && !destroyed) {
+            // No preview running and we're back on a path that needs one: start it.
+            scanStarted = startScan()
+        }
+    })
+
     onMount(async () => {
         // Focus and select the path input
         await tick()
@@ -416,9 +468,14 @@
 
         // Volume space is loaded by the $effect watching selectedVolumeId
 
-        // Start scanning files immediately. Track the promise so handleConfirm can
+        // Start the deep scan preview immediately — UNLESS this is a same-volume
+        // move, where the backend does a server-side rename (zero bytes) and the
+        // recursive byte scan is pure waste (the 30–40 s "Verifying before move…"
+        // this fast path eliminates). Track the promise so handleConfirm can
         // await it: this ensures previewId is set before onConfirm fires.
-        scanStarted = startScan()
+        if (!isSameVolumeMove) {
+            scanStarted = startScan()
+        }
 
         // Run the cheap top-level conflict check in parallel with the scan
         // preview (it's one dest listing, not the recursive byte scan). MUST be
@@ -451,6 +508,20 @@
     async function handleConfirm() {
         if (pathError || confirmed) return
         confirmed = true
+        // Same-volume move: dispatch IMMEDIATELY. No deep scan ever ran (the
+        // backend renames server-side, zero bytes), so there's nothing to wait
+        // for and no cached preview to consume — pass `previewId = null` and
+        // `scanInProgress = false` so the progress dialog dispatches without
+        // gating on a scan. The conflict check still runs, so we await it for
+        // `conflictNames`. This is the FE half of the perf fix.
+        if (isSameVolumeMove) {
+            cancelPreview()
+            if (conflictCheckPromise) {
+                await conflictCheckPromise
+            }
+            onConfirm(editedPath, selectedVolumeId, null, conflictPolicy, activeOperationType, false, conflictNames)
+            return
+        }
         // Wait for startScanPreview IPC to return so previewId is set. Without this,
         // a fast confirm (auto-confirm, Playwright test, rapid Enter keypress) races
         // with the IPC and leaves the progress dialog with a null previewId that it

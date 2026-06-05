@@ -121,6 +121,29 @@ Frontend handles this by:
 - Showing brief success toast instead
 - Still doing conflict scan upfront in dry-run mode (just `exists()` checks, ~100 ms for 10k files)
 
+### Same-volume move skips the deep scan preview
+
+`isSameVolumeMove = activeOperationType === 'move' && sourceVolumeId === selectedVolumeId` (derived in `TransferDialog`,
+no extra prop). For a same-volume move the backend does a server-side rename-merge that transfers zero bytes, so the
+deep recursive scan preview — which exists only to feed the Size bar — is pure waste. On a NAS it used to cost 30–40 s
+of "Verifying before move…" before a 100 ms rename. So:
+
+- `onMount` starts the deep preview only when NOT a same-volume move.
+- A `$effect` keyed on `isSameVolumeMove` handles Copy/Move (or destination-volume) toggles AFTER mount: flipping to a
+  same-volume Move **cancels** the in-flight preview (`cancelPreview()` evicts it without touching the independent
+  conflict check); flipping away (to Copy, or a cross-volume Move) **(re)starts** it (Copy genuinely needs byte totals).
+- `handleConfirm` for a same-volume move dispatches IMMEDIATELY with `previewId = null` and `scanInProgress = false`, so
+  `TransferProgressDialog` never enters `waitForScanThenStart` — it calls `startOperation()` directly (no scan
+  listeners, no gating). It still awaits the cheap conflict check for `conflictNames`.
+- The cheap top-level conflict check (M2 decoupling) keeps running independently on mount, so a same-volume move still
+  surfaces "N folders will merge" and the file-policy radios. This decoupling is the prerequisite that lets us cancel
+  the deep preview without degrading the conflict UX.
+- Size bar: `bytesTotal = 0` already hides it (`{#if bytesTotal > 0}`), honest for a rename. The progress dialog reads
+  with Files-only progress; the complete toast counts top-level items (a moved folder counts as one item).
+- Pinned by `TransferDialog.test.ts` § "same-volume move scan gating" (no scan started for a same-volume move; the
+  preview starts for a same-volume copy; toggle both directions cancels/restarts; immediate dispatch with
+  `previewId = null` / `scanInProgress = false`).
+
 ### Index conversion for ".." entry
 
 When the directory has a parent entry shown at index 0, frontend indices are offset by +1 from backend:

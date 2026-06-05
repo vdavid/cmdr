@@ -25,7 +25,7 @@
 //! top-level directories from the file-only bulk-skip.
 
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Instant;
@@ -264,6 +264,108 @@ pub(super) async fn scan_volume_sources(
         total_bytes: batch.aggregate.total_bytes,
         source_hints,
     })
+}
+
+/// Top-level-only source hints for the same-volume move fast path.
+///
+/// Unlike [`VolumePreflight`], this carries no recursive byte total — a
+/// same-volume move is a rename and transfers zero bytes, so there's nothing to
+/// drive a Size bar. We collect ONLY the per-top-level-item `is_directory` /
+/// size hints (for the conflict resolver and `known_directory_paths`), at the
+/// cost of one pipelined batch stat of the top-level items — O(top-level
+/// items), never a subtree walk.
+pub(super) struct TopLevelMoveHints {
+    pub source_hints: HashMap<PathBuf, SourceHint>,
+}
+
+impl TopLevelMoveHints {
+    /// Top-level paths that are directories — same role as
+    /// [`VolumePreflight::known_directory_paths`] (keeps bulk-skip file-only).
+    pub(super) fn known_directory_paths(&self) -> HashSet<PathBuf> {
+        self.source_hints
+            .iter()
+            .filter(|&(_path, hint)| hint.is_directory)
+            .map(|(path, _hint)| path.clone())
+            .collect()
+    }
+}
+
+/// Collects top-level `is_directory` / size hints for a same-volume move WITHOUT
+/// walking any subtree — the move is a rename, so a deep walk (which
+/// `scan_for_copy` / `scan_for_copy_batch` do to count bytes) would be pure
+/// waste, and it's exactly the 30–40 s "Verifying before move…" the fast path
+/// exists to kill.
+///
+/// Consumes a cached TransferDialog preview when present (free — the dialog
+/// already scanned); we read ONLY each top-level item's `top_level_is_directory`
+/// / size from it, never re-walking. Otherwise, groups the top-level sources by
+/// PARENT and lists each distinct parent ONCE (`list_directory` is one
+/// round-trip per parent: a single pipelined op on SMB, one parent listing on
+/// MTP — the same shape `MtpVolume`'s `scan_for_copy_batch_with_progress` uses,
+/// minus the recursion). Cost is O(distinct parents), never O(subtree).
+pub(super) async fn top_level_move_hints(
+    volume: &Arc<dyn Volume>,
+    source_paths: &[PathBuf],
+    config: &VolumeCopyConfig,
+) -> Result<TopLevelMoveHints, WriteOperationError> {
+    // Cached preview: read only the per-top-level-path type + (file) size.
+    if let Some(cached) = config.preview_id.as_deref().and_then(take_cached_scan_result) {
+        let mut source_hints = HashMap::with_capacity(cached.per_path.len());
+        for (path, scan) in cached.per_path {
+            let size = if scan.top_level_is_directory {
+                0
+            } else {
+                scan.total_bytes
+            };
+            source_hints.insert(
+                path,
+                SourceHint {
+                    is_directory: scan.top_level_is_directory,
+                    size,
+                },
+            );
+        }
+        return Ok(TopLevelMoveHints { source_hints });
+    }
+
+    // No cached preview: group sources by parent and list each parent once,
+    // indexing entries by name for an O(1) per-source lookup. One listing per
+    // distinct parent — never a subtree walk.
+    let mut by_parent: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
+    for path in source_paths {
+        let parent = path.parent().map(Path::to_path_buf).unwrap_or_default();
+        by_parent.entry(parent).or_default().push(path.clone());
+    }
+
+    let mut source_hints = HashMap::with_capacity(source_paths.len());
+    for (parent, paths) in by_parent {
+        let entries = volume
+            .list_directory(&parent, None)
+            .await
+            .map_err(|e| WriteOperationError::IoError {
+                path: parent.display().to_string(),
+                message: format!("listing move-source parent failed: {e}"),
+            })?;
+        let by_name: HashMap<&str, &crate::file_system::listing::FileEntry> =
+            entries.iter().map(|e| (e.name.as_str(), e)).collect();
+        for path in paths {
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+            if let Some(entry) = by_name.get(name) {
+                let size = if entry.is_directory { 0 } else { entry.size.unwrap_or(0) };
+                source_hints.insert(
+                    path,
+                    SourceHint {
+                        is_directory: entry.is_directory,
+                        size,
+                    },
+                );
+            }
+            // A source missing from its parent listing surfaces later as a
+            // per-source rename error; leave it out of the hint map (the loop
+            // falls back to a trait probe for it).
+        }
+    }
+    Ok(TopLevelMoveHints { source_hints })
 }
 
 /// Emits `write-cancelled` and returns a `WriteFailure::Cancelled`. Used when

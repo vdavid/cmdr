@@ -11,8 +11,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import TransferDialog from './TransferDialog.svelte'
+import * as commands from '$lib/tauri-commands'
 import type { VolumeConflictInfo } from '$lib/tauri-commands'
 import type { ConflictResolution } from '$lib/file-explorer/types'
+
+const startScanPreviewMock = vi.mocked(commands.startScanPreview)
+const cancelScanPreviewMock = vi.mocked(commands.cancelScanPreview)
 
 /* ------------------------------------------------------------------------- */
 /* Mock harness                                                              */
@@ -109,6 +113,10 @@ interface MountOpts {
   autoConfirm?: boolean
   autoConfirmOnConflict?: string
   onConfirm?: ConfirmFn
+  operationType?: 'copy' | 'move'
+  sourceVolumeId?: string
+  /** The destination volume the dialog starts on (= `selectedVolumeId`). */
+  currentVolumeId?: string
 }
 
 type ConfirmFn = (
@@ -127,18 +135,18 @@ function mountDialog(opts: MountOpts = {}): HTMLDivElement {
   mount(TransferDialog, {
     target,
     props: {
-      operationType: 'copy',
+      operationType: opts.operationType ?? 'copy',
       sourcePaths: ['/Users/test/photos', '/Users/test/notes.txt'],
       destinationPath: '/Users/test/dest',
       direction: 'right',
-      currentVolumeId: 'root',
+      currentVolumeId: opts.currentVolumeId ?? 'root',
       fileCount: 1,
       folderCount: 1,
       sourceFolderPath: '/Users/test',
       sortColumn: 'name',
       sortOrder: 'ascending',
-      sourceVolumeId: 'root',
-      destVolumeId: 'root',
+      sourceVolumeId: opts.sourceVolumeId ?? 'root',
+      destVolumeId: opts.currentVolumeId ?? 'root',
       autoConfirm: opts.autoConfirm ?? false,
       autoConfirmOnConflict: opts.autoConfirmOnConflict,
       onConfirm: opts.onConfirm ?? (() => {}),
@@ -156,8 +164,19 @@ beforeEach(() => {
   scanCompleteCb = null
   scanVolumeForConflictsMock.mockReset()
   scanVolumeForConflictsMock.mockResolvedValue([])
+  startScanPreviewMock.mockClear()
+  startScanPreviewMock.mockResolvedValue({ previewId: 'preview-1' })
+  cancelScanPreviewMock.mockClear()
   document.body.innerHTML = ''
 })
+
+/** Clicks the Copy/Move segmented toggle option by its label. */
+function clickToggle(target: HTMLElement, label: 'Copy' | 'Move'): void {
+  const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('.toggle-option'))
+  const btn = buttons.find((b) => b.textContent.trim() === label)
+  if (!btn) throw new Error(`toggle option "${label}" not found`)
+  btn.click()
+}
 
 /* ------------------------------------------------------------------------- */
 /* Decoupling: conflict info appears while the byte scan is still running    */
@@ -330,5 +349,83 @@ describe('TransferDialog auto-confirm payload', () => {
 
     expect(captured.preKnown).toEqual(['notes.txt'])
     expect(captured.resolution).toBe('overwrite')
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* Same-volume move: skip the deep scan, dispatch immediately                */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferDialog same-volume move scan gating', () => {
+  it('does NOT start the deep scan preview for a same-volume move', async () => {
+    mountDialog({ operationType: 'move', sourceVolumeId: 'ext', currentVolumeId: 'ext' })
+    await flushMicrotasks()
+
+    expect(startScanPreviewMock, 'a same-volume move must skip the deep byte scan').not.toHaveBeenCalled()
+  })
+
+  it('still starts the deep scan for a same-volume COPY (copy needs byte totals)', async () => {
+    mountDialog({ operationType: 'copy', sourceVolumeId: 'ext', currentVolumeId: 'ext' })
+    await flushMicrotasks()
+
+    expect(startScanPreviewMock, 'a copy always needs the byte scan').toHaveBeenCalledTimes(1)
+  })
+
+  it('dispatches immediately with previewId=null and scanInProgress=false for a same-volume move', async () => {
+    const captured: { previewId: string | null; scanInProgress: boolean | null; op: string | null } = {
+      previewId: 'unset',
+      scanInProgress: null,
+      op: null,
+    }
+    const onConfirm: ConfirmFn = (_d, _v, previewId, _r, operationType, scanInProgress) => {
+      captured.previewId = previewId
+      captured.scanInProgress = scanInProgress
+      captured.op = operationType
+    }
+
+    const target = mountDialog({
+      operationType: 'move',
+      sourceVolumeId: 'ext',
+      currentVolumeId: 'ext',
+      onConfirm,
+    })
+    await flushMicrotasks()
+    clickToggle(target, 'Move') // already Move; the confirm path is what matters
+    // Trigger confirm via Enter on the dialog.
+    const dialog = target.querySelector<HTMLElement>('[role="dialog"], dialog') ?? target
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushMicrotasks()
+
+    expect(captured.op).toBe('move')
+    expect(captured.previewId, 'no cached preview to consume on the fast path').toBeNull()
+    expect(captured.scanInProgress, 'dispatch must not gate on a scan').toBe(false)
+  })
+
+  it('cancels the running preview when flipping a cross-volume copy to a same-volume move', async () => {
+    // Start as a Move from `ext` but landing on `root` (cross-volume) → the deep
+    // preview runs. Flipping the destination is awkward in a unit test, so start
+    // as a Copy on the same volume (preview runs), then flip to Move (same
+    // volume) and assert the preview is cancelled.
+    const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'ext', currentVolumeId: 'ext' })
+    await flushMicrotasks()
+    expect(startScanPreviewMock).toHaveBeenCalledTimes(1)
+
+    clickToggle(target, 'Move')
+    await flushMicrotasks()
+
+    expect(cancelScanPreviewMock, 'flipping to a same-volume move cancels the deep preview').toHaveBeenCalled()
+  })
+
+  it('restarts the preview when flipping back from a same-volume move to copy', async () => {
+    const target = mountDialog({ operationType: 'move', sourceVolumeId: 'ext', currentVolumeId: 'ext' })
+    await flushMicrotasks()
+    // Move on same volume → no scan yet.
+    expect(startScanPreviewMock).not.toHaveBeenCalled()
+
+    clickToggle(target, 'Copy')
+    await flushMicrotasks()
+
+    // Copy needs byte totals → the preview starts.
+    expect(startScanPreviewMock, 'flip to copy (re)starts the byte scan').toHaveBeenCalledTimes(1)
   })
 })

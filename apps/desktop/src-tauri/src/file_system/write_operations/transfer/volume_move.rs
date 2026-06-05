@@ -27,7 +27,8 @@ use super::transfer_driver::{
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
-use super::volume_preflight::{SourceHint, scan_volume_sources};
+use super::volume_preflight::{SourceHint, scan_volume_sources, top_level_move_hints};
+use super::volume_rename_merge::{RenameMergeCtx, rename_merge_directory};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
@@ -724,7 +725,7 @@ async fn move_within_same_volume(
     clippy::too_many_arguments,
     reason = "Same-volume move requires passing multiple context parameters"
 )]
-pub(super) async fn move_within_same_volume_with_progress(
+pub(crate) async fn move_within_same_volume_with_progress(
     events: Arc<dyn OperationEventSink>,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -733,28 +734,39 @@ pub(super) async fn move_within_same_volume_with_progress(
     dest_path: &Path,
     config: &VolumeCopyConfig,
 ) -> Result<(), WriteOperationError> {
-    // Phase 1: Preflight scan. Same-volume rename doesn't transfer bytes
-    // (MTP MoveObject is one USB call per file), but we still want to show
-    // the user a Size progress bar that tracks alongside the Files bar, and
-    // we want the bulk-skip prelude to know which sources are directories
-    // without a per-source `is_directory` probe. The preflight call hits the
-    // cached preview from TransferDialog for free in the common case;
-    // otherwise it's one batch scan up front.
-    let preflight = scan_volume_sources(
-        &volume,
-        source_paths,
-        config,
-        operation_id,
-        WriteOperationType::Move,
-        state,
-        &*events,
-    )
-    .await
-    .map_err(|f| f.error)?;
-    let total_files = preflight.total_files;
-    let total_bytes = preflight.total_bytes;
-    let known_directory_paths = preflight.known_directory_paths();
-    let source_hints: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(preflight.source_hints);
+    // Dest-inside-source guard: the rename-merge makes this path recursive for
+    // the first time, so moving `/A` into `/A/sub` would re-discover and
+    // re-rename the content it just moved. Reject `dest == source ||
+    // dest.starts_with(source)` for a directory source, mirroring
+    // `copy_volumes_with_progress`'s guard. Path-prefix only — no
+    // `canonicalize`, since these aren't local paths (MTP/SMB/InMemory).
+    for source in source_paths {
+        if (dest_path == source.as_path() || dest_path.starts_with(source))
+            && matches!(volume.is_directory(source).await, Ok(true))
+        {
+            return Err(WriteOperationError::DestinationInsideSource {
+                source: source.display().to_string(),
+                destination: dest_path.display().to_string(),
+            });
+        }
+    }
+
+    // Top-level hints, NOT a deep pre-flight scan. A same-volume move is a
+    // rename — it transfers zero bytes, so there's no Size bar to feed (the FE
+    // hides it on `bytes_total == 0`). We need only the per-source
+    // `is_directory` / size hints (for the conflict resolver and
+    // `known_directory_paths`) and a file count, both of which a single
+    // pipelined batch stat of the TOP-LEVEL items supplies — O(top-level
+    // items), never a subtree walk. A cached TransferDialog preview is consumed
+    // for free when present; otherwise `scan_for_copy_batch` runs one batch
+    // (SMB pipelines the stats; MTP groups by parent). `files_total` is the
+    // count of selected top-level items (each counts 1 when its rename / merge
+    // completes); `bytes_total` is 0.
+    let top_level = top_level_move_hints(&volume, source_paths, config).await?;
+    let total_files = source_paths.len();
+    let total_bytes = 0u64;
+    let known_directory_paths = top_level.known_directory_paths();
+    let source_hints: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(top_level.source_hints);
 
     // Bulk-skip is file-only. Top-level directory matches are excluded so
     // their non-conflicting children still move.
@@ -764,16 +776,10 @@ pub(super) async fn move_within_same_volume_with_progress(
         &config.pre_known_conflicts,
         &known_directory_paths,
     );
-    let mut bulk_skip_files = 0usize;
-    let mut bulk_skip_bytes = 0u64;
-    for path in &pre_skip_paths {
-        let size = source_hints
-            .get(path)
-            .map(|h| if h.is_directory { 0 } else { h.size })
-            .unwrap_or(0);
-        bulk_skip_files += 1;
-        bulk_skip_bytes += size;
-    }
+    // A rename moves no bytes (`total_bytes == 0`), so bulk-skipped sources
+    // credit 0 bytes too — only the file counter tracks progress on this path.
+    let bulk_skip_files = pre_skip_paths.len();
+    let bulk_skip_bytes = 0u64;
 
     let driver_config = DriverConfig {
         operation_type: WriteOperationType::Move,
@@ -865,11 +871,10 @@ pub(super) async fn move_within_same_volume_with_progress(
                                 "move_within_same_volume: skipping {} due to conflict resolution",
                                 source_path_owned.display()
                             );
-                            // Credit the source's byte size so the Size bar
-                            // matches the file counter when every source is
-                            // skipped.
-                            let bytes_accounted = source_hint.map(|h| h.size).unwrap_or(0);
-                            ConflictDecision::Skip { bytes_accounted }
+                            // A rename moves no bytes (the byte axis stays at 0),
+                            // so a skip credits 0 bytes — the file counter alone
+                            // tracks progress on this path.
+                            ConflictDecision::Skip { bytes_accounted: 0 }
                         }
                         Some(rc) => {
                             // Same-volume move uses `volume.rename` (atomic-ish,
@@ -907,29 +912,62 @@ pub(super) async fn move_within_same_volume_with_progress(
         {
             let volume = Arc::clone(&volume);
             let source_hints = Arc::clone(&source_hints);
+            let state = Arc::clone(state);
+            let events = Arc::clone(&events);
+            let apply_to_all = Arc::clone(&apply_to_all_cell);
+            let config_for_merge = config_owned.clone();
+            let operation_id = operation_id_owned.clone();
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let volume = Arc::clone(&volume);
                 let source_hints = Arc::clone(&source_hints);
+                let state = Arc::clone(&state);
+                let events = Arc::clone(&events);
+                let apply_to_all = Arc::clone(&apply_to_all);
+                let config_for_merge = config_for_merge.clone();
+                let operation_id = operation_id.clone();
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
                     .dest_path
                     .expect("async driver always supplies dest_path")
                     .to_path_buf();
                 Box::pin(async move {
-                    // Use the cached scan hint for size. Falls back to a
-                    // per-source stat if the hint is missing (cached preview
-                    // without per-path data, or future backends that don't
-                    // populate it).
-                    let size = match source_hints.get(&source_path).copied() {
-                        Some(h) if !h.is_directory => h.size,
-                        Some(_) => 0,
-                        None => volume
-                            .get_metadata(&source_path)
-                            .await
-                            .ok()
-                            .and_then(|m| m.size)
-                            .unwrap_or(0),
+                    // Source type from the top-level hint; falls back to a stat
+                    // only when no hint reached us (cached preview without
+                    // per-path data). A rename moves zero bytes, so the byte
+                    // axis stays at 0 throughout — no size lookup needed.
+                    let hint = source_hints.get(&source_path).copied();
+                    let source_is_dir = match hint {
+                        Some(h) => h.is_directory,
+                        None => volume.is_directory(&source_path).await.unwrap_or(false),
                     };
+
+                    // Dir-vs-dir collision: the resolver short-circuited to a
+                    // merge (no prompt for the folder), handing back the existing
+                    // dest dir as the target. A flat `rename` would fail
+                    // `AlreadyExists`, so walk the source level by level and
+                    // rename each child into the merged destination instead.
+                    // Files / cross-type clashes inside follow the file policy.
+                    if source_is_dir && volume.is_directory(&dest_item_path).await.unwrap_or(false) {
+                        let merge_ctx = RenameMergeCtx {
+                            volume: &volume,
+                            events: &*events,
+                            operation_id: &operation_id,
+                            config: &config_for_merge,
+                            state: &state,
+                            apply_to_all: &apply_to_all,
+                        };
+                        // Register both halves of every deep child rename with
+                        // the downloads watcher's ignore set. No-ops on
+                        // non-local volumes.
+                        let note = |from: &Path, to: &Path| {
+                            note_pending_for_local_volume(&volume, from);
+                            note_pending_for_local_volume(&volume, to);
+                        };
+                        rename_merge_directory(&merge_ctx, &source_path, &dest_item_path, &note).await?;
+                        // A rename moves no bytes: the item counts 1 (driver's
+                        // milestone), the byte axis stays at 0.
+                        return Ok(TransferOutcome::Transferred { bytes: 0 });
+                    }
 
                     // Register both halves with the downloads watcher's
                     // ignore set when the volume is local-FS-backed.
@@ -943,11 +981,10 @@ pub(super) async fn move_within_same_volume_with_progress(
                         .await
                         .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
-                    // Per-file milestone emit (bumped `files_done` /
-                    // `bytes_done`) now lives in the driver's `Transferred`
-                    // arm — fires uniformly across copy + move. See
-                    // `transfer_driver.rs::drive_transfer_serial_async`.
-                    Ok(TransferOutcome::Transferred { bytes: size })
+                    // Per-file milestone emit (bumped `files_done`) lives in the
+                    // driver's `Transferred` arm. A rename moves no bytes, so the
+                    // byte axis stays at 0.
+                    Ok(TransferOutcome::Transferred { bytes: 0 })
                 })
             }
         },

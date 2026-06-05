@@ -93,6 +93,9 @@ pub(crate) use validation::{
 pub(crate) use transfer::volume_copy::copy_volumes_with_progress;
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
+pub(crate) use transfer::volume_move::move_within_same_volume_with_progress;
+#[cfg(test)]
+#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
 pub(crate) use types::CollectorEventSink;
 
 // Re-export volume copy types and functions

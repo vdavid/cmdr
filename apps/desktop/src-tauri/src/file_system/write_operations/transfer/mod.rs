@@ -22,6 +22,7 @@ pub(super) mod volume_conflict;
 pub(super) mod volume_copy;
 pub(super) mod volume_move;
 pub(super) mod volume_preflight;
+pub(super) mod volume_rename_merge;
 pub(super) mod volume_strategy;
 
 // Re-export for the nested integration tests below (and to mirror the
@@ -40,3 +41,5 @@ mod move_integration_test;
 mod transaction_integration_test;
 #[cfg(test)]
 mod type_mismatch_rename_tests;
+#[cfg(test)]
+mod volume_rename_merge_tests;

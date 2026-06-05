@@ -944,16 +944,17 @@ async fn cross_volume_move_emits_bytes_total_on_progress() {
     assert_eq!(complete[0].bytes_processed, expected_total);
 }
 
-/// Same-volume rename emits `bytes_total > 0` on every Copying-phase progress
-/// event. Even though rename transfers no bytes, the FE shows the Size bar
-/// tracking alongside the Files bar so the two stay visually paired.
+/// A same-volume move is a rename — it transfers zero bytes — so every
+/// Copying-phase progress event carries `bytes_total == 0`. The FE hides the
+/// Size bar on `bytes_total == 0`, which is honest: a rename moves no bytes, so
+/// showing a Size bar would be a lie. `files_total` is the count of top-level
+/// items, not a recursive file count.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn same_volume_move_emits_bytes_total_on_progress() {
+async fn same_volume_move_reports_zero_bytes_total() {
     let volume: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("V").with_space_info(10_000_000, 10_000_000));
     volume.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
     volume.create_file(Path::new("/b.txt"), b"bravo-bravo").await.unwrap();
     volume.create_directory(Path::new("/dst")).await.unwrap();
-    let expected_total = (b"alpha".len() + b"bravo-bravo".len()) as u64;
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state_with_interval_ms(0);
@@ -982,14 +983,16 @@ async fn same_volume_move_emits_bytes_total_on_progress() {
     assert!(!copying.is_empty(), "expected at least one Copying progress event");
     for ev in &copying {
         assert_eq!(
-            ev.bytes_total, expected_total,
-            "every Copying progress event must carry the real bytes_total (got {} for files_done={})",
+            ev.bytes_total, 0,
+            "a rename moves zero bytes, so every Copying progress event must carry bytes_total = 0 (got {} for files_done={})",
             ev.bytes_total, ev.files_done,
         );
+        assert_eq!(ev.files_total, 2, "files_total is the top-level item count");
     }
 
     let complete = events.complete.lock().unwrap();
-    assert_eq!(complete[0].bytes_processed, expected_total);
+    assert_eq!(complete[0].files_processed, 2);
+    assert_eq!(complete[0].bytes_processed, 0);
 }
 
 /// Cross-volume move (no `preview_id`) emits multiple `Scanning`-phase
