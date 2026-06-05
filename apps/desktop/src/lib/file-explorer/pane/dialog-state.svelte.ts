@@ -43,6 +43,11 @@ export interface TransferProgressPropsData {
   /** Source filenames known to conflict at dest (from pre-flight scan).
    *  Forwarded to the BE so it can bulk-skip them upfront under `Skip all`. */
   preKnownConflicts?: string[]
+  /** Top-level files the user selected (for the completion toast's per-type split).
+   *  Absent on the clipboard-paste path, where the per-type split isn't known. */
+  fileCount?: number
+  /** Top-level folders the user selected (for the completion toast's per-type split). */
+  folderCount?: number
 }
 
 export interface NewFolderDialogPropsData {
@@ -95,6 +100,11 @@ export interface DialogStateDeps {
   getShowHiddenFiles: () => boolean
   onRefocus: () => void
   onOpenInEditor: (path: string) => void
+}
+
+/** Human-readable label for a transfer op, used in log lines. */
+function transferOpLabel(op: TransferOperationType): string {
+  return op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
 }
 
 /** Force a backend re-read on a pane's listing so file diffs are emitted promptly. */
@@ -292,6 +302,8 @@ export function createDialogState(deps: DialogStateDeps) {
         conflictResolution,
         scanInProgress,
         preKnownConflicts,
+        fileCount: transferDialogProps.fileCount,
+        folderCount: transferDialogProps.folderCount,
       }
       snapshotSourcePaneSelection()
 
@@ -346,8 +358,9 @@ export function createDialogState(deps: DialogStateDeps) {
     },
 
     handleTransferComplete(filesProcessed: number, filesSkipped: number, bytesProcessed: number) {
-      const op = transferProgressProps?.operationType ?? 'copy'
-      const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
+      const props = transferProgressProps
+      const op = props?.operationType ?? 'copy'
+      const opLabel = transferOpLabel(op)
 
       // Cross-snapshot delete sync (M8c, plan §3.7): when files are removed from
       // disk via Delete or Trash (or moved away via Move — the source path no
@@ -357,15 +370,23 @@ export function createDialogState(deps: DialogStateDeps) {
       // containing it" rule. The snapshot store bumps its mutation tick so
       // `SearchResultsView`'s `$derived` re-evaluates and the row vanishes
       // without a manual refresh. No-op when no snapshot contains the path.
-      if ((op === 'delete' || op === 'trash' || op === 'move') && transferProgressProps?.sourcePaths) {
-        for (const sourcePath of transferProgressProps.sourcePaths) {
+      if ((op === 'delete' || op === 'trash' || op === 'move') && props?.sourcePaths) {
+        for (const sourcePath of props.sourcePaths) {
           removeEntryFromAllSnapshots(sourcePath)
         }
       }
       log.info(
         `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${formatBytes(bytesProcessed)})`,
       )
-      const toastMessage = composeTransferCompleteToast({ operationType: op, filesProcessed, filesSkipped })
+      // Top-level selection counts for the per-type split ("Moved 1 file and 3
+      // folders"). Absent on the clipboard-paste path → composer falls back.
+      const toastMessage = composeTransferCompleteToast({
+        operationType: op,
+        filesProcessed,
+        filesSkipped,
+        fileCount: props?.fileCount,
+        folderCount: props?.folderCount,
+      })
       // `info` for the all-skipped case (nothing actually moved/copied — neutral
       // outcome, not a success). `success` everywhere else, including mixed: the
       // user's intent landed at the target.
@@ -386,7 +407,7 @@ export function createDialogState(deps: DialogStateDeps) {
 
     handleTransferCancelled(filesProcessed: number) {
       const op = transferProgressProps?.operationType ?? 'copy'
-      const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
+      const opLabel = transferOpLabel(op)
       log.info(`${opLabel} cancelled after ${String(filesProcessed)} files`)
 
       refreshPanesAfterTransfer()
@@ -399,7 +420,7 @@ export function createDialogState(deps: DialogStateDeps) {
 
     handleTransferError(error: WriteOperationError, friendly?: FriendlyError) {
       const op = transferProgressProps?.operationType ?? 'copy'
-      const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
+      const opLabel = transferOpLabel(op)
       log.error('{op} failed: {errorType}', {
         op: opLabel,
         errorType: error.type,
