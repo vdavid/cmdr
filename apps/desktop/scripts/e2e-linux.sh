@@ -18,6 +18,35 @@ DESKTOP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$DESKTOP_DIR/../.." && pwd)"
 IMAGE_NAME="cmdr-e2e"
 
+# ── Consolidated host-side cleanup (installed ONCE, before any branch) ────────
+# This script has several conditional concerns that each need teardown:
+#   - the VNC branch backs up and must restore the host .cargo/config.toml;
+#   - the main flow takes a machine-wide SMB lease (holder $$) that must be
+#     released so the shared stack downs at zero holders.
+# Each is runtime-guarded on a variable that stays empty until its resource
+# exists, so a single early `trap cleanup EXIT` covers every concern regardless
+# of which branch ran — the guards no-op the irrelevant clauses. Installing it
+# once up front avoids the old last-trap-wins footgun (multiple single-handler
+# `trap … EXIT` lines silently overwriting each other).
+#
+# NOTE: the cargo-restore and app-kill traps INSIDE the `docker run bash -c '…'`
+# strings stay where they are — they run in the container's own shell against
+# container-internal state (an ephemeral `--rm` filesystem, the container's app
+# PID) that this host-side handler cannot reach.
+cleanup() {
+    # SMB lease: release only if we acquired one (never down a stack we don't
+    # hold; the helper itself downs only at zero holders).
+    if [[ -n "${SMB_LEASE_HELD:-}" ]]; then
+        (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease release "$$" 2>/dev/null) || true
+    fi
+    # Cargo config: restore the temporarily-cleared dev override if a backup
+    # exists (the VNC branch sets CARGO_CONFIG_BAK).
+    if [[ -n "${CARGO_CONFIG_BAK:-}" && -f "${CARGO_CONFIG_BAK:-}" ]]; then
+        mv "$CARGO_CONFIG_BAK" "$CARGO_CONFIG" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT
+
 # Docker volume names for persistent caches.
 # Each can be overridden via env var to a host path (starting with /) for CI,
 # where `actions/cache` can only cache host paths, not Docker named volumes.
@@ -125,10 +154,11 @@ if $VNC_MODE; then
     CARGO_CONFIG="$DESKTOP_DIR/src-tauri/.cargo/config.toml"
     CARGO_CONFIG_BAK=""
     if [ -f "$CARGO_CONFIG" ]; then
+        # Restore is handled by the consolidated `cleanup()` EXIT trap at the top
+        # of the script (guarded on CARGO_CONFIG_BAK).
         CARGO_CONFIG_BAK="${CARGO_CONFIG}.docker-bak"
         cp "$CARGO_CONFIG" "$CARGO_CONFIG_BAK"
         > "$CARGO_CONFIG"
-        trap 'mv "${CARGO_CONFIG_BAK}" "${CARGO_CONFIG}" 2>/dev/null || true' EXIT
     fi
 
     docker run -it --rm \
@@ -286,6 +316,26 @@ probe_smb_ports() {
 }
 
 start_smb_containers() {
+    # Take this whole run's machine-wide SMB lease FIRST, holder $$ (this
+    # long-lived harness shell, distinct from the short-lived inner start.sh that
+    # runs as the "manual" holder — coexisting is fine, the helper is idempotent
+    # per holder). CI runs e2e-linux.sh DIRECTLY (never through check.sh), so the
+    # orchestrator's lease never exists for this job; the script must own its
+    # own. The lease is released by the consolidated cleanup() EXIT trap.
+    #
+    # Go-missing fallback: if the helper can't run we proceed with the legacy
+    # logic below (which shells out to start.sh, itself lease-aware) and never
+    # set SMB_LEASE_HELD, so cleanup() won't try to release a lease we don't hold.
+    if command -v go &> /dev/null; then
+        if (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease acquire "$$" e2e); then
+            SMB_LEASE_HELD=1
+        else
+            log_warn "SMB lease helper failed; proceeding without a cross-worktree lease (legacy path)"
+        fi
+    else
+        log_warn "'go' not found; proceeding without a cross-worktree SMB lease (legacy path)"
+    fi
+
     # Check that ALL four required containers are running. A prior `minimal` or
     # `core` invocation leaves guest+auth up but not 50shares/unicode, so a
     # guest-only check falsely reports "already running" and tests that need
@@ -294,7 +344,7 @@ start_smb_containers() {
     # ALSO: "running" per `docker compose ps` only means the container is
     # alive; smbd inside may be hung, OOM-killed, or still loading. We always
     # follow the running-check with an active TCP probe; if it fails, we
-    # restart the SMB stack rather than letting the E2E run hit "Cannot reach"
+    # reconcile the SMB stack rather than letting the E2E run hit "Cannot reach"
     # errors mid-test. See the case study in
     # apps/desktop/test/CLAUDE.md "Testing principles".
     local running
@@ -312,9 +362,20 @@ start_smb_containers() {
         if probe_smb_ports 10; then
             log_info "SMB containers healthy"
         else
-            log_warn "SMB containers running but not serving; restarting"
-            docker compose -p smb-consumer down > /dev/null 2>&1 || true
-            "$SMB_SERVERS_DIR/start.sh" e2e
+            # Running-but-not-serving. NEVER blanket-`down` the shared stack:
+            # a sibling worktree's suite may be mid-run against it. Reconcile
+            # instead — `up -d` the e2e services under the lock (additive, no
+            # down, no force-recreate). If other leases are live, the sick stack
+            # is the first-comer's to manage; the probe below retries.
+            log_warn "SMB containers running but not serving; reconciling (no down)"
+            if command -v go &> /dev/null && (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease reconcile e2e); then
+                : # reconciled under the lock
+            else
+                # Fallback (Go missing / helper broken): legacy down + restart.
+                log_warn "SMB reconcile helper unavailable; falling back to legacy down + restart"
+                docker compose -p smb-consumer down > /dev/null 2>&1 || true
+                "$SMB_SERVERS_DIR/start.sh" e2e
+            fi
         fi
     else
         log_info "Starting SMB containers (e2e)..."

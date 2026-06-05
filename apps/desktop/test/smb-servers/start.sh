@@ -16,6 +16,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_DIR="$SCRIPT_DIR/.compose"
 PROJECT_NAME="smb-consumer"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
 # Compose files are vendored from smb2's `tests/docker/consumer/`. See
 # `.compose/VENDORED.md` for how to update when the smb2 dep bumps.
@@ -55,12 +56,38 @@ case "$mode" in
         ;;
 esac
 
+# Adopt-or-start via the machine-wide SMB lease. The Go helper holds a flock,
+# refcounts every concurrent session across worktrees, and either ADOPTS an
+# already-serving stack (no compose call) or RECONCILES it (`up -d` under the
+# lock) — so a sibling worktree's live suite is never recreated or torn down out
+# from under it. This bare `start.sh` registers as the "manual" sentinel holder
+# that the dead-PID sweep never reaps; clear it with `stop.sh`. See
+# scripts/check/smblease for the model.
+#
+# On success the helper has already brought the stack up (or confirmed it's
+# serving), so we skip our own `up` and go straight to the probe. If `go` is
+# missing or the helper errors (a local-ergonomics edge — CI always has Go), we
+# warn loudly and FALL BACK to the legacy direct `up`, never blocking the user.
+#
 # The override (`docker-compose.override.yml`, cmdr-owned, re-vendor-safe) layers
 # `restart: unless-stopped` + `mem_limit` + `cpus` onto every non-flaky consumer.
-# Only `up` applies those keys, so the override `-f` belongs here alone — the bare
-# `compose ps`/`port`/`logs`/`down` calls reconstruct config from container labels
-# and work unchanged.
-docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" -f "$COMPOSE_DIR/docker-compose.override.yml" up -d "${services[@]}"
+# Only `up` applies those keys, so the override `-f` belongs at the up call sites
+# (the helper and the fallback) — the bare `compose ps`/`port`/`logs` calls
+# reconstruct config from container labels and work unchanged.
+lease_ok=false
+if command -v go &> /dev/null; then
+    if (cd "$REPO_ROOT/scripts/check" && go run ./smb-lease acquire manual "$mode"); then
+        lease_ok=true
+    else
+        echo "WARN: SMB lease helper failed; falling back to direct 'compose up' (no cross-worktree refcounting)." >&2
+    fi
+else
+    echo "WARN: 'go' not found; falling back to direct 'compose up' (no cross-worktree SMB lease refcounting)." >&2
+fi
+
+if [ "$lease_ok" = false ]; then
+    docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" -f "$COMPOSE_DIR/docker-compose.override.yml" up -d "${services[@]}"
+fi
 
 # Resolve the list of running services if `all` was requested.
 if [ ${#services[@]} -eq 0 ]; then
