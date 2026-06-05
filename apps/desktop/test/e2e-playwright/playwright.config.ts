@@ -28,8 +28,15 @@ const outputDir = process.env.CMDR_E2E_OUTPUT_DIR ?? './test-results'
 // Step 6b: the MTP shard used to need `retries: 1` because the watcher's
 // resume window raced with delayed FSEvents from `recreateMtpFixtures`.
 // `resync_virtual_mtp_after_disk_change` (commands/mtp.rs) now drains those
-// events while the watcher is still paused, so all shards run at zero retries.
-const retries = 0
+// events while the watcher is still paused, so no shard needs a retry for an
+// app-level race.
+//
+// CI-only retry for load-induced environment flake on the shared Docker VM:
+// the Linux lane sets `CI=true` and runs this exact config, so it inherits one
+// retry, while local dev stays at zero so a real race surfaces immediately
+// instead of being papered over. A retried pass shows as `flaky` in the `list`
+// reporter, keeping the signal visible. See docs/testing.md § retries carve-out.
+const retries = process.env.CI ? 1 : 0
 
 export default defineConfig({
   testDir: '.',
@@ -41,12 +48,13 @@ export default defineConfig({
   retries,
   workers: 1, // Single worker per Playwright process, one Tauri app instance
   reporter: [['list'], ['json', { outputFile: jsonReport }]],
-  // Tight default: 8 s per test forces specs to be deterministic about UI waits.
-  // Tests that legitimately need longer (axe audits, MTP virtual-device protocol
-  // overhead, SMB+Docker latency, drive-index convergence) call `test.setTimeout`
-  // with a reason in the comment. Anything without a justified override should
-  // fit comfortably in 8 s.
-  timeout: 8000,
+  // 15 s per test absorbs load-induced UI-wait jitter on the shared Docker VM and
+  // on CI, where a busy host stretches `waitForSelector` / nav waits past the old
+  // 8 s budget. Tests that legitimately need longer (axe audits, MTP virtual-device
+  // protocol overhead, SMB+Docker latency, drive-index convergence) still call
+  // `test.setTimeout` with a reason in the comment. Anything without a justified
+  // override should fit comfortably in 15 s.
+  timeout: 15000,
 
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',

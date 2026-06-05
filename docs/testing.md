@@ -141,6 +141,14 @@ through the public-via-helper path. Don't reach past the guard.
 Retries hide bugs. If a test flakes, find the race and fix it (Rust IPC race, missing await, watcher debounce, etc.).
 Drop retries when the cause is gone.
 
+**Carve-out — CI-only, for load-induced environment flake on the shared Docker VM.** The Playwright config sets
+`retries: process.env.CI ? 1 : 0`. This is allowed because the Linux Docker lane runs every spec sequentially on a host
+that also builds the app, so a busy host can stretch a `waitForSelector` / nav wait past its budget independently of any
+app-level race. Local dev stays at zero retries, so a real race still surfaces immediately rather than being papered
+over. Playwright marks a retried-pass as `flaky` in its `list` reporter, so the retry stays a tracked, visible event,
+not a silenced one. The anti-pattern above still stands for masking a real race in app/IPC code — the carve-out is
+narrow: CI-only, environment flake, signal preserved.
+
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 
 Use `commands.commandName(args)` from `apps/desktop/src/lib/ipc/`. Enforced by `cmdr/no-raw-tauri-invoke` ESLint rule

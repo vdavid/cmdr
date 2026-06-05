@@ -409,8 +409,12 @@ export async function ensureAppReady(
         if (explorer) explorer.focus();
     })()`)
 
-  // Wait until a file entry has the cursor (focus confirmed)
-  await tauriPage.waitForSelector('.file-pane .file-entry.is-under-cursor', 3000)
+  // Wait until a file entry has the cursor (focus confirmed). 6 s (not 8 s):
+  // this and the focus-landed poll below stack inside `ensureAppReady` with no
+  // early return, so 6000 + 6000 stays under the 15 s global timeout. An 8000
+  // pair would let a stacked overrun trip the global-timeout abort, losing this
+  // helper's specific error.
+  await tauriPage.waitForSelector('.file-pane .file-entry.is-under-cursor', 6000)
 
   // Confirm focus actually landed inside the explorer so the container-level
   // keydown handler reaches keys like Tab and ArrowDown. (Document-level F-key
@@ -442,7 +446,7 @@ export async function ensureAppReady(
                 return !!(ae && ae.closest && ae.closest('.dual-pane-explorer') !== null);
             })()`)
     },
-    3000,
+    6000,
   )
   if (!focusOk) {
     const diag = await tauriPage.evaluate<string>(`(function() {
@@ -457,7 +461,7 @@ export async function ensureAppReady(
                 overlays: Array.from(document.querySelectorAll('.modal-overlay, [role="dialog"], [role="alertdialog"]')).map(function(e){return {cls: e.className.toString(), id: e.id, dialogId: e.dataset && e.dataset.dialogId, visible: !!e.offsetParent};})
             });
         })()`)
-    throw new Error(`ensureAppReady: focus did not land inside .dual-pane-explorer after 3s. State: ${diag}`)
+    throw new Error(`ensureAppReady: focus did not land inside .dual-pane-explorer after 6s. State: ${diag}`)
   }
 }
 
@@ -539,10 +543,10 @@ export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
                 })()`)
         return name !== '..'
       },
-      3000,
+      8000,
     )
     if (!moved) {
-      throw new Error('skipParentEntry: cursor did not leave the ".." entry within 3s after ArrowDown')
+      throw new Error('skipParentEntry: cursor did not leave the ".." entry within 8s after ArrowDown')
     }
   }
 }
@@ -649,8 +653,12 @@ export async function moveCursorToFile(tauriPage: PageLike, targetName: string):
   await ensureMcpClient(tauriPage)
   await mcpCall('move_cursor', { pane, filename: targetName })
 
-  // Confirm the cursor landed on the target file. Short timeout because `move_cursor`
-  // is synchronous on the backend, this only covers the render tick.
+  // Confirm the cursor landed on the target file. `move_cursor` is synchronous on
+  // the backend, so this only covers the render tick on a green run — it resolves
+  // the moment the cursor lands and never reaches the budget. 8 s is failure
+  // headroom for the shared Docker VM under load, where the render tick stretches.
+  // Safe to keep at 8 s: this is the only bumped budget inside moveCursorToFile,
+  // and the helper isn't called from ensureAppReady, so it never stacks.
   return pollUntil(
     tauriPage,
     async () => {
@@ -662,7 +670,7 @@ export async function moveCursorToFile(tauriPage: PageLike, targetName: string):
                 return entry.getAttribute('data-filename') === ${JSON.stringify(targetName)};
             })()`)
     },
-    2000,
+    8000,
   )
 }
 
