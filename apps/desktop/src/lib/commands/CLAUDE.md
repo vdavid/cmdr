@@ -86,15 +86,17 @@ entry's `.name` in place, and `getPaletteCommands()` plus the shortcuts conflict
 
 `isCommandId(value: string): value is CommandId` narrows the un-typed string edges where ids enter the frontend — the
 Rust `execute-command` event payload (`+page.svelte`), the cross-window emit from `LicenseSection.svelte`, and the
-selection-dialog `onCommand` prop. Never `as CommandId`-cast at these edges; a stale id would slip to the dispatcher's
-switch `default` and silently no-op. The IPC boundary is un-typed (Rust emits a bare `json!`), so
-`rust-command-id-drift.test.ts` is the backstop that keeps Rust ids and `COMMAND_IDS` in sync.
+selection-dialog `onCommand` prop. Never `as CommandId`-cast at these edges; a stale id would miss the handler record
+and silently no-op. The IPC boundary is un-typed (Rust emits a bare `json!`), so `rust-command-id-drift.test.ts` is the
+backstop that keeps Rust ids and `COMMAND_IDS` in sync.
 
 `handleCommandExecute<K extends CommandId>(commandId: K, ctx, ...args: CommandDispatchArgs<K>)` is the typed dispatch
 entry point. Arg-less ids take no third argument; arg-carrying ids (like `view.setMode`) require their payload. Inside,
-`commandId` widens to the `CommandId` union and the `switch` narrows per `case` as before (the flat
-`Record<CommandId, Handler>` conversion is a deferred, optional follow-up); it's already exhaustive-safe because the id
-is the closed union.
+`commandId` widens to the `CommandId` union, the core runs its preamble, then looks the id up in the flat
+`commandHandlers` record (in `routes/(main)/command-handlers/`). The record is keyed by
+`Exclude<CommandId, DispatchExemptId>`, so every dispatchable id has a handler at compile time (a missing one is a
+compile error); the 20 `DispatchExemptId`s deliberately have none and silently no-op. See `routes/(main)/CLAUDE.md` and
+`routes/(main)/command-handlers/CLAUDE.md` for the handler record and the exempt families.
 
 `CommandScope` is a union of string literals: `'App'`, `'Main window'`, `'Main window/File list'`,
 `'Main window/Brief mode'`, `'Main window/Full mode'`, `'Main window/Network'`, `'Main window/Share browser'`,
@@ -103,8 +105,8 @@ keyboard routing is handled by each UI component.
 
 ## Command registry
 
-`command-registry.ts` holds ~115 commands grouped by scope (about 77 palette-visible; the rest are
-`showInPalette: false` — low-level navigation and the MCP-only per-pane commands). Key rules:
+`command-registry.ts` holds 109 commands grouped by scope (about 77 palette-visible; the rest are `showInPalette: false`
+— low-level navigation and the MCP-only per-pane commands). Key rules:
 
 - `showInPalette: false` for low-level navigation (↑/↓, ←/→, volume/palette modal internals).
 - `app.commandPalette` has `showInPalette: false`; opening the palette from inside itself makes no sense.
@@ -162,9 +164,12 @@ added an IPC + Tauri-event + Svelte-effect hop between the keystroke and the DOM
 3. If the command carries a REQUIRED dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`; if the
    payload is OPTIONAL (dispatched both arg-less and with a payload, like the MCP `file.copy`/`move`/`delete` tools),
    use `CommandArgsOptionalOverrides` so `CommandDispatchArgs` resolves to `[args?]`. Arg-less commands skip both (they
-   default to `NoCommandArgs`). The `case` then reads the payload from `dispatchArgs`. MCP-only commands are dispatched
-   from the `mcp-listeners.ts` adapter after a validate-parse, and are `showInPalette: false`.
-4. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/command-dispatch.ts`.
+   default to `NoCommandArgs`). The handler then reads the payload from `hctx.dispatchArgs`. MCP-only commands are
+   dispatched from the `mcp-listeners.ts` adapter after a validate-parse, and are `showInPalette: false`.
+4. Add the handler to the right family module in `routes/(main)/command-handlers/`. The `commandHandlers` record is
+   keyed by `Exclude<CommandId, DispatchExemptId>`, so a missing handler is a COMPILE error; an intentionally
+   handlerless command goes in `DISPATCH_EXEMPT_IDS` (in `command-handlers/types.ts`) with a documented reason (the
+   `command-handler-record.test.ts` set-equality test fails if the id is in neither).
 5. No changes needed to fuzzy search or keyboard dispatch. Commands with `showInPalette: true` are automatically
    dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`). If the command is
    palette-visible, also add its id to `EXPECTED_PALETTE_IDS` in `command-registry.test.ts` (the palette-visible-set pin
@@ -209,14 +214,14 @@ sync to avoid double-toggling.
 
 ## Gotchas
 
-**Gotcha**: `commands` is a plain array, not a `Map` or indexed structure. **Why**: The array is ~115 items.
+**Gotcha**: `commands` is a plain array, not a `Map` or indexed structure. **Why**: The array is ~109 items.
 `getPaletteCommands()` filters it on each call, and uFuzzy needs an array of strings anyway. Indexing by ID would help
 lookup but add complexity for no measurable gain at this scale.
 
 **Gotcha**: `getPaletteCommands()` is the only filter; there's no `getCommandById()`. **Why**: Command lookup by ID
-happens in the shortcuts system (which builds its own reverse map) and in `handleCommandExecute` (which uses a switch
-statement). The commands module intentionally stays minimal: it's a registry and a search engine, not a full command
-bus.
+happens in the shortcuts system (which builds its own reverse map) and in `handleCommandExecute` (which looks the id up
+in the flat handler record). The commands module intentionally stays minimal: it's a registry and a search engine, not a
+full command bus.
 
 **Gotcha**: `info.ranges` from uFuzzy is a flat `[start, end, start, end, ...]` array, not an array of tuples. **Why**:
 uFuzzy uses this flat format for performance. The code unpacks ranges into individual character indices for
@@ -231,9 +236,9 @@ do text things in selectable regions. See `handleTextRegionShortcut` in `command
 
 **Gotcha**: Adding a command with a menu item requires changes in four places. **Why**: The menu system (Rust) and
 command system (TypeScript) are separate codebases connected by string IDs. The four places are: (1)
-`command-registry.ts`, (2) `handleCommandExecute` switch in `command-dispatch.ts`, (3) `src-tauri/src/menu/mod.rs` ID
-mappings (`menu_id_to_command` + `command_id_to_menu_id`) plus the matching `Menu/SubmenuItem::with_id` registration in
-the right platform builder (`macos.rs` / `linux.rs` — the top-level menus include `Select` between Edit and View), (4)
+`command-registry.ts`, (2) the handler in `routes/(main)/command-handlers/`, (3) `src-tauri/src/menu/mod.rs` ID mappings
+(`menu_id_to_command` + `command_id_to_menu_id`) plus the matching `Menu/SubmenuItem::with_id` registration in the right
+platform builder (`macos.rs` / `linux.rs` — the top-level menus include `Select` between Edit and View), (4)
 `menuCommands` array in `shortcuts-store.ts`. Missing any one causes silent failures (shortcut works but menu doesn't,
 or vice versa).
 

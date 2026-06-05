@@ -1,16 +1,17 @@
 /**
  * Characterization suite for `handleCommandExecute`.
  *
- * Pins the EXACT current behavior of the dispatch switch — every dispatchable
- * id's call pattern + args, the bespoke branches (zoom/tab toasts, activeElement
- * input branches, the quickLook guard, the cloud try/catch toast, the about URLs,
+ * Pins the EXACT behavior of the dispatch core — every dispatchable id's call
+ * pattern + args, the bespoke branches (zoom/tab toasts, activeElement input
+ * branches, the quickLook guard, the cloud try/catch toast, the about URLs,
  * `view.showHidden`'s early return), the per-arm await/void semantics (the two
  * MCP round-trip ids pinned with deferred promises), the preamble order, and the
  * 20 exempt ids' preamble-then-silent-no-op path.
  *
- * This drives the PUBLIC `handleCommandExecute(commandId, ctx, ...args)` so it
- * survives the M2 switch→record conversion UNCHANGED: green against the switch
- * today, green against the record tomorrow.
+ * This drives the PUBLIC `handleCommandExecute(commandId, ctx, ...args)`, whose
+ * signature is independent of the internal dispatch mechanism, so the same suite
+ * pins behavior whether dispatch routes through a switch or the flat handler
+ * record it uses today.
  *
  * The dispatchable-89 / exempt-20 sets are DERIVED from `COMMAND_IDS` minus a
  * local exempt list, so the suite self-checks the counts (a new command, or a
@@ -172,8 +173,9 @@ import type { ExplorerAPI } from './explorer-api'
  * three families: native-menu-owned (`app.quit`/`hide`/`hideOthers`/`showAll`),
  * per-keystroke P2 (`nav.up`/`down`/`left`/`right`/`firstInFull`/`lastInFull`),
  * and component-scoped (palette/volume/network/share/contextMenu). Mirrors the
- * plan's `DispatchExemptId` union. Kept local to this characterization file
- * (M2 introduces the production `DISPATCH_EXEMPT_IDS` tuple).
+ * production `DispatchExemptId` union (`command-handlers/types.ts`), kept as an
+ * independent local copy so this characterization file derives its own dispatchable
+ * vs exempt split rather than trusting the code it characterizes.
  */
 const EXEMPT_IDS = [
   'app.quit',

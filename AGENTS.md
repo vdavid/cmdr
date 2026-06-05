@@ -225,9 +225,10 @@ common pitfalls.
 - **Coverage allowlist is a last resort.** Extract pure functions and test them. Only allowlist what genuinely can't be
   tested. Name the specific untestable API in the reason.
 - When adding a new user-facing action, add its id to `COMMAND_IDS` in `lib/commands/command-ids.ts`, the entry in
-  `command-registry.ts`, and the handler case in `handleCommandExecute` in `routes/(main)/command-dispatch.ts`. A
-  tuple↔registry sync test and the `cmdr/no-raw-command-dispatch` lint rule hold you to it; full checklist in
-  `lib/commands/CLAUDE.md`.
+  `command-registry.ts`, and the handler in `routes/(main)/command-handlers/` (the `commandHandlers` record is keyed by
+  `Exclude<CommandId, DispatchExemptId>`, so a missing handler is a compile error; an intentionally handlerless command
+  goes in `DISPATCH_EXEMPT_IDS`). A tuple↔registry sync test and the `cmdr/no-raw-command-dispatch` lint rule hold you
+  to it; full checklist in `lib/commands/CLAUDE.md`.
 - If you added a new Tauri command touching the filesystem, check `docs/architecture.md` § Platform constraints.
 - ❌ **Don't read TCC-protected paths or call NSWorkspace icon/LaunchServices APIs at app launch without the FDA gate.**
   `~/Downloads`, `~/Documents`, `~/Desktop`, `~/Pictures`, `~/Movies`, `~/Music`, `~/Library/CloudStorage`, and any

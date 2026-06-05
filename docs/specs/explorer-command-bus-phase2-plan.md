@@ -406,13 +406,13 @@ unchanged (L9 contract). Debug-error-preview dev flow still works (manual). Docs
 `no-raw-command-dispatch` green with no unjustified opt-outs; all docs swept; **phase-end:** `--include-slow` green +
 manual Quick Look + drag-drop checklists + watch CI to green before the phase merge to `main`.
 
-### M6 (optional) – Flat handler record conversion
+### M6 (optional) – Flat handler record conversion — DONE
 
-**Only if** the orchestrator/David wants the master sketch's flat `Record<CommandId, Handler>` (one-hop cmd-click
-traversal). Deferred out of M1 deliberately (see M1 decision). Lands as its own isolated, behavior-identical milestone
-so a regression is bisectable to the conversion, not tangled with an entry-path migration. The win is jump-to-definition
-ergonomics, not type safety (the switch is already exhaustive over `CommandId` after M1). If David's seam review in M1
-says "do the record," fold it into M1 instead; if "switch is fine," drop M6 entirely.
+Executed as its own plan: [command-handler-record-plan.md](command-handler-record-plan.md). The `handleCommandExecute`
+switch is now a small dispatch core over a flat handler record keyed by `Exclude<CommandId, DispatchExemptId>` (the win:
+one-hop cmd-click traversal + a compile-time completeness guarantee), with handlers split into family modules under
+`routes/(main)/command-handlers/`. It landed behavior-identical, isolated from the entry-path migration, exactly as
+deferred out of M1.
 
 ## Invariants this phase must honor
 

@@ -6,13 +6,15 @@ onboarding, licensing), and routes commands + MCP events into the explorer via a
 
 ## File map
 
-| File                  | Purpose                                                                                                                                                                                                                                                                                                     |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `+layout.svelte`      | Main-window layout: updater, settings applier, AI state init, MCP shortcuts/settings bridges, toast container, crash + MTP + error-report dialogs                                                                                                                                                           |
-| `+page.svelte`        | App shell: mounts `DualPaneExplorer`, owns top-level dialog visibility ($state) and the `explorerRef` handle, wires keydown / context-menu / menu-event listeners, runs onboarding gating                                                                                                                   |
-| `command-dispatch.ts` | `handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)`: the single typed switch that turns `CommandId`s (palette, keyboard, menu, F-bar, MCP) into `ExplorerAPI` calls or dialog toggles. Arg-carrying ids take a typed payload. Load-bearing: referenced from `$lib/commands` and many tests |
-| `explorer-api.ts`     | `ExplorerAPI` interface — the contract `DualPaneExplorer` exposes upward. Shared by `+page.svelte`, `command-dispatch.ts`, `mcp-listeners.ts` so none of them import the component directly                                                                                                                 |
-| `mcp-listeners.ts`    | `setupMcpListeners(ctx)`: thin transport adapter — validate-parses each `mcp-*` Tauri payload into typed `CommandArgs` and `dispatch`es it through the bus. No business logic; the round-trip callers reply via `mcp-response`                                                                              |
+| File                          | Purpose                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `+layout.svelte`              | Main-window layout: updater, settings applier, AI state init, MCP shortcuts/settings bridges, toast container, crash + MTP + error-report dialogs                                                                                                                                                                                                                                      |
+| `+page.svelte`                | App shell: mounts `DualPaneExplorer`, owns top-level dialog visibility ($state) and the `explorerRef` handle, wires keydown / context-menu / menu-event listeners, runs onboarding gating                                                                                                                                                                                              |
+| `command-dispatch.ts`         | `handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)`: the dispatch CORE. Runs the preamble (text-region intercept → `log.info` → breadcrumb → close palette → capability guard), then looks the id up in the flat `commandHandlers` record and awaits the handler. Arg-carrying ids take a typed payload. Load-bearing: referenced from `$lib/commands` and many tests |
+| `command-dispatch-context.ts` | `CommandDispatchContext` + `CommandDispatchDialogs`: the per-call context (the `getExplorer()` getter, the dialog-visibility callbacks, `dispatch`). A leaf so the handler modules and the core both import it without a cycle. Re-exported from `command-dispatch.ts` for existing importers                                                                                          |
+| `command-handlers/`           | Family-grouped handler modules (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`, `clipboard`, `selection`, `misc`) plus `types.ts` (the seam: `CommandHandler`, `CommandHandlerRecord`, the `DispatchExemptId` union) and `index.ts` (assembles the one `commandHandlers` record). See its [`CLAUDE.md`](command-handlers/CLAUDE.md)                                        |
+| `explorer-api.ts`             | `ExplorerAPI` interface — the contract `DualPaneExplorer` exposes upward. Shared by `+page.svelte`, `command-dispatch.ts`, `mcp-listeners.ts` so none of them import the component directly                                                                                                                                                                                            |
+| `mcp-listeners.ts`            | `setupMcpListeners(ctx)`: thin transport adapter — validate-parses each `mcp-*` Tauri payload into typed `CommandArgs` and `dispatch`es it through the bus. No business logic; the round-trip callers reply via `mcp-response`                                                                                                                                                         |
 
 ## Conventions
 
@@ -22,11 +24,20 @@ those modules read the current ref each call without capturing a stale `undefine
 the explorer instance underneath.
 
 **Adding a user-facing action.** Add the id to the `COMMAND_IDS` tuple in `$lib/commands/command-ids.ts`, register the
-command in `command-registry.ts` (id, label, scope, palette visibility, default shortcut), and add a `case` in
-`handleCommandExecute`. The registry is what the palette and shortcuts see; the dispatch is what runs. Skipping any side
-gives a compile error or an invisible / inert command. See `$lib/commands/CLAUDE.md` § "Adding a command" for the full
-checklist (arg shapes, the menu-id drift test, the palette-set pin). The AGENTS.md "no string-matching" rule applies —
-branch on the `CommandId`, never on the label.
+command in `command-registry.ts` (id, label, scope, palette visibility, default shortcut), and add a handler to the
+right family module in `command-handlers/`. The `commandHandlers` record is keyed by
+`Exclude<CommandId, DispatchExemptId>`, so a missing handler is a COMPILE error; an intentionally handlerless command
+goes in `DISPATCH_EXEMPT_IDS` (in `command-handlers/types.ts`) with a documented reason. The registry is what the
+palette and shortcuts see; the dispatch is what runs. See `$lib/commands/CLAUDE.md` § "Adding a command" for the full
+checklist (arg shapes, the menu-id drift test, the palette-set pin) and `command-handlers/CLAUDE.md` § "Adding a
+command" for the handler step. The AGENTS.md "no string-matching" rule applies — branch on the `CommandId`, never on the
+label.
+
+**The exempt families.** Twenty ids are registered (for the rebinding UI) with NO dispatch handler — native-menu-owned,
+per-keystroke P2, and component-scoped. The `DispatchExemptId` union in `command-handlers/types.ts` is the single
+maintained list, documented per family in `command-handlers/CLAUDE.md` § "The exempt families". The core silently no-ops
+these after the preamble (PR3 byte-identical behavior). ❌ Never add a handler for a per-keystroke `nav.*` id — that
+routes an arrow through a registry lookup + log + breadcrumb IPC per keypress (a P2 perf regression), not a completion.
 
 **Dialog state lives in `+page.svelte`, not in dispatch.** `command-dispatch.ts` only flips visibility via
 `ctx.dialogs.showXxx(...)` callbacks. The page owns the `$state` flags + props for command palette, search dialog,
@@ -79,11 +90,11 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (menu, skip `pushViewMenuS
 - **`mcp-response` round-trips** (`mcp-open-under-cursor`, `mcp-move-cursor`): the bus dispatches the `void`-returning
   intent; the adapter owns the `requestId` correlation and the `emit('mcp-response', { requestId, ok, error? })` reply.
   It **awaits** the dispatch's promise so the ack fires only after the action settles (the backend has an ack timeout) —
-  the dispatch case `await`s the underlying `openItemUnderCursor` / `moveCursor`, and an exception propagates to the
-  adapter's `try/catch`, which replies `ok: false`. HMR can land these with no explorer; they reply `ok: false` rather
-  than crashing.
+  the `nav.openUnderCursor` / `cursor.moveTo` handlers (in `command-handlers/nav-handlers.ts`) are `async` and `await`
+  the underlying `openItemUnderCursor` / `moveCursor`, and an exception propagates to the adapter's `try/catch`, which
+  replies `ok: false`. HMR can land these with no explorer; they reply `ok: false` rather than crashing.
 
-A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`); those dispatch cases call
+A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`); those handlers call
 `explorerRef.navigate({ pane, to: { history: 'back' | 'forward' }, source: 'user' })`, same as `nav.parent`
 (`to: { history: 'parent' }`). Every other key stays a `sendKeyToFocusedPane` passthrough — a keystroke is transport,
 not a command, so it never rides the bus (invariant P2).
@@ -97,10 +108,11 @@ through the bus would pollute the `CommandId` union with dev-only ids for zero g
 
 ## Gotchas
 
-- **`+page.svelte` is >900 lines and `command-dispatch.ts` is >670 lines, both flagged by `file-length`.** Don't pile
-  new state into the page — extract another `setupXxxListeners(ctx)` module like `mcp-listeners.ts`. Don't pile new
-  branches into the dispatcher's switch — group related ids and lift their bodies into small helpers (`showZoomToast`,
-  `handleTextRegionShortcut`, `blockedByCapabilities` are the pattern).
+- **`+page.svelte` is >900 lines, flagged by `file-length`.** Don't pile new state into the page — extract another
+  `setupXxxListeners(ctx)` module like `mcp-listeners.ts`. The dispatch core (`command-dispatch.ts`) is small (~170
+  lines): new commands get a handler in the relevant `command-handlers/` family module, NOT a branch in the core. If a
+  family module grows large, split it; don't fold the handler bodies back into the core. `handleTextRegionShortcut` and
+  `blockedByCapabilities` stay in the core (pre-dispatch guards, not handlers).
 - **⌘A is a native menu accelerator.** macOS intercepts it before the webview, so the `selection.selectAll` branch
   routes to `active.select()` when the focused element is an `<input>` / `<textarea>` BEFORE delegating to
   `explorerRef.handleSelectionAction('selectAll')`. The keydown bail in `+page.svelte` doesn't help here — the menu
