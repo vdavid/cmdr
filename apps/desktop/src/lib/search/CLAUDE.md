@@ -263,7 +263,8 @@ Click on the footer's "Open in pane" button promotes the current result set into
    §3.5: auto-applies and Enter-runs don't pollute the history). For AI mode, the entry's `query` carries the original
    natural-language prompt (via `getLastAiPrompt()`), not the AI's translated pattern.
 5. Calls `onOpenInPane?.(id)` to hand off to the host (`+page.svelte` → `DualPaneExplorer.openSearchSnapshotInPane`),
-   which routes through `handleVolumeChange` so pinned- tab fork / focus / history-push all apply uniformly.
+   which routes through the `navigate({ to: { snapshot }, source: 'user' })` transaction so pinned-tab fork / focus /
+   history-push all apply uniformly.
 6. Closes the dialog. State is preserved (module-level `$state` survives unmount); ⌘F reopens to the same place.
 
 The label shown in the pane breadcrumb (and the snapshot's `label` field) is built by
@@ -382,8 +383,8 @@ already had the precedent: the `network` browser is a `volumeId` the FilePane sp
 component. Following that pattern lets us reuse the entire file-explorer toolkit (selection, keyboard nav, copy / move
 source, history, Quick Look, drag-out) for free, and gives the user a real navigable pane with history-aware `⌘[` /
 `⌘]`. A "special mode" branch would have leaked into every pane-aware module forever; the virtual-volume namespace
-concentrates the special- casing into a small number of well-documented sites (FilePane gates,
-`DualPaneExplorer.applyPathChange`, the breadcrumb label resolver).
+concentrates the special-casing into a small number of well-documented sites (FilePane gates, `navigate.ts`'s
+`commitPathFromListing` drop-foreign-listings policy, the breadcrumb label resolver).
 
 **Decision**: Dialog, not a panel or sidebar. **Why**: Search is a focused, transient task. A command- palette-style
 overlay matches this usage pattern and doesn't consume permanent screen real estate.

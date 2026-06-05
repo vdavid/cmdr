@@ -147,12 +147,14 @@ fallback contract, and the snapshot-pane note.
 - **Fuzzy search**: `@leeoniya/ufuzzy` (~3.5KB), typo-tolerant
 - **Match highlighting**: matched characters underlined
 - **Persisted query**: remembered within session
-- **~60 commands**: all scopes (app, main window, file list, network, about)
+- **~77 palette-visible commands**: all scopes (app, main window, file list, network, about)
 
 ### Gotchas
 
 - **Low-level nav commands hidden**: `showInPalette: false` for arrow keys, Page Up/Down
-- **Execution handler in +page.svelte**: `handleCommandExecute` delegates to `explorerRef`
+- **Typed dispatch**: every entry path routes through `handleCommandExecute` (a `CommandId`-typed switch in
+  `routes/(main)/command-dispatch.ts`), which turns the id into an `ExplorerAPI` call or a dialog toggle. See
+  `$lib/commands/CLAUDE.md`.
 
 ## Git (`git/`)
 
