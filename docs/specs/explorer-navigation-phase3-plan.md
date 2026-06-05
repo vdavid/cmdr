@@ -9,12 +9,16 @@ subscriber – all behavior-preserving.
 
 ## Loud rules (read before touching anything)
 
-- **P4 – navigation stays OPTIMISTIC.** `navigate()` commits pane state IMMEDIATELY (volumeId + path + history
-  together), then triggers the listing load and the background `determineNavigationPath` correction gated by a token.
-  There is NO synchronous validate-then-commit gate. A "resolve the real path, THEN set state" rewrite is a UX
-  regression (the spinner wouldn't show until resolution settled), not just a perf one. The only synchronous work before
-  the commit is capability/refusal checks that today are already synchronous (the `network` refusal, the MTP refusal).
-  Cross-volume snapshot resolution (`resolvePathVolume`) stays async-then-`handleVolumeChange`, exactly as today.
+- **P4 – navigation stays AS optimistic as today, PER ARM (pinned by the M1 regression tests – reality is
+  arm-specific).** The volume-switch arm commits volumeId + path + history synchronously before any listing (truly
+  optimistic). The in-place path-nav arm commits ONLY at `listing-complete` (`applyPathChange` via `onPathChange`) – it
+  is NOT optimistic today, and `navigate()` must NOT "upgrade" it to an immediate commit (that would change when the
+  path/breadcrumb updates relative to the listing – a PR3 violation). The master's blanket "state commits immediately"
+  is imprecise; preserve the split the M1 scenario-8 tests pin. What P4 forbids in both arms: a NEW synchronous
+  validate-then-commit gate ("resolve the real path, THEN set state") – the spinner must show immediately. The only
+  synchronous work before each arm's existing commit point is the capability/refusal checks that today are already
+  synchronous (the `network` refusal, the MTP refusal). Cross-volume snapshot resolution (`resolvePathVolume`) stays
+  async-then-`handleVolumeChange`, exactly as today.
 - **A4 – the phase isn't done while the old entries or the counters live.** `handleVolumeChange`, `handlePathChange`,
   `applyPathChange`, the coordinator-level `navigateToPath`,
   `handleNavigationAction`/`updatePaneAfterHistoryNavigation`, `applyVolumePathCorrection`, AND both
