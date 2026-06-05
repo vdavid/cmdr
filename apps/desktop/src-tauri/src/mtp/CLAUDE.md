@@ -17,7 +17,17 @@ storage picker, and reactive volume state.
 | `watcher.rs` | `start_mtp_watcher()`: nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones |
 | `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill`; restores on disconnect/exit; `ensure_ptpcamerad_enabled()` on startup for crash recovery. Falls back to manual `PTPCAMERAD_WORKAROUND_COMMAND` dialog if suppression fails |
 | `connection/` | Per-device session layer: `MtpConnectionManager` singleton, connect / disconnect (with `MtpDisconnectReason` so logs and UI distinguish explicit toggle-off from hotplug-loss), event-loop task, list / read / write / mutate / bulk ops. See [`connection/CLAUDE.md`](connection/CLAUDE.md) for the file-by-file breakdown, lock semantics, caches, and gotchas. |
-| `virtual_device.rs` | Virtual MTP device for E2E testing; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Run with: `pnpm dev -- --features virtual-mtp` (pass `--worktree <slug>` first for an isolated data dir). |
+| `virtual_device.rs` | Virtual MTP device for E2E testing and dev sessions; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Dev opt-in: `CMDR_VIRTUAL_MTP=1 pnpm dev` (the wrapper adds the feature; `=<dir>` backs it with a custom dir). See [`docs/tooling/virtual-mtp.md`](../../../../../docs/tooling/virtual-mtp.md). |
+
+### Virtual MTP device (dev + E2E activation)
+
+The `virtual-mtp` feature compiles in `virtual_device.rs`; whether the device actually registers at startup is decided
+at runtime by `activate_from_env_if_requested()` (called from `lib.rs`). It registers when **either** `CMDR_E2E_MODE=1`
+(an E2E run) **or** `CMDR_VIRTUAL_MTP` is set (the dev opt-in), and never when `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP` is set
+(the override non-MTP E2E shards use to avoid racing the shared backing dir). So a `virtual-mtp`-compiled binary launched
+with none of those env vars stays inert and matches a plain build — the dev opt-in is purely additive to the E2E path.
+The fixture tree mirrors `test/e2e-shared/mtp-fixtures.ts`. The gating logic (`decide_startup_root`) is pure and
+unit-tested in `virtual_device.rs::tests`.
 
 ## Architecture / data flow
 

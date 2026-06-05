@@ -427,14 +427,14 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             volumes_linux::watcher::start_volume_watcher(app.handle());
 
-            // Register virtual MTP device for E2E testing (before watcher so it's in the initial snapshot).
-            // Under parallel E2E sharding the MTP backing dir is shared across Tauri instances, so
-            // non-MTP shards opt out via CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP to avoid the startup
-            // wipe-and-recreate race on the shared dir.
+            // Register the virtual MTP device (before the watcher so it's in the initial
+            // snapshot) when requested. Two activation paths, unified in
+            // `activate_from_env_if_requested`: an E2E run (CMDR_E2E_MODE=1) or a dev opt-in
+            // (CMDR_VIRTUAL_MTP=1, or =<dir> for a custom backing dir). Non-MTP E2E shards opt
+            // out via CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP to avoid racing the shared backing dir.
+            // See `mtp/virtual_device.rs::decide_startup_root` and `docs/tooling/virtual-mtp.md`.
             #[cfg(feature = "virtual-mtp")]
-            if std::env::var("CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP").is_err() {
-                mtp::virtual_device::setup_virtual_mtp_device();
-            }
+            mtp::virtual_device::activate_from_env_if_requested();
 
             // Ensure ptpcamerad is re-enabled in case a previous session crashed
             // while it was suppressed. No-op if it was already enabled.

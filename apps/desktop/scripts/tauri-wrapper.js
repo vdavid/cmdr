@@ -41,6 +41,31 @@ const isBuild = args.includes('build')
 // anything after `--` (Tauri / cargo args like `--features virtual-mtp`) intact.
 const { slug: rawWorktreeSlug, rest: forwardedArgs } = extractWorktreeFlag(args)
 
+// Dev-only virtual MTP opt-in. `CMDR_VIRTUAL_MTP=1 pnpm dev` (or `=<dir>` for a custom
+// backing dir) registers a fake Android device so MTP flows (drag&drop, transfers,
+// conflict dialogs) are testable without real hardware. The Rust side is feature-gated
+// (`#[cfg(feature = "virtual-mtp")]`), so we must compile the feature in AND let the
+// matching env var through. The var is already in `env` (inherited); here we just append
+// the cargo feature to the dev build. Adding a feature changes the feature set, so the
+// first `CMDR_VIRTUAL_MTP=1 pnpm dev` after a plain run triggers a full-ish rebuild.
+// Release `pnpm build` never reads this, so prod binaries stay feature-free.
+// See docs/tooling/virtual-mtp.md and src-tauri/src/mtp/virtual_device.rs.
+const wantsVirtualMtp = isDev && !!process.env.CMDR_VIRTUAL_MTP && process.env.CMDR_VIRTUAL_MTP.trim() !== ''
+if (wantsVirtualMtp && !forwardedArgs.includes('virtual-mtp')) {
+  // Cargo features live after the `--` separator that splits Tauri-CLI args from
+  // `cargo run` args. Reuse an existing `--features <list>` (append, comma-joined) so we
+  // don't clobber a user-passed feature set; otherwise add a fresh `-- --features` block.
+  const dashDash = forwardedArgs.indexOf('--')
+  const featuresIdx = dashDash >= 0 ? forwardedArgs.indexOf('--features', dashDash) : -1
+  if (featuresIdx >= 0 && featuresIdx + 1 < forwardedArgs.length) {
+    forwardedArgs[featuresIdx + 1] = `${forwardedArgs[featuresIdx + 1]},virtual-mtp`
+  } else if (dashDash >= 0) {
+    forwardedArgs.push('--features', 'virtual-mtp')
+  } else {
+    forwardedArgs.push('--', '--features', 'virtual-mtp')
+  }
+}
+
 const env = { ...process.env }
 /** @type {string | null} */
 let instanceTmpDir = null

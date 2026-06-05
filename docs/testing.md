@@ -228,17 +228,18 @@ E2E test hooks split along two axes:
 
 **Existing soft hooks** (env vars):
 
-| Variable                            | Purpose                                                                    |
-| ----------------------------------- | -------------------------------------------------------------------------- |
-| `CMDR_E2E_MODE=1`                   | Canonical "we're under E2E" marker; subsystems can flip behaviors.         |
-| `CMDR_E2E_START_PATH`               | Fixture directory; surfaced via `get_e2e_start_path` so FE can pick it up. |
-| `CMDR_E2E_SHARD_KIND`               | "mtp" / "non-mtp" / "all": selects spec subset for parallel sharding.      |
-| `CMDR_E2E_JSON_REPORT`              | Per-shard Playwright JSON report path.                                     |
-| `CMDR_E2E_OUTPUT_DIR`               | Per-shard Playwright artifact dir.                                         |
-| `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1` | Non-MTP shards opt out of wiping the shared MTP backing dir.               |
-| `CMDR_E2E_SKIP_MTP_FIXTURES=1`      | Non-MTP shards skip `globalSetup`'s MTP fixture reset.                     |
-| `CMDR_E2E_COPY_THROTTLE_MS`         | Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.     |
-| `CMDR_PLAYWRIGHT_SOCKET`            | Override the plugin's Unix socket path (one socket per shard).             |
+| Variable                            | Purpose                                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `CMDR_E2E_MODE=1`                   | Canonical "we're under E2E" marker; subsystems can flip behaviors.                                     |
+| `CMDR_E2E_START_PATH`               | Fixture directory; surfaced via `get_e2e_start_path` so FE can pick it up.                             |
+| `CMDR_E2E_SHARD_KIND`               | "mtp" / "non-mtp" / "all": selects spec subset for parallel sharding.                                  |
+| `CMDR_E2E_JSON_REPORT`              | Per-shard Playwright JSON report path.                                                                 |
+| `CMDR_E2E_OUTPUT_DIR`               | Per-shard Playwright artifact dir.                                                                     |
+| `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1` | Non-MTP shards opt out of wiping the shared MTP backing dir.                                           |
+| `CMDR_E2E_SKIP_MTP_FIXTURES=1`      | Non-MTP shards skip `globalSetup`'s MTP fixture reset.                                                 |
+| `CMDR_VIRTUAL_MTP=1` (or `=<dir>`)  | Dev opt-in: `pnpm dev` registers the virtual MTP device. See [virtual-mtp.md](tooling/virtual-mtp.md). |
+| `CMDR_E2E_COPY_THROTTLE_MS`         | Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.                                 |
+| `CMDR_PLAYWRIGHT_SOCKET`            | Override the plugin's Unix socket path (one socket per shard).                                         |
 
 **Existing soft hooks** (IPC-driven, feature-gated to `playwright-e2e`):
 

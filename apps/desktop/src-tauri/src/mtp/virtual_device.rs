@@ -1,17 +1,27 @@
-//! Virtual MTP device setup for E2E testing.
+//! Virtual MTP device setup for E2E testing and manual dev sessions.
 //!
 //! Registers a virtual MTP device backed by local filesystem directories so that
-//! Playwright E2E tests can exercise the full MTP UI flow without real hardware.
+//! Playwright E2E tests (and `CMDR_VIRTUAL_MTP=1 pnpm dev` dev sessions) can
+//! exercise the full MTP UI flow without real hardware.
 //!
-//! Gated behind `--features virtual-mtp`. Never enable in production builds.
+//! Gated behind `--features virtual-mtp`. Never compiled into production builds.
+//! See `mtp/CLAUDE.md` § "Virtual MTP device" and `docs/tooling/virtual-mtp.md`.
 
 use crate::ignore_poison::IgnorePoison;
 use log::info;
 use mtp_rs::{VirtualDeviceConfig, VirtualStorageConfig, WatcherGuard};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::Duration;
+
+/// Env var that opts a feature-compiled binary into registering the virtual MTP
+/// device at startup. `1` (or `true`) uses the default fixture root; any other
+/// non-empty value is treated as a custom backing-dir path. Unset means "don't
+/// register" (so a binary compiled with `virtual-mtp` but launched without the
+/// var behaves like a plain build). The wrapper (`tauri-wrapper.js`) also reads
+/// this var to append `--features virtual-mtp` to the dev build.
+pub const VIRTUAL_MTP_ENV: &str = "CMDR_VIRTUAL_MTP";
 
 /// Holds the watcher guard while the watcher is paused. Protected by a mutex
 /// so it can be accessed from Tauri commands (which run on arbitrary threads).
@@ -22,12 +32,74 @@ static WATCHER_GUARD: Mutex<Option<WatcherGuard>> = Mutex::new(None);
 /// `test/e2e-shared/mtp-fixtures.ts`.
 pub const MTP_FIXTURE_ROOT: &str = "/tmp/cmdr-mtp-e2e-fixtures";
 
-/// Registers a virtual MTP device with two storages and pre-populated test files.
+/// Decides whether a feature-compiled binary should register the virtual MTP
+/// device at startup, and which fixture root to back it with.
+///
+/// Returns `Some(root)` to register at `root`, or `None` to skip. The decision
+/// is pure (takes the relevant env values as args) so it's unit-testable:
+///
+/// - The skip override (`CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP`, any non-empty value)
+///   always wins → `None`. Parallel E2E shards set this on the non-MTP lanes so
+///   they don't race the MTP lane's wipe-and-recreate of the shared backing dir.
+/// - Otherwise we register when **either** we're under an E2E run (`e2e_mode`)
+///   **or** `CMDR_VIRTUAL_MTP` is set to a non-empty value (the dev opt-in).
+/// - The root is the default `MTP_FIXTURE_ROOT` unless `CMDR_VIRTUAL_MTP` names
+///   a custom path (anything other than the `1` / `true` "use the default"
+///   sentinels).
+fn decide_startup_root(skip_override: bool, e2e_mode: bool, virtual_mtp_var: Option<&str>) -> Option<PathBuf> {
+    if skip_override {
+        return None;
+    }
+    let var = virtual_mtp_var.map(str::trim).filter(|s| !s.is_empty());
+    if !e2e_mode && var.is_none() {
+        return None;
+    }
+    let root = match var {
+        Some(value) if !is_default_sentinel(value) => PathBuf::from(value),
+        _ => PathBuf::from(MTP_FIXTURE_ROOT),
+    };
+    Some(root)
+}
+
+/// Whether a `CMDR_VIRTUAL_MTP` value means "just use the default fixture root"
+/// (as opposed to naming a custom backing dir).
+fn is_default_sentinel(value: &str) -> bool {
+    matches!(value.to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
+}
+
+/// Reads the environment and, if a virtual MTP device is requested, registers it.
+///
+/// Called once at startup (before `start_mtp_watcher()` so the device lands in
+/// the initial snapshot). Returns the registered device's `location_id`, or
+/// `None` when no device was requested. See [`decide_startup_root`] for the
+/// gating logic and `docs/tooling/virtual-mtp.md` for the dev workflow.
+pub fn activate_from_env_if_requested() -> Option<u64> {
+    let skip_override = std::env::var("CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP")
+        .map(|v| !v.is_empty())
+        .unwrap_or(false);
+    let e2e_mode = crate::test_mode::is_e2e_mode();
+    let virtual_mtp_var = std::env::var(VIRTUAL_MTP_ENV).ok();
+    let root = decide_startup_root(skip_override, e2e_mode, virtual_mtp_var.as_deref())?;
+    Some(setup_virtual_mtp_device_at(&root))
+}
+
+/// Registers a virtual MTP device with two storages and pre-populated test files
+/// at the default fixture root ([`MTP_FIXTURE_ROOT`]).
+///
+/// Used by Rust integration tests that drive the device directly. The startup
+/// path goes through [`activate_from_env_if_requested`] instead (it derives the
+/// root from the environment).
+#[cfg(test)]
+pub fn setup_virtual_mtp_device() -> u64 {
+    setup_virtual_mtp_device_at(Path::new(MTP_FIXTURE_ROOT))
+}
+
+/// Registers a virtual MTP device backed by `root`, with two storages and
+/// pre-populated files so drag-and-drop / transfers are testable immediately.
 ///
 /// Must be called **before** `start_mtp_watcher()` so the device appears in the
 /// initial device snapshot.
-pub fn setup_virtual_mtp_device() -> u64 {
-    let root = Path::new(MTP_FIXTURE_ROOT);
+pub fn setup_virtual_mtp_device_at(root: &Path) -> u64 {
     let internal = root.join("internal");
     let readonly = root.join("readonly");
 
@@ -36,9 +108,11 @@ pub fn setup_virtual_mtp_device() -> u64 {
         fs::remove_dir_all(root).expect("failed to clean MTP fixture root");
     }
 
-    // Create directory structure
+    // Create directory structure. Mirrors `test/e2e-shared/mtp-fixtures.ts`'s
+    // `recreateMtpFixtures()` so the dev opt-in and the E2E recreate seed the
+    // same tree (DCIM/Burst included).
     fs::create_dir_all(internal.join("Documents")).expect("failed to create Documents dir");
-    fs::create_dir_all(internal.join("DCIM")).expect("failed to create DCIM dir");
+    fs::create_dir_all(internal.join("DCIM/Burst")).expect("failed to create DCIM/Burst dir");
     fs::create_dir_all(internal.join("Music")).expect("failed to create Music dir");
     fs::create_dir_all(readonly.join("photos")).expect("failed to create photos dir");
 
@@ -55,6 +129,11 @@ pub fn setup_virtual_mtp_device() -> u64 {
     .expect("failed to write notes.txt");
     fs::write(internal.join("DCIM/photo-001.jpg"), b"\xFF\xD8\xFF\xE0dummy-jpeg-bytes")
         .expect("failed to write photo-001.jpg");
+    fs::write(
+        internal.join("DCIM/Burst/burst-001.jpg"),
+        b"\xFF\xD8\xFF\xE0dummy-burst-bytes",
+    )
+    .expect("failed to write burst-001.jpg");
 
     // Populate read-only storage
     fs::write(
@@ -151,4 +230,70 @@ pub fn was_path_dropped(suffix: &str) -> bool {
 /// the buffer stays scoped to in-flight pauses across long test runs.
 pub fn clear_dropped_paths() {
     mtp_rs::clear_dropped_paths(VIRTUAL_DEVICE_SERIAL);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skip_override_always_wins() {
+        // Even under E2E mode or with the dev var set, the skip override (set by
+        // non-MTP E2E shards) forces "don't register" so they don't race the
+        // shared backing dir.
+        assert_eq!(decide_startup_root(true, true, Some("1")), None);
+        assert_eq!(decide_startup_root(true, false, None), None);
+        assert_eq!(decide_startup_root(true, true, None), None);
+    }
+
+    #[test]
+    fn plain_dev_does_not_register() {
+        // No E2E mode, no dev var → a feature-compiled binary stays inert.
+        assert_eq!(decide_startup_root(false, false, None), None);
+        assert_eq!(decide_startup_root(false, false, Some("")), None);
+        assert_eq!(decide_startup_root(false, false, Some("   ")), None);
+    }
+
+    #[test]
+    fn e2e_mode_registers_at_default_root() {
+        // The E2E path: feature compiled, E2E mode on, no dev var.
+        assert_eq!(
+            decide_startup_root(false, true, None),
+            Some(PathBuf::from(MTP_FIXTURE_ROOT))
+        );
+    }
+
+    #[test]
+    fn dev_var_sentinels_register_at_default_root() {
+        for sentinel in ["1", "true", "TRUE", "yes", "on"] {
+            assert_eq!(
+                decide_startup_root(false, false, Some(sentinel)),
+                Some(PathBuf::from(MTP_FIXTURE_ROOT)),
+                "sentinel {sentinel:?} should use the default root",
+            );
+        }
+    }
+
+    #[test]
+    fn dev_var_path_registers_at_custom_root() {
+        assert_eq!(
+            decide_startup_root(false, false, Some("/tmp/my-mtp-fixtures")),
+            Some(PathBuf::from("/tmp/my-mtp-fixtures")),
+        );
+        // Surrounding whitespace is trimmed.
+        assert_eq!(
+            decide_startup_root(false, false, Some("  /tmp/spaced  ")),
+            Some(PathBuf::from("/tmp/spaced")),
+        );
+    }
+
+    #[test]
+    fn is_default_sentinel_matrix() {
+        assert!(is_default_sentinel("1"));
+        assert!(is_default_sentinel("true"));
+        assert!(is_default_sentinel("Yes"));
+        assert!(!is_default_sentinel("/tmp/foo"));
+        assert!(!is_default_sentinel("0"));
+        assert!(!is_default_sentinel("off"));
+    }
 }

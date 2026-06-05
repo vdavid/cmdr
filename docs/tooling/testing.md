@@ -86,6 +86,9 @@ real hardware. Helpers in `apps/desktop/test/e2e-shared/mtp-fixtures.ts` and `mc
 `resync_virtual_mtp_after_disk_change` IPC command atomically pauses the watcher, recreates fixtures, drains pending
 FSEvents, rescans, and resumes. Use it from `beforeEach`, not the four-step manual sequence (race-prone).
 
+The same device is available in a normal dev session via `CMDR_VIRTUAL_MTP=1 pnpm dev` — see
+[virtual-mtp.md](virtual-mtp.md) for the dev workflow.
+
 ### Docker SMB containers
 
 14 Samba containers for SMB integration tests. Start with `apps/desktop/test/smb-servers/start.sh`. macOS skips SMB E2E
