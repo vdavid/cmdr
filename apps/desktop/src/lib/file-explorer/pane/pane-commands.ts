@@ -1,5 +1,7 @@
 import { findFileIndex } from '$lib/tauri-commands'
+import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
 import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
+import type { SelectionAction } from '../../../routes/(main)/explorer-api'
 import type { FilePaneAPI } from './types'
 import type { FileEntry, FriendlyError, WriteOperationError } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
@@ -18,7 +20,7 @@ type DialogState = ReturnType<typeof createDialogState>
  * callbacks, which is the explorer-store phase's job, not this factoring.
  */
 export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
-  function confirmDialog(dialogType: string, onConflict?: string) {
+  function confirmDialog(dialogType: ConfirmDialogType, onConflict?: string) {
     dialogs.confirmOpenDialog(dialogType, onConflict)
   }
 
@@ -163,12 +165,12 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
   }
 
   /**
-   * Handle selection action from MCP.
-   * @param action - The selection action (clear, selectAll, deselectAll, toggleAtCursor, toggleAtCursorAndMoveDown, selectRange)
+   * Handle selection action from the keyboard/palette dispatch and MCP.
+   * @param action - The selection action (closed `SelectionAction` union)
    * @param startIndex - Start index for range selection
    * @param endIndex - End index for range selection
    */
-  function handleSelectionAction(action: string, startIndex?: number, endIndex?: number) {
+  function handleSelectionAction(action: SelectionAction, startIndex?: number, endIndex?: number) {
     const paneRef = access.getPaneRef(access.getFocusedPane())
     if (!paneRef) return
 
@@ -326,7 +328,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
    * @param count - Number of items to select, or 'all' for select all
    * @param mode - 'replace', 'add', or 'subtract'
    */
-  function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: string) {
+  function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) {
     const paneRef = access.getPaneRef(pane)
     if (!paneRef) return
 

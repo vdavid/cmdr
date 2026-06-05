@@ -276,15 +276,18 @@ export async function handleCommandExecute<K extends CommandId>(
       return
 
     case 'view.setMode': {
-      // Per-pane view change from a native-menu click (`view-mode-changed`). The
-      // `id === 'view.setMode'` narrowing doesn't reach `dispatchArgs` (it's a
-      // separate local), so read the typed payload with a single cast — the
-      // generic signature already type-checked it at the call site. Deliberately
-      // routes to `setViewModeFromMenu`, NOT `setViewMode`: the menu click already
-      // toggled its own CheckMenuItem, so the handler must skip `pushViewMenuState`
-      // to avoid double-syncing against Rust's `sync_view_mode_check_states`.
-      const { pane, mode } = dispatchArgs as CommandArgs['view.setMode']
-      explorerRef?.setViewModeFromMenu(pane, mode)
+      // Per-pane view change. The `id === 'view.setMode'` narrowing doesn't reach
+      // `dispatchArgs` (it's a separate local), so read the typed payload with a
+      // single cast — the generic signature already type-checked it at the call
+      // site. `fromMenu` picks the primitive: a native-menu click
+      // (`view-mode-changed`, `fromMenu: true`) routes to `setViewModeFromMenu`,
+      // which skips `pushViewMenuState` because the click already toggled its own
+      // CheckMenuItem (Rust ran `sync_view_mode_check_states`); the MCP
+      // `set_view_mode` tool (`fromMenu: false`) routes to `setViewMode`, which
+      // pushes the menu state since nothing toggled it.
+      const { pane, mode, fromMenu } = dispatchArgs as CommandArgs['view.setMode']
+      if (fromMenu) explorerRef?.setViewModeFromMenu(pane, mode)
+      else explorerRef?.setViewMode(mode, pane)
       return
     }
 
@@ -346,6 +349,11 @@ export async function handleCommandExecute<K extends CommandId>(
       explorerRef?.copyPathBetweenPanes('right', 'left')
       return
 
+    case 'pane.refresh':
+      // MCP `refresh` tool: re-list the focused pane.
+      explorerRef?.refreshPane()
+      return
+
     // === Tab commands ===
     case 'tab.new': {
       const success = explorerRef?.newTab()
@@ -390,6 +398,15 @@ export async function handleCommandExecute<K extends CommandId>(
       explorerRef?.closeOtherTabs()
       return
 
+    case 'tab.mcpAction': {
+      // MCP `tab` tool: a per-pane tab action targeting a SPECIFIC pane and tab
+      // (the focused-pane `tab.new`/`tab.close`/etc. can't). Routes to the
+      // component's `handleMcpTabAction`, which owns the tab-mutation primitives.
+      const { pane, action, tabId, pinned } = dispatchArgs as CommandArgs['tab.mcpAction']
+      explorerRef?.handleMcpTabAction(pane, action, tabId, pinned)
+      return
+    }
+
     // === Navigation commands ===
     case 'nav.open':
       explorerRef?.sendKeyToFocusedPane('Enter')
@@ -423,6 +440,28 @@ export async function handleCommandExecute<K extends CommandId>(
       explorerRef?.sendKeyToFocusedPane('PageDown')
       return
 
+    case 'nav.openUnderCursor':
+      // MCP `open_under_cursor` round-trip: AWAIT so the adapter's
+      // `emit('mcp-response', { ok: true })` fires only after the open completes
+      // (directory listed, or OS open-with-default dispatched). An exception
+      // propagates to the adapter's try/catch, which replies `ok: false`.
+      await explorerRef?.openItemUnderCursor()
+      return
+
+    case 'cursor.moveTo': {
+      // MCP `move_cursor` round-trip: AWAIT for the same ack-timing reason. L1/L2
+      // (focus re-anchor + `whenLoadSettles`) live inside `moveCursor` — untouched.
+      const { pane, to } = dispatchArgs as CommandArgs['cursor.moveTo']
+      await explorerRef?.moveCursor(pane, to)
+      return
+    }
+
+    case 'cursor.scrollTo': {
+      const { pane, index } = dispatchArgs as CommandArgs['cursor.scrollTo']
+      explorerRef?.scrollTo(pane, index)
+      return
+    }
+
     // === Downloads commands ===
     case 'downloads.goToLatest':
       await goToLatestDownload(explorerRef)
@@ -432,6 +471,16 @@ export async function handleCommandExecute<K extends CommandId>(
     case 'network.refresh':
       explorerRef?.refreshNetworkHosts()
       return
+
+    // === Volume commands ===
+    case 'volume.selectByName': {
+      // MCP `select_volume` tool: select a SPECIFIC pane's volume by name.
+      // Navigation-adjacent — still calls `selectVolumeByName` (Phase 3 owns
+      // volume mechanics).
+      const { pane, name } = dispatchArgs as CommandArgs['volume.selectByName']
+      void explorerRef?.selectVolumeByName(pane, name)
+      return
+    }
 
     // === Sort commands ===
     case 'sort.byName':
@@ -466,6 +515,15 @@ export async function handleCommandExecute<K extends CommandId>(
       explorerRef?.setSortOrder('toggle')
       return
 
+    case 'sort.set': {
+      // Per-pane sort from the MCP `sort` tool: an explicit column + order on a
+      // SPECIFIC pane (the `sort.by*` / `sort.ascending` commands act on the
+      // focused pane only).
+      const { pane, column, order } = dispatchArgs as CommandArgs['sort.set']
+      void explorerRef?.setSort(column, order, pane)
+      return
+    }
+
     // === File action commands ===
     case 'file.view':
       void explorerRef?.openViewerForCursor()
@@ -483,13 +541,21 @@ export async function handleCommandExecute<K extends CommandId>(
       return
     }
 
-    case 'file.copy':
-      void explorerRef?.openCopyDialog()
+    case 'file.copy': {
+      // Arg-less from the F-bar / palette / keyboard (open the dialog with no
+      // preset); the MCP `copy` tool may pass `{ autoConfirm, onConflict }` to
+      // pre-answer the conflict policy. `dispatchArgs` is `undefined` in the
+      // arg-less case, so the openers default both.
+      const copyArgs = dispatchArgs as CommandArgs['file.copy'] | undefined
+      void explorerRef?.openCopyDialog(copyArgs?.autoConfirm, copyArgs?.onConflict)
       return
+    }
 
-    case 'file.move':
-      void explorerRef?.openMoveDialog()
+    case 'file.move': {
+      const moveArgs = dispatchArgs as CommandArgs['file.move'] | undefined
+      void explorerRef?.openMoveDialog(moveArgs?.autoConfirm, moveArgs?.onConflict)
       return
+    }
 
     case 'file.newFolder':
       void explorerRef?.openNewFolderDialog()
@@ -499,13 +565,23 @@ export async function handleCommandExecute<K extends CommandId>(
       void explorerRef?.openNewFileDialog()
       return
 
-    case 'file.delete':
-      void explorerRef?.openDeleteDialog(false)
+    case 'file.delete': {
+      const deleteArgs = dispatchArgs as CommandArgs['file.delete'] | undefined
+      void explorerRef?.openDeleteDialog(false, deleteArgs?.autoConfirm)
       return
+    }
 
     case 'file.deletePermanently':
       void explorerRef?.openDeleteDialog(true)
       return
+
+    case 'dialog.confirm': {
+      // MCP `dialog confirm` tool: programmatically confirm an already-open
+      // transfer/delete dialog.
+      const { type, onConflict } = dispatchArgs as CommandArgs['dialog.confirm']
+      explorerRef?.confirmDialog(type, onConflict)
+      return
+    }
 
     case 'file.showInFinder': {
       const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
@@ -628,6 +704,14 @@ export async function handleCommandExecute<K extends CommandId>(
     case 'selection.deselectAll':
       explorerRef?.handleSelectionAction('deselectAll')
       return
+
+    case 'selection.mcpSelect': {
+      // MCP `select` tool: range/all selection on a SPECIFIC pane with a typed
+      // mode (`replace`/`add`/`subtract`).
+      const { pane, start, count, mode } = dispatchArgs as CommandArgs['selection.mcpSelect']
+      explorerRef?.handleMcpSelect(pane, start, count, mode)
+      return
+    }
 
     case 'selection.selectFiles':
       ctx.dialogs.showSelectionDialog('add')

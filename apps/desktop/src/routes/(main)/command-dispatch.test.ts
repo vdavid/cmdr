@@ -46,24 +46,29 @@ describe('handleCommandExecute — view.setMode (arg-carrying dispatch)', () => 
     vi.clearAllMocks()
   })
 
-  it('routes { pane, mode } to setViewModeFromMenu, not setViewMode', async () => {
+  it('fromMenu: true routes to setViewModeFromMenu, not setViewMode', async () => {
     const setViewModeFromMenu = vi.fn()
     const setViewMode = vi.fn()
     const ctx = makeCtx({ setViewModeFromMenu, setViewMode })
 
-    await handleCommandExecute('view.setMode', ctx, { pane: 'right', mode: 'brief' })
+    await handleCommandExecute('view.setMode', ctx, { pane: 'right', mode: 'brief', fromMenu: true })
 
     expect(setViewModeFromMenu).toHaveBeenCalledExactlyOnceWith('right', 'brief')
-    // Deliberately NOT the focused-pane setter (which would push menu state).
+    // The menu already toggled its CheckMenuItem, so the focused-pane setter
+    // (which would push menu state) must NOT run.
     expect(setViewMode).not.toHaveBeenCalled()
   })
 
-  it('passes the left pane and full mode through unchanged', async () => {
+  it('fromMenu: false routes to setViewMode (the MCP path that pushes menu state)', async () => {
     const setViewModeFromMenu = vi.fn()
-    const ctx = makeCtx({ setViewModeFromMenu })
+    const setViewMode = vi.fn()
+    const ctx = makeCtx({ setViewModeFromMenu, setViewMode })
 
-    await handleCommandExecute('view.setMode', ctx, { pane: 'left', mode: 'full' })
+    await handleCommandExecute('view.setMode', ctx, { pane: 'left', mode: 'full', fromMenu: false })
 
-    expect(setViewModeFromMenu).toHaveBeenCalledExactlyOnceWith('left', 'full')
+    // `setViewMode(mode, pane)` — note arg order — pushes the menu state since
+    // nothing toggled it (the MCP `set_view_mode` tool's byte-identical path).
+    expect(setViewMode).toHaveBeenCalledExactlyOnceWith('full', 'left')
+    expect(setViewModeFromMenu).not.toHaveBeenCalled()
   })
 })

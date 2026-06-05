@@ -71,17 +71,27 @@ describe('CommandId is a closed union (compile-time)', () => {
   })
 
   it('arg-carrying ids resolve to a single-payload dispatch tuple', () => {
-    // `view.setMode` overrides its `CommandArgs` entry with `{ pane, mode }`, so
-    // its dispatch tuple is `[args]` (one required payload), not `[]`.
-    const withArgs: CommandDispatchArgs<'view.setMode'> = [{ pane: 'left', mode: 'full' }]
-    const argValue: CommandArgs['view.setMode'] = { pane: 'right', mode: 'brief' }
+    // `view.setMode` overrides its `CommandArgs` entry with `{ pane, mode, fromMenu }`,
+    // so its dispatch tuple is `[args]` (one required payload), not `[]`.
+    const withArgs: CommandDispatchArgs<'view.setMode'> = [{ pane: 'left', mode: 'full', fromMenu: true }]
+    const argValue: CommandArgs['view.setMode'] = { pane: 'right', mode: 'brief', fromMenu: false }
 
     // @ts-expect-error -- an arg-carrying id can't be dispatched with no payload.
     const missing: CommandDispatchArgs<'view.setMode'> = []
     void missing
 
-    expect(withArgs[0]).toEqual({ pane: 'left', mode: 'full' })
+    expect(withArgs[0]).toEqual({ pane: 'left', mode: 'full', fromMenu: true })
     expect(argValue.pane).toBe('right')
+  })
+
+  it('optional-payload ids accept both an arg-less and an arg-carrying dispatch', () => {
+    // `file.copy` is dispatched arg-less from the F-bar / palette and with a
+    // payload from the MCP `copy` tool, so its tuple is `[args?]`.
+    const noArgs: CommandDispatchArgs<'file.copy'> = []
+    const withArgs: CommandDispatchArgs<'file.copy'> = [{ autoConfirm: true, onConflict: 'overwrite_all' }]
+
+    expect(noArgs).toEqual([])
+    expect(withArgs[0]?.autoConfirm).toBe(true)
   })
 })
 

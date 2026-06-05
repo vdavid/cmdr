@@ -184,6 +184,10 @@ export const commands: Command[] = [
   { id: 'sort.ascending', name: 'Sort ascending', scope: 'Main window', showInPalette: true, shortcuts: [] },
   { id: 'sort.descending', name: 'Sort descending', scope: 'Main window', showInPalette: true, shortcuts: [] },
   { id: 'sort.toggleOrder', name: 'Toggle sort order', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  // Per-pane sort carrying `{ pane, column, order }`, dispatched by the MCP `sort`
+  // tool. Hidden from the palette: the `sort.by*` commands are the user-facing
+  // entries; this one targets a specific pane with an explicit order.
+  { id: 'sort.set', name: 'Set pane sort', scope: 'Main window', showInPalette: false, shortcuts: [] },
 
   // ============================================================================
   // Main window - Pane commands
@@ -588,6 +592,39 @@ export const commands: Command[] = [
     showInPalette: false,
     shortcuts: ['Escape'],
   },
+
+  // ============================================================================
+  // MCP-only per-pane commands
+  // ============================================================================
+  // Carry per-pane / per-option payloads the focused-pane registry commands can't
+  // express. Dispatched by the MCP server's tools through the command bus; all are
+  // `showInPalette: false` (no user-facing palette entry) with no shortcut.
+  {
+    id: 'volume.selectByName',
+    name: 'Select pane volume by name',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
+  {
+    id: 'selection.mcpSelect',
+    name: 'Select range in pane',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
+  { id: 'cursor.moveTo', name: 'Move pane cursor', scope: 'Main window', showInPalette: false, shortcuts: [] },
+  { id: 'cursor.scrollTo', name: 'Scroll pane to index', scope: 'Main window', showInPalette: false, shortcuts: [] },
+  { id: 'pane.refresh', name: 'Refresh pane', scope: 'Main window', showInPalette: false, shortcuts: [] },
+  {
+    id: 'nav.openUnderCursor',
+    name: 'Open item under cursor',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
+  { id: 'tab.mcpAction', name: 'Pane tab action', scope: 'Main window', showInPalette: false, shortcuts: [] },
+  { id: 'dialog.confirm', name: 'Confirm open dialog', scope: 'Main window', showInPalette: false, shortcuts: [] },
 
   // ============================================================================
   // About window

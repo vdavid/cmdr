@@ -73,6 +73,8 @@ export const COMMAND_IDS = [
   'sort.ascending',
   'sort.descending',
   'sort.toggleOrder',
+  // Per-pane sort with explicit column + order, carried by the MCP `sort` tool.
+  'sort.set',
 
   // Pane commands
   'pane.switch',
@@ -81,6 +83,8 @@ export const COMMAND_IDS = [
   'pane.rightVolumeChooser',
   'pane.copyPathLeftToRight',
   'pane.copyPathRightToLeft',
+  // Re-list the focused pane, carried by the MCP `refresh` tool.
+  'pane.refresh',
 
   // Tab commands
   'tab.new',
@@ -90,6 +94,9 @@ export const COMMAND_IDS = [
   'tab.prev',
   'tab.togglePin',
   'tab.closeOthers',
+  // Per-pane tab action carried by the MCP `tab` tool (the focused-pane
+  // `tab.new`/`tab.close`/etc. can't target the inactive pane or a specific tab).
+  'tab.mcpAction',
 
   // File-list navigation commands
   'nav.up',
@@ -102,6 +109,13 @@ export const COMMAND_IDS = [
   'nav.pageDown',
   'nav.back',
   'nav.forward',
+  // Opens the entry under the focused pane's cursor, awaiting completion so the
+  // MCP `open_under_cursor` round-trip can ack on real completion.
+  'nav.openUnderCursor',
+
+  // Cursor positioning (MCP). `cursor.moveTo` round-trips via the adapter.
+  'cursor.moveTo',
+  'cursor.scrollTo',
 
   // Brief mode specific
   'nav.left',
@@ -127,6 +141,9 @@ export const COMMAND_IDS = [
   'file.newFile',
   'file.delete',
   'file.deletePermanently',
+  // Programmatically confirm an already-open transfer/delete dialog, carried by
+  // the MCP `dialog confirm` tool.
+  'dialog.confirm',
   'file.showInFinder',
   'file.copyPath',
   'file.copyCurrentDirectoryPath',
@@ -144,6 +161,8 @@ export const COMMAND_IDS = [
   'selection.deselectAll',
   'selection.selectFiles',
   'selection.deselectFiles',
+  // Range/all selection carried by the MCP `select` tool (start + count + mode).
+  'selection.mcpSelect',
 
   // Network browser
   'network.selectHost',
@@ -156,6 +175,10 @@ export const COMMAND_IDS = [
   // Volume chooser
   'volume.select',
   'volume.close',
+  // Select a specific pane's volume by name, carried by the MCP `select_volume`
+  // tool. Navigation-adjacent: still calls `selectVolumeByName` (Phase 3 owns
+  // volume mechanics).
+  'volume.selectByName',
 
   // About window
   'about.openWebsite',

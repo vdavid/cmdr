@@ -4,8 +4,21 @@
  */
 
 import type { ViewMode } from '$lib/app-status-store'
+import type { McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
 import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import type { FileEntry, FriendlyError } from '$lib/file-explorer/types'
+
+/**
+ * Closed action set for `handleSelectionAction` (the selection sub-dispatcher).
+ * `clear` and `deselectAll` both clear; `selectRange` uses the index args.
+ */
+export type SelectionAction =
+  | 'clear'
+  | 'deselectAll'
+  | 'selectAll'
+  | 'toggleAtCursor'
+  | 'toggleAtCursorAndMoveDown'
+  | 'selectRange'
 
 export interface ExplorerAPI {
   refocus: () => void
@@ -48,8 +61,13 @@ export interface ExplorerAPI {
   ) => Promise<void>
   getFocusedPane: () => 'left' | 'right'
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
-  handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
-  handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: string) => void
+  handleSelectionAction: (action: SelectionAction, startIndex?: number, endIndex?: number) => void
+  handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => void
+  /**
+   * Per-pane tab action from the MCP `tab` tool. Targets a SPECIFIC pane (and
+   * optionally a specific tab), unlike the focused-pane `newTab`/`cycleTab`/etc.
+   */
+  handleMcpTabAction: (pane: 'left' | 'right', action: McpTabAction, tabId?: string, pinned?: boolean) => void
   startRename: () => void
   openCopyDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
   openMoveDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
@@ -60,7 +78,7 @@ export interface ExplorerAPI {
   openNewFileDialog: () => Promise<void>
   openDeleteDialog: (permanent: boolean, autoConfirm?: boolean) => Promise<void>
   closeConfirmationDialog: () => void
-  confirmDialog: (dialogType: string, onConflict?: string) => void
+  confirmDialog: (dialogType: ConfirmDialogType, onConflict?: string) => void
   isConfirmationDialogOpen: () => boolean
   isRenaming: () => boolean
   openViewerForCursor: () => Promise<void>

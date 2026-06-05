@@ -9,7 +9,8 @@
     import { openInEditor, quickLookSetPath } from '$lib/tauri-commands'
     import { closeFromPaneError, quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { saveAppStatus, saveLastUsedPathForVolume, type ViewMode } from '$lib/app-status-store'
-    import type { CommandId } from '$lib/commands'
+    import type { CommandId, McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
+    import type { SelectionAction } from '../../../routes/(main)/explorer-api'
     import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import {
         pathExists,
@@ -180,7 +181,6 @@
     let unlistenVolumeContextAction: UnlistenFn | undefined
     let unlistenIndexEvents: UnlistenFn | undefined
     let unlistenIndexAggregationComplete: UnlistenFn | undefined
-    let unlistenMcpTab: UnlistenFn | undefined
 
     // Debounced tab sync to MCP backend (~100ms trailing)
     let tabSyncTimer: ReturnType<typeof setTimeout> | null = null
@@ -992,18 +992,6 @@
             getPaneRef('right')?.refreshIndexSizes()
         })
 
-        // Listen for MCP tab events (new, close, close_others, activate, set_pinned)
-        unlistenMcpTab = await listen<{
-            action: string
-            pane: string
-            tabId?: string
-            pinned?: boolean
-        }>('mcp-tab', (event) => {
-            const { action, pane: paneStr, tabId, pinned } = event.payload
-            if (paneStr !== 'left' && paneStr !== 'right') return
-            handleMcpTabAction(paneStr, action, tabId, pinned)
-        })
-
         // Register the native drag-and-drop listeners (drag-image-size, drag-modifiers,
         // onDragDropEvent). The controller owns the band; the folder-highlight effect
         // was already created synchronously in the factory body.
@@ -1087,7 +1075,6 @@
         unlistenVolumeContextAction?.()
         unlistenIndexEvents?.()
         unlistenIndexAggregationComplete?.()
-        unlistenMcpTab?.()
         if (tabSyncTimer) clearTimeout(tabSyncTimer)
         if (quickLookFollowTimer !== null) clearTimeout(quickLookFollowTimer)
         // No cleanup needed for throttle (no pending timers)
@@ -1270,7 +1257,7 @@
     })
 
     /** Programmatically confirms an already-open dialog (for MCP). */
-    export function confirmDialog(dialogType: string, onConflict?: string) {
+    export function confirmDialog(dialogType: ConfirmDialogType, onConflict?: string) {
         paneCommands.confirmDialog(dialogType, onConflict)
     }
 
@@ -1543,7 +1530,7 @@
         return true
     }
 
-    export function handleSelectionAction(action: string, startIndex?: number, endIndex?: number) {
+    export function handleSelectionAction(action: SelectionAction, startIndex?: number, endIndex?: number) {
         paneCommands.handleSelectionAction(action, startIndex, endIndex)
     }
 
@@ -1786,7 +1773,7 @@
         paneCommands.refreshNetworkHosts()
     }
 
-    export function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: string) {
+    export function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) {
         paneCommands.handleMcpSelect(pane, start, count, mode)
     }
 
@@ -1846,14 +1833,19 @@
         syncReopenMenuState()
     }
 
-    function handleMcpTabAction(
+    /**
+     * Per-pane tab action from the MCP `tab` tool, routed here through the command
+     * bus (`tab.mcpAction`). Owns the tab-mutation primitives; the dispatch layer
+     * just forwards the typed args.
+     */
+    export function handleMcpTabAction(
         pane: 'left' | 'right',
-        action: string,
-        tabId: string | undefined,
-        pinned: boolean | undefined,
+        action: McpTabAction,
+        tabId?: string,
+        pinned?: boolean,
     ) {
         const mgr = getTabMgr(pane)
-        const mcpTabHandlers: Partial<Record<string, () => void>> = {
+        const mcpTabHandlers: Record<McpTabAction, () => void> = {
             new: () => {
                 if (!tabOpsNewTab(pane, getTabMgr, (h) => $state.snapshot(h))) {
                     log.warn(`MCP tab new: tab limit reached in ${pane} pane`)
@@ -1896,7 +1888,7 @@
                 if (pane === focusedPane && pinId === mgr.activeTabId) syncPinTabMenu()
             },
         }
-        mcpTabHandlers[action]?.()
+        mcpTabHandlers[action]()
     }
 
     function syncPinTabMenu() {

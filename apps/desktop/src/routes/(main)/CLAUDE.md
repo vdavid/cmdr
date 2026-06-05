@@ -12,7 +12,7 @@ onboarding, licensing), and routes commands + MCP events into the explorer via a
 | `+page.svelte`        | App shell: mounts `DualPaneExplorer`, owns top-level dialog visibility ($state) and the `explorerRef` handle, wires keydown / context-menu / menu-event listeners, runs onboarding gating                                                    |
 | `command-dispatch.ts` | `handleCommandExecute(commandId, ctx)`: the single switch that turns command ids (palette, keyboard, menu, MCP) into `ExplorerAPI` calls or dialog toggles. Load-bearing: referenced from `$lib/commands/command-registry.ts` and many tests |
 | `explorer-api.ts`     | `ExplorerAPI` interface — the contract `DualPaneExplorer` exposes upward. Shared by `+page.svelte`, `command-dispatch.ts`, `mcp-listeners.ts` so none of them import the component directly                                                  |
-| `mcp-listeners.ts`    | `setupMcpListeners(ctx)`: pure plumbing that subscribes to `mcp-*` Tauri events and forwards them to `ExplorerAPI`. No business logic; the round-trip callers reply via `mcp-response`                                                       |
+| `mcp-listeners.ts`    | `setupMcpListeners(ctx)`: thin transport adapter — validate-parses each `mcp-*` Tauri payload into typed `CommandArgs` and `dispatch`es it through the bus. No business logic; the round-trip callers reply via `mcp-response`               |
 
 ## Conventions
 
@@ -45,9 +45,37 @@ shortcut-driven path that bypasses the UI.
 bundles) and one `record_breadcrumb` invoke (rolling manifest buffer). Both are best-effort; a failing breadcrumb must
 not break the dispatch.
 
-**MCP listener round-trips.** Listeners that need to reply (`mcp-nav-to-path`, `mcp-open-under-cursor`,
-`mcp-move-cursor`) take a `requestId` in the payload and emit `mcp-response` with `{ requestId, ok, error? }`. Plumbing
-only — actual outcomes come from `ExplorerAPI`.
+**`mcp-listeners.ts` is a transport adapter onto the command bus.** Every `mcp-*` event (except the two below)
+validate-parses its raw payload into the command's typed `CommandArgs` — each discriminant string is whitelist-checked
+by a small pure parser (`parsePane`, `parseSortColumn`, `parseTabAction`, …; unit-tested in `mcp-listeners.test.ts`), a
+malformed value collapses to `undefined` and the listener skips the dispatch — then calls `ctx.dispatch(id, args)`. No
+`as {...}` payload casts survive. The dispatch ids are typed `CommandId` consts (not literals) so
+`cmdr/no-raw-command-dispatch` (A3) stays satisfied and a registry rename breaks compilation here. `ctx.dispatch` is
+`+page.svelte`'s `handleCommandExecute` (bound with its context), so MCP events get the same preamble (per-command
+`log.info` + `record_breadcrumb` + the search-results guard) as the keyboard / palette / menu paths — a deliberate,
+uniform telemetry gain.
+
+The per-pane MCP commands (`sort.set`, `selection.mcpSelect`, `cursor.moveTo`, `cursor.scrollTo`, `volume.selectByName`,
+`tab.mcpAction`, `pane.refresh`, `dialog.confirm`, `nav.openUnderCursor`, and the optional-arg
+`file.copy`/`file.move`/`file.delete`) exist because the focused-pane registry commands can't target a specific pane /
+tab / option. They're all `showInPalette: false`. `view.setMode` is shared with the native-menu `view-mode-changed`
+path; its `fromMenu` flag picks `setViewModeFromMenu` (menu, skip `pushViewMenuState`) vs `setViewMode` (MCP, push it).
+
+**Two exceptions stay adapter-local (off the bus this phase).**
+
+- **`mcp-nav-to-path`** bypasses the bus entirely. `navigateToPath` returns a sync `string` refusal sentinel that
+  fire-and-forget `dispatch` can't surface, so the adapter keeps calling `explorerRef.navigateToPath` directly and
+  forwards the sentinel byte-identically (L12). It joins the bus in a later phase with a typed `NavigateResult`.
+- **`mcp-response` round-trips** (`mcp-open-under-cursor`, `mcp-move-cursor`): the bus dispatches the `void`-returning
+  intent; the adapter owns the `requestId` correlation and the `emit('mcp-response', { requestId, ok, error? })` reply.
+  It **awaits** the dispatch's promise so the ack fires only after the action settles (the backend has an ack timeout) —
+  the dispatch case `await`s the underlying `openItemUnderCursor` / `moveCursor`, and an exception propagates to the
+  adapter's `try/catch`, which replies `ok: false`. HMR can land these with no explorer; they reply `ok: false` rather
+  than crashing.
+
+A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`, still on the OLD `navigate` mechanism);
+every other key stays a `sendKeyToFocusedPane` passthrough — a keystroke is transport, not a command, so it never rides
+the bus (invariant P2).
 
 ## Gotchas
 

@@ -249,8 +249,9 @@
                 raw.pane === 'left' || raw.pane === 'right' ? raw.pane : (explorerRef?.getFocusedPane() ?? 'left')
             // `viewSetModeCommand` is a typed const (not an inline literal) so a
             // registry rename breaks compilation and `cmdr/no-raw-command-dispatch`
-            // stays satisfied (A3).
-            void handleCommandExecute(viewSetModeCommand, { pane, mode })
+            // stays satisfied (A3). `fromMenu: true` → the handler skips
+            // `pushViewMenuState` (the menu already toggled its CheckMenuItem).
+            void handleCommandExecute(viewSetModeCommand, { pane, mode, fromMenu: true })
         })
 
         // Native sort-menu clicks. Rust emits this directly (not via
@@ -654,10 +655,12 @@
         await setupDialogListeners()
         await setupMcpListeners({
             getExplorer: () => explorerRef,
+            // The MCP adapter dispatches through the same typed command bus as the
+            // keyboard / palette / menu paths. `handleCommandExecute` already binds
+            // the shared dispatch context, so MCP events get the uniform preamble
+            // (log + breadcrumb + search-results guard).
+            dispatch: handleCommandExecute,
             listenTauri,
-            openSearchDialog: () => {
-                showSearchDialog = true
-            },
             isAiEnabled: () => getSetting('ai.provider') !== 'off',
         })
         await initIndexState()

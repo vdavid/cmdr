@@ -29,49 +29,95 @@ export type CommandScope =
  */
 export type NoCommandArgs = undefined
 
+/** Which pane a per-pane command targets. */
+export type PaneId = 'left' | 'right'
+
+/** Sortable column (mirrors `ExplorerAPI.setSort`). */
+export type SortColumn = 'name' | 'extension' | 'size' | 'modified' | 'created'
+
+/** Selection mode for the MCP `select` tool. */
+export type McpSelectMode = 'replace' | 'add' | 'subtract'
+
+/** Tab action for the MCP `tab` tool. */
+export type McpTabAction = 'new' | 'close' | 'close_others' | 'activate' | 'reopen' | 'set_pinned'
+
+/** Dialog kind the MCP `dialog confirm` tool can confirm. */
+export type ConfirmDialogType = 'transfer-confirmation' | 'delete-confirmation'
+
 /**
- * Override slot for the few commands that carry a typed dispatch payload. Each
- * key is the arg-carrying command's id; its value is the payload shape. Later MCP
- * milestones add `sort.set`, `cursor.moveTo`, etc. here without touching the
- * arg-less defaults. PR1 forbids dead arg types, so only commands something
- * actually dispatches with args appear.
+ * Override slot for commands whose dispatch payload is REQUIRED. Each key is the
+ * command's id; its value is the payload shape. PR1 forbids dead arg types, so
+ * only commands something actually dispatches with args appear.
  *
- * `view.setMode` is the first: it sets a SPECIFIC pane's view mode (unlike the
- * focused-pane `view.briefMode` / `view.fullMode`), so it needs `{ pane, mode }`.
- * The native-menu `view-mode-changed` event routes here.
+ * `view.setMode` sets a SPECIFIC pane's view mode (unlike the focused-pane
+ * `view.briefMode` / `view.fullMode`). `fromMenu` discriminates the two callers
+ * that share it: the native-menu `view-mode-changed` event (`fromMenu: true` →
+ * skip `pushViewMenuState`, the menu already toggled its CheckMenuItem) and the
+ * MCP `set_view_mode` tool (`fromMenu: false` → push the menu state, since
+ * nothing toggled it).
+ *
+ * The rest carry the per-pane MCP payloads the focused-pane registry commands
+ * can't express.
  */
 export interface CommandArgsOverrides {
-  'view.setMode': { pane: 'left' | 'right'; mode: ViewMode }
+  'view.setMode': { pane: PaneId; mode: ViewMode; fromMenu: boolean }
+  'sort.set': { pane: PaneId; column: SortColumn; order: 'asc' | 'desc' }
+  'selection.mcpSelect': { pane: PaneId; start: number; count: number | 'all'; mode: McpSelectMode }
+  'cursor.moveTo': { pane: PaneId; to: number | string }
+  'cursor.scrollTo': { pane: PaneId; index: number }
+  'volume.selectByName': { pane: PaneId; name: string }
+  'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean }
+  'dialog.confirm': { type: ConfirmDialogType; onConflict?: string }
 }
 
 /**
- * Per-command argument map. Commands listed in `CommandArgsOverrides` resolve to
- * their typed payload; every other id resolves to `NoCommandArgs`, so
- * `dispatch('file.rename')` needs no second argument. A conditional mapped type
- * (not an intersection) keeps the arg-less default `undefined` rather than
- * collapsing overridden keys to `never`.
+ * Override slot for commands whose dispatch payload is OPTIONAL. These are
+ * dispatched arg-less from the F-key bar / palette / keyboard (open the dialog
+ * with no preset) AND with a payload from the MCP `copy`/`move`/`delete` tools
+ * (the AI can pre-answer the conflict policy / auto-confirm). `CommandDispatchArgs`
+ * resolves these to a `[args?]` tuple so both call shapes type-check.
+ */
+export interface CommandArgsOptionalOverrides {
+  'file.copy': { autoConfirm?: boolean; onConflict?: string }
+  'file.move': { autoConfirm?: boolean; onConflict?: string }
+  'file.delete': { autoConfirm?: boolean }
+}
+
+/**
+ * Per-command argument map. Commands in `CommandArgsOverrides` /
+ * `CommandArgsOptionalOverrides` resolve to their typed payload; every other id
+ * resolves to `NoCommandArgs`, so `dispatch('file.rename')` needs no second
+ * argument. A conditional mapped type (not an intersection) keeps the arg-less
+ * default `undefined` rather than collapsing overridden keys to `never`.
  */
 export type CommandArgs = {
-  [K in CommandId]: K extends keyof CommandArgsOverrides ? CommandArgsOverrides[K] : NoCommandArgs
+  [K in CommandId]: K extends keyof CommandArgsOverrides
+    ? CommandArgsOverrides[K]
+    : K extends keyof CommandArgsOptionalOverrides
+      ? CommandArgsOptionalOverrides[K]
+      : NoCommandArgs
 }
 
 /**
  * Tuple form of a command's dispatch arguments: `[]` for arg-less commands,
- * `[args]` for arg-carrying ones. Lets a single `dispatch<K>(id, ...args)`
- * signature stay terse for the common case while type-checking the rest.
+ * `[args]` for required-payload ones, `[args?]` for optional-payload ones. Lets a
+ * single `dispatch<K>(id, ...args)` signature stay terse for the common case
+ * while type-checking the rest.
  *
  * Distributes over `K` (naked type param in the conditional) so a call site
- * holding a broad `CommandId` resolves to `[] | [args]` — i.e. an arg-less
- * dispatch (`handleCommandExecute(commandId)`) stays valid while an arg-carrying
- * literal id (`handleCommandExecute('view.setMode', payload)`) still requires its
- * payload. Without the distribution, `CommandArgs[CommandId]` is a union that
- * doesn't extend `NoCommandArgs`, which would wrongly force a payload on every
- * broad-id call site.
+ * holding a broad `CommandId` resolves to `[] | [args] | [args?]` — i.e. an
+ * arg-less dispatch (`handleCommandExecute(commandId)`) stays valid while an
+ * arg-carrying literal id (`handleCommandExecute('view.setMode', payload)`) still
+ * requires its payload. Without the distribution, `CommandArgs[CommandId]` is a
+ * union that doesn't extend `NoCommandArgs`, which would wrongly force a payload
+ * on every broad-id call site.
  */
 export type CommandDispatchArgs<K extends CommandId> = K extends CommandId
-  ? CommandArgs[K] extends NoCommandArgs
-    ? []
-    : [args: CommandArgs[K]]
+  ? K extends keyof CommandArgsOptionalOverrides
+    ? [args?: CommandArgs[K]]
+    : CommandArgs[K] extends NoCommandArgs
+      ? []
+      : [args: CommandArgs[K]]
   : never
 
 /** A command definition */

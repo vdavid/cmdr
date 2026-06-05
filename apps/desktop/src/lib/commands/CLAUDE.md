@@ -37,22 +37,45 @@ interface CommandMatch {
 
 // Dispatch arg foundation. Most commands are arg-less (→ `NoCommandArgs`, an
 // `undefined` marker), so `dispatch('file.rename')` needs no second arg.
-// Arg-carrying commands declare their payload in `CommandArgsOverrides`;
-// `view.setMode` ({ pane, mode }) is the first. `CommandDispatchArgs`
-// distributes over `K` so a broad `CommandId` resolves to `[] | [args]` (an
-// arg-less call stays terse) while a literal arg-carrying id requires its payload.
+// REQUIRED-payload commands declare their shape in `CommandArgsOverrides`
+// (mostly the per-pane MCP commands). OPTIONAL-payload commands declare it in
+// `CommandArgsOptionalOverrides` — these dispatch arg-less from one path and with
+// a payload from another (`file.copy`/`move`/`delete`: arg-less from the F-bar /
+// palette, payload-carrying from the MCP tools). `CommandDispatchArgs` distributes
+// over `K` so a broad `CommandId` resolves to `[] | [args] | [args?]`.
 interface CommandArgsOverrides {
-  'view.setMode': { pane: 'left' | 'right'; mode: ViewMode }
+  'view.setMode': { pane: PaneId; mode: ViewMode; fromMenu: boolean } // fromMenu: skip vs push menu state
+  'sort.set': { pane: PaneId; column: SortColumn; order: 'asc' | 'desc' }
+  'selection.mcpSelect': { pane: PaneId; start: number; count: number | 'all'; mode: McpSelectMode }
+  'cursor.moveTo': { pane: PaneId; to: number | string }
+  'cursor.scrollTo': { pane: PaneId; index: number }
+  'volume.selectByName': { pane: PaneId; name: string }
+  'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean }
+  'dialog.confirm': { type: ConfirmDialogType; onConflict?: string }
+}
+interface CommandArgsOptionalOverrides {
+  'file.copy': { autoConfirm?: boolean; onConflict?: string }
+  'file.move': { autoConfirm?: boolean; onConflict?: string }
+  'file.delete': { autoConfirm?: boolean }
 }
 type CommandArgs = {
-  [K in CommandId]: K extends keyof CommandArgsOverrides ? CommandArgsOverrides[K] : NoCommandArgs
+  [K in CommandId]: K extends keyof CommandArgsOverrides
+    ? CommandArgsOverrides[K]
+    : K extends keyof CommandArgsOptionalOverrides
+      ? CommandArgsOptionalOverrides[K]
+      : NoCommandArgs
 }
 type CommandDispatchArgs<K extends CommandId> = K extends CommandId
-  ? CommandArgs[K] extends NoCommandArgs
-    ? []
-    : [args: CommandArgs[K]]
+  ? K extends keyof CommandArgsOptionalOverrides
+    ? [args?: CommandArgs[K]]
+    : CommandArgs[K] extends NoCommandArgs
+      ? []
+      : [args: CommandArgs[K]]
   : never
 ```
+
+The per-pane MCP commands route through `mcp-listeners.ts` (a transport adapter — see `routes/(main)/CLAUDE.md`); the
+adapter validate-parses each raw payload into these arg shapes before dispatching. They're all `showInPalette: false`.
 
 ### Typed ids and the dispatch boundary
 
@@ -135,8 +158,11 @@ added an IPC + Tauri-event + Svelte-effect hop between the keystroke and the DOM
    since `Command.id` is `CommandId`.)
 2. Add an entry to the `commands` array in `command-registry.ts`. (Skipping this fails the set-equality test in
    `command-registry.test.ts`.)
-3. If the command carries a dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`. Arg-less
-   commands skip this (they default to `NoCommandArgs`). The `case` then reads the payload from `dispatchArgs`.
+3. If the command carries a REQUIRED dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`; if the
+   payload is OPTIONAL (dispatched both arg-less and with a payload, like the MCP `file.copy`/`move`/`delete` tools),
+   use `CommandArgsOptionalOverrides` so `CommandDispatchArgs` resolves to `[args?]`. Arg-less commands skip both (they
+   default to `NoCommandArgs`). The `case` then reads the payload from `dispatchArgs`. MCP-only commands are dispatched
+   from the `mcp-listeners.ts` adapter after a validate-parse, and are `showInPalette: false`.
 4. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/command-dispatch.ts`.
 5. No changes needed to the palette, fuzzy search, or keyboard dispatch. Commands with `showInPalette: true` are
    automatically dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`).

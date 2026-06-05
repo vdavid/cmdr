@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { PaneAccess } from './pane-access'
 import type { FilePaneAPI } from './types'
 import type { FileEntry } from '../types'
+import type { SelectionAction } from '../../../routes/(main)/explorer-api'
 
 const { findFileIndexSpy } = vi.hoisted(() => ({
   findFileIndexSpy: vi.fn<() => Promise<number | null>>(),
@@ -168,7 +169,9 @@ describe('handleSelectionAction routing', () => {
   it('no-ops on an unknown action and when no pane is focused', () => {
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.handleSelectionAction('bogus')
+    // The action param is the closed `SelectionAction` union now; a bogus value
+    // can only arrive via a cast. Pin that the switch has no errant default.
+    cmds.handleSelectionAction('bogus' as SelectionAction)
     expect(ref.clearSelection).not.toHaveBeenCalled()
 
     // No pane focused: nothing throws.
@@ -384,8 +387,8 @@ describe('moveCursorByNameInFileListing parent offset', () => {
 describe('delegating commands', () => {
   it('confirmDialog forwards dialogType + onConflict to the dialog state', () => {
     const cmds = create(buildAccess())
-    cmds.confirmDialog('transfer', 'overwrite')
-    expect(dialogsStub.confirmOpenDialog).toHaveBeenCalledWith('transfer', 'overwrite')
+    cmds.confirmDialog('transfer-confirmation', 'overwrite')
+    expect(dialogsStub.confirmOpenDialog).toHaveBeenCalledWith('transfer-confirmation', 'overwrite')
   })
 
   it('triggerTransferError builds a synthetic error carrying the friendly title', () => {
