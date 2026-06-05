@@ -1,5 +1,12 @@
 # Explorer architecture plan
 
+**Status: shipped (2026-06-05).** All phases (0–4) landed on `main`; the four per-phase plans in this folder are the
+execution records. Phase 5 (backend-authoritative pane state) is deliberately deferred – revisit when a feature needs
+two writers of pane state (multi-window, agent-driven panes) or transactional MCP writes. The Phase-2 plan's optional M6
+(flat handler record) shipped separately via [command-handler-record-plan.md](command-handler-record-plan.md). This is a
+historical document; the current architecture is described in `docs/architecture.md` and the colocated `CLAUDE.md`
+files.
+
 The master spec for refactoring the dual-pane explorer frontend from component-trapped state + imperative instance APIs
 to a module store + typed command dispatch + transactional navigation + capability-driven virtual volumes.
 
