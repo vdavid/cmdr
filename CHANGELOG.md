@@ -12,18 +12,18 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - Folders always merge on copy and move. A folder landing on a same-named folder now blends into it instead of asking
   you to overwrite, skip, or rename the whole folder. Your conflict choice (skip, overwrite, or rename) applies to the
   clashing files inside, so dest-only files always survive the merge
-  ([ed07c54d](https://github.com/vdavid/cmdr/commit/ed07c54d),
-  [b74543a1](https://github.com/vdavid/cmdr/commit/b74543a1))
+  ([89cd978c](https://github.com/vdavid/cmdr/commit/89cd978c),
+  [6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))
 - Same-volume moves are instant. Moving a folder within one drive, NAS share, or phone is a rename, so Cmdr skips the
   pre-move scan that used to make a big NAS folder sit on "Verifying before move…" for 30–40 seconds
-  ([6e8c0414](https://github.com/vdavid/cmdr/commit/6e8c0414),
-  [0617eb22](https://github.com/vdavid/cmdr/commit/0617eb22))
+  ([a9743ecc](https://github.com/vdavid/cmdr/commit/a9743ecc),
+  [114e5d2d](https://github.com/vdavid/cmdr/commit/114e5d2d))
 
 ### Fixed
 
 - Resolve conflicts file by file inside a folder merge on network and phone drives (SMB, MTP, and cross-volume). A newer
   file deep in the tree no longer loses to an older one behind a single folder-level OK; each clashing file follows your
-  conflict choice ([b74543a1](https://github.com/vdavid/cmdr/commit/b74543a1))
+  conflict choice ([6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))
 
 ## [0.23.0] - 2026-06-01
 
