@@ -256,6 +256,18 @@ In `shortcuts.json`:
 
 These are semantically different.
 
+An empty string is never a real shortcut. `initializeShortcuts` heals leaked `''` entries on load (an earlier settings
+add flow could persist them; see `lib/settings/sections/CLAUDE.md` § "The add slot is UI-only"). The healing matrix,
+applied per command key:
+
+- `[]` (length 0) → kept as-is: a genuine "removed all" state.
+- `['']` / `['', '']` (non-empty, all `''`) → dropped entirely (entry not loaded), so the registry default applies. We
+  must NOT collapse this to `[]` — that would wrongly suppress a default-bound command's defaults.
+- `['⌘X', '']` → loaded as `['⌘X']` (the `''` filtered out).
+- non-array garbage → skipped (unchanged).
+
+Covered by the "heals leaked empty-string entries" tests in `shortcuts-store.test.ts`.
+
 ### Default shortcuts are immutable
 
 `command-registry.ts` is compiled into the app. Changing defaults requires a new build. This is intentional: defaults

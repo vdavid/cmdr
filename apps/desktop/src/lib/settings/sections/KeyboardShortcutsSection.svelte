@@ -52,11 +52,13 @@
     let confirmTimeout = $state<ReturnType<typeof setTimeout> | null>(null)
     let conflictWarning = $state<{ shortcut: string; conflictingCommand: Command } | null>(null)
 
-    // Track if we're in "add shortcut" mode (new shortcut with empty value)
+    // "Adding" is pure UI state: the add slot is the editing target one past the
+    // end of the command's real shortcuts. Nothing is written to the store until a
+    // key is captured and confirmed, so abandoning an add (Escape, clicking away,
+    // clicking + elsewhere) leaks nothing. See CLAUDE.md § "The add slot is UI-only".
     const isAddingNewShortcut = $derived.by(() => {
         if (!editingShortcut) return false
-        const shortcuts = getEffectiveShortcuts(editingShortcut.commandId)
-        return editingShortcut.index === shortcuts.length - 1 && shortcuts[editingShortcut.index] === ''
+        return editingShortcut.index === getEffectiveShortcuts(editingShortcut.commandId).length
     })
 
     // Reactivity trigger for shortcut changes
@@ -204,20 +206,23 @@
         // Capture values before calling any functions that might change state
         const currentCommandId = editingShortcut.commandId
         const currentIndex = editingShortcut.index
+        const addingNew = isAddingNewShortcut
 
-        // Check for duplicates on the same action
+        // Already bound to this same action? Nothing to do (no store touch on the
+        // add slot means there's nothing to clean up either) - just exit.
         const currentShortcuts = getEffectiveShortcuts(currentCommandId)
         const isDuplicate = currentShortcuts.some((s, i) => s === pendingKey && i !== currentIndex)
         if (isDuplicate) {
-            // Shortcut already exists on this action - just cancel
-            if (isAddingNewShortcut) {
-                removeShortcut(currentCommandId, currentIndex)
-            }
             cancelEdit()
             return
         }
 
-        setShortcut(currentCommandId, currentIndex, pendingKey)
+        if (addingNew) {
+            // First time the store hears about this binding: append it.
+            addShortcut(currentCommandId, pendingKey)
+        } else {
+            setShortcut(currentCommandId, currentIndex, pendingKey)
+        }
         cancelEdit()
     }
 
@@ -258,20 +263,20 @@
         if (event.key === 'Escape') {
             event.preventDefault()
             event.stopImmediatePropagation()
-            // If we're adding a new shortcut and canceling, remove the empty entry
-            if (isAddingNewShortcut) {
-                removeShortcut(editingShortcut.commandId, editingShortcut.index)
-            }
+            // The add slot is UI-only, so canceling an add just drops edit state.
             cancelEdit()
             return
         }
 
-        // Handle Backspace/Delete to remove shortcut
+        // Backspace/Delete on an empty capture removes the shortcut being edited.
+        // On the add slot there's no real entry to remove, so it just cancels.
         if (event.key === 'Backspace' || event.key === 'Delete') {
             if (!pendingKey) {
                 event.preventDefault()
                 event.stopPropagation()
-                removeShortcut(editingShortcut.commandId, editingShortcut.index)
+                if (!isAddingNewShortcut) {
+                    removeShortcut(editingShortcut.commandId, editingShortcut.index)
+                }
                 cancelEdit()
                 return
             }
@@ -281,10 +286,12 @@
     }
 
     function handleAddShortcut(commandId: string) {
-        addShortcut(commandId, '')
-        const shortcuts = getEffectiveShortcuts(commandId)
-        editingShortcut = { commandId, index: shortcuts.length - 1 }
+        // Don't materialize a store entry - the add slot is one past the end and
+        // stays UI-only until a key is confirmed. Starting a fresh add also
+        // dismisses any pending conflict decision from a previous edit.
+        editingShortcut = { commandId, index: getEffectiveShortcuts(commandId).length }
         pendingKey = ''
+        conflictWarning = null
     }
 
     function handleRemoveShortcutAtIndex(commandId: string, index: number) {
@@ -497,6 +504,10 @@
                     {@const shortcuts = getEffectiveShortcuts(command.id)}
                     {@const isModified = isShortcutModified(command.id)}
                     {@const hasConflicts = conflictingIds.has(command.id)}
+                    {@const isAddingHere =
+                        editingShortcut !== null &&
+                        editingShortcut.commandId === command.id &&
+                        editingShortcut.index === shortcuts.length}
                     <div
                         id={shortcutAnchorId(command.id)}
                         class="command-row"
@@ -522,6 +533,7 @@
                                     <button
                                         class="shortcut-pill"
                                         class:editing={isEditing}
+                                        class:pending-conflict={isEditing && conflictWarning !== null}
                                         class:empty={!shortcut && !isEditing}
                                         onclick={() => {
                                             editingShortcut = { commandId: command.id, index: i }
@@ -554,8 +566,23 @@
                                         {/if}
                                     </button>
                                 {/each}
-                            {:else}
+                            {:else if !isAddingHere}
                                 <span class="no-shortcut">(none)</span>
+                            {/if}
+                            {#if isAddingHere}
+                                <!-- Synthetic add-slot pill: UI-only until a key is captured and
+                                     confirmed. Until then nothing reaches the store, so abandoning
+                                     the add leaks no junk entry. -->
+                                <button
+                                    class="shortcut-pill editing"
+                                    class:pending-conflict={conflictWarning !== null}
+                                    onclick={() => {
+                                        pendingKey = ''
+                                        conflictWarning = null
+                                    }}
+                                >
+                                    {pendingKey || 'Press keys...'}
+                                </button>
                             {/if}
                             <button
                                 class="add-shortcut"
@@ -845,6 +872,17 @@
     .shortcut-pill.editing:hover {
         background: var(--color-accent-hover);
         border-color: var(--color-accent-hover);
+    }
+
+    /* A pending-decision pill: the user pressed a conflicting combo and the warning
+       banner is up awaiting their choice. Tint it like the warning (also on hover,
+       overriding the accent hover above) so it reads as "this combo is in question",
+       not as a saved binding. */
+    .shortcut-pill.editing.pending-conflict,
+    .shortcut-pill.editing.pending-conflict:hover {
+        background: var(--color-warning-bg);
+        color: var(--color-text-primary);
+        border-color: var(--color-warning);
     }
 
     .shortcut-pill.empty {

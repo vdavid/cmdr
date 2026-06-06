@@ -367,3 +367,62 @@ describe('shortcuts-store cross-window propagation (RC1)', () => {
     expect(changedEmits()).toHaveLength(1) // still just the original, no re-emit
   })
 })
+
+describe('shortcuts-store loading heals leaked empty-string entries (RC5)', () => {
+  // The old "+ add" flow materialized a real `''` entry in the store the instant
+  // the user clicked +, and several exit paths (click away, click +/pill on
+  // another row) leaked it to disk. The add flow no longer writes `''`, but some
+  // users (and the dev instance) already have leaked garbage persisted. Loading
+  // heals it per this matrix, distinguishing real "removed all" `[]` from
+  // empty-string junk. See CLAUDE.md § "Empty array vs missing key".
+
+  it('keeps a genuine removed-all [] (not treated as junk)', async () => {
+    // `app.hide` defaults to ['⌘H']. A stored [] means the user removed it.
+    disk.set('shortcut:app.hide', [])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual([])
+    expect(store.isShortcutModified('app.hide')).toBe(true)
+  })
+
+  it("drops a [''] junk entry entirely, falling back to the default", async () => {
+    disk.set('shortcut:app.hide', [''])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    // Healed away: no custom entry, so the registry default shows (platform-converted).
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
+    expect(store.isShortcutModified('app.hide')).toBe(false)
+  })
+
+  it("drops a ['', ''] (multi-leak) junk entry entirely", async () => {
+    disk.set('shortcut:app.hide', ['', ''])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
+    expect(store.isShortcutModified('app.hide')).toBe(false)
+  })
+
+  it("drops [''] junk on a default-[] command (no resurrection, no spurious modified)", async () => {
+    // `app.showAll` defaults to []. A leaked [''] must not register as modified.
+    disk.set('shortcut:app.showAll', [''])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    expect(store.getEffectiveShortcuts('app.showAll')).toEqual([])
+    expect(store.isShortcutModified('app.showAll')).toBe(false)
+  })
+
+  it("filters trailing '' from a mixed entry, keeping the real shortcut", async () => {
+    disk.set('shortcut:app.hide', ['⌘X', ''])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(['⌘X'])
+    expect(store.isShortcutModified('app.hide')).toBe(true)
+  })
+
+  it('leaves a normal custom entry untouched', async () => {
+    disk.set('shortcut:app.hide', ['⌘X', '⌘Y'])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(['⌘X', '⌘Y'])
+  })
+})

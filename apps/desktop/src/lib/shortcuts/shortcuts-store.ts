@@ -163,12 +163,24 @@ export async function initializeShortcuts(): Promise<void> {
   for (const key of shortcutKeys) {
     const commandId = key.replace('shortcut:', '')
     const shortcuts = await store.get<string[]>(key)
-    // An empty array is a real, persisted state ("user removed all shortcuts,
-    // don't fall back to defaults") and must load, so we accept any array and
-    // only skip non-array garbage. See CLAUDE.md § "Empty array vs missing key".
-    if (Array.isArray(shortcuts)) {
-      customShortcuts.set(commandId, shortcuts)
+    if (!Array.isArray(shortcuts)) continue // skip non-array garbage
+
+    // Heal leaked empty-string entries. A `''` is never a real shortcut; it's
+    // junk an older "+ add" flow could persist when the user clicked away from a
+    // half-started add. Drop every `''`, but keep the distinction that matters:
+    //   - a genuine `[]` (length 0) is "user removed all shortcuts" — load it.
+    //   - a non-empty array that's ALL `''` heals to empty, which we must NOT
+    //     store as `[]` (that would wrongly suppress a default-bound command's
+    //     defaults); skip the entry entirely so the registry default applies.
+    //   - `['⌘X', '']` heals to `['⌘X']`.
+    // See CLAUDE.md § "Empty array vs missing key".
+    if (shortcuts.length === 0) {
+      customShortcuts.set(commandId, []) // real removed-all state
+      continue
     }
+    const healed = shortcuts.filter((s) => s !== '')
+    if (healed.length === 0) continue // was all-'' junk; fall back to default
+    customShortcuts.set(commandId, healed)
   }
 
   if (customShortcuts.size > 0) {

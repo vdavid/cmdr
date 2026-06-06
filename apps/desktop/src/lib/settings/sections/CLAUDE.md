@@ -37,9 +37,11 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 | `keyboard-shortcuts-grouping.ts`   | Pure scope→group logic for `KeyboardShortcutsSection` (one titled group per `CommandScope`, fixed order). Tested by the set-equality regression guard                                                                                                                                                                                                                                                                                       |
 
 Each section ships with an `*.a11y.test.ts` (axe-core tier-3). `McpServerSection`, `UpdatesSection`, `SearchSection`,
-and `FileSystemWatchingSection` also have functional `*.test.ts` / `*.svelte.test.ts` files; the three pure-helper `.ts`
-files have unit tests next to them. `FileSystemWatchingSection.svelte.test.ts` combines tier-3 axe with the functional
-render contract since both share the same heavy IPC mock setup.
+`FileSystemWatchingSection`, and `KeyboardShortcutsSection` also have functional `*.test.ts` / `*.svelte.test.ts` files;
+the pure-helper `.ts` files have unit tests next to them. `FileSystemWatchingSection.svelte.test.ts` combines tier-3 axe
+with the functional render contract since both share the same heavy IPC mock setup.
+`KeyboardShortcutsSection.svelte.test.ts` runs the real `$lib/shortcuts` store against an in-memory disk (mocks only the
+Tauri boundaries, like `shortcuts-store.test.ts`) and drives the add/edit/conflict flows through the DOM.
 
 ## Conventions
 
@@ -116,6 +118,31 @@ guard; it also fails if a new `CommandScope` is added without a `scopeOrder` ent
 
 Deep links to compound-scope rows now land + flash like any other (`shortcut-file.quickLook` from the Quick Look toast,
 F-key chips from the F-bar).
+
+## The add slot is UI-only (never write a provisional `''`)
+
+`KeyboardShortcutsSection`'s "+ add" flow is pure UI state, NOT a store mutation. Clicking `+` only sets
+`editingShortcut = { commandId, index: getEffectiveShortcuts(id).length }` — one past the end — and the template renders
+a synthetic editing pill at that slot. Nothing reaches `shortcuts-store` until a key is captured and confirmed
+(`saveShortcut` calls `addShortcut(id, combo)` for the add slot, `setShortcut(id, index, combo)` for an existing pill).
+
+Why it MUST stay UI-only: every store mutator saves to disk AND broadcasts cross-window (see `lib/shortcuts/CLAUDE.md`).
+An earlier shape called `addShortcut(id, '')` the instant `+` was clicked, so any exit that wasn't Escape/Backspace
+(clicking another pill, clicking `+` on another row, clicking away) leaked a real `['']` entry to disk and to other
+windows — the user saw framed `(none)` pills accumulate (one per leak). With the add slot UI-only, every cancel/exit
+path just resets `editingShortcut`; there's nothing in the store to clean up. `isAddingNewShortcut` derives from
+`index === getEffectiveShortcuts(id).length` (no `''` sentinel). The duplicate-on-same-action path simply cancels.
+
+If you ever need to persist a placeholder mid-edit, don't — the store has no concept of an empty shortcut, and
+`initializeShortcuts` actively heals leaked `''` entries on load (the matrix lives in `lib/shortcuts/CLAUDE.md`).
+
+## Conflict banner: the editing pill reads as a pending decision
+
+When a captured combo conflicts, `handleKeyCapture` sets `conflictWarning` and returns without saving (the banner offers
+Remove-from-other / Keep-both / Cancel). The editing pill keeps showing the proposed combo — honest, it IS the proposed
+combo — but gains `class:pending-conflict` (warning-tinted) so it doesn't read as a saved binding sitting next to the
+banner. Pressing more keys re-evaluates; choosing Cancel (or Escape) exits via `cancelEdit`; and clicking a different
+pill or `+` on another row dismisses the banner (those handlers reset `conflictWarning`).
 
 ## Deep-link arrival into a shortcut row
 
