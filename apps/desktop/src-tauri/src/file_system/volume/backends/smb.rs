@@ -2231,8 +2231,17 @@ mod smb_integration_test;
 #[path = "smb_soak_test.rs"]
 mod smb_soak_test;
 #[cfg(test)]
+#[path = "smb_streaming_integration_test.rs"]
+mod smb_streaming_integration_test;
+#[cfg(test)]
+#[path = "smb_stress_test.rs"]
+mod smb_stress_test;
+#[cfg(test)]
 #[path = "smb_test.rs"]
 mod smb_test;
 #[cfg(test)]
 #[path = "smb_test_support.rs"]
 mod smb_test_support;
+#[cfg(test)]
+#[path = "smb_transfer_semantics_test.rs"]
+mod smb_transfer_semantics_test;

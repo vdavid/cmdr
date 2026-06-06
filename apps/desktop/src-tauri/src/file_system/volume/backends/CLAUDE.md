@@ -125,11 +125,16 @@ spawned detached task. This is safe because the stream always lives in an async 
 - `smb_test.rs`: SMB unit tests (no server needed): type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo,
   Error→VolumeError), connection state transitions, path conversion, capability flags, and the channel-backed
   `SmbReadStream` consumer. These run by default.
-- The SMB test suites live in sibling files (`smb_test.rs`, `smb_integration_test.rs`, `smb_soak_test.rs`) wired as
-  `#[cfg(test)] #[path = "..."] mod`s of `smb` (so `super::*` still reaches the backend's private items). Cross-suite
-  helpers (`make_docker_volume`, `test_dir_name`, `ensure_clean`, `hash_bytes`, `hash_volume_file`, `TEST_PREFIX_ROOT`,
+- The SMB test suites live in sibling files wired as `#[cfg(test)] #[path = "..."] mod`s of `smb` (so `super::*`
+  still reaches the backend's private items), split by theme: `smb_test.rs` (unit, above), `smb_integration_test.rs`
+  (connection management, core CRUD, basic streaming smoke, scan/conflict preview), `smb_streaming_integration_test.rs`
+  (the full read/write streaming surface: progress, cancel, large multi-chunk files, plus the error/cleanup paths with
+  the `ErroringReadStream` double), `smb_transfer_semantics_test.rs` (high-level merge/move contracts driven through
+  the transfer pipelines), `smb_stress_test.rs` (concurrency: the no-deadlock guard with its `MutexCaptureLogger`
+  machinery, and the 100-file content-integrity test), and `smb_soak_test.rs` (below). Cross-suite helpers
+  (`make_docker_volume`, `test_dir_name`, `ensure_clean`, `hash_bytes`, `hash_volume_file`, `TEST_PREFIX_ROOT`,
   `cleanup_test_prefix`) live in `smb_test_support.rs` as `pub(super)` items.
-- **Docker SMB integration tests** (`smb_integration_test.rs`): `#[ignore]` tests that require Docker SMB containers
+- **Docker SMB integration tests** (the four themed `smb_*_test.rs` Docker suites above): `#[ignore]` tests that require Docker SMB containers
   (start with `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`.
   Connect via `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`),
   `readonly_port()` (10488), `slow_port()` (10493, 200ms latency). Use these for testing real SMB protocol behavior
