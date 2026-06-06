@@ -206,12 +206,16 @@ objc2 = { version = "0.6", features = ["std", "exception"] }
 objc2-foundation = { version = "0.3", features = [
     "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",
     "NSData", "NSFileManager", "NSNotification", "NSBundle", "NSDistributedNotificationCenter", "NSUserDefaults",
+    "NSOperation",
 ] }
 objc2-app-kit = { version = "0.3", features = [
     "NSDragging", "NSDraggingItem", "NSImage", "NSColor", "NSColorSpace",
     "NSApplication", "NSMenu", "NSMenuItem", "NSPasteboard", "NSRunningApplication",
     "NSWorkspace", "NSPanel", "NSOpenPanel", "NSSavePanel", "NSWindow", "NSResponder",
     "NSEvent",
+    # File promises (drag out from MTP/SMB panes): NSFilePromiseProvider +
+    # its delegate's writePromiseToURL:completionHandler: (block2 completion).
+    "NSFilePromiseProvider", "block2",
 ] }
 # Native macOS Quick Look panel (QLPreviewPanel + protocols). Published 2025-10-04, well
 # outside the 14-day cool-off; tracks the same objc2 0.6 family as the other bindings above.
