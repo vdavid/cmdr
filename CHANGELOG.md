@@ -16,6 +16,13 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Connecting to a password-protected NAS no longer dead-ends. When a share needs a sign-in, or a saved password stops
+  working, Cmdr now shows its own login form right where you are instead of letting macOS pop an error dialog and then
+  failing with a cryptic "error code -6600". Your entered password mounts the share and lands in the Keychain when you
+  ask it to ([eebb0877](https://github.com/vdavid/cmdr/commit/eebb0877))
+- Picking a share that's already mounted now takes you straight there. Cmdr recognizes the server even when it shows up
+  under a different name (Bonjour name vs IP address), instead of mounting a doomed second copy
+  ([eebb0877](https://github.com/vdavid/cmdr/commit/eebb0877))
 - Dragging a file from a phone or network pane out to Finder, the Desktop, or a terminal no longer drops a junk
   `.textClipping` file or pastes a meaningless path. Finder and the Desktop now download the real file (see Added);
   terminals and apps that can't take the download get a clean no-op instead of garbage
