@@ -378,11 +378,17 @@ pub(super) fn unregister_operation_status(operation_id: &str) {
 /// Registers under `WriteOperationType::Copy` because a drag-out download IS a
 /// copy from the device to local disk — the type only affects diagnostics
 /// (`list_active_operations`), and the busy set itself is type-agnostic.
+///
+/// macOS-only: the sole caller is `native_drag::fulfillment`, which is
+/// `#[cfg(target_os = "macos")]`. On other targets this would be dead code under
+/// `#![deny(unused)]`.
+#[cfg(target_os = "macos")]
 pub(crate) fn register_external_volume_op(op_id: &str, volume_ids: Vec<String>) {
     register_operation_status(op_id, WriteOperationType::Copy, volume_ids);
 }
 
 /// Clears the busy mark registered by [`register_external_volume_op`].
+#[cfg(target_os = "macos")]
 pub(crate) fn release_external_volume_op(op_id: &str) {
     unregister_operation_status(op_id);
 }

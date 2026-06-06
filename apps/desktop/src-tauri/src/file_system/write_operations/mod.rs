@@ -67,7 +67,10 @@ pub use state::{
 };
 // External busy-volume seam for the drag-out fulfillment service (see
 // `state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate
-// callers (`native_drag::fulfillment`) reach it.
+// callers (`native_drag::fulfillment`) reach it. macOS-only: the sole consumer
+// (`native_drag`) is `#[cfg(target_os = "macos")]`, so on other targets these
+// would be dead code under `#![deny(unused)]`.
+#[cfg(target_os = "macos")]
 pub(crate) use state::{register_external_volume_op, release_external_volume_op};
 #[allow(unused_imports, reason = "Public API re-exports for consumers of this module")]
 pub use types::{
