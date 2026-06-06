@@ -397,6 +397,12 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             file_system::volume::smb::set_app_handle(app.handle().clone());
 
+            // Stash the AppHandle so the drag-out file-promise machinery can
+            // dispatch session cleanup (freeing the retained promise delegates)
+            // back to the AppKit main thread once a fulfillment drains.
+            #[cfg(target_os = "macos")]
+            native_drag::set_app_handle(app.handle().clone());
+
             // Network discovery (mDNS) startup is deferred. See the post-`load_settings`
             // block below. Starting mDNS here would trigger macOS's "Cmdr wants to find devices
             // on local networks" prompt at app launch even on first install before the user has

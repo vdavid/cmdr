@@ -51,7 +51,7 @@ pub fn start_drag_paths(
         return Err("No valid files to drag".to_string());
     }
     let locality = locality_for_volume(source_volume_id.as_deref());
-    run_drag_on_main_thread(&app, path_bufs, PathBuf::from(icon_path), locality)
+    run_drag_on_main_thread(&app, path_bufs, PathBuf::from(icon_path), locality, source_volume_id)
 }
 
 /// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
@@ -90,7 +90,7 @@ pub fn start_selection_drag(
     let volume_id = crate::file_system::listing::get_listing_volume_id_and_path(&listing_id).map(|(vid, _)| vid);
     let locality = locality_for_volume(volume_id.as_deref());
 
-    run_drag_on_main_thread(&app, paths, PathBuf::from(icon_path), locality)
+    run_drag_on_main_thread(&app, paths, PathBuf::from(icon_path), locality, volume_id)
 }
 
 /// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
@@ -117,12 +117,13 @@ fn run_drag_on_main_thread(
     paths: Vec<PathBuf>,
     icon_path: PathBuf,
     locality: DragSessionLocality,
+    source_volume_id: Option<String>,
 ) -> Result<(), String> {
     let window = app.get_webview_window("main").ok_or("Main window not found")?;
     let (tx, rx) = channel();
 
     app.run_on_main_thread(move || {
-        let result = native_drag::start_drag(&window, paths, &icon_path, locality);
+        let result = native_drag::start_drag(&window, paths, &icon_path, locality, source_volume_id.as_deref());
         let _ = tx.send(result);
     })
     .map_err(|e| format!("Failed to run on main thread: {}", e))?;

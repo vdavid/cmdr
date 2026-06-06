@@ -40,28 +40,25 @@
 //! working unchanged (it operates on `NSDraggingItem`s regardless of writer
 //! type), and the system-rendered count badge keeps working for >1 item.
 
+pub mod fulfillment;
+pub mod promises;
+pub mod source;
 pub mod type_plan;
+pub mod uti;
 
+pub use promises::set_app_handle;
 pub use type_plan::DragSessionLocality;
 use type_plan::{PasteboardItemPlan, plan_pasteboard_items};
 
 use std::path::{Path, PathBuf};
-use std::ptr::NonNull;
-use std::sync::OnceLock;
 
+use objc2::MainThreadMarker;
 use objc2::msg_send;
 use objc2::rc::Retained;
-use objc2::runtime::{AnyClass, AnyObject, ClassBuilder, Sel};
-use objc2::sel;
+use objc2::runtime::{AnyClass, AnyObject};
 use objc2_foundation::{NSPoint, NSRect, NSSize, NSString};
 
 const NS_LEFT_MOUSE_DRAGGED: usize = 7;
-
-/// Permissive operation mask published to the destination: `Copy | Link | Generic | Move`.
-/// macOS arbitrates the chosen operation based on modifier keys (Alt → Copy, Cmd → Move,
-/// Ctrl-Alt → Link) and the destination's preference. Restricting the mask up-front makes
-/// destinations like Warp reject the drop entirely (terminals only accept Copy).
-const PERMISSIVE_OP_MASK: usize = 1 | 2 | 4 | 16;
 
 const TYPE_FILE_URL: &str = "public.file-url";
 const TYPE_STRING: &str = "public.utf8-plain-text";
@@ -70,17 +67,38 @@ const TYPE_STRING: &str = "public.utf8-plain-text";
 /// and as a defensive fallback for any old Mac app that reads only this type.
 const TYPE_FILENAMES: &str = "NSFilenamesPboardType";
 
+/// A monotonic key generator for virtual drag sessions. Used as the
+/// `session_key` under which a session's promise delegates/providers register in
+/// `promises::COUNTERS` and the source's end-callback frees them. A monotonic
+/// counter (not the drag sequence number, which is only known AFTER the session
+/// begins) lets us register the delegates BEFORE the drag starts — the weak
+/// delegate refs must be alive the instant Finder might query them.
+fn next_session_key() -> isize {
+    use std::sync::atomic::{AtomicIsize, Ordering};
+    static NEXT: AtomicIsize = AtomicIsize::new(1);
+    NEXT.fetch_add(1, Ordering::Relaxed)
+}
+
 /// Begins a native drag session for the given file paths. The pasteboard layout
-/// is decided by `locality`: a [`DragSessionLocality::Local`] session advertises
-/// the legacy file-url + text + filenames layout; a
-/// [`DragSessionLocality::Virtual`] session advertises empty items (no
-/// materializable representations — see the module docs). Must be called on the
-/// AppKit main thread.
+/// is decided by `locality`:
+///
+/// - [`DragSessionLocality::Local`] advertises the legacy file-url + text +
+///   filenames layout per item, and the source carries no promise session.
+/// - [`DragSessionLocality::Virtual`] attaches an `NSFilePromiseProvider` to
+///   each item (so dropping on Finder downloads the real bytes via the
+///   fulfillment service) and NO materializable representations. The session's
+///   delegates/providers register under a fresh `session_key` and are freed when
+///   the gesture ends and fulfillments drain (see [`promises`]).
+///
+/// `source_volume_id` is the source volume for a virtual session (the id the
+/// fulfillment service resolves to stream bytes). Ignored for local sessions.
+/// Must be called on the AppKit main thread.
 pub fn start_drag(
     window: &tauri::WebviewWindow,
     paths: Vec<PathBuf>,
     icon_path: &Path,
     locality: DragSessionLocality,
+    source_volume_id: Option<&str>,
 ) -> Result<(), String> {
     if paths.is_empty() {
         return Err("No paths to drag".into());
@@ -89,12 +107,45 @@ pub fn start_drag(
         return Err(format!("Drag icon missing: {}", icon_path.display()));
     }
 
+    let mtm = MainThreadMarker::new().ok_or("start_drag must run on the AppKit main thread")?;
+
     // Compose the per-item pasteboard plan ONCE for the whole session. Mixing
     // local and virtual items is impossible by construction (single-pane
     // selections, single-volume panes), so the plan is keyed on one locality
     // value, never branched per item.
     let path_strings: Vec<String> = paths.iter().map(|p| p.to_string_lossy().into_owned()).collect();
     let item_plans = plan_pasteboard_items(&path_strings, locality);
+
+    // For a virtual session, build one promise provider per item up front (on
+    // main). They register their delegates under `session_key` so the weak
+    // delegate refs stay alive across the gesture and fulfillment. Local
+    // sessions get `NO_PROMISE_SESSION` (no providers, end callback is a no-op).
+    let (session_key, promise_providers) = match locality {
+        DragSessionLocality::Virtual => {
+            let key = next_session_key();
+            let volume_id = source_volume_id.unwrap_or_default().to_string();
+            let items: Vec<promises::PromiseItem> = paths
+                .iter()
+                .map(|path| {
+                    let is_directory = false; // Resolved at fulfillment time; UTI uses the leaf below.
+                    let leaf = path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().into_owned())
+                        .unwrap_or_else(|| "file".to_string());
+                    let uti = uti::uti_for_item(&leaf, is_directory);
+                    promises::PromiseItem {
+                        leaf,
+                        uti,
+                        source_volume_id: volume_id.clone(),
+                        source_path: path.clone(),
+                    }
+                })
+                .collect();
+            let providers = promises::build_session_providers(mtm, key, items);
+            (key, Some(providers))
+        }
+        DragSessionLocality::Local => (source::NO_PROMISE_SESSION, None),
+    };
 
     let ns_window_ptr = window.ns_window().map_err(|e| format!("ns_window unavailable: {e}"))? as *mut AnyObject;
     if ns_window_ptr.is_null() {
@@ -143,16 +194,31 @@ pub fn start_drag(
         };
 
         // One `NSDraggingItem` per file regardless of locality, so the drag image
-        // and system-rendered count badge are unaffected. What each item's
-        // `NSPasteboardItem` advertises comes straight from the pre-computed plan.
-        for (path, plan) in paths.iter().zip(item_plans.iter()) {
-            let item_alloc: *mut AnyObject = msg_send![nspbi_cls, alloc];
-            let item: *mut AnyObject = msg_send![item_alloc, init];
-
-            apply_item_plan(item, plan, path, &pb_types)?;
+        // and system-rendered count badge are unaffected. The pasteboard WRITER
+        // differs by locality:
+        //
+        // - Local: a plain `NSPasteboardItem` carrying the pre-computed plan
+        //   (file-url + text + filenames).
+        // - Virtual: the item's `NSFilePromiseProvider` (itself an
+        //   `NSPasteboardWriting`), so an external drop downloads the real bytes.
+        //   No legacy types — the provider is the whole payload.
+        for (i, (path, plan)) in paths.iter().zip(item_plans.iter()).enumerate() {
+            // The dragging-item writer: a promise provider for virtual sessions,
+            // else a plan-filled `NSPasteboardItem`.
+            let writer: *mut AnyObject = if let Some(providers) = promise_providers.as_ref() {
+                // SAFETY: `NSFilePromiseProvider` conforms to `NSPasteboardWriting`,
+                // which is what `initWithPasteboardWriter:` expects. One provider
+                // per item, same order as `paths`.
+                Retained::as_ptr(&providers[i]) as *mut AnyObject
+            } else {
+                let item_alloc: *mut AnyObject = msg_send![nspbi_cls, alloc];
+                let item: *mut AnyObject = msg_send![item_alloc, init];
+                apply_item_plan(item, plan, path, &pb_types)?;
+                item
+            };
 
             let drag_item_alloc: *mut AnyObject = msg_send![nsdi_cls, alloc];
-            let drag_item: *mut AnyObject = msg_send![drag_item_alloc, initWithPasteboardWriter: item];
+            let drag_item: *mut AnyObject = msg_send![drag_item_alloc, initWithPasteboardWriter: writer];
             let _: () = msg_send![drag_item, setDraggingFrame: image_rect, contents: img];
 
             let _: () = msg_send![dragging_items, addObject: drag_item];
@@ -189,7 +255,9 @@ pub fn start_drag(
             return Err("Failed to build drag event".into());
         }
 
-        let source = build_drag_source();
+        // The source carries the session key so its `endedAtPoint` callback can
+        // free the virtual session's promise objects once fulfillments drain.
+        let source = source::build_drag_source(mtm, session_key);
 
         let _: *mut AnyObject = msg_send![
             content_view,
@@ -200,47 +268,6 @@ pub fn start_drag(
     }
 
     Ok(())
-}
-
-// --- Drag source class ---
-
-static SOURCE_CLASS: OnceLock<&'static AnyClass> = OnceLock::new();
-
-/// Registers the drag source class once. The class implements
-/// `NSDraggingSource`'s required method, returning [`PERMISSIVE_OP_MASK`].
-fn source_class() -> &'static AnyClass {
-    SOURCE_CLASS.get_or_init(|| {
-        let superclass = AnyClass::get(c"NSObject").expect("NSObject class missing");
-        let mut builder =
-            ClassBuilder::new(c"CmdrDragSource", superclass).expect("CmdrDragSource: class registration failed");
-
-        unsafe {
-            builder.add_method(
-                sel!(draggingSession:sourceOperationMaskForDraggingContext:),
-                operation_mask as unsafe extern "C-unwind" fn(_, _, _, _) -> _,
-            );
-        }
-
-        builder.register()
-    })
-}
-
-unsafe extern "C-unwind" fn operation_mask(
-    _this: NonNull<AnyObject>,
-    _: Sel,
-    _session: *mut AnyObject,
-    _context: usize,
-) -> usize {
-    PERMISSIVE_OP_MASK
-}
-
-fn build_drag_source() -> Retained<AnyObject> {
-    let cls = source_class();
-    unsafe {
-        let alloc: *mut AnyObject = msg_send![cls, alloc];
-        let init: *mut AnyObject = msg_send![alloc, init];
-        Retained::from_raw(init).expect("CmdrDragSource init returned nil")
-    }
 }
 
 // --- Pasteboard item construction ---

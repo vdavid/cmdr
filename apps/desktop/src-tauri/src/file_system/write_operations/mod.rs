@@ -65,6 +65,10 @@ pub use state::{
     busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
     init_busy_volume_emitter, list_active_operations, resolve_write_conflict,
 };
+// External busy-volume seam for the drag-out fulfillment service (see
+// `state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate
+// callers (`native_drag::fulfillment`) reach it.
+pub(crate) use state::{register_external_volume_op, release_external_volume_op};
 #[allow(unused_imports, reason = "Public API re-exports for consumers of this module")]
 pub use types::{
     ConflictInfo, ConflictResolution, DryRunResult, OperationStatus, OperationSummary, ScanPreviewCancelledEvent,

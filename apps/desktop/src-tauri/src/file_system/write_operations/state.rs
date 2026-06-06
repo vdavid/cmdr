@@ -353,6 +353,41 @@ pub(super) fn unregister_operation_status(operation_id: &str) {
 }
 
 // ============================================================================
+// External busy-volume seam (drag-out file promises)
+// ============================================================================
+//
+// `register_operation_status` / `unregister_operation_status` are `pub(super)`,
+// reachable only inside `write_operations`. The drag-out fulfillment service
+// (`crate::native_drag::fulfillment`) lives outside this module but needs the
+// same eject guard: while it streams bytes off an MTP/SMB device into a
+// Finder-chosen destination, the source volume must register as busy so the
+// user can't eject the phone mid-download (the server-side `eject_volume` guard
+// reads `busy_volume_ids()`). It is NOT a real write operation — no
+// `WRITE_OPERATION_STATE` entry, no progress events, no settle — so it can't go
+// through `start_write_operation`. This thin `pub(crate)` pair is the smallest
+// honest seam: it touches only the `OPERATION_STATUS_CACHE` half (which is what
+// `recompute_and_emit_busy_volumes` reads), keeping the busy set and the
+// `volumes-busy-changed` event firing exactly as a real op would.
+
+/// Marks `volume_ids` busy for the duration of an external (non-write-op)
+/// operation, keyed by `op_id`. Used by the drag-out fulfillment service to
+/// guard the source volume against eject while a promise is streaming. Pair
+/// every call with [`release_external_volume_op`] (the fulfillment service uses
+/// an RAII guard so release fires on every exit path).
+///
+/// Registers under `WriteOperationType::Copy` because a drag-out download IS a
+/// copy from the device to local disk — the type only affects diagnostics
+/// (`list_active_operations`), and the busy set itself is type-agnostic.
+pub(crate) fn register_external_volume_op(op_id: &str, volume_ids: Vec<String>) {
+    register_operation_status(op_id, WriteOperationType::Copy, volume_ids);
+}
+
+/// Clears the busy mark registered by [`register_external_volume_op`].
+pub(crate) fn release_external_volume_op(op_id: &str) {
+    unregister_operation_status(op_id);
+}
+
+// ============================================================================
 // Busy-volumes set (drives "disable Eject while an op touches this device")
 // ============================================================================
 
