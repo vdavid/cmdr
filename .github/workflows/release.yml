@@ -49,16 +49,19 @@ jobs:
         run: |
           # tauri-action's bundler does the APP-BUNDLE signing-keychain setup itself from the
           # APPLE_CERTIFICATE env vars, but only at BUNDLING time. The llama-server dylib signing
-          # in beforeBuildCommand (download-llama-server.go) runs BEFORE that, and the login
-          # keychain's private key isn't usable from this launchd-launched runner: codesign fails
-          # with errSecInternalComponent (works fine from a GUI shell). Give that signing its own
-          # hermetic keychain.
+          # in beforeBuildCommand (download-llama-server.go) runs BEFORE that, and the runner's
+          # launchd service (SessionCreate=true) lives in its own security session where the login
+          # keychain's private key isn't usable: codesign fails with errSecInternalComponent
+          # (works fine from a GUI shell). Give that signing its own hermetic keychain.
           #
-          # Deliberately NOT added to the keychain search list: download-llama-server.go targets
-          # it explicitly via codesign --keychain ($LLAMA_SIGN_KEYCHAIN), so the identity never
-          # appears twice in the search list. A previous manual-import step that DID join the
-          # search list caused intermittent errSecInternalComponent failures (ambiguous identity)
-          # and once broke `gh` by dropping the login keychain from the list. Don't re-add it.
+          # The keychain MUST be both targeted explicitly (codesign --keychain via
+          # $LLAMA_SIGN_KEYCHAIN in download-llama-server.go) AND in the user keychain search
+          # list: --keychain alone fails with errSecInternalComponent for a keychain outside the
+          # search list (verified empirically on this runner). The explicit --keychain pins
+          # identity resolution to this keychain, so the login keychain's copy of the same
+          # identity can't make resolution ambiguous (the failure mode an earlier manual-import
+          # step had). The "Restore keychain search list" cleanup step below resets the search
+          # list to login-only on every run, pass or fail.
           KEYCHAIN_PATH="$RUNNER_TEMP/llama-sign.keychain-db"
           KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
@@ -70,6 +73,8 @@ jobs:
           rm "$RUNNER_TEMP/llama-sign-cert.p12"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" \
             "$KEYCHAIN_PATH" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN_PATH" \
+            "$HOME/Library/Keychains/login.keychain-db"
           echo "LLAMA_SIGN_KEYCHAIN=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
 
       - name: Set up notarization credentials

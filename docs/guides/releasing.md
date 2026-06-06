@@ -128,11 +128,15 @@ happened on the self-hosted runner:
 
 - **The llama-server dylib signing in `beforeBuildCommand` leaned on the login keychain.** tauri-action's bundler sets
   up its own signing keychain from `APPLE_CERTIFICATE`, but only at bundling time; `download-llama-server.go` signs the
-  bundled dylibs before that. The login keychain's private key isn't usable from the launchd-launched runner (the exact
-  same `codesign` command works from a GUI shell), so every matrix job failed ~30 s in, and a runner-service restart
-  doesn't help. The fix in `release.yml` ("Set up llama-server signing keychain") imports the cert into a dedicated
-  keychain that the Go script targets explicitly via `codesign --keychain` (`LLAMA_SIGN_KEYCHAIN`), deliberately kept
-  OUT of the keychain search list so the two identity copies can never make resolution ambiguous.
+  bundled dylibs before that. The runner's launchd service runs with `SessionCreate=true` (GitHub's `svc.sh` plist), so
+  its jobs live in their own security session where the login keychain's private key isn't usable (the exact same
+  `codesign` command works from a GUI shell), and every matrix job failed ~30 s in. A runner-service restart doesn't
+  help. The fix in `release.yml` ("Set up llama-server signing keychain") imports the cert into a dedicated keychain
+  that the Go script targets explicitly via `codesign --keychain` (`LLAMA_SIGN_KEYCHAIN`). The keychain must ALSO be in
+  the user keychain search list: `--keychain` alone fails with the same `errSecInternalComponent` for a keychain outside
+  the search list (verified empirically on this runner). The explicit `--keychain` is what keeps the login keychain's
+  copy of the identity from making resolution ambiguous; the "Restore keychain search list" cleanup step resets the list
+  afterwards.
 
 The other two are about the **same Developer ID identity being reachable from more than one keychain in the search
 list** (ambiguous resolution):
