@@ -1,5 +1,8 @@
 <script lang="ts">
     import type { SortColumn, SortOrder } from '../types'
+    import { commands, type CommandId } from '$lib/commands'
+    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
 
     interface Props {
         column: SortColumn
@@ -9,9 +12,36 @@
         onClick: (column: SortColumn) => void
         /** Alignment: 'left' (default), 'right' for numeric columns */
         align?: 'left' | 'right'
+        /** Whether the containing pane is focused. The sort shortcut acts on the focused
+         * pane only, so the tooltip includes it only when pressing it would actually
+         * sort this pane. Clicking sorts this pane regardless, so the tooltip text
+         * itself always shows. */
+        isFocused?: boolean
     }
 
-    const { column, label, currentSortColumn, currentSortOrder, onClick, align = 'left' }: Props = $props()
+    const {
+        column,
+        label,
+        currentSortColumn,
+        currentSortOrder,
+        onClick,
+        align = 'left',
+        isFocused = true,
+    }: Props = $props()
+
+    const columnToCommandIdMap: Record<SortColumn, CommandId> = {
+        name: 'sort.byName',
+        extension: 'sort.byExtension',
+        size: 'sort.bySize',
+        modified: 'sort.byModified',
+        created: 'sort.byCreated',
+    }
+
+    const commandId = $derived(columnToCommandIdMap[column])
+    const commandName = $derived(commands.find((c) => c.id === commandId)?.name ?? '')
+    // Reactive: re-reads when the user rebinds the shortcut. The tooltip action
+    // live-updates its content, so a focus flip or rebind mid-hover shows too.
+    const shortcut = $derived(isFocused ? getFirstShortcutReactive(commandId) : undefined)
 
     const isActive = $derived(column === currentSortColumn)
 
@@ -34,6 +64,7 @@
     onclick={handleClick}
     onkeydown={handleKeyDown}
     type="button"
+    use:tooltip={{ text: commandName, shortcut }}
 >
     <span class="label">{label}</span>
     <span class="sort-indicator" class:invisible={!isActive} aria-hidden="true">

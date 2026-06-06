@@ -92,8 +92,14 @@ export async function initializeShortcuts(): Promise<void> {
 
   initialized = true
 
-  // Sync menu accelerators with loaded custom shortcuts
-  await syncMenuAccelerators()
+  // Notify listeners (reactive shortcut reads, the dispatch map) and sync menu
+  // accelerators for every loaded customization. Components can mount before this
+  // async init finishes; without the notification they'd keep showing registry
+  // defaults until the next manual shortcut change. `notifyListeners` routes through
+  // `updateMenuAccelerator`, which no-ops for commands without a menu item.
+  for (const commandId of customShortcuts.keys()) {
+    notifyListeners(commandId)
+  }
 }
 
 /**
@@ -166,20 +172,6 @@ export const menuCommands = [
   'tab.prev',
   'tab.closeOthers',
 ]
-
-/**
- * Sync all custom shortcuts to menu accelerators.
- * Called at initialization to ensure menu reflects persisted shortcuts.
- */
-async function syncMenuAccelerators(): Promise<void> {
-  for (const commandId of menuCommands) {
-    // Only update if there's a custom shortcut
-    if (customShortcuts.has(commandId)) {
-      log.debug('Syncing menu accelerator for {commandId}', { commandId })
-      await updateMenuAccelerator(commandId)
-    }
-  }
-}
 
 /**
  * Force save immediately. Should be called before window/page unload.

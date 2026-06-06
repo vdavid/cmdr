@@ -28,6 +28,18 @@ shortcuts:
 - Delta-only storage: only customizations, not defaults
 - Empty array means "all shortcuts removed"
 - Missing command means "use defaults from registry"
+- `initializeShortcuts` notifies `onShortcutChange` listeners for every loaded customization, so components that mounted
+  before the async init finished (reactive shortcut reads, the dispatch map) catch up instead of showing registry
+  defaults. The notification path also syncs menu accelerators (`updateMenuAccelerator` no-ops for commands without a
+  menu item).
+
+### Reactive reads (`reactive-shortcuts.svelte.ts`)
+
+`getFirstShortcutReactive(commandId)` returns the first effective shortcut (the one menus show) and subscribes
+`$derived`/`$effect` consumers to shortcut changes via a module-level `$state` version bumped on every
+`onShortcutChange`. Use it for long-lived UI that displays a shortcut (tooltips, hints), so a rebind updates the UI
+live. One-off reads at event time (toasts, context menus) keep calling `getEffectiveShortcuts` directly — a toast
+deliberately snapshots the binding it was created with.
 
 ### Scope hierarchy (`scope-hierarchy.ts`)
 
@@ -150,10 +162,10 @@ There's no dynamic registration.
 
 When shortcuts change, `updateMenuAccelerator()` calls `invoke('update_menu_accelerator')` to update the native menu
 label. The `menuCommands` array in `shortcuts-store.ts` lists all ~40 commands that have menu items. At startup,
-`syncMenuAccelerators()` pushes any persisted customizations into the menu. On the Rust side, `MenuState.items` is a
-`HashMap<String, MenuItemEntry>` that tracks regular `MenuItem`s by ID; `update_menu_item_accelerator()` handles the
-remove/recreate/reinsert cycle. View mode CheckMenuItems still use the separate `update_view_mode_accelerator()` path to
-preserve checked state.
+`initializeShortcuts` pushes any persisted customizations into the menu via the `notifyListeners` path. On the Rust
+side, `MenuState.items` is a `HashMap<String, MenuItemEntry>` that tracks regular `MenuItem`s by ID;
+`update_menu_item_accelerator()` handles the remove/recreate/reinsert cycle. View mode CheckMenuItems still use the
+separate `update_view_mode_accelerator()` path to preserve checked state.
 
 ### Conflict warnings are not errors
 

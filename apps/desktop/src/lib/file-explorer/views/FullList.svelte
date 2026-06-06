@@ -771,6 +771,7 @@
             <span class="header-icon"></span>
             <SortableHeader
                 column="name"
+                {isFocused}
                 label="Name"
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
@@ -781,6 +782,7 @@
             {/if}
             <SortableHeader
                 column="extension"
+                {isFocused}
                 label="Ext"
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
@@ -788,6 +790,7 @@
             />
             <SortableHeader
                 column="size"
+                {isFocused}
                 label="Size"
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
@@ -795,6 +798,7 @@
             />
             <SortableHeader
                 column="modified"
+                {isFocused}
                 label="Modified"
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}

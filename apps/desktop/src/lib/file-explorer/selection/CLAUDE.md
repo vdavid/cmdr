@@ -104,11 +104,19 @@ Props: `file: FileEntry`, `syncIcon?: string` (URL for sync overlay badge).
 ## `SortableHeader.svelte`
 
 Props: `column`, `label`, `currentSortColumn`, `currentSortOrder`, `onClick`, `align?` (`'left'` default, `'right'` for
-numeric columns).
+numeric columns), `isFocused?` (`true` default; pass the pane's focus state).
 
 Renders a `<button>` with a sort-direction triangle (▲/▼). The triangle is `display: none` on inactive columns so it
 doesn't reserve width. `FullList` shrink-wraps column widths and `opacity: 0` would have baked ~12px of dead space into
 every unsorted header. Handles both `onclick` and `onkeydown` (Enter/Space).
+
+The header carries a tooltip with the sort command's name ("Sort by size") plus its current keyboard shortcut as a
+`<kbd>` chip. The command id derives from `column` via the internal `columnToCommandIdMap`; the shortcut comes from
+`getFirstShortcutReactive` (`$lib/shortcuts/reactive-shortcuts.svelte`), so a rebind in Settings updates the tooltip
+live. **Truthfulness rule**: the shortcut shows only when `isFocused` is true, because the `sort.by*` commands act on
+the focused pane; hovering the unfocused pane's header shows the command name only (clicking still sorts that pane, so
+the name stays). The tooltip action live-updates, so a focus flip or rebind mid-hover is reflected immediately. Pinned
+by `SortableHeader.svelte.test.ts`.
 
 ## Key decisions
 
