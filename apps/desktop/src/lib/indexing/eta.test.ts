@@ -2,7 +2,15 @@
  * Tests for the pure ETA helpers driving the drive-indexing status tooltip.
  */
 import { describe, it, expect } from 'vitest'
-import { formatEta, computeElapsedEta, computeWindowEta, blendEtas, pruneSnapshots, type EtaSnapshot } from './eta'
+import {
+  formatEta,
+  computeElapsedEta,
+  computeWindowEta,
+  blendEtas,
+  pruneSnapshots,
+  computeScanProgress,
+  type EtaSnapshot,
+} from './eta'
 
 describe('formatEta', () => {
   it('reads "Almost done" under two seconds', () => {
@@ -20,6 +28,13 @@ describe('formatEta', () => {
     expect(formatEta(60)).toBe('1m left')
     expect(formatEta(125)).toBe('2m left')
     expect(formatEta(600)).toBe('10m left')
+  })
+
+  it('reads "Almost done" for non-finite input', () => {
+    // The scan branch is a new caller; a dropped null gate upstream would otherwise
+    // surface "Infinitym left". One line of insurance against that failure mode.
+    expect(formatEta(Number.POSITIVE_INFINITY)).toBe('Almost done')
+    expect(formatEta(Number.NaN)).toBe('Almost done')
   })
 })
 
@@ -103,5 +118,41 @@ describe('pruneSnapshots', () => {
   it('returns the same array when empty', () => {
     const empty: EtaSnapshot[] = []
     expect(pruneSnapshots(empty, 5000)).toBe(empty)
+  })
+})
+
+describe('computeScanProgress', () => {
+  it('uses the entry calibration (tier 1) when a prior total is present', () => {
+    // 5,000 of a prior 10,000 entries → 0.5, calibrated (not rough).
+    expect(computeScanProgress(5000, 1000, 10000, 4_000_000)).toEqual({ fraction: 0.5, rough: false })
+  })
+
+  it('clamps the calibrated fraction at 0.99 when this scan outgrows the prior total', () => {
+    // Disk grew since last scan: 12,000 vs a prior 10,000 → clamp to 0.99, never 100% mid-scan.
+    expect(computeScanProgress(12000, 1000, 10000, 4_000_000)).toEqual({ fraction: 0.99, rough: false })
+  })
+
+  it('falls back to bytes (tier 2, rough) when there is no prior total but used bytes are known', () => {
+    // 1 MB of a 4 MB volume → 0.25, rough.
+    expect(computeScanProgress(5000, 1_000_000, null, 4_000_000)).toEqual({ fraction: 0.25, rough: true })
+  })
+
+  it('clamps the rough fraction at 0.95 (wider error band: clones overshoot)', () => {
+    // Clone-heavy disk overshoots the statfs denominator → clamp lower than tier 1.
+    expect(computeScanProgress(5000, 5_000_000, null, 4_000_000)).toEqual({ fraction: 0.95, rough: true })
+  })
+
+  it('prefers the entry calibration over bytes when both denominators are present', () => {
+    expect(computeScanProgress(5000, 9_999_999, 10000, 4_000_000)).toEqual({ fraction: 0.5, rough: false })
+  })
+
+  it('returns null when neither denominator is available', () => {
+    expect(computeScanProgress(5000, 1_000_000, null, null)).toBeNull()
+  })
+
+  it('returns null on zero denominators (no division by zero, no fake 100%)', () => {
+    expect(computeScanProgress(5000, 1_000_000, 0, 4_000_000)).toEqual({ fraction: 0.25, rough: true })
+    expect(computeScanProgress(5000, 1_000_000, 0, 0)).toBeNull()
+    expect(computeScanProgress(0, 0, 0, 0)).toBeNull()
   })
 })

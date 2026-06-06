@@ -94,7 +94,7 @@ describe('buildDirSizeTooltip', () => {
 
   it('returns the size-readiness hint when no data and scanning is active', () => {
     expect(buildDirSizeTooltip(undefined, undefined, 0, 0, true, formatSize, formatNum, plural)).toBe(
-      'Sizes are usually ready after 3 minutes',
+      'Sizes appear as the scan progresses',
     )
   })
 

@@ -243,7 +243,7 @@
                         class="stale-indicator stale-icon"
                         role="img"
                         aria-label="Size not ready yet"
-                        use:tooltip={'Sizes are usually ready after 3 minutes'}
+                        use:tooltip={'Sizes appear as the scan progresses'}
                     >
                         <IconHourglass width="12" height="12" />
                     </span>

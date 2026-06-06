@@ -40,9 +40,9 @@ without DOM performance issues.
   is set (full scan/aggregation, every size in flux) OR the row's own `recursiveSizePending` is set (live delete/copy in
   flight for that dir, even with no scan running). Two flavors share the glyph: the `size-stale` state pairs it with a
   visible recursive size (tooltip "Updating index: size may change."), while the `scanning` state (no size yet) renders
-  the `<dir>` placeholder plus the hourglass with tooltip "Sizes are usually ready after 3 minutes" so a fresh install
-  reads as quietly working rather than `Scanning...` on every row. `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH`
-  for both states so the shrink-wrapped column never clips the glyph. The per-dir flag rides
+  the `<dir>` placeholder plus the hourglass with tooltip "Sizes appear as the scan progresses" so a fresh install reads
+  as quietly working rather than `Scanning...` on every row. `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH` for
+  both states so the shrink-wrapped column never clips the glyph. The per-dir flag rides
   `DirStats.recursiveSizePending`, copied onto entries by `updateIndexSizesInPlace` / `createParentEntry` (backend:
   `indexing/pending_sizes.rs`). Also renders an optional Git status column between Name and Ext when `gitRepoRoot` is
   set and `showGitColumn` is true (gated by the `fileExplorer.git.showStatusColumn` setting in `FilePane`); fetches

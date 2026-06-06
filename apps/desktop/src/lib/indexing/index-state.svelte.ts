@@ -11,6 +11,15 @@ import { addToast } from '$lib/ui/toast'
 let scanning = $state(false)
 let entriesScanned = $state(0)
 let dirsFound = $state(0)
+let bytesScanned = $state(0)
+let scanStartedAt = $state(0)
+
+// Per-scan calibration, set once at scan start (or backfilled on late-join). These pick the
+// progress tier and seed the tier-1 ETA. `priorTotalEntries`/`priorScanDurationMs` come from
+// the previous completed scan; `volumeUsedBytes` is the scanned volume's used bytes at start.
+let priorTotalEntries = $state<number | null>(null)
+let priorScanDurationMs = $state<number | null>(null)
+let volumeUsedBytes = $state<number | null>(null)
 
 // Replay state
 let replaying = $state(false)
@@ -40,6 +49,26 @@ export function getEntriesScanned(): number {
 
 export function getDirsFound(): number {
   return dirsFound
+}
+
+export function getBytesScanned(): number {
+  return bytesScanned
+}
+
+export function getScanStartedAt(): number {
+  return scanStartedAt
+}
+
+export function getPriorTotalEntries(): number | null {
+  return priorTotalEntries
+}
+
+export function getPriorScanDurationMs(): number | null {
+  return priorScanDurationMs
+}
+
+export function getVolumeUsedBytes(): number | null {
+  return volumeUsedBytes
 }
 
 export function isAggregating(): boolean {
@@ -82,6 +111,7 @@ export function getReplayStartedAt(): number {
 function resetCounters() {
   entriesScanned = 0
   dirsFound = 0
+  bytesScanned = 0
 }
 
 function resetAggregation() {
@@ -121,12 +151,21 @@ const unlistenHandles: UnlistenFn[] = []
 
 /** Set up listeners for index scan events. Call once during app init. */
 export async function initIndexState(): Promise<void> {
-  const unlistenStarted = await listen<{ volumeId: string }>('index-scan-started', () => {
+  const unlistenStarted = await listen<{
+    volumeId: string
+    priorTotalEntries: number | null
+    priorScanDurationMs: number | null
+    volumeUsedBytes: number | null
+  }>('index-scan-started', (event) => {
     eventVersion++
     scanning = true
     resetCounters()
     resetAggregation()
     resetReplay()
+    scanStartedAt = Date.now()
+    priorTotalEntries = event.payload.priorTotalEntries
+    priorScanDurationMs = event.payload.priorScanDurationMs
+    volumeUsedBytes = event.payload.volumeUsedBytes
   })
   unlistenHandles.push(unlistenStarted)
 
@@ -134,9 +173,11 @@ export async function initIndexState(): Promise<void> {
     volumeId: string
     entriesScanned: number
     dirsFound: number
+    bytesScanned: number
   }>('index-scan-progress', (event) => {
     entriesScanned = event.payload.entriesScanned
     dirsFound = event.payload.dirsFound
+    bytesScanned = event.payload.bytesScanned
   })
   unlistenHandles.push(unlistenProgress)
 
@@ -225,10 +266,31 @@ export async function initIndexState(): Promise<void> {
       scanning = true
       entriesScanned = res.data.entriesScanned
       dirsFound = res.data.dirsFound
+      bytesScanned = res.data.bytesScanned
+      // The tier-2 denominator rides the top-level response (stashed calibration).
+      volumeUsedBytes = res.data.volumeUsedBytes
+      // The tier-1 calibration lives in the nested meta-backed `indexStatus`. Its values are
+      // the PREVIOUS completed scan's totals (the completion handler is the only writer), which
+      // is exactly the tier-1 denominator — not the live counters above. Meta values are TEXT,
+      // so `Number()`-parse and guard NaN → null.
+      const indexStatus = res.data.indexStatus
+      priorTotalEntries = parseMetaNumber(indexStatus?.totalEntries)
+      priorScanDurationMs = parseMetaNumber(indexStatus?.scanDurationMs)
+      // No scan-start wall-clock on late-join: the percent still works (elapsed-free), but the
+      // tier-1 ETA seed and elapsed extrapolation have nothing until the sliding window fills.
+      // Accepted graceful degradation.
     }
   } catch {
     // Indexing not initialized or unavailable: no-op
   }
+}
+
+/** Parse a TEXT meta value (e.g. `IndexStatus.totalEntries`) to a number, or `null` when
+ *  absent or unparseable. */
+function parseMetaNumber(value: string | null | undefined): number | null {
+  if (value == null) return null
+  const parsed = Number(value)
+  return Number.isNaN(parsed) ? null : parsed
 }
 
 /** Clean up all listeners. Call during app teardown. */

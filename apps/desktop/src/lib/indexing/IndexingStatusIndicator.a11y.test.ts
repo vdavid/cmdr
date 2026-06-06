@@ -17,11 +17,18 @@ let scanning = false
 let aggregating = false
 let aggPhase = 'computing'
 let replaying = false
+let priorTotalEntries: number | null = null
+let volumeUsedBytes: number | null = null
 
 vi.mock('./index-state.svelte', () => ({
   isScanning: () => scanning,
   getEntriesScanned: () => 42000,
   getDirsFound: () => 1200,
+  getBytesScanned: () => 1_000_000,
+  getScanStartedAt: () => Date.now() - 4000,
+  getPriorTotalEntries: () => priorTotalEntries,
+  getPriorScanDurationMs: () => 120000,
+  getVolumeUsedBytes: () => volumeUsedBytes,
   isAggregating: () => aggregating,
   getAggregationPhase: () => aggPhase,
   getAggregationCurrent: () => 500,
@@ -46,15 +53,33 @@ describe('IndexingStatusIndicator a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it('scanning shows the icon with no a11y violations', async () => {
+  it('scanning (counter-only, no denominator) shows the icon with no a11y violations', async () => {
     scanning = true
     aggregating = false
     replaying = false
+    priorTotalEntries = null
+    volumeUsedBytes = null
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(IndexingStatusIndicator, { target, props: {} })
     await tick()
     expect(target.querySelector('.indexing-status')).not.toBeNull()
+    expect(target.querySelector('.tooltip-progress')).toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  it('scanning with calibrated progress shows the bar with no a11y violations', async () => {
+    scanning = true
+    aggregating = false
+    replaying = false
+    priorTotalEntries = 100000
+    volumeUsedBytes = null
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(IndexingStatusIndicator, { target, props: {} })
+    await tick()
+    expect(target.querySelector('.indexing-status')).not.toBeNull()
+    expect(target.querySelector('.tooltip-progress')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 

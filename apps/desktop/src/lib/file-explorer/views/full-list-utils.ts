@@ -395,5 +395,5 @@ export function buildDirSizeTooltip(
 
     return { html: lines.join('<br>') }
   }
-  return scanning ? 'Sizes are usually ready after 3 minutes' : ''
+  return scanning ? 'Sizes appear as the scan progresses' : ''
 }

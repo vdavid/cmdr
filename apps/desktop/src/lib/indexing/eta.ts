@@ -19,7 +19,9 @@ export interface EtaSnapshot {
  * under a minute counts down in seconds, otherwise rounds to whole minutes.
  */
 export function formatEta(seconds: number): string {
-  if (seconds < 2) return 'Almost done'
+  // Non-finite guard: every planned caller null-gates before reaching here, but the scan
+  // branch is a new caller and a future edit dropping that gate would surface "Infinitym left".
+  if (!Number.isFinite(seconds) || seconds < 2) return 'Almost done'
   if (seconds < 60) return `${String(Math.round(seconds))}s left`
   return `${String(Math.round(seconds / 60))}m left`
 }
@@ -56,6 +58,52 @@ export function computeWindowEta(snapshots: EtaSnapshot[], remaining: number): n
 export function blendEtas(a: number | null, b: number | null): number | null {
   if (a != null && b != null) return (a + b) / 2
   return a ?? b
+}
+
+/** The tier-1 (calibrated) progress ceiling. The prior scan's total is approximate for
+ * THIS disk state, so we never report a full 100% mid-scan: 99% paired with "Almost done"
+ * is honest, 100% with work left is a lie. */
+export const SCAN_PROGRESS_CALIBRATED_MAX = 0.99
+
+/** The tier-2 (rough, first-scan) progress ceiling. Lower than tier 1 because its error band
+ * is wider: APFS clones make the per-file physical-byte sum overshoot the statfs used-bytes
+ * denominator by up to ~20%, so a clone-heavy disk would hit 100% with minutes still left. */
+export const SCAN_PROGRESS_ROUGH_MAX = 0.95
+
+/** A two-tier scan progress fraction with a flag for the rough (first-scan) tier. */
+export interface ScanProgress {
+  fraction: number
+  rough: boolean
+}
+
+/**
+ * Compute drive-scan progress as a clamped fraction, choosing the tier from the available
+ * denominators.
+ *
+ * - **Tier 1 (calibrated)**: when the previous completed scan's entry total is known,
+ *   `entriesScanned / priorTotalEntries`, clamped to `SCAN_PROGRESS_CALIBRATED_MAX`. Both sides
+ *   come from the same instrument (the scan's own entry counter), so this is apples-to-apples.
+ * - **Tier 2 (rough)**: the first scan has no prior total, so `bytesScanned / volumeUsedBytes`,
+ *   clamped to the lower `SCAN_PROGRESS_ROUGH_MAX` and flagged `rough`. Some honest signal beats
+ *   none during onboarding.
+ * - Neither denominator available (or both zero) → `null`: the caller falls back to a
+ *   counter-only tooltip.
+ */
+export function computeScanProgress(
+  entriesScanned: number,
+  bytesScanned: number,
+  priorTotalEntries: number | null,
+  volumeUsedBytes: number | null,
+): ScanProgress | null {
+  if (priorTotalEntries != null && priorTotalEntries > 0) {
+    const fraction = Math.min(SCAN_PROGRESS_CALIBRATED_MAX, entriesScanned / priorTotalEntries)
+    return { fraction, rough: false }
+  }
+  if (volumeUsedBytes != null && volumeUsedBytes > 0) {
+    const fraction = Math.min(SCAN_PROGRESS_ROUGH_MAX, bytesScanned / volumeUsedBytes)
+    return { fraction, rough: true }
+  }
+  return null
 }
 
 /**

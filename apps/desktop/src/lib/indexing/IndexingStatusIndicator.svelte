@@ -4,6 +4,11 @@
         isScanning,
         getEntriesScanned,
         getDirsFound,
+        getBytesScanned,
+        getScanStartedAt,
+        getPriorTotalEntries,
+        getPriorScanDurationMs,
+        getVolumeUsedBytes,
         isAggregating,
         getAggregationPhase,
         getAggregationCurrent,
@@ -20,6 +25,7 @@
         computeWindowEta,
         blendEtas,
         pruneSnapshots,
+        computeScanProgress,
         type EtaSnapshot,
     } from './eta'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
@@ -29,6 +35,11 @@
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
     const dirsFound = $derived(getDirsFound())
+    const bytesScanned = $derived(getBytesScanned())
+    const scanStartedAt = $derived(getScanStartedAt())
+    const priorTotalEntries = $derived(getPriorTotalEntries())
+    const priorScanDurationMs = $derived(getPriorScanDurationMs())
+    const volumeUsedBytes = $derived(getVolumeUsedBytes())
     const aggregating = $derived(isAggregating())
     const aggPhase = $derived(getAggregationPhase())
     const aggCurrent = $derived(getAggregationCurrent())
@@ -44,11 +55,82 @@
     // indicator carries all three states without two components fighting for the corner.
     const visible = $derived(scanning || aggregating || replaying)
 
-    const scanLabel = $derived(
+    const scanCounters = $derived(
         entriesScanned > 0
-            ? `Scanning... ${formatNumber(entriesScanned)} entries, ${formatNumber(dirsFound)} dirs`
-            : 'Scanning...',
+            ? ` ${formatNumber(entriesScanned)} entries, ${formatNumber(dirsFound)} dirs`
+            : '',
     )
+
+    // Two-tier scan progress: calibrated (entries vs the prior scan's total) after the first
+    // scan, rough (bytes vs the volume's used bytes) on the first scan. Null → counter-only.
+    const scanProgressInfo = $derived(
+        computeScanProgress(entriesScanned, bytesScanned, priorTotalEntries, volumeUsedBytes),
+    )
+    const scanProgress = $derived(scanProgressInfo?.fraction ?? null)
+    const scanRough = $derived(scanProgressInfo?.rough ?? false)
+
+    // The scan label names the tier so the rough first-scan reads as approximate. The counters
+    // ride along on both. "..." matches the indicator's three-ASCII-dots convention.
+    const scanLabel = $derived(
+        (scanRough ? 'Scanning your drive (first scan)...' : 'Scanning your drive...') + scanCounters,
+    )
+
+    // The ETA unit must match the progress tier: entries for tier 1, bytes for tier 2. The
+    // window samples the same counter the tier divides by, so the rate and the remaining work
+    // never mix units.
+    const scanUnit = $derived(scanRough ? 'bytes' : 'entries')
+    const scanProcessed = $derived(scanRough ? bytesScanned : entriesScanned)
+    const scanTotal = $derived(scanRough ? (volumeUsedBytes ?? 0) : (priorTotalEntries ?? 0))
+
+    // Shared sliding-window span (~5s) for both the scan and replay rate estimates. Early
+    // total-rate extrapolation alone is wildly wrong, so the window-rate blend smooths it.
+    const windowDurationMs = 5000
+
+    // Sliding window over the scan's progress, same machinery the replay branch uses. Keyed on
+    // the active unit so a tier flip (it won't mid-scan, but be safe) resets cleanly.
+    let scanWindowSnapshots = $state<EtaSnapshot[]>([])
+    let lastScanSnapshotProcessed = -1
+    let lastScanUnit = ''
+
+    $effect(() => {
+        if (!scanning || scanProgress == null) {
+            scanWindowSnapshots = []
+            lastScanSnapshotProcessed = -1
+            lastScanUnit = scanUnit
+            return
+        }
+        if (scanUnit !== lastScanUnit) {
+            scanWindowSnapshots = []
+            lastScanSnapshotProcessed = -1
+            lastScanUnit = scanUnit
+        }
+        const processed = scanProcessed
+        if (processed !== lastScanSnapshotProcessed) {
+            scanWindowSnapshots.push({ timestamp: Date.now(), eventsProcessed: processed })
+            lastScanSnapshotProcessed = processed
+            scanWindowSnapshots = pruneSnapshots(scanWindowSnapshots, windowDurationMs)
+        }
+    })
+
+    const scanEta = $derived.by(() => {
+        if (!scanning || scanProgress == null || scanTotal <= 0 || scanProcessed <= 0) return null
+        const remaining = scanTotal - scanProcessed
+
+        const elapsedSec = scanStartedAt > 0 ? (Date.now() - scanStartedAt) / 1000 : 0
+        const elapsedBasedEta = computeElapsedEta(elapsedSec, scanProcessed, remaining)
+        const windowBasedEta = computeWindowEta(scanWindowSnapshots, remaining)
+        const blended = blendEtas(elapsedBasedEta, windowBasedEta)
+        if (blended != null) return formatEta(blended)
+
+        // Early signal (tier 1 only): before the blend has data, seed from the prior scan's
+        // duration minus elapsed. ms → seconds for formatEta, which floors negatives to
+        // "Almost done" (a scan outrunning the prior duration degrades honestly).
+        if (!scanRough && priorScanDurationMs != null && scanStartedAt > 0) {
+            const seedSeconds = (priorScanDurationMs - (Date.now() - scanStartedAt)) / 1000
+            return formatEta(seedSeconds)
+        }
+        return null
+    })
 
     const phaseToLabel: Record<string, string> = {
         saving_entries: 'Saving entries...',
@@ -74,9 +156,8 @@
     })
 
     // Sliding window of replay-progress snapshots over the last ~5 seconds, fed through the
-    // pure window-rate helper. Early extrapolation alone is wildly wrong, so the final ETA
-    // blends the window rate with the total-rate extrapolation 50-50.
-    const windowDurationMs = 5000
+    // pure window-rate helper. The final ETA blends the window rate with the total-rate
+    // extrapolation 50-50 (see `windowDurationMs` near the scan window above).
     let windowSnapshots = $state<EtaSnapshot[]>([])
     let lastSnapshotProcessed = -1
 
@@ -113,10 +194,16 @@
     type Mode = 'scan' | 'aggregation' | 'replay'
     const mode = $derived<Mode>(aggregating ? 'aggregation' : scanning ? 'scan' : 'replay')
 
+    // Tier 2 wraps its ETA in "roughly" since the bytes-vs-used-bytes denominator is approximate.
+    // "Almost done" is already a terminal phrase, so it stays unprefixed (not "roughly Almost done").
+    const scanEtaDisplay = $derived(
+        scanEta != null && scanRough && scanEta !== 'Almost done' ? `roughly ${scanEta}` : scanEta,
+    )
+
     const label = $derived(mode === 'aggregation' ? aggLabel : mode === 'scan' ? scanLabel : 'Updating index...')
     const detail = $derived(mode === 'replay' ? replayDetail : null)
-    const progress = $derived(mode === 'aggregation' ? aggProgress : mode === 'replay' ? replayProgress : null)
-    const eta = $derived(mode === 'aggregation' ? aggEta : mode === 'replay' ? replayEta : null)
+    const progress = $derived(mode === 'aggregation' ? aggProgress : mode === 'scan' ? scanProgress : replayProgress)
+    const eta = $derived(mode === 'aggregation' ? aggEta : mode === 'scan' ? scanEtaDisplay : replayEta)
 
     const percent = $derived(progress != null ? Math.min(100, Math.round(progress * 100)) : null)
 

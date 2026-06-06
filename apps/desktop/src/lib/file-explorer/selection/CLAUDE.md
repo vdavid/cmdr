@@ -73,11 +73,11 @@ Stale indicator (Lucide hourglass icon via `~icons/lucide/hourglass`, rendered i
   `getDirSizeDisplayState(displaySize, indexing, recursiveSizePending)` — the same decider FullList uses, so Brief's
   status bar matches Full's size column. Here `indexing = isScanning() || isAggregating()` (the aggregation phase
   matters too), and `recursiveSizePending` lights the hourglass during a live delete/copy even with no full scan. An
-  unindexed dir always shows `DIR`; while indexing it adds a "Size not ready yet" hourglass (tooltip: "Sizes are usually
-  ready after 3 minutes"), the same de-emphasized treatment Full's size column gives its `scanning` state. The
-  per-folder `recursiveSizePending` flag lives only on `DirStats` (not `get_file_range`), so
-  `FilePane.fetchEntryUnderCursor` overlays it onto the cursor entry via `updateIndexSizesInPlace([entry])` (skipping
-  `..`, whose entry path is the parent folder), and re-runs on `index-dir-updated` so the hourglass tracks a storm live.
+  unindexed dir always shows `DIR`; while indexing it adds a "Size not ready yet" hourglass (tooltip: "Sizes appear as
+  the scan progresses"), the same de-emphasized treatment Full's size column gives its `scanning` state. The per-folder
+  `recursiveSizePending` flag lives only on `DirStats` (not `get_file_range`), so `FilePane.fetchEntryUnderCursor`
+  overlays it onto the cursor entry via `updateIndexSizesInPlace([entry])` (skipping `..`, whose entry path is the
+  parent folder), and re-runs on `index-dir-updated` so the hourglass tracks a storm live.
 
 Symlink hint (Lucide info icon via `~icons/lucide/info`, rendered in tertiary text color) appears next to a directory's
 size in `file-info` mode when `entry.recursiveHasSymlinks === true`. The tooltip reads: "This folder contains symlinks.
