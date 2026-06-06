@@ -5,6 +5,24 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Drag files and folders from your phone or NAS straight to Finder or the Desktop. Cmdr downloads them on drop, under
+  the name Finder picks, the same gesture Photos and Mail already use. Multi-select and whole folders work, and a toast
+  keeps you posted while the download runs ([871f19d0](https://github.com/vdavid/cmdr/commit/871f19d0),
+  [88d3b8b8](https://github.com/vdavid/cmdr/commit/88d3b8b8))
+
+### Fixed
+
+- Dragging a file from a phone or network pane out to Finder, the Desktop, or a terminal no longer drops a junk
+  `.textClipping` file or pastes a meaningless path. Finder and the Desktop now download the real file (see Added);
+  terminals and apps that can't take the download get a clean no-op instead of garbage
+  ([7adf5e1e](https://github.com/vdavid/cmdr/commit/7adf5e1e))
+- Show "/" instead of a raw storage id (like "65537") in the tab title at a phone or camera storage root
+  ([75fb9a6c](https://github.com/vdavid/cmdr/commit/75fb9a6c))
+
 ## [0.24.0] - 2026-06-06
 
 ### Added
@@ -18,9 +36,6 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   [07877792](https://github.com/vdavid/cmdr/commit/07877792))
 - Block ejecting a volume while a copy, move, or delete is touching it
   ([fe2a0987](https://github.com/vdavid/cmdr/commit/fe2a0987))
-- Drag files and folders from your phone or NAS straight to Finder or the Desktop. Cmdr downloads them on drop, under
-  the name Finder picks, the same gesture Photos and Mail already use. Multi-select and whole folders work, and a toast
-  keeps you posted while the download runs
 
 ### Changed
 
@@ -43,9 +58,6 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Dragging a file from a phone or network pane out to Finder, the Desktop, or a terminal no longer drops a junk
-  `.textClipping` file or pastes a meaningless path. Finder and the Desktop now download the real file (see Added);
-  terminals and apps that can't take the download get a clean no-op instead of garbage
 - Resolve conflicts file by file inside a folder merge on network and phone drives (SMB, MTP, and cross-volume). A newer
   file deep in the tree no longer loses to an older one behind a single folder-level OK; each clashing file follows your
   conflict choice ([6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))
@@ -59,7 +71,6 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   ([f4a8b1cb](https://github.com/vdavid/cmdr/commit/f4a8b1cb))
 - Show the volume name instead of a raw storage id (like "65538") in the transfer dialog header
   ([f4a8b1cb](https://github.com/vdavid/cmdr/commit/f4a8b1cb))
-- Show "/" instead of a raw storage id (like "65537") in the tab title at a phone or camera storage root
 - Fix file viewer settings (word wrap, text size, binary warning) silently resetting every session
   ([51e127aa](https://github.com/vdavid/cmdr/commit/51e127aa))
 - Make the title bar draggable while a dialog is open, and in the file viewer window
