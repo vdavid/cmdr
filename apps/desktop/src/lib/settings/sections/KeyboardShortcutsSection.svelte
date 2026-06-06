@@ -27,6 +27,7 @@
     } from '$lib/shortcuts'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
+    import { groupCommandsByScope } from './keyboard-shortcuts-grouping'
     import { shortcutAnchorId } from '$lib/settings/settings-window'
     import {
         getPendingShortcutHighlight,
@@ -102,9 +103,6 @@
         }
     })
 
-    // Group commands by scope
-    const scopes = ['App', 'Main window', 'File list', 'Navigation', 'Selection', 'Edit', 'View', 'Help']
-
     // Get conflict count for badge
     const conflictCount = $derived.by(() => {
         // Trigger on shortcut changes
@@ -162,17 +160,9 @@
         return 'go to latest download global'.includes(nameSearchQuery.trim().toLowerCase())
     })
 
-    // Group filtered commands by scope
-    const groupedCommands = $derived.by(() => {
-        const groups: Record<string, Command[]> = {}
-        for (const scope of scopes) {
-            const scopeCommands = filteredCommands.filter((c) => c.scope === scope)
-            if (scopeCommands.length > 0) {
-                groups[scope] = scopeCommands
-            }
-        }
-        return groups
-    })
+    // Group filtered commands by scope into the fixed display order. Every command
+    // renders in exactly one group (keyed by its scope), so all are rebindable here.
+    const groupedCommands = $derived(groupCommandsByScope(filteredCommands))
 
     function handleKeyCapture(event: KeyboardEvent) {
         if (!editingShortcut) return
@@ -501,10 +491,10 @@
     {/if}
 
     <div class="commands-list">
-        {#each Object.entries(groupedCommands) as [scope, scopeCommands] (scope)}
+        {#each groupedCommands as group (group.scope)}
             <div class="scope-group">
-                <h3 class="scope-title">{scope}</h3>
-                {#each scopeCommands as command (`${command.id}-${String(shortcutChangeCounter)}`)}
+                <h3 class="scope-title">{group.title}</h3>
+                {#each group.commands as command (`${command.id}-${String(shortcutChangeCounter)}`)}
                     {@const shortcuts = getEffectiveShortcuts(command.id)}
                     {@const isModified = isShortcutModified(command.id)}
                     {@const hasConflicts = conflictingIds.has(command.id)}

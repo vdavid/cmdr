@@ -34,6 +34,7 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 | `ai-secret-error.ts`               | Pure mapper from OS secret-store error variants to user-facing strings. Used by `AiCloudSection`                                                                                                                                                                                                                                                                                                                                            |
 | `license-section-utils.ts`         | Pure label/status formatters extracted from `LicenseSection` for testability                                                                                                                                                                                                                                                                                                                                                                |
 | `ram-gauge-utils.ts`               | Pure stacked-bar segment math for `AiLocalSection`'s memory gauge (used → projected → free, plus warning thresholds)                                                                                                                                                                                                                                                                                                                        |
+| `keyboard-shortcuts-grouping.ts`   | Pure scope→group logic for `KeyboardShortcutsSection` (one titled group per `CommandScope`, fixed order). Tested by the set-equality regression guard                                                                                                                                                                                                                                                                                       |
 
 Each section ships with an `*.a11y.test.ts` (axe-core tier-3). `McpServerSection`, `UpdatesSection`, `SearchSection`,
 and `FileSystemWatchingSection` also have functional `*.test.ts` / `*.svelte.test.ts` files; the three pure-helper `.ts`
@@ -102,16 +103,19 @@ Settings AI changes hot-apply because `settings-applier.ts` routes `ai.provider`
 `ai.cloudProviderConfigs` to `ai-config.ts::pushConfigToBackend()`, which re-reads everything fresh. Sections just call
 `setSetting(...)`; don't try to push the AI config from the section component.
 
-### Compound-scope rows don't render in any group
+### Every command groups by scope (one group per `CommandScope`)
 
-`KeyboardShortcutsSection` groups commands by **exact** `command.scope` match against a fixed `scopes` list
-(`['App', 'Main window', 'File list', …]`). A command whose registry scope is a compound path like
-`'Main window/File list'` (e.g. `file.quickLook`, `file.contextMenu`) matches NEITHER `'Main window'` NOR `'File list'`,
-so it lands in no group and never renders here. A deep link to such a row (`shortcut-file.quickLook`) still opens the
-section, but the scroll silently no-ops because the row element doesn't exist. This is a pre-existing display gap, not
-something the deep-link work introduced; fixing it (group compound scopes under their parent, or widen the match) is
-separate work. The Quick Look toast deep-links to `file.quickLook` anyway because that's the truthful target — when the
-display gap is fixed, it lands on the row with no further change.
+`KeyboardShortcutsSection` renders one titled group per `CommandScope`, in a fixed reading order, via the pure
+`groupCommandsByScope` (`keyboard-shortcuts-grouping.ts`). Compound scopes (`'Main window/File list'`,
+`'Main window/Brief mode'`, `'Main window/Volume chooser'`, …) each become their own group titled by the last segment
+("File list", "Brief mode", …). So every registry command lands in exactly one group and is rebindable here, including
+`file.quickLook` and the F-key commands. Don't reintroduce an ad-hoc title list matched against scopes: the group set
+must stay the scope union, or whole groups of commands silently vanish from the rebinding UI. The
+`keyboard-shortcuts-grouping.test.ts` set-equality test (union of grouped commands === all registry commands) is the
+guard; it also fails if a new `CommandScope` is added without a `scopeOrder` entry.
+
+Deep links to compound-scope rows now land + flash like any other (`shortcut-file.quickLook` from the Quick Look toast,
+F-key chips from the F-bar).
 
 ## Deep-link arrival into a shortcut row
 

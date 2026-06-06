@@ -353,14 +353,13 @@ test.describe('Settings keyboard-shortcut deep link', () => {
 
   test('lands on Keyboard shortcuts with the target row scrolled into view', async ({ tauriPage }) => {
     const main = tauriPage as TauriPage
-    // `downloads.goToLatest` is a regular registry row (scope `Main window`) that
-    // lives far enough down the list to need a scroll, so it exercises the nested
-    // `.commands-list` scroll path. (We can't target `file.quickLook` — the Quick
-    // Look toast's deep-link target — because its compound `Main window/File list`
-    // scope keeps it out of the section's scope groups entirely; that's a
-    // pre-existing display bug, see `sections/CLAUDE.md` § "Compound-scope rows
-    // don't render in any group".)
-    const targetAnchor = 'shortcut-downloads.goToLatest'
+    // `file.quickLook` is the Quick Look toast's deep-link target. Its scope is the
+    // compound `Main window/File list`, so this also guards that compound-scope rows
+    // render and are reachable (the section groups every command by scope; see
+    // `sections/CLAUDE.md` § "Every command groups by scope"). The row lives far
+    // enough down the list to need a scroll, exercising the nested `.commands-list`
+    // scroll path.
+    const targetAnchor = 'shortcut-file.quickLook'
     const section = JSON.stringify(['Keyboard shortcuts'])
     const url = `/settings?section=${encodeURIComponent(section)}&anchor=${encodeURIComponent(targetAnchor)}`
     const urlJson = JSON.stringify(url)
