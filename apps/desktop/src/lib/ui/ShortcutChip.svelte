@@ -41,9 +41,15 @@
          * rows, F-key bar buttons) where a nested click target would double-activate.
          */
         clickable?: boolean
+        /**
+         * Visual density. `md` (default) is the standalone pill. `sm` tightens the
+         * padding and corner radius for dense rows where several chips sit side by
+         * side (the command palette caps at three).
+         */
+        size?: 'sm' | 'md'
     }
 
-    const { commandId, key, clickable = true }: Props = $props()
+    const { commandId, key, clickable = true, size = 'md' }: Props = $props()
 
     if ((commandId === undefined) === (key === undefined)) {
         throw new Error('ShortcutChip: set exactly one of `commandId` or `key`')
@@ -69,6 +75,7 @@
         <button
             type="button"
             class="shortcut-chip clickable"
+            class:sm={size === 'sm'}
             aria-label="Customize the {commandName} shortcut"
             onclick={handleClick}
             use:tooltip={'Customize this shortcut'}
@@ -76,7 +83,7 @@
             <kbd>{value}</kbd>
         </button>
     {:else}
-        <kbd class="shortcut-chip">{value}</kbd>
+        <kbd class="shortcut-chip" class:sm={size === 'sm'}>{value}</kbd>
     {/if}
 {/if}
 
@@ -96,6 +103,13 @@
         font-size: var(--font-size-xs);
         color: var(--color-text-primary);
         white-space: nowrap;
+    }
+
+    /* Dense variant: tighter padding + corner radius so several chips fit a row
+       (the command palette shows up to three). */
+    .shortcut-chip.sm {
+        padding: 0 var(--spacing-xs);
+        border-radius: var(--radius-xs);
     }
 
     /* The clickable variant is a real <button> wrapping the <kbd>. Reset the button

@@ -11,6 +11,11 @@
     import { onDestroy, onMount, tick } from 'svelte'
     import { searchCommands, getPaletteCommands, type CommandMatch, type CommandId } from '$lib/commands'
     import { pruneRecentCommands, pushRecentCommand } from '$lib/app-status-store'
+    import { getEffectiveShortcutsReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+
+    /** How many shortcut chips a palette row shows (power users discover alternates). */
+    const MAX_SHORTCUTS_SHOWN = 3
 
     interface Props {
         /** Called when user selects a command */
@@ -167,11 +172,6 @@
 
         return segments
     }
-
-    /** Format shortcuts for display */
-    function formatShortcuts(shortcuts: string[]): string {
-        return shortcuts.slice(0, 2).join(' / ')
-    }
 </script>
 
 <div
@@ -214,6 +214,7 @@
                 tabindex="-1"
             >
                 {#each results as match, index (match.command.id)}
+                    {@const shortcuts = getEffectiveShortcutsReactive(match.command.id).slice(0, MAX_SHORTCUTS_SHOWN)}
                     {#if recentCount > 0 && index === 0}
                         <div class="group-heading">Recent</div>
                     {/if}
@@ -247,8 +248,14 @@
                                 {/if}
                             {/each}
                         </span>
-                        {#if match.command.shortcuts.length > 0}
-                            <span class="shortcuts">{formatShortcuts(match.command.shortcuts)}</span>
+                        {#if shortcuts.length > 0}
+                            <span class="shortcuts">
+                                <!-- Key by index, not the combo string: a user can bind the same
+                                     combo twice, and a keyed-by-value each would throw on the dupe. -->
+                                {#each shortcuts as shortcut, i (i)}
+                                    <ShortcutChip key={shortcut} size="sm" clickable={false} />
+                                {/each}
+                            </span>
                         {/if}
                     </div>
                 {/each}
@@ -351,8 +358,10 @@
         background: var(--color-accent-subtle);
     }
 
-    .result-item.is-under-cursor .shortcuts {
-        color: var(--color-text-secondary);
+    /* On the accent-subtle cursor row, lift the chips off the tinted background so
+       they stay legible (the default tertiary bg blends into the highlight). */
+    .result-item.is-under-cursor :global(.shortcut-chip) {
+        background: var(--color-bg-secondary);
     }
 
     .command-name {
@@ -378,9 +387,9 @@
     }
 
     .shortcuts {
+        display: flex;
+        gap: var(--spacing-xs);
         margin-left: var(--spacing-lg);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
         flex-shrink: 0;
     }
 

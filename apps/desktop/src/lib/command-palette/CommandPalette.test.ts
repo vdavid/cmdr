@@ -1,9 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount } from 'svelte'
-import { tick } from 'svelte'
+import { tick, flushSync } from 'svelte'
 import CommandPalette from './CommandPalette.svelte'
 import { pruneRecentCommands, pushRecentCommand } from '$lib/app-status-store'
+import { setShortcut, resetShortcut } from '$lib/shortcuts/shortcuts-store'
 
+// These ids are real command-registry entries, so the palette's effective-shortcut
+// reads (which hit the real registry + store, not the mocked `$lib/commands`)
+// resolve against known bindings. `app.quit` defaults to ⌘Q, `app.about` is unbound.
 const ALL_COMMANDS = [
   { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', shortcuts: ['⌘Q'], showInPalette: true },
   { id: 'app.about', name: 'About Cmdr', scope: 'App', shortcuts: [], showInPalette: true },
@@ -16,6 +20,33 @@ vi.mock('$lib/app-status-store', () => ({
   pruneRecentCommands: vi.fn().mockResolvedValue([]),
   pushRecentCommand: vi.fn().mockResolvedValue(undefined),
 }))
+
+// The shortcuts store persists to a Tauri plugin store and syncs menu accelerators;
+// stub both so the palette can read/rebind effective shortcuts in jsdom.
+vi.mock('@tauri-apps/plugin-store', () => ({
+  load: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => Promise.resolve(undefined)),
+      set: vi.fn(() => Promise.resolve()),
+      save: vi.fn(() => Promise.resolve()),
+      keys: vi.fn(() => Promise.resolve([])),
+      delete: vi.fn(() => Promise.resolve()),
+    }),
+  ),
+}))
+
+vi.mock('$lib/ipc/bindings', () => ({
+  commands: { updateMenuAccelerator: vi.fn(() => Promise.resolve({ status: 'ok' })) },
+}))
+
+/** Read the chip text inside the row for a given command id. */
+function shortcutTextsFor(target: HTMLElement, commandId: string): string[] {
+  // Attribute selector, not `#palette-option-app.quit` — a dotted command id would
+  // parse the part after the dot as a class selector.
+  const row = target.querySelector(`[id="palette-option-${commandId}"]`)
+  if (!row) return []
+  return Array.from(row.querySelectorAll('.shortcuts .shortcut-chip')).map((el) => el.textContent)
+}
 
 // Mock the commands module to provide test data
 vi.mock('$lib/commands', () => ({
@@ -49,6 +80,12 @@ describe('CommandPalette', () => {
     Element.prototype.scrollIntoView = vi.fn()
     vi.mocked(pruneRecentCommands).mockResolvedValue([])
     vi.mocked(pushRecentCommand).mockClear()
+  })
+
+  afterEach(() => {
+    // Drop any rebinds so a custom shortcut doesn't leak into the next test.
+    resetShortcut('app.quit')
+    resetShortcut('view.showHidden')
   })
 
   it('renders the modal with search input', async () => {
@@ -447,6 +484,58 @@ describe('CommandPalette', () => {
     expect(target.querySelector('[role="listbox"]')).toBeNull()
     expect(target.querySelector('.no-results')?.textContent).toContain('No commands found')
     expect(input?.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('renders the effective custom binding, not the registry default', async () => {
+    // app.quit defaults to ⌘Q; rebind it and the row must show the custom combo.
+    setShortcut('app.quit', 0, '⌘0')
+
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+
+    expect(shortcutTextsFor(target, 'app.quit')).toEqual(['⌘0'])
+  })
+
+  it('caps the shown shortcuts at three', async () => {
+    // Bind four shortcuts; only the first three render.
+    setShortcut('view.showHidden', 0, '⌘1')
+    setShortcut('view.showHidden', 1, '⌘2')
+    setShortcut('view.showHidden', 2, '⌘3')
+    setShortcut('view.showHidden', 3, '⌘4')
+
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+
+    expect(shortcutTextsFor(target, 'view.showHidden')).toEqual(['⌘1', '⌘2', '⌘3'])
+  })
+
+  it('updates a rendered row live when the binding changes while the palette is open', async () => {
+    // Custom bindings are stored verbatim (no platform conversion), so they assert
+    // cleanly regardless of the test platform.
+    setShortcut('app.quit', 0, '⌘7')
+
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+
+    expect(shortcutTextsFor(target, 'app.quit')).toEqual(['⌘7'])
+
+    // Simulate a rebind (the MCP / Settings path) while the palette stays open.
+    setShortcut('app.quit', 0, '⌘8')
+    flushSync()
+
+    expect(shortcutTextsFor(target, 'app.quit')).toEqual(['⌘8'])
   })
 
   it('does not throw if the previously focused element is no longer in the DOM', async () => {

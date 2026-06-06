@@ -102,7 +102,9 @@ describe('ShortcutChip', () => {
 
     button?.click()
     // The dynamic import resolves on a microtask; let the event loop drain.
-    await vi.waitFor(() => { expect(openShortcutCustomization).toHaveBeenCalledWith('downloads.goToLatest'); })
+    await vi.waitFor(() => {
+      expect(openShortcutCustomization).toHaveBeenCalledWith('downloads.goToLatest')
+    })
   })
 
   it('renders a non-clickable kbd when clickable is false', () => {

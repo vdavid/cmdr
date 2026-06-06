@@ -58,7 +58,13 @@ scrollable-region rule has nothing to flag in the empty state, and `aria-expande
 **Fuzzy highlight rendering**: `highlightMatches()` converts the flat `matchedIndices` set into `{ text, highlighted }`
 segments and renders `<mark class="match-highlight">` for matched chars.
 
-**Shortcut display**: `formatShortcuts()` calls `.slice(0, 2)`; at most 2 shortcuts are shown per command.
+**Shortcut display**: each row reads `getEffectiveShortcutsReactive(command.id)` (live effective bindings, NOT the
+registry defaults in `command.shortcuts`), caps at three (`MAX_SHORTCUTS_SHOWN`), and renders each combo as a
+non-clickable, dense (`size="sm"`) `ShortcutChip`. The chips track rebinds live: `getEffectiveShortcutsReactive`
+subscribes the component to the shortcuts-store version, so a Settings/MCP rebind updates the open palette without a
+reopen. Chips are non-clickable because the whole row already owns the click (decision (a) in
+`docs/specs/shortcut-display-unification-plan.md`). On the accent-subtle cursor row, the chip background is lifted to
+`--color-bg-secondary` so it stays legible against the tint (both themes).
 
 **jsdom limitation**: `scrollIntoView` is not implemented in jsdom; tests mock it via
 `Element.prototype.scrollIntoView = vi.fn()`.
@@ -97,9 +103,13 @@ enough for ~60 commands that debouncing would only add latency. The `$derived` r
 synchronously on every keystroke, keeping results perfectly in sync with the input. Debouncing would be needed if the
 command list grew to thousands.
 
-**Decision**: `formatShortcuts()` caps display at 2 shortcuts via `.slice(0, 2)`. **Why**: Some commands have many
-shortcuts (e.g., `nav.parent` has `Backspace` and `Cmd+Up`). Showing all of them would crowd the result row. Two is
-enough for discoverability; the full list lives in the shortcut settings.
+**Decision**: Shortcut display caps at three (`MAX_SHORTCUTS_SHOWN`) and reads the live effective bindings via
+`getEffectiveShortcutsReactive`, not the registry defaults. **Why**: Some commands have many shortcuts (for example,
+`nav.parent` has `Backspace` and `⌘↑`); showing all crowds the row. Three is the product-decided cap (power users use
+the palette to discover alternates like `⌘3` / `⌘F3`) — the dense `size="sm"` chip keeps three legible without dropping
+the count. Reading the effective bindings (instead of `command.shortcuts`) fixes the long-standing bug where a rebound
+command showed a combo that no longer worked; the reactive read also keeps an open palette in sync with a mid-session
+rebind. The full list still lives in the shortcut settings.
 
 ## Gotchas
 
@@ -128,4 +138,6 @@ Add the command to `$lib/commands/command-registry.ts` and handle the ID in the 
 
 - `$lib/commands`: `searchCommands`, `getPaletteCommands`, `CommandMatch`
 - `$lib/app-status-store`: `pruneRecentCommands`, `pushRecentCommand`
+- `$lib/shortcuts/reactive-shortcuts.svelte`: `getEffectiveShortcutsReactive` (live effective bindings per row)
+- `$lib/ui/ShortcutChip.svelte`: renders each combo (literal `key` mode, `size="sm"`, non-clickable)
 - CSS variables from `app.css` (`--z-modal`, `--color-accent-subtle`, `--color-bg-secondary`, etc.)

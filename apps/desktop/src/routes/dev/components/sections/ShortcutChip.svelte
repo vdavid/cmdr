@@ -31,6 +31,16 @@
         </div>
 
         <div class="row">
+            <span class="row-label">Dense (size="sm")</span>
+            <div class="chips">
+                <ShortcutChip key="⌘1" size="sm" />
+                <ShortcutChip key="⌘2" size="sm" />
+                <ShortcutChip key="⌘3" size="sm" />
+            </div>
+            <span class="row-note">Tighter padding + radius for dense rows (the command palette)</span>
+        </div>
+
+        <div class="row">
             <span class="row-label">Command (unbound)</span>
             <div class="chips">
                 <ShortcutChip commandId="app.about" />

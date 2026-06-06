@@ -338,11 +338,12 @@ the per-component tier rules in `age-tier-utils.ts`, and the HTML-string variant
 `ShortcutChip.svelte`: the one component that renders a keyboard shortcut anywhere in the UI, so the look stays uniform
 and new call sites can't hand-roll a divergent style. Two mutually exclusive modes:
 
-| Prop        | Type         | Notes                                                                                                    |
-| ----------- | ------------ | -------------------------------------------------------------------------------------------------------- |
-| `commandId` | `CommandId?` | Dynamic mode. Renders the command's first effective shortcut via `getFirstShortcutReactive`, reactively. |
-| `key`       | `string?`    | Literal mode. A fixed key string (toast snapshots, fixed interaction keys). Never clickable.             |
-| `clickable` | `boolean?`   | Default `true` in `commandId` mode; ignored (forced non-clickable) in literal mode.                      |
+| Prop        | Type            | Notes                                                                                                    |
+| ----------- | --------------- | -------------------------------------------------------------------------------------------------------- |
+| `commandId` | `CommandId?`    | Dynamic mode. Renders the command's first effective shortcut via `getFirstShortcutReactive`, reactively. |
+| `key`       | `string?`       | Literal mode. A fixed key string (toast snapshots, fixed interaction keys). Never clickable.             |
+| `clickable` | `boolean?`      | Default `true` in `commandId` mode; ignored (forced non-clickable) in literal mode.                      |
+| `size`      | `'sm' \| 'md'?` | Visual density. `md` (default) is the standalone pill; `sm` tightens padding + radius for dense rows.    |
 
 Exactly one of `commandId` / `key` must be set (a dev-time error otherwise).
 
@@ -367,7 +368,9 @@ loads it via dynamic `import()` inside the click handler only. Keep it that way.
 **Visual.** Neutral pill modeled on the Settings `.shortcut-pill` (`--color-bg-tertiary` background, 1px
 `--color-border`, `--radius-sm`, `--font-size-xs`), NOT the tooltip's accent chip (`.cmdr-tooltip-kbd` stays its accent
 look — different context). The clickable variant adds an accent border + `--color-accent-text` on hover; cursor stays
-`default` per the app-wide convention (only `LinkButton` opts into `cursor: pointer`).
+`default` per the app-wide convention (only `LinkButton` opts into `cursor: pointer`). `size="sm"` shrinks padding to
+`0 var(--spacing-xs)` and the corner radius to `--radius-xs` for dense rows where several chips sit side by side — the
+command palette (up to three chips per row) is the first consumer.
 
 The `shortcut-<commandId>` anchor-id convention (shared with the Settings section the deep link targets) lives as the
 exported `shortcutAnchorId(commandId)` in `lib/settings/settings-window.ts` so it can't drift.
