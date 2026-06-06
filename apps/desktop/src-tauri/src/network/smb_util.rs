@@ -27,6 +27,25 @@ pub fn classify_error(err: &smb2::Error) -> ShareListError {
     }
 }
 
+/// Classifies an error from an *authenticated* listing attempt.
+///
+/// The caller supplied explicit credentials, so an auth-class rejection
+/// (`AuthRequired` / `AccessDenied`, for example `STATUS_LOGON_FAILURE`) means the
+/// credentials are wrong (`AuthFailed`), not that authentication is required.
+/// `SigningRequired` is deliberately NOT remapped: it's a protocol capability mismatch,
+/// not a credential problem. Everything else falls through to [`classify_error`].
+// Consumed by the macOS arm of `smb_client` today (Linux's authenticated fallback goes
+// through smbclient); the classifier itself is platform-agnostic.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn classify_authenticated_error(err: &smb2::Error) -> ShareListError {
+    match err.kind() {
+        ErrorKind::AuthRequired | ErrorKind::AccessDenied => ShareListError::AuthFailed {
+            message: "Invalid username or password".to_string(),
+        },
+        _ => classify_error(err),
+    }
+}
+
 /// Converts smb2 share info to Cmdr's ShareInfo type.
 /// smb2's `list_shares()` already filters to disk shares and strips `$` shares.
 pub fn convert_shares(shares: Vec<smb2::ShareInfo>) -> Vec<ShareInfo> {
@@ -55,6 +74,27 @@ mod tests {
         }));
         assert!(!is_auth_error(&smb2::Error::Timeout));
         assert!(!is_auth_error(&smb2::Error::Disconnected));
+    }
+
+    /// When the caller supplied explicit credentials, an auth-class rejection means the
+    /// credentials are WRONG, not that authentication is required. Without the
+    /// context-aware classifier, a wrong password surfaced as "Authentication required.
+    /// Please enter your credentials." in the login form (observed in QA against the
+    /// Naspolya NAS) instead of "Invalid username or password."
+    #[test]
+    fn test_classify_authenticated_error_maps_rejection_to_auth_failed() {
+        match classify_authenticated_error(&smb2::Error::Auth {
+            message: "STATUS_LOGON_FAILURE during SessionSetup".to_string(),
+        }) {
+            ShareListError::AuthFailed { .. } => {}
+            e => panic!("Expected AuthFailed for a rejected authenticated session, got {:?}", e),
+        }
+
+        // Non-auth errors keep their regular classification.
+        match classify_authenticated_error(&smb2::Error::Timeout) {
+            ShareListError::Timeout { .. } => {}
+            e => panic!("Expected Timeout, got {:?}", e),
+        }
     }
 
     #[test]

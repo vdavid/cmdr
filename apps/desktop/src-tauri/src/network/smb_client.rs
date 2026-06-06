@@ -18,6 +18,10 @@ use super::smb_smbutil::{list_shares_smbutil, list_shares_smbutil_authenticated_
 // argv); only the non-macOS authed fallback (smbclient `-A` authfile) still uses this.
 #[cfg(not(target_os = "macos"))]
 use super::smb_smbutil::list_shares_smbutil_with_auth;
+// Only the macOS arm classifies the raw smb2 failure of an authenticated listing
+// (Linux retries via the smbclient authfile fallback instead).
+#[cfg(target_os = "macos")]
+use super::smb_util::classify_authenticated_error;
 use super::smb_util::{classify_error, convert_shares, is_auth_error};
 
 /// Lists shares on a network host.
@@ -168,7 +172,9 @@ async fn list_shares_smb2(
                                 }),
                                 Err(e) => {
                                     debug!("smb2 authenticated list failed: {}", e);
-                                    Err(classify_error(&e))
+                                    // Authenticated context: a rejected session means
+                                    // wrong credentials, not "authentication required".
+                                    Err(classify_authenticated_error(&e))
                                 }
                             };
                         }

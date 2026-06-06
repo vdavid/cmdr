@@ -89,6 +89,12 @@ async fn register_replacing_predecessor(
         let _ = tokio::task::spawn_blocking(move || prev.on_unmount()).await;
     }
     manager.register(volume_id, new_volume);
+
+    // Tell the frontend the volume's connection state changed (os_mount → direct).
+    // The auto-upgrade paths often coincide with an FSEvents mount event that triggers
+    // a broadcast anyway, but the after-sign-in and already-mounted paths have no
+    // mount event at all: without this, the picker keeps the stale os_mount dot.
+    crate::volume_broadcast::emit_volumes_changed();
 }
 
 /// Tries to establish a direct smb2 connection and register as `SmbVolume`.
