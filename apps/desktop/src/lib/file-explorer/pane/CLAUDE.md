@@ -75,7 +75,10 @@ Colocated with the code they pin. Notable cross-cutting suites: `DualPaneExplore
 `selection-consistency.test.ts` (selection survives diffs / cancel / source-item-done), `listing-diff-sync.test.ts`
 (pure `reconcileCursorAndSelection` off-by-one coverage), `file-pane-keyboard.test.ts`, `volume-breadcrumb.test.ts`,
 `volume-tint.svelte.test.ts` (+ `volume-tint.svelte.fallback.test.ts` for the old-WebKit branch), `*.a11y.test.ts` (axe
-sweeps per alt-view component).
+sweeps per alt-view component). The drag-drop controller suite is split in two: `drag-drop-controller.svelte.test.ts`
+(handler contracts incl. the self-drag-identity scenarios) and `drag-drop-controller.listeners.svelte.test.ts` (Tauri
+listener registration + the enter→over→drop cycle), sharing volume constants and builders from
+`drag-drop-controller.test-fixtures.ts` (the `vi.mock` blocks stay duplicated per file — vitest hoists them per module).
 
 ## Conventions
 

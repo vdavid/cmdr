@@ -19,15 +19,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { DropTarget } from '../drag/drop-target-hit-testing'
 import type { DragFileInfo } from '../drag/drag-drop'
-import type { PaneAccess } from './pane-access'
-import type { VolumeInfo } from '../types'
-
-/** Tauri drag-drop event payloads (a structural subset of the real shape). */
-type DragDropPayload =
-  | { type: 'enter'; paths: string[]; position: { x: number; y: number } }
-  | { type: 'over'; position: { x: number; y: number } }
-  | { type: 'drop'; paths: string[]; position: { x: number; y: number } }
-  | { type: 'leave' }
+import {
+  type DragDropPayload,
+  type AccessConfig,
+  SAME_VOL_PATH_A,
+  SAME_VOL_PATH_B,
+  EXT_VOL_PATH,
+  ROOT_VOLUME,
+  EXT_VOLUME,
+  SD_CARD_VOLUME,
+  MTP_VOLUME,
+  SMB_VOLUME,
+  buildAccess,
+  buildDialogs,
+  flushDrop,
+  paneTarget,
+  folderTarget,
+} from './drag-drop-controller.test-fixtures'
 
 const {
   resolveDropTargetSpy,
@@ -131,142 +139,12 @@ vi.mock('../modifier-key-tracker.svelte', () => ({
 // end-to-end through the actual builder.
 
 import { createDragDropController } from './drag-drop-controller.svelte'
-import type { createDialogState } from './dialog-state.svelte'
-import type { TransferDialogPropsData } from './transfer-operations'
-
-type DialogState = ReturnType<typeof createDialogState>
-type ShowTransferSpy = ReturnType<typeof vi.fn<(props: TransferDialogPropsData) => void>>
-
-const SAME_VOL_PATH_A = '/Users/x/a'
-const SAME_VOL_PATH_B = '/Users/x/b'
-const EXT_VOL_PATH = '/Volumes/Ext/dest'
-
-const ROOT_VOLUME: VolumeInfo = {
-  id: 'root',
-  name: 'Macintosh HD',
-  path: '/',
-  volumeType: 'local',
-  isReadOnly: false,
-  supportsTrash: true,
-} as unknown as VolumeInfo
-
-const EXT_VOLUME: VolumeInfo = {
-  id: 'ext',
-  name: 'Ext',
-  path: '/Volumes/Ext',
-  volumeType: 'local',
-  isReadOnly: false,
-  supportsTrash: true,
-} as unknown as VolumeInfo
-
-// A read-only MTP SD card and a writable MTP device, both registered with
-// `mtp://…` roots so `findVolumeIdForPath` resolves a dropped MTP-shaped path
-// to them via longest-prefix.
-const SD_CARD_VOLUME: VolumeInfo = {
-  id: 'mtp-dev:65538',
-  name: 'Virtual Pixel 9 - SD Card',
-  path: 'mtp://dev/65538',
-  volumeType: 'mtp',
-  isReadOnly: true,
-  supportsTrash: false,
-} as unknown as VolumeInfo
-
-const MTP_VOLUME: VolumeInfo = {
-  id: 'mtp-dev:65537',
-  name: 'Virtual Pixel 9',
-  path: 'mtp://dev/65537',
-  volumeType: 'mtp',
-  isReadOnly: false,
-  supportsTrash: false,
-} as unknown as VolumeInfo
-
-// An smb2-native SMB share, registered with an `smb://…` root. Its listing paths
-// are volume-relative, same class as MTP.
-const SMB_VOLUME: VolumeInfo = {
-  id: 'smb-server-share',
-  name: 'share on server',
-  path: 'smb://server/share',
-  category: 'network',
-  isReadOnly: false,
-  supportsTrash: false,
-} as unknown as VolumeInfo
-
-interface AccessConfig {
-  focusedPane?: 'left' | 'right'
-  paths?: Partial<Record<'left' | 'right', string>>
-  volumeIds?: Partial<Record<'left' | 'right', string>>
-  volumes?: VolumeInfo[]
-}
-
-function buildAccess(config: AccessConfig = {}): PaneAccess {
-  const otherPane = (pane: 'left' | 'right'): 'left' | 'right' => (pane === 'left' ? 'right' : 'left')
-  return {
-    getPaneRef: () => undefined,
-    getPanePath: (pane) => config.paths?.[pane] ?? (pane === 'left' ? '/left/dir' : '/right/dir'),
-    getPaneVolumeId: (pane) => config.volumeIds?.[pane] ?? 'root',
-    getPaneSort: () => ({ sortBy: 'name', sortOrder: 'ascending' }),
-    getPaneHistory: () => ({ stack: [], currentIndex: 0 }),
-    getFocusedPane: () => config.focusedPane ?? 'left',
-    otherPane,
-    getShowHiddenFiles: () => true,
-    getVolumes: () => config.volumes ?? [ROOT_VOLUME],
-    focusContainer: vi.fn(),
-  }
-}
-
-function buildDialogs(): {
-  dialogs: DialogState
-  showTransfer: ShowTransferSpy
-  showAlert: ReturnType<typeof vi.fn>
-} {
-  const showTransfer = vi.fn<(props: TransferDialogPropsData) => void>()
-  const showAlert = vi.fn<(title: string, message: string) => void>()
-  const dialogs = { showTransfer, showAlert } as unknown as DialogState
-  return { dialogs, showTransfer, showAlert }
-}
-
-/**
- * `handleDrop` fires `handleFileDrop` without awaiting; `handleFileDrop` awaits
- * `statPathsKinds` before opening the dialog. Flush a couple of microtask turns
- * so the dialog open lands before the assertion.
- */
-async function flushDrop(): Promise<void> {
-  await Promise.resolve()
-  await Promise.resolve()
-}
 
 /** Returns the args of the most recent `updateOverlay` call: [x, y, targetName, canDrop, operation]. */
 function lastOverlayArgs(): [number, number, string | null, boolean, 'copy' | 'move'] {
   const calls = updateOverlaySpy.mock.calls
   expect(calls.length).toBeGreaterThan(0)
   return calls[calls.length - 1] as [number, number, string | null, boolean, 'copy' | 'move']
-}
-
-/** Returns the captured `onDragDropEvent` handler or throws if `init()` didn't register one. */
-function dragDropHandler(): (event: { payload: DragDropPayload }) => void {
-  const handler = dragDropHandlerRef.current
-  if (!handler) throw new Error("init() didn't register an onDragDropEvent handler")
-  return handler
-}
-
-/** Returns the captured `listen` handler for an event name or throws if absent. */
-function listenHandler(eventName: string): (event: { payload: unknown }) => void {
-  const handler = listenHandlers.get(eventName)
-  if (!handler) throw new Error(`no listener registered for "${eventName}"`)
-  return handler
-}
-
-function paneTarget(paneId: 'left' | 'right'): DropTarget {
-  return { type: 'pane', paneId }
-}
-
-function folderTarget(path: string, paneId: 'left' | 'right' = 'left'): DropTarget {
-  return {
-    type: 'folder',
-    path,
-    paneId,
-    element: { classList: { add: vi.fn(), remove: vi.fn() } } as unknown as HTMLElement,
-  }
 }
 
 describe('drag-drop-controller', () => {
@@ -855,21 +733,6 @@ describe('drag-drop-controller', () => {
     })
   })
 
-  describe('handleDragEnter', () => {
-    it('shows the overlay and starts modifier tracking for a normal drag', () => {
-      resolveDropTargetSpy.mockReturnValue(paneTarget('left'))
-      getIsDraggingFromSelfSpy.mockReturnValue(false)
-      const { controller } = create()
-
-      controller.handleDragEnter(['/a/f.txt'], { x: 1, y: 1 })
-
-      expect(showOverlaySpy).toHaveBeenCalledTimes(1)
-      expect(startModifierTrackingSpy).toHaveBeenCalledTimes(1)
-      // handleDragEnter chains into handleDragOver
-      expect(updateOverlaySpy).toHaveBeenCalled()
-    })
-  })
-
   describe('clearDropTargets', () => {
     it('clears the pane highlight', () => {
       resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
@@ -879,90 +742,6 @@ describe('drag-drop-controller', () => {
 
       controller.clearDropTargets()
       expect(controller.getDropTargetPane()).toBeNull()
-    })
-  })
-
-  describe('init + native listeners', () => {
-    it('registers the three native-drag listeners', async () => {
-      const { controller } = create()
-      await controller.init()
-      expect(listenHandlers.has('drag-image-size')).toBe(true)
-      expect(listenHandlers.has('drag-modifiers')).toBe(true)
-      expect(dragDropHandlerRef.current).not.toBeNull()
-    })
-
-    it('drives a full enter → over → drop drag cycle through the webview listener', async () => {
-      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
-      const { controller, showTransfer } = create({ focusedPane: 'left', paths: { right: '/right/dir' } })
-      await controller.init()
-      const fire = dragDropHandler()
-
-      fire({ payload: { type: 'enter', paths: [SAME_VOL_PATH_A], position: { x: 1, y: 1 } } })
-      expect(showOverlaySpy).toHaveBeenCalledTimes(1)
-      expect(controller.getDropTargetPane()).toBe('right')
-
-      fire({ payload: { type: 'over', position: { x: 2, y: 2 } } })
-
-      fire({ payload: { type: 'drop', paths: [SAME_VOL_PATH_A], position: { x: 2, y: 2 } } })
-      await flushDrop()
-      expect(showTransfer).toHaveBeenCalledTimes(1)
-      expect(hideOverlaySpy).toHaveBeenCalled()
-      // Drop clears the highlight as part of its teardown.
-      expect(controller.getDropTargetPane()).toBeNull()
-    })
-
-    it('on leave, hides the overlay and clears targets without ending the self-drag session', async () => {
-      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
-      const { controller } = create()
-      await controller.init()
-      const fire = dragDropHandler()
-
-      fire({ payload: { type: 'enter', paths: ['/a/f'], position: { x: 1, y: 1 } } })
-      expect(controller.getDropTargetPane()).toBe('right')
-
-      fire({ payload: { type: 'leave' } })
-      expect(hideOverlaySpy).toHaveBeenCalled()
-      expect(stopModifierTrackingSpy).toHaveBeenCalled()
-      expect(controller.getDropTargetPane()).toBeNull()
-    })
-
-    it('the drag-image-size listener suppresses the overlay for a large external image', async () => {
-      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
-      getIsDraggingFromSelfSpy.mockReturnValue(false)
-      const { controller } = create()
-      await controller.init()
-      const fire = dragDropHandler()
-      const sizeHandler = listenHandler('drag-image-size')
-
-      sizeHandler({ payload: { width: 200, height: 200 } })
-      fire({ payload: { type: 'enter', paths: ['/a/big'], position: { x: 1, y: 1 } } })
-
-      // Large external image → overlay suppressed.
-      expect(showOverlaySpy).not.toHaveBeenCalled()
-    })
-
-    it('the drag-modifiers listener re-runs handleDragOver at the last position', async () => {
-      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
-      const { controller } = create()
-      await controller.init()
-      const fire = dragDropHandler()
-      const modHandler = listenHandler('drag-modifiers')
-
-      fire({ payload: { type: 'enter', paths: ['/a/f'], position: { x: 7, y: 9 } } })
-      updateOverlaySpy.mockClear()
-
-      modHandler({ payload: { altHeld: true, cmdHeld: false, shiftHeld: false } })
-      // Re-evaluated at the last drag position (7, 9).
-      const lastCall = lastOverlayArgs()
-      expect(lastCall[0]).toBe(7)
-      expect(lastCall[1]).toBe(9)
-    })
-
-    it('cleanup unsubscribes the listeners and stops modifier tracking', async () => {
-      const { controller } = create()
-      await controller.init()
-      controller.cleanup()
-      expect(stopModifierTrackingSpy).toHaveBeenCalled()
     })
   })
 })
