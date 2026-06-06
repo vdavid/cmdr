@@ -46,6 +46,46 @@ vi.mock('@tauri-apps/plugin-store', () => ({
   }),
 }))
 
+// Fake `@tauri-apps/api/event` bus. `listen` records each (name, handler) pair
+// in a shared registry so a test can drive a "remote window" by invoking the
+// captured handler; `emit` records each (name, payload) so a test can assert
+// what a mutation broadcast. Declared via `vi.hoisted` so the registries survive
+// the `vi.resetModules()` reloads (they stand in for the cross-window OS bus,
+// which a webview reload doesn't reset).
+const eventBus = vi.hoisted(() => ({
+  listeners: new Map<string, Array<(event: { payload: unknown }) => void>>(),
+  emits: [] as Array<{ name: string; payload: unknown }>,
+}))
+
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: vi.fn((name: string, handler: (event: { payload: unknown }) => void) => {
+    const arr = eventBus.listeners.get(name) ?? []
+    arr.push(handler)
+    eventBus.listeners.set(name, arr)
+    return Promise.resolve(() => {
+      const cur = eventBus.listeners.get(name) ?? []
+      eventBus.listeners.set(
+        name,
+        cur.filter((h) => h !== handler),
+      )
+    })
+  }),
+  emit: vi.fn((name: string, payload: unknown) => {
+    eventBus.emits.push({ name, payload })
+    return Promise.resolve()
+  }),
+}))
+
+// Deliver an event to every handler registered in THIS window for `name`. Stands
+// in for the OS delivering a cross-window broadcast. The originating window also
+// receives its own emits on the real bus, so tests use this to prove the
+// loop-guard drops self-originated events.
+function deliver(name: string, payload: unknown): void {
+  for (const handler of eventBus.listeners.get(name) ?? []) {
+    handler({ payload })
+  }
+}
+
 vi.mock('$lib/settings/store-path', () => ({
   resolveStorePath: (name: string) => Promise.resolve(name),
 }))
@@ -72,8 +112,15 @@ async function flushSave() {
 beforeEach(() => {
   // Fresh disk per test; resetModules so each test starts with an uninitialized store.
   disk.clear()
+  eventBus.listeners.clear()
+  eventBus.emits.length = 0
   vi.resetModules()
 })
+
+// All `shortcuts:changed` emit payloads recorded so far.
+function changedEmits(): unknown[] {
+  return eventBus.emits.filter((e) => e.name === 'shortcuts:changed').map((e) => e.payload)
+}
 
 describe('shortcuts-store persistence round-trips', () => {
   it('keeps a removed-only-default shortcut removed across a reload (RC2)', async () => {
@@ -187,5 +234,136 @@ describe('shortcuts-store persistence round-trips', () => {
     // Garbage is skipped, so the command falls back to its registry default ([]).
     expect(store.getEffectiveShortcuts('app.showAll')).toEqual(getDefaultShortcuts('app.showAll'))
     expect(store.isShortcutModified('app.showAll')).toBe(false)
+  })
+})
+
+describe('shortcuts-store cross-window propagation (RC1)', () => {
+  it('setShortcut emits a shortcuts:changed event with the command id and new shortcuts', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.setShortcut('app.showAll', 0, 'F9')
+    await flushSave()
+
+    const emits = changedEmits() as Array<{ commandId?: string; shortcuts?: unknown }>
+    const forCmd = emits.find((p) => p.commandId === 'app.showAll')
+    expect(forCmd).toBeDefined()
+    expect(forCmd?.shortcuts).toEqual(['F9'])
+  })
+
+  it('applying a received remote change updates effective shortcuts AND fires listeners, without saving or re-emitting', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    const seen: string[] = []
+    store.onShortcutChange((id) => seen.push(id))
+
+    // A second window rebound app.showAll to F9 and broadcast it. The emit
+    // carries that window's senderId, so it differs from ours.
+    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'app.showAll', shortcuts: ['F9'] })
+    await flushSave()
+
+    // Local effective state reflects the remote change.
+    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(['F9'])
+    // Local reactive consumers were notified.
+    expect(seen).toContain('app.showAll')
+    // The writer already persisted; we must NOT write disk again here.
+    expect(disk.has('shortcut:app.showAll')).toBe(false)
+    // And we must NOT re-broadcast (that would loop).
+    expect(changedEmits()).toHaveLength(0)
+  })
+
+  it('propagates the "removed all shortcuts" empty-array state as [], not as a reset', async () => {
+    // `app.hide` defaults to ['⌘H']. Removing its only shortcut leaves [], which
+    // means "user removed all bindings, don't fall back to defaults" — distinct
+    // from a reset (which would send null and revert to ['⌘H']).
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.removeShortcut('app.hide', 0)
+    await flushSave()
+
+    const emits = changedEmits() as Array<{ commandId?: string; shortcuts?: unknown }>
+    const forCmd = emits.find((p) => p.commandId === 'app.hide')
+    expect(forCmd?.shortcuts).toEqual([])
+
+    // A receiving window applies [] (removed-all), not the ⌘H default.
+    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'app.hide', shortcuts: [] })
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual([])
+  })
+
+  it('a received reset (null shortcuts) clears the local custom entry and notifies', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    // Local window has a customization first.
+    store.setShortcut('app.hide', 0, '⌃X')
+    await flushSave()
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(['⌃X'])
+
+    const seen: string[] = []
+    store.onShortcutChange((id) => seen.push(id))
+
+    // Another window reset app.hide to its default.
+    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'app.hide', shortcuts: null })
+
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
+    expect(store.isShortcutModified('app.hide')).toBe(false)
+    expect(seen).toContain('app.hide')
+  })
+
+  it('reset-all round-trips: a received reset-all clears every local customization and notifies each', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.setShortcut('app.showAll', 0, 'F9')
+    await flushSave()
+    store.setShortcut('app.hide', 0, '⌃X')
+    await flushSave()
+
+    const seen: string[] = []
+    store.onShortcutChange((id) => seen.push(id))
+
+    deliver('shortcuts:changed', { senderId: 'other-window', resetAll: true })
+
+    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(getDefaultShortcuts('app.showAll'))
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
+    expect(seen).toContain('app.showAll')
+    expect(seen).toContain('app.hide')
+  })
+
+  it('resetAllShortcuts emits a reset-all marker', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.setShortcut('app.showAll', 0, 'F9')
+    await flushSave()
+    eventBus.emits.length = 0 // ignore the setShortcut emit
+
+    await store.resetAllShortcuts()
+
+    const emits = changedEmits() as Array<{ resetAll?: boolean }>
+    expect(emits.some((p) => p.resetAll === true)).toBe(true)
+  })
+
+  it('loop guard: the originating window ignores its own broadcast (no double-apply, no notify)', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.setShortcut('app.showAll', 0, 'F9')
+    await flushSave()
+
+    // Grab the payload this window actually emitted, including its own senderId.
+    const ownEmit = changedEmits()[0] as { senderId: string; commandId: string; shortcuts: unknown }
+    expect(ownEmit.senderId).toBeTruthy()
+
+    const seen: string[] = []
+    store.onShortcutChange((id) => seen.push(id))
+
+    // The OS echoes our own emit back to us. The loop guard must drop it.
+    deliver('shortcuts:changed', ownEmit)
+
+    expect(seen).not.toContain('app.showAll')
+    expect(changedEmits()).toHaveLength(1) // still just the original, no re-emit
   })
 })

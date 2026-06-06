@@ -3,6 +3,7 @@
  */
 
 import { load, type Store } from '@tauri-apps/plugin-store'
+import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { commands as ipcCommands } from '$lib/ipc/bindings'
 import { commands } from '$lib/commands/command-registry'
 import { resolveStorePath } from '$lib/settings/store-path'
@@ -24,6 +25,93 @@ let storeInstance: Store | null = null
 // In-memory cache of custom shortcuts
 const customShortcuts = new Map<string, string[]>()
 let initialized = false
+
+// ============================================================================
+// Cross-window propagation
+// ============================================================================
+
+// Event name for cross-window shortcut changes. Mirrors settings-store's
+// `settings:changed` pattern (see `$lib/settings/settings-store.ts`).
+const SHORTCUTS_CHANGED_EVENT = 'shortcuts:changed'
+
+// A per-window id stamped on every emit. The receiving listener drops any event
+// whose `senderId` matches its own, so the originating window doesn't re-apply
+// (and re-emit) its own change. Unlike settings-store — which dedupes via a
+// strict-equality idempotency guard on the cached value — shortcut payloads are
+// arrays that arrive as fresh references, so there's nothing to compare by
+// identity; an explicit sender id is the clean loop guard here.
+const SENDER_ID = crypto.randomUUID()
+
+interface ShortcutsChangedPayload {
+  senderId: string
+  // Present for a single-command change. `shortcuts` is the new custom list, or
+  // `null` when the command reverted to its registry default (no custom entry).
+  commandId?: string
+  shortcuts?: string[] | null
+  // Present for a reset-all broadcast: clear every local customization.
+  resetAll?: boolean
+}
+
+let crossWindowUnlisten: UnlistenFn | null = null
+
+/** Broadcast a single-command change to other windows. */
+function emitShortcutChange(commandId: string): void {
+  // `customShortcuts.get` returns undefined once the command reverted to default
+  // (cleanup/reset dropped the entry); send `null` so receivers clear their own.
+  const shortcuts = customShortcuts.get(commandId) ?? null
+  void emit(SHORTCUTS_CHANGED_EVENT, {
+    senderId: SENDER_ID,
+    commandId,
+    shortcuts: shortcuts ? [...shortcuts] : null,
+  } satisfies ShortcutsChangedPayload)
+}
+
+/** Broadcast a reset-all to other windows. */
+function emitResetAll(): void {
+  void emit(SHORTCUTS_CHANGED_EVENT, { senderId: SENDER_ID, resetAll: true } satisfies ShortcutsChangedPayload)
+}
+
+/**
+ * Install the cross-window listener. Called once from `initializeShortcuts`.
+ * Re-init is guarded both by `initialized` and by `crossWindowUnlisten`, so a
+ * window never double-subscribes.
+ *
+ * On a remote change it updates the local `customShortcuts` map directly and
+ * fires `notifyListeners` so reactive consumers (chips, F-key bar, palette) and
+ * the dispatch map rebuild. It deliberately does NOT save to disk (the writer
+ * window already persisted) and does NOT re-emit (that would loop).
+ */
+async function setupCrossWindowListener(): Promise<void> {
+  if (crossWindowUnlisten) return // already listening
+
+  crossWindowUnlisten = await listen<ShortcutsChangedPayload>(SHORTCUTS_CHANGED_EVENT, (event) => {
+    const { senderId, commandId, shortcuts, resetAll } = event.payload
+    if (senderId === SENDER_ID) return // our own broadcast; ignore (loop guard)
+
+    if (resetAll) {
+      // Capture affected ids before clearing so we can notify each.
+      const affected = [...customShortcuts.keys()]
+      customShortcuts.clear()
+      for (const id of affected) {
+        notifyListeners(id)
+      }
+      return
+    }
+
+    if (commandId === undefined) return
+
+    if (shortcuts == null) {
+      // Remote reverted this command to its default (`null`, or a malformed
+      // single-command payload missing `shortcuts`). `==` catches both null and
+      // undefined; an empty array stays truthy here, so the "removed all
+      // shortcuts" state is preserved as `[]`, not collapsed to a reset.
+      customShortcuts.delete(commandId)
+    } else {
+      customShortcuts.set(commandId, [...shortcuts])
+    }
+    notifyListeners(commandId)
+  })
+}
 
 // ============================================================================
 // Initialization
@@ -92,6 +180,10 @@ export async function initializeShortcuts(): Promise<void> {
   } else {
     log.debug('No custom shortcuts found in store')
   }
+
+  // Listen for cross-window shortcut changes (Settings ↔ main window). Installed
+  // once per window; `setupCrossWindowListener` is a no-op if already subscribed.
+  await setupCrossWindowListener()
 
   initialized = true
 
@@ -272,6 +364,8 @@ export function setShortcut(commandId: string, index: number, shortcut: string):
   // and we need persistence before the Settings window might close
   void saveToStore()
   notifyListeners(commandId)
+  // Broadcast AFTER updating local state so other windows catch up live.
+  emitShortcutChange(commandId)
 }
 
 /**
@@ -285,6 +379,7 @@ export function addShortcut(commandId: string, shortcut: string): void {
   // Save immediately for reliable persistence
   void saveToStore()
   notifyListeners(commandId)
+  emitShortcutChange(commandId)
 }
 
 /**
@@ -300,6 +395,7 @@ export function removeShortcut(commandId: string, index: number): void {
     // Save immediately for reliable persistence
     void saveToStore()
     notifyListeners(commandId)
+    emitShortcutChange(commandId)
   }
 }
 
@@ -312,6 +408,7 @@ export function resetShortcut(commandId: string): void {
     // Save immediately for reliable persistence
     void saveToStore()
     notifyListeners(commandId)
+    emitShortcutChange(commandId)
   }
 }
 
@@ -331,6 +428,9 @@ export async function resetAllShortcuts(): Promise<void> {
   for (const id of modifiedIds) {
     notifyListeners(id)
   }
+
+  // Broadcast a single reset-all marker; receivers clear their whole map.
+  emitResetAll()
 }
 
 // ============================================================================

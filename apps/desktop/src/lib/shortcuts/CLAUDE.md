@@ -40,6 +40,31 @@ shortcuts:
   defaults. The notification path also syncs menu accelerators (`updateMenuAccelerator` no-ops for commands without a
   menu item).
 
+### Cross-window propagation (`shortcuts:changed`)
+
+The store is per-webview module state, so a rebind in the Settings window must reach the main window's `customShortcuts`
+map, its `onShortcutChange` consumers (reactive chips, F-key bar, palette, sort tooltips), AND its dispatch map —
+otherwise they stay stale until restart and the new key doesn't actually work. This mirrors settings-store's
+`settings:changed` pattern.
+
+- **Every mutation** (`setShortcut` / `addShortcut` / `removeShortcut` / `resetShortcut` / `resetAllShortcuts`) emits a
+  `shortcuts:changed` Tauri event AFTER updating local state and saving. A single-command change carries
+  `{ senderId, commandId, shortcuts }` where `shortcuts` is the new custom list, or `null` when the command reverted to
+  its registry default (cleanup/reset dropped the map entry). `resetAllShortcuts` emits `{ senderId, resetAll: true }`.
+- **`initializeShortcuts` installs a listener** (`setupCrossWindowListener`) that, on a remote change, updates the local
+  map directly and calls `notifyListeners(commandId)` so reactive consumers + the dispatch map rebuild. It does NOT save
+  to disk (the writer already saved) and does NOT re-emit (that would loop). A reset-all clears the whole map and
+  notifies each previously-customized id (computed from the map before clearing). The listener is installed once per
+  window — guarded by both `initialized` and a non-null `crossWindowUnlisten`, so a re-init can't double-subscribe.
+- **Loop guard:** each window stamps every emit with a per-window `SENDER_ID` (a `crypto.randomUUID()` generated once at
+  module load); the listener drops any event whose `senderId` matches its own. Settings-store dedupes instead via a
+  strict-equality idempotency guard on the cached value, but shortcut payloads are arrays that arrive as fresh
+  references (nothing to compare by identity), so the explicit sender id is the clean guard here.
+- **The viewer never subscribes.** It's capability-restricted and never calls `initializeShortcuts`, so no
+  `shortcuts:changed` listener is installed there. Importing `shortcuts-store` at module eval (the viewer pulls it in
+  transitively via the literal-mode `ShortcutChip`) only runs `crypto.randomUUID()` and declares functions — no
+  `listen()` call — so the capability boundary holds.
+
 ### Reactive reads (`reactive-shortcuts.svelte.ts`)
 
 Two readers over one module-level `$state` version (bumped on every `onShortcutChange`):
@@ -168,8 +193,13 @@ hurt (adding F8 to the registry but forgetting to add it to the keydown handler)
 
 ### Why separate MCP listener for main window?
 
-The settings window has a full MCP bridge that syncs all state. The main window only needs to react to shortcut changes.
-A lightweight listener keeps concerns separated and reduces overhead.
+`mcp-shortcuts-listener.ts` listens for the backend's `mcp-shortcuts-set` / `-remove` / `-reset` events (a distinct
+backend→main channel) so MCP tools can rebind even when the Settings window is closed. It calls the same store mutators
+(`setShortcut` / `removeShortcut` / `resetShortcut`), so an MCP-driven change in the main window now also rides the
+`shortcuts:changed` cross-window event to the Settings window for free — no special handling needed. The MCP listener
+stays separate because its trigger (a backend event with a different payload shape) is unrelated to the window-to-window
+`shortcuts:changed` channel; folding them together would conflate two transports. (If a future change makes the two
+channels share a payload, revisit — but today it's not a trivial merge, so leave it.)
 
 ## Gotchas
 
