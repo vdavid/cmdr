@@ -59,6 +59,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   ([f4a8b1cb](https://github.com/vdavid/cmdr/commit/f4a8b1cb))
 - Show the volume name instead of a raw storage id (like "65538") in the transfer dialog header
   ([f4a8b1cb](https://github.com/vdavid/cmdr/commit/f4a8b1cb))
+- Show "/" instead of a raw storage id (like "65537") in the tab title at a phone or camera storage root
 - Fix file viewer settings (word wrap, text size, binary warning) silently resetting every session
   ([51e127aa](https://github.com/vdavid/cmdr/commit/51e127aa))
 - Make the title bar draggable while a dialog is open, and in the file viewer window

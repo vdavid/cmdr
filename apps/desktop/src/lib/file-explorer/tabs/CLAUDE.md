@@ -9,6 +9,10 @@ Per-pane tab system for the dual-pane file explorer. Each pane side (left/right)
   pin). Max 10 tabs per pane.
 - `TabBar.svelte`: Tab bar UI component. Always visible, Chrome-style shrinking tabs, pin icons, close buttons, context
   menu.
+- `tab-label.ts`: `deriveTabLabel(path)` — the tab title. Basename via `getFolderName` for normal paths, but for an MTP
+  path (`mtp://…`) it derives from the within-storage path (`getMtpDisplayPath`) so the storage root shows "/" instead
+  of the raw storage id (`65537`). Mounted-volume roots (`/Volumes/USB`) keep their basename; only the MTP scheme is
+  special-cased. Pinned by `tab-label.test.ts`.
 - `tab-state-manager.test.ts`: Unit tests for state manager
 
 ## Key decisions

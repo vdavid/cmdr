@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { TabState, TabId } from './tab-types'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import { getFolderName } from '$lib/file-operations/transfer/transfer-dialog-utils'
+    import { deriveTabLabel } from './tab-label'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
 
     interface Props {
@@ -132,7 +132,7 @@
                     </span>
                 {/if}
                 <span class="tab-label">
-                    {getFolderName(tab.path)}
+                    {deriveTabLabel(tab.path)}
                 </span>
                 {#if !isSingleTab}
                     <span
