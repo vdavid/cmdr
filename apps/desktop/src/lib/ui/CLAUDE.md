@@ -185,8 +185,8 @@ Progressive status text driven by props (mutually exclusive, evaluated top-down)
 4. Default → "Loading..."
 
 `showCancelHint` adds "Press [Esc] to cancel and go back" (the key rendered as a literal `ShortcutChip`) below the
-spinner. The container uses a 400ms `fadeIn` animation
-where the first 50% is invisible (effectively 200ms before fade begins), avoiding flash for fast loads.
+spinner. The container uses a 400ms `fadeIn` animation where the first 50% is invisible (effectively 200ms before fade
+begins), avoiding flash for fast loads.
 
 ## ProgressBar
 
@@ -377,9 +377,9 @@ The `shortcut-<commandId>` anchor-id convention (shared with the Settings sectio
 exported `shortcutAnchorId(commandId)` in `lib/settings/settings-window.ts` so it can't drift.
 
 **Where literal chips render the fixed interaction keys (Class B).** Beyond the live `commandId` sites, literal-mode
-chips give the uniform key look to fixed (non-customizable) interaction keys: the search dialog's empty-state tip
-(`⌘N` / `⌘H` / `⌘Enter`), the run button's `⏎`, the scope popover's `⌥C` / `⌥V`, the recent-items footer's `⌘H` and
-popover's `↑↓` / `Enter`, the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s `Esc` cancel hint, the
+chips give the uniform key look to fixed (non-customizable) interaction keys: the search dialog's empty-state tip (`⌘N`
+/ `⌘H` / `⌘Enter`), the run button's `⏎`, the scope popover's `⌥C` / `⌥V`, the recent-items footer's `⌘H` and popover's
+`↑↓` / `Enter`, the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s `Esc` cancel hint, the
 `PtpcameradDialog` `Ctrl+C`, and the network browser's `⌘R` refresh hint. These keys are static by nature (no registry
 command, never clickable); the chip only unifies their appearance.
 
