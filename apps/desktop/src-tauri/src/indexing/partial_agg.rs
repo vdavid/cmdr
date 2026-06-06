@@ -1,14 +1,13 @@
-//! Send-decision logic for mid-scan partial aggregation.
+//! Send-decision logic and hot-path collection for mid-scan partial aggregation.
 //!
 //! The scan progress loop in `manager.rs` ticks every 500 ms. On each tick it
 //! asks `should_send_partial_agg` whether to fire a `ComputePartialAggregates`
-//! message. Keeping the decision in a pure function lets it be unit-tested
+//! message; when it does, `collect_hot_paths` turns the live listing snapshot
+//! into the message's `hot_paths`. Keeping both pure lets them be unit-tested
 //! exhaustively while the timer loop itself stays a dumb caller.
 
-// The scan progress loop in `manager.rs` is the sole non-test consumer of these
-// items; until that call site lands they have no non-test reference, so
-// dead-code analysis would flag them. The truth-table tests exercise every branch.
-#![allow(dead_code, reason = "consumed by the scan progress loop in manager.rs")]
+use crate::file_system::listing::caching::ListingSummary;
+use crate::indexing::firmlinks;
 
 /// How many 500 ms progress ticks between partial-aggregation passes.
 ///
@@ -44,9 +43,85 @@ pub(super) fn should_send_partial_agg(tick: u64, queue_depth: usize) -> bool {
     queue_depth <= PARTIAL_AGG_MAX_QUEUE_DEPTH
 }
 
+/// Turn a snapshot of the live listing cache into the firmlink-normalized "hot
+/// paths" for a partial-aggregation pass: the directories a pane is currently
+/// showing, so the handler can punch their `dir_stats` through the depth cap.
+///
+/// Keeps only listings on the volume being scanned (matched by `volume_id`, the
+/// only reliable signal — `ListingSummary` carries no volume root). This drops,
+/// by construction, every `network` / `search-results` / `mtp-*` listing, SMB
+/// shares, and **other local volumes** like `/Volumes/OtherDisk`: those carry
+/// absolute-looking paths that would otherwise be resolved against the scanned
+/// volume's per-volume DB, matching the wrong subtree. `path.is_absolute()` is a
+/// belt-and-braces second filter.
+///
+/// Surviving paths are mapped through `firmlinks::normalize_path` so they match
+/// the index's canonical form (`/tmp` → `/private/tmp` etc.), then deduplicated
+/// (two panes on the same dir collapse to one) while preserving first-seen order.
+pub(super) fn collect_hot_paths(listings: &[ListingSummary], scanned_volume_id: &str) -> Vec<String> {
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut out: Vec<String> = Vec::new();
+    for listing in listings {
+        if listing.volume_id != scanned_volume_id || !listing.path.is_absolute() {
+            continue;
+        }
+        let normalized = firmlinks::normalize_path(&listing.path.to_string_lossy());
+        if seen.insert(normalized.clone()) {
+            out.push(normalized);
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+
+    fn summary(volume_id: &str, path: &str) -> ListingSummary {
+        ListingSummary {
+            listing_id: format!("listing-{path}"),
+            volume_id: volume_id.to_string(),
+            path: PathBuf::from(path),
+            entry_count: 0,
+            age_ms: 0,
+        }
+    }
+
+    #[test]
+    fn keeps_matching_volume_absolute_paths_normalized_and_deduped() {
+        let listings = vec![
+            // On the scanned volume, absolute: kept.
+            summary("vol-main", "/Users/david"),
+            // Same path on another local volume: dropped (would resolve against
+            // the wrong per-volume DB).
+            summary("vol-other", "/Users/david"),
+            // Virtual / device listings: dropped by the volume-id filter.
+            summary("mtp-1234", "/DCIM"),
+            summary("search-results", "/anything"),
+            summary("network", "/share/docs"),
+            // Relative / SMB-share-shaped path on the scanned volume: dropped by
+            // the absolute-path filter.
+            summary("vol-main", "relative/dir"),
+            // Needs firmlink normalization.
+            summary("vol-main", "/tmp/scratch"),
+            // Duplicate of the first (two panes on the same dir): deduped.
+            summary("vol-main", "/Users/david"),
+        ];
+
+        let hot = collect_hot_paths(&listings, "vol-main");
+
+        // First-seen order preserved; the /tmp entry normalized; duplicate gone;
+        // every other-volume / virtual / relative entry filtered out.
+        let expected_tmp = firmlinks::normalize_path("/tmp/scratch");
+        assert_eq!(hot, vec!["/Users/david".to_string(), expected_tmp]);
+    }
+
+    #[test]
+    fn empty_when_no_listing_matches_the_scanned_volume() {
+        let listings = vec![summary("vol-other", "/Users/david"), summary("mtp-1", "/DCIM")];
+        assert!(collect_hot_paths(&listings, "vol-main").is_empty());
+    }
 
     #[test]
     fn never_sends_on_tick_zero() {

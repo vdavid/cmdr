@@ -15,12 +15,14 @@ use super::events::{
     IndexScanProgressEvent, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord, RescanReason,
     emit_rescan_notification,
 };
+use super::partial_agg;
 use super::reconciler::{self, EventReconciler};
 use super::scanner::{self, ScanConfig};
 use super::state::{INDEXING, IndexPhase};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
 use super::writer::{IndexWriter, WriteMessage};
+use crate::file_system::listing::caching;
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
@@ -372,7 +374,9 @@ impl IndexManager {
         let volume_id_progress = self.volume_id.clone();
         let app_progress = self.app.clone();
         let scan_done_progress = Arc::clone(&scan_done);
+        let writer_progress = self.writer.clone();
         tauri::async_runtime::spawn(async move {
+            let mut tick: u64 = 0;
             loop {
                 tokio::time::sleep(Duration::from_millis(500)).await;
                 if scan_done_progress.load(Ordering::Relaxed) {
@@ -387,6 +391,27 @@ impl IndexManager {
                         dirs_found: dirs,
                     },
                 );
+
+                // Mid-scan partial aggregation: on the interval-th tick (and only
+                // when the writer isn't backed up), ask the writer to compute and
+                // write a bounded subset of partial dir sizes so visible listings
+                // show growing numbers during the scan. The whole block sits
+                // behind the gate so skipped ticks do zero extra work — which also
+                // makes disabling the feature a single call-site toggle. All logic
+                // lives in the tested helpers; this body just snapshots and sends.
+                tick += 1;
+                if partial_agg::should_send_partial_agg(tick, writer_progress.queue_depth()) {
+                    // Take the cheap, owned listing snapshot first and let its
+                    // read lock drop before any path work; don't hold a
+                    // cross-subsystem lock through normalization.
+                    let listings = caching::snapshot_listings();
+                    let hot_paths = partial_agg::collect_hot_paths(&listings, &volume_id_progress);
+                    match writer_progress.try_send(WriteMessage::ComputePartialAggregates { hot_paths }) {
+                        Ok(true) => {}
+                        Ok(false) => log::debug!("Partial aggregation pass dropped: writer channel full"),
+                        Err(e) => log::debug!("Partial aggregation send failed (writer gone): {e}"),
+                    }
+                }
             }
         });
 

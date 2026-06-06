@@ -586,6 +586,157 @@ mod tests {
         *enrichment::READ_POOL.lock().unwrap() = None;
     }
 
+    /// Mid-scan, enrichment reads the partial `dir_stats` rows: a top-level dir's
+    /// `recursive_size` is non-null and grows across batches, all BEFORE any
+    /// `ComputeAllAggregates` lands. This pins the read path end of the feature —
+    /// the writer-side partial pass plus the on-disk rows it commits are visible
+    /// to `enrich_entries_with_index` while the scan is still in flight.
+    ///
+    /// Deterministic by construction: each `flush_blocking` is a barrier, so this
+    /// simulates a mid-scan prefix without racing a live scanner thread.
+    /// `enrich_entries_with_index` reads the process-global `READ_POOL`, so the
+    /// test installs a pool and serializes on `READ_POOL_TEST_MUTEX`; without the
+    /// install, enrichment silently no-ops (proven by the teeth check below).
+    #[test]
+    fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
+        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
+
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let db_path = dir.path().join("partial-enrich.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        *enrichment::READ_POOL.lock().unwrap() = Some(Arc::new(ReadPool::new(db_path.clone()).expect("create pool")));
+
+        // Top-level dir /big (id=10, depth 1 — within the partial pass's depth cap).
+        let big = EntryRow {
+            id: 10,
+            parent_id: ROOT_ID,
+            name: "big".into(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+            inode: None,
+        };
+
+        // Batch 1: the dir plus one 100-byte file directly under it.
+        let batch1 = vec![
+            big.clone(),
+            EntryRow {
+                id: 11,
+                parent_id: 10,
+                name: "f1.dat".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(100),
+                physical_size: Some(100),
+                modified_at: None,
+                inode: None,
+            },
+        ];
+        writer.send(writer::WriteMessage::InsertEntriesV2(batch1)).unwrap();
+        writer
+            .send(writer::WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        // Enrich a /big FileEntry: a partial pass has run, so recursive_size is
+        // non-null and reflects batch-1 contents only.
+        let mut entries = vec![make_file_entry("big", "/big", true)];
+        enrich_entries_with_index(&mut entries);
+        assert_eq!(
+            entries[0].recursive_size,
+            Some(100),
+            "after batch 1's partial pass, /big should show a non-null partial size"
+        );
+
+        // Batch 2: a second 50-byte file under /big. After its partial pass, the
+        // size grows — still before any ComputeAllAggregates.
+        let batch2 = vec![EntryRow {
+            id: 12,
+            parent_id: 10,
+            name: "f2.dat".into(),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(50),
+            physical_size: Some(50),
+            modified_at: None,
+            inode: None,
+        }];
+        writer.send(writer::WriteMessage::InsertEntriesV2(batch2)).unwrap();
+        writer
+            .send(writer::WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let mut entries = vec![make_file_entry("big", "/big", true)];
+        enrich_entries_with_index(&mut entries);
+        assert_eq!(
+            entries[0].recursive_size,
+            Some(150),
+            "after batch 2's partial pass, /big's partial size should grow to 100 + 50"
+        );
+
+        writer.shutdown();
+        *enrichment::READ_POOL.lock().unwrap() = None;
+    }
+
+    /// Teeth for `partial_aggregation_is_visible_to_enrichment_mid_scan`: with the
+    /// partial-agg sends removed, no `dir_stats` rows exist mid-scan, so
+    /// enrichment leaves `recursive_size` null. This proves the assertions above
+    /// fail without the feature under test — they aren't vacuously green.
+    #[test]
+    fn enrichment_sees_no_partial_size_without_a_partial_pass() {
+        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
+
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let db_path = dir.path().join("partial-enrich-teeth.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = writer::IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        *enrichment::READ_POOL.lock().unwrap() = Some(Arc::new(ReadPool::new(db_path.clone()).expect("create pool")));
+
+        let batch = vec![
+            EntryRow {
+                id: 10,
+                parent_id: ROOT_ID,
+                name: "big".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 11,
+                parent_id: 10,
+                name: "f1.dat".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(100),
+                physical_size: Some(100),
+                modified_at: None,
+                inode: None,
+            },
+        ];
+        // Insert and flush, but send NO ComputePartialAggregates.
+        writer.send(writer::WriteMessage::InsertEntriesV2(batch)).unwrap();
+        writer.flush_blocking().unwrap();
+
+        let mut entries = vec![make_file_entry("big", "/big", true)];
+        enrich_entries_with_index(&mut entries);
+        assert_eq!(
+            entries[0].recursive_size, None,
+            "without a partial pass, no dir_stats row exists, so enrichment finds no size"
+        );
+
+        writer.shutdown();
+        *enrichment::READ_POOL.lock().unwrap() = None;
+    }
+
     /// `get_dir_stats` reflects the in-memory pending-size tracker: a directory
     /// with unprocessed writes in flight comes back `recursive_size_pending`,
     /// and clears once the tracker is reset (writer drained).
