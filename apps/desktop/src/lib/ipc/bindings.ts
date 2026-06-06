@@ -2853,6 +2853,12 @@ export type IndexStatus = {
   scanCompletedAt: string | null
   scanDurationMs: string | null
   totalEntries: string | null
+  /**
+   *  The previous completed scan's summed post-dedup physical bytes (TEXT, like
+   *  every meta value). Surfaced for symmetry with `total_entries` and for
+   *  debugging; not on the tier-1 critical path.
+   */
+  totalPhysicalBytes: string | null
   lastEventId: string | null
 }
 
@@ -2861,8 +2867,22 @@ export type IndexStatusResponse = {
   scanning: boolean
   entriesScanned: number
   dirsFound: number
+  /**
+   *  Resolved post-dedup physical bytes scanned so far (live), the tier-2
+   *  progress numerator. 0 when no scan is running. Rides the same
+   *  `scan_handle` snapshot as `entries_scanned`/`dirs_found`.
+   */
+  bytesScanned: number
   indexStatus: IndexStatus | null
   dbFileSize: number | null
+  /**
+   *  The scanned volume's used bytes at the current scan's start, the tier-2
+   *  (first-scan) progress denominator. Sourced from the stashed calibration,
+   *  so it's present only while a scan is running (and only when the space-info
+   *  fetch succeeded). Lets the FE backfill tier-2 progress after a mid-scan
+   *  window reload, where the `index-scan-started` event was missed.
+   */
+  volumeUsedBytes: number | null
 }
 
 /**

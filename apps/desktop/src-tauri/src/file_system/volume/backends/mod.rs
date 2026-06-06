@@ -19,6 +19,10 @@ mod smb_watcher;
 
 pub use in_memory::InMemoryVolume;
 pub use local_posix::LocalPosixVolume;
+/// Cross-platform volume used-bytes helper (NSURL purgeable-aware on macOS,
+/// `statvfs` on Linux). Re-exported so the indexing module can read the scanned
+/// volume's used bytes for tier-2 scan progress without re-implementing statfs.
+pub(crate) use local_posix::get_space_info_for_path;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use mtp::MtpVolume;
 #[cfg(any(target_os = "macos", target_os = "linux"))]

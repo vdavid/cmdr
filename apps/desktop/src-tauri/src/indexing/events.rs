@@ -14,6 +14,15 @@ use super::store::IndexStatus;
 #[serde(rename_all = "camelCase")]
 pub struct IndexScanStartedEvent {
     pub volume_id: String,
+    /// The previous completed scan's final entry count, the tier-1 (calibrated)
+    /// progress denominator. `None` on a first-ever scan (no prior calibration).
+    pub prior_total_entries: Option<u64>,
+    /// The previous completed scan's wall-clock duration, used to seed the tier-1
+    /// ETA before the sliding window has samples. `None` on a first-ever scan.
+    pub prior_scan_duration_ms: Option<u64>,
+    /// The scanned volume's used bytes at scan start, the tier-2 (rough, first-scan)
+    /// progress denominator. `None` when the space-info fetch failed.
+    pub volume_used_bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,6 +31,9 @@ pub struct IndexScanProgressEvent {
     pub volume_id: String,
     pub entries_scanned: u64,
     pub dirs_found: u64,
+    /// Resolved post-dedup physical bytes scanned so far, the tier-2 progress
+    /// numerator (apples-to-apples with `volume_used_bytes`).
+    pub bytes_scanned: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -159,8 +171,18 @@ pub struct IndexStatusResponse {
     pub scanning: bool,
     pub entries_scanned: u64,
     pub dirs_found: u64,
+    /// Resolved post-dedup physical bytes scanned so far (live), the tier-2
+    /// progress numerator. 0 when no scan is running. Rides the same
+    /// `scan_handle` snapshot as `entries_scanned`/`dirs_found`.
+    pub bytes_scanned: u64,
     pub index_status: Option<IndexStatus>,
     pub db_file_size: Option<u64>,
+    /// The scanned volume's used bytes at the current scan's start, the tier-2
+    /// (first-scan) progress denominator. Sourced from the stashed calibration,
+    /// so it's present only while a scan is running (and only when the space-info
+    /// fetch succeeded). Lets the FE backfill tier-2 progress after a mid-scan
+    /// window reload, where the `index-scan-started` event was missed.
+    pub volume_used_bytes: Option<u64>,
 }
 
 /// Extended debug status for the debug window. Includes live DB counts

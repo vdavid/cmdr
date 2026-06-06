@@ -52,6 +52,52 @@ pub(crate) struct IndexManager {
     pub(super) app: AppHandle,
     /// Whether a full scan is currently running. Shared with the completion handler.
     pub(super) scanning: Arc<AtomicBool>,
+    /// Calibration for the in-flight scan, captured in `start_scan`: the prior
+    /// completed scan's totals (read from meta before truncating) plus the
+    /// scanned volume's used bytes (fetched once). A plain field is enough —
+    /// `start_scan` is `&mut self` and `get_status` is `&self`. `None` until the
+    /// first scan starts; refreshed at the start of every scan.
+    scan_calibration: Option<ScanCalibration>,
+}
+
+/// The static, per-scan inputs the frontend needs to pick and drive a scan
+/// progress tier. Captured once at scan start (`get_status` reads it back for
+/// late-join), so the moving 500 ms progress events carry only live counters.
+#[derive(Debug, Clone, Copy)]
+struct ScanCalibration {
+    /// The prior completed scan's persisted totals (tier-1 denominator + ETA seed).
+    prior: super::store::ScanCalibration,
+    /// The scanned volume's used bytes at scan start (tier-2 denominator). `None`
+    /// when the space-info fetch failed; never blocks or delays the scan.
+    volume_used_bytes: Option<u64>,
+}
+
+/// The live scan-progress fields `get_status` surfaces on `IndexStatusResponse`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct LiveScanCounters {
+    entries_scanned: u64,
+    dirs_found: u64,
+    bytes_scanned: u64,
+    volume_used_bytes: Option<u64>,
+}
+
+/// Derive the live scan counters for `get_status` from the active scan's progress
+/// snapshot and the stashed per-scan calibration. Extracted as a pure function so
+/// the snapshot-and-calibration combining is unit-testable without an `AppHandle`
+/// (`get_status` itself needs a full `IndexManager`, which the module's testing
+/// bar keeps under integration coverage). No active scan → all-zero counters; the
+/// `volume_used_bytes` denominator rides the stashed calibration so a mid-scan
+/// window reload can still backfill tier-2 progress after missing the started event.
+fn live_scan_counters(
+    snapshot: Option<scanner::ScanProgressSnapshot>,
+    calibration: Option<ScanCalibration>,
+) -> LiveScanCounters {
+    LiveScanCounters {
+        entries_scanned: snapshot.map(|s| s.entries_scanned).unwrap_or(0),
+        dirs_found: snapshot.map(|s| s.dirs_found).unwrap_or(0),
+        bytes_scanned: snapshot.map(|s| s.bytes_scanned).unwrap_or(0),
+        volume_used_bytes: calibration.and_then(|c| c.volume_used_bytes),
+    }
 }
 
 impl IndexManager {
@@ -84,6 +130,7 @@ impl IndexManager {
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
             app,
             scanning: Arc::new(AtomicBool::new(false)),
+            scan_calibration: None,
         })
     }
 
@@ -303,6 +350,37 @@ impl IndexManager {
             return Err("Scan already running".to_string());
         }
 
+        // Step 0: Capture this scan's calibration BEFORE truncating.
+        //
+        // The prior completed scan's totals are read straight off the live read
+        // connection: the calibration keys survive `TruncateData` (it preserves
+        // `meta`), but reading first keeps the data flow obviously correct — we
+        // snapshot the previous scan's numbers before the truncate touches anything.
+        let prior = IndexStore::read_scan_calibration(self.store.read_conn()).unwrap_or_else(|e| {
+            log::warn!("Failed to read prior scan calibration (tier-1 will degrade): {e}");
+            super::store::ScanCalibration::default()
+        });
+
+        // Fetch the scanned volume's used bytes ONCE (tier-2 denominator). The call
+        // does disk I/O — an NSURL XPC round-trip on macOS, `statvfs` on Linux — and
+        // `start_scan` runs in async contexts (the auto-start spawn, async Tauri
+        // commands), so wrap it in `block_in_place`, matching the `flush_blocking`
+        // call below. A bare blocking call on a tokio worker can stall on a wedged
+        // mount. Failure → `None`; never block or delay the scan for the denominator.
+        let volume_root = self.volume_root.clone();
+        let volume_used_bytes = tokio::task::block_in_place(|| {
+            crate::file_system::volume::backends::get_space_info_for_path(&volume_root)
+                .map(|info| info.used_bytes)
+                .map_err(|e| log::warn!("Failed to read volume used bytes (tier-2 will degrade): {e}"))
+                .ok()
+        });
+
+        let calibration = ScanCalibration {
+            prior,
+            volume_used_bytes,
+        };
+        self.scan_calibration = Some(calibration);
+
         // Step 0a: Clear the previous scan's completion marker BEFORE truncating.
         // Without this, a rescan killed mid-way (power loss, `kill -9`) leaves the
         // PREVIOUS scan's `scan_completed_at` in meta on top of a truncated/partial
@@ -357,11 +435,17 @@ impl IndexManager {
             }
         }
 
-        // Emit started event
+        // Emit started event with the static, per-scan calibration. Static values
+        // ride this event once; the 500 ms progress event carries only the moving
+        // counters, so the FE never re-receives constants. The tier decision
+        // (calibrated vs rough) is then a pure function of this one event.
         let _ = self.app.emit(
             "index-scan-started",
             IndexScanStartedEvent {
                 volume_id: self.volume_id.clone(),
+                prior_total_entries: calibration.prior.total_entries,
+                prior_scan_duration_ms: calibration.prior.scan_duration_ms,
+                volume_used_bytes: calibration.volume_used_bytes,
             },
         );
 
@@ -404,6 +488,7 @@ impl IndexManager {
                         volume_id: volume_id_progress.clone(),
                         entries_scanned: snap.entries_scanned,
                         dirs_found: snap.dirs_found,
+                        bytes_scanned: snap.bytes_scanned,
                     },
                 );
 
@@ -712,16 +797,17 @@ impl IndexManager {
         let db_file_size = self.store.db_file_size().ok();
 
         let snap = self.scan_handle.as_ref().map(|h| h.progress.snapshot());
-        let entries_scanned = snap.map(|s| s.entries_scanned).unwrap_or(0);
-        let dirs_found = snap.map(|s| s.dirs_found).unwrap_or(0);
+        let counters = live_scan_counters(snap, self.scan_calibration);
 
         Ok(IndexStatusResponse {
             initialized: true,
             scanning: self.scanning.load(Ordering::Relaxed),
-            entries_scanned,
-            dirs_found,
+            entries_scanned: counters.entries_scanned,
+            dirs_found: counters.dirs_found,
+            bytes_scanned: counters.bytes_scanned,
             index_status: Some(index_status),
             db_file_size,
+            volume_used_bytes: counters.volume_used_bytes,
         })
     }
 
@@ -835,5 +921,69 @@ impl IndexManager {
         self.writer.shutdown();
 
         log::info!("IndexManager: shut down for volume '{}'", self.volume_id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Unit tests for the pure `get_status` helper.
+    //!
+    //! `IndexManager::get_status` itself needs a full manager (and thus an
+    //! `AppHandle`), which the module's testing bar keeps under integration
+    //! coverage. `live_scan_counters` is the snapshot-and-calibration combining
+    //! it delegates to; pinning that here exercises every field `get_status`
+    //! surfaces — live bytes from the scan snapshot and the tier-2 used-bytes
+    //! denominator from the stashed calibration — without an `AppHandle`.
+    use super::*;
+    use crate::indexing::scanner::ScanProgressSnapshot;
+
+    fn snapshot(entries: u64, dirs: u64, bytes: u64) -> ScanProgressSnapshot {
+        ScanProgressSnapshot {
+            entries_scanned: entries,
+            dirs_found: dirs,
+            bytes_scanned: bytes,
+        }
+    }
+
+    fn calibration(used_bytes: Option<u64>) -> ScanCalibration {
+        ScanCalibration {
+            prior: super::super::store::ScanCalibration::default(),
+            volume_used_bytes: used_bytes,
+        }
+    }
+
+    #[test]
+    fn live_counters_reflect_snapshot_bytes_and_calibration_used_bytes() {
+        // Mid-scan: an active snapshot plus a calibration carrying the tier-2
+        // denominator. get_status must surface both, apples-to-apples with what
+        // the 500 ms progress event emits.
+        let counters = live_scan_counters(
+            Some(snapshot(42_000, 1_200, 905_000_000)),
+            Some(calibration(Some(746_000_000))),
+        );
+        assert_eq!(counters.entries_scanned, 42_000);
+        assert_eq!(counters.dirs_found, 1_200);
+        assert_eq!(counters.bytes_scanned, 905_000_000);
+        assert_eq!(counters.volume_used_bytes, Some(746_000_000));
+    }
+
+    #[test]
+    fn live_counters_are_zero_with_no_active_scan() {
+        // No scan handle and no calibration (the idle / between-scans state):
+        // every live counter reads 0 and the tier-2 denominator is absent.
+        let counters = live_scan_counters(None, None);
+        assert_eq!(counters, LiveScanCounters::default());
+        assert_eq!(counters.bytes_scanned, 0);
+        assert_eq!(counters.volume_used_bytes, None);
+    }
+
+    #[test]
+    fn live_counters_omit_used_bytes_when_space_info_failed() {
+        // First scan where the space-info fetch failed: a live snapshot exists,
+        // but the tier-2 denominator is `None`, so the FE falls back to tier 1 /
+        // counter-only. The live bytes still flow through.
+        let counters = live_scan_counters(Some(snapshot(10, 3, 4_096)), Some(calibration(None)));
+        assert_eq!(counters.bytes_scanned, 4_096);
+        assert_eq!(counters.volume_used_bytes, None);
     }
 }

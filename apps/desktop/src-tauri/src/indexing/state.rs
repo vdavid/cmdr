@@ -362,8 +362,10 @@ pub fn get_status() -> Result<IndexStatusResponse, String> {
             scanning: false,
             entries_scanned: 0,
             dirs_found: 0,
+            bytes_scanned: 0,
             index_status: None,
             db_file_size: None,
+            volume_used_bytes: None,
         }),
         IndexPhase::Initializing { store, .. } => {
             let db_file_size = store.db_file_size().ok();
@@ -373,8 +375,10 @@ pub fn get_status() -> Result<IndexStatusResponse, String> {
                 scanning: true,
                 entries_scanned: 0,
                 dirs_found: 0,
+                bytes_scanned: 0,
                 index_status,
                 db_file_size,
+                volume_used_bytes: None,
             })
         }
         IndexPhase::Running(mgr) => mgr.get_status(),
@@ -391,8 +395,10 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
                 scanning: false,
                 entries_scanned: 0,
                 dirs_found: 0,
+                bytes_scanned: 0,
                 index_status: None,
                 db_file_size: None,
+                volume_used_bytes: None,
             };
             let (activity_phase, phase_started_at, phase_duration_ms, phase_history) =
                 IndexManager::read_phase_timeline();
@@ -425,8 +431,10 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
                 scanning: true,
                 entries_scanned: 0,
                 dirs_found: 0,
+                bytes_scanned: 0,
                 index_status,
                 db_file_size,
+                volume_used_bytes: None,
             };
             let (activity_phase, phase_started_at, phase_duration_ms, phase_history) =
                 IndexManager::read_phase_timeline();

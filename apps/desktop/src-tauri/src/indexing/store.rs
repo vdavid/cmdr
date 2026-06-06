@@ -183,6 +183,10 @@ pub struct IndexStatus {
     pub scan_completed_at: Option<String>,
     pub scan_duration_ms: Option<String>,
     pub total_entries: Option<String>,
+    /// The previous completed scan's summed post-dedup physical bytes (TEXT, like
+    /// every meta value). Surfaced for symmetry with `total_entries` and for
+    /// debugging; not on the tier-1 critical path.
+    pub total_physical_bytes: Option<String>,
     pub last_event_id: Option<String>,
 }
 
@@ -550,6 +554,7 @@ impl IndexStore {
             scan_completed_at: Self::read_meta_value(&self.read_conn, "scan_completed_at")?,
             scan_duration_ms: Self::read_meta_value(&self.read_conn, "scan_duration_ms")?,
             total_entries: Self::read_meta_value(&self.read_conn, "total_entries")?,
+            total_physical_bytes: Self::read_meta_value(&self.read_conn, "total_physical_bytes")?,
             last_event_id: Self::read_meta_value(&self.read_conn, "last_event_id")?,
         })
     }
