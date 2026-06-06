@@ -32,6 +32,7 @@
         | 'components-tooltips'
         | 'components-size-badges'
         | 'components-date-label'
+        | 'components-shortcut-chip'
         | 'components-commandbox'
         | 'components-empty-states'
 
@@ -65,6 +66,7 @@
                 { id: 'components-tooltips', label: 'Tooltips' },
                 { id: 'components-size-badges', label: 'Size badges' },
                 { id: 'components-date-label', label: 'Date label' },
+                { id: 'components-shortcut-chip', label: 'Shortcut chip' },
                 { id: 'components-commandbox', label: 'CommandBox' },
                 { id: 'components-empty-states', label: 'Empty states' },
             ],

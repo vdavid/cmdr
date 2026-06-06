@@ -12,6 +12,7 @@
     import Tooltips from './sections/Tooltips.svelte'
     import SizeBadges from './sections/SizeBadges.svelte'
     import DateLabelSection from './sections/DateLabelSection.svelte'
+    import ShortcutChipSection from './sections/ShortcutChip.svelte'
     import CommandBoxSection from './sections/CommandBoxSection.svelte'
     import EmptyStates from './sections/EmptyStates.svelte'
 
@@ -41,6 +42,7 @@
         'tooltips',
         'size-badges',
         'date-label',
+        'shortcut-chip',
         'commandbox',
         'empty-states',
     ] as const
@@ -152,6 +154,7 @@
         <Tooltips />
         <SizeBadges />
         <DateLabelSection />
+        <ShortcutChipSection />
         <CommandBoxSection />
         <EmptyStates />
     </div>

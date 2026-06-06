@@ -4,21 +4,22 @@ Reusable UI components used across the entire desktop app.
 
 ## Key files
 
-| File                 | Purpose                                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------------------- |
-| `ModalDialog.svelte` | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
-| `dialog-registry.ts` | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
-| `Button.svelte`      | Styled button with variant and size props                                                      |
-| `LinkButton.svelte`  | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
-| `CommandBox.svelte`  | Copyable terminal command (monospace + Copy button)                                            |
-| `LoadingIcon.svelte` | Animated spinner with progressive status text                                                  |
-| `AlertDialog.svelte` | Single-action confirmation dialog built on `ModalDialog`                                       |
-| `ProgressBar.svelte` | Reusable progress bar (just the bar, no labels or layout)                                      |
-| `Size.svelte`        | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
-| `SectionCard.svelte` | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
-| `ToggleGroup.svelte` | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
-| `DateLabel.svelte`   | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
-| `toast/`             | Centralized toast notification system: store, container, item                                  |
+| File                  | Purpose                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| `ModalDialog.svelte`  | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
+| `dialog-registry.ts`  | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
+| `Button.svelte`       | Styled button with variant and size props                                                      |
+| `LinkButton.svelte`   | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
+| `CommandBox.svelte`   | Copyable terminal command (monospace + Copy button)                                            |
+| `LoadingIcon.svelte`  | Animated spinner with progressive status text                                                  |
+| `AlertDialog.svelte`  | Single-action confirmation dialog built on `ModalDialog`                                       |
+| `ProgressBar.svelte`  | Reusable progress bar (just the bar, no labels or layout)                                      |
+| `Size.svelte`         | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
+| `SectionCard.svelte`  | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
+| `ToggleGroup.svelte`  | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
+| `DateLabel.svelte`    | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
+| `ShortcutChip.svelte` | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode  |
+| `toast/`              | Centralized toast notification system: store, container, item                                  |
 
 ## Not part of this module: soft sheets
 
@@ -331,6 +332,45 @@ The wrapper sets `font-variant-numeric: tabular-nums` and `white-space: nowrap` 
 
 See the parent `lib/settings/CLAUDE.md` § "Date display" for the full one-source-of-truth chain (`formatDateForDisplay`,
 the per-component tier rules in `age-tier-utils.ts`, and the HTML-string variant for tooltips / MCP responses).
+
+## ShortcutChip
+
+`ShortcutChip.svelte`: the one component that renders a keyboard shortcut anywhere in the UI, so the look stays uniform
+and new call sites can't hand-roll a divergent style. Two mutually exclusive modes:
+
+| Prop        | Type         | Notes                                                                                                    |
+| ----------- | ------------ | -------------------------------------------------------------------------------------------------------- |
+| `commandId` | `CommandId?` | Dynamic mode. Renders the command's first effective shortcut via `getFirstShortcutReactive`, reactively. |
+| `key`       | `string?`    | Literal mode. A fixed key string (toast snapshots, fixed interaction keys). Never clickable.             |
+| `clickable` | `boolean?`   | Default `true` in `commandId` mode; ignored (forced non-clickable) in literal mode.                      |
+
+Exactly one of `commandId` / `key` must be set (a dev-time error otherwise).
+
+**Truthfulness rule.** A `commandId` chip is a _claim about live app behavior_ ("pressing this does X"), so it reads the
+reactive store and updates live when the user rebinds. It renders **nothing** when the command has no binding — callers
+embedding it in prose must conditionalize the surrounding sentence. A `key` chip is just typography. Keeping both modes
+in one component is what guarantees the uniform look, while the prop split keeps the rule mechanical: customizable →
+`commandId`; fixed → `key`.
+
+**Clickable variant.** In `commandId` mode (and `clickable` not set to `false`) the chip is a real
+`<button type="button">` wrapping the `<kbd>`, with `aria-label="Customize the {command name} shortcut"` and a
+"Customize this shortcut" tooltip. Clicking deep-links to Settings > Keyboard shortcuts (`openShortcutCustomization`).
+Set `clickable={false}` when the chip sits inside another interactive control (palette rows, F-key bar buttons) where a
+nested click target would double-activate. Non-clickable chips render a bare `<kbd>`.
+
+**Lazy-import constraint (load-bearing, don't break it).** The chip must NOT statically import
+`openShortcutCustomization`. That helper pulls in `@tauri-apps/api/webviewWindow` and window-positioning, which (1) must
+stay out of the literal-mode chip's module-eval surface so the chip is importable in the capability-restricted viewer
+window with zero Tauri surface, and (2) would reject at runtime in the viewer (no window-creation permission). The chip
+loads it via dynamic `import()` inside the click handler only. Keep it that way.
+
+**Visual.** Neutral pill modeled on the Settings `.shortcut-pill` (`--color-bg-tertiary` background, 1px
+`--color-border`, `--radius-sm`, `--font-size-xs`), NOT the tooltip's accent chip (`.cmdr-tooltip-kbd` stays its accent
+look — different context). The clickable variant adds an accent border + `--color-accent-text` on hover; cursor stays
+`default` per the app-wide convention (only `LinkButton` opts into `cursor: pointer`).
+
+The `shortcut-<commandId>` anchor-id convention (shared with the Settings section the deep link targets) lives as the
+exported `shortcutAnchorId(commandId)` in `lib/settings/settings-window.ts` so it can't drift.
 
 ## SectionCard
 

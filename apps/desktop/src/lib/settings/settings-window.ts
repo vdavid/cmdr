@@ -148,3 +148,32 @@ export async function openSettingsWindow(section?: string[], anchor?: string): P
       })
   })
 }
+
+/**
+ * The DOM-id convention for a command's row in the Keyboard shortcuts section.
+ *
+ * Shared knowledge between `openShortcutCustomization` (which deep-links to it) and
+ * the section that renders the rows (M3 puts this id on each `.command-row`). Keep it
+ * as one function so the two ends can't drift.
+ */
+export function shortcutAnchorId(commandId: string): string {
+  return `shortcut-${commandId}`
+}
+
+/**
+ * Open Settings > Keyboard shortcuts scrolled to a specific command's row.
+ *
+ * Used by clickable `ShortcutChip`s. The chip imports this lazily (dynamic `import()`)
+ * so a literal-mode chip in the capability-restricted viewer window stays importable
+ * with zero Tauri surface at module-eval time. Don't add a static import of this from
+ * the chip.
+ *
+ * M3 finishes the settings-side arrival behavior (row ids, scroll-into-nested-list,
+ * filter-clearing, flash). This already deep-links to the section + anchor.
+ *
+ * @public consumed via a dynamic `import()` from `ShortcutChip.svelte`; knip's Svelte
+ * parser doesn't trace dynamic imports, so it'd flag this as unused otherwise.
+ */
+export function openShortcutCustomization(commandId: string): Promise<void> {
+  return openSettingsWindow(['Keyboard shortcuts'], shortcutAnchorId(commandId))
+}

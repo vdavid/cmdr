@@ -35,11 +35,17 @@ shortcuts:
 
 ### Reactive reads (`reactive-shortcuts.svelte.ts`)
 
-`getFirstShortcutReactive(commandId)` returns the first effective shortcut (the one menus show) and subscribes
-`$derived`/`$effect` consumers to shortcut changes via a module-level `$state` version bumped on every
-`onShortcutChange`. Use it for long-lived UI that displays a shortcut (tooltips, hints), so a rebind updates the UI
-live. One-off reads at event time (toasts, context menus) keep calling `getEffectiveShortcuts` directly — a toast
-deliberately snapshots the binding it was created with.
+Two readers over one module-level `$state` version (bumped on every `onShortcutChange`):
+
+- `getEffectiveShortcutsReactive(commandId)` returns the full effective list (the command palette shows up to three).
+  Param is typed `CommandId`, not loose `string`. Returns a fresh array on every call (the underlying
+  `getEffectiveShortcuts` copies the store's data), so consumers can't mutate the store — don't cache the reference.
+- `getFirstShortcutReactive(commandId)` is `[0]` of that list (the one menus and inline `ShortcutChip`s show).
+
+Both subscribe `$derived`/`$effect` consumers to shortcut changes, so a rebind updates the UI live. Use them for
+long-lived UI that displays a shortcut (tooltips, hints, the palette, `ShortcutChip`). One-off reads at event time
+(toasts, context menus) keep calling `getEffectiveShortcuts` directly — a toast deliberately snapshots the binding it
+was created with.
 
 ### Scope hierarchy (`scope-hierarchy.ts`)
 
