@@ -1459,6 +1459,18 @@ fn handle_truncate_data(
 /// writes `dir_stats` for. Depth from the scan root: `/Users` = 1,
 /// `/Users/david` = 2, `~/Downloads` = 3. Covers onboarding browsing while
 /// keeping each pass's write set to a few thousand rows rather than 100K+.
+///
+/// Real-volume measurement (Apple Silicon, 5.94M entries / 558K dirs, release
+/// build): the depth-3 write set plus pane hot paths was 151–716 rows per pass,
+/// and total per-pass cost (full in-memory bottom-up compute over every
+/// scanned dir + the bounded write) ran 6–397 ms, p95 377 ms — comfortably
+/// under the 500 ms budget across the whole scan. The compute dominates the
+/// write (rows are trivial); it scales with dirs-scanned-so-far, which is why
+/// the last passes near 558K dirs are the slowest. Lowering this depth would
+/// shrink the write set but not the compute, so it isn't the lever to pull if a
+/// future, larger volume breaches the budget — raise `PARTIAL_AGG_TICK_INTERVAL`
+/// instead. (Note: an unoptimized debug build runs this compute ~20× slower,
+/// p95 ~2.6 s — measure tuning against a release build, never `pnpm dev`.)
 const PARTIAL_AGG_MAX_DEPTH: usize = 3;
 
 /// Mid-scan partial aggregation: compute partial recursive sizes from the

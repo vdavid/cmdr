@@ -12,8 +12,11 @@ use crate::indexing::firmlinks;
 /// How many 500 ms progress ticks between partial-aggregation passes.
 ///
 /// 10 ticks = 5 s. Matches the frontend's 2 s/pane `index-dir-updated` refresh
-/// throttle (so no emit is wasted), and yields ~30 reveals over a ~2.5 min scan
-/// — frequent enough to feel live without measurably slowing the scan.
+/// throttle (so no emit is wasted), and yields ~28 reveals over a ~2.5 min scan
+/// — frequent enough to feel live without measurably slowing the scan. Verified
+/// on a real volume (Apple Silicon, 5.94M entries / 558K dirs, release build):
+/// 28 passes, each ≤ 397 ms, total scan ~2m25s, indistinguishable from the
+/// feature-off baseline. See the per-pass cost note on `PARTIAL_AGG_MAX_DEPTH`.
 pub(super) const PARTIAL_AGG_TICK_INTERVAL: u64 = 10;
 
 /// Skip a partial pass when the writer channel is backed up beyond this many
@@ -21,7 +24,10 @@ pub(super) const PARTIAL_AGG_TICK_INTERVAL: u64 = 10;
 ///
 /// ~20% of the 20 000-message channel capacity. A deep backlog means the writer
 /// is the bottleneck catching up on insert batches; partial sizes are a luxury,
-/// so don't pile more work on. Tuned with M4 measurements.
+/// so don't pile more work on. On the real-volume verification run the channel
+/// never approached this depth (insert batches drained between passes), so the
+/// cap acted purely as a safety valve — kept at 4 000 as headroom rather than
+/// re-tuned down.
 pub(super) const PARTIAL_AGG_MAX_QUEUE_DEPTH: usize = 4_000;
 
 /// Decide whether the scan progress loop should send a `ComputePartialAggregates`
