@@ -9,6 +9,8 @@
      * the user reading it doesn't mutate the displayed hint mid-flight.
      */
 
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+
     interface Props {
         /** The path the user typed, which doesn't exist. */
         requested: string
@@ -29,7 +31,7 @@
         <code class="path">{requested}</code> doesn't exist, so we took you to <code class="path">{landed}</code>.
     </span>
     {#if backShortcut}
-        <span class="hint">Press <kbd>{backShortcut}</kbd> to go back.</span>
+        <span class="hint">Press <ShortcutChip key={backShortcut} /> to go back.</span>
     {/if}
 </div>
 
@@ -58,13 +60,8 @@
     .hint {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
-    }
-
-    kbd {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        padding: 0 var(--spacing-xs);
-        border-radius: var(--radius-xs);
-        background: var(--color-bg-tertiary);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
     }
 </style>

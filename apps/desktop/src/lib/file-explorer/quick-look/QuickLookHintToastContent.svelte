@@ -15,10 +15,19 @@
 
     import { dismissToast } from '$lib/ui/toast'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { setSetting } from '$lib/settings'
+    import { getEffectiveShortcuts } from '$lib/shortcuts'
     import { openShortcutCustomization } from '$lib/settings/settings-window'
 
     import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
+
+    // Snapshot the Quick Look binding at toast creation. Toasts don't rewrite
+    // themselves when the user rebinds mid-display (the next toast picks up the
+    // change); a literal-mode chip with this fixed string is the right shape.
+    // Falls back to ⇧Space (the default) so the hint always shows a key. The
+    // chip is non-clickable: the toast already offers the Settings link below.
+    const quickLookKey = getEffectiveShortcuts('file.quickLook')[0] ?? '⇧Space'
 
     function handleOpenSettings() {
         dismissToast(QUICK_LOOK_HINT_TOAST_ID)
@@ -35,17 +44,19 @@
 
 <div class="content">
     <p>
-        In Cmdr, <kbd>Space</kbd> selects the file under the cursor by default.
+        In Cmdr, <ShortcutChip key="Space" /> selects the file under the cursor by default.
     </p>
     <p>
         If you come from Finder, this might be unusual because Finder triggers a "Quick preview" action on
-        <kbd>Space</kbd>.
+        <ShortcutChip key="Space" />.
     </p>
     <p>
-        In Cmdr, you can trigger quick view via <kbd>⇧Space</kbd>. (<kbd>⇧Space</kbd> works in Finder, too, btw!)
+        In Cmdr, you can trigger quick view via <ShortcutChip key={quickLookKey} />. (<ShortcutChip
+            key={quickLookKey}
+        /> works in Finder, too, btw!)
     </p>
     <p>
-        You can also use <kbd>Enter</kbd> to open files in the default app.
+        You can also use <ShortcutChip key="Enter" /> to open files in the default app.
     </p>
     <p class="settings-line">
         All of this is configurable in
@@ -71,15 +82,6 @@
 
     p {
         margin: 0;
-    }
-
-    kbd {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        background: var(--color-bg-tertiary);
-        padding: 0 var(--spacing-xs);
-        border-radius: var(--radius-sm);
-        white-space: nowrap;
     }
 
     .settings-line {

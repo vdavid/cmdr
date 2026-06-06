@@ -67,6 +67,7 @@ list).
 | `volume-capabilities.ts`      | `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` / `capabilitiesFor` |
 | `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                                            |
 | `selection-dialog-keys.ts`    | Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)                 |
+| `function-key-commands.ts`    | `fnKeyToCommand`: the F-key bar's 9 button → command-id map (typed; unit-tested)               |
 | `error-pane-utils.ts`         | Tiny helper for `ErrorPane`'s technical-details rendering                                      |
 | `integration-test-utils.ts`   | Shared test scaffolding for pane integration tests                                             |
 
@@ -253,15 +254,28 @@ in the chain. Per-pane read only (P1): touch the focused pane's manager, never b
 
 **`FunctionKeyBar` dispatches `file.*` onto the bus.** Each button click calls a single
 `onCommand?: (id: CommandId) => void` prop, wired in `+page.svelte` to `handleCommandExecute`. The button-to-command
-mapping lives in a typed `fnKeyToCommand` map inside the component (F2/⇧F6 → `file.rename`, F3 → `file.view`, F4 →
-`file.edit`, F5 → `file.copy`, F6 → `file.move`, ⇧F4 → `file.newFile`, F7 → `file.newFolder`, F8 → `file.delete`, ⇧F8 →
-`file.deletePermanently`). The keys are held in a typed map (not inlined at the call site) so
-`cmdr/no-raw-command-dispatch` stays satisfied. Routing F-clicks through the bus means they now get the dispatch
-preamble (`log.info` + `record_breadcrumb` breadcrumb + the `blockedByCapabilities` guard) like every other entry path —
-a deliberate telemetry gain, not a behavior change. The buttons' visible `disabled` flags (`canRename` / `canMkfile` /
-`canMkdir` / `canSourceOps`) win first: a disabled button can't be clicked, so the dispatch capability guard never fires
-for an F-click (the guard's blocked set — `file.rename` / `file.newFile` / `file.newFolder` — matches exactly the
-buttons the flags disable on a snapshot pane).
+mapping lives in a typed `fnKeyToCommand` map (F2/⇧F6 → `file.rename`, F3 → `file.view`, F4 → `file.edit`, F5 →
+`file.copy`, F6 → `file.move`, ⇧F4 → `file.newFile`, F7 → `file.newFolder`, F8 → `file.delete`, ⇧F8 →
+`file.deletePermanently`). The map is extracted to `function-key-commands.ts` so it's unit-testable
+(`function-key-commands.test.ts` pins the 9 mappings); it's a typed constant (not inlined at the call site) so
+`cmdr/no-raw-command-dispatch` stays satisfied.
+
+**The F-bar chips read live effective shortcuts, not hardcoded F-keys.** Each visible button shows its command's
+`getFirstShortcutReactive(id)` value, so rebinding `file.copy` to `⌘C` re-renders the F5 button's chip immediately — the
+bar never lies about what the keys do. The `aria-label` interpolates the same dynamic combo ("Copy (F5)" → "Copy (⌘C)").
+When a command has no binding the chip renders nothing (the button keeps its label and stays clickable; an empty `<kbd>`
+would read as broken). The chips keep the bar's quiet local `<kbd>` styling rather than the boxed `ShortcutChip` pill —
+a boxed pill repeated 8× fights the flat bar; truthfulness is the must, the chip look is the want. The Shift fork stays
+**presentational and hardcoded** (which buttons appear on Shift never changes), but each shown button reads ITS
+command's effective FIRST binding — so the Shift-revealed "Rename" button shows `file.rename`'s first binding (`F2`),
+not `⇧F6`. Slightly odd next to its siblings, but truthful, which is the whole point. The four Shift placeholder slots
+(F2/F3/F5/F7, no command) keep their static F-key labels. Layout survives an absurd custom binding: the buttons are
+`flex: 1; min-width: 0` and the label truncates before the chip, so a long combo can't push the bar past the window.
+Routing F-clicks through the bus means they now get the dispatch preamble (`log.info` + `record_breadcrumb` breadcrumb +
+the `blockedByCapabilities` guard) like every other entry path — a deliberate telemetry gain, not a behavior change. The
+buttons' visible `disabled` flags (`canRename` / `canMkfile` / `canMkdir` / `canSourceOps`) win first: a disabled button
+can't be clicked, so the dispatch capability guard never fires for an F-click (the guard's blocked set — `file.rename` /
+`file.newFile` / `file.newFolder` — matches exactly the buttons the flags disable on a snapshot pane).
 
 **Selection-dialog keys dispatch onto the bus.** The `+` / `-` keypresses are classified by `selection-dialog-keys.ts`
 and reach the bus through a typed `onCommand?: (commandId: CommandId) => void` prop chain: `FilePane` (the classifier at

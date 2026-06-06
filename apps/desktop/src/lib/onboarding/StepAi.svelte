@@ -26,6 +26,7 @@
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import { tooltip } from '$lib/tooltip/tooltip'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { getAppLogger } from '$lib/logging/logger'
 
     /**
@@ -324,8 +325,12 @@
                 <th scope="row">Select</th>
                 <td>You say "select all image files", agent suggests a selection, you review and apply at will.</td>
                 <td>
-                    You press <kbd>⌘+</kbd> and type something like
-                    <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.
+                    <!-- The chip reads the real `selection.selectFiles` binding (bare `+`),
+                         not a hardcoded combo. Non-clickable: this is onboarding prose, and
+                         deep-linking to Settings mid-wizard would be jarring. Worded "the … key"
+                         so a bare `+` doesn't read as a key separator. -->
+                    You press the <ShortcutChip commandId="selection.selectFiles" clickable={false} /> key and type
+                    something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.
                 </td>
             </tr>
         </tbody>
@@ -536,8 +541,7 @@
         white-space: nowrap;
     }
 
-    .comparison code,
-    .comparison kbd {
+    .comparison code {
         font-family: var(--font-mono);
         font-size: var(--font-size-xs);
         background: var(--color-bg-tertiary);

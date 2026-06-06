@@ -13,6 +13,7 @@
      * second copy of the Jump action.
      */
     import Size from '$lib/ui/Size.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { dismissToast } from '$lib/ui/toast'
     import { goToDownload } from './go-to-latest'
     import {
@@ -116,7 +117,7 @@
         <span class="subdir">in {subdirLabel}</span>
     {/if}
     {#if shortcutHint}
-        <span class="hint">Press <kbd>{shortcutHint}</kbd> to jump</span>
+        <span class="hint">Press <ShortcutChip key={shortcutHint} /> to jump</span>
     {/if}
     <div class="actions">
         <button type="button" class="jump-button" onclick={handleJumpButton}>
@@ -162,14 +163,9 @@
     .hint {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
-    }
-
-    kbd {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        padding: 0 var(--spacing-xs);
-        border-radius: var(--radius-xs);
-        background: var(--color-bg-tertiary);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
     }
 
     .actions {

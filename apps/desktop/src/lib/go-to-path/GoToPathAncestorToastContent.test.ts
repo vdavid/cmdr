@@ -24,9 +24,10 @@ describe('GoToPathAncestorToastContent', () => {
     cleanup()
   })
 
-  it('renders the snapshotted back-shortcut in a kbd', async () => {
+  it('renders the snapshotted back-shortcut as a literal ShortcutChip', async () => {
     const { target, cleanup } = setup({ requested: '/x/y', landed: '/', backShortcut: '⌘B' })
     await tick()
+    // The literal-mode ShortcutChip renders a <kbd>, so the snapshot string shows verbatim.
     const kbd = target.querySelector('kbd')
     expect(kbd?.textContent).toBe('⌘B')
     cleanup()

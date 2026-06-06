@@ -3,6 +3,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { deriveTabLabel } from './tab-label'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
+    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
 
     interface Props {
         tabs: TabState[]
@@ -32,6 +33,11 @@
 
     const isSingleTab = $derived(tabs.length === 1)
     const isAtMax = $derived(tabs.length >= maxTabs)
+
+    // The "+" tooltip's shortcut badge tracks the live `tab.new` binding (the
+    // tooltip action re-renders when the value changes), so rebinding ⌘T in
+    // Settings updates the hint without a reload. Same pattern as the sort headers.
+    const newTabShortcut = $derived(getFirstShortcutReactive('tab.new'))
 
     const volumeNameById = $derived(new Map(getVolumes().map((v) => [v.id, v.name])))
 
@@ -150,7 +156,7 @@
     <button
         class="new-tab-btn"
         aria-label="New tab"
-        use:tooltip={{ text: 'New tab', shortcut: '⌘T' }}
+        use:tooltip={{ text: 'New tab', shortcut: newTabShortcut }}
         disabled={isAtMax}
         class:disabled={isAtMax}
         onclick={onNewTab}

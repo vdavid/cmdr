@@ -1,6 +1,26 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushSync } from 'svelte'
+
+// The reactivity test rebinds a shortcut, which fires the menu-accelerator sync
+// IPC and touches the plugin store. Stub both so the in-memory rebind path runs
+// without a backend (mirrors `SortableHeader.svelte.test.ts`).
+vi.mock('@tauri-apps/plugin-store', () => ({
+  load: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => Promise.resolve(undefined)),
+      set: vi.fn(() => Promise.resolve()),
+      save: vi.fn(() => Promise.resolve()),
+      keys: vi.fn(() => Promise.resolve([])),
+      delete: vi.fn(() => Promise.resolve()),
+    }),
+  ),
+}))
+vi.mock('$lib/ipc/bindings', () => ({
+  commands: { updateMenuAccelerator: vi.fn(() => Promise.resolve({ status: 'ok' })) },
+}))
+
 import FunctionKeyBar from './FunctionKeyBar.svelte'
+import { setShortcut, removeShortcut, resetShortcut } from '$lib/shortcuts/shortcuts-store'
 import type { CommandId } from '$lib/commands'
 
 describe('FunctionKeyBar', () => {
@@ -115,7 +135,13 @@ describe('FunctionKeyBar', () => {
 
     const kbds = target.querySelectorAll('kbd')
     const keys = Array.from(kbds).map((kbd) => kbd.textContent)
-    expect(keys).toEqual(['F2', 'F3', '⇧F4', 'F5', '⇧F6', 'F7', '⇧F8'])
+    // The chip on each command button reads ITS command's effective FIRST binding
+    // (platform-formatted: `⇧F4` → `Shift+F4` off macOS). The Shift fork is
+    // presentational — which buttons appear is fixed — so the Shift-revealed
+    // "Rename" button (index 4) shows `file.rename`'s first binding, which is `F2`,
+    // not `⇧F6`. That's the decided, truthful behavior. The four empty slots stay
+    // hardcoded F-key labels (F2, F3, F5, F7) since they map to no command.
+    expect(keys).toEqual(['F2', 'F3', 'Shift+F4', 'F5', 'F2', 'F7', 'Shift+F8'])
 
     // Shift+F4, Shift+F6, and Shift+F8 should have labels
     const buttons = target.querySelectorAll('button')
@@ -139,6 +165,39 @@ describe('FunctionKeyBar', () => {
     expect(keys).toEqual(['F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'])
 
     document.body.removeChild(target)
+  })
+
+  it("shows each button's effective first shortcut, and updates it live on rebind", () => {
+    const target = document.createElement('div')
+    mount(FunctionKeyBar, { target, props: { visible: true } })
+
+    const f5Kbd = () => target.querySelectorAll('kbd')[3].textContent // F5 = Copy = index 3
+    expect(f5Kbd()).toBe('F5')
+
+    // Rebinding `file.copy` re-renders the Copy button's chip immediately: the bar
+    // reads the live effective shortcut, it never shows a stale hardcoded F-key.
+    setShortcut('file.copy', 0, '⌘K')
+    flushSync()
+    expect(f5Kbd()).toBe('⌘K')
+
+    resetShortcut('file.copy')
+  })
+
+  it('renders no chip for a command with no binding (the button keeps its label)', () => {
+    const target = document.createElement('div')
+    mount(FunctionKeyBar, { target, props: { visible: true } })
+
+    // Remove the only binding for `file.copy` (default is a single `F5`), leaving an
+    // empty custom array ("all removed"). The F5 button should drop its chip but keep
+    // its label and stay a button (still clickable). An empty <kbd> would read as broken.
+    removeShortcut('file.copy', 0)
+    flushSync()
+
+    const copyButton = target.querySelectorAll('button')[3]
+    expect(copyButton.querySelector('kbd')).toBeNull()
+    expect(copyButton.querySelector('span')?.textContent).toBe('Copy')
+
+    resetShortcut('file.copy')
   })
 
   it('disables most buttons in shift state', async () => {

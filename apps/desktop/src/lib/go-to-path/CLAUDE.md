@@ -13,7 +13,7 @@ Backend counterpart: [`src-tauri/src/go_to_path/CLAUDE.md`](../../../src-tauri/s
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `go-to-path.ts`                       | `goToPath(explorer, input)` handler: resolve → switch on the typed `kind` → navigate via the shared primitives → record the resolved target into recents. Plus the pure helpers (see below).       |
 | `GoToPathDialog.svelte`               | The modal: auto-focused textbox (clipboard-prefilled when the clipboard resolves to a real path), up to 10 recent rows (digit chip + middle-truncated path + `[x]`), live inline ancestor warning. |
-| `GoToPathAncestorToastContent.svelte` | INFO toast for the nearest-ancestor outcome. Props `requested`, `landed`, `backShortcut` (snapshotted). Code-formats the paths and the kbd.                                                        |
+| `GoToPathAncestorToastContent.svelte` | INFO toast for the nearest-ancestor outcome. Props `requested`, `landed`, `backShortcut` (snapshotted). Code-formats the paths; renders the back-shortcut as a literal `ShortcutChip`.             |
 | `recent-paths-state.svelte.ts`        | `$state` mirror of the backend recents store. `loadRecentPaths` / `addRecentPath` / `removeRecentPath` write the backend via IPC, then re-read the authoritative list so the UI stays in sync.     |
 | `go-to-path-ids.ts`                   | Stable dedup id for the ancestor INFO toast.                                                                                                                                                       |
 
@@ -75,9 +75,10 @@ empty-box guard is therefore unambiguous and modifier-free. Confirmed with David
 at the keydown site.
 
 **Decision**: The ancestor toast's back-shortcut is snapshotted at toast-creation
-(`getEffectiveShortcuts('nav.back')[0]`), never hardcoded and never live-subscribed. **Why**: A later rebind shouldn't
-rewrite a visible toast — that would no longer match what the user could press. The next toast picks up the new binding.
-Matches the downloads toast snapshot rule.
+(`getEffectiveShortcuts('nav.back')[0]`), never hardcoded and never live-subscribed, and rendered as a literal-mode
+`ShortcutChip` (`key={backShortcut}`). **Why**: A later rebind shouldn't rewrite a visible toast — that would no longer
+match what the user could press. The next toast picks up the new binding. Matches the downloads toast snapshot rule. The
+chip is literal (not `commandId` mode) precisely to preserve the snapshot; a `commandId` chip re-renders live.
 
 ## Menu double-dispatch (idempotency)
 

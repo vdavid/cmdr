@@ -2,6 +2,8 @@
     import { explorerState } from './explorer-state.svelte'
     import { getActiveTab } from '../tabs/tab-state-manager.svelte'
     import { capabilitiesFor } from './volume-capabilities'
+    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
+    import { fnKeyToCommand } from './function-key-commands'
     import type { CommandId } from '$lib/commands'
 
     interface Props {
@@ -19,22 +21,24 @@
     const { visible = true, onCommand }: Props = $props()
 
     /**
-     * Each F-key button's command id. Held in a typed map (not inlined as a
-     * string literal at the `onCommand?.(…)` call site) so the `CommandId` type
-     * is checked and `cmdr/no-raw-command-dispatch` stays satisfied: the call
-     * site passes a typed value, never a magic string.
+     * Each visible button's CHIP shows its command's live effective first shortcut
+     * (`getFirstShortcutReactive`), not the hardcoded F-key. Rebinding `file.copy`
+     * to `⌘C` in Settings re-renders the F5 button's chip as `⌘C` immediately, so
+     * the bar never lies about what the keys do. The chip keeps the bar's quiet
+     * `<kbd>` look (a boxed `ShortcutChip` pill repeated 8× fights the flat bar);
+     * truthfulness is the must, the chip style is the want (see the migration plan).
+     *
+     * The Shift fork stays presentational: WHICH buttons appear on Shift is fixed,
+     * but each shown button reads ITS command's effective FIRST binding. Both Rename
+     * buttons (F2 and the Shift-revealed one) therefore show `file.rename`'s first
+     * binding — slightly odd, but truthful, which is the whole point.
+     *
+     * When a command has no binding the chip renders nothing (the button stays
+     * clickable and keeps its label); an empty `<kbd>` would read as broken.
      */
-    const fnKeyToCommand = {
-        view: 'file.view',
-        edit: 'file.edit',
-        copy: 'file.copy',
-        move: 'file.move',
-        rename: 'file.rename',
-        newFile: 'file.newFile',
-        newFolder: 'file.newFolder',
-        delete: 'file.delete',
-        deletePermanently: 'file.deletePermanently',
-    } as const satisfies Record<string, CommandId>
+    function shortcutFor(id: CommandId): string | undefined {
+        return getFirstShortcutReactive(id)
+    }
 
     /**
      * Capabilities for the focused pane, read straight off the explorer store.
@@ -82,6 +86,31 @@
 
 <svelte:document onkeydown={handleKeyDown} onkeyup={handleKeyUp} />
 
+<!--
+  One command button. The chip reads the command's live effective first shortcut;
+  the aria-label interpolates the same dynamic combo so screen readers hear what
+  actually triggers the action ("Copy (F5)" → "Copy (⌘C)" after a rebind). When
+  unbound, both the chip and the parenthetical drop — the label alone, still clickable.
+-->
+{#snippet commandButton(id: CommandId, label: string, action: string, enabled: boolean)}
+    {@const shortcut = shortcutFor(id)}
+    <button
+        onclick={() => onCommand?.(id)}
+        disabled={!enabled}
+        tabindex={-1}
+        aria-label={shortcut ? `${action} (${shortcut})` : action}
+    >
+        {#if shortcut}<kbd>{shortcut}</kbd>{/if}<span>{label}</span>
+    </button>
+{/snippet}
+
+<!-- A fixed F-key slot with no Shift action. Presentational only (not a command). -->
+{#snippet emptySlot(fnKey: string)}
+    <button disabled tabindex={-1} aria-label="{fnKey} (no shift action)">
+        <kbd>{fnKey}</kbd>
+    </button>
+{/snippet}
+
 {#if visible}
     <div
         class="function-key-bar"
@@ -91,99 +120,30 @@
             e.preventDefault()
         }}
     >
+        <!-- eslint-disable @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
         {#if shiftHeld}
-            <button disabled tabindex={-1} aria-label="F2 (no shift action)">
-                <kbd>F2</kbd>
-            </button>
-            <button disabled tabindex={-1} aria-label="F3 (no shift action)">
-                <kbd>F3</kbd>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.newFile)}
-                disabled={!canMkfile}
-                tabindex={-1}
-                aria-label="Create new file (Shift+F4)"
-            >
-                <kbd>⇧F4</kbd><span>New file</span>
-            </button>
-            <button disabled tabindex={-1} aria-label="F5 (no shift action)">
-                <kbd>F5</kbd>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.rename)}
-                disabled={!canRename}
-                tabindex={-1}
-                aria-label="Rename (Shift+F6)"
-            >
-                <kbd>⇧F6</kbd><span>Rename</span>
-            </button>
-            <button disabled tabindex={-1} aria-label="F7 (no shift action)">
-                <kbd>F7</kbd>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.deletePermanently)}
-                disabled={!canSourceOps}
-                tabindex={-1}
-                aria-label="Delete permanently (Shift+F8)"
-            >
-                <kbd>⇧F8</kbd><span>Permanently</span>
-            </button>
+            {@render emptySlot('F2')}
+            {@render emptySlot('F3')}
+            {@render commandButton(fnKeyToCommand.newFile, 'New file', 'Create new file', canMkfile)}
+            {@render emptySlot('F5')}
+            {@render commandButton(fnKeyToCommand.rename, 'Rename', 'Rename', canRename)}
+            {@render emptySlot('F7')}
+            {@render commandButton(
+                fnKeyToCommand.deletePermanently,
+                'Permanently',
+                'Delete permanently',
+                canSourceOps,
+            )}
         {:else}
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.rename)}
-                disabled={!canRename}
-                tabindex={-1}
-                aria-label="Rename (F2)"
-            >
-                <kbd>F2</kbd><span>Rename</span>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.view)}
-                tabindex={-1}
-                aria-label="View file (F3)"
-            >
-                <kbd>F3</kbd><span>View</span>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.edit)}
-                tabindex={-1}
-                aria-label="Edit file (F4)"
-            >
-                <kbd>F4</kbd><span>Edit</span>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.copy)}
-                disabled={!canSourceOps}
-                tabindex={-1}
-                aria-label="Copy (F5)"
-            >
-                <kbd>F5</kbd><span>Copy</span>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.move)}
-                disabled={!canSourceOps}
-                tabindex={-1}
-                aria-label="Move (F6)"
-            >
-                <kbd>F6</kbd><span>Move</span>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.newFolder)}
-                disabled={!canMkdir}
-                tabindex={-1}
-                aria-label="New folder (F7)"
-            >
-                <kbd>F7</kbd><span>New folder</span>
-            </button>
-            <button
-                onclick={() => onCommand?.(fnKeyToCommand.delete)}
-                disabled={!canSourceOps}
-                tabindex={-1}
-                aria-label="Delete (F8)"
-            >
-                <kbd>F8</kbd><span>Delete</span>
-            </button>
+            {@render commandButton(fnKeyToCommand.rename, 'Rename', 'Rename', canRename)}
+            {@render commandButton(fnKeyToCommand.view, 'View', 'View file', true)}
+            {@render commandButton(fnKeyToCommand.edit, 'Edit', 'Edit file', true)}
+            {@render commandButton(fnKeyToCommand.copy, 'Copy', 'Copy', canSourceOps)}
+            {@render commandButton(fnKeyToCommand.move, 'Move', 'Move', canSourceOps)}
+            {@render commandButton(fnKeyToCommand.newFolder, 'New folder', 'New folder', canMkdir)}
+            {@render commandButton(fnKeyToCommand.delete, 'Delete', 'Delete', canSourceOps)}
         {/if}
+        <!-- eslint-enable @typescript-eslint/no-confusing-void-expression -->
     </div>
 {/if}
 
@@ -196,6 +156,10 @@
 
     button {
         flex: 1;
+        /* min-width: 0 lets a button shrink below its content size so a long custom
+           binding (e.g. ⌘⇧⌥K) can't force the bar wider than the window: the label
+           truncates instead. Without it, flex items refuse to shrink past content. */
+        min-width: 0;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -208,6 +172,15 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
         transition: background-color var(--transition-fast);
+    }
+
+    /* The label truncates before the chip does: a long binding keeps the key
+       readable (the chip is the truthful claim) while the word gives way. */
+    button > span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
     }
 
     button:last-child {
@@ -229,5 +202,7 @@
         color: var(--color-text-secondary);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px var(--spacing-xs);
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 </style>

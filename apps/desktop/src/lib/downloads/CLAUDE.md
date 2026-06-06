@@ -15,7 +15,7 @@ Backend counterpart: [`src-tauri/src/downloads/CLAUDE.md`](../../../src-tauri/sr
 | `LatestDownloadFdaToastContent.svelte`   | INFO toast: "Cmdr needs Full Disk Access…" with an "Open System Settings" action.                                                                                                                                |
 | `go-to-latest-ids.ts`                    | Dedup ids for the go-to-latest INFO toasts.                                                                                                                                                                      |
 | `event-bridge.svelte.ts`                 | Listener bridge: one `download-detected` subscription, dispatches per the settings enum.                                                                                                                         |
-| `DownloadToastContent.svelte`            | In-app toast: title with filename + size, optional subdir line, snapshotted shortcut hint, Jump + Stop-showing actions.                                                                                          |
+| `DownloadToastContent.svelte`            | In-app toast: title with filename + size, optional subdir line, snapshotted shortcut hint (literal `ShortcutChip`), Jump + Stop-showing actions.                                                                 |
 | `notifications-mode.ts`                  | Reader, writer, and deep-link helper for `behavior.fileSystemWatching.downloadsNotifications`.                                                                                                                   |
 | `global-shortcut-bridge.svelte.ts`       | One `global-shortcut-fired` Tauri event subscription. Calls `goToLatestDownload` plus, on first un-acknowledged trigger, the warn toast.                                                                         |
 | `GlobalShortcutWarnToastContent.svelte`  | First-trigger persistent warn toast for ⌃⌥⌘J. "Keep it on" / "Turn it off" buttons. Snapshotted binding prop.                                                                                                    |
@@ -40,9 +40,11 @@ Settings whenever; their preference stays put.
 ## Snapshot-at-creation rule
 
 The shortcut hint shown on each in-app toast is the value of `getEffectiveShortcuts('downloads.goToLatest')[0]` at
-toast-creation time, passed as a prop. A remap that happens between this toast appearing and the user clicking does NOT
+toast-creation time, passed as the `shortcutHint` prop and rendered as a literal-mode `ShortcutChip`
+(`key={shortcutHint}`, non-clickable). A remap that happens between this toast appearing and the user clicking does NOT
 change what's displayed — that would be confusing, because the hint would no longer match what the user actually pressed
-when the toast first showed up. The next toast picks up the new binding naturally.
+when the toast first showed up. The next toast picks up the new binding naturally. (The chip is literal, not `commandId`
+mode, precisely to preserve this snapshot semantic; a `commandId` chip would re-render live.)
 
 Pure-prop-driven: the toast component reads `event`, `shortcutHint`, `explorer`, and `toastId` once on mount. No live
 subscriptions, no module state. The `ToastItem` host extends the toast store with a `props` field (see `lib/ui/toast/`)

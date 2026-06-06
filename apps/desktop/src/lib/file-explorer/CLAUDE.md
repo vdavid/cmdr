@@ -12,7 +12,11 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
   toast keeps reappearing as a gentle reminder until the user clicks "Don't show again" (or flips
   `fileExplorer.suppressQuickLookHint` in Settings > Advanced). While the toast is on screen, further Space presses just
   toggle selection — the hint module no-ops if the toast is already visible. The X on the toast frame closes the current
-  instance without suppressing future ones.
+  instance without suppressing future ones. The toast's keys render as literal-mode `ShortcutChip`s: `Space` / `Enter`
+  are fixed interaction keys, and the Quick Look key is snapshotted at toast creation
+  (`getEffectiveShortcuts('file.quickLook')[0]`, default `⇧Space`) so a mid-display rebind doesn't rewrite the visible
+  toast. The toast also carries a "Settings > Keyboard shortcuts" `LinkButton` that deep-links to the `file.quickLook`
+  row, so the chips themselves stay non-clickable.
 - **Insert**: toggle selection at cursor and move cursor down (Total Commander style). `..` isn't selectable, but the
   cursor still advances. At the last row the cursor stays put. No physical Insert key on Apple keyboards — users can
   remap via Karabiner-Elements, plug in a PC USB keyboard, or rebind in Settings → Shortcuts.
