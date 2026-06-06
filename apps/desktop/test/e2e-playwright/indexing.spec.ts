@@ -109,7 +109,7 @@ async function ensureFullView(tauriPage: PageLike): Promise<void> {
   }
 }
 
-/** Waits until a directory's size column shows a numeric value (not "<dir>" or "Scanning..."). */
+/** Waits until a directory's size column shows a numeric value (not the "<dir>" placeholder). */
 async function waitForNumericSize(tauriPage: PageLike, entryName: string, timeoutMs = 15000): Promise<string> {
   await expect
     .poll(
@@ -157,7 +157,7 @@ test.describe('Drive indexing', () => {
     expect(stats.recursiveFileCount).toBe(1)
     expect(stats.recursiveDirCount).toBe(0)
 
-    // Also verify the UI shows a numeric size (not "<dir>" or "Scanning...")
+    // Also verify the UI shows a numeric size (not the "<dir>" placeholder)
     await ensureFullView(tauriPage)
     const sizeText = await waitForNumericSize(tauriPage, 'sub-dir')
     expect(sizeText).toMatch(/\d/)

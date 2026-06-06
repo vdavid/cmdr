@@ -92,8 +92,10 @@ describe('buildDirSizeTooltip', () => {
     expect(buildDirSizeTooltip(undefined, undefined, 0, 0, false, formatSize, formatNum, plural)).toBe('')
   })
 
-  it('returns "Scanning..." when no data and scanning is active', () => {
-    expect(buildDirSizeTooltip(undefined, undefined, 0, 0, true, formatSize, formatNum, plural)).toBe('Scanning...')
+  it('returns the size-readiness hint when no data and scanning is active', () => {
+    expect(buildDirSizeTooltip(undefined, undefined, 0, 0, true, formatSize, formatNum, plural)).toBe(
+      'Sizes are usually ready after 3 minutes',
+    )
   })
 
   it('returns HTML tooltip with size and counts when recursive size is available', () => {

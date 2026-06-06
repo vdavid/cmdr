@@ -962,7 +962,14 @@
                                         </span>
                                     {/if}
                                 {:else if dirSizeState === 'scanning'}
-                                    <span class="size-scanning">Scanning...</span>
+                                    <span class="size-dir">&lt;dir&gt;</span>
+                                    <span
+                                        class="size-stale icon-indicator"
+                                        role="img"
+                                        aria-label="Size not ready yet"
+                                        use:tooltip={'Sizes are usually ready after 3 minutes'}
+                                        ><IconHourglass width="12" height="12" /></span
+                                    >
                                 {:else}
                                     <span class="size-dir">&lt;dir&gt;</span>
                                 {/if}
@@ -1312,12 +1319,6 @@
         display: inline-flex;
         align-items: center;
         cursor: help;
-    }
-
-    .size-scanning {
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-xs);
-        white-space: nowrap;
     }
 
     .col-date {

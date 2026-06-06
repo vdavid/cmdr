@@ -324,7 +324,7 @@ export type DirSizeDisplayState = 'dir' | 'scanning' | 'size' | 'size-stale'
  * Rules (where "active" = global `indexing` OR this dir's own `pending` flag):
  * - Has recursiveSize + active     -> 'size-stale' (show size with hourglass)
  * - Has recursiveSize + not active -> 'size' (show formatted size)
- * - No recursiveSize + active      -> 'scanning' (show spinner)
+ * - No recursiveSize + active      -> 'scanning' (show <dir> placeholder with hourglass)
  * - No recursiveSize + not active  -> 'dir' (show <dir> placeholder)
  *
  * Global `indexing` means a full scan/aggregation is running (every size in
@@ -395,5 +395,5 @@ export function buildDirSizeTooltip(
 
     return { html: lines.join('<br>') }
   }
-  return scanning ? 'Scanning...' : ''
+  return scanning ? 'Sizes are usually ready after 3 minutes' : ''
 }

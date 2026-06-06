@@ -4,22 +4,21 @@ Reusable UI components used across the entire desktop app.
 
 ## Key files
 
-| File                     | Purpose                                                                                        |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| `ModalDialog.svelte`     | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
-| `dialog-registry.ts`     | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
-| `Button.svelte`          | Styled button with variant and size props                                                      |
-| `LinkButton.svelte`      | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
-| `CommandBox.svelte`      | Copyable terminal command (monospace + Copy button)                                            |
-| `LoadingIcon.svelte`     | Animated spinner with progressive status text                                                  |
-| `AlertDialog.svelte`     | Single-action confirmation dialog built on `ModalDialog`                                       |
-| `ProgressBar.svelte`     | Reusable progress bar (just the bar, no labels or layout)                                      |
-| `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA                              |
-| `Size.svelte`            | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
-| `SectionCard.svelte`     | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
-| `ToggleGroup.svelte`     | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
-| `DateLabel.svelte`       | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
-| `toast/`                 | Centralized toast notification system: store, container, item                                  |
+| File                 | Purpose                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------- |
+| `ModalDialog.svelte` | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
+| `dialog-registry.ts` | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
+| `Button.svelte`      | Styled button with variant and size props                                                      |
+| `LinkButton.svelte`  | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
+| `CommandBox.svelte`  | Copyable terminal command (monospace + Copy button)                                            |
+| `LoadingIcon.svelte` | Animated spinner with progressive status text                                                  |
+| `AlertDialog.svelte` | Single-action confirmation dialog built on `ModalDialog`                                       |
+| `ProgressBar.svelte` | Reusable progress bar (just the bar, no labels or layout)                                      |
+| `Size.svelte`        | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
+| `SectionCard.svelte` | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
+| `ToggleGroup.svelte` | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
+| `DateLabel.svelte`   | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
+| `toast/`             | Centralized toast notification system: store, container, item                                  |
 
 ## Not part of this module: soft sheets
 
@@ -84,14 +83,50 @@ import { tooltip } from '$lib/tooltip/tooltip'
 <!-- Only show when text overflows -->
 <span use:tooltip={{ text: longText, overflowOnly: true }}>...</span>
 
+<!-- Live rich content: the caller owns a hidden host, the action adopts its CONTENT child on show -->
+<span use:tooltip={{ contentEl: tooltipContent }}>...</span>
+<div hidden>
+  <div bind:this={tooltipContent}>
+    <ProgressBar value={progress} size="sm" />
+    <span>{label} · {eta}</span>
+  </div>
+</div>
+
 <!-- No tooltip (pass undefined or '') -->
 <span use:tooltip={undefined}>...</span>
 ```
 
-`TooltipParam` type: `string | { text?, html?, shortcut?, overflowOnly? } | null | undefined`.
+`TooltipParam` type: `string | { text?, html?, shortcut?, overflowOnly?, contentEl? } | null | undefined`.
 
 The tooltip element has `white-space: pre-line` and uses global CSS classes, so `<span class="size-mb">` etc. work
 inside `{ html }` tooltips. The `html` variant renders via `innerHTML`; only use with trusted content.
+
+### Live rich content (`contentEl`)
+
+For a tooltip whose content updates while it's shown (a ticking counter, a `ProgressBar` whose width transition must
+survive), pass `contentEl: HTMLElement`. Precedence is `contentEl` > `html` > `text`/`shortcut`. On show the action
+**reparents** that element into the shared tooltip; on hide / destroy / param swap it moves it back. Because the DOM
+node persists, Svelte keeps updating it in place: transitions glide instead of resetting, counters don't flicker, and
+all the existing tooltip machinery (delay, positioning, glass styling, a11y) comes along.
+
+Rules for callers:
+
+- **The element must stay owned by a hidden host you render.** Wrap the live content in a `<div hidden>` host and pass
+  the inner content element (not the host) as `contentEl`: `<div hidden><div bind:this={content}>…</div></div>`. The
+  action borrows the inner element while shown and returns it to the hidden host on hide, so your reactive bindings keep
+  working. Don't hand it a one-off element you then drop. **Pass the content element, not the hidden host itself — an
+  adopted element keeps its own `hidden` attribute and would render invisible inside the tooltip.**
+- **Give the content a stable `min-width` (no `ResizeObserver`).** The action positions once after attaching, then can't
+  see later content mutations, so growing text would push out of the tooltip without repositioning. Fix the width with
+  CSS on the content element (a fixed `min-width`, like `IndexingStatusIndicator`'s 200px tooltip column) so the
+  measured size stays steady as counters tick.
+- **`aria-describedby` reads the tooltip's text**, so the content must carry the real label (and ETA) as text, not only
+  a decorative bar.
+
+The reparenting is singleton-safe: the shared tooltip element is app-wide, so if another trigger's tooltip shows (or the
+live update path re-renders) while your element is adopted, the action returns yours to its host first instead of
+orphaning it. If the host unmounted mid-show, the element is just detached (guarded by `isConnected`). Covered by
+`tooltip.test.ts`.
 
 **Gotcha (detached trigger → corner tooltip)**: the show is deferred by a 400ms timer. A virtual-scroll row recycled
 while hovered is removed from the DOM **without** firing `mouseleave`, so the timer would otherwise survive and later
@@ -166,28 +201,8 @@ Props:
 Uses `role="progressbar"` with `aria-valuenow` / `aria-valuemin` / `aria-valuemax`. Fill transitions via
 `transition: width 0.15s ease-out`.
 
-Consumers: `ProgressOverlay` (size `sm`), `TransferProgressDialog` (size `md`, dual bars for size + file count).
-
-## ProgressOverlay
-
-Floating top-right overlay for showing progress on long-running operations. Uses `pointer-events: none` so it never
-blocks clicks. Two layout modes:
-
-- **Label only** (`progress` omitted): Spinner + single-line label. Compact layout.
-- **With progress** (`progress` passed, even as `null`): Spinner + column layout with label, optional detail text,
-  optional progress bar + percentage + ETA. The column has `min-width: 160px` to give the progress bar enough room.
-
-Props:
-
-| Prop       | Type             | Notes                                                                         |
-| ---------- | ---------------- | ----------------------------------------------------------------------------- |
-| `visible`  | `boolean`        | Show/hide the overlay                                                         |
-| `label`    | `string`         | Main text (for example, "Scanning...", "Computing directory sizes...")        |
-| `detail`   | `string?`        | Secondary text (for example, "42,000 entries")                                |
-| `progress` | `number \| null` | 0–1 for determinate bar, `null` for no bar. Omit entirely for compact layout. |
-| `eta`      | `string \| null` | Pre-formatted ETA string (for example, "~2 min left")                         |
-
-Used by `ScanStatusOverlay` (indexing progress). Designed to also be used for replay progress.
+Consumers: `IndexingStatusIndicator` (size `sm`, in the indexing tooltip), `TransferProgressDialog` (size `md`, dual
+bars for size + file count).
 
 ## Toast system (`toast/`)
 

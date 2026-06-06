@@ -189,9 +189,6 @@
     "tauri-commands/rename.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
-    "indexing/ScanStatusOverlay.svelte": {
-      "reason": "UI overlay component, depends on Tauri event listeners"
-    },
     "indexing/index-events.ts": {
       "reason": "Thin wrapper over Tauri listen API"
     },
@@ -251,12 +248,6 @@
     },
     "tauri-commands/search.ts": {
       "reason": "Tauri command wrappers, tested via integration"
-    },
-    "indexing/ReplayStatusOverlay.svelte": {
-      "reason": "UI overlay component, depends on Tauri event listeners"
-    },
-    "ui/ProgressOverlay.svelte": {
-      "reason": "Pure UI component, no logic to test beyond rendering"
     },
     "crash-reporter/CrashReportDialog.svelte": {
       "reason": "UI dialog, depends on Tauri commands for send/dismiss"

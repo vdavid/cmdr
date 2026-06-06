@@ -1,18 +1,19 @@
 # Indexing (frontend)
 
-Frontend bridge to the Rust drive indexer. Owns reactive scan state, Tauri event listeners, and the scan status overlay.
+Frontend bridge to the Rust drive indexer. Owns reactive scan state, Tauri event listeners, and the drive-indexing
+status indicator.
 
 Rust counterpart: `apps/desktop/src-tauri/src/indexing/`
 
 ## Files
 
-| File                         | Purpose                                                            |
-| ---------------------------- | ------------------------------------------------------------------ |
-| `index.ts`                   | Public API barrel export                                           |
-| `index-state.svelte.ts`      | Module-level `$state` for scan progress; listens for scan events   |
-| `index-events.ts`            | Listens for `index-dir-updated`, calls back with updated paths     |
-| `ScanStatusOverlay.svelte`   | Thin wrapper feeding scan/aggregation state into `ProgressOverlay` |
-| `ReplayStatusOverlay.svelte` | Thin wrapper feeding replay state into `ProgressOverlay`           |
+| File                             | Purpose                                                                       |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| `index.ts`                       | Public API barrel export                                                      |
+| `index-state.svelte.ts`          | Module-level `$state` for scan progress; listens for scan events              |
+| `index-events.ts`                | Listens for `index-dir-updated`, calls back with updated paths                |
+| `eta.ts`                         | Pure ETA helpers (formatting thresholds, elapsed + sliding-window estimation) |
+| `IndexingStatusIndicator.svelte` | Top-right hourglass icon; rich tooltip with scan / aggregation / replay state |
 
 ## Public API (`index.ts`)
 
@@ -52,7 +53,7 @@ Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`, `agg
 | `index-replay-progress`      | `{ volumeId, eventsProcessed, estimatedTotal }`     | `replaying = true` on first, update counters            |
 | `index-replay-complete`      | `{ volumeId, durationMs }`                          | Reset replay state                                      |
 | `index-aggregation-progress` | `{ phase, current, total }`                         | `aggregating = true`, update phase/progress/ETA         |
-| `index-aggregation-complete` | `()`                                                | Reset aggregation state, dismiss overlay                |
+| `index-aggregation-complete` | `()`                                                | Reset aggregation state                                 |
 
 **Startup race condition**: The Rust indexer starts in Tauri's `setup()` hook before the frontend registers listeners.
 `initIndexState` uses a "listen first, then query" pattern: registers event listeners, then calls `get_index_status` IPC
@@ -69,30 +70,35 @@ with a batch of paths: multiple paths during DB replay, typically one path durin
 `DualPaneExplorer` calls this and checks each path against the current directory of each pane using a path-prefix
 comparison (relies on trailing-slash normalization).
 
-## Scan status overlay (`ScanStatusOverlay.svelte`)
+## Status indicator (`IndexingStatusIndicator.svelte`)
 
-Thin wrapper that computes label, progress, and ETA from scan/aggregation state, then delegates rendering to
-`$lib/ui/ProgressOverlay.svelte`. Visible while `isScanning()` or `isAggregating()` is true.
+One component for all three index-activity states (scan, aggregation, replay). They're logically the same in the user's
+mental model — "the drive index is updating" — so they share a single quiet indicator instead of three overlays fighting
+for the corner.
 
-- **Scan phase**: Label only (compact layout, no progress bar). Shows "Scanning... 42,000 entries, 1,200 dirs".
-- **Aggregation phase**: Column layout with phase label + optional progress bar + ETA. Phases: `saving_entries`
-  (flushing writer backlog), `loading`, `sorting` (no progress bar), `computing`, `writing` (progress bar on
-  `saving_entries`, `computing`, and `writing`). ETA is computed from elapsed time and current/total ratio, reset on
-  phase transitions.
+- **Rendering**: a small Lucide hourglass (`~icons/lucide/hourglass`, ~14px, the same icon as the size-column stale
+  indicator) pinned `position: absolute; top/right: var(--spacing-sm)` in tertiary text color. It pulses opacity gently
+  to signal activity (design principle: show some anim when the app is doing something), gated behind
+  `prefers-reduced-motion: reduce` (static then). The full detail lives in a rich tooltip on hover/focus.
+- **Visibility**: `isScanning() || isAggregating() || isReplaying()`. Any index activity shows the icon immediately — no
+  grace delay, because a small icon is unobtrusive and showing it immediately keeps the indicator honest.
+- **Message priority**: aggregation > scan > replay. One mode owns the tooltip at a time, so a running scan or
+  aggregation shows its own message rather than a replay one underneath.
+- **Tooltip content** (the component renders the content inside a `<div hidden>` host and passes the inner content div —
+  not the hidden host — to the tooltip action via `contentEl`, so the adopted element doesn't carry `hidden` into the
+  tooltip):
+  - Scan: "Scanning... 42,000 entries, 1,200 dirs" (`formatNumber` formatting).
+  - Aggregation: phase label ("Saving entries...", "Loading directories...", "Sorting directories...", "Computing
+    directory sizes...", "Saving directory sizes...") + `ProgressBar` + percent + ETA for the phases that have progress
+    (`saving_entries`, `computing`, `writing`).
+  - Replay: "Updating index..." + "N events processed" + `ProgressBar` + blended ETA.
+- **ETA**: pure helpers in `eta.ts`. Aggregation uses a single elapsed extrapolation. Replay blends that 50-50 with a
+  sliding-window rate over the last ~5 seconds (early extrapolation alone is wildly wrong). The window snapshot
+  collection is the only stateful glue and stays in the component; it feeds the pure `pruneSnapshots` /
+  `computeWindowEta` / `blendEtas` / `formatEta` functions.
 
 Uses `formatNumber` from selection-info-utils for number formatting (uses `'en-US'` locale, hardcoded via
 `toLocaleString('en-US')`).
-
-## Replay status overlay (`ReplayStatusOverlay.svelte`)
-
-Thin wrapper that computes label, progress, and ETA from replay state, then delegates rendering to
-`$lib/ui/ProgressOverlay.svelte`. Visible when `isReplaying()` is true AND more than 4 seconds have elapsed since replay
-started, AND not currently scanning or aggregating (to avoid stacking overlays).
-
-- **Progress bar**: `eventsProcessed / estimatedTotal` ratio.
-- **ETA**: 50-50 blend of total-based ETA (elapsed extrapolation) and a sliding-window rate over the last ~5 seconds.
-  Falls back to whichever is available if one can't be computed yet.
-- **Detail**: Shows "{N} events processed" with locale formatting.
 
 ## Key decisions
 
@@ -102,18 +108,28 @@ have a race window where `index-scan-started` fires between the query and the li
 stuck on "not scanning". Registering listeners first closes this gap: any event that fires during or after the query is
 caught.
 
-**Decision**: Scan overlay uses `pointer-events: none`. **Why**: The overlay sits in the top-right corner over the file
-list. Without `pointer-events: none`, it would intercept clicks on files near the corner. The overlay is purely
-informational, with no interactive elements.
+**Decision**: The status indicator is a focusable, hoverable icon (`role="img"`, `tabindex="0"`), not a
+`pointer-events: none` glyph. **Why**: the rich detail lives in a tooltip the user reaches by hover or focus, so the
+icon must accept pointer and keyboard interaction. The hover target is a tiny ~14px icon in the corner, so stealing
+clicks near files isn't a real concern (the old full-width overlay needed `pointer-events: none` because it spanned a
+visible band). The tab stop is intentional and indexing-only — the component renders nothing when idle, so there's no
+dead tab stop in the steady state. The tooltip carries the live label + ETA via `aria-describedby`; `role="status"`
+would be wrong here (it's a live region for auto-announced changes, not a focusable hover target).
 
-## No tests
+## Tests
 
-No unit or integration tests exist for this module yet. Manual testing via the Rust indexer with `pnpm dev`.
+- `eta.test.ts`: the pure ETA helpers (thresholds, elapsed + window estimation, blending, snapshot pruning).
+- `IndexingStatusIndicator.a11y.test.ts`: tier-3 axe checks for idle (renders nothing), scanning, and
+  aggregating-with-progress, mocking `index-state.svelte`.
+
+The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json` (module `$state`
+driven by Tauri events). Manual end-to-end testing via the Rust indexer with `pnpm dev`.
 
 ## Dependencies
 
 - `@tauri-apps/api/core`: `invoke`
 - `$lib/tauri-commands`: `listen`, `UnlistenFn`
 - `$lib/ui/toast`: `addToast` (rescan notification toasts)
-- `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (overlay only)
-- `$lib/ui/ProgressOverlay.svelte`: reusable progress overlay component (used by `ScanStatusOverlay`)
+- `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (indicator only)
+- `$lib/tooltip/tooltip`: `tooltip` action with the `contentEl` live-content param (indicator only)
+- `$lib/ui/ProgressBar.svelte`: reusable progress bar, size `sm` (in the indicator tooltip)

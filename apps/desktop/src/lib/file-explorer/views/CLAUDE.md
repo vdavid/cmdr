@@ -36,13 +36,17 @@ without DOM performance issues.
   delegates to triads in bytes mode, a dynamic friendliest-unit string in dynamic mode, and a forced single-unit string
   in `kB`/`MB`/`GB` mode. `measure-column-widths.ts` accepts the same options so the size column shrink-wraps the
   actually-rendered cell text. Uses Lucide icons (via `unplugin-icons`): `~icons/lucide/circle-alert` for size mismatch
-  warnings and `~icons/lucide/hourglass` for stale index indicators. The hourglass shows when the global `indexing` flag
+  warnings and `~icons/lucide/hourglass` for the index indicators. The hourglass shows when the global `indexing` flag
   is set (full scan/aggregation, every size in flux) OR the row's own `recursiveSizePending` is set (live delete/copy in
-  flight for that dir, even with no scan running). The per-dir flag rides `DirStats.recursiveSizePending`, copied onto
-  entries by `updateIndexSizesInPlace` / `createParentEntry` (backend: `indexing/pending_sizes.rs`). Also renders an
-  optional Git status column between Name and Ext when `gitRepoRoot` is set and `showGitColumn` is true (gated by the
-  `fileExplorer.git.showStatusColumn` setting in `FilePane`); fetches `fetchStatusMap` and refreshes on
-  `git-state-changed` for the active repo
+  flight for that dir, even with no scan running). Two flavors share the glyph: the `size-stale` state pairs it with a
+  visible recursive size (tooltip "Updating index: size may change."), while the `scanning` state (no size yet) renders
+  the `<dir>` placeholder plus the hourglass with tooltip "Sizes are usually ready after 3 minutes" so a fresh install
+  reads as quietly working rather than `Scanning...` on every row. `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH`
+  for both states so the shrink-wrapped column never clips the glyph. The per-dir flag rides
+  `DirStats.recursiveSizePending`, copied onto entries by `updateIndexSizesInPlace` / `createParentEntry` (backend:
+  `indexing/pending_sizes.rs`). Also renders an optional Git status column between Name and Ext when `gitRepoRoot` is
+  set and `showGitColumn` is true (gated by the `fileExplorer.git.showStatusColumn` setting in `FilePane`); fetches
+  `fetchStatusMap` and refreshes on `git-state-changed` for the active repo
 - **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in
   `full-list-utils.ts`)
 - **view-modes.test.ts** – Integration tests for hidden-file filtering and directory listing structure (uses

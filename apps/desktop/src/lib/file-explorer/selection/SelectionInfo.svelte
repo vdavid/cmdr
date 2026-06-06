@@ -237,7 +237,17 @@
         <span class="name" use:tooltip={displayName} use:useShortenMiddle={{ text: displayName, preferBreakAt: '.', startRatio: 0.7 }}></span>
         <span class="size" use:tooltip={sizeTooltip}>
             {#if sizeDisplay === 'DIR'}
-                {#if dirSizeState === 'scanning'}Scanning...{:else}DIR{/if}
+                DIR
+                {#if dirSizeState === 'scanning'}
+                    <span
+                        class="stale-indicator stale-icon"
+                        role="img"
+                        aria-label="Size not ready yet"
+                        use:tooltip={'Sizes are usually ready after 3 minutes'}
+                    >
+                        <IconHourglass width="12" height="12" />
+                    </span>
+                {/if}
             {:else if sizeDisplay}
                 {#each sizeDisplay as triad, i (i)}
                     <span class={triad.tierClass}>{triad.value}</span>

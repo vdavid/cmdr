@@ -2,7 +2,7 @@ import type { ActionReturn } from 'svelte/action'
 
 type TooltipParam =
   | string
-  | { text?: string; html?: string; shortcut?: string; overflowOnly?: boolean }
+  | { text?: string; html?: string; shortcut?: string; overflowOnly?: boolean; contentEl?: HTMLElement }
   | null
   | undefined
 
@@ -20,8 +20,23 @@ let timerNode: HTMLElement | null = null
 /** Shared container for tooltips (keeps them inside a landmark to satisfy axe's `region` rule). */
 let tooltipContainer: HTMLDivElement | null = null
 
+/**
+ * When a `contentEl` param adopts a caller-owned element into the shared tooltip, we record the
+ * element and the host it came from so we can put it back. The tooltip element is a single app-wide
+ * singleton, so any other trigger showing (or a live `update()`) must return this element first,
+ * otherwise the host would keep a detached child and Svelte would update a dead subtree.
+ */
+let adoptedContentEl: HTMLElement | null = null
+let adoptedContentHost: ParentNode | null = null
+
 function ensureTooltipContainer(): HTMLDivElement {
-  if (tooltipContainer) return tooltipContainer
+  // Self-heal if the cached container got detached from the document (so the next show actually
+  // renders). The container normally lives for the whole app lifetime, but staying defensive keeps a
+  // stray `body` mutation from silently breaking every tooltip.
+  if (tooltipContainer) {
+    if (!tooltipContainer.isConnected) document.body.appendChild(tooltipContainer)
+    return tooltipContainer
+  }
   tooltipContainer = document.createElement('div')
   tooltipContainer.setAttribute('role', 'region')
   tooltipContainer.setAttribute('aria-label', 'Tooltips')
@@ -31,7 +46,12 @@ function ensureTooltipContainer(): HTMLDivElement {
 }
 
 function ensureTooltipElement(): HTMLDivElement {
-  if (tooltipEl) return tooltipEl
+  if (tooltipEl) {
+    // Re-attach via the container if a stray `body` mutation detached our subtree, so the next show
+    // still renders. `ensureTooltipContainer` re-appends itself; the cached `tooltipEl` rides along.
+    if (!tooltipEl.isConnected) ensureTooltipContainer()
+    return tooltipEl
+  }
 
   tooltipEl = document.createElement('div')
   tooltipEl.className = 'cmdr-tooltip'
@@ -45,12 +65,55 @@ function ensureTooltipElement(): HTMLDivElement {
 function isEmptyParam(param: TooltipParam): boolean {
   if (param === null || param === undefined || param === '') return true
   if (typeof param === 'object') {
-    return !param.text && !param.html && !param.shortcut
+    return !param.text && !param.html && !param.shortcut && !param.contentEl
   }
   return false
 }
 
+/**
+ * Return any adopted `contentEl` to its host before the tooltip's content is replaced or the tooltip
+ * hides. The host may have unmounted while the tooltip was showing (the owning component was destroyed
+ * mid-show), so we only re-append when it's still connected; otherwise we just detach the element so
+ * it doesn't dangle inside the shared tooltip.
+ */
+function returnAdoptedContentEl(): void {
+  if (!adoptedContentEl) return
+
+  if (adoptedContentHost && (adoptedContentHost as Node).isConnected) {
+    adoptedContentHost.appendChild(adoptedContentEl)
+  } else {
+    adoptedContentEl.remove()
+  }
+
+  adoptedContentEl = null
+  adoptedContentHost = null
+}
+
 function setTooltipContent(el: HTMLDivElement, param: TooltipParam): void {
+  const nextContentEl = typeof param === 'object' && param !== null ? param.contentEl : undefined
+
+  // Runs on every content write (show, the live `update()` path, and any future call site). If the
+  // tooltip currently holds an adopted element and we're about to render something else into it (a
+  // different `contentEl`, or a plain text/html param), return the old element to its host first.
+  // Without this, the `innerHTML`/`textContent`/`appendChild` below would orphan the adopted node:
+  // the owner's host would lose its child silently and Svelte would keep updating a detached subtree.
+  if (adoptedContentEl && nextContentEl !== adoptedContentEl) {
+    returnAdoptedContentEl()
+  }
+
+  if (nextContentEl) {
+    // Adopt the caller's live element: record its current parent (the hidden host) so we can return it
+    // on hide/destroy or when the param swaps, then move it into the tooltip. When the same element is
+    // already adopted (the live `update()` path re-rendering unchanged rich content), it's still in the
+    // tooltip and its host is already recorded, so there's nothing to do and Svelte keeps updating it.
+    if (nextContentEl !== adoptedContentEl) {
+      adoptedContentHost = nextContentEl.parentNode
+      el.replaceChildren(nextContentEl)
+      adoptedContentEl = nextContentEl
+    }
+    return
+  }
+
   if (typeof param === 'string') {
     el.textContent = param
     return
@@ -139,6 +202,8 @@ function showTooltip(triggerEl: HTMLElement, param: TooltipParam): void {
 
 function hideTooltip(): void {
   cancelTimer()
+  // Return any adopted rich content to its host so Svelte keeps updating it in place for the next show.
+  returnAdoptedContentEl()
   if (tooltipEl) {
     tooltipEl.classList.remove('visible')
   }

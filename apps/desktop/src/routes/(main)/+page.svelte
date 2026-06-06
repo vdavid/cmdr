@@ -16,8 +16,7 @@
     import { goToPath } from '$lib/go-to-path/go-to-path'
     import { getFocusedPanePath, getFocusedPaneSearchableFolder } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
-    import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
-    import ReplayStatusOverlay from '$lib/indexing/ReplayStatusOverlay.svelte'
+    import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
@@ -978,8 +977,7 @@
 
         {#if showApp}
             <DualPaneExplorer bind:this={explorerRef} onCommand={handleCommandExecute} />
-            <ScanStatusOverlay />
-            <ReplayStatusOverlay />
+            <IndexingStatusIndicator />
         {/if}
 
         {#if showApp}

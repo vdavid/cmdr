@@ -1,0 +1,227 @@
+<script lang="ts">
+    import IconHourglass from '~icons/lucide/hourglass'
+    import {
+        isScanning,
+        getEntriesScanned,
+        getDirsFound,
+        isAggregating,
+        getAggregationPhase,
+        getAggregationCurrent,
+        getAggregationTotal,
+        getAggregationStartedAt,
+        isReplaying,
+        getReplayEventsProcessed,
+        getReplayEstimatedTotal,
+        getReplayStartedAt,
+    } from './index-state.svelte'
+    import {
+        formatEta,
+        computeElapsedEta,
+        computeWindowEta,
+        blendEtas,
+        pruneSnapshots,
+        type EtaSnapshot,
+    } from './eta'
+    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
+    import { tooltip } from '$lib/tooltip/tooltip'
+    import ProgressBar from '$lib/ui/ProgressBar.svelte'
+
+    const scanning = $derived(isScanning())
+    const entriesScanned = $derived(getEntriesScanned())
+    const dirsFound = $derived(getDirsFound())
+    const aggregating = $derived(isAggregating())
+    const aggPhase = $derived(getAggregationPhase())
+    const aggCurrent = $derived(getAggregationCurrent())
+    const aggTotal = $derived(getAggregationTotal())
+    const aggStartedAt = $derived(getAggregationStartedAt())
+    const replaying = $derived(isReplaying())
+    const eventsProcessed = $derived(getReplayEventsProcessed())
+    const estimatedTotal = $derived(getReplayEstimatedTotal())
+    const replayStartedAt = $derived(getReplayStartedAt())
+
+    // The icon shows for any index activity. Scan/aggregation own the message when they're
+    // running; replay fills the corner only when nothing more specific is happening, so one
+    // indicator carries all three states without two components fighting for the corner.
+    const visible = $derived(scanning || aggregating || replaying)
+
+    const scanLabel = $derived(
+        entriesScanned > 0
+            ? `Scanning... ${formatNumber(entriesScanned)} entries, ${formatNumber(dirsFound)} dirs`
+            : 'Scanning...',
+    )
+
+    const phaseToLabel: Record<string, string> = {
+        saving_entries: 'Saving entries...',
+        loading: 'Loading directories...',
+        sorting: 'Sorting directories...',
+        computing: 'Computing directory sizes...',
+        writing: 'Saving directory sizes...',
+    }
+
+    const aggLabel = $derived(phaseToLabel[aggPhase] ?? 'Computing directory sizes...')
+
+    const aggHasProgress = $derived(
+        aggPhase === 'saving_entries' || aggPhase === 'computing' || aggPhase === 'writing',
+    )
+
+    const aggProgress = $derived(aggHasProgress && aggTotal > 0 ? Math.min(1, aggCurrent / aggTotal) : null)
+
+    const aggEta = $derived.by(() => {
+        if (aggTotal === 0 || aggCurrent === 0 || aggStartedAt === 0) return null
+        const elapsed = (Date.now() - aggStartedAt) / 1000
+        const remaining = computeElapsedEta(elapsed, aggCurrent, aggTotal - aggCurrent)
+        return remaining != null ? formatEta(remaining) : null
+    })
+
+    // Sliding window of replay-progress snapshots over the last ~5 seconds, fed through the
+    // pure window-rate helper. Early extrapolation alone is wildly wrong, so the final ETA
+    // blends the window rate with the total-rate extrapolation 50-50.
+    const windowDurationMs = 5000
+    let windowSnapshots = $state<EtaSnapshot[]>([])
+    let lastSnapshotProcessed = -1
+
+    $effect(() => {
+        if (!replaying) {
+            windowSnapshots = []
+            lastSnapshotProcessed = -1
+            return
+        }
+        const processed = eventsProcessed
+        if (processed !== lastSnapshotProcessed) {
+            windowSnapshots.push({ timestamp: Date.now(), eventsProcessed: processed })
+            lastSnapshotProcessed = processed
+            windowSnapshots = pruneSnapshots(windowSnapshots, windowDurationMs)
+        }
+    })
+
+    const replayProgress = $derived(estimatedTotal > 0 ? Math.min(1, eventsProcessed / estimatedTotal) : 0)
+    const replayDetail = $derived(`${formatNumber(eventsProcessed)} events processed`)
+
+    const replayEta = $derived.by(() => {
+        if (!replaying || eventsProcessed === 0 || estimatedTotal === 0 || replayStartedAt === 0) return null
+        const remaining = estimatedTotal - eventsProcessed
+        if (remaining <= 0) return 'Almost done'
+
+        const elapsedSec = (Date.now() - replayStartedAt) / 1000
+        const totalBasedEta = computeElapsedEta(elapsedSec, eventsProcessed, remaining)
+        const windowBasedEta = computeWindowEta(windowSnapshots, remaining)
+        const blended = blendEtas(totalBasedEta, windowBasedEta)
+        return blended != null ? formatEta(blended) : null
+    })
+
+    // The mode the tooltip content reflects. Scan/aggregation win over replay.
+    type Mode = 'scan' | 'aggregation' | 'replay'
+    const mode = $derived<Mode>(aggregating ? 'aggregation' : scanning ? 'scan' : 'replay')
+
+    const label = $derived(mode === 'aggregation' ? aggLabel : mode === 'scan' ? scanLabel : 'Updating index...')
+    const detail = $derived(mode === 'replay' ? replayDetail : null)
+    const progress = $derived(mode === 'aggregation' ? aggProgress : mode === 'replay' ? replayProgress : null)
+    const eta = $derived(mode === 'aggregation' ? aggEta : mode === 'replay' ? replayEta : null)
+
+    const percent = $derived(progress != null ? Math.min(100, Math.round(progress * 100)) : null)
+
+    // The tooltip action adopts `tooltipContent` (not the hidden wrapper) so it renders visibly
+    // inside the tooltip: an adopted element keeps its own `hidden` attribute, so a hidden host
+    // passed as `contentEl` would render an empty tooltip.
+    let tooltipContent = $state<HTMLDivElement>()
+</script>
+
+{#if visible}
+    <span
+        class="indexing-status"
+        tabindex="0"
+        role="img"
+        aria-label="Drive indexing status"
+        use:tooltip={{ contentEl: tooltipContent }}
+    >
+        <IconHourglass width="14" height="14" />
+    </span>
+
+    <div hidden>
+        <div bind:this={tooltipContent} class="tooltip-content">
+            <span class="tooltip-label">{label}</span>
+            {#if detail}
+                <span class="tooltip-detail">{detail}</span>
+            {/if}
+            {#if percent != null}
+                <div class="tooltip-progress">
+                    <ProgressBar value={progress ?? 0} size="sm" ariaLabel={label} />
+                    <span class="tooltip-percent">{percent}%</span>
+                    {#if eta}
+                        <span class="tooltip-eta">{eta}</span>
+                    {/if}
+                </div>
+            {/if}
+        </div>
+    </div>
+{/if}
+
+<style>
+    .indexing-status {
+        position: absolute;
+        top: var(--spacing-sm);
+        right: var(--spacing-sm);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-tertiary);
+        z-index: var(--z-sticky);
+    }
+
+    .indexing-status:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-xs);
+    }
+
+    /* A gentle opacity pulse signals the app is doing something, without drawing the eye. */
+    @media (prefers-reduced-motion: no-preference) {
+        .indexing-status {
+            animation: indexing-pulse 2s ease-in-out infinite;
+        }
+    }
+
+    @keyframes indexing-pulse {
+        0%,
+        100% {
+            opacity: 0.5;
+        }
+        50% {
+            opacity: 1;
+        }
+    }
+
+    .tooltip-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
+        /* Stable width so the tooltip doesn't jitter as the counters tick (the tooltip
+           action measures once on show and can't see later content growth). */
+        min-width: 200px;
+    }
+
+    .tooltip-label {
+        white-space: nowrap;
+    }
+
+    .tooltip-detail {
+        white-space: nowrap;
+        color: var(--color-text-tertiary);
+    }
+
+    .tooltip-progress {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .tooltip-percent {
+        font-variant-numeric: tabular-nums;
+        min-width: 28px;
+        text-align: right;
+    }
+
+    .tooltip-eta {
+        color: var(--color-text-tertiary);
+    }
+</style>

@@ -174,7 +174,6 @@ function sizeCellText(bytes: number, opts: SizeFormatOpts): string {
 function sizeTextForEntry(
   entry: FileEntry,
   sizeDisplayMode: 'smart' | 'logical' | 'physical',
-  indexing: boolean,
   sizeFormatOpts: SizeFormatOpts,
   isRestricted: boolean,
 ): string {
@@ -191,9 +190,10 @@ function sizeTextForEntry(
   if (entry.isDirectory) {
     const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
     if (s !== undefined) return sizeCellText(s, sizeFormatOpts)
-    // Mirror FullList's render decision (same `getDirSizeDisplayState`) so the
-    // measured text matches what's drawn for the no-size case.
-    return getDirSizeDisplayState(s, indexing, entry.recursiveSizePending) === 'scanning' ? 'Scanning...' : '<dir>'
+    // Mirror FullList's render decision (same `getDirSizeDisplayState`): both the
+    // scanning and dir states render the `<dir>` placeholder text (the scanning
+    // state adds an hourglass on top, reserved separately in `sizeIconSuffixForEntry`).
+    return '<dir>'
   }
   const s = getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode)
   return s !== undefined ? sizeCellText(s, sizeFormatOpts) : ''
@@ -227,10 +227,23 @@ function foldDate(current: DateMaxima, formatted: FormattedDate, measure: (text:
 }
 
 /** Pixel width of the size-column icons that follow the text for this row. */
-function sizeIconSuffixForEntry(entry: FileEntry, indexing: boolean, showSizeMismatchWarning: boolean): number {
+function sizeIconSuffixForEntry(
+  entry: FileEntry,
+  sizeDisplayMode: 'smart' | 'logical' | 'physical',
+  indexing: boolean,
+  showSizeMismatchWarning: boolean,
+): number {
   let suffix = 0
-  if (entry.isDirectory && (indexing || entry.recursiveSizePending) && entry.recursiveSize != null)
-    suffix += SIZE_ICON_WIDTH
+  if (entry.isDirectory) {
+    // FullList draws the hourglass for both the `size-stale` state (a settled
+    // size that may still change) and the `scanning` state (`<dir>` placeholder
+    // with no size yet). Both reserve the icon width here so the shrink-wrapped
+    // column doesn't clip the glyph. Mirror the same `getDirSizeDisplayState`
+    // decision the renderer uses.
+    const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
+    const state = getDirSizeDisplayState(s, indexing, entry.recursiveSizePending)
+    if (state === 'size-stale' || state === 'scanning') suffix += SIZE_ICON_WIDTH
+  }
   if (showSizeMismatchWarning) {
     const logical = entry.isDirectory ? entry.recursiveSize : entry.size
     const physical = entry.isDirectory ? entry.recursivePhysicalSize : entry.physicalSize
@@ -377,11 +390,10 @@ function foldEntries(
     const sizeText = sizeTextForEntry(
       entry,
       ctx.sizeDisplayMode,
-      ctx.indexing,
       ctx.sizeFormatOpts,
       ctx.isRestricted?.(entry.path) ?? false,
     )
-    const iconSuffix = sizeIconSuffixForEntry(entry, ctx.indexing, ctx.showSizeMismatchWarning)
+    const iconSuffix = sizeIconSuffixForEntry(entry, ctx.sizeDisplayMode, ctx.indexing, ctx.showSizeMismatchWarning)
     const rowSize = (sizeText ? ctx.measure(sizeText) : 0) + iconSuffix
     if (rowSize > sizeMax) sizeMax = rowSize
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix

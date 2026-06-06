@@ -105,11 +105,12 @@ describe('SelectionInfo Brief file-info dir size state', () => {
     expect(t.querySelector('.stale-indicator')).toBeNull()
   })
 
-  it('shows "Scanning" for an unindexed dir while indexing', async () => {
+  it('shows the dir placeholder with the not-ready hourglass for an unindexed dir while indexing', async () => {
     idx.scanning = true
     const t = mountFileInfo(makeDir({ recursiveSize: undefined, recursivePhysicalSize: undefined }))
     await tick()
-    expect(t.textContent).toMatch(/Scanning/i)
+    expect(t.textContent).toMatch(/DIR/)
+    expect(t.querySelector('.stale-indicator')).not.toBeNull()
   })
 
   it('shows the dir placeholder for an unindexed dir when idle', async () => {

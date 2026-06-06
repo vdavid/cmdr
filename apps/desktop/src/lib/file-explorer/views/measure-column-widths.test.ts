@@ -206,6 +206,22 @@ describe('computeFullListColumnWidths', () => {
     expect(pending.size).toBeGreaterThanOrEqual(idle.size)
   })
 
+  it('reserves icon width for a scanning directory with no size yet', () => {
+    _setMeasureForTests(fakeMeasure)
+    const idle = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [entry({ name: 'd', isDirectory: true, recursiveSize: undefined })],
+    })
+    const scanning = computeFullListColumnWidths({
+      ...baseArgs,
+      indexing: true,
+      entries: [entry({ name: 'd', isDirectory: true, recursiveSize: undefined })],
+    })
+    // The `<dir>` placeholder text is the same in both, but the scanning row also
+    // draws the hourglass, so its column must reserve the extra icon width.
+    expect(scanning.size).toBeGreaterThan(idle.size)
+  })
+
   it('includes parentDirStats size when provided', () => {
     _setMeasureForTests(fakeMeasure)
     const without = computeFullListColumnWidths({
