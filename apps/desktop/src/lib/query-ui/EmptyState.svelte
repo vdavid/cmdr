@@ -15,6 +15,7 @@
      */
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { pluralize } from '$lib/utils/pluralize'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
 
     interface ExampleChip {
@@ -89,9 +90,9 @@
         <p class="index-status">Index ready · {formattedCount} {pluralize(indexEntryCount, 'entry', 'entries')}</p>
     {/if}
     <p class="tip">
-        Tip: <kbd>⌘N</kbd> starts fresh, <kbd>⌘H</kbd> shows recent searches{#if aiEnabled}, <kbd
-                >⌘Enter</kbd
-            > runs an AI search{/if}.
+        Tip: <ShortcutChip key="⌘N" /> starts fresh, <ShortcutChip key="⌘H" /> shows recent searches{#if aiEnabled}, <ShortcutChip
+                key="⌘Enter"
+            /> runs an AI search{/if}.
     </p>
 </div>
 
@@ -173,15 +174,10 @@
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
         margin: 0;
-    }
-
-    kbd {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-xs);
-        padding: 0 var(--spacing-xxs);
-        color: var(--color-text-primary);
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-xxs);
     }
 </style>

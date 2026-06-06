@@ -184,7 +184,8 @@ Progressive status text driven by props (mutually exclusive, evaluated top-down)
 3. `openingFolder` true → "Opening folder..."
 4. Default → "Loading..."
 
-`showCancelHint` adds "Press ESC to cancel and go back" below the spinner. The container uses a 400ms `fadeIn` animation
+`showCancelHint` adds "Press [Esc] to cancel and go back" (the key rendered as a literal `ShortcutChip`) below the
+spinner. The container uses a 400ms `fadeIn` animation
 where the first 50% is invisible (effectively 200ms before fade begins), avoiding flash for fast loads.
 
 ## ProgressBar
@@ -374,6 +375,31 @@ command palette (up to three chips per row) is the first consumer.
 
 The `shortcut-<commandId>` anchor-id convention (shared with the Settings section the deep link targets) lives as the
 exported `shortcutAnchorId(commandId)` in `lib/settings/settings-window.ts` so it can't drift.
+
+**Where literal chips render the fixed interaction keys (Class B).** Beyond the live `commandId` sites, literal-mode
+chips give the uniform key look to fixed (non-customizable) interaction keys: the search dialog's empty-state tip
+(`⌘N` / `⌘H` / `⌘Enter`), the run button's `⏎`, the scope popover's `⌥C` / `⌥V`, the recent-items footer's `⌘H` and
+popover's `↑↓` / `Enter`, the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s `Esc` cancel hint, the
+`PtpcameradDialog` `Ctrl+C`, and the network browser's `⌘R` refresh hint. These keys are static by nature (no registry
+command, never clickable); the chip only unifies their appearance.
+
+**Class B sites kept un-migrated (deliberate exceptions):**
+
+- **`ModeChips` / `ToggleGroup` `.tg-hint` glyphs** (`⌥A` / `⌥F` / `⌥R`): these are whisper-quiet tertiary mono text
+  baked into a segmented-control cell. A boxed chip reads heavier than the surrounding cell label and fights the
+  control's calm rhythm, so the hint style stays. (Pre-decided in the plan.)
+- **The `QueryDialog` footer action-button hints** (`.shortcut-hint` / `.shortcut-on-primary`, e.g. `Go to file ⏎`,
+  `Show all in main window ⏎`): the key reads as a suffix fused into the button's own label ("Go to file" + "⏎" is one
+  phrase). Boxing it fragments the label from the key and the neutral pill clashes on the accent primary button. Kept as
+  integrated microcopy, same call as the F-key bar in M4.
+- **`ViewerStatusBar`'s shortcut line** (`W wrap · F tail · ⌘A select all · …`): a dense single tertiary line of six
+  key+description pairs. Boxing each key would make the calm status bar loud and risk overflow; the run-on prose form is
+  the right treatment here.
+- **`KeyboardShortcutsSection`'s "Press ESC to clear"**: lives inside the Settings shortcuts editor, which is out of
+  scope for chip migration (it IS the editor).
+
+The litmus test for a future Class B site: migrate when the chip reads same-or-better than the current treatment; keep
+the current treatment (and note it here) when the boxed pill genuinely reads worse in a dense or label-fused context.
 
 ## SectionCard
 

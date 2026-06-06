@@ -18,6 +18,7 @@
      */
     import { onDestroy, tick } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { computeRecentChipsLayout } from '$lib/query-ui/recent-chips-layout'
     import { modeBadge } from './recent-items-utils'
     import type { RecentItemAdapter, RecentItemKey } from './recent-items-types'
@@ -210,7 +211,7 @@
             use:tooltip={{ text: trailingTooltipText, shortcut: trailingShortcut }}
             aria-label={ariaAllButtonLabel}
         >
-            {trailingLabel}<span class="shortcut-hint" aria-hidden="true">{trailingShortcut}</span>
+            {trailingLabel}<ShortcutChip key={trailingShortcut} size="sm" />
         </button>
     </div>
 {/if}
@@ -312,16 +313,5 @@
     .all-searches {
         font-style: italic;
         color: var(--color-text-tertiary);
-    }
-
-    /* Inline ⌘H hint after the "All searches…" label. Tertiary color so it
-       reads as discoverability cue, not action label. */
-    .shortcut-hint {
-        margin-left: var(--spacing-xs);
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        opacity: 0.8;
-        font-style: normal;
     }
 </style>

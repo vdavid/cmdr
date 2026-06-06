@@ -94,7 +94,7 @@ describe('LoadingIcon component', () => {
 
       const cancelHint = target.querySelector('.cancel-hint')
       expect(cancelHint).not.toBeNull()
-      expect(cancelHint?.textContent).toBe('Press ESC to cancel and go back')
+      expect(cancelHint?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Press Esc to cancel and go back')
     })
 
     it('does not show cancel hint when showCancelHint is false', async () => {
@@ -113,7 +113,7 @@ describe('LoadingIcon component', () => {
       const cancelHint = target.querySelector('.cancel-hint')
 
       expect(loadingText?.textContent).toBe('Loaded 250 files...')
-      expect(cancelHint?.textContent).toBe('Press ESC to cancel and go back')
+      expect(cancelHint?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Press Esc to cancel and go back')
     })
   })
 
@@ -152,7 +152,7 @@ describe('LoadingIcon component', () => {
       expect(normalizeText(target.querySelector('.loading-text'))).toBe(
         'All 1,000 files loaded. Sorting your files, preparing view...',
       )
-      expect(target.querySelector('.cancel-hint')?.textContent).toBe('Press ESC to cancel and go back')
+      expect(normalizeText(target.querySelector('.cancel-hint'))).toBe('Press Esc to cancel and go back')
     })
   })
 

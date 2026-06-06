@@ -191,6 +191,12 @@ Small contracts that apply to every consumer of the query UI:
 - Each chip's tooltip leads with the full text so a CSS-ellipsis-truncated chip stays readable on hover.
 - Path column font is `--font-size-sm` (matching the filename column) with `--spacing-xxs` row vertical padding so the
   row height stays compact.
+- **Fixed interaction keys render as literal `ShortcutChip`s** (`size="sm"` in dense slots): the run button's `⏎`, the
+  empty-state tip (`⌘N` / `⌘H` / `⌘Enter`, in `EmptyState.svelte`), the scope popover's `⌥C` / `⌥V`, and the recent-items
+  footer's `⌘H` and popover's `↑↓` / `Enter`. These are dialog-internal keys with no registry command, so the chip only
+  unifies their look — never clickable, never dynamic. The mode-chip `.tg-hint` glyphs (`⌥A` / `⌥F` / `⌥R`) and the
+  footer action-button hints (`Go to file ⏎`, `Show all in main window ⏎`) deliberately stay un-boxed; see
+  `lib/ui/CLAUDE.md` § ShortcutChip for the rationale.
 
 Chip-side behaviors live in [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md); search-specific ones in
 `lib/search/CLAUDE.md`.

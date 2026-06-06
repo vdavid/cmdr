@@ -41,6 +41,7 @@
     import ViewerToolbar from './ViewerToolbar.svelte'
     import ViewerStatusBar from './ViewerStatusBar.svelte'
     import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { commands } from '$lib/ipc/bindings'
     import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
     import type { RangeEnd } from '$lib/tauri-commands'
@@ -739,8 +740,8 @@
         <aside class="binary-warning" role="note">
             <p class="binary-warning-text">
                 This is the raw view of the file. You might want to view the actual <strong>{warning.label}</strong>
-                instead. To do that, close this window and press <kbd>⇧Space</kbd> to open the quick view, or press
-                <kbd>Enter</kbd> (or double-click the file) to open it in the associated app.
+                instead. To do that, close this window and press <ShortcutChip key="⇧Space" /> to open the quick view, or
+                press <ShortcutChip key="Enter" /> (or double-click the file) to open it in the associated app.
             </p>
             <div class="binary-warning-actions">
                 <button type="button" class="binary-warning-action" onclick={dismissBanner}>Close</button>
@@ -970,10 +971,9 @@
     }
 
     /* Binary-file warning banner. Reuses the existing error palette
-       (`--color-error-bg/text/border`) and the project-standard inline
-       `<kbd>` + link-button conventions (see `lib/ui/LinkButton.svelte` and
-       the MTP / Quick Look hint toasts) so it reads as part of Cmdr's
-       visual language, not a one-off. Bottom border mirrors `.search-bar`. */
+       (`--color-error-bg/text/border`) and the shared `ShortcutChip` for the
+       key hints so it reads as part of Cmdr's visual language, not a one-off.
+       Bottom border mirrors `.search-bar`. */
     .binary-warning {
         display: flex;
         flex-direction: column;
@@ -989,20 +989,6 @@
 
     .binary-warning-text {
         margin: 0;
-    }
-
-    /* Matches the `<kbd>` styling in the Quick Look hint toast
-       (`QuickLookHintToastContent.svelte`): tertiary background, primary
-       text color. Reads as a key inset across both modes without needing
-       a special palette per banner color. */
-    .binary-warning-text kbd {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-        padding: 0 var(--spacing-xs);
-        border-radius: var(--radius-sm);
-        white-space: nowrap;
     }
 
     .binary-warning-actions {

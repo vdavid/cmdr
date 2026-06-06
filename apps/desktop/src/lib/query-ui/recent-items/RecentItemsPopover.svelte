@@ -19,6 +19,7 @@
      */
     import uFuzzy from '@leeoniya/ufuzzy'
     import FilterChipPopover from '../filter-chips/FilterChipPopover.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { modeBadge } from './recent-items-utils'
     import type { RecentItemAdapter, RecentItemKey, RecentItemView } from './recent-items-types'
 
@@ -195,7 +196,10 @@
                 {/each}
             {/if}
         </div>
-        <div class="hint">↑↓ to move · Enter to run · right-click to remove</div>
+        <div class="hint">
+            <ShortcutChip key="↑↓" size="sm" /> to move · <ShortcutChip key="Enter" size="sm" /> to run · right-click to
+            remove
+        </div>
     </div>
 </FilterChipPopover>
 
@@ -278,6 +282,10 @@
     }
 
     .hint {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--spacing-xxs);
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
         padding-top: var(--spacing-xxs);

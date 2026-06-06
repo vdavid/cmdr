@@ -9,6 +9,7 @@
      * stays in the parent so the dialog-level keymap lives next to the popovers it targets.
      */
     import FilterChipPopover from './FilterChipPopover.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import './filter-popover.css'
 
@@ -126,7 +127,7 @@
                 }}
             >
                 Use current folder
-                <kbd class="footer-kbd">⌥C</kbd>
+                <ShortcutChip key="⌥C" size="sm" />
             </button>
             <button
                 type="button"
@@ -137,7 +138,7 @@
                 }}
             >
                 All folders
-                <kbd class="footer-kbd">⌥V</kbd>
+                <ShortcutChip key="⌥V" size="sm" />
             </button>
         </div>
     </div>
@@ -233,17 +234,5 @@
     .footer-button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
-    }
-
-    .footer-kbd {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        font-weight: 500;
-        color: var(--color-accent-text);
-        background: var(--color-accent-subtle);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 1px 4px;
-        border-radius: var(--radius-sm);
-        line-height: 1;
     }
 </style>

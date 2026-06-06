@@ -4,6 +4,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import CommandBox from '$lib/ui/CommandBox.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
 
     interface Props {
         /** The process name that's blocking (like "pid 45145, ptpcamerad"). */
@@ -60,8 +61,8 @@
         </div>
 
         <p class="help-text">
-            This command continuously stops ptpcamerad while running. Press <kbd>Ctrl+C</kbd> in Terminal to stop it when
-            done.
+            This command continuously stops ptpcamerad while running. Press <ShortcutChip key="Ctrl+C" /> in Terminal to
+            stop it when done.
         </p>
 
         <div class="actions">
@@ -112,15 +113,6 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         line-height: 1.5;
-    }
-
-    .help-text kbd {
-        background: var(--color-bg-tertiary);
-        padding: var(--spacing-xxs) var(--spacing-xs);
-        border-radius: var(--radius-sm);
-        font-family: var(--font-system);
-        font-size: var(--font-size-sm);
-        border: 1px solid var(--color-border-strong);
     }
 
     .actions {

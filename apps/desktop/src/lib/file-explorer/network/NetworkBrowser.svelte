@@ -36,6 +36,7 @@
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import { addToast } from '$lib/ui/toast'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { triggerNetworkDiscovery } from './lazy-trigger'
 
     /** Row height for host list (matches Full list) */
@@ -629,7 +630,7 @@
     {#if hosts.length > 0}
         <button class="network-status-bar" onclick={handleRefreshClick} aria-label="Refresh network hosts">
             <span class="status-text">{hosts.length} {hosts.length === 1 ? 'host' : 'hosts'}</span>
-            <span class="refresh-hint">Press ⌘R or click here to refresh</span>
+            <span class="refresh-hint">Press <ShortcutChip key="⌘R" size="sm" /> or click here to refresh</span>
         </button>
     {/if}
 </div>
@@ -811,5 +812,8 @@
         padding-left: var(--spacing-md);
         color: var(--color-text-tertiary);
         white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
     }
 </style>

@@ -118,9 +118,10 @@ describe('SearchBar', () => {
     // No leading icon. The corner-down-left lucide icon used to live here.
     const svgs = button?.querySelectorAll('svg') ?? []
     expect(svgs.length).toBe(0)
-    // Exactly one "⏎" hint inside the button.
-    const enterHints = button?.querySelectorAll('.run-enter-hint') ?? []
+    // Exactly one "⏎" hint chip inside the button.
+    const enterHints = button?.querySelectorAll('.shortcut-chip') ?? []
     expect(enterHints.length).toBe(1)
+    expect(enterHints[0]?.textContent).toBe('⏎')
     // The visible label reads "Search ⏎" (a single space between "Search" and "⏎").
     const text = button?.textContent.replace(/\s+/g, ' ').trim()
     expect(text).toBe('Search ⏎')

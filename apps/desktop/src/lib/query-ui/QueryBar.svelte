@@ -20,6 +20,7 @@
      *   - ⌘1/⌘2/⌘3 switch modes (numbering changes when AI is off).
      */
     import { tooltip } from '$lib/tooltip/tooltip'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import type { SearchMode } from './query-filter-state.svelte'
 
     interface Props {
@@ -122,7 +123,7 @@
         aria-label={runTitle}
     >
         <span class="run-label">Search</span>
-        {#if showEnterHint}<span class="run-enter-hint" aria-hidden="true">⏎</span>{/if}
+        {#if showEnterHint}<ShortcutChip key="⏎" size="sm" />{/if}
     </button>
 </div>
 
@@ -193,13 +194,6 @@
 
     .run-label {
         line-height: 1;
-    }
-
-    .run-enter-hint {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        opacity: 0.8;
     }
 
     .run-button:hover:not(:disabled) {

@@ -1,4 +1,6 @@
 <script lang="ts">
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+
     interface Props {
         openingFolder?: boolean
         loadedCount?: number
@@ -28,7 +30,7 @@
         <div class="loading-text">Loading...</div>
     {/if}
     {#if showCancelHint}
-        <div class="cancel-hint">Press ESC to cancel and go back</div>
+        <div class="cancel-hint">Press <ShortcutChip key="Esc" /> to cancel and go back</div>
     {/if}
 </div>
 
@@ -60,6 +62,9 @@
     }
 
     .cancel-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
     }
