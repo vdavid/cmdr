@@ -1,6 +1,8 @@
 # Shortcut display unification plan
 
-Status: draft, 2026-06-06.
+Status: implemented, 2026-06-06. All milestones plus the two approved scope additions done, full check suite incl. slow
+lane green, manually verified live in the running app via MCP (palette live rebind, deep-link arrival into a shortcut
+row with the flash, F-key bar live update on rebind).
 
 ## Goal and intent
 

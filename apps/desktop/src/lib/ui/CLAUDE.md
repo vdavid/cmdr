@@ -391,7 +391,7 @@ command, never clickable); the chip only unifies their appearance.
 - **The `QueryDialog` footer action-button hints** (`.shortcut-hint` / `.shortcut-on-primary`, e.g. `Go to file ⏎`,
   `Show all in main window ⏎`): the key reads as a suffix fused into the button's own label ("Go to file" + "⏎" is one
   phrase). Boxing it fragments the label from the key and the neutral pill clashes on the accent primary button. Kept as
-  integrated microcopy, same call as the F-key bar in M4.
+  integrated microcopy, same call as the F-key bar's.
 - **`ViewerStatusBar`'s shortcut line** (`W wrap · F tail · ⌘A select all · …`): a dense single tertiary line of six
   key+description pairs. Boxing each key would make the calm status bar loud and risk overflow; the run-on prose form is
   the right treatment here.

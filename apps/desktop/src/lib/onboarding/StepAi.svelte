@@ -27,6 +27,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { getAppLogger } from '$lib/logging/logger'
 
     /**
@@ -67,6 +68,10 @@
 
     const log = getAppLogger('onboarding-step-ai')
     const onboardingState = getOnboardingState()
+
+    // Drives the "Select" comparison cell: when `selection.selectFiles` is unbound the
+    // chip renders nothing, so we swap to a wording that names the action instead.
+    const selectFilesShortcut = $derived(getFirstShortcutReactive('selection.selectFiles'))
 
     type WizardChoice = 'cloud' | 'local' | 'off'
 
@@ -328,9 +333,16 @@
                     <!-- The chip reads the real `selection.selectFiles` binding (bare `+`),
                          not a hardcoded combo. Non-clickable: this is onboarding prose, and
                          deep-linking to Settings mid-wizard would be jarring. Worded "the … key"
-                         so a bare `+` doesn't read as a key separator. -->
-                    You press the <ShortcutChip commandId="selection.selectFiles" clickable={false} /> key and type
-                    something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.
+                         so a bare `+` doesn't read as a key separator. The chip renders nothing
+                         when the command is unbound, so the sentence falls back to naming the
+                         action instead of leaving a gap where the key would sit. -->
+                    {#if selectFilesShortcut}
+                        You press the <ShortcutChip commandId="selection.selectFiles" clickable={false} /> key and type
+                        something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.
+                    {:else}
+                        You open "Select files…" and type something like
+                        <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.
+                    {/if}
                 </td>
             </tr>
         </tbody>
