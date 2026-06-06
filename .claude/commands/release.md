@@ -100,7 +100,7 @@ Prepare a release based on docs/guides/releasing.md.
 5. Based on the changes, advise what the next version should be (patch: bug fixes, minor: new features, major: major
    launches), and give the user the `./scripts/release.sh x.x.x` command to run.
 6. **Offer to run the release script** for the user. Wait for confirmation before running.
-7. **Offer to push** with `git push origin main --tags`. Wait for confirmation before pushing.
+7. **Push immediately** with `git push origin main --tags` IFF the release script completed cleanly. Else: stop and ask.
 8. **After pushing**, confirm the self-hosted runner picked up the build:
    - Wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the `Build (...)` jobs.
    - At least one `Build (...)` job should be `in_progress` (the self-hosted runner serializes the three matrix jobs, so
