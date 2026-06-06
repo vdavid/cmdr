@@ -75,7 +75,10 @@ export async function initializeShortcuts(): Promise<void> {
   for (const key of shortcutKeys) {
     const commandId = key.replace('shortcut:', '')
     const shortcuts = await store.get<string[]>(key)
-    if (shortcuts && shortcuts.length > 0) {
+    // An empty array is a real, persisted state ("user removed all shortcuts,
+    // don't fall back to defaults") and must load, so we accept any array and
+    // only skip non-array garbage. See CLAUDE.md § "Empty array vs missing key".
+    if (Array.isArray(shortcuts)) {
       customShortcuts.set(commandId, shortcuts)
     }
   }
@@ -318,19 +321,11 @@ export function resetShortcut(commandId: string): void {
 export async function resetAllShortcuts(): Promise<void> {
   const modifiedIds = [...customShortcuts.keys()]
 
-  // Clear all customizations
+  // Clear all customizations. With the map empty, saveToStore's reconcile step
+  // deletes every stale `shortcut:*` key from disk, so we don't duplicate the
+  // delete-loop here.
   customShortcuts.clear()
-
-  // Delete all shortcut keys from store
-  const store = await getStore()
-  const keys = await store.keys()
-  for (const key of keys) {
-    if (key.startsWith('shortcut:')) {
-      await store.delete(key)
-    }
-  }
-  await store.set('_schemaVersion', SCHEMA_VERSION)
-  await store.save()
+  await saveToStore()
 
   // Notify listeners for all modified commands
   for (const id of modifiedIds) {
@@ -346,6 +341,17 @@ async function saveToStore(): Promise<void> {
   try {
     const store = await getStore()
     log.debug('Saving shortcuts: {shortcuts}', { shortcuts: JSON.stringify(Object.fromEntries(customShortcuts)) })
+
+    // Reconcile disk with the in-memory map so the save reflects the full current
+    // state, not just additions. Delete every `shortcut:*` key that no longer has
+    // a map entry: when `resetShortcut` or `cleanupIfMatchesDefaults` drops an
+    // entry, the matching disk key must go too, or it resurrects on next load.
+    const keys = await store.keys()
+    for (const key of keys) {
+      if (key.startsWith('shortcut:') && !customShortcuts.has(key.replace('shortcut:', ''))) {
+        await store.delete(key)
+      }
+    }
 
     // Store each command's shortcuts at top level (like settings-store does)
     // This avoids potential issues with nested objects

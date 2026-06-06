@@ -28,6 +28,13 @@ shortcuts:
 - Delta-only storage: only customizations, not defaults
 - Empty array means "all shortcuts removed"
 - Missing command means "use defaults from registry"
+- `saveToStore` reconciles disk against the in-memory map on every write: it deletes any `shortcut:*` key whose command
+  no longer has a map entry, then writes the current entries. So when `resetShortcut` / `cleanupIfMatchesDefaults` drops
+  an entry (e.g. a custom that's been edited back to defaults, or `app.showAll`'s `[]` default after removing an added
+  shortcut), the stale disk key goes too. Without this the old value resurrects at next load. `resetAllShortcuts` relies
+  on the same step — it just clears the map and saves.
+- `initializeShortcuts` loads any array, including `[]`, and skips only non-array garbage (`Array.isArray` check). The
+  empty array is the persisted "removed all shortcuts" state, so it must survive a reload, not be treated as absent.
 - `initializeShortcuts` notifies `onShortcutChange` listeners for every loaded customization, so components that mounted
   before the async init finished (reactive shortcut reads, the dispatch map) catch up instead of showing registry
   defaults. The notification path also syncs menu accelerators (`updateMenuAccelerator` no-ops for commands without a

@@ -244,9 +244,6 @@
     "shortcuts/mcp-shortcuts-listener.ts": {
       "reason": "MCP listener, depends on Tauri events"
     },
-    "shortcuts/shortcuts-store.ts": {
-      "reason": "Depends on Tauri store APIs"
-    },
     "stores/volume-store.svelte.ts": {
       "reason": "Depends on Tauri listen/invoke APIs, integration point between backend events and frontend state"
     },
