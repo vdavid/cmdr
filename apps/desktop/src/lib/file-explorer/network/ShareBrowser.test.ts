@@ -104,11 +104,34 @@ describe('ShareBrowser credential gate', () => {
     await waitForShareList(target)
 
     api.openCursorItem()
-    await tick()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.login-title')).toBeTruthy()
+    })
 
     expect(onShareSelect).not.toHaveBeenCalled()
     const title = must(target.querySelector('.login-title'), 'the login form')
     expect(title.textContent).toContain('naspi')
+
+    await unmount(component)
+  })
+
+  it('uses stored credentials silently when creds are required (no prompt)', async () => {
+    // The listing came back creds_required (it succeeded via the system Keychain), but
+    // Cmdr has the password saved. Activating the share must reuse it, not re-prompt.
+    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
+    h.getSmbCredentials.mockResolvedValue({ username: 'david', password: 'hunter2' })
+    const onShareSelect = vi.fn()
+    const { target, component, api } = mountBrowser(onShareSelect)
+    await waitForShareList(target)
+
+    api.openCursorItem()
+    await vi.waitFor(() => {
+      expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'naspi' }), {
+        username: 'david',
+        password: 'hunter2',
+      })
+    })
+    expect(target.querySelector('.login-title'), 'must not prompt when stored creds exist').toBeNull()
 
     await unmount(component)
   })
@@ -121,7 +144,9 @@ describe('ShareBrowser credential gate', () => {
     await waitForShareList(target)
 
     api.openCursorItem()
-    await tick()
+    await vi.waitFor(() => {
+      expect(target.querySelector('#username')).toBeTruthy()
+    })
 
     const usernameInput = must(target.querySelector<HTMLInputElement>('#username'), 'the username input')
     const passwordInput = must(target.querySelector<HTMLInputElement>('#password'), 'the password input')
@@ -153,8 +178,9 @@ describe('ShareBrowser credential gate', () => {
     await waitForShareList(target)
 
     api.openCursorItem()
-    await tick()
-    expect(target.querySelector('.login-title')).toBeTruthy()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.login-title')).toBeTruthy()
+    })
 
     // Cancel: the share list is loaded and fine, so stay on it.
     const cancelButton = must(

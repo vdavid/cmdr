@@ -116,7 +116,7 @@
             (s) => s.name.localeCompare(shareName, undefined, { sensitivity: 'base' }) === 0,
         )
         if (match) {
-            activateShare(match)
+            void activateShare(match)
         } else {
             addToast(`Share '${shareName}' not found on ${host.name}`, { level: 'warn' })
         }
@@ -130,14 +130,35 @@
      * which Cmdr can't reuse for mounting, so the list renders fine while
      * `authenticatedCredentials` stays null.
      */
-    function activateShare(share: ShareInfo) {
+    async function activateShare(share: ShareInfo) {
         if (authMode === 'creds_required' && !authenticatedCredentials) {
+            // Try Cmdr's stored password before prompting. The share list often loads
+            // via the system Keychain (smbutil) without ever exercising our own creds,
+            // so we may already have a working password saved. If the stored creds turn
+            // out to be stale, the mount fails and NetworkMountView surfaces the login
+            // form (see its mount-failure handler), so we don't need to validate here.
+            const stored = await loadStoredCredentials()
+            if (stored) {
+                authenticatedCredentials = stored
+                onShareSelect?.(share, stored)
+                return
+            }
             pendingMountShare = share
             loginError = undefined
             showLoginForm = true
             return
         }
         onShareSelect?.(share, authenticatedCredentials)
+    }
+
+    /** Reads Cmdr's stored credentials for this host, or null if none are saved. */
+    async function loadStoredCredentials(): Promise<{ username: string; password: string } | null> {
+        try {
+            const creds = await getSmbCredentials(host.name, null)
+            return { username: creds.username, password: creds.password }
+        } catch {
+            return null
+        }
     }
 
     /** Sync share list to MCP so agents see the same data as the UI. */
@@ -385,7 +406,7 @@
     // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView / MCP
     export function openCursorItem(): void {
         if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
-            activateShare(sortedShares[cursorIndex])
+            void activateShare(sortedShares[cursorIndex])
         }
     }
 
@@ -395,7 +416,7 @@
 
     function handleShareDoubleClick(index: number) {
         if (index >= 0 && index < sortedShares.length) {
-            activateShare(sortedShares[index])
+            void activateShare(sortedShares[index])
         }
     }
 
@@ -473,7 +494,7 @@
         if (e.key === 'Enter') {
             e.preventDefault()
             if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
-                activateShare(sortedShares[cursorIndex])
+                void activateShare(sortedShares[cursorIndex])
             }
             return true
         }

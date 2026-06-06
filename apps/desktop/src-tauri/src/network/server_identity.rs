@@ -33,6 +33,19 @@ fn normalize(s: &str) -> String {
     s.trim_end_matches('.').to_lowercase()
 }
 
+/// The stable key for a server's stored credentials.
+///
+/// The same NAS reaches the credential store under different names depending on the
+/// caller: the frontend saves under the mDNS instance name (`Naspolya`), while the
+/// OS-mount upgrade path looks up by the `statfs` server (`Naspolya._smb._tcp.local`)
+/// or the resolved hostname (`naspolya.local`). Keying credentials on the raw string
+/// splits one server's password across several entries, so a password saved on mount
+/// is never found on the next connect. `credential_key` collapses every name form to
+/// the same bare identity (IP literals pass through unchanged — they have no bare form).
+pub fn credential_key(server: &str) -> String {
+    bare_name(&normalize(server))
+}
+
 /// Extracts the bare name from any of the forms a server name arrives in:
 /// `Naspolya._smb._tcp.local` → `naspolya`, `naspolya.local` → `naspolya`,
 /// `naspolya` → `naspolya`. Input must already be normalized.
@@ -155,5 +168,26 @@ mod tests {
     fn test_exact_strings_always_match() {
         assert!(same_server("192.168.1.111", "192.168.1.111", &[]));
         assert!(same_server("some-nas", "some-nas", &[]));
+    }
+
+    /// Every name form of one server must produce the SAME credential key, so a password
+    /// saved by the frontend (mDNS instance name) is found by the upgrade path (`statfs`
+    /// service name / resolved hostname). This is the keying split-brain that left a
+    /// just-saved Naspolya password unusable on the next connect.
+    #[test]
+    fn test_credential_key_collapses_name_forms() {
+        assert_eq!(credential_key("Naspolya"), "naspolya");
+        assert_eq!(credential_key("Naspolya.local"), "naspolya");
+        assert_eq!(credential_key("Naspolya.local."), "naspolya");
+        assert_eq!(credential_key("Naspolya._smb._tcp.local"), "naspolya");
+        assert_eq!(credential_key("Naspolya._smb._tcp.local."), "naspolya");
+    }
+
+    /// IP literals have no bare form; they pass through (lowercased) unchanged so two
+    /// different hosts can't collide on one credential entry.
+    #[test]
+    fn test_credential_key_passes_ip_through() {
+        assert_eq!(credential_key("192.168.1.111"), "192.168.1.111");
+        assert_eq!(credential_key("localhost"), "localhost");
     }
 }

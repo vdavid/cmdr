@@ -102,13 +102,15 @@ Rendered after user selects a host. Auth flow on mount:
 `authenticatedCredentials` is passed to `onShareSelect` so the caller can mount the share without re-prompting.
 
 **Credential gate on share activation** (`activateShare`): every activation path (Enter, double-click, auto-mount)
-checks `authMode === 'creds_required' && !authenticatedCredentials` and shows the login form (with the share name in the
-title) instead of firing `onShareSelect` with null credentials. This combination is real: on macOS the share-listing
-fallback (`smbutil view -N`) authenticates via the SYSTEM Keychain, which Cmdr can't reuse for mounting, so the list
-renders fine while Cmdr holds no credentials — activating a share used to fire a doomed guest mount. The gated share
-waits in `pendingMountShare`; after a successful sign-in, `connectWithCredentials` fires
-`onShareSelect(pending, authenticatedCredentials)`. Cancel on a gated form returns to the share list (the list behind it
-is loaded and fine), not the host list. Pinned by `ShareBrowser.test.ts`.
+checks `authMode === 'creds_required' && !authenticatedCredentials`. When it trips, it first tries Cmdr's stored
+password (`loadStoredCredentials` → `getSmbCredentials`) and, if found, mounts with it silently; only if none is saved
+does it show the login form (with the share name in the title). This matters because the share list often loads via the
+SYSTEM Keychain (`smbutil view -N`) without ever exercising Cmdr's own creds, so `authenticatedCredentials` is null even
+when a working password is saved — without the stored-creds attempt the user got re-prompted on every visit. Stale
+stored creds aren't validated here; the mount fails and `NetworkMountView` surfaces the login form (see its
+mount-failure handler). The gated share waits in `pendingMountShare`; after a successful sign-in,
+`connectWithCredentials` fires `onShareSelect(pending, authenticatedCredentials)`. Cancel on a gated form returns to the
+share list (the list behind it is loaded and fine), not the host list. Pinned by `ShareBrowser.test.ts`.
 
 When `authenticatedCredentials` is set (stored creds were used), a "Forget saved password" button appears in the header
 row. Clicking it calls `forgetCredentials` and clears `authenticatedCredentials`.

@@ -61,10 +61,17 @@ impl From<SecretStoreError> for KeychainError {
 
 /// Creates the account name used for credential storage.
 /// Format: "smb://{server}/{share}" or "smb://{server}" for server-level credentials.
+///
+/// The server is collapsed to its stable identity via
+/// [`crate::network::server_identity::credential_key`] so that every name form of one
+/// server (mDNS instance name, `.local` hostname, `statfs` service name) keys the same
+/// entry. Without this, a password saved by the frontend under `Naspolya` is invisible
+/// to the upgrade path looking up `Naspolya._smb._tcp.local`.
 fn make_account_name(server: &str, share: Option<&str>) -> String {
+    let key = crate::network::server_identity::credential_key(server);
     match share {
-        Some(s) => format!("smb://{}/{}", server.to_lowercase(), s),
-        None => format!("smb://{}", server.to_lowercase()),
+        Some(s) => format!("smb://{}/{}", key, s),
+        None => format!("smb://{}", key),
     }
 }
 
@@ -185,6 +192,17 @@ mod tests {
         let account1 = make_account_name("TEST_SERVER", Some("Share"));
         let account2 = make_account_name("test_server", Some("Share"));
         assert_eq!(account1, account2);
+    }
+
+    /// All name forms of one server must produce the same account, so a password saved
+    /// under the mDNS instance name is found when the upgrade path looks it up by the
+    /// `statfs` service name or the resolved hostname.
+    #[test]
+    fn test_make_account_name_collapses_server_name_forms() {
+        let saved = make_account_name("Naspolya", None);
+        assert_eq!(saved, "smb://naspolya");
+        assert_eq!(make_account_name("Naspolya.local", None), saved);
+        assert_eq!(make_account_name("Naspolya._smb._tcp.local", None), saved);
     }
 
     #[test]
