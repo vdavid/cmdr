@@ -15,6 +15,7 @@ mod events;
 pub mod expected_totals;
 pub mod firmlinks;
 mod manager;
+mod partial_agg;
 mod state;
 pub mod store;
 pub mod writer;

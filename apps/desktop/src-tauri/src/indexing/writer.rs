@@ -292,6 +292,27 @@ impl IndexWriter {
         })
     }
 
+    /// Best-effort estimate of the writer channel depth: messages sent but not
+    /// yet processed. Read by the scan progress loop to skip partial-aggregation
+    /// passes while the writer is catching up on an insert backlog.
+    pub fn queue_depth(&self) -> usize {
+        self.queue_depth.load(Ordering::Relaxed)
+    }
+
+    /// Non-blocking send. Unlike `send`, never parks the caller when the channel
+    /// is full — the message is dropped and `Ok(false)` is returned. This is what
+    /// lets the partial-aggregation sender live on a tokio task without risking a
+    /// parked worker: a full channel means the writer is busy with the real scan
+    /// work, and a dropped partial pass is harmless (the next tick retries).
+    ///
+    /// Returns:
+    /// - `Ok(true)`  — message enqueued.
+    /// - `Ok(false)` — channel full, message dropped (not an error).
+    /// - `Err(..)`   — writer thread gone (channel disconnected).
+    pub fn try_send(&self, msg: WriteMessage) -> Result<bool, IndexStoreError> {
+        try_send_with_depth(&self.sender, &self.queue_depth, msg)
+    }
+
     /// Send a `Flush` and await the response, confirming all prior messages have been committed.
     pub async fn flush(&self) -> Result<(), IndexStoreError> {
         let (tx, rx) = oneshot::channel();
@@ -328,6 +349,39 @@ impl IndexWriter {
             && let Err(e) = handle.join()
         {
             log::warn!("Index writer thread panicked on shutdown: {e:?}");
+        }
+    }
+}
+
+/// Bump the depth counter, attempt a non-blocking `try_send`, and undo the bump
+/// on any failure. Extracted as a free function (taking the raw channel + atomic)
+/// so the bump/undo accounting can be tested against a bare `sync_channel`
+/// without standing up a draining writer thread.
+///
+/// The undo on **both** `Full` and `Disconnected` is load-bearing: `queue_depth`
+/// is only ever incremented on a successful enqueue, so a failed `try_send` that
+/// left the bump in place would drift the depth upward forever — breaking both
+/// the `PARTIAL_AGG_MAX_QUEUE_DEPTH` backpressure skip and the `queue_depth == 0`
+/// pending-sizes wholesale clear in `writer_loop`. This mirrors `send`'s
+/// undo-on-error pattern.
+fn try_send_with_depth(
+    sender: &mpsc::SyncSender<WriteMessage>,
+    queue_depth: &AtomicUsize,
+    msg: WriteMessage,
+) -> Result<bool, IndexStoreError> {
+    queue_depth.fetch_add(1, Ordering::Relaxed);
+    match sender.try_send(msg) {
+        Ok(()) => Ok(true),
+        Err(mpsc::TrySendError::Full(_)) => {
+            queue_depth.fetch_sub(1, Ordering::Relaxed);
+            Ok(false)
+        }
+        Err(mpsc::TrySendError::Disconnected(_)) => {
+            queue_depth.fetch_sub(1, Ordering::Relaxed);
+            Err(IndexStoreError::Io(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "Writer thread has shut down",
+            )))
         }
     }
 }
@@ -4288,5 +4342,89 @@ mod tests {
         );
 
         writer.shutdown();
+    }
+
+    // ── try_send / queue_depth ───────────────────────────────────────
+
+    /// Happy path on a live writer: `try_send` enqueues without blocking and
+    /// bumps `queue_depth`; once the writer drains the message the depth returns
+    /// to 0. Pins both the `Ok(true)` outcome and the depth accounting.
+    #[test]
+    fn try_send_enqueues_and_tracks_queue_depth() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        let sent = writer
+            .try_send(WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+            .expect("try_send on a live writer should not error");
+        assert!(sent, "try_send into an empty channel should enqueue (Ok(true))");
+
+        // After a flush barrier the writer has processed every prior message,
+        // so the depth is back to 0.
+        writer.flush_blocking().unwrap();
+        let mut drained = false;
+        for _ in 0..200 {
+            if writer.queue_depth() == 0 {
+                drained = true;
+                break;
+            }
+            thread::sleep(Duration::from_millis(5));
+        }
+        assert!(drained, "queue_depth should return to 0 once the writer drains");
+
+        writer.shutdown();
+    }
+
+    /// A `try_send` to a shut-down writer reports the disconnect as an error AND
+    /// undoes its depth bump, so a dead channel can't leave `queue_depth` drifted.
+    #[test]
+    fn try_send_after_shutdown_errors_and_undoes_depth() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+        writer.shutdown();
+
+        let depth_before = writer.queue_depth();
+        let result = writer.try_send(WriteMessage::ComputePartialAggregates { hot_paths: vec![] });
+        assert!(
+            result.is_err(),
+            "try_send to a disconnected writer should be Err, got {result:?}"
+        );
+        assert_eq!(
+            writer.queue_depth(),
+            depth_before,
+            "the depth bump must be undone on a disconnected send"
+        );
+    }
+
+    /// The bump/undo accounting against a raw `sync_channel(1)`: the first send
+    /// fills the single slot (`Ok(true)`, depth +1), the second finds it full
+    /// (`Ok(false)`, no error, depth unchanged — the bump is undone). This pins
+    /// the Full path deterministically without a draining writer thread.
+    #[test]
+    fn try_send_with_depth_undoes_bump_on_full() {
+        let (sender, _receiver) = mpsc::sync_channel::<WriteMessage>(1);
+        let depth = AtomicUsize::new(0);
+
+        let first = try_send_with_depth(
+            &sender,
+            &depth,
+            WriteMessage::ComputePartialAggregates { hot_paths: vec![] },
+        )
+        .expect("first send into an open channel should not error");
+        assert!(first, "first send fills the single slot (Ok(true))");
+        assert_eq!(depth.load(Ordering::Relaxed), 1, "successful send bumps depth");
+
+        let second = try_send_with_depth(
+            &sender,
+            &depth,
+            WriteMessage::ComputePartialAggregates { hot_paths: vec![] },
+        )
+        .expect("a full channel is Ok(false), not Err");
+        assert!(!second, "second send finds the channel full (Ok(false))");
+        assert_eq!(
+            depth.load(Ordering::Relaxed),
+            1,
+            "a dropped (full) send must leave depth unchanged — bump undone"
+        );
     }
 }
