@@ -78,6 +78,11 @@
     // Track authenticated credentials for mounting
     let authenticatedCredentials = $state<{ username: string; password: string } | null>(null)
 
+    // Share activation waiting behind the credential gate: set when the user activates
+    // a share while creds are required and none are held; fired after a successful
+    // sign-in (see `activateShare`).
+    let pendingMountShare = $state<ShareInfo | null>(null)
+
     // Auto-mount tracking: track the last share we tried so the same prop value
     // doesn't re-fire, but a new value (for example via "Copy path between panes"
     // with cursor on a different share) does.
@@ -111,11 +116,29 @@
             (s) => s.name.localeCompare(shareName, undefined, { sensitivity: 'base' }) === 0,
         )
         if (match) {
-            onShareSelect?.(match, authenticatedCredentials)
+            activateShare(match)
         } else {
             addToast(`Share '${shareName}' not found on ${host.name}`, { level: 'warn' })
         }
     })
+
+    /**
+     * Activates a share (Enter, double-click, or auto-mount). When the listing reported
+     * `creds_required` but we hold no credentials, route through the login form first
+     * instead of firing a doomed guest mount. This combination is real: on macOS the
+     * share-listing fallback (`smbutil view -N`) authenticates via the SYSTEM Keychain,
+     * which Cmdr can't reuse for mounting, so the list renders fine while
+     * `authenticatedCredentials` stays null.
+     */
+    function activateShare(share: ShareInfo) {
+        if (authMode === 'creds_required' && !authenticatedCredentials) {
+            pendingMountShare = share
+            loginError = undefined
+            showLoginForm = true
+            return
+        }
+        onShareSelect?.(share, authenticatedCredentials)
+    }
 
     /** Sync share list to MCP so agents see the same data as the UI. */
     async function syncPaneStateToMcp() {
@@ -284,20 +307,38 @@
                 authMode === 'guest_allowed' ? 'guest_or_credentials' : 'credentials_only',
                 username,
             )
+
+            firePendingShareActivation()
         } catch (e) {
             const shareError = e as ShareListError
             if (shareError.type === 'auth_failed') {
-                loginError = 'Invalid username or password. Please try again.'
                 // Mark credentials as failed
                 setCredentialStatus(host.name, 'failed')
-            } else if (shareError.type === 'auth_required' || shareError.type === 'signing_required') {
-                loginError = 'Authentication required. Please enter your credentials.'
-            } else {
-                loginError = shareError.message || `Connection failed: ${shareError.type}`
             }
+            loginError = loginErrorMessageFor(shareError)
         } finally {
             isConnecting = false
         }
+    }
+
+    /** Fires the share activation that was waiting behind the login form, if any. */
+    function firePendingShareActivation() {
+        const pending = pendingMountShare
+        pendingMountShare = null
+        if (pending) {
+            onShareSelect?.(pending, authenticatedCredentials)
+        }
+    }
+
+    /** User-facing message for a failed sign-in attempt. */
+    function loginErrorMessageFor(shareError: ShareListError): string {
+        if (shareError.type === 'auth_failed') {
+            return 'Invalid username or password. Please try again.'
+        }
+        if (shareError.type === 'auth_required' || shareError.type === 'signing_required') {
+            return 'Authentication required. Please enter your credentials.'
+        }
+        return shareError.message || `Connection failed: ${shareError.type}`
     }
 
     function handleConnect(username: string | null, password: string | null, rememberInKeychain: boolean) {
@@ -306,6 +347,13 @@
 
     function handleCancel() {
         showLoginForm = false
+        loginError = undefined
+        if (pendingMountShare) {
+            // The login form gated a share activation; the share list behind it is
+            // loaded and fine, so stay on it instead of dropping to the host list.
+            pendingMountShare = null
+            return
+        }
         onBack?.()
     }
 
@@ -337,7 +385,7 @@
     // noinspection JSUnusedGlobalSymbols -- used dynamically by NetworkMountView / MCP
     export function openCursorItem(): void {
         if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
-            onShareSelect?.(sortedShares[cursorIndex], authenticatedCredentials)
+            activateShare(sortedShares[cursorIndex])
         }
     }
 
@@ -347,7 +395,7 @@
 
     function handleShareDoubleClick(index: number) {
         if (index >= 0 && index < sortedShares.length) {
-            onShareSelect?.(sortedShares[index], authenticatedCredentials)
+            activateShare(sortedShares[index])
         }
     }
 
@@ -425,7 +473,7 @@
         if (e.key === 'Enter') {
             e.preventDefault()
             if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
-                onShareSelect?.(sortedShares[cursorIndex], authenticatedCredentials)
+                activateShare(sortedShares[cursorIndex])
             }
             return true
         }
@@ -461,6 +509,7 @@
     {#if showLoginForm}
         <NetworkLoginForm
             {host}
+            shareName={pendingMountShare?.name}
             {authMode}
             errorMessage={loginError}
             {isConnecting}

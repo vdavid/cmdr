@@ -101,6 +101,15 @@ Rendered after user selects a host. Auth flow on mount:
 
 `authenticatedCredentials` is passed to `onShareSelect` so the caller can mount the share without re-prompting.
 
+**Credential gate on share activation** (`activateShare`): every activation path (Enter, double-click, auto-mount)
+checks `authMode === 'creds_required' && !authenticatedCredentials` and shows the login form (with the share name in the
+title) instead of firing `onShareSelect` with null credentials. This combination is real: on macOS the share-listing
+fallback (`smbutil view -N`) authenticates via the SYSTEM Keychain, which Cmdr can't reuse for mounting, so the list
+renders fine while Cmdr holds no credentials — activating a share used to fire a doomed guest mount. The gated share
+waits in `pendingMountShare`; after a successful sign-in, `connectWithCredentials` fires
+`onShareSelect(pending, authenticatedCredentials)`. Cancel on a gated form returns to the share list (the list behind it
+is loaded and fine), not the host list. Pinned by `ShareBrowser.test.ts`.
+
 When `authenticatedCredentials` is set (stored creds were used), a "Forget saved password" button appears in the header
 row. Clicking it calls `forgetCredentials` and clears `authenticatedCredentials`.
 
@@ -112,10 +121,12 @@ remount when the source pane's cursor moves to another share on the same host.
 
 ## `NetworkLoginForm.svelte`
 
-Props: `host`, `shareName?`, `authMode`, `errorMessage?`, `isConnecting?`, `onConnect`, `onCancel`.
+Props: `host`, `shareName?`, `authMode`, `defaultConnectionMode?`, `initialUsername?`, `errorMessage?`, `isConnecting?`,
+`onConnect`, `onCancel`.
 
 - Shows guest/credentials radio when `authMode === 'guest_allowed'`.
-- Pre-fills username from `getUsernameHints()` (server-keyed map) or `getKnownShareByName()`.
+- Pre-fills username from `getUsernameHints()` (server-keyed map) or `getKnownShareByName()`; an explicit
+  `initialUsername` (for example, the username from a failed mount attempt) wins over both.
 - Tab key stops propagation, which prevents the parent pane-switch shortcut from firing while tabbing between fields.
 - `connectionMode` is `$derived.by` from `authMode` prop (guest default when guest allowed). In Svelte 5, `$derived`
   values are read-only; the reactive behavior works because `$derived.by` re-evaluates when `authMode` changes.
@@ -145,6 +156,15 @@ User activates "Connect to server..." row
                  ├─ ShareBrowser mounts (host set)
                  └─ if sharePath → autoMountShare triggers mount
 ```
+
+## Mount-phase auth failures route to the login form
+
+`NetworkMountView.svelte` (in `../pane/`) renders `NetworkLoginForm` instead of its dead-end error pane whenever
+`mountNetworkShare` rejects with an auth-class error (`auth_failed` / `auth_required` — including the NetAuth -6600 code
+the backend now maps). The form shows the mount error inline, pre-fills the previously tried username via
+`initialUsername`, retries the mount with the entered credentials on submit, and saves them via `saveSmbCredentials` on
+success when "Remember in Keychain" is checked. Escape / Cancel returns to the share list. Non-auth errors (unreachable,
+timeout, share gone) keep the error pane with "Try again" / "Back". Pinned by `../pane/NetworkMountView.test.ts`.
 
 ## SMB live-reconnect flow (cross-component)
 

@@ -23,6 +23,12 @@
 //! The constant `kNetFSUseGuestKey` is a `#define` in `<NetFS/NetFS.h>` (not an
 //! exported symbol), so we recreate the CFString from the literal `"Guest"` at the
 //! call site rather than linking to an `extern "C"` static.
+//!
+//! On top of that, every mount sets `UIOption = NoUI` (`kNAUIOptionKey = kNAUIOptionNoUI`):
+//! even with explicit credentials, NetFS hands auth *failures* to NetAuthAgent, which
+//! shows a system dialog and returns `kNetAuthErrorInternal` (-6600) when dismissed.
+//! With `NoUI`, failures come back immediately as typed error codes and Cmdr renders
+//! its own login flow. See `open_option_entries`.
 
 use core_foundation::base::TCFType;
 use core_foundation::string::CFString;
@@ -102,6 +108,45 @@ const ETIMEDOUT: i32 = 60;
 const ECONNREFUSED: i32 = 61;
 const EHOSTUNREACH: i32 = 65;
 const EAUTH: i32 = 80;
+/// NetAuth error codes (NetAuthAgent), documented in the comment block of `<NetFS/NetFS.h>`.
+/// `kNetAuthErrorInternal` is what `NetFSMountURLSync` returns when authentication fails,
+/// for example a guest mount against a creds-required server.
+const KNETAUTH_ERROR_INTERNAL: i32 = -6600;
+const KNETAUTH_ERROR_MOUNT_FAILED: i32 = -6602;
+const KNETAUTH_ERROR_NO_SHARES_AVAILABLE: i32 = -6003;
+const KNETAUTH_ERROR_GUEST_NOT_SUPPORTED: i32 = -6004;
+
+/// Value of a NetFS `openOptions` entry.
+#[derive(Debug, PartialEq)]
+enum OpenOptionValue {
+    /// `kCFBooleanTrue`
+    True,
+    /// A CFString value.
+    Str(&'static str),
+}
+
+/// Decides which entries go into the NetFS `openOptions` dictionary.
+///
+/// `UIOption = NoUI` (`kNAUIOptionKey = kNAUIOptionNoUI`) is ALWAYS set: Cmdr owns all
+/// auth UI. Without it, NetFS hands auth failures to NetAuthAgent, which shows a system
+/// dialog ("You entered an invalid username or password...") on top of Cmdr, blocks the
+/// mount call while it's open, and then returns `kNetAuthErrorInternal` (-6600). With
+/// `NoUI`, the same failure comes back immediately as a typed error code that we map in
+/// `error_from_code` and render in our own login flow.
+///
+/// All three keys (`UIOption`, `Guest`, `ForceNewSession`) are `#define`s in
+/// `<NetFS/NetFS.h>`, not exported symbols, so the caller recreates CFStrings from these
+/// literals rather than linking `extern "C"` statics.
+fn open_option_entries(want_guest: bool, want_force_new_session: bool) -> Vec<(&'static str, OpenOptionValue)> {
+    let mut entries = vec![("UIOption", OpenOptionValue::Str("NoUI"))];
+    if want_guest {
+        entries.push(("Guest", OpenOptionValue::True));
+    }
+    if want_force_new_session {
+        entries.push(("ForceNewSession", OpenOptionValue::True));
+    }
+    entries
+}
 
 /// Map NetFS/POSIX error codes to user-friendly MountError.
 /// Note: EEXIST (17) is handled specially in mount_share_sync, not here.
@@ -116,11 +161,20 @@ fn error_from_code(code: i32, share_name: &str, server_name: &str) -> MountError
         ENETFSNOSHARESAVAIL => MountError::ShareNotFound {
             message: format!("No shares available on \"{}\"", server_name),
         },
-        EACCES | EAUTH => MountError::AuthFailed {
+        EACCES | EAUTH | KNETAUTH_ERROR_INTERNAL => MountError::AuthFailed {
             message: "Invalid username or password".to_string(),
         },
         ENETFSNOAUTHMECHSUPP => MountError::AuthRequired {
             message: "Authentication required".to_string(),
+        },
+        KNETAUTH_ERROR_GUEST_NOT_SUPPORTED => MountError::AuthRequired {
+            message: format!("\"{}\" doesn't allow guest access. Sign in to connect.", server_name),
+        },
+        KNETAUTH_ERROR_NO_SHARES_AVAILABLE => MountError::ShareNotFound {
+            message: format!("No shares available on \"{}\"", server_name),
+        },
+        KNETAUTH_ERROR_MOUNT_FAILED => MountError::ProtocolError {
+            message: format!("\"{}\" refused to mount \"{}\"", server_name, share_name),
         },
         ETIMEDOUT => MountError::Timeout {
             message: format!("Connection to \"{}\" timed out", server_name),
@@ -159,6 +213,18 @@ pub fn mount_share_sync(
     password: Option<&str>,
     port: u16,
 ) -> Result<MountResult, MountError> {
+    // If this exact share (same server identity + port) is already mounted, return it
+    // directly instead of going through NetFS. The identity check matters: the existing
+    // mount may be keyed by a different name for the same server (mDNS service name vs
+    // IP), in which case a second NetFS call would "disambiguate" into mounting a
+    // doomed second copy with a fresh session instead of reusing this one.
+    if let Some(existing) = find_mount_path_for_share(server, share, port) {
+        return Ok(MountResult {
+            mount_path: existing,
+            already_mounted: true,
+        });
+    }
+
     // Build SMB URL: smb://server/share (with port for non-standard)
     let url_string = if port != 445 {
         format!("smb://{}:{}/{}", server, port, share)
@@ -187,46 +253,45 @@ pub fn mount_share_sync(
     // If so, pick a disambiguated path (public-1, public-2, ...) like Finder does.
     let explicit_mount_path = disambiguated_mount_path(server, share, port);
 
-    // Build openOptions. Two reasons we may need a dict:
-    //   1. Guest mount (no credentials): set `kNetFSUseGuestKey = true` so NetFS doesn't consult the
-    //      Keychain and pop a credential dialog.
-    //   2. Disambiguating against an existing same-hostname mount: set `ForceNewSession = true` so
-    //      macOS opens a fresh SMB session instead of reusing the existing one (different port =
-    //      different server).
-    // If neither applies, pass NULL (NetFS uses default behavior).
+    // Build openOptions. `open_option_entries` decides the content:
+    //   - `UIOption = NoUI`, always: Cmdr owns all auth UI; NetAuthAgent must never pop
+    //     a system dialog (see the helper's doc comment).
+    //   - `Guest = true` for guest mounts (no credentials): NetFS authenticates as guest
+    //     without consulting the Keychain.
+    //   - `ForceNewSession = true` when disambiguating against an existing same-name
+    //     mount: macOS opens a fresh SMB session instead of reusing the existing one
+    //     (different server, so the existing session would be wrong).
     let want_guest = cf_user.is_none() && cf_pass.is_none();
     let want_force_new_session = explicit_mount_path.is_some();
-    let open_options = if want_guest || want_force_new_session {
-        unsafe {
-            let dict = core_foundation::dictionary::CFDictionaryCreateMutable(
-                ptr::null(),
-                2,
-                &core_foundation::dictionary::kCFTypeDictionaryKeyCallBacks,
-                &core_foundation::dictionary::kCFTypeDictionaryValueCallBacks,
-            );
-            let true_value = core_foundation::boolean::kCFBooleanTrue;
-            if want_guest {
-                // `kNetFSUseGuestKey` is a `#define` in <NetFS/NetFS.h>, not an
-                // exported symbol. Build the CFString from its literal value.
-                let guest_key = CFString::new("Guest");
-                core_foundation::dictionary::CFDictionarySetValue(
+    let entries = open_option_entries(want_guest, want_force_new_session);
+    let open_options = unsafe {
+        let dict = core_foundation::dictionary::CFDictionaryCreateMutable(
+            ptr::null(),
+            0, // no capacity limit
+            &core_foundation::dictionary::kCFTypeDictionaryKeyCallBacks,
+            &core_foundation::dictionary::kCFTypeDictionaryValueCallBacks,
+        );
+        for (key, value) in &entries {
+            // The dictionary retains keys and values (kCFTypeDictionary*CallBacks), so
+            // dropping the temporary CFStrings after SetValue is fine.
+            let cf_key = CFString::new(key);
+            match value {
+                OpenOptionValue::True => core_foundation::dictionary::CFDictionarySetValue(
                     dict,
-                    guest_key.as_concrete_TypeRef() as *const c_void,
-                    true_value as *const c_void,
-                );
+                    cf_key.as_concrete_TypeRef() as *const c_void,
+                    core_foundation::boolean::kCFBooleanTrue as *const c_void,
+                ),
+                OpenOptionValue::Str(s) => {
+                    let cf_value = CFString::new(s);
+                    core_foundation::dictionary::CFDictionarySetValue(
+                        dict,
+                        cf_key.as_concrete_TypeRef() as *const c_void,
+                        cf_value.as_concrete_TypeRef() as *const c_void,
+                    );
+                }
             }
-            if want_force_new_session {
-                let force_key = CFString::new("ForceNewSession");
-                core_foundation::dictionary::CFDictionarySetValue(
-                    dict,
-                    force_key.as_concrete_TypeRef() as *const c_void,
-                    true_value as *const c_void,
-                );
-            }
-            dict as *const c_void
         }
-    } else {
-        ptr::null()
+        dict as *const c_void
     };
 
     // Prepare output array for mount points
@@ -275,7 +340,7 @@ pub fn mount_share_sync(
     // The explicit path is most reliable because we already validated it.
     let mount_path = explicit_mount_path
         .or_else(|| extract_mount_path(mountpoints))
-        .or_else(|| find_mount_path_for_share(server, share))
+        .or_else(|| find_mount_path_for_share(server, share, port))
         .unwrap_or_else(|| format!("/Volumes/{}", share));
 
     Ok(MountResult {
@@ -353,9 +418,11 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
         return None; // Default path is free
     }
 
-    // Check if the existing mount is from the same server+port
+    // Check if the existing mount is from the same server+port. Identity-aware: the
+    // mount source may name the server differently than we do (mDNS service name vs
+    // IP), and a string mismatch here would force a second mount of the same share.
     if let Some(info) = get_smb_mount_info(&default_path)
-        && info.server.to_lowercase() == server.to_lowercase()
+        && crate::network::server_identity::same_server_live(&info.server, server)
         && info.share == share
         && info.port == port
     {
@@ -375,7 +442,7 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
         }
         // If this suffixed path exists and belongs to this server, reuse it
         if let Some(info) = get_smb_mount_info(&candidate)
-            && info.server.to_lowercase() == server.to_lowercase()
+            && crate::network::server_identity::same_server_live(&info.server, server)
             && info.share == share
             && info.port == port
         {
@@ -386,16 +453,17 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
     None // Give up after 100 attempts, let NetFS handle it
 }
 
-/// Finds the mount path for a server+share by scanning `/Volumes/` with `statfs`.
+/// Finds the mount path for a server+share+port by scanning `/Volumes/` with `statfs`.
 ///
 /// Handles disambiguated paths: if `server` has share `public` but `/Volumes/public`
 /// belongs to a different server, macOS may have mounted it at `/Volumes/public-1`.
-/// This function finds the right one by checking each mount's source via `statfs`.
-fn find_mount_path_for_share(server: &str, share: &str) -> Option<String> {
+/// This function finds the right one by checking each mount's source via `statfs`,
+/// comparing servers by identity (mDNS name ↔ IP), not by string. The port check keeps
+/// same-named shares on different ports apart (Docker test containers on `localhost`).
+fn find_mount_path_for_share(server: &str, share: &str, port: u16) -> Option<String> {
     use crate::volumes::get_smb_mount_info;
 
     let entries = std::fs::read_dir("/Volumes").ok()?;
-    let server_lower = server.to_lowercase();
 
     for entry in entries.flatten() {
         let path = entry.path().to_string_lossy().to_string();
@@ -405,8 +473,9 @@ fn find_mount_path_for_share(server: &str, share: &str) -> Option<String> {
             continue;
         }
         if let Some(info) = get_smb_mount_info(&path)
-            && info.server.to_lowercase() == server_lower
+            && crate::network::server_identity::same_server_live(&info.server, server)
             && info.share == share
+            && info.port == port
         {
             return Some(path);
         }
@@ -501,6 +570,70 @@ mod tests {
         match err {
             MountError::HostUnreachable { .. } => (),
             _ => panic!("Expected HostUnreachable error"),
+        }
+    }
+
+    /// NetAuth error codes (NetAuthAgent, documented in `<NetFS/NetFS.h>`) must map to
+    /// typed errors, not the opaque `ProtocolError` catch-all. -6600 is what
+    /// `NetFSMountURLSync` returns when authentication fails (observed in the wild with
+    /// a guest mount against a creds-required NAS); routing it to `AuthFailed` is what
+    /// lets the frontend offer the login form instead of a dead-end error pane.
+    #[test]
+    fn test_netauth_error_codes() {
+        let err = error_from_code(-6600, "naspi", "naspolya");
+        assert!(
+            matches!(err, MountError::AuthFailed { .. }),
+            "kNetAuthErrorInternal (-6600) should be AuthFailed, got {:?}",
+            err
+        );
+
+        let err = error_from_code(-6004, "naspi", "naspolya");
+        assert!(
+            matches!(err, MountError::AuthRequired { .. }),
+            "kNetAuthErrorGuestNotSupported (-6004) should be AuthRequired, got {:?}",
+            err
+        );
+
+        let err = error_from_code(-6003, "naspi", "naspolya");
+        assert!(
+            matches!(err, MountError::ShareNotFound { .. }),
+            "kNetAuthErrorNoSharesAvailable (-6003) should be ShareNotFound, got {:?}",
+            err
+        );
+
+        // kNetAuthErrorMountFailed means auth SUCCEEDED but the mount step failed, so it
+        // must NOT map to an auth-class error (that would loop the user into a pointless
+        // login form). It stays a ProtocolError, just with a readable message.
+        let err = error_from_code(-6602, "naspi", "naspolya");
+        assert!(
+            matches!(err, MountError::ProtocolError { .. }),
+            "kNetAuthErrorMountFailed (-6602) should stay ProtocolError, got {:?}",
+            err
+        );
+    }
+
+    /// `UIOption = NoUI` must be set on EVERY mount, regardless of guest/credentialed
+    /// mode. Without it, NetFS hands auth failures to NetAuthAgent, which pops a system
+    /// dialog ("You entered an invalid username or password...") on top of Cmdr and then
+    /// returns `kNetAuthErrorInternal`. Cmdr owns all auth UI.
+    #[test]
+    fn test_open_options_always_suppress_system_ui() {
+        for (guest, force_new_session) in [(false, false), (true, false), (false, true), (true, true)] {
+            let entries = open_option_entries(guest, force_new_session);
+            assert!(
+                entries.contains(&("UIOption", OpenOptionValue::Str("NoUI"))),
+                "UIOption=NoUI missing for guest={guest}, force_new_session={force_new_session}: {entries:?}"
+            );
+            assert_eq!(
+                entries.iter().any(|(key, _)| *key == "Guest"),
+                guest,
+                "Guest key presence should match guest={guest}"
+            );
+            assert_eq!(
+                entries.iter().any(|(key, _)| *key == "ForceNewSession"),
+                force_new_session,
+                "ForceNewSession key presence should match force_new_session={force_new_session}"
+            );
         }
     }
 

@@ -22,6 +22,7 @@ pub mod mount;
 #[path = "mount_linux.rs"]
 pub mod mount;
 
+pub mod server_identity;
 pub mod smb_client;
 
 // SMB submodules - these are implementation details of smb_client

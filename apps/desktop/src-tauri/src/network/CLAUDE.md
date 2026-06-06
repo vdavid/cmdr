@@ -22,6 +22,7 @@ Frontend counterpart: [`apps/desktop/src/lib/file-explorer/network/CLAUDE.md`](.
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
   - `mount_linux.rs`: Linux `gio mount` for GVFS-based user-space mounts
+- **Server identity**: `server_identity.rs`: `same_server` / `same_server_live` equivalence over the names a server goes by (mDNS service name, `.local` hostname, IP), enriched from the discovery state. Used by the mount-path disambiguation and the already-mounted short-circuit so string-shape differences can't split one server into two.
 - **Auth** (platform-agnostic):
   - `keychain.rs`: SMB credential management. Delegates storage to `crate::secrets::store()` (see `secrets/CLAUDE.md` for backend details)
 - **State**: `known_shares.rs`: Connection history in `known-shares.json` (usernames, last auth mode, timestamps).
@@ -80,6 +81,13 @@ Full UX control (login form appears in-pane), smart defaults (pre-fill username 
 guest/credentials toggle. `keychain.rs` delegates to `crate::secrets::store()` for platform-agnostic credential storage
 (macOS Keychain, Linux Secret Service, encrypted file fallback). Passwords never stored in our settings file.
 `CMDR_SECRET_STORE=file` forces the plain file backend in dev mode (set by `tauri-wrapper.js`).
+
+To make this hold, every NetFS mount sets `UIOption = NoUI` (`open_option_entries` in `mount.rs`). Without it, NetFS
+hands auth *failures* to NetAuthAgent even when we pass explicit credentials: the agent pops a system dialog ("You
+entered an invalid username or password...") on top of Cmdr, blocks the mount call while open, and returns
+`kNetAuthErrorInternal` (-6600) when dismissed. With `NoUI`, the same failure returns immediately as a typed code
+(`error_from_code` maps -6600 → `AuthFailed`, -6004 `kNetAuthErrorGuestNotSupported` → `AuthRequired`) and the frontend
+renders its own login form.
 
 ### `smb2` for SMB share enumeration (not `pavao`/libsmbclient, `smb-rs`, or `smbutil`)
 
@@ -196,6 +204,12 @@ detects the collision before calling `NetFSMountURLSync`. `disambiguated_mount_p
 already taken by a different server (via `statfs`), and if so picks `/Volumes/{share}-1`, `-2`, etc. (Finder's
 convention) and passes it as an explicit mount point to `NetFSMountURLSync`. The volume switcher shows
 `{share} on {server}` for SMB mounts so the user knows which server each volume belongs to.
+
+"Different server" is an identity comparison (`server_identity::same_server_live`), never a string compare: `statfs`
+may report the existing mount as `Naspolya._smb._tcp.local` while we mount by `192.168.1.111`, and a string mismatch
+would treat one NAS as two, force a second mount with `ForceNewSession`, and break session reuse. For the same reason,
+`mount_share_sync` returns early with `already_mounted: true` when `find_mount_path_for_share` finds the same
+server+share+port already mounted, skipping NetFS entirely.
 
 ## Gotchas
 

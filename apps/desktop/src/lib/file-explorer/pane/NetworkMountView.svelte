@@ -1,12 +1,13 @@
 <script lang="ts">
     import { tick } from 'svelte'
     import type { MountError, NetworkHost, ShareInfo } from '../types'
-    import { mountNetworkShare, resolvePathVolume } from '$lib/tauri-commands'
+    import { mountNetworkShare, resolvePathVolume, saveSmbCredentials } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
     import { getAppLogger } from '$lib/logging/logger'
     import type { NetworkBrowserAPI, ShareBrowserAPI, NetworkCursorEntry } from './types'
     import NetworkBrowser from '../network/NetworkBrowser.svelte'
     import ShareBrowser from '../network/ShareBrowser.svelte'
+    import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import ConnectToServerDialog from '../network/ConnectToServerDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
 
@@ -54,6 +55,14 @@
         share: ShareInfo
         credentials: { username: string; password: string } | null
     } | null>(null)
+
+    // Auth-class mount failures render the login form instead of the dead-end error
+    // pane: the user can fix the credentials right there, and the retry mounts with
+    // what they entered. Non-auth failures (unreachable, timeout, ...) keep the error
+    // pane with "Try again".
+    const showMountLoginForm = $derived(
+        (mountError?.type === 'auth_failed' || mountError?.type === 'auth_required') && currentNetworkHost !== null,
+    )
 
     // Component refs for keyboard navigation
     let networkBrowserRef: NetworkBrowserAPI | undefined = $state()
@@ -175,7 +184,42 @@
         }
     }
 
+    /** Sync form-submit wrapper around the async retry (the form's `onConnect` returns void). */
+    function handleMountLoginConnect(username: string | null, password: string | null, rememberInKeychain: boolean) {
+        void retryMountWithCredentials(username, password, rememberInKeychain)
+    }
+
+    /** Retries the failed mount with credentials from the login form; saves them on success. */
+    async function retryMountWithCredentials(
+        username: string | null,
+        password: string | null,
+        rememberInKeychain: boolean,
+    ) {
+        if (!lastMountAttempt || !currentNetworkHost) return
+        const hostName = currentNetworkHost.name
+        const credentials = username === null ? null : { username, password: password ?? '' }
+
+        await handleShareSelect(lastMountAttempt.share, credentials)
+
+        // handleShareSelect cleared mountError on success; persist the working credentials.
+        if (mountError === null && credentials && rememberInKeychain && password !== null) {
+            try {
+                await saveSmbCredentials(hostName, null, credentials.username, password)
+            } catch (e) {
+                log.warn('Mount succeeded but saving credentials failed: {error}', { error: e })
+            }
+        }
+    }
+
     export function handleKeyDown(e: KeyboardEvent) {
+        if (showMountLoginForm) {
+            // The form's own inputs handle their keys; Escape returns to the share list.
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                handleMountErrorBack()
+            }
+            return
+        }
         if (currentNetworkHost) {
             shareBrowserRef?.handleKeyDown(e)
         } else {
@@ -243,6 +287,16 @@
         <span class="spinner spinner-md"></span>
         <span class="mounting-text">Mounting {currentNetworkHost?.name ?? 'share'}...</span>
     </div>
+{:else if showMountLoginForm && currentNetworkHost}
+    <NetworkLoginForm
+        host={currentNetworkHost}
+        shareName={lastMountAttempt?.share.name}
+        authMode="creds_required"
+        initialUsername={lastMountAttempt?.credentials?.username}
+        errorMessage={mountError?.message}
+        onConnect={handleMountLoginConnect}
+        onCancel={handleMountErrorBack}
+    />
 {:else if mountError}
     <div class="mount-error-state">
         <div class="error-icon">&#x274C;</div>

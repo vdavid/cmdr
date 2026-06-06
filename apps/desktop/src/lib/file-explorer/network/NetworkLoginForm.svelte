@@ -17,6 +17,8 @@
         authMode: AuthMode
         /** Override the default connection mode (guest vs credentials) */
         defaultConnectionMode?: ConnectionMode
+        /** Pre-fill for the username field (for example, from a failed mount attempt). Wins over stored hints. */
+        initialUsername?: string
         /** Error message to display, if any */
         errorMessage?: string
         /** Whether we're currently attempting to connect */
@@ -27,7 +29,17 @@
         onCancel: () => void
     }
 
-    const { host, shareName, authMode, defaultConnectionMode, errorMessage, isConnecting = false, onConnect, onCancel }: Props = $props()
+    const {
+        host,
+        shareName,
+        authMode,
+        defaultConnectionMode,
+        initialUsername,
+        errorMessage,
+        isConnecting = false,
+        onConnect,
+        onCancel,
+    }: Props = $props()
 
     // Form state - writable derived that syncs with authMode prop
     // defaultConnectionMode overrides the auto-detection when provided
@@ -35,7 +47,7 @@
         if (defaultConnectionMode) return defaultConnectionMode
         return authMode === 'guest_allowed' ? 'guest' : 'credentials'
     })
-    let username = $state('')
+    let username = $state(initialUsername ?? '')
     let password = $state('')
     let rememberInKeychain = $state(true)
 
@@ -69,13 +81,15 @@
         const serverKey = host.name.toLowerCase()
         if (hints[serverKey]) {
             usernameHint = hints[serverKey]
-            username = hints[serverKey]
+            if (!initialUsername) {
+                username = hints[serverKey]
+            }
         }
 
         // Get known share data if we have a share name
         if (shareName) {
             knownShare = await getKnownShareByName(host.name, shareName)
-            if (knownShare?.username) {
+            if (knownShare?.username && !initialUsername) {
                 username = knownShare.username
             }
         }
