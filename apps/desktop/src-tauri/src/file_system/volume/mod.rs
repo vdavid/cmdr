@@ -643,6 +643,20 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Reconnect using freshly-entered credentials, replacing whatever was cached.
+    ///
+    /// Invoked by the "Sign in" affordance the frontend shows when an in-place reconnect
+    /// gave up on an auth failure (a password changed on the server). The implementation
+    /// persists the new credentials so the next reconnect is silent, then runs the normal
+    /// reconnect. Default `Err(NotSupported)`; only `SmbVolume` overrides today.
+    fn reconnect_with_credentials<'a>(
+        &'a self,
+        _username: String,
+        _password: String,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
     // ========================================
     // Watching: Optional, default no-op
     // ========================================

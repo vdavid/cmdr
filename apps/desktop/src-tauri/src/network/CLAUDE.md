@@ -180,6 +180,8 @@ Every `NSWorkspaceDidMountNotification` on an SMB share triggers a fresh `regist
 
 `gio mount` is used for user-space SMB mounting on Linux. It requires the `gvfs-smb` package. If `gio` is not available, a helpful error message is returned. Mounts appear under `/run/user/<uid>/gvfs/`.
 
+The password is fed to `gio mount` through the child's **stdin** (`run_gio_mount` spawns `gio` directly with a piped stdin), never via a shell command line. An earlier `sh -c "echo 'PASS' | gio mount …"` shape leaked the cleartext password into the process argument list (`ps` / `/proc/<pid>/cmdline`) — the same argv exposure the macOS smbutil path is careful to avoid. The already-mounted check (`find_existing_mount` → `match_existing_smb_mount`) parses `gio mount -l` and compares servers by identity (`server_identity::same_server`), so a share mounted under one name (for example by Nautilus using the hostname) is recognized when we look it up by another (the IP).
+
 ### `HostSource` enum on `NetworkHost`
 
 `NetworkHost.source` distinguishes mDNS-discovered hosts (`Discovered`, default) from user-added ones (`Manual`). Defaults to `Discovered` via `#[serde(default)]` for backward compatibility with existing serialized data. The frontend uses this to determine which hosts show a "Remove" option and to skip mDNS resolution for manual hosts.

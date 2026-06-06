@@ -13,20 +13,21 @@ list).
 
 ### Components
 
-| File                             | Purpose                                                                           |
-| -------------------------------- | --------------------------------------------------------------------------------- |
-| `DualPaneExplorer.svelte`        | Root: two panes + resizer + dialog manager + key/command dispatch + MCP wiring    |
-| `FilePane.svelte`                | One pane: listing, cursor, selection, view mode, breadcrumb, alt-view switching   |
-| `DialogManager.svelte`           | Renders every modal dialog (transfer, delete, rename, new-folder, alert, error)   |
-| `FunctionKeyBar.svelte`          | F1–F10 bar at the bottom of the window                                            |
-| `PaneResizer.svelte`             | Drag handle between the two panes                                                 |
-| `ErrorPane.svelte`               | Friendly-error display for listing failures (see parent § "Error display")        |
-| `VolumeUnreachableBanner.svelte` | Volume resolution timed out OR SMB give-up state; retry + open home / disconnect  |
-| `SmbReconnectingView.svelte`     | Spinner + progress bar while `smb-reconnect-manager` runs its backoff cycle       |
-| `MtpConnectionView.svelte`       | Placeholder pane for MTP connection states                                        |
-| `NetworkMountView.svelte`        | Network browser host/share list + login form                                      |
-| `SearchResultsView.svelte`       | Snapshot view for `volumeId === 'search-results'` (see parent § "Search-results") |
-| `TypeToJumpIndicator.svelte`     | Bottom-right "Jump: …" chip                                                       |
+| File                             | Purpose                                                                                       |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `DualPaneExplorer.svelte`        | Root: two panes + resizer + dialog manager + key/command dispatch + MCP wiring                |
+| `FilePane.svelte`                | One pane: listing, cursor, selection, view mode, breadcrumb, alt-view switching               |
+| `DialogManager.svelte`           | Renders every modal dialog (transfer, delete, rename, new-folder, alert, error)               |
+| `FunctionKeyBar.svelte`          | F1–F10 bar at the bottom of the window                                                        |
+| `PaneResizer.svelte`             | Drag handle between the two panes                                                             |
+| `ErrorPane.svelte`               | Friendly-error display for listing failures (see parent § "Error display")                    |
+| `VolumeUnreachableBanner.svelte` | Volume resolution timed out OR SMB give-up state; retry + open home / disconnect              |
+| `SmbReconnectingView.svelte`     | Spinner + progress bar while `smb-reconnect-manager` runs its backoff cycle                   |
+| `SmbReauthView.svelte`           | Sign-in prompt when an SMB reconnect gave up on auth (`needs-auth`); wraps `NetworkLoginForm` |
+| `MtpConnectionView.svelte`       | Placeholder pane for MTP connection states                                                    |
+| `NetworkMountView.svelte`        | Network browser host/share list + login form                                                  |
+| `SearchResultsView.svelte`       | Snapshot view for `volumeId === 'search-results'` (see parent § "Search-results")             |
+| `TypeToJumpIndicator.svelte`     | Bottom-right "Jump: …" chip                                                                   |
 
 ### Reactive state (`*.svelte.ts`)
 
@@ -149,10 +150,10 @@ string. The guards:
   device-only connection sub-state, which the table doesn't carry — it's a runtime connection state, not a kind). The
   `{#if}` chain branches on `paneViewKind` for the three alt-views (NetworkMountView / SearchResultsView /
   MtpConnectionView) and the SelectionInfo footer (`paneViewKind === 'normal'`). The RUNTIME-state branches
-  (`unreachable`, SMB reconnecting / gave-up, the inline SMB upgrade login, `loading` / `friendlyError` / `error`) stay
-  per-feature and gate IN FRONT of the descriptor, byte-identical precedence (L10). This is a derived discriminant, NOT
-  a new component (A8). The per-feature gates (git lookup, type-to-jump keystroke, dir-exists poll) read
-  `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
+  (`unreachable`, SMB reconnecting / gave-up / needs-auth sign-in, the inline SMB upgrade login, `loading` /
+  `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical precedence (L10). This
+  is a derived discriminant, NOT a new component (A8). The per-feature gates (git lookup, type-to-jump keystroke,
+  dir-exists poll) read `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
   (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for the jump) STAY — MTP has
   a backend listing but git can't run on it, there's no on-disk path to `pathExists`-poll, and the not-yet-connected
   sub-state isn't a kind capability. `caps` is derived once per pane (`caps = $derived(capabilitiesFor(volumeId))`); the

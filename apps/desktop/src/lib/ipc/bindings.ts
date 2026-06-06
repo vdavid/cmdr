@@ -2031,6 +2031,19 @@ export const commands = {
   reconnectSmbVolume: (volumeId: string) =>
     typedError<null, IpcError>(__TAURI_INVOKE('reconnect_smb_volume', { volumeId })),
   /**
+   *  Reconnects an SMB volume with freshly-entered credentials.
+   *
+   *  Invoked by the "Sign in" affordance shown when an in-place reconnect gave up on an
+   *  auth failure (a `needs_auth` `smb-connection-changed` event). The volume persists the
+   *  new password (so future reconnects are silent) and runs the standard reconnect; on
+   *  success the backend emits `smb-connection-changed { state: "direct" }`. On a non-SMB
+   *  volume this yields `NotSupported` (trait default); the FE only invokes it for SMB.
+   */
+  reconnectSmbVolumeWithCredentials: (volumeId: string, username: string, password: string) =>
+    typedError<null, IpcError>(
+      __TAURI_INVOKE('reconnect_smb_volume_with_credentials', { volumeId, username, password }),
+    ),
+  /**
    *  Disconnects a single SMB volume by unmounting it at the OS level.
    *
    *  Called by the "Disconnect" button in `SmbReconnectingView` / the gave-up

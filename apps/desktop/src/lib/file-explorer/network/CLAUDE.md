@@ -101,16 +101,21 @@ Rendered after user selects a host. Auth flow on mount:
 
 `authenticatedCredentials` is passed to `onShareSelect` so the caller can mount the share without re-prompting.
 
-**Credential gate on share activation** (`activateShare`): every activation path (Enter, double-click, auto-mount)
-checks `authMode === 'creds_required' && !authenticatedCredentials`. When it trips, it first tries Cmdr's stored
-password (`loadStoredCredentials` → `getSmbCredentials`) and, if found, mounts with it silently; only if none is saved
-does it show the login form (with the share name in the title). This matters because the share list often loads via the
-SYSTEM Keychain (`smbutil view -N`) without ever exercising Cmdr's own creds, so `authenticatedCredentials` is null even
-when a working password is saved — without the stored-creds attempt the user got re-prompted on every visit. Stale
-stored creds aren't validated here; the mount fails and `NetworkMountView` surfaces the login form (see its
-mount-failure handler). The gated share waits in `pendingMountShare`; after a successful sign-in,
-`connectWithCredentials` fires `onShareSelect(pending, authenticatedCredentials)`. Cancel on a gated form returns to the
-share list (the list behind it is loaded and fine), not the host list. Pinned by `ShareBrowser.test.ts`.
+**Share activation never pre-prompts** (`activateShare`, every path — Enter, double-click, auto-mount): when
+`authMode === 'creds_required'` and no creds are in memory, it tries Cmdr's stored password first
+(`loadStoredCredentials` → `getSmbCredentials`), then **attempts the mount** with whatever it has (possibly none). It
+does NOT show an in-pane login form. Two reasons this is correct:
+
+- An already-mounted share's mount **short-circuits** in the backend (returns the existing mount, no auth), so reaching
+  it via Network → server → share just navigates instead of re-prompting. The listing's `creds_required` says nothing
+  about whether THIS share is currently mounted, so a pre-prompt there was wrong (the #6 bug).
+- A genuinely-locked share's mount fails and `NetworkMountView` surfaces the login form (its mount-failure handler) —
+  one login surface, no dead end. `NoUI` (macOS) makes that failure fast and dialog-free.
+
+The stored-creds attempt still matters because the share list often loads via the SYSTEM Keychain (`smbutil view -N`)
+without exercising Cmdr's own creds, so `authenticatedCredentials` is null even when a working password is saved. Pinned
+by `ShareBrowser.test.ts`. The ShareBrowser's own `NetworkLoginForm` now appears ONLY when the share **listing** needs
+auth (`loadShares`); cancelling that returns to the host list.
 
 When `authenticatedCredentials` is set (stored creds were used), a "Forget saved password" button appears in the header
 row. Clicking it calls `forgetCredentials` and clears `authenticatedCredentials`.
@@ -185,6 +190,14 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
    refcounted (both panes on the same share share one cycle). When the manager has an active cycle, FilePane swaps the
    file list for `SmbReconnectingView`. On `gave-up`, it swaps to `VolumeUnreachableBanner` (`smbGaveUp` variant). On
    success, the registered `onSuccess` callback re-runs `loadDirectory`.
+
+**Auth-failure give-up → "Sign in", not "unreachable"** (`needs-auth` status): when the backend's reconnect fails on an
+auth error and the saved password can't fix it, it emits `smb-connection-changed { state: "needs_auth" }`. The manager's
+`handleNeedsAuth` stops the backoff (retrying a stale password is futile) and flips the status to `needs-auth`; FilePane
+shows `pane/SmbReauthView.svelte` (a thin wrapper over `NetworkLoginForm`) instead of the generic unreachable banner.
+Submitting calls `reconnectSmbVolumeWithCredentials(volumeId, …)`, which persists the new password and reconnects;
+success arrives as a `direct` event that clears the state and reloads the pane. Pinned by
+`smb-reconnect-manager.svelte.test.ts` ("stops the backoff and flips to needs-auth").
 
 The lazy-nav path: if the user opens a share that's already `Disconnected` (no fresh event in flight), the FilePane
 `$effect` notices `currentVolumeInfo?.smbConnectionState === 'disconnected'` and calls `manager.startCycle(volumeId)`

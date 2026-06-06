@@ -154,6 +154,7 @@ export {
   upgradeToSmbVolume,
   upgradeToSmbVolumeWithCredentials,
   reconnectSmbVolume,
+  reconnectSmbVolumeWithCredentials,
   disconnectSmbVolume,
   type UpgradeResult,
   connectToServer,

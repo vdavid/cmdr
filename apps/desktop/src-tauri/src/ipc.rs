@@ -313,6 +313,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::reconnect_smb_volume,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
+        crate::commands::network::reconnect_smb_volume_with_credentials,
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::disconnect_smb_volume,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::eject::eject_volume,
@@ -371,6 +373,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::stubs::network::upgrade_to_smb_volume_with_credentials,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::network::reconnect_smb_volume,
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        crate::stubs::network::reconnect_smb_volume_with_credentials,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::network::disconnect_smb_volume,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]

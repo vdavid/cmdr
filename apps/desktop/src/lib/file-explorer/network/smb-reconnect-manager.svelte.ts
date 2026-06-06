@@ -42,7 +42,7 @@ export const TOTAL_DURATION_MS = RECONNECT_DELAYS_MS.reduce((a, b) => a + b, 0)
 /** Number of attempts in a full cycle. */
 export const TOTAL_ATTEMPTS = RECONNECT_DELAYS_MS.length
 
-export type ReconnectStatus = 'waiting' | 'attempting' | 'gave-up'
+export type ReconnectStatus = 'waiting' | 'attempting' | 'gave-up' | 'needs-auth'
 
 export interface ReconnectState {
   status: ReconnectStatus
@@ -71,13 +71,15 @@ class SmbReconnectManager {
   /** Idempotent. Call once at app startup before any FilePane mounts. */
   async init(): Promise<void> {
     if (this.unlisten) return
-    this.unlisten = await listen<{ volumeId: string; state: 'direct' | 'disconnected' }>(
+    this.unlisten = await listen<{ volumeId: string; state: 'direct' | 'disconnected' | 'needs_auth' }>(
       'smb-connection-changed',
       (event) => {
         const { volumeId, state } = event.payload
         log.debug('smb-connection-changed: volumeId={volumeId}, state={state}', { volumeId, state })
         if (state === 'disconnected') {
           this.handleDisconnected(volumeId)
+        } else if (state === 'needs_auth') {
+          this.handleNeedsAuth(volumeId)
         } else {
           this.handleDirect(volumeId)
         }
@@ -213,6 +215,24 @@ class SmbReconnectManager {
     })
   }
 
+  /**
+   * The backend gave up reconnecting because the saved password no longer works
+   * (the server's password changed). Stop the futile backoff — retrying the same
+   * stale credentials can't succeed — and flip to `needs-auth` so FilePane shows a
+   * "Sign in" prompt instead of the generic "unreachable" banner. The user signs in
+   * via `reconnectSmbVolumeWithCredentials`; success arrives as a `direct` event.
+   */
+  private handleNeedsAuth(volumeId: string): void {
+    untrack(() => {
+      const entry = this.map.get(volumeId)
+      if (!entry) return // No subscribers; the next nav re-enters the flow.
+      if (entry.timerId) clearTimeout(entry.timerId)
+      entry.timerId = null
+      entry.state = { ...entry.state, status: 'needs-auth' }
+      this.map.set(volumeId, entry) // notify subscribers
+    })
+  }
+
   private handleDirect(volumeId: string): void {
     untrack(() => {
       const entry = this.map.get(volumeId)
@@ -285,6 +305,9 @@ class SmbReconnectManager {
       // Re-fetch entry: `cancel` may have run during the attempt.
       const e2 = this.map.get(volumeId)
       if (!e2) return
+      // The backend may have emitted `needs_auth` during this attempt (stale password).
+      // `handleNeedsAuth` already stopped the cycle; don't schedule another doomed retry.
+      if (e2.state.status === 'needs-auth') return
       const next = attemptIndex + 1
       if (next >= TOTAL_ATTEMPTS) {
         e2.state = { ...e2.state, status: 'gave-up' }

@@ -78,6 +78,20 @@ pub(crate) fn get_read_pool() -> Option<Arc<ReadPool>> {
     READ_POOL.lock().ok()?.as_ref().cloned()
 }
 
+/// The common parent directory of a sibling listing (all entries in a listing share one
+/// parent). Returns `None` when the listing has no enrichable directory entry or the
+/// first such entry's path is malformed (no `/`). Firmlink-normalized so it matches the
+/// index's canonical paths.
+fn listing_parent_path(entries: &[FileEntry]) -> Option<String> {
+    let first_dir = entries.iter().find(|e| e.is_directory && !e.is_symlink)?;
+    let normalized = firmlinks::normalize_path(&first_dir.path);
+    match normalized.rfind('/') {
+        Some(0) => Some("/".to_string()),
+        Some(pos) => Some(normalized[..pos].to_string()),
+        None => None,
+    }
+}
+
 /// Enrich directory entries with recursive size data from the index.
 ///
 /// Called from `get_file_range` on every page fetch. Does nothing if
@@ -105,20 +119,19 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
 
     let dir_count = entries.iter().filter(|e| e.is_directory && !e.is_symlink).count();
 
-    // Determine the common parent directory from the first directory entry.
-    // All entries in a listing share the same parent (they're siblings).
-    let parent_path = match entries.iter().find(|e| e.is_directory && !e.is_symlink) {
-        Some(e) => {
-            let normalized = firmlinks::normalize_path(&e.path);
-            // Parent = path without the last component
-            match normalized.rfind('/') {
-                Some(0) => "/".to_string(),
-                Some(pos) => normalized[..pos].to_string(),
-                None => return, // Malformed path, skip
-            }
-        }
+    let parent_path = match listing_parent_path(entries) {
+        Some(p) => p,
         None => return,
     };
+
+    // Skip listings the indexer never covers: network mounts and external drives under
+    // /Volumes, /mnt, and system paths (the scanner's exclusion set). Their entries are
+    // never in the index, so enrichment would miss the parent lookup, fall through to
+    // per-file lookups that also miss, and log "Parent path not found" on every listing
+    // refresh. Nothing to enrich here — return before touching the DB.
+    if super::scanner::should_exclude(&parent_path) {
+        return;
+    }
 
     log::debug!("enrich: {} under {parent_path}", pluralize(dir_count as u64, "dir"));
 
@@ -257,5 +270,49 @@ pub(super) fn enrich_via_individual_paths_on(entries: &mut [FileEntry], conn: &C
             entry.recursive_dir_count = Some(stats.recursive_dir_count);
             entry.recursive_has_symlinks = Some(stats.recursive_has_symlinks);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn dir(path: &str) -> FileEntry {
+        let name = path.rsplit('/').next().unwrap_or(path).to_string();
+        FileEntry::new(name, path.to_string(), true, false)
+    }
+
+    #[test]
+    fn listing_parent_path_finds_common_parent() {
+        let entries = [dir("/Users/veszelovszki/project"), dir("/Users/veszelovszki/other")];
+        assert_eq!(listing_parent_path(&entries).as_deref(), Some("/Users/veszelovszki"));
+    }
+
+    #[test]
+    fn listing_parent_path_handles_root_children() {
+        assert_eq!(listing_parent_path(&[dir("/Users")]).as_deref(), Some("/"));
+    }
+
+    #[test]
+    fn listing_parent_path_none_without_enrichable_dirs() {
+        let files = [FileEntry::new("a.txt".into(), "/Users/a.txt".into(), false, false)];
+        assert_eq!(listing_parent_path(&files), None);
+    }
+
+    /// A listing under an excluded prefix (network mount / external drive under /Volumes
+    /// on macOS, /mnt on Linux, system virtual filesystems on both) must be skipped:
+    /// those entries are never in the index, so enrichment would fail the parent lookup
+    /// and log "Parent path not found" on every listing. `/proc/` is in the excluded set
+    /// on both platforms, so it keeps this assertion platform-agnostic.
+    #[test]
+    fn excluded_listing_parents_are_skipped() {
+        let parent = listing_parent_path(&[dir("/proc/123/fd")]).expect("has a parent");
+        assert!(
+            super::super::scanner::should_exclude(&parent),
+            "an excluded system path must be skipped by enrichment"
+        );
+        // A boot-volume listing is NOT excluded — enrichment must still run there.
+        let home = listing_parent_path(&[dir("/Users/veszelovszki/project")]).expect("has a parent");
+        assert!(!super::super::scanner::should_exclude(&home));
     }
 }

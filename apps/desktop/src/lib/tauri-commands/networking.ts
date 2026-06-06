@@ -346,6 +346,23 @@ export async function reconnectSmbVolume(volumeId: string): Promise<void> {
 }
 
 /**
+ * Reconnects an SMB volume with freshly-entered credentials. Used by the "Sign in"
+ * affordance shown when an in-place reconnect gave up on an auth failure (the saved
+ * password went stale). The backend persists the new password and reconnects; on
+ * success a `smb-connection-changed { state: "direct" }` event follows.
+ *
+ * Resolves on success; throws on failure with an `IpcError`-shaped exception.
+ */
+export async function reconnectSmbVolumeWithCredentials(
+  volumeId: string,
+  username: string,
+  password: string,
+): Promise<void> {
+  const res = await commands.reconnectSmbVolumeWithCredentials(volumeId, username, password)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
  * Disconnects an SMB volume by unmounting it at the OS level (macOS) or by
  * dropping the smb2 session (Linux, until GVFS unmount is wired up). The
  * `volumes-changed` event removes the volume from the picker shortly after.

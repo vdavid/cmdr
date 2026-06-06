@@ -47,9 +47,13 @@ fn get_app_handle() -> Option<AppHandle> {
 #[serde(rename_all = "camelCase")]
 struct SmbConnectionChangedPayload {
     volume_id: String,
-    /// `"direct"` or `"disconnected"`. The internal state machine is binary;
-    /// the OS-mount fallback only exists at the outer `SmbConnectionState` layer
-    /// (driven by `enrich_smb_connection_state`), not on the smb2 hot path.
+    /// `"direct"`, `"disconnected"`, or `"needs_auth"`. The internal connection state
+    /// machine is binary (Direct / Disconnected); `"needs_auth"` is a transient FE-only
+    /// signal emitted when an in-place reconnect gave up on an auth failure (password
+    /// changed on the server), so the reconnect manager shows a "Sign in" prompt instead
+    /// of the generic "unreachable" banner. It does not correspond to a backend
+    /// `ConnectionState` variant. The OS-mount fallback likewise only exists at the outer
+    /// `SmbConnectionState` layer (driven by `enrich_smb_connection_state`).
     state: &'static str,
 }
 
@@ -869,6 +873,10 @@ impl SmbVolume {
                                     "SmbVolume::attempt_reconnect(share={}): refreshed credentials also failed: {}",
                                     self.share_name, e2
                                 );
+                                // The password on the server changed and what we have
+                                // saved no longer works. Tell the FE so it shows a
+                                // "Sign in" prompt instead of the generic "unreachable".
+                                emit_state_change(&self.volume_id, "needs_auth");
                                 return Err(map_smb_error(e2));
                             }
                         }
@@ -879,6 +887,7 @@ impl SmbVolume {
                             "SmbVolume::attempt_reconnect(share={}): no fresh credentials available; giving up on this attempt",
                             self.share_name
                         );
+                        emit_state_change(&self.volume_id, "needs_auth");
                         return Err(map_smb_error(err));
                     }
                 }
@@ -925,6 +934,30 @@ impl SmbVolume {
 
         info!("SmbVolume::attempt_reconnect(share={}): success", self.share_name);
         Ok(())
+    }
+
+    /// Reconnect with freshly-entered credentials (the "Sign in" affordance after a
+    /// `needs_auth` give-up). Persists the new password server-level — mirroring how the
+    /// login form saves, so the NEXT reconnect finds it silently — updates the in-memory
+    /// params, then runs the standard reconnect. If these credentials are also wrong,
+    /// `do_attempt_reconnect` re-emits `needs_auth`, so a bad retry re-prompts rather than
+    /// dead-ending.
+    async fn do_reconnect_with_credentials(&self, username: String, password: String) -> Result<(), VolumeError> {
+        let server = { self.params.read().await.server.clone() };
+        if let Err(e) = crate::network::keychain::save_credentials(&server, None, &username, &password) {
+            // Non-fatal: the in-memory params below still carry the creds for this
+            // reconnect; only the "silent next time" guarantee is lost.
+            warn!(
+                "SmbVolume::reconnect_with_credentials(share={}): saving credentials failed: {}",
+                self.share_name, e
+            );
+        }
+        {
+            let mut params_w = self.params.write().await;
+            params_w.username = username;
+            params_w.password = password;
+        }
+        self.do_attempt_reconnect().await
     }
 }
 
@@ -2133,6 +2166,14 @@ impl Volume for SmbVolume {
 
     fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(self.do_attempt_reconnect())
+    }
+
+    fn reconnect_with_credentials<'a>(
+        &'a self,
+        username: String,
+        password: String,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.do_reconnect_with_credentials(username, password))
     }
 
     fn on_unmount(&self) {

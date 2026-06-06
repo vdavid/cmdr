@@ -34,7 +34,7 @@ import {
 } from './smb-reconnect-manager.svelte'
 
 /** Drives the listener as if the backend emitted the event. */
-function emit(volumeId: string, state: 'direct' | 'disconnected'): void {
+function emit(volumeId: string, state: 'direct' | 'disconnected' | 'needs_auth'): void {
   if (!lastEventHandler) throw new Error("init() was not called or didn't install a listener")
   lastEventHandler({ payload: { volumeId, state } })
 }
@@ -103,6 +103,35 @@ describe('smbReconnectManager', () => {
     expect(mockReconnect).toHaveBeenCalledTimes(TOTAL_ATTEMPTS)
 
     smbReconnectManager.cancel('vol-giveup')
+    unsub()
+  })
+
+  it('stops the backoff and flips to needs-auth on a `needs_auth` event', async () => {
+    await smbReconnectManager.init()
+    const unsub = smbReconnectManager.subscribe('vol-auth')
+    mockReconnect.mockRejectedValue(new Error('STATUS_LOGON_FAILURE'))
+
+    smbReconnectManager.startCycle('vol-auth')
+    // First attempt fires after the first delay and fails; the backend would emit
+    // needs_auth alongside that failure.
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    emit('vol-auth', 'needs_auth')
+
+    expect(smbReconnectManager.getState('vol-auth')?.status).toBe('needs-auth')
+
+    // The futile backoff must stop: advancing well past the full schedule fires no
+    // further reconnect attempts (retrying the same stale password can't succeed).
+    const callsAtFlip = mockReconnect.mock.calls.length
+    for (const delay of RECONNECT_DELAYS_MS) {
+      await vi.advanceTimersByTimeAsync(delay)
+    }
+    expect(mockReconnect.mock.calls.length).toBe(callsAtFlip)
+
+    // A later successful sign-in (`direct`) clears the needs-auth state.
+    emit('vol-auth', 'direct')
+    expect(smbReconnectManager.getState('vol-auth')).toBeNull()
+
+    smbReconnectManager.cancel('vol-auth')
     unsub()
   })
 

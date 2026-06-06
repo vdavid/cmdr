@@ -40,6 +40,45 @@ fn is_gio_available() -> bool {
     Command::new("gio").arg("version").output().is_ok()
 }
 
+/// Extracts the `(server, share)` of any `smb://` mount URL on one `gio mount -l` line.
+///
+/// Lines look like `  Mount(0): docs on naspolya -> smb://naspolya/docs/`. The server is
+/// stripped of any `user@` prefix and `:port` suffix so it compares cleanly against a
+/// discovered host. Returns `None` for non-SMB or malformed lines.
+fn parse_smb_mount(line: &str) -> Option<(String, String)> {
+    let rest = line.split("smb://").nth(1)?;
+    let url = rest.split_whitespace().next()?.trim_end_matches('/');
+    let (host_part, share) = url.split_once('/')?;
+    let host = host_part.rsplit('@').next().unwrap_or(host_part);
+    let host = host.split(':').next().unwrap_or(host);
+    if host.is_empty() || share.is_empty() {
+        return None;
+    }
+    Some((host.to_string(), share.to_string()))
+}
+
+/// Scans `gio mount -l` output for a mount of `share` on a server that is the same
+/// identity as `server` (mDNS name ↔ `.local` hostname ↔ IP, via the discovery state).
+/// Returns the server name as it appears in the existing mount, so the caller can derive
+/// the matching GVFS path. Identity-aware so a share mounted under one name (for example
+/// by Nautilus using the hostname) is recognized when we look it up by another (the IP).
+fn match_existing_smb_mount(
+    stdout: &str,
+    server: &str,
+    share: &str,
+    hosts: &[crate::network::NetworkHost],
+) -> Option<String> {
+    for line in stdout.lines() {
+        if let Some((mount_server, mount_share)) = parse_smb_mount(line)
+            && mount_share.eq_ignore_ascii_case(share)
+            && crate::network::server_identity::same_server(&mount_server, server, hosts)
+        {
+            return Some(mount_server);
+        }
+    }
+    None
+}
+
 /// Finds the GVFS mount path for an SMB share.
 /// Checks `gio mount -l` output for an existing mount matching the server/share.
 fn find_existing_mount(server: &str, share: &str) -> Option<String> {
@@ -50,20 +89,11 @@ fn find_existing_mount(server: &str, share: &str) -> Option<String> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let smb_url_lower = format!("smb://{}/{}", server.to_lowercase(), share.to_lowercase());
-
-    // gio mount -l outputs lines like:
-    //   Mount(0): share on server -> smb://server/share/
-    // Look for the mount URL matching our target
-    for line in stdout.lines() {
-        let line_lower = line.to_lowercase();
-        if line_lower.contains(&smb_url_lower) {
-            // Found a matching mount; derive the GVFS path
-            return Some(derive_gvfs_path(server, share));
-        }
-    }
-
-    None
+    let hosts = crate::network::get_discovered_hosts();
+    let mount_server = match_existing_smb_mount(&stdout, server, share, &hosts)?;
+    // Derive from the server name the existing mount actually uses, so the GVFS path
+    // matches even when it was mounted under a different alias than we looked up.
+    Some(derive_gvfs_path(&mount_server, share))
 }
 
 /// Derives the expected GVFS mount path for an SMB share.
@@ -116,51 +146,10 @@ fn mount_share_sync(
 
     debug!("Mounting SMB share via gio: {}", smb_url);
 
-    // gio mount with anonymous flag if no credentials.
-    // `LC_ALL=C` keeps stderr English so `classify_mount_error` matches.
-    let mut cmd = Command::new("gio");
-    cmd.env("LC_ALL", "C");
-    cmd.args(["mount", &smb_url]);
-
-    if username.is_none() {
-        cmd.arg("--anonymous");
-    }
-
-    // If we have a password, pass it via stdin using the askpass approach.
-    // gio mount reads credentials interactively, so we need to handle that.
-    // For non-interactive use, we set the password via an environment trick:
-    // GIO_USE_FILE_MONITOR and pipe the password.
-    if let Some(pass) = password {
-        // Use echo to pipe the password to gio mount's stdin
-        let shell_cmd = if username.is_some() {
-            // gio mount prompts: Password:
-            format!("echo '{}' | gio mount '{}'", escape_shell_arg(pass), smb_url)
-        } else {
-            format!("gio mount --anonymous '{}'", smb_url)
-        };
-
-        // `LC_ALL=C` keeps stderr English so `classify_mount_error` matches.
-        let output = Command::new("sh")
-            .env("LC_ALL", "C")
-            .args(["-c", &shell_cmd])
-            .output()
-            .map_err(|e| MountError::ProtocolError {
-                message: format!("Failed to run gio mount: {}", e),
-            })?;
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(classify_mount_error(&stderr, server, share));
-        }
-    } else {
-        let output = cmd.output().map_err(|e| MountError::ProtocolError {
-            message: format!("Failed to run gio mount: {}", e),
-        })?;
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(classify_mount_error(&stderr, server, share));
-        }
+    let output = run_gio_mount(&smb_url, username, password)?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(classify_mount_error(&stderr, server, share));
     }
 
     // After successful mount, find the mount path
@@ -172,10 +161,55 @@ fn mount_share_sync(
     })
 }
 
-/// Escapes a string for use in a shell single-quoted context.
-fn escape_shell_arg(s: &str) -> String {
-    // In single quotes, only single quote itself needs escaping: ' -> '\''
-    s.replace('\'', "'\\''")
+/// Runs `gio mount <url>`, feeding the password (when present) through the child's
+/// stdin instead of a shell command line.
+///
+/// `gio mount` reads the password interactively from stdin when the URL carries a
+/// username. The previous implementation piped it via `sh -c "echo 'PASS' | gio …"`,
+/// which placed the cleartext password in the process argument list (`ps` /
+/// `/proc/<pid>/cmdline`) for the lifetime of the call — the same argv leak the macOS
+/// smbutil path is careful to avoid. Spawning `gio` directly and writing the password
+/// to its stdin keeps the secret off argv entirely. A mount with no username is a
+/// guest/anonymous mount (`--anonymous`), which never prompts, so no stdin is needed.
+fn run_gio_mount(
+    smb_url: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+) -> Result<std::process::Output, MountError> {
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let fail = |e: std::io::Error| MountError::ProtocolError {
+        message: format!("Failed to run gio mount: {}", e),
+    };
+
+    let mut cmd = Command::new("gio");
+    // `LC_ALL=C` keeps stderr English so `classify_mount_error` matches.
+    cmd.env("LC_ALL", "C").args(["mount", smb_url]);
+    if username.is_none() {
+        cmd.arg("--anonymous");
+    }
+
+    // Only an authenticated mount needs a password, and gio reads it (one line) from
+    // stdin. Everything else gets a null stdin so gio can't block waiting on input.
+    let password = username.and(password);
+    cmd.stdin(if password.is_some() {
+        Stdio::piped()
+    } else {
+        Stdio::null()
+    });
+    cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
+
+    let mut child = cmd.spawn().map_err(fail)?;
+
+    if let Some(pass) = password {
+        let mut stdin = child.stdin.take().expect("stdin is piped when a password is present");
+        // Best-effort: if gio closed stdin early, `wait_with_output` surfaces the real
+        // error. Dropping `stdin` after the write sends EOF so gio stops reading.
+        let _ = stdin.write_all(format!("{}\n", pass).as_bytes());
+    }
+
+    child.wait_with_output().map_err(fail)
 }
 
 /// Classifies `gio mount` stderr into a structured `MountError`.
@@ -305,10 +339,46 @@ mod tests {
     }
 
     #[test]
-    fn test_escape_shell_arg() {
-        assert_eq!(escape_shell_arg("simple"), "simple");
-        assert_eq!(escape_shell_arg("it's"), "it'\\''s");
-        assert_eq!(escape_shell_arg("p@ss!word"), "p@ss!word");
+    fn test_parse_smb_mount_line() {
+        // The shape `gio mount -l` emits.
+        assert_eq!(
+            parse_smb_mount("  Mount(0): docs on naspolya -> smb://naspolya/docs/"),
+            Some(("naspolya".to_string(), "docs".to_string()))
+        );
+        // user@ and :port decorations are stripped from the server.
+        assert_eq!(
+            parse_smb_mount("Mount(1): x -> smb://david@192.168.1.111:445/naspi"),
+            Some(("192.168.1.111".to_string(), "naspi".to_string()))
+        );
+        // Non-SMB and malformed lines yield nothing.
+        assert_eq!(parse_smb_mount("Drive(0): SSD"), None);
+        assert_eq!(parse_smb_mount("-> smb://serveronly"), None);
+    }
+
+    /// The existing-mount lookup must recognize a share already mounted under a different
+    /// name for the same server (for example, Nautilus mounted it by hostname while we
+    /// look it up by IP). Identity comes from the discovery state, mirroring macOS.
+    #[test]
+    fn test_match_existing_smb_mount_is_identity_aware() {
+        use crate::network::{HostSource, NetworkHost};
+        let hosts = [NetworkHost {
+            id: "naspolya".into(),
+            name: "Naspolya".into(),
+            hostname: Some("naspolya.local".into()),
+            ip_address: Some("192.168.1.111".into()),
+            port: 445,
+            source: HostSource::Discovered,
+        }];
+        let lines = "Mount(0): naspi on naspolya -> smb://naspolya.local/naspi/";
+
+        // Looking up by IP finds the hostname-mounted share via discovery identity.
+        let hit = match_existing_smb_mount(lines, "192.168.1.111", "naspi", &hosts);
+        assert_eq!(hit.as_deref(), Some("naspolya.local"), "expected identity match by IP");
+
+        // A genuinely different share name does not match.
+        assert!(match_existing_smb_mount(lines, "192.168.1.111", "other", &hosts).is_none());
+        // A different server (no identity link) does not match.
+        assert!(match_existing_smb_mount(lines, "192.168.1.150", "naspi", &[]).is_none());
     }
 
     #[test]

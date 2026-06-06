@@ -68,6 +68,7 @@
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
+    import SmbReauthView from './SmbReauthView.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import SearchResultsView from './SearchResultsView.svelte'
     import type { SearchResultsViewAPI } from './types'
@@ -495,6 +496,8 @@
     )
     /** Show the gave-up state: uses the existing unreachable banner with an added Disconnect button. */
     const showSmbGaveUp = $derived(reconnectState !== null && reconnectState.status === 'gave-up')
+    /** Show the sign-in prompt: reconnect gave up because the saved password went stale. */
+    const showSmbNeedsAuth = $derived(reconnectState !== null && reconnectState.status === 'needs-auth')
 
     // Subscribe to the per-volume reconnect manager whenever this pane is on
     // an SMB share. The subscription is refcounted (multiple panes on the same
@@ -2675,6 +2678,12 @@
                 cycleState={reconnectState}
                 onCancel={handleSmbReconnectCancel}
                 onDisconnect={handleSmbReconnectDisconnect}
+            />
+        {:else if showSmbNeedsAuth}
+            <SmbReauthView
+                {volumeId}
+                serverLabel={currentVolumeInfo?.name ?? volumePath}
+                onCancel={handleSmbReconnectDisconnect}
             />
         {:else if showSmbGaveUp}
             <VolumeUnreachableBanner

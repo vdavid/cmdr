@@ -587,6 +587,33 @@ pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::comman
         .map_err(|e| IpcError::from_err(e.to_string()))
 }
 
+/// Reconnects an SMB volume with freshly-entered credentials.
+///
+/// Invoked by the "Sign in" affordance shown when an in-place reconnect gave up on an
+/// auth failure (a `needs_auth` `smb-connection-changed` event). The volume persists the
+/// new password (so future reconnects are silent) and runs the standard reconnect; on
+/// success the backend emits `smb-connection-changed { state: "direct" }`. On a non-SMB
+/// volume this yields `NotSupported` (trait default); the FE only invokes it for SMB.
+#[tauri::command]
+#[specta::specta]
+pub async fn reconnect_smb_volume_with_credentials(
+    volume_id: String,
+    username: String,
+    password: String,
+) -> Result<(), crate::commands::util::IpcError> {
+    use crate::commands::util::IpcError;
+    use crate::file_system::get_volume_manager;
+
+    let volume = get_volume_manager()
+        .get(&volume_id)
+        .ok_or_else(|| IpcError::from_err(format!("Volume not found: {}", volume_id)))?;
+
+    volume
+        .reconnect_with_credentials(username, password)
+        .await
+        .map_err(|e| IpcError::from_err(e.to_string()))
+}
+
 /// Disconnects a single SMB volume by unmounting it at the OS level.
 ///
 /// Called by the "Disconnect" button in `SmbReconnectingView` / the gave-up

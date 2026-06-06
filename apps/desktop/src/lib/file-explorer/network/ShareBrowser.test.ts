@@ -66,12 +66,6 @@ interface ShareBrowserApi {
   openCursorItem: () => void
 }
 
-/** Narrows a queried element, failing the test with a readable message when absent. */
-function must<T>(value: T | null | undefined, what: string): T {
-  expect(value, `expected ${what} to be present`).toBeTruthy()
-  return value as T
-}
-
 function mountBrowser(
   onShareSelect: (share: ShareInfo, creds: { username: string; password: string } | null) => void,
   onBack?: () => void,
@@ -97,7 +91,12 @@ describe('ShareBrowser credential gate', () => {
     h.getSmbCredentials.mockRejectedValue(new Error('not found'))
   })
 
-  it('shows the login form instead of selecting the share when creds are required and none are held', async () => {
+  it('attempts the mount (no in-pane prompt) when creds are required and none are stored', async () => {
+    // The listing is creds_required but Cmdr holds no password. Activation must NOT show
+    // an in-pane login form: it attempts the mount with no creds, so an already-mounted
+    // share just navigates (backend short-circuit) and a genuinely-locked share routes
+    // to NetworkMountView's mount-failure login form. Pre-prompting here would re-prompt
+    // for already-mounted shares (#6).
     h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
     const onShareSelect = vi.fn()
     const { target, component, api } = mountBrowser(onShareSelect)
@@ -105,12 +104,9 @@ describe('ShareBrowser credential gate', () => {
 
     api.openCursorItem()
     await vi.waitFor(() => {
-      expect(target.querySelector('.login-title')).toBeTruthy()
+      expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'naspi' }), null)
     })
-
-    expect(onShareSelect).not.toHaveBeenCalled()
-    const title = must(target.querySelector('.login-title'), 'the login form')
-    expect(title.textContent).toContain('naspi')
+    expect(target.querySelector('.login-title'), 'must not show an in-pane prompt on activation').toBeNull()
 
     await unmount(component)
   })
@@ -132,66 +128,6 @@ describe('ShareBrowser credential gate', () => {
       })
     })
     expect(target.querySelector('.login-title'), 'must not prompt when stored creds exist').toBeNull()
-
-    await unmount(component)
-  })
-
-  it('selects the pending share with the entered credentials after a successful sign-in', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
-    h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
-    const onShareSelect = vi.fn()
-    const { target, component, api } = mountBrowser(onShareSelect)
-    await waitForShareList(target)
-
-    api.openCursorItem()
-    await vi.waitFor(() => {
-      expect(target.querySelector('#username')).toBeTruthy()
-    })
-
-    const usernameInput = must(target.querySelector<HTMLInputElement>('#username'), 'the username input')
-    const passwordInput = must(target.querySelector<HTMLInputElement>('#password'), 'the password input')
-    usernameInput.value = 'david'
-    usernameInput.dispatchEvent(new Event('input', { bubbles: true }))
-    passwordInput.value = 'hunter2'
-    passwordInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await tick()
-
-    must(target.querySelector('form'), 'the login form element').dispatchEvent(
-      new Event('submit', { bubbles: true, cancelable: true }),
-    )
-
-    await vi.waitFor(() => {
-      expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'naspi' }), {
-        username: 'david',
-        password: 'hunter2',
-      })
-    })
-
-    await unmount(component)
-  })
-
-  it('cancel on the share-gate login form returns to the share list, not the host list', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
-    const onShareSelect = vi.fn()
-    const onBack = vi.fn()
-    const { target, component, api } = mountBrowser(onShareSelect, onBack)
-    await waitForShareList(target)
-
-    api.openCursorItem()
-    await vi.waitFor(() => {
-      expect(target.querySelector('.login-title')).toBeTruthy()
-    })
-
-    // Cancel: the share list is loaded and fine, so stay on it.
-    const cancelButton = must(
-      Array.from(target.querySelectorAll('button')).find((b) => b.textContent.includes('Cancel')),
-      'the Cancel button',
-    )
-    cancelButton.click()
-    await tick()
-
-    expect(onBack).not.toHaveBeenCalled()
-    expect(target.querySelector('.share-row')).toBeTruthy()
 
     await unmount(component)
   })

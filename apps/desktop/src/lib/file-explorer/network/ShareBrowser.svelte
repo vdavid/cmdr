@@ -78,11 +78,6 @@
     // Track authenticated credentials for mounting
     let authenticatedCredentials = $state<{ username: string; password: string } | null>(null)
 
-    // Share activation waiting behind the credential gate: set when the user activates
-    // a share while creds are required and none are held; fired after a successful
-    // sign-in (see `activateShare`).
-    let pendingMountShare = $state<ShareInfo | null>(null)
-
     // Auto-mount tracking: track the last share we tried so the same prop value
     // doesn't re-fire, but a new value (for example via "Copy path between panes"
     // with cursor on a different share) does.
@@ -131,23 +126,26 @@
      * `authenticatedCredentials` stays null.
      */
     async function activateShare(share: ShareInfo) {
+        // When creds are required but none are in memory, try Cmdr's stored password
+        // first. The share list often loads via the system Keychain (smbutil) without
+        // ever exercising our own creds, so a working password may already be saved.
         if (authMode === 'creds_required' && !authenticatedCredentials) {
-            // Try Cmdr's stored password before prompting. The share list often loads
-            // via the system Keychain (smbutil) without ever exercising our own creds,
-            // so we may already have a working password saved. If the stored creds turn
-            // out to be stale, the mount fails and NetworkMountView surfaces the login
-            // form (see its mount-failure handler), so we don't need to validate here.
             const stored = await loadStoredCredentials()
             if (stored) {
                 authenticatedCredentials = stored
-                onShareSelect?.(share, stored)
-                return
             }
-            pendingMountShare = share
-            loginError = undefined
-            showLoginForm = true
-            return
         }
+
+        // Attempt the mount with whatever credentials we have (possibly none). Two
+        // cases this handles without ever pre-prompting:
+        //   - The share is already mounted → the backend short-circuits to the existing
+        //     mount (no auth), so reaching an already-mounted share just navigates.
+        //   - It genuinely needs auth we don't have → the mount fails and
+        //     `NetworkMountView` surfaces the login form (its mount-failure handler),
+        //     a single login surface with no dead end.
+        // Don't pre-prompt here on `creds_required`: that re-prompts for shares that are
+        // already mounted (the listing's `creds_required` says nothing about whether
+        // THIS share is currently mounted).
         onShareSelect?.(share, authenticatedCredentials)
     }
 
@@ -328,8 +326,6 @@
                 authMode === 'guest_allowed' ? 'guest_or_credentials' : 'credentials_only',
                 username,
             )
-
-            firePendingShareActivation()
         } catch (e) {
             const shareError = e as ShareListError
             if (shareError.type === 'auth_failed') {
@@ -339,15 +335,6 @@
             loginError = loginErrorMessageFor(shareError)
         } finally {
             isConnecting = false
-        }
-    }
-
-    /** Fires the share activation that was waiting behind the login form, if any. */
-    function firePendingShareActivation() {
-        const pending = pendingMountShare
-        pendingMountShare = null
-        if (pending) {
-            onShareSelect?.(pending, authenticatedCredentials)
         }
     }
 
@@ -367,14 +354,12 @@
     }
 
     function handleCancel() {
+        // The ShareBrowser login form only appears when the share LISTING itself needs
+        // auth (see `loadShares`); cancelling it means "don't sign in" → back to the
+        // host list. (Share-activation auth is handled by NetworkMountView's
+        // mount-failure form, not here.)
         showLoginForm = false
         loginError = undefined
-        if (pendingMountShare) {
-            // The login form gated a share activation; the share list behind it is
-            // loaded and fine, so stay on it instead of dropping to the host list.
-            pendingMountShare = null
-            return
-        }
         onBack?.()
     }
 
@@ -530,7 +515,6 @@
     {#if showLoginForm}
         <NetworkLoginForm
             {host}
-            shareName={pendingMountShare?.name}
             {authMode}
             errorMessage={loginError}
             {isConnecting}
