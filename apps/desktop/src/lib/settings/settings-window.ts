@@ -161,6 +161,22 @@ export function shortcutAnchorId(commandId: string): string {
 }
 
 /**
+ * The other half of `shortcutAnchorId`: given an anchor id, return the command id
+ * it targets, or `null` when the anchor isn't a shortcut-row anchor.
+ *
+ * The settings page uses this to decide whether a deep-link anchor needs the
+ * Keyboard-shortcuts arrival behavior (clear filters, scroll the nested list,
+ * flash the row) versus the plain `contentElement.scrollTo` path the older
+ * sub-group anchors (`settings-downloads-notifications`) take.
+ *
+ * Defined next to `shortcutAnchorId` so the two can't drift apart.
+ */
+export function commandIdFromShortcutAnchor(anchorId: string): string | null {
+  const prefix = 'shortcut-'
+  return anchorId.startsWith(prefix) ? anchorId.slice(prefix.length) : null
+}
+
+/**
  * Open Settings > Keyboard shortcuts scrolled to a specific command's row.
  *
  * Used by clickable `ShortcutChip`s. The chip imports this lazily (dynamic `import()`)

@@ -306,9 +306,18 @@
 
     /** Set up MCP dialog event listeners (close/focus) */
     async function setupDialogListeners() {
-        // Settings with section (MCP-specific: "dialog open settings --section shortcuts")
-        await listenTauri('open-settings', () => {
-            void openSettingsWindow()
+        // Settings with section (MCP-specific: "dialog open settings --section shortcuts").
+        // The Rust MCP executor (`mcp/executor/dialogs.rs`) emits `{ section: <string> }`
+        // — a BARE string, no anchor (the `dialog` tool has no anchor param, so MCP can't
+        // deep-link to a row today; that's future work). Parse defensively (no `as` cast,
+        // same discipline as `mcp-listeners.ts`) and wrap the bare string in an array.
+        await listenTauri('open-settings', (event) => {
+            const payload = event.payload
+            const section =
+                payload && typeof payload === 'object' && 'section' in payload && typeof payload.section === 'string'
+                    ? payload.section
+                    : undefined
+            void openSettingsWindow(section ? [section] : undefined)
         })
 
         // About dialog

@@ -178,7 +178,18 @@ file map, the 50-50 split-layout rule, and the `SettingPasswordInput` store-driv
   Position: opens centered on the main window on first open of the session (via `lib/window-positioning.ts`). After
   that, the position+size persists in-memory (via the `get_child_window_rect` / `set_child_window_rect` Tauri commands)
   so reopening lands in the same spot. On app start the cache is empty again. Saved rects that no longer fit any monitor
-  (display disconnected, etc.) are clamped to the nearest monitor.
+  (display disconnected, etc.) are clamped to the nearest monitor. Also exports the keyboard-shortcut deep-link pair:
+  `shortcutAnchorId(commandId)` / `commandIdFromShortcutAnchor(anchorId)` (the `shortcut-<commandId>` DOM-id convention,
+  one definition so writer and readers can't drift) and `openShortcutCustomization(commandId)` (the in-app entry point
+  clickable `ShortcutChip`s call to deep-link to a row). See § "Deep-link arrival into a shortcut row" below and
+  [`sections/CLAUDE.md`](sections/CLAUDE.md).
+- **pending-shortcut-highlight.svelte.ts**: shared module-level `$state` seam for the deep-link arrival flash. The
+  settings page writes the target command id (`setPendingShortcutHighlight`) after scrolling its row into view; the
+  `KeyboardShortcutsSection` reads it (`getPendingShortcutHighlight`) to apply a `class:flash`, then clears it
+  (`clearPendingShortcutHighlight`) once the animation ends. The section also registers a filter resetter
+  (`registerShortcutFilterReset`) the page calls before scrolling, so a leftover filter can't hide the target row. State
+  (not a direct DOM class) because the rows re-key on `shortcutChangeCounter` — an imperative class would vanish on
+  re-render. Both ends must import the module or knip flags the exports as unused.
 - **format-utils.ts**: Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time is
   covered in detail under § "Date display" above. `formatDateForDisplay` is the canonical entry point. Built-in `iso`
   and `short` formats include a `|` internally so the file-list renderer can split the date and time halves into two

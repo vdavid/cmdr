@@ -9,7 +9,16 @@
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initTextSize, cleanupTextSize, getEffectiveScale } from '$lib/text-size.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
-    import { SETTINGS_BASE_MIN_HEIGHT, settingsMaxWidth, settingsMinWidth } from '$lib/settings/settings-window'
+    import {
+        SETTINGS_BASE_MIN_HEIGHT,
+        settingsMaxWidth,
+        settingsMinWidth,
+        commandIdFromShortcutAnchor,
+    } from '$lib/settings/settings-window'
+    import {
+        resetShortcutFilters,
+        setPendingShortcutHighlight,
+    } from '$lib/settings/pending-shortcut-highlight.svelte'
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
     import { getAppLogger } from '$lib/logging/logger'
@@ -107,25 +116,84 @@
         }
     }
 
+    /** `'auto'` when the user prefers reduced motion, else `'smooth'`. */
+    function scrollBehavior(): ScrollBehavior {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    }
+
     /**
-     * Scroll a sub-group anchor into view. Called after `selectedSection` has
-     * committed and the section's `onMount` has run; we use a short
-     * `requestAnimationFrame` cycle to wait for the section to render its
-     * `SectionCard`s. If the anchor never appears the scroll silently no-ops;
-     * the deep-link still lands on the right section.
+     * Scroll a deep-link anchor into view. Called after `selectedSection` has
+     * committed and the section's `onMount` has run.
+     *
+     * Two paths:
+     *
+     * - **Shortcut-row anchors** (`shortcut-<commandId>`) live inside the
+     *   Keyboard-shortcuts section's nested `.commands-list` scroller, which the
+     *   outer `contentElement.scrollTo` can't reach. They also may be hidden by a
+     *   leftover filter. So: clear the section's filters, wait for the target row
+     *   to mount, then scroll the inner list and flash the row.
+     * - **Everything else** (the `settings-downloads-notifications` sub-group, …)
+     *   keeps the deliberate `contentElement.scrollTo` path — `handleSectionSelect`
+     *   carries the same comment about avoiding `scrollIntoView` so the outer
+     *   settings layout / drag region doesn't shift.
+     *
+     * `setTimeout(0)` (not `requestAnimationFrame`) defers past the current handler
+     * because the settings window can open without focus in E2E, where macOS
+     * WKWebView throttles rAF — see `docs/testing.md` § "rAF in unfocused windows".
+     * If the anchor never appears the scroll silently no-ops; the deep-link still
+     * lands on the right section.
      */
     function scrollAnchorIntoView(anchorId: string) {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                const target = document.getElementById(anchorId)
-                if (target && contentElement) {
-                    contentElement.scrollTo({
-                        top: target.offsetTop - 16,
-                        behavior: 'smooth',
-                    })
-                }
-            })
-        })
+        const shortcutCommandId = commandIdFromShortcutAnchor(anchorId)
+        if (shortcutCommandId !== null) {
+            void scrollShortcutRowIntoView(anchorId, shortcutCommandId)
+            return
+        }
+        setTimeout(() => {
+            const target = document.getElementById(anchorId)
+            if (target && contentElement) {
+                contentElement.scrollTo({
+                    top: target.offsetTop - 16,
+                    behavior: scrollBehavior(),
+                })
+            }
+        }, 0)
+    }
+
+    /**
+     * Deep-link arrival into a Keyboard-shortcuts row. The sequence is
+     * load-bearing (see the plan's § Deep link timing):
+     *
+     *   1. Clear the section's filters synchronously — a leftover `Modified`
+     *      filter or search query may keep the target row out of the DOM.
+     *   2. `await tick()` — clearing filters mutates `$derived` state
+     *      (`filteredCommands` → `groupedCommands`); the row does NOT exist until
+     *      Svelte flushes.
+     *   3. `setTimeout(0)` — defer past the current handler (and stay off rAF for
+     *      the unfocused-window throttle).
+     *   4. Scroll the nested `.commands-list` to the row and set the flash state.
+     */
+    async function scrollShortcutRowIntoView(anchorId: string, commandId: string) {
+        resetShortcutFilters()
+        await tick()
+        setTimeout(() => {
+            const target = document.getElementById(anchorId)
+            const list = target?.closest('.commands-list')
+            if (target instanceof HTMLElement && list instanceof HTMLElement) {
+                // Scroll the INNER scroller only, so the outer settings layout /
+                // drag region stays put (the outer `contentElement.scrollTo` can't
+                // reach a row inside this overflow container anyway). Compute the
+                // target via the live rect delta rather than `offsetTop`, which is
+                // relative to each element's own `offsetParent` and can differ
+                // between the row and the list. 16 px of breathing room above.
+                const targetTop = list.scrollTop + (target.getBoundingClientRect().top - list.getBoundingClientRect().top)
+                list.scrollTo({
+                    top: Math.max(targetTop - 16, 0),
+                    behavior: scrollBehavior(),
+                })
+            }
+            setPendingShortcutHighlight(commandId)
+        }, 0)
     }
 
     // Handle section selection from sidebar

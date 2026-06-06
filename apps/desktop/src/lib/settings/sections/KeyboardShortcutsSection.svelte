@@ -27,6 +27,13 @@
     } from '$lib/shortcuts'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
+    import { shortcutAnchorId } from '$lib/settings/settings-window'
+    import {
+        getPendingShortcutHighlight,
+        clearPendingShortcutHighlight,
+        registerShortcutFilterReset,
+        unregisterShortcutFilterReset,
+    } from '$lib/settings/pending-shortcut-highlight.svelte'
 
     interface Props {
         searchQuery: string
@@ -60,6 +67,39 @@
         return onShortcutChange(() => {
             shortcutChangeCounter++
         })
+    })
+
+    // Deep-link arrival flash: the settings page sets the target command id in the
+    // shared module (`pending-shortcut-highlight`) after scrolling its row into
+    // view; we read it here to apply the `flash` class, then clear it once the
+    // animation has played out. State-driven (not a direct DOM class) because the
+    // rows re-key on `shortcutChangeCounter` — an imperative class would vanish on
+    // the next re-render. ~1.6 s matches the CSS animation duration.
+    const FLASH_DURATION_MS = 1600
+    const highlightedCommandId = $derived(getPendingShortcutHighlight())
+    $effect(() => {
+        if (highlightedCommandId === null) return
+        const timer = setTimeout(() => {
+            clearPendingShortcutHighlight()
+        }, FLASH_DURATION_MS)
+        return () => {
+            clearTimeout(timer)
+        }
+    })
+
+    // Register a filter resetter so a deep link to a row that a leftover filter
+    // would hide can clear the filters first (the settings page calls this before
+    // its scroll). Unregister on unmount so the page no-ops when the section is gone.
+    function resetFilters() {
+        activeFilter = 'all'
+        localNameSearchQuery = ''
+        keySearchQuery = ''
+    }
+    $effect(() => {
+        registerShortcutFilterReset(resetFilters)
+        return () => {
+            unregisterShortcutFilterReset(resetFilters)
+        }
     })
 
     // Group commands by scope
@@ -468,7 +508,12 @@
                     {@const shortcuts = getEffectiveShortcuts(command.id)}
                     {@const isModified = isShortcutModified(command.id)}
                     {@const hasConflicts = conflictingIds.has(command.id)}
-                    <div class="command-row" class:has-conflicts={hasConflicts}>
+                    <div
+                        id={shortcutAnchorId(command.id)}
+                        class="command-row"
+                        class:has-conflicts={hasConflicts}
+                        class:flash={command.id === highlightedCommandId}
+                    >
                         <div class="command-info">
                             {#if isModified}
                                 <span class="modified-dot" use:tooltip={'Modified from default'}></span>
@@ -711,6 +756,50 @@
 
     .command-row.has-conflicts {
         background: var(--color-warning-bg);
+    }
+
+    /* Deep-link arrival flash: two gentle accent-subtle background pulses so the
+       eye lands on the row the user clicked a shortcut chip to customize. The
+       `border-radius` rounds the highlight so it reads as a deliberate pulse, not
+       a full-bleed row-state change. State-driven via `class:flash` (the row
+       re-keys on `shortcutChangeCounter`, so a direct DOM class wouldn't survive).
+       The settings page clears the state after the animation; the class drops then. */
+    .command-row.flash {
+        border-radius: var(--radius-sm);
+        animation: shortcut-flash 1.5s ease-in-out;
+    }
+
+    @keyframes shortcut-flash {
+        0%,
+        100% {
+            background: transparent;
+        }
+
+        20%,
+        65% {
+            background: var(--color-accent-subtle);
+        }
+
+        42% {
+            background: transparent;
+        }
+    }
+
+    /* Reduced motion: skip the pulses, show a static highlight that fades out once. */
+    @media (prefers-reduced-motion: reduce) {
+        .command-row.flash {
+            animation: shortcut-flash-static 1.5s ease-out;
+        }
+
+        @keyframes shortcut-flash-static {
+            0% {
+                background: var(--color-accent-subtle);
+            }
+
+            100% {
+                background: transparent;
+            }
+        }
     }
 
     .command-info {

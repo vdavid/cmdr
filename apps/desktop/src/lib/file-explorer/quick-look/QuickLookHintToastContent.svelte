@@ -16,13 +16,15 @@
     import { dismissToast } from '$lib/ui/toast'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import { setSetting } from '$lib/settings'
-    import { openSettingsWindow } from '$lib/settings/settings-window'
+    import { openShortcutCustomization } from '$lib/settings/settings-window'
 
     import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
 
     function handleOpenSettings() {
         dismissToast(QUICK_LOOK_HINT_TOAST_ID)
-        void openSettingsWindow(['Keyboard shortcuts'])
+        // Deep-link straight to the Quick Look command's row in Keyboard shortcuts
+        // (scrolled into view + flashed), the first consumer of the deep-link path.
+        void openShortcutCustomization('file.quickLook')
     }
 
     function handleDontShowAgain() {

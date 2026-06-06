@@ -47,6 +47,16 @@ long-lived UI that displays a shortcut (tooltips, hints, the palette, `ShortcutC
 (toasts, context menus) keep calling `getEffectiveShortcuts` directly — a toast deliberately snapshots the binding it
 was created with.
 
+### Deep link to a command's row (`../settings/settings-window.ts`)
+
+A clickable `ShortcutChip` (and any other "customize this shortcut" affordance) deep-links to the command's row in
+Settings > Keyboard shortcuts via `openShortcutCustomization(commandId)`. That helper calls
+`openSettingsWindow(['Keyboard shortcuts'], shortcutAnchorId(commandId))`. The anchor-id convention
+`shortcut-<commandId>` lives as the paired `shortcutAnchorId` / `commandIdFromShortcutAnchor` functions in
+`settings-window.ts` so the writer (the helper) and the readers (the section's row id, the settings page's arrival
+handler) can't drift. The settings side scrolls the row into its nested list and flashes it — see
+[`../settings/sections/CLAUDE.md`](../settings/sections/CLAUDE.md) § "Deep-link arrival".
+
 ### Scope hierarchy (`scope-hierarchy.ts`)
 
 Defines which shortcuts are active in each context:

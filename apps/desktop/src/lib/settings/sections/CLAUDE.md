@@ -102,6 +102,45 @@ Settings AI changes hot-apply because `settings-applier.ts` routes `ai.provider`
 `ai.cloudProviderConfigs` to `ai-config.ts::pushConfigToBackend()`, which re-reads everything fresh. Sections just call
 `setSetting(...)`; don't try to push the AI config from the section component.
 
+### Compound-scope rows don't render in any group
+
+`KeyboardShortcutsSection` groups commands by **exact** `command.scope` match against a fixed `scopes` list
+(`['App', 'Main window', 'File list', …]`). A command whose registry scope is a compound path like
+`'Main window/File list'` (e.g. `file.quickLook`, `file.contextMenu`) matches NEITHER `'Main window'` NOR `'File list'`,
+so it lands in no group and never renders here. A deep link to such a row (`shortcut-file.quickLook`) still opens the
+section, but the scroll silently no-ops because the row element doesn't exist. This is a pre-existing display gap, not
+something the deep-link work introduced; fixing it (group compound scopes under their parent, or widen the match) is
+separate work. The Quick Look toast deep-links to `file.quickLook` anyway because that's the truthful target — when the
+display gap is fixed, it lands on the row with no further change.
+
+## Deep-link arrival into a shortcut row
+
+A clickable `ShortcutChip` (and the Quick Look toast's "Settings > Keyboard shortcuts" link) deep-links to a command's
+row via `openShortcutCustomization(commandId)` (`../settings-window.ts`), which opens
+`openSettingsWindow(['Keyboard shortcuts'], shortcutAnchorId(commandId))`. The arrival behavior lives across three
+files; the pieces are load-bearing in this order:
+
+1. **Row id**: each `.command-row` carries `id={shortcutAnchorId(command.id)}` (i.e. `shortcut-<commandId>`) on the
+   keyed element, so the id survives the `shortcutChangeCounter` re-keying. `GlobalShortcutRow` (the `(global)`
+   go-to-latest hotkey) gets NO anchor — its binding lives in `settings.json`, not the registry, and it isn't a
+   deep-link target.
+2. **Filter clear**: a leftover filter (the `Modified`/`Conflicts` chip, the name search, the key search) can keep the
+   target row out of the DOM. The section registers a resetter via `registerShortcutFilterReset`
+   (`../pending-shortcut-highlight.svelte.ts`); the settings page calls `resetShortcutFilters()` BEFORE it scrolls.
+3. **Scroll the nested list, not the outer content**: the rows live inside `.commands-list`, an `overflow-y: auto`
+   scroller, so `routes/settings/+page.svelte`'s default `contentElement.scrollTo` can't reach them.
+   `scrollAnchorIntoView` branches on `commandIdFromShortcutAnchor`: shortcut anchors scroll the inner `.commands-list`
+   (via the live rect delta, not `offsetTop`), leaving the outer settings layout / drag region put; everything else
+   keeps the old `contentElement.scrollTo` path. The sequence is clear filters → `await tick()` (the row mounts only
+   after Svelte flushes the `$derived` filter state) → `setTimeout(0)` (defer past the handler, and stay off `rAF` for
+   the unfocused-window throttle, see `docs/testing.md`) → scroll + flash.
+4. **Flash**: the page calls `setPendingShortcutHighlight(commandId)`; the section reads it via a `$derived` and applies
+   `class:flash` on the matching row, clearing the state after the ~1.5 s animation. Two gentle `--color-accent-subtle`
+   pulses (a static fade under `prefers-reduced-motion`). State-driven, NOT a direct DOM class: the rows re-key on
+   `shortcutChangeCounter`, so an imperative class would vanish on the next re-render. Both ends import
+   `pending-shortcut-highlight.svelte.ts` (the page writes, the section reads + registers the resetter) so knip doesn't
+   flag either export.
+
 ## Key decisions
 
 ### Section renamed from "Drive indexing" to "File system watching"

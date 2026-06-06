@@ -332,6 +332,84 @@ test.describe('Settings page', () => {
   })
 })
 
+test.describe('Settings keyboard-shortcut deep link', () => {
+  // A clickable `ShortcutChip` opens Settings > Keyboard shortcuts scrolled to a
+  // specific command's row, with a brief flash. `openShortcutCustomization` builds
+  // the URL `/settings?section=["Keyboard shortcuts"]&anchor=shortcut-<commandId>`,
+  // exactly what we create here directly (the same `plugin:webview` IPC the prod
+  // `new WebviewWindow` call uses), so this exercises the settings-side arrival
+  // logic: URL-anchor parse → filter clear → mount the row → scroll the nested
+  // `.commands-list` to it.
+  //
+  // Opened with `focus: false` like prod does in E2E, so this also guards the
+  // unfocused-window rAF-throttle rule (the scroll/flash uses `setTimeout(0)`, not
+  // `requestAnimationFrame`). See `docs/testing.md` § "rAF in unfocused windows".
+
+  let settings: TauriPage
+
+  test.afterEach(async ({ tauriPage }) => {
+    await closeScopedWindow(tauriPage as TauriPage, settings, 'settings')
+  })
+
+  test('lands on Keyboard shortcuts with the target row scrolled into view', async ({ tauriPage }) => {
+    const main = tauriPage as TauriPage
+    // `downloads.goToLatest` is a regular registry row (scope `Main window`) that
+    // lives far enough down the list to need a scroll, so it exercises the nested
+    // `.commands-list` scroll path. (We can't target `file.quickLook` — the Quick
+    // Look toast's deep-link target — because its compound `Main window/File list`
+    // scope keeps it out of the section's scope groups entirely; that's a
+    // pre-existing display bug, see `sections/CLAUDE.md` § "Compound-scope rows
+    // don't render in any group".)
+    const targetAnchor = 'shortcut-downloads.goToLatest'
+    const section = JSON.stringify(['Keyboard shortcuts'])
+    const url = `/settings?section=${encodeURIComponent(section)}&anchor=${encodeURIComponent(targetAnchor)}`
+    const urlJson = JSON.stringify(url)
+
+    await main.evaluate(`(function() {
+        var invoke = window.__TAURI_INTERNALS__.invoke;
+        return invoke('plugin:webview|create_webview_window', {
+            options: {
+                label: 'settings',
+                url: ${urlJson},
+                title: 'Settings',
+                width: 800, height: 600, minWidth: 400, minHeight: 300,
+                resizable: true, focus: false,
+            },
+        });
+    })()`)
+
+    settings = await main.waitForWindow((w) => w.label === 'settings', { timeout: 10000 })
+    await settings.waitForSelector('.settings-window', 3000)
+    // The Keyboard-shortcuts section renders the shortcut table; wait for the
+    // target row to exist (the deep link clears any filter that might hide it).
+    // Attribute selector, not `#id`: the anchor contains a `.` (`downloads.goToLatest`)
+    // which a CSS `#` selector would parse as a class.
+    await settings.waitForSelector(`[id="${targetAnchor}"]`, 3000)
+
+    // The row must be scrolled into the nested `.commands-list` viewport. Poll the
+    // rect comparison: the deep-link scroll defers via `setTimeout(0)`, so the row
+    // may start out of view and settle into it. `expect.poll` makes the wait the
+    // assertion (no bare `pollUntil` that could pass silently on timeout).
+    await expect
+      .poll(
+        () =>
+          settings.evaluate<boolean>(
+            `(function() {
+              var row = document.getElementById(${JSON.stringify(targetAnchor)});
+              var list = row && row.closest('.commands-list');
+              if (!row || !list) return false;
+              var r = row.getBoundingClientRect();
+              var l = list.getBoundingClientRect();
+              // Fully within the inner scroller's viewport (small slack for borders).
+              return r.top >= l.top - 1 && r.bottom <= l.bottom + 1;
+            })()`,
+          ),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
+  })
+})
+
 test.describe('Settings keyboard binding', () => {
   // The shared `closeScopedWindow` helper closes the settings window via
   // `plugin:window|close` from the main page, bypassing the keyboard handler

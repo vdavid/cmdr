@@ -15,7 +15,7 @@ import QuickLookHintToastContent from './QuickLookHintToastContent.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { dismissToast } from '$lib/ui/toast'
 import { setSetting } from '$lib/settings'
-import { openSettingsWindow } from '$lib/settings/settings-window'
+import { openShortcutCustomization } from '$lib/settings/settings-window'
 
 vi.mock('$lib/ui/toast', () => ({
   dismissToast: vi.fn(),
@@ -24,14 +24,14 @@ vi.mock('$lib/settings', () => ({
   setSetting: vi.fn(),
 }))
 vi.mock('$lib/settings/settings-window', () => ({
-  openSettingsWindow: vi.fn(() => Promise.resolve()),
+  openShortcutCustomization: vi.fn(() => Promise.resolve()),
 }))
 
 describe('QuickLookHintToastContent', () => {
   beforeEach(() => {
     vi.mocked(dismissToast).mockClear()
     vi.mocked(setSetting).mockClear()
-    vi.mocked(openSettingsWindow).mockClear()
+    vi.mocked(openShortcutCustomization).mockClear()
   })
 
   it('default render has no a11y violations', async () => {
@@ -69,7 +69,7 @@ describe('QuickLookHintToastContent', () => {
     if (!settingsButton) throw new Error('Settings link missing')
     settingsButton.click()
     expect(dismissToast).toHaveBeenCalledWith('quick-look-hint')
-    expect(openSettingsWindow).toHaveBeenCalledWith(['Keyboard shortcuts'])
+    expect(openShortcutCustomization).toHaveBeenCalledWith('file.quickLook')
     expect(setSetting).not.toHaveBeenCalled()
   })
 
@@ -86,6 +86,6 @@ describe('QuickLookHintToastContent', () => {
     expect(setSetting).toHaveBeenCalledWith('fileExplorer.suppressQuickLookHint', true)
     expect(dismissToast).toHaveBeenCalledWith('quick-look-hint')
     // The settings window should NOT have opened — that's a different action.
-    expect(openSettingsWindow).not.toHaveBeenCalled()
+    expect(openShortcutCustomization).not.toHaveBeenCalled()
   })
 })
