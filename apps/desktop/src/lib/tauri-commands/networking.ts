@@ -320,6 +320,31 @@ export async function upgradeToSmbVolume(volumeId: string): Promise<UpgradeResul
 }
 
 /**
+ * Whether the system (login) keychain holds a password another app (Finder) saved for
+ * this volume's SMB server. Attribute-only probe — never triggers the macOS consent
+ * dialog — so the UI can decide whether to offer "use the saved password". Best-effort:
+ * any error resolves to `false` (the offer simply doesn't appear). macOS only; `false`
+ * elsewhere.
+ */
+export async function systemHasSavedSmbPassword(volumeId: string): Promise<boolean> {
+  const res = await commands.systemHasSavedSmbPassword(volumeId)
+  return res.status === 'ok' ? res.data : false
+}
+
+/**
+ * Upgrades an OS-mounted SMB volume to direct smb2 using the password Finder already
+ * saved in the login keychain. Reading it triggers the macOS consent dialog (prime the
+ * user first). On success the password is copied into Cmdr's own store so future
+ * reconnects are silent; if nothing is saved or the user denies, the result is
+ * `credentialsNeeded` so the caller falls back to the login form.
+ */
+export async function upgradeToSmbVolumeUsingSavedPassword(volumeId: string): Promise<UpgradeResult> {
+  const res = await commands.upgradeToSmbVolumeUsingSavedPassword(volumeId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
  * Upgrades an SMB volume using explicit credentials from the login form.
  */
 export async function upgradeToSmbVolumeWithCredentials(

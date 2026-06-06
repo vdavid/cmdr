@@ -5,8 +5,11 @@
         getIpcErrorMessage,
         resolvePathVolume,
         upgradeToSmbVolume,
+        systemHasSavedSmbPassword,
+        upgradeToSmbVolumeUsingSavedPassword,
         type UpgradeResult,
     } from '$lib/tauri-commands'
+    import { ask } from '@tauri-apps/plugin-dialog'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
@@ -395,6 +398,9 @@
                 addToast('Connected directly for faster access', { level: 'success' })
                 requestVolumeRefresh()
             } else if (result.status === 'credentialsNeeded') {
+                // Before asking the user to type a password, see if macOS/Finder already
+                // saved one for this share (prompt-free probe). If so, offer to reuse it.
+                if (await tryUseSavedPassword(vid, result.displayName)) return
                 onSmbUpgradeLogin?.(result, vid)
             } else {
                 addToast(`Direct connection failed: ${result.message}`, { level: 'error' })
@@ -402,6 +408,47 @@
         } catch (e) {
             dismissToast(connectingToastId)
             addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })
+        }
+    }
+
+    /**
+     * If macOS/Finder already saved a password for this share, offer to reuse it (so the
+     * user doesn't retype it). A prompt-free probe decides whether to offer; on "Use
+     * saved password" we prime the user (the macOS Keychain consent dialog comes next,
+     * and we can't customize its text) then read+connect. Returns `true` when it fully
+     * handled the connection (connected, or the saved password was absent/denied/failed
+     * and we routed to the login form), so the caller skips its own login-form trigger.
+     * Returns `false` when there's nothing saved or the user chose to type it instead.
+     */
+    async function tryUseSavedPassword(vid: string, displayName: string): Promise<boolean> {
+        if (!(await systemHasSavedSmbPassword(vid))) return false
+
+        const useSaved = await ask(
+            `Cmdr can reuse the password macOS already saved for "${displayName}". You'll see a system prompt asking to allow Keychain access — that's expected; click Allow.`,
+            { title: 'Use the saved password?', kind: 'info', okLabel: 'Use saved password', cancelLabel: 'Enter it instead' },
+        )
+        if (!useSaved) return false
+
+        const savedToastId = addToast('Connecting with the saved password...', { dismissal: 'persistent' })
+        try {
+            const r = await upgradeToSmbVolumeUsingSavedPassword(vid)
+            dismissToast(savedToastId)
+            if (r.status === 'success') {
+                addToast('Connected directly for faster access', { level: 'success' })
+                requestVolumeRefresh()
+                return true
+            }
+            if (r.status === 'credentialsNeeded') {
+                // Saved password was absent/denied/wrong — fall to the login form.
+                onSmbUpgradeLogin?.(r, vid)
+                return true
+            }
+            addToast(`Direct connection failed: ${r.message}`, { level: 'error' })
+            return true
+        } catch (e) {
+            dismissToast(savedToastId)
+            addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })
+            return true
         }
     }
 

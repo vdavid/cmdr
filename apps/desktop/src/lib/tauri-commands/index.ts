@@ -153,6 +153,8 @@ export {
   mountNetworkShare,
   upgradeToSmbVolume,
   upgradeToSmbVolumeWithCredentials,
+  systemHasSavedSmbPassword,
+  upgradeToSmbVolumeUsingSavedPassword,
   reconnectSmbVolume,
   reconnectSmbVolumeWithCredentials,
   disconnectSmbVolume,

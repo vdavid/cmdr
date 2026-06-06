@@ -177,9 +177,14 @@ SMB volumes with an active `SmbVolume` in the backend carry `smbConnectionState:
 renders a small colored circle (green = direct smb2 session, yellow = OS mount fallback) both in the dropdown and in the
 closed breadcrumb label. Yellow state has a submenu trigger in the dropdown and a clickable button (circle + down arrow)
 in the breadcrumb, both opening a "Connect directly for faster access" menu item. Clicking it calls `upgradeToSmbVolume`
-which tries stored credentials first; if none found or they fail, the backend returns `credentialsNeeded` and the
-`onSmbUpgradeLogin` callback triggers `FilePane` to show `NetworkLoginForm` inline (same pattern as `ShareBrowser`).
-Submenu supports full keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
+which tries stored credentials first; if none found or they fail, the backend returns `credentialsNeeded`. Before
+showing the login form, `tryUseSavedPassword` runs a prompt-free probe (`systemHasSavedSmbPassword`): if macOS/Finder
+already saved a password for this share, it offers to reuse it via a native primer dialog ("Use the saved password?" —
+the cushion before the system Keychain consent dialog, whose own text we can't customize). On "Use saved password" it
+calls `upgradeToSmbVolumeUsingSavedPassword` (consent read → direct smb2 → copied into Cmdr's store); on "Enter it
+instead", a denied consent, or no saved password, it falls through to the `onSmbUpgradeLogin` callback that triggers
+`FilePane` to show `NetworkLoginForm` inline (same pattern as `ShareBrowser`). Submenu supports full keyboard navigation
+(ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
 
 ### Eject button + context-menu item
 
