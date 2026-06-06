@@ -306,10 +306,19 @@ Intent: honest coverage given that the Finder leg cannot be automated.
 
 ## Open decisions (flagged, with proposed defaults)
 
-1. **Folder promises in v1** — include only if M0 #2 verifies cleanly AND the hand-rolled recursion stays small; else
-   file-only v1 (multi-select still works) with folders as a fast-follow.
-2. **Large-fulfillment progress surface** — toast vs. indicator vs. (with Cancel) a minimal progress strip; decide in M3
-   under the "signs of life within ~1 s" constraint.
+1. **Folder promises in v1** — RESOLVED (M0): yes. Finder accepts a `public.folder` promise and hands us a directory
+   destination URL; the fulfillment service populates it with the plan's hand-rolled recursive walk. Multi-select and
+   folders both work.
+2. **Large-fulfillment progress surface** — RESOLVED (M3): a single per-SESSION toast keyed by the drag sequence number,
+   replaced in place from signs-of-life to completion. When the FIRST fulfillment begins (Finder asked), a neutral
+   `default`-level persistent in-progress toast ("Copying N items from your device…") appears within ~1 s — the
+   signs-of-life affordance, honest because it reflects real in-flight work rather than a guessed size threshold (MTP is
+   serial-USB slow regardless of size). When the session drains, the same toast is replaced by a `success` completion
+   toast ("Copied 2 files and 1 folder.", via the shared transfer-toast composer) or a `warn`/`error` failure toast
+   naming the file(s). No Cancel button, so v1 stays no-user-cancel (Finder owns the gesture — Scope). Rejected the
+   size-thresholded "big drags only" surface (a threshold is a guess; the in-progress toast is cheap and always honest)
+   and a bespoke progress strip (no real progress signal short of per-byte plumbing we don't need in v1). Lives in
+   `native_drag/session_summary.rs` (BE fold) + `lib/file-explorer/drag/drag-out-event-bridge.ts` (FE toasts).
 
 ## Execution notes
 

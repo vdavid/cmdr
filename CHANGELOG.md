@@ -18,6 +18,9 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   [07877792](https://github.com/vdavid/cmdr/commit/07877792))
 - Block ejecting a volume while a copy, move, or delete is touching it
   ([fe2a0987](https://github.com/vdavid/cmdr/commit/fe2a0987))
+- Drag files and folders from your phone or NAS straight to Finder or the Desktop. Cmdr downloads them on drop, under
+  the name Finder picks, the same gesture Photos and Mail already use. Multi-select and whole folders work, and a toast
+  keeps you posted while the download runs
 
 ### Changed
 
@@ -41,8 +44,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Dragging a file from a phone or network pane out to Finder, the Desktop, or a terminal no longer drops a junk
-  `.textClipping` file (or pastes a meaningless path). The drag just does nothing outside Cmdr for now, and still works
-  as before inside Cmdr
+  `.textClipping` file or pastes a meaningless path. Finder and the Desktop now download the real file (see Added);
+  terminals and apps that can't take the download get a clean no-op instead of garbage
 - Resolve conflicts file by file inside a folder merge on network and phone drives (SMB, MTP, and cross-volume). A newer
   file deep in the tree no longer loses to an older one behind a single folder-level OK; each clashing file follows your
   conflict choice ([6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))

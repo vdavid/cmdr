@@ -100,14 +100,28 @@ impl VolumeResolver for RegistryResolver {
     }
 }
 
+/// What a successful fulfillment produced, so the session-summary accounting can
+/// split the completion toast by kind ("Copied 2 files and 1 folder.").
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FulfillOutcome {
+    /// Whether the dragged item was a directory (recursively downloaded) vs a
+    /// single file.
+    pub is_dir: bool,
+}
+
 /// Fulfills one dragged item: downloads `source_path` from the volume identified
 /// by `source_volume_id` to the exact `dest_path` Finder supplied.
 ///
 /// Marks the source volume busy for the eject guard for the whole transfer
-/// (released on every exit via an RAII guard). Returns `Ok(())` on success; on
-/// any failure removes the partial/created destination and returns a
-/// [`FulfillError`] carrying friendly copy.
-pub async fn fulfill(source_volume_id: &str, source_path: &Path, dest_path: &Path) -> Result<(), FulfillError> {
+/// (released on every exit via an RAII guard). Returns the resolved
+/// [`FulfillOutcome`] (file vs folder) on success; on any failure removes the
+/// partial/created destination and returns a [`FulfillError`] carrying friendly
+/// copy.
+pub async fn fulfill(
+    source_volume_id: &str,
+    source_path: &Path,
+    dest_path: &Path,
+) -> Result<FulfillOutcome, FulfillError> {
     fulfill_with_resolver(&RegistryResolver, source_volume_id, source_path, dest_path).await
 }
 
@@ -138,7 +152,7 @@ pub(crate) async fn fulfill_with_resolver(
     source_volume_id: &str,
     source_path: &Path,
     dest_path: &Path,
-) -> Result<(), FulfillError> {
+) -> Result<FulfillOutcome, FulfillError> {
     let Some(volume) = resolver.resolve(source_volume_id) else {
         // The source vanished between drag-start and fulfillment.
         let err = VolumeError::DeviceDisconnected(format!("Volume '{source_volume_id}' is no longer available"));
@@ -181,7 +195,7 @@ pub(crate) async fn fulfill_with_resolver(
             err.friendly.title
         );
     }
-    result
+    result.map(|()| FulfillOutcome { is_dir })
 }
 
 /// Streams one source file to the EXACT `dest_path`. On any error, removes the
@@ -349,9 +363,10 @@ mod tests {
         let dest = dest_dir.path().join("sunset 2.jpg");
 
         let resolver = FixedResolver(Some(v));
-        fulfill_with_resolver(&resolver, "phone", Path::new("/DCIM/photo-001.jpg"), &dest)
+        let outcome = fulfill_with_resolver(&resolver, "phone", Path::new("/DCIM/photo-001.jpg"), &dest)
             .await
             .expect("fulfillment should succeed");
+        assert!(!outcome.is_dir, "a single file fulfillment reports is_dir = false");
 
         assert!(dest.exists(), "file must land at the exact Finder leaf");
         assert_eq!(std::fs::read(&dest).unwrap(), b"sunset bytes");
@@ -521,9 +536,10 @@ mod tests {
         let dest = dest_dir.path().join("DCIM copy");
 
         let resolver = FixedResolver(Some(v));
-        fulfill_with_resolver(&resolver, "phone", Path::new("/DCIM"), &dest)
+        let outcome = fulfill_with_resolver(&resolver, "phone", Path::new("/DCIM"), &dest)
             .await
             .expect("folder fulfillment should succeed");
+        assert!(outcome.is_dir, "a folder fulfillment reports is_dir = true");
 
         assert!(dest.is_dir(), "the dest folder must land under the Finder leaf");
         assert_eq!(std::fs::read(dest.join("a.jpg")).unwrap(), b"aaa");

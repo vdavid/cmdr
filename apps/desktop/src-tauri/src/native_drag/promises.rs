@@ -82,13 +82,63 @@ use objc2::runtime::ProtocolObject;
 use objc2::{AllocAnyThread, DefinedClass, MainThreadMarker, define_class, msg_send};
 use objc2_app_kit::{NSFilePromiseProvider, NSFilePromiseProviderDelegate};
 use objc2_foundation::{NSError, NSObject, NSObjectProtocol, NSOperationQueue, NSString, NSURL};
-use tauri::AppHandle;
+use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter};
 
+use super::session_summary::{ItemOutcome, SessionSummary, summarize};
 use crate::ignore_poison::IgnorePoison;
 
 /// The `NSError` domain for a drag-out fulfillment failure. Finder reads
 /// `localizedDescription` and shows its own alert.
 const ERROR_DOMAIN: &str = "com.veszelovszki.cmdr.drag-out";
+
+/// Tauri event names for the FE toast bridge (see `lib/file-explorer/drag/`).
+/// Plain untyped Tauri events with FE-mirrored payloads, the same pattern the
+/// downloads watcher uses for `download-detected`.
+const SESSION_STARTED_EVENT: &str = "drag-out-session-started";
+const SESSION_COMPLETE_EVENT: &str = "drag-out-session-complete";
+
+/// Payload for `drag-out-session-started`: the FE raises a signs-of-life
+/// in-progress toast when the FIRST fulfillment begins, so a big/slow (MTP is
+/// serial USB) drag doesn't feel hung while Finder shows nothing. `total_items`
+/// is the top-level dragged-item count, so the toast can read "Copying 3 items…".
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionStartedEvent {
+    /// The drag sequence key, so the FE can key its in-progress toast and replace
+    /// it in place with the completion toast under the same id.
+    pub session_key: i64,
+    /// Top-level dragged items in this session.
+    pub total_items: usize,
+}
+
+/// Payload for `drag-out-session-complete`: the FE replaces the in-progress
+/// toast with a completion (success) or failure toast. Carries the same
+/// `session_key` so the replacement lands on the right toast, plus the folded
+/// per-item outcome counts.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionCompleteEvent {
+    /// The drag sequence key (matches the started event's key).
+    pub session_key: i64,
+    /// Top-level files that landed successfully.
+    pub files_succeeded: usize,
+    /// Top-level folders that landed successfully.
+    pub folders_succeeded: usize,
+    /// Leaf names of items that failed (empty on full success).
+    pub failures: Vec<String>,
+}
+
+impl SessionCompleteEvent {
+    fn from_summary(session_key: isize, summary: SessionSummary) -> Self {
+        Self {
+            session_key: session_key as i64,
+            files_succeeded: summary.files_succeeded,
+            folders_succeeded: summary.folders_succeeded,
+            failures: summary.failures,
+        }
+    }
+}
 
 // ============================================================================
 // Global app handle (for dispatching cleanup back to the main thread)
@@ -122,6 +172,15 @@ fn run_on_main(f: impl FnOnce() + Send + 'static) {
 struct SessionCounters {
     gesture_ended: bool,
     in_flight: usize,
+    /// Top-level dragged items in this session (seeded at provider build). Lets
+    /// the started-toast read "Copying N items…" before any item finishes.
+    total_items: usize,
+    /// Whether the `drag-out-session-started` event already fired (the FIRST
+    /// fulfillment to enter emits it; later ones don't re-emit).
+    started_emitted: bool,
+    /// Per-item outcomes, recorded as each fulfillment finishes. Folded into the
+    /// `drag-out-session-complete` payload when the session drains.
+    outcomes: Vec<ItemOutcome>,
 }
 
 /// Per-session `Send` bookkeeping, keyed by drag sequence number.
@@ -170,26 +229,31 @@ fn with_retained_store<R>(f: impl FnOnce(&mut HashMap<isize, SessionObjects>) ->
 }
 
 /// Frees a session's retained objects if its counters say the gesture has ended
-/// and no fulfillment is in flight. Dispatches the actual removal to the main
-/// thread. Idempotent: a missing session is a no-op.
+/// and no fulfillment is in flight, AFTER emitting the completion toast event.
+/// Dispatches the actual removal to the main thread. Idempotent: a missing
+/// session is a no-op.
 fn maybe_free_session(key: isize) {
-    let should_free = {
+    let drained = {
         let map = counters().lock_ignore_poison();
         map.get(&key)
             .map(|c| c.gesture_ended && c.in_flight == 0)
             .unwrap_or(false)
     };
-    if should_free {
-        // Remove the counters now (cheap, Send) so a late duplicate trigger
-        // can't double-dispatch; free the retained objects on main.
-        counters().lock_ignore_poison().remove(&key);
-        run_on_main(move || {
-            let removed = with_retained_store(|store| store.remove(&key).is_some());
-            if removed {
-                log::debug!(target: "drag_out", "session {key} freed (gesture ended, fulfillments drained)");
-            }
-        });
+    if !drained {
+        return;
     }
+    // Remove the counters now (cheap, Send) so a late duplicate trigger can't
+    // double-dispatch. Take the recorded outcomes with it for the toast.
+    let outcomes = counters().lock_ignore_poison().remove(&key).map(|c| c.outcomes);
+    if let Some(outcomes) = outcomes {
+        emit_session_complete(key, &outcomes);
+    }
+    run_on_main(move || {
+        let removed = with_retained_store(|store| store.remove(&key).is_some());
+        if removed {
+            log::debug!(target: "drag_out", "session {key} freed (gesture ended, fulfillments drained)");
+        }
+    });
 }
 
 /// Marks a session's gesture as ended (from the drag source's
@@ -200,21 +264,71 @@ pub(super) fn mark_gesture_ended(key: isize) {
     maybe_free_session(key);
 }
 
-/// Bumps the in-flight fulfillment count (on `writePromiseToURL` entry).
+/// Bumps the in-flight fulfillment count (on `writePromiseToURL` entry). The
+/// FIRST fulfillment to enter a session emits `drag-out-session-started` so the
+/// FE can raise the signs-of-life in-progress toast before any byte lands.
 fn enter_fulfillment(key: isize) {
-    counters().lock_ignore_poison().entry(key).or_default().in_flight += 1;
+    let started = {
+        let mut map = counters().lock_ignore_poison();
+        let c = map.entry(key).or_default();
+        c.in_flight += 1;
+        if c.started_emitted {
+            None
+        } else {
+            c.started_emitted = true;
+            Some(c.total_items)
+        }
+    };
+    if let Some(total_items) = started {
+        emit_session_started(key, total_items);
+    }
 }
 
-/// Drops the in-flight count after a fulfillment completes. If that was the last
-/// in-flight fulfillment and the gesture already ended, frees the session.
-fn leave_fulfillment(key: isize) {
+/// Records a finished fulfillment's outcome and drops the in-flight count. If
+/// that was the last in-flight fulfillment and the gesture already ended, the
+/// completion toast fires and the session frees.
+fn leave_fulfillment(key: isize, outcome: ItemOutcome) {
     {
         let mut map = counters().lock_ignore_poison();
         if let Some(c) = map.get_mut(&key) {
             c.in_flight = c.in_flight.saturating_sub(1);
+            c.outcomes.push(outcome);
         }
     }
     maybe_free_session(key);
+}
+
+/// Emits `drag-out-session-started` to the main window. A no-op (with a warn)
+/// if the app handle isn't set or the emit fails — the toast is best-effort and
+/// never blocks fulfillment.
+fn emit_session_started(key: isize, total_items: usize) {
+    let Some(app) = APP_HANDLE.get() else {
+        return;
+    };
+    let payload = SessionStartedEvent {
+        session_key: key as i64,
+        total_items,
+    };
+    if let Err(e) = app.emit(SESSION_STARTED_EVENT, &payload) {
+        log::warn!(target: "drag_out", "failed to emit {SESSION_STARTED_EVENT}: {e}");
+    }
+}
+
+/// Emits `drag-out-session-complete` with the folded summary. Skips the emit
+/// entirely for an empty session (the user dropped on a non-Finder target, so
+/// nothing was ever fulfilled) — no toast for a clean no-op.
+fn emit_session_complete(key: isize, outcomes: &[ItemOutcome]) {
+    let summary = summarize(outcomes);
+    if summary.is_empty() {
+        return;
+    }
+    let Some(app) = APP_HANDLE.get() else {
+        return;
+    };
+    let payload = SessionCompleteEvent::from_summary(key, summary);
+    if let Err(e) = app.emit(SESSION_COMPLETE_EVENT, &payload) {
+        log::warn!(target: "drag_out", "failed to emit {SESSION_COMPLETE_EVENT}: {e}");
+    }
 }
 
 // ============================================================================
@@ -303,26 +417,33 @@ define_class!(
 
             // Block the (serial, ours) queue thread on the async service. The
             // service never hops to the main thread, so this can't deadlock.
-            let outcome = tauri::async_runtime::block_on(super::fulfillment::fulfill(
+            let result = tauri::async_runtime::block_on(super::fulfillment::fulfill(
                 &ivars.source_volume_id,
                 &ivars.source_path,
                 &dest,
             ));
 
-            match outcome {
-                Ok(()) => {
-                    // null NSError signals success.
+            // Record the per-item outcome for the session-complete toast, then
+            // signal Finder (null NSError = success; a mapped NSError = failure).
+            let item_outcome = match result {
+                Ok(fulfilled) => {
                     completion_handler.call((std::ptr::null_mut(),));
+                    ItemOutcome::Succeeded {
+                        is_dir: fulfilled.is_dir,
+                    }
                 }
                 Err(err) => {
                     let ns_error = build_ns_error(&err);
                     // `into_raw` hands ownership to the completion block /
                     // Finder (which releases it). NOT a leak.
                     completion_handler.call((Retained::into_raw(ns_error),));
+                    ItemOutcome::Failed {
+                        leaf: ivars.leaf.clone(),
+                    }
                 }
-            }
+            };
 
-            leave_fulfillment(key);
+            leave_fulfillment(key, item_outcome);
         }
 
         /// Returns the shared serial queue for this provider's session.
@@ -393,6 +514,7 @@ pub(super) fn build_session_providers(
     items: Vec<PromiseItem>,
 ) -> Vec<Retained<NSFilePromiseProvider>> {
     let queue = fresh_serial_queue();
+    let total_items = items.len();
 
     let mut providers = Vec::with_capacity(items.len());
     let mut delegates = Vec::with_capacity(items.len());
@@ -414,8 +536,13 @@ pub(super) fn build_session_providers(
         delegates.push(delegate);
     }
 
-    // Seed the counters and stash the retained objects (we're on main).
-    counters().lock_ignore_poison().entry(session_key).or_default();
+    // Seed the counters (recording the top-level item count for the started
+    // toast) and stash the retained objects (we're on main).
+    counters()
+        .lock_ignore_poison()
+        .entry(session_key)
+        .or_default()
+        .total_items = total_items;
     with_retained_store(|store| {
         store.insert(
             session_key,
@@ -571,10 +698,38 @@ mod tests {
         );
 
         // The last fulfillment finishing frees the counters.
-        leave_fulfillment(key);
+        leave_fulfillment(key, ItemOutcome::Succeeded { is_dir: false });
         assert!(
             !counters().lock_ignore_poison().contains_key(&key),
             "the last fulfillment finishing after gesture-end must free the session"
+        );
+    }
+
+    #[test]
+    fn outcomes_accumulate_until_the_session_drains() {
+        let key = 999_003isize;
+        counters().lock_ignore_poison().entry(key).or_default().total_items = 2;
+
+        // Two fulfillments in flight; each records its outcome on leave.
+        enter_fulfillment(key);
+        enter_fulfillment(key);
+        leave_fulfillment(key, ItemOutcome::Succeeded { is_dir: false });
+
+        // After one leaves, the session is still alive (gesture not ended) and
+        // carries one recorded outcome.
+        {
+            let map = counters().lock_ignore_poison();
+            let c = map.get(&key).expect("session still alive");
+            assert_eq!(c.outcomes.len(), 1);
+            assert_eq!(c.in_flight, 1);
+        }
+
+        // The second leaves and the gesture ends: session drains and frees.
+        leave_fulfillment(key, ItemOutcome::Failed { leaf: "x.jpg".into() });
+        mark_gesture_ended(key);
+        assert!(
+            !counters().lock_ignore_poison().contains_key(&key),
+            "session frees once both fulfillments drained and the gesture ended"
         );
     }
 

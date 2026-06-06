@@ -49,6 +49,10 @@ terminals (which only accept Copy).
 Key files:
 
 - `drag-drop.ts`: Mouse tracking, threshold detection, drag initiation
+- `drag-out-event-bridge.ts`: Subscribes to the backend's `drag-out-session-started` / `drag-out-session-complete`
+  events and turns each drag SESSION into one signs-of-life → completion toast (mounted from `(main)/+page.svelte`)
+- `drag-out-toast.ts`: Pure `composeDragOutCompleteToast(payload)` — success counts via the shared transfer-toast
+  composer, failure toast naming the file(s). Unit-tested
 - `drag-image-renderer.ts`: Canvas rendering for rich OS drag preview (retina-aware, fading edges)
 - `commands/file_system/drag.rs`: `start_drag_paths` and `start_selection_drag` Tauri commands; both hop to the AppKit
   main thread before calling into `native_drag::start_drag`
@@ -110,20 +114,30 @@ round-trip entirely.
 External drops (no in-flight self-drag) keep the resolver path: their paths are genuine local absolute paths from Finder
 et al.
 
-### Drag-out of a non-local pane to external apps (clean no-op, promises pending)
+### Drag-out of a non-local pane to external apps (file promises — downloads on drop)
 
-Dragging a file from an MTP / SMB pane OUT to Finder or another external app publishes an EMPTY pasteboard item (no
-file-url, no text, no filenames — see the locality-aware layout above). So the external drop is a clean no-op: Finder
-makes nothing, a terminal inserts nothing. No more `.textClipping` junk file (the old layout published a bogus
-volume-relative `file://` URL plus a path string, and Finder materialized the string into
-`photos:sunset.jpg.textClipping`).
+Dragging a file or folder from an MTP / SMB pane OUT to Finder or the Desktop **downloads it there**, under the exact
+filename the destination chose (Finder uniquifies collisions, "sunset 2.jpg", and we honor that leaf). Each dragged item
+carries an `NSFilePromiseProvider` instead of a `file://` URL: the provider promises Finder "I'll produce this file's
+bytes when you ask," and Finder asks by calling our delegate's `writePromiseToURL:` on drop, which streams the real
+bytes off the device into the Finder-chosen destination. Multi-select works; folders download recursively. The drag
+image and count badge are unaffected (one `NSDraggingItem` per item; `setDraggingFrame:contents:` is writer-agnostic).
+The promise machinery, delegate, fulfillment service, and the M3 completion toasts live in
+[`src-tauri/src/native_drag/CLAUDE.md`](../../../src-tauri/src/native_drag/CLAUDE.md).
 
-- **In-app drops are unaffected** — they use the recorded self-drag identity above, NOT the pasteboard paths, and the M0
-  spike verified the empty-pasteboard layout still fires wry's drop event (empty path vec, no panic). So a virtual
-  self-drag still works.
-- **External drops can't download yet.** Making a drop into Finder/Desktop actually download the bytes needs an
-  `NSFilePromiseProvider` per item (streams bytes on drop via `writePromiseToURL:`). That's the next milestone; the
-  empty layout here is its safe precursor (nothing materializable until the promise writer lands).
+- **No more `.textClipping` junk file.** A virtual session advertises NO materializable representations besides the
+  promise (no file-url, no text, no filenames), so an app that accepts neither promises nor our remaining types makes a
+  clean no-op instead of the old garbage. The old layout published a bogus volume-relative `file://` URL plus a path
+  string, and Finder materialized the string into `photos:sunset.jpg.textClipping`.
+- **Terminals get no text from a virtual pane.** A volume-relative path is meaningless outside Cmdr, so virtual sessions
+  intentionally publish no `public.utf8-plain-text` — dropping a phone file into Warp inserts nothing. Local-pane drags
+  keep the terminal-text affordance.
+- **In-app drops are unaffected** — they use the recorded self-drag identity above, NOT the pasteboard paths, and the
+  promise-only layout still fires wry's drop event (empty path vec, no panic). So a virtual self-drag still works. The
+  promise is fulfilled only when an EXTERNAL consumer (Finder) asks, so it never touches in-app behavior.
+- **Completion feedback.** Finder shows nothing while a promise downloads, so Cmdr surfaces a signs-of-life in-progress
+  toast when fulfillment starts and a completion (or failure) toast when the session drains — one toast per drag
+  SESSION, not per file. See the native_drag doc § "Completion toasts (M3)".
 
 Drop preparation runs through the shared transfer entry seam (`pane/transfer-entry.ts`), the SAME path F5/F6 and
 clipboard paste use, so all three entry points prepare a transfer identically. On drop,
@@ -185,8 +199,9 @@ Key files:
     `NSDragOperationCopy`, so a Move-only source mask makes them reject the drop entirely. For a LOCAL session our
     version advertises file-URL + shell-escaped text + legacy filenames per the layout above, and always publishes a
     permissive op mask. Finder/IntelliJ behavior is unchanged (they read file URLs); terminals get working text drops;
-    macOS modifier keys arbitrate the operation natively. For a VIRTUAL session it advertises an empty item (see the
-    locality-aware layout above), so an external drop can't materialize garbage.
+    macOS modifier keys arbitrate the operation natively. For a VIRTUAL session each item carries an
+    `NSFilePromiseProvider` and no legacy types (see the locality-aware layout above), so an external drop downloads the
+    real bytes instead of materializing garbage.
 - **Decision**: Modifier keys tracked via NSEvent.modifierFlags
   - **Why**: Tauri doesn't expose modifier state in DragDropEvent. Emits `drag-modifiers` event only when state changes.
 - **Decision**: Drop operation follows Finder's volume-aware default plus Alt/Cmd/Shift modifiers

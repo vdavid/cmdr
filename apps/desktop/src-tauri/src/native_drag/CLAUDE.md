@@ -15,7 +15,8 @@ The whole module is `#[cfg(target_os = "macos")]`.
 | `type_plan.rs` | Pure, locality-aware pasteboard composition (`plan_pasteboard_items`). Local = file-url + text + filenames; virtual = empty (the textClipping fix). Unit-tested policy. |
 | `source.rs` | `CmdrDragSource` (`define_class!`, `MainThreadOnly`): the `NSDraggingSource`. Returns the permissive operation mask and, on `draggingSession:endedAtPoint:operation:`, tells the promise machinery the gesture ended so a virtual session's objects can be freed. |
 | `promises.rs` | The file-promise providers + delegate (`CmdrPromiseDelegate`), the shared serial queue, the session-lifetime storage, and the `NSError` mapping. |
-| `fulfillment.rs` | The plain-Rust fulfillment service: downloads a virtual file to the Finder-chosen destination. NO AppKit; unit-testable. |
+| `fulfillment.rs` | The plain-Rust fulfillment service: downloads a virtual file to the Finder-chosen destination. NO AppKit; unit-testable. Returns a `FulfillOutcome { is_dir }` so the session summary can split the completion toast by kind. |
+| `session_summary.rs` | Pure per-session outcome accounting (`ItemOutcome`, `SessionSummary`, `summarize`). Folds per-item outcomes into the top-level file/folder/failure counts the completion toast reads. NO AppKit, NO Tauri; unit-tested in isolation. |
 | `uti.rs` | Pure filename-extension → UTI mapping for promise providers (`public.jpeg`, …, fallback `public.data`; folders `public.folder`). |
 
 ## How drag-out works
@@ -106,6 +107,31 @@ runtime and the source `VolumeReadStream` (MTP's `Drop` cancels the USB transfer
 producer); a device disconnect surfaces as a `next_chunk` read error. Either way the cleanup contract
 removes the partial. No explicit teardown hook is needed beyond the existing runtime shutdown.
 
+### Completion toasts (M3)
+
+Finder shows nothing while a promise downloads, so Cmdr is the only feedback surface. The session storage emits two
+plain Tauri events (FE-mirrored payloads, same pattern as the downloads watcher's `download-detected` — no specta
+binding), turned into ONE toast per drag SESSION by `lib/file-explorer/drag/drag-out-event-bridge.ts`:
+
+- **`drag-out-session-started`** — emitted by `enter_fulfillment` the FIRST time a session's fulfillment begins (Finder
+  asked). Carries `total_items`. This is the **signs-of-life affordance**: the FE raises a neutral `default`-level
+  persistent in-progress toast ("Downloading 3 items…") within ~1 s, so a multi-GB / slow MTP drag doesn't feel hung. No Cancel button — v1 stays no-user-cancel (Finder owns the gesture; see the plan's Scope). The trigger is
+  fulfillment-start, not drag-start, because a drag the user drops back into Cmdr never fulfills and must show nothing.
+- **`drag-out-session-complete`** — emitted when the session DRAINS (gesture ended AND `in_flight == 0`), carrying the
+  folded `SessionSummary` (top-level `files_succeeded` / `folders_succeeded` / `failures` leaf names). The FE replaces
+  the in-progress toast in place (same `drag-out:<sessionKey>` id) with the completion toast: success counts via the
+  shared `composeTransferCompleteToast` ("Copied 2 files and 1 folder."), or a failure toast naming the file(s). A clean
+  no-op session (dropped on a non-Finder target, nothing ever fulfilled) summarizes to empty and emits NO event — no
+  toast.
+
+**Counts are top-level dragged items**, consistent with the selection-split contract: one dragged folder counts as one
+folder regardless of how many files land inside it. The delegate records each item's `ItemOutcome` (success + `is_dir`,
+or failure + leaf) on the queue thread via `leave_fulfillment`; the drain point folds them with `session_summary::summarize`.
+
+**Failure complements Finder, not duplicates it.** Finder shows its own NSError alert per failed item (see NSError
+mapping below). Our failure toast names the file and leans on Finder for the technical detail (the friendly copy already
+rode the `FriendlyError` pipeline). Mirrors the transfer-failure pattern.
+
 ## NSError mapping
 
 A `FulfillError` carries a rendered `FriendlyError`. The delegate maps it to an `NSError` in domain
@@ -121,8 +147,11 @@ quiet; a real failure uses code 1 and shows the title.
   cleanup, and the busy-volume seam (drive a blocking stream, assert busy during + released after).
 - `uti.rs`: extension → UTI mapping units.
 - `promises.rs`: delegate smoke (construct a provider, `fileNameForType` returns the leaf), NSError
-  domain/title/code mapping, and the COUNTERS session-lifetime state machine. The AppKit-touching
-  tests guard on `MainThreadMarker::new()` and skip off-main (nextest runs tests on worker threads).
+  domain/title/code mapping, and the COUNTERS session-lifetime state machine (incl. outcome
+  accumulation across in-flight fulfillments). The AppKit-touching tests guard on
+  `MainThreadMarker::new()` and skip off-main (nextest runs tests on worker threads).
+- `session_summary.rs`: the pure outcome fold (empty/no-toast, single file, mixed file+folder split,
+  failures recording leaf names, all-failed still surfaces a toast).
 - `type_plan.rs`: the pure pasteboard policy (local byte-identical, virtual empty across every item).
 
 The Finder leg itself can't be automated honestly (Finder owns the drop gesture); the manual

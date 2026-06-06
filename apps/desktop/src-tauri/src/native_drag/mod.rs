@@ -42,6 +42,7 @@
 
 pub mod fulfillment;
 pub mod promises;
+pub mod session_summary;
 pub mod source;
 pub mod type_plan;
 pub mod uti;

@@ -41,6 +41,7 @@
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { startDownloadsEventBridge } from '$lib/downloads/event-bridge.svelte'
     import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
+    import { startDragOutEventBridge } from '$lib/file-explorer/drag/drag-out-event-bridge'
     import {
         handleCommandExecute as dispatchCommand,
         type CommandDispatchContext,
@@ -699,6 +700,12 @@
         // and shows the first-trigger warn toast when `acknowledged === false`.
         const unlistenGlobalShortcut = await startGlobalShortcutBridge(explorerRef)
         tauriUnlistenFns.push(unlistenGlobalShortcut)
+        // Drag-out completion bridge: one `drag-out-session-started` +
+        // `drag-out-session-complete` pair per drag session, turned into a single
+        // signs-of-life → completion toast (downloading a phone/NAS file to
+        // Finder shows nothing on Finder's side; this is our feedback surface).
+        const unlistenDragOut = await startDragOutEventBridge()
+        tauriUnlistenFns.push(unlistenDragOut)
     }
 
     /** Sync file-scoped menu items with main window focus state. */
