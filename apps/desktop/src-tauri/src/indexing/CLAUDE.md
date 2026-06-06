@@ -48,7 +48,17 @@ App startup
   |   |-- Otherwise -> fresh full scan
   |
 Full scan (start_scan):
+  |-- Capture this scan's calibration BEFORE truncating:
+  |   |-- read the prior COMPLETED scan's totals from meta (read_scan_calibration:
+  |   |   total_entries, total_physical_bytes, scan_duration_ms) off the live read connection
+  |   |-- fetch the scanned volume's used bytes once (get_space_info_for_path in block_in_place;
+  |   |   failure -> None, never blocks the scan)
+  |   |-- stash both on the manager's scan_calibration field (get_status reads it for late-join)
+  |-- DeleteMeta(scan_completed_at): clear the previous completion marker so a killed rescan
+  |   heals to a fresh scan instead of replaying on a gutted index (calibration keys stay intact)
   |-- Truncate entries + dir_stats (TruncateData + flush_blocking)
+  |-- Emit index-scan-started { prior_total_entries, prior_scan_duration_ms, volume_used_bytes }
+  |   (static per-scan calibration; the FE's calibrated-vs-rough tier decision is a pure function of it)
   |-- Start DriveWatcher (sinceWhen=0, buffers events)
   |-- ScanContext initialized: root -> ROOT_ID, IDs from shared AtomicI64 counter
   |-- jwalk parallel walk -> ScanContext assigns IDs -> batched InsertEntriesV2 -> writer -> SQLite
@@ -56,7 +66,10 @@ Full scan (start_scan):
   |   -> hot paths from listing-cache snapshot -> try_send(ComputePartialAggregates)
   |   -> writer computes over accumulator maps, writes depth <= 3 dirs + hot dirs
   |   -> emit index-dir-updated "/" -> panes refresh with growing sizes + hourglass
-  |-- On complete: replay buffered events (reconciler), compute all aggregates, switch to live mode
+  |-- Progress reporter (every 500ms): emit index-scan-progress { entries_scanned, dirs_found, bytes_scanned }
+  |-- On UNcancelled complete (was_cancelled == false): persist meta (scan_completed_at, scan_duration_ms,
+  |   total_entries, total_physical_bytes, volume_path), then replay buffered events (reconciler),
+  |   compute all aggregates, switch to live mode. A cancelled scan writes NO meta -> heals on restart.
   |
 Live mode:
   |-- macOS: FSEvents -> reconciler (resolve_path -> entry IDs) -> UpsertEntryV2/MoveEntryV2/DeleteEntryById/DeleteSubtreeById -> writer -> SQLite
@@ -100,7 +113,7 @@ Three tables:
   - `name_folded TEXT NOT NULL` stores `normalize_for_comparison(name)` on all platforms. On macOS this is NFD + case fold; on Linux/Windows it's the identity (same as `name`). Index: `idx_parent_name_folded ON entries (parent_id, name_folded)` (UNIQUE since v12).
   - The old `idx_parent(parent_id)` from v5 is removed; the composite index replaces it.
 - `dir_stats` (entry_id INTEGER PK, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks)
-- `meta` (key TEXT PK, value TEXT) WITHOUT ROWID
+- `meta` (key TEXT PK, value TEXT) WITHOUT ROWID. All values are TEXT. Keys: `schema_version`, `volume_path`, `last_event_id`, and the completed-scan calibration written by the completion handler — `scan_completed_at` (Unix seconds; the heal sentinel — its presence means "the last scan finished"), `scan_duration_ms` (the tier-1 ETA seed), `total_entries` (the tier-1 progress denominator), and `total_physical_bytes` (the post-dedup physical-byte sum; tier-2 cap tuning + debugging, not on the tier-1 critical path). The calibration keys describe the last COMPLETED scan and survive `TruncateData`; `start_scan` reads them via `read_scan_calibration` before truncating and clears only `scan_completed_at` (via `DeleteMeta`).
 
 WAL mode, 16 MB page cache, `auto_vacuum = INCREMENTAL`. Free pages reclaimed both inline after `TruncateData` and on a 30 s background timer in `state.rs` that sends `WriteMessage::IncrementalVacuum` + `WriteMessage::WalCheckpoint` to the writer. The vacuum handler uses a tiered cap (`pick_vacuum_cap`): skip when freelist < 1 000, 2 000-page cap up to 20 000, 20 000-page cap above — keeps steady-state lock holds tiny while draining real backlog in tens of minutes instead of hours. The WAL checkpoint handler runs `PRAGMA wal_checkpoint(TRUNCATE)`, which shrinks the on-disk WAL file when readers permit (degrades to PASSIVE semantics otherwise, no-op error path). The scanner fires an explicit `WalCheckpoint` after `ComputeAllAggregates` so the GB-scale post-scan WAL spike trims immediately instead of waiting up to 30 s. Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
 
@@ -174,6 +187,10 @@ function is shared so the two gate sites can't drift apart.
 **`getattrlistbulk` (via jwalk) for scanning, not `enumeratorAtURL` or `searchfs`**: Benchmarked on ~5M files (macOS, Apple Silicon, APFS). `getattrlistbulk` recursive walk: 1m49s with sizes. `enumeratorAtURL` with prefetched keys: 2m05s (+11%), found ~500K fewer entries. `searchfs`: fast for name lookup but can't return sizes. `mdfind`: undercounts (Spotlight excludes `.git/`, `node_modules/`, caches). `getattrlistbulk` is what jwalk uses under the hood on macOS, and adding size collection costs only ~4% overhead (packed in the same bulk buffer, no extra syscalls).
 
 **Physical sizes may overcount ~10-20% due to APFS clones**: Per-file `st_blocks * 512` sums to ~905 GB vs ~746 GB true volume usage (`statfs()`). APFS clones (Xcode, simulators, Time Machine, `cp` since Ventura) share underlying blocks but each clone reports full allocation. Volume usage bar always uses `statfs()` for true totals.
+
+**Two-tier scan progress (calibrated vs rough)**: The scan status indicator shows a progress bar + percent + ETA, sourced two ways depending on whether a prior scan's calibration exists. **Tier 1 (every scan after the first, "calibrated")**: `entries_scanned / prior total_entries`, where the denominator is the previous COMPLETED scan's persisted entry count. This is apples-to-apples by construction — both sides come from the same instrument (the scan's own entry counter under identical exclusion/hardlink/firmlink rules), so drift is only what actually changed on disk between scans (a percent or two). Entry count is the unit, not bytes, because scan cost is per `stat()`, not per byte — the smoother clock. ETA seeds from the prior scan's persisted `scan_duration_ms` until the sliding window fills. **Tier 2 (the first scan, "rough")**: `bytes_scanned / volume_used_bytes`, the only place a bytes-vs-statfs ratio survives, wrapped in honesty (clamped, "roughly" wording). The `bytes_scanned` numerator is the resolved post-dedup `physical_size` summed once per stored entry (after the hardlink-dedup match), so it tracks the stored physical-size sums exactly. The denominator is `get_space_info_for_path` used bytes (NSURL purgeable-aware on macOS, `statvfs` on Linux).
+
+The clamps differ by error band (constants live in `eta.ts`): tier 1 caps at 0.99 (the prior total is approximate for THIS disk state, so 99% + "Almost done" is honest, 100% mid-scan is a lie), tier 2 caps lower at 0.95 (APFS clones can make the per-file physical-byte sum overshoot statfs used-bytes by up to ~20%). Real-volume measurement on a 5.96M-entry / 769 GB drive: the final unclamped tier-2 fraction landed at 0.97 — exclusions/purgeable netted it slightly UNDER 100% rather than the feared clone overshoot, so the 0.95 cap holds (the user never saw a fake 100%; the last ~5% rode the "Almost done" tail). Neither denominator available -> null -> the counter-only tooltip (graceful degradation; also the late-join case where the window hasn't filled). See [`src/lib/indexing/CLAUDE.md`](../../../src/lib/indexing/CLAUDE.md) for the FE math and rendering.
 
 **Single-writer thread, not connection pooling**: SQLite write concurrency is limited by its single-writer design. Instead of fighting it with `BUSY_TIMEOUT` and retries, one dedicated thread owns the write connection. Eliminates contention entirely.
 
@@ -268,7 +285,12 @@ per-event detail back: `RUST_LOG=cmdr_lib::indexing::reconciler=trace,cmdr_lib::
 
 **Dirs created by reconciler/live events must get `dir_stats` immediately**: `UpsertEntryV2` inserts a zero-valued `dir_stats` row when creating a new directory. Without this, directories created after the last full aggregation have no `dir_stats` and show no sizes in the UI. `BackfillMissingDirStats` runs after reconciler replay and cold-start replay as a catch-up pass for any dirs that slipped through (for example, from older code before this fix). The zero-init + backfill combination guarantees every directory always has a `dir_stats` row.
 
-**Scan cancellation leaves partial data**: By design. `scan_completed_at` not set in meta, so next startup detects incomplete scan and runs fresh. No cleanup needed.
+**An interrupted scan always heals to a fresh rescan, via two cooperating writes**: The "incomplete scan -> fresh rescan" contract (next startup sees data but no `scan_completed_at` -> `IncompletePreviousScan`) holds for every interruption, including a killed rescan on top of a previously completed one. Two writes make it true:
+
+1. **Clear-at-start.** `start_scan` sends `DeleteMeta("scan_completed_at")` (through the writer channel, before `TruncateData`). Without this, a rescan killed mid-way (`kill -9`, power loss) would leave the PREVIOUS scan's `scan_completed_at` in meta on top of a truncated/partial `entries` table, and the next startup would take the journal-replay path over a gutted index instead of healing.
+2. **`was_cancelled` gate.** The completion handler writes the five meta keys (`scan_completed_at`, `scan_duration_ms`, `total_entries`, `total_physical_bytes`, `volume_path`) only when `!summary.was_cancelled`. A user `stop_scan` (or any cancel) therefore persists NO completion marker, so the partial index never looks complete.
+
+The calibration keys (`total_entries`, `total_physical_bytes`, `scan_duration_ms`) are left UNcleared at scan start so they keep describing the last COMPLETED scan throughout the current one (tier-1 progress needs them, and they must survive a cancel-then-rescan). The same-session post-`stop_scan` state is intentionally "no `scan_completed_at` while live": the app runs live mode on the partial index with no lying completion marker until the next restart heals it. Don't gate the reconcile/live transition on `was_cancelled` — only the meta writes are gated.
 
 **Mid-scan partial aggregation must borrow the accumulator maps, never consume them — and its empty-maps no-op must stay SQL-free**: `handle_compute_partial_aggregates` takes `&AccumulatorMaps`. If it cleared or mutated them (the way `handle_compute_all_aggregates` clears them after use), the final aggregation would compute the exact totals from corrupted maps and silently ship wrong sizes — the worst class of bug here. The borrow is enforced by the type, and `stress_tests_partial_aggregation.rs`'s differential test pins byte-identical final `dir_stats` with and without partial passes (its primary oracle recomputes from `entries`, so it catches map corruption that an (a)==(b) comparison would miss because corruption poisons both arms identically). The empty-maps early return has **no SQL fallback** for the same reason it can't be "fixed" to look one up: the scanner sends `ComputeAllAggregates` before `scan_done` is set, so a late `ComputePartialAggregates` can legitimately arrive *after* the final pass cleared the maps; the no-op is what keeps that late message from overwriting the final totals with a depth-capped partial subset.
 
