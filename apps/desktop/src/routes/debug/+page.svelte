@@ -186,7 +186,7 @@
 </main>
 
 <style>
-    /* stylelint-disable declaration-property-value-disallowed-list, declaration-property-value-allowed-list, color-no-hex -- Dev utility window */
+    /* stylelint-disable declaration-property-value-disallowed-list -- Dev utility window */
 
     .debug-window {
         width: 100%;

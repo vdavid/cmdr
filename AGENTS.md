@@ -278,7 +278,8 @@ common pitfalls.
   - **Opt out only when there's no other option** (third-party CLI with no exit-code differentiation, etc.). Add
     `// allowed-error-string-match: <reason>` on the line above (Rust) or
     `// eslint-disable-next-line cmdr/no-error-string-match -- <reason>` (TS/Svelte). Pair the opt-out with `LC_ALL=C`
-    on the subprocess and snapshot tests pinning the matched strings against a tool version.
+    on the subprocess and snapshot tests pinning the matched strings against a tool version. The check fails on orphaned
+    opt-outs (comment present, no matching violation) — remove them when the code changes.
 - ❌ **No bare `await pollUntil(...)` (or other `Promise<boolean>` poll helper) in E2E tests.** The helper returns
   `false` on timeout instead of throwing, and a bare expression statement discards the return — the test silently passes
   even when the polled condition never holds. Prefer Playwright's `expect.poll(() => ...).toBeTruthy()` (idiomatic and
@@ -288,6 +289,7 @@ common pitfalls.
   - **Enforced by**: `bare-poll` (Go check, fast lane). Scans `apps/desktop/test/`.
   - **Opt out** for genuine best-effort cleanups (for example, dismissing an overlay that might or might not be there)
     with `// allowed-bare-poll: <reason>` on the line above OR as a trailing comment on the same line. Use sparingly.
+    Orphaned opt-outs (no matching bare poll anymore) fail the check — remove them.
 - ❌ **No bare `.lock().unwrap()` / `.read().unwrap()` / `.write().unwrap()` on a std `Mutex`/`RwLock` in `src-tauri`.**
   A bare `unwrap`/`expect` aborts the whole app when the lock is poisoned (some background-thread panicked while holding
   it), and a bare call records no intent. Every std-lock acquisition must be a deliberate, documented choice:
@@ -298,7 +300,8 @@ common pitfalls.
   [`apps/desktop/src-tauri/src/ignore_poison.rs`](apps/desktop/src-tauri/src/ignore_poison.rs).
   - **Enforced by**: `lock-poison` (Go check, fast lane). Scans `apps/desktop/src-tauri/src/`, skips test files.
   - **Opt out** (rare; e.g. a lock proven unpoisonable because nothing panics under it) with
-    `// allowed-lock-poison: <reason>` on the line above or as a trailing comment.
+    `// allowed-lock-poison: <reason>` on the line above or as a trailing comment. Orphaned opt-outs fail the check —
+    remove them when the code changes.
 - ❌ **Type-safe IPC: no raw `invoke('...')` outside the typed bindings folder.** Tauri command names are duplicated
   across the Rust `#[tauri::command]` site and every TS call site, with no compile-time link. Renaming the Rust side
   silently breaks runtime IPC with a generic "not allowed" error. The repo wires `tauri-specta` to generate typed

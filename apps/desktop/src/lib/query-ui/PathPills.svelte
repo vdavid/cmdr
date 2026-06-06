@@ -282,7 +282,6 @@
         border: 0;
         /* Trimmed horizontal padding so the larger font doesn't blow the column;
            vertical padding stays at 0 since the row padding handles vertical rhythm. */
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 0 var(--spacing-xxs);
         border-radius: var(--radius-sm);
         font-size: var(--font-size-sm);

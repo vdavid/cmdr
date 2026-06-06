@@ -116,7 +116,6 @@
 
   .icon {
     display: inline-flex;
-    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- icon indicator, not body text */
     color: var(--color-git-portal);
   }
 

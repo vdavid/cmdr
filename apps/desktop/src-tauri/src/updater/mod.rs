@@ -276,7 +276,6 @@ mod tests {
         // `#[ignore]` verification harness pinning reqwest 0.13's `source()` chain wording. Not classification; the production updater renders the chain into log strings, never branches on the words. Manual run only.
         let chain = msg.to_lowercase();
         let matched = ["tcp connect", "deadline", "timed out"]
-            // allowed-error-string-match: see fn doc; snapshot of reqwest wording for the manual-run verification harness.
             .iter()
             .any(|needle| chain.contains(needle));
         assert!(matched, "expected connect/deadline-shaped cause in chain: {msg}");

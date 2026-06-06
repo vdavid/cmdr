@@ -12,6 +12,9 @@
 
 [licenses]
 version = 2
+# Shrink-wrap for the allow list: an allowed license no longer used by any
+# dependency fails the check, so the list can't accumulate stale entries.
+unused-allowed-license = "deny"
 allow = [
     "MIT",
     "Apache-2.0",

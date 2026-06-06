@@ -61,11 +61,12 @@ type errorStringMatchSite struct {
 func RunErrorStringMatch(ctx *CheckContext) (CheckResult, error) {
 	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
 
-	violations, scanned, err := scanForErrorStringMatch(ctx.RootDir, rustSrcDir)
+	violations, orphans, scanned, err := scanForErrorStringMatch(ctx.RootDir, rustSrcDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
 	}
 
+	var parts []string
 	if len(violations) > 0 {
 		sort.Slice(violations, func(i, j int) bool {
 			if violations[i].relPath == violations[j].relPath {
@@ -77,12 +78,18 @@ func RunErrorStringMatch(ctx *CheckContext) (CheckResult, error) {
 		for _, v := range violations {
 			sb.WriteString(fmt.Sprintf("  %s:%d: %s\n", v.relPath, v.line, v.text))
 		}
-		return CheckResult{}, fmt.Errorf(
+		parts = append(parts, fmt.Sprintf(
 			"found %d %s of substring-matching error/state values "+
 				"(use a typed enum variant, errno code, or explicit flag instead: "+
 				"add `%s <reason>` on the line above to opt a specific site out):\n%s",
-			len(violations), Pluralize(len(violations), "site", "sites"), AllowErrorStringMatchComment, sb.String(),
-		)
+			len(violations), Pluralize(len(violations), "site", "sites"), AllowErrorStringMatchComment, strings.TrimRight(sb.String(), "\n"),
+		))
+	}
+	if len(orphans) > 0 {
+		parts = append(parts, formatOrphanDirectives(AllowErrorStringMatchComment, orphans))
+	}
+	if len(parts) > 0 {
+		return CheckResult{}, fmt.Errorf("%s", strings.Join(parts, "\n"))
 	}
 
 	return Success(fmt.Sprintf(
@@ -91,8 +98,9 @@ func RunErrorStringMatch(ctx *CheckContext) (CheckResult, error) {
 	)), nil
 }
 
-func scanForErrorStringMatch(rootDir, srcDir string) ([]errorStringMatchSite, int, error) {
+func scanForErrorStringMatch(rootDir, srcDir string) ([]errorStringMatchSite, []orphanDirective, int, error) {
 	var violations []errorStringMatchSite
+	var orphans []orphanDirective
 	scanned := 0
 
 	err := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
@@ -123,11 +131,13 @@ func scanForErrorStringMatch(rootDir, srcDir string) ([]errorStringMatchSite, in
 
 		scanner := bufio.NewScanner(f)
 		scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+		tracker := newDirectiveTracker(AllowErrorStringMatchComment, "//")
 		var prev string
 		lineNum := 0
 		for scanner.Scan() {
 			lineNum++
 			line := scanner.Text()
+			tracker.observe(lineNum, line)
 
 			trimmed := strings.TrimLeft(line, " \t")
 			if strings.HasPrefix(trimmed, "//") {
@@ -143,6 +153,7 @@ func scanForErrorStringMatch(rootDir, srcDir string) ([]errorStringMatchSite, in
 			// Opt-out: `// allowed-error-string-match: <reason>` on the
 			// previous line OR as a trailing comment on the same line.
 			if hasAllowErrorStringMatchComment(prev) || hasAllowErrorStringMatchComment(line) {
+				tracker.markUsed(lineNum, line, prev)
 				prev = line
 				continue
 			}
@@ -154,10 +165,11 @@ func scanForErrorStringMatch(rootDir, srcDir string) ([]errorStringMatchSite, in
 			})
 			prev = line
 		}
+		orphans = append(orphans, tracker.orphans(relPath)...)
 		return scanner.Err()
 	})
 
-	return violations, scanned, err
+	return violations, orphans, scanned, err
 }
 
 func lineMatchesErrorStringPattern(line string) bool {

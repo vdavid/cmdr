@@ -339,9 +339,7 @@
         left: -8px;
         /* `transparent` inside the top-left quarter-disc (away from tab),
            `black` outside (= near tab → opaque, visible). */
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- mask uses raw px in radial-gradient args */
         mask-image: radial-gradient(circle at top left, transparent 8px, black 8px);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- vendor-prefixed mask, WKWebView fallback */
         -webkit-mask-image: radial-gradient(circle at top left, transparent 8px, black 8px);
     }
 
@@ -349,9 +347,7 @@
        curved triangle near the tab's bottom-right corner. */
     .tab-shoulder-right {
         right: -8px;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- mask uses raw px in radial-gradient args */
         mask-image: radial-gradient(circle at top right, transparent 8px, black 8px);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- vendor-prefixed mask, WKWebView fallback */
         -webkit-mask-image: radial-gradient(circle at top right, transparent 8px, black 8px);
     }
 

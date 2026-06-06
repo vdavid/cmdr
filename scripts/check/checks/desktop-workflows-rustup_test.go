@@ -122,7 +122,7 @@ jobs:
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			writeWorkflow(t, wfDir, "test.yml", tc.content)
-			got, err := scanWorkflowForRustup(filepath.Join(wfDir, "test.yml"), tmp)
+			got, _, err := scanWorkflowForRustup(filepath.Join(wfDir, "test.yml"), tmp)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -136,5 +136,51 @@ jobs:
 				}
 			}
 		})
+	}
+}
+
+func TestScanWorkflowForRustup_FlagsOrphanedOptOut(t *testing.T) {
+	tmp := t.TempDir()
+	wfDir := filepath.Join(tmp, ".github", "workflows")
+	writeWorkflow(t, wfDir, "test.yml", `name: x
+jobs:
+  build:
+    steps:
+      # allowed-rustup-add: floating directive that excuses nothing
+      - run: echo ok
+      - run: rustup update stable # allowed-rustup-add: stale, this line no longer adds a target
+`)
+
+	_, orphans, err := scanWorkflowForRustup(filepath.Join(wfDir, "test.yml"), tmp)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(orphans) != 2 {
+		t.Fatalf("expected 2 orphaned directives (pure-comment line 5 + trailing line 7), got %d: %v", len(orphans), orphans)
+	}
+	if orphans[0].line != 5 || orphans[1].line != 7 {
+		t.Errorf("expected orphans at lines 5 and 7, got %d and %d", orphans[0].line, orphans[1].line)
+	}
+}
+
+func TestScanWorkflowForRustup_UsedOptOutIsNotOrphan(t *testing.T) {
+	tmp := t.TempDir()
+	wfDir := filepath.Join(tmp, ".github", "workflows")
+	writeWorkflow(t, wfDir, "test.yml", `name: x
+jobs:
+  build:
+    steps:
+      - run: rustup target add wasm32-unknown-unknown # allowed-rustup-add: wasm builds only happen here
+`)
+
+	violations, orphans, err := scanWorkflowForRustup(filepath.Join(wfDir, "test.yml"), tmp)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(violations) != 0 {
+		t.Errorf("expected no violations, got %v", violations)
+	}
+	if len(orphans) != 0 {
+		t.Errorf("expected no orphans for a used opt-out, got %v", orphans)
 	}
 }

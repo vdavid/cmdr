@@ -58,11 +58,12 @@ type barePollSite struct {
 func RunBarePoll(ctx *CheckContext) (CheckResult, error) {
 	testDir := filepath.Join(ctx.RootDir, "apps", "desktop", "test")
 
-	violations, scanned, err := scanForBarePoll(ctx.RootDir, testDir)
+	violations, orphans, scanned, err := scanForBarePoll(ctx.RootDir, testDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to scan test files: %w", err)
 	}
 
+	var parts []string
 	if len(violations) > 0 {
 		sort.Slice(violations, func(i, j int) bool {
 			if violations[i].relPath == violations[j].relPath {
@@ -74,14 +75,20 @@ func RunBarePoll(ctx *CheckContext) (CheckResult, error) {
 		for _, v := range violations {
 			sb.WriteString(fmt.Sprintf("  %s:%d: %s\n", v.relPath, v.line, v.text))
 		}
-		return CheckResult{}, fmt.Errorf(
+		parts = append(parts, fmt.Sprintf(
 			"found %d bare `await <pollHelper>(...)` %s where the return value is "+
 				"discarded (the test silently passes if the poll times out). "+
 				"Prefer Playwright's `expect.poll(() => ...).toBeTruthy()`, or wrap as "+
 				"`expect(await pollUntil(...)).toBe(true)`. "+
 				"Add `%s <reason>` on the line above to opt a specific site out (rare):\n%s",
-			len(violations), Pluralize(len(violations), "site", "sites"), AllowBarePollComment, sb.String(),
-		)
+			len(violations), Pluralize(len(violations), "site", "sites"), AllowBarePollComment, strings.TrimRight(sb.String(), "\n"),
+		))
+	}
+	if len(orphans) > 0 {
+		parts = append(parts, formatOrphanDirectives(AllowBarePollComment, orphans))
+	}
+	if len(parts) > 0 {
+		return CheckResult{}, fmt.Errorf("%s", strings.Join(parts, "\n"))
 	}
 
 	return Success(fmt.Sprintf(
@@ -90,8 +97,9 @@ func RunBarePoll(ctx *CheckContext) (CheckResult, error) {
 	)), nil
 }
 
-func scanForBarePoll(rootDir, testDir string) ([]barePollSite, int, error) {
+func scanForBarePoll(rootDir, testDir string) ([]barePollSite, []orphanDirective, int, error) {
 	var violations []barePollSite
+	var orphans []orphanDirective
 	scanned := 0
 
 	err := filepath.WalkDir(testDir, func(path string, d os.DirEntry, err error) error {
@@ -124,11 +132,13 @@ func scanForBarePoll(rootDir, testDir string) ([]barePollSite, int, error) {
 
 		scanner := bufio.NewScanner(f)
 		scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+		tracker := newDirectiveTracker(AllowBarePollComment, "//")
 		var prev string
 		lineNum := 0
 		for scanner.Scan() {
 			lineNum++
 			line := scanner.Text()
+			tracker.observe(lineNum, line)
 
 			trimmed := strings.TrimLeft(line, " \t")
 			if strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "*") {
@@ -145,6 +155,7 @@ func scanForBarePoll(rootDir, testDir string) ([]barePollSite, int, error) {
 			// Opt-out: `// allowed-bare-poll: <reason>` on the previous line OR as
 			// a trailing comment on the same line.
 			if hasAllowBarePollComment(prev) || hasAllowBarePollComment(line) {
+				tracker.markUsed(lineNum, line, prev)
 				prev = line
 				continue
 			}
@@ -157,10 +168,11 @@ func scanForBarePoll(rootDir, testDir string) ([]barePollSite, int, error) {
 			})
 			prev = line
 		}
+		orphans = append(orphans, tracker.orphans(relPath)...)
 		return scanner.Err()
 	})
 
-	return violations, scanned, err
+	return violations, orphans, scanned, err
 }
 
 func hasAllowBarePollComment(line string) bool {

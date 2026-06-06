@@ -394,7 +394,6 @@
     }
 
     .symlink-hint-icon {
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
         color: var(--color-text-tertiary);
     }
 </style>

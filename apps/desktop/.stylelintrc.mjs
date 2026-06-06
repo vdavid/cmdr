@@ -8,6 +8,9 @@ export default {
   extends: ['stylelint-config-standard'],
   plugins: ['stylelint-value-no-unknown-custom-properties', 'stylelint-declaration-block-no-ignored-properties'],
   customSyntax: 'postcss-html',
+  // Shrink-wrap for disable comments: a `stylelint-disable` that no longer
+  // suppresses anything is an error, so stale opt-outs can't linger.
+  reportNeedlessDisables: true,
   overrides: [
     {
       files: ['**/app.css'],

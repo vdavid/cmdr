@@ -97,12 +97,13 @@ func testFileIsValid(rootDir, testRelPath string) bool {
 }
 
 type a11yCoverageResult struct {
-	uncoveredFiles   []string          // .svelte files without tests and not allowlisted
-	emptyTestFiles   []string          // test files that exist but don't import the helper
-	deadAllowlist    []string          // allowlist entries pointing to files that don't exist
-	allowlistedCount int               // count of valid allowlist entries
-	coveredCount     int               // count of components with valid test files
-	allowlistReasons map[string]string // for formatting
+	uncoveredFiles     []string          // .svelte files without tests and not allowlisted
+	emptyTestFiles     []string          // test files that exist but don't import the helper
+	deadAllowlist      []string          // allowlist entries pointing to files that don't exist
+	redundantAllowlist []string          // allowlist entries whose component has a valid test anyway
+	allowlistedCount   int               // count of valid allowlist entries
+	coveredCount       int               // count of components with valid test files
+	allowlistReasons   map[string]string // for formatting
 }
 
 func scanA11yCoverage(rootDir string, allowlist a11yCoverageAllowlist) (a11yCoverageResult, error) {
@@ -133,6 +134,12 @@ func scanA11yCoverage(rootDir string, allowlist a11yCoverageAllowlist) (a11yCove
 		}
 
 		if _, exempt := allowlist.Exempt[rel]; exempt {
+			// An exempt component that has a valid test anyway makes the
+			// entry redundant: the "can't be tested" reason no longer holds.
+			if testRel := testFilePathFor(rel); trackedSet[testRel] && testFileIsValid(rootDir, testRel) {
+				result.redundantAllowlist = append(result.redundantAllowlist, rel)
+				continue
+			}
 			result.allowlistedCount++
 			continue
 		}
@@ -159,6 +166,7 @@ func scanA11yCoverage(rootDir string, allowlist a11yCoverageAllowlist) (a11yCove
 	sort.Strings(result.uncoveredFiles)
 	sort.Strings(result.emptyTestFiles)
 	sort.Strings(result.deadAllowlist)
+	sort.Strings(result.redundantAllowlist)
 
 	return result, nil
 }
@@ -185,6 +193,12 @@ func formatA11yCoverageFailure(r a11yCoverageResult) string {
 			sb.WriteString(fmt.Sprintf("    - %s: remove from scripts/check/checks/a11y-coverage-allowlist.json\n", f))
 		}
 	}
+	if len(r.redundantAllowlist) > 0 {
+		sb.WriteString(fmt.Sprintf("  %d redundant allowlist entry/entries (component has a valid a11y test anyway):\n", len(r.redundantAllowlist)))
+		for _, f := range r.redundantAllowlist {
+			sb.WriteString(fmt.Sprintf("    - %s: remove from scripts/check/checks/a11y-coverage-allowlist.json\n", f))
+		}
+	}
 	sb.WriteString("\nTemplate for new test: see apps/desktop/src/lib/ui/CLAUDE.md § Adding a component-level a11y test (tier 3).\n")
 	sb.WriteString("Allowlist is for components that genuinely can't be tested here (tier 2 covers, too composed, etc.). Include a reason.")
 	return strings.TrimRight(sb.String(), "\n")
@@ -202,7 +216,7 @@ func RunA11yCoverage(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("scan: %w", err)
 	}
 
-	if len(result.uncoveredFiles) == 0 && len(result.emptyTestFiles) == 0 && len(result.deadAllowlist) == 0 {
+	if len(result.uncoveredFiles) == 0 && len(result.emptyTestFiles) == 0 && len(result.deadAllowlist) == 0 && len(result.redundantAllowlist) == 0 {
 		suffix := ""
 		if result.allowlistedCount > 0 {
 			suffix = fmt.Sprintf(" (%d allowlisted)", result.allowlistedCount)

@@ -304,3 +304,32 @@ fn classify(err: &VolumeError) -> Kind {
 		t.Errorf("expected scanned count in success message, got: %s", res.Message)
 	}
 }
+
+func TestErrorStringMatch_FlagsOrphanedOptOut(t *testing.T) {
+	_, err := runErrorStringMatchOn(t, map[string]string{
+		"volume.rs": `
+fn classify(err: &VolumeError) -> Kind {
+    // allowed-error-string-match: stale, the match below moved to typed variants
+    matches!(err, VolumeError::AlreadyExists(_))
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected orphaned opt-out violation, got success")
+	}
+	if !strings.Contains(err.Error(), "unused") || !strings.Contains(err.Error(), "volume.rs:3") {
+		t.Errorf("expected unused-directive report at volume.rs:3, got: %s", err.Error())
+	}
+}
+
+func TestErrorStringMatch_IgnoresDirectiveMetaMention(t *testing.T) {
+	res, err := runErrorStringMatchOn(t, map[string]string{
+		"docs.rs": "// Opt out with `// allowed-error-string-match: <reason>` above the line\n",
+	})
+	if err != nil {
+		t.Fatalf("expected success for prose mention, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}

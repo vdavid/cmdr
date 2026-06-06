@@ -9,7 +9,7 @@ func TestScanFlagsBtnPrimaryRestyle(t *testing.T) {
     background: blue;
   }
 </style>`
-	vs, as := scanFile("/root", "/root/apps/desktop/src/foo/Foo.svelte", svelte)
+	vs, as, _ := scanFile("/root", "/root/apps/desktop/src/foo/Foo.svelte", svelte)
 	if len(as) != 0 {
 		t.Errorf("unexpected allowlist entries: %#v", as)
 	}
@@ -29,7 +29,7 @@ func TestScanIgnoresLayoutOnly(t *testing.T) {
     margin: 0;
   }
 </style>`
-	vs, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
+	vs, _, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
 	if len(vs) != 0 {
 		t.Errorf("layout-only override should pass, got: %#v", vs)
 	}
@@ -50,7 +50,7 @@ func TestScanIgnoresSimilarlyNamedClasses(t *testing.T) {
     color: green;
   }
 </style>`
-	vs, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
+	vs, _, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
 	if len(vs) != 0 {
 		t.Errorf("non-canonical class names should be ignored, got: %#v", vs)
 	}
@@ -63,7 +63,7 @@ func TestScanRespectsAllowlistComment(t *testing.T) {
     color: red;
   }
 </style>`
-	vs, as := scanFile("/root", "/root/x/Foo.svelte", svelte)
+	vs, as, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
 	if len(vs) != 0 {
 		t.Errorf("allowlisted rule should not violate, got: %#v", vs)
 	}
@@ -83,7 +83,7 @@ func TestScanEmptyRationaleNotAllowed(t *testing.T) {
     color: red;
   }
 </style>`
-	vs, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
+	vs, _, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
 	if len(vs) != 1 {
 		t.Errorf("empty-rationale comment shouldn't allowlist; got %d violations", len(vs))
 	}
@@ -97,7 +97,7 @@ func TestScanAllowsCanonicalButtonFile(t *testing.T) {
 	svelte := `<style>
   .btn-primary { color: red; }
 </style>`
-	vs, _ := scanFile("/root", "/root/x/Button.svelte", svelte)
+	vs, _, _ := scanFile("/root", "/root/x/Button.svelte", svelte)
 	if len(vs) != 1 {
 		t.Errorf("scanFile should flag regardless of path; got %d", len(vs))
 	}
@@ -115,7 +115,7 @@ func TestScanDescendsIntoMediaBlocks(t *testing.T) {
 	// re-scan their inner rules for selector matches. This test pins
 	// today's behavior (nested rules NOT flagged). If we extend coverage
 	// later, update this test.
-	vs, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
+	vs, _, _ := scanFile("/root", "/root/x/Foo.svelte", svelte)
 	if len(vs) != 0 {
 		t.Errorf("nested @media rules currently not scanned; got %d", len(vs))
 	}
@@ -128,4 +128,54 @@ func contains(s, sub string) bool {
 		}
 	}
 	return false
+}
+
+func TestScanFlagsOrphanCommentOnNonBtnRule(t *testing.T) {
+	svelte := `<style>
+  /* allowed-btn-restyle: stale, this rule no longer touches a btn class */
+  .toggle-button {
+    color: red;
+  }
+</style>`
+	vs, _, orphans := scanFile("/root", "/root/x/Foo.svelte", svelte)
+	if len(vs) != 0 {
+		t.Errorf("non-btn rule should not violate, got: %#v", vs)
+	}
+	if len(orphans) != 1 {
+		t.Fatalf("want 1 orphaned allowlist comment, got %d: %#v", len(orphans), orphans)
+	}
+	if orphans[0].Line != 2 {
+		t.Errorf("want orphan at line 2, got %d", orphans[0].Line)
+	}
+}
+
+func TestScanFlagsOrphanCommentOnLayoutOnlyBtnRule(t *testing.T) {
+	// Layout-only overrides aren't flagged at all, so they don't need (or
+	// consume) a rationale.
+	svelte := `<style>
+  /* allowed-btn-restyle: stale, the color override below was removed */
+  .btn-primary {
+    flex: 1;
+  }
+</style>`
+	_, _, orphans := scanFile("/root", "/root/x/Foo.svelte", svelte)
+	if len(orphans) != 1 {
+		t.Fatalf("want 1 orphaned allowlist comment, got %d: %#v", len(orphans), orphans)
+	}
+}
+
+func TestScanUsedAllowlistCommentIsNotOrphan(t *testing.T) {
+	svelte := `<style>
+  /* allowed-btn-restyle: intentionally dimmed in the pre-onboarding modal */
+  .btn-primary {
+    color: red;
+  }
+</style>`
+	vs, as, orphans := scanFile("/root", "/root/x/Foo.svelte", svelte)
+	if len(vs) != 0 || len(as) != 1 {
+		t.Fatalf("expected the comment to excuse the rule (vs=%d, as=%d)", len(vs), len(as))
+	}
+	if len(orphans) != 0 {
+		t.Errorf("used allowlist comment should not be an orphan, got: %#v", orphans)
+	}
 }

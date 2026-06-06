@@ -49,22 +49,67 @@ type longFile struct {
 	sizeBytes int64
 }
 
+// fileLengthAllowlist is the on-disk shape of file-length-allowlist.json.
+// `Files` maps relative paths to accepted line counts (the contract a file may
+// not silently grow past). `Exempt` maps relative paths to a reason for files
+// whose length is not actionable at all (generated files): they never warn and
+// never get ratcheted.
+type fileLengthAllowlist struct {
+	Comment string            `json:"$comment,omitempty"`
+	Exempt  map[string]string `json:"exempt,omitempty"`
+	Files   map[string]int    `json:"files"`
+}
+
+// fileLengthAllowlistPath returns the allowlist location (next to the check
+// source files).
+func fileLengthAllowlistPath(rootDir string) string {
+	return filepath.Join(rootDir, "scripts", "check", "checks", "file-length-allowlist.json")
+}
+
 // loadFileLengthAllowlist reads the allowlist JSON from the checks directory.
-// Returns a map of relative path → allowed line count.
-func loadFileLengthAllowlist(rootDir string) map[string]int {
-	// The allowlist lives next to the check source files
-	allowlistPath := filepath.Join(rootDir, "scripts", "check", "checks", "file-length-allowlist.json")
-	data, err := os.ReadFile(allowlistPath)
+// A missing or unparsable file yields an empty allowlist (all long files get
+// reported).
+func loadFileLengthAllowlist(rootDir string) fileLengthAllowlist {
+	var list fileLengthAllowlist
+	data, err := os.ReadFile(fileLengthAllowlistPath(rootDir))
 	if err != nil {
-		return nil
+		return list
 	}
-	var raw struct {
-		Files map[string]int `json:"files"`
+	if err := json.Unmarshal(data, &list); err != nil {
+		return fileLengthAllowlist{}
 	}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil
+	return list
+}
+
+// shrinkwrapFileLengthAllowlist computes the stale-entry verdicts: dead
+// entries (file gone), satisfied entries (file under the warn threshold), and
+// slack entries (file more than the growth buffer below its allowed count,
+// which get ratcheted down to the current count). It mutates list in place and
+// returns one human-readable line per change.
+func shrinkwrapFileLengthAllowlist(rootDir string, list *fileLengthAllowlist) []string {
+	var changes []string
+	for _, path := range sortedKeys(list.Files) {
+		allowed := list.Files[path]
+		lineCount, err := countLines(filepath.Join(rootDir, path))
+		switch {
+		case err != nil:
+			delete(list.Files, path)
+			changes = append(changes, fmt.Sprintf("removed %s (file no longer exists)", path))
+		case lineCount < fileLengthWarnLines:
+			delete(list.Files, path)
+			changes = append(changes, fmt.Sprintf("removed %s (now %d lines, under the %d threshold)", path, lineCount, fileLengthWarnLines))
+		case lineCount <= allowed*(100-fileLengthAllowlistBufferPct)/100:
+			list.Files[path] = lineCount
+			changes = append(changes, fmt.Sprintf("ratcheted %s: %d → %d lines", path, allowed, lineCount))
+		}
 	}
-	return raw.Files
+	for _, path := range sortedKeys(list.Exempt) {
+		if !fileExists(filepath.Join(rootDir, path)) {
+			delete(list.Exempt, path)
+			changes = append(changes, fmt.Sprintf("removed exempt %s (file no longer exists)", path))
+		}
+	}
+	return changes
 }
 
 type fileLengthScanResult struct {
@@ -73,7 +118,7 @@ type fileLengthScanResult struct {
 }
 
 // scanFileLengths walks the repo and collects files exceeding the threshold.
-func scanFileLengths(rootDir string, allowlist map[string]int) (fileLengthScanResult, error) {
+func scanFileLengths(rootDir string, allowlist fileLengthAllowlist) (fileLengthScanResult, error) {
 	var result fileLengthScanResult
 
 	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
@@ -95,7 +140,11 @@ func scanFileLengths(rootDir string, allowlist map[string]int) (fileLengthScanRe
 			return nil
 		}
 		relPath, _ := filepath.Rel(rootDir, path)
-		if allowedLines, ok := allowlist[relPath]; ok && lineCount <= allowedLines*(100+fileLengthAllowlistBufferPct)/100 {
+		if _, exempt := allowlist.Exempt[relPath]; exempt {
+			result.allowlistedCount++
+			return nil
+		}
+		if allowedLines, ok := allowlist.Files[relPath]; ok && lineCount <= allowedLines*(100+fileLengthAllowlistBufferPct)/100 {
 			result.allowlistedCount++
 			return nil
 		}
@@ -110,7 +159,7 @@ func scanFileLengths(rootDir string, allowlist map[string]int) (fileLengthScanRe
 }
 
 // formatLongFiles builds the warning message listing long files.
-func formatLongFiles(files []longFile, allowlist map[string]int, allowlistedCount int) string {
+func formatLongFiles(files []longFile, allowlist fileLengthAllowlist, allowlistedCount int) string {
 	sort.Slice(files, func(i, j int) bool { return files[i].relPath < files[j].relPath })
 
 	var sb strings.Builder
@@ -118,7 +167,7 @@ func formatLongFiles(files []longFile, allowlist map[string]int, allowlistedCoun
 		sizeKB := f.sizeBytes / 1000
 		tokenStr := formatTokenCount(f.sizeBytes / 4)
 		detail := fmt.Sprintf("(%d lines, %d kB, ~%s tokens)", f.lines, sizeKB, tokenStr)
-		if allowedLines, ok := allowlist[f.relPath]; ok {
+		if allowedLines, ok := allowlist.Files[f.relPath]; ok {
 			growthPct := (f.lines - allowedLines) * 100 / allowedLines
 			detail = fmt.Sprintf("(%d lines, allowlist: %d, %d kB, ~%s tokens, +%d%% growth)", f.lines, allowedLines, sizeKB, tokenStr, growthPct)
 		}
@@ -139,24 +188,58 @@ func formatLongFiles(files []longFile, allowlist map[string]int, allowlistedCoun
 }
 
 // RunFileLength scans the repo for source files exceeding the line count threshold.
-// Files in the allowlist are suppressed if at or below their allowlisted line count.
-// Always succeeds: reports long files as a warning, never fails.
+// Files in the allowlist are suppressed if at or below their allowlisted line count;
+// files in the exempt section are always suppressed. Stale allowlist entries are
+// shrink-wrapped: outside CI the check removes dead/satisfied entries and ratchets
+// slack ones down to the current count; in CI it only reports them.
+// Always succeeds: reports long files (and CI-mode staleness) as a warning, never fails.
 func RunFileLength(ctx *CheckContext) (CheckResult, error) {
 	allowlist := loadFileLengthAllowlist(ctx.RootDir)
+
+	staleChanges := shrinkwrapFileLengthAllowlist(ctx.RootDir, &allowlist)
+	madeChanges := false
+	if len(staleChanges) > 0 && !ctx.CI {
+		if err := writeJSONAllowlist(fileLengthAllowlistPath(ctx.RootDir), allowlist); err != nil {
+			return CheckResult{}, err
+		}
+		reformatWithOxfmt(ctx.RootDir, "scripts/check/checks/file-length-allowlist.json")
+		madeChanges = true
+	}
+
 	result, err := scanFileLengths(ctx.RootDir, allowlist)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to scan files: %w", err)
 	}
 
-	if len(result.longFiles) == 0 {
-		if result.allowlistedCount > 0 {
-			return Success(fmt.Sprintf("No new long files (%d allowlisted)", result.allowlistedCount)), nil
+	var staleMsg string
+	if len(staleChanges) > 0 {
+		verb := "Shrink-wrapped allowlist"
+		if ctx.CI {
+			verb = "Stale allowlist entries (a local run shrink-wraps them)"
 		}
-		return Success("All files under threshold"), nil
+		staleMsg = fmt.Sprintf("%s:\n  - %s", verb, strings.Join(staleChanges, "\n  - "))
+	}
+
+	if len(result.longFiles) == 0 {
+		okMsg := "All files under threshold"
+		if result.allowlistedCount > 0 {
+			okMsg = fmt.Sprintf("No new long files (%d allowlisted)", result.allowlistedCount)
+		}
+		if staleMsg != "" {
+			if ctx.CI {
+				return CheckResult{Code: ResultWarning, Message: okMsg + "; " + staleMsg, Total: -1, Issues: -1, Changes: -1}, nil
+			}
+			res := SuccessWithChanges(okMsg + "; " + staleMsg)
+			return res, nil
+		}
+		return Success(okMsg), nil
 	}
 
 	msg := formatLongFiles(result.longFiles, allowlist, result.allowlistedCount)
-	return CheckResult{Code: ResultWarning, Message: msg, Total: -1, Issues: -1, Changes: -1}, nil
+	if staleMsg != "" {
+		msg += "\n" + staleMsg
+	}
+	return CheckResult{Code: ResultWarning, Message: msg, MadeChanges: madeChanges, Total: -1, Issues: -1, Changes: -1}, nil
 }
 
 func countLines(path string) (int, error) {

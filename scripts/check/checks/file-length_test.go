@@ -358,7 +358,165 @@ func TestRunFileLength_NewFileNotInAllowlist(t *testing.T) {
 func TestLoadFileLengthAllowlist_Missing(t *testing.T) {
 	tmp := t.TempDir()
 	result := loadFileLengthAllowlist(tmp)
-	if result != nil {
-		t.Errorf("expected nil for missing allowlist, got %v", result)
+	if len(result.Files) != 0 || len(result.Exempt) != 0 {
+		t.Errorf("expected empty allowlist for missing file, got %+v", result)
+	}
+}
+
+// writeAllowlistFull writes a complete allowlist JSON (comment, exempt, files)
+// and returns its path.
+func writeAllowlistFull(t *testing.T, dir string, exempt map[string]string, files map[string]int) string {
+	t.Helper()
+	checksDir := filepath.Join(dir, "scripts", "check", "checks")
+	if err := os.MkdirAll(checksDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	list := fileLengthAllowlist{Comment: "test allowlist", Exempt: exempt, Files: files}
+	path := filepath.Join(checksDir, "file-length-allowlist.json")
+	if err := writeJSONAllowlist(path, list); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestRunFileLength_ExemptFileNeverWarns(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "generated.ts")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 5000)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	writeAllowlistFull(t, tmp, map[string]string{"generated.ts": "generated file, length not actionable"}, nil)
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultSuccess {
+		t.Errorf("expected success for exempt file, got code %d: %s", result.Code, result.Message)
+	}
+}
+
+func TestRunFileLength_RemovesDeadEntryLocally(t *testing.T) {
+	tmp := t.TempDir()
+	allowlistPath := writeAllowlistFull(t, tmp, nil, map[string]int{"gone.go": 900})
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.MadeChanges {
+		t.Errorf("expected MadeChanges after dead-entry removal, got: %+v", result)
+	}
+	if !strings.Contains(result.Message, "gone.go") {
+		t.Errorf("expected removal mention of gone.go, got: %s", result.Message)
+	}
+	reloaded := loadFileLengthAllowlist(tmp)
+	if _, ok := reloaded.Files["gone.go"]; ok {
+		t.Errorf("expected dead entry removed from %s, still present", allowlistPath)
+	}
+	if reloaded.Comment == "" {
+		t.Error("expected $comment preserved across rewrite")
+	}
+}
+
+func TestRunFileLength_RemovesUnderThresholdEntryLocally(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "shrunk.go")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 500)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	writeAllowlistFull(t, tmp, nil, map[string]int{"shrunk.go": 900})
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.MadeChanges {
+		t.Errorf("expected MadeChanges after under-threshold removal, got: %+v", result)
+	}
+	reloaded := loadFileLengthAllowlist(tmp)
+	if _, ok := reloaded.Files["shrunk.go"]; ok {
+		t.Error("expected under-threshold entry removed")
+	}
+}
+
+func TestRunFileLength_RatchetsSlackEntryLocally(t *testing.T) {
+	tmp := t.TempDir()
+	// File at 900 lines, allowed 1200: more than 10% slack → ratchet to 900.
+	path := filepath.Join(tmp, "slack.go")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 900)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	writeAllowlistFull(t, tmp, nil, map[string]int{"slack.go": 1200})
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.MadeChanges {
+		t.Errorf("expected MadeChanges after ratchet, got: %+v", result)
+	}
+	reloaded := loadFileLengthAllowlist(tmp)
+	if got := reloaded.Files["slack.go"]; got != 900 {
+		t.Errorf("expected slack.go ratcheted to 900, got %d", got)
+	}
+}
+
+func TestRunFileLength_LeavesSmallSlackAlone(t *testing.T) {
+	tmp := t.TempDir()
+	// File at 870 lines, allowed 900: within the 10% slack buffer → no churn.
+	path := filepath.Join(tmp, "stable.go")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 870)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	writeAllowlistFull(t, tmp, nil, map[string]int{"stable.go": 900})
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.MadeChanges {
+		t.Errorf("expected no rewrite for small slack, got changes: %s", result.Message)
+	}
+	reloaded := loadFileLengthAllowlist(tmp)
+	if got := reloaded.Files["stable.go"]; got != 900 {
+		t.Errorf("expected stable.go untouched at 900, got %d", got)
+	}
+}
+
+func TestRunFileLength_RemovesDeadExemptEntryLocally(t *testing.T) {
+	tmp := t.TempDir()
+	writeAllowlistFull(t, tmp, map[string]string{"gone.ts": "stale reason"}, nil)
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.MadeChanges {
+		t.Errorf("expected MadeChanges after dead exempt removal, got: %+v", result)
+	}
+	reloaded := loadFileLengthAllowlist(tmp)
+	if _, ok := reloaded.Exempt["gone.ts"]; ok {
+		t.Error("expected dead exempt entry removed")
+	}
+}
+
+func TestRunFileLength_CIReportsStaleWithoutRewriting(t *testing.T) {
+	tmp := t.TempDir()
+	writeAllowlistFull(t, tmp, nil, map[string]int{"gone.go": 900})
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp, CI: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.MadeChanges {
+		t.Error("expected no rewrite in CI mode")
+	}
+	if !strings.Contains(result.Message, "gone.go") {
+		t.Errorf("expected stale entry reported in CI, got: %s", result.Message)
+	}
+	reloaded := loadFileLengthAllowlist(tmp)
+	if _, ok := reloaded.Files["gone.go"]; !ok {
+		t.Error("expected allowlist untouched in CI mode")
 	}
 }

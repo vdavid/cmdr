@@ -29,15 +29,22 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
 - **Security advisory sweep**: Drain whatever `cargo audit` and `pnpm audit` report. Renovate handles most of this
   automatically now, but check anyway in case advisories slipped past it. Frequency: monthly with the dep sweep, plus
   immediately for any high-severity advisory.
+- **Review `cargo-audit` ignores**: `apps/desktop/src-tauri/.cargo/audit.toml` carries ignored advisories that
+  cargo-audit can't verify as still-needed (currently `RUSTSEC-2023-0071`, waiting on `sspi` updating its `rsa` dep).
+  For each entry, check whether the upstream fix landed; if it did, remove the ignore. Frequency: quarterly, batched
+  with the allowlist cutback.
 
 ### Codebase health
 
 - **Split files that grew too big**: Walk the file-length warnings, pick the worst offenders, and split them into
   focused modules. Frequency: quarterly, or whenever the warning list gets noisy.
-- **Cut back the file-length allowlist**: Remove entries for files that no longer exist, and lower entries when the
-  underlying file shrank. Both tighten the contract (never loosen it). Frequency: quarterly.
-- **Cut back other allowlists**: Coverage allowlist, a11y-coverage allowlist, ESLint disable comments, Clippy `#[allow]`
-  attributes, knip ignores. The principle is the same: shrink the escape hatch. Frequency: quarterly.
+- **Cut back allowlists (the non-automated rest)**: Most allowlist staleness is now caught automatically — the
+  file-length check shrink-wraps its own allowlist on local runs; svelte-tests removes dead coverage-allowlist entries
+  and warns on satisfied ones; a11y-coverage fails on dead/redundant entries; the comment scanners (`bare-poll`,
+  `lock-poison`, `error-string-match`, `btn-restyle`, `workflows-rustup`) fail on orphaned opt-out comments; knip treats
+  unused ignores as errors; stylelint reports needless disables; cargo-deny denies unused allowed licenses. What's left
+  for the manual pass: Clippy `#[allow]` attributes, ESLint disable comments outside the type-aware lane, and judging
+  the "coverage satisfied" warnings. Frequency: quarterly.
 - **Dead code sweep**: Hunt for un-wired features, stale `#[allow(dead_code)]`, unused exports, tautological tests,
   mock-only tests. Frequency: quarterly.
 - **AI-smell / inelegance review**: Ask a fresh agent (different from any that wrote the code) to review the codebase

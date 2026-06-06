@@ -93,6 +93,15 @@ type Allowed struct {
 	Rationale string
 }
 
+// Orphan is an `allowed-btn-restyle` comment that excused nothing: the rule it
+// precedes doesn't touch a banned property on a canonical button class (or the
+// rationale is empty, or the comment floats unattached). Stale comments must
+// go, or they'll silently excuse a future restyle.
+type Orphan struct {
+	File string
+	Line int
+}
+
 func main() {
 	verbose := flag.Bool("verbose", false, "Show allowlisted rules and rationales")
 	flag.Parse()
@@ -103,18 +112,41 @@ func main() {
 		os.Exit(1)
 	}
 
+	violations, allowed, orphans, err := scanTree(rootDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%sError walking src: %v%s\n", colorRed, err, colorReset)
+		os.Exit(1)
+	}
+
+	if len(violations) > 0 {
+		printViolations(violations)
+	}
+	if len(orphans) > 0 {
+		printOrphans(orphans)
+	}
+	if *verbose && len(allowed) > 0 {
+		printAllowed(allowed)
+	}
+
+	if len(violations) > 0 || len(orphans) > 0 {
+		os.Exit(1)
+	}
+	fmt.Printf("%s✅ No .btn-* restyles. (%d allowlisted, run with --verbose to list)%s\n", colorGreen, len(allowed), colorReset)
+}
+
+// scanTree walks every non-Button `.svelte` file under apps/desktop/src and
+// aggregates the scan results, violations sorted by file and line.
+func scanTree(rootDir string) ([]Violation, []Allowed, []Orphan, error) {
 	srcDir := filepath.Join(rootDir, "apps", "desktop", "src")
 	var violations []Violation
 	var allowed []Allowed
+	var orphans []Orphan
 
-	err = filepath.Walk(srcDir, func(path string, info os.FileInfo, walkErr error) error {
+	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if info.IsDir() {
-			return nil
-		}
-		if filepath.Ext(path) != ".svelte" {
+		if info.IsDir() || filepath.Ext(path) != ".svelte" {
 			return nil
 		}
 		// `Button.svelte` IS the canonical source of these styles; skip it.
@@ -125,15 +157,12 @@ func main() {
 		if readErr != nil {
 			return readErr
 		}
-		v, a := scanFile(rootDir, path, string(content))
+		v, a, o := scanFile(rootDir, path, string(content))
 		violations = append(violations, v...)
 		allowed = append(allowed, a...)
+		orphans = append(orphans, o...)
 		return nil
 	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%sError walking src: %v%s\n", colorRed, err, colorReset)
-		os.Exit(1)
-	}
 
 	sort.SliceStable(violations, func(i, j int) bool {
 		if violations[i].File != violations[j].File {
@@ -141,37 +170,48 @@ func main() {
 		}
 		return violations[i].Line < violations[j].Line
 	})
+	return violations, allowed, orphans, err
+}
 
-	if len(violations) > 0 {
-		fmt.Printf("%s=== .btn-* restyle violations ===%s\n", colorYellow, colorReset)
-		for _, v := range violations {
-			fmt.Printf(
-				"  %s%s:%d%s  %s%s%s  sets %s: %s\n",
-				colorRed, v.File, v.Line, colorReset,
-				colorDim, v.Selector, colorReset,
-				v.Property, trimToOneLine(v.Value),
-			)
-		}
-		fmt.Println()
-		fmt.Println("Each rule above changes `color`, `background`, or `background-color` on a")
-		fmt.Println("canonical Button class (.btn / .btn-primary / .btn-secondary / .btn-danger)")
-		fmt.Println("from a scoped `<style>` block. Restyling the shared component breaks the")
-		fmt.Println("contrast guarantees Button.svelte ships with (notably under runtime macOS")
-		fmt.Println("accent overrides). Either:")
-		fmt.Println("  - drop the override and use Button's own variants, OR")
-		fmt.Println("  - add `/* allowed-btn-restyle: <reason> */` on the line above with a")
-		fmt.Println("    concrete written rationale.")
-		fmt.Printf("%s❌ %d violation(s) across %d file(s).%s\n", colorRed, len(violations), countDistinctFiles(violations), colorReset)
-		if *verbose && len(allowed) > 0 {
-			printAllowed(allowed)
-		}
-		os.Exit(1)
+func printViolations(violations []Violation) {
+	fmt.Printf("%s=== .btn-* restyle violations ===%s\n", colorYellow, colorReset)
+	for _, v := range violations {
+		fmt.Printf(
+			"  %s%s:%d%s  %s%s%s  sets %s: %s\n",
+			colorRed, v.File, v.Line, colorReset,
+			colorDim, v.Selector, colorReset,
+			v.Property, trimToOneLine(v.Value),
+		)
 	}
+	fmt.Println()
+	fmt.Println("Each rule above changes `color`, `background`, or `background-color` on a")
+	fmt.Println("canonical Button class (.btn / .btn-primary / .btn-secondary / .btn-danger)")
+	fmt.Println("from a scoped `<style>` block. Restyling the shared component breaks the")
+	fmt.Println("contrast guarantees Button.svelte ships with (notably under runtime macOS")
+	fmt.Println("accent overrides). Either:")
+	fmt.Println("  - drop the override and use Button's own variants, OR")
+	fmt.Println("  - add `/* allowed-btn-restyle: <reason> */` on the line above with a")
+	fmt.Println("    concrete written rationale.")
+	fmt.Printf("%s❌ %d violation(s) across %d file(s).%s\n", colorRed, len(violations), countDistinctFiles(violations), colorReset)
+}
 
-	if *verbose && len(allowed) > 0 {
-		printAllowed(allowed)
+func printOrphans(orphans []Orphan) {
+	sort.SliceStable(orphans, func(i, j int) bool {
+		if orphans[i].File != orphans[j].File {
+			return orphans[i].File < orphans[j].File
+		}
+		return orphans[i].Line < orphans[j].Line
+	})
+	fmt.Printf("%s=== Unused allowed-btn-restyle comments ===%s\n", colorYellow, colorReset)
+	for _, o := range orphans {
+		fmt.Printf("  %s%s:%d%s\n", colorRed, o.File, o.Line, colorReset)
 	}
-	fmt.Printf("%s✅ No .btn-* restyles. (%d allowlisted, run with --verbose to list)%s\n", colorGreen, len(allowed), colorReset)
+	fmt.Println()
+	fmt.Println("Each `/* allowed-btn-restyle: ... */` comment above excuses nothing: the rule")
+	fmt.Println("it precedes doesn't set a banned property on a canonical button class (or the")
+	fmt.Println("rationale is empty). Remove the stale comment so it can't silently excuse a")
+	fmt.Println("future restyle.")
+	fmt.Printf("%s❌ %d unused allowlist comment(s).%s\n", colorRed, len(orphans), colorReset)
 }
 
 func printAllowed(allowed []Allowed) {
@@ -200,21 +240,24 @@ func countDistinctFiles(violations []Violation) int {
 	return len(seen)
 }
 
-// scanFile returns the violations and allowlisted rules from one `.svelte`.
+// scanFile returns the violations, allowlisted rules, and orphaned allowlist
+// comments from one `.svelte`.
 //
 // The path is converted to repo-relative before populating outputs.
-func scanFile(rootDir, absPath, content string) ([]Violation, []Allowed) {
+func scanFile(rootDir, absPath, content string) ([]Violation, []Allowed, []Orphan) {
 	relPath := relativeTo(rootDir, absPath)
 	styleBlocks := findStyleBlocks(content)
 
 	var vs []Violation
 	var as []Allowed
+	var os []Orphan
 	for _, sb := range styleBlocks {
-		blockVs, blockAs := scanStyleBlock(relPath, sb.body, sb.lineOffset)
+		blockVs, blockAs, blockOs := scanStyleBlock(relPath, sb.body, sb.lineOffset)
 		vs = append(vs, blockVs...)
 		as = append(as, blockAs...)
+		os = append(os, blockOs...)
 	}
-	return vs, as
+	return vs, as, os
 }
 
 type styleBlock struct {
@@ -255,13 +298,16 @@ func findStyleBlocks(content string) []styleBlock {
 // scanStyleBlock walks the body of a `<style>` block, locates each top-level
 // rule whose selector touches a canonical button class, and flags the rule
 // if it sets a banned property. The allowlist comment is consumed from the
-// gap immediately before the rule.
+// gap immediately before the rule. Allowlist comments that excused nothing
+// (wrong selector, layout-only rule, empty rationale, or floating free) come
+// back as orphans.
 //
 // The walker uses a depth-aware brace scan so nested `@media`/`@supports`
 // rules are descended into without confusing the matcher.
-func scanStyleBlock(relPath, body string, lineOffset int) ([]Violation, []Allowed) {
+func scanStyleBlock(relPath, body string, lineOffset int) ([]Violation, []Allowed, []Orphan) {
 	var vs []Violation
 	var as []Allowed
+	consumed := map[int]bool{} // body offsets of allowlist comments that excused a rule
 	depth := 0
 	selStart := 0
 	for i := 0; i < len(body); i++ {
@@ -278,12 +324,12 @@ func scanStyleBlock(relPath, body string, lineOffset int) ([]Violation, []Allowe
 				}
 				end := matchingBrace(body, i)
 				if end < 0 {
-					return vs, as
+					return vs, as, collectOrphans(relPath, body, lineOffset, consumed)
 				}
 				ruleBody := body[i+1 : end]
 				lineNo := lineOffset + strings.Count(body[:i], "\n")
 				if btnSelectorRE.MatchString(selector) {
-					rationale := findPrecedingAllowlist(body[selStart:i])
+					rationale, matchStart := findPrecedingAllowlist(body[selStart:i])
 					if rationale != "" {
 						// Always record allowlisted rules touching banned
 						// properties (so rationales stay visible). Layout-only
@@ -291,6 +337,7 @@ func scanStyleBlock(relPath, body string, lineOffset int) ([]Violation, []Allowe
 						// rationales.
 						if rps := bannedPropDecls(ruleBody); len(rps) > 0 {
 							as = append(as, Allowed{File: relPath, Line: lineNo, Selector: selector, Rationale: rationale})
+							consumed[selStart+matchStart] = true
 						}
 					} else {
 						for _, rp := range bannedPropDecls(ruleBody) {
@@ -319,7 +366,23 @@ func scanStyleBlock(relPath, body string, lineOffset int) ([]Violation, []Allowe
 			}
 		}
 	}
-	return vs, as
+	return vs, as, collectOrphans(relPath, body, lineOffset, consumed)
+}
+
+// collectOrphans returns every allowlist comment in the block whose start
+// offset never got consumed by a banned-prop rule on a canonical button class.
+func collectOrphans(relPath, body string, lineOffset int, consumed map[int]bool) []Orphan {
+	var orphans []Orphan
+	for _, m := range allowlistRE.FindAllStringIndex(body, -1) {
+		if consumed[m[0]] {
+			continue
+		}
+		orphans = append(orphans, Orphan{
+			File: relPath,
+			Line: lineOffset + strings.Count(body[:m[0]], "\n"),
+		})
+	}
+	return orphans
 }
 
 type propDecl struct {
@@ -352,13 +415,14 @@ func bannedPropDecls(body string) []propDecl {
 // the first non-whitespace char of the selector — so an allowlist comment
 // attached to a previous rule can't accidentally cover the next one.
 //
-// Returns the trimmed rationale, or "" if no valid allowlist comment was
-// found (or its rationale was empty, which we treat as no comment).
-func findPrecedingAllowlist(prefix string) string {
+// Returns the trimmed rationale plus the comment's start offset within
+// prefix, or ("", -1) if no valid allowlist comment was found (or its
+// rationale was empty, which we treat as no comment).
+func findPrecedingAllowlist(prefix string) (string, int) {
 	// Find the last allowlist comment in the prefix region.
 	matches := allowlistRE.FindAllStringSubmatchIndex(prefix, -1)
 	if len(matches) == 0 {
-		return ""
+		return "", -1
 	}
 	last := matches[len(matches)-1]
 	// last[1] is the byte index right after the closing `*/` of the
@@ -373,15 +437,15 @@ func findPrecedingAllowlist(prefix string) string {
 		if c != ' ' && c != '\t' && c != '\n' && c != '\r' {
 			// Selector class chars are fine; declarations / braces are not.
 			if c == '{' || c == '}' || c == ';' {
-				return ""
+				return "", -1
 			}
 		}
 	}
 	rationale := strings.TrimSpace(prefix[last[2]:last[3]])
 	if rationale == "" {
-		return ""
+		return "", -1
 	}
-	return rationale
+	return rationale, last[0]
 }
 
 // --- helpers below mirror scripts/check-a11y-contrast/parser.go in style. ---

@@ -408,7 +408,6 @@
 
     .no-results-criteria {
         margin: 0;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 0 0 0 1.25em;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);

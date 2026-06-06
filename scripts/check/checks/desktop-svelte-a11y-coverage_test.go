@@ -145,6 +145,28 @@ func TestA11yCoverage_DeadAllowlistEntry(t *testing.T) {
 	}
 }
 
+func TestA11yCoverage_RedundantAllowlistEntry(t *testing.T) {
+	tmp := setupGitRepo(t, map[string]string{
+		// Component is exempt, yet a valid a11y test exists → the entry is redundant.
+		"apps/desktop/src/lib/ui/Tested.svelte":             "<div />",
+		"apps/desktop/src/lib/ui/Tested.a11y.test.ts":       `import { expectNoA11yViolations } from '$lib/test-a11y'`,
+		"scripts/check/checks/a11y-coverage-allowlist.json": `{"exempt":{"apps/desktop/src/lib/ui/Tested.svelte":"can't be tested (no longer true)"}}`,
+	})
+
+	ctx := &CheckContext{RootDir: tmp}
+	_, err := RunA11yCoverage(ctx)
+	if err == nil {
+		t.Fatal("expected error for redundant allowlist entry")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "Tested.svelte") {
+		t.Errorf("expected failure to name the redundant entry, got: %s", msg)
+	}
+	if !strings.Contains(msg, "redundant") {
+		t.Errorf("expected 'redundant' in message, got: %s", msg)
+	}
+}
+
 func TestA11yCoverage_IgnoresUntrackedFiles(t *testing.T) {
 	tmp := setupGitRepo(t, map[string]string{
 		"apps/desktop/src/lib/ui/Button.svelte":             "<button>Click</button>",

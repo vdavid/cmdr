@@ -314,3 +314,44 @@ fn clean(state: &State) {
 		t.Errorf("expected scanned count in success message, got: %s", res.Message)
 	}
 }
+
+func TestLockPoison_FlagsOrphanedOptOut(t *testing.T) {
+	_, err := runLockPoisonOn(t, map[string]string{
+		"state.rs": `
+fn get(state: &State) -> u32 {
+    // allowed-lock-poison: stale, the bare unwrap below was since migrated
+    *state.value.lock_ignore_poison()
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected orphaned opt-out violation, got success")
+	}
+	if !strings.Contains(err.Error(), "unused") || !strings.Contains(err.Error(), "state.rs:3") {
+		t.Errorf("expected unused-directive report at state.rs:3, got: %s", err.Error())
+	}
+}
+
+func TestLockPoison_IgnoresOrphanInsideTestMod(t *testing.T) {
+	// Test mods are skipped by the check entirely, so a directive there is
+	// outside its jurisdiction (test code may use bare unwraps freely).
+	res, err := runLockPoisonOn(t, map[string]string{
+		"state.rs": `
+fn get() -> u32 { 0 }
+
+#[cfg(test)]
+mod tests {
+    fn helper(state: &State) -> u32 {
+        // allowed-lock-poison: leftover from a refactor
+        *state.value.lock().unwrap()
+    }
+}
+`,
+	})
+	if err != nil {
+		t.Fatalf("expected success for directive inside test mod, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}

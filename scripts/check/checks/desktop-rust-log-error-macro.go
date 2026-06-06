@@ -25,16 +25,19 @@ type logErrorSite struct {
 }
 
 // RunLogErrorMacro greps the desktop Rust crate for `log::error!` calls and fails on
-// any site outside the allowlist. The convention is documented in
+// any site outside the allowlist. It also fails on stale allowlist entries: a file
+// that no longer exists, or one with no `log::error!` calls left (so the entry no
+// longer excuses anything). The convention is documented in
 // `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` § Convention.
 func RunLogErrorMacro(ctx *CheckContext) (CheckResult, error) {
 	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
 
-	violations, scanned, err := scanForRawLogError(ctx.RootDir, rustSrcDir)
+	violations, stale, scanned, err := scanForRawLogError(ctx.RootDir, rustSrcDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
 	}
 
+	var parts []string
 	if len(violations) > 0 {
 		sort.Slice(violations, func(i, j int) bool {
 			if violations[i].relPath == violations[j].relPath {
@@ -46,10 +49,19 @@ func RunLogErrorMacro(ctx *CheckContext) (CheckResult, error) {
 		for _, v := range violations {
 			sb.WriteString(fmt.Sprintf("  %s:%d: %s\n", v.relPath, v.line, v.text))
 		}
-		return CheckResult{}, fmt.Errorf(
+		parts = append(parts, fmt.Sprintf(
 			"found %d raw `log::error!` %s outside the allowlist (use `crate::log_error!` instead; see error_reporter/CLAUDE.md):\n%s",
-			len(violations), Pluralize(len(violations), "site", "sites"), sb.String(),
-		)
+			len(violations), Pluralize(len(violations), "site", "sites"), strings.TrimRight(sb.String(), "\n"),
+		))
+	}
+	if len(stale) > 0 {
+		parts = append(parts, fmt.Sprintf(
+			"%d stale `allowlistedLogErrorSites` %s — remove from desktop-rust-log-error-macro.go:\n  %s",
+			len(stale), Pluralize(len(stale), "entry", "entries"), strings.Join(stale, "\n  "),
+		))
+	}
+	if len(parts) > 0 {
+		return CheckResult{}, fmt.Errorf("%s", strings.Join(parts, "\n"))
 	}
 
 	return Success(fmt.Sprintf(
@@ -59,9 +71,11 @@ func RunLogErrorMacro(ctx *CheckContext) (CheckResult, error) {
 }
 
 // scanForRawLogError walks the given source dir and returns every `log::error!` call
-// site that isn't in the allowlist. Returns the count of files scanned for reporting.
-func scanForRawLogError(rootDir, srcDir string) ([]logErrorSite, int, error) {
+// site that isn't in the allowlist, plus stale allowlist entries (file gone, or no
+// `log::error!` calls left). Returns the count of files scanned for reporting.
+func scanForRawLogError(rootDir, srcDir string) ([]logErrorSite, []string, int, error) {
 	var violations []logErrorSite
+	allowlistHits := make(map[string]int, len(allowlistedLogErrorSites))
 	scanned := 0
 
 	err := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
@@ -77,8 +91,11 @@ func scanForRawLogError(rootDir, srcDir string) ([]logErrorSite, int, error) {
 		if relErr != nil {
 			relPath = path
 		}
-		if allowlistedLogErrorSites[relPath] {
-			return nil
+		allowlisted := allowlistedLogErrorSites[relPath]
+		if allowlisted {
+			// Still scan it: zero hits means the entry no longer excuses
+			// anything and should go.
+			allowlistHits[relPath] = 0
 		}
 
 		f, openErr := os.Open(path)
@@ -102,6 +119,10 @@ func scanForRawLogError(rootDir, srcDir string) ([]logErrorSite, int, error) {
 			if strings.HasPrefix(trimmed, "//") {
 				continue
 			}
+			if allowlisted {
+				allowlistHits[relPath]++
+				continue
+			}
 			violations = append(violations, logErrorSite{
 				relPath: relPath,
 				line:    lineNum,
@@ -110,6 +131,21 @@ func scanForRawLogError(rootDir, srcDir string) ([]logErrorSite, int, error) {
 		}
 		return scanner.Err()
 	})
+	if err != nil {
+		return nil, nil, 0, err
+	}
 
-	return violations, scanned, err
+	var stale []string
+	for path := range allowlistedLogErrorSites {
+		hits, visited := allowlistHits[path]
+		switch {
+		case !visited:
+			stale = append(stale, fmt.Sprintf("%s (file no longer exists)", path))
+		case hits == 0:
+			stale = append(stale, fmt.Sprintf("%s (no `log::error!` calls left)", path))
+		}
+	}
+	sort.Strings(stale)
+
+	return violations, stale, scanned, nil
 }

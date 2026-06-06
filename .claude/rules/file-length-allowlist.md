@@ -1,11 +1,16 @@
 Rules for `scripts/check/checks/file-length-allowlist.json`:
 
-✅ **OK without asking**: removing an entry for a file that no longer exists, or lowering an existing entry's number
-when the underlying file shrank below it. Both are tightening the contract — they surface growth earlier, never hide it.
+✅ **Automated (no action needed)**: the check shrink-wraps the `files` section on local runs — it removes entries for
+files that no longer exist or shrank under the threshold, and ratchets entries down when the file has more than 10%
+slack. Don't do these edits by hand; just run `./scripts/check.sh --check file-length` and commit the rewrite.
 
-❌ **Never without explicit user consent**: adding a new entry, raising an existing entry's number, or any other change
-that loosens the contract. The allowlist exists to track current file sizes; bumping it as a side effect of a feature
-change hides growth that should be addressed by trimming or splitting the file. If a file you're touching exceeds its
-allowlisted count and the warning is annoying, leave it as a warning and surface it to the user.
+❌ **Never without explicit user consent**: adding a new entry (to `files` or `exempt`), raising an existing entry's
+number, or any other change that loosens the contract. The allowlist exists to track current file sizes; bumping it as a
+side effect of a feature change hides growth that should be addressed by trimming or splitting the file. If a file
+you're touching exceeds its allowlisted count and the warning is annoying, leave it as a warning and surface it to the
+user.
+
+The `exempt` section is for generated files whose length is not actionable (for example `bindings.ts`); entries need a
+reason and the same consent rule applies to adding one.
 
 The file-length check is warn-only — it doesn't fail the suite — so leaving the warning is always safe.

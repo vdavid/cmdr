@@ -15,6 +15,13 @@ import (
 // CoverageThreshold is the minimum line coverage percentage required.
 const CoverageThreshold = 70.0
 
+// coverageSatisfiedMarginPct is the hysteresis band above CoverageThreshold:
+// an allowlist entry is only reported as removable when the file's coverage is
+// at least threshold+margin. Entries hovering right at the threshold would
+// otherwise churn (removed this week, the check fails when coverage dips to
+// 69% next week), so that band stays silently allowlisted.
+const coverageSatisfiedMarginPct = 5.0
+
 // CoverageMetric represents coverage data for a single metric.
 type CoverageMetric struct {
 	Total   int     `json:"total"`
@@ -40,6 +47,43 @@ type CoverageAllowlist struct {
 // AllowlistEntry represents a single allowlisted file entry.
 type AllowlistEntry struct {
 	Reason string `json:"reason"`
+}
+
+// coverageStaleness holds the allowlist entries that look unneeded: dead
+// (the file no longer exists) and satisfied (the file now meets the coverage
+// threshold with margin to spare, so the "can't be tested" reason no longer
+// holds).
+type coverageStaleness struct {
+	dead      []string // relative paths (allowlist keys)
+	satisfied []string // formatted "path (NN.N%)" lines
+}
+
+// findStaleCoverageEntries checks every allowlist entry against the filesystem
+// and the freshly produced coverage data.
+func findStaleCoverageEntries(desktopDir string, allowlist CoverageAllowlist, coverage map[string]FileCoverage) coverageStaleness {
+	var stale coverageStaleness
+	srcPrefix := filepath.Join(desktopDir, "src", "lib") + "/"
+
+	for _, relPath := range sortedKeys(allowlist.Files) {
+		if !fileExists(filepath.Join(desktopDir, "src", "lib", relPath)) {
+			stale.dead = append(stale.dead, relPath)
+			continue
+		}
+		if cov, ok := coverage[srcPrefix+relPath]; ok && cov.Lines.Pct >= CoverageThreshold+coverageSatisfiedMarginPct {
+			stale.satisfied = append(stale.satisfied, fmt.Sprintf("%s (%.1f%%)", relPath, cov.Lines.Pct))
+		}
+	}
+	return stale
+}
+
+// shrinkwrapCoverageAllowlist removes the given dead entries from the
+// allowlist and rewrites coverage-allowlist.json (preserving the comment and
+// the surviving entries' reasons).
+func shrinkwrapCoverageAllowlist(desktopDir string, allowlist *CoverageAllowlist, dead []string) error {
+	for _, relPath := range dead {
+		delete(allowlist.Files, relPath)
+	}
+	return writeJSONAllowlist(filepath.Join(desktopDir, "coverage-allowlist.json"), allowlist)
 }
 
 // RunSvelteTests runs Svelte unit tests with Vitest and checks coverage.
@@ -89,7 +133,44 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	// Check coverage for each file
+	if err := checkCoverageThresholds(desktopDir, allowlist, coverage, clean); err != nil {
+		return CheckResult{}, err
+	}
+
+	// Shrink-wrap the allowlist: drop entries whose file is gone (auto-fix
+	// locally, report-only in CI) and surface entries whose file now clears
+	// the threshold comfortably (warn; removal is a judgment call because the
+	// reason may say "tested elsewhere" and coverage oscillates).
+	stale := findStaleCoverageEntries(desktopDir, allowlist, coverage)
+	staleNotes, madeChanges, err := applyCoverageShrinkwrap(ctx, desktopDir, &allowlist, stale)
+	if err != nil {
+		return CheckResult{}, err
+	}
+
+	passMsg := "All tests passed"
+	count := 0
+	if testCount != "all" {
+		count, _ = strconv.Atoi(testCount)
+		passMsg = fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))
+	}
+	result := Success(passMsg)
+	if len(staleNotes) > 0 {
+		result.Message = passMsg + "; " + strings.Join(staleNotes, "; ")
+		result.MadeChanges = madeChanges
+		if len(stale.satisfied) > 0 || (ctx.CI && len(stale.dead) > 0) {
+			result.Code = ResultWarning
+		}
+	}
+	if count > 0 {
+		result.Total = count
+	}
+	return result, nil
+}
+
+// checkCoverageThresholds returns an error listing every non-allowlisted file
+// under src/lib whose line coverage is below the threshold. `cleanOutput` is
+// the ANSI-stripped vitest output, used to append run diagnostics.
+func checkCoverageThresholds(desktopDir string, allowlist CoverageAllowlist, coverage map[string]FileCoverage, cleanOutput string) error {
 	var lowCoverageFiles []string
 	srcPrefix := filepath.Join(desktopDir, "src", "lib") + "/"
 
@@ -109,35 +190,57 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 				fmt.Sprintf("  %s: %.1f%% (threshold: %.0f%%)", relPath, fileCov.Lines.Pct, CoverageThreshold))
 		}
 	}
-
-	if len(lowCoverageFiles) > 0 {
-		sort.Strings(lowCoverageFiles)
-		errorMsg := "Files below coverage threshold:\n"
-		for _, f := range lowCoverageFiles {
-			errorMsg += "      " + f + "\n"
-		}
-		// Make the failure self-diagnosing. A contended run has been seen (once)
-		// to leave a file that HAS a dedicated test reading 0% — i.e. the run was
-		// incomplete, not a real coverage gap. It couldn't be reproduced under
-		// CPU+memory load (see docs/notes/check-cpu-contention.md), so it's rare;
-		// surfacing vitest's run tallies + any worker-death lines tells the next
-		// occurrence apart from a genuine drop, instead of swallowing the output.
-		errorMsg += "\n      If a below-threshold file has a dedicated test, the run was likely\n" +
-			"      incomplete (rare, load-related) — re-run `--check svelte-tests` standalone\n" +
-			"      before trusting this. Genuine gap? Add it to coverage-allowlist.json with a reason."
-		if diag := vitestRunDiagnostics(clean); diag != "" {
-			errorMsg += "\n\n      vitest run context (watch the skip count + any worker errors):\n" + diag
-		}
-		return CheckResult{}, fmt.Errorf("coverage below threshold for %d files\n%s", len(lowCoverageFiles), errorMsg)
+	if len(lowCoverageFiles) == 0 {
+		return nil
 	}
 
-	if testCount == "all" {
-		return Success("All tests passed"), nil
+	sort.Strings(lowCoverageFiles)
+	errorMsg := "Files below coverage threshold:\n"
+	for _, f := range lowCoverageFiles {
+		errorMsg += "      " + f + "\n"
 	}
-	count, _ := strconv.Atoi(testCount)
-	result := Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests")))
-	result.Total = count
-	return result, nil
+	// Make the failure self-diagnosing. A contended run has been seen (once)
+	// to leave a file that HAS a dedicated test reading 0% — i.e. the run was
+	// incomplete, not a real coverage gap. It couldn't be reproduced under
+	// CPU+memory load (see docs/notes/check-cpu-contention.md), so it's rare;
+	// surfacing vitest's run tallies + any worker-death lines tells the next
+	// occurrence apart from a genuine drop, instead of swallowing the output.
+	errorMsg += "\n      If a below-threshold file has a dedicated test, the run was likely\n" +
+		"      incomplete (rare, load-related) — re-run `--check svelte-tests` standalone\n" +
+		"      before trusting this. Genuine gap? Add it to coverage-allowlist.json with a reason."
+	if diag := vitestRunDiagnostics(cleanOutput); diag != "" {
+		errorMsg += "\n\n      vitest run context (watch the skip count + any worker errors):\n" + diag
+	}
+	return fmt.Errorf("coverage below threshold for %d files\n%s", len(lowCoverageFiles), errorMsg)
+}
+
+// applyCoverageShrinkwrap turns the staleness verdicts into action: dead
+// entries get removed from the allowlist file on local runs (report-only in
+// CI), satisfied entries are always surfaced as a note for an agent to judge.
+func applyCoverageShrinkwrap(ctx *CheckContext, desktopDir string, allowlist *CoverageAllowlist, stale coverageStaleness) (notes []string, madeChanges bool, err error) {
+	if len(stale.dead) > 0 {
+		if ctx.CI {
+			notes = append(notes, fmt.Sprintf(
+				"%d dead coverage-allowlist %s (file gone; a local run removes them): %s",
+				len(stale.dead), Pluralize(len(stale.dead), "entry", "entries"), strings.Join(stale.dead, ", ")))
+		} else {
+			if err := shrinkwrapCoverageAllowlist(desktopDir, allowlist, stale.dead); err != nil {
+				return nil, false, err
+			}
+			reformatWithOxfmt(ctx.RootDir, "apps/desktop/coverage-allowlist.json")
+			madeChanges = true
+			notes = append(notes, fmt.Sprintf(
+				"removed %d dead coverage-allowlist %s: %s",
+				len(stale.dead), Pluralize(len(stale.dead), "entry", "entries"), strings.Join(stale.dead, ", ")))
+		}
+	}
+	if len(stale.satisfied) > 0 {
+		notes = append(notes, fmt.Sprintf(
+			"%d coverage-allowlist %s look unneeded (coverage ≥ %.0f%%) — remove from coverage-allowlist.json or keep with an updated reason:\n  %s",
+			len(stale.satisfied), Pluralize(len(stale.satisfied), "entry", "entries"),
+			CoverageThreshold+coverageSatisfiedMarginPct, strings.Join(stale.satisfied, "\n  ")))
+	}
+	return notes, madeChanges, nil
 }
 
 // vitestRunDiagnostics pulls the lines that reveal whether a vitest run was

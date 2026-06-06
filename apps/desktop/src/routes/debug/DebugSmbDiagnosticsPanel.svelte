@@ -643,7 +643,7 @@
 </section>
 
 <style>
-    /* stylelint-disable declaration-property-value-disallowed-list, declaration-property-value-allowed-list -- Dev utility panel */
+    /* stylelint-disable declaration-property-value-disallowed-list -- Dev utility panel */
 
     .smb-toolbar {
         display: flex;

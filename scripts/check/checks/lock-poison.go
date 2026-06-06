@@ -47,11 +47,12 @@ type lockPoisonSite struct {
 func RunLockPoison(ctx *CheckContext) (CheckResult, error) {
 	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
 
-	violations, scanned, err := scanForLockPoison(ctx.RootDir, rustSrcDir)
+	violations, orphans, scanned, err := scanForLockPoison(ctx.RootDir, rustSrcDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", err)
 	}
 
+	var parts []string
 	if len(violations) > 0 {
 		sort.Slice(violations, func(i, j int) bool {
 			if violations[i].relPath == violations[j].relPath {
@@ -63,13 +64,19 @@ func RunLockPoison(ctx *CheckContext) (CheckResult, error) {
 		for _, v := range violations {
 			sb.WriteString(fmt.Sprintf("  %s:%d: %s\n", v.relPath, v.line, v.text))
 		}
-		return CheckResult{}, fmt.Errorf(
+		parts = append(parts, fmt.Sprintf(
 			"found %d std-lock %s acquired without recorded poison-handling intent "+
 				"(use `lock_ignore_poison()` / `read_ignore_poison()` / `write_ignore_poison()` to recover, "+
 				"or `.expect(\"<lock> poisoned: <why>\")` to abort deliberately; "+
 				"add `%s <reason>` on the line above or as a trailing comment to opt a site out):\n%s",
-			len(violations), Pluralize(len(violations), "site", "sites"), AllowLockPoisonComment, sb.String(),
-		)
+			len(violations), Pluralize(len(violations), "site", "sites"), AllowLockPoisonComment, strings.TrimRight(sb.String(), "\n"),
+		))
+	}
+	if len(orphans) > 0 {
+		parts = append(parts, formatOrphanDirectives(AllowLockPoisonComment, orphans))
+	}
+	if len(parts) > 0 {
+		return CheckResult{}, fmt.Errorf("%s", strings.Join(parts, "\n"))
 	}
 
 	return Success(fmt.Sprintf(
@@ -78,8 +85,9 @@ func RunLockPoison(ctx *CheckContext) (CheckResult, error) {
 	)), nil
 }
 
-func scanForLockPoison(rootDir, srcDir string) ([]lockPoisonSite, int, error) {
+func scanForLockPoison(rootDir, srcDir string) ([]lockPoisonSite, []orphanDirective, int, error) {
 	var violations []lockPoisonSite
+	var orphans []orphanDirective
 	scanned := 0
 
 	err := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
@@ -101,15 +109,16 @@ func scanForLockPoison(rootDir, srcDir string) ([]lockPoisonSite, int, error) {
 			relPath = path
 		}
 
-		fileViolations, scanErr := scanRustFileForLockPoison(path, relPath)
+		fileViolations, fileOrphans, scanErr := scanRustFileForLockPoison(path, relPath)
 		if scanErr != nil {
 			return scanErr
 		}
 		violations = append(violations, fileViolations...)
+		orphans = append(orphans, fileOrphans...)
 		return nil
 	})
 
-	return violations, scanned, err
+	return violations, orphans, scanned, err
 }
 
 // lockPoisonScanState tracks the in-file `#[cfg(test)]` mod skip across lines.
@@ -125,11 +134,11 @@ type lockPoisonScanState struct {
 }
 
 // scanRustFileForLockPoison scans a single Rust file for std-lock acquisitions
-// that record no poison-handling intent.
-func scanRustFileForLockPoison(path, relPath string) ([]lockPoisonSite, error) {
+// that record no poison-handling intent, plus orphaned opt-out directives.
+func scanRustFileForLockPoison(path, relPath string) ([]lockPoisonSite, []orphanDirective, error) {
 	f, openErr := os.Open(path)
 	if openErr != nil {
-		return nil, openErr
+		return nil, nil, openErr
 	}
 	defer f.Close()
 
@@ -138,6 +147,7 @@ func scanRustFileForLockPoison(path, relPath string) ([]lockPoisonSite, error) {
 
 	var violations []lockPoisonSite
 	var state lockPoisonScanState
+	tracker := newDirectiveTracker(AllowLockPoisonComment, "//")
 	var prev string
 	lineNum := 0
 
@@ -145,19 +155,20 @@ func scanRustFileForLockPoison(path, relPath string) ([]lockPoisonSite, error) {
 		lineNum++
 		line := scanner.Text()
 
-		if site := classifyLockPoisonLine(line, prev, relPath, lineNum, &state); site != nil {
+		if site := classifyLockPoisonLine(line, prev, relPath, lineNum, &state, tracker); site != nil {
 			violations = append(violations, *site)
 		}
 		prev = line
 	}
-	return violations, scanner.Err()
+	return violations, tracker.orphans(relPath), scanner.Err()
 }
 
 // classifyLockPoisonLine evaluates one line against the lock-poison policy,
 // advancing the test-mod skip state. It returns a non-nil site only when the
 // line is a real violation (a std-lock acquisition with no recorded intent and
-// no opt-out comment).
-func classifyLockPoisonLine(line, prev, relPath string, lineNum int, state *lockPoisonScanState) *lockPoisonSite {
+// no opt-out comment). Directive sites are recorded on the tracker; test-mod
+// lines are outside the check's jurisdiction and never tracked.
+func classifyLockPoisonLine(line, prev, relPath string, lineNum int, state *lockPoisonScanState, tracker *directiveTracker) *lockPoisonSite {
 	if state.inTestMod {
 		state.testModDepth += strings.Count(line, "{") - strings.Count(line, "}")
 		if state.testModDepth <= 0 {
@@ -165,6 +176,8 @@ func classifyLockPoisonLine(line, prev, relPath string, lineNum int, state *lock
 		}
 		return nil
 	}
+
+	tracker.observe(lineNum, line)
 
 	// Comment-only lines never carry code; the caller still records them for
 	// the previous-line opt-out lookup.
@@ -192,6 +205,7 @@ func classifyLockPoisonLine(line, prev, relPath string, lineNum int, state *lock
 	// Opt-out: `// allowed-lock-poison: <reason>` on the previous line OR as a
 	// trailing comment on the same line.
 	if hasAllowLockPoisonComment(prev) || hasAllowLockPoisonComment(line) {
+		tracker.markUsed(lineNum, line, prev)
 		return nil
 	}
 

@@ -55,20 +55,29 @@ func RunWorkflowsRustup(ctx *CheckContext) (CheckResult, error) {
 	sort.Strings(files)
 
 	var violations []string
+	var orphans []orphanDirective
 	scanned := 0
 	for _, f := range files {
-		v, err := scanWorkflowForRustup(f, ctx.RootDir)
+		v, o, err := scanWorkflowForRustup(f, ctx.RootDir)
 		if err != nil {
 			return CheckResult{}, err
 		}
 		violations = append(violations, v...)
+		orphans = append(orphans, o...)
 		scanned++
 	}
 
+	var parts []string
 	if len(violations) > 0 {
-		return CheckResult{}, fmt.Errorf(
+		parts = append(parts, fmt.Sprintf(
 			"`rustup target add` / `rustup component add` found in workflows; declare in rust-toolchain.toml instead\n%s",
-			indentOutput(strings.Join(violations, "\n")))
+			indentOutput(strings.Join(violations, "\n"))))
+	}
+	if len(orphans) > 0 {
+		parts = append(parts, formatOrphanDirectives("# allowed-rustup-add:", orphans))
+	}
+	if len(parts) > 0 {
+		return CheckResult{}, fmt.Errorf("%s", strings.Join(parts, "\n"))
 	}
 
 	result := Success(fmt.Sprintf("%d %s, no `rustup target/component add` lines",
@@ -86,15 +95,16 @@ var rustupAddRE = regexp.MustCompile(`\brustup\s+(target|component)\s+add\b`)
 // Opt-out marker. Must include a non-empty reason after the colon.
 var rustupAddAllowedRE = regexp.MustCompile(`#\s*allowed-rustup-add:\s*(\S.*)`)
 
-func scanWorkflowForRustup(path, repoRoot string) ([]string, error) {
+func scanWorkflowForRustup(path, repoRoot string) ([]string, []orphanDirective, error) {
 	rel, _ := filepath.Rel(repoRoot, path)
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("open %s: %w", rel, err)
+		return nil, nil, fmt.Errorf("open %s: %w", rel, err)
 	}
 	defer f.Close()
 
 	var violations []string
+	tracker := newDirectiveTracker("# allowed-rustup-add:", "#")
 	scanner := bufio.NewScanner(f)
 	// Workflow yaml lines can be long (compose-style chained runs); raise the
 	// buffer above bufio's 64 KB default to cover the worst case.
@@ -103,10 +113,13 @@ func scanWorkflowForRustup(path, repoRoot string) ([]string, error) {
 	for scanner.Scan() {
 		lineNo++
 		line := scanner.Text()
+		tracker.observe(lineNo, line)
 		// Skip whole-line YAML comments. A line whose first non-whitespace
 		// character is `#` is a comment and can mention `rustup target add` in
 		// prose without being a command (for example, "the previous rustup
-		// target add step was removed; see rust-toolchain.toml").
+		// target add step was removed; see rust-toolchain.toml"). The opt-out
+		// only works as a trailing comment, so a pure-comment directive line
+		// excuses nothing and surfaces as an orphan.
 		trimmed := strings.TrimLeft(line, " \t")
 		if strings.HasPrefix(trimmed, "#") {
 			continue
@@ -116,6 +129,7 @@ func scanWorkflowForRustup(path, repoRoot string) ([]string, error) {
 		}
 		// Opt-out: line ends with `# allowed-rustup-add: <reason>`.
 		if m := rustupAddAllowedRE.FindStringSubmatch(line); m != nil && strings.TrimSpace(m[1]) != "" {
+			tracker.markUsed(lineNo, line, "")
 			continue
 		}
 		violations = append(violations, fmt.Sprintf(
@@ -123,7 +137,7 @@ func scanWorkflowForRustup(path, repoRoot string) ([]string, error) {
 			rel, lineNo, strings.TrimSpace(line)))
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("scan %s: %w", rel, err)
+		return nil, nil, fmt.Errorf("scan %s: %w", rel, err)
 	}
-	return violations, nil
+	return violations, tracker.orphans(rel), nil
 }

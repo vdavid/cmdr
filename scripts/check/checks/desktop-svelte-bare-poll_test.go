@@ -215,6 +215,50 @@ func TestBarePoll_SkipsNonTsFiles(t *testing.T) {
 	}
 }
 
+func TestBarePoll_FlagsOrphanedOptOutOnPreviousLine(t *testing.T) {
+	_, err := runBarePollOn(t, map[string]string{
+		"helpers.ts": `
+async function ready(page) {
+    // allowed-bare-poll: stale reason, the call below was since refactored
+    const ok = await pollUntil(page, () => check(), 3000)
+    return ok
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected orphaned opt-out violation, got success")
+	}
+	if !strings.Contains(err.Error(), "unused") || !strings.Contains(err.Error(), "helpers.ts:3") {
+		t.Errorf("expected unused-directive report at helpers.ts:3, got: %s", err.Error())
+	}
+}
+
+func TestBarePoll_FlagsOrphanedTrailingOptOut(t *testing.T) {
+	_, err := runBarePollOn(t, map[string]string{
+		"helpers.ts": `
+async function ready(page) {
+    const ok = await pollUntil(page, () => check(), 3000) // allowed-bare-poll: stale
+    return ok
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected orphaned trailing opt-out violation, got success")
+	}
+}
+
+func TestBarePoll_IgnoresDirectiveMetaMention(t *testing.T) {
+	res, err := runBarePollOn(t, map[string]string{
+		"docs.ts": "// Opt out with `// allowed-bare-poll: <reason>` on the line above\n",
+	})
+	if err != nil {
+		t.Fatalf("expected success for prose mention of the directive, got: %v", err)
+	}
+	if res.Code != ResultSuccess {
+		t.Fatalf("expected ResultSuccess, got %v: %s", res.Code, res.Message)
+	}
+}
+
 func TestBarePoll_PassesOnCleanCode(t *testing.T) {
 	res, err := runBarePollOn(t, map[string]string{
 		"clean.spec.ts": `

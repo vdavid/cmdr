@@ -193,8 +193,12 @@ fn classify_mount_error(stderr: &str, server: &str, share: &str) -> MountError {
     type Needle = &'static str;
     let needles_lower = stderr.to_lowercase();
     // Lookup helper: kept private to this fn so future callers can't smuggle
-    // their own free-form classification through it.
-    // allowed-error-string-match: parses `gio mount` (glib) stderr; no exit-code granularity, no typed error output. Forced English via `LC_ALL=C` on the subprocess. Snapshot tests `classify_mount_error_snapshot_*` pin the matched phrases.
+    // their own free-form classification through it. String matching is unavoidable
+    // here: `gio mount` (glib) gives no exit-code granularity and no typed error
+    // output. English is forced via `LC_ALL=C` on the subprocess, and the snapshot
+    // tests `classify_mount_error_snapshot_*` pin the matched phrases. (The fn doc
+    // covers the full rationale; if a flagged shape ever lands here, re-add the
+    // `allowed-error-string-match:` opt-out on the exact line that trips.)
     let has_any = |phrases: &[Needle]| -> bool { phrases.iter().any(|p| needles_lower.contains(p)) };
 
     // Order matters: the auth-required check has to run after the auth-failed
