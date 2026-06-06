@@ -101,6 +101,143 @@ pub fn build_synthetic_tree(
     entries
 }
 
+/// Build a synthetic tree that also injects symlink rows and a hardlink pair,
+/// so tests exercise the `recursive_has_symlinks` flag and the dedup convention.
+///
+/// On top of `build_synthetic_tree`'s plain dirs/files, this appends, under each
+/// leaf directory:
+/// - one symlink (`is_symlink: true`, sizes `None`, like the scanner stores them),
+/// - a hardlink pair: a primary link (real sizes) and a secondary link
+///   (`logical_size: None`, `physical_size: None`) sharing one inode — matching
+///   the scanner's dedup-at-insert convention, so each inode's bytes count once.
+///
+/// Keeps `check_db_consistency` valid (it sums `logical_size.unwrap_or(0)`, so the
+/// `None` secondary contributes 0) and gives `check_recursive_has_symlinks`
+/// something to assert.
+pub fn build_synthetic_tree_with_symlinks_and_hardlinks(
+    levels: usize,
+    dirs_per_level: usize,
+    files_per_dir: usize,
+    file_size: u64,
+) -> Vec<EntryRow> {
+    let mut entries = build_synthetic_tree(levels, dirs_per_level, files_per_dir, file_size);
+
+    // Next free id and the leaf directories (those that are no other entry's parent).
+    let mut next_id = entries.iter().map(|e| e.id).max().unwrap_or(ROOT_ID) + 1;
+    let parent_ids: std::collections::HashSet<i64> = entries.iter().map(|e| e.parent_id).collect();
+    let leaf_dir_ids: Vec<i64> = entries
+        .iter()
+        .filter(|e| e.is_directory && !parent_ids.contains(&e.id))
+        .map(|e| e.id)
+        .collect();
+
+    for (i, parent_id) in leaf_dir_ids.into_iter().enumerate() {
+        // Symlink.
+        entries.push(EntryRow {
+            id: next_id,
+            parent_id,
+            name: format!("link_{i}"),
+            is_directory: false,
+            is_symlink: true,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+            inode: None,
+        });
+        next_id += 1;
+
+        // Hardlink primary (carries the bytes).
+        let shared_inode = 1_000_000 + i as u64;
+        entries.push(EntryRow {
+            id: next_id,
+            parent_id,
+            name: format!("hard_primary_{i}.dat"),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(file_size),
+            physical_size: Some(file_size),
+            modified_at: Some(1_700_000_000),
+            inode: Some(shared_inode),
+        });
+        next_id += 1;
+
+        // Hardlink secondary (None sizes — counted as a file, contributes 0 bytes).
+        entries.push(EntryRow {
+            id: next_id,
+            parent_id,
+            name: format!("hard_secondary_{i}.dat"),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: Some(1_700_000_000),
+            inode: Some(shared_inode),
+        });
+        next_id += 1;
+    }
+
+    entries
+}
+
+/// Assert that every directory's stored `recursive_has_symlinks` matches an
+/// independent recompute from the `entries` table (a direct symlink child, or
+/// any subdirectory whose subtree contains a symlink).
+///
+/// A separate helper, not part of `check_db_consistency`: that helper is shared
+/// by every stress test, so widening it has a broad blast radius.
+pub fn check_recursive_has_symlinks(conn: &Connection) {
+    let all_entries: Vec<EntryRow> = {
+        let mut stmt = conn
+            .prepare("SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode FROM entries")
+            .unwrap();
+        stmt.query_map([], |row| {
+            Ok(EntryRow {
+                id: row.get(0)?,
+                parent_id: row.get(1)?,
+                name: row.get(2)?,
+                is_directory: row.get::<_, i32>(3)? != 0,
+                is_symlink: row.get::<_, i32>(4)? != 0,
+                logical_size: row.get(5)?,
+                physical_size: row.get(6)?,
+                modified_at: row.get(7)?,
+                inode: row.get(8)?,
+            })
+        })
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect()
+    };
+
+    let mut children_map: HashMap<i64, Vec<&EntryRow>> = HashMap::new();
+    for entry in &all_entries {
+        children_map.entry(entry.parent_id).or_default().push(entry);
+    }
+
+    fn expected_has_symlinks(entry_id: i64, children_map: &HashMap<i64, Vec<&EntryRow>>) -> bool {
+        let Some(children) = children_map.get(&entry_id) else {
+            return false;
+        };
+        children
+            .iter()
+            .any(|child| child.is_symlink || (child.is_directory && expected_has_symlinks(child.id, children_map)))
+    }
+
+    for entry in &all_entries {
+        if !entry.is_directory {
+            continue;
+        }
+        let stats = IndexStore::get_dir_stats_by_id(conn, entry.id)
+            .unwrap()
+            .unwrap_or_else(|| panic!("dir_stats missing for entry id={}, name={}", entry.id, entry.name));
+        let expected = expected_has_symlinks(entry.id, &children_map);
+        assert_eq!(
+            stats.recursive_has_symlinks, expected,
+            "recursive_has_symlinks mismatch for id={}, name='{}': got {}, expected {}",
+            entry.id, entry.name, stats.recursive_has_symlinks, expected
+        );
+    }
+}
+
 /// Verify DB consistency invariants after a test.
 ///
 /// Checks:

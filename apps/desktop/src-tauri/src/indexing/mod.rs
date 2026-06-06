@@ -33,6 +33,8 @@ mod stress_test_helpers;
 mod stress_tests_concurrency;
 #[cfg(test)]
 mod stress_tests_lifecycle;
+#[cfg(test)]
+mod stress_tests_partial_aggregation;
 
 pub use enrichment::enrich_entries_with_index;
 pub(crate) use enrichment::{ReadPool, get_read_pool};

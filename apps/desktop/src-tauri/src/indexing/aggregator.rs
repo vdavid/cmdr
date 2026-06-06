@@ -258,6 +258,163 @@ fn compute_bottom_up(
     computed
 }
 
+/// Outcome of a single partial-aggregation pass, for logging.
+pub struct PartialAggStats {
+    /// Number of directories the bottom-up compute covered (all known dirs).
+    pub dirs_computed: u64,
+    /// Number of `dir_stats` rows actually written this pass.
+    pub rows_written: u64,
+    /// Number of `hot_paths` that resolved to a directory entry.
+    pub hot_paths_resolved: u64,
+}
+
+/// Mid-scan partial aggregation: compute partial recursive sizes from the
+/// in-memory accumulator maps (as they stand) and write a bounded subset of
+/// `dir_stats` rows so visible listings can show growing sizes during the scan.
+///
+/// Borrows `direct_stats` and `child_dirs` read-only and never mutates them.
+/// The compute runs over every known directory (cheap, pure in-memory), but the
+/// write set is bounded: dirs at `depth <= max_depth` from the scan root, plus
+/// any `hot_paths` directory and its direct children (so a pane currently
+/// showing a deep dir gets live sizes regardless of depth).
+///
+/// `hot_paths` resolve via `resolve_path` on the writer's connection (fine here:
+/// partial passes run between committed batches, so there's no open
+/// transaction). A hot path that doesn't resolve, or resolves to a
+/// non-directory, is skipped silently.
+pub fn compute_partial_aggregates(
+    conn: &Connection,
+    direct_stats: &ChildrenStatsMap,
+    child_dirs: &HashMap<i64, Vec<i64>>,
+    hot_paths: &[String],
+    max_depth: usize,
+) -> Result<PartialAggStats, IndexStoreError> {
+    use std::collections::HashSet;
+
+    use crate::indexing::store::ROOT_ID;
+
+    // Derive the directory list from the maps. Every scanned directory appears
+    // exactly once as a value in `child_dirs` (pushed when its row was inserted
+    // under its parent). The scan root (ROOT_ID) has no parent in any map, so
+    // add it explicitly with the `0` sentinel parent.
+    let mut dir_entries: Vec<(i64, i64)> = Vec::new();
+    dir_entries.push((ROOT_ID, 0));
+    for (&parent_id, children) in child_dirs {
+        for &child_id in children {
+            dir_entries.push((child_id, parent_id));
+        }
+    }
+
+    // Compute each dir's depth from the scan root via a memoized walk.
+    // `depth(ROOT_ID) = 0` is the explicit base case: ROOT_ID's parent is the
+    // `0` sentinel (in no map), so a naive walk would assign it `usize::MAX` and
+    // the most visible row (the `/` pane's `..`) would never get a partial
+    // total. Any dir whose chain can't reach ROOT_ID (shouldn't happen — jwalk
+    // inserts parents before children — but cheap to guard) gets `usize::MAX`,
+    // so it's never written by the depth cap (it stays a placeholder until the
+    // final pass).
+    let parent_of: HashMap<i64, i64> = dir_entries.iter().map(|&(id, pid)| (id, pid)).collect();
+    let mut depths: HashMap<i64, usize> = HashMap::with_capacity(dir_entries.len());
+    depths.insert(ROOT_ID, 0);
+    for &(id, _) in &dir_entries {
+        depth_of(id, &parent_of, &mut depths);
+    }
+
+    // Topological sort + bottom-up compute over ALL dirs (borrowed maps; the
+    // cheap part — pure in-memory iteration). Every dir gets a correct subtree
+    // total regardless of its depth-to-root, so hot-path writes are always safe.
+    let sorted = topological_sort_bottom_up(&dir_entries);
+    let dirs_computed = sorted.len() as u64;
+    let computed = compute_bottom_up(&sorted, direct_stats, child_dirs, None, |_| {});
+
+    // Write set: dirs at depth ≤ max_depth, plus each hot-path dir and its direct
+    // children (independent of the depth cap).
+    let mut write_set: HashSet<i64> = depths
+        .iter()
+        .filter(|&(_, &depth)| depth <= max_depth)
+        .map(|(&id, _)| id)
+        .collect();
+
+    let mut hot_paths_resolved: u64 = 0;
+    for path in hot_paths {
+        let Some(dir_id) = resolve_path(conn, path)? else {
+            continue; // Not scanned yet (or excluded): skip silently, retry next pass.
+        };
+        // `computed` holds exactly the known directories (derived from the maps),
+        // so a hot path resolving to a non-directory (a symlink/file leaf) is
+        // absent and skipped. An empty directory is still present — it's a value
+        // in `child_dirs`, hence in the compute — so it punches through fine.
+        if !computed.contains_key(&dir_id) {
+            continue;
+        }
+        hot_paths_resolved += 1;
+        write_set.insert(dir_id);
+        if let Some(children) = child_dirs.get(&dir_id) {
+            write_set.extend(children.iter().copied());
+        }
+    }
+
+    // Collect the rows to write (value columns only; partial passes overwrite
+    // whatever the final pass will fully recompute).
+    let rows: Vec<DirStatsById> = write_set.iter().filter_map(|id| computed.get(id).cloned()).collect();
+    let rows_written = rows.len() as u64;
+
+    for chunk in rows.chunks(1000) {
+        IndexStore::upsert_dir_stats_by_id(conn, chunk)?;
+    }
+
+    Ok(PartialAggStats {
+        dirs_computed,
+        rows_written,
+        hot_paths_resolved,
+    })
+}
+
+/// Memoized depth from the scan root for the partial-aggregation depth cap.
+///
+/// `depth(ROOT_ID) = 0` is seeded by the caller. A dir whose parent chain can't
+/// reach ROOT_ID gets `usize::MAX` (never written by the depth cap). Iterative
+/// to avoid deep recursion on long chains.
+fn depth_of(start: i64, parent_of: &HashMap<i64, i64>, depths: &mut HashMap<i64, usize>) -> usize {
+    if let Some(&d) = depths.get(&start) {
+        return d;
+    }
+    // Walk up, collecting the unresolved chain, until we hit a memoized node or
+    // a dead end (a parent not in the map).
+    let mut chain: Vec<i64> = Vec::new();
+    let mut current = start;
+    let base = loop {
+        if let Some(&d) = depths.get(&current) {
+            break d;
+        }
+        chain.push(current);
+        match parent_of.get(&current) {
+            Some(&pid) => current = pid,
+            None => {
+                // Chain can't reach ROOT_ID: every node on it is detached.
+                for id in &chain {
+                    depths.insert(*id, usize::MAX);
+                }
+                return usize::MAX;
+            }
+        }
+    };
+    // `base` is a finite depth at `current`; assign increasing depths back down
+    // the chain. If `base` is `usize::MAX` the whole chain is detached too.
+    if base == usize::MAX {
+        for id in &chain {
+            depths.insert(*id, usize::MAX);
+        }
+        return usize::MAX;
+    }
+    let mut d = base;
+    for &id in chain.iter().rev() {
+        d += 1;
+        depths.insert(id, d);
+    }
+    *depths.get(&start).unwrap_or(&usize::MAX)
+}
+
 /// Compute `dir_stats` for directories under `root` only (bottom-up).
 ///
 /// Called after a subtree scan completes. Resolves the root path to an entry ID,
