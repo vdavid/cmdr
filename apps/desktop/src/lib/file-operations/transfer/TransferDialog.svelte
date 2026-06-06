@@ -2,18 +2,8 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import {
         getVolumeSpace,
-        startScanPreview,
-        cancelScanPreview,
-        checkScanPreviewStatus,
-        onScanPreviewProgress,
-        onScanPreviewComplete,
-        onScanPreviewError,
-        onScanPreviewCancelled,
-        scanVolumeForConflicts,
         DEFAULT_VOLUME_ID,
         type VolumeSpaceInfo,
-        type SourceItemInput,
-        type UnlistenFn,
     } from '$lib/tauri-commands'
     import type {
         SortColumn,
@@ -21,9 +11,7 @@
         ConflictResolution,
         TransferOperationType,
     } from '$lib/file-explorer/types'
-    import { getSetting } from '$lib/settings'
     import { validateDirectoryPath } from '$lib/utils/filename-validation'
-    import { pluralize } from '$lib/utils/pluralize'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -33,6 +21,9 @@
         shouldShowHardlinkNote,
         toVolumeRelativePath,
     } from './transfer-dialog-utils'
+    import { getPathValidationError, formatSpaceInfo } from './transfer-dialog-logic'
+    import { createTransferScanState } from './transfer-scan-state.svelte'
+    import { createTransferConflictCheck } from './transfer-conflict-check.svelte'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import Size from '$lib/ui/Size.svelte'
@@ -116,50 +107,10 @@
     // Volume space info
     let volumeSpace = $state<VolumeSpaceInfo | null>(null)
 
-    // Scan preview state
-    let previewId = $state<string | null>(null)
-    let filesFound = $state(0)
-    let dirsFound = $state(0)
-    // `bytesFound` is the write footprint (what the copy writes). `dedupBytesFound`
-    // is the `du`-equivalent source size; the two differ only when the source has
-    // hardlinks (cargo `target/`, Time Machine, deduped backups), in which case we
-    // show a one-line note clarifying the gap.
-    let bytesFound = $state(0)
-    let dedupBytesFound = $state(0)
-    let isScanning = $state(false)
-    let scanComplete = $state(false)
-    let unlisteners: UnlistenFn[] = []
-    // Promise that resolves once startScanPreview IPC has returned and previewId is set.
-    // handleConfirm awaits this to guarantee previewId is non-null when passed to
-    // TransferProgressDialog, otherwise a fast confirm races with IPC and leaves the
-    // progress dialog stuck in "Scanning 0 files" forever.
-    let scanStarted: Promise<void> = Promise.resolve()
-
     // Whether the user confirmed (so we don't cancel the scan on destroy)
     let confirmed = false
     let destroyed = false
 
-    // Conflict detection state. `totalConflictCount` is the unbounded count of
-    // real conflicts (file clashes + cross-type clashes) for the summary text —
-    // must NOT be derived from a capped slice, or the summary misleads the user
-    // about how many files will actually be skipped. Dir-vs-dir collisions are
-    // NOT conflicts: they always merge silently, so they're surfaced as a
-    // separate informational count (`mergeFolderCount`) and never counted here.
-    // The conflict names (file + cross-type only, never dir-dir) are forwarded
-    // to the backend on confirm so it can bulk-skip them upfront under
-    // `Skip all`. We never render per-conflict rows in this dialog, so we don't
-    // need to keep the full `VolumeConflictInfo[]` array around.
-    let totalConflictCount = $state(0)
-    // Count of source folders that will merge into an existing same-named dest
-    // folder. Informational only — never a conflict, never a radio count.
-    let mergeFolderCount = $state(0)
-    // `true` when any real conflict is a cross-type clash (file-vs-folder either
-    // direction). Drives the upfront "Overwrite all" red warning, mirroring the
-    // per-file dialog's file→folder warning.
-    let hasTypeMismatchConflict = $state(false)
-    let conflictNames = $state<string[]>([])
-    let isCheckingConflicts = $state(false)
-    let conflictCheckComplete = $state(false)
     // Map MCP onConflict string to ConflictResolution, or default to "ask for each"
     const autoConfirmConflictMap: Record<string, ConflictResolution> = {
         skip_all: 'skip',
@@ -213,6 +164,47 @@
             sourceVolumeId === selectedVolumeId,
     )
 
+    // Deep scan-preview orchestration (Size bar + file/dir tallies). The factory
+    // owns the scan listeners, the start/cancel lifecycle, and the Copy/Move
+    // toggle effect that (re)starts or cancels the preview around a same-volume
+    // move. Created synchronously here (component init) so its internal `$effect`
+    // lands in the effect-tracking context (L3).
+    const scan = createTransferScanState({
+        getSourcePaths: () => sourcePaths,
+        getSortColumn: () => sortColumn,
+        getSortOrder: () => sortOrder,
+        getSourceVolumeId: () => sourceVolumeId,
+        getIsSameVolumeMove: () => isSameVolumeMove,
+        getConfirmed: () => confirmed,
+        getDestroyed: () => destroyed,
+    })
+
+    // Cheap top-level conflict check (one dest listing). Runs in parallel with the
+    // deep scan and stays decoupled from it, so a same-volume move can cancel the
+    // deep preview while still surfacing merges + the file-policy radios.
+    const conflicts = createTransferConflictCheck({
+        getSelectedVolumeId: () => selectedVolumeId,
+        getSourcePaths: () => sourcePaths,
+        getEditedPath: () => editedPath,
+        getSourceVolumeId: () => sourceVolumeId,
+        getDestroyed: () => destroyed,
+        log,
+    })
+
+    // Local aliases over the factory getters so the markup reads the same names
+    // it always has. Each tracks the factory's reactive `$state`, so the template
+    // updates exactly as before.
+    const bytesFound = $derived(scan.bytesFound)
+    const dedupBytesFound = $derived(scan.dedupBytesFound)
+    const filesFound = $derived(scan.filesFound)
+    const dirsFound = $derived(scan.dirsFound)
+    const isScanning = $derived(scan.isScanning)
+    const scanComplete = $derived(scan.scanComplete)
+    const totalConflictCount = $derived(conflicts.totalConflictCount)
+    const mergeFolderCount = $derived(conflicts.mergeFolderCount)
+    const hasTypeMismatchConflict = $derived(conflicts.hasTypeMismatchConflict)
+    const isCheckingConflicts = $derived(conflicts.isCheckingConflicts)
+
     const dialogTitle = $derived(generateTitle(activeOperationType, fileCount, folderCount))
     const showHardlinkNote = $derived(
         shouldShowHardlinkNote({
@@ -239,45 +231,14 @@
         scanComplete ? 'done' : isSameVolumeMove ? 'skipped' : 'counting',
     )
 
-    /** Checks whether the destination path is invalid relative to the source paths. */
-    function getPathValidationError(sources: string[], destination: string): string | null {
-        const normDest = destination.replace(/\/+$/, '')
-        const verb = activeOperationType === 'copy' ? 'copy' : 'move'
-
-        for (const source of sources) {
-            const normSource = source.replace(/\/+$/, '')
-            if (normDest === normSource || normDest.startsWith(normSource + '/')) {
-                const folderName = normSource.split('/').pop() ?? normSource
-                return `Can't ${verb} "${folderName}" into its own subfolder`
-            }
-        }
-
-        for (const source of sources) {
-            const normSource = source.replace(/\/+$/, '')
-            const sourceParent = normSource.substring(0, normSource.lastIndexOf('/'))
-            if (normDest === sourceParent) {
-                const fileName = normSource.split('/').pop() ?? normSource
-                return `"${fileName}" is already in this location`
-            }
-        }
-
-        return null
-    }
-
     const pathError = $derived.by(() => {
         const structural = validateDirectoryPath(editedPath)
         if (structural.severity === 'error') return structural.message
-        return getPathValidationError(sourcePaths, editedPath)
+        return getPathValidationError(sourcePaths, editedPath, activeOperationType)
     })
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
-    function formatSpaceInfo(space: VolumeSpaceInfo | null): string {
-        if (!space) return ''
-        const format = getFileSizeFormat()
-        const free = formatFileSizeWithFormat(space.availableBytes, format)
-        const total = formatFileSizeWithFormat(space.totalBytes, format)
-        return `${free} free of ${total}`
-    }
+    const spaceInfoText = $derived(formatSpaceInfo(volumeSpace, (bytes) => formatFileSizeWithFormat(bytes, getFileSizeFormat())))
 
     // Load volume space when volume changes
     async function loadVolumeSpace() {
@@ -307,14 +268,6 @@
         }
     })
 
-    /** Cleans up event listeners for scan preview. */
-    function cleanup() {
-        for (const unlisten of unlisteners) {
-            unlisten()
-        }
-        unlisteners = []
-    }
-
     /**
      * Pending conflict check, captured so `handleConfirm` can await it. Without this,
      * a fast confirm (Enter pressed before the check finishes) sends the operation
@@ -331,179 +284,6 @@
      */
     let conflictCheckPromise: Promise<void> | null = $state(null)
 
-    /** Checks for conflicts at the destination. */
-    async function checkConflicts() {
-        if (destroyed || isCheckingConflicts || conflictCheckComplete) return
-
-        isCheckingConflicts = true
-        try {
-            // Build source item info from the source paths. We extract the
-            // filename from each path for name matching. The real per-item
-            // `is_directory` and size come from the backend, which resolves
-            // them authoritatively from the source volume (one batched stat)
-            // when we pass `sourceVolumeId` + `sourcePaths`. We still send
-            // placeholders here so name matching works even if that resolution
-            // is unavailable (e.g. the source volume vanished).
-            const sourceItems: SourceItemInput[] = sourcePaths.map((path) => {
-                const name = path.split('/').pop() || path
-                return {
-                    name,
-                    size: 0,
-                    modified: null,
-                    isDirectory: false,
-                }
-            })
-
-            const foundConflicts = await scanVolumeForConflicts(
-                selectedVolumeId,
-                sourceItems,
-                editedPath,
-                sourceVolumeId,
-                sourcePaths,
-            )
-
-            // Classify each collision:
-            //  - dir + dir  → a silent merge, not a conflict (informational).
-            //  - everything else (file+file, file+dir, dir+file) → a real
-            //    conflict the file policy governs.
-            // Only real conflicts count toward `totalConflictCount` and feed
-            // the bulk-skip name list; dir-dir merges must never enter the file
-            // bulk-skip set ("Skip all" must not skip folders wholesale).
-            const realConflicts = foundConflicts.filter((c) => !(c.sourceIsDirectory && c.destIsDirectory))
-            mergeFolderCount = foundConflicts.length - realConflicts.length
-            totalConflictCount = realConflicts.length
-            hasTypeMismatchConflict = realConflicts.some((c) => c.sourceIsDirectory !== c.destIsDirectory)
-            conflictNames = realConflicts.map((c) => c.sourcePath)
-            conflictCheckComplete = true
-
-            if (totalConflictCount > 0 || mergeFolderCount > 0) {
-                log.info('Found {count} {conflictsNoun} and {merges} folder merges at destination', {
-                    count: totalConflictCount,
-                    conflictsNoun: pluralize(totalConflictCount, 'conflict'),
-                    merges: mergeFolderCount,
-                })
-            }
-        } catch (err) {
-            log.error('Failed to check for conflicts: {error}', { error: err })
-            // Don't block the operation on conflict check failure
-            conflictCheckComplete = true
-        } finally {
-            isCheckingConflicts = false
-        }
-    }
-
-    /** Accepts the event if it belongs to our scan, filtering stale events from previous scans. */
-    function isOurScanEvent(eventPreviewId: string): boolean {
-        // Don't accept events until we know our previewId from the IPC return.
-        // This prevents adopting stale events from previous orphaned scans.
-        if (!previewId) return false
-        return eventPreviewId === previewId
-    }
-
-    /** Starts the scan preview to count files/dirs/bytes. */
-    async function startScan() {
-        // Subscribe to events BEFORE starting scan (avoid missing fast completions)
-        unlisteners.push(
-            await onScanPreviewProgress((event) => {
-                if (!isOurScanEvent(event.previewId)) return
-                filesFound = event.filesFound
-                dirsFound = event.dirsFound
-                bytesFound = event.bytesFound
-            }),
-        )
-        unlisteners.push(
-            await onScanPreviewComplete((event) => {
-                if (!isOurScanEvent(event.previewId)) return
-                filesFound = event.filesTotal
-                dirsFound = event.dirsTotal
-                bytesFound = event.bytesTotal
-                dedupBytesFound = event.dedupBytesTotal
-                isScanning = false
-                scanComplete = true
-            }),
-        )
-        unlisteners.push(
-            await onScanPreviewError((event) => {
-                if (!isOurScanEvent(event.previewId)) return
-                isScanning = false
-                // Keep showing whatever stats we have
-            }),
-        )
-        unlisteners.push(
-            await onScanPreviewCancelled((event) => {
-                if (!isOurScanEvent(event.previewId)) return
-                isScanning = false
-            }),
-        )
-
-        // Start the scan
-        isScanning = true
-        const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
-        const result = await startScanPreview(sourcePaths, sortColumn, sortOrder, progressIntervalMs, sourceVolumeId)
-        previewId = result.previewId
-
-        // Check if the scan already completed while we were awaiting the IPC return.
-        // Events that arrived before previewId was set were dropped (isOurScanEvent returned false),
-        // so we need to read the backend's cached totals and hydrate the dialog from them.
-        // Without this, M2a's watcher-backed oracle (a ~5 ms scan) lands its events
-        // before we register listeners and the dialog shows "✓ 0 files" forever.
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- may have changed during await
-        if (isScanning) {
-            const totals = await checkScanPreviewStatus(previewId)
-            if (totals) {
-                filesFound = totals.filesTotal
-                dirsFound = totals.dirsTotal
-                bytesFound = totals.bytesTotal
-                dedupBytesFound = totals.dedupBytesTotal
-                isScanning = false
-                scanComplete = true
-            }
-        }
-    }
-
-    /** Cancels the in-flight deep scan preview and resets its state, without
-     *  touching the (independent) conflict check. Used when the user flips to a
-     *  same-volume Move, where the deep byte scan is waste — the move is a
-     *  rename. Idempotent: a no-op when no preview is running. */
-    function cancelPreview() {
-        if (previewId) {
-            void cancelScanPreview(previewId)
-        }
-        cleanup() // drop the scan-preview listeners
-        previewId = null
-        isScanning = false
-        scanComplete = false
-        filesFound = 0
-        dirsFound = 0
-        bytesFound = 0
-        dedupBytesFound = 0
-        scanStarted = Promise.resolve()
-    }
-
-    // Copy/Move toggle gating for same-volume moves. `startScan()` runs once in
-    // `onMount` for the initial operation; this effect handles LATER toggles:
-    //  - flip to a same-volume Move → cancel the deep recursive preview (a
-    //    rename moves zero bytes, so there's nothing for the Size bar to show).
-    //  - flip away (to Copy, or to a cross-volume Move) → (re)start the preview,
-    //    because Copy genuinely needs byte totals for its Size bar.
-    // The conflict check is independent (runs in `onMount`), so it's unaffected.
-    let toggleEffectInitialized = false
-    $effect(() => {
-        // Track the reactive inputs.
-        const sameVolumeMove = isSameVolumeMove
-        if (!toggleEffectInitialized) {
-            // Skip the first run: `onMount` owns the initial scan/skip decision.
-            toggleEffectInitialized = true
-            return
-        }
-        if (sameVolumeMove) {
-            cancelPreview()
-        } else if (!previewId && !confirmed && !destroyed) {
-            // No preview running and we're back on a path that needs one: start it.
-            scanStarted = startScan()
-        }
-    })
-
     onMount(async () => {
         // Focus and select the path input
         await tick()
@@ -515,18 +295,17 @@
         // Start the deep scan preview immediately — UNLESS this is a same-volume
         // move, where the backend does a server-side rename (zero bytes) and the
         // recursive byte scan is pure waste (the 30–40 s "Verifying before move…"
-        // this fast path eliminates). Track the promise so handleConfirm can
-        // await it: this ensures previewId is set before onConfirm fires.
-        if (!isSameVolumeMove) {
-            scanStarted = startScan()
-        }
+        // this fast path eliminates). The scan factory tracks the promise so
+        // handleConfirm can await it: this ensures previewId is set before
+        // onConfirm fires.
+        scan.start()
 
         // Run the cheap top-level conflict check in parallel with the scan
         // preview (it's one dest listing, not the recursive byte scan). MUST be
         // assigned BEFORE the auto-confirm branch so the fast path's
         // `handleConfirm` await guard sees a real promise and dispatches with
-        // `conflictNames` populated. Mirrors how `scanStarted` is assigned above.
-        conflictCheckPromise = checkConflicts()
+        // `conflictNames` populated. Mirrors how the scan promise is tracked above.
+        conflictCheckPromise = conflicts.check()
 
         // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
         if (autoConfirm) {
@@ -543,10 +322,13 @@
         // `cancelScanPreview` also evicts the cached `CachedScanResult`, so a
         // dialog dismissed AFTER the scan completed doesn't leak the cache until
         // quit.
-        if (previewId && !confirmed) {
-            void cancelScanPreview(previewId)
+        if (!confirmed) {
+            scan.freeAndCleanup()
+        } else {
+            // Confirmed: the progress dialog consumes the scan, so only drop our
+            // listeners without cancelling the (still-needed) preview.
+            scan.cleanup()
         }
-        cleanup()
     })
 
     async function handleConfirm() {
@@ -559,18 +341,18 @@
         // gating on a scan. The conflict check still runs, so we await it for
         // `conflictNames`. This is the FE half of the perf fix.
         if (isSameVolumeMove) {
-            cancelPreview()
+            scan.cancelPreview()
             if (conflictCheckPromise) {
                 await conflictCheckPromise
             }
-            onConfirm(editedPath, selectedVolumeId, null, conflictPolicy, activeOperationType, false, conflictNames)
+            onConfirm(editedPath, selectedVolumeId, null, conflictPolicy, activeOperationType, false, conflicts.conflictNames)
             return
         }
         // Wait for startScanPreview IPC to return so previewId is set. Without this,
         // a fast confirm (auto-confirm, Playwright test, rapid Enter keypress) races
         // with the IPC and leaves the progress dialog with a null previewId that it
         // cannot recover from once scan events have already been emitted.
-        await scanStarted
+        await scan.scanStarted
         // Also wait for the conflict scan if it's still running. Without this, a fast
         // confirm sends `conflicts: []` to the backend even when conflicts exist,
         // the user never sees the radio policy section, and the operation runs with
@@ -582,11 +364,11 @@
         onConfirm(
             editedPath,
             selectedVolumeId,
-            previewId,
+            scan.previewId,
             conflictPolicy,
             activeOperationType,
-            isScanning,
-            conflictNames,
+            scan.isScanning,
+            conflicts.conflictNames,
         )
     }
 
@@ -594,10 +376,7 @@
         // Free the scan preview (cancels an in-flight scan and evicts any cached
         // result). Regardless of `isScanning`, so a dismiss after the scan
         // completed doesn't leak the cache.
-        if (previewId) {
-            void cancelScanPreview(previewId)
-        }
-        cleanup()
+        scan.freeAndCleanup()
         onCancel()
     }
 
@@ -656,7 +435,7 @@
             {/each}
         </select>
         {#if volumeSpace}
-            <span class="space-info">{formatSpaceInfo(volumeSpace)}</span>
+            <span class="space-info">{spaceInfoText}</span>
         {/if}
     </div>
 
