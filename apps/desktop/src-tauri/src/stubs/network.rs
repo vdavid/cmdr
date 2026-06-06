@@ -392,6 +392,25 @@ pub async fn reconnect_smb_volume_with_credentials(
     Err("Direct SMB connection not supported on this platform".to_string())
 }
 
+/// Probe for a Finder-saved SMB password (stub: always false).
+#[tauri::command]
+#[specta::specta]
+pub async fn system_has_saved_smb_password(_volume_id: String) -> Result<bool, String> {
+    Ok(false)
+}
+
+/// Upgrades an SMB volume using a saved system password (stub: returns error).
+#[tauri::command]
+#[specta::specta]
+pub async fn upgrade_to_smb_volume_using_saved_password(
+    _volume_id: String,
+    _app_handle: tauri::AppHandle,
+) -> Result<UpgradeResult, String> {
+    Ok(UpgradeResult::NetworkError {
+        message: "Reading saved SMB passwords is only supported on macOS".to_string(),
+    })
+}
+
 /// Disconnects an SMB volume (stub: returns error).
 #[tauri::command]
 #[specta::specta]

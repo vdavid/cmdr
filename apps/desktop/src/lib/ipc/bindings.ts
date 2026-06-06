@@ -2018,6 +2018,25 @@ export const commands = {
       __TAURI_INVOKE('upgrade_to_smb_volume_with_credentials', { volumeId, username, password, rememberInKeychain }),
     ),
   /**
+   *  Does the system (login) keychain hold an SMB password another app (Finder) saved for
+   *  this volume's server? Attributes-only probe — **never triggers the consent dialog** —
+   *  so the frontend can decide whether to offer the "Use the password macOS saved"
+   *  affordance. macOS-only; returns `false` everywhere else.
+   */
+  systemHasSavedSmbPassword: (volumeId: string) =>
+    typedError<boolean, string>(__TAURI_INVOKE('system_has_saved_smb_password', { volumeId })),
+  /**
+   *  Upgrades an OS-mounted SMB volume to a direct smb2 connection using the password that
+   *  another app (Finder/macOS) already saved in the login keychain — so the user doesn't
+   *  retype it. Reading the password triggers the macOS consent dialog (the frontend primes
+   *  the user first; we can't customize the system dialog's text). On success, the password
+   *  is also copied into Cmdr's own store so future reconnects are silent. If nothing is
+   *  saved or the user denies access, returns `CredentialsNeeded` so the frontend falls back
+   *  to its login form. **User-initiated only** — never call this at startup.
+   */
+  upgradeToSmbVolumeUsingSavedPassword: (volumeId: string) =>
+    typedError<UpgradeResult, string>(__TAURI_INVOKE('upgrade_to_smb_volume_using_saved_password', { volumeId })),
+  /**
    *  Tries to rebuild the smb2 session for a Disconnected `SmbVolume` in place.
    *
    *  Called by the frontend reconnect manager on each backoff tick (and on

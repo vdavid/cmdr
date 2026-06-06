@@ -311,6 +311,10 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::upgrade_to_smb_volume_with_credentials,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
+        crate::commands::network::system_has_saved_smb_password,
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        crate::commands::network::upgrade_to_smb_volume_using_saved_password,
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::reconnect_smb_volume,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::reconnect_smb_volume_with_credentials,
@@ -371,6 +375,10 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::stubs::network::upgrade_to_smb_volume,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::network::upgrade_to_smb_volume_with_credentials,
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        crate::stubs::network::system_has_saved_smb_password,
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        crate::stubs::network::upgrade_to_smb_volume_using_saved_password,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::network::reconnect_smb_volume,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]

@@ -14,6 +14,10 @@ use std::sync::LazyLock;
 #[cfg(target_os = "macos")]
 mod keychain_macos;
 
+/// Reading SMB passwords other apps (Finder/macOS) saved in the login keychain. macOS-only.
+#[cfg(target_os = "macos")]
+pub mod system_keychain_smb;
+
 #[cfg(target_os = "linux")]
 mod keyring_linux;
 

@@ -351,6 +351,34 @@ pub(crate) fn friendly_server_name(server: &str) -> String {
     resolve_ip_to_hostname(server).unwrap_or_else(|| server.to_string())
 }
 
+/// The server-name forms another app (Finder) might have keyed an SMB password under for
+/// this server, gathered from the discovery state. Finder typically uses the full mDNS
+/// service name (`Naspolya._smb._tcp.local`), while we mount by IP — so for each
+/// discovered host that's the same identity as `server`, we contribute its advertised
+/// name, its `.local` hostname, and the synthesized `{name}._smb._tcp.local` service form.
+/// Pure over `hosts` for testability; the live wrapper feeds `get_discovered_hosts()`.
+pub(crate) fn system_keychain_aliases(server: &str) -> Vec<String> {
+    system_keychain_aliases_from(server, &get_discovered_hosts())
+}
+
+fn system_keychain_aliases_from(server: &str, hosts: &[crate::network::NetworkHost]) -> Vec<String> {
+    use crate::network::server_identity::same_server;
+    let mut out = Vec::new();
+    for h in hosts {
+        let matches = same_server(&h.name, server, hosts)
+            || h.hostname.as_deref().is_some_and(|hn| same_server(hn, server, hosts))
+            || h.ip_address.as_deref() == Some(server);
+        if matches {
+            out.push(h.name.clone());
+            out.push(format!("{}._smb._tcp.local", h.name));
+            if let Some(hn) = &h.hostname {
+                out.push(hn.clone());
+            }
+        }
+    }
+    out
+}
+
 /// Tries to retrieve SMB credentials from the Keychain.
 ///
 /// Tries multiple keys: by IP (from statfs), by hostname (from mDNS discovery),
@@ -399,6 +427,33 @@ pub(crate) async fn get_keychain_password(
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn system_keychain_aliases_include_the_mdns_service_form_for_an_ip() {
+        use crate::network::{HostSource, NetworkHost};
+        let hosts = [NetworkHost {
+            id: "naspolya".into(),
+            name: "Naspolya".into(),
+            hostname: Some("Naspolya.local".into()),
+            ip_address: Some("192.168.1.111".into()),
+            port: 445,
+            source: HostSource::Discovered,
+        }];
+        // We mount by IP; Finder keyed its password by the mDNS service name. The alias
+        // set must include that form so the keychain lookup can find it.
+        let aliases = system_keychain_aliases_from("192.168.1.111", &hosts);
+        assert!(
+            aliases.contains(&"Naspolya._smb._tcp.local".to_string()),
+            "got {aliases:?}"
+        );
+        assert!(aliases.contains(&"Naspolya.local".to_string()));
+        assert!(aliases.contains(&"Naspolya".to_string()));
+    }
+
+    #[test]
+    fn system_keychain_aliases_empty_for_an_unknown_server() {
+        assert!(system_keychain_aliases_from("10.9.9.9", &[]).is_empty());
+    }
 
     #[test]
     fn is_private_ipv4_recognizes_rfc1918_and_link_local() {
