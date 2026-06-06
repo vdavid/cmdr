@@ -485,7 +485,7 @@ async function performSingleFileDrag(
   // Don't reset draggingFromSelf after the start call; it resolves before the
   // OS delivers drop/leave events. The flag is cleared by the drop handler.
   draggingFromSelf = true
-  await startDragPaths([filePath], resolved.path)
+  await startDragPaths([filePath], resolved.path, sourceVolumeId)
 }
 
 /**
@@ -550,5 +550,5 @@ async function performPathsDrag(context: PathsDragContext): Promise<void> {
   await setSelfDragResolvedOperation('move')
 
   draggingFromSelf = true
-  await startDragPaths(context.paths, resolved.path)
+  await startDragPaths(context.paths, resolved.path, context.sourceVolumeId)
 }

@@ -590,10 +590,16 @@ export const commands = {
     ),
   /**
    *  Begins a native drag with the given file paths. Used for single-file drags
-   *  where the frontend has the path directly (no listing-cache lookup needed).
+   *  where the frontend has the path directly (no listing-cache lookup needed),
+   *  and for the search-results pane's paths-by-value drag.
+   *
+   *  `source_volume_id` lets the caller declare the session's source volume so the
+   *  pasteboard layout can strip materializable representations for virtual
+   *  volumes (the FE drag-start path has this id since the recorded-identity work).
+   *  Absent (`None`) defaults to a local session — back-compatible.
    */
-  startDragPaths: (paths: string[], iconPath: string) =>
-    typedError<null, string>(__TAURI_INVOKE('start_drag_paths', { paths, iconPath })),
+  startDragPaths: (paths: string[], iconPath: string, sourceVolumeId: string | null) =>
+    typedError<null, string>(__TAURI_INVOKE('start_drag_paths', { paths, iconPath, sourceVolumeId })),
   /**
    *  Marks a self-drag as active and stores the rich image path so the native swizzle can:
    *  - Hide the OS drag image over our window (swap to transparent in `draggingEntered:`)

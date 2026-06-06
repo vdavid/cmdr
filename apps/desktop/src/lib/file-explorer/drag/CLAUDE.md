@@ -17,16 +17,30 @@ Two backend commands, both routed through `native_drag.rs` so the pasteboard pay
   against, but the FE already has absolute paths on each row, so we send them directly. Wired via the `PathsDragContext`
   variant in `drag-drop.ts`; FullList picks this branch automatically when `usingStaticEntries`.
 
-Pasteboard layout per drag (one `NSPasteboardItem` per file):
+Pasteboard layout is decided ONCE per drag session by the source volume's locality, never per item (a single drag can't
+mix local and virtual items — single-pane selections, single-volume panes). The locality-aware composition is a pure,
+unit-tested policy in `native_drag/type_plan.rs::plan_pasteboard_items`; `native_drag/mod.rs` is a thin executor of the
+plan. The backend derives locality from `Volume::supports_local_fs_access()`: `start_selection_drag` reads it off the
+listing's volume; `start_drag_paths` takes an optional `sourceVolumeId` (threaded from the FE drag-start path, which has
+it since the recorded-identity work; `null` defaults to local).
 
-- Every item: `public.file-url` (the URL's `absoluteString`): Finder, IntelliJ, etc. iterate items reading this.
-- First item only: `public.utf8-plain-text` with the full shell-escaped path list joined by spaces (terminals like Warp
-  etc.) read this via `pasteboard.string(forType:)` and insert the text at the cursor.
-- Later items: `public.utf8-plain-text` with their own escaped path (so item-iterating consumers don't see duplicates).
-- First item only: `NSFilenamesPboardType` (legacy `NSArray<NSString>` of all paths). Required for stock wry's
-  `collect_paths`, which reads only this type and `unwrap()`s if absent; see
-  [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix. Drop this once wry ships a release
-  containing the fix and we bump our `tauri-runtime-wry`.
+- **Local sessions** (real local FS or OS-mounted shares — `file://` URLs are real) keep the legacy layout
+  byte-for-byte, one `NSPasteboardItem` per file:
+  - Every item: `public.file-url` (the URL's `absoluteString`): Finder, IntelliJ, etc. iterate items reading this.
+  - First item only: `public.utf8-plain-text` with the full shell-escaped path list joined by spaces (terminals like
+    Warp etc.) read this via `pasteboard.string(forType:)` and insert the text at the cursor.
+  - Later items: `public.utf8-plain-text` with their own escaped path (so item-iterating consumers don't see
+    duplicates).
+  - First item only: `NSFilenamesPboardType` (legacy `NSArray<NSString>` of all paths). Required for stock wry's
+    `collect_paths`, which reads only this type and `unwrap()`s if absent; see
+    [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix. Drop this once wry ships a release
+    containing the fix and we bump our `tauri-runtime-wry`.
+- **Virtual sessions** (MTP, direct SMB, search-results — paths with no local backing) advertise NOTHING external apps
+  can materialize: no file-url, no text, no filenames, across EVERY item. A virtual path's `file://` URL is bogus and
+  the legacy types are exactly what Finder turned into the `.textClipping` junk file. The M0 spike verified promise-only
+  items still fire wry's drop event with empty paths (no panic), so in-app self-drags keep working via recorded identity
+  (below) and an external drop is a clean no-op. The drag image and count badge are unaffected (one `NSDraggingItem` per
+  file regardless; `setDraggingFrame:contents:` is writer-agnostic).
 
 Source operation mask: permissive (`Copy | Link | Generic | Move`). macOS arbitrates the actual operation via modifier
 keys (Alt → Copy, Cmd → Move, Ctrl-Alt → Link) and destination preference. Restricting the mask to a single op breaks
@@ -96,26 +110,20 @@ round-trip entirely.
 External drops (no in-flight self-drag) keep the resolver path: their paths are genuine local absolute paths from Finder
 et al.
 
-### Drag-out of a non-local pane to external apps (known limitation)
+### Drag-out of a non-local pane to external apps (clean no-op, promises pending)
 
-Dragging a file from an MTP / SMB pane OUT to Finder or another external app publishes a `file://` URL built from the
-VOLUME-RELATIVE path (`file:///photos/sunset.jpg`) — a bogus local URL the source file doesn't back. Finder typically
-no-ops on it (the referenced path doesn't exist); a terminal pastes the literal escaped string.
+Dragging a file from an MTP / SMB pane OUT to Finder or another external app publishes an EMPTY pasteboard item (no
+file-url, no text, no filenames — see the locality-aware layout above). So the external drop is a clean no-op: Finder
+makes nothing, a terminal inserts nothing. No more `.textClipping` junk file (the old layout published a bogus
+volume-relative `file://` URL plus a path string, and Finder materialized the string into
+`photos:sunset.jpg.textClipping`).
 
-This is a **known limitation**, made deliberate rather than left undefined:
-
-- **The pasteboard payload can't simply be stripped or sentinel-ized for non-local panes.** Stock wry's `collect_paths`
-  reads only `NSFilenamesPboardType` and `unwrap()`s if it's absent (see the gotcha below), so an in-app self-drag
-  re-entry would panic without a non-empty filenames payload.
-- **A real fix is disproportionate today.** It would need the backend to either materialize the MTP/SMB file to a temp
-  local path before drag-out, or publish an `NSFilesPromisePboardType` (promised-file) provider that streams bytes on
-  drop. Both are sizable native efforts.
-- **In-app drops are already correct regardless** — they use the recorded self-drag identity above, NOT the pasteboard
-  paths. So this limitation is confined to drags whose destination is an EXTERNAL app.
-
-**Recommendation:** if/when this matters to users, implement the promised-file provider (`NSFilesPromisePboardType` +
-`draggingSession:writeToURL:`) so a drop into Finder streams the real bytes. Until then, the behavior is documented and
-non-destructive (Finder no-ops; no data loss).
+- **In-app drops are unaffected** — they use the recorded self-drag identity above, NOT the pasteboard paths, and the M0
+  spike verified the empty-pasteboard layout still fires wry's drop event (empty path vec, no panic). So a virtual
+  self-drag still works.
+- **External drops can't download yet.** Making a drop into Finder/Desktop actually download the bytes needs an
+  `NSFilePromiseProvider` per item (streams bytes on drop via `writePromiseToURL:`). That's the next milestone; the
+  empty layout here is its safe precursor (nothing materializable until the promise writer lands).
 
 Drop preparation runs through the shared transfer entry seam (`pane/transfer-entry.ts`), the SAME path F5/F6 and
 clipboard paste use, so all three entry points prepare a transfer identically. On drop,
@@ -169,15 +177,16 @@ Key files:
 - **Decision**: Rich PNG drag image for external visibility, transparent 1x1 inside window
   - **Why**: Self-drags swap images mid-drag via `setDraggingFrame:contents:` (entered → transparent, exited → rich).
     DOM overlay provides feedback inside.
-- **Decision**: Custom `native_drag.rs` instead of the upstream `drag` crate
+- **Decision**: Custom `native_drag/` module instead of the upstream `drag` crate
   - **Why**: The upstream crate writes only `public.file-url` per item and uses a single-op mask (Move OR Copy). That
     failed three ways: (1) terminals like Warp listen for `public.utf8-plain-text`, not file URLs, so drops were
     silently dropped; (2) wry's `collect_paths` reads `NSFilenamesPboardType` and panics if the auto-derivation fails;
     see [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix; (3) terminals only accept
-    `NSDragOperationCopy`, so a Move-only source mask makes them reject the drop entirely. Our version advertises
-    file-URL + shell-escaped text + legacy filenames per the layout above, and publishes a permissive op mask.
-    Finder/IntelliJ behavior is unchanged (they read file URLs); terminals get working text drops; macOS modifier keys
-    arbitrate the operation natively.
+    `NSDragOperationCopy`, so a Move-only source mask makes them reject the drop entirely. For a LOCAL session our
+    version advertises file-URL + shell-escaped text + legacy filenames per the layout above, and always publishes a
+    permissive op mask. Finder/IntelliJ behavior is unchanged (they read file URLs); terminals get working text drops;
+    macOS modifier keys arbitrate the operation natively. For a VIRTUAL session it advertises an empty item (see the
+    locality-aware layout above), so an external drop can't materialize garbage.
 - **Decision**: Modifier keys tracked via NSEvent.modifierFlags
   - **Why**: Tauri doesn't expose modifier state in DragDropEvent. Emits `drag-modifiers` event only when state changes.
 - **Decision**: Drop operation follows Finder's volume-aware default plus Alt/Cmd/Shift modifiers

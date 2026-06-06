@@ -40,6 +40,9 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Dragging a file from a phone or network pane out to Finder, the Desktop, or a terminal no longer drops a junk
+  `.textClipping` file (or pastes a meaningless path). The drag just does nothing outside Cmdr for now, and still works
+  as before inside Cmdr
 - Resolve conflicts file by file inside a folder merge on network and phone drives (SMB, MTP, and cross-volume). A newer
   file deep in the tree no longer loses to an older one behind a single folder-level OK; each clashing file follows your
   conflict choice ([6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))

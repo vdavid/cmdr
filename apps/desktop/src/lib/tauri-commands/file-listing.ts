@@ -277,12 +277,17 @@ export async function startSelectionDrag(
 
 /**
  * Begins a native drag with explicit file paths. Used for single-file drags
- * where the frontend has the path directly. Advertises both `public.file-url`
- * and `public.utf8-plain-text` so terminal apps (Warp, etc.) can paste paths
- * as text. Operation mask is permissive; macOS picks the actual operation.
+ * where the frontend has the path directly, and the search-results paths-by-value
+ * drag. For a LOCAL source volume the pasteboard advertises `public.file-url` +
+ * `public.utf8-plain-text` so terminal apps (Warp, etc.) can paste paths as text;
+ * the operation mask is permissive and macOS picks the actual operation. For a
+ * VIRTUAL source volume (MTP, direct SMB, search-results) the backend strips
+ * those representations so an external drop can't materialize garbage. Pass the
+ * source volume id so the backend can tell the two apart; `null` defaults to a
+ * local session.
  */
-export async function startDragPaths(paths: string[], iconPath: string): Promise<void> {
-  const res = await commands.startDragPaths(paths, iconPath)
+export async function startDragPaths(paths: string[], iconPath: string, sourceVolumeId: string | null): Promise<void> {
+  const res = await commands.startDragPaths(paths, iconPath, sourceVolumeId)
   if (res.status === 'error') throwIpcError(res.error)
 }
 

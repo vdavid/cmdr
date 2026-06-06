@@ -3,7 +3,7 @@
 #[cfg(target_os = "macos")]
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 #[cfg(target_os = "macos")]
-use crate::native_drag;
+use crate::native_drag::{self, DragSessionLocality};
 #[cfg(target_os = "macos")]
 use std::path::PathBuf;
 #[cfg(target_os = "macos")]
@@ -11,24 +11,59 @@ use std::sync::mpsc::channel;
 #[cfg(target_os = "macos")]
 use tauri::Manager;
 
+/// Resolves a source volume id to its drag-session locality.
+///
+/// Local FS and OS-mounted shares (`supports_local_fs_access() == true`) keep the
+/// legacy file-url layout; protocol-only / virtual volumes (MTP, direct SMB,
+/// search-results) advertise nothing materializable. An unknown or absent id
+/// (the back-compatible default for callers that don't know their volume)
+/// resolves to `Local` — the conservative choice that preserves today's layout.
+#[cfg(target_os = "macos")]
+fn locality_for_volume(volume_id: Option<&str>) -> DragSessionLocality {
+    let Some(volume_id) = volume_id else {
+        return DragSessionLocality::Local;
+    };
+    match crate::file_system::get_volume_manager().get(volume_id) {
+        Some(volume) if !volume.supports_local_fs_access() => DragSessionLocality::Virtual,
+        _ => DragSessionLocality::Local,
+    }
+}
+
 /// Begins a native drag with the given file paths. Used for single-file drags
-/// where the frontend has the path directly (no listing-cache lookup needed).
+/// where the frontend has the path directly (no listing-cache lookup needed),
+/// and for the search-results pane's paths-by-value drag.
+///
+/// `source_volume_id` lets the caller declare the session's source volume so the
+/// pasteboard layout can strip materializable representations for virtual
+/// volumes (the FE drag-start path has this id since the recorded-identity work).
+/// Absent (`None`) defaults to a local session — back-compatible.
 #[cfg(target_os = "macos")]
 #[tauri::command]
 #[specta::specta]
-pub fn start_drag_paths(app: tauri::AppHandle, paths: Vec<String>, icon_path: String) -> Result<(), String> {
+pub fn start_drag_paths(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+    icon_path: String,
+    source_volume_id: Option<String>,
+) -> Result<(), String> {
     let path_bufs: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
     if path_bufs.is_empty() {
         return Err("No valid files to drag".to_string());
     }
-    run_drag_on_main_thread(&app, path_bufs, PathBuf::from(icon_path))
+    let locality = locality_for_volume(source_volume_id.as_deref());
+    run_drag_on_main_thread(&app, path_bufs, PathBuf::from(icon_path), locality)
 }
 
 /// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
 #[specta::specta]
-pub fn start_drag_paths(_app: tauri::AppHandle, _paths: Vec<String>, _icon_path: String) -> Result<(), String> {
+pub fn start_drag_paths(
+    _app: tauri::AppHandle,
+    _paths: Vec<String>,
+    _icon_path: String,
+    _source_volume_id: Option<String>,
+) -> Result<(), String> {
     Err("Drag operation is not yet supported on this platform".to_string())
 }
 
@@ -50,7 +85,12 @@ pub fn start_selection_drag(
         return Err("No valid files to drag".to_string());
     }
 
-    run_drag_on_main_thread(&app, paths, PathBuf::from(icon_path))
+    // The listing knows its own volume, so the session's locality is derivable
+    // here without a new parameter.
+    let volume_id = crate::file_system::listing::get_listing_volume_id_and_path(&listing_id).map(|(vid, _)| vid);
+    let locality = locality_for_volume(volume_id.as_deref());
+
+    run_drag_on_main_thread(&app, paths, PathBuf::from(icon_path), locality)
 }
 
 /// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
@@ -72,12 +112,17 @@ pub fn start_selection_drag(
 /// `NSDraggingItem`s and the source class are not `Send`, so everything happens inside
 /// the closure; the result travels back via a one-shot channel.
 #[cfg(target_os = "macos")]
-fn run_drag_on_main_thread(app: &tauri::AppHandle, paths: Vec<PathBuf>, icon_path: PathBuf) -> Result<(), String> {
+fn run_drag_on_main_thread(
+    app: &tauri::AppHandle,
+    paths: Vec<PathBuf>,
+    icon_path: PathBuf,
+    locality: DragSessionLocality,
+) -> Result<(), String> {
     let window = app.get_webview_window("main").ok_or("Main window not found")?;
     let (tx, rx) = channel();
 
     app.run_on_main_thread(move || {
-        let result = native_drag::start_drag(&window, paths, &icon_path);
+        let result = native_drag::start_drag(&window, paths, &icon_path, locality);
         let _ = tx.send(result);
     })
     .map_err(|e| format!("Failed to run on main thread: {}", e))?;
