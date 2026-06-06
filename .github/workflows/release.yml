@@ -42,15 +42,35 @@ jobs:
         run: pnpm exec svelte-kit sync
         working-directory: ./apps/desktop
 
-      # No manual keychain/cert-import step: tauri-action's bundler does the full signing-keychain
-      # setup itself from the APPLE_CERTIFICATE/APPLE_CERTIFICATE_PASSWORD env vars below (create a
-      # temp keychain, import the cert, set the key-partition-list, auto-detect the Developer ID).
-      # A manual `security import` on top of that put the same cert in two keychains in the search
-      # list, which made codesign fail intermittently with errSecInternalComponent (ambiguous
-      # identity). It also did `security list-keychain -d user -s`, replacing the user search list
-      # and dropping the login keychain (where `gh`'s token lives), which broke `gh` on this
-      # self-hosted runner. Letting the bundler own signing keeps exactly one cert in the search
-      # list and leaves the login keychain in place.
+      - name: Set up llama-server signing keychain
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # tauri-action's bundler does the APP-BUNDLE signing-keychain setup itself from the
+          # APPLE_CERTIFICATE env vars, but only at BUNDLING time. The llama-server dylib signing
+          # in beforeBuildCommand (download-llama-server.go) runs BEFORE that, and the login
+          # keychain's private key isn't usable from this launchd-launched runner: codesign fails
+          # with errSecInternalComponent (works fine from a GUI shell). Give that signing its own
+          # hermetic keychain.
+          #
+          # Deliberately NOT added to the keychain search list: download-llama-server.go targets
+          # it explicitly via codesign --keychain ($LLAMA_SIGN_KEYCHAIN), so the identity never
+          # appears twice in the search list. A previous manual-import step that DID join the
+          # search list caused intermittent errSecInternalComponent failures (ambiguous identity)
+          # and once broke `gh` by dropping the login keychain from the list. Don't re-add it.
+          KEYCHAIN_PATH="$RUNNER_TEMP/llama-sign.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/llama-sign-cert.p12"
+          security import "$RUNNER_TEMP/llama-sign-cert.p12" -k "$KEYCHAIN_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/llama-sign-cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH" > /dev/null
+          echo "LLAMA_SIGN_KEYCHAIN=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
 
       - name: Set up notarization credentials
         env:
@@ -94,6 +114,13 @@ jobs:
           releaseName: 'Cmdr ${{ github.ref_name }}'
           releaseBody: 'See CHANGELOG.md for details.'
           releaseDraft: false
+
+      - name: Delete llama-server signing keychain
+        if: always()
+        run: |
+          if [ -n "${LLAMA_SIGN_KEYCHAIN:-}" ] && [ -f "$LLAMA_SIGN_KEYCHAIN" ]; then
+            security delete-keychain "$LLAMA_SIGN_KEYCHAIN"
+          fi
 
       - name: Restore keychain search list
         if: always()

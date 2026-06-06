@@ -123,9 +123,19 @@ main, and triggers a website deploy. If it fails:
 
 ### `codesign` fails with `errSecInternalComponent` (and `gh` stops working after a release)
 
-`errSecInternalComponent` from `codesign` means the signing key can't be resolved cleanly, almost always because the
-**same Developer ID identity is reachable from more than one keychain in the search list** (ambiguous resolution). Two
-ways this happened on the self-hosted runner:
+`errSecInternalComponent` from `codesign` means the signing key can't be resolved or accessed cleanly. Three ways this
+happened on the self-hosted runner:
+
+- **The llama-server dylib signing in `beforeBuildCommand` leaned on the login keychain.** tauri-action's bundler sets
+  up its own signing keychain from `APPLE_CERTIFICATE`, but only at bundling time; `download-llama-server.go` signs the
+  bundled dylibs before that. The login keychain's private key isn't usable from the launchd-launched runner (the exact
+  same `codesign` command works from a GUI shell), so every matrix job failed ~30 s in, and a runner-service restart
+  doesn't help. The fix in `release.yml` ("Set up llama-server signing keychain") imports the cert into a dedicated
+  keychain that the Go script targets explicitly via `codesign --keychain` (`LLAMA_SIGN_KEYCHAIN`), deliberately kept
+  OUT of the keychain search list so the two identity copies can never make resolution ambiguous.
+
+The other two are about the **same Developer ID identity being reachable from more than one keychain in the search
+list** (ambiguous resolution):
 
 - **A duplicate cert across keychains.** The Developer ID Application cert existed in both the login keychain (with its
   private key) and the System keychain (a stray keyless copy). Check with `security find-identity -v -p codesigning`: if

@@ -266,13 +266,23 @@ func writeFile(path string, r io.Reader, mode os.FileMode) error {
 
 // codesign signs a binary with the given identity, hardened runtime, and secure timestamp.
 func codesign(path, identity string) error {
-	cmd := exec.Command("codesign",
+	args := []string{
 		"--force",
 		"--options", "runtime",
 		"--timestamp",
 		"--sign", identity,
-		path,
-	)
+	}
+	// In CI the identity lives in a dedicated keychain that's deliberately NOT in the
+	// keychain search list (see the "Set up llama-server signing keychain" step in
+	// release.yml). Target it explicitly so identity resolution can't be ambiguous and
+	// doesn't depend on the runner session's login-keychain access (codesign fails with
+	// errSecInternalComponent when a launchd-launched runner tries to use the login
+	// keychain's private key).
+	if keychain := os.Getenv("LLAMA_SIGN_KEYCHAIN"); keychain != "" {
+		args = append(args, "--keychain", keychain)
+	}
+	args = append(args, path)
+	cmd := exec.Command("codesign", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w: %s", err, string(output))
