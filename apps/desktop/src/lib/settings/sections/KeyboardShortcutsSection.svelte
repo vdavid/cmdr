@@ -779,11 +779,33 @@
     .commands-list {
         max-height: 400px;
         overflow-y: auto;
-        /* Reserve the scrollbar gutter so the row's trailing controls (the + add
-           button, the macOS badge) never sit under an overlay scrollbar when the
-           list scrolls. `stable` keeps the layout steady whether or not the bar
-           is showing, which reads cleaner than a forced always-on scrollbar. */
+        /* Keep the row's trailing controls (the + add button, the macOS badge) out
+           from under the scrollbar. macOS overlay scrollbars float above content and
+           take no layout space (`scrollbar-gutter` alone does nothing for them), so
+           styling `::-webkit-scrollbar` below opts this scroller into a classic,
+           space-taking scrollbar; the gutter then keeps the width stable whether or
+           not the list is long enough to scroll. */
         scrollbar-gutter: stable;
+    }
+
+    /* Styling any `::-webkit-scrollbar` part switches WebKit from overlay to classic
+       scrollbars for this element — that switch is the actual fix; the colors just
+       keep it native-looking. */
+    .commands-list::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .commands-list::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: var(--radius-full);
+    }
+
+    .commands-list::-webkit-scrollbar-thumb:hover {
+        background: var(--color-text-tertiary);
+    }
+
+    .commands-list::-webkit-scrollbar-track {
+        background: transparent;
     }
 
     .scope-group {
