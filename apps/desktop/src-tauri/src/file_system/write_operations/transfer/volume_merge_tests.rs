@@ -9,7 +9,9 @@
 //! exactly as in production. Shared fixtures `make_state` / `make_volumes` live in
 //! `volume_copy_tests.rs` (`super::tests`).
 
-use super::super::conflict_responder_test_support::{ConflictResponderSink, file_conflict_count};
+use super::super::conflict_responder_test_support::{
+    ConflictResponderSink, file_conflict_count, folder_conflict_count_both_dirs,
+};
 use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::file_system::volume::Volume;
@@ -92,19 +94,6 @@ async fn make_rich_merge() -> (Arc<dyn Volume>, Arc<dyn Volume>) {
         .unwrap();
 
     (source, dest)
-}
-
-/// Count `write-conflict` events whose paths refer to a DIRECTORY on either side
-/// — i.e. a folder-level prompt. The contract is ZERO of these for a dir-vs-dir
-/// merge (folders always merge silently).
-fn folder_conflict_count(events: &CollectorEventSink) -> usize {
-    events
-        .conflicts
-        .lock()
-        .unwrap()
-        .iter()
-        .filter(|c| c.source_is_directory && c.destination_is_directory)
-        .count()
 }
 
 // ============================================================================
@@ -197,7 +186,7 @@ async fn merge_never_deletes_unshadowed_dest_files_under_every_policy() {
 
         // Zero folder-level prompts under EVERY policy, even Stop.
         assert_eq!(
-            folder_conflict_count(&events.inner),
+            folder_conflict_count_both_dirs(&events.inner),
             0,
             "policy {policy:?}/{scripted:?}: a dir-vs-dir merge wrongly emitted a folder conflict"
         );

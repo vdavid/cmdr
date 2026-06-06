@@ -109,3 +109,29 @@ pub(super) fn file_conflict_count(events: &CollectorEventSink) -> usize {
         .filter(|c| !c.source_is_directory && !c.destination_is_directory)
         .count()
 }
+
+/// Counts `write-conflict` events where source AND destination are BOTH
+/// directories — i.e. a true dir-vs-dir folder-level prompt. This is the
+/// contract the cross-volume COPY merge defends: dir-vs-dir always merges
+/// silently, so this count must be ZERO. Use this from `volume_merge_tests.rs`.
+pub(super) fn folder_conflict_count_both_dirs(events: &CollectorEventSink) -> usize {
+    events
+        .conflicts
+        .lock_ignore_poison()
+        .iter()
+        .filter(|c| c.source_is_directory && c.destination_is_directory)
+        .count()
+}
+
+/// Counts `write-conflict` events where source OR destination is a directory —
+/// i.e. any folder-touching prompt (including a file-vs-folder type mismatch).
+/// This is the contract the same-volume RENAME-MERGE defends: a folder merge
+/// must raise ZERO of these. Use this from `volume_rename_merge_tests.rs`.
+pub(super) fn folder_conflict_count_any_dir(events: &CollectorEventSink) -> usize {
+    events
+        .conflicts
+        .lock_ignore_poison()
+        .iter()
+        .filter(|c| c.source_is_directory || c.destination_is_directory)
+        .count()
+}

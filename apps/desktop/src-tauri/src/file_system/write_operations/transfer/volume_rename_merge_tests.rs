@@ -17,7 +17,9 @@
 //! (CI) and macOS. The case-fold tests use a dedicated case-insensitive wrapper
 //! so they're portable regardless of the host filesystem's case sensitivity.
 
-use super::conflict_responder_test_support::{ConflictResponderSink, file_conflict_count};
+use super::conflict_responder_test_support::{
+    ConflictResponderSink, file_conflict_count, folder_conflict_count_any_dir,
+};
 use super::volume_move::move_within_same_volume_with_progress;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
@@ -64,18 +66,6 @@ fn exists(root: &Path, rel: &str) -> bool {
     root.join(rel).exists()
 }
 
-/// Counts `write-conflict` events that name a DIRECTORY on either side — i.e. a
-/// folder-level prompt. The contract is ZERO of these for a dir-vs-dir merge.
-fn folder_conflict_count(events: &CollectorEventSink) -> usize {
-    events
-        .conflicts
-        .lock()
-        .unwrap()
-        .iter()
-        .filter(|c| c.source_is_directory || c.destination_is_directory)
-        .count()
-}
-
 // ============================================================================
 // Merge with zero folder prompts
 // ============================================================================
@@ -115,7 +105,11 @@ async fn rename_merge_no_folder_prompt_dest_only_survives() {
     .await;
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
 
-    assert_eq!(folder_conflict_count(&events), 0, "a folder merge must never prompt");
+    assert_eq!(
+        folder_conflict_count_any_dir(&events),
+        0,
+        "a folder merge must never prompt"
+    );
     // Dest-only file preserved.
     assert_eq!(read(root, "dst/album/keep.txt"), b"DEST-keep");
     // Source-only file + nested subtree arrived.
@@ -216,7 +210,7 @@ async fn rename_merge_overwrite_replaces_and_deletes_source_spine() {
     )
     .await;
     assert!(result.is_ok(), "expected Ok, got {:?}", result);
-    assert_eq!(folder_conflict_count(&events), 0);
+    assert_eq!(folder_conflict_count_any_dir(&events), 0);
 
     // Clashing files replaced with the source bytes.
     assert_eq!(read(root, "dst/album/clash.txt"), b"SRC-NEW");
@@ -260,7 +254,7 @@ async fn rename_merge_stop_file_clash_prompts_and_resumes() {
     // Exactly one FILE prompt, zero FOLDER prompts — sink-derived, race-free.
     assert_eq!(file_conflict_count(&events.inner), 1, "exactly one file clash prompted");
     assert_eq!(
-        folder_conflict_count(&events.inner),
+        folder_conflict_count_any_dir(&events.inner),
         0,
         "the folder itself never prompts"
     );
@@ -767,7 +761,7 @@ async fn case_folded_file_collision_prompts_exactly_once() {
         1,
         "a case-folded file collision must prompt exactly once"
     );
-    assert_eq!(folder_conflict_count(&events.inner), 0);
+    assert_eq!(folder_conflict_count_any_dir(&events.inner), 0);
 }
 
 /// A child resolved Overwrite that THEN collides on the case-folded name must
