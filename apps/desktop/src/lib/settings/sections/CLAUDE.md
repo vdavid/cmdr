@@ -136,6 +136,12 @@ path just resets `editingShortcut`; there's nothing in the store to clean up. `i
 If you ever need to persist a placeholder mid-edit, don't — the store has no concept of an empty shortcut, and
 `initializeShortcuts` actively heals leaked `''` entries on load (the matrix lives in `lib/shortcuts/CLAUDE.md`).
 
+Known accepted edge: with the add slot open at `index === length`, a cross-window broadcast that ADDS a shortcut to the
+same command bumps the length, so the stale `editingShortcut` now points at the remotely added pill — a key captured
+after that lands as an overwrite of that pill instead of an append. It needs a precise two-window race on the same
+command, the result is visible immediately, and any fix (re-deriving the slot on `shortcutChangeCounter` bumps) costs
+more state than the race is worth. Revisit only if it shows up in practice.
+
 ## Conflict banner: the editing pill reads as a pending decision
 
 When a captured combo conflicts, `handleKeyCapture` sets `conflictWarning` and returns without saving (the banner offers

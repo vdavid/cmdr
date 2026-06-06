@@ -132,7 +132,7 @@ function render(): void {
   flushSync()
 }
 
-describe('KeyboardShortcutsSection add flow (RC5: no leaked junk)', () => {
+describe('KeyboardShortcutsSection add flow', () => {
   it('clicking + then clicking away leaves no entry in the store and no framed (none) pill', async () => {
     render()
     expect(isShortcutModified(ABOUT)).toBe(false)
@@ -196,7 +196,7 @@ describe('KeyboardShortcutsSection add flow (RC5: no leaked junk)', () => {
   })
 })
 
-describe('KeyboardShortcutsSection conflict banner (RC5)', () => {
+describe('KeyboardShortcutsSection conflict banner', () => {
   it('shows the banner with the proposed combo and keeps the pill in a pending-decision state', async () => {
     render()
     // Bind F5 (file.copy default) onto the add slot of About — conflict.

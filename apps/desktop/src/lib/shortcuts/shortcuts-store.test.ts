@@ -123,7 +123,7 @@ function changedEmits(): unknown[] {
 }
 
 describe('shortcuts-store persistence round-trips', () => {
-  it('keeps a removed-only-default shortcut removed across a reload (RC2)', async () => {
+  it('keeps a removed-only-default shortcut removed across a reload', async () => {
     // `app.hide` defaults to ['⌘H']. Remove the only shortcut, leaving [].
     let store = await loadStore()
     await store.initializeShortcuts()
@@ -142,7 +142,7 @@ describe('shortcuts-store persistence round-trips', () => {
     expect(store.getEffectiveShortcuts('app.hide')).toEqual([])
   })
 
-  it('does not resurrect a removed shortcut on a default-[] command (RC3)', async () => {
+  it('does not resurrect a removed shortcut on a default-[] command', async () => {
     // `app.showAll` defaults to []. Add a custom, then remove it.
     let store = await loadStore()
     await store.initializeShortcuts()
@@ -165,7 +165,7 @@ describe('shortcuts-store persistence round-trips', () => {
     expect(store.getEffectiveShortcuts('app.showAll')).toEqual([])
   })
 
-  it('reset-to-default survives a reload (RC3)', async () => {
+  it('reset-to-default survives a reload', async () => {
     // Customize `app.hide` away from its default, then reset it.
     let store = await loadStore()
     await store.initializeShortcuts()
@@ -237,7 +237,7 @@ describe('shortcuts-store persistence round-trips', () => {
   })
 })
 
-describe('shortcuts-store cross-window propagation (RC1)', () => {
+describe('shortcuts-store cross-window propagation', () => {
   it('setShortcut emits a shortcuts:changed event with the command id and new shortcuts', async () => {
     const store = await loadStore()
     await store.initializeShortcuts()
@@ -368,7 +368,7 @@ describe('shortcuts-store cross-window propagation (RC1)', () => {
   })
 })
 
-describe('shortcuts-store loading heals leaked empty-string entries (RC5)', () => {
+describe('shortcuts-store loading heals leaked empty-string entries', () => {
   // The old "+ add" flow materialized a real `''` entry in the store the instant
   // the user clicked +, and several exit paths (click away, click +/pill on
   // another row) leaked it to disk. The add flow no longer writes `''`, but some
