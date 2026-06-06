@@ -9,7 +9,7 @@
 //! mapping) lives here where it's testable; the Objective-C surface stays
 //! paper-thin.
 //!
-//! ## Sequence (per the drag-out plan, M2)
+//! ## Sequence
 //!
 //! [`fulfill`] resolves the source volume from the registry, marks it busy for
 //! the eject guard, notes the destination as a Cmdr-own write (so dropping a

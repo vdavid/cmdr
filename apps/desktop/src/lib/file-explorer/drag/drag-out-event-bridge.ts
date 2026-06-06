@@ -7,9 +7,9 @@
  * - **`drag-out-session-started`** — the first fulfillment began. Finder shows
  *   nothing while a promise downloads, and a phone/NAS drag is slow (MTP is
  *   serial USB), so we raise a signs-of-life in-progress toast ("Copying N
- *   items…") keyed by the session. This is the M3 affordance: visible feedback
- *   within ~1 s for big drags, with no Cancel button (v1 stays no-user-cancel —
- *   Finder owns the gesture).
+ *   items…") keyed by the session. This is the signs-of-life affordance: visible
+ *   feedback within ~1 s for big drags, with no Cancel button (v1 stays
+ *   no-user-cancel — Finder owns the gesture).
  * - **`drag-out-session-complete`** — the session drained. We REPLACE the
  *   in-progress toast (same id) with a completion toast: success counts via the
  *   shared transfer-toast composer, or a failure toast naming the file(s).

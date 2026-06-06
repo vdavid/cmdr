@@ -1,8 +1,9 @@
 # Drag-out file promises — M0 spike findings
 
-**M0 COMPLETE.** Reference note for the [drag-out file promises plan](../specs/drag-out-file-promises-plan.md). M0
-resolved the two load-bearing unknowns before any real code lands. To be linked from
-`src/lib/file-explorer/drag/CLAUDE.md` when M3 rewrites that doc.
+Reference note for the [drag-out file promises plan](../specs/drag-out-file-promises-plan.md). Records the two
+load-bearing unknowns the M0 spike resolved before any real code landed: the chosen pasteboard layout and the
+folder-promise verdict. Linked from
+[`src/lib/file-explorer/drag/CLAUDE.md`](../../apps/desktop/src/lib/file-explorer/drag/CLAUDE.md).
 
 ## Verdicts
 

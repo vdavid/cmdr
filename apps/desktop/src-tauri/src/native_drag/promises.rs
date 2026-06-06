@@ -32,7 +32,7 @@
 //! `run_on_main_thread`). So `block_on`-ing it on the queue thread can't
 //! deadlock against a busy main thread. See [`super::fulfillment`]'s module doc.
 //!
-//! ## Delegate-lifetime model (load-bearing — the M0 spike hit this)
+//! ## Delegate-lifetime model (load-bearing)
 //!
 //! `NSFilePromiseProvider.delegate` is a WEAK reference: the provider does NOT
 //! retain its delegate. If the delegate were a drag-start local that drops when

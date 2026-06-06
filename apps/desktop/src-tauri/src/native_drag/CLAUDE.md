@@ -65,7 +65,7 @@ tree (`remove_dir_all`, safe because the dest is a fresh Finder-created director
 thread (volume I/O + a cheap downloads-watcher mutex, no `run_on_main_thread`), so `block_on`-ing it
 on the queue thread can't deadlock against a busy main thread.
 
-### Delegate-lifetime model (the M0-spike gotcha)
+### Delegate-lifetime model (load-bearing)
 
 **`NSFilePromiseProvider.delegate` is WEAK** — the provider doesn't retain its delegate. A delegate
 that's a drag-start local would drop when `start_drag` returns, zeroing the provider's weak ref, and
@@ -107,7 +107,7 @@ runtime and the source `VolumeReadStream` (MTP's `Drop` cancels the USB transfer
 producer); a device disconnect surfaces as a `next_chunk` read error. Either way the cleanup contract
 removes the partial. No explicit teardown hook is needed beyond the existing runtime shutdown.
 
-### Completion toasts (M3)
+### Completion toasts
 
 Finder shows nothing while a promise downloads, so Cmdr is the only feedback surface. The session storage emits two
 plain Tauri events (FE-mirrored payloads, same pattern as the downloads watcher's `download-detected` — no specta

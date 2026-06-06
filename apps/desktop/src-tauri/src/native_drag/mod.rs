@@ -26,14 +26,13 @@
 //!     which reads only this type and `unwrap()`s if it's missing. Drop this
 //!     once [wry#1723](https://github.com/tauri-apps/wry/pull/1723) ships.
 //! - **Virtual sessions** (MTP, direct SMB, search-results — paths with no local
-//!   backing) advertise NOTHING external apps can materialize: no file-url, no
-//!   text, no filenames, across EVERY item. A virtual path's `file://` URL is
-//!   bogus and the legacy types are what Finder turned into a `.textClipping`
-//!   junk file. The M0 spike verified promise-only items still fire wry's drop
-//!   event with empty paths (no panic), so in-app self-drags keep working via
-//!   recorded identity, and an external drop becomes a clean no-op. In M1 a
-//!   virtual item's payload is simply empty; the `NSFilePromiseProvider` writer
-//!   that makes external drops download the real bytes arrives in M2.
+//!   backing) carry no legacy types: no file-url, no text, no filenames, across
+//!   EVERY item. A virtual path's `file://` URL is bogus and the legacy types are
+//!   what Finder turned into a `.textClipping` junk file. Promise-only items
+//!   still fire wry's drop event with empty paths (no panic), so in-app
+//!   self-drags keep working via recorded identity. The `NSFilePromiseProvider`
+//!   writer attached to each virtual item makes an external drop download the
+//!   real bytes (see [`promises`] / [`fulfillment`]).
 //!
 //! The rich PNG icon is set as `setDraggingFrame:contents:` on every item
 //! regardless of locality, so the existing `drag_image_swap` swizzle keeps

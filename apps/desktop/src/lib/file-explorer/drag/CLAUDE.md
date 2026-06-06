@@ -37,9 +37,9 @@ it since the recorded-identity work; `null` defaults to local).
     containing the fix and we bump our `tauri-runtime-wry`.
 - **Virtual sessions** (MTP, direct SMB, search-results — paths with no local backing) advertise NOTHING external apps
   can materialize: no file-url, no text, no filenames, across EVERY item. A virtual path's `file://` URL is bogus and
-  the legacy types are exactly what Finder turned into the `.textClipping` junk file. The M0 spike verified promise-only
-  items still fire wry's drop event with empty paths (no panic), so in-app self-drags keep working via recorded identity
-  (below) and an external drop is a clean no-op. The drag image and count badge are unaffected (one `NSDraggingItem` per
+  the legacy types are exactly what Finder turned into the `.textClipping` junk file. Promise-only items still fire
+  wry's drop event with empty paths (no panic), so in-app self-drags keep working via recorded identity (below); an
+  external drop fulfills the promise instead. The drag image and count badge are unaffected (one `NSDraggingItem` per
   file regardless; `setDraggingFrame:contents:` is writer-agnostic).
 
 Source operation mask: permissive (`Copy | Link | Generic | Move`). macOS arbitrates the actual operation via modifier
@@ -122,8 +122,10 @@ carries an `NSFilePromiseProvider` instead of a `file://` URL: the provider prom
 bytes when you ask," and Finder asks by calling our delegate's `writePromiseToURL:` on drop, which streams the real
 bytes off the device into the Finder-chosen destination. Multi-select works; folders download recursively. The drag
 image and count badge are unaffected (one `NSDraggingItem` per item; `setDraggingFrame:contents:` is writer-agnostic).
-The promise machinery, delegate, fulfillment service, and the M3 completion toasts live in
-[`src-tauri/src/native_drag/CLAUDE.md`](../../../src-tauri/src/native_drag/CLAUDE.md).
+The promise machinery, delegate, fulfillment service, and the completion toasts live in
+[`src-tauri/src/native_drag/CLAUDE.md`](../../../../src-tauri/src/native_drag/CLAUDE.md). The pasteboard-layout and
+folder-promise verdicts behind the design are recorded in
+[`docs/notes/drag-out-promises-spike.md`](../../../../../../docs/notes/drag-out-promises-spike.md).
 
 - **No more `.textClipping` junk file.** A virtual session advertises NO materializable representations besides the
   promise (no file-url, no text, no filenames), so an app that accepts neither promises nor our remaining types makes a
@@ -137,7 +139,7 @@ The promise machinery, delegate, fulfillment service, and the M3 completion toas
   promise is fulfilled only when an EXTERNAL consumer (Finder) asks, so it never touches in-app behavior.
 - **Completion feedback.** Finder shows nothing while a promise downloads, so Cmdr surfaces a signs-of-life in-progress
   toast when fulfillment starts and a completion (or failure) toast when the session drains — one toast per drag
-  SESSION, not per file. See the native_drag doc § "Completion toasts (M3)".
+  SESSION, not per file. See the native_drag doc § "Completion toasts".
 
 Drop preparation runs through the shared transfer entry seam (`pane/transfer-entry.ts`), the SAME path F5/F6 and
 clipboard paste use, so all three entry points prepare a transfer identically. On drop,

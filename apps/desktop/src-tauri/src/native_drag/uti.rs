@@ -9,14 +9,14 @@
 //! exist locally, neither of which holds for a virtual promise).
 //!
 //! Unknown extensions degrade to `public.data`, which Finder accepts for any
-//! file. Directories use `public.folder` (the M0 spike verified Finder accepts a
-//! `public.folder` promise and hands us a directory destination URL).
+//! file. Directories use `public.folder` — Finder accepts a `public.folder`
+//! promise and hands us a directory destination URL.
 
 /// The fallback UTI for a file whose extension we don't recognize. Finder
 /// accepts it for any file content.
 pub const FALLBACK_FILE_UTI: &str = "public.data";
 
-/// The UTI for a directory promise (the M0-verified folder-drag path).
+/// The UTI for a directory promise (the folder-drag path).
 pub const FOLDER_UTI: &str = "public.folder";
 
 /// Returns the UTI for a dragged item.
@@ -119,6 +119,88 @@ mod tests {
     fn pdf_and_text_documents_map() {
         assert_eq!(uti_for_item("report.pdf", false), "com.adobe.pdf");
         assert_eq!(uti_for_item("notes.txt", false), "public.plain-text");
+    }
+
+    #[test]
+    fn every_mapped_extension_resolves_to_its_uti() {
+        // One row per match arm in `uti_for_extension`, including every alias.
+        // Pins the whole table so deleting (or editing) any arm fails here
+        // instead of silently degrading that type to the `public.data` fallback.
+        let cases: &[(&str, &str)] = &[
+            // Images
+            ("jpg", "public.jpeg"),
+            ("jpeg", "public.jpeg"),
+            ("jpe", "public.jpeg"),
+            ("png", "public.png"),
+            ("gif", "com.compuserve.gif"),
+            ("tiff", "public.tiff"),
+            ("tif", "public.tiff"),
+            ("bmp", "com.microsoft.bmp"),
+            ("heic", "public.heic"),
+            ("heif", "public.heic"),
+            ("webp", "org.webmproject.webp"),
+            ("svg", "public.svg-image"),
+            ("raw", "public.camera-raw-image"),
+            ("dng", "public.camera-raw-image"),
+            // Video
+            ("mov", "com.apple.quicktime-movie"),
+            ("qt", "com.apple.quicktime-movie"),
+            ("mp4", "public.mpeg-4"),
+            ("m4v", "public.mpeg-4"),
+            ("avi", "public.avi"),
+            ("mkv", "org.matroska.mkv"),
+            ("webm", "org.webmproject.webm"),
+            ("m2ts", "public.avchd-collection"),
+            ("mts", "public.avchd-collection"),
+            // Audio
+            ("mp3", "public.mp3"),
+            ("m4a", "public.mpeg-4-audio"),
+            ("aac", "public.aac-audio"),
+            ("wav", "com.microsoft.waveform-audio"),
+            ("aiff", "public.aiff-audio"),
+            ("aif", "public.aiff-audio"),
+            ("flac", "org.xiph.flac"),
+            ("ogg", "org.xiph.ogg-audio"),
+            ("oga", "org.xiph.ogg-audio"),
+            // Documents
+            ("pdf", "com.adobe.pdf"),
+            ("txt", "public.plain-text"),
+            ("text", "public.plain-text"),
+            ("rtf", "public.rtf"),
+            ("html", "public.html"),
+            ("htm", "public.html"),
+            ("csv", "public.comma-separated-values-text"),
+            ("json", "public.json"),
+            ("xml", "public.xml"),
+            ("doc", "com.microsoft.word.doc"),
+            ("docx", "org.openxmlformats.wordprocessingml.document"),
+            ("xls", "com.microsoft.excel.xls"),
+            ("xlsx", "org.openxmlformats.spreadsheetml.sheet"),
+            ("ppt", "com.microsoft.powerpoint.ppt"),
+            ("pptx", "org.openxmlformats.presentationml.presentation"),
+            // Archives
+            ("zip", "public.zip-archive"),
+            ("gz", "org.gnu.gnu-zip-archive"),
+            ("gzip", "org.gnu.gnu-zip-archive"),
+            ("tar", "public.tar-archive"),
+            ("7z", "org.7-zip.7-zip-archive"),
+            ("rar", "com.rarlab.rar-archive"),
+        ];
+
+        for (ext, expected) in cases {
+            // Direct extension mapping.
+            assert_eq!(uti_for_extension(ext), *expected, "uti_for_extension({ext:?})");
+            // And through the public entry point with a filename.
+            let file_name = format!("file.{ext}");
+            assert_eq!(
+                uti_for_item(&file_name, false),
+                *expected,
+                "uti_for_item({file_name:?})"
+            );
+            // Case-insensitive: an uppercase extension maps the same.
+            let upper = format!("file.{}", ext.to_ascii_uppercase());
+            assert_eq!(uti_for_item(&upper, false), *expected, "uti_for_item({upper:?})");
+        }
     }
 
     #[test]

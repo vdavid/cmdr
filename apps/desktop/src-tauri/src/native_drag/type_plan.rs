@@ -29,11 +29,12 @@
 //! NO file-url, NO text, NO filenames — across EVERY item. A virtual path's
 //! `file://` URL is bogus (the file doesn't exist locally), the text was a
 //! meaningless volume-relative string outside Cmdr, and an auto-derived (or
-//! explicit) filenames entry is the textClipping junk Finder materializes. The
-//! M0 spike verified that promise-only items still fire wry's drop event with an
-//! empty path vector (no panic), so the in-app self-drag path keeps working via
-//! recorded identity. In M1 a virtual item's pasteboard payload is simply EMPTY;
-//! the `NSFilePromiseProvider` writer arrives in M2.
+//! explicit) filenames entry is the textClipping junk Finder materializes.
+//! Promise-only items still fire wry's drop event with an empty path vector (no
+//! panic), so the in-app self-drag path keeps working via recorded identity. A
+//! virtual item's pasteboard payload is empty here; the parent module attaches
+//! the `NSFilePromiseProvider` writer that streams the real bytes on an external
+//! drop.
 
 /// Whether a drag session's source volume is locally materialized (local FS or
 /// an OS-mounted share, where a `file://` URL is real) or protocol-only /
@@ -45,7 +46,7 @@ pub enum DragSessionLocality {
     /// Paths are real local filesystem paths. Keep the full legacy layout.
     Local,
     /// Paths are volume-relative virtual paths with no local backing. Publish
-    /// nothing external apps can materialize (M2 adds the promise providers).
+    /// no legacy types; the parent module attaches a promise provider per item.
     Virtual,
 }
 
@@ -65,7 +66,7 @@ pub struct PasteboardItemPlan {
 }
 
 impl PasteboardItemPlan {
-    /// An item that advertises nothing — the virtual-session payload in M1.
+    /// An item that advertises nothing — the virtual-session payload.
     fn empty() -> Self {
         Self {
             file_url: None,
@@ -90,8 +91,8 @@ impl PasteboardItemPlan {
 /// entry per input path, in order.
 ///
 /// Pure: no AppKit, no I/O. The parent module turns each [`PasteboardItemPlan`]
-/// into `NSPasteboardItem` representations (and, in M2, attaches a promise
-/// provider for virtual items).
+/// into `NSPasteboardItem` representations (and attaches a promise provider for
+/// virtual items).
 pub fn plan_pasteboard_items(paths: &[String], locality: DragSessionLocality) -> Vec<PasteboardItemPlan> {
     match locality {
         DragSessionLocality::Virtual => {
