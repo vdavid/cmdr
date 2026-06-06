@@ -5,7 +5,19 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.24.0] - 2026-06-06
+
+### Added
+
+- Go to path (⌘G): jump anywhere by typing or pasting a path, with `~` expansion, recent paths on digit keys, clipboard
+  prefill, and a nearest-existing-ancestor fallback when the path doesn't exist
+  ([2a87c01b](https://github.com/vdavid/cmdr/commit/2a87c01b),
+  [afa2fe18](https://github.com/vdavid/cmdr/commit/afa2fe18),
+  [6b3e941b](https://github.com/vdavid/cmdr/commit/6b3e941b),
+  [3a768fcc](https://github.com/vdavid/cmdr/commit/3a768fcc),
+  [07877792](https://github.com/vdavid/cmdr/commit/07877792))
+- Block ejecting a volume while a copy, move, or delete is touching it
+  ([fe2a0987](https://github.com/vdavid/cmdr/commit/fe2a0987))
 
 ### Changed
 
@@ -18,12 +30,59 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   pre-move scan that used to make a big NAS folder sit on "Verifying before move…" for 30–40 seconds
   ([a9743ecc](https://github.com/vdavid/cmdr/commit/a9743ecc),
   [114e5d2d](https://github.com/vdavid/cmdr/commit/114e5d2d))
+- Completion toasts now report what you selected, split by type: "Moved 1 file and 3 folders"
+  ([ae629609](https://github.com/vdavid/cmdr/commit/ae629609),
+  [f977ed95](https://github.com/vdavid/cmdr/commit/f977ed95))
+- Disable Rollback for same-volume moves (a rename has nothing to roll back); Cancel stays available
+  ([f069e37e](https://github.com/vdavid/cmdr/commit/f069e37e))
+- Rename "Reveal latest download" to "Go to latest download" in the menu, palette, and settings
+  ([49ddaf0a](https://github.com/vdavid/cmdr/commit/49ddaf0a))
 
 ### Fixed
 
 - Resolve conflicts file by file inside a folder merge on network and phone drives (SMB, MTP, and cross-volume). A newer
   file deep in the tree no longer loses to an older one behind a single folder-level OK; each clashing file follows your
   conflict choice ([6e305a47](https://github.com/vdavid/cmdr/commit/6e305a47))
+- Fix dropping files from the Desktop, Documents, or Downloads failing with "Source volume not found"
+  ([c3021243](https://github.com/vdavid/cmdr/commit/c3021243))
+- Fix drags from phone and network panes reading 0 bytes / 0 files in the transfer dialog
+  ([c3021243](https://github.com/vdavid/cmdr/commit/c3021243))
+- Dropping onto a read-only volume now shows the "Read-only device" alert instead of a copy dialog that can't succeed
+  ([62bbc09a](https://github.com/vdavid/cmdr/commit/62bbc09a))
+- Fix the Copy→Move toggle zeroing the transfer dialog counters on local moves
+  ([f4a8b1cb](https://github.com/vdavid/cmdr/commit/f4a8b1cb))
+- Show the volume name instead of a raw storage id (like "65538") in the transfer dialog header
+  ([f4a8b1cb](https://github.com/vdavid/cmdr/commit/f4a8b1cb))
+- Fix file viewer settings (word wrap, text size, binary warning) silently resetting every session
+  ([51e127aa](https://github.com/vdavid/cmdr/commit/51e127aa))
+- Make the title bar draggable while a dialog is open, and in the file viewer window
+  ([016abbdf](https://github.com/vdavid/cmdr/commit/016abbdf),
+  [e28e8905](https://github.com/vdavid/cmdr/commit/e28e8905))
+- Highlight cloud drives (iCloud, Dropbox, Google Drive) in the volume switcher instead of Macintosh HD
+  ([28e72ac0](https://github.com/vdavid/cmdr/commit/28e72ac0))
+- Fix tooltips jumping to the window corner in big folders ([2b45ec08](https://github.com/vdavid/cmdr/commit/2b45ec08))
+- Fix a rare hang when answering a copy/move conflict prompt
+  ([070b8d15](https://github.com/vdavid/cmdr/commit/070b8d15),
+  [99271478](https://github.com/vdavid/cmdr/commit/99271478))
+
+### Non-app
+
+- Rebuild the explorer frontend architecture: a module state store, a typed command bus across every entry path
+  (keyboard, palette, menu, F-bar, MCP), one transactional `navigate()`, a per-kind volume capability table, and a flat
+  command handler record replacing an 89-case switch ([062ebbb7](https://github.com/vdavid/cmdr/commit/062ebbb7),
+  [5709b50a](https://github.com/vdavid/cmdr/commit/5709b50a),
+  [ef52db45](https://github.com/vdavid/cmdr/commit/ef52db45),
+  [6270612c](https://github.com/vdavid/cmdr/commit/6270612c),
+  [6aaf82d0](https://github.com/vdavid/cmdr/commit/6aaf82d0),
+  [c7c0f5d6](https://github.com/vdavid/cmdr/commit/c7c0f5d6))
+- Add a virtual MTP device for dev: `CMDR_VIRTUAL_MTP=1 pnpm dev` plugs in a fake "Virtual Pixel 9", no hardware needed
+  ([9b9a4cad](https://github.com/vdavid/cmdr/commit/9b9a4cad))
+- Make the SMB test containers safe to share across concurrent agent sessions: lease-refcounted teardown, auto-restart,
+  and resource caps ([b4307236](https://github.com/vdavid/cmdr/commit/b4307236),
+  [7905a4ea](https://github.com/vdavid/cmdr/commit/7905a4ea),
+  [7ae14a75](https://github.com/vdavid/cmdr/commit/7ae14a75))
+- Stop E2E builds from uploading error reports to the live channel
+  ([293853b0](https://github.com/vdavid/cmdr/commit/293853b0))
 
 ## [0.23.0] - 2026-06-01
 
