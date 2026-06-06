@@ -5,7 +5,7 @@
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { commands as ipcCommands } from '$lib/ipc/bindings'
-import { commands } from '$lib/commands/command-registry'
+import { commands, NATIVE_SHORTCUT_COMMAND_IDS } from '$lib/commands/command-registry'
 import { resolveStorePath } from '$lib/settings/store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
@@ -162,6 +162,14 @@ export async function initializeShortcuts(): Promise<void> {
 
   for (const key of shortcutKeys) {
     const commandId = key.replace('shortcut:', '')
+
+    // Drop any persisted customization for a macOS-native command. AppKit owns
+    // these accelerators, so the entry is a no-op illusion (David's dev
+    // shortcuts.json carries `app.hide: []` from testing). Not loading it leaves
+    // the map without an entry, so the registry default applies and the next
+    // save reconciles the stale disk key away.
+    if (isNativeShortcutCommand(commandId)) continue
+
     const shortcuts = await store.get<string[]>(key)
     if (!Array.isArray(shortcuts)) continue // skip non-array garbage
 
@@ -308,6 +316,19 @@ async function migrateShortcuts(store: Store, fromVersion: number): Promise<void
 // Core API
 // ============================================================================
 
+// Fast-lookup set for the macOS-native commands. AppKit owns both their behavior
+// and accelerator (PredefinedMenuItems), so a persisted customization is a pure
+// illusion: it can't disable the OS accelerator and can't dispatch anything.
+const nativeShortcutIds = new Set<string>(NATIVE_SHORTCUT_COMMAND_IDS)
+
+/**
+ * Whether macOS owns this command's shortcut outright (Family-1 native command).
+ * The editor renders these read-only; the mutators below refuse to write them.
+ */
+export function isNativeShortcutCommand(commandId: string): boolean {
+  return nativeShortcutIds.has(commandId)
+}
+
 /**
  * Get effective shortcuts for a command (custom if set, otherwise defaults).
  * Always returns a copy to prevent mutation of the original arrays.
@@ -361,6 +382,10 @@ function cleanupIfMatchesDefaults(commandId: string): void {
  * Set a specific shortcut for a command at an index.
  */
 export function setShortcut(commandId: string, index: number, shortcut: string): void {
+  if (isNativeShortcutCommand(commandId)) {
+    log.warn('Refusing to set shortcut for macOS-native command {commandId}: AppKit owns it', { commandId })
+    return
+  }
   log.debug('setShortcut({commandId}, {index}, {shortcut})', { commandId, index, shortcut })
   const current = getEffectiveShortcuts(commandId)
 
@@ -384,6 +409,10 @@ export function setShortcut(commandId: string, index: number, shortcut: string):
  * Add a new shortcut to a command.
  */
 export function addShortcut(commandId: string, shortcut: string): void {
+  if (isNativeShortcutCommand(commandId)) {
+    log.warn('Refusing to add shortcut for macOS-native command {commandId}: AppKit owns it', { commandId })
+    return
+  }
   const current = getEffectiveShortcuts(commandId)
   current.push(shortcut)
   customShortcuts.set(commandId, current)
@@ -398,6 +427,10 @@ export function addShortcut(commandId: string, shortcut: string): void {
  * Remove a shortcut from a command at an index.
  */
 export function removeShortcut(commandId: string, index: number): void {
+  if (isNativeShortcutCommand(commandId)) {
+    log.warn('Refusing to remove shortcut for macOS-native command {commandId}: AppKit owns it', { commandId })
+    return
+  }
   const current = getEffectiveShortcuts(commandId)
 
   if (index >= 0 && index < current.length) {
@@ -412,7 +445,9 @@ export function removeShortcut(commandId: string, index: number): void {
 }
 
 /**
- * Reset a command's shortcuts to defaults.
+ * Reset a command's shortcuts to defaults. Stays permissive for native commands:
+ * it only ever DELETES a custom entry (it never writes the illusion), so letting
+ * it clear a leaked native customization is safe and useful.
  */
 export function resetShortcut(commandId: string): void {
   if (customShortcuts.has(commandId)) {

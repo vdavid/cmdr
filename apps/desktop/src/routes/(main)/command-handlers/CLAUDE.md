@@ -35,6 +35,12 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
 which ride `handleKeyDown → FilePane`, NEVER the bus), and component-scoped (palette / volume / network / share /
 context menu, handled inside their own components). The core silently no-ops these after the preamble.
 
+Family 1's four ids are spread into `DISPATCH_EXEMPT_IDS` from `NATIVE_SHORTCUT_COMMAND_IDS` in
+`$lib/commands/command-registry` — the same list the registry's `nativeShortcut` flag keys off and the shortcuts editor
+uses to render those rows read-only — so the "AppKit owns this" fact lives in exactly one place. The `DispatchExemptId`
+union still lists the four literals (the type can't spread a runtime tuple); `command-registry.test.ts` pins the two in
+sync.
+
 **❌ Do NOT add a handler for a per-keystroke `nav.*` id** — that routes an arrow key through a registry lookup + log +
 breadcrumb IPC per keypress (a P2 perf regression), not a completion.
 

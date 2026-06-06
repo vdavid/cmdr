@@ -32,6 +32,7 @@ export {
   resetAllShortcuts,
   onShortcutChange,
   flushPendingSave,
+  isNativeShortcutCommand,
 } from './shortcuts-store'
 
 // Conflict detection

@@ -4,7 +4,6 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { commands } from '$lib/commands/command-registry'
-    import type { Command } from '$lib/commands/types'
     import { searchCommands } from '$lib/commands/fuzzy-search'
     import {
         getEffectiveShortcuts,
@@ -15,6 +14,7 @@
         resetShortcut,
         resetAllShortcuts,
         onShortcutChange,
+        isNativeShortcutCommand,
     } from '$lib/shortcuts'
     import {
         formatKeyCombo,
@@ -27,6 +27,7 @@
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
     import { groupCommandsByScope } from './keyboard-shortcuts-grouping'
+    import { classifyConflict, reservedByMacOsMessage, type ConflictKind } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '$lib/settings/settings-window'
     import {
         getPendingShortcutHighlight,
@@ -50,7 +51,9 @@
     let editingShortcut = $state<{ commandId: string; index: number } | null>(null)
     let pendingKey = $state('')
     let confirmTimeout = $state<ReturnType<typeof setTimeout> | null>(null)
-    let conflictWarning = $state<{ shortcut: string; conflictingCommand: Command } | null>(null)
+    // The captured combo plus its classification (native → reserved-by-macOS,
+    // Cancel-only; normal → resolvable Remove/Keep/Cancel). See keyboard-shortcuts-banner.ts.
+    let conflictWarning = $state<{ shortcut: string; conflict: ConflictKind } | null>(null)
 
     // "Adding" is pure UI state: the add slot is the editing target one past the
     // end of the command's real shortcuts. Nothing is written to the store until a
@@ -188,8 +191,9 @@
         const command = commands.find((c) => c.id === currentEditCommandId)
         if (command) {
             const conflicts = findConflictsForShortcut(combo, command.scope, command.id)
-            if (conflicts.length > 0) {
-                conflictWarning = { shortcut: combo, conflictingCommand: conflicts[0] }
+            const conflict = classifyConflict(conflicts)
+            if (conflict) {
+                conflictWarning = { shortcut: combo, conflict }
                 return // Don't auto-save, wait for user decision
             }
         }
@@ -227,13 +231,16 @@
     }
 
     function handleRemoveFromOther() {
-        if (!conflictWarning || !editingShortcut) return
+        // Only valid for a normal (resolvable) conflict; the native banner never
+        // renders this action.
+        if (!conflictWarning || conflictWarning.conflict.kind !== 'normal' || !editingShortcut) return
 
         // Find the index of the shortcut in the conflicting command
-        const conflictShortcuts = getEffectiveShortcuts(conflictWarning.conflictingCommand.id)
+        const other = conflictWarning.conflict.command
+        const conflictShortcuts = getEffectiveShortcuts(other.id)
         const conflictIndex = conflictShortcuts.indexOf(conflictWarning.shortcut)
         if (conflictIndex >= 0) {
-            removeShortcut(conflictWarning.conflictingCommand.id, conflictIndex)
+            removeShortcut(other.id, conflictIndex)
         }
 
         // Now save our shortcut
@@ -484,15 +491,26 @@
     {#if conflictWarning}
         <div class="conflict-warning">
             <span class="warning-icon">⚠️</span>
-            <span class="warning-text">
-                <strong>{conflictWarning.shortcut}</strong> is already bound to "{conflictWarning.conflictingCommand
-                    .name}"
-            </span>
-            <div class="warning-actions">
-                <Button variant="secondary" size="mini" onclick={handleRemoveFromOther}>Remove from other</Button>
-                <Button variant="secondary" size="mini" onclick={handleKeepBoth}>Keep both</Button>
-                <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
-            </div>
+            {#if conflictWarning.conflict.kind === 'native'}
+                <!-- macOS owns this combo: it can never reach Cmdr, so we don't offer
+                     "Remove from other" or "Keep both" (both would be a lie). -->
+                <span class="warning-text">
+                    {reservedByMacOsMessage(conflictWarning.shortcut, conflictWarning.conflict.command)}
+                </span>
+                <div class="warning-actions">
+                    <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
+                </div>
+            {:else}
+                <span class="warning-text">
+                    <strong>{conflictWarning.shortcut}</strong> is already bound to "{conflictWarning.conflict.command
+                        .name}"
+                </span>
+                <div class="warning-actions">
+                    <Button variant="secondary" size="mini" onclick={handleRemoveFromOther}>Remove from other</Button>
+                    <Button variant="secondary" size="mini" onclick={handleKeepBoth}>Keep both</Button>
+                    <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
+                </div>
+            {/if}
         </div>
     {/if}
 
@@ -504,6 +522,7 @@
                     {@const shortcuts = getEffectiveShortcuts(command.id)}
                     {@const isModified = isShortcutModified(command.id)}
                     {@const hasConflicts = conflictingIds.has(command.id)}
+                    {@const isNative = isNativeShortcutCommand(command.id)}
                     {@const isAddingHere =
                         editingShortcut !== null &&
                         editingShortcut.commandId === command.id &&
@@ -524,7 +543,23 @@
                             <span class="command-name">{command.name}</span>
                         </div>
                         <div class="command-shortcuts">
-                            {#if shortcuts.length > 0}
+                            {#if isNative}
+                                <!-- macOS owns both the behavior and the accelerator (PredefinedMenuItem).
+                                     Cmdr can neither rebind nor intercept it, so the row is read-only: plain
+                                     pills, a "macOS" badge, no +/×/reset and no add slot. -->
+                                {#if shortcuts.length > 0}
+                                    {#each shortcuts as shortcut (shortcut)}
+                                        <span class="shortcut-pill static">{shortcut}</span>
+                                    {/each}
+                                {:else}
+                                    <span class="no-shortcut">(none)</span>
+                                {/if}
+                                <span
+                                    class="macos-badge"
+                                    use:tooltip={"macOS handles this shortcut. Cmdr can't change it."}>macOS</span
+                                >
+                            {:else}
+                                {#if shortcuts.length > 0}
                                 {#each shortcuts as shortcut, i (i)}
                                     {@const isEditing =
                                         editingShortcut !== null &&
@@ -606,6 +641,7 @@
                                 >
                                     ↩
                                 </button>
+                            {/if}
                             {/if}
                         </div>
                     </div>
@@ -743,6 +779,11 @@
     .commands-list {
         max-height: 400px;
         overflow-y: auto;
+        /* Reserve the scrollbar gutter so the row's trailing controls (the + add
+           button, the macOS badge) never sit under an overlay scrollbar when the
+           list scrolls. `stable` keeps the layout steady whether or not the bar
+           is showing, which reads cleaner than a forced always-on scrollbar. */
+        scrollbar-gutter: stable;
     }
 
     .scope-group {
@@ -888,6 +929,27 @@
     .shortcut-pill.empty {
         color: var(--color-text-tertiary);
         border-style: dashed;
+    }
+
+    /* A read-only pill for macOS-native commands: same chip shape as an editable
+       pill, but rendered as a plain span (no hover, no click) so it reads as
+       "shown, not editable". */
+    .shortcut-pill.static {
+        color: var(--color-text-secondary);
+    }
+
+    /* "macOS" badge marking a row the OS owns. Tinted with the muted/secondary
+       surface tokens so it reads as an informational tag, not an action. */
+    .macos-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--spacing-xxs) var(--spacing-xs);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg-secondary);
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        cursor: default;
     }
 
     .remove-shortcut {

@@ -124,116 +124,116 @@ function changedEmits(): unknown[] {
 
 describe('shortcuts-store persistence round-trips', () => {
   it('keeps a removed-only-default shortcut removed across a reload', async () => {
-    // `app.hide` defaults to ['⌘H']. Remove the only shortcut, leaving [].
+    // `file.copy` defaults to ['F5']. Remove the only shortcut, leaving [].
     let store = await loadStore()
     await store.initializeShortcuts()
 
-    store.removeShortcut('app.hide', 0)
+    store.removeShortcut('file.copy', 0)
     await flushSave()
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual([])
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual([])
     // Disk must hold the empty array, not the absence of the key.
-    expect(disk.get('shortcut:app.hide')).toEqual([])
+    expect(disk.get('shortcut:file.copy')).toEqual([])
 
     // Reload (fresh webview re-reads disk).
     vi.resetModules()
     store = await loadStore()
     await store.initializeShortcuts()
 
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual([])
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual([])
   })
 
   it('does not resurrect a removed shortcut on a default-[] command', async () => {
-    // `app.showAll` defaults to []. Add a custom, then remove it.
+    // `app.about` defaults to []. Add a custom, then remove it.
     let store = await loadStore()
     await store.initializeShortcuts()
 
-    store.addShortcut('app.showAll', 'F7')
+    store.addShortcut('app.about', 'F7')
     await flushSave()
-    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(['F7'])
-    expect(disk.get('shortcut:app.showAll')).toEqual(['F7'])
+    expect(store.getEffectiveShortcuts('app.about')).toEqual(['F7'])
+    expect(disk.get('shortcut:app.about')).toEqual(['F7'])
 
-    store.removeShortcut('app.showAll', 0)
+    store.removeShortcut('app.about', 0)
     await flushSave()
     // Now matches the [] default, so the map entry is cleaned up and the stale
     // disk key must be deleted.
-    expect(disk.has('shortcut:app.showAll')).toBe(false)
+    expect(disk.has('shortcut:app.about')).toBe(false)
 
     vi.resetModules()
     store = await loadStore()
     await store.initializeShortcuts()
 
-    expect(store.getEffectiveShortcuts('app.showAll')).toEqual([])
+    expect(store.getEffectiveShortcuts('app.about')).toEqual([])
   })
 
   it('reset-to-default survives a reload', async () => {
-    // Customize `app.hide` away from its default, then reset it.
+    // Customize `file.copy` away from its default, then reset it.
     let store = await loadStore()
     await store.initializeShortcuts()
 
-    store.setShortcut('app.hide', 0, '⌃X')
+    store.setShortcut('file.copy', 0, '⌃X')
     await flushSave()
-    expect(disk.get('shortcut:app.hide')).toEqual(['⌃X'])
+    expect(disk.get('shortcut:file.copy')).toEqual(['⌃X'])
 
-    store.resetShortcut('app.hide')
+    store.resetShortcut('file.copy')
     await flushSave()
     // After reset the stale disk key must be gone.
-    expect(disk.has('shortcut:app.hide')).toBe(false)
+    expect(disk.has('shortcut:file.copy')).toBe(false)
 
     vi.resetModules()
     store = await loadStore()
     await store.initializeShortcuts()
 
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(getDefaultShortcuts('file.copy'))
   })
 
   it('persists and reloads a normal customization (regression)', async () => {
     let store = await loadStore()
     await store.initializeShortcuts()
 
-    store.setShortcut('app.showAll', 0, 'F9')
+    store.setShortcut('app.about', 0, 'F9')
     await flushSave()
-    expect(disk.get('shortcut:app.showAll')).toEqual(['F9'])
+    expect(disk.get('shortcut:app.about')).toEqual(['F9'])
 
     vi.resetModules()
     store = await loadStore()
     await store.initializeShortcuts()
 
-    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(['F9'])
+    expect(store.getEffectiveShortcuts('app.about')).toEqual(['F9'])
   })
 
   it('resetAllShortcuts clears every customization across a reload', async () => {
     let store = await loadStore()
     await store.initializeShortcuts()
 
-    store.setShortcut('app.showAll', 0, 'F9')
+    store.setShortcut('app.about', 0, 'F9')
     await flushSave()
-    store.setShortcut('app.hide', 0, '⌃X')
+    store.setShortcut('file.copy', 0, '⌃X')
     await flushSave()
-    expect(disk.get('shortcut:app.showAll')).toEqual(['F9'])
-    expect(disk.get('shortcut:app.hide')).toEqual(['⌃X'])
+    expect(disk.get('shortcut:app.about')).toEqual(['F9'])
+    expect(disk.get('shortcut:file.copy')).toEqual(['⌃X'])
 
     await store.resetAllShortcuts()
-    expect(disk.has('shortcut:app.showAll')).toBe(false)
-    expect(disk.has('shortcut:app.hide')).toBe(false)
+    expect(disk.has('shortcut:app.about')).toBe(false)
+    expect(disk.has('shortcut:file.copy')).toBe(false)
 
     vi.resetModules()
     store = await loadStore()
     await store.initializeShortcuts()
 
-    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(getDefaultShortcuts('app.showAll'))
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
+    expect(store.getEffectiveShortcuts('app.about')).toEqual(getDefaultShortcuts('app.about'))
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(getDefaultShortcuts('file.copy'))
   })
 
   it('ignores non-array (garbage) values at load', async () => {
     // Simulate a corrupted entry on disk.
-    disk.set('shortcut:app.showAll', 'not-an-array')
+    disk.set('shortcut:app.about', 'not-an-array')
 
     const store = await loadStore()
     await store.initializeShortcuts()
 
     // Garbage is skipped, so the command falls back to its registry default ([]).
-    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(getDefaultShortcuts('app.showAll'))
-    expect(store.isShortcutModified('app.showAll')).toBe(false)
+    expect(store.getEffectiveShortcuts('app.about')).toEqual(getDefaultShortcuts('app.about'))
+    expect(store.isShortcutModified('app.about')).toBe(false)
   })
 })
 
@@ -242,11 +242,11 @@ describe('shortcuts-store cross-window propagation', () => {
     const store = await loadStore()
     await store.initializeShortcuts()
 
-    store.setShortcut('app.showAll', 0, 'F9')
+    store.setShortcut('app.about', 0, 'F9')
     await flushSave()
 
     const emits = changedEmits() as Array<{ commandId?: string; shortcuts?: unknown }>
-    const forCmd = emits.find((p) => p.commandId === 'app.showAll')
+    const forCmd = emits.find((p) => p.commandId === 'app.about')
     expect(forCmd).toBeDefined()
     expect(forCmd?.shortcuts).toEqual(['F9'])
   })
@@ -258,38 +258,38 @@ describe('shortcuts-store cross-window propagation', () => {
     const seen: string[] = []
     store.onShortcutChange((id) => seen.push(id))
 
-    // A second window rebound app.showAll to F9 and broadcast it. The emit
+    // A second window rebound app.about to F9 and broadcast it. The emit
     // carries that window's senderId, so it differs from ours.
-    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'app.showAll', shortcuts: ['F9'] })
+    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'app.about', shortcuts: ['F9'] })
     await flushSave()
 
     // Local effective state reflects the remote change.
-    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(['F9'])
+    expect(store.getEffectiveShortcuts('app.about')).toEqual(['F9'])
     // Local reactive consumers were notified.
-    expect(seen).toContain('app.showAll')
+    expect(seen).toContain('app.about')
     // The writer already persisted; we must NOT write disk again here.
-    expect(disk.has('shortcut:app.showAll')).toBe(false)
+    expect(disk.has('shortcut:app.about')).toBe(false)
     // And we must NOT re-broadcast (that would loop).
     expect(changedEmits()).toHaveLength(0)
   })
 
   it('propagates the "removed all shortcuts" empty-array state as [], not as a reset', async () => {
-    // `app.hide` defaults to ['⌘H']. Removing its only shortcut leaves [], which
+    // `file.copy` defaults to ['F5']. Removing its only shortcut leaves [], which
     // means "user removed all bindings, don't fall back to defaults" — distinct
-    // from a reset (which would send null and revert to ['⌘H']).
+    // from a reset (which would send null and revert to ['F5']).
     const store = await loadStore()
     await store.initializeShortcuts()
 
-    store.removeShortcut('app.hide', 0)
+    store.removeShortcut('file.copy', 0)
     await flushSave()
 
     const emits = changedEmits() as Array<{ commandId?: string; shortcuts?: unknown }>
-    const forCmd = emits.find((p) => p.commandId === 'app.hide')
+    const forCmd = emits.find((p) => p.commandId === 'file.copy')
     expect(forCmd?.shortcuts).toEqual([])
 
-    // A receiving window applies [] (removed-all), not the ⌘H default.
-    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'app.hide', shortcuts: [] })
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual([])
+    // A receiving window applies [] (removed-all), not the F5 default.
+    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'file.copy', shortcuts: [] })
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual([])
   })
 
   it('a received reset (null shortcuts) clears the local custom entry and notifies', async () => {
@@ -297,28 +297,28 @@ describe('shortcuts-store cross-window propagation', () => {
     await store.initializeShortcuts()
 
     // Local window has a customization first.
-    store.setShortcut('app.hide', 0, '⌃X')
+    store.setShortcut('file.copy', 0, '⌃X')
     await flushSave()
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(['⌃X'])
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(['⌃X'])
 
     const seen: string[] = []
     store.onShortcutChange((id) => seen.push(id))
 
-    // Another window reset app.hide to its default.
-    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'app.hide', shortcuts: null })
+    // Another window reset file.copy to its default.
+    deliver('shortcuts:changed', { senderId: 'other-window', commandId: 'file.copy', shortcuts: null })
 
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
-    expect(store.isShortcutModified('app.hide')).toBe(false)
-    expect(seen).toContain('app.hide')
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(getDefaultShortcuts('file.copy'))
+    expect(store.isShortcutModified('file.copy')).toBe(false)
+    expect(seen).toContain('file.copy')
   })
 
   it('reset-all round-trips: a received reset-all clears every local customization and notifies each', async () => {
     const store = await loadStore()
     await store.initializeShortcuts()
 
-    store.setShortcut('app.showAll', 0, 'F9')
+    store.setShortcut('app.about', 0, 'F9')
     await flushSave()
-    store.setShortcut('app.hide', 0, '⌃X')
+    store.setShortcut('file.copy', 0, '⌃X')
     await flushSave()
 
     const seen: string[] = []
@@ -326,17 +326,17 @@ describe('shortcuts-store cross-window propagation', () => {
 
     deliver('shortcuts:changed', { senderId: 'other-window', resetAll: true })
 
-    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(getDefaultShortcuts('app.showAll'))
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
-    expect(seen).toContain('app.showAll')
-    expect(seen).toContain('app.hide')
+    expect(store.getEffectiveShortcuts('app.about')).toEqual(getDefaultShortcuts('app.about'))
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(getDefaultShortcuts('file.copy'))
+    expect(seen).toContain('app.about')
+    expect(seen).toContain('file.copy')
   })
 
   it('resetAllShortcuts emits a reset-all marker', async () => {
     const store = await loadStore()
     await store.initializeShortcuts()
 
-    store.setShortcut('app.showAll', 0, 'F9')
+    store.setShortcut('app.about', 0, 'F9')
     await flushSave()
     eventBus.emits.length = 0 // ignore the setShortcut emit
 
@@ -350,7 +350,7 @@ describe('shortcuts-store cross-window propagation', () => {
     const store = await loadStore()
     await store.initializeShortcuts()
 
-    store.setShortcut('app.showAll', 0, 'F9')
+    store.setShortcut('app.about', 0, 'F9')
     await flushSave()
 
     // Grab the payload this window actually emitted, including its own senderId.
@@ -363,7 +363,7 @@ describe('shortcuts-store cross-window propagation', () => {
     // The OS echoes our own emit back to us. The loop guard must drop it.
     deliver('shortcuts:changed', ownEmit)
 
-    expect(seen).not.toContain('app.showAll')
+    expect(seen).not.toContain('app.about')
     expect(changedEmits()).toHaveLength(1) // still just the original, no re-emit
   })
 })
@@ -377,52 +377,113 @@ describe('shortcuts-store loading heals leaked empty-string entries', () => {
   // empty-string junk. See CLAUDE.md § "Empty array vs missing key".
 
   it('keeps a genuine removed-all [] (not treated as junk)', async () => {
-    // `app.hide` defaults to ['⌘H']. A stored [] means the user removed it.
-    disk.set('shortcut:app.hide', [])
+    // `file.copy` defaults to ['F5']. A stored [] means the user removed it.
+    disk.set('shortcut:file.copy', [])
     const store = await loadStore()
     await store.initializeShortcuts()
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual([])
-    expect(store.isShortcutModified('app.hide')).toBe(true)
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual([])
+    expect(store.isShortcutModified('file.copy')).toBe(true)
   })
 
   it("drops a [''] junk entry entirely, falling back to the default", async () => {
-    disk.set('shortcut:app.hide', [''])
+    disk.set('shortcut:file.copy', [''])
     const store = await loadStore()
     await store.initializeShortcuts()
     // Healed away: no custom entry, so the registry default shows (platform-converted).
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
-    expect(store.isShortcutModified('app.hide')).toBe(false)
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(getDefaultShortcuts('file.copy'))
+    expect(store.isShortcutModified('file.copy')).toBe(false)
   })
 
   it("drops a ['', ''] (multi-leak) junk entry entirely", async () => {
-    disk.set('shortcut:app.hide', ['', ''])
+    disk.set('shortcut:file.copy', ['', ''])
     const store = await loadStore()
     await store.initializeShortcuts()
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
-    expect(store.isShortcutModified('app.hide')).toBe(false)
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(getDefaultShortcuts('file.copy'))
+    expect(store.isShortcutModified('file.copy')).toBe(false)
   })
 
   it("drops [''] junk on a default-[] command (no resurrection, no spurious modified)", async () => {
-    // `app.showAll` defaults to []. A leaked [''] must not register as modified.
-    disk.set('shortcut:app.showAll', [''])
+    // `app.about` defaults to []. A leaked [''] must not register as modified.
+    disk.set('shortcut:app.about', [''])
     const store = await loadStore()
     await store.initializeShortcuts()
-    expect(store.getEffectiveShortcuts('app.showAll')).toEqual([])
-    expect(store.isShortcutModified('app.showAll')).toBe(false)
+    expect(store.getEffectiveShortcuts('app.about')).toEqual([])
+    expect(store.isShortcutModified('app.about')).toBe(false)
   })
 
   it("filters trailing '' from a mixed entry, keeping the real shortcut", async () => {
-    disk.set('shortcut:app.hide', ['⌘X', ''])
+    disk.set('shortcut:file.copy', ['⌘X', ''])
     const store = await loadStore()
     await store.initializeShortcuts()
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(['⌘X'])
-    expect(store.isShortcutModified('app.hide')).toBe(true)
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(['⌘X'])
+    expect(store.isShortcutModified('file.copy')).toBe(true)
   })
 
   it('leaves a normal custom entry untouched', async () => {
-    disk.set('shortcut:app.hide', ['⌘X', '⌘Y'])
+    disk.set('shortcut:file.copy', ['⌘X', '⌘Y'])
     const store = await loadStore()
     await store.initializeShortcuts()
-    expect(store.getEffectiveShortcuts('app.hide')).toEqual(['⌘X', '⌘Y'])
+    expect(store.getEffectiveShortcuts('file.copy')).toEqual(['⌘X', '⌘Y'])
+  })
+})
+
+describe('shortcuts-store refuses to customize macOS-native commands', () => {
+  // The four `nativeShortcut` commands (app.quit/hide/hideOthers/showAll) are
+  // macOS PredefinedMenuItems: AppKit owns both the behavior AND the accelerator.
+  // Cmdr can neither rebind nor intercept them, so any persisted customization is
+  // an illusion. The editor no longer offers the controls, but the store mutators
+  // are the real boundary — MCP events and future callers route through them too —
+  // so they must refuse, and load must reconcile away leaked entries.
+
+  it('drops a persisted native customization on load (the dev shortcuts.json case)', async () => {
+    // David's dev shortcuts.json carries `app.hide: []` from live testing.
+    disk.set('shortcut:app.hide', [])
+    disk.set('shortcut:app.showAll', ['F9'])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    // Healed away entirely: the registry default applies, not the persisted value.
+    expect(store.isShortcutModified('app.hide')).toBe(false)
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
+    expect(store.isShortcutModified('app.showAll')).toBe(false)
+    expect(store.getEffectiveShortcuts('app.showAll')).toEqual(getDefaultShortcuts('app.showAll'))
+  })
+
+  it('setShortcut is a no-op for a native command (no write, no emit)', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.setShortcut('app.hide', 0, '⌃X')
+    await flushSave()
+
+    expect(store.isShortcutModified('app.hide')).toBe(false)
+    expect(disk.has('shortcut:app.hide')).toBe(false)
+    expect(changedEmits()).toHaveLength(0)
+  })
+
+  it('addShortcut is a no-op for a native command (no write, no emit)', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.addShortcut('app.showAll', 'F9')
+    await flushSave()
+
+    expect(store.isShortcutModified('app.showAll')).toBe(false)
+    expect(disk.has('shortcut:app.showAll')).toBe(false)
+    expect(changedEmits()).toHaveLength(0)
+  })
+
+  it('removeShortcut is a no-op for a native command (no write, no emit)', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.removeShortcut('app.hide', 0)
+    await flushSave()
+
+    // The default ⌘H stays intact; nothing persisted.
+    expect(store.isShortcutModified('app.hide')).toBe(false)
+    expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
+    expect(disk.has('shortcut:app.hide')).toBe(false)
+    expect(changedEmits()).toHaveLength(0)
   })
 })

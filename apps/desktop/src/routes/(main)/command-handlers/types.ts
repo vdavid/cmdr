@@ -10,6 +10,7 @@
  * neither, so the graph stays acyclic for the `import-cycles` check.
  */
 import type { CommandId, CommandArgs } from '$lib/commands'
+import { NATIVE_SHORTCUT_COMMAND_IDS } from '$lib/commands/command-registry'
 import type { CommandDispatchContext } from '../command-dispatch-context'
 import type { ExplorerAPI } from '../explorer-api'
 
@@ -62,11 +63,10 @@ export type DispatchExemptId =
  * member that drifts out of the union fails to compile.
  */
 export const DISPATCH_EXEMPT_IDS = [
-  // Family 1 — Native-menu-owned.
-  'app.quit',
-  'app.hide',
-  'app.hideOthers',
-  'app.showAll',
+  // Family 1 — Native-menu-owned. Sourced from the registry's
+  // `NATIVE_SHORTCUT_COMMAND_IDS` (the same list the `nativeShortcut` flag is
+  // keyed to), so the "AppKit owns this" fact lives in exactly one place.
+  ...NATIVE_SHORTCUT_COMMAND_IDS,
   // Family 2 — Per-keystroke, P2-protected. ❌ DO NOT add handlers.
   'nav.up',
   'nav.down',

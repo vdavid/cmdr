@@ -11,6 +11,17 @@
 import type { Command } from './types'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 
+/**
+ * The macOS-native commands: AppKit `PredefinedMenuItem`s own BOTH the behavior
+ * and the accelerator (`terminate:`, `hide:`, `hideOtherApplications:`,
+ * `unhideAllApplications:`). Cmdr can neither rebind nor intercept them, so the
+ * shortcuts editor renders them read-only and the store refuses to customize
+ * them. Single source of truth: the registry entries below carry
+ * `nativeShortcut: true` for exactly these ids (pinned by `command-registry.test.ts`),
+ * and `command-handlers/types.ts` sources its Family-1 dispatch-exempt list from here.
+ */
+export const NATIVE_SHORTCUT_COMMAND_IDS = ['app.quit', 'app.hide', 'app.hideOthers', 'app.showAll'] as const
+
 // `Command.id` is the `CommandId` union derived from `COMMAND_IDS` in
 // `command-ids.ts`. Adding an entry here whose id isn't in that tuple is a
 // compile error; a tuple id with no entry here is caught by the set-equality
@@ -23,11 +34,19 @@ export const commands: Command[] = [
   // ============================================================================
   // Native-only: handled by PredefinedMenuItems via macOS selectors (hide:, hideOtherApplications:,
   // unhideAllApplications:, terminate:). showInPalette: false keeps them out of the JS shortcut
-  // dispatch map; the native menu accelerators handle the keyboard shortcuts directly.
-  { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘Q'] },
-  { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘H'] },
-  { id: 'app.hideOthers', name: 'Hide others', scope: 'App', showInPalette: false, shortcuts: ['⌥⌘H'] },
-  { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: false, shortcuts: [] },
+  // dispatch map; the native menu accelerators handle the keyboard shortcuts directly. `nativeShortcut`
+  // makes the editor read-only and the store refuse to rebind them (NATIVE_SHORTCUT_COMMAND_IDS above).
+  { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘Q'], nativeShortcut: true },
+  { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘H'], nativeShortcut: true },
+  {
+    id: 'app.hideOthers',
+    name: 'Hide others',
+    scope: 'App',
+    showInPalette: false,
+    shortcuts: ['⌥⌘H'],
+    nativeShortcut: true,
+  },
+  { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: false, shortcuts: [], nativeShortcut: true },
   { id: 'app.about', name: 'About Cmdr', scope: 'App', showInPalette: true, shortcuts: [] },
   { id: 'app.licenseKey', name: 'See license details', scope: 'App', showInPalette: true, shortcuts: [] },
   {

@@ -27,6 +27,7 @@ interface Command {
   scope: CommandScope // hierarchical, display-only (does not enforce routing)
   showInPalette: boolean
   shortcuts: string[] // e.g. ['⌘Q'], ['Backspace', '⌘↑']
+  nativeShortcut?: true // macOS owns behavior AND accelerator (PredefinedMenuItem); read-only in the editor
   description?: string
 }
 
@@ -186,10 +187,16 @@ scope enforcement centralized would require the command module to know about all
 conflict detection in the shortcuts system and for display in settings; the actual dispatch is the responsibility of
 each component's keydown handler or the centralized dispatch map.
 
-**Decision**: `showInPalette: false` for native macOS commands (quit, hide, hide others, show all). **Why**: These
-commands are handled by macOS via `PredefinedMenuItems` with native selectors (`terminate:`, `hide:`, etc.). The native
-menu accelerators handle the keyboard shortcuts directly. Including them in the JS shortcut dispatch map would cause
-double-execution: the native handler fires AND the JS handler fires.
+**Decision**: `showInPalette: false` AND `nativeShortcut: true` for native macOS commands (quit, hide, hide others, show
+all). **Why**: These commands are handled by macOS via `PredefinedMenuItems` with native selectors (`terminate:`,
+`hide:`, etc.). The native menu accelerators handle the keyboard shortcuts directly. Including them in the JS shortcut
+dispatch map would cause double-execution: the native handler fires AND the JS handler fires. AppKit owns BOTH the
+behavior and the accelerator, so Cmdr can neither rebind nor intercept them — editing them in Settings would be a double
+illusion (removal doesn't disable the OS accelerator; a new binding dispatches into a void). `nativeShortcut: true` (set
+on exactly the `NATIVE_SHORTCUT_COMMAND_IDS` exported from `command-registry.ts`) is the single source of truth that
+makes the shortcuts editor render these rows read-only and makes the store mutators refuse to write them.
+`command-handlers/types.ts` sources its Family-1 dispatch-exempt list from the same `NATIVE_SHORTCUT_COMMAND_IDS`, so
+the "AppKit owns this" fact lives in one place; `command-registry.test.ts` pins the flag set-equal to that list.
 
 **Decision**: `isMacOS()` called at module load time for platform-specific command names and visibility. **Why**: Some
 commands only make sense on macOS (`Get info`, `Quick look`, `Show in Finder`). Rather than filtering at render time,

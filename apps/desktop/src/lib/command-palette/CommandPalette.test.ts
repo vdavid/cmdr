@@ -487,8 +487,10 @@ describe('CommandPalette', () => {
   })
 
   it('renders the effective custom binding, not the registry default', async () => {
-    // app.quit defaults to ⌘Q; rebind it and the row must show the custom combo.
-    setShortcut('app.quit', 0, '⌘0')
+    // view.showHidden defaults to ⌘⇧.; rebind it and the row must show the custom
+    // combo. (A non-native command: the macOS-native commands like app.quit can't
+    // be rebound and aren't shown in the palette anyway.)
+    setShortcut('view.showHidden', 0, '⌘0')
 
     const target = document.createElement('div')
     mount(CommandPalette, {
@@ -497,7 +499,7 @@ describe('CommandPalette', () => {
     })
     await tick()
 
-    expect(shortcutTextsFor(target, 'app.quit')).toEqual(['⌘0'])
+    expect(shortcutTextsFor(target, 'view.showHidden')).toEqual(['⌘0'])
   })
 
   it('caps the shown shortcuts at three', async () => {
@@ -519,8 +521,9 @@ describe('CommandPalette', () => {
 
   it('updates a rendered row live when the binding changes while the palette is open', async () => {
     // Custom bindings are stored verbatim (no platform conversion), so they assert
-    // cleanly regardless of the test platform.
-    setShortcut('app.quit', 0, '⌘7')
+    // cleanly regardless of the test platform. (view.showHidden is a normal,
+    // rebindable command — unlike the macOS-native ones.)
+    setShortcut('view.showHidden', 0, '⌘7')
 
     const target = document.createElement('div')
     mount(CommandPalette, {
@@ -529,13 +532,13 @@ describe('CommandPalette', () => {
     })
     await tick()
 
-    expect(shortcutTextsFor(target, 'app.quit')).toEqual(['⌘7'])
+    expect(shortcutTextsFor(target, 'view.showHidden')).toEqual(['⌘7'])
 
     // Simulate a rebind (the MCP / Settings path) while the palette stays open.
-    setShortcut('app.quit', 0, '⌘8')
+    setShortcut('view.showHidden', 0, '⌘8')
     flushSync()
 
-    expect(shortcutTextsFor(target, 'app.quit')).toEqual(['⌘8'])
+    expect(shortcutTextsFor(target, 'view.showHidden')).toEqual(['⌘8'])
   })
 
   it('does not throw if the previously focused element is no longer in the DOM', async () => {

@@ -70,6 +70,8 @@ import { initializeShortcuts, getEffectiveShortcuts, isShortcutModified, resetAl
 const ABOUT = 'app.about'
 // `file.copy` lives under File list and defaults to ['F5'].
 const COPY = 'file.copy'
+// `app.hide` (Hide Cmdr): a macOS-native command — AppKit owns ⌘H. Read-only here.
+const HIDE = 'app.hide'
 
 let target: HTMLElement
 let component: ReturnType<typeof mount> | null = null
@@ -256,5 +258,56 @@ describe('KeyboardShortcutsSection conflict banner', () => {
 
     clickAddShortcut(COPY)
     expect(target.querySelector('.conflict-warning')).toBeNull()
+  })
+})
+
+describe('KeyboardShortcutsSection native macOS rows', () => {
+  it('renders a native row read-only: a macOS badge, no editable pill, no +/×/reset', () => {
+    render()
+    const hideRow = row(HIDE)
+
+    // The combo shows as a plain, non-interactive element: no <button> pill.
+    expect(hideRow.querySelectorAll('button.shortcut-pill')).toHaveLength(0)
+    // It still renders the combo as a static (read-only) chip.
+    expect(hideRow.querySelectorAll('.shortcut-pill.static').length).toBeGreaterThan(0)
+    // No add slot, no remove, no reset controls on a native row.
+    expect(hideRow.querySelector('.add-shortcut')).toBeNull()
+    expect(hideRow.querySelector('.remove-shortcut')).toBeNull()
+    expect(hideRow.querySelector('.reset-shortcut')).toBeNull()
+    // The "macOS" badge is present and explains why.
+    const badge = hideRow.querySelector('.macos-badge')
+    expect(badge).not.toBeNull()
+    expect(badge?.textContent.trim()).toBe('macOS')
+  })
+
+  it('keeps normal rows fully editable (the read-only treatment is native-only)', () => {
+    render()
+    const copyRow = row(COPY)
+    // file.copy keeps an interactive pill and the + add affordance.
+    expect(copyRow.querySelectorAll('.shortcut-pill').length).toBeGreaterThan(0)
+    expect(copyRow.querySelector('.add-shortcut')).not.toBeNull()
+    expect(copyRow.querySelector('.macos-badge')).toBeNull()
+  })
+
+  it('capturing a native combo (⌘H) on another command shows the reserved-by-macOS banner with only Cancel', async () => {
+    render()
+    // Capture Ctrl+H on the add slot of file.copy. In the test (non-macOS) env
+    // app.hide's ⌘H default resolves to Ctrl+H, so this conflicts with the native.
+    clickAddShortcut(COPY)
+    pressKey({ key: 'h', ctrlKey: true })
+    await flushSave()
+
+    const banner = target.querySelector('.conflict-warning')
+    expect(banner).not.toBeNull()
+    const text = banner?.textContent ?? ''
+    expect(text).toContain('reserved by macOS')
+    expect(text).toContain('Hide Cmdr')
+
+    // The honest banner offers ONLY Cancel — no lying "Remove from other" / "Keep both".
+    const buttonLabels = [...(banner?.querySelectorAll('button') ?? [])].map((b) => b.textContent.trim())
+    expect(buttonLabels).toEqual(['Cancel'])
+
+    // Nothing was persisted to the conflicting command.
+    expect(isShortcutModified(COPY)).toBe(false)
   })
 })

@@ -132,6 +132,14 @@ export interface Command {
   showInPalette: boolean
   /** Keyboard shortcuts (like ['⌘⇧P', 'F1']) */
   shortcuts: string[]
+  /**
+   * macOS owns this command's behavior AND its accelerator via a
+   * `PredefinedMenuItem` (`terminate:`, `hide:`, `hideOtherApplications:`,
+   * `unhideAllApplications:`). Cmdr can neither rebind nor intercept it, so the
+   * shortcuts editor renders it read-only and the store refuses to customize it.
+   * Set only on the four `NATIVE_SHORTCUT_COMMAND_IDS` (Family 1 dispatch-exempt).
+   */
+  nativeShortcut?: true
   /** Optional description for long-form help */
   description?: string
   /**

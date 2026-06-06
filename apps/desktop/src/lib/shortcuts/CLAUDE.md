@@ -40,6 +40,23 @@ shortcuts:
   defaults. The notification path also syncs menu accelerators (`updateMenuAccelerator` no-ops for commands without a
   menu item).
 
+### macOS-native commands are not customizable
+
+The four `nativeShortcut` commands (`app.quit`/`hide`/`hideOthers`/`showAll`, exported as `NATIVE_SHORTCUT_COMMAND_IDS`
+from `$lib/commands/command-registry`) are macOS `PredefinedMenuItem`s: AppKit owns BOTH the behavior and the
+accelerator, so any persisted customization is a pure illusion (it can't disable the OS accelerator and dispatches into
+a void). The store enforces this at its boundary, the real seam for MCP events and any future caller:
+
+- **Load drops them.** `initializeShortcuts` skips any persisted `shortcut:<native id>` entry (David's dev
+  `shortcuts.json` carries `app.hide: []` from testing). Not loading it means the map has no entry, the registry default
+  applies, and the next `saveToStore` reconcile deletes the stale disk key.
+- **Mutators no-op.** `setShortcut` / `addShortcut` / `removeShortcut` early-return with a `log.warn` for native
+  commands (no write, no `notifyListeners`, no cross-window emit). `resetShortcut` stays permissive — it only ever
+  DELETES a custom entry, never writes the illusion, so it can usefully clear a leaked native customization.
+- `isNativeShortcutCommand(commandId)` is the exported predicate; the editor uses it to render native rows read-only.
+- MCP shortcut edits route through these same mutators (`mcp-shortcuts-listener.ts`), so they inherit the guard for
+  free.
+
 ### Cross-window propagation (`shortcuts:changed`)
 
 The store is per-webview module state, so a rebind in the Settings window must reach the main window's `customShortcuts`

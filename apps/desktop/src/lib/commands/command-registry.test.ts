@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { commands, getPaletteCommands, updateLicenseCommandName } from './command-registry'
+import { commands, getPaletteCommands, updateLicenseCommandName, NATIVE_SHORTCUT_COMMAND_IDS } from './command-registry'
 import { COMMAND_IDS, isCommandId, type CommandId } from './command-ids'
 import type { CommandArgs, CommandDispatchArgs } from './types'
+import { DISPATCH_EXEMPT_IDS } from '../../routes/(main)/command-handlers/types'
 
 /**
  * The exact set of commands the palette shows the user. Pinned so a new
@@ -126,6 +127,45 @@ describe('command-registry id sync', () => {
 
   it('has no duplicate ids in the tuple', () => {
     expect(COMMAND_IDS.length).toBe(new Set(COMMAND_IDS).size)
+  })
+})
+
+describe('nativeShortcut flag', () => {
+  it('the source list names the four macOS-native commands', () => {
+    // Sanity guard against a silently-failing import: the set-equality below
+    // would falsely pass if `NATIVE_SHORTCUT_COMMAND_IDS` resolved to undefined.
+    expect([...NATIVE_SHORTCUT_COMMAND_IDS].sort()).toEqual(
+      ['app.hide', 'app.hideOthers', 'app.quit', 'app.showAll'].sort(),
+    )
+  })
+
+  it('marks exactly the commands in NATIVE_SHORTCUT_COMMAND_IDS', () => {
+    // The `nativeShortcut` registry flag and `NATIVE_SHORTCUT_COMMAND_IDS` are
+    // two views of the same set: macOS owns both the behavior AND the accelerator
+    // (PredefinedMenuItems), so the editor must render them read-only and the
+    // store must refuse to rebind them. Keying the flag off the list keeps the
+    // sites from drifting.
+    const flagged = new Set(commands.filter((c) => c.nativeShortcut).map((c) => c.id))
+    const expected = new Set<string>(NATIVE_SHORTCUT_COMMAND_IDS)
+    expect(flagged).toEqual(expected)
+  })
+
+  it('every native command is also dispatch-exempt (Family 1)', () => {
+    // The native commands are handler-less by design (AppKit runs them). The
+    // dispatch-exempt list sources Family 1 from the same registry list, so this
+    // also proves that single-source wiring round-trips.
+    const exempt = new Set<string>(DISPATCH_EXEMPT_IDS)
+    for (const id of NATIVE_SHORTCUT_COMMAND_IDS) {
+      expect(exempt.has(id), `${id} must be dispatch-exempt`).toBe(true)
+    }
+  })
+
+  it('only ever uses `true` for the flag (never `false`/`undefined` noise)', () => {
+    for (const cmd of commands) {
+      if (cmd.nativeShortcut !== undefined) {
+        expect(cmd.nativeShortcut).toBe(true)
+      }
+    }
   })
 })
 

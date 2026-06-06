@@ -35,6 +35,7 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 | `license-section-utils.ts`         | Pure label/status formatters extracted from `LicenseSection` for testability                                                                                                                                                                                                                                                                                                                                                                |
 | `ram-gauge-utils.ts`               | Pure stacked-bar segment math for `AiLocalSection`'s memory gauge (used → projected → free, plus warning thresholds)                                                                                                                                                                                                                                                                                                                        |
 | `keyboard-shortcuts-grouping.ts`   | Pure scope→group logic for `KeyboardShortcutsSection` (one titled group per `CommandScope`, fixed order). Tested by the set-equality regression guard                                                                                                                                                                                                                                                                                       |
+| `keyboard-shortcuts-banner.ts`     | Pure conflict-banner classification for `KeyboardShortcutsSection` (`classifyConflict` → native vs normal; `reservedByMacOsMessage`). Native conflicts win even in a mixed set. Unit-tested                                                                                                                                                                                                                                                 |
 
 Each section ships with an `*.a11y.test.ts` (axe-core tier-3). `McpServerSection`, `UpdatesSection`, `SearchSection`,
 `FileSystemWatchingSection`, and `KeyboardShortcutsSection` also have functional `*.test.ts` / `*.svelte.test.ts` files;
@@ -141,6 +142,33 @@ same command bumps the length, so the stale `editingShortcut` now points at the 
 after that lands as an overwrite of that pill instead of an append. It needs a precise two-window race on the same
 command, the result is visible immediately, and any fix (re-deriving the slot on `shortcutChangeCounter` bumps) costs
 more state than the race is worth. Revisit only if it shows up in practice.
+
+## macOS-native rows are read-only
+
+The four `nativeShortcut` commands (`app.quit`/`hide`/`hideOthers`/`showAll`) render read-only: their combos show as
+plain `.shortcut-pill.static` spans (no click-to-edit), with no `+` add, no `×` remove, no reset button, and never the
+add slot. Each native row also carries a small "macOS" badge (`.macos-badge`) with a tooltip: "macOS handles this
+shortcut. Cmdr can't change it." (`Show all` has no default binding, so it renders its `(none)` unframed plus the
+badge.) The branch is keyed off `isNativeShortcutCommand(command.id)` from `$lib/shortcuts`. This is honest: AppKit owns
+both the behavior and the accelerator (see `lib/shortcuts/CLAUDE.md` § "macOS-native commands are not customizable"), so
+an editable control here would be a double illusion. The store also refuses these writes as defense in depth, so the UI
+and the store agree.
+
+## Conflict banner: native conflicts are honest (reserved by macOS), others are resolvable
+
+`handleKeyCapture` classifies the captured combo's conflicts via the pure `classifyConflict`
+(`keyboard-shortcuts-banner.ts`):
+
+- If the conflict set includes a `nativeShortcut` command (even in a MIXED set with a normal command — the native wins,
+  because the combo is unusable regardless), the banner reads
+  `⌘H is reserved by macOS (Hide Cmdr) and won't reach Cmdr. Pick a different combo.` (`reservedByMacOsMessage`) and
+  offers ONLY Cancel. No "Remove from other" (removing Cmdr's binding doesn't free the OS accelerator) and no "Keep
+  both" (the user's binding would never fire) — both would be a lie.
+- A purely non-native conflict keeps the resolvable banner (Remove-from-other / Keep-both / Cancel).
+
+`conflictWarning` carries `{ shortcut, conflict: ConflictKind }`; the template branches on `conflict.kind`. The
+classification logic is extracted to the pure `keyboard-shortcuts-banner.ts` (unit-tested) to keep the section component
+lean.
 
 ## Conflict banner: the editing pill reads as a pending decision
 
