@@ -40,7 +40,7 @@ export function getAllConflicts(): ShortcutConflict[] {
   for (const cmd of commands) {
     // Filter out empty shortcuts (used during editing)
     const shortcuts = getEffectiveShortcuts(cmd.id).filter((s) => s)
-    const scope = cmd.scope as CommandScope
+    const scope = cmd.scope
 
     for (const shortcut of shortcuts) {
       // Create a unique key for this shortcut
@@ -62,10 +62,9 @@ export function getAllConflicts(): ShortcutConflict[] {
         // Check for actual scope overlap between all pairs
         const actualConflicts: Command[] = []
         for (const c of conflictingCommands) {
-          const cScope = c.scope as CommandScope
           // Check if this command conflicts with any other
           const hasOverlap = conflictingCommands.some(
-            (other) => other.id !== c.id && scopesOverlap(cScope, other.scope),
+            (other) => other.id !== c.id && scopesOverlap(c.scope, other.scope),
           )
           if (hasOverlap) {
             actualConflicts.push(c)

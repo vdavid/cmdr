@@ -23,7 +23,6 @@
         findConflictsForShortcut,
         getConflictingCommandIds,
         getConflictCount,
-        type CommandScope,
     } from '$lib/shortcuts'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
@@ -186,7 +185,7 @@
         const currentEditCommandId = editingShortcut.commandId
         const command = commands.find((c) => c.id === currentEditCommandId)
         if (command) {
-            const conflicts = findConflictsForShortcut(combo, command.scope as CommandScope, command.id)
+            const conflicts = findConflictsForShortcut(combo, command.scope, command.id)
             if (conflicts.length > 0) {
                 conflictWarning = { shortcut: combo, conflictingCommand: conflicts[0] }
                 return // Don't auto-save, wait for user decision

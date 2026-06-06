@@ -66,17 +66,27 @@ handler) can't drift. The settings side scrolls the row into its nested list and
 
 ### Scope hierarchy (`scope-hierarchy.ts`)
 
-Defines which shortcuts are active in each context:
+`CommandScope` is the single scope vocabulary — `scope-hierarchy.ts` re-exports it from `../commands/types.ts`, so the
+registry's `scope` strings and the hierarchy keys are the same type. `scopeHierarchy` holds each scope's ancestry chain
+(most specific first); two scopes "overlap" (and so can conflict) when one chain contains the other.
 
-- `App` scope: global, always active
-- `Main window` → inherits `App`
-- `File list` → inherits `Main window` → inherits `App`
+The chains mirror what renders together in the app:
 
-When "File list" is focused, shortcuts from all three scopes can trigger.
+- `App` → global, always active.
+- `Main window` → inherits `App`.
+- `Main window/File list` → inherits `Main window` → `App`.
+- `Main window/Brief mode` and `Main window/Full mode` → sit UNDER `Main window/File list` (→ `Main window` → `App`).
+  The file list renders in both view modes, so a mode-scoped key genuinely collides with a File-list key. Brief and Full
+  stay siblings (neither chain contains the other), so they don't conflict with each other — the registry binds `←`/`→`
+  in both on purpose, and the modes never coexist.
+- `Main window/Network`, `Main window/Share browser`, `Main window/Volume chooser` → siblings of `Main window/File list`
+  (under `Main window` → `App`, but not under the file list). A pane shows one of them INSTEAD of the file list, so
+  their keys don't collide with File-list keys.
+- `Command palette` → inherits `Main window` → `App` (it overlays the main window).
+- `About window` and `Onboarding` → inherit `App` only (standalone/modal contexts).
 
-Note: the command registry uses compound scopes like `'Main window/File list'`, `'Main window/Brief mode'`,
-`'Main window/Full mode'`, `'Main window/Network'` that are distinct from the simple scope hierarchy defined in
-`scope-hierarchy.ts`. These compound scopes represent specific UI contexts within the main window.
+`getActiveScopes(unknown)` returns `[]`, and `scopesOverlap` treats an empty chain as non-overlapping, so a typo'd scope
+silently can't conflict rather than throwing.
 
 ### Conflict detection (`conflict-detector.ts`)
 
@@ -85,7 +95,9 @@ Two commands conflict if:
 1. They share the same key combo, AND
 2. Their scopes overlap (via hierarchy)
 
-Example: `⌘N` in "File list" and `⌘N` in "Main window" conflict because "File list" inherits from "Main window".
+Example: `⌘N` in `Main window/File list` and `⌘N` in `Main window` conflict because the File-list chain contains
+`Main window`. Two `Main window/File list` commands sharing a combo also conflict (same scope). `←` in
+`Main window/Brief mode` and `←` in `Main window/Full mode` do NOT, because Brief and Full are siblings.
 
 ### Key capture (`key-capture.ts`)
 
@@ -221,8 +233,8 @@ are part of the app's behavior, not user data.
 
 ### Scope overlap is transitive
 
-If "File list" inherits "Main window" and "Main window" inherits "App", then "File list" also inherits "App". The
-`getActiveScopes()` function returns all ancestors, not just the immediate parent.
+If `Main window/File list` inherits `Main window` and `Main window` inherits `App`, then `Main window/File list` also
+inherits `App`. `getActiveScopes()` returns the full ancestry chain, not just the immediate parent.
 
 ### No chorded shortcuts
 

@@ -291,8 +291,9 @@ in `types.ts` bridges this gap. Don't expose raw pixel values in the UI.
 
 ### Shortcuts conflict only when scopes overlap
 
-`⌘N` in "File list" scope and `⌘N` in "Settings window" scope do NOT conflict because their scope hierarchies don't
-overlap. Only warn when the same key combo is used in overlapping scopes (e.g., "File list" and "Main window").
+`⌘N` in `Main window/File list` and `⌘N` in `About window` do NOT conflict because their scope chains don't overlap.
+Only warn when the same key combo is used in overlapping scopes (for example, `Main window/File list` and
+`Main window`). See `lib/shortcuts/CLAUDE.md` § "Scope hierarchy" for the full chain model.
 
 ### No undo
 

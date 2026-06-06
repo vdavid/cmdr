@@ -77,9 +77,9 @@ describe('conflict-detector', () => {
     it('returns commands sharing the same shortcut in overlapping scopes', () => {
       setCommands(
         makeCommand({ id: 'a', shortcuts: ['⌘N'], scope: 'Main window' }),
-        makeCommand({ id: 'b', shortcuts: ['⌘N'], scope: 'File list' }),
+        makeCommand({ id: 'b', shortcuts: ['⌘N'], scope: 'Main window/File list' }),
       )
-      const conflicts = findConflictsForShortcut('⌘N', 'File list')
+      const conflicts = findConflictsForShortcut('⌘N', 'Main window/File list')
       const ids = conflicts.map((c) => c.id)
       expect(ids).toContain('a')
       expect(ids).toContain('b')
@@ -107,9 +107,9 @@ describe('conflict-detector', () => {
     it('returns empty array when scopes do not overlap', () => {
       setCommands(
         makeCommand({ id: 'a', shortcuts: ['⌘N'], scope: 'About window' }),
-        makeCommand({ id: 'b', shortcuts: ['⌘N'], scope: 'Settings window' }),
+        makeCommand({ id: 'b', shortcuts: ['⌘N'], scope: 'Command palette' }),
       )
-      // About window and Settings window don't overlap
+      // About window and Command palette don't overlap
       const conflicts = findConflictsForShortcut('⌘N', 'About window')
       const ids = conflicts.map((c) => c.id)
       expect(ids).toContain('a')
@@ -180,7 +180,7 @@ describe('conflict-detector', () => {
     it('does not report a conflict when scopes do not overlap', () => {
       setCommands(
         makeCommand({ id: 'a', shortcuts: ['⌘N'], scope: 'About window' }),
-        makeCommand({ id: 'b', shortcuts: ['⌘N'], scope: 'Settings window' }),
+        makeCommand({ id: 'b', shortcuts: ['⌘N'], scope: 'Command palette' }),
       )
       expect(getAllConflicts()).toEqual([])
     })
@@ -199,12 +199,12 @@ describe('conflict-detector', () => {
 
     it('handles three commands sharing a shortcut with partial scope overlap', () => {
       // a: App (overlaps with everything)
-      // b: About window (overlaps with App but not Settings window)
-      // c: Settings window (overlaps with App but not About window)
+      // b: About window (overlaps with App but not Command palette)
+      // c: Command palette (overlaps with App but not About window)
       setCommands(
         makeCommand({ id: 'a', shortcuts: ['⌘N'], scope: 'App' }),
         makeCommand({ id: 'b', shortcuts: ['⌘N'], scope: 'About window' }),
-        makeCommand({ id: 'c', shortcuts: ['⌘N'], scope: 'Settings window' }),
+        makeCommand({ id: 'c', shortcuts: ['⌘N'], scope: 'Command palette' }),
       )
       const conflicts = getAllConflicts()
       expect(conflicts).toHaveLength(1)
@@ -225,6 +225,54 @@ describe('conflict-detector', () => {
       expect(conflicts).toHaveLength(2)
       const shortcuts = conflicts.map((c) => c.shortcut).sort()
       expect(shortcuts).toEqual(['⌘A', '⌘B'])
+    })
+
+    // ----------------------------------------------------------------------
+    // Compound-scope conflicts (the regression these tests guard)
+    // ----------------------------------------------------------------------
+
+    it('detects a conflict between two File-list commands sharing a combo', () => {
+      setCommands(
+        makeCommand({ id: 'a', shortcuts: ['⌘K'], scope: 'Main window/File list' }),
+        makeCommand({ id: 'b', shortcuts: ['⌘K'], scope: 'Main window/File list' }),
+      )
+      const conflicts = getAllConflicts()
+      expect(conflicts).toHaveLength(1)
+      expect(conflicts[0].commandIds).toContain('a')
+      expect(conflicts[0].commandIds).toContain('b')
+    })
+
+    it('detects a conflict between a Main-window command and a File-list command sharing a combo', () => {
+      setCommands(
+        makeCommand({ id: 'a', shortcuts: ['⌘K'], scope: 'Main window' }),
+        makeCommand({ id: 'b', shortcuts: ['⌘K'], scope: 'Main window/File list' }),
+      )
+      const conflicts = getAllConflicts()
+      expect(conflicts).toHaveLength(1)
+      expect(conflicts[0].commandIds).toContain('a')
+      expect(conflicts[0].commandIds).toContain('b')
+    })
+
+    it('does NOT report a conflict for the default Brief/Full ←/→ pairs', () => {
+      // The registry binds ← and → in BOTH Brief and Full mode on purpose; the
+      // modes are mutually exclusive, so they must never be flagged as conflicts.
+      setCommands(
+        makeCommand({ id: 'nav.left', shortcuts: ['←'], scope: 'Main window/Brief mode' }),
+        makeCommand({ id: 'nav.right', shortcuts: ['→'], scope: 'Main window/Brief mode' }),
+        makeCommand({ id: 'nav.firstInFull', shortcuts: ['←'], scope: 'Main window/Full mode' }),
+        makeCommand({ id: 'nav.lastInFull', shortcuts: ['→'], scope: 'Main window/Full mode' }),
+      )
+      expect(getAllConflicts()).toEqual([])
+    })
+
+    it('does NOT report a conflict between a Network command and a File-list command (sibling views)', () => {
+      // Enter is bound on both network.selectHost and nav.open, but a pane shows
+      // the network browser INSTEAD of the file list, so they never coexist.
+      setCommands(
+        makeCommand({ id: 'network.selectHost', shortcuts: ['Enter'], scope: 'Main window/Network' }),
+        makeCommand({ id: 'nav.open', shortcuts: ['Enter'], scope: 'Main window/File list' }),
+      )
+      expect(getAllConflicts()).toEqual([])
     })
   })
 

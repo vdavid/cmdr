@@ -23,9 +23,9 @@ describe('scope-hierarchy', () => {
       expect(scopes).toEqual(['Main window', 'App'])
     })
 
-    it('returns File list, Main window, and App for File list scope', () => {
-      const scopes = getActiveScopes('File list')
-      expect(scopes).toEqual(['File list', 'Main window', 'App'])
+    it('returns File list, Main window, and App for Main window/File list scope', () => {
+      const scopes = getActiveScopes('Main window/File list')
+      expect(scopes).toEqual(['Main window/File list', 'Main window', 'App'])
     })
 
     it('returns Command palette, Main window, and App for Command palette scope', () => {
@@ -37,33 +37,92 @@ describe('scope-hierarchy', () => {
       const scopes = getActiveScopes('About window')
       expect(scopes).toEqual(['About window', 'App'])
     })
+
+    it('returns Brief mode under File list, Main window, and App', () => {
+      // The file list renders in Brief mode too, so a Brief-mode key sits *under*
+      // the file list in the chain (and inherits Main window + App).
+      const scopes = getActiveScopes('Main window/Brief mode')
+      expect(scopes).toEqual(['Main window/Brief mode', 'Main window/File list', 'Main window', 'App'])
+    })
+
+    it('returns Full mode under File list, Main window, and App', () => {
+      const scopes = getActiveScopes('Main window/Full mode')
+      expect(scopes).toEqual(['Main window/Full mode', 'Main window/File list', 'Main window', 'App'])
+    })
+
+    it('returns Network as a sibling of File list (under Main window, App)', () => {
+      // Sibling views replace the file list in a pane, so they sit beside it (not
+      // under it): under Main window + App, but not under Main window/File list.
+      const scopes = getActiveScopes('Main window/Network')
+      expect(scopes).toEqual(['Main window/Network', 'Main window', 'App'])
+    })
+
+    it('returns Share browser as a sibling of File list (under Main window, App)', () => {
+      const scopes = getActiveScopes('Main window/Share browser')
+      expect(scopes).toEqual(['Main window/Share browser', 'Main window', 'App'])
+    })
+
+    it('returns Volume chooser as a sibling of File list (under Main window, App)', () => {
+      const scopes = getActiveScopes('Main window/Volume chooser')
+      expect(scopes).toEqual(['Main window/Volume chooser', 'Main window', 'App'])
+    })
+
+    it('returns empty array for an unknown scope', () => {
+      expect(getActiveScopes('Nonexistent scope')).toEqual([])
+    })
   })
 
   describe('scopesOverlap', () => {
     it('App overlaps with everything', () => {
       expect(scopesOverlap('App', 'App')).toBe(true)
       expect(scopesOverlap('App', 'Main window')).toBe(true)
-      expect(scopesOverlap('App', 'File list')).toBe(true)
+      expect(scopesOverlap('App', 'Main window/File list')).toBe(true)
       expect(scopesOverlap('App', 'About window')).toBe(true)
     })
 
+    it('File list overlaps with itself', () => {
+      expect(scopesOverlap('Main window/File list', 'Main window/File list')).toBe(true)
+    })
+
     it('File list overlaps with Main window', () => {
-      expect(scopesOverlap('File list', 'Main window')).toBe(true)
-      expect(scopesOverlap('Main window', 'File list')).toBe(true)
+      expect(scopesOverlap('Main window/File list', 'Main window')).toBe(true)
+      expect(scopesOverlap('Main window', 'Main window/File list')).toBe(true)
     })
 
     it('File list does not overlap with About window', () => {
-      expect(scopesOverlap('File list', 'About window')).toBe(false)
-      expect(scopesOverlap('About window', 'File list')).toBe(false)
+      expect(scopesOverlap('Main window/File list', 'About window')).toBe(false)
+      expect(scopesOverlap('About window', 'Main window/File list')).toBe(false)
     })
 
     it('Command palette does not overlap with About window', () => {
       expect(scopesOverlap('Command palette', 'About window')).toBe(false)
     })
 
-    it('Settings window does not overlap with Main window children', () => {
-      expect(scopesOverlap('Settings window', 'File list')).toBe(false)
-      expect(scopesOverlap('Settings window', 'Navigation')).toBe(false)
+    it('Brief mode overlaps with File list (the list renders in Brief mode)', () => {
+      expect(scopesOverlap('Main window/Brief mode', 'Main window/File list')).toBe(true)
+      expect(scopesOverlap('Main window/File list', 'Main window/Brief mode')).toBe(true)
+    })
+
+    it('Brief mode does NOT overlap with Full mode (mutually exclusive siblings)', () => {
+      // The registry deliberately binds ←/→ in both modes; they never coexist, so
+      // they must not be reported as conflicting.
+      expect(scopesOverlap('Main window/Brief mode', 'Main window/Full mode')).toBe(false)
+      expect(scopesOverlap('Main window/Full mode', 'Main window/Brief mode')).toBe(false)
+    })
+
+    it('Network does NOT overlap with File list (sibling views in a pane)', () => {
+      expect(scopesOverlap('Main window/Network', 'Main window/File list')).toBe(false)
+      expect(scopesOverlap('Main window/File list', 'Main window/Network')).toBe(false)
+    })
+
+    it('Volume chooser overlaps with Main window', () => {
+      expect(scopesOverlap('Main window/Volume chooser', 'Main window')).toBe(true)
+      expect(scopesOverlap('Main window', 'Main window/Volume chooser')).toBe(true)
+    })
+
+    it('an unknown scope does not overlap with anything', () => {
+      expect(scopesOverlap('Nonexistent scope', 'App')).toBe(false)
+      expect(scopesOverlap('App', 'Nonexistent scope')).toBe(false)
     })
   })
 
@@ -72,10 +131,14 @@ describe('scope-hierarchy', () => {
       const scopes = getAllScopes()
       expect(scopes).toContain('App')
       expect(scopes).toContain('Main window')
-      expect(scopes).toContain('File list')
+      expect(scopes).toContain('Main window/File list')
+      expect(scopes).toContain('Main window/Brief mode')
+      expect(scopes).toContain('Main window/Full mode')
+      expect(scopes).toContain('Main window/Network')
+      expect(scopes).toContain('Main window/Share browser')
+      expect(scopes).toContain('Main window/Volume chooser')
       expect(scopes).toContain('Command palette')
       expect(scopes).toContain('About window')
-      expect(scopes).toContain('Settings window')
       expect(scopes.length).toBeGreaterThanOrEqual(10)
     })
   })
