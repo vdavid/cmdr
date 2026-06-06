@@ -104,6 +104,19 @@ impl Default for ScanConfig {
 pub struct ScanProgress {
     pub entries_scanned: Arc<AtomicU64>,
     pub dirs_found: Arc<AtomicU64>,
+    /// Resolved post-dedup physical bytes seen so far. Each entry contributes its
+    /// `physical_size.unwrap_or(0)` after hardlink dedup, so the live numerator
+    /// follows the exact same rules as the stored physical-size sums (directories,
+    /// symlinks, and second+ hardlinks contribute 0).
+    pub bytes_scanned: Arc<AtomicU64>,
+}
+
+/// A point-in-time read of an active scan's progress counters.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ScanProgressSnapshot {
+    pub entries_scanned: u64,
+    pub dirs_found: u64,
+    pub bytes_scanned: u64,
 }
 
 impl ScanProgress {
@@ -111,15 +124,17 @@ impl ScanProgress {
         Self {
             entries_scanned: Arc::new(AtomicU64::new(0)),
             dirs_found: Arc::new(AtomicU64::new(0)),
+            bytes_scanned: Arc::new(AtomicU64::new(0)),
         }
     }
 
     /// Read current progress snapshot.
-    pub fn snapshot(&self) -> (u64, u64) {
-        (
-            self.entries_scanned.load(Ordering::Relaxed),
-            self.dirs_found.load(Ordering::Relaxed),
-        )
+    pub fn snapshot(&self) -> ScanProgressSnapshot {
+        ScanProgressSnapshot {
+            entries_scanned: self.entries_scanned.load(Ordering::Relaxed),
+            dirs_found: self.dirs_found.load(Ordering::Relaxed),
+            bytes_scanned: self.bytes_scanned.load(Ordering::Relaxed),
+        }
     }
 }
 
@@ -141,6 +156,9 @@ impl ScanHandle {
 pub struct ScanSummary {
     pub total_entries: u64,
     pub total_dirs: u64,
+    /// Resolved post-dedup physical bytes the scan summed (the final value of the
+    /// `bytes_scanned` counter). Apples-to-apples with the stored physical-size sums.
+    pub total_physical_bytes: u64,
     pub duration_ms: u64,
     pub was_cancelled: bool,
 }
@@ -267,6 +285,7 @@ fn run_scan(
     let mut batch: Vec<EntryRow> = Vec::with_capacity(batch_size);
     let mut total_entries: u64 = 0;
     let mut total_dirs: u64 = 0;
+    let mut total_physical_bytes: u64 = 0;
     // Tracks inodes with nlink > 1 so each hardlinked file's size is counted only once.
     // Files with nlink == 1 (the vast majority) skip the set entirely.
     let mut seen_inodes: HashSet<u64> = HashSet::new();
@@ -305,6 +324,7 @@ fn run_scan(
             return Ok(ScanSummary {
                 total_entries,
                 total_dirs,
+                total_physical_bytes,
                 duration_ms: start.elapsed().as_millis() as u64,
                 was_cancelled: true,
             });
@@ -417,6 +437,14 @@ fn run_scan(
         total_entries += 1;
         progress.entries_scanned.fetch_add(1, Ordering::Relaxed);
 
+        // Accumulate the resolved post-dedup physical bytes once per stored entry.
+        // Placed here (after the hardlink-dedup match, alongside the entry counters)
+        // so it follows the exact dedup rules of the stored sums: directories,
+        // symlinks, and second+ hardlinks resolved to `None` contribute 0.
+        let entry_physical = physical_size.unwrap_or(0);
+        total_physical_bytes += entry_physical;
+        progress.bytes_scanned.fetch_add(entry_physical, Ordering::Relaxed);
+
         batch.push(scanned);
         if batch.len() >= batch_size {
             flush_batch(&mut batch, writer)?;
@@ -435,6 +463,7 @@ fn run_scan(
     Ok(ScanSummary {
         total_entries,
         total_dirs,
+        total_physical_bytes,
         duration_ms: start.elapsed().as_millis() as u64,
         was_cancelled: false,
     })
@@ -741,9 +770,10 @@ mod tests {
         assert!(summary.duration_ms < 10_000, "scan should complete quickly");
 
         // Verify progress matches summary
-        let (entries, dirs) = handle.progress.snapshot();
-        assert_eq!(entries, summary.total_entries);
-        assert_eq!(dirs, summary.total_dirs);
+        let snap = handle.progress.snapshot();
+        assert_eq!(snap.entries_scanned, summary.total_entries);
+        assert_eq!(snap.dirs_found, summary.total_dirs);
+        assert_eq!(snap.bytes_scanned, summary.total_physical_bytes);
 
         // Wait for writer to process all messages + aggregation
         writer.flush_blocking().unwrap();
@@ -1100,5 +1130,96 @@ mod tests {
 
         // Should resolve to the actual entry ID, NOT ROOT_ID
         assert_eq!(ctx.lookup_parent(subtree_root), Some(noname_id));
+    }
+
+    /// Sum every stored row's `physical_size` (NULLs count as 0), matching how the
+    /// aggregator treats per-entry physical bytes.
+    fn sum_stored_physical_bytes(db_path: &Path) -> u64 {
+        let conn = IndexStore::open_read_connection(db_path).unwrap();
+        conn.query_row("SELECT COALESCE(SUM(physical_size), 0) FROM entries", [], |row| {
+            row.get::<_, i64>(0)
+        })
+        .unwrap() as u64
+    }
+
+    /// Build a tree with BOTH plain single-link files AND a hardlink pair. The
+    /// single-link files are what catch a "bytes increment placed inside the
+    /// dedup arm" bug: that arm fires only for `nlink > 1`, so single-link files
+    /// would contribute nothing and near-zero the counter.
+    #[cfg(unix)]
+    fn create_tree_with_hardlinks(dir: &Path) {
+        // Plain single-link files (the majority).
+        fs::write(dir.join("plain1.bin"), vec![0u8; 4096]).unwrap();
+        fs::write(dir.join("plain2.bin"), vec![0u8; 12288]).unwrap();
+        let sub = dir.join("sub");
+        fs::create_dir_all(&sub).unwrap();
+        fs::write(sub.join("plain3.bin"), vec![0u8; 8192]).unwrap();
+
+        // A hardlink pair: two directory entries, one inode. Only the first link's
+        // size should be counted; the second resolves to None.
+        let target = dir.join("linked.bin");
+        fs::write(&target, vec![0u8; 16384]).unwrap();
+        fs::hard_link(&target, dir.join("linked-alias.bin")).unwrap();
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn bytes_scanned_matches_stored_physical_sum_with_hardlinks() {
+        let scan_root = scan_test_tempdir();
+        create_tree_with_hardlinks(scan_root.path());
+
+        let (writer, db_path, _db_dir) = setup_writer();
+        let config = ScanConfig {
+            root: scan_root.path().to_path_buf(),
+            batch_size: 100,
+            num_threads: 1,
+        };
+
+        let (handle, join_handle) = scan_volume(config, &writer).unwrap();
+        let summary = join_handle.join().expect("scan thread panicked").unwrap();
+        assert!(!summary.was_cancelled);
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        let counter_total = handle.progress.snapshot().bytes_scanned;
+        let stored_total = sum_stored_physical_bytes(&db_path);
+
+        // The live counter follows the exact post-dedup rules of the stored rows.
+        assert_eq!(
+            counter_total, stored_total,
+            "bytes_scanned counter must equal the sum of stored physical sizes"
+        );
+        // Sanity: the plain single-link files alone exceed any single hardlink, so a
+        // counter that only ran inside the dedup arm would fall well below this.
+        assert!(
+            counter_total >= 4096 + 12288 + 8192,
+            "counter must include the single-link files, not just the hardlink"
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn scan_summary_total_physical_bytes_equals_final_counter() {
+        let scan_root = scan_test_tempdir();
+        create_tree_with_hardlinks(scan_root.path());
+
+        let (writer, _db_path, _db_dir) = setup_writer();
+        let config = ScanConfig {
+            root: scan_root.path().to_path_buf(),
+            batch_size: 100,
+            num_threads: 1,
+        };
+
+        let (handle, join_handle) = scan_volume(config, &writer).unwrap();
+        let summary = join_handle.join().expect("scan thread panicked").unwrap();
+        writer.shutdown();
+
+        assert_eq!(
+            summary.total_physical_bytes,
+            handle.progress.snapshot().bytes_scanned,
+            "summary.total_physical_bytes must equal the final counter value"
+        );
+        assert!(summary.total_physical_bytes > 0, "scan should sum some physical bytes");
     }
 }

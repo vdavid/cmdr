@@ -186,6 +186,19 @@ pub struct IndexStatus {
     pub last_event_id: Option<String>,
 }
 
+/// The previous completed scan's persisted calibration, read from `meta`.
+///
+/// All fields are `Option` because a first-ever scan (or a DB rebuilt after a
+/// schema bump / `clear_index`) has none of these keys yet. The numerator-side
+/// live counters are compared against `total_entries` (tier-1 denominator) and
+/// `total_physical_bytes` (tier-2 cap tuning); `scan_duration_ms` seeds the ETA.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ScanCalibration {
+    pub total_entries: Option<u64>,
+    pub total_physical_bytes: Option<u64>,
+    pub scan_duration_ms: Option<u64>,
+}
+
 // ── Errors ───────────────────────────────────────────────────────────
 
 #[derive(Debug)]
@@ -538,6 +551,21 @@ impl IndexStore {
             scan_duration_ms: Self::read_meta_value(&self.read_conn, "scan_duration_ms")?,
             total_entries: Self::read_meta_value(&self.read_conn, "total_entries")?,
             last_event_id: Self::read_meta_value(&self.read_conn, "last_event_id")?,
+        })
+    }
+
+    /// Read the previous completed scan's calibration from `meta` on the given
+    /// connection. Missing or unparseable keys map to `None`. Takes a connection
+    /// (rather than `&self`) so `start_scan` can read it off a fresh connection
+    /// before truncating; the keys survive `TruncateData` (it preserves `meta`).
+    pub fn read_scan_calibration(conn: &Connection) -> Result<ScanCalibration, IndexStoreError> {
+        let read_u64 = |key: &str| -> Result<Option<u64>, IndexStoreError> {
+            Ok(Self::read_meta_value(conn, key)?.and_then(|v| v.parse::<u64>().ok()))
+        };
+        Ok(ScanCalibration {
+            total_entries: read_u64("total_entries")?,
+            total_physical_bytes: read_u64("total_physical_bytes")?,
+            scan_duration_ms: read_u64("scan_duration_ms")?,
         })
     }
 
@@ -1003,6 +1031,12 @@ impl IndexStore {
         Ok(())
     }
 
+    /// Delete a meta key (no-op if absent).
+    pub fn delete_meta(conn: &Connection, key: &str) -> Result<(), IndexStoreError> {
+        conn.execute("DELETE FROM meta WHERE key = ?1", params![key])?;
+        Ok(())
+    }
+
     /// Get a single meta value by key.
     #[cfg(test)]
     pub fn get_meta(conn: &Connection, key: &str) -> Result<Option<String>, IndexStoreError> {
@@ -1423,6 +1457,39 @@ mod tests {
         let status = store.get_index_status().unwrap();
         assert_eq!(status.volume_path.as_deref(), Some("/"));
         assert_eq!(status.scan_duration_ms.as_deref(), Some("1234"));
+    }
+
+    #[test]
+    fn read_scan_calibration_reads_seeded_keys() {
+        let (store, _dir) = open_temp_store();
+        let write_conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+        IndexStore::update_meta(&write_conn, "total_entries", "5000000").unwrap();
+        IndexStore::update_meta(&write_conn, "total_physical_bytes", "905000000000").unwrap();
+        IndexStore::update_meta(&write_conn, "scan_duration_ms", "149000").unwrap();
+
+        let calibration = IndexStore::read_scan_calibration(&write_conn).unwrap();
+        assert_eq!(calibration.total_entries, Some(5_000_000));
+        assert_eq!(calibration.total_physical_bytes, Some(905_000_000_000));
+        assert_eq!(calibration.scan_duration_ms, Some(149_000));
+    }
+
+    #[test]
+    fn read_scan_calibration_missing_keys_are_none() {
+        let (store, _dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+        // Fresh DB: none of the calibration keys exist yet.
+        let calibration = IndexStore::read_scan_calibration(&conn).unwrap();
+        assert_eq!(calibration, ScanCalibration::default());
+        assert_eq!(calibration.total_entries, None);
+        assert_eq!(calibration.total_physical_bytes, None);
+        assert_eq!(calibration.scan_duration_ms, None);
+
+        // A non-numeric value also maps to None (parse failure), not an error.
+        IndexStore::update_meta(&conn, "total_entries", "not-a-number").unwrap();
+        let calibration = IndexStore::read_scan_calibration(&conn).unwrap();
+        assert_eq!(calibration.total_entries, None);
     }
 
     #[test]

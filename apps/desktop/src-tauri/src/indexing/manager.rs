@@ -303,7 +303,22 @@ impl IndexManager {
             return Err("Scan already running".to_string());
         }
 
-        // Step 0: Truncate entries + dir_stats so the scan inserts into an empty DB.
+        // Step 0a: Clear the previous scan's completion marker BEFORE truncating.
+        // Without this, a rescan killed mid-way (power loss, `kill -9`) leaves the
+        // PREVIOUS scan's `scan_completed_at` in meta on top of a truncated/partial
+        // `entries` table, so the next startup takes the journal-replay path over a
+        // gutted index instead of the `IncompletePreviousScan` fresh rescan. The
+        // calibration keys (`total_entries`, `total_physical_bytes`, `scan_duration_ms`)
+        // are intentionally left intact so they keep describing the last COMPLETED
+        // scan throughout this one. The same flush below covers both sends.
+        if let Err(e) = self
+            .writer
+            .send(WriteMessage::DeleteMeta("scan_completed_at".to_string()))
+        {
+            log::warn!("Failed to send DeleteMeta(scan_completed_at): {e}");
+        }
+
+        // Step 0b: Truncate entries + dir_stats so the scan inserts into an empty DB.
         // Without this, INSERT OR REPLACE on a populated table with the `platform_case`
         // collation is ~12x slower (30 min vs 2.5 min), and old rows with stale IDs
         // accumulate as orphaned subtrees, bloating the DB 3-4x per scan cycle.
@@ -382,13 +397,13 @@ impl IndexManager {
                 if scan_done_progress.load(Ordering::Relaxed) {
                     break;
                 }
-                let (entries, dirs) = progress.snapshot();
+                let snap = progress.snapshot();
                 let _ = app_progress.emit(
                     "index-scan-progress",
                     IndexScanProgressEvent {
                         volume_id: volume_id_progress.clone(),
-                        entries_scanned: entries,
-                        dirs_found: dirs,
+                        entries_scanned: snap.entries_scanned,
+                        dirs_found: snap.dirs_found,
                     },
                 );
 
@@ -550,26 +565,40 @@ impl IndexManager {
                     // can fail (e.g. "database is locked") and cause an early return.
                     // Without this, scan_completed_at is never persisted and the next
                     // startup triggers a full rescan of the entire volume.
-                    let now = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map(|d| d.as_secs().to_string())
-                        .unwrap_or_default();
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "scan_completed_at".to_string(),
-                        value: now,
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "scan_duration_ms".to_string(),
-                        value: summary.duration_ms.to_string(),
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "total_entries".to_string(),
-                        value: summary.total_entries.to_string(),
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "volume_path".to_string(),
-                        value: "/".to_string(),
-                    });
+                    //
+                    // Gate ALL meta writes behind `!was_cancelled`: a user-stopped scan
+                    // holds only partial totals, and writing `scan_completed_at` for it
+                    // would mark a partial index as complete — the next startup would skip
+                    // the `IncompletePreviousScan` fresh rescan. With the clear-at-start
+                    // above, a cancelled scan leaves NO completion marker, so it heals on
+                    // restart. The reconcile/live transition below is intentionally NOT
+                    // gated; only the meta writes are.
+                    if !summary.was_cancelled {
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs().to_string())
+                            .unwrap_or_default();
+                        let _ = writer.send(WriteMessage::UpdateMeta {
+                            key: "scan_completed_at".to_string(),
+                            value: now,
+                        });
+                        let _ = writer.send(WriteMessage::UpdateMeta {
+                            key: "scan_duration_ms".to_string(),
+                            value: summary.duration_ms.to_string(),
+                        });
+                        let _ = writer.send(WriteMessage::UpdateMeta {
+                            key: "total_entries".to_string(),
+                            value: summary.total_entries.to_string(),
+                        });
+                        let _ = writer.send(WriteMessage::UpdateMeta {
+                            key: "total_physical_bytes".to_string(),
+                            value: summary.total_physical_bytes.to_string(),
+                        });
+                        let _ = writer.send(WriteMessage::UpdateMeta {
+                            key: "volume_path".to_string(),
+                            value: "/".to_string(),
+                        });
+                    }
 
                     // Open a read connection for path resolution during replay
                     let replay_conn = match IndexStore::open_read_connection(&writer.db_path()) {
@@ -682,11 +711,9 @@ impl IndexManager {
 
         let db_file_size = self.store.db_file_size().ok();
 
-        let (entries_scanned, dirs_found) = self
-            .scan_handle
-            .as_ref()
-            .map(|h| h.progress.snapshot())
-            .unwrap_or((0, 0));
+        let snap = self.scan_handle.as_ref().map(|h| h.progress.snapshot());
+        let entries_scanned = snap.map(|s| s.entries_scanned).unwrap_or(0);
+        let dirs_found = snap.map(|s| s.dirs_found).unwrap_or(0);
 
         Ok(IndexStatusResponse {
             initialized: true,

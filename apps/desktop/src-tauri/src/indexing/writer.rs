@@ -120,6 +120,11 @@ pub enum WriteMessage {
     UpdateLastEventId(u64),
     /// Update a meta key.
     UpdateMeta { key: String, value: String },
+    /// Delete a meta key (no-op if absent). Used at scan start to clear the
+    /// previous `scan_completed_at` so a killed rescan heals to a fresh scan
+    /// instead of replaying on top of a gutted index. Not search-relevant, so
+    /// (like `UpdateMeta`) it does NOT bump the writer generation.
+    DeleteMeta(String),
     /// Request current entry count (for progress reporting).
     #[cfg(test)]
     GetEntryCount(oneshot::Sender<Result<u64, IndexStoreError>>),
@@ -838,6 +843,11 @@ fn process_message(
         WriteMessage::UpdateMeta { key, value } => {
             if let Err(e) = IndexStore::update_meta(conn, &key, &value) {
                 log::warn!("Index writer: update_meta({key}) failed: {e}");
+            }
+        }
+        WriteMessage::DeleteMeta(key) => {
+            if let Err(e) = IndexStore::delete_meta(conn, &key) {
+                log::warn!("Index writer: delete_meta({key}) failed: {e}");
             }
         }
         #[cfg(test)]
@@ -2559,6 +2569,65 @@ mod tests {
         assert_eq!(val.as_deref(), Some("test_value"));
         drop(store);
         drop(status);
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn update_meta_total_physical_bytes_round_trip() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        writer
+            .send(WriteMessage::UpdateMeta {
+                key: "total_physical_bytes".into(),
+                value: "123456789".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let val = IndexStore::get_meta(&conn, "total_physical_bytes").unwrap();
+        assert_eq!(val.as_deref(), Some("123456789"));
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn delete_meta_via_writer_clears_key() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Set, then delete, then expect the key to read back as None.
+        writer
+            .send(WriteMessage::UpdateMeta {
+                key: "scan_completed_at".into(),
+                value: "1700000000".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        assert_eq!(
+            IndexStore::get_meta(&conn, "scan_completed_at").unwrap().as_deref(),
+            Some("1700000000")
+        );
+
+        writer
+            .send(WriteMessage::DeleteMeta("scan_completed_at".into()))
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        assert_eq!(
+            IndexStore::get_meta(&conn, "scan_completed_at").unwrap(),
+            None,
+            "DeleteMeta must remove the key entirely"
+        );
+
+        // Deleting an absent key is a harmless no-op.
+        writer.send(WriteMessage::DeleteMeta("never_set".into())).unwrap();
+        writer.flush_blocking().unwrap();
+        assert_eq!(IndexStore::get_meta(&conn, "never_set").unwrap(), None);
 
         writer.shutdown();
     }

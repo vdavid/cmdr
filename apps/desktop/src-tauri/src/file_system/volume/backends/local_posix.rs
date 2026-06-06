@@ -796,7 +796,7 @@ impl VolumeReadStream for LocalPosixReadStream {
 /// On macOS, uses `NSURLVolumeAvailableCapacityForImportantUsageKey` which includes purgeable
 /// space (APFS snapshots, iCloud caches), matching what Finder reports. Falls back to `statvfs`
 /// if the NSURL query fails. On Linux, uses `statvfs` directly (no purgeable space concept).
-fn get_space_info_for_path(path: &Path) -> Result<SpaceInfo, VolumeError> {
+pub(crate) fn get_space_info_for_path(path: &Path) -> Result<SpaceInfo, VolumeError> {
     // On macOS, prefer the NSURL API that accounts for purgeable space.
     #[cfg(target_os = "macos")]
     {
