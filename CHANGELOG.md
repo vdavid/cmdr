@@ -15,12 +15,12 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   [88d3b8b8](https://github.com/vdavid/cmdr/commit/88d3b8b8))
 - Shortcuts shown across the app now reflect your custom bindings, live. Rebind a key in Settings and every hint that
   shows it updates right away, so the app never points you at a key that no longer works
-  ([e0bce9e7](https://github.com/vdavid/cmdr/commit/e0bce9e7),
-  [d9cdf9db](https://github.com/vdavid/cmdr/commit/d9cdf9db),
-  [398dd77c](https://github.com/vdavid/cmdr/commit/398dd77c))
+  ([7df9824b](https://github.com/vdavid/cmdr/commit/7df9824b),
+  [6d31f007](https://github.com/vdavid/cmdr/commit/6d31f007),
+  [1354fa2f](https://github.com/vdavid/cmdr/commit/1354fa2f))
 - Click a shortcut anywhere in the app to jump straight to its row in Settings > Keyboard shortcuts and customize it.
   The row scrolls into view and flashes so you can't miss it
-  ([ab752965](https://github.com/vdavid/cmdr/commit/ab752965))
+  ([baa8f0c2](https://github.com/vdavid/cmdr/commit/baa8f0c2))
 
 ### Fixed
 
@@ -37,13 +37,13 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   ([7adf5e1e](https://github.com/vdavid/cmdr/commit/7adf5e1e))
 - The command palette now shows your real shortcuts (up to three per command) instead of the built-in defaults, so a
   rebound command no longer displays a key combo that doesn't work
-  ([3e9f0fb0](https://github.com/vdavid/cmdr/commit/3e9f0fb0))
+  ([fc78a6d1](https://github.com/vdavid/cmdr/commit/fc78a6d1))
 - The Keyboard shortcuts editor now lists every command. A handful (like Quick Look and the F-key actions) were missing
-  from the list and couldn't be rebound ([d93b005d](https://github.com/vdavid/cmdr/commit/d93b005d))
+  from the list and couldn't be rebound ([6060a9b3](https://github.com/vdavid/cmdr/commit/6060a9b3))
 - The F-key bar, toasts, and onboarding now show the key you actually bound rather than a hardcoded one. The AI
   onboarding step also stops claiming the Select files dialog opens on ⌘+ when it really opens on a bare +
-  ([e0bce9e7](https://github.com/vdavid/cmdr/commit/e0bce9e7),
-  [398dd77c](https://github.com/vdavid/cmdr/commit/398dd77c))
+  ([7df9824b](https://github.com/vdavid/cmdr/commit/7df9824b),
+  [1354fa2f](https://github.com/vdavid/cmdr/commit/1354fa2f))
 - Show "/" instead of a raw storage id (like "65537") in the tab title at a phone or camera storage root
   ([75fb9a6c](https://github.com/vdavid/cmdr/commit/75fb9a6c))
 
