@@ -126,6 +126,7 @@ export {
   watchVolumeSpace,
   unwatchVolumeSpace,
   setDiskSpaceThreshold,
+  setLowDiskSpaceConfig,
   checkFullDiskAccess,
   getRestrictedPaths,
   getMacosMajorVersion,

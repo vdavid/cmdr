@@ -33,9 +33,10 @@ Backend counterpart: [`src-tauri/src/downloads/CLAUDE.md`](../../../src-tauri/sr
 - `'both'` → both.
 - `'neither'` → no-op.
 
-The macOS native path also asks the OS for permission the first time a session needs it. On denial we surface a single
-INFO toast with a stable dedup id; we DON'T flip the user's setting and we DON'T retry. The user can re-enable in System
-Settings whenever; their preference stays put.
+The macOS native path asks the OS for permission via the shared `$lib/notifications/macos-notification-permission.ts`
+helper (also used by `lib/low-disk-space/`): session-cached answer, a single INFO toast with a stable dedup id on
+denial, no retries, and we DON'T flip the user's setting. The user can re-enable in System Settings whenever; their
+preference stays put.
 
 ## Snapshot-at-creation rule
 

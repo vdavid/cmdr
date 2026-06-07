@@ -31,6 +31,7 @@ import {
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { pushConfigToBackend } from './ai-config'
+import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
 import { applyAutoCheckEnabled } from '$lib/updates/updater.svelte'
 
 const log = getAppLogger('settings-applier')
@@ -158,6 +159,11 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'indexing.enabled': (v) => void setIndexingEnabled(v as boolean),
   'fileOperations.mtpEnabled': (v) => void setMtpEnabled(v as boolean),
   'advanced.diskSpaceChangeThreshold': (v) => void setDiskSpaceThreshold(v as number),
+  // Low-disk-space pair: either change re-pushes the full config. The helper
+  // re-reads both settings fresh at call time (same shape as the AI triplet
+  // below), so the mode and threshold always travel together.
+  'behavior.fileSystemWatching.lowDiskSpaceNotifications': () => void pushLowDiskSpaceConfigToBackend(),
+  'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent': () => void pushLowDiskSpaceConfigToBackend(),
   'network.directSmbConnection': (v) => void setDirectSmbConnection(v as boolean),
   'advanced.filterSafeSaveArtifacts': (v) => void setFilterSafeSaveArtifacts(v as boolean),
   'network.smbConcurrency': (v) => void setSmbConcurrency(v as number),

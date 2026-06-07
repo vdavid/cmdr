@@ -56,6 +56,10 @@ pub struct Settings {
     pub mtp_enabled: Option<bool>,
     #[serde(alias = "advanced.diskSpaceChangeThreshold", default)]
     pub disk_space_change_threshold_mb: Option<u64>,
+    #[serde(alias = "behavior.fileSystemWatching.lowDiskSpaceNotifications", default)]
+    pub low_disk_space_notifications: Option<String>,
+    #[serde(alias = "behavior.fileSystemWatching.lowDiskSpaceThresholdPercent", default)]
+    pub low_disk_space_threshold_percent: Option<u64>,
     #[serde(alias = "network.smbConcurrency", default)]
     pub smb_concurrency: Option<u16>,
     #[serde(alias = "advanced.maxLogStorageMb", default)]
@@ -78,6 +82,14 @@ fn default_show_hidden() -> bool {
     true
 }
 
+impl Settings {
+    /// Whether the low-disk-space warning is on: any mode except `"off"`.
+    /// A missing key means the registry default (`"in-app"`), so enabled.
+    pub fn low_disk_space_enabled(&self) -> bool {
+        self.low_disk_space_notifications.as_deref() != Some("off")
+    }
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -93,6 +105,8 @@ impl Default for Settings {
             filter_safe_save_artifacts: None,
             mtp_enabled: None,
             disk_space_change_threshold_mb: None,
+            low_disk_space_notifications: None,
+            low_disk_space_threshold_percent: None,
             smb_concurrency: None,
             max_log_storage_mb: None,
             error_reports_enabled: None,
@@ -149,6 +163,13 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let filter_safe_save_artifacts = json.get("advanced.filterSafeSaveArtifacts").and_then(|v| v.as_bool());
     let mtp_enabled = json.get("fileOperations.mtpEnabled").and_then(|v| v.as_bool());
     let disk_space_change_threshold_mb = json.get("advanced.diskSpaceChangeThreshold").and_then(|v| v.as_u64());
+    let low_disk_space_notifications = json
+        .get("behavior.fileSystemWatching.lowDiskSpaceNotifications")
+        .and_then(|v| v.as_str())
+        .map(String::from);
+    let low_disk_space_threshold_percent = json
+        .get("behavior.fileSystemWatching.lowDiskSpaceThresholdPercent")
+        .and_then(|v| v.as_u64());
     let smb_concurrency = json
         .get("network.smbConcurrency")
         .and_then(|v| v.as_u64())
@@ -174,6 +195,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         filter_safe_save_artifacts,
         mtp_enabled,
         disk_space_change_threshold_mb,
+        low_disk_space_notifications,
+        low_disk_space_threshold_percent,
         smb_concurrency,
         max_log_storage_mb,
         error_reports_enabled,

@@ -2,15 +2,16 @@
  * Tier-3 tests for `FileSystemWatchingSection.svelte`.
  *
  * Pins the contract:
- *   - Three sub-groups render: Drive indexing, Downloads notifications, Go to
- *     latest download.
+ *   - Four sub-groups render: Drive indexing, Downloads notifications, Go to
+ *     latest download, Low disk space.
  *   - When the FDA gate is closed (`fda_pending` is true), sub-groups 2 and 3
- *     grey out and one shared hint appears.
- *   - The downloads-notifications ToggleGroup writes through to the settings
- *     store.
+ *     grey out and one shared hint appears. Low disk space stays interactive
+ *     (statfs needs no TCC permission).
+ *   - The downloads-notifications and low-disk-space ToggleGroups write
+ *     through to the settings store.
  *   - The global-shortcut on/off toggle calls the backend IPC.
- *   - The Downloads notifications sub-group carries a stable anchor id so
- *     deep-links can land on it.
+ *   - The Downloads notifications and Low disk space sub-groups carry stable
+ *     anchor ids so deep-links can land on them.
  *
  * The section calls a few backend IPCs (status snapshot, recheck gate, apply
  * shortcut, index status). All mocked so the tests can run without a Tauri
@@ -72,6 +73,10 @@ function setDefaultSettings(): void {
         return '\u{2303}\u{2325}\u{2318}J'
       case 'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged':
         return true
+      case 'behavior.fileSystemWatching.lowDiskSpaceNotifications':
+        return 'in-app'
+      case 'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent':
+        return 5
       default:
         return undefined
     }
@@ -116,11 +121,11 @@ async function mountSection(): Promise<HTMLDivElement> {
 }
 
 describe('FileSystemWatchingSection', () => {
-  it('renders all three sub-groups when FDA is granted', async () => {
+  it('renders all four sub-groups when FDA is granted', async () => {
     const target = await mountSection()
     const labels = Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
     expect(labels).toEqual(
-      expect.arrayContaining(['Drive indexing', 'Downloads notifications', 'Go to latest download']),
+      expect.arrayContaining(['Drive indexing', 'Downloads notifications', 'Go to latest download', 'Low disk space']),
     )
     // Section title.
     const title = target.querySelector('.section-title')?.textContent.trim()
@@ -186,9 +191,58 @@ describe('FileSystemWatchingSection', () => {
   it('shows a Switch (not a binding text input) for the go-to-latest toggle', async () => {
     const target = await mountSection()
     // The toggle is an Ark Switch with a hidden checkbox; there is no binding
-    // text input here anymore (that moved to Keyboard shortcuts).
+    // text input here anymore (that moved to Keyboard shortcuts). The Ark
+    // NumberInput in the Low disk space sub-group also renders `type="text"`
+    // (a spinbutton), so the assertion excludes it by scope.
     expect(target.querySelector('input[type="checkbox"][data-test="global-shortcut-enabled"]')).not.toBeNull()
-    expect(target.querySelector('input[type="text"]')).toBeNull()
+    expect(target.querySelector('input[type="text"]:not([data-scope="number-input"])')).toBeNull()
+    target.remove()
+  })
+
+  it('exposes the Low disk space anchor id so the toast deep-link can target it', async () => {
+    const target = await mountSection()
+    const anchor = target.querySelector('#settings-low-disk-space')
+    expect(anchor).not.toBeNull()
+    target.remove()
+  })
+
+  it('writes through to the settings store when the user picks a different low-disk-space mode', async () => {
+    const target = await mountSection()
+    // The Low disk space ToggleGroup's "Off" option (the downloads group has
+    // no option labelled exactly "Off", so the lookup is unambiguous).
+    const offButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Off')
+    if (!offButton) throw new Error('Off toggle not found')
+    offButton.click()
+    await tick()
+
+    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.lowDiskSpaceNotifications', 'off')
+    target.remove()
+  })
+
+  it('greys out the threshold input when the low-disk-space warning is off', async () => {
+    getSettingMock.mockImplementation((key: string): unknown => {
+      if (key === 'behavior.fileSystemWatching.lowDiskSpaceNotifications') return 'off'
+      if (key === 'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent') return 5
+      if (key === 'indexing.enabled') return true
+      if (key === 'behavior.fileSystemWatching.downloadsNotifications') return 'in-app'
+      if (key === 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled') return true
+      if (key === 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding') return '\u{2303}\u{2325}\u{2318}J'
+      return undefined
+    })
+    const target = await mountSection()
+    const thresholdInput = target.querySelector('input[data-scope="number-input"]')
+    if (!thresholdInput) throw new Error('Threshold number input not found')
+    expect(thresholdInput.hasAttribute('disabled')).toBe(true)
+    target.remove()
+  })
+
+  it('does not gate the Low disk space sub-group on FDA', async () => {
+    setStatus(true)
+    const target = await mountSection()
+    // The anchor div carries no data-gated attribute: statfs needs no TCC
+    // permission, so the sub-group stays interactive while FDA is pending.
+    const anchor = target.querySelector('#settings-low-disk-space')
+    expect(anchor?.getAttribute('data-gated')).toBeNull()
     target.remove()
   })
 

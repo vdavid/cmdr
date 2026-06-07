@@ -19,6 +19,12 @@
      *      it updates the moment the user rebinds in `Keyboard shortcuts`,
      *      where the combo is actually edited). Greyed out when the FDA gate
      *      is closed.
+     *   4. **Low disk space** — the 3-option ToggleGroup driving
+     *      `behavior.fileSystemWatching.lowDiskSpaceNotifications` plus the
+     *      percent-threshold number input. NOT FDA-gated: the backend's space
+     *      poller reads `statfs`, which needs no TCC permission. Carries a
+     *      stable anchor id so the warn toast's "Disable these notifications"
+     *      button can deep-link here.
      *
      * Sub-groups 2 and 3 share ONE FDA hint, not one per sub-group, per the
      * plan's "Locked copy" decision.
@@ -30,6 +36,7 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
+    import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
@@ -50,6 +57,12 @@
         DOWNLOADS_NOTIFICATIONS_SETTING_KEY,
         DOWNLOADS_NOTIFICATIONS_ANCHOR_ID,
     } from '$lib/downloads/notifications-mode'
+    import {
+        LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY,
+        LOW_DISK_SPACE_THRESHOLD_SETTING_KEY,
+        LOW_DISK_SPACE_ANCHOR_ID,
+        getLowDiskSpaceNotificationsMode,
+    } from '$lib/low-disk-space/notifications-mode'
 
     interface Props {
         searchQuery: string
@@ -70,6 +83,17 @@
         label: '',
         description: '',
     }
+    const lowDiskSpaceDef = getSettingDefinition(LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY) ?? {
+        label: '',
+        description: '',
+    }
+    const lowDiskSpaceThresholdDef = getSettingDefinition(LOW_DISK_SPACE_THRESHOLD_SETTING_KEY) ?? {
+        label: '',
+        description: '',
+    }
+
+    // Tracked so the threshold input greys out while the warning is off.
+    let lowDiskSpaceMode = $state(getLowDiskSpaceNotificationsMode())
 
     // The on/off state lives here; the binding is edited in `Keyboard
     // shortcuts`. We track the binding only so this toggle's description can
@@ -180,6 +204,9 @@
         const unsubEnabled = onSpecificSettingChange(GLOBAL_GO_TO_LATEST_ENABLED_KEY, (_id, value) => {
             shortcutEnabled = value
         })
+        const unsubLowDiskSpace = onSpecificSettingChange(LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY, () => {
+            lowDiskSpaceMode = getLowDiskSpaceNotificationsMode()
+        })
         // Refresh DB size every 2 seconds while visible
         refreshTimer = setInterval(() => void refreshDbSize(), 2000)
 
@@ -187,6 +214,7 @@
             clearInterval(refreshTimer)
             unsubBinding()
             unsubEnabled()
+            unsubLowDiskSpace()
         }
     })
 </script>
@@ -279,6 +307,36 @@
                 <p class="shortcut-hint">
                     Change the shortcut under Keyboard shortcuts → Go to latest download (global).
                 </p>
+            {/if}
+        </SectionCard>
+    </div>
+
+    <div id={LOW_DISK_SPACE_ANCHOR_ID}>
+        <SectionCard label="Low disk space">
+            {#if shouldShow(LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY)}
+                <SettingRow
+                    id={LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY}
+                    label={lowDiskSpaceDef.label}
+                    description={lowDiskSpaceDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id={LOW_DISK_SPACE_NOTIFICATIONS_SETTING_KEY} />
+                </SettingRow>
+            {/if}
+            {#if shouldShow(LOW_DISK_SPACE_THRESHOLD_SETTING_KEY)}
+                <SettingRow
+                    id={LOW_DISK_SPACE_THRESHOLD_SETTING_KEY}
+                    label={lowDiskSpaceThresholdDef.label}
+                    description={lowDiskSpaceThresholdDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingNumberInput
+                        id={LOW_DISK_SPACE_THRESHOLD_SETTING_KEY}
+                        disabled={lowDiskSpaceMode === 'off'}
+                        unit="%"
+                    />
+                </SettingRow>
             {/if}
         </SectionCard>
     </div>

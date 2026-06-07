@@ -971,6 +971,9 @@ export const commands = {
   unwatchVolumeSpace: (watcherId: string) => __TAURI_INVOKE<void>('unwatch_volume_space', { watcherId }),
   // Updates the change threshold at runtime (from settings).
   setDiskSpaceThreshold: (mb: number) => __TAURI_INVOKE<void>('set_disk_space_threshold', { mb }),
+  // Updates the low-disk-space warning config at runtime (from settings).
+  setLowDiskSpaceConfig: (enabled: boolean, thresholdPercent: number) =>
+    __TAURI_INVOKE<void>('set_low_disk_space_config', { enabled, thresholdPercent }),
   /**
    *  Checks for a pending crash report from a previous session.
    *  Returns the report, or `null` if none exists.

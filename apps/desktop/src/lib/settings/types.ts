@@ -120,6 +120,7 @@ export const VOLUME_TINT_COLORS: readonly Exclude<VolumeTintColor, 'none'>[] = [
   'brown',
 ] as const
 export type DownloadsNotificationsMode = 'in-app' | 'macos' | 'both' | 'neither'
+export type LowDiskSpaceNotificationsMode = 'in-app' | 'macos' | 'off'
 
 export type AiProvider = 'off' | 'cloud' | 'local'
 export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
@@ -192,6 +193,8 @@ export interface SettingsValues {
   'behavior.fileSystemWatching.globalGoToLatestShortcut.binding': string
   /** Internal: suppresses the first-trigger warn toast once the user acknowledges it. */
   'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged': boolean
+  'behavior.fileSystemWatching.lowDiskSpaceNotifications': LowDiskSpaceNotificationsMode
+  'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent': number
 
   // Viewer
   'viewer.wordWrap': boolean

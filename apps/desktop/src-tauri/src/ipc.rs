@@ -248,6 +248,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::space_poller::watch_volume_space,
         crate::space_poller::unwatch_volume_space,
         crate::space_poller::set_disk_space_threshold,
+        crate::space_poller::set_low_disk_space_config,
         #[cfg(target_os = "macos")]
         crate::commands::volumes::list_volumes,
         #[cfg(target_os = "macos")]

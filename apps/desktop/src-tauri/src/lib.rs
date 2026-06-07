@@ -569,9 +569,13 @@ pub fn run() {
             file_system::set_filter_safe_save_artifacts(saved_settings.filter_safe_save_artifacts.unwrap_or(true));
             file_system::set_smb_concurrency(saved_settings.smb_concurrency.unwrap_or(10) as usize);
 
-            // Initialize disk space poller (live status bar updates)
+            // Initialize disk space poller (live status bar updates + low-disk-space warning)
             space_poller::init(app.handle());
             space_poller::set_threshold_mb(saved_settings.disk_space_change_threshold_mb.unwrap_or(1));
+            space_poller::configure_low_disk_space(
+                saved_settings.low_disk_space_enabled(),
+                saved_settings.low_disk_space_threshold_percent.unwrap_or(5),
+            );
             space_poller::start();
 
             // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking).

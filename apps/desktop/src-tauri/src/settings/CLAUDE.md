@@ -30,6 +30,8 @@ Settings {
     direct_smb_connection: Option<bool>,   // from "network.directSmbConnection"
     mtp_enabled: Option<bool>,             // from "fileOperations.mtpEnabled"
     disk_space_change_threshold_mb: Option<u64>, // from "advanced.diskSpaceChangeThreshold"
+    low_disk_space_notifications: Option<String>,    // from "behavior.fileSystemWatching.lowDiskSpaceNotifications"; `low_disk_space_enabled()` maps any mode but "off" (or missing) to enabled
+    low_disk_space_threshold_percent: Option<u64>,   // from "behavior.fileSystemWatching.lowDiskSpaceThresholdPercent" (default 5)
     max_log_storage_mb: Option<u64>,               // from "advanced.maxLogStorageMb"
     error_reports_enabled: Option<bool>,           // from "updates.errorReports" (Flow B opt-in, default off)
     network_enabled: Option<bool>,                 // from "network.enabled" (default on; off renders picker as "Network (disabled)")

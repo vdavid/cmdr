@@ -435,6 +435,38 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
     hidden: true,
   },
+  {
+    id: 'behavior.fileSystemWatching.lowDiskSpaceNotifications',
+    section: ['Behavior', 'File system watching'],
+    label: 'Low disk space warning',
+    description: 'How to warn you when your startup disk runs low on free space.',
+    keywords: ['disk', 'space', 'low', 'free', 'storage', 'full', 'warning', 'notification', 'boot', 'startup'],
+    type: 'enum',
+    default: 'in-app',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'in-app', label: 'In-app' },
+        { value: 'macos', label: 'macOS notification' },
+        { value: 'off', label: 'Off' },
+      ],
+    },
+  },
+  {
+    id: 'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent',
+    section: ['Behavior', 'File system watching'],
+    label: 'Warning threshold',
+    description: 'Warn when free space drops below this percent of your startup disk.',
+    keywords: ['disk', 'space', 'threshold', 'percent', 'low', 'free', 'warning'],
+    type: 'number',
+    default: 5,
+    component: 'number-input',
+    constraints: {
+      min: 1,
+      max: 50,
+      step: 1,
+    },
+  },
 
   // ========================================================================
   // Behavior › Search

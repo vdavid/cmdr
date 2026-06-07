@@ -67,7 +67,8 @@ vi.mock('$lib/ipc/bindings', () => ({
   },
 }))
 
-import { startDownloadsEventBridge, __resetPermissionCacheForTests } from './event-bridge.svelte'
+import { startDownloadsEventBridge } from './event-bridge.svelte'
+import { __resetPermissionCacheForTests } from '$lib/notifications/macos-notification-permission'
 
 /**
  * Wait until every queued microtask + promise chain has settled. Each

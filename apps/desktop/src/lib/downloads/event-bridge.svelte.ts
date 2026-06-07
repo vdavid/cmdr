@@ -25,11 +25,12 @@
  */
 
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
+import { sendNotification } from '@tauri-apps/plugin-notification'
 import { commands } from '$lib/ipc/bindings'
 import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
+import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
 import { getDownloadsNotificationsMode, type DownloadsNotificationsMode } from './notifications-mode'
 import DownloadToastContent from './DownloadToastContent.svelte'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
@@ -40,7 +41,6 @@ const DOWNLOAD_DETECTED_EVENT = 'download-detected'
 const GO_TO_LATEST_COMMAND_ID = 'downloads.goToLatest'
 const TOAST_TIMEOUT_MS = 10_000
 const TOAST_GROUP = 'downloads'
-const PERMISSION_DENIED_TOAST_ID = 'downloads:macos-permission-denied'
 
 interface DownloadDetectedPayload {
   path: string
@@ -50,16 +50,6 @@ interface DownloadDetectedPayload {
   inSubdir: boolean
   sizeBytes: number | null
 }
-
-/**
- * Whether we've already asked the OS for notification permission in this
- * session. macOS only shows the system dialog once per process lifetime
- * regardless, but we cache the answer so we don't await an `isPermissionGranted`
- * round-trip per event when the user already granted it.
- *
- * `null` means "not yet asked"; subsequent values reflect the latest answer.
- */
-let cachedPermission: 'granted' | 'denied' | null = null
 
 /**
  * Mount the listener. Returns an unsubscribe function — call it from the
@@ -127,7 +117,7 @@ function dispatchToast(payload: DownloadDetectedPayload, explorer: ExplorerAPI |
 }
 
 async function dispatchMacosNotification(payload: DownloadDetectedPayload): Promise<void> {
-  const ok = await ensurePermissionGranted()
+  const ok = await ensureMacosNotificationPermission()
   if (!ok) return
 
   const title = `Downloaded ${payload.fileName}`
@@ -149,63 +139,6 @@ function relativeSubdir(parentDir: string): string {
   const i = parentDir.lastIndexOf(marker)
   if (i === -1) return parentDir
   return 'Downloads/' + parentDir.slice(i + marker.length) + '/'
-}
-
-/**
- * Ask the OS for notification permission if we haven't already, cache the
- * answer for the rest of the session, and surface a single INFO toast on
- * denial so the user knows what happened.
- *
- * The macOS dialog wording is fixed by Apple; we can't customize it. The
- * dialog only appears the first time per process lifetime — `requestPermission`
- * on subsequent calls just returns the cached OS answer.
- */
-async function ensurePermissionGranted(): Promise<boolean> {
-  if (cachedPermission === 'granted') return true
-  if (cachedPermission === 'denied') return false
-
-  let granted: boolean
-  try {
-    granted = await isPermissionGranted()
-  } catch (err) {
-    log.warn('Failed to query macOS notification permission: {err}', { err: String(err) })
-    return false
-  }
-
-  if (!granted) {
-    let response: 'granted' | 'denied' | 'default'
-    try {
-      response = await requestPermission()
-    } catch (err) {
-      log.warn('Failed to request macOS notification permission: {err}', { err: String(err) })
-      return false
-    }
-    if (response !== 'granted') {
-      cachedPermission = 'denied'
-      surfaceDeniedToast()
-      return false
-    }
-  }
-
-  cachedPermission = 'granted'
-  return true
-}
-
-function surfaceDeniedToast(): void {
-  // INFO level with a dedup id so repeated denials only stack one toast.
-  // No retries — the user can flip the setting back when they're ready.
-  addToast('macOS notifications are off. Open System Settings to allow them.', {
-    id: PERMISSION_DENIED_TOAST_ID,
-    level: 'info',
-  })
-}
-
-/**
- * Test-only: reset the in-module permission cache between tests. Production
- * code never touches this.
- */
-export function __resetPermissionCacheForTests(): void {
-  cachedPermission = null
 }
 
 /**

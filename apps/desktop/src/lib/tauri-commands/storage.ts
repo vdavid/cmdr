@@ -163,6 +163,15 @@ export async function setDiskSpaceThreshold(mb: number): Promise<void> {
   await commands.setDiskSpaceThreshold(Math.round(mb))
 }
 
+/**
+ * Updates the low-disk-space warning config at runtime. `enabled` registers or
+ * removes the backend's permanent boot-volume watcher; `thresholdPercent` is
+ * the free-space percent that trips the warning.
+ */
+export async function setLowDiskSpaceConfig(enabled: boolean, thresholdPercent: number): Promise<void> {
+  await commands.setLowDiskSpaceConfig(enabled, Math.round(thresholdPercent))
+}
+
 // ============================================================================
 // Permission checking
 // ============================================================================
