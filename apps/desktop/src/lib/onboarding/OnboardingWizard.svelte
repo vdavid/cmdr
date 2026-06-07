@@ -4,6 +4,7 @@
     import IconArrowLeft from '~icons/lucide/arrow-left'
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
+    import { trapFocus } from '$lib/ui/focus-trap'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
     import {
@@ -31,9 +32,8 @@
 
     /**
      * The wizard panel. `tabindex=-1` lets us focus it on mount so keystrokes
-     * land on our handler instead of the underlying app. The hand-rolled focus
-     * trap (`handleKeydown`) queries focusables fresh on every Tab so it picks
-     * up controls added mid-step (e.g. a newly-revealed API-key input).
+     * land on our handler instead of the underlying app. Tab stays inside via
+     * the shared `use:trapFocus` action on this element.
      */
     let panelEl: HTMLDivElement | undefined = $state()
     /**
@@ -69,19 +69,12 @@
     })
 
     /**
-     * Hand-rolled focus trap. Mirrors the pattern documented in
-     * `apps/desktop/src/lib/ui/CLAUDE.md` § Key decisions for `ModalDialog` but
-     * goes further: we wrap Tab manually because the wizard's focusable set
-     * grows and shrinks as the user picks providers, types API keys, etc., and
-     * an overlay-tabindex-only trap leaks Tab to the underlying app.
-     *
-     * Escape is intentionally a no-op (round-3 #9): the wizard is the only path
-     * for first-launch consent and the user shouldn't be able to dismiss it
-     * without choosing.
+     * Tab trapping itself lives in the shared `use:trapFocus` action on the panel
+     * (it queries focusables fresh on every Tab, so controls added mid-step — a
+     * newly-revealed API-key input — join the cycle). No `onEscape` is passed:
+     * the wizard is the only path for first-launch consent and the user shouldn't
+     * be able to dismiss it without choosing.
      */
-    const FOCUSABLE_SELECTOR =
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
     function handleKeydown(event: KeyboardEvent): void {
         if (event.key === 'Escape') {
             // Wizard intentionally swallows Escape so the user can't dismiss it without
@@ -89,34 +82,7 @@
             // palette) don't see it either.
             event.preventDefault()
             event.stopPropagation()
-            return
         }
-        if (event.key !== 'Tab' || !panelEl) return
-
-        // We can't filter by `offsetParent` here: jsdom always returns `null` so every
-        // focusable would be filtered out, leaving only the panel itself. The selector
-        // already excludes `[disabled]` controls; conditionally-rendered Back/Next
-        // buttons aren't in the DOM at all when they shouldn't be focusable, so the
-        // unfiltered list matches what a real user can tab to in practice.
-        const focusables = Array.from(panelEl.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-        if (focusables.length === 0) {
-            event.preventDefault()
-            panelEl.focus()
-            return
-        }
-        const first = focusables[0]
-        const last = focusables[focusables.length - 1]
-        const active = document.activeElement
-        const goingForward = !event.shiftKey
-
-        if (goingForward && (active === last || active === panelEl || !panelEl.contains(active))) {
-            event.preventDefault()
-            first.focus()
-        } else if (!goingForward && (active === first || active === panelEl)) {
-            event.preventDefault()
-            last.focus()
-        }
-        // Otherwise: let the browser cycle naturally within the panel.
     }
 
     function handleBack(): void {
@@ -211,8 +177,9 @@
     }))
 </script>
 
-<div class="wizard-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-wizard-title">
-    <!-- Hand-rolled focus trap: panel takes focus on mount so Tab/Esc routing lands here. -->
+<!-- No `onEscape` on the trap: the wizard must swallow Escape (see `handleKeydown`). -->
+<div class="wizard-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-wizard-title" use:trapFocus>
+    <!-- Panel takes focus on mount so Esc routing lands here; trapFocus keeps Tab inside. -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
         bind:this={panelEl}

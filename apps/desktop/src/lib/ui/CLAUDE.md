@@ -7,6 +7,7 @@ Reusable UI components used across the entire desktop app.
 | File                  | Purpose                                                                                        |
 | --------------------- | ---------------------------------------------------------------------------------------------- |
 | `ModalDialog.svelte`  | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
+| `focus-trap.ts`       | `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack            |
 | `dialog-registry.ts`  | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
 | `Button.svelte`       | Styled button with variant and size props                                                      |
 | `LinkButton.svelte`   | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
@@ -26,9 +27,10 @@ Reusable UI components used across the entire desktop app.
 `OnboardingWizard.svelte` (in `$lib/onboarding/`) is the canonical soft-sheet implementation: ~90% viewport coverage,
 frosted backdrop, no drag / Escape / × button, body owns the close gesture. It's NOT a `ModalDialog` variant — sheets
 break almost every `ModalDialog` constraint (full-bleed sizing, no title bar, no Escape, no draggable). Adding sheet
-variants to `ModalDialog` would dilute its contract; sheets get their own shell, their own `--sheet-*` design tokens
-(see [`docs/design-system.md`](../../../../docs/design-system.md) § "Soft sheets"), and their own focus-trap. They still
-plug into the same dialog registry (`'onboarding'`) so MCP tracking works through the same id-based surface.
+variants to `ModalDialog` would dilute its contract; sheets get their own shell and their own `--sheet-*` design tokens
+(see [`docs/design-system.md`](../../../../docs/design-system.md) § "Soft sheets"), while focus trapping comes from the
+same shared `use:trapFocus` action (§ "Focus trapping"). They still plug into the same dialog registry (`'onboarding'`)
+so MCP tracking works through the same id-based surface.
 
 Reach for a sheet when you have a multi-step flow the user must commit to. Reach for `ModalDialog` for everything else.
 
@@ -49,7 +51,42 @@ Props:
 | `role`           | `'dialog'` \| `'alertdialog'` | Default `'dialog'`                                                    |
 
 The overlay element receives `tabindex="-1"` and is focused on mount so Escape/keydown events are captured without a
-visible focus ring on the scrim.
+visible focus ring on the scrim. The overlay also carries `use:trapFocus={{ onEscape: onclose }}` (see § "Focus
+trapping" below), so every `ModalDialog` consumer gets Tab containment and the Escape fallback for free.
+
+## Focus trapping (`focus-trap.ts`)
+
+`use:trapFocus` is the one mechanism that keeps keyboard focus inside a modal surface. `aria-modal="true"` is
+assistive-tech semantics only — the browser happily tabs focus out of an overlay, into a background where the global
+shortcut dispatch is suppressed while the dialog flag is up. That's a full keyboard lockout (the command palette's
+Tab-Tab bug: Esc, ⌘⇧P, and Tab all dead, mouse-only recovery). The action does three jobs:
+
+1. **Tab wrapping**: Tab on the last tabbable wraps to the first; Shift+Tab mirrors. The tabbable list is queried fresh
+   on every keypress, so dialogs whose controls mount and unmount (the onboarding wizard, filter popovers) stay trapped.
+2. **Leak guard**: a document-level capture `focusin` listener pulls focus back if it lands outside the container anyway
+   (a programmatic `.focus()` from background code). The pull-back is deferred by one microtask so a closing dialog's
+   own focus-restore (`onDestroy` → `previousActiveElement.focus()`) wins — the action's destroy unregisters the trap
+   before the microtask runs.
+3. **Escape fallback**: if Escape fires while focus is outside the container (the broken state the guard exists for),
+   `onEscape` runs. When focus is inside — the healthy state — the action stays out of the way and the dialog's own
+   Escape handler works as usual.
+
+Traps **stack**: with several mounted (a `FilterChipPopover` inside `QueryDialog`), only the most recently mounted one
+enforces; closing it hands enforcement back down. That's what gives nested popovers their "Esc closes only the popover"
+semantics on the leaked-focus path.
+
+Usage: `use:trapFocus={{ onEscape: <close callback> }}` on the dialog's outermost element (the one carrying
+`role="dialog"`). Omit `onEscape` only for dialogs that must swallow Escape (the onboarding wizard). All listeners run
+in the capture phase, so inner `stopPropagation()` calls (which every dialog makes to shield the file explorer) can't
+starve the trap.
+
+**Enforced by**: `cmdr/dialog-needs-focus-trap` (ESLint) — any element with a static `role="dialog"` /
+`role="alertdialog"` must carry `use:trapFocus` on the same element. Opt out with an
+`<!-- eslint-disable-next-line cmdr/dialog-needs-focus-trap -- <reason> -->` comment above the element; the one
+sanctioned case today is `NetworkLoginForm` (an in-pane, non-modal form where the rest of the app stays interactive).
+Components passing `role` to `ModalDialog` as a prop don't repeat the directive — the primitive owns it. Tier-2
+Playwright coverage lives in `test/e2e-playwright/focus-trap.spec.ts`; the action's unit tests sit next to it in
+`focus-trap.test.ts`.
 
 ## Dialog registry
 
@@ -546,8 +583,9 @@ without fixing the underlying component. Each skip has a concrete fix noted in t
 
 **Decision**: Custom `ModalDialog` with manual overlay + drag logic instead of the native `<dialog>` element. **Why**:
 Native `<dialog>` doesn't support drag-to-reposition, and its `::backdrop` is not style-customizable enough for the blur
-effect. The trade-off is manually managing focus trapping and Escape handling, but the overlay `tabindex="-1"` +
-`focus()` on mount approach is simpler than a full focus-trap library.
+effect. The trade-off is manually managing focus trapping and Escape handling: the overlay `tabindex="-1"` + `focus()`
+on mount captures keydowns, and the shared `use:trapFocus` action (§ "Focus trapping") keeps Tab inside. Don't rely on
+the mount-focus alone — an overlay-tabindex-only setup leaks Tab to the underlying app.
 
 **Decision**: Dialog registry is a `const` array with `satisfies` (not an `enum` or `Record`). **Why**:
 `as const satisfies` gives a union type for `SoftDialogId` that TypeScript can narrow, while also letting the array be

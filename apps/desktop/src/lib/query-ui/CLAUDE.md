@@ -212,27 +212,27 @@ provides pixel-accurate text widths.
 
 Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below).
 
-| Shortcut  | Action                                                                         |
-| --------- | ------------------------------------------------------------------------------ |
-| `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)                |
-| `⌥⏎`      | Show all results in the main window (Search) / no-op (Selection); see consumer |
-| `⌘Enter`  | No-op. Bare Enter is the only path that runs a search or opens the cursor row. |
-| `⇧Enter`  | No-op. Same rule as ⌘Enter.                                                    |
-| `⌘N`      | Clear all dialog state ("new search" / "new selection")                        |
-| `⌘H`      | Toggle the recent-items popover (fuzzy over the full history)                  |
-| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                                      |
-| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                                   |
-| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                                  |
-| `⌘4`      | Reserved for Content when it ships; not wired now                              |
-| `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled)              |
-| `⌥F`      | Mode chip: Filename (global)                                                   |
-| `⌥R`      | Mode chip: Regex (global)                                                      |
-| `⌥←`      | Navigate the active pane to the cursor row's parent folder                     |
-| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)               |
-| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)                  |
-| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)                |
-| `Tab`     | Trapped within the dialog; cycles through interactive elements                 |
-| `Escape`  | Close the dialog                                                               |
+| Shortcut  | Action                                                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------ |
+| `Enter`   | Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)                                        |
+| `⌥⏎`      | Show all results in the main window (Search) / no-op (Selection); see consumer                         |
+| `⌘Enter`  | No-op. Bare Enter is the only path that runs a search or opens the cursor row.                         |
+| `⇧Enter`  | No-op. Same rule as ⌘Enter.                                                                            |
+| `⌘N`      | Clear all dialog state ("new search" / "new selection")                                                |
+| `⌘H`      | Toggle the recent-items popover (fuzzy over the full history)                                          |
+| `⌘1`      | Switch to AI (AI on) or Filename (AI off)                                                              |
+| `⌘2`      | Switch to Filename (AI on) or Regex (AI off)                                                           |
+| `⌘3`      | Switch to Regex (AI on); no-op when AI is off                                                          |
+| `⌘4`      | Reserved for Content when it ships; not wired now                                                      |
+| `⌥A`      | Mode chip: AI (global inside the dialog; only when AI is enabled)                                      |
+| `⌥F`      | Mode chip: Filename (global)                                                                           |
+| `⌥R`      | Mode chip: Regex (global)                                                                              |
+| `⌥←`      | Navigate the active pane to the cursor row's parent folder                                             |
+| `⌥→`      | Navigate the active pane to the cursor row's path (descend back)                                       |
+| `↑` / `↓` | Move the cursor through the results list (loops top<->bottom)                                          |
+| `←` / `→` | When focus is on a mode chip: move between chips (skip Content)                                        |
+| `Tab`     | Trapped within the dialog (shared `use:trapFocus` on the overlay); cycles through interactive elements |
+| `Escape`  | Close the dialog                                                                                       |
 
 Filter-popover openers (`⌥S`, `⌥M`, `⌥I`) and the macOS Option-glyph remap live in
 [`filter-chips/CLAUDE.md`](filter-chips/CLAUDE.md). Scope-popover shortcuts (`⌥C`, `⌥V`) are Search-only — see

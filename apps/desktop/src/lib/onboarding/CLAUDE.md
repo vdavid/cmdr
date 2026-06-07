@@ -5,16 +5,16 @@ Owns first-launch consent: Full Disk Access (macOS only), AI provider, and a sma
 
 ## Key files
 
-| File                         | Purpose                                                                                                                            |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, focus trap, Escape-swallow.             |
-| `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                  |
-| `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.                                        |
-| `StepAi.svelte`              | Step 2: AI provider picker. Three FDA-outcome banners, three radio choices, dual-button footer (Start vs Continue).                |
-| `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Arrow / Home / End / type-to-jump keyboard nav.                  |
-| `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                            |
-| `StepOptional.svelte`        | Step 3 (optional): networking, indexing, updates, MTP toggles bound to existing registry settings.                                 |
-| `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc. |
+| File                         | Purpose                                                                                                                                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal requires committing to a step). |
+| `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                                                                                                    |
+| `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.                                                                                                                          |
+| `StepAi.svelte`              | Step 2: AI provider picker. Three FDA-outcome banners, three radio choices, dual-button footer (Start vs Continue).                                                                                                  |
+| `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Arrow / Home / End / type-to-jump keyboard nav.                                                                                                    |
+| `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                                                                                                              |
+| `StepOptional.svelte`        | Step 3 (optional): networking, indexing, updates, MTP toggles bound to existing registry settings.                                                                                                                   |
+| `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc.                                                                                   |
 
 ## Status
 

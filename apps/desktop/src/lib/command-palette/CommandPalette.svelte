@@ -13,6 +13,7 @@
     import { pruneRecentCommands, pushRecentCommand } from '$lib/app-status-store'
     import { getEffectiveShortcutsReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
+    import { trapFocus } from '$lib/ui/focus-trap'
 
     /** How many shortcut chips a palette row shows (power users discover alternates). */
     const MAX_SHORTCUTS_SHOWN = 3
@@ -104,6 +105,14 @@
                 e.preventDefault()
                 onClose()
                 break
+            case 'Tab':
+                // The palette is a combobox: DOM focus stays on the input the whole
+                // time (the cursor option is announced via aria-activedescendant).
+                // Swallow Tab entirely; the default would walk focus to the roving-
+                // tabindex option row and then out into the blurred background, where
+                // the suppressed global dispatch leaves the keyboard locked out.
+                e.preventDefault()
+                break
             case 'ArrowDown':
                 e.preventDefault()
                 cursorIndex = Math.min(cursorIndex + 1, results.length - 1)
@@ -182,6 +191,7 @@
     tabindex="-1"
     onclick={handleOverlayClick}
     onkeydown={handleKeyDown}
+    use:trapFocus={{ onEscape: onClose }}
 >
     <div class="palette-modal">
         <input

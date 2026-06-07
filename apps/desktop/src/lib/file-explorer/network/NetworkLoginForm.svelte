@@ -124,6 +124,7 @@
     }
 </script>
 
+<!-- eslint-disable-next-line cmdr/dialog-needs-focus-trap -- in-pane, non-modal form: the other pane and the rest of the app stay interactive, so trapping Tab here would wall off keyboard access to them -->
 <div
     class="login-container"
     role="dialog"

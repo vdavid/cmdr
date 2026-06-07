@@ -64,7 +64,9 @@ trap, and the close-on-Escape contract. It's also reused by `RecentItemsPopover.
 **Positioning**: `FilterChipPopover.svelte` measures its anchor (the chip) and the popover element, then auto-flips
 above the chip if there's not enough room below. The flip decision runs once per open and on `ResizeObserver` ticks.
 
-**Focus trap**: Tab and Shift+Tab cycle within the popover; focus returns to the chip on close.
+**Focus trap**: the shared `use:trapFocus` action (`$lib/ui/focus-trap`) cycles Tab and Shift+Tab within the popover;
+focus returns to the chip on close. The popover's trap mounts above the host dialog's in the trap stack, so enforcement
+is scoped to the popover while it's open (see `lib/ui/CLAUDE.md` § "Focus trapping").
 
 ## Chip-popover focus contract
 

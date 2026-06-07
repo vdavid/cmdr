@@ -409,6 +409,12 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
 
 ## Gotchas
 
+- **The focus guard must exempt dialog content.** `DualPaneExplorer.handleFocusGuard` refocuses the container on any
+  non-input focusin inside the explorer, and the rename dialogs (`RenameConflictDialog`, `ExtensionChangeDialog`) mount
+  INSIDE FilePane. Without the `[role="dialog"], [role="alertdialog"]` exemption, the guard yanks focus off the dialog
+  overlay while `use:trapFocus` (see `lib/ui/CLAUDE.md` § "Focus trapping") pulls it back — an endless focus ping-pong
+  of microtasks that starves the event loop and freezes the webview. Pinned by the "rename to existing name is rejected
+  on MTP" E2E. Focus containment inside a dialog is the trap's job; the guard only corrals pane chrome.
 - **Parent offset.** When `hasParent`, frontend cursor index = backend index + 1. `toFrontendIndices` applies this; the
   type-to-jump match callback applies it manually. Forgetting it lands the cursor one row off on every match.
 - **Selection's `SvelteSet` requires mutations, not reassignment.** `selectionState.selectedIndices.add(i)` works;

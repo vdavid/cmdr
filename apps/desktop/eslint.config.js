@@ -32,6 +32,7 @@ import noErrorStringMatch from './eslint-plugins/no-error-string-match.js'
 import noRawTauriInvoke from './eslint-plugins/no-raw-tauri-invoke.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
+import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 
 /* global process */
@@ -228,6 +229,8 @@ export default tseslint.config(
     // module: state changes go through its named mutators (invariant A2).
     // Dispatching a raw command-id string literal is banned: the bus carries
     // `CommandId`-typed values so renames are caught at compile time (A3).
+    // A static dialog-role element without `use:trapFocus` is banned: Tab would
+    // walk focus into the suppressed background and lock out the keyboard.
     files: ['src/**/*.{ts,svelte.ts,svelte}', 'src/**/*.test.ts'],
     plugins: {
       cmdr: {
@@ -236,6 +239,7 @@ export default tseslint.config(
           'no-raw-tauri-invoke': noRawTauriInvoke,
           'no-explorer-state-writes': noExplorerStateWrites,
           'no-raw-command-dispatch': noRawCommandDispatch,
+          'dialog-needs-focus-trap': dialogNeedsFocusTrap,
         },
       },
     },
@@ -244,6 +248,7 @@ export default tseslint.config(
       'cmdr/no-raw-tauri-invoke': 'error',
       'cmdr/no-explorer-state-writes': 'error',
       'cmdr/no-raw-command-dispatch': 'error',
+      'cmdr/dialog-needs-focus-trap': 'error',
     },
   },
   {

@@ -2,6 +2,7 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import type { Snippet } from 'svelte'
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
+    import { trapFocus } from './focus-trap'
     import type { SoftDialogId } from './dialog-registry'
 
     interface Props {
@@ -128,6 +129,7 @@
     data-dialog-id={dialogId}
     tabindex="-1"
     onkeydown={handleOverlayKeydown}
+    use:trapFocus={{ onEscape: onclose }}
 >
     <div class="modal-dialog" class:dragging={isDragging} style={dialogStyle}>
         {#if onclose}

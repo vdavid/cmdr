@@ -20,6 +20,7 @@
      * mousedown inside followed by mouseup outside (a drag) doesn't accidentally close.
      */
     import { onMount, onDestroy, tick, type Snippet } from 'svelte'
+    import { trapFocus } from '$lib/ui/focus-trap'
 
     interface Props {
         /** The trigger element. Used for positioning and as the focus-return target. */
@@ -93,27 +94,16 @@
             // close the whole dialog. This is the contract documented in the search dialog's
             // CLAUDE.md.
             e.stopPropagation()
-            onClose()
-            // Focus returns to the anchor so the user keeps their place in the chip row.
-            anchor.focus()
-            return
+            closeAndReturnFocus()
         }
-        if (e.key === 'Tab') {
-            const focusables = focusableElements()
-            if (focusables.length === 0) {
-                e.preventDefault()
-                return
-            }
-            const first = focusables[0]
-            const last = focusables[focusables.length - 1]
-            if (e.shiftKey && document.activeElement === first) {
-                e.preventDefault()
-                last.focus()
-            } else if (!e.shiftKey && document.activeElement === last) {
-                e.preventDefault()
-                first.focus()
-            }
-        }
+        // Tab cycling is handled by `use:trapFocus` on the popover element. The popover's
+        // trap mounts above the host dialog's, so enforcement is scoped here while open.
+    }
+
+    function closeAndReturnFocus(): void {
+        onClose()
+        // Focus returns to the anchor so the user keeps their place in the chip row.
+        anchor.focus()
     }
 
     function handleDocumentMouseDown(e: MouseEvent): void {
@@ -160,6 +150,7 @@
         style:top="{position.top}px"
         onkeydown={handleKeyDown}
         tabindex="-1"
+        use:trapFocus={{ onEscape: closeAndReturnFocus }}
     >
         {@render children()}
     </div>

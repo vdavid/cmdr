@@ -31,6 +31,14 @@ overlay).
 **Event propagation**: `stopPropagation()` is called on every `keydown` in the overlay `div`'s handler. This prevents
 the file list from scrolling or handling shortcuts behind the modal.
 
+**Focus containment**: two layers. (1) `handleKeyDown` swallows Tab outright (`preventDefault`): the palette is a
+combobox, so DOM focus belongs on the input the whole time — without the swallow, two Tab presses walked focus through
+the roving-tabindex option row into the blurred background, where the suppressed global dispatch left Esc / ⌘⇧P / Tab
+all dead (a full keyboard lockout, mouse-only recovery). (2) The overlay carries `use:trapFocus={{ onEscape: onClose }}`
+(`$lib/ui/focus-trap`, see `lib/ui/CLAUDE.md` § "Focus trapping"), which pulls back programmatic focus leaks and keeps
+Escape working even if focus somehow escapes anyway. Tier-2 regression coverage:
+`test/e2e-playwright/focus-trap.spec.ts`.
+
 **Recents on empty query**: `pruneRecentCommands` / `pushRecentCommand` from `$lib/app-status-store` (Tauri store). On
 mount, the palette calls `pruneRecentCommands(validIds)`: this loads the persisted recents, drops any IDs that are no
 longer valid palette commands (renamed / removed since last use), saves the cleaned list back, and returns it. The

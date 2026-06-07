@@ -43,6 +43,7 @@
     import { deriveEnterAction, SEARCH_AUTO_APPLY_DEBOUNCE_MS, type SearchMode } from './query-filter-state.svelte'
     import type { QueryDialogConfig } from './query-dialog-config'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { trapFocus } from '$lib/ui/focus-trap'
 
     interface Props {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments -- E is the Svelte component generic; the explicit <E> binds the inference for callers like SearchDialog/SelectionDialog
@@ -395,26 +396,6 @@
         }
     }
 
-    /** Tab focus trap inside the dialog. Returns true if handled. */
-    function handleTabFocusTrap(e: KeyboardEvent): boolean {
-        if (e.key !== 'Tab' || !dialogElement) return false
-        const focusable = dialogElement.querySelectorAll<HTMLElement>(
-            'input:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        )
-        if (focusable.length > 0) {
-            const first = focusable[0]
-            const last = focusable[focusable.length - 1]
-            if (e.shiftKey && document.activeElement === first) {
-                e.preventDefault()
-                last.focus()
-            } else if (!e.shiftKey && document.activeElement === last) {
-                e.preventDefault()
-                first.focus()
-            }
-        }
-        return true
-    }
-
     /**
      * Matches a plain modifier-key combo (cmd OR alt, no others, no shift).
      *
@@ -616,7 +597,7 @@
 
     function handleKeyDown(e: KeyboardEvent): void {
         e.stopPropagation()
-        if (handleTabFocusTrap(e)) return
+        // Tab wrapping is handled by `use:trapFocus` on the overlay.
         if (handleModifierShortcuts(e)) return
         switch (e.key) {
             case 'Escape':
@@ -706,6 +687,7 @@
     tabindex="-1"
     onclick={handleOverlayClick}
     onkeydown={handleKeyDown}
+    use:trapFocus={{ onEscape: config.onClose }}
 >
     <div class="search-dialog" bind:this={dialogElement} style="max-width: {config.maxWidth};">
         <!--

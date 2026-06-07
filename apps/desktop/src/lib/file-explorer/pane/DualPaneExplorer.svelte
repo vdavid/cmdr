@@ -749,7 +749,16 @@
         return false
     }
 
-    /** Prevents focus from escaping to buttons/links inside the explorer. Only inputs (rename, network login) are allowed. */
+    /**
+     * Prevents focus from escaping to buttons/links inside the explorer. Inputs (rename,
+     * network login) and dialog content are exempt. The dialog exemption is load-bearing:
+     * the rename dialogs mount INSIDE FilePane, and without it this guard yanks focus off
+     * the dialog overlay while `use:trapFocus` pulls it back — an endless focus ping-pong
+     * of microtasks that starves the event loop and freezes the whole webview (pinned by
+     * the "rename to existing name is rejected on MTP" E2E). Focus containment inside a
+     * dialog is the trap's job, not this guard's; the exemption also makes the dialogs'
+     * buttons keyboard-reachable.
+     */
     function handleFocusGuard(e: FocusEvent) {
         const target = e.target as HTMLElement
         if (
@@ -757,7 +766,8 @@
             target instanceof HTMLInputElement ||
             target instanceof HTMLTextAreaElement ||
             target instanceof HTMLSelectElement ||
-            target.isContentEditable
+            target.isContentEditable ||
+            target.closest('[role="dialog"], [role="alertdialog"]') !== null
         )
             return
         containerElement?.focus()

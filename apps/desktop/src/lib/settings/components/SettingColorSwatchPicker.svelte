@@ -9,6 +9,7 @@
         type VolumeTintColor,
     } from '$lib/settings'
     import { nextSwatchIndex } from './swatch-keyboard'
+    import { trapFocus } from '$lib/ui/focus-trap'
 
     interface Props {
         id: SettingId
@@ -124,6 +125,7 @@
             aria-label="Choose a tint color for {label}"
             class="popover"
             onkeydown={handlePopoverKeydown}
+            use:trapFocus={{ onEscape: () => { closePopover(); } }}
         >
             <div class="swatch-grid" role="listbox" aria-label="Tint colors">
                 <button

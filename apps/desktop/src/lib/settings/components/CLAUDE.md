@@ -100,9 +100,10 @@ focus from the trigger. If you change this, verify with the a11y test and a manu
 
 ### `SettingColorSwatchPicker` keyboard nav lives in `swatch-keyboard.ts`
 
-The picker component owns the popover open/close, focus management, and outside-click. The arrow-key index math is in
-the pure module so the traversal table (Arrow keys, Home/End, PageUp/PageDown wrap rules) can be tested without a DOM.
-Keep new keys in the pure helper.
+The picker component owns the popover open/close, focus management, and outside-click; Tab containment comes from the
+shared `use:trapFocus` on the popover (see `lib/ui/CLAUDE.md` § "Focus trapping"). The arrow-key index math is in the
+pure module so the traversal table (Arrow keys, Home/End, PageUp/PageDown wrap rules) can be tested without a DOM. Keep
+new keys in the pure helper.
 
 ### `SettingsSection` title styling is intentionally borderless
 
