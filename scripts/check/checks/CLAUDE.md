@@ -61,6 +61,11 @@ CheckDefinition{
   `e2e-linux` burn cores in the VM the host process never shows). Calibrate from the isolation sweep in
   `docs/notes/check-cpu-contention.md`; visualize with `./scripts/check.sh --graph`. Only the measured non-fast checks
   carry explicit weights today; fast/formatters default to 1.
+- **`NotInCI`** documents WHY a check intentionally has no step in any GitHub workflow (for example, the Playwright E2E
+  suite needs a macOS window server). The `ci-coverage` check enforces it both ways: a check that's neither invoked by a
+  workflow nor carrying a reason fails the suite, and a check that has a reason but IS invoked also fails (stale
+  excuse). Empty (the default) = the check must appear in a workflow. See `docs/tooling/ci.md` § "The registry ↔ CI
+  contract".
 
 ## Adding a new check
 
@@ -72,8 +77,11 @@ CheckDefinition{
 5. If the check grows an allowlist or an opt-out comment, wire staleness detection from day one (see § Allowlist
    shrink-wrap): dead entries must auto-remove or fail, and orphaned opt-out comments must fail. Reuse
    `directiveTracker` / `writeJSONAllowlist`.
-6. Run `./scripts/check.sh --check go-vet --check staticcheck` to verify (staticcheck is strict about idiomatic Go).
-7. Update the "Apps and check counts" table below and `AGENTS.md`'s `--check` list.
+6. **Wire it into CI**: add a workflow step in `.github/workflows/ci.yml` (or `slow-checks.yml` for slow/weekly checks),
+   or set a `NotInCI` reason on the definition. The `ci-coverage` check fails the suite until you do one or the other —
+   there's no third option of "registered but runs nowhere".
+7. Run `./scripts/check.sh --check go-vet --check staticcheck` to verify (staticcheck is strict about idiomatic Go).
+8. Update the "Apps and check counts" table below and `AGENTS.md`'s `--check` list.
 
 ### Return values
 
@@ -182,7 +190,7 @@ RUSTSEC ignores — that's a quarterly task in `docs/maintenance.md`.
 | Website    | Docker   | docker-build                                                                                                                                                                                                                                                              |
 | API server | TS       | oxfmt, eslint, typecheck, tests                                                                                                                                                                                                                                           |
 | Scripts    | Go       | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck                                                                                                                                                                      |
-| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows)                                                                                                                    |
+| Other      | Metrics  | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links, workflows-rustup (forbids `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract)                                                                      |
 | Other      | Security | workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)                                                                                                                                                                                 |
 
 ## Key decisions

@@ -1,12 +1,16 @@
 name: Slow checks
 
-# Daily security, dependency, and thorough lint checks
-# Runs at 4 AM CET (3 AM UTC) to catch newly disclosed vulnerabilities
-# and issues that the fast CI checks skip
+# Weekly security, dependency, and thorough lint checks: things too slow or too
+# cadence-driven for per-push CI. Mondays at 4 AM CET (3 AM UTC) so newly
+# disclosed vulnerabilities surface at the start of the week.
+# (Was nightly; deliberately reduced to weekly in June 2026, the nightly cadence
+# was more than we needed. If runs ever stop appearing, check the workflow isn't
+# disabled in GitHub's UI: a manual disable survives file changes, `gh workflow
+# enable "Slow checks"` re-enables.)
 # GitHub automatically emails repo admins on failure
 on:
   schedule:
-    - cron: '0 3 * * *' # 4 AM CET = 3 AM UTC
+    - cron: '0 3 * * 1' # Mondays, 4 AM CET = 3 AM UTC
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -56,6 +60,9 @@ jobs:
       - name: Run cargo-udeps
         run: ./scripts/check/check --check desktop-rust-cargo-udeps --ci
 
+      - name: Run govulncheck
+        run: ./scripts/check/check --check scripts-go-govulncheck --ci
+
   # ===========================================
   # Type-aware ESLint (too slow for per-push CI)
   # ===========================================
@@ -92,8 +99,40 @@ jobs:
         run: go build -o check .
         working-directory: ./scripts/check
 
-      - name: Run type-aware ESLint
-        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck --ci
+      # Two passes since the check was split (10632789): one projectService
+      # batch per file type keeps each pass ~15 s instead of ~10 min combined.
+      - name: Run type-aware ESLint (Svelte files)
+        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-svelte --ci
+
+      - name: Run type-aware ESLint (TypeScript files)
+        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-typescript --ci
+
+  # ===========================================
+  # Website Docker build
+  # ===========================================
+  # The website deploys as a Docker image built on the server; per-push CI only
+  # builds the site itself. This weekly full image build catches Dockerfile /
+  # .dockerignore drift before it breaks a real deploy.
+  website-docker:
+    name: Website Docker build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Build website Docker image
+        run: ./scripts/check/check --check website-docker-build --ci
 
   # ===========================================
   # SMB soak test (manual trigger only)

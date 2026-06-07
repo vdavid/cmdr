@@ -120,7 +120,8 @@ Three cadences. Pick the one that matches where you are in the work, not the one
   exclusive with `--include-slow` / `--only-slow`. Covers:
   - All formatters (`oxfmt`, `rustfmt`, `gofmt`) and most non-compiling static linters (`cfg-gate`, `log-error-macro`,
     `error-string-match`, `lock-poison`, `ipc-enum-camelcase`, `cargo-machete`, `knip`, `import-cycles`, `type-drift`,
-    `stylelint`, `css-unused`, `a11y-contrast`, `btn-restyle`, `a11y-coverage`, `bare-poll`, `e2e-linux-typecheck`).
+    `stylelint`, `css-unused`, `a11y-contrast`, `btn-restyle`, `a11y-coverage`, `bare-poll`, `e2e-linux-typecheck`,
+    `ci-coverage`).
   - Go: `go-vet`, `staticcheck`, `ineffassign`, `misspell`, `gocyclo`, `go-tests`.
   - API server: `typecheck`, `tests`.
   - Website: `html-validate` (self-skips when `dist/` is absent).
@@ -152,7 +153,9 @@ Three cadences. Pick the one that matches where you are in the work, not the one
 - Docker SMB containers: 14 Samba containers (guest, auth, readonly, slow, flaky, unicode, deep nesting, etc.) for
   integration tests. Start with `apps/desktop/test/smb-servers/start.sh`. Connect from Rust via
   `smb2::testing::guest_port()` and friends. See `apps/desktop/test/smb-servers/README.md` for details.
-- CI: Runs on PRs and pushes to main for changed files. Full run: Actions → CI → "Run workflow".
+- CI: Runs on PRs and pushes to main for changed files. Full run: Actions → CI → "Run workflow". The workflow map,
+  change-detection filter rules, and the registry↔CI contract (`ci-coverage`) are in
+  [docs/tooling/ci.md](docs/tooling/ci.md).
 
 ## Debugging
 

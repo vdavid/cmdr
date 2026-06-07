@@ -205,6 +205,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🦀 Rust",
 		IsSlow:            true,
 		FreestyleIncompat: true,
+		NotInCI:           "CI's desktop-rust job already runs the same tests natively on a Linux runner; this check exists to run them from a Mac",
 		DependsOn:         []string{"desktop-rust-clippy"},
 		Run:               RunRustTestsLinux,
 	},
@@ -229,6 +230,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "svelte-kit sync",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
+		NotInCI:     "CI jobs run `pnpm exec svelte-kit sync` directly as a setup step",
 		DependsOn:   []string{"oxfmt"},
 		Run:         RunDesktopSvelteKitSync,
 	},
@@ -385,6 +387,7 @@ var AllChecks = []CheckDefinition{
 		IsSlow:            true,
 		FreestyleIncompat: true,
 		NeedsSmb:          SmbModeE2E,
+		NotInCI:           "the desktop-e2e-linux CI job runs this suite via apps/desktop/scripts/e2e-linux.sh, not through the check tool",
 		DependsOn:         []string{"desktop-svelte-e2e-linux-typecheck"},
 		Run:               RunDesktopE2ELinux,
 	},
@@ -397,6 +400,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🎨 Svelte",
 		IsSlow:            true,
 		FreestyleIncompat: true,
+		NotInCI:           "needs a macOS machine with a window server; run locally via --include-slow before milestones",
 		Run:               RunDesktopE2EPlaywright,
 	},
 
@@ -597,6 +601,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "file length",
 		App:         AppOther,
 		Tech:        "📏 Metrics",
+		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
 		DependsOn:   nil,
 		IsFast:      true,
 		Run:         RunFileLength,
@@ -606,6 +611,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "CLAUDE.md reminder",
 		App:         AppOther,
 		Tech:        "📏 Metrics",
+		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
 		DependsOn:   nil,
 		IsFast:      true,
 		Run:         RunClaudeMdReminder,
@@ -639,6 +645,19 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   nil,
 		IsFast:      true,
 		Run:         RunWorkflowsRustup,
+	},
+	// Two-way contract between this registry and .github/workflows/: every
+	// `--check` name in a workflow must resolve here, every check here must be
+	// in a workflow or carry a NotInCI reason, and ci.yml's change-detection
+	// filter paths must exist. See ci-coverage.go for the incidents behind it.
+	{
+		ID:          "ci-coverage",
+		DisplayName: "CI coverage",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		DependsOn:   nil,
+		IsFast:      true,
+		Run:         RunCICoverage,
 	},
 }
 

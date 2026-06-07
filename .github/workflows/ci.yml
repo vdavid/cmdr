@@ -24,12 +24,21 @@ jobs:
       desktop: ${{ steps.filter.outputs.desktop }}
       website: ${{ steps.filter.outputs.website }}
       api-server: ${{ steps.filter.outputs.api-server }}
+      dashboard: ${{ steps.filter.outputs.dashboard }}
       scripts: ${{ steps.filter.outputs.scripts }}
-      packages: ${{ steps.filter.outputs.packages }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
+      # Filter design rules (the `ci-coverage` check validates the non-glob paths exist):
+      # - A filter must cover every path its job's checks read, not just the obvious app dir.
+      #   Example: `rust` includes `test/smb-servers/` because the SMB integration tests run
+      #   against those container configs; `svelte` includes `eslint-plugins/` and
+      #   `test/e2e-shared/` because Vitest and ESLint cover them (see vitest.config.ts).
+      # - `.mise.toml` (toolchain versions) and this workflow file are in every filter:
+      #   changing either can change any job's behavior, so everything reruns.
+      # - `pnpm-lock.yaml` is in every Node-based filter so lockfile-only bumps
+      #   (pnpm dedupe, transitive updates) still run the affected apps' checks.
       - name: Detect file changes
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         id: filter
@@ -37,32 +46,62 @@ jobs:
           filters: |
             rust:
               - 'apps/desktop/src-tauri/**'
+              - 'apps/desktop/test/smb-servers/**'
               - 'crates/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
             svelte:
               - 'apps/desktop/src/**'
               - 'apps/desktop/static/**'
+              - 'apps/desktop/test/e2e-shared/**'
+              - 'apps/desktop/eslint-plugins/**'
+              - 'apps/desktop/scripts/**'
               - 'apps/desktop/package.json'
               - 'apps/desktop/svelte.config.js'
-              - 'apps/desktop/vite.config.ts'
+              - 'apps/desktop/vite.config.js'
+              - 'apps/desktop/vitest.config.ts'
+              - 'apps/desktop/eslint.config.js'
               - 'apps/desktop/tsconfig.json'
-              - 'apps/desktop/tailwind.config.ts'
               - 'pnpm-lock.yaml'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
             desktop:
+              # Gates the Linux E2E job, which builds the full app: frontend + the whole
+              # Rust workspace, so the Rust workspace inputs belong here too.
               - 'apps/desktop/**'
+              - 'crates/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
             website:
               - 'apps/website/**'
               - '.dockerignore'
               - 'CHANGELOG.md'
+              - 'pnpm-lock.yaml'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
             api-server:
               - 'apps/api-server/**'
-            scripts:
-              - 'scripts/**'
-            packages:
-              - '**/package.json'
               - 'pnpm-lock.yaml'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
+            dashboard:
+              - 'apps/analytics-dashboard/**'
+              - 'pnpm-lock.yaml'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
+            scripts:
+              # `apps/desktop/scripts/` holds Go files the scripts-go-* checks scan
+              # (see GetGoDirectories in scripts/check/checks/common.go).
+              - 'scripts/**'
+              - 'apps/desktop/scripts/**'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
 
   # ===========================================
   # Desktop app - Rust backend
@@ -96,6 +135,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
 
+      # pnpm is only needed by bindings-fresh (its regen script formats
+      # bindings.ts with `pnpm exec oxfmt`).
+      - name: Cache pnpm
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Build check tool
         run: go build -o check .
         working-directory: ./scripts/check
@@ -103,20 +155,42 @@ jobs:
       - name: Check rustfmt
         run: ./scripts/check/check --check desktop-rust-rustfmt --ci
 
-      - name: Run clippy
-        run: ./scripts/check/check --check desktop-rust-clippy --ci
+      # Cheap static lints first, so a violation fails before the long compiles below.
+      - name: Check cfg-gate
+        run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
+
+      - name: Check log-error-macro
+        run: ./scripts/check/check --check desktop-rust-log-error-macro --ci
+
+      - name: Check error-string-match
+        run: ./scripts/check/check --check desktop-rust-error-string-match --ci
+
+      - name: Check lock-poison
+        run: ./scripts/check/check --check desktop-rust-lock-poison --ci
+
+      - name: Check ipc-enum-camelcase
+        run: ./scripts/check/check --check desktop-rust-ipc-enum-camelcase --ci
+
+      - name: Check pluralize-noun
+        run: ./scripts/check/check --check desktop-pluralize-noun --ci
 
       - name: Run jscpd
         run: ./scripts/check/check --check desktop-rust-jscpd --ci
 
-      - name: Check cfg-gate
-        run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
+      - name: Run cargo-machete
+        run: ./scripts/check/check --check desktop-rust-cargo-machete --ci
+
+      - name: Run clippy
+        run: ./scripts/check/check --check desktop-rust-clippy --ci
 
       - name: Run Rust tests
         run: ./scripts/check/check --check desktop-rust-tests --ci
 
       - name: Run SMB integration tests
         run: ./scripts/check/check --check desktop-rust-integration-tests --ci
+
+      - name: Check bindings freshness
+        run: ./scripts/check/check --check desktop-bindings-fresh --ci
 
   # ===========================================
   # Desktop app - Svelte frontend
@@ -130,8 +204,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0 # full history so changelog-commit-links can resolve historical SHAs
 
       - name: Install mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
@@ -158,12 +230,6 @@ jobs:
         run: go build -o check .
         working-directory: ./scripts/check
 
-      - name: Check oxfmt
-        run: ./scripts/check/check --check oxfmt --ci
-
-      - name: Check CHANGELOG commit links
-        run: ./scripts/check/check --check changelog-commit-links --ci
-
       - name: Run ESLint
         run: ./scripts/check/check --check desktop-svelte-eslint --ci
 
@@ -172,6 +238,18 @@ jobs:
 
       - name: Check unused CSS
         run: ./scripts/check/check --check desktop-svelte-css-unused --ci
+
+      - name: Check a11y contrast
+        run: ./scripts/check/check --check desktop-svelte-a11y-contrast --ci
+
+      - name: Check a11y coverage
+        run: ./scripts/check/check --check desktop-svelte-a11y-coverage --ci
+
+      - name: Check btn-restyle
+        run: ./scripts/check/check --check desktop-svelte-btn-restyle --ci
+
+      - name: Check bare polls
+        run: ./scripts/check/check --check desktop-svelte-bare-poll --ci
 
       - name: Run svelte-check
         run: ./scripts/check/check --check desktop-svelte-check --ci
@@ -184,6 +262,9 @@ jobs:
 
       - name: Check type drift
         run: ./scripts/check/check --check desktop-svelte-type-drift --ci
+
+      - name: Typecheck Linux E2E suite
+        run: ./scripts/check/check --check desktop-svelte-e2e-linux-typecheck --ci
 
       - name: Run Svelte tests
         run: ./scripts/check/check --check desktop-svelte-tests --ci
@@ -253,8 +334,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0 # full history so changelog-commit-links can resolve historical SHAs
 
       - name: Install mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
@@ -276,12 +355,6 @@ jobs:
       - name: Build check tool
         run: go build -o check .
         working-directory: ./scripts/check
-
-      - name: Check oxfmt
-        run: ./scripts/check/check --check oxfmt --ci
-
-      - name: Check CHANGELOG commit links
-        run: ./scripts/check/check --check changelog-commit-links --ci
 
       - name: Run ESLint
         run: ./scripts/check/check --check website-eslint --ci
@@ -328,6 +401,97 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache pnpm
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Run ESLint
+        run: ./scripts/check/check --check api-server-eslint --ci
+
+      - name: Run typecheck
+        run: ./scripts/check/check --check api-server-typecheck --ci
+
+      - name: Run tests
+        run: ./scripts/check/check --check api-server-tests --ci
+
+  # ===========================================
+  # Analytics dashboard
+  # ===========================================
+  # The dashboard has no entries in the check registry (it's a small private
+  # SvelteKit app), so this job runs its package scripts directly. Without it,
+  # dashboard changes only got validated by the deploy build, after landing on main.
+  dashboard:
+    name: Analytics dashboard
+    runs-on: ubuntu-latest
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.dashboard == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache pnpm
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run svelte-check
+        run: pnpm check
+        working-directory: ./apps/analytics-dashboard
+
+      - name: Run tests
+        run: pnpm test
+        working-directory: ./apps/analytics-dashboard
+
+      - name: Build
+        run: pnpm build
+        working-directory: ./apps/analytics-dashboard
+
+  # ===========================================
+  # Repo hygiene (always runs, no change gate)
+  # ===========================================
+  # Catches what per-app filters can't: oxfmt formats the whole monorepo (docs,
+  # configs, workflows), so a docs-only commit must still run it — otherwise
+  # unformatted markdown lands on main and fails the next unrelated PR. Also the
+  # single home of changelog-commit-links (it was duplicated across three jobs)
+  # and the workflows/registry guards, which watch files no app filter covers.
+  hygiene:
+    name: Repo hygiene
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0 # full history so changelog-commit-links can resolve historical SHAs
 
@@ -358,14 +522,14 @@ jobs:
       - name: Check CHANGELOG commit links
         run: ./scripts/check/check --check changelog-commit-links --ci
 
-      - name: Run ESLint
-        run: ./scripts/check/check --check api-server-eslint --ci
+      - name: Check workflow hardening
+        run: ./scripts/check/check --check workflows-hardening --ci
 
-      - name: Run typecheck
-        run: ./scripts/check/check --check api-server-typecheck --ci
+      - name: Check workflow rustup pins
+        run: ./scripts/check/check --check workflows-rustup --ci
 
-      - name: Run tests
-        run: ./scripts/check/check --check api-server-tests --ci
+      - name: Check CI coverage of registry checks
+        run: ./scripts/check/check --check ci-coverage --ci
 
   # ===========================================
   # Scripts (Go checks)
@@ -420,11 +584,16 @@ jobs:
   # ===========================================
   # Website deployment
   # ===========================================
+  # This is the ONLY website deploy path. There used to be a standalone
+  # deploy-website.yml that fired on the same paths — that deployed twice per
+  # push and, worse, deployed even when checks failed (it didn't wait for the
+  # website job). Keep deployment here, gated on the website checks passing.
+  # `workflow_dispatch` on main (with run_all) doubles as the manual deploy lever.
   deploy-website:
     name: Deploy website
     runs-on: ubuntu-latest
     needs: website
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
     steps:
       - name: Trigger deploy webhook
@@ -445,7 +614,7 @@ jobs:
   ci-ok:
     name: CI OK
     runs-on: ubuntu-latest
-    needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, api-server, scripts]
+    needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, api-server, dashboard, scripts, hygiene]
     if: always()
     steps:
       - name: Check all jobs passed

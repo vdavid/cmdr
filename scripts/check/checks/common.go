@@ -108,6 +108,13 @@ type CheckDefinition struct {
 	// CPU too (`rust-tests-linux` / `e2e-linux` burn cores in the VM that the host
 	// process never shows).
 	CpuWeight int
+	// NotInCI documents WHY this check intentionally has no step in any GitHub
+	// workflow. The ci-coverage check enforces the invariant both ways: a check
+	// that's neither referenced by a workflow nor carrying a NotInCI reason
+	// fails the suite (someone added a check and forgot to wire it into CI),
+	// and a check that has a reason AND a workflow reference also fails (the
+	// reason went stale — remove it). Empty = must be referenced in a workflow.
+	NotInCI   string
 	DependsOn []string
 	Run       CheckFunc
 }

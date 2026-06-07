@@ -1,6 +1,6 @@
 # Check runner
 
-Go CLI that runs all code quality checks for the Cmdr monorepo (~41 checks across 4 apps) in parallel with dependency
+Go CLI that runs all code quality checks for the Cmdr monorepo (~42 checks across 4 apps) in parallel with dependency
 ordering. Invoked via `./scripts/check.sh` at the repo root.
 
 For check authoring (how to add a new check, `CheckDefinition` shape, naming/`CLIName()` rules, common helpers, the
