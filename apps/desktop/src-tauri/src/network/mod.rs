@@ -24,7 +24,13 @@ pub mod mount;
 
 // Platform-agnostic on purpose (the Linux `gio mount` path should adopt it too), but
 // today only the macOS mount path consumes it, so tolerate "unused" off macOS.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(
+        dead_code,
+        reason = "only the macOS mount path consumes it today; Linux should adopt it"
+    )
+)]
 pub mod server_identity;
 pub mod smb_client;
 

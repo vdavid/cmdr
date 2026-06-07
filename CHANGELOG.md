@@ -11,41 +11,41 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Drag files and folders from your phone or NAS straight to Finder or the Desktop. Cmdr downloads them on drop, under
   the name Finder picks, the same gesture Photos and Mail already use. Multi-select and whole folders work, and a toast
-  keeps you posted while the download runs ([871f19d0](https://github.com/vdavid/cmdr/commit/871f19d0),
-  [88d3b8b8](https://github.com/vdavid/cmdr/commit/88d3b8b8))
+  keeps you posted while the download runs ([c97a032f](https://github.com/vdavid/cmdr/commit/c97a032f),
+  [9e54719d](https://github.com/vdavid/cmdr/commit/9e54719d))
 - Shortcuts shown across the app now reflect your custom bindings, live. Rebind a key in Settings and every hint that
   shows it updates right away, so the app never points you at a key that no longer works
-  ([f31b2d28](https://github.com/vdavid/cmdr/commit/f31b2d28),
-  [b20f2ad4](https://github.com/vdavid/cmdr/commit/b20f2ad4),
-  [67388649](https://github.com/vdavid/cmdr/commit/67388649))
+  ([123e76b7](https://github.com/vdavid/cmdr/commit/123e76b7),
+  [e756a379](https://github.com/vdavid/cmdr/commit/e756a379),
+  [18acf50f](https://github.com/vdavid/cmdr/commit/18acf50f))
 - Click a shortcut anywhere in the app to jump straight to its row in Settings > Keyboard shortcuts and customize it.
   The row scrolls into view and flashes so you can't miss it
-  ([f1ce775f](https://github.com/vdavid/cmdr/commit/f1ce775f))
+  ([b38f6cf8](https://github.com/vdavid/cmdr/commit/b38f6cf8))
 
 ### Fixed
 
 - Connecting to a password-protected NAS no longer dead-ends. When a share needs a sign-in, or a saved password stops
   working, Cmdr now shows its own login form right where you are instead of letting macOS pop an error dialog and then
   failing with a cryptic "error code -6600". Your entered password mounts the share and lands in the Keychain when you
-  ask it to ([eebb0877](https://github.com/vdavid/cmdr/commit/eebb0877))
+  ask it to ([0e1bc77d](https://github.com/vdavid/cmdr/commit/0e1bc77d))
 - Picking a share that's already mounted now takes you straight there. Cmdr recognizes the server even when it shows up
   under a different name (Bonjour name vs IP address), instead of mounting a doomed second copy
-  ([eebb0877](https://github.com/vdavid/cmdr/commit/eebb0877))
+  ([0e1bc77d](https://github.com/vdavid/cmdr/commit/0e1bc77d))
 - Dragging a file from a phone or network pane out to Finder, the Desktop, or a terminal no longer drops a junk
   `.textClipping` file or pastes a meaningless path. Finder and the Desktop now download the real file (see Added);
   terminals and apps that can't take the download get a clean no-op instead of garbage
-  ([7adf5e1e](https://github.com/vdavid/cmdr/commit/7adf5e1e))
+  ([6e8ac5ae](https://github.com/vdavid/cmdr/commit/6e8ac5ae))
 - The command palette now shows your real shortcuts (up to three per command) instead of the built-in defaults, so a
   rebound command no longer displays a key combo that doesn't work
-  ([d9c2f375](https://github.com/vdavid/cmdr/commit/d9c2f375))
+  ([87df2ed9](https://github.com/vdavid/cmdr/commit/87df2ed9))
 - The Keyboard shortcuts editor now lists every command. A handful (like Quick Look and the F-key actions) were missing
-  from the list and couldn't be rebound ([a4e9394a](https://github.com/vdavid/cmdr/commit/a4e9394a))
+  from the list and couldn't be rebound ([73766c9e](https://github.com/vdavid/cmdr/commit/73766c9e))
 - The F-key bar, toasts, and onboarding now show the key you actually bound rather than a hardcoded one. The AI
   onboarding step also stops claiming the Select files dialog opens on ⌘+ when it really opens on a bare +
-  ([f31b2d28](https://github.com/vdavid/cmdr/commit/f31b2d28),
-  [67388649](https://github.com/vdavid/cmdr/commit/67388649))
+  ([123e76b7](https://github.com/vdavid/cmdr/commit/123e76b7),
+  [18acf50f](https://github.com/vdavid/cmdr/commit/18acf50f))
 - Show "/" instead of a raw storage id (like "65537") in the tab title at a phone or camera storage root
-  ([75fb9a6c](https://github.com/vdavid/cmdr/commit/75fb9a6c))
+  ([582cfbaf](https://github.com/vdavid/cmdr/commit/582cfbaf))
 
 ## [0.24.0] - 2026-06-06
 

@@ -36,7 +36,13 @@ pub fn classify_error(err: &smb2::Error) -> ShareListError {
 /// not a credential problem. Everything else falls through to [`classify_error`].
 // Consumed by the macOS arm of `smb_client` today (Linux's authenticated fallback goes
 // through smbclient); the classifier itself is platform-agnostic.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(
+        dead_code,
+        reason = "consumed by the macOS arm of smb_client; Linux goes through smbclient"
+    )
+)]
 pub fn classify_authenticated_error(err: &smb2::Error) -> ShareListError {
     match err.kind() {
         ErrorKind::AuthRequired | ErrorKind::AccessDenied => ShareListError::AuthFailed {

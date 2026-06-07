@@ -443,12 +443,21 @@ else
     # Pre-create the host JSON report file so Docker bind-mounts it as a
     # file (without this, Docker creates a directory at the bind target on
     # first run). `playwright.config.ts` reads $CMDR_E2E_JSON_REPORT and routes
-    # its `json` reporter there; we bind-mount the host file at the same path
-    # inside the container so playwright writes through to the host. The
-    # report feeds `scripts/e2e-test-timings/` for macOS-vs-Linux per-test
-    # wall-clock comparisons. Truncating with `:>` instead of `touch` so a
-    # stale report from a previous run is overwritten cleanly.
+    # its `json` reporter there; we bind-mount the host file into the container
+    # so playwright writes through to the host. The report feeds
+    # `scripts/e2e-test-timings/` for macOS-vs-Linux per-test wall-clock
+    # comparisons. Truncating with `:>` instead of `touch` so a stale report
+    # from a previous run is overwritten cleanly.
+    #
+    # The CONTAINER-side path must NOT be under /tmp: /tmp is sticky (1777),
+    # and on hosts with `fs.protected_regular` (Ubuntu defaults, so GitHub
+    # runners) root in the container gets EACCES opening an O_CREAT file in a
+    # sticky dir when the bind-mounted file is owned by another uid (the
+    # runner user). Mounting at a root-owned non-sticky path sidesteps the
+    # sysctl. Locally (OrbStack maps the host uid to container root) both
+    # paths work, which is why this only ever failed in CI.
     LINUX_E2E_JSON_REPORT="/tmp/cmdr-e2e-report-linux.json"
+    CONTAINER_E2E_JSON_REPORT="/e2e-report/cmdr-e2e-report-linux.json"
     : > "$LINUX_E2E_JSON_REPORT"
 
     # Capture the test exit code so we can run a post-flight diagnostic
@@ -462,12 +471,12 @@ else
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
-        -v "$LINUX_E2E_JSON_REPORT:$LINUX_E2E_JSON_REPORT" \
+        -v "$LINUX_E2E_JSON_REPORT:$CONTAINER_E2E_JSON_REPORT" \
         -w /app/apps/desktop \
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
         -e CI=true \
         -e "E2E_GREP=${GREP_FILTER:-}" \
-        -e "CMDR_E2E_JSON_REPORT=$LINUX_E2E_JSON_REPORT" \
+        -e "CMDR_E2E_JSON_REPORT=$CONTAINER_E2E_JSON_REPORT" \
         $SMB_ENV_ARGS \
         "$IMAGE_NAME" \
         bash -c '

@@ -34,7 +34,10 @@ async function fetchAllStargazers(repo: string, headers: Record<string, string>)
   let url: string | null = `https://api.github.com/repos/${repo}/stargazers?per_page=100`
 
   while (url) {
-    const response = await fetch(url, {
+    // Explicit annotations: `url` is reassigned from `response` via the Link
+    // header below, and TS otherwise reports the whole chain as circular
+    // ("implicitly any ... referenced in its own initializer").
+    const response: Response = await fetch(url, {
       headers: { ...headers, Accept: 'application/vnd.github.star+json' },
     })
     if (!response.ok) throw new Error(`GitHub stargazers API returned ${response.status} for ${repo}`)
@@ -43,7 +46,7 @@ async function fetchAllStargazers(repo: string, headers: Record<string, string>)
     for (const item of items) dates.push(item.starred_at)
 
     // Follow pagination
-    const linkHeader = response.headers.get('Link')
+    const linkHeader: string | null = response.headers.get('Link')
     const nextMatch = linkHeader?.match(/<([^>]+)>;\s*rel="next"/)
     url = nextMatch?.[1] ?? null
   }

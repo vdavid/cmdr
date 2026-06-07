@@ -34,7 +34,7 @@ function guardedFetch<T>(
 }
 
 /** Returns the env object from CF Pages platform, falling back to $env/dynamic/private for local dev. */
-async function resolveEnv(platform: App.Platform | undefined): Promise<App.Platform['env']> {
+async function resolveEnv(platform: App.Platform | undefined): Promise<NonNullable<App.Platform['env']>> {
   if (platform?.env) return platform.env
   const { env } = await import('$env/dynamic/private')
   return {

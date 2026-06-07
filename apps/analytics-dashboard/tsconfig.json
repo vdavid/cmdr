@@ -10,6 +10,8 @@
     "sourceMap": true,
     "strict": true,
     "moduleResolution": "bundler"
-  },
-  "include": ["src"]
+  }
+  // No `include` override: it would REPLACE the generated .svelte-kit/tsconfig.json's
+  // include list, dropping ambient.d.ts — which is what declares `$env/dynamic/private`
+  // and friends. svelte-check then fails on those imports.
 }
