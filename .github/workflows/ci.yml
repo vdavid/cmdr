@@ -135,19 +135,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
 
-      # pnpm is only needed by bindings-fresh (its regen script formats
-      # bindings.ts with `pnpm exec oxfmt`).
-      - name: Cache pnpm
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Build check tool
         run: go build -o check .
         working-directory: ./scripts/check
@@ -188,9 +175,6 @@ jobs:
 
       - name: Run SMB integration tests
         run: ./scripts/check/check --check desktop-rust-integration-tests --ci
-
-      - name: Check bindings freshness
-        run: ./scripts/check/check --check desktop-bindings-fresh --ci
 
   # ===========================================
   # Desktop app - Svelte frontend

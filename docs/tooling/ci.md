@@ -43,8 +43,14 @@ can't silently rot a filter again (this happened: the filter watched `vite.confi
 CI runs checks by explicit name (`--check <id>`), which means two failure modes are silent: a check added to the
 registry but never wired into a workflow simply never runs in CI, and a check renamed in the registry breaks the
 workflow that still invokes the old name — but only when that workflow next runs (for `slow-checks.yml`, up to a week
-later). Both happened before this guard existed: a dozen checks (including `bindings-fresh`, which AGENTS.md described
-as CI-enforced) ran nowhere, and the `eslint-typecheck` split left `slow-checks.yml` invoking a name the tool rejects.
+later). Both happened before this guard existed: a dozen checks ran nowhere, and the `eslint-typecheck` split left
+`slow-checks.yml` invoking a name the tool rejects.
+
+Some checks legitimately can't run in CI; they carry a `NotInCI` reason instead of a workflow step. The clearest example
+is `bindings-fresh`: the committed `bindings.ts` is the macOS command surface (Cmdr ships macOS-only), and
+platform-gated `#[tauri::command]`s mean a Linux runner regenerates a different surface, so the check would always
+report "stale" there. It stays a local macOS pre-commit check. The Playwright E2E suite is similar (needs a macOS window
+server).
 
 `ci-coverage` (in the always-on `hygiene` job and the `--fast` lane) enforces:
 

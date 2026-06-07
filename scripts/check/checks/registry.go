@@ -159,8 +159,16 @@ var AllChecks = []CheckDefinition{
 		App:               AppDesktop,
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true, // runs `cargo nextest` to regen
-		DependsOn:         nil,
-		Run:               RunDesktopBindingsFresh,
+		// The committed bindings.ts is the macOS command surface (Cmdr ships
+		// macOS-only). Platform-gated #[tauri::command]s (clipboard, Linux-only
+		// mount commands; see ipc.rs) mean regenerating on a Linux CI runner
+		// produces a DIFFERENT surface, so the check would always report
+		// "stale" there against the canonical macOS file. It stays a local
+		// pre-commit check on macOS (the canonical platform); CI on Linux
+		// fundamentally can't validate macOS bindings.
+		NotInCI:   "regen is platform-specific; the committed bindings.ts is the macOS surface, which a Linux CI runner can't reproduce",
+		DependsOn: nil,
+		Run:       RunDesktopBindingsFresh,
 	},
 	{
 		ID:                "desktop-rust-ipc-enum-camelcase",

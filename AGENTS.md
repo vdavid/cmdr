@@ -315,7 +315,9 @@ common pitfalls.
   - **Enforced by**: `cmdr/no-raw-tauri-invoke` (ESLint rule). Bypassed only inside `lib/ipc/` (the bindings),
     `routes/debug/` (dev-only debug panels), and test files.
   - **Regenerate** with `cd apps/desktop && pnpm bindings:regen` after any change to a `#[tauri::command]` surface or a
-    Type-derived DTO. CI's `bindings-fresh` check fails if the committed `bindings.ts` is stale.
+    Type-derived DTO. The local `bindings-fresh` check (in `./scripts/check.sh`) fails if the committed `bindings.ts` is
+    stale. It runs on macOS only, not in CI: the committed file is the macOS command surface, and platform-gated
+    commands mean a Linux runner regenerates a different surface (it's marked `NotInCI` in the registry).
   - **At call sites, prefer named locals over inline primitives.** `commands.renameFile(from, to, force, volumeId)` is
     fine; `commands.foo(true, null, 5)` isn't. Extract `const force = true; const volumeId = null; const retries = 5`
     first. This is the price specta charges for type safety.
