@@ -11,7 +11,8 @@
 
 use super::listing::FileEntry;
 use super::volume::Volume;
-use super::watcher::compute_diff;
+use super::watcher::{compute_diff, rebase_event_path};
+use std::path::{Path, PathBuf};
 
 fn make_entry(name: &str, size: Option<u64>) -> FileEntry {
     make_entry_in(name, "/test", size)
@@ -26,6 +27,47 @@ fn make_entry_in(name: &str, dir: &str, size: Option<u64>) -> FileEntry {
         extended_metadata_loaded: true,
         ..FileEntry::new(name.to_string(), format!("{}/{}", dir, name), false, false)
     }
+}
+
+#[test]
+fn test_rebase_event_path_exact_parent_match() {
+    assert_eq!(
+        rebase_event_path(Path::new("/Users/jane/docs/file.txt"), Path::new("/Users/jane/docs")),
+        Some(PathBuf::from("/Users/jane/docs/file.txt"))
+    );
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn test_rebase_event_path_resolves_private_symlink() {
+    // Pre-fix, FSEvents' canonical /private/tmp/... paths never matched a listing
+    // watched as /tmp/..., so the pane silently never updated.
+    assert_eq!(
+        rebase_event_path(Path::new("/private/tmp/work/new-dir"), Path::new("/tmp/work")),
+        Some(PathBuf::from("/tmp/work/new-dir")),
+        "canonical event path must rebase into the listing's /tmp path space"
+    );
+    // And the inverse orientation (listing opened via the canonical path)
+    assert_eq!(
+        rebase_event_path(Path::new("/tmp/work/new-dir"), Path::new("/private/tmp/work")),
+        Some(PathBuf::from("/private/tmp/work/new-dir"))
+    );
+}
+
+#[test]
+fn test_rebase_event_path_rejects_non_children() {
+    // Different directory
+    assert_eq!(
+        rebase_event_path(Path::new("/private/tmp/other/file"), Path::new("/tmp/work")),
+        None
+    );
+    // Deeper descendant (watcher is non-recursive; only direct children count)
+    assert_eq!(
+        rebase_event_path(Path::new("/private/tmp/work/sub/file"), Path::new("/tmp/work")),
+        None
+    );
+    // Prefix-similar but distinct dir name must not match (/tmpdir is not /tmp)
+    assert_eq!(rebase_event_path(Path::new("/tmpdir/file"), Path::new("/tmp")), None);
 }
 
 #[test]
@@ -312,7 +354,7 @@ async fn test_handle_directory_change_detects_new_entries() {
 
     // Add a new file to the volume (simulating external change).
     volume
-        .create_file(std::path::Path::new("/testdir/b.txt"), b"new content")
+        .create_file(Path::new("/testdir/b.txt"), b"new content")
         .await
         .unwrap();
 

@@ -1580,8 +1580,8 @@
         }
     }
 
-    export function refreshPane() {
-        paneCommands.refreshPane()
+    export async function refreshPane(): Promise<void> {
+        await paneCommands.refreshPane()
     }
 
     /** Debug only: inject a FriendlyError into the specified pane. */
@@ -1628,8 +1628,18 @@
         paneCommands.refreshNetworkHosts()
     }
 
-    export function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) {
-        paneCommands.handleMcpSelect(pane, start, count, mode)
+    export async function handleMcpSelect(
+        pane: 'left' | 'right',
+        start: number,
+        count: number | 'all',
+        mode: McpSelectMode,
+    ): Promise<void> {
+        // Focus follows the selection (same as `moveCursor`). The backend already
+        // set ITS focused-pane store; without the FE following, a subsequent
+        // focused-pane operation (copy/delete) acts on the previously-focused
+        // pane while the backend pre-check validates against the selected one.
+        explorerState.setFocusedPane(pane)
+        await paneCommands.handleMcpSelect(pane, start, count, mode)
     }
 
     export async function handleMcpSelectNames(
@@ -1637,6 +1647,8 @@
         names: string[],
         mode: McpSelectMode,
     ): Promise<void> {
+        // Focus follows the selection — see `handleMcpSelect`.
+        explorerState.setFocusedPane(pane)
         await paneCommands.handleMcpSelectNames(pane, names, mode)
     }
 

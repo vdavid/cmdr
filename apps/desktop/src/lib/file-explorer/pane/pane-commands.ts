@@ -1,4 +1,4 @@
-import { findFileIndex, findFileIndices } from '$lib/tauri-commands'
+import { findFileIndex, findFileIndices, refreshListing } from '$lib/tauri-commands'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
 import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import { capabilitiesFor } from './volume-capabilities'
@@ -275,12 +275,24 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
   }
 
   /**
-   * Refresh the focused pane.
-   * Used by MCP refresh tool.
+   * Refresh the focused pane: force a backend re-read of the listing, then
+   * re-render. Used by the MCP refresh tool (a round-trip — throws on failure so
+   * the adapter reports the real outcome). The re-read is the point: the whole
+   * reason a caller refreshes is "I think the cache is stale", and a bare
+   * `refreshView()` only re-renders the same stale cache. Local volumes always
+   * re-read; watcher-backed MTP/SMB listings short-circuit in the backend (their
+   * caches are kept fresh by `notify_mutation`, and a redundant MTP re-read costs
+   * ~17 s) — see `refresh_listing` in `commands/file_system/listing.rs`.
    */
-  function refreshPane() {
+  async function refreshPane(): Promise<void> {
     const paneRef = access.getPaneRef(access.getFocusedPane())
-    paneRef?.refreshView()
+    if (!paneRef) throw new Error('The focused pane is unavailable')
+    const listingId = paneRef.getListingId()
+    if (listingId) {
+      const result = await refreshListing(listingId)
+      if (result.timedOut) throw new Error('Refresh timed out — the volume may be unresponsive')
+    }
+    paneRef.refreshView()
   }
 
   /** Debug only: inject a FriendlyError into the specified pane. */
@@ -321,9 +333,14 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
    * @param count - Number of items to select, or 'all' for select all
    * @param mode - 'replace', 'add', or 'subtract'
    */
-  function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) {
+  async function handleMcpSelect(
+    pane: 'left' | 'right',
+    start: number,
+    count: number | 'all',
+    mode: McpSelectMode,
+  ): Promise<void> {
     const paneRef = access.getPaneRef(pane)
-    if (!paneRef) return
+    if (!paneRef) throw new Error(`The ${pane} pane is unavailable`)
 
     // Get current selection for add/subtract modes (local Set, not reactive state)
     const currentSelection = new Set<number>(paneRef.getSelectedIndices())
@@ -331,43 +348,36 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     if (count === 0) {
       // Clear selection
       paneRef.setSelectedIndices([])
-      void paneRef.syncStateToMcpNow()
-      return
-    }
-
-    if (count === 'all') {
+    } else if (count === 'all') {
       // Select all
       paneRef.selectAll()
-      void paneRef.syncStateToMcpNow()
-      return
-    }
-
-    // Calculate the indices to select
-    const endIndex = start + count - 1
-    const targetIndices: number[] = []
-    for (let i = start; i <= endIndex; i++) {
-      targetIndices.push(i)
-    }
-
-    let newSelection: number[]
-    if (mode === 'add') {
-      // Add to current selection
-      targetIndices.forEach((i) => currentSelection.add(i))
-      newSelection = Array.from(currentSelection)
-    } else if (mode === 'subtract') {
-      // Remove from current selection
-      targetIndices.forEach((i) => currentSelection.delete(i))
-      newSelection = Array.from(currentSelection)
     } else {
-      // Replace mode (default)
-      newSelection = targetIndices
-    }
+      // Calculate the indices to select
+      const endIndex = start + count - 1
+      const targetIndices: number[] = []
+      for (let i = start; i <= endIndex; i++) {
+        targetIndices.push(i)
+      }
 
-    paneRef.setSelectedIndices(newSelection)
-    // Immediate push so the backend's GenerationAdvanced ack fires on THIS
-    // selection (not 300 ms later via the debounce), and a follow-up tool call
-    // (select → copy) reads fresh selection state.
-    void paneRef.syncStateToMcpNow()
+      let newSelection: number[]
+      if (mode === 'add') {
+        // Add to current selection
+        targetIndices.forEach((i) => currentSelection.add(i))
+        newSelection = Array.from(currentSelection)
+      } else if (mode === 'subtract') {
+        // Remove from current selection
+        targetIndices.forEach((i) => currentSelection.delete(i))
+        newSelection = Array.from(currentSelection)
+      } else {
+        // Replace mode (default)
+        newSelection = targetIndices
+      }
+
+      paneRef.setSelectedIndices(newSelection)
+    }
+    // Push the new selection to the backend's PaneStateStore BEFORE the round-trip
+    // replies ok, so a follow-up tool call (select → copy) reads fresh state.
+    await paneRef.syncStateToMcpNow()
   }
 
   /**

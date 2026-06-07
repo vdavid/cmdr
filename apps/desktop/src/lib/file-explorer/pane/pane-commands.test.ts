@@ -4,12 +4,19 @@ import type { FilePaneAPI } from './types'
 import type { FileEntry } from '../types'
 import type { SelectionAction } from '../../../routes/(main)/explorer-api'
 
-const { findFileIndexSpy, findFileIndicesSpy } = vi.hoisted(() => ({
+const { findFileIndexSpy, findFileIndicesSpy, refreshListingSpy } = vi.hoisted(() => ({
   findFileIndexSpy: vi.fn<() => Promise<number | null>>(),
   findFileIndicesSpy: vi.fn<() => Promise<Record<string, number>>>(),
+  refreshListingSpy: vi.fn<() => Promise<{ data: null; timedOut: boolean }>>(() =>
+    Promise.resolve({ data: null, timedOut: false }),
+  ),
 }))
 
-vi.mock('$lib/tauri-commands', () => ({ findFileIndex: findFileIndexSpy, findFileIndices: findFileIndicesSpy }))
+vi.mock('$lib/tauri-commands', () => ({
+  findFileIndex: findFileIndexSpy,
+  findFileIndices: findFileIndicesSpy,
+  refreshListing: refreshListingSpy,
+}))
 
 // `capabilitiesFor` (used by `isSnapshotPane`) resolves fsType/category from the
 // volume store for real ids; the two virtual ids short-circuit before the lookup.
@@ -192,48 +199,48 @@ describe('handleSelectionAction routing', () => {
 })
 
 describe('handleMcpSelect modes', () => {
-  it('count 0 clears the selection', () => {
+  it('count 0 clears the selection', async () => {
     const ref = buildPaneRef({ selectedIndices: [1, 2] })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.handleMcpSelect('left', 0, 0, 'replace')
+    await cmds.handleMcpSelect('left', 0, 0, 'replace')
     expect(ref.setSelectedIndices).toHaveBeenCalledWith([])
     expect(ref.selectAll).not.toHaveBeenCalled()
   })
 
-  it("'all' selects all", () => {
+  it("'all' selects all", async () => {
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.handleMcpSelect('left', 0, 'all', 'replace')
+    await cmds.handleMcpSelect('left', 0, 'all', 'replace')
     expect(ref.selectAll).toHaveBeenCalledOnce()
     expect(ref.setSelectedIndices).not.toHaveBeenCalled()
   })
 
-  it('replace mode sets the contiguous range from start', () => {
+  it('replace mode sets the contiguous range from start', async () => {
     const ref = buildPaneRef({ selectedIndices: [9] })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.handleMcpSelect('left', 2, 3, 'replace')
+    await cmds.handleMcpSelect('left', 2, 3, 'replace')
     expect(ref.setSelectedIndices).toHaveBeenCalledWith([2, 3, 4])
   })
 
-  it('add mode unions the range with the current selection', () => {
+  it('add mode unions the range with the current selection', async () => {
     const ref = buildPaneRef({ selectedIndices: [0, 1] })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.handleMcpSelect('left', 2, 2, 'add')
+    await cmds.handleMcpSelect('left', 2, 2, 'add')
     expect(ref.setSelectedIndices).toHaveBeenCalledWith([0, 1, 2, 3])
   })
 
-  it('subtract mode removes the range from the current selection', () => {
+  it('subtract mode removes the range from the current selection', async () => {
     const ref = buildPaneRef({ selectedIndices: [0, 1, 2, 3] })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.handleMcpSelect('left', 1, 2, 'subtract')
+    await cmds.handleMcpSelect('left', 1, 2, 'subtract')
     expect(ref.setSelectedIndices).toHaveBeenCalledWith([0, 3])
   })
 
-  it('targets the requested pane, not the focused one', () => {
+  it('targets the requested pane, not the focused one', async () => {
     const left = buildPaneRef()
     const right = buildPaneRef()
     const cmds = create(buildAccess({ focusedPane: 'left', paneRefs: { left, right } }))
-    cmds.handleMcpSelect('right', 0, 1, 'replace')
+    await cmds.handleMcpSelect('right', 0, 1, 'replace')
     expect(right.setSelectedIndices).toHaveBeenCalledWith([0])
     expect(left.setSelectedIndices).not.toHaveBeenCalled()
   })
@@ -453,11 +460,21 @@ describe('delegating commands', () => {
     expect(right.setCursorIndex).toHaveBeenCalledWith(42)
   })
 
-  it('refreshPane refreshes the focused pane view', () => {
+  it('refreshPane forces a backend re-read, then re-renders', async () => {
+    // Pre-fix this only bumped the render counter — a stale cache stayed stale.
     const ref = buildPaneRef()
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    cmds.refreshPane()
+    await cmds.refreshPane()
+    expect(refreshListingSpy).toHaveBeenCalledExactlyOnceWith('listing-1')
     expect(ref.refreshView).toHaveBeenCalledOnce()
+  })
+
+  it('refreshPane throws when the backend re-read times out', async () => {
+    refreshListingSpy.mockResolvedValueOnce({ data: null, timedOut: true })
+    const ref = buildPaneRef()
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await expect(cmds.refreshPane()).rejects.toThrow('Refresh timed out')
+    expect(ref.refreshView).not.toHaveBeenCalled()
   })
 
   it('refreshNetworkHosts refreshes the focused pane', () => {

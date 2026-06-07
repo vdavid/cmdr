@@ -30,8 +30,9 @@ export const paneHandlers = {
     explorerRef?.copyPathBetweenPanes('right', 'left')
   },
 
-  'pane.refresh': ({ explorerRef }) => {
-    // MCP `refresh` tool: re-list the focused pane.
-    explorerRef?.refreshPane()
+  'pane.refresh': async ({ explorerRef }) => {
+    // MCP `refresh` tool: a round-trip — AWAIT so the adapter acks on a real
+    // backend re-read, and a failure reaches its try/catch.
+    await explorerRef?.refreshPane()
   },
 } satisfies Partial<CommandHandlerRecord>

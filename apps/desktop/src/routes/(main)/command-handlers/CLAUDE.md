@@ -18,10 +18,11 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
 
 - **Handlers read `hctx.explorerRef`, never `ctx.getExplorer()`.** The core reads the explorer once per dispatch; a
   handler re-reading it would re-evaluate mid-dispatch (HMR-fragile). Grep `getExplorer(` here → must be zero.
-- **Preserve each arm's `await` vs `void` exactly.** The two MCP round-trip ids (`nav.openUnderCursor`, `cursor.moveTo`)
-  are `async` + `await` so the adapter acks on real completion (the ack-timing contract); the
-  `command-dispatch.characterization.test.ts` deferred-promise pins guard this. Every other explorer-driving arm `void`s
-  its promise. `void`-ing a round-trip (or awaiting a fire-and-forget) is a silent behavior break with no compile error.
+- **Preserve each arm's `await` vs `void` exactly.** The MCP round-trip ids (`nav.openUnderCursor`, `cursor.moveTo`,
+  `selection.mcpSelect`, `selection.mcpSelectByNames`, `pane.refresh`) are `async` + `await` so the adapter acks on real
+  completion (the ack-timing contract); the `command-dispatch.characterization.test.ts` deferred-promise pins guard
+  this. Every other explorer-driving arm `void`s its promise. `void`-ing a round-trip (or awaiting a fire-and-forget) is
+  a silent behavior break with no compile error.
 - **Grouped ids share ONE body, no copy-paste.** The four `view.zoom.setNN` presets call one `applyZoomPreset`; the
   get-entry-then-act file/cloud arms call one `withEntryUnderCursor`.
 - **No imports of the core or `+page.svelte`.** Modules import `../command-dispatch-context`, `../explorer-api`,

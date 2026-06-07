@@ -201,6 +201,68 @@ fn test_build_pane_yaml() {
 }
 
 #[test]
+fn test_brief_cursor_detail_respects_loaded_window() {
+    // Scrolled large directory: the files vec holds the loaded window
+    // [loaded_start, loaded_end), while cursor_index is GLOBAL. The brief-mode
+    // cursor detail must index window-relative, or it describes the wrong file.
+    let state = PaneState {
+        path: "/big".to_string(),
+        volume_id: Some("root".to_string()),
+        volume_name: Some("Macintosh HD".to_string()),
+        files: vec![
+            PaneFileEntry {
+                name: "window-first.txt".to_string(),
+                path: "/big/window-first.txt".to_string(),
+                is_directory: false,
+                size: Some(1),
+                recursive_size: None,
+                modified: None,
+                recursive_size_pending: None,
+            },
+            PaneFileEntry {
+                name: "under-cursor.txt".to_string(),
+                path: "/big/under-cursor.txt".to_string(),
+                is_directory: false,
+                size: Some(2),
+                recursive_size: None,
+                modified: None,
+                recursive_size_pending: None,
+            },
+        ],
+        cursor_index: 101, // global; window-relative index 1
+        view_mode: "brief".to_string(),
+        selected_indices: vec![],
+        sort_field: "name".to_string(),
+        sort_order: "asc".to_string(),
+        total_files: 50_000,
+        loaded_start: 100,
+        loaded_end: 102,
+        show_hidden: false,
+        tabs: vec![],
+        type_to_jump: None,
+    };
+
+    let yaml = build_pane_yaml_with_options(&state, "  ", false);
+    assert!(
+        yaml.contains("name: under-cursor.txt"),
+        "cursor detail should name the file under the cursor, got:\n{yaml}"
+    );
+    assert!(
+        !yaml.contains("name: window-first.txt"),
+        "cursor detail must not name a different file in the window, got:\n{yaml}"
+    );
+
+    // Cursor outside the loaded window: no detail lines rather than a wrong file.
+    let mut outside = state;
+    outside.cursor_index = 5;
+    let yaml = build_pane_yaml_with_options(&outside, "  ", false);
+    assert!(
+        !yaml.contains("name: window-first.txt") && !yaml.contains("name: under-cursor.txt"),
+        "cursor outside the window must not show any file's details, got:\n{yaml}"
+    );
+}
+
+#[test]
 fn test_format_tab_compact_active() {
     let tab = TabInfo {
         id: "t1".to_string(),

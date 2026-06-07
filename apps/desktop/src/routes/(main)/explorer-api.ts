@@ -71,7 +71,7 @@ export interface ExplorerAPI {
   getFocusedPane: () => 'left' | 'right'
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
   handleSelectionAction: (action: SelectionAction, startIndex?: number, endIndex?: number) => void
-  handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => void
+  handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => Promise<void>
   /**
    * By-name selection for the MCP `select` tool's `names` mode. Throws when the
    * pane is unavailable or any name isn't in the listing (the MCP adapter
@@ -108,7 +108,7 @@ export interface ExplorerAPI {
   openSearchSnapshotInPane: (snapshotId: string, pane?: 'left' | 'right') => void
   moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
   scrollTo: (pane: 'left' | 'right', index: number) => void
-  refreshPane: () => void
+  refreshPane: () => Promise<void>
   refreshNetworkHosts: () => void
   injectError: (pane: 'left' | 'right', friendly: FriendlyError) => void
   resetError: (pane: 'left' | 'right' | 'both') => void

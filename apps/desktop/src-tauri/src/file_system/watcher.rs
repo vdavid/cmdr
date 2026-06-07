@@ -163,6 +163,31 @@ pub fn stop_watching(listing_id: &str) {
     }
 }
 
+/// Maps an FSEvents/inotify path to the watched listing's path space, returning the
+/// rebased path when the event is for a direct child of the watched directory.
+///
+/// On macOS, FSEvents reports canonical paths (`/private/tmp/…`) while the listing
+/// cache holds the user-navigated form (`/tmp/…`). A raw parent comparison silently
+/// drops every event for listings under `/tmp`, `/var`, or `/etc` — the pane then
+/// never updates until the user re-navigates. The comparison runs on the
+/// symlink/firmlink-normalized forms (`firmlinks::normalize_path`, the same
+/// canonicalization the index uses), and the returned path is rebased onto
+/// `dir_path` so cache lookups (`has_entry`) and diff entries stay consistent with
+/// the listing's own paths.
+pub(super) fn rebase_event_path(event_path: &Path, dir_path: &Path) -> Option<PathBuf> {
+    let parent = event_path.parent()?;
+    if parent == dir_path {
+        return Some(event_path.to_path_buf());
+    }
+    let parent_normalized = crate::indexing::firmlinks::normalize_path(&parent.to_string_lossy());
+    let dir_normalized = crate::indexing::firmlinks::normalize_path(&dir_path.to_string_lossy());
+    if parent_normalized == dir_normalized {
+        event_path.file_name().map(|name| dir_path.join(name))
+    } else {
+        None
+    }
+}
+
 /// Processes individual file-system events incrementally instead of re-reading the whole directory.
 ///
 /// Falls back to `handle_directory_change` when events are too numerous or ambiguous.
@@ -186,15 +211,16 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         return;
     };
 
-    // Collect unique direct-child paths, skipping access events
+    // Collect unique direct-child paths, skipping access events. Event paths are
+    // rebased into the listing's path space (see `rebase_event_path`).
     let mut unique_paths: HashSet<PathBuf> = HashSet::new();
     for event in &events {
         if matches!(event.kind, EventKind::Access(_)) {
             continue;
         }
         for path in &event.paths {
-            if path.parent() == Some(dir_path.as_path()) {
-                unique_paths.insert(path.clone());
+            if let Some(rebased) = rebase_event_path(path, &dir_path) {
+                unique_paths.insert(rebased);
             }
         }
     }

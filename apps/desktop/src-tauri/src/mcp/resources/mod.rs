@@ -252,11 +252,15 @@ pub(crate) fn build_pane_yaml_with_options(state: &PaneState, indent: &str, comp
         indent, state.loaded_start, state.loaded_end
     ));
 
-    // Cursor info
+    // Cursor info. `cursor_index` is global while `files` holds only the loaded
+    // window, so the detail lookup is window-relative; a cursor outside the
+    // window shows no details rather than a wrong file's.
     lines.push(format!("{}cursor:", indent));
     lines.push(format!("{}  index: {}", indent, state.cursor_index));
-    if state.view_mode == "brief" && state.cursor_index < state.files.len() {
-        let cursor_file = &state.files[state.cursor_index];
+    let cursor_window_index = state.cursor_index.checked_sub(state.loaded_start);
+    if state.view_mode == "brief"
+        && let Some(cursor_file) = cursor_window_index.and_then(|i| state.files.get(i))
+    {
         lines.push(format!("{}  name: {}", indent, cursor_file.name));
         if let Some(size) = cursor_file.size {
             lines.push(format!("{}  size: {}", indent, format_size(size)));

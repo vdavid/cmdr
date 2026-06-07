@@ -87,12 +87,12 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (menu, skip `pushViewMenuS
   `'refused'` result forwards `result.reason.message` byte-identically as the `mcp-response` error (L12); a `'started'`
   result awaits `result.settled` (the listing completes) before replying `ok: true`. The bus dispatch is fire-and-forget
   and can't surface this round-trip, so it stays adapter-local.
-- **`mcp-response` round-trips** (`mcp-open-under-cursor`, `mcp-move-cursor`, `mcp-select-names`): the bus dispatches
-  the `void`-returning intent; the adapter owns the `requestId` correlation and the
+- **`mcp-response` round-trips** (`mcp-open-under-cursor`, `mcp-move-cursor`, `mcp-select`, `mcp-select-names`,
+  `mcp-refresh`): the bus dispatches the `void`-returning intent; the adapter owns the `requestId` correlation and the
   `emit('mcp-response', { requestId, ok, error? })` reply. It **awaits** the dispatch's promise so the ack fires only
   after the action settles (the backend has an ack timeout) — the `nav.openUnderCursor` / `cursor.moveTo` /
-  `selection.mcpSelectByNames` handlers are `async` and `await` the underlying `openItemUnderCursor` / `moveCursor` /
-  `handleMcpSelectNames`, and an exception (filename not found, index out of range, missing names) propagates to the
+  `selection.mcpSelect` / `selection.mcpSelectByNames` / `pane.refresh` handlers are `async` and `await` the underlying
+  call, and an exception (filename not found, index out of range, missing names, refresh timeout) propagates to the
   adapter's `try/catch`, which replies `ok: false` with the message — the tool reports the real failure instead of a
   false-positive OK. HMR can land these with no explorer; they reply `ok: false` rather than crashing.
 

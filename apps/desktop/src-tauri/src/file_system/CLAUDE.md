@@ -44,3 +44,10 @@ through the same `fetch_path_icons` 8 MB path, not the generic per-id loop.
 which has no Tokio runtime context, so `tokio::spawn` panics with "there is no reactor running". Use
 `tauri::async_runtime::spawn` instead (same pattern `indexing::watcher` uses). This bit the file watcher's full-reread
 fallback path (`watcher.rs`, `>500` events or ambiguous event kinds).
+
+**Watcher event paths must be rebased into the listing's path space (`watcher.rs::rebase_event_path`).** On macOS,
+FSEvents reports canonical paths (`/private/tmp/…`) while `LISTING_CACHE` holds the user-navigated form (`/tmp/…`). The
+incremental handler compares the symlink/firmlink-normalized forms (`indexing::firmlinks::normalize_path`) and rebases
+matching event paths onto the listing's directory, so `has_entry` lookups and diff entries stay in the listing's own
+path space. A raw `path.parent() == dir_path` comparison silently dropped every event for listings under `/tmp`,
+`/var`, and `/etc` — the pane never updated until the user re-navigated.

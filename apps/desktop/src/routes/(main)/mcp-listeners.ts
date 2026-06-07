@@ -214,13 +214,29 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   })
 
   await listenTauri('mcp-select', (event) => {
+    // Round-trip: the adapter replies after the selection landed in the backend's
+    // PaneStateStore, so a follow-up tool call (select → copy) reads fresh state.
     const raw = asRecord(event.payload)
     const pane = parsePane(raw.pane)
     const start = typeof raw.start === 'number' ? raw.start : undefined
     const count = parseSelectCount(raw.count)
     const mode = parseSelectMode(raw.mode)
-    if (!pane || start === undefined || count === undefined || !mode) return
-    void dispatch(selectionMcpSelectCommand, { pane, start, count, mode })
+    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    if (requestId === undefined) return
+    void (async () => {
+      const { emit } = await import('@tauri-apps/api/event')
+      if (!pane || start === undefined || count === undefined || !mode) {
+        await emit('mcp-response', { requestId, ok: false, error: 'Invalid select payload' })
+        return
+      }
+      try {
+        await dispatch(selectionMcpSelectCommand, { pane, start, count, mode })
+        await emit('mcp-response', { requestId, ok: true })
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e)
+        await emit('mcp-response', { requestId, ok: false, error })
+      }
+    })()
   })
 
   await listenTauri('mcp-select-names', (event) => {
@@ -353,8 +369,23 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     void dispatch(viewSetModeCommand, { pane, mode, fromMenu: false })
   })
 
-  await listenTauri('mcp-refresh', () => {
-    void dispatch(paneRefreshCommand)
+  await listenTauri('mcp-refresh', (event) => {
+    // Round-trip: the refresh tool's OK must mean "the backend re-read the
+    // directory", not "an event was dispatched" — a stale cache is exactly what
+    // the caller is trying to escape.
+    const raw = asRecord(event.payload)
+    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    if (requestId === undefined) return
+    void (async () => {
+      const { emit } = await import('@tauri-apps/api/event')
+      try {
+        await dispatch(paneRefreshCommand)
+        await emit('mcp-response', { requestId, ok: true })
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e)
+        await emit('mcp-response', { requestId, ok: false, error })
+      }
+    })()
   })
 
   await listenTauri('mcp-copy', (event) => {

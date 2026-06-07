@@ -33,11 +33,12 @@ export const selectionHandlers = {
     explorerRef?.handleSelectionAction('deselectAll')
   },
 
-  'selection.mcpSelect': ({ explorerRef, dispatchArgs }) => {
+  'selection.mcpSelect': async ({ explorerRef, dispatchArgs }) => {
     // MCP `select` tool: range/all selection on a SPECIFIC pane with a typed
-    // mode (`replace`/`add`/`subtract`).
+    // mode (`replace`/`add`/`subtract`). A round-trip — AWAIT so the adapter's
+    // ack fires after the selection landed in the backend's PaneStateStore.
     const { pane, start, count, mode } = dispatchArgs as CommandArgs['selection.mcpSelect']
-    explorerRef?.handleMcpSelect(pane, start, count, mode)
+    await explorerRef?.handleMcpSelect(pane, start, count, mode)
   },
 
   'selection.mcpSelectByNames': async ({ explorerRef, dispatchArgs }) => {

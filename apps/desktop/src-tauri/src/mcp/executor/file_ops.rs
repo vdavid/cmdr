@@ -223,20 +223,13 @@ pub async fn execute_mkfile<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
 
 /// Execute refresh command.
 ///
-/// TODO(mcp-ack): No reliable ack signal yet. `refresh` asks the FE to re-list the
-/// current pane. If the listing comes back byte-identical to the cached state (very
-/// common for MTP and SMB after an operation already pushed fresh state, or for any
-/// pane that hasn't drifted since the last update), the FE skips the
-/// `update_*_pane_state` call to avoid a redundant generation bump. That leaves
-/// `refresh` without a `GenerationAdvanced` signal.
-///
-/// Two acceptable follow-ups: (1) switch to `mcp_round_trip` so the FE explicitly
-/// emits `mcp-response` once re-list completes regardless of whether state changed;
-/// (2) always bump generation on re-list. Until one of those, refresh stays
-/// fire-and-forget. The original bug is less acute here than for destructive tools.
+/// A round-trip: the FE forces a backend re-read of the focused pane's listing
+/// (the `refresh_listing` IPC — local volumes always re-read; watcher-backed
+/// MTP/SMB listings short-circuit, their caches are kept fresh by `notify_mutation`)
+/// and replies once it completes. `OK` means "the directory was actually re-read",
+/// not "an event was dispatched".
 pub async fn execute_refresh<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("mcp-refresh", ())?;
-    Ok(json!("OK: Pane refreshed"))
+    mcp_round_trip(app, "mcp-refresh", json!({}), "OK: Pane re-read from disk".to_string()).await
 }
 
 /// Execute the unified select command. Ack: pane generation advances (the new
@@ -252,8 +245,8 @@ pub async fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Val
         return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
     }
 
-    // By-name selection: a round-trip (the FE reports names that aren't in the
-    // listing back as the error), unlike the fire-and-forget index modes below.
+    // By-name selection: a round-trip — the FE reports names that aren't in the
+    // listing back as the error.
     if let Some(names_value) = params.get("names") {
         let names: Vec<&str> = names_value
             .as_array()
@@ -334,17 +327,15 @@ pub async fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Val
         store.set_focused_pane(pane.to_string());
     }
 
-    let pre_gen = snapshot_generation(app);
-    app.emit(
+    // Index modes are a round-trip too: the FE applies the selection, flushes the
+    // MCP state push, and replies — so `OK` means the backend's PaneStateStore
+    // already holds the new selection (a follow-up `copy` reads fresh state), and
+    // an unrelated pane push can't false-positive the way `GenerationAdvanced` could.
+    mcp_round_trip(
+        app,
         "mcp-select",
         json!({"pane": pane, "start": start, "count": count, "mode": mode}),
-    )?;
-
-    wait_for_ack(
-        app,
-        AckSignal::GenerationAdvanced { from: pre_gen },
-        DEFAULT_ACK_TIMEOUT,
+        format!("OK: Selection updated in {pane} pane"),
     )
-    .await?;
-    Ok(json!(format!("OK: Selection updated in {pane} pane")))
+    .await
 }
