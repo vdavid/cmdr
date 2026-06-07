@@ -645,3 +645,45 @@ fn matrix_dir_overwrite_older_skips_newer_child_preserves_source() {
     assert_dir_one_skipped_child(false, ConflictResolution::OverwriteOlder, false);
     assert_dir_one_skipped_child(true, ConflictResolution::OverwriteOlder, false);
 }
+
+/// A cross-FS move of a tree containing an EMPTY directory must land that
+/// directory at the destination — and, critically, must not destroy it. The
+/// staging copy iterates `scan_result.files` only, so an empty dir never
+/// staged, never renamed into place, and then Phase 4 deleted the source:
+/// the directory vanished entirely. That's silent data loss, the worst case
+/// of the empty-dir hole (the copy sibling merely failed to create it).
+#[test]
+fn cross_fs_move_preserves_empty_directories() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(src_dir.join("tree/populated")).unwrap();
+    fs::create_dir_all(src_dir.join("tree/sub-empty")).unwrap();
+    fs::write(src_dir.join("tree/populated/file.txt"), b"content").unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(200);
+    let config = WriteOperationConfig::default();
+
+    let source = src_dir.join("tree");
+    let result = move_with_staging(
+        &*events,
+        "op-cross-fs-move-empty-dir",
+        &state,
+        std::slice::from_ref(&source),
+        &dst_dir,
+        &config,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    assert!(
+        dst_dir.join("tree/sub-empty").is_dir(),
+        "the empty directory must arrive at the destination"
+    );
+    assert!(
+        dst_dir.join("tree/populated/file.txt").is_file(),
+        "the regular file must arrive at the destination"
+    );
+    assert!(!source.exists(), "the source tree should be removed after the move");
+}

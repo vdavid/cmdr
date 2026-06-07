@@ -116,3 +116,103 @@ fn local_copy_emits_flushing_phase_before_complete() {
     let complete = events.complete.lock().unwrap();
     assert_eq!(complete.len(), 1, "exactly one write-complete");
 }
+
+/// Copying an EMPTY directory must create it at the destination. The copy
+/// loop iterates `scan_result.files` only and creates directories lazily as
+/// file parents, so a source with zero files used to complete "successfully"
+/// while creating nothing — the empty dir silently never arrived.
+#[test]
+fn copy_creates_empty_directory_at_destination() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(src_dir.join("empty-dir")).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(200);
+    let config = WriteOperationConfig::default();
+
+    let source = src_dir.join("empty-dir");
+    let result = copy_files_with_progress_inner(
+        &*events,
+        "op-copy-empty-dir",
+        &state,
+        std::slice::from_ref(&source),
+        &dst_dir,
+        &config,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+    assert!(
+        dst_dir.join("empty-dir").is_dir(),
+        "the empty directory must exist at the destination"
+    );
+}
+
+/// Empty directories NESTED inside a populated source must land too: the file
+/// loop creates only ancestors of files, so `tree/sub-empty` (no files
+/// anywhere under it) needs the explicit scanned-dirs pass.
+#[test]
+fn copy_creates_nested_empty_directories() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(src_dir.join("tree/populated")).unwrap();
+    fs::create_dir_all(src_dir.join("tree/sub-empty/deeper-empty")).unwrap();
+    fs::write(src_dir.join("tree/populated/file.txt"), b"content").unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(200);
+    let config = WriteOperationConfig::default();
+
+    let source = src_dir.join("tree");
+    let result = copy_files_with_progress_inner(
+        &*events,
+        "op-copy-nested-empty-dirs",
+        &state,
+        std::slice::from_ref(&source),
+        &dst_dir,
+        &config,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+    assert!(
+        dst_dir.join("tree/populated/file.txt").is_file(),
+        "the regular file must arrive"
+    );
+    assert!(
+        dst_dir.join("tree/sub-empty/deeper-empty").is_dir(),
+        "nested empty directories must exist at the destination"
+    );
+}
+
+/// An empty source dir whose destination already holds a same-named FILE must
+/// not destroy that file (folders merge; a type clash on an empty dir is left
+/// alone rather than silently replacing user data).
+#[test]
+fn copy_empty_directory_does_not_clobber_same_named_dest_file() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(src_dir.join("clash")).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    fs::write(dst_dir.join("clash"), b"existing user data").unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(200);
+    let config = WriteOperationConfig::default();
+
+    let source = src_dir.join("clash");
+    let result = copy_files_with_progress_inner(
+        &*events,
+        "op-copy-empty-dir-clash",
+        &state,
+        std::slice::from_ref(&source),
+        &dst_dir,
+        &config,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+    let dest = dst_dir.join("clash");
+    assert!(dest.is_file(), "the existing dest file must survive");
+    assert_eq!(fs::read(&dest).unwrap(), b"existing user data");
+}

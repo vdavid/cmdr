@@ -595,6 +595,29 @@ fn move_with_staging(
         return Err(e);
     }
 
+    // Stage the scanned directories the per-file loop didn't create: an empty
+    // dir has no files, so it never staged, Phase 3's rename never moved it,
+    // and Phase 4's source delete then DESTROYED it — gone from the source
+    // without ever arriving at the destination. Staging it here lets it ride
+    // the normal rename + cleanup machinery.
+    if let Err(e) = super::copy::create_scanned_dirs_at_destination(
+        &scan_result.dirs,
+        sources,
+        &staging_dir,
+        state,
+        &mut transaction,
+        &mut created_dirs,
+        &dir_remap,
+    ) {
+        remove_dir_all_in_background(staging_dir.clone());
+        events.emit_error(WriteErrorEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Move,
+            e.clone(),
+        ));
+        return Err(e);
+    }
+
     // Original source paths whose staged copy was discarded on Skip (the file
     // never reached the destination). Phase 4 consults this so it deletes ONLY
     // sources that actually landed — deleting a skipped source's original would
