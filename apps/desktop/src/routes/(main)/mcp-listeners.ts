@@ -82,6 +82,12 @@ export function parseSelectMode(value: unknown): McpSelectMode | undefined {
   return value === 'replace' || value === 'add' || value === 'subtract' ? value : undefined
 }
 
+/** Names list for by-name selection: a non-empty array of strings. */
+export function parseNames(value: unknown): string[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined
+  return value.every((v): v is string => typeof v === 'string') ? value : undefined
+}
+
 /** Tab action. */
 export function parseTabAction(value: unknown): McpTabAction | undefined {
   return value === 'new' ||
@@ -122,6 +128,7 @@ export function parseCursorTarget(value: unknown): number | string | undefined {
 const sortSetCommand: CommandId = 'sort.set'
 const volumeSelectByNameCommand: CommandId = 'volume.selectByName'
 const selectionMcpSelectCommand: CommandId = 'selection.mcpSelect'
+const selectionMcpSelectByNamesCommand: CommandId = 'selection.mcpSelectByNames'
 const cursorMoveToCommand: CommandId = 'cursor.moveTo'
 const cursorScrollToCommand: CommandId = 'cursor.scrollTo'
 const viewSetModeCommand: CommandId = 'view.setMode'
@@ -214,6 +221,32 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const mode = parseSelectMode(raw.mode)
     if (!pane || start === undefined || count === undefined || !mode) return
     void dispatch(selectionMcpSelectCommand, { pane, start, count, mode })
+  })
+
+  await listenTauri('mcp-select-names', (event) => {
+    // Round-trip (like `mcp-move-cursor`): by-name selection must report missing
+    // names back, so the adapter owns the requestId correlation and AWAITs the
+    // dispatch — a not-found throw becomes the `mcp-response` error.
+    const raw = asRecord(event.payload)
+    const pane = parsePane(raw.pane)
+    const names = parseNames(raw.names)
+    const mode = parseSelectMode(raw.mode)
+    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    if (requestId === undefined) return
+    void (async () => {
+      const { emit } = await import('@tauri-apps/api/event')
+      if (!pane || !names || !mode) {
+        await emit('mcp-response', { requestId, ok: false, error: 'Invalid select-names payload' })
+        return
+      }
+      try {
+        await dispatch(selectionMcpSelectByNamesCommand, { pane, names, mode })
+        await emit('mcp-response', { requestId, ok: true })
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e)
+        await emit('mcp-response', { requestId, ok: false, error })
+      }
+    })()
   })
 
   await listenTauri('mcp-nav-to-path', (event) => {

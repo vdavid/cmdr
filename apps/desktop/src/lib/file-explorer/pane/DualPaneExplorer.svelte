@@ -6,6 +6,7 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { openInEditor, quickLookSetPath } from '$lib/tauri-commands'
+    import { pluralize } from '$lib/utils/pluralize'
     import { closeFromPaneError, quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import { type ViewMode } from '$lib/app-status-store'
     import type { CommandId, McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
@@ -1417,11 +1418,16 @@
     /**
      * Move cursor to a specific index or filename.
      * Used by MCP move_cursor tool.
+     *
+     * Throws when the target doesn't exist (filename not in the listing, index out
+     * of range, pane unavailable). The `cursor.moveTo` dispatch awaits this, so the
+     * exception reaches the MCP adapter's try/catch and the tool reports the real
+     * failure instead of a false-positive "OK: Moved cursor".
      */
     export async function moveCursor(pane: 'left' | 'right', to: number | string) {
         explorerState.setFocusedPane(pane)
         const paneRef = getPaneRef(pane)
-        if (!paneRef) return
+        if (!paneRef) throw new Error(`The ${pane} pane is unavailable`)
 
         // Wait for the pane's current load (if any) to settle before touching
         // the listing. Without this, an MCP-driven `move_cursor` that lands
@@ -1431,9 +1437,22 @@
         await paneRef.whenLoadSettles()
 
         if (typeof to === 'number') {
+            // `setCursorIndex` stores the value unclamped, so range-check first.
+            // Network views own their cursor (hosts/shares), skip the listing count.
+            if (!paneRef.isInNetworkView()) {
+                const total = paneRef.getEffectiveTotalCount()
+                if (to < 0 || to >= total) {
+                    throw new Error(
+                        `Index ${String(to)} is out of range in the ${pane} pane (${String(total)} ${pluralize(total, 'item')})`,
+                    )
+                }
+            }
             await paneRef.setCursorIndex(to)
         } else {
-            await paneCommands.moveCursorByName(paneRef, to)
+            const found = await paneCommands.moveCursorByName(paneRef, to)
+            if (!found) {
+                throw new Error(`"${to}" not found in the ${pane} pane listing`)
+            }
         }
         // MCP-driven cursor placement: re-anchor DOM focus on the explorer container
         // so the next keystroke (the agent often follows move_cursor with a shortcut)
@@ -1611,6 +1630,14 @@
 
     export function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) {
         paneCommands.handleMcpSelect(pane, start, count, mode)
+    }
+
+    export async function handleMcpSelectNames(
+        pane: 'left' | 'right',
+        names: string[],
+        mode: McpSelectMode,
+    ): Promise<void> {
+        await paneCommands.handleMcpSelectNames(pane, names, mode)
     }
 
     // --- Tab bar handler functions (logic in tab-operations.ts) ---

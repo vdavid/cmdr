@@ -1,4 +1,4 @@
-import { findFileIndex } from '$lib/tauri-commands'
+import { findFileIndex, findFileIndices } from '$lib/tauri-commands'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
 import { isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import { capabilitiesFor } from './volume-capabilities'
@@ -236,30 +236,32 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     }
   }
 
-  async function moveCursorByName(paneRef: FilePaneAPI, name: string) {
+  /** Returns true when the cursor landed on the named item, false when it wasn't found. */
+  async function moveCursorByName(paneRef: FilePaneAPI, name: string): Promise<boolean> {
     const inNetwork: boolean = paneRef.isInNetworkView()
     if (inNetwork) {
       // Network views handle name lookup locally
       const idx: number = paneRef.findNetworkItemIndex(name)
-      if (idx >= 0) {
-        await paneRef.setCursorIndex(idx)
-      }
-    } else {
-      await moveCursorByNameInFileListing(paneRef, name)
+      if (idx < 0) return false
+      await paneRef.setCursorIndex(idx)
+      return true
     }
+    return moveCursorByNameInFileListing(paneRef, name)
   }
 
-  async function moveCursorByNameInFileListing(paneRef: FilePaneAPI, name: string) {
+  /** Returns true when the cursor landed on the named item, false when it wasn't found. */
+  async function moveCursorByNameInFileListing(paneRef: FilePaneAPI, name: string): Promise<boolean> {
     const listingId: string = paneRef.getListingId()
-    if (!listingId) return
+    if (!listingId) return false
 
     const backendIndex = await findFileIndex(listingId, name, access.getShowHiddenFiles())
-    if (backendIndex === null) return
+    if (backendIndex === null) return false
 
     // Backend index doesn't include ".." entry, but frontend does
     const hasParent: boolean = paneRef.hasParentEntry()
     const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
     await paneRef.setCursorIndex(frontendIndex)
+    return true
   }
 
   /**
@@ -329,12 +331,14 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     if (count === 0) {
       // Clear selection
       paneRef.setSelectedIndices([])
+      void paneRef.syncStateToMcpNow()
       return
     }
 
     if (count === 'all') {
       // Select all
       paneRef.selectAll()
+      void paneRef.syncStateToMcpNow()
       return
     }
 
@@ -360,6 +364,54 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     }
 
     paneRef.setSelectedIndices(newSelection)
+    // Immediate push so the backend's GenerationAdvanced ack fires on THIS
+    // selection (not 300 ms later via the debounce), and a follow-up tool call
+    // (select → copy) reads fresh selection state.
+    void paneRef.syncStateToMcpNow()
+  }
+
+  /**
+   * Select specific files by name (MCP `select` tool's `names` mode), so agents
+   * don't have to map names → indexes themselves. Throws when the pane is
+   * unavailable or any name isn't in the listing — the MCP adapter forwards the
+   * message as the round-trip error.
+   *
+   * @param mode - 'replace', 'add', or 'subtract'
+   */
+  async function handleMcpSelectNames(pane: 'left' | 'right', names: string[], mode: McpSelectMode): Promise<void> {
+    const paneRef = access.getPaneRef(pane)
+    if (!paneRef) throw new Error(`The ${pane} pane is unavailable`)
+
+    await paneRef.whenLoadSettles()
+    const listingId = paneRef.getListingId()
+    if (!listingId) throw new Error(`The ${pane} pane has no file listing`)
+
+    const found = await findFileIndices(listingId, names, access.getShowHiddenFiles())
+    const missing = names.filter((name) => !(name in found))
+    if (missing.length > 0) {
+      throw new Error(`Not found in the ${pane} pane: ${missing.join(', ')}`)
+    }
+
+    // Backend indices don't include the ".." row; frontend indices do
+    const hasParent: boolean = paneRef.hasParentEntry()
+    const targetIndices = names.map((name) => (hasParent ? found[name] + 1 : found[name]))
+
+    const currentSelection = new Set<number>(paneRef.getSelectedIndices())
+    let newSelection: number[]
+    if (mode === 'add') {
+      targetIndices.forEach((i) => currentSelection.add(i))
+      newSelection = Array.from(currentSelection)
+    } else if (mode === 'subtract') {
+      targetIndices.forEach((i) => currentSelection.delete(i))
+      newSelection = Array.from(currentSelection)
+    } else {
+      newSelection = targetIndices
+    }
+    paneRef.setSelectedIndices(newSelection)
+    // Push the new selection to the backend's PaneStateStore BEFORE the round-trip
+    // replies ok. Without this, select → copy reads stale (empty) selection in the
+    // backend pre-check and the copy is wrongly rejected.
+    await paneRef.syncStateToMcpNow()
   }
 
   return {
@@ -384,5 +436,6 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     triggerTransferError,
     refreshNetworkHosts,
     handleMcpSelect,
+    handleMcpSelectNames,
   }
 }

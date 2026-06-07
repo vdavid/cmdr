@@ -109,6 +109,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'confirmDialog',
     'handleSelectionAction',
     'handleMcpSelect',
+    'handleMcpSelectNames',
     'copyToClipboard',
     'cutToClipboard',
     'pasteFromClipboard',

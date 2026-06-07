@@ -37,6 +37,10 @@ export interface FilePaneAPI {
   getNetworkCursorEntry(): NetworkCursorEntry | null
   setCursorIndex(index: number): Promise<void>
   getCursorIndex(): number
+  /** Total cursor-addressable rows (incl. the `..` row; snapshot count for snapshot panes). */
+  getEffectiveTotalCount(): number
+  /** Awaitable, immediate MCP state push (skips the debounce). See FilePane.svelte. */
+  syncStateToMcpNow(): Promise<void>
   /**
    * Queues a "land the cursor on this filename once the next directory-diff
    * applies" intent. Used by mkdir/mkfile/rename to defeat the structural

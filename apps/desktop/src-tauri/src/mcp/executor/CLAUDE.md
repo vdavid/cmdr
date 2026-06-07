@@ -49,7 +49,8 @@ Polling cadence: 250 ms for state-driven signals (matches the `await` tool); 100
 
 When the backend can't fully validate preconditions (or has to wait on the OS), the tool emits an event with a `requestId` and waits for the FE to reply via `mcp-response` carrying `{ requestId, ok, error? }`. Used by:
 
-- `move_cursor`, `set_setting` (5 s).
+- `move_cursor`, `set_setting` (5 s). The FE verifies the cursor actually landed (filename found, index in range) before replying `ok: true` — a silent no-op was the original false-positive-OK bug.
+- `select` with `names` (5 s) — the FE maps names → indices via the `findFileIndices` batch IPC, applies the selection, then **flushes the MCP state push (`syncStateToMcpNow`) before replying**, so a follow-up `copy` reads fresh selection state. Missing names come back as the round-trip error. Index/`all` modes stay fire-and-forget with `GenerationAdvanced`.
 - `nav_to_path` — 30 s via `mcp_round_trip_with_timeout`; FE delays the response until `handleListingComplete` fires.
 - `open_under_cursor` — 5 s via `mcp_round_trip_with_timeout`; opening a file delegates to the OS default app, so neither `GenerationAdvanced` nor `WindowAppeared` would fire.
 - Resources that need FE data use `resource_round_trip` (same pattern, returns the `data` field). Used by `cmdr://settings`.
@@ -58,10 +59,15 @@ When the backend can't fully validate preconditions (or has to wait on the OS), 
 
 Agents routinely send `~/Downloads`; the frontend and the existence checks only understand absolute paths. Both helpers live in `mod.rs`: `user_path_param(params, key)` for a required path param (extract + missing-param error + tilde expansion), `expand_user_path(s)` for optional or conditional sites (the `dialog` tool's optional `path`, the `await` tool's `value` when the condition is path-shaped). Never read a path param with raw `params.get(...)` — a literal `~` either fails validation (`nav_to_path`, `dialog`) or silently never matches and burns the full timeout (`await`). Virtual paths (`mtp://…`) don't start with `~`, so expansion is a no-op for them; the `search`/`ai_search` `scope` param is the one exception that handles `~` itself (in `search::query::parse_scope`).
 
+### Empty-operation fast-fail (`file_ops.rs`)
+
+`copy`/`move`/`delete` run `check_operation_has_target` before dispatching. The pure core (`empty_operation_error`, unit-tested) mirrors the FE fallback semantics: a selection wins; no selection falls back to the cursor file; cursor on `..` (or an empty pane, where the FE renders no rows at all — `files` empty with `total_files <= 1`) means the FE would silently drop the dialog, so the tool rejects fast with the real cause instead of the generic 1500 ms ack timeout. Unsynced state (`path` empty) passes through — the FE is the authority. This is why `select`'s names mode flushes the state push before replying: without it, select → copy would read stale empty selection here and wrongly reject.
+
 ### Adding new tools
 
 - Pick the right category file; if it doesn't exist yet, create one and register it in `mod.rs::execute_tool()`.
-- If the tool takes a filesystem path param, extract it via `user_path_param` (see above).
+- If the tool takes a filesystem path param, extract it via `user_path_param` (see above), and validate existence (when appropriate) via `validate_path_exists` — never bare `Path::exists()`, which blocks forever on a hung mount.
+- Param names are camelCase on the wire (`tabId`, `timeoutSeconds`); see `../CLAUDE.md` § Tools.
 - If the tool mutates pane state, prefer `AckSignal::GenerationAdvanced` and route the mutation through `PaneStateStore` (or `update_pane_tabs` for tab work — the single place that bumps generation for tabs).
 - If the tool needs an explicit outcome from the FE, use `mcp_round_trip`. Don't replicate FE knowledge in Rust.
 

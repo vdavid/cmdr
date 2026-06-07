@@ -83,6 +83,46 @@ fn user_path_param(params: &Value, key: &str) -> Result<String, ToolError> {
         .ok_or_else(|| ToolError::invalid_params(format!("Missing '{key}' parameter")))
 }
 
+/// True for scheme-prefixed virtual paths (`mtp://…`, `smb://…`) that don't live on the
+/// local filesystem and must skip local existence checks.
+fn is_virtual_path(path: &str) -> bool {
+    path.split_once("://").is_some_and(|(scheme, _)| {
+        !scheme.is_empty()
+            && scheme.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
+            && scheme
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '.' | '-'))
+    })
+}
+
+/// Validates that an agent-supplied path exists, without wedging on a hung mount.
+///
+/// Virtual paths (see `is_virtual_path`) skip the check — the local filesystem knows
+/// nothing about them; the frontend's navigation/open path is the authority there.
+/// The local probe runs on the blocking pool under a 2 s timeout because
+/// `Path::exists()` on a dead network mount can block indefinitely, and an MCP handler
+/// must never do un-timed filesystem I/O (same contract as `commands/util.rs`).
+async fn validate_path_exists(path: &str) -> Result<(), ToolError> {
+    if is_virtual_path(path) {
+        return Ok(());
+    }
+    let owned = path.to_string();
+    let exists = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        tokio::task::spawn_blocking(move || std::path::Path::new(&owned).exists()),
+    )
+    .await;
+    match exists {
+        Ok(Ok(true)) => Ok(()),
+        Ok(Ok(false)) => Err(ToolError::invalid_params(format!("Path does not exist: {path}"))),
+        Ok(Err(e)) => Err(ToolError::internal(format!("Path check failed: {e}"))),
+        Err(_) => Err(ToolError::internal(format!(
+            // allowed-pluralize-noun: "exists" is a verb here, not a plural noun
+            "Timed out after two seconds checking whether {path} exists — the volume may be unresponsive"
+        ))),
+    }
+}
+
 /// Emit an event to the frontend and wait for a response (5s timeout).
 ///
 /// The frontend must emit `mcp-response` with `{ requestId, ok, error? }`.

@@ -230,28 +230,28 @@ fn run_search_and_postprocess(index: &search::SearchIndex, query: &SearchQuery) 
 /// Execute the `search` tool.
 pub async fn execute_search(params: &Value) -> ToolResult {
     let pattern = params.get("pattern").and_then(|v| v.as_str()).map(|s| s.to_string());
-    let pattern_type = match params.get("pattern_type").and_then(|v| v.as_str()) {
+    let pattern_type = match params.get("patternType").and_then(|v| v.as_str()) {
         Some("regex") => PatternType::Regex,
         _ => PatternType::Glob,
     };
     let min_size = params
-        .get("min_size")
+        .get("sizeMin")
         .and_then(|v| v.as_str())
         .map(parse_human_size)
         .transpose()?;
     let max_size = params
-        .get("max_size")
+        .get("sizeMax")
         .and_then(|v| v.as_str())
         .map(parse_human_size)
         .transpose()?;
     let modified_after = params
-        .get("modified_after")
+        .get("modifiedAfter")
         .and_then(|v| v.as_str())
         .map(search::ai::iso_date_to_timestamp)
         .transpose()
         .map_err(ToolError::invalid_params)?;
     let modified_before = params
-        .get("modified_before")
+        .get("modifiedBefore")
         .and_then(|v| v.as_str())
         .map(search::ai::iso_date_to_timestamp)
         .transpose()

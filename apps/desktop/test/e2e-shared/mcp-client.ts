@@ -86,12 +86,12 @@ export async function mcpNavToPath(pane: 'left' | 'right', path: string): Promis
 
 /** Waits for an item to appear in a pane. */
 export async function mcpAwaitItem(pane: 'left' | 'right', itemName: string, timeoutS = 15): Promise<string> {
-  return mcpCall('await', { pane, condition: 'has_item', value: itemName, timeout_s: timeoutS })
+  return mcpCall('await', { pane, condition: 'has_item', value: itemName, timeoutSeconds: timeoutS })
 }
 
 /** Waits for the pane path to contain a substring. */
 export async function mcpAwaitPath(pane: 'left' | 'right', pathSubstring: string, timeoutS = 15): Promise<string> {
-  return mcpCall('await', { pane, condition: 'path_contains', value: pathSubstring, timeout_s: timeoutS })
+  return mcpCall('await', { pane, condition: 'path_contains', value: pathSubstring, timeoutSeconds: timeoutS })
 }
 
 /** Navigates to parent directory. */

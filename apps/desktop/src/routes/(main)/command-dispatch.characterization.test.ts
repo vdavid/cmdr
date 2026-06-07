@@ -192,7 +192,7 @@ describe('characterization — id partition self-check', () => {
   })
 
   it('dispatchable set is exactly 89 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(89)
+    expect(DISPATCHABLE_IDS).toHaveLength(90)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {
@@ -848,6 +848,7 @@ describe('characterization — every dispatchable id dispatches without throwing
     'view.setMode': { pane: 'left', mode: 'brief', fromMenu: true },
     'sort.set': { pane: 'left', column: 'name', order: 'asc' },
     'selection.mcpSelect': { pane: 'left', start: 0, count: 'all', mode: 'replace' },
+    'selection.mcpSelectByNames': { pane: 'left', names: ['a.txt'], mode: 'replace' },
     'cursor.moveTo': { pane: 'left', to: 0 },
     'cursor.scrollTo': { pane: 'left', index: 0 },
     'volume.selectByName': { pane: 'left', name: 'X' },

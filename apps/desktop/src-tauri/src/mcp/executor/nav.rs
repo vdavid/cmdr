@@ -1,13 +1,11 @@
 //! Navigation tool handlers.
 
-use std::path::Path;
-
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
     AckSignal, NAV_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_round_trip, mcp_round_trip_with_timeout,
-    snapshot_generation, user_path_param, wait_for_ack,
+    snapshot_generation, user_path_param, validate_path_exists, wait_for_ack,
 };
 
 /// Execute a navigation command without parameters.
@@ -180,10 +178,9 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
                 return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
             }
 
-            // Validate that the path exists (skip for mtp:// virtual paths)
-            if !path.starts_with("mtp://") && !Path::new(&path).exists() {
-                return Err(ToolError::invalid_params(format!("Path does not exist: {}", path)));
-            }
+            // Virtual paths (mtp://, smb://) skip the local check; local paths are
+            // probed on the blocking pool under a timeout.
+            validate_path_exists(&path).await?;
 
             if let Some(store) = app.try_state::<PaneStateStore>() {
                 store.set_focused_pane(pane.to_string());

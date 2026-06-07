@@ -704,6 +704,25 @@
     }
 
     /**
+     * Total cursor-addressable rows (includes the `..` row; snapshot panes use the
+     * snapshot's count). Used by MCP `move_cursor` to range-check an index before
+     * setting it, since `setCursorIndex` stores the value unclamped.
+     */
+    export function getEffectiveTotalCount(): number {
+        return effectiveTotalCount
+    }
+
+    /**
+     * Awaitable, immediate MCP state push (skips the 300 ms debounce). MCP
+     * round-trips that mutate pane state (by-name selection) call this before
+     * replying, so the backend's `PaneStateStore` is fresh when the tool returns
+     * OK — otherwise a follow-up tool call (select → copy) reads stale state.
+     */
+    export async function syncStateToMcpNow(): Promise<void> {
+        await syncPaneStateToMcp()
+    }
+
+    /**
      * Sets the "land the cursor on this name when the next diff applies" marker.
      * The diff handler already reads `renameFlow.pendingCursorName` for the rename
      * flow; mkdir/mkfile reuse the same channel so a freshly-created entry can

@@ -63,6 +63,7 @@ export interface CommandArgsOverrides {
   'view.setMode': { pane: PaneId; mode: ViewMode; fromMenu: boolean }
   'sort.set': { pane: PaneId; column: SortColumn; order: 'asc' | 'desc' }
   'selection.mcpSelect': { pane: PaneId; start: number; count: number | 'all'; mode: McpSelectMode }
+  'selection.mcpSelectByNames': { pane: PaneId; names: string[]; mode: McpSelectMode }
   'cursor.moveTo': { pane: PaneId; to: number | string }
   'cursor.scrollTo': { pane: PaneId; index: number }
   'volume.selectByName': { pane: PaneId; name: string }

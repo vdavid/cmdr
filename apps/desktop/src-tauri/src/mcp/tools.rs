@@ -49,7 +49,7 @@ fn get_tab_tools() -> Vec<Tool> {
                     "enum": ["left", "right"],
                     "description": "Which pane to operate on"
                 },
-                "tab_id": {
+                "tabId": {
                     "type": "string",
                     "description": "Tab ID. Defaults to active tab for close, close_others, set_pinned. Required for activate. Not used for new or reopen."
                 },
@@ -225,7 +225,7 @@ fn get_nav_tools() -> Vec<Tool> {
                     },
                     "path": {
                         "type": "string",
-                        "description": "Absolute path to navigate to"
+                        "description": "Path to navigate to: absolute, ~-relative, or virtual (mtp://, smb://)"
                     }
                 },
                 "required": ["pane", "path"]
@@ -297,7 +297,9 @@ fn get_cursor_tools() -> Vec<Tool> {
 fn get_selection_tools() -> Vec<Tool> {
     vec![Tool {
         name: "select".to_string(),
-        description: "Select files in pane. Use count for ranges, all for everything, count=0 to clear".to_string(),
+        description:
+            "Select files in pane. Use names for specific files, count for ranges, all for everything, count=0 to clear"
+                .to_string(),
         input_schema: json!({
             "type": "object",
             "properties": {
@@ -305,6 +307,11 @@ fn get_selection_tools() -> Vec<Tool> {
                     "type": "string",
                     "enum": ["left", "right"],
                     "description": "Which pane to select in"
+                },
+                "names": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Filenames to select. Errors if any name isn't in the listing."
                 },
                 "start": {
                     "type": "integer",
@@ -432,24 +439,24 @@ fn get_search_tools() -> Vec<Tool> {
                         "type": "string",
                         "description": "Glob or regex filename pattern (for example, \"*.pdf\", \"report*\")"
                     },
-                    "pattern_type": {
+                    "patternType": {
                         "type": "string",
                         "enum": ["glob", "regex"],
                         "description": "Pattern type. Default: glob"
                     },
-                    "min_size": {
+                    "sizeMin": {
                         "type": "string",
                         "description": "Minimum file size, human-readable (for example, \"1 MB\", \"500 KB\")"
                     },
-                    "max_size": {
+                    "sizeMax": {
                         "type": "string",
                         "description": "Maximum file size, human-readable"
                     },
-                    "modified_after": {
+                    "modifiedAfter": {
                         "type": "string",
                         "description": "ISO date, for example \"2025-01-01\""
                     },
-                    "modified_before": {
+                    "modifiedBefore": {
                         "type": "string",
                         "description": "ISO date"
                     },
@@ -527,12 +534,12 @@ fn get_network_tools() -> Vec<Tool> {
             input_schema: json!({
                 "type": "object",
                 "properties": {
-                    "host_id": {
+                    "hostId": {
                         "type": "string",
                         "description": "Host ID to remove (for example, manual-192-168-1-100-9445)"
                     }
                 },
-                "required": ["host_id"]
+                "required": ["hostId"]
             }),
         },
         Tool {
@@ -544,12 +551,12 @@ fn get_network_tools() -> Vec<Tool> {
             input_schema: json!({
                 "type": "object",
                 "properties": {
-                    "volume_id": {
+                    "volumeId": {
                         "type": "string",
                         "description": "Volume ID of the SMB share (e.g. smb-192-168-1-111-445-naspi). See cmdr://state volumes."
                     }
                 },
-                "required": ["volume_id"]
+                "required": ["volumeId"]
             }),
         },
     ]
@@ -570,18 +577,18 @@ fn get_await_tools() -> Vec<Tool> {
                 },
                 "condition": {
                     "type": "string",
-                    "enum": ["has_item", "item_count_gte", "path", "path_contains"],
-                    "description": "Condition to wait for: has_item (file list contains item named value), item_count_gte (file list has >= value items), path (pane path equals value), path_contains (pane path contains value)"
+                    "enum": ["has_item", "not_has_item", "item_count_gte", "item_count_lte", "path", "path_contains"],
+                    "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value)"
                 },
                 "value": {
                     "type": "string",
                     "description": "Value for the condition (item name, count, path, or substring)"
                 },
-                "timeout_s": {
+                "timeoutSeconds": {
                     "type": "integer",
                     "description": "Timeout in seconds (default 15, max 60)"
                 },
-                "after_generation": {
+                "afterGeneration": {
                     "type": "integer",
                     "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result."
                 }
@@ -695,7 +702,7 @@ mod tests {
 
         assert!(props.get("action").is_some());
         assert!(props.get("pane").is_some());
-        assert!(props.get("tab_id").is_some());
+        assert!(props.get("tabId").is_some());
         assert!(props.get("pinned").is_some());
 
         let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();

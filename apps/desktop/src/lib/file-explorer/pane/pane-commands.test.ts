@@ -4,11 +4,12 @@ import type { FilePaneAPI } from './types'
 import type { FileEntry } from '../types'
 import type { SelectionAction } from '../../../routes/(main)/explorer-api'
 
-const { findFileIndexSpy } = vi.hoisted(() => ({
+const { findFileIndexSpy, findFileIndicesSpy } = vi.hoisted(() => ({
   findFileIndexSpy: vi.fn<() => Promise<number | null>>(),
+  findFileIndicesSpy: vi.fn<() => Promise<Record<string, number>>>(),
 }))
 
-vi.mock('$lib/tauri-commands', () => ({ findFileIndex: findFileIndexSpy }))
+vi.mock('$lib/tauri-commands', () => ({ findFileIndex: findFileIndexSpy, findFileIndices: findFileIndicesSpy }))
 
 // `capabilitiesFor` (used by `isSnapshotPane`) resolves fsType/category from the
 // volume store for real ids; the two virtual ids short-circuit before the lookup.
@@ -62,6 +63,8 @@ function buildPaneRef(
     applyIndices: vi.fn(),
     setCursorIndex: vi.fn(() => Promise.resolve()),
     findNetworkItemIndex: vi.fn(() => -1),
+    whenLoadSettles: vi.fn(() => Promise.resolve()),
+    syncStateToMcpNow: vi.fn(() => Promise.resolve()),
     // Key-route spies
     handleKeyDown: vi.fn(),
     handleJumpKeystroke: vi.fn(),
@@ -334,24 +337,29 @@ describe('moveCursorByNameInFileListing parent offset', () => {
     findFileIndexSpy.mockResolvedValue(4)
     const ref = buildPaneRef({ hasParent: true })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    await cmds.moveCursorByNameInFileListing(refOf(ref), 'target')
+    const found = await cmds.moveCursorByNameInFileListing(refOf(ref), 'target')
     expect(ref.setCursorIndex).toHaveBeenCalledWith(5)
+    expect(found).toBe(true)
   })
 
   it('uses the backend index unchanged when the pane has no parent row', async () => {
     findFileIndexSpy.mockResolvedValue(4)
     const ref = buildPaneRef({ hasParent: false })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    await cmds.moveCursorByNameInFileListing(refOf(ref), 'target')
+    const found = await cmds.moveCursorByNameInFileListing(refOf(ref), 'target')
     expect(ref.setCursorIndex).toHaveBeenCalledWith(4)
+    expect(found).toBe(true)
   })
 
-  it('does nothing when the backend reports no match', async () => {
+  it('reports not-found when the backend reports no match', async () => {
+    // Pre-fix the caller had no way to tell, so MCP move_cursor returned a
+    // false-positive OK for nonexistent filenames.
     findFileIndexSpy.mockResolvedValue(null)
     const ref = buildPaneRef({ hasParent: true })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    await cmds.moveCursorByNameInFileListing(refOf(ref), 'missing')
+    const found = await cmds.moveCursorByNameInFileListing(refOf(ref), 'missing')
     expect(ref.setCursorIndex).not.toHaveBeenCalled()
+    expect(found).toBe(false)
   })
 
   it('passes showHiddenFiles through to findFileIndex', async () => {
@@ -499,8 +507,58 @@ describe('moveCursorByName network-vs-listing dispatch', () => {
     findFileIndexSpy.mockResolvedValue(2)
     const ref = buildPaneRef({ isInNetworkView: false, hasParent: false })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
-    await cmds.moveCursorByName(refOf(ref), 'file')
+    const found = await cmds.moveCursorByName(refOf(ref), 'file')
     expect(findFileIndexSpy).toHaveBeenCalledOnce()
     expect(ref.setCursorIndex).toHaveBeenCalledWith(2)
+    expect(found).toBe(true)
+  })
+
+  it('reports not-found for a missing network item without moving the cursor', async () => {
+    const ref = buildPaneRef({ isInNetworkView: true })
+    vi.mocked(ref.findNetworkItemIndex).mockReturnValue(-1)
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    const found = await cmds.moveCursorByName(refOf(ref), 'no-such-host')
+    expect(ref.setCursorIndex).not.toHaveBeenCalled()
+    expect(found).toBe(false)
+  })
+})
+
+describe('handleMcpSelectNames', () => {
+  it('maps names to frontend indices (parent offset) and replaces the selection', async () => {
+    findFileIndicesSpy.mockResolvedValue({ 'a.txt': 0, 'b.txt': 4 })
+    const ref = buildPaneRef({ hasParent: true })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await cmds.handleMcpSelectNames('left', ['a.txt', 'b.txt'], 'replace')
+    expect(ref.setSelectedIndices).toHaveBeenCalledWith([1, 5])
+  })
+
+  it('throws naming the missing files when any name is not in the listing', async () => {
+    findFileIndicesSpy.mockResolvedValue({ 'a.txt': 0 })
+    const ref = buildPaneRef({ hasParent: false })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await expect(cmds.handleMcpSelectNames('left', ['a.txt', 'nope.txt', 'gone.md'], 'replace')).rejects.toThrow(
+      'Not found in the left pane: nope.txt, gone.md',
+    )
+    expect(ref.setSelectedIndices).not.toHaveBeenCalled()
+  })
+
+  it('merges with the current selection in add mode and removes in subtract mode', async () => {
+    findFileIndicesSpy.mockResolvedValue({ 'a.txt': 2 })
+    const ref = buildPaneRef({ hasParent: false, selectedIndices: [7] })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await cmds.handleMcpSelectNames('left', ['a.txt'], 'add')
+    expect(ref.setSelectedIndices).toHaveBeenCalledWith([7, 2])
+
+    const ref2 = buildPaneRef({ hasParent: false, selectedIndices: [2, 7] })
+    const cmds2 = create(buildAccess({ paneRefs: { left: ref2 } }))
+    await cmds2.handleMcpSelectNames('left', ['a.txt'], 'subtract')
+    expect(ref2.setSelectedIndices).toHaveBeenCalledWith([7])
+  })
+
+  it('throws when the pane is unavailable', async () => {
+    const cmds = create(buildAccess({ paneRefs: { left: undefined } }))
+    await expect(cmds.handleMcpSelectNames('left', ['a.txt'], 'replace')).rejects.toThrow(
+      'The left pane is unavailable',
+    )
   })
 })

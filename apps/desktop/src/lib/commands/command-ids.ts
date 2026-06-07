@@ -163,6 +163,8 @@ export const COMMAND_IDS = [
   'selection.deselectFiles',
   // Range/all selection carried by the MCP `select` tool (start + count + mode).
   'selection.mcpSelect',
+  // By-name selection carried by the MCP `select` tool (names + mode), a round-trip.
+  'selection.mcpSelectByNames',
 
   // Network browser
   'network.selectHost',

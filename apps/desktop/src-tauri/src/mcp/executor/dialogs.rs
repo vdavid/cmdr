@@ -21,14 +21,12 @@
 //!   dialog is mid-close when the event arrives, the new mount may race; the ack times out within
 //!   the 1500 ms budget and the tool surfaces a clean failure. See plan §5.7 risk register.
 
-use std::path::Path;
-
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
     AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_generation,
-    snapshot_window_count, wait_for_ack,
+    snapshot_window_count, validate_path_exists, wait_for_ack,
 };
 
 /// Execute the unified dialog command.
@@ -91,10 +89,8 @@ async fn execute_dialog_open<R: Runtime>(
         "file-viewer" => {
             // If path is provided, open for that file; otherwise, use cursor file
             if let Some(path) = path {
-                // Validate that the file exists
-                if !Path::new(path).exists() {
-                    return Err(ToolError::invalid_params(format!("File does not exist: {}", path)));
-                }
+                // Timed, virtual-path-aware existence check (see executor/mod.rs)
+                validate_path_exists(path).await?;
                 app.emit("open-file-viewer", json!({"path": path}))?;
                 wait_for_ack(app, AckSignal::WindowAppeared("viewer"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!(format!("OK: Opened file viewer for {path}")))
@@ -144,10 +140,8 @@ async fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
         }
         "file-viewer" => {
             if let Some(path) = path {
-                // Validate that the file exists
-                if !Path::new(path).exists() {
-                    return Err(ToolError::invalid_params(format!("File does not exist: {}", path)));
-                }
+                // Timed, virtual-path-aware existence check (see executor/mod.rs)
+                validate_path_exists(path).await?;
                 app.emit("focus-file-viewer", json!({"path": path}))?;
                 wait_for_ack(app, AckSignal::WindowAppeared("viewer"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!(format!("OK: Focused file viewer for {path}")))

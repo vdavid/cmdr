@@ -73,6 +73,12 @@ export interface ExplorerAPI {
   handleSelectionAction: (action: SelectionAction, startIndex?: number, endIndex?: number) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => void
   /**
+   * By-name selection for the MCP `select` tool's `names` mode. Throws when the
+   * pane is unavailable or any name isn't in the listing (the MCP adapter
+   * forwards the message as the round-trip error).
+   */
+  handleMcpSelectNames: (pane: 'left' | 'right', names: string[], mode: McpSelectMode) => Promise<void>
+  /**
    * Per-pane tab action from the MCP `tab` tool. Targets a SPECIFIC pane (and
    * optionally a specific tab), unlike the focused-pane `newTab`/`cycleTab`/etc.
    */

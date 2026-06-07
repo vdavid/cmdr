@@ -21,15 +21,28 @@ pub async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
         .get("value")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
-    let timeout_s = params.get("timeout_s").and_then(|v| v.as_u64()).unwrap_or(15).min(60);
-    let after_generation = params.get("after_generation").and_then(|v| v.as_u64());
+    let timeout_s = params
+        .get("timeoutSeconds")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(15)
+        .min(60);
+    let after_generation = params.get("afterGeneration").and_then(|v| v.as_u64());
 
     if !["left", "right"].contains(&pane) {
         return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
     }
-    if !["has_item", "item_count_gte", "path", "path_contains"].contains(&condition) {
+    if ![
+        "has_item",
+        "not_has_item",
+        "item_count_gte",
+        "item_count_lte",
+        "path",
+        "path_contains",
+    ]
+    .contains(&condition)
+    {
         return Err(ToolError::invalid_params(
-            "condition must be 'has_item', 'item_count_gte', 'path', or 'path_contains'",
+            "condition must be 'has_item', 'not_has_item', 'item_count_gte', 'item_count_lte', 'path', or 'path_contains'",
         ));
     }
 
@@ -71,9 +84,14 @@ pub async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
 
         let matched = match condition {
             "has_item" => state.files.iter().any(|f| f.name == value),
+            "not_has_item" => !state.files.iter().any(|f| f.name == value),
             "item_count_gte" => {
                 let min_count: usize = value.parse().unwrap_or(1);
                 state.files.len() >= min_count
+            }
+            "item_count_lte" => {
+                let max_count: usize = value.parse().unwrap_or(0);
+                state.files.len() <= max_count
             }
             "path" => state.path == value,
             "path_contains" => state.path.contains(value.as_str()),
@@ -139,9 +157,9 @@ pub async fn execute_connect_to_server<R: Runtime>(app: &AppHandle<R>, params: &
 /// Execute `remove_manual_server`: remove from storage and discovery state.
 pub fn execute_remove_manual_server<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let host_id = params
-        .get("host_id")
+        .get("hostId")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| ToolError::invalid_params("Missing 'host_id' parameter"))?;
+        .ok_or_else(|| ToolError::invalid_params("Missing 'hostId' parameter"))?;
 
     match crate::network::manual_servers::remove_manual_server(host_id, app) {
         Ok(()) => Ok(json!(format!("OK: Removed server {}", host_id))),
@@ -163,9 +181,9 @@ pub fn execute_remove_manual_server<R: Runtime>(app: &AppHandle<R>, params: &Val
 /// MCP internal error.
 pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
     let volume_id = params
-        .get("volume_id")
+        .get("volumeId")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| ToolError::invalid_params("Missing 'volume_id' parameter"))?;
+        .ok_or_else(|| ToolError::invalid_params("Missing 'volumeId' parameter"))?;
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {

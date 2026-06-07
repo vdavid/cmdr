@@ -10,6 +10,7 @@
 
 pub(crate) mod indexing;
 pub(crate) mod logs;
+pub(crate) mod transfers;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -50,10 +51,11 @@ pub fn get_all_resources() -> Vec<Resource> {
         Resource {
             uri: "cmdr://state".to_string(),
             name: "App state".to_string(),
-            description: "Complete app state (both panes, volumes, dialogs, listings, recent listing errors). \
-                          Supports `?include=panes,volumes,dialogs,listings,recentErrors` to project only \
+            description: "Complete app state (both panes, volumes, dialogs, listings, recent listing errors, \
+                          running transfers with progress/speed/ETA). Supports \
+                          `?include=panes,volumes,dialogs,listings,recentErrors,transfers` to project only \
                           listed sections, and `?compact=true` to drop the per-pane file lists. Examples: \
-                          `cmdr://state?include=listings,recentErrors` or `cmdr://state?compact=true`."
+                          `cmdr://state?include=transfers` or `cmdr://state?compact=true`."
                 .to_string(),
             mime_type: "text/yaml".to_string(),
         },
@@ -583,6 +585,15 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
                 ));
             }
         }
+    }
+
+    if opts.includes("transfers") {
+        let ops = transfers::snapshot_transfers();
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        yaml.push_str(&transfers::build_transfers_yaml(&ops, now_ms));
     }
 
     if opts.includes("recentErrors") {

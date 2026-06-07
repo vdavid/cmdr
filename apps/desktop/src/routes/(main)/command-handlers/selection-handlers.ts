@@ -40,6 +40,13 @@ export const selectionHandlers = {
     explorerRef?.handleMcpSelect(pane, start, count, mode)
   },
 
+  'selection.mcpSelectByNames': async ({ explorerRef, dispatchArgs }) => {
+    // MCP `select` tool's `names` mode: a round-trip — AWAIT so the adapter's
+    // ack fires on real completion and a not-found throw reaches its try/catch.
+    const { pane, names, mode } = dispatchArgs as CommandArgs['selection.mcpSelectByNames']
+    await explorerRef?.handleMcpSelectNames(pane, names, mode)
+  },
+
   'selection.selectFiles': ({ ctx }) => {
     ctx.dialogs.showSelectionDialog('add')
   },

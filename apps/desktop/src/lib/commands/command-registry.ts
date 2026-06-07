@@ -632,6 +632,13 @@ export const commands: Command[] = [
     showInPalette: false,
     shortcuts: [],
   },
+  {
+    id: 'selection.mcpSelectByNames',
+    name: 'Select files by name in pane',
+    scope: 'Main window',
+    showInPalette: false,
+    shortcuts: [],
+  },
   { id: 'cursor.moveTo', name: 'Move pane cursor', scope: 'Main window', showInPalette: false, shortcuts: [] },
   { id: 'cursor.scrollTo', name: 'Scroll pane to index', scope: 'Main window', showInPalette: false, shortcuts: [] },
   { id: 'pane.refresh', name: 'Refresh pane', scope: 'Main window', showInPalette: false, shortcuts: [] },

@@ -51,6 +51,119 @@ fn test_expand_user_path_leaves_non_tilde_paths_untouched() {
     assert_eq!(expand_user_path("~root/x"), "~root/x");
 }
 
+fn pane_state_with(
+    files: Vec<(&str, bool)>,
+    cursor_index: usize,
+    selected: Vec<usize>,
+) -> crate::mcp::pane_state::PaneState {
+    crate::mcp::pane_state::PaneState {
+        path: "/test".to_string(),
+        files: files
+            .into_iter()
+            .map(|(name, is_directory)| crate::mcp::pane_state::PaneFileEntry {
+                name: name.to_string(),
+                path: format!("/test/{name}"),
+                is_directory,
+                size: None,
+                recursive_size: None,
+                recursive_size_pending: None,
+                modified: None,
+            })
+            .collect(),
+        cursor_index,
+        selected_indices: selected,
+        total_files: 0,
+        ..Default::default()
+    }
+}
+
+#[test]
+fn test_empty_operation_error_selection_wins() {
+    let mut state = pane_state_with(vec![("..", true), ("a.txt", false)], 0, vec![1]);
+    state.total_files = 2;
+    assert!(file_ops::empty_operation_error(&state, "left", "copy").is_none());
+}
+
+#[test]
+fn test_empty_operation_error_cursor_on_parent() {
+    // Pre-fix this surfaced as a misleading 1500 ms "frontend may be stalled" timeout.
+    let mut state = pane_state_with(vec![("..", true), ("a.txt", false)], 0, vec![]);
+    state.total_files = 2;
+    let msg = file_ops::empty_operation_error(&state, "left", "delete").expect("should reject");
+    assert!(msg.contains("Nothing to delete"));
+    assert!(msg.contains("parent entry"));
+}
+
+#[test]
+fn test_empty_operation_error_cursor_fallback_proceeds() {
+    let mut state = pane_state_with(vec![("..", true), ("a.txt", false)], 1, vec![]);
+    state.total_files = 2;
+    assert!(file_ops::empty_operation_error(&state, "left", "copy").is_none());
+}
+
+#[test]
+fn test_empty_operation_error_empty_pane() {
+    // Synced empty volume root: zero files, zero total
+    let state = pane_state_with(vec![], 0, vec![]);
+    let msg = file_ops::empty_operation_error(&state, "right", "move").expect("should reject");
+    assert!(msg.contains("the right pane shows no files"));
+}
+
+#[test]
+fn test_empty_operation_error_empty_dir_with_unrendered_parent() {
+    // Synced empty dir: the FE renders the empty-state overlay (no rows, not even `..`),
+    // so the push has zero files while total_files still counts the parent entry.
+    let mut state = pane_state_with(vec![], 0, vec![]);
+    state.total_files = 1;
+    let msg = file_ops::empty_operation_error(&state, "left", "copy").expect("should reject");
+    assert!(msg.contains("shows no files"));
+}
+
+#[test]
+fn test_empty_operation_error_unsynced_state_passes_through() {
+    // Default state (no push yet, path empty): the FE is the authority, don't reject.
+    let mut state = pane_state_with(vec![], 0, vec![]);
+    state.path = String::new();
+    assert!(file_ops::empty_operation_error(&state, "left", "copy").is_none());
+}
+
+#[test]
+fn test_empty_operation_error_cursor_outside_loaded_window() {
+    // Cursor at global index 5 but the loaded window starts at 100: we can't see the
+    // entry, so the FE stays the authority and the operation proceeds.
+    let mut state = pane_state_with(vec![("z.txt", false)], 5, vec![]);
+    state.loaded_start = 100;
+    state.loaded_end = 101;
+    state.total_files = 200;
+    assert!(file_ops::empty_operation_error(&state, "left", "copy").is_none());
+}
+
+#[test]
+fn test_is_virtual_path() {
+    // Scheme-prefixed virtual paths skip the local existence check
+    assert!(is_virtual_path("mtp://device-1/DCIM"));
+    assert!(is_virtual_path("smb://nas.local/share/folder"));
+    // Local paths don't
+    assert!(!is_virtual_path("/Users/jane/Documents"));
+    assert!(!is_virtual_path("~/Downloads"));
+    assert!(!is_virtual_path(""));
+    // A "://" that isn't a scheme prefix isn't virtual
+    assert!(!is_virtual_path("/tmp/weird://name"));
+    assert!(!is_virtual_path("://no-scheme"));
+}
+
+#[tokio::test]
+async fn test_validate_path_exists() {
+    // Local existing path passes
+    assert!(validate_path_exists("/tmp").await.is_ok());
+    // Local missing path is invalid_params
+    let err = validate_path_exists("/nonexistent/path/xyz").await.unwrap_err();
+    assert_eq!(err.code, INVALID_PARAMS);
+    // Virtual paths skip the check entirely
+    assert!(validate_path_exists("mtp://device/DCIM").await.is_ok());
+    assert!(validate_path_exists("smb://server/share/missing").await.is_ok());
+}
+
 #[test]
 fn test_path_exists_validation() {
     // Test that Path::new().exists() works as expected for our validation

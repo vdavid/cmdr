@@ -55,12 +55,12 @@ pub async fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Tool
         return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
     }
 
-    let tab_id = params.get("tab_id").and_then(|v| v.as_str());
+    let tab_id = params.get("tabId").and_then(|v| v.as_str());
 
     // Resolve tab_id: required for activate, defaults to active tab for others
     let resolved_tab_id = match action {
         "activate" => tab_id
-            .ok_or_else(|| ToolError::invalid_params("'tab_id' is required for activate"))?
+            .ok_or_else(|| ToolError::invalid_params("'tabId' is required for activate"))?
             .to_string(),
         "new" | "reopen" => String::new(), // not used
         _ => {

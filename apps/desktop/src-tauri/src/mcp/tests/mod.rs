@@ -6,6 +6,7 @@ mod resource_indexing_tests;
 mod resource_log_tests;
 mod resource_state_tests;
 mod resource_tests;
+mod resource_transfer_tests;
 mod security_tests;
 mod spec_compliance_tests;
 mod tool_category_tests;
