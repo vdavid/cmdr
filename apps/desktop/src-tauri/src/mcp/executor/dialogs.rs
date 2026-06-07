@@ -27,7 +27,8 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
-    AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, snapshot_generation, snapshot_window_count, wait_for_ack,
+    AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_generation,
+    snapshot_window_count, wait_for_ack,
 };
 
 /// Execute the unified dialog command.
@@ -51,7 +52,8 @@ pub async fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, params: &Val
 
     // Optional params
     let section = params.get("section").and_then(|v| v.as_str());
-    let path = params.get("path").and_then(|v| v.as_str());
+    let path = params.get("path").and_then(|v| v.as_str()).map(expand_user_path);
+    let path = path.as_deref();
     let on_conflict = params.get("onConflict").and_then(|v| v.as_str());
 
     match action {

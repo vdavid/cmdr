@@ -62,6 +62,27 @@ impl From<tauri::Error> for ToolError {
     }
 }
 
+/// Expands a leading `~` in an agent-supplied path to the user's home directory.
+///
+/// Every agent-supplied path must pass through this (or `user_path_param`, which wraps it)
+/// before validation, comparison, or emission to the frontend — agents routinely send
+/// `~/Downloads` and the frontend only understands absolute paths. Virtual paths
+/// (`mtp://…`, direct-SMB) never start with `~`, so they pass through untouched.
+fn expand_user_path(path: &str) -> String {
+    crate::commands::file_system::expand_tilde(path)
+}
+
+/// Extracts a required path parameter, expanding a leading `~` via `expand_user_path`.
+///
+/// Use this instead of raw `params.get(key)` for any param that names a filesystem path.
+fn user_path_param(params: &Value, key: &str) -> Result<String, ToolError> {
+    params
+        .get(key)
+        .and_then(|v| v.as_str())
+        .map(expand_user_path)
+        .ok_or_else(|| ToolError::invalid_params(format!("Missing '{key}' parameter")))
+}
+
 /// Emit an event to the frontend and wait for a response (5s timeout).
 ///
 /// The frontend must emit `mcp-response` with `{ requestId, ok, error? }`.

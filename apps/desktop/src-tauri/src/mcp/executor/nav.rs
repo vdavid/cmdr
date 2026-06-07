@@ -7,7 +7,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
     AckSignal, NAV_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_round_trip, mcp_round_trip_with_timeout,
-    snapshot_generation, wait_for_ack,
+    snapshot_generation, user_path_param, wait_for_ack,
 };
 
 /// Execute a navigation command without parameters.
@@ -174,17 +174,14 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
                 .get("pane")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
-            let path = params
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'path' parameter"))?;
+            let path = user_path_param(params, "path")?;
 
             if !["left", "right"].contains(&pane) {
                 return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
             }
 
             // Validate that the path exists (skip for mtp:// virtual paths)
-            if !path.starts_with("mtp://") && !Path::new(path).exists() {
+            if !path.starts_with("mtp://") && !Path::new(&path).exists() {
                 return Err(ToolError::invalid_params(format!("Path does not exist: {}", path)));
             }
 

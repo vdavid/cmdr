@@ -33,6 +33,14 @@ pub async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
         ));
     }
 
+    // Expand `~` for path conditions: pane state holds absolute paths, so a literal
+    // `~/…` value would never match and the tool would burn its full timeout.
+    let value = if matches!(condition, "path" | "path_contains") {
+        super::expand_user_path(value)
+    } else {
+        value.to_string()
+    };
+
     let store = app
         .try_state::<PaneStateStore>()
         .ok_or_else(|| ToolError::internal("Pane state not available"))?;
@@ -68,7 +76,7 @@ pub async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
                 state.files.len() >= min_count
             }
             "path" => state.path == value,
-            "path_contains" => state.path.contains(value),
+            "path_contains" => state.path.contains(value.as_str()),
             _ => unreachable!(),
         };
 

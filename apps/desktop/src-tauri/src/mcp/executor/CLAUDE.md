@@ -8,7 +8,7 @@ Up: [`../CLAUDE.md`](../CLAUDE.md) (mcp).
 
 | File             | Responsibility                                                                                                                 |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `mod.rs`         | `execute_tool()` dispatcher, shared types (`ToolResult`, `ToolError`), and the `mcp_round_trip` / `resource_round_trip` helpers.|
+| `mod.rs`         | `execute_tool()` dispatcher, shared types (`ToolResult`, `ToolError`), the `mcp_round_trip` / `resource_round_trip` helpers, and the `user_path_param` / `expand_user_path` tilde-expansion helpers.|
 | `ack.rs`         | The ack contract: `AckSignal` variants, `snapshot_generation`, `wait_for_ack`, default budgets.                                |
 | `app.rs`         | `quit`, `switch_pane`, `swap_panes`, `tab` (unified action verb).                                                              |
 | `view.rs`        | `toggle_hidden`, `set_view_mode`, `sort`.                                                                                      |
@@ -54,9 +54,14 @@ When the backend can't fully validate preconditions (or has to wait on the OS), 
 - `open_under_cursor` — 5 s via `mcp_round_trip_with_timeout`; opening a file delegates to the OS default app, so neither `GenerationAdvanced` nor `WindowAppeared` would fire.
 - Resources that need FE data use `resource_round_trip` (same pattern, returns the `data` field). Used by `cmdr://settings`.
 
+### Agent-supplied paths go through `user_path_param` / `expand_user_path`
+
+Agents routinely send `~/Downloads`; the frontend and the existence checks only understand absolute paths. Both helpers live in `mod.rs`: `user_path_param(params, key)` for a required path param (extract + missing-param error + tilde expansion), `expand_user_path(s)` for optional or conditional sites (the `dialog` tool's optional `path`, the `await` tool's `value` when the condition is path-shaped). Never read a path param with raw `params.get(...)` — a literal `~` either fails validation (`nav_to_path`, `dialog`) or silently never matches and burns the full timeout (`await`). Virtual paths (`mtp://…`) don't start with `~`, so expansion is a no-op for them; the `search`/`ai_search` `scope` param is the one exception that handles `~` itself (in `search::query::parse_scope`).
+
 ### Adding new tools
 
 - Pick the right category file; if it doesn't exist yet, create one and register it in `mod.rs::execute_tool()`.
+- If the tool takes a filesystem path param, extract it via `user_path_param` (see above).
 - If the tool mutates pane state, prefer `AckSignal::GenerationAdvanced` and route the mutation through `PaneStateStore` (or `update_pane_tabs` for tab work — the single place that bumps generation for tabs).
 - If the tool needs an explicit outcome from the FE, use `mcp_round_trip`. Don't replicate FE knowledge in Rust.
 

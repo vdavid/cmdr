@@ -20,6 +20,38 @@ fn test_tool_error_internal() {
 }
 
 #[test]
+fn test_user_path_param_expands_tilde() {
+    let home = dirs::home_dir().expect("home dir").to_string_lossy().to_string();
+
+    // Pre-fix, `~/Downloads` passed through raw and failed the existence check.
+    let params = json!({"path": "~/Downloads"});
+    assert_eq!(user_path_param(&params, "path").unwrap(), format!("{home}/Downloads"));
+
+    // Bare `~` expands to home itself
+    let params = json!({"path": "~"});
+    assert_eq!(user_path_param(&params, "path").unwrap(), home);
+}
+
+#[test]
+fn test_user_path_param_missing_param() {
+    let err = user_path_param(&json!({}), "path").unwrap_err();
+    assert_eq!(err.code, INVALID_PARAMS);
+    assert_eq!(err.message, "Missing 'path' parameter");
+}
+
+#[test]
+fn test_expand_user_path_leaves_non_tilde_paths_untouched() {
+    // Absolute paths
+    assert_eq!(expand_user_path("/tmp"), "/tmp");
+    // Virtual paths must never be expanded
+    assert_eq!(expand_user_path("mtp://device-1/DCIM"), "mtp://device-1/DCIM");
+    // `~` only expands as the leading segment
+    assert_eq!(expand_user_path("/tmp/~/x"), "/tmp/~/x");
+    // `~user` syntax is not supported, so it passes through
+    assert_eq!(expand_user_path("~root/x"), "~root/x");
+}
+
+#[test]
 fn test_path_exists_validation() {
     // Test that Path::new().exists() works as expected for our validation
     assert!(Path::new("/").exists(), "Root should exist");
