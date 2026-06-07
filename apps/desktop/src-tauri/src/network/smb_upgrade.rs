@@ -357,10 +357,15 @@ pub(crate) fn friendly_server_name(server: &str) -> String {
 /// discovered host that's the same identity as `server`, we contribute its advertised
 /// name, its `.local` hostname, and the synthesized `{name}._smb._tcp.local` service form.
 /// Pure over `hosts` for testability; the live wrapper feeds `get_discovered_hosts()`.
+/// macOS-only: every caller reads the system keychain, and an ungated definition fails the
+/// Linux build via `#![deny(unused)]`.
+#[cfg(target_os = "macos")]
 pub(crate) fn system_keychain_aliases(server: &str) -> Vec<String> {
     system_keychain_aliases_from(server, &get_discovered_hosts())
 }
 
+// `test` keeps the pure helper compiling for the unit tests below, which run on Linux too.
+#[cfg(any(target_os = "macos", test))]
 fn system_keychain_aliases_from(server: &str, hosts: &[crate::network::NetworkHost]) -> Vec<String> {
     use crate::network::server_identity::same_server;
     let mut out = Vec::new();

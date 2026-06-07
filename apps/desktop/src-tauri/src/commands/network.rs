@@ -8,8 +8,12 @@ use crate::network::{
 
 use crate::network::smb_upgrade::{
     UpgradeError, UpgradeResult, friendly_server_name, get_keychain_password, register_smb_volume,
-    resolve_ip_to_hostname_with_wait, system_keychain_aliases, try_smb_upgrade,
+    resolve_ip_to_hostname_with_wait, try_smb_upgrade,
 };
+// Only the macOS-gated commands below read the system keychain aliases; an unconditional
+// import fails the Linux build via `#![deny(unused)]`.
+#[cfg(target_os = "macos")]
+use crate::network::smb_upgrade::system_keychain_aliases;
 
 /// Gets all currently discovered network hosts.
 #[tauri::command]
