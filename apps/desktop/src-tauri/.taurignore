@@ -1,0 +1,9 @@
+# Files the Tauri CLI's dev watcher should NOT rebuild/restart the app for.
+# Gitignore syntax. Without this, `pnpm dev` restarts the whole app whenever a
+# colocated CLAUDE.md (20+ of them live under src-tauri/) gets edited, which
+# happens constantly when agents update docs alongside code.
+#
+# Verified 2026-06: the watcher logs "File src-tauri/src/mcp/CLAUDE.md changed.
+# Rebuilding application..." without this file, and stays quiet with it.
+# Vite has its own equivalent shield (`server.watch.ignored` in vite.config.js).
+*.md

@@ -29,6 +29,22 @@ compatibility.
 For the canonical reference on `CMDR_INSTANCE_ID` (per-resource breakdown, precedence rules, debug recipes, acceptance
 smoke), see [`/docs/tooling/instance-isolation.md`](../../docs/tooling/instance-isolation.md).
 
+### Dev watcher and markdown files
+
+Two watchers run during `pnpm dev`, each with its own shield:
+
+- The **Tauri CLI** watches `src-tauri/` and the workspace crates, and rebuilds + restarts the whole app on ANY file
+  change there. [`src-tauri/.taurignore`](src-tauri/.taurignore) (gitignore syntax) excludes `*.md`, because 20+
+  colocated `CLAUDE.md` files live under `src-tauri/src/` and every docs edit used to restart the app. Verified
+  empirically: without the file, the watcher logs `File src-tauri/src/mcp/CLAUDE.md changed. Rebuilding application...`;
+  with it, markdown edits are silent while `.rs` edits still rebuild.
+- **Vite** watches the rest of `apps/desktop/`; `server.watch.ignored` in `vite.config.js` excludes `src-tauri/` so Rust
+  builds don't churn the frontend watcher. Markdown elsewhere is harmless to Vite: `.md` files aren't in the module
+  graph, and SvelteKit only full-reloads on route files, `app.html`, hooks, and `svelte.config.js`.
+
+Don't delete either shield. If a new always-edited non-build file type shows up under `src-tauri/`, add it to
+`.taurignore` rather than teaching people to avoid saving.
+
 ## Structure
 
 - `src/`: Svelte frontend (SvelteKit static adapter, TypeScript strict, custom CSS with design tokens)

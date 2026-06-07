@@ -177,7 +177,10 @@ Three cadences. Pick the one that matches where you are in the work, not the one
 - **Error reports**: When triaging an error report bundle (zip + `manifest.json`), read
   `src-tauri/src/error_reporter/CLAUDE.md` first: it documents the bundle layout, what each piece captures, and the
   redaction conventions.
-- **Hot reload**: `pnpm dev` hot-reloads. Max 15s for Rust, max 3s for frontend.
+- **Hot reload**: `pnpm dev` hot-reloads. Max 15s for Rust, max 3s for frontend. Markdown edits trigger nothing:
+  `apps/desktop/src-tauri/.taurignore` shields the Tauri CLI's watcher (which otherwise rebuilds + restarts the app on
+  ANY file change under `src-tauri/`, including the colocated `CLAUDE.md`s) and `server.watch.ignored` in
+  `vite.config.js` shields Vite from `src-tauri/`. Don't delete either.
 - **Index DB queries**: The index SQLite DB uses a custom `platform_case` collation, so the `sqlite3` CLI can't query
   it. Use `cargo run -p index-query -- <db_path> "<sql>"` instead. See
   [docs/tooling/index-query.md](docs/tooling/index-query.md) for examples and DB paths.
