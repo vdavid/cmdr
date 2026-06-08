@@ -141,10 +141,13 @@ export async function moveCursorToFile(tauriPage: PageLike, targetName: string):
   await ensureMcpClient(tauriPage)
   await mcpCall('move_cursor', { pane, filename: targetName })
 
-  // Confirm the cursor landed on the target file. `move_cursor` is synchronous on
-  // the backend, so this only covers the render tick on a green run — it resolves
-  // the moment the cursor lands and never reaches the budget. 8 s is failure
-  // headroom for the shared Docker VM under load, where the render tick stretches.
+  // Confirm the cursor landed on the target file. `move_cursor` round-trips AND
+  // flushes the backend PaneStateStore before replying (DualPaneExplorer.moveCursor
+  // → syncStateToMcpNow), so the backend cursor is fresh by the time this returns —
+  // a follow-up copy/move/delete won't read a stale cursor-on-`..`. This poll only
+  // covers the DOM render tick on a green run — it resolves the moment the cursor
+  // lands and never reaches the budget. 8 s is failure headroom for the shared
+  // Docker VM under load, where the render tick stretches.
   // Safe to keep at 8 s: this is the only bumped budget inside moveCursorToFile,
   // and the helper isn't called from ensureAppReady, so it never stacks.
   return pollUntil(

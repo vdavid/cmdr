@@ -1460,6 +1460,17 @@
         // genuine; `void` swallowed the cursor-set promise and let MCP report `OK`
         // before the cursor was observably positioned.
         containerElement?.focus()
+
+        // Flush the new cursor position to the backend's PaneStateStore BEFORE the
+        // round-trip replies ok, so a follow-up tool call (move_cursor → copy/move/
+        // delete) reads fresh state. Without this, the cursor lives only in FE state
+        // until the debounced pane→MCP sync fires; the immediately-following file-op
+        // runs `check_operation_has_target` against a stale store (cursor still on
+        // `..`) and rejects with "Nothing to copy". This mirrors `select`, which
+        // flushes for the same reason (see pane-commands.ts handleMcpSelect*). Not a
+        // per-keystroke path — keyboard cursor moves use `setCursorIndex` directly via
+        // handleKeyDown, never this exported MCP/search entry.
+        await paneRef.syncStateToMcpNow()
     }
 
     export function scrollTo(pane: 'left' | 'right', index: number) {

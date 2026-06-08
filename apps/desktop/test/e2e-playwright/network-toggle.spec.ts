@@ -110,6 +110,14 @@ test.describe('Network toggle in volume picker', () => {
   })
 
   test.afterEach(async ({ tauriPage }) => {
+    // Close the volume picker the read-only tests leave open. They assert on the
+    // dropdown's label and have no reason to dismiss it themselves, but the
+    // fixtures safety-net afterEach (which runs AFTER this one — Playwright runs
+    // afterEach hooks inner-to-outer) fails the test on a leaked `.volume-dropdown`.
+    // Without this explicit close the tests were flaky: the `setSettingViaBridge`
+    // re-render below sometimes dropped focus and closed the picker (pass), sometimes
+    // didn't (leak → fail). `closeVolumePicker` is a no-op when nothing's open.
+    await closeVolumePicker(tauriPage)
     // Restore the default so the next spec file starts clean.
     await setSettingViaBridge(tauriPage, 'network.enabled', true)
     // Close any settings window the click test may have opened. Best-effort; the

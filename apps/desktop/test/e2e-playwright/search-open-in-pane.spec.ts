@@ -87,7 +87,12 @@ async function getRightPaneActiveTabPath(): Promise<string | null> {
 async function pollRightPaneVolumeId(
   tauriPage: PageLike,
   expected: string | { not: string },
-  timeoutMs = 3000,
+  // 10 s, not 3 s: the volume id is read from `cmdr://state`, which the FE syncs on
+  // a debounce after a nav. On the shared Docker VM under full-suite load (E2E +
+  // rust-tests-linux + SMB containers) that sync stretched past 3 s and flaked this
+  // poll. The probe still returns the instant the id matches; this is failure
+  // headroom, matching `moveCursorToFile`'s 8 s precedent for the same loaded VM.
+  timeoutMs = 10000,
 ): Promise<boolean> {
   const matches = (path: string, target: string): boolean => {
     if (target === 'search-results') return path.startsWith('search-results://')
@@ -108,7 +113,9 @@ async function pollRightPaneVolumeId(
 }
 
 /** Convenience: poll for the search overlay to unmount. */
-async function pollOverlayGone(tauriPage: PageLike, timeoutMs = 3000): Promise<boolean> {
+async function pollOverlayGone(tauriPage: PageLike, timeoutMs = 10000): Promise<boolean> {
+  // 10 s for the same loaded-Docker-VM headroom as pollRightPaneVolumeId; the
+  // overlay-unmount tick after the Open-in-pane click can stretch under load.
   return pollUntil(tauriPage, async () => (await tauriPage.count(SEARCH_OVERLAY)) === 0, timeoutMs)
 }
 

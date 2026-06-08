@@ -49,7 +49,7 @@ Polling cadence: 250 ms for state-driven signals (matches the `await` tool); 100
 
 When the backend can't fully validate preconditions (or has to wait on the OS), the tool emits an event with a `requestId` and waits for the FE to reply via `mcp-response` carrying `{ requestId, ok, error? }`. Used by:
 
-- `move_cursor`, `set_setting` (5 s). The FE verifies the cursor actually landed (filename found, index in range) before replying `ok: true` — a silent no-op was the original false-positive-OK bug.
+- `move_cursor`, `set_setting` (5 s). The FE verifies the cursor actually landed (filename found, index in range), then (move_cursor) **flushes the MCP state push (`syncStateToMcpNow`) before replying**, so a follow-up `copy`/`move`/`delete` reads the new cursor position instead of the stale pre-move one. Without the flush, the cursor lived only in FE state until the debounced pane→MCP sync, and the file-op's `check_operation_has_target` (below) saw the cursor still on `..` and rejected with "Nothing to copy" — flaky under load, which is exactly what bit the MTP E2E specs. A silent no-op (cursor never moved) was the original false-positive-OK bug.
 - `select` (5 s, all modes) — the FE applies the selection (names mode maps names → indices via the `findFileIndices` batch IPC first), then **flushes the MCP state push (`syncStateToMcpNow`) before replying**, so a follow-up `copy` reads fresh selection state. Missing names come back as the round-trip error.
 - `refresh` (5 s) — the FE forces a backend re-read via the `refreshListing` IPC (local volumes always re-read; watcher-backed MTP/SMB listings short-circuit) and replies once it completes. `OK` means the directory was actually re-read.
 - `nav_to_path` — 30 s via `mcp_round_trip_with_timeout`; FE delays the response until `handleListingComplete` fires.
@@ -62,7 +62,7 @@ Agents routinely send `~/Downloads`; the frontend and the existence checks only 
 
 ### Empty-operation fast-fail (`file_ops.rs`)
 
-`copy`/`move`/`delete` run `check_operation_has_target` before dispatching. The pure core (`empty_operation_error`, unit-tested) mirrors the FE fallback semantics: a selection wins; no selection falls back to the cursor file; cursor on `..` (or an empty pane, where the FE renders no rows at all — `files` empty with `total_files <= 1`) means the FE would silently drop the dialog, so the tool rejects fast with the real cause instead of the generic 1500 ms ack timeout. Unsynced state (`path` empty) passes through — the FE is the authority. This is why `select`'s names mode flushes the state push before replying: without it, select → copy would read stale empty selection here and wrongly reject.
+`copy`/`move`/`delete` run `check_operation_has_target` before dispatching. The pure core (`empty_operation_error`, unit-tested) mirrors the FE fallback semantics: a selection wins; no selection falls back to the cursor file; cursor on `..` (or an empty pane, where the FE renders no rows at all — `files` empty with `total_files <= 1`) means the FE would silently drop the dialog, so the tool rejects fast with the real cause instead of the generic 1500 ms ack timeout. Unsynced state (`path` empty) passes through — the FE is the authority. This is why both `select` (all modes) and `move_cursor` flush the state push before replying: without it, select → copy reads a stale empty selection and move_cursor → copy reads a stale cursor (still on `..`), and either wrongly rejects here.
 
 ### Adding new tools
 

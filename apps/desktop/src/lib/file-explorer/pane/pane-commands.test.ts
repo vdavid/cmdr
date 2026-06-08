@@ -222,6 +222,18 @@ describe('handleMcpSelect modes', () => {
     expect(ref.setSelectedIndices).toHaveBeenCalledWith([2, 3, 4])
   })
 
+  it('flushes the new selection to the MCP store before returning', async () => {
+    // The flush-before-reply contract: a follow-up copy/move/delete reads the
+    // backend PaneStateStore, which lags FE state until the debounced sync. select
+    // (and now move_cursor) must push synchronously so the file-op pre-check sees
+    // the fresh selection instead of rejecting with "Nothing to copy". Pinning it
+    // here guards both paths from a future "drop the flush" regression.
+    const ref = buildPaneRef({ selectedIndices: [9] })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await cmds.handleMcpSelect('left', 2, 3, 'replace')
+    expect(ref.syncStateToMcpNow).toHaveBeenCalled()
+  })
+
   it('add mode unions the range with the current selection', async () => {
     const ref = buildPaneRef({ selectedIndices: [0, 1] })
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
