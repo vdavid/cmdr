@@ -132,6 +132,34 @@ string-based; the plan doc explains why.
   borrowed `&'static str`, so the field became `String` and the two emit sites now `.to_string()` the
   `phase_to_str(...)` result. The wire value is unchanged; only the Rust field type widened.
 
+### Migration gotchas learned converting the MTP device events
+
+- **Ad-hoc `serde_json::json!({...})` emits become named structs with the SAME camelCase keys.** Five MTP events
+  (`mtp-device-connected`, `mtp-device-disconnected`, `mtp-storage-removed`, `mtp-permission-error`,
+  `mtp-exclusive-access-error`) were emitted as hand-authored `json!({ "deviceId": …, … })` literals, already camelCase.
+  Each became a `#[derive(…, tauri_specta::Event)] #[serde(rename_all = "camelCase")]` struct that reproduces the keys
+  exactly (verify each `makeEvent<…>('wire-name')` is byte-identical). The two unit events (`mtp-ptpcamerad-suppressed`
+  / `mtp-ptpcamerad-restored`, emitted from macOS-gated `watcher.rs`) became unit structs (`type X = null`), defined
+  unconditionally in `connection/mod.rs` so `collect_events!` and the generated bindings stay cross-platform stable even
+  though the emit sites are `#[cfg(target_os = "macos")]`.
+- **A nested serialize-only DTO needs `Deserialize` added.** `MtpDeviceConnected` carries `Vec<MtpStorageInfo>`, but
+  `MtpStorageInfo` (in `mtp/types.rs`) was `Serialize`-only ("return type only"). `Event` requires the whole payload to
+  round-trip, so it gained a `Deserialize` derive. (`MtpDeviceInfo` did NOT — it never nests in an event payload, only
+  the `device_name: String` does.)
+- **Aliasing a hand-written FE interface to the generated type removes a null-vs-undefined drift.** The old
+  hand-mirrored `MtpStorageInfo` FE interface had `storageType?: string`; the generated one is
+  `storageType: string | null` (no `skip_serializing_if`). Rather than coerce at every consumer, the
+  `tauri-commands/mtp.ts` interface was aliased to the generated `MtpStorageInfo` (and `MtpTransferProgress` likewise).
+  The historical `*Event` payload type names (`MtpDeviceConnectedEvent`, …) are kept as re-export aliases of the
+  generated types so the barrel and consumers keep a stable import surface. The one remaining coercion:
+  `MtpExclusiveAccessError.blockingProcess` is `string | null`, so the `+layout.svelte` handler assigns it into a
+  `string | undefined` `$state` with `?? undefined`.
+- **`mtp-ptpcamerad-suppressed` / `mtp-ptpcamerad-restored` / `mtp-storage-removed` have no FE listener.** They're
+  emitted but currently unconsumed (the connected toast fires on `mtp-device-connected`, not on the suppressed event).
+  They were still typed (struct + `collect_events!`) so the bindings are complete and a future consumer gets a typed
+  `events.mtpPtpcameradSuppressed.listen(...)`, but no `on*` wrapper was added for them — don't add dead wrappers for
+  events nothing subscribes to.
+
 ## Call-site convention: name your arguments
 
 Specta-generated wrappers take **positional** arguments (in declaration order), not an object. That's elegant when the

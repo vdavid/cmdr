@@ -27,6 +27,9 @@ import {
   onMtpDeviceDisconnected,
   onMtpExclusiveAccessError,
   onMtpPermissionError,
+  type MtpDeviceConnectedEvent,
+  type MtpDeviceDisconnectedEvent,
+  type MtpExclusiveAccessErrorEvent,
 } from '$lib/tauri-commands'
 import {
   getDevices,
@@ -417,7 +420,7 @@ describe('mtp-store', () => {
 
   describe('event handling', () => {
     it('updates state on mtp-device-connected event', async () => {
-      let connectedCallback: ((event: { deviceId: string; storages: MtpStorageInfo[] }) => void) | undefined
+      let connectedCallback: ((event: MtpDeviceConnectedEvent) => void) | undefined
       vi.mocked(onMtpDeviceConnected).mockImplementation((callback) => {
         connectedCallback = callback
         return Promise.resolve(vi.fn())
@@ -427,7 +430,7 @@ describe('mtp-store', () => {
       await initialize()
 
       // Simulate event from backend
-      connectedCallback?.({ deviceId: 'mtp-336592896', storages: [mockStorage] })
+      connectedCallback?.({ deviceId: 'mtp-336592896', deviceName: 'Pixel', storages: [mockStorage] })
 
       const device = getDevice('mtp-336592896')
       expect(device?.connectionState).toBe('connected')
@@ -435,8 +438,8 @@ describe('mtp-store', () => {
     })
 
     it('updates state on mtp-device-disconnected event', async () => {
-      let connectedCallback: ((event: { deviceId: string; storages: MtpStorageInfo[] }) => void) | undefined
-      let disconnectedCallback: ((event: { deviceId: string; reason: 'user' | 'removed' }) => void) | undefined
+      let connectedCallback: ((event: MtpDeviceConnectedEvent) => void) | undefined
+      let disconnectedCallback: ((event: MtpDeviceDisconnectedEvent) => void) | undefined
       vi.mocked(onMtpDeviceConnected).mockImplementation((callback) => {
         connectedCallback = callback
         return Promise.resolve(vi.fn())
@@ -449,7 +452,7 @@ describe('mtp-store', () => {
       await initialize()
 
       // Simulate backend auto-connect (populates the store)
-      connectedCallback?.({ deviceId: 'mtp-336592896', storages: [mockStorage] })
+      connectedCallback?.({ deviceId: 'mtp-336592896', deviceName: 'Pixel', storages: [mockStorage] })
       expect(getDevice('mtp-336592896')?.connectionState).toBe('connected')
 
       // Simulate disconnect event from backend
@@ -461,7 +464,7 @@ describe('mtp-store', () => {
     })
 
     it('sets error state on mtp-exclusive-access-error event', async () => {
-      let exclusiveCallback: ((event: { deviceId: string; blockingProcess?: string }) => void) | undefined
+      let exclusiveCallback: ((event: MtpExclusiveAccessErrorEvent) => void) | undefined
       vi.mocked(onMtpExclusiveAccessError).mockImplementation((callback) => {
         exclusiveCallback = callback
         return Promise.resolve(vi.fn())

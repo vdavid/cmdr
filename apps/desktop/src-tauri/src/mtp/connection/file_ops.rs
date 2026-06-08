@@ -5,7 +5,8 @@ use mtp_rs::{NewObjectInfo, ObjectHandle, StorageId};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event;
 use tokio::io::AsyncWriteExt;
 
 use super::errors::{MtpConnectionError, map_mtp_error};
@@ -107,17 +108,15 @@ impl MtpConnectionManager {
 
         // Emit initial progress
         if let Some(app) = app {
-            let _ = app.emit(
-                "mtp-transfer-progress",
-                MtpTransferProgress {
-                    operation_id: operation_id.to_string(),
-                    device_id: device_id.to_string(),
-                    transfer_type: MtpTransferType::Download,
-                    current_file: filename.clone(),
-                    bytes_done: 0,
-                    bytes_total: total_size,
-                },
-            );
+            let _ = MtpTransferProgress {
+                operation_id: operation_id.to_string(),
+                device_id: device_id.to_string(),
+                transfer_type: MtpTransferType::Download,
+                current_file: filename.clone(),
+                bytes_done: 0,
+                bytes_total: total_size,
+            }
+            .emit(app);
         }
 
         // Download the file as a stream (holds session lock until complete)
@@ -192,17 +191,15 @@ impl MtpConnectionManager {
 
         // Emit completion progress
         if let Some(app) = app {
-            let _ = app.emit(
-                "mtp-transfer-progress",
-                MtpTransferProgress {
-                    operation_id: operation_id.to_string(),
-                    device_id: device_id.to_string(),
-                    transfer_type: MtpTransferType::Download,
-                    current_file: filename,
-                    bytes_done: bytes_written,
-                    bytes_total: total_size,
-                },
-            );
+            let _ = MtpTransferProgress {
+                operation_id: operation_id.to_string(),
+                device_id: device_id.to_string(),
+                transfer_type: MtpTransferType::Download,
+                current_file: filename,
+                bytes_done: bytes_written,
+                bytes_total: total_size,
+            }
+            .emit(app);
         }
 
         debug!(
@@ -291,17 +288,15 @@ impl MtpConnectionManager {
 
         // Emit initial progress
         if let Some(app) = app {
-            let _ = app.emit(
-                "mtp-transfer-progress",
-                MtpTransferProgress {
-                    operation_id: operation_id.to_string(),
-                    device_id: device_id.to_string(),
-                    transfer_type: MtpTransferType::Upload,
-                    current_file: filename.clone(),
-                    bytes_done: 0,
-                    bytes_total: file_size,
-                },
-            );
+            let _ = MtpTransferProgress {
+                operation_id: operation_id.to_string(),
+                device_id: device_id.to_string(),
+                transfer_type: MtpTransferType::Upload,
+                current_file: filename.clone(),
+                bytes_done: 0,
+                bytes_total: file_size,
+            }
+            .emit(app);
         }
 
         let device = acquire_device_lock(&device_arc, device_id, "upload_file").await?;
@@ -387,17 +382,15 @@ impl MtpConnectionManager {
 
         // Emit completion progress
         if let Some(app) = app {
-            let _ = app.emit(
-                "mtp-transfer-progress",
-                MtpTransferProgress {
-                    operation_id: operation_id.to_string(),
-                    device_id: device_id.to_string(),
-                    transfer_type: MtpTransferType::Upload,
-                    current_file: filename.clone(),
-                    bytes_done: file_size,
-                    bytes_total: file_size,
-                },
-            );
+            let _ = MtpTransferProgress {
+                operation_id: operation_id.to_string(),
+                device_id: device_id.to_string(),
+                transfer_type: MtpTransferType::Upload,
+                current_file: filename.clone(),
+                bytes_done: file_size,
+                bytes_total: file_size,
+            }
+            .emit(app);
         }
 
         debug!("MTP upload complete: {} -> {}", local_path.display(), new_path_str);

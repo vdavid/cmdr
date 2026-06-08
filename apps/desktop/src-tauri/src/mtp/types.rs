@@ -2,7 +2,7 @@
 //!
 //! These types are serialized to JSON for Tauri commands.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub use crate::usb_speed::UsbSpeed;
 
@@ -36,10 +36,11 @@ pub struct MtpDeviceInfo {
 ///
 /// Android devices typically have one or more storages: "Internal Storage", "SD Card", etc.
 ///
-/// Only serialized (Rust → frontend); no `Deserialize` needed (return type only).
 /// Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
-/// accepts the type in Unified mode.
-#[derive(Debug, Clone, Serialize, specta::Type)]
+/// accepts the type in Unified mode. Carries `Deserialize` because it's nested in the typed
+/// `MtpDeviceConnected` event payload, and `tauri_specta::Event` requires the whole payload
+/// (and everything it contains) to round-trip.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpStorageInfo {
     /// MTP storage handle.

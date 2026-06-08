@@ -32,7 +32,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event;
 use tokio::sync::{Mutex, broadcast};
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
@@ -46,7 +47,9 @@ const MTP_TIMEOUT_SECS: u64 = 30;
 // ============================================================================
 
 /// Progress event for MTP file transfers (download/upload).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+///
+/// Kebab-cases to the `mtp-transfer-progress` wire name, so no `event_name` override.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpTransferProgress {
     /// Unique operation ID.
@@ -87,6 +90,64 @@ pub enum MtpDisconnectReason {
     /// drops (cable, port, phone-side USB stack).
     Removed,
 }
+
+// ============================================================================
+// Typed device-lifecycle events (kebab-cased struct name = wire event name)
+// ============================================================================
+
+/// Emitted when an MTP device connects, or when a late-arriving storage is
+/// registered on an already-connected device (in which case `device_name` is
+/// empty and `storages` carries only the new storage).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpDeviceConnected {
+    pub device_id: String,
+    pub device_name: String,
+    pub storages: Vec<MtpStorageInfo>,
+}
+
+/// Emitted when an MTP device disconnects (user toggle or USB removal).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpDeviceDisconnected {
+    pub device_id: String,
+    pub reason: MtpDisconnectReason,
+}
+
+/// Emitted when a storage area is removed from a connected device.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpStorageRemoved {
+    pub device_id: String,
+    pub storage_id: u32,
+}
+
+/// Emitted when opening a device fails because another process holds exclusive
+/// access (typically `ptpcamerad` on macOS). The frontend shows the workaround
+/// dialog with `blocking_process` (the claiming process name, from `ioreg`).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpExclusiveAccessError {
+    pub device_id: String,
+    pub blocking_process: Option<String>,
+}
+
+/// Emitted when opening a device fails for lack of USB permission (Linux:
+/// missing udev rules). The frontend shows a copyable udev install command.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpPermissionError {
+    pub device_id: String,
+}
+
+/// Emitted (macOS) when Cmdr suppresses `ptpcamerad` to claim a device.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct MtpPtpcameradSuppressed;
+
+/// Emitted (macOS) when Cmdr restores `ptpcamerad` (MTP disabled or no devices
+/// remain connected).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct MtpPtpcameradRestored;
 
 /// Result of a successful MTP operation.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -230,13 +291,11 @@ impl MtpConnectionManager {
 
                     // Emit event for frontend to show dialog
                     if let Some(app) = app {
-                        let _ = app.emit(
-                            "mtp-exclusive-access-error",
-                            serde_json::json!({
-                                "deviceId": device_id,
-                                "blockingProcess": blocking_process.clone()
-                            }),
-                        );
+                        let _ = MtpExclusiveAccessError {
+                            device_id: device_id.to_string(),
+                            blocking_process: blocking_process.clone(),
+                        }
+                        .emit(app);
                     }
 
                     return Err(MtpConnectionError::ExclusiveAccess {
@@ -256,7 +315,10 @@ impl MtpConnectionManager {
                         mtp_rs::Error::Usb(usb_err) if usb_err.kind() == nusb::ErrorKind::PermissionDenied
                     ) {
                         if let Some(app) = app {
-                            let _ = app.emit("mtp-permission-error", serde_json::json!({ "deviceId": device_id }));
+                            let _ = MtpPermissionError {
+                                device_id: device_id.to_string(),
+                            }
+                            .emit(app);
                         }
                         return Err(MtpConnectionError::PermissionDenied {
                             device_id: device_id.to_string(),
@@ -374,14 +436,12 @@ impl MtpConnectionManager {
 
         // Emit connected event
         if let Some(app) = app {
-            let _ = app.emit(
-                "mtp-device-connected",
-                serde_json::json!({
-                    "deviceId": device_id,
-                    "deviceName": connected_info.device.product.clone().unwrap_or_default(),
-                    "storages": connected_info.storages
-                }),
-            );
+            let _ = MtpDeviceConnected {
+                device_id: device_id.to_string(),
+                device_name: connected_info.device.product.clone().unwrap_or_default(),
+                storages: connected_info.storages.clone(),
+            }
+            .emit(app);
         }
 
         // Broadcast updated volume list (includes new MTP volumes)
@@ -440,13 +500,11 @@ impl MtpConnectionManager {
 
         // Emit disconnected event
         if let Some(app) = app {
-            let _ = app.emit(
-                "mtp-device-disconnected",
-                serde_json::json!({
-                    "deviceId": device_id,
-                    "reason": reason,
-                }),
-            );
+            let _ = MtpDeviceDisconnected {
+                device_id: device_id.to_string(),
+                reason,
+            }
+            .emit(app);
         }
 
         // Broadcast updated volume list (MTP volume removed)
@@ -583,14 +641,12 @@ impl MtpConnectionManager {
         }
 
         // Emit updated device info so the frontend knows about the new storage
-        let _ = app.emit(
-            "mtp-device-connected",
-            serde_json::json!({
-                "deviceId": device_id,
-                "deviceName": "",
-                "storages": [storage_info]
-            }),
-        );
+        let _ = MtpDeviceConnected {
+            device_id: device_id.to_string(),
+            device_name: String::new(),
+            storages: vec![storage_info],
+        }
+        .emit(app);
 
         // Broadcast volume list change
         crate::volume_broadcast::emit_volumes_changed();
@@ -613,13 +669,11 @@ impl MtpConnectionManager {
         info!("Unregistered MTP volume: {} (storage removed)", volume_id);
 
         // Emit event so frontend updates
-        let _ = app.emit(
-            "mtp-storage-removed",
-            serde_json::json!({
-                "deviceId": device_id,
-                "storageId": storage_id
-            }),
-        );
+        let _ = MtpStorageRemoved {
+            device_id: device_id.to_string(),
+            storage_id,
+        }
+        .emit(app);
 
         // Broadcast volume list change
         crate::volume_broadcast::emit_volumes_changed();

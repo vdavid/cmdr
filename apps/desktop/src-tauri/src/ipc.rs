@@ -66,6 +66,10 @@ use crate::indexing::{
     IndexScanStartedEvent,
 };
 use crate::ipc_collectors::collect_all_types;
+use crate::mtp::{
+    MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
+    MtpPtpcameradSuppressed, MtpStorageRemoved, MtpTransferProgress,
+};
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
 
@@ -634,6 +638,16 @@ pub fn builder() -> Builder<tauri::Wry> {
             IndexAggregationCompleteEvent, // event_name = "index-aggregation-complete" (payloadless)
             IndexMemoryWarningEvent,       // event_name = "index-memory-warning"
             SearchIndexReadyEvent,         // event_name = "search-index-ready"
+            // MTP device events (mtp/connection/, mtp/watcher.rs). Struct names
+            // kebab-case directly to the wire names, so no `event_name` override.
+            MtpDeviceConnected,
+            MtpDeviceDisconnected,
+            MtpStorageRemoved,
+            MtpTransferProgress,
+            MtpExclusiveAccessError,
+            MtpPermissionError,
+            MtpPtpcameradSuppressed,
+            MtpPtpcameradRestored,
         ])
 }
 

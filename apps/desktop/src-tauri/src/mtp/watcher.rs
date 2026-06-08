@@ -252,13 +252,14 @@ async fn run_hotplug_watcher(_app: AppHandle) {
 /// Emits `mtp-ptpcamerad-suppressed` event on success so the frontend can show a toast.
 #[cfg(target_os = "macos")]
 fn suppress_ptpcamerad_if_needed() {
-    use tauri::Emitter;
+    use super::connection::MtpPtpcameradSuppressed;
+    use tauri_specta::Event;
 
     match super::macos_workaround::suppress_ptpcamerad() {
         Ok(true) => {
             info!("Suppressed ptpcamerad for MTP device access");
             if let Some(app) = APP_HANDLE.get() {
-                let _ = app.emit("mtp-ptpcamerad-suppressed", ());
+                let _ = MtpPtpcameradSuppressed.emit(app);
             }
             // Give the daemon time to die before we try to claim the USB device
             std::thread::sleep(std::time::Duration::from_millis(200));
@@ -275,13 +276,14 @@ fn suppress_ptpcamerad_if_needed() {
 /// Emits `mtp-ptpcamerad-restored` event on success.
 #[cfg(target_os = "macos")]
 fn restore_ptpcamerad_unconditionally() {
-    use tauri::Emitter;
+    use super::connection::MtpPtpcameradRestored;
+    use tauri_specta::Event;
 
     match super::macos_workaround::restore_ptpcamerad() {
         Ok(true) => {
             info!("Restored ptpcamerad (MTP disabled)");
             if let Some(app) = APP_HANDLE.get() {
-                let _ = app.emit("mtp-ptpcamerad-restored", ());
+                let _ = MtpPtpcameradRestored.emit(app);
             }
         }
         Ok(false) => {} // Wasn't suppressed
@@ -293,7 +295,8 @@ fn restore_ptpcamerad_unconditionally() {
 /// Emits `mtp-ptpcamerad-restored` event on success.
 #[cfg(target_os = "macos")]
 fn restore_ptpcamerad_if_no_devices() {
-    use tauri::Emitter;
+    use super::connection::MtpPtpcameradRestored;
+    use tauri_specta::Event;
 
     let remaining = get_current_mtp_devices();
     if !remaining.is_empty() {
@@ -304,7 +307,7 @@ fn restore_ptpcamerad_if_no_devices() {
         Ok(true) => {
             info!("Restored ptpcamerad (no MTP devices remaining)");
             if let Some(app) = APP_HANDLE.get() {
-                let _ = app.emit("mtp-ptpcamerad-restored", ());
+                let _ = MtpPtpcameradRestored.emit(app);
             }
         }
         Ok(false) => {} // Wasn't suppressed

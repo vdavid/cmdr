@@ -5,13 +5,14 @@ use mtp_rs::{CancelToken, ObjectHandle, StorageId};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event;
 
 use super::cache::{CachedListing, LISTING_CACHE_TTL_SECS};
 use super::errors::MtpConnectionError;
 use super::{
-    DeviceEntry, MTP_TIMEOUT_SECS, MtpConnectionManager, MtpDisconnectReason, acquire_device_lock,
-    convert_mtp_datetime, get_mtp_icon_id, map_mtp_error, normalize_mtp_path,
+    DeviceEntry, MTP_TIMEOUT_SECS, MtpConnectionManager, MtpDeviceDisconnected, MtpDisconnectReason,
+    acquire_device_lock, convert_mtp_datetime, get_mtp_icon_id, map_mtp_error, normalize_mtp_path,
 };
 use crate::file_system::FileEntry;
 
@@ -690,13 +691,11 @@ impl MtpConnectionManager {
             info!("MTP device disconnected and removed from registry: {}", device_id);
 
             if let Some(app) = app {
-                let _ = app.emit(
-                    "mtp-device-disconnected",
-                    serde_json::json!({
-                        "deviceId": device_id,
-                        "reason": MtpDisconnectReason::Removed,
-                    }),
-                );
+                let _ = MtpDeviceDisconnected {
+                    device_id: device_id.to_string(),
+                    reason: MtpDisconnectReason::Removed,
+                }
+                .emit(app);
                 debug!(
                     "handle_device_disconnected: emitted mtp-device-disconnected event for {}",
                     device_id

@@ -2257,6 +2257,14 @@ export const events = {
   listingProgress: makeEvent<ListingProgressEvent>('listing-progress'),
   listingReadComplete: makeEvent<ListingReadCompleteEvent>('listing-read-complete'),
   lowDiskSpace: makeEvent<LowDiskSpacePayload>('low-disk-space'),
+  mtpDeviceConnected: makeEvent<MtpDeviceConnected>('mtp-device-connected'),
+  mtpDeviceDisconnected: makeEvent<MtpDeviceDisconnected>('mtp-device-disconnected'),
+  mtpExclusiveAccessError: makeEvent<MtpExclusiveAccessError>('mtp-exclusive-access-error'),
+  mtpPermissionError: makeEvent<MtpPermissionError>('mtp-permission-error'),
+  mtpPtpcameradRestored: makeEvent<MtpPtpcameradRestored>('mtp-ptpcamerad-restored'),
+  mtpPtpcameradSuppressed: makeEvent<MtpPtpcameradSuppressed>('mtp-ptpcamerad-suppressed'),
+  mtpStorageRemoved: makeEvent<MtpStorageRemoved>('mtp-storage-removed'),
+  mtpTransferProgress: makeEvent<MtpTransferProgress>('mtp-transfer-progress'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
   scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
   scanPreviewComplete: makeEvent<ScanPreviewCompleteEvent>('scan-preview-complete'),
@@ -3394,6 +3402,23 @@ export type MtpConnectionError =
   | { type: 'other'; device_id: string; message: string }
 
 /**
+ *  Emitted when an MTP device connects, or when a late-arriving storage is
+ *  registered on an already-connected device (in which case `device_name` is
+ *  empty and `storages` carries only the new storage).
+ */
+export type MtpDeviceConnected = {
+  deviceId: string
+  deviceName: string
+  storages: MtpStorageInfo[]
+}
+
+// Emitted when an MTP device disconnects (user toggle or USB removal).
+export type MtpDeviceDisconnected = {
+  deviceId: string
+  reason: MtpDisconnectReason
+}
+
+/**
  *  Information about a connected MTP device.
  *
  *  This represents a device detected via USB, before opening an MTP session.
@@ -3421,6 +3446,34 @@ export type MtpDeviceInfo = {
   usbSpeed: UsbSpeed | null
 }
 
+/**
+ *  Why an MTP device was disconnected.
+ *
+ *  Surfaced on the `mtp-device-disconnected` event so logs and UI can
+ *  distinguish a deliberate user action from a USB-level removal (unplug,
+ *  I/O error, etc.). Previously every disconnect was reported as `"user"`,
+ *  which made unstable-USB sessions read like the user kept pulling the cable.
+ */
+export type MtpDisconnectReason =
+  // User explicitly disconnected (toggled MTP off in settings).
+  | 'user'
+  /**
+   *  The device was removed: USB hotplug saw it gone, or the event loop
+   *  reported `Error::Disconnected`. Includes hard unplugs and I/O-level
+   *  drops (cable, port, phone-side USB stack).
+   */
+  | 'removed'
+
+/**
+ *  Emitted when opening a device fails because another process holds exclusive
+ *  access (typically `ptpcamerad` on macOS). The frontend shows the workaround
+ *  dialog with `blocking_process` (the claiming process name, from `ioreg`).
+ */
+export type MtpExclusiveAccessError = {
+  deviceId: string
+  blockingProcess: string | null
+}
+
 // Information about an object on the device (returned after creation).
 export type MtpObjectInfo = {
   // Object handle.
@@ -3445,6 +3498,23 @@ export type MtpOperationResult = {
   bytesTransferred: number
 }
 
+/**
+ *  Emitted when opening a device fails for lack of USB permission (Linux:
+ *  missing udev rules). The frontend shows a copyable udev install command.
+ */
+export type MtpPermissionError = {
+  deviceId: string
+}
+
+/**
+ *  Emitted (macOS) when Cmdr restores `ptpcamerad` (MTP disabled or no devices
+ *  remain connected).
+ */
+export type MtpPtpcameradRestored = null
+
+// Emitted (macOS) when Cmdr suppresses `ptpcamerad` to claim a device.
+export type MtpPtpcameradSuppressed = null
+
 // Result of scanning an MTP path for copy operation.
 export type MtpScanResult = {
   // Number of files found.
@@ -3460,9 +3530,10 @@ export type MtpScanResult = {
  *
  *  Android devices typically have one or more storages: "Internal Storage", "SD Card", etc.
  *
- *  Only serialized (Rust → frontend); no `Deserialize` needed (return type only).
  *  Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
- *  accepts the type in Unified mode.
+ *  accepts the type in Unified mode. Carries `Deserialize` because it's nested in the typed
+ *  `MtpDeviceConnected` event payload, and `tauri_specta::Event` requires the whole payload
+ *  (and everything it contains) to round-trip.
  */
 export type MtpStorageInfo = {
   // MTP storage handle.
@@ -3477,6 +3548,35 @@ export type MtpStorageInfo = {
   storageType: string | null
   isReadOnly: boolean
 }
+
+// Emitted when a storage area is removed from a connected device.
+export type MtpStorageRemoved = {
+  deviceId: string
+  storageId: number
+}
+
+/**
+ *  Progress event for MTP file transfers (download/upload).
+ *
+ *  Kebab-cases to the `mtp-transfer-progress` wire name, so no `event_name` override.
+ */
+export type MtpTransferProgress = {
+  // Unique operation ID.
+  operationId: string
+  // Device ID.
+  deviceId: string
+  // Type of transfer.
+  transferType: MtpTransferType
+  // Current file being transferred.
+  currentFile: string
+  // Bytes transferred so far.
+  bytesDone: number
+  // Total bytes to transfer.
+  bytesTotal: number
+}
+
+// Type of MTP transfer operation.
+export type MtpTransferType = 'download' | 'upload'
 
 export type NegotiatedSummaryDto = {
   dialect: string

@@ -28,7 +28,9 @@ pub mod virtual_device;
 pub mod watcher;
 
 pub use connection::{
-    ConnectedDeviceInfo, MtpConnectionError, MtpDisconnectReason, MtpObjectInfo, MtpOperationResult, connection_manager,
+    ConnectedDeviceInfo, MtpConnectionError, MtpDeviceConnected, MtpDeviceDisconnected, MtpDisconnectReason,
+    MtpExclusiveAccessError, MtpObjectInfo, MtpOperationResult, MtpPermissionError, MtpPtpcameradRestored,
+    MtpPtpcameradSuppressed, MtpStorageRemoved, MtpTransferProgress, connection_manager,
 };
 pub use discovery::list_mtp_devices;
 pub use types::{MtpDeviceInfo, MtpStorageInfo};

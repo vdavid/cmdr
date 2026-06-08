@@ -77,7 +77,7 @@
     let permissionPendingDeviceId = $state<string | undefined>(undefined)
 
     function handleMtpExclusiveAccessError(event: MtpExclusiveAccessErrorEvent) {
-        ptpcameradBlockingProcess = event.blockingProcess
+        ptpcameradBlockingProcess = event.blockingProcess ?? undefined
         pendingDeviceId = event.deviceId
         showPtpcameradDialog = true
     }
