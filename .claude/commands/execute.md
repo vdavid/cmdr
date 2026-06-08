@@ -1,39 +1,75 @@
 Lead a team of Opus agents to deliver on this plan.
 
-You:
+## Setup
 
-- You don't do any work, only oversee the agents!
-- You're the leader that keeps this project together, and they do the work. I need your context window to have capacity
-  left for post-implementation checks, fixes, thinking, etc.
-- Run the agents sequentially, we're in no rush. Unless you predict that the quality is better if they work in parallel.
-  And look at what they did between the milestones. Try to use the output of the previous agents as input for the next
-  ones.
+- Work on the worktree where the plan lives (the `plan` command creates one). If the plan was made on the main clone,
+  move it to a worktree branched off local `main` first, so your context is preserved for follow-up tweaks. Keep `main`
+  clean (see `solo-dev-workflow.md`).
 
-Agents:
+## You (the lead)
 
-- It's your responsibility that the _whole_ plan gets executed. From time to time, agents skip parts of their part of
-  the plan. Give them a clear scope and ask them to do the whole thing. Instruct the agents to thoroughly review their
-  work before submitting it to you. They should only say that they're done when they finished all parts of their job.
-- Also, agents sometimes do the opposite and don't understand what milestone they ought to complete, and jump on the
-  whole plan. This usually results in a disaster in quality because they run out of context, they auto-compress, then
-  the compressed agent lacks proper understanding of our values and what we're doing. So again, give them a clear scope.
-- Ask every agent to reflect whether they are satisfied with what they'd done. Make them ask: "Is what I've done solid
-  AND elegant? You proud and confident about it?" If the answer is "no" to either, they should adjust, then rinse and
-  repeat.
-- They should also see if there is something else to fix, like any latent bugs that only need 10–15 LoC changes around
-  their part of the development. They're encouraged to fix these. Correctness and bug-free code over crystal-clean
-  commits.
+- You don't do the implementation work, you oversee the agents. You keep this project together; they do the work. I need
+  your context window free for post-implementation checks, fixes, thinking, and the verification below.
+- Run agents sequentially, we're in no rush, unless you predict the quality is better in parallel. Look at what each
+  agent did between milestones, and feed the previous agent's output into the next one's input.
 
-Final review:
+## Agents
 
-- In the end, ask +1 Opus agent to do a thorough review of the execution, and flag if anything is skipped, broken,
-  incomplete, etc.
-- Have +1 Opus agent run `./scripts/check.sh` and make sure that it's green, even if checks fail on unrelated things.
-- Strip milestone tags from the touched code and docs. Plan-specific names like "M1", "M2a", "Milestone 3", "Phase 2",
-  etc. leak into inline comments, dead-code `reason` strings, test helper prefixes, doc strings, and CLAUDE.md text
-  during execution. Grep the touched files (`rg -n '\b(M[0-9][a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <paths>`) and
-  replace each hit with a descriptive reference ("the watcher", "the hook contract", "the downloads toast", etc.) so a
-  future reader doesn't need the plan in hand. The plan file itself keeps its milestone structure — that's where
-  milestones belong. Be careful to leave pre-existing milestone references in unrelated code alone (different feature's
-  M1, Apple Silicon "M1" chip, SVG `M` path coords, etc.).
-- Do a review yourself, and report: is this something you're proud of? Is this solid AND elegant? Is something missing?
+- It's your responsibility that the _whole_ plan gets executed. Agents sometimes skip parts of their scope. Give them a
+  clear scope and ask them to do the whole thing. They only say "done" when every part of their job is finished and
+  thoroughly self-reviewed.
+- Agents sometimes do the opposite: they ignore their milestone boundary and jump on the whole plan. That tanks quality,
+  because they run out of context, auto-compress, and the compressed agent loses our values and intent. So give each a
+  clear, bounded scope.
+- Make every agent reflect: "Is what I've done solid AND elegant? Am I proud and confident about it?" If "no" to either,
+  adjust and repeat.
+- They should also fix latent bugs near their work (small, ~10-15 LoC changes). Correctness and bug-free code over
+  crystal-clean commits.
+
+## Feedback loops are mandatory
+
+Don't fly blind. At checkpoints (and especially after a feature milestone), run the app, read the logs, and drive it via
+MCP to confirm new features actually look and feel right. Spawn an agent to run the app, interact with it, and test via
+MCP when that's a good use of a fresh context.
+
+- MCP caveat: a freshly spawned Claude Code session often doesn't auto-connect the wired-up MCP even though it's
+  configured. Unless you can trigger a refresh, use the CLI fallback `./scripts/mcp-call.sh` (and the Tauri bridge). See
+  [docs/tooling/mcp.md](../../docs/tooling/mcp.md).
+
+## Testing and checks
+
+- Cover new features with tests, using real red→green TDD wherever reasonable (see `tdd-red-green.md`).
+- Run `./scripts/check.sh` after each milestone. Run the slow suite (`--include-slow`) only at the very end.
+- When running E2E, run only the set specific to the feature you're working on. Our E2E tests are designed to run well
+  under a second each; a focused run is fast.
+
+## Lead verification (you own delegated work)
+
+Don't integrate on trust (see `verify-delegated-work.md`):
+
+- Re-run the security- and data-safety-critical tests yourself.
+- Read the actual diffs. Confirm the scope matches the plan's intent: nothing skipped, nothing stray.
+- Rebase the worktree onto CURRENT local `main` before the fast-forward merge (it can advance mid-session).
+
+## Keep docs current
+
+Agents keep `CLAUDE.md` files and other docs up to date continuously as they work, so we end in a good documented state,
+not with a doc-sync chore at the end.
+
+## Final review
+
+- Ask +1 Opus agent to thoroughly review the execution and flag anything skipped, broken, or incomplete.
+- Have +1 Opus agent run `./scripts/check.sh` and confirm it's green (even if unrelated checks fail, surface those).
+- Strip milestone tags from the touched code and docs. Plan-specific names like "M1", "M2a", "Milestone 3", "Phase 2"
+  leak into inline comments, dead-code `reason` strings, test helper prefixes, doc strings, and `CLAUDE.md` text during
+  execution. Grep the touched files (`rg -n '\b(M[0-9][a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <paths>`) and replace
+  each hit with a descriptive reference ("the watcher", "the hook contract", "the downloads toast", etc.) so a future
+  reader doesn't need the plan in hand. The plan file itself keeps its milestone structure. Leave pre-existing milestone
+  references in unrelated code alone (a different feature's M1, the Apple Silicon "M1" chip, SVG `M` path coords, etc.).
+- Do a review yourself, and report: is this something you're proud of? Is this solid AND elegant? Is anything missing?
+
+## Wrap
+
+Fast-forward merge the worktree into local `main`, then delete the worktree and branch (see `solo-dev-workflow.md`).
+Don't push, and don't offer to: I push on my own schedule (see `push-cadence.md`). We're done when the work is committed
+and we've discussed the follow-ups.

@@ -46,7 +46,7 @@ Tauri-MCP plugin gets a post-bind connect-check on the Rust side that warns on m
 
 - **Don't bypass the wrapper.** Raw `cargo tauri dev` or raw `cargo build` skips the env composition AND the
   `beforeBuildCommand` chain (llama-server download + frontend build). The app launches with the prod identifier or no
-  embedded frontend. See AGENTS.md's "Critical rules" section.
+  embedded frontend. See the `rust` rule in `.claude/rules/`.
 - **Wrapper exit cleanup is best-effort.** `process.on('exit' / 'SIGINT' / 'SIGTERM')` doesn't run on `SIGKILL`, OOM, or
   VS Code closing the terminal. The `$TMPDIR` location is the load-bearing fallback so leaked configs auto-prune.
 - **`--worktree` slug isn't validated against the actual worktree directory name.** The user pins whatever slug they

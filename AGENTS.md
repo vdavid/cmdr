@@ -206,123 +206,23 @@ common pitfalls.
 
 ## Where to put instructions
 
-- **User-generic preferences** (e.g. "never use git stash", "don't take external actions without approval") →
-  `~/.claude/CLAUDE.md`. These apply across all projects.
-- **Project-specific instructions** → `AGENTS.md` (this file) for repo-wide rules, or colocated `CLAUDE.md` files for
-  module-specific docs. These are version-controlled and visible to all contributors.
-- **Don't use** the project-level `memory/MEMORY.md` for either category. It's not transparent and not in the repo.
+Split by kind and by level:
 
-## Critical rules
+- **Imperatives** ("always / never X") → `rules/` files: `~/.claude/rules/` for cross-project preferences,
+  `.claude/rules/` here for project rules. Keep them concise.
+- **Knowledge** (how the codebase works, gotchas, how-tos) → this `AGENTS.md` and colocated `CLAUDE.md` files.
+- User-level rules already apply to every project, so don't restate them here.
+- **Don't use** `memory/MEMORY.md` for either: it's not transparent and not version-controlled. Prefer rules and docs.
 
-- ❌ NEVER use `git stash`, `git checkout`, `git reset`, or any git write operation unless explicitly asked. Multiple
-  agents may be working simultaneously.
-- ❌ NEVER add dependencies without checking license compatibility (`cargo deny check`) and verifying the latest version
-  from npm/crates.io/GitHub. Never trust training data for versions.
-- ❌ When adding code that loads remote content (`fetch`, `iframe`), ask whether to disable in dev mode.
-  `withGlobalTauri: true` in dev mode is a security risk.
-- ❌ When testing the Tauri app, DO NOT USE THE BROWSER. Use the MCP servers.
-- ❌ Don't ignore linter warnings. Fix them or justify with a comment.
-- **Icons**: We use `unplugin-icons` with `@iconify-json/lucide`. Import as Svelte components from
-  `~icons/lucide/{icon-name}` (inline SVGs, no runtime cost). See `docs/style-guide.md` § Icons for usage, sizing,
-  coloring, and how to find new icons.
-- Always use CSS variables defined in `apps/desktop/src/app.css`. Stylelint catches undefined/hallucinated variables.
-- Never use raw `px` values for `font-size`, `border-radius`, `font-family`, or `z-index` >= 10. Use
-  `var(--font-size-*)`, `var(--radius-*)`, `var(--font-*)`, and `var(--z-*)` tokens. Stylelint enforces this.
-- **Coverage allowlist is a last resort.** Extract pure functions and test them. Only allowlist what genuinely can't be
-  tested. Name the specific untestable API in the reason.
-- When adding a new user-facing action, add its id to `COMMAND_IDS` in `lib/commands/command-ids.ts`, the entry in
-  `command-registry.ts`, and the handler in `routes/(main)/command-handlers/` (the `commandHandlers` record is keyed by
-  `Exclude<CommandId, DispatchExemptId>`, so a missing handler is a compile error; an intentionally handlerless command
-  goes in `DISPATCH_EXEMPT_IDS`). A tuple↔registry sync test and the `cmdr/no-raw-command-dispatch` lint rule hold you
-  to it; full checklist in `lib/commands/CLAUDE.md`.
-- If you added a new Tauri command touching the filesystem, check `docs/architecture.md` § Platform constraints.
-- ❌ **Don't read TCC-protected paths or call NSWorkspace icon/LaunchServices APIs at app launch without the FDA gate.**
-  `~/Downloads`, `~/Documents`, `~/Desktop`, `~/Pictures`, `~/Movies`, `~/Music`, `~/Library/CloudStorage`, and any
-  `NSWorkspace.iconForFile:` call (even on `/Applications` or the iCloud root) can trigger macOS TCC popups during
-  onboarding. We had **5–10 popups stacked on top of the in-app FDA modal** before this gate landed. Use
-  `crate::fda_gate::is_fda_pending_runtime()` for launch-time call sites, or
-  `crate::fda_gate::is_fda_pending(fda_choice, os_fda_granted)` for pure logic and tests. After Allow + restart, or Deny
-  in-session via `start_indexing_after_fda_decision`, the gate clears and the same call sites run normally. See
-  [`apps/desktop/src-tauri/src/fda_gate.rs`](apps/desktop/src-tauri/src/fda_gate.rs) and
-  [`apps/desktop/src/lib/onboarding/CLAUDE.md`](apps/desktop/src/lib/onboarding/CLAUDE.md) § "FDA gate".
-- ❌ **Tauri APIs fail silently without permissions.** Whenever you call a new Tauri API from a window (`setMinSize`,
-  `setTitle`, `show`, plugin commands, anything new), add the matching permission to that window's capability file in
-  `src-tauri/capabilities/{default,settings,viewer}.json`. Without it, the call rejects with a generic "not allowed"
-  error and your feature looks broken with no obvious cause. Surface failures by `await`-ing the call inside a
-  `try/catch` and logging the error rather than `void`-ing the promise. See `src-tauri/capabilities/CLAUDE.md` for the
-  per-window split and naming conventions.
-- We use [mise](https://mise.jdx.dev/) to manage tool versions (Go, Node, etc.), pinned in `.mise.toml`. Shims are on
-  PATH via `~/.bashrc` and `~/.zshenv`, so `go` and `node` should just work. If `go` is "not found", check that
-  `~/.local/share/mise/shims` is on `$PATH`.
-- After bumping npm deps, run `pnpm dedupe`. Without it, transitive deps (e.g. `postcss-html`'s `postcss`,
-  `@axe-core/playwright`'s `@playwright/test`) can stay pinned to older nested versions, producing weird false-positive
-  failures: stylelint 17.9 misparses Svelte inline `style="..."` attributes against an old postcss; website-typecheck
-  fails on a `Page` type mismatch when AxeBuilder gets a different Playwright version than the e2e specs.
-- ❌ **NEVER use `eprintln!`, `println!`, or `dbg!` in `src-tauri/` code.** They bypass the fern logger: no level
-  filtering, no file output, no inclusion in error-report bundles. Clippy denies them at the crate root. Use
-  `log::debug!` / `log::info!` / `log::warn!` / `log::error!` with a scoped `target:` (for example
-  `log::debug!(target: "open_with", "...")`) so logs are filterable via `RUST_LOG`. **READ
-  [`apps/desktop/src-tauri/src/logging/CLAUDE.md`](apps/desktop/src-tauri/src/logging/CLAUDE.md) before adding any log
-  call or touching the log pipeline**: it has the rules and the why.
-- ❌ **NEVER build the Tauri app with raw `cargo build`.** It produces a binary without the embedded frontend (white
-  screen). Always build via `pnpm tauri build` or the `node scripts/tauri-wrapper.js build` wrapper from
-  `apps/desktop/`. The `beforeBuildCommand` in `tauri.conf.json` runs the llama-server download (Go) and frontend build;
-  skipping it breaks the app. For E2E builds:
-  `node scripts/tauri-wrapper.js build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e,virtual-mtp,smb-e2e`.
-  The binary lands in `<repo>/target/<triple>/release/Cmdr`.
-  - **Don't add your own build-cache layer.** `pnpm tauri build` already caches internally: Cargo's incremental
-    compilation, Vite/SvelteKit's frontend build cache, and the `beforeBuildCommand`'s own short-circuits all kick in on
-    warm runs. A "skip build if hash matches" check on top of that is redundant and risks shipping a stale binary.
-- ❌ **No string-matching error or state classification.** Don't classify errors, app state, or control flow by checking
-  substrings of a message, stderr, error title, or any other free-form text. Use a typed enum variant, an errno code, or
-  an explicit flag on the struct that crosses the IPC boundary. The wording is for the user to read; code that branches
-  on it breaks silently when copy changes, when the OS localizes, or when an upstream library reformats its messages.
-  - **Tests too**: prefer `assert!(matches!(err, VolumeError::AlreadyExists(_)))` over `err.message.contains("...")`.
-    The variant is the contract; the message is documentation.
-  - **Enforced by**: `error-string-match` (Rust check, scans `apps/desktop/src-tauri/src/`) and
-    `cmdr/no-error-string-match` (ESLint rule, scans `apps/desktop/src/`).
-  - **Opt out only when there's no other option** (third-party CLI with no exit-code differentiation, etc.). Add
-    `// allowed-error-string-match: <reason>` on the line above (Rust) or
-    `// eslint-disable-next-line cmdr/no-error-string-match -- <reason>` (TS/Svelte). Pair the opt-out with `LC_ALL=C`
-    on the subprocess and snapshot tests pinning the matched strings against a tool version. The check fails on orphaned
-    opt-outs (comment present, no matching violation) — remove them when the code changes.
-- ❌ **No bare `await pollUntil(...)` (or other `Promise<boolean>` poll helper) in E2E tests.** The helper returns
-  `false` on timeout instead of throwing, and a bare expression statement discards the return — the test silently passes
-  even when the polled condition never holds. Prefer Playwright's `expect.poll(() => ...).toBeTruthy()` (idiomatic and
-  fuses the wait with the assertion); fall back to `expect(await pollUntil(...)).toBe(true)` for the few sites that
-  can't migrate. The same trap applies to `pollFs`, `pollUntilValue`, `pollActiveMode`, `pollOverlayGone`,
-  `pollFocusedPane`, and any future `Promise<boolean>` poll helper.
-  - **Enforced by**: `bare-poll` (Go check, fast lane). Scans `apps/desktop/test/`.
-  - **Opt out** for genuine best-effort cleanups (for example, dismissing an overlay that might or might not be there)
-    with `// allowed-bare-poll: <reason>` on the line above OR as a trailing comment on the same line. Use sparingly.
-    Orphaned opt-outs (no matching bare poll anymore) fail the check — remove them.
-- ❌ **No bare `.lock().unwrap()` / `.read().unwrap()` / `.write().unwrap()` on a std `Mutex`/`RwLock` in `src-tauri`.**
-  A bare `unwrap`/`expect` aborts the whole app when the lock is poisoned (some background-thread panicked while holding
-  it), and a bare call records no intent. Every std-lock acquisition must be a deliberate, documented choice:
-  `lock_ignore_poison()` / `read_ignore_poison()` / `write_ignore_poison()` (recover — the default for simple value
-  stores) **or** `.expect("<lock> poisoned: <why aborting is correct>")` (abort — only for locks guarding a real
-  cross-field invariant; the message must contain "poison"). The full rule and the value-store-vs-invariant decision
-  test live in the module doc of
-  [`apps/desktop/src-tauri/src/ignore_poison.rs`](apps/desktop/src-tauri/src/ignore_poison.rs).
-  - **Enforced by**: `lock-poison` (Go check, fast lane). Scans `apps/desktop/src-tauri/src/`, skips test files.
-  - **Opt out** (rare; e.g. a lock proven unpoisonable because nothing panics under it) with
-    `// allowed-lock-poison: <reason>` on the line above or as a trailing comment. Orphaned opt-outs fail the check —
-    remove them when the code changes.
-- ❌ **Type-safe IPC: no raw `invoke('...')` outside the typed bindings folder.** Tauri command names are duplicated
-  across the Rust `#[tauri::command]` site and every TS call site, with no compile-time link. Renaming the Rust side
-  silently breaks runtime IPC with a generic "not allowed" error. The repo wires `tauri-specta` to generate typed
-  bindings into `apps/desktop/src/lib/ipc/`; call them as `commands.commandName(args)` instead.
-  - **Enforced by**: `cmdr/no-raw-tauri-invoke` (ESLint rule). Bypassed only inside `lib/ipc/` (the bindings),
-    `routes/debug/` (dev-only debug panels), and test files.
-  - **Regenerate** with `cd apps/desktop && pnpm bindings:regen` after any change to a `#[tauri::command]` surface or a
-    Type-derived DTO. The local `bindings-fresh` check (in `./scripts/check.sh`) fails if the committed `bindings.ts` is
-    stale. It runs on macOS only, not in CI: the committed file is the macOS command surface, and platform-gated
-    commands mean a Linux runner regenerates a different surface (it's marked `NotInCI` in the registry).
-  - **At call sites, prefer named locals over inline primitives.** `commands.renameFile(from, to, force, volumeId)` is
-    fine; `commands.foo(true, null, 5)` isn't. Extract `const force = true; const volumeId = null; const retries = 5`
-    first. This is the price specta charges for type safety.
-  - For the rules around adding new commands, type shape constraints (`skip_serializing_if`, `serde_json::Value`), and
-    the current exclusion list, read [`apps/desktop/src/lib/ipc/CLAUDE.md`](apps/desktop/src/lib/ipc/CLAUDE.md).
+## Hard rules
+
+The project's hard rules live as focused, auto-loaded files in [`.claude/rules/`](.claude/rules/), each concise and
+pointing to its detailed colocated doc. They're always in context, so this file stays knowledge, not rules.
+
+Two project facts worth stating here directly: tool versions are mise-managed (Go, Node, etc., pinned in `.mise.toml`;
+shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shims` is on `$PATH`). Icons come from
+`unplugin-icons` + `@iconify-json/lucide` (inline SVGs from `~icons/lucide/{icon-name}`); see `docs/style-guide.md` §
+Icons.
 
 ## Worktrees
 
@@ -340,14 +240,12 @@ common pitfalls.
 
 ## Workflow
 
-- **Always read** [style-guide.md](docs/style-guide.md) before touching code. Especially sentence case!
+- **Follow** [style-guide.md](docs/style-guide.md) when touching code. Especially sentence case!
 - Cover your code with tests until you're confident. Don't go overboard. Test per milestone.
-- **We don't use PRs.** Changes land directly on `main`. The "PR" section in `.claude/rules/git-conventions.md` is for
-  the rare case David explicitly asks for one; the default is a regular commit on `main` (or merging a feature branch
-  into `main`). No `gh pr create`, no review-app webhook, none of that.
-- **Never `git push` (or `git push --tags`) without explicit approval.** Even after a clean commit on `main`, pushing is
-  an external action, so wait until David says to push. This applies to feature branches and tags too. The user-level
-  rule `~/.claude/rules/no-external-actions.md` already covers this; restating it here so it's impossible to miss.
+- **We don't use PRs.** Changes land on `main` via fast-forward merge from a worktree branch. The "PR" section in
+  `.claude/rules/git-conventions.md` is only for the rare case David explicitly asks for one. No `gh pr create`.
+- **Don't `git push` without explicit approval, and don't push routinely** (solo work, limited CI). See the
+  `push-cadence` and `no-external-actions` user rules.
 
 Happy coding! 🦀✨
 

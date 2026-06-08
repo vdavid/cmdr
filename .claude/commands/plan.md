@@ -1,15 +1,20 @@
 Plan the feature implementation we discussed.
 
-1. Collect context from related `CLAUDE.md` files or `docs/`, as needed. Read
-   [design-principles.md](../../docs/design-principles.md)) to remember our core product design values.
-2. Save the plan to `docs/specs/{feature}-plan.md`.
-3. Capture the INTENTION behind each decision, not just the steps. The implementing agent or human should know the "why"
-   s and be able to adapt dynamically!
-4. Use milestones if needed. Make sure to include the necessary docs updates roughly, testing (Unit? Integration? E2E?),
-   and running all necessary checks.
-5. Leave notes about what can be executed in parallel, but only if it's extremely safe and needs no worktrees; we're
-   usually not in a hurry and sequential running is totally fine.
-6. DO NOT enter "Plan mode" unless specifically asked to "Enter plan mode". Use docs/specs.
-7. Get an Opus agent to review the plan with fresh eyes, and point out any mistakes. Then fix up the plan based on that.
+1. **Work on a worktree.** Create a worktree branched off local `main` and write the plan there, so execution can run on
+   the same worktree with your context preserved (see `solo-dev-workflow.md` and `worktree-base-local-main.md`; set up
+   per-worktree CodeGraph per `codegraph-worktree.md`). For a tiny plan you don't intend to execute as a separate
+   effort, ask first whether a worktree is warranted.
+2. Collect context from related `CLAUDE.md` files or `docs/`, as needed. Read
+   [design-principles.md](../../docs/design-principles.md) to remember our core product design values.
+3. Save the plan to `docs/specs/{feature}-plan.md` (inside the worktree).
+4. Capture the INTENTION behind each decision, not just the steps. The implementing agent or human should know the
+   "why"s and be able to adapt dynamically!
+5. Use milestones if needed. For each milestone, name the docs updates, the tests that prove it (unit? integration?
+   E2E?), and which tests are written test-first as a real red→green sequence (see `tdd-red-green.md`) versus written
+   after. Lean TDD for bug fixes and risky logic. Include the checks to run.
+6. Leave notes about what can be executed in parallel, but only if it's extremely safe; we're usually not in a hurry and
+   sequential running is totally fine.
+7. DO NOT enter "Plan mode" unless specifically asked to "Enter plan mode". Use `docs/specs`.
+8. Get an Opus agent to review the plan with fresh eyes, and point out any mistakes. Then fix up the plan based on that.
    Link the most crucial docs and design principles to the agent.
-8. Do this review round again and again, until the reviewer agent has no meaningful input, or maximum 5 times.
+9. Do this review round again and again, until the reviewer agent has no meaningful input, or maximum 5 times.

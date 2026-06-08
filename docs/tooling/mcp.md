@@ -54,6 +54,12 @@ Cmdr MCP can't do (window management, DOM inspection, arbitrary JS execution).
 **Prefer the wired-up MCP tools** (e.g. `mcp__cmdr__search`, `mcp__cmdr__nav_to_path`). These are available when Claude
 Code's MCP integration is connected. Always call `tools/list` first if you're unsure about parameter names.
 
+**Spawned agents often start without the MCP connected.** A freshly spawned Claude Code session (a subagent, or a
+session a lead spins up) frequently doesn't auto-connect the wired-up `mcp__cmdr__*` / `mcp__tauri__*` tools even though
+they're configured, and there may be no way to trigger a refresh from inside that session. So when orchestrating agents,
+assume they'll drive the app through the CLI fallback `./scripts/mcp-call.sh` rather than the wired-up tools. It
+connects independently and works regardless of the session's MCP state.
+
 **Fallback: `./scripts/mcp-call.sh`**: a curl wrapper for Cmdr's MCP server:
 
 ```bash
