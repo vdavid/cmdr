@@ -1,8 +1,14 @@
 // Network hosts, SMB shares, keychain, and mounting
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { commands } from '$lib/ipc/bindings'
-import type { MountResult, SmbCredentials, UpgradeResult } from '$lib/ipc/bindings'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { commands, events } from '$lib/ipc/bindings'
+import type {
+  MountResult,
+  NetworkHostContextAction,
+  SmbConnectionChanged,
+  SmbCredentials,
+  UpgradeResult,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 import type {
   AuthOptions,
@@ -67,6 +73,48 @@ export async function resolveNetworkHost(hostId: string): Promise<NetworkHost | 
     // Command not available (non-macOS) - return null
     return null
   }
+}
+
+// ============================================================================
+// Network discovery event listeners
+// ============================================================================
+
+/** Fires when mDNS discovers a host. Payload is the bare `NetworkHost`. */
+export function onNetworkHostFound(handler: (host: NetworkHost) => void): Promise<UnlistenFn> {
+  return events.networkHostFound.listen((event) => {
+    handler(event.payload as NetworkHost)
+  })
+}
+
+/** Fires when a host disappears. */
+export function onNetworkHostLost(handler: (id: string) => void): Promise<UnlistenFn> {
+  return events.networkHostLost.listen((event) => {
+    handler(event.payload.id)
+  })
+}
+
+/** Fires when a host's hostname / IP is resolved. Payload is the updated `NetworkHost`. */
+export function onNetworkHostResolved(handler: (host: NetworkHost) => void): Promise<UnlistenFn> {
+  return events.networkHostResolved.listen((event) => {
+    handler(event.payload as NetworkHost)
+  })
+}
+
+/** Fires when the discovery state changes (idle / searching / active). */
+export function onNetworkDiscoveryStateChanged(handler: (state: DiscoveryState) => void): Promise<UnlistenFn> {
+  return events.networkDiscoveryStateChanged.listen((event) => {
+    handler(event.payload.state)
+  })
+}
+
+/**
+ * Fires when a direct-SMB volume's session flips Direct / Disconnected / needs-auth.
+ * `state` is a free-form string on the wire; callers narrow it to their own union.
+ */
+export function onSmbConnectionChanged(handler: (payload: SmbConnectionChanged) => void): Promise<UnlistenFn> {
+  return events.smbConnectionChanged.listen((event) => {
+    handler(event.payload)
+  })
 }
 
 // ============================================================================
@@ -482,10 +530,8 @@ export async function showNetworkHostContextMenu(
  * Listens for the network host context menu action event emitted by `on_menu_event` in Rust.
  * The event fires asynchronously after `popup()` returns.
  */
-export function onNetworkHostContextAction(
-  handler: (payload: { action: string; hostId: string; hostName: string }) => void,
-): Promise<UnlistenFn> {
-  return listen<{ action: string; hostId: string; hostName: string }>('network-host-context-action', (event) => {
+export function onNetworkHostContextAction(handler: (payload: NetworkHostContextAction) => void): Promise<UnlistenFn> {
+  return events.networkHostContextAction.listen((event) => {
     handler(event.payload)
   })
 }

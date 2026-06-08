@@ -488,15 +488,13 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         } else {
             "disconnect"
         };
-        let _ = app.emit_to(
-            "main",
-            "network-host-context-action",
-            serde_json::json!({
-                "action": action,
-                "hostId": ctx.host_id,
-                "hostName": ctx.host_name,
-            }),
-        );
+        use tauri_specta::Event as _;
+        let payload = crate::network::NetworkHostContextAction {
+            action: action.to_string(),
+            host_id: ctx.host_id.clone(),
+            host_name: ctx.host_name.clone(),
+        };
+        let _ = payload.emit_to(app, "main");
         return;
     }
 

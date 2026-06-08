@@ -185,10 +185,18 @@ export {
   removeManualServer,
   showNetworkHostContextMenu,
   onNetworkHostContextAction,
+  onNetworkHostFound,
+  onNetworkHostLost,
+  onNetworkHostResolved,
+  onNetworkDiscoveryStateChanged,
+  onSmbConnectionChanged,
   disconnectNetworkHost,
   ensureNetworkDiscoveryStarted,
   setNetworkEnabled,
 } from './networking'
+
+// Git browser events
+export { onGitStateChanged } from './git'
 
 // Write operations (copy, move, delete)
 export {

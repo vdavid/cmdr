@@ -2240,6 +2240,7 @@ export const commands = {
 /** Events */
 export const events = {
   dryRunComplete: makeEvent<DryRunResult>('dry-run-complete'),
+  gitStateChanged: makeEvent<GitStateChangedPayload>('git-state-changed'),
   indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
   indexAggregationProgress: makeEvent<AggregationProgressEvent>('index-aggregation-progress'),
   indexDirUpdated: makeEvent<IndexDirUpdatedEvent>('index-dir-updated'),
@@ -2265,6 +2266,11 @@ export const events = {
   mtpPtpcameradSuppressed: makeEvent<MtpPtpcameradSuppressed>('mtp-ptpcamerad-suppressed'),
   mtpStorageRemoved: makeEvent<MtpStorageRemoved>('mtp-storage-removed'),
   mtpTransferProgress: makeEvent<MtpTransferProgress>('mtp-transfer-progress'),
+  networkDiscoveryStateChanged: makeEvent<NetworkDiscoveryStateChanged>('network-discovery-state-changed'),
+  networkHostContextAction: makeEvent<NetworkHostContextAction>('network-host-context-action'),
+  networkHostFound: makeEvent<NetworkHostFound>('network-host-found'),
+  networkHostLost: makeEvent<NetworkHostLost>('network-host-lost'),
+  networkHostResolved: makeEvent<NetworkHostResolved>('network-host-resolved'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
   scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
   scanPreviewComplete: makeEvent<ScanPreviewCompleteEvent>('scan-preview-complete'),
@@ -2272,6 +2278,7 @@ export const events = {
   scanPreviewProgress: makeEvent<ScanPreviewProgressEvent>('scan-preview-progress'),
   scanProgress: makeEvent<ScanProgressEvent>('scan-progress'),
   searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
+  smbConnectionChanged: makeEvent<SmbConnectionChanged>('smb-connection-changed'),
   volumeContextAction: makeEvent<VolumeContextAction>('volume-context-action'),
   volumeMounted: makeEvent<VolumeMounted>('volume-mounted'),
   volumeSpaceChanged: makeEvent<VolumeSpaceChanged>('volume-space-changed'),
@@ -2840,6 +2847,16 @@ export type FrontendLogEntry = {
   level: LogLevel
   category: string
   message: string
+}
+
+/**
+ *  Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
+ *  `RepoInfo` snapshot. The `…Payload` suffix wouldn't kebab-case to the existing
+ *  wire string, so the name is pinned via `event_name`.
+ */
+export type GitStateChangedPayload = {
+  repoRoot: string
+  info: RepoInfo
 }
 
 /**
@@ -3591,10 +3608,17 @@ export type NegotiatedSummaryDto = {
   compression_supported: boolean
 }
 
+// Typed `network-discovery-state-changed` Tauri event.
+export type NetworkDiscoveryStateChanged = {
+  state: DiscoveryState
+}
+
 /**
  *  A discovered network host advertising SMB services.
  *
- *  Only serialized (Rust → frontend); no `Deserialize` needed (return type only).
+ *  `Deserialize` is needed because this type is the flattened payload of the
+ *  `network-host-found` / `network-host-resolved` typed events (`tauri_specta::Event`
+ *  derives require `Deserialize` for the FE-side listener).
  *  Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
  *  accepts the type in Unified mode.
  */
@@ -3612,6 +3636,37 @@ export type NetworkHost = {
   // How this host was added to the list.
   source?: HostSource
 }
+
+/**
+ *  Typed `network-host-context-action` Tauri event. Emitted to the `main` window
+ *  when the user picks an action from a network host's native context menu
+ *  (forget-server / forget-password / disconnect). Window-scoped, so it's emitted
+ *  via `Event::emit_to` from `menu::menu_handlers`.
+ */
+export type NetworkHostContextAction = {
+  // The action id: `"forget-server"`, `"forget-password"`, or `"disconnect"`.
+  action: string
+  hostId: string
+  hostName: string
+}
+
+/**
+ *  Typed `network-host-found` Tauri event. The payload is the bare `NetworkHost`
+ *  object (flattened), matching the historic `emit("network-host-found", &host)`
+ *  wire shape. Struct name kebab-cases to `network-host-found`.
+ */
+export type NetworkHostFound = NetworkHost
+
+// Typed `network-host-lost` Tauri event. Carries the gone host's id.
+export type NetworkHostLost = {
+  id: string
+}
+
+/**
+ *  Typed `network-host-resolved` Tauri event. Same flattened-host payload as
+ *  `network-host-found`, emitted when a host's hostname / IP is resolved.
+ */
+export type NetworkHostResolved = NetworkHost
 
 // Current status of an operation for query APIs.
 export type OperationStatus = {
@@ -4222,6 +4277,27 @@ export type ShareListResult = {
 export type SigningInfoDto = {
   active: boolean
   algorithm: string | null
+}
+
+/**
+ *  Typed `smb-connection-changed` Tauri event. The frontend reconnect manager
+ *  listens for this and runs the per-volume backoff cycle. Defined here (in the
+ *  always-compiled `network` module rather than the macOS/Linux-only SMB backend)
+ *  so `collect_events!` in `ipc.rs`, which can't cfg-gate inline, references it on
+ *  every platform. The backend `SmbVolume` emit site builds and emits it.
+ */
+export type SmbConnectionChanged = {
+  volumeId: string
+  /**
+   *  `"direct"`, `"disconnected"`, or `"needs_auth"`. The internal connection state
+   *  machine is binary (Direct / Disconnected); `"needs_auth"` is a transient FE-only
+   *  signal emitted when an in-place reconnect gave up on an auth failure (password
+   *  changed on the server), so the reconnect manager shows a "Sign in" prompt instead
+   *  of the generic "unreachable" banner. It does not correspond to a backend
+   *  `ConnectionState` variant. The OS-mount fallback likewise only exists at the outer
+   *  `SmbConnectionState` layer (driven by `enrich_smb_connection_state`).
+   */
+  state: string
 }
 
 /**

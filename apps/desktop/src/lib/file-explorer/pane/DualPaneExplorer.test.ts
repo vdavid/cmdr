@@ -117,6 +117,11 @@ vi.mock('$lib/tauri-commands', () => ({
   onVolumeUnmounted: vi.fn().mockResolvedValue(() => {}),
   onVolumesChanged: vi.fn().mockResolvedValue(() => {}),
   onVolumesBusyChanged: vi.fn().mockResolvedValue(() => {}),
+  onSmbConnectionChanged: vi.fn().mockResolvedValue(() => {}),
+  onNetworkHostFound: vi.fn().mockResolvedValue(() => {}),
+  onNetworkHostLost: vi.fn().mockResolvedValue(() => {}),
+  onNetworkHostResolved: vi.fn().mockResolvedValue(() => {}),
+  onNetworkDiscoveryStateChanged: vi.fn().mockResolvedValue(() => {}),
   onIndexDirUpdated: vi.fn().mockResolvedValue(() => {}),
   getIpcErrorMessage: (e: unknown) => String(e),
 }))

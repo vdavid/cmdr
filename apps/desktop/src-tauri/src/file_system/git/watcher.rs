@@ -12,14 +12,18 @@ use std::time::Duration;
 
 use notify::RecursiveMode;
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
-use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
+use tauri_specta::Event;
 
 use super::repo::{RepoInfo, discover_repo, repo_info};
 
-/// Tauri event payload for `git-state-changed`.
-#[derive(Debug, Clone, Serialize)]
+/// Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
+/// `RepoInfo` snapshot. The `…Payload` suffix wouldn't kebab-case to the existing
+/// wire string, so the name is pinned via `event_name`.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "git-state-changed")]
 pub struct GitStateChangedPayload {
     pub repo_root: String,
     pub info: RepoInfo,
@@ -157,7 +161,7 @@ fn recompute_and_emit(app: &AppHandle, repo_root: &Path) {
         repo_root: root.display().to_string(),
         info,
     };
-    let _ = app.emit("git-state-changed", payload);
+    let _ = payload.emit(app);
 
     // Any `.git/*` mutation we watch for is a superset of "the index might
     // have moved", so we drop the cached status snapshot every time. The

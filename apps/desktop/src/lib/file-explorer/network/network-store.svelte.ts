@@ -8,7 +8,10 @@ import {
   listNetworkHosts,
   getNetworkDiscoveryState,
   resolveNetworkHost,
-  listen,
+  onNetworkHostFound,
+  onNetworkHostLost,
+  onNetworkHostResolved,
+  onNetworkDiscoveryStateChanged,
   listSharesOnHost,
   prefetchShares as prefetchSharesCmd,
   getSmbCredentials,
@@ -156,8 +159,7 @@ export async function initNetworkDiscovery(): Promise<void> {
   }
 
   // Subscribe to events
-  unlistenHostFound = await listen<NetworkHost>('network-host-found', (event) => {
-    const host = event.payload
+  unlistenHostFound = await onNetworkHostFound((host) => {
     hosts = [...hosts.filter((h) => h.id !== host.id), host]
     // Start resolving the new host immediately (will prefetch after resolution)
     // Or prefetch directly if already resolved
@@ -168,16 +170,14 @@ export async function initNetworkDiscovery(): Promise<void> {
     }
   })
 
-  unlistenHostLost = await listen<{ id: string }>('network-host-lost', (event) => {
-    const { id } = event.payload
+  unlistenHostLost = await onNetworkHostLost((id) => {
     hosts = hosts.filter((h) => h.id !== id)
     // Clean up share state for lost host
     shareStates.delete(id)
   })
 
   // Listen for host resolution from mDNS (Bonjour NSNetService.resolve())
-  unlistenHostResolved = await listen<NetworkHost>('network-host-resolved', (event) => {
-    const resolved = event.payload
+  unlistenHostResolved = await onNetworkHostResolved((resolved) => {
     // Update the host with resolved info (hostname and IP from mDNS)
     hosts = hosts.map((h) => (h.id === resolved.id ? { ...h, ...resolved } : h))
 
@@ -188,8 +188,8 @@ export async function initNetworkDiscovery(): Promise<void> {
     }
   })
 
-  unlistenStateChanged = await listen<{ state: DiscoveryState }>('network-discovery-state-changed', (event) => {
-    discoveryState = event.payload.state
+  unlistenStateChanged = await onNetworkDiscoveryStateChanged((state) => {
+    discoveryState = state
   })
 }
 

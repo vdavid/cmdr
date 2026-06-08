@@ -23,8 +23,8 @@
 
 import { untrack } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { reconnectSmbVolume } from '$lib/tauri-commands'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { reconnectSmbVolume, onSmbConnectionChanged } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('smbReconnect')
@@ -71,20 +71,17 @@ class SmbReconnectManager {
   /** Idempotent. Call once at app startup before any FilePane mounts. */
   async init(): Promise<void> {
     if (this.unlisten) return
-    this.unlisten = await listen<{ volumeId: string; state: 'direct' | 'disconnected' | 'needs_auth' }>(
-      'smb-connection-changed',
-      (event) => {
-        const { volumeId, state } = event.payload
-        log.debug('smb-connection-changed: volumeId={volumeId}, state={state}', { volumeId, state })
-        if (state === 'disconnected') {
-          this.handleDisconnected(volumeId)
-        } else if (state === 'needs_auth') {
-          this.handleNeedsAuth(volumeId)
-        } else {
-          this.handleDirect(volumeId)
-        }
-      },
-    )
+    this.unlisten = await onSmbConnectionChanged((payload) => {
+      const { volumeId, state } = payload
+      log.debug('smb-connection-changed: volumeId={volumeId}, state={state}', { volumeId, state })
+      if (state === 'disconnected') {
+        this.handleDisconnected(volumeId)
+      } else if (state === 'needs_auth') {
+        this.handleNeedsAuth(volumeId)
+      } else {
+        this.handleDirect(volumeId)
+      }
+    })
   }
 
   /**

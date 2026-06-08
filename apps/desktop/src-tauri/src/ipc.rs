@@ -49,6 +49,7 @@ use specta_typescript::Typescript;
 use tauri_specta::{Builder, collect_events};
 
 use crate::commands::search::SearchIndexReadyEvent;
+use crate::file_system::git::watcher::GitStateChangedPayload;
 use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
     ListingReadCompleteEvent,
@@ -69,6 +70,10 @@ use crate::ipc_collectors::collect_all_types;
 use crate::mtp::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
     MtpPtpcameradSuppressed, MtpStorageRemoved, MtpTransferProgress,
+};
+use crate::network::{
+    NetworkDiscoveryStateChanged, NetworkHostContextAction, NetworkHostFound, NetworkHostLost, NetworkHostResolved,
+    SmbConnectionChanged,
 };
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
@@ -648,6 +653,18 @@ pub fn builder() -> Builder<tauri::Wry> {
             MtpPermissionError,
             MtpPtpcameradSuppressed,
             MtpPtpcameradRestored,
+            // Network + git (network/, file_system/git/, file_system/volume/backends/smb.rs,
+            // menu/menu_handlers.rs). Host-found / host-resolved flatten the bare
+            // `NetworkHost`; `git-state-changed` pins its wire name via `event_name`
+            // (the `…Payload` suffix wouldn't kebab-case to it); `network-host-context-action`
+            // is window-scoped (`emit_to`).
+            NetworkHostFound,
+            NetworkHostLost,
+            NetworkHostResolved,
+            NetworkDiscoveryStateChanged,
+            NetworkHostContextAction,
+            SmbConnectionChanged,
+            GitStateChangedPayload, // event_name = "git-state-changed"
         ])
 }
 

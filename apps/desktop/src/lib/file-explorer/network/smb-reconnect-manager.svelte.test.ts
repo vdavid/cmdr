@@ -8,20 +8,20 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { SmbConnectionChanged } from '$lib/ipc/bindings'
 
 // Hoisted mocks: must run before importing the module under test.
 const mockReconnect = vi.fn<(volumeId: string) => Promise<void>>()
-const mockListen = vi.fn<(event: string, handler: (e: { payload: unknown }) => void) => Promise<() => void>>()
-let lastEventHandler: ((e: { payload: unknown }) => void) | null = null
+const mockListen = vi.fn<(handler: (payload: SmbConnectionChanged) => void) => Promise<() => void>>()
+let lastEventHandler: ((payload: SmbConnectionChanged) => void) | null = null
 
 vi.mock('$lib/tauri-commands', () => ({
   reconnectSmbVolume: (id: string) => mockReconnect(id),
-}))
-
-vi.mock('@tauri-apps/api/event', () => ({
-  listen: (event: string, handler: (e: { payload: unknown }) => void) => {
+  // The manager subscribes to `smb-connection-changed` through this typed wrapper,
+  // so the test captures its unwrapped-payload handler here.
+  onSmbConnectionChanged: (handler: (payload: SmbConnectionChanged) => void) => {
     lastEventHandler = handler
-    return mockListen(event, handler)
+    return mockListen(handler)
   },
 }))
 
@@ -36,7 +36,7 @@ import {
 /** Drives the listener as if the backend emitted the event. */
 function emit(volumeId: string, state: 'direct' | 'disconnected' | 'needs_auth'): void {
   if (!lastEventHandler) throw new Error("init() was not called or didn't install a listener")
-  lastEventHandler({ payload: { volumeId, state } })
+  lastEventHandler({ volumeId, state })
 }
 
 describe('smbReconnectManager', () => {

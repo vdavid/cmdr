@@ -1,7 +1,8 @@
 <script lang="ts">
     import IconCircleAlert from '~icons/lucide/circle-alert'
     import IconHourglass from '~icons/lucide/hourglass'
-    import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+    import { type UnlistenFn } from '@tauri-apps/api/event'
+    import { onGitStateChanged } from '$lib/tauri-commands'
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
@@ -716,8 +717,8 @@
         }
 
         void load()
-        void listen<{ repoRoot: string }>('git-state-changed', (event) => {
-            if (event.payload.repoRoot === repo) void load()
+        void onGitStateChanged((payload) => {
+            if (payload.repoRoot === repo) void load()
         }).then((fn) => {
             if (cancelled) fn()
             else unlisten = fn

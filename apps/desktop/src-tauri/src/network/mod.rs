@@ -55,7 +55,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
+use tauri_specta::Event;
 
 pub use mdns_discovery::start_discovery;
 pub use smb_client::{AuthMode, ShareListError, ShareListResult};
@@ -104,10 +105,12 @@ pub enum HostSource {
 
 /// A discovered network host advertising SMB services.
 ///
-/// Only serialized (Rust → frontend); no `Deserialize` needed (return type only).
+/// `Deserialize` is needed because this type is the flattened payload of the
+/// `network-host-found` / `network-host-resolved` typed events (`tauri_specta::Event`
+/// derives require `Deserialize` for the FE-side listener).
 /// Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
 /// accepts the type in Unified mode.
-#[derive(Debug, Clone, Serialize, specta::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkHost {
     /// Derived from service name.
@@ -133,6 +136,69 @@ pub enum DiscoveryState {
     Searching,
     /// Initial burst is complete, still listening.
     Active,
+}
+
+/// Typed `network-host-found` Tauri event. The payload is the bare `NetworkHost`
+/// object (flattened), matching the historic `emit("network-host-found", &host)`
+/// wire shape. Struct name kebab-cases to `network-host-found`.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+pub struct NetworkHostFound {
+    #[serde(flatten)]
+    pub host: NetworkHost,
+}
+
+/// Typed `network-host-resolved` Tauri event. Same flattened-host payload as
+/// `network-host-found`, emitted when a host's hostname / IP is resolved.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+pub struct NetworkHostResolved {
+    #[serde(flatten)]
+    pub host: NetworkHost,
+}
+
+/// Typed `network-host-lost` Tauri event. Carries the gone host's id.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct NetworkHostLost {
+    pub id: String,
+}
+
+/// Typed `network-discovery-state-changed` Tauri event.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct NetworkDiscoveryStateChanged {
+    pub state: DiscoveryState,
+}
+
+/// Typed `network-host-context-action` Tauri event. Emitted to the `main` window
+/// when the user picks an action from a network host's native context menu
+/// (forget-server / forget-password / disconnect). Window-scoped, so it's emitted
+/// via `Event::emit_to` from `menu::menu_handlers`.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct NetworkHostContextAction {
+    /// The action id: `"forget-server"`, `"forget-password"`, or `"disconnect"`.
+    pub action: String,
+    pub host_id: String,
+    pub host_name: String,
+}
+
+/// Typed `smb-connection-changed` Tauri event. The frontend reconnect manager
+/// listens for this and runs the per-volume backoff cycle. Defined here (in the
+/// always-compiled `network` module rather than the macOS/Linux-only SMB backend)
+/// so `collect_events!` in `ipc.rs`, which can't cfg-gate inline, references it on
+/// every platform. The backend `SmbVolume` emit site builds and emits it.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct SmbConnectionChanged {
+    pub volume_id: String,
+    /// `"direct"`, `"disconnected"`, or `"needs_auth"`. The internal connection state
+    /// machine is binary (Direct / Disconnected); `"needs_auth"` is a transient FE-only
+    /// signal emitted when an in-place reconnect gave up on an auth failure (password
+    /// changed on the server), so the reconnect manager shows a "Sign in" prompt instead
+    /// of the generic "unreachable" banner. It does not correspond to a backend
+    /// `ConnectionState` variant. The OS-mount fallback likewise only exists at the outer
+    /// `SmbConnectionState` layer (driven by `enrich_smb_connection_state`).
+    pub state: String,
 }
 
 /// Current network discovery state, accessible globally.
@@ -183,19 +249,19 @@ pub(crate) fn drain_discovered_hosts() -> Vec<String> {
 /// Clears all discovered hosts and resets discovery state to `Idle`.
 /// Called when networking is disabled via the user toggle so the frontend store empties
 /// without waiting for `network-host-lost` events from a stopped daemon.
-pub fn clear_discovered_hosts<R: tauri::Runtime>(app_handle: &impl Emitter<R>) {
+pub fn clear_discovered_hosts<R: tauri::Runtime>(app_handle: &(impl Emitter<R> + Manager<R>)) {
     let removed_ids = drain_discovered_hosts();
     for id in removed_ids {
-        let _ = app_handle.emit("network-host-lost", serde_json::json!({ "id": id }));
+        let _ = NetworkHostLost { id }.emit(app_handle);
     }
-    let _ = app_handle.emit(
-        "network-discovery-state-changed",
-        serde_json::json!({ "state": DiscoveryState::Idle }),
-    );
+    let _ = NetworkDiscoveryStateChanged {
+        state: DiscoveryState::Idle,
+    }
+    .emit(app_handle);
 }
 
 /// Called by the mDNS discovery module when a host is discovered.
-pub(crate) fn on_host_found<R: tauri::Runtime>(host: NetworkHost, app_handle: &impl Emitter<R>) {
+pub(crate) fn on_host_found<R: tauri::Runtime>(host: NetworkHost, app_handle: &(impl Emitter<R> + Manager<R>)) {
     let mut state = get_discovery_state().lock_ignore_poison();
 
     let is_new = !state.hosts.contains_key(&host.id);
@@ -212,11 +278,11 @@ pub(crate) fn on_host_found<R: tauri::Runtime>(host: NetworkHost, app_handle: &i
     state.hosts.insert(host.id.clone(), host.clone());
 
     // Emit event to frontend
-    let _ = app_handle.emit("network-host-found", &host);
+    let _ = NetworkHostFound { host }.emit(app_handle);
 }
 
 /// Called by the mDNS discovery module when a host disappears.
-pub(crate) fn on_host_lost<R: tauri::Runtime>(host_id: &str, app_handle: &impl Emitter<R>) {
+pub(crate) fn on_host_lost<R: tauri::Runtime>(host_id: &str, app_handle: &(impl Emitter<R> + Manager<R>)) {
     let mut state = get_discovery_state().lock_ignore_poison();
 
     if let Some(removed) = state.hosts.remove(host_id) {
@@ -225,7 +291,10 @@ pub(crate) fn on_host_lost<R: tauri::Runtime>(host_id: &str, app_handle: &impl E
             removed.id, removed.name, removed.ip_address
         );
         // Emit event to frontend
-        let _ = app_handle.emit("network-host-lost", serde_json::json!({ "id": host_id }));
+        let _ = NetworkHostLost {
+            id: host_id.to_string(),
+        }
+        .emit(app_handle);
     }
 }
 
@@ -242,10 +311,7 @@ pub(crate) fn on_discovery_state_changed(new_state: DiscoveryState, app_handle: 
     set_discovery_state(new_state);
 
     // Emit event to frontend
-    let _ = app_handle.emit(
-        "network-discovery-state-changed",
-        serde_json::json!({ "state": new_state }),
-    );
+    let _ = NetworkDiscoveryStateChanged { state: new_state }.emit(app_handle);
 }
 
 /// Called by the mDNS discovery module when a host's address is resolved.
@@ -274,7 +340,7 @@ pub(crate) fn on_host_resolved(
             source: HostSource::Discovered,
         };
         state.hosts.insert(host_id.to_string(), host.clone());
-        let _ = app_handle.emit("network-host-found", &host);
+        let _ = NetworkHostFound { host }.emit(app_handle);
     }
 
     let host = state.hosts.get_mut(host_id).expect("just inserted or already present");
@@ -288,7 +354,7 @@ pub(crate) fn on_host_resolved(
     );
 
     // Emit event to frontend with updated host info
-    let _ = app_handle.emit("network-host-resolved", host.clone());
+    let _ = NetworkHostResolved { host: host.clone() }.emit(app_handle);
 }
 
 /// Generates a stable ID from a service name.

@@ -160,6 +160,52 @@ string-based; the plan doc explains why.
   `events.mtpPtpcameradSuppressed.listen(...)`, but no `on*` wrapper was added for them — don't add dead wrappers for
   events nothing subscribes to.
 
+### Migration gotchas learned converting the network/SMB + git events
+
+- **`#[serde(flatten)]` keeps a bare-object emit byte-identical.** `network-host-found` / `network-host-resolved` were
+  `app.emit("network-host-found", &host)` where `host: NetworkHost` — the wire payload IS the bare host object, not
+  `{ host: {...} }`. A wrapper struct `pub struct NetworkHostFound { #[serde(flatten)] pub host: NetworkHost }` with the
+  `Event` derive generates `export type NetworkHostFound = NetworkHost` (specta inlines the single flattened field), so
+  the wire shape and the FE payload stay exactly the bare host. Two events with the same payload shape need two distinct
+  structs (one `Event` derive = one wire name), so both wrap `NetworkHost`. The flattened type itself (`NetworkHost`)
+  must gain `Deserialize` (it was serialize-only as a command return type).
+- **Define an event struct in an always-compiled module when its emit site is `#[cfg]`-gated.** `smb-connection-changed`
+  is emitted from `file_system/volume/backends/smb.rs`, which is
+  `#[cfg(any(target_os = "macos", target_os = "linux"))]`. `collect_events!` in `ipc.rs` can't `#[cfg]`-gate inline, so
+  the `SmbConnectionChanged` struct lives in the always-compiled `network/mod.rs` (the emit site just builds +
+  `.emit()`s it via `crate::network::SmbConnectionChanged`). Same principle the MTP partition used (structs in
+  `connection/mod.rs`, emits in macOS-gated `watcher.rs`).
+- **`tauri_specta::Event::emit` needs `Emitter + Manager`, not just `Emitter`.** Functions that took
+  `app_handle: &impl Emitter<R>` for the old `app.emit("name", payload)` must widen the bound to
+  `&(impl Emitter<R> + Manager<R>)` — `Event::emit`'s signature is `H: Emitter<R> + Manager<R>`. `AppHandle` satisfies
+  both, so callers are unaffected; only the generic signature changes.
+- **A window-scoped `emit_to` migrates the same way as `emit`, via `Event::emit_to`.** `network-host-context-action` was
+  `app.emit_to("main", "network-host-context-action", json!({...}))` from `menu/menu_handlers.rs`. It becomes
+  `payload.emit_to(app, "main")` (note the arg order flips: `Event::emit_to(self, handle, target)`), with
+  `use tauri_specta::Event as _;` in scope. Mirrors `VolumeContextAction` (partition 2).
+- **A `…Payload`-named struct needs `event_name` even when the wire name is plain.** `GitStateChangedPayload`
+  kebab-cases to `git-state-changed-payload`, so it carries `#[tauri_specta(event_name = "git-state-changed")]`. Its
+  nested `RepoInfo` already derived `specta::Type` + `Deserialize` (it's a command return type), so no extra work there
+  — and `RepoInfo` is now generated into `bindings.ts`, so the git store drops its hand-mirrored `RepoInfo` interface
+  and re-exports the generated one (consumers keep their `from './git-store.svelte'` import path).
+- **`&'static str` → `String` again.** `SmbConnectionChanged.state` was `&'static str` (fine for serialize-only emit);
+  `Event` requires `Deserialize`, so it widened to `String`. The wire values (`"direct"` / `"disconnected"` /
+  `"needs_auth"`) are unchanged, but the generated TS type is now `state: string`, not a literal union — FE consumers
+  narrow it themselves (the volume store filters out `needs_auth` before assigning to its `'direct' | 'disconnected'`
+  field; that filter also closed a latent bug where the old `listen<{ state: 'direct' | 'disconnected' }>` cast lied
+  about the runtime `needs_auth` value).
+- **Test mocks of `$lib/tauri-commands` must list every new `on*` wrapper the mounted component tree reaches.**
+  `DualPaneExplorer.test.ts` mocks the whole barrel; adding `onSmbConnectionChanged` / `onNetworkHost*` /
+  `onNetworkDiscoveryStateChanged` wrappers (reached transitively via the SMB reconnect manager + network store) means
+  the mock must export them, or vitest throws `No "onX" export is defined on the mock` as an unhandled rejection (tests
+  still "pass" but the run reports an error and fails the gate). `smb-reconnect-manager.svelte.test.ts` switched its
+  capture from mocking raw `@tauri-apps/api/event`'s `listen` to mocking `onSmbConnectionChanged` (the wrapper now hands
+  the bare payload, so the test's `emit()` no longer wraps in `{ payload }`).
+- **A new thin `tauri-commands/*.ts` listener file needs a `coverage-allowlist.json` entry.** `tauri-commands/git.ts`
+  (one `onGitStateChanged` wrapper) can't be meaningfully unit-tested (it's `events.x.listen` plumbing), so it joins the
+  other wrapper files in the allowlist with the same "thin typed-event listener wrapper, exercised via integration"
+  reason. Same precedent as `indexing.ts`.
+
 ## Call-site convention: name your arguments
 
 Specta-generated wrappers take **positional** arguments (in declaration order), not an object. That's elegant when the

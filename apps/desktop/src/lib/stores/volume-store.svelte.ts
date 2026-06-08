@@ -8,9 +8,9 @@
  * Call `initVolumeStore()` once at app startup (before components mount).
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { listVolumes, refreshVolumes, onVolumesChanged } from '$lib/tauri-commands'
-import type { VolumeInfo } from '$lib/file-explorer/types'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { listVolumes, refreshVolumes, onVolumesChanged, onSmbConnectionChanged } from '$lib/tauri-commands'
+import type { SmbConnectionState, VolumeInfo } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 
@@ -106,19 +106,20 @@ export async function initVolumeStore(): Promise<void> {
   // off this volume update the moment a session flips Direct/Disconnected,
   // without waiting for the next `volumes-changed` (which may not fire, as the
   // volume itself didn't appear or disappear, just its session quality).
-  unlistenSmbConnectionChanged = await listen<{ volumeId: string; state: 'direct' | 'disconnected' }>(
-    'smb-connection-changed',
-    (event) => {
-      const { volumeId, state } = event.payload
-      const idx = volumes.findIndex((v) => v.id === volumeId)
-      if (idx < 0) return
-      // Replace the entry so consumers using `$derived` over `getVolumes()` re-run.
-      const next = [...volumes]
-      next[idx] = { ...next[idx], smbConnectionState: state }
-      volumes = next
-      logger.debug('smb-connection-changed: {volumeId} → {state}', { volumeId, state })
-    },
-  )
+  unlistenSmbConnectionChanged = await onSmbConnectionChanged((payload) => {
+    const { volumeId } = payload
+    // `needs_auth` is a reconnect-manager-only signal; the picker only tracks
+    // Direct / Disconnected, so ignore other states here.
+    if (payload.state !== 'direct' && payload.state !== 'disconnected') return
+    const state: SmbConnectionState = payload.state
+    const idx = volumes.findIndex((v) => v.id === volumeId)
+    if (idx < 0) return
+    // Replace the entry so consumers using `$derived` over `getVolumes()` re-run.
+    const next = [...volumes]
+    next[idx] = { ...next[idx], smbConnectionState: state }
+    volumes = next
+    logger.debug('smb-connection-changed: {volumeId} → {state}', { volumeId, state })
+  })
 
   // Bootstrap: fetch initial list via IPC (in case the backend event
   // fired before we subscribed, or hasn't fired yet)

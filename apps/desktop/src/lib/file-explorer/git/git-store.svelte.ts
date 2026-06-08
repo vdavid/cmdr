@@ -5,20 +5,14 @@
  * updates reactively as `git-state-changed` events arrive, and calls
  * `unsubscribe(repoRoot)` on unmount or path-off-repo.
  */
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { commands } from '$lib/ipc/bindings'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { commands, type RepoInfo } from '$lib/ipc/bindings'
+import { onGitStateChanged } from '$lib/tauri-commands'
 import { throwIpcError } from '$lib/tauri-commands/ipc-types'
 
-export interface RepoInfo {
-  repoRoot: string
-  branch: string | null
-  detachedSha: string | null
-  unborn: boolean
-  upstream: string | null
-  ahead: number | null
-  behind: number | null
-  isDirty: boolean
-}
+// Re-export the generated `RepoInfo` so existing importers (`RepoChip`, `FilePane`,
+// tests) keep their `from './git-store.svelte'` import path.
+export type { RepoInfo }
 
 interface RepoEntry {
   refcount: number
@@ -35,18 +29,13 @@ interface RepoEntry {
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state; transient coalescing bookkeeping consumed only inside `subscribeToRepo`, never rendered.
 const inflight = new Map<string, Promise<RepoInfo>>()
 
-interface GitStateChangedPayload {
-  repoRoot: string
-  info: RepoInfo
-}
-
 const repos = $state<Map<string, RepoEntry>>(new Map())
 let unlisten: UnlistenFn | null = null
 
 async function ensureListener(): Promise<void> {
   if (unlisten) return
-  unlisten = await listen<GitStateChangedPayload>('git-state-changed', (event) => {
-    const { repoRoot, info } = event.payload
+  unlisten = await onGitStateChanged((payload) => {
+    const { repoRoot, info } = payload
     const entry = repos.get(repoRoot)
     if (entry) {
       entry.info = info

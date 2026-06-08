@@ -21,7 +21,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Mutex as StdMutex, OnceLock};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 // ── App-handle for connection-state events ──────────────────────────
 
@@ -41,31 +41,14 @@ fn get_app_handle() -> Option<AppHandle> {
     APP_HANDLE.get().and_then(|m| m.lock().ok()).and_then(|g| g.clone())
 }
 
-/// Payload for `smb-connection-changed`. The frontend reconnect manager listens
-/// for this and runs the per-volume backoff cycle.
-#[derive(Debug, Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SmbConnectionChangedPayload {
-    volume_id: String,
-    /// `"direct"`, `"disconnected"`, or `"needs_auth"`. The internal connection state
-    /// machine is binary (Direct / Disconnected); `"needs_auth"` is a transient FE-only
-    /// signal emitted when an in-place reconnect gave up on an auth failure (password
-    /// changed on the server), so the reconnect manager shows a "Sign in" prompt instead
-    /// of the generic "unreachable" banner. It does not correspond to a backend
-    /// `ConnectionState` variant. The OS-mount fallback likewise only exists at the outer
-    /// `SmbConnectionState` layer (driven by `enrich_smb_connection_state`).
-    state: &'static str,
-}
-
 fn emit_state_change(volume_id: &str, state: &'static str) {
+    use tauri_specta::Event;
     if let Some(app) = get_app_handle()
-        && let Err(e) = app.emit(
-            "smb-connection-changed",
-            SmbConnectionChangedPayload {
-                volume_id: volume_id.to_string(),
-                state,
-            },
-        )
+        && let Err(e) = (crate::network::SmbConnectionChanged {
+            volume_id: volume_id.to_string(),
+            state: state.to_string(),
+        })
+        .emit(&app)
     {
         warn!("Failed to emit smb-connection-changed: {}", e);
     }

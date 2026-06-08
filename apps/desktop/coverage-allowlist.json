@@ -262,6 +262,9 @@
     "tauri-commands/file-viewer.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
+    "tauri-commands/git.ts": {
+      "reason": "Thin typed-event listener wrapper over events.gitStateChanged.listen; exercised via integration (git-store.svelte.ts, FullList.svelte)"
+    },
     "tauri-commands/icons.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
