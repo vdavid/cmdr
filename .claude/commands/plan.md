@@ -4,8 +4,8 @@ Plan the feature implementation we discussed.
    the same worktree with your context preserved (see `solo-dev-workflow.md` and `worktree-base-local-main.md`; set up
    per-worktree CodeGraph per `codegraph-worktree.md`). For a tiny plan you don't intend to execute as a separate
    effort, ask first whether a worktree is warranted.
-2. Collect context from related `CLAUDE.md` files or `docs/`, as needed. Read
-   [design-principles.md](../../docs/design-principles.md) to remember our core product design values.
+2. Collect context from related `CLAUDE.md` files or `docs/`, as needed. Plan with our core product design values and
+   design principles front of mind.
 3. Save the plan to `docs/specs/{feature}-plan.md` (inside the worktree).
 4. Capture the INTENTION behind each decision, not just the steps. The implementing agent or human should know the
    "why"s and be able to adapt dynamically!
