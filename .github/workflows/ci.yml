@@ -122,13 +122,13 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      - name: Cache Cargo
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: ~/.cargo/registry/cache
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+      # Caches the compiled `target/` dir plus the cargo registry/index/git deps,
+      # keyed on Cargo.lock + rustc. The old registry-only cache left the full
+      # ~1000-crate Tauri tree to recompile cold every run (~16 min); with target/
+      # cached, an unchanged-deps push recompiles only the `cmdr` crate. rust-cache
+      # prunes intelligently to stay under GitHub's 10 GB per-repo cache ceiling.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
 
       - name: Install Tauri dependencies (Linux)
         run: |

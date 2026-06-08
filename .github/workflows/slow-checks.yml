@@ -1,16 +1,20 @@
 name: Slow checks
 
-# Weekly security, dependency, and thorough lint checks: things too slow or too
-# cadence-driven for per-push CI. Mondays at 4 AM CET (3 AM UTC) so newly
-# disclosed vulnerabilities surface at the start of the week.
-# (Was nightly; deliberately reduced to weekly in June 2026, the nightly cadence
-# was more than we needed. If runs ever stop appearing, check the workflow isn't
-# disabled in GitHub's UI: a manual disable survives file changes, `gh workflow
-# enable "Slow checks"` re-enables.)
+# Security, dependency, and thorough lint checks: things too slow or too
+# cadence-driven for per-push CI. Runs every 6 days at 4 AM CET (3 AM UTC).
+# (Was nightly; reduced to weekly, then to every-6-days in June 2026. The 6-day
+# cadence is deliberate, NOT weekly: it keeps the gap under GitHub's 7-day cache
+# eviction so this job's rust-cache (cargo-udeps's nightly target) survives run
+# to run. `*/6` on day-of-month fires on the 1st/7th/13th/19th/25th/31st — gaps
+# are always ≤6 days, including across month boundaries. Don't switch it back to
+# a weekly `* * 1` form: that reintroduces a 7-day gap and the cache goes cold.
+# If runs ever stop appearing, check the workflow isn't disabled in GitHub's UI:
+# a manual disable survives file changes; `gh workflow enable "Slow checks"`
+# re-enables.)
 # GitHub automatically emails repo admins on failure
 on:
   schedule:
-    - cron: '0 3 * * 1' # Mondays, 4 AM CET = 3 AM UTC
+    - cron: '0 3 */6 * *' # every 6 days, 4 AM CET = 3 AM UTC (≤6-day gap < 7-day cache eviction)
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -31,13 +35,16 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      - name: Cache Cargo
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: ~/.cargo/registry/cache
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+      # Caches target/ + cargo deps so cargo-udeps's nightly compile is incremental
+      # across runs. rust-cache keys per-job, so this is a SEPARATE cache from the
+      # per-push desktop-rust one (different job, nightly vs stable). GitHub evicts
+      # caches after 7 days unused — the every-6-days schedule (see the cron above)
+      # is what keeps THIS cache warm run to run. Caveat: this is a third multi-GB
+      # Rust cache (with desktop-rust + the e2e Docker cache); if the repo total
+      # crosses GitHub's 10 GB ceiling, LRU may evict the least-used (this one)
+      # regardless of the cron. Watch `gh cache list` sizes.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
 
       - name: Install Tauri dependencies (Linux)
         run: |
@@ -111,7 +118,7 @@ jobs:
   # Website Docker build
   # ===========================================
   # The website deploys as a Docker image built on the server; per-push CI only
-  # builds the site itself. This weekly full image build catches Dockerfile /
+  # builds the site itself. This periodic full image build catches Dockerfile /
   # .dockerignore drift before it breaks a real deploy.
   website-docker:
     name: Website Docker build
