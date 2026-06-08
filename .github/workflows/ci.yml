@@ -272,19 +272,22 @@ jobs:
   desktop-e2e-linux:
     name: E2E tests (Playwright, Linux)
     runs-on: ubuntu-latest
-    # NOT gated on `desktop-rust`. The two are independent: a Rust unit-test
-    # failure shouldn't silently skip e2e validation (and vice versa). Gating
-    # them together hid a 4-day red main streak in May 2026, where a flaky
-    # accent-color unit test kept blocking e2e from ever running on PRs that
-    # touched neither path. Keep the `desktop-svelte` gate — the e2e binary
-    # embeds the frontend build, so without a green Svelte build there's no
-    # artifact worth running.
-    needs: [changes, desktop-svelte]
-    if: |
-      always() &&
-      (inputs.run_all || needs.changes.outputs.desktop == 'true') &&
-      needs.desktop-svelte.result != 'failure' &&
-      needs.desktop-svelte.result != 'cancelled'
+    # Gated ONLY on change detection — not on desktop-rust OR desktop-svelte:
+    # - desktop-rust: independent. A Rust unit-test failure shouldn't skip e2e
+    #   (and vice versa). Gating them together hid a 4-day red-main streak in
+    #   May 2026 where a flaky accent-color unit test blocked e2e on PRs that
+    #   touched neither path.
+    # - desktop-svelte: dropped (June 2026) to cut the critical path. e2e's
+    #   Docker build runs its OWN frontend build (beforeBuildCommand), so it
+    #   never consumed desktop-svelte's artifacts — the gate was only a "don't
+    #   spend e2e compute if svelte's quality checks are red" optimization, and
+    #   it forced e2e to wait ~4 min for desktop-svelte before starting. Now e2e
+    #   starts at t=0, the single biggest wall-clock win on the per-push path.
+    #   Trade: e2e runs even when svelte-check / eslint / svelte tests fail
+    #   (rare); a genuine frontend BUILD error still fails e2e's own build.
+    # `changes` always runs, so no always()/skip handling is needed here.
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.desktop == 'true'
 
     steps:
       - name: Checkout code
