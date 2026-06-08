@@ -141,6 +141,12 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     disconnectSmbVolume: vi.fn().mockResolvedValue(undefined),
     ejectVolume: vi.fn().mockResolvedValue(undefined),
     onVolumeContextAction: vi.fn().mockResolvedValue(() => {}),
+    // Route the typed `volume-unmounted` wrapper through the recorder so
+    // `fireListingEvent('volume-unmounted', …)` reaches the DPE listener.
+    onVolumeUnmounted: (cb: (payload: unknown) => void) =>
+      recorder.listen('volume-unmounted', (event) => {
+        cb(event.payload)
+      }),
     openInEditor: vi.fn().mockResolvedValue(undefined),
     getIpcErrorMessage: (e: unknown) => String(e),
   }

@@ -29,10 +29,12 @@ pub enum LocationCategory {
 
 /// Information about a location (volume, folder, or cloud drive).
 ///
-/// Only serialized (Rust → frontend); never sent from the frontend, so no `Deserialize`.
+/// Serialized Rust → frontend. It also derives `Deserialize` because it rides inside
+/// the typed `volumes-changed` event payload (`VolumesChanged`), and `tauri_specta::Event`
+/// requires the payload (and its nested types) to round-trip.
 /// Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
 /// accepts the type in Unified mode.
-#[derive(Debug, Clone, Serialize, specta::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LocationInfo {
     pub id: String,

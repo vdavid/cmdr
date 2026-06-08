@@ -62,7 +62,7 @@ use validation::{
 // Re-export public types
 pub use scan_preview::{cancel_scan_preview, get_scan_preview_totals, start_scan_preview};
 pub use state::{
-    busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
+    VolumesBusyChanged, busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
     init_busy_volume_emitter, list_active_operations, resolve_write_conflict,
 };
 // External busy-volume seam for the drag-out fulfillment service (see

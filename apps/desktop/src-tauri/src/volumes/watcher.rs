@@ -18,7 +18,10 @@ use objc2_app_kit::{
 use objc2_foundation::{NSDictionary, NSNotification, NSString, NSURL};
 use std::ptr::NonNull;
 use std::sync::OnceLock;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event;
+
+use crate::volume_broadcast::{VolumeMounted, VolumeUnmounted};
 
 /// Global app handle for emitting events from the observer.
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
@@ -26,14 +29,6 @@ static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 /// Marker: set after the NSWorkspace observer has been installed.
 /// Idempotency gate so repeat calls to `start_volume_watcher` don't double-subscribe.
 static OBSERVER_INSTALLED: OnceLock<()> = OnceLock::new();
-
-/// Payload for volume mount/unmount events.
-#[derive(Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VolumeEventPayload {
-    /// The volume path (like "/Volumes/MyDrive").
-    pub volume_path: String,
-}
 
 /// Start observing volume mount/unmount notifications. Idempotent.
 ///
@@ -135,10 +130,10 @@ pub(crate) fn handle_volume_mounted(volume_path: &str) {
     try_upgrade_smb_mount(volume_path);
 
     if let Some(app) = APP_HANDLE.get() {
-        let payload = VolumeEventPayload {
+        let payload = VolumeMounted {
             volume_path: volume_path.to_string(),
         };
-        if let Err(e) = app.emit("volume-mounted", payload) {
+        if let Err(e) = payload.emit(app) {
             error!("Failed to emit volume-mounted event: {}", e);
         }
     }
@@ -173,10 +168,10 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
     unregister_volume_from_manager(volume_path, registered_id.as_deref());
 
     if let Some(app) = APP_HANDLE.get() {
-        let payload = VolumeEventPayload {
+        let payload = VolumeUnmounted {
             volume_path: volume_path.to_string(),
         };
-        if let Err(e) = app.emit("volume-unmounted", payload) {
+        if let Err(e) = payload.emit(app) {
             error!("Failed to emit volume-unmounted event: {}", e);
         }
     }
@@ -270,7 +265,7 @@ mod tests {
 
     #[test]
     fn payload_serializes_with_camel_case_key() {
-        let payload = VolumeEventPayload {
+        let payload = VolumeMounted {
             volume_path: "/Volumes/MyDrive".to_string(),
         };
         let json = serde_json::to_string(&payload).unwrap();

@@ -16,35 +16,27 @@
  * hysteresis re-arms replaces the visible toast instead of stacking.
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
 import { sendNotification } from '@tauri-apps/plugin-notification'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
 import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+import { onLowDiskSpace } from '$lib/tauri-commands'
+import type { LowDiskSpacePayload } from '$lib/ipc/bindings'
 import { getLowDiskSpaceNotificationsMode } from './notifications-mode'
 import LowDiskSpaceToastContent from './LowDiskSpaceToastContent.svelte'
 
 const log = getAppLogger('low-disk-space')
-
-const LOW_DISK_SPACE_EVENT = 'low-disk-space'
-
-interface LowDiskSpacePayload {
-  volumeId: string
-  totalBytes: number
-  availableBytes: number
-  freePercent: number
-  thresholdPercent: number
-}
 
 /**
  * Mount the listener. Returns an unsubscribe function — call it from the
  * caller's `onDestroy`.
  */
 export async function startLowDiskSpaceEventBridge(): Promise<UnlistenFn> {
-  const unlisten = await listen<LowDiskSpacePayload>(LOW_DISK_SPACE_EVENT, (event) => {
-    void handleLowDiskSpace(event.payload)
+  const unlisten = await onLowDiskSpace((payload) => {
+    void handleLowDiskSpace(payload)
   })
   log.debug('Low-disk-space event bridge mounted')
   return unlisten

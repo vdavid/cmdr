@@ -9,12 +9,14 @@
 //! Tauri events. Also registers/unregisters volumes with the global `VolumeManager`.
 
 use crate::file_system::linux_mounts;
+use crate::volume_broadcast::{VolumeMounted, VolumeUnmounted};
 use log::{debug, error, info, warn};
 use notify::{Event, EventKind, RecommendedWatcher, Watcher};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{Mutex, OnceLock};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event as _;
 
 /// Global app handle for emitting events from the watcher.
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
@@ -30,13 +32,6 @@ static KNOWN_MOUNTS: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
 
 /// Known GVFS SMB mount paths, for diffing.
 static KNOWN_GVFS_MOUNTS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
-
-/// Payload for volume mount/unmount events.
-#[derive(Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VolumeEventPayload {
-    pub volume_path: String,
-}
 
 /// Start watching for volume mount/unmount events.
 /// Call this once during app setup.
@@ -291,10 +286,10 @@ fn emit_volume_mounted(volume_path: &str) {
     register_volume_with_manager(volume_path);
 
     if let Some(app) = APP_HANDLE.get() {
-        let payload = VolumeEventPayload {
+        let payload = VolumeMounted {
             volume_path: volume_path.to_string(),
         };
-        if let Err(e) = app.emit("volume-mounted", payload) {
+        if let Err(e) = payload.emit(app) {
             error!("Failed to emit volume-mounted event: {}", e);
         } else {
             debug!("Emitted volume-mounted for {}", volume_path);
@@ -307,10 +302,10 @@ fn emit_volume_unmounted(volume_path: &str) {
     unregister_volume_from_manager(volume_path);
 
     if let Some(app) = APP_HANDLE.get() {
-        let payload = VolumeEventPayload {
+        let payload = VolumeUnmounted {
             volume_path: volume_path.to_string(),
         };
-        if let Err(e) = app.emit("volume-unmounted", payload) {
+        if let Err(e) = payload.emit(app) {
             error!("Failed to emit volume-unmounted event: {}", e);
         } else {
             debug!("Emitted volume-unmounted for {}", volume_path);
@@ -365,7 +360,7 @@ mod tests {
 
     #[test]
     fn test_volume_event_payload_serialization() {
-        let payload = VolumeEventPayload {
+        let payload = VolumeMounted {
             volume_path: "/mnt/usb".to_string(),
         };
         let json = serde_json::to_string(&payload).unwrap();

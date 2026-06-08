@@ -1,10 +1,18 @@
 // Volume management, space, and permissions
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
 import type { VolumeInfo } from '../file-explorer/types'
 import type { TimedOut } from './ipc-types'
 import { getAppLogger } from '$lib/logging/logger'
-import { commands, events, type VolumeSpaceChanged } from '$lib/ipc/bindings'
+import {
+  commands,
+  events,
+  type LowDiskSpacePayload,
+  type VolumeContextAction,
+  type VolumesBusyChanged,
+  type VolumeSpaceChanged,
+  type VolumeUnmounted,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 const log = getAppLogger('storage')
@@ -119,15 +127,53 @@ export async function getBusyVolumeIds(): Promise<string[]> {
   return commands.getBusyVolumeIds()
 }
 
+/** Volume-list-changed payload, with `data` exposed as the FE-wide `VolumeInfo` type. */
+export interface VolumesChangedPayload {
+  data: VolumeInfo[]
+  timedOut: boolean
+}
+
+/**
+ * Subscribes to backend-pushed volume-list updates. The wire payload is the typed
+ * `tauri-specta` `VolumesChanged` event; `data` is re-typed to the FE-wide
+ * `VolumeInfo` (same cast `listVolumes` applies, bridging the `LocationInfo`
+ * null-vs-undefined optional shape). Call the returned `UnlistenFn` on destroy.
+ */
+export function onVolumesChanged(handler: (payload: VolumesChangedPayload) => void): Promise<UnlistenFn> {
+  return events.volumesChanged.listen((event) => {
+    handler(event.payload as VolumesChangedPayload)
+  })
+}
+
+/**
+ * Subscribes to per-volume unmount events. The handler receives the gone volume's
+ * path so panes can redirect off it.
+ * Call the returned `UnlistenFn` on component destroy to avoid leaks.
+ */
+export function onVolumeUnmounted(handler: (payload: VolumeUnmounted) => void): Promise<UnlistenFn> {
+  return events.volumeUnmounted.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Subscribes to busy-volume-set changes. The handler receives the sorted list of
+ * volume IDs with an in-flight copy / move / delete operation.
+ * Call the returned `UnlistenFn` on component destroy to avoid leaks.
+ */
+export function onVolumesBusyChanged(handler: (payload: VolumesBusyChanged) => void): Promise<UnlistenFn> {
+  return events.volumesBusyChanged.listen((event) => {
+    handler(event.payload)
+  })
+}
+
 /**
  * Subscribes to volume-context-menu actions (currently just "eject") emitted by the
  * native breadcrumb context menu. The handler receives `{ action, volumeId, volumeName }`.
  * Returns an `UnlistenFn` — call it on component destroy to avoid leaks.
  */
-export function onVolumeContextAction(
-  handler: (event: { action: string; volumeId: string; volumeName: string }) => void,
-): Promise<UnlistenFn> {
-  return listen<{ action: string; volumeId: string; volumeName: string }>('volume-context-action', (event) => {
+export function onVolumeContextAction(handler: (payload: VolumeContextAction) => void): Promise<UnlistenFn> {
+  return events.volumeContextAction.listen((event) => {
     handler(event.payload)
   })
 }
@@ -164,6 +210,18 @@ export async function unwatchVolumeSpace(watcherId: string): Promise<void> {
  */
 export async function onVolumeSpaceChanged(callback: (payload: VolumeSpaceChanged) => void): Promise<UnlistenFn> {
   return events.volumeSpaceChanged.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Subscribes to the backend low-disk-space warning. The payload is the typed
+ * `tauri-specta` event, so `volumeId` / `freePercent` / `thresholdPercent` (and
+ * the byte fields) are checked at compile time against the Rust `LowDiskSpacePayload`.
+ * Call the returned `UnlistenFn` on component destroy to avoid leaks.
+ */
+export async function onLowDiskSpace(callback: (payload: LowDiskSpacePayload) => void): Promise<UnlistenFn> {
+  return events.lowDiskSpace.listen((event) => {
     callback(event.payload)
   })
 }

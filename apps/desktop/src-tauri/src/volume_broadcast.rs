@@ -9,10 +9,11 @@
 //! succession, or MTP connect immediately after USB hotplug).
 
 use log::{debug, error, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event;
 
 /// Global app handle for emitting events.
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
@@ -28,16 +29,6 @@ const DEBOUNCE_MS: u64 = 150;
 /// Timeout for listing local volumes. If `list_locations()` takes longer
 /// (for example, a hung NFS mount), we emit whatever we have with `timed_out: true`.
 const LIST_TIMEOUT: Duration = Duration::from_secs(2);
-
-/// Payload for the `volumes-changed` event.
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct VolumesChangedPayload<V: Serialize> {
-    /// The full volume list (local + MTP).
-    data: Vec<V>,
-    /// Whether the local volume listing timed out (some volumes may be missing).
-    timed_out: bool,
-}
 
 /// Stores the app handle for later use. Call once during app setup.
 pub fn init(app: &AppHandle) {
@@ -95,6 +86,52 @@ use crate::volumes_linux::LocationInfo;
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use crate::stubs::volumes::VolumeInfo as LocationInfo;
+
+/// Typed `volumes-changed` Tauri event. The struct name kebab-cases to the wire
+/// event name (`volumes-changed`) via `tauri_specta::Event`. The TS payload type
+/// and a typed `events.volumesChanged.listen(...)` helper are generated into
+/// `apps/desktop/src/lib/ipc/bindings.ts`.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumesChanged {
+    /// The full volume list (local + MTP).
+    pub data: Vec<LocationInfo>,
+    /// Whether the local volume listing timed out (some volumes may be missing).
+    pub timed_out: bool,
+}
+
+/// Typed `volume-mounted` Tauri event (per-volume, carries the mount path).
+/// Emitted by both the macOS (`NSWorkspace`) and Linux (`/proc/mounts` + GVFS)
+/// watchers. The struct name kebab-cases to `volume-mounted`.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeMounted {
+    /// The volume path (like "/Volumes/MyDrive").
+    pub volume_path: String,
+}
+
+/// Typed `volume-unmounted` Tauri event (per-volume, carries the gone path).
+/// `DualPaneExplorer` listens for this to redirect panes off ejected volumes.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeUnmounted {
+    /// The volume path (like "/Volumes/MyDrive").
+    pub volume_path: String,
+}
+
+/// Typed `volume-context-action` Tauri event. Emitted to the `main` window when
+/// the user picks an action (currently just "eject") from the native breadcrumb /
+/// dropdown-row context menu. Window-scoped, so it's emitted via `Event::emit_to`.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeContextAction {
+    /// The action id (for example, "eject").
+    pub action: String,
+    /// The target volume's ID.
+    pub volume_id: String,
+    /// The target volume's display name (for confirmation copy).
+    pub volume_name: String,
+}
 
 #[cfg(target_os = "macos")]
 fn list_locations() -> Vec<LocationInfo> {
@@ -166,11 +203,11 @@ async fn do_emit() {
         volumes.len(),
         timed_out
     );
-    let payload = VolumesChangedPayload {
+    let payload = VolumesChanged {
         data: volumes,
         timed_out,
     };
-    if let Err(e) = app.emit("volumes-changed", &payload) {
+    if let Err(e) = payload.emit(app) {
         error!("Failed to emit volumes-changed: {}", e);
     }
 }

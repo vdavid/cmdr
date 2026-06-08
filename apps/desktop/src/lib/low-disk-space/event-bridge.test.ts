@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
  * and assert the resulting calls.
  */
 
-type LowDiskSpaceListener = (ev: { payload: LowDiskSpacePayload }) => void
+type LowDiskSpaceListener = (payload: LowDiskSpacePayload) => void
 interface LowDiskSpacePayload {
   volumeId: string
   totalBytes: number
@@ -17,21 +17,21 @@ interface LowDiskSpacePayload {
 }
 
 const {
-  listenMock,
+  onLowDiskSpaceMock,
   getLowDiskSpaceNotificationsModeMock,
   ensureMacosNotificationPermissionMock,
   sendNotificationMock,
   addToastMock,
 } = vi.hoisted(() => ({
-  listenMock: vi.fn(),
+  onLowDiskSpaceMock: vi.fn(),
   getLowDiskSpaceNotificationsModeMock: vi.fn<() => 'in-app' | 'macos' | 'off'>(),
   ensureMacosNotificationPermissionMock: vi.fn<() => Promise<boolean>>(),
   sendNotificationMock: vi.fn(),
   addToastMock: vi.fn<(content: unknown, options?: Record<string, unknown>) => string>(() => 'toast-id'),
 }))
 
-vi.mock('@tauri-apps/api/event', () => ({
-  listen: listenMock,
+vi.mock('$lib/tauri-commands', () => ({
+  onLowDiskSpace: onLowDiskSpaceMock,
 }))
 
 vi.mock('@tauri-apps/plugin-notification', () => ({
@@ -79,12 +79,12 @@ function payload(overrides: Partial<LowDiskSpacePayload> = {}): LowDiskSpacePayl
 
 async function startBridgeAndCaptureListener(): Promise<LowDiskSpaceListener> {
   let captured: LowDiskSpaceListener | null = null
-  listenMock.mockImplementation((_event: string, handler: LowDiskSpaceListener) => {
+  onLowDiskSpaceMock.mockImplementation((handler: LowDiskSpaceListener) => {
     captured = handler
     return Promise.resolve(() => {})
   })
   await startLowDiskSpaceEventBridge()
-  // `captured` is assigned inside the `listen` mock's closure, so TS's
+  // `captured` is assigned inside the `onLowDiskSpace` mock's closure, so TS's
   // control-flow analysis still sees its initialized `null` here. The runtime
   // check is the actual contract.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -94,7 +94,7 @@ async function startBridgeAndCaptureListener(): Promise<LowDiskSpaceListener> {
 
 describe('startLowDiskSpaceEventBridge', () => {
   beforeEach(() => {
-    listenMock.mockReset()
+    onLowDiskSpaceMock.mockReset()
     getLowDiskSpaceNotificationsModeMock.mockReset().mockReturnValue('in-app')
     ensureMacosNotificationPermissionMock.mockReset().mockResolvedValue(true)
     sendNotificationMock.mockReset()
@@ -103,12 +103,12 @@ describe('startLowDiskSpaceEventBridge', () => {
 
   it('subscribes to the low-disk-space event', async () => {
     await startBridgeAndCaptureListener()
-    expect(listenMock).toHaveBeenCalledWith('low-disk-space', expect.any(Function))
+    expect(onLowDiskSpaceMock).toHaveBeenCalledWith(expect.any(Function))
   })
 
   it("mode 'in-app' dispatches a persistent warn toast with a per-volume dedup id", async () => {
     const listener = await startBridgeAndCaptureListener()
-    listener({ payload: payload() })
+    listener(payload())
     await flushAsync()
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
@@ -123,7 +123,7 @@ describe('startLowDiskSpaceEventBridge', () => {
   it("mode 'macos' sends a native notification only", async () => {
     getLowDiskSpaceNotificationsModeMock.mockReturnValue('macos')
     const listener = await startBridgeAndCaptureListener()
-    listener({ payload: payload() })
+    listener(payload())
     await flushAsync()
 
     expect(sendNotificationMock).toHaveBeenCalledTimes(1)
@@ -137,7 +137,7 @@ describe('startLowDiskSpaceEventBridge', () => {
     getLowDiskSpaceNotificationsModeMock.mockReturnValue('macos')
     ensureMacosNotificationPermissionMock.mockResolvedValue(false)
     const listener = await startBridgeAndCaptureListener()
-    listener({ payload: payload() })
+    listener(payload())
     await flushAsync()
 
     expect(sendNotificationMock).not.toHaveBeenCalled()
@@ -147,7 +147,7 @@ describe('startLowDiskSpaceEventBridge', () => {
   it("mode 'off' dispatches nothing (defense in depth against a stale event)", async () => {
     getLowDiskSpaceNotificationsModeMock.mockReturnValue('off')
     const listener = await startBridgeAndCaptureListener()
-    listener({ payload: payload() })
+    listener(payload())
     await flushAsync()
 
     expect(addToastMock).not.toHaveBeenCalled()

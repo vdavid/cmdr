@@ -11,8 +11,8 @@
  */
 
 import { SvelteSet } from 'svelte/reactivity'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { getBusyVolumeIds } from '$lib/tauri-commands'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { getBusyVolumeIds, onVolumesBusyChanged } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const logger = getAppLogger('volume-busy-store')
@@ -46,10 +46,10 @@ export function isVolumeBusy(volumeId: string): boolean {
 export async function initVolumeBusyStore(): Promise<void> {
   if (initialized) return
 
-  unlistenBusyChanged = await listen<string[]>('volumes-busy-changed', (event) => {
+  unlistenBusyChanged = await onVolumesBusyChanged((payload) => {
     receivedEvent = true
-    setBusy(event.payload)
-    logger.debug('volumes-busy-changed: {count} busy', { count: event.payload.length })
+    setBusy(payload.volumeIds)
+    logger.debug('volumes-busy-changed: {count} busy', { count: payload.volumeIds.length })
   })
 
   // Bootstrap: fetch the current set (the event may have fired before we

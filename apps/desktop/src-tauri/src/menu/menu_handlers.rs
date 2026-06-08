@@ -466,15 +466,13 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             log::warn!(target: "eject", "EJECT_VOLUME_ID clicked with no volume_id stashed");
             return;
         }
-        let _ = app.emit_to(
-            "main",
-            "volume-context-action",
-            serde_json::json!({
-                "action": "eject",
-                "volumeId": ctx.volume_id,
-                "volumeName": ctx.volume_name,
-            }),
-        );
+        use tauri_specta::Event as _;
+        let payload = crate::volume_broadcast::VolumeContextAction {
+            action: "eject".to_string(),
+            volume_id: ctx.volume_id.clone(),
+            volume_name: ctx.volume_name.clone(),
+        };
+        let _ = payload.emit_to(app, "main");
         return;
     }
 

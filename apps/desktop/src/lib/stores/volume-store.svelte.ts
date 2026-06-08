@@ -9,18 +9,12 @@
  */
 
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { listVolumes, refreshVolumes } from '$lib/tauri-commands'
+import { listVolumes, refreshVolumes, onVolumesChanged } from '$lib/tauri-commands'
 import type { VolumeInfo } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 
 const logger = getAppLogger('volume-store')
-
-/** Payload shape matching Rust's `VolumesChangedPayload`. */
-interface VolumesChangedPayload {
-  data: VolumeInfo[]
-  timedOut: boolean
-}
 
 let volumes = $state<VolumeInfo[]>([])
 let timedOut = $state(false)
@@ -84,15 +78,15 @@ export async function initVolumeStore(): Promise<void> {
   if (initialized) return
 
   // Subscribe to backend-pushed volume list updates
-  unlistenVolumesChanged = await listen<VolumesChangedPayload>('volumes-changed', (event) => {
+  unlistenVolumesChanged = await onVolumesChanged((payload) => {
     receivedEvent = true
-    volumes = event.payload.data
-    timedOut = event.payload.timedOut
+    volumes = payload.data
+    timedOut = payload.timedOut
 
     // Detect retry failure: we were refreshing and it's still timed out
     if (refreshing) {
       refreshing = false
-      if (event.payload.timedOut) {
+      if (payload.timedOut) {
         retryFailed = true
         retryFailedTimer = setTimeout(() => {
           retryFailed = false
@@ -101,9 +95,9 @@ export async function initVolumeStore(): Promise<void> {
     }
 
     logger.debug('volumes-changed: {count} {volumesNoun}, timedOut={timedOut}', {
-      count: event.payload.data.length,
-      volumesNoun: pluralize(event.payload.data.length, 'volume'),
-      timedOut: event.payload.timedOut,
+      count: payload.data.length,
+      volumesNoun: pluralize(payload.data.length, 'volume'),
+      timedOut: payload.timedOut,
     })
   })
 

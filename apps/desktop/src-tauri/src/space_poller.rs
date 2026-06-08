@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use tauri_specta::Event;
 
 use crate::file_system::get_volume_manager;
@@ -97,15 +97,18 @@ pub struct VolumeSpaceChanged {
     pub available_bytes: u64,
 }
 
-/// Payload for the `low-disk-space` Tauri event.
-#[derive(Clone, Serialize)]
+/// Typed `low-disk-space` Tauri event. The struct keeps its `Payload` suffix
+/// (used internally), so the wire name is pinned with `event_name` rather than
+/// letting the kebab-case of the ident drift to `low-disk-space-payload`.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "low-disk-space")]
 #[serde(rename_all = "camelCase")]
-struct LowDiskSpacePayload {
-    volume_id: String,
-    total_bytes: u64,
-    available_bytes: u64,
-    free_percent: f64,
-    threshold_percent: u64,
+pub struct LowDiskSpacePayload {
+    pub volume_id: String,
+    pub total_bytes: u64,
+    pub available_bytes: u64,
+    pub free_percent: f64,
+    pub threshold_percent: u64,
 }
 
 /// Stores the app handle. Call once during setup.
@@ -327,7 +330,7 @@ fn emit_low_disk_space(volume_id: &str, space: &CachedSpace, free_percent: f64, 
         "low-disk-space: {} at {:.1}% free ({} of {} bytes), threshold {}%",
         volume_id, free_percent, space.available_bytes, space.total_bytes, threshold_percent
     );
-    if let Err(e) = app.emit("low-disk-space", &payload) {
+    if let Err(e) = payload.emit(app) {
         warn!("Failed to emit low-disk-space: {}", e);
     }
 }

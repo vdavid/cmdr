@@ -80,6 +80,35 @@ string-based; the plan doc explains why.
   `rename_all = "camelCase"` enums, so a `snake_case`-tagged enum slips past it). When an event payload nests an enum,
   eyeball its multi-word variant fields before assuming the wire shape was correct.
 
+### Migration gotchas learned converting volume + disk-space events
+
+- **A generic payload struct can't derive `Event`; monomorphize it.** `volumes-changed` was emitted from a
+  `VolumesChangedPayload<V: Serialize>` generic over the volume type. `collect_events!` needs a concrete struct with a
+  static `NAME`, so the generic was replaced with a concrete
+  `VolumesChanged { data: Vec<LocationInfo>, timed_out: bool }` (the generic was only ever instantiated with
+  `LocationInfo`). If the only-instantiation type isn't obvious, grep the emit sites before collapsing the generic.
+- **An event payload that nests a serialize-only DTO needs `Deserialize` added to that DTO.** `Event` requires the
+  payload (and everything it contains) to round-trip, so wrapping macOS `LocationInfo` (previously `Serialize`-only,
+  "never sent from the frontend") in `VolumesChanged` forced a `Deserialize` derive on it. Check the nested type's own
+  nested types too (`LocationCategory`, `SmbConnectionState`, `UsbSpeed` already had it here).
+- **A `LocationInfo`-vs-`VolumeInfo` null/undefined gap surfaces at the FE listener boundary.** The generated
+  `LocationInfo.icon` is `string | null` (no `skip_serializing_if`), but the hand-written FE `VolumeInfo.icon` is
+  `string | undefined`, so `data: LocationInfo[]` won't assign into a `VolumeInfo[]` `$state`. The codebase already
+  bridges this for the `listVolumes` command with a `as VolumeInfo[]` cast; the typed `onVolumesChanged` wrapper applies
+  the same cast in ONE place (in `storage.ts`, re-typing its callback payload to `VolumeInfo[]`) so consumers stay
+  clean.
+- **A bare `Vec<String>` (JSON array) event payload must be wrapped in a named struct, which changes the wire shape.**
+  `volumes-busy-changed` emitted a bare `&Vec<String>` (a JSON `["id", …]`); `Event` payloads must be named types, so it
+  became `VolumesBusyChanged { volume_ids: Vec<String> }` (wire shape array → `{ volumeIds: [...] }`). The FE consumer
+  (`volume-busy-store`) and its test had to switch from reading `event.payload` to `payload.volumeIds`. When you wrap a
+  bare-collection event, update every consumer's field access, not just the listener registration.
+- **Two per-window-shared payloads (`volume-mounted` / `volume-unmounted`) need TWO structs, not one shared
+  `VolumeEventPayload`.** Both events carried the same `{ volume_path }` shape via a single `VolumeEventPayload` struct
+  duplicated in the macOS and Linux watchers, but one struct = one `NAME`, so they became distinct `VolumeMounted` /
+  `VolumeUnmounted` structs (defined once cross-platform in `volume_broadcast.rs`, imported by both watchers). A
+  window-targeted event (`volume-context-action`, emitted via `emit_to("main", …)`) converts to
+  `payload.emit_to(app, "main")` from `tauri_specta::Event`.
+
 ## Call-site convention: name your arguments
 
 Specta-generated wrappers take **positional** arguments (in declaration order), not an object. That's elegant when the

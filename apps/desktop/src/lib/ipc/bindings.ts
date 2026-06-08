@@ -2246,13 +2246,19 @@ export const events = {
   listingOpening: makeEvent<ListingOpeningEvent>('listing-opening'),
   listingProgress: makeEvent<ListingProgressEvent>('listing-progress'),
   listingReadComplete: makeEvent<ListingReadCompleteEvent>('listing-read-complete'),
+  lowDiskSpace: makeEvent<LowDiskSpacePayload>('low-disk-space'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
   scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
   scanPreviewComplete: makeEvent<ScanPreviewCompleteEvent>('scan-preview-complete'),
   scanPreviewError: makeEvent<ScanPreviewErrorEvent>('scan-preview-error'),
   scanPreviewProgress: makeEvent<ScanPreviewProgressEvent>('scan-preview-progress'),
   scanProgress: makeEvent<ScanProgressEvent>('scan-progress'),
+  volumeContextAction: makeEvent<VolumeContextAction>('volume-context-action'),
+  volumeMounted: makeEvent<VolumeMounted>('volume-mounted'),
   volumeSpaceChanged: makeEvent<VolumeSpaceChanged>('volume-space-changed'),
+  volumeUnmounted: makeEvent<VolumeUnmounted>('volume-unmounted'),
+  volumesBusyChanged: makeEvent<VolumesBusyChanged>('volumes-busy-changed'),
+  volumesChanged: makeEvent<VolumesChanged>('volumes-changed'),
   writeCancelled: makeEvent<WriteCancelledEvent>('write-cancelled'),
   writeComplete: makeEvent<WriteCompleteEvent>('write-complete'),
   writeConflict: makeEvent<WriteConflictEvent>('write-conflict'),
@@ -3177,7 +3183,9 @@ export type LocationCategory =
 /**
  *  Information about a location (volume, folder, or cloud drive).
  *
- *  Only serialized (Rust → frontend); never sent from the frontend, so no `Deserialize`.
+ *  Serialized Rust → frontend. It also derives `Deserialize` because it rides inside
+ *  the typed `volumes-changed` event payload (`VolumesChanged`), and `tauri_specta::Event`
+ *  requires the payload (and its nested types) to round-trip.
  *  Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
  *  accepts the type in Unified mode.
  */
@@ -3206,6 +3214,19 @@ export type LocationInfo = {
 }
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'warning' | 'error'
+
+/**
+ *  Typed `low-disk-space` Tauri event. The struct keeps its `Payload` suffix
+ *  (used internally), so the wire name is pinned with `event_name` rather than
+ *  letting the kebab-case of the ident drift to `low-disk-space-payload`.
+ */
+export type LowDiskSpacePayload = {
+  volumeId: string
+  totalBytes: number
+  availableBytes: number
+  freePercent: number
+  thresholdPercent: number
+}
 
 /**
  *  Result of successfully adding a manual server.
@@ -4289,6 +4310,20 @@ export type ViewerSessionStatus = {
   totalLines: number | null
 }
 
+/**
+ *  Typed `volume-context-action` Tauri event. Emitted to the `main` window when
+ *  the user picks an action (currently just "eject") from the native breadcrumb /
+ *  dropdown-row context menu. Window-scoped, so it's emitted via `Event::emit_to`.
+ */
+export type VolumeContextAction = {
+  // The action id (for example, "eject").
+  action: string
+  // The target volume's ID.
+  volumeId: string
+  // The target volume's display name (for confirmation copy).
+  volumeName: string
+}
+
 // Copy operation configuration for volume-to-volume copy.
 export type VolumeCopyConfig = {
   // In milliseconds.
@@ -4321,6 +4356,16 @@ export type VolumeCopyScanResult = {
 }
 
 /**
+ *  Typed `volume-mounted` Tauri event (per-volume, carries the mount path).
+ *  Emitted by both the macOS (`NSWorkspace`) and Linux (`/proc/mounts` + GVFS)
+ *  watchers. The struct name kebab-cases to `volume-mounted`.
+ */
+export type VolumeMounted = {
+  // The volume path (like "/Volumes/MyDrive").
+  volumePath: string
+}
+
+/**
  *  Typed `volume-space-changed` Tauri event. The struct name kebab-cases to the
  *  wire event name (`volume-space-changed`) via `tauri_specta::Event`. Both the
  *  TS payload type and a typed `events.volumeSpaceChanged.listen(...)` helper are
@@ -4338,6 +4383,39 @@ export type VolumeSpaceInfo = {
   totalBytes: number
   // In bytes.
   availableBytes: number
+}
+
+/**
+ *  Typed `volume-unmounted` Tauri event (per-volume, carries the gone path).
+ *  `DualPaneExplorer` listens for this to redirect panes off ejected volumes.
+ */
+export type VolumeUnmounted = {
+  // The volume path (like "/Volumes/MyDrive").
+  volumePath: string
+}
+
+/**
+ *  Typed `volumes-busy-changed` Tauri event. Wraps the busy volume-ID list in a
+ *  struct because `tauri_specta::Event` payloads must be named types (a bare
+ *  `Vec<String>` can't derive `Event`). The struct name kebab-cases to
+ *  `volumes-busy-changed`.
+ */
+export type VolumesBusyChanged = {
+  // IDs of volumes with an in-flight copy / move / delete operation (sorted).
+  volumeIds: string[]
+}
+
+/**
+ *  Typed `volumes-changed` Tauri event. The struct name kebab-cases to the wire
+ *  event name (`volumes-changed`) via `tauri_specta::Event`. The TS payload type
+ *  and a typed `events.volumesChanged.listen(...)` helper are generated into
+ *  `apps/desktop/src/lib/ipc/bindings.ts`.
+ */
+export type VolumesChanged = {
+  // The full volume list (local + MTP).
+  data: LocationInfo[]
+  // Whether the local volume listing timed out (some volumes may be missing).
+  timedOut: boolean
 }
 
 /**

@@ -10,15 +10,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Hoisted mocks: must run before importing the module under test.
 const mockGetBusyVolumeIds = vi.fn<() => Promise<string[]>>()
-let lastEventHandler: ((e: { payload: string[] }) => void) | null = null
+let lastEventHandler: ((payload: { volumeIds: string[] }) => void) | null = null
 const mockUnlisten = vi.fn()
 
 vi.mock('$lib/tauri-commands', () => ({
   getBusyVolumeIds: () => mockGetBusyVolumeIds(),
-}))
-
-vi.mock('@tauri-apps/api/event', () => ({
-  listen: (_event: string, handler: (e: { payload: string[] }) => void) => {
+  onVolumesBusyChanged: (handler: (payload: { volumeIds: string[] }) => void) => {
     lastEventHandler = handler
     return Promise.resolve(mockUnlisten)
   },
@@ -29,7 +26,7 @@ import { initVolumeBusyStore, cleanupVolumeBusyStore, isVolumeBusy } from './vol
 /** Drives the listener as if the backend emitted `volumes-busy-changed`. */
 function emit(ids: string[]): void {
   if (!lastEventHandler) throw new Error("init() didn't install a listener")
-  lastEventHandler({ payload: ids })
+  lastEventHandler({ volumeIds: ids })
 }
 
 describe('volume-busy-store', () => {

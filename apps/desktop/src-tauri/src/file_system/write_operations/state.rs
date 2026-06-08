@@ -397,6 +397,17 @@ pub(crate) fn release_external_volume_op(op_id: &str) {
 // Busy-volumes set (drives "disable Eject while an op touches this device")
 // ============================================================================
 
+/// Typed `volumes-busy-changed` Tauri event. Wraps the busy volume-ID list in a
+/// struct because `tauri_specta::Event` payloads must be named types (a bare
+/// `Vec<String>` can't derive `Event`). The struct name kebab-cases to
+/// `volumes-busy-changed`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumesBusyChanged {
+    /// IDs of volumes with an in-flight copy / move / delete operation (sorted).
+    pub volume_ids: Vec<String>,
+}
+
 /// App handle for emitting `volumes-busy-changed`. Set once at startup via
 /// `init_busy_volume_emitter`. Absent in unit tests, where the recompute is a
 /// no-op emit (the set is still queryable via `busy_volume_ids`).
@@ -456,10 +467,11 @@ fn recompute_and_emit_busy_volumes() {
     let Some(app) = BUSY_APP.get() else {
         return;
     };
-    let mut payload: Vec<String> = current.into_iter().collect();
-    payload.sort();
-    use tauri::Emitter;
-    if let Err(e) = app.emit("volumes-busy-changed", &payload) {
+    let mut volume_ids: Vec<String> = current.into_iter().collect();
+    volume_ids.sort();
+    use tauri_specta::Event as _;
+    let payload = VolumesBusyChanged { volume_ids };
+    if let Err(e) = payload.emit(app) {
         crate::log_error!(target: "eject", "Failed to emit volumes-busy-changed: {}", e);
     }
 }

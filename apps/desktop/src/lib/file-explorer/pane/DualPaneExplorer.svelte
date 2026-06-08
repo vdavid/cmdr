@@ -24,6 +24,7 @@
         updateViewModeMenu,
         ejectVolume,
         onVolumeContextAction,
+        onVolumeUnmounted,
         getIpcErrorMessage,
     } from '$lib/tauri-commands'
     import type {
@@ -888,8 +889,8 @@
         })
 
         // Subscribe to volume unmount events (redirect panes off ejected volumes)
-        unlistenVolumeUnmount = await listen<{ volumePath: string }>('volume-unmounted', (event) => {
-            const volume = volumes.find((v) => v.path === event.payload.volumePath)
+        unlistenVolumeUnmount = await onVolumeUnmounted((payload) => {
+            const volume = volumes.find((v) => v.path === payload.volumePath)
             if (volume) {
                 void handleVolumeUnmount(volume.id)
             }

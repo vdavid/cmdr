@@ -52,13 +52,15 @@ use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
     ListingReadCompleteEvent,
 };
+use crate::file_system::write_operations::VolumesBusyChanged;
 use crate::file_system::write_operations::{
     ConflictInfo, DryRunResult, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 use crate::ipc_collectors::collect_all_types;
-use crate::space_poller::VolumeSpaceChanged;
+use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
+use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
 
 /// Public greeting used by the example webview surface; kept here as the
 /// foundational smoke test for the specta wiring.
@@ -602,6 +604,14 @@ pub fn builder() -> Builder<tauri::Wry> {
             ScanPreviewCompleteEvent,
             ScanPreviewErrorEvent,
             ScanPreviewCancelledEvent,
+            // Volumes + disk space (volumes/, volumes_linux/, space_poller.rs,
+            // write_operations/state.rs busy set, menu eject action).
+            VolumesChanged,
+            VolumeMounted,
+            VolumeUnmounted,
+            VolumesBusyChanged,
+            VolumeContextAction,
+            LowDiskSpacePayload, // event_name = "low-disk-space"
         ])
 }
 
