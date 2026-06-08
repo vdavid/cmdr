@@ -29,6 +29,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
+      # Same reason as the desktop-rust job: a warm rust-cache restore plus the
+      # nightly udeps build can crowd the runner's ~14 GB free disk. Reclaim the
+      # unused preinstalled SDKs up front. Best-effort; `df -h` for diagnosis.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/share/swift /opt/hostedtoolcache/CodeQL || true
+          df -h /
+
       - name: Install mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
 
