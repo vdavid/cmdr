@@ -125,6 +125,7 @@ export {
   onVolumeContextAction,
   watchVolumeSpace,
   unwatchVolumeSpace,
+  onVolumeSpaceChanged,
   setDiskSpaceThreshold,
   setLowDiskSpaceConfig,
   checkFullDiskAccess,

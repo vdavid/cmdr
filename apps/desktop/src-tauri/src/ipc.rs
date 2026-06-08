@@ -46,9 +46,10 @@
 
 #[cfg(test)]
 use specta_typescript::Typescript;
-use tauri_specta::Builder;
+use tauri_specta::{Builder, collect_events};
 
 use crate::ipc_collectors::collect_all_types;
+use crate::space_poller::VolumeSpaceChanged;
 
 /// Public greeting used by the example webview surface; kept here as the
 /// foundational smoke test for the specta wiring.
@@ -561,7 +562,13 @@ pub fn builder() -> Builder<tauri::Wry> {
     // Build the final Commands combining the runtime handler with all type info.
     // `internal::command` takes the handler fn and the type-collector fn pointer.
     let combined_commands = tauri_specta::internal::command(runtime_handler, collect_all_types);
-    Builder::<tauri::Wry>::new().commands(combined_commands)
+    Builder::<tauri::Wry>::new()
+        .commands(combined_commands)
+        // Typed events. Each registered struct derives `tauri_specta::Event`;
+        // its kebab-cased name is the wire event name and its TS type + a typed
+        // `events.<name>.listen(...)` helper are generated into `bindings.ts`.
+        // Mounted onto the app via `mount_events` in `crate::run`.
+        .events(collect_events![VolumeSpaceChanged])
 }
 
 #[cfg(test)]

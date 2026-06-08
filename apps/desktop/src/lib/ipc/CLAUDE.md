@@ -34,6 +34,31 @@ For commands that return `Result<T, E>` on the Rust side, the TS wrapper returns
 `{ status: 'ok', data: T } | { status: 'error', error: E }`. Most call sites unwrap via `throwIpcError` from
 `$lib/tauri-commands/ipc-types`.
 
+## Typed events
+
+Events are wired through the same `tauri-specta` machinery as commands, but not all events are migrated yet — many are
+still raw `app.emit("name", payload)` on the Rust side with a hand-mirrored TS `listen<{…}>(...)`. See
+[`docs/specs/typed-events-plan.md`](../../../../../docs/specs/typed-events-plan.md) for the migration plan, the proven
+pattern, and the full event inventory.
+
+A typed event is a Rust struct deriving `tauri_specta::Event` (kebab-cased struct name = wire event name), registered
+via `collect_events![Struct]` in `ipc.rs::builder()`, and mounted with `specta_builder.mount_events(app)` in `lib.rs`'s
+`setup` (required, else `Event::emit` panics). Regen generates an `events.<name>` helper into `bindings.ts`:
+
+```ts
+events.volumeSpaceChanged.listen((event) => {
+  /* event.payload is typed */
+})
+```
+
+As with commands, don't call `events.*` raw in components — add a thin `on<Event>(cb)` wrapper in `tauri-commands/`
+(returns `UnlistenFn`) and import it from the barrel. The reference event is `volume-space-changed`
+(`onVolumeSpaceChanged` in `tauri-commands/storage.ts`).
+
+The same type-shape constraints apply (no `skip_serializing_if`, no `serde_json::Value`). Events with a runtime-built
+name or a `serde_json::Value` payload (the `mcp-*` MCP-dispatch relay, `viewer:file-changed:<session-id>`) stay
+string-based; the plan doc explains why.
+
 ## Call-site convention: name your arguments
 
 Specta-generated wrappers take **positional** arguments (in declaration order), not an object. That's elegant when the

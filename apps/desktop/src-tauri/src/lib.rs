@@ -162,6 +162,10 @@ pub fn run() {
     // path silently overwrites the committed file with raw specta output on
     // every dev launch.
     let specta_builder = ipc::builder();
+    // `invoke_handler()` returns an owned closure (it clones the command map
+    // internally), so we grab it here before moving `specta_builder` into the
+    // `setup` closure where `mount_events` registers the typed events.
+    let invoke_handler = specta_builder.invoke_handler();
     let builder = tauri::Builder::default();
 
     // Window state plugin is only available on desktop platforms. The filter
@@ -264,7 +268,12 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(downloads::global_shortcut::plugin_builder())
-        .setup(|app| {
+        .setup(move |app| {
+            // Mount the typed `tauri-specta` events onto the app. Required before
+            // any `Event::emit` / `Event::listen` call resolves the event name
+            // from the registry. See `ipc.rs` for the event collection.
+            specta_builder.mount_events(app);
+
             // === Logging setup ===
             //
             // Hand-rolled fern dispatch tree (`logging::dispatch::init`) replaces
@@ -712,7 +721,7 @@ pub fn run() {
             Ok(())
         })
         .on_menu_event(menu::handle_menu_event)
-        .invoke_handler(specta_builder.invoke_handler())
+        .invoke_handler(invoke_handler)
         .on_window_event(|window, event| {
             // Main-window focus re-checks the FDA gate so the Downloads
             // watcher starts/stops on transitions. Covers the "user

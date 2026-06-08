@@ -30,6 +30,7 @@
         listDirectoryStart,
         listen,
         onMtpDeviceDisconnected,
+        onVolumeSpaceChanged,
         openFile,
         refreshListingIndexSizes,
         resolvePathVolume,
@@ -2511,18 +2512,15 @@
             userHomePath = h.endsWith('/') ? h.slice(0, -1) : h
         })
 
-        // Listen for live disk-space updates from the backend poller
-        void listen<{ volumeId: string; totalBytes: number; availableBytes: number }>(
-            'volume-space-changed',
-            (event) => {
-                if (event.payload.volumeId === volumeId) {
-                    volumeSpace = {
-                        totalBytes: event.payload.totalBytes,
-                        availableBytes: event.payload.availableBytes,
-                    }
+        // Listen for live disk-space updates from the backend poller (typed event)
+        void onVolumeSpaceChanged((payload) => {
+            if (payload.volumeId === volumeId) {
+                volumeSpace = {
+                    totalBytes: payload.totalBytes,
+                    availableBytes: payload.availableBytes,
                 }
-            },
-        ).then((fn) => {
+            }
+        }).then((fn) => {
             unlistenSpaceChanged = fn
         })
 

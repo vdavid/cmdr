@@ -4,7 +4,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { VolumeInfo } from '../file-explorer/types'
 import type { TimedOut } from './ipc-types'
 import { getAppLogger } from '$lib/logging/logger'
-import { commands } from '$lib/ipc/bindings'
+import { commands, events, type VolumeSpaceChanged } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 const log = getAppLogger('storage')
@@ -154,6 +154,18 @@ export async function watchVolumeSpace(watcherId: string, volumeId: string, path
  */
 export async function unwatchVolumeSpace(watcherId: string): Promise<void> {
   await commands.unwatchVolumeSpace(watcherId)
+}
+
+/**
+ * Subscribes to live disk-space updates from the backend poller. The payload is
+ * the typed `tauri-specta` event, so `volumeId` / `totalBytes` / `availableBytes`
+ * are checked at compile time against the Rust `VolumeSpaceChanged` struct.
+ * Call the returned `UnlistenFn` in `onDestroy` to avoid leaks.
+ */
+export async function onVolumeSpaceChanged(callback: (payload: VolumeSpaceChanged) => void): Promise<UnlistenFn> {
+  return events.volumeSpaceChanged.listen((event) => {
+    callback(event.payload)
+  })
 }
 
 /**

@@ -15,12 +15,13 @@
 //! same single `statfs` per tick with the permanent watcher.
 
 use log::{debug, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
+use tauri_specta::Event;
 
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
@@ -84,13 +85,16 @@ struct CachedSpace {
     available_bytes: u64,
 }
 
-/// Payload for the `volume-space-changed` Tauri event.
-#[derive(Clone, Serialize)]
+/// Typed `volume-space-changed` Tauri event. The struct name kebab-cases to the
+/// wire event name (`volume-space-changed`) via `tauri_specta::Event`. Both the
+/// TS payload type and a typed `events.volumeSpaceChanged.listen(...)` helper are
+/// generated into `apps/desktop/src/lib/ipc/bindings.ts`.
+#[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
-struct VolumeSpaceChangedPayload {
-    volume_id: String,
-    total_bytes: u64,
-    available_bytes: u64,
+pub struct VolumeSpaceChanged {
+    pub volume_id: String,
+    pub total_bytes: u64,
+    pub available_bytes: u64,
 }
 
 /// Payload for the `low-disk-space` Tauri event.
@@ -385,13 +389,13 @@ fn update_cache(volume_id: &str, space: &CachedSpace) {
 
 fn emit(volume_id: &str, space: &CachedSpace) {
     let Some(app) = APP_HANDLE.get() else { return };
-    let payload = VolumeSpaceChangedPayload {
+    let payload = VolumeSpaceChanged {
         volume_id: volume_id.to_string(),
         total_bytes: space.total_bytes,
         available_bytes: space.available_bytes,
     };
     debug!("volume-space-changed: {} ({} avail)", volume_id, space.available_bytes);
-    if let Err(e) = app.emit("volume-space-changed", &payload) {
+    if let Err(e) = payload.emit(app) {
         warn!("Failed to emit volume-space-changed: {}", e);
     }
 }
