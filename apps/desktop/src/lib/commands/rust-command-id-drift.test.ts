@@ -2,11 +2,12 @@
  * Rust↔frontend command-id drift guard.
  *
  * The `CommandId` union can't reach across the Tauri IPC boundary: Rust emits a
- * bare `json!({ "commandId": "…" })`, and `LicenseSection.svelte` cross-window
- * emits the same. A stale Rust id silently hits the dispatcher's switch
- * `default` and no-ops — TypeScript can't catch it. This test pins every
- * Rust-emitted command id to `COMMAND_IDS`, so renaming a registry id without
- * updating Rust (or vice versa) fails here.
+ * typed `ExecuteCommand { command_id }` whose `commandId` is a bare string, and
+ * `LicenseSection.svelte` cross-window emits the same via `emitExecuteCommand`.
+ * A stale id silently hits the dispatcher's switch `default` and no-ops —
+ * TypeScript can't catch it. This test pins every emitted command id to
+ * `COMMAND_IDS`, so renaming a registry id without updating Rust (or vice versa)
+ * fails here.
  *
  * Mechanism: parse the two Rust/Svelte source files for their command-id string
  * literals rather than maintaining a hand-copied list (which would itself drift).
@@ -52,8 +53,9 @@ function menuEmittedCommandIds(): string[] {
 function crossWindowEmittedCommandIds(): string[] {
   const source = readFileSync(path.join(desktopRoot, 'src/lib/settings/sections/LicenseSection.svelte'), 'utf8')
   const ids = new Set<string>()
-  // Match `emitTo('main', 'execute-command', { commandId: 'app.licenseKey' })`.
-  const re = /execute-command'[^)]*commandId:\s*'([^']+)'/g
+  // Match `emitExecuteCommand('app.licenseKey')` (the typed cross-window relay
+  // wrapper over `events.executeCommand.emit`).
+  const re = /emitExecuteCommand\('([^']+)'\)/g
   let match: RegExpExecArray | null
   while ((match = re.exec(source)) !== null) {
     ids.add(match[1])

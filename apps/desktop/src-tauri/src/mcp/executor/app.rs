@@ -2,6 +2,9 @@
 
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri_specta::Event as _;
+
+use crate::window_events::ExecuteCommand;
 
 use super::{AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, snapshot_generation, wait_for_ack};
 
@@ -20,7 +23,10 @@ pub fn execute_switch_pane<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
         let new_pane = if current == "left" { "right" } else { "left" };
         store.set_focused_pane(new_pane.to_string());
     }
-    app.emit_to("main", "execute-command", json!({"commandId": "pane.switch"}))?;
+    ExecuteCommand {
+        command_id: "pane.switch".to_string(),
+    }
+    .emit_to(app, "main")?;
     Ok(json!("OK: Switched focus to other pane"))
 }
 
@@ -33,7 +39,10 @@ pub fn execute_swap_panes<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
         store.set_left(right);
         store.set_right(left);
     }
-    app.emit_to("main", "execute-command", json!({"commandId": "pane.swap"}))?;
+    ExecuteCommand {
+        command_id: "pane.swap".to_string(),
+    }
+    .emit_to(app, "main")?;
     Ok(json!("OK: Swapped left and right panes"))
 }
 

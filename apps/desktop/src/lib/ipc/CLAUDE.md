@@ -36,10 +36,19 @@ For commands that return `Result<T, E>` on the Rust side, the TS wrapper returns
 
 ## Typed events
 
-Events are wired through the same `tauri-specta` machinery as commands, but not all events are migrated yet — many are
-still raw `app.emit("name", payload)` on the Rust side with a hand-mirrored TS `listen<{…}>(...)`. See
-[`docs/specs/typed-events-plan.md`](../../../../../docs/specs/typed-events-plan.md) for the migration plan, the proven
-pattern, and the full event inventory.
+Events are wired through the same `tauri-specta` machinery as commands. The migration is **complete**: every typeable
+event is now a Rust struct deriving `tauri_specta::Event`, with a typed `events.<name>` helper in `bindings.ts` and a
+thin `on<Event>` wrapper in `tauri-commands/`. Two families intentionally stay string-based (they can't be typed):
+
+- **The `mcp-*` MCP-dispatch relay** (`mcp/executor/mod.rs`, `mcp/resources/mod.rs`): a generic
+  `mcp_round_trip_with_timeout(app, event: &str, payload: Value, …)` emits a runtime-built name with a free-form
+  `serde_json::Value` payload — both specta blockers. (`mcp-settings-close` is the exception: it's a distinct static
+  `emit_to`, so it WAS typed.)
+- **`viewer:file-changed:<session-id>`** (`file_viewer/session.rs`): the session id is interpolated into the event name
+  at runtime, so there's no static struct to collect.
+
+See [`docs/specs/typed-events-plan.md`](../../../../../docs/specs/typed-events-plan.md) for the migration plan, the
+proven pattern, and the full event inventory.
 
 A typed event is a Rust struct deriving `tauri_specta::Event` (kebab-cased struct name = wire event name), registered
 via `collect_events![Struct]` in `ipc.rs::builder()`, and mounted with `specta_builder.mount_events(app)` in `lib.rs`'s
@@ -256,6 +265,37 @@ string-based; the plan doc explains why.
   name. Tests that mock `$lib/tauri-commands` must add the new `on*` wrapper to the mock (a mounted-tree test throws
   `No "onDirectoryDiff" export` as an unhandled rejection that fails the gate even though assertions pass). Make the
   re-wrap null-safe (`event?.payload`) so it serves both payload and payloadless (unit-struct) events.
+
+### Migration gotchas learned converting the window-management events (final partition)
+
+- **A typed `emit_to` needs NO new capability permission.** All window-management events (`open/close/focus-*`,
+  `execute-command`, `mcp-settings-close`, `viewer-word-wrap-toggled`, `tab-context-action`,
+  `persist-restricted-setting`) are `emit_to`-targeted at a specific window. The listening windows (`default`/main,
+  `settings`, `viewer`) already carry `core:event:default` (which grants `listen`/`unlisten`/`emit`), and a typed
+  `Event` still routes through the same `event:` plugin under the same wire name, so the existing permission covers it.
+  Don't add a capability when converting a string `listen` to a typed `events.x.listen`. (Verified: zero changes to
+  `capabilities/{default,settings,viewer}.json` for this partition.)
+- **An event with both a `{path}` and a `()` emit site collapses to one `Option<String>` payload.** `open-file-viewer`
+  and `focus-file-viewer` each emitted `json!({"path": …})` from one MCP branch and `()` from another. One `Event`
+  struct = one wire shape, so both became `{ path: Option<String> }` (generated `path: string | null`); the FE reads
+  `payload.path ?? undefined` where it previously read `payload?.path`. The `null`-vs-`undefined` coercion is the same
+  one the rest of the migration hit (`skip_serializing_if` is banned, so absent → `null`).
+- **`app.emit("name", …)` broadcasts converted to `Event::emit_to(app, "main")` because only the main window listens.**
+  The MCP dialog `open/close/focus-*` events were broadcast (`app.emit`), but their sole listener is the main window's
+  `+page.svelte`. Switching to `payload.emit_to(app, "main")` is functionally identical (the broadcast only ever reached
+  the main window's listener) and more precise. Don't preserve the broadcast form just because the original used it.
+- **`execute-command` is emitted from BOTH Rust and the frontend; the typed `Event` serves both via `.emit` and
+  `.listen`.** Nine Rust sites (menu dispatch + MCP) emit it; `LicenseSection.svelte` (settings window) cross-window
+  emits it too. The Rust sites use `ExecuteCommand { command_id }.emit_to(app, "main")`; the FE site uses the thin
+  `emitExecuteCommand(commandId)` wrapper (over `events.executeCommand.emit({ commandId })`, a broadcast that only the
+  main window listens for). The `rust-command-id-drift.test.ts` regex that pins the cross-window id to `COMMAND_IDS` was
+  updated from matching `emitTo('main', 'execute-command', …)` to matching `emitExecuteCommand('…')`; the FE-emit
+  wrapper is the one place outside `lib/ipc/` that calls `events.*.emit`, so adding an `emit*` wrapper alongside the
+  `on*` wrappers keeps components off raw `events.*`.
+- **`mcp-settings-close` is typeable even though it's named `mcp-*`.** Unlike the rest of the `mcp-*` family (which
+  funnel through the generic `mcp_round_trip` relay with a runtime `&str` name + `serde_json::Value` payload), this one
+  is a distinct static `emit_to("settings", "mcp-settings-close", ())`, so it became a unit-struct `Event`. The relay
+  family stays string-based; "starts with `mcp-`" is not the test — "goes through the generic relay" is.
 
 ## Call-site convention: name your arguments
 

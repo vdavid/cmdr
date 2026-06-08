@@ -205,14 +205,6 @@ impl RestrictedWindowPersistableSetting {
     }
 }
 
-/// Payload of the `persist-restricted-setting` event delivered to the main window.
-#[derive(Debug, Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PersistRestrictedSettingPayload {
-    id: &'static str,
-    value: bool,
-}
-
 /// Persists a setting on behalf of a restricted-capability window (the viewer).
 ///
 /// The backend never writes `settings.json` itself (the settings loader is
@@ -227,12 +219,13 @@ pub fn persist_restricted_window_setting(
     setting: RestrictedWindowPersistableSetting,
     value: bool,
 ) -> Result<(), String> {
-    use tauri::Emitter;
-    let payload = PersistRestrictedSettingPayload {
-        id: setting.setting_id(),
+    use tauri_specta::Event as _;
+    let payload = crate::window_events::PersistRestrictedSetting {
+        id: setting.setting_id().to_string(),
         value,
     };
-    app.emit_to("main", "persist-restricted-setting", payload)
+    payload
+        .emit_to(&app, "main")
         .map_err(|e| format!("Failed to forward setting to the main window: {e}"))
 }
 

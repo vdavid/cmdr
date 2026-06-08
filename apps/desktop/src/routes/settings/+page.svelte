@@ -2,6 +2,7 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+    import { onMcpSettingsClose } from '$lib/tauri-commands'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { initializeSettings, forceSave as forceSettingsSave } from '$lib/settings'
@@ -357,7 +358,7 @@
             // so the in-flight IPC ack can settle before webkit2gtk begins destroying
             // the webview. See `handleKeydown` for why `setTimeout(0)` is used instead
             // of nested rAFs.
-            unlistenMcpClose = await listen('mcp-settings-close', () => {
+            unlistenMcpClose = await onMcpSettingsClose(() => {
                 log.debug('Received mcp-settings-close, closing window')
                 const win = getCurrentWindow()
                 setTimeout(() => {

@@ -271,6 +271,9 @@
     "tauri-commands/directory-watcher.ts": {
       "reason": "Thin typed-event listener wrappers over events.directoryDiff / directoryDeleted; exercised via integration (listing-diff-sync.svelte.ts, new-folder/file dialogs)"
     },
+    "tauri-commands/dialog-events.ts": {
+      "reason": "Thin typed window-management event wrappers (on*/emit) over events.executeCommand / open|focus|close dialog helpers; exercised via integration ((main)/+page.svelte, settings + viewer windows, restricted-settings-bridge.ts)"
+    },
     "tauri-commands/git.ts": {
       "reason": "Thin typed-event listener wrapper over events.gitStateChanged.listen; exercised via integration (git-store.svelte.ts, FullList.svelte)"
     },

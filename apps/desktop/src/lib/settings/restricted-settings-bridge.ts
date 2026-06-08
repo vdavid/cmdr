@@ -16,7 +16,8 @@
  * untrusted).
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { onPersistRestrictedSetting } from '$lib/tauri-commands'
 import { persistSettingFromRestrictedWindow } from './settings-store'
 import { validateSettingValue } from './settings-registry'
 import type { SettingId, SettingsValues } from './types'
@@ -53,8 +54,8 @@ export function handlePersistRestrictedSetting(payload: PersistRestrictedSetting
 /** Registers the bridge listener. Call in onMount of the main window. */
 export async function setupRestrictedSettingsBridge(): Promise<void> {
   if (unlisten) return
-  unlisten = await listen<PersistRestrictedSettingPayload>('persist-restricted-setting', (event) => {
-    handlePersistRestrictedSetting(event.payload)
+  unlisten = await onPersistRestrictedSetting((payload) => {
+    handlePersistRestrictedSetting(payload)
   })
   log.debug('Restricted-settings bridge listener set up')
 }

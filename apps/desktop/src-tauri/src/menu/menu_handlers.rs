@@ -9,7 +9,7 @@
 use std::sync::Mutex;
 
 use tauri::{
-    AppHandle, Emitter, Manager, Runtime,
+    AppHandle, Manager, Runtime,
     menu::{CheckMenuItem, MenuItem, Submenu},
 };
 
@@ -395,11 +395,11 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         if let Some(main_window) = app.get_webview_window("main")
             && main_window.is_focused().unwrap_or(false)
         {
-            let _ = app.emit_to(
-                "main",
-                "execute-command",
-                serde_json::json!({ "commandId": "tab.close" }),
-            );
+            use tauri_specta::Event as _;
+            let _ = crate::window_events::ExecuteCommand {
+                command_id: "tab.close".to_string(),
+            }
+            .emit_to(app, "main");
         } else {
             for (_label, window) in app.webview_windows() {
                 if window.is_focused().unwrap_or(false) {
@@ -415,7 +415,8 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     if id == VIEWER_WORD_WRAP_ID {
         for (label, window) in app.webview_windows() {
             if label.starts_with("viewer-") && window.is_focused().unwrap_or(false) {
-                let _ = app.emit_to(&label, "viewer-word-wrap-toggled", ());
+                use tauri_specta::Event as _;
+                let _ = crate::window_events::ViewerWordWrapToggled.emit_to(app, &label);
                 break;
             }
         }
@@ -457,7 +458,8 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
 
     // === Tab context menu actions: emit tab-context-action directly ===
     if id == TAB_PIN_ID || id == TAB_CLOSE_OTHERS_ID || id == TAB_CLOSE_ID {
-        let _ = app.emit_to("main", "tab-context-action", serde_json::json!({ "action": id }));
+        use tauri_specta::Event as _;
+        let _ = crate::window_events::TabContextAction { action: id.to_string() }.emit_to(app, "main");
         return;
     }
 
@@ -516,11 +518,11 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
                 EDIT_COPY_ID => "edit.copy",
                 _ => "edit.paste",
             };
-            let _ = app.emit_to(
-                "main",
-                "execute-command",
-                serde_json::json!({ "commandId": command_id }),
-            );
+            use tauri_specta::Event as _;
+            let _ = crate::window_events::ExecuteCommand {
+                command_id: command_id.to_string(),
+            }
+            .emit_to(app, "main");
         } else {
             // Send native clipboard action to the first responder chain
             #[cfg(target_os = "macos")]
@@ -593,11 +595,11 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
                 return;
             }
         }
-        let _ = app.emit_to(
-            "main",
-            "execute-command",
-            serde_json::json!({ "commandId": command_id }),
-        );
+        use tauri_specta::Event as _;
+        let _ = crate::window_events::ExecuteCommand {
+            command_id: command_id.to_string(),
+        }
+        .emit_to(app, "main");
     }
 
     // Unknown menu ID: no-op (all known IDs are handled above)

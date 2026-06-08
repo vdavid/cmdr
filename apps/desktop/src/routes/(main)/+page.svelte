@@ -31,6 +31,16 @@
         registerKnownDialogs,
         onViewModeChanged,
         onMenuSort,
+        onExecuteCommand,
+        onOpenSettings,
+        onOpenFileViewer,
+        onFocusFileViewer,
+        onFocusAbout,
+        onFocusConfirmation,
+        onCloseFileViewer,
+        onCloseAllFileViewers,
+        onCloseAbout,
+        onCloseConfirmation,
     } from '$lib/tauri-commands'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { loadSettings, saveSettings } from '$lib/settings-store'
@@ -226,16 +236,20 @@
     /** Set up menu-related event listeners */
     async function setupMenuListeners() {
         // Single unified listener for all menu commands routed through "execute-command"
-        unlistenExecuteCommand = await safeListenTauri('execute-command', (event) => {
-            const { commandId } = event.payload as { commandId: string }
-            // The Rust menu emit (`menu_id_to_command`) and cross-window emits send a bare
-            // string across IPC; the `CommandId` union can't reach over that boundary. Narrow
-            // at the edge so a stale Rust id is dropped here rather than no-oping in the switch
-            // `default`. The Rust↔registry drift test pins the two id sets together.
-            if (isCommandId(commandId)) {
-                void handleCommandExecute(commandId)
-            }
-        })
+        try {
+            unlistenExecuteCommand = await onExecuteCommand((payload) => {
+                const { commandId } = payload
+                // The Rust menu emit (`menu_id_to_command`) and cross-window emits send a bare
+                // string across IPC; the `CommandId` union can't reach over that boundary. Narrow
+                // at the edge so a stale Rust id is dropped here rather than no-oping in the switch
+                // `default`. The Rust↔registry drift test pins the two id sets together.
+                if (isCommandId(commandId)) {
+                    void handleCommandExecute(commandId)
+                }
+            })
+        } catch {
+            // Not in a Tauri environment
+        }
 
         // Per-pane view change from a native-menu click. Rust emits this directly
         // (not via `execute-command`) because the CheckMenuItem already toggled
@@ -311,6 +325,18 @@
         if (unlisten) tauriUnlistenFns.push(unlisten)
     }
 
+    /**
+     * Registers a typed `on*` event wrapper and stores its unlisten for cleanup.
+     * Swallows the non-Tauri-environment rejection, matching `listenTauri`.
+     */
+    async function pushTauri(register: () => Promise<UnlistenFn>): Promise<void> {
+        try {
+            tauriUnlistenFns.push(await register())
+        } catch {
+            // Not in a Tauri environment
+        }
+    }
+
     /** Set up MCP dialog event listeners (close/focus) */
     async function setupDialogListeners() {
         // Settings with section (MCP-specific: "dialog open settings --section shortcuts").
@@ -318,23 +344,25 @@
         // — a BARE string, no anchor (the `dialog` tool has no anchor param, so MCP can't
         // deep-link to a row today; that's future work). Parse defensively (no `as` cast,
         // same discipline as `mcp-listeners.ts`) and wrap the bare string in an array.
-        await listenTauri('open-settings', (event) => {
-            const payload = event.payload
-            const section =
-                payload && typeof payload === 'object' && 'section' in payload && typeof payload.section === 'string'
-                    ? payload.section
-                    : undefined
-            void openSettingsWindow(section ? [section] : undefined)
-        })
+        await pushTauri(() =>
+            onOpenSettings((payload) => {
+                const section = payload.section || undefined
+                void openSettingsWindow(section ? [section] : undefined)
+            }),
+        )
 
         // About dialog
-        await listenTauri('close-about', () => {
-            showAboutWindow = false
-        })
-        await listenTauri('focus-about', () => {
-            // Already shown, just ensure it's visible
-            showAboutWindow = true
-        })
+        await pushTauri(() =>
+            onCloseAbout(() => {
+                showAboutWindow = false
+            }),
+        )
+        await pushTauri(() =>
+            onFocusAbout(() => {
+                // Already shown, just ensure it's visible
+                showAboutWindow = true
+            }),
+        )
 
         // Volume picker
         await listenTauri('open-volume-picker', () => {
@@ -348,39 +376,48 @@
         })
 
         // File viewer
-        await listenTauri('open-file-viewer', (event) => {
-            const payload = event.payload as { path?: string } | undefined
-            if (payload?.path) {
-                // Open viewer for specific path
-                void openFileViewer(payload.path)
-            } else {
-                // Open viewer for cursor file
-                void explorerRef?.openViewerForCursor()
-            }
-        })
-        await listenTauri('close-file-viewer', (event) => {
-            const payload = event.payload as { path?: string } | undefined
-            void closeFileViewer(payload?.path)
-        })
-        await listenTauri('close-all-file-viewers', () => {
-            void closeAllFileViewers()
-        })
-        await listenTauri('focus-file-viewer', (event) => {
-            const payload = event.payload as { path?: string } | undefined
-            void focusFileViewer(payload?.path)
-        })
+        await pushTauri(() =>
+            onOpenFileViewer((payload) => {
+                if (payload.path) {
+                    // Open viewer for specific path
+                    void openFileViewer(payload.path)
+                } else {
+                    // Open viewer for cursor file
+                    void explorerRef?.openViewerForCursor()
+                }
+            }),
+        )
+        await pushTauri(() =>
+            onCloseFileViewer((payload) => {
+                void closeFileViewer(payload.path ?? undefined)
+            }),
+        )
+        await pushTauri(() =>
+            onCloseAllFileViewers(() => {
+                void closeAllFileViewers()
+            }),
+        )
+        await pushTauri(() =>
+            onFocusFileViewer((payload) => {
+                void focusFileViewer(payload.path ?? undefined)
+            }),
+        )
 
         // Confirmation dialog - handled by DualPaneExplorer
-        await listenTauri('close-confirmation', () => {
-            explorerRef?.closeConfirmationDialog()
-        })
-        await listenTauri('focus-confirmation', () => {
-            // The confirmation dialog is a modal overlay in the main window.
-            // If it's open, ensure the main window is focused so the dialog is visible.
-            if (explorerRef?.isConfirmationDialogOpen()) {
-                void focusMainWindow()
-            }
-        })
+        await pushTauri(() =>
+            onCloseConfirmation(() => {
+                explorerRef?.closeConfirmationDialog()
+            }),
+        )
+        await pushTauri(() =>
+            onFocusConfirmation(() => {
+                // The confirmation dialog is a modal overlay in the main window.
+                // If it's open, ensure the main window is focused so the dialog is visible.
+                if (explorerRef?.isConfirmationDialogOpen()) {
+                    void focusMainWindow()
+                }
+            }),
+        )
 
         // Debug error injection (dev mode only)
         if (import.meta.env.DEV) {

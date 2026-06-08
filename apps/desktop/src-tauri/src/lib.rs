@@ -139,6 +139,7 @@ mod volume_broadcast;
 mod volumes;
 #[cfg(target_os = "linux")]
 mod volumes_linux;
+mod window_events;
 
 // Non-macOS stubs (Linux has real implementations for everything;
 // other platforms use stubs for all platform-specific features)

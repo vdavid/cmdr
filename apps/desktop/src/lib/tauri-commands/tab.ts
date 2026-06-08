@@ -1,5 +1,5 @@
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { commands } from '$lib/ipc/bindings'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { commands, events } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 /** Shows a native context menu for a tab (fire-and-forget). */
@@ -18,7 +18,7 @@ export async function showTabContextMenu(
  * `MenuEvent` through the event loop.
  */
 export function onTabContextAction(handler: (action: string) => void): Promise<UnlistenFn> {
-  return listen<{ action: string }>('tab-context-action', (event) => {
+  return events.tabContextAction.listen((event) => {
     handler(event.payload.action)
   })
 }

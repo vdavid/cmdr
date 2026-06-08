@@ -23,6 +23,12 @@
 
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri_specta::Event as _;
+
+use crate::window_events::{
+    CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
+    FocusFileViewer, FocusSettings, McpSettingsClose, OpenFileViewer, OpenSettings,
+};
 
 use super::{
     AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_generation,
@@ -77,11 +83,17 @@ async fn execute_dialog_open<R: Runtime>(
         "settings" => {
             if let Some(section) = section {
                 // Section-specific: MCP-only event handled by setupDialogListeners
-                app.emit_to("main", "open-settings", json!({"section": section}))?;
+                OpenSettings {
+                    section: section.to_string(),
+                }
+                .emit_to(app, "main")?;
                 wait_for_ack(app, AckSignal::WindowAppeared("settings"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!(format!("OK: Opened settings at {section}")))
             } else {
-                app.emit_to("main", "execute-command", json!({"commandId": "app.settings"}))?;
+                ExecuteCommand {
+                    command_id: "app.settings".to_string(),
+                }
+                .emit_to(app, "main")?;
                 wait_for_ack(app, AckSignal::WindowAppeared("settings"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!("OK: Opened settings"))
             }
@@ -91,18 +103,24 @@ async fn execute_dialog_open<R: Runtime>(
             if let Some(path) = path {
                 // Timed, virtual-path-aware existence check (see executor/mod.rs)
                 validate_path_exists(path).await?;
-                app.emit("open-file-viewer", json!({"path": path}))?;
+                OpenFileViewer {
+                    path: Some(path.to_string()),
+                }
+                .emit_to(app, "main")?;
                 wait_for_ack(app, AckSignal::WindowAppeared("viewer"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!(format!("OK: Opened file viewer for {path}")))
             } else {
                 // Open for file under cursor (validation happens in frontend)
-                app.emit("open-file-viewer", ())?;
+                OpenFileViewer { path: None }.emit_to(app, "main")?;
                 wait_for_ack(app, AckSignal::WindowAppeared("viewer"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!("OK: Opened file viewer for cursor file"))
             }
         }
         "about" => {
-            app.emit_to("main", "execute-command", json!({"commandId": "app.about"}))?;
+            ExecuteCommand {
+                command_id: "app.about".to_string(),
+            }
+            .emit_to(app, "main")?;
             // `about` is a soft dialog (ModalDialog overlay in the main window), not a
             // separate Tauri window. Track via SoftDialogTracker.
             wait_for_ack(app, AckSignal::SoftDialogAppeared("about"), DEFAULT_ACK_TIMEOUT).await?;
@@ -113,7 +131,10 @@ async fn execute_dialog_open<R: Runtime>(
             // handler covers all three surfaces. The wizard is a soft sheet (its own
             // `OnboardingWizard.svelte`, not a ModalDialog consumer), but it calls
             // `notifyDialogOpened('onboarding')` on mount, so SoftDialogTracker fires.
-            app.emit_to("main", "execute-command", json!({"commandId": "cmdr.openOnboarding"}))?;
+            ExecuteCommand {
+                command_id: "cmdr.openOnboarding".to_string(),
+            }
+            .emit_to(app, "main")?;
             wait_for_ack(app, AckSignal::SoftDialogAppeared("onboarding"), DEFAULT_ACK_TIMEOUT).await?;
             Ok(json!("OK: Opened onboarding wizard"))
         }
@@ -134,7 +155,7 @@ async fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
     // message; that's the correct contract (you can't focus what isn't there).
     match dialog_type {
         "settings" => {
-            app.emit("focus-settings", ())?;
+            FocusSettings.emit_to(app, "main")?;
             wait_for_ack(app, AckSignal::WindowAppeared("settings"), DEFAULT_ACK_TIMEOUT).await?;
             Ok(json!("OK: Focused settings"))
         }
@@ -142,23 +163,26 @@ async fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
             if let Some(path) = path {
                 // Timed, virtual-path-aware existence check (see executor/mod.rs)
                 validate_path_exists(path).await?;
-                app.emit("focus-file-viewer", json!({"path": path}))?;
+                FocusFileViewer {
+                    path: Some(path.to_string()),
+                }
+                .emit_to(app, "main")?;
                 wait_for_ack(app, AckSignal::WindowAppeared("viewer"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!(format!("OK: Focused file viewer for {path}")))
             } else {
                 // Focus most recently opened file-viewer
-                app.emit("focus-file-viewer", ())?;
+                FocusFileViewer { path: None }.emit_to(app, "main")?;
                 wait_for_ack(app, AckSignal::WindowAppeared("viewer"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!("OK: Focused most recent file viewer"))
             }
         }
         "about" => {
-            app.emit("focus-about", ())?;
+            FocusAbout.emit_to(app, "main")?;
             wait_for_ack(app, AckSignal::SoftDialogAppeared("about"), DEFAULT_ACK_TIMEOUT).await?;
             Ok(json!("OK: Focused about dialog"))
         }
         "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
-            app.emit("focus-confirmation", ())?;
+            FocusConfirmation.emit_to(app, "main")?;
             // Soft dialogs: the tracker is the source of truth.
             wait_for_ack(
                 app,
@@ -180,7 +204,7 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
     match dialog_type {
         "settings" => {
             if app.webview_windows().contains_key("settings") {
-                app.emit_to("settings", "mcp-settings-close", ())?;
+                McpSettingsClose.emit_to(app, "settings")?;
                 wait_for_ack(app, AckSignal::WindowDisappeared("settings"), DEFAULT_ACK_TIMEOUT).await?;
             }
             // If the settings window wasn't open to begin with, the close is a no-op
@@ -195,7 +219,10 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
                 return Err(ToolError::invalid_params("No file viewer windows are open."));
             }
             if let Some(path) = path {
-                app.emit("close-file-viewer", json!({"path": path}))?;
+                CloseFileViewer {
+                    path: Some(path.to_string()),
+                }
+                .emit_to(app, "main")?;
                 // Closing one of N viewers: ack when the count drops below `before`.
                 // If the path doesn't match any open viewer, the count stays put and
                 // we time out, which is the right contract (caller asked to close a
@@ -211,7 +238,7 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
                 .await?;
                 Ok(json!(format!("OK: Closed file viewer for {path}")))
             } else {
-                app.emit("close-all-file-viewers", ())?;
+                CloseAllFileViewers.emit_to(app, "main")?;
                 // Close-all: ack when zero viewers remain (`count < 1`).
                 wait_for_ack(
                     app,
@@ -230,12 +257,12 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
             // SoftDialogTracker (id: "about"). If it isn't open, the tracker doesn't
             // hold the id and `SoftDialogDisappeared` returns immediately, so close is
             // a fast no-op in that case, no timeout.
-            app.emit("close-about", ())?;
+            CloseAbout.emit_to(app, "main")?;
             wait_for_ack(app, AckSignal::SoftDialogDisappeared("about"), DEFAULT_ACK_TIMEOUT).await?;
             Ok(json!("OK: Closed about dialog"))
         }
         "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
-            app.emit("close-confirmation", ())?;
+            CloseConfirmation.emit_to(app, "main")?;
             // Soft confirmation dialogs unmount their `ModalDialog`, which fires
             // `notifyDialogClosed` and updates the `SoftDialogTracker`. Wait for the
             // tracker to lose the dialog ID. Cancel doesn't reliably bump generation

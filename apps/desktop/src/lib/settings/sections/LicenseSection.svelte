@@ -1,12 +1,12 @@
 <script lang="ts">
     import { onMount } from 'svelte'
-    import { emitTo } from '@tauri-apps/api/event'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import SettingsSection from '../components/SettingsSection.svelte'
     import {
         openExternalUrl,
         getLicenseInfo,
         getLicenseStatus,
+        emitExecuteCommand,
         type LicenseInfo,
         type LicenseStatus,
     } from '$lib/tauri-commands'
@@ -37,7 +37,7 @@
         // Cross-window `execute-command` emit: this `commandId` must stay a valid frontend
         // `COMMAND_IDS` entry (it's narrowed by `isCommandId` in `+page.svelte` before
         // dispatch). The `rust-command-id-drift.test.ts` test pins it to the registry.
-        await emitTo('main', 'execute-command', { commandId: 'app.licenseKey' })
+        await emitExecuteCommand('app.licenseKey')
         await getCurrentWindow().close()
     }
 

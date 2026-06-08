@@ -12,6 +12,7 @@
         viewerSetupMenu,
         viewerSetWordWrap,
         isIpcError,
+        onViewerWordWrapToggled,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
@@ -574,7 +575,7 @@
             })
             .catch(() => {})
 
-        unlistenWordWrap = await listen('viewer-word-wrap-toggled', () => {
+        unlistenWordWrap = await onViewerWordWrapToggled(() => {
             toggleWordWrap(true)
         })
 

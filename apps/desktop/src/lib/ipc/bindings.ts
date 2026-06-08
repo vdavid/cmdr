@@ -2247,6 +2247,10 @@ export const events = {
   aiServerReady: makeEvent<AiServerReady>('ai-server-ready'),
   aiStarting: makeEvent<AiStarting>('ai-starting'),
   aiVerifying: makeEvent<AiVerifying>('ai-verifying'),
+  closeAbout: makeEvent<CloseAbout>('close-about'),
+  closeAllFileViewers: makeEvent<CloseAllFileViewers>('close-all-file-viewers'),
+  closeConfirmation: makeEvent<CloseConfirmation>('close-confirmation'),
+  closeFileViewer: makeEvent<CloseFileViewer>('close-file-viewer'),
   directoryDeleted: makeEvent<DirectoryDeletedEvent>('directory-deleted'),
   directoryDiff: makeEvent<DirectoryDiff>('directory-diff'),
   downloadDetected: makeEvent<DownloadDetectedEvent>('download-detected'),
@@ -2256,6 +2260,11 @@ export const events = {
   dragOutSessionStarted: makeEvent<SessionStartedEvent>('drag-out-session-started'),
   dryRunComplete: makeEvent<DryRunResult>('dry-run-complete'),
   errorReportAutoSent: makeEvent<ErrorReportAutoSent>('error-report-auto-sent'),
+  executeCommand: makeEvent<ExecuteCommand>('execute-command'),
+  focusAbout: makeEvent<FocusAbout>('focus-about'),
+  focusConfirmation: makeEvent<FocusConfirmation>('focus-confirmation'),
+  focusFileViewer: makeEvent<FocusFileViewer>('focus-file-viewer'),
+  focusSettings: makeEvent<FocusSettings>('focus-settings'),
   gitStateChanged: makeEvent<GitStateChangedPayload>('git-state-changed'),
   globalShortcutFired: makeEvent<GlobalShortcutFired>('global-shortcut-fired'),
   indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
@@ -2275,6 +2284,7 @@ export const events = {
   listingProgress: makeEvent<ListingProgressEvent>('listing-progress'),
   listingReadComplete: makeEvent<ListingReadCompleteEvent>('listing-read-complete'),
   lowDiskSpace: makeEvent<LowDiskSpacePayload>('low-disk-space'),
+  mcpSettingsClose: makeEvent<McpSettingsClose>('mcp-settings-close'),
   menuSort: makeEvent<MenuSort>('menu-sort'),
   mtpDeviceConnected: makeEvent<MtpDeviceConnected>('mtp-device-connected'),
   mtpDeviceDisconnected: makeEvent<MtpDeviceDisconnected>('mtp-device-disconnected'),
@@ -2289,6 +2299,9 @@ export const events = {
   networkHostFound: makeEvent<NetworkHostFound>('network-host-found'),
   networkHostLost: makeEvent<NetworkHostLost>('network-host-lost'),
   networkHostResolved: makeEvent<NetworkHostResolved>('network-host-resolved'),
+  openFileViewer: makeEvent<OpenFileViewer>('open-file-viewer'),
+  openSettings: makeEvent<OpenSettings>('open-settings'),
+  persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
   quickLookClosed: makeEvent<QuickLookClosed>('quick-look-closed'),
   quickLookKey: makeEvent<QuickLookKeyEvent>('quick-look-key'),
   restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
@@ -2302,7 +2315,9 @@ export const events = {
   settingsChanged: makeEvent<SettingsChanged>('settings-changed'),
   smbConnectionChanged: makeEvent<SmbConnectionChanged>('smb-connection-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
+  tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
+  viewerWordWrapToggled: makeEvent<ViewerWordWrapToggled>('viewer-word-wrap-toggled'),
   volumeContextAction: makeEvent<VolumeContextAction>('volume-context-action'),
   volumeMounted: makeEvent<VolumeMounted>('volume-mounted'),
   volumeSpaceChanged: makeEvent<VolumeSpaceChanged>('volume-space-changed'),
@@ -2503,6 +2518,30 @@ export type ClipboardReadResult = {
    *  practice these resolve; `None` falls back to the flattened wording.
    */
   isDirectory: (boolean | null)[]
+}
+
+// `close-about`: dismiss the about dialog overlay (MCP `dialog close about`).
+export type CloseAbout = null
+
+/**
+ *  `close-all-file-viewers`: close every open viewer (MCP `dialog close
+ *  file-viewer` with no path).
+ */
+export type CloseAllFileViewers = null
+
+/**
+ *  `close-confirmation`: cancel the open confirmation overlay (MCP `dialog close
+ *  <confirmation>`).
+ */
+export type CloseConfirmation = null
+
+/**
+ *  `close-file-viewer`: close one viewer. `path` present → that file's viewer;
+ *  absent matches the FE's optional-path close path (MCP `dialog close
+ *  file-viewer`).
+ */
+export type CloseFileViewer = {
+  path: string | null
 }
 
 export type CompressionInfoDto = {
@@ -2859,6 +2898,17 @@ export type ErrorReportAutoSent = {
 }
 
 /**
+ *  `execute-command`: the single unified menu/cross-window command relay. The
+ *  native menu (`menu/menu_handlers.rs`), the MCP dialog/app tools
+ *  (`mcp/executor/`), and the settings window's License section all emit this to
+ *  the main window, which narrows `command_id` to a registry `CommandId` and
+ *  dispatches it. Wire key stays `commandId` via `rename_all`.
+ */
+export type ExecuteCommand = {
+  commandId: string
+}
+
+/**
  *  User-selectable text encoding for the file viewer.
  *
  *  The variants are deliberately narrow: every entry is something a user is
@@ -2961,6 +3011,26 @@ export type FileEntry = {
    */
   displaySizeTooltip: string | null
 }
+
+// `focus-about`: ensure the (soft, main-window-overlay) about dialog is visible.
+export type FocusAbout = null
+
+/**
+ *  `focus-confirmation`: focus the main window so an open confirmation overlay is
+ *  visible (MCP `dialog focus <confirmation>`).
+ */
+export type FocusConfirmation = null
+
+/**
+ *  `focus-file-viewer`: focus a viewer. `path` present → that file's viewer;
+ *  absent → the most recently opened viewer (MCP `dialog focus`).
+ */
+export type FocusFileViewer = {
+  path: string | null
+}
+
+// `focus-settings`: bring the settings window forward (MCP `dialog focus`).
+export type FocusSettings = null
 
 export type FriendlyError = {
   category: ErrorCategory
@@ -3512,6 +3582,14 @@ export type ManualConnectResult = {
 export type Markdown = string & { readonly __markdown: unique symbol }
 
 /**
+ *  `mcp-settings-close`: ask the settings window to close itself. Emitted via a
+ *  distinct static `emit_to("settings", …)` (NOT through the generic `mcp-*`
+ *  runtime relay), so it's cleanly typeable. The settings window's `+page.svelte`
+ *  listens and closes (MCP `dialog close settings`).
+ */
+export type McpSettingsClose = null
+
+/**
  *  `menu-sort`: a Sort-by menu item (column or order) clicked. `action` is
  *  `"sortBy"` (then `value` is a column name) or `"sortOrder"` (then `value` is
  *  `"asc"` / `"desc"`). The FE has a dedicated listener that maps this onto a
@@ -3830,6 +3908,22 @@ export type NetworkHostLost = {
  */
 export type NetworkHostResolved = NetworkHost
 
+/**
+ *  `open-file-viewer`: open a viewer window. `path` present → open that file;
+ *  absent → open the file under the cursor (MCP `dialog open file-viewer`).
+ */
+export type OpenFileViewer = {
+  path: string | null
+}
+
+/**
+ *  `open-settings`: open the settings window deep-linked to `section` (MCP
+ *  `dialog open settings --section …`). Emitted to the main window.
+ */
+export type OpenSettings = {
+  section: string
+}
+
 // Current status of an operation for query APIs.
 export type OperationStatus = {
   operationId: string
@@ -3929,6 +4023,17 @@ export type PathVolumeResolution = {
 }
 
 export type PatternType = 'glob' | 'regex'
+
+/**
+ *  `persist-restricted-setting`: the viewer (a restricted-capability window with
+ *  no store access) forwards an allowlisted setting write to the main window,
+ *  which persists it through the normal store pipeline. Emitted to the main
+ *  window from `persist_restricted_window_setting`.
+ */
+export type PersistRestrictedSetting = {
+  id: string
+  value: boolean
+}
 
 // A completed or in-progress phase in the indexing timeline.
 export type PhaseRecord = {
@@ -4669,6 +4774,15 @@ export type SystemTextSizeChanged = {
   multiplier: number
 }
 
+/**
+ *  `tab-context-action`: a tab right-click context-menu item was clicked. The
+ *  `action` is the raw menu item id (`TAB_PIN_ID` / `TAB_CLOSE_OTHERS_ID` /
+ *  `TAB_CLOSE_ID`); the FE maps it. Emitted to the main window.
+ */
+export type TabContextAction = {
+  action: string
+}
+
 // Represents a tab in a pane (for MCP state reporting).
 export type TabInfo = {
   id: string
@@ -4879,6 +4993,12 @@ export type ViewerSessionStatus = {
   isIndexing: boolean
   totalLines: number | null
 }
+
+/**
+ *  `viewer-word-wrap-toggled`: the View > Word wrap menu item was clicked while a
+ *  viewer window had focus. Emitted to that specific viewer's label.
+ */
+export type ViewerWordWrapToggled = null
 
 /**
  *  Typed `volume-context-action` Tauri event. Emitted to the `main` window when

@@ -266,6 +266,26 @@ listeners). All typeable events from categories (a), (c), (d) and the const-name
 **Explicitly excluded (stay string-based):** the entire `mcp-*` relay family (b/e) and `viewer:file-changed:<id>` (e).
 Note this in the migration's done-criteria so a later agent doesn't try to "finish" them.
 
+## ✅ Done
+
+The migration is **complete**. All seven partitions landed; every typeable event derives `tauri_specta::Event`, has a
+generated `events.<name>` helper in `bindings.ts`, and is consumed through a thin `on<Event>` (or `emit<Event>`) wrapper
+in `tauri-commands/`. Partition 7 (window management) put its structs in the always-compiled
+`src-tauri/src/window_events.rs`, converts the MCP dialog / menu / restricted-settings emit sites to
+`payload.emit_to(app, target)`, and needed **no** capability-file changes (the listening windows already carry
+`core:event:default`, which a typed `emit_to` reuses under the same wire name).
+
+**Exactly two families intentionally stay string-based** (both are specta-unrepresentable, not oversights — don't try to
+"finish" them):
+
+- **The `mcp-*` MCP-dispatch relay** (`mcp/executor/mod.rs`, `mcp/resources/mod.rs`): a generic
+  `mcp_round_trip_with_timeout(app, event: &str, payload: serde_json::Value, …)` with a runtime-built name and a
+  free-form `Value` payload. (`mcp-settings-close` is NOT in this set: it's a distinct static `emit_to`, so it WAS
+  typed.)
+- **`viewer:file-changed:<session-id>`** (`file_viewer/session.rs`): the session id is interpolated into the event name
+  at runtime, so there's no static struct for `collect_events!`. Retyping it would mean a static `viewer-file-changed`
+  event with `session_id` in the payload — a behavior change, out of scope.
+
 ### Orchestration — serialize the shared chokepoints
 
 Two resources are shared and must NOT be edited concurrently by workers:

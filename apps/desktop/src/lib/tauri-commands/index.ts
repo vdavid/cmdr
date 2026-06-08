@@ -303,6 +303,26 @@ export { onDownloadDetected, onGlobalShortcutFired } from './downloads'
 // Restricted-paths event
 export { onRestrictedPathsChanged } from './restricted-paths'
 
+// Window-management events (MCP dialog lifecycle, execute-command relay,
+// settings self-close, viewer word-wrap, restricted-settings forward)
+export {
+  onExecuteCommand,
+  emitExecuteCommand,
+  onOpenSettings,
+  onOpenFileViewer,
+  onFocusSettings,
+  onFocusFileViewer,
+  onFocusAbout,
+  onFocusConfirmation,
+  onCloseFileViewer,
+  onCloseAllFileViewers,
+  onCloseAbout,
+  onCloseConfirmation,
+  onMcpSettingsClose,
+  onViewerWordWrapToggled,
+  onPersistRestrictedSetting,
+} from './dialog-events'
+
 // Licensing
 export {
   getLicenseStatus,
