@@ -223,9 +223,6 @@
     "settings/sections/LoggingSection.svelte": {
       "reason": "UI section, simple rendering"
     },
-    "settings/sections/McpServerSection.svelte": {
-      "reason": "UI section, depends on Tauri APIs"
-    },
     "settings/sections/MtpSection.svelte": {
       "reason": "UI section, simple rendering"
     },

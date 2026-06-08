@@ -4,32 +4,38 @@ use tauri::{AppHandle, Runtime};
 
 use crate::mcp;
 
-/// Start or stop the MCP server based on the user's setting.
+/// Start or stop the MCP server based on the user's setting. On enable, binds the requested
+/// port exactly: a busy port returns `McpServerOutcome::PortInUse` (server left as it was)
+/// rather than silently landing on a different port. On disable, waits for the socket to
+/// release so an immediate re-enable on the same port binds cleanly.
 #[tauri::command]
 #[specta::specta]
-pub async fn set_mcp_enabled<R: Runtime + 'static>(app: AppHandle<R>, enabled: bool, port: u16) -> Result<(), String> {
+pub async fn set_mcp_enabled<R: Runtime + 'static>(
+    app: AppHandle<R>,
+    enabled: bool,
+    port: u16,
+) -> Result<mcp::McpServerOutcome, String> {
     if enabled {
-        if !mcp::is_mcp_running() {
-            let config = mcp::McpConfig::from_settings_and_env(Some(true), Some(port));
-            mcp::start_mcp_server(app, config).await?;
-        }
+        let config = mcp::McpConfig::from_settings_and_env(Some(true), Some(port));
+        mcp::rebind_interactive(app, config).await
     } else {
-        mcp::stop_mcp_server();
+        mcp::stop_mcp_server_and_wait().await;
+        Ok(mcp::McpServerOutcome::Stopped)
     }
-    Ok(())
 }
 
-/// Restart the MCP server on a new port. No-op if the server isn't running.
+/// Restart the running MCP server on a new port (zero-downtime: the new listener binds
+/// before the old one is retired). A busy port leaves the server running on its current
+/// port and returns `McpServerOutcome::PortInUse`. No-op (`Stopped`) if the server isn't
+/// running — enabling is the toggle's job, not the port stepper's.
 #[tauri::command]
 #[specta::specta]
-pub async fn set_mcp_port<R: Runtime + 'static>(app: AppHandle<R>, port: u16) -> Result<(), String> {
+pub async fn set_mcp_port<R: Runtime + 'static>(app: AppHandle<R>, port: u16) -> Result<mcp::McpServerOutcome, String> {
     if !mcp::is_mcp_running() {
-        return Ok(());
+        return Ok(mcp::McpServerOutcome::Stopped);
     }
-
-    mcp::stop_mcp_server();
     let config = mcp::McpConfig::from_settings_and_env(Some(true), Some(port));
-    mcp::start_mcp_server(app, config).await
+    mcp::rebind_interactive(app, config).await
 }
 
 /// Returns whether the MCP server is currently running.

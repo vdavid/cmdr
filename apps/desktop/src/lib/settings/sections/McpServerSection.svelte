@@ -12,6 +12,7 @@
         setMcpPort,
         getMcpRunning,
         getMcpPort,
+        type McpServerOutcome,
     } from '$lib/tauri-commands'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
@@ -81,6 +82,19 @@
         }
     })
 
+    /**
+     * Reflect a server lifecycle outcome in local UI state. A `portInUse` outcome means the
+     * backend left the server as it was (zero disruption) and we surface the in-use notice
+     * plus a suggested alternative — the same affordance the server-off preview offers.
+     * `running` / `stopped` are picked up by the subsequent `syncState()`.
+     */
+    async function applyOutcome(outcome: McpServerOutcome): Promise<void> {
+        if (outcome.kind === 'portInUse') {
+            portStatus = 'unavailable'
+            suggestedPort = await findAvailablePort(outcome.requested)
+        }
+    }
+
     async function applyMcpEnabled(enabled: boolean): Promise<void> {
         serverError = null
         serverWarning = null
@@ -88,7 +102,8 @@
         suggestedPort = null
         const port = getSetting('developer.mcpPort')
         try {
-            await setMcpEnabled(enabled, port)
+            const outcome = await setMcpEnabled(enabled, port)
+            await applyOutcome(outcome)
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error)
             log.error('Failed to toggle MCP server: {error}', { error: message })
@@ -118,9 +133,11 @@
         const wasRunning = await getMcpRunning()
 
         if (wasRunning) {
-            // Server is running: restart on the new port
+            // Server is running: rebind to the new port (zero-downtime; a busy port leaves
+            // the server on its current port and reports portInUse).
             try {
-                await setMcpPort(port)
+                const outcome = await setMcpPort(port)
+                await applyOutcome(outcome)
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : String(error)
                 log.error('Failed to change MCP port: {error}', { error: message })
@@ -136,6 +153,19 @@
 
     async function checkPort(): Promise<void> {
         const port = getSetting('developer.mcpPort')
+
+        // Port 0 means "ephemeral" — there's nothing to check, the kernel always finds one.
+        if (port === 0) {
+            portStatus = null
+            return
+        }
+        // The port we're already bound to reads as "in use" to a fresh probe (we hold it).
+        // That's not a conflict, so report it available instead of suggesting a move.
+        if (serverRunning && runningPort === port) {
+            portStatus = 'available'
+            return
+        }
+
         portStatus = 'checking'
         suggestedPort = null
 
@@ -190,30 +220,40 @@
     {#if shouldShow('developer.mcpEnabled') || shouldShow('developer.mcpPort')}
         {#if serverError}
             <div class="port-status unavailable">{serverError}</div>
-        {:else if serverWarning}
-            <div class="port-status warning">{serverWarning}</div>
-        {:else if serverRunning && runningPort}
-            <div class="port-status active">
-                Server is running on port {runningPort}
-                {#if getSetting('developer.mcpPort') === 0}
-                    (ephemeral)
-                {:else if runningPort !== getSetting('developer.mcpPort')}
-                    (port {getSetting('developer.mcpPort')} was in use)
-                {/if}
-            </div>
-        {:else if portStatus === 'checking'}
-            <div class="port-status checking">Checking port availability...</div>
-        {:else if portStatus === 'available'}
-            <div class="port-status available">Port {getSetting('developer.mcpPort')} is available</div>
-        {:else if portStatus === 'unavailable'}
-            <div class="port-status unavailable">
-                Port {getSetting('developer.mcpPort')} is in use
-                {#if suggestedPort}
-                    <Button variant="primary" size="mini" onclick={useSuggestedPort}>
-                        Use port {suggestedPort} instead
-                    </Button>
-                {/if}
-            </div>
+        {:else}
+            {#if serverWarning}
+                <div class="port-status warning">{serverWarning}</div>
+            {/if}
+            {#if serverRunning && runningPort}
+                <div class="port-status active">
+                    Server is running on port {runningPort}
+                    {#if getSetting('developer.mcpPort') === 0}
+                        (ephemeral)
+                    {:else if runningPort !== getSetting('developer.mcpPort') && portStatus !== 'unavailable'}
+                        (port {getSetting('developer.mcpPort')} was in use)
+                    {/if}
+                </div>
+            {/if}
+            <!-- The availability notice coexists with the running line: a failed port change
+                 (portInUse) shows both "running on the old port" and "the new one is busy". -->
+            {#if portStatus === 'checking'}
+                <div class="port-status checking">Checking port availability...</div>
+            {:else if portStatus === 'available' && !serverRunning}
+                <div class="port-status available">Port {getSetting('developer.mcpPort')} is available</div>
+            {:else if portStatus === 'unavailable'}
+                <div class="port-status unavailable">
+                    {#if serverRunning && runningPort}
+                        Port {getSetting('developer.mcpPort')} is in use, still running on port {runningPort}
+                    {:else}
+                        Port {getSetting('developer.mcpPort')} is in use
+                    {/if}
+                    {#if suggestedPort}
+                        <Button variant="primary" size="mini" onclick={useSuggestedPort}>
+                            Use port {suggestedPort} instead
+                        </Button>
+                    {/if}
+                </div>
+            {/if}
         {/if}
     {/if}
 </SettingsSection>

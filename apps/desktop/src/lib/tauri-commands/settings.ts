@@ -118,16 +118,36 @@ export async function setShowVirtualGitPortal(enabled: boolean): Promise<void> {
 // MCP server commands
 // ============================================================================
 
-/** Starts or stops the MCP server. Pass the current port so it binds correctly on enable. */
-export async function setMcpEnabled(enabled: boolean, port: number): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
-  await invoke('set_mcp_enabled', { enabled, port })
+/**
+ * Result of an MCP server lifecycle transition. Mirrors the Rust `McpServerOutcome` enum
+ * (`apps/desktop/src-tauri/src/mcp/server.rs`); the wire shape is pinned by the
+ * `mcp_server_outcome_json_shape` Rust test. Discriminated on `kind` so callers branch on a
+ * typed tag, never a message string (AGENTS.md § "No string-matching state classification").
+ * Hand-maintained because `set_mcp_*` are generic over `R: Runtime` and excluded from the
+ * specta bindings (see `lib/ipc/CLAUDE.md` § Excluded commands).
+ */
+export type McpServerOutcome =
+  | { kind: 'running'; port: number }
+  | { kind: 'stopped' }
+  | { kind: 'portInUse'; requested: number }
+
+/**
+ * Starts or stops the MCP server. Pass the current port so it binds correctly on enable.
+ * On enable, a busy port yields `{ kind: 'portInUse' }` and leaves the server as it was.
+ */
+export async function setMcpEnabled(enabled: boolean, port: number): Promise<McpServerOutcome> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic command (<R: Runtime>), excluded from specta bindings
+  return invoke<McpServerOutcome>('set_mcp_enabled', { enabled, port })
 }
 
-/** Restarts the MCP server on a new port. No-op if the server isn't currently running. */
-export async function setMcpPort(port: number): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
-  await invoke('set_mcp_port', { port })
+/**
+ * Restarts the running MCP server on a new port (zero-downtime). No-op (`{ kind: 'stopped' }`)
+ * if the server isn't running; a busy port yields `{ kind: 'portInUse' }` and keeps the
+ * server on its current port.
+ */
+export async function setMcpPort(port: number): Promise<McpServerOutcome> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic command (<R: Runtime>), excluded from specta bindings
+  return invoke<McpServerOutcome>('set_mcp_port', { port })
 }
 
 /** Returns whether the MCP server is currently running. */

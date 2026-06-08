@@ -368,6 +368,7 @@ export type {
   SystemMemoryInfo,
   SuggestionStreamEvent,
   FolderSuggestionsStream,
+  McpServerOutcome,
 } from './settings'
 
 // Tab context menu

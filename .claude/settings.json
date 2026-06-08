@@ -1,9 +1,4 @@
 {
-  "mcpServers": {
-    "cmdr": {
-      "url": "http://localhost:9225/mcp"
-    }
-  },
   "hooks": {
     "PreToolUse": [
       {
