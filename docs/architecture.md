@@ -8,56 +8,64 @@ are in the [Cross-cutting patterns](#cross-cutting-patterns) section below.
 
 All under `apps/desktop/src/lib/`.
 
-| Directory                   | Purpose                                                                                                                                                                       |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-explorer/`            | Dual-pane file explorer: pane orchestration, selection, navigation, sorting. State lives in the `explorer-state.svelte.ts` module store                                       |
-| `file-explorer/views/`      | Virtual-scrolling file lists (Brief + Full modes), 100k+ files                                                                                                                |
-| `file-explorer/drag/`       | Native drag-and-drop (drag-out, drop-in, pane-to-pane, macOS image swizzle)                                                                                                   |
-| `file-explorer/rename/`     | Inline rename with validation, conflict resolution, extension change                                                                                                          |
-| `file-explorer/selection/`  | Space/Shift/Cmd selection, range operations                                                                                                                                   |
-| `file-explorer/navigation/` | Back/forward history, breadcrumb, path utilities                                                                                                                              |
-| `file-explorer/network/`    | Network browser UI (SMB share browsing, login form)                                                                                                                           |
-| `file-explorer/git/`        | Git browser frontend: breadcrumb chip, status columns, reactive `RepoInfo` store, git portal icons. Git settings in `settings/sections/GitSection.svelte`                     |
-| `file-explorer/pane/`       | Per-pane orchestration: cursor, scroll, dual-pane coordination. Owns the single `navigate.ts` transaction, the persistence subscriber, and the `volume-capabilities.ts` table |
-| `file-explorer/tabs/`       | Tab bar and per-pane tab state                                                                                                                                                |
-| `file-explorer/operations/` | Pane-scoped operation hooks (delete, refresh, swap) wired into the command registry                                                                                           |
-| `file-explorer/quick-look/` | Frontend Quick Look (Shift+Space) trigger and keyboard plumbing                                                                                                               |
-| `file-operations/`          | Umbrella over `transfer/`, `delete/`, `mkdir/`, `mkfile/` dialogs (shared progress dialog) plus `scan-throughput.ts`                                                          |
-| `file-operations/transfer/` | Copy + move dialogs, progress dialog (reused by delete/trash), error rendering, scan-phase body                                                                               |
-| `file-operations/delete/`   | F8 / Shift+F8 delete + trash confirmation dialog and pure utilities                                                                                                           |
-| `file-operations/mkdir/`    | F7 new-folder dialog with AI folder-name suggestions                                                                                                                          |
-| `file-operations/mkfile/`   | Shift+F4 new-file dialog                                                                                                                                                      |
-| `file-viewer/`              | Read-only file viewer (separate window, virtual scrolling)                                                                                                                    |
-| `settings/`                 | Settings UI + registry-based architecture, reactive state                                                                                                                     |
-| `shortcuts/`                | Keyboard shortcut customization, scope hierarchy, conflict detection                                                                                                          |
-| `ipc/`                      | Auto-generated `tauri-specta` bindings (`bindings.ts`). Don't edit by hand; call through `tauri-commands/`                                                                    |
-| `tauri-commands/`           | Typed TypeScript wrappers around `ipc/bindings.ts`. Canonical import path for backend IPC                                                                                     |
-| `command-palette/`          | Fuzzy command search (~77 palette-visible commands)                                                                                                                           |
-| `commands/`                 | Typed command registry (`CommandId` union + `CommandArgs`), fuzzy search engine. Every entry path dispatches through `handleCommandExecute`                                   |
-| `licensing/`                | License validation, commercial reminders, expiration modals                                                                                                                   |
-| `logging/`                  | Unified logging: LogTape config, batching bridge to Rust, verbose toggle                                                                                                      |
-| `error-reporter/`           | Error report dialog (Flow A), auto-send toast (Flow B), shared `error-report-flow`                                                                                            |
-| `crash-reporter/`           | Frontend half of the crash pipeline: detects the persisted crash file and offers to send it                                                                                   |
-| `ai/`                       | Local LLM features (folder suggestions), download flow. Runtime states only; first-launch consent owned by `onboarding/`                                                      |
-| `indexing/`                 | Drive index state, events, priority triggers, scan status overlay                                                                                                             |
-| `downloads/`                | Go-to-latest action, settings-gated download notifications, global shortcut bridge                                                                                            |
-| `low-disk-space/`           | Low-disk-space warning frontend: event bridge, mode/threshold helpers, Settings deep-link                                                                                     |
-| `notifications/`            | Shared macOS notification permission flow, used by `downloads/` and `low-disk-space/`                                                                                         |
-| `go-to-path/`               | "Go to path" (⌘G) dialog + handler: thin presenter over backend `resolve_go_to_path`, recents mirror                                                                          |
-| `query-ui/`                 | Shared filter-and-act-on primitives for Search and Selection: `QueryBar`, `ModeChips`, `QueryResults`, recent-items, `createQueryFilterState()`                               |
-| `query-ui/filter-chips/`    | Filter chip popover subsystem (size/modified/scope/pattern)                                                                                                                   |
-| `search/`                   | Whole-drive file search dialog (first `query-ui` consumer): scope, AI label/pattern, snapshot store + virtual `search-results` volume, "Open in pane"                         |
-| `selection-dialog/`         | "Select files…" / "Deselect files…" dialog (second `query-ui` consumer): pure glob/regex + size/date matcher, cloud AI translation                                            |
-| `mtp/`                      | MTP (Android device) file browsing UI                                                                                                                                         |
-| `onboarding/`               | Soft-sheet onboarding wizard: Full Disk Access, AI provider, optional settings                                                                                                |
-| `ui/`                       | Shared UI primitives: ModalDialog, Button, AlertDialog, Notification, dialog registry, `SectionCard`                                                                          |
-| `routes/dev/components/`    | Dev-only catalog of every `lib/ui/` primitive (Storybook replacement), in the Debug window                                                                                    |
-| `tooltip/`                  | Lightweight tooltip primitive                                                                                                                                                 |
-| `stores/`                   | App-wide reactive Svelte stores: volume list, restricted-paths state                                                                                                          |
-| `updates/`                  | Auto-updater UI                                                                                                                                                               |
-| `utils/`                    | Filename validation, confirm dialog utilities                                                                                                                                 |
-| `path/`                     | Path manipulation helpers (normalize, segment, join/split, platform-aware comparators)                                                                                        |
-| `font-metrics/`             | Character width measurement for accurate Brief mode column sizing                                                                                                             |
+- `file-explorer/`: Dual-pane file explorer: pane orchestration, selection, navigation, sorting. State lives in the
+  `explorer-state.svelte.ts` module store
+- `file-explorer/views/`: Virtual-scrolling file lists (Brief + Full modes), 100k+ files
+- `file-explorer/drag/`: Native drag-and-drop (drag-out, drop-in, pane-to-pane, macOS image swizzle)
+- `file-explorer/rename/`: Inline rename with validation, conflict resolution, extension change
+- `file-explorer/selection/`: Space/Shift/Cmd selection, range operations
+- `file-explorer/navigation/`: Back/forward history, breadcrumb, path utilities
+- `file-explorer/network/`: Network browser UI (SMB share browsing, login form)
+- `file-explorer/git/`: Git browser frontend: breadcrumb chip, status columns, reactive `RepoInfo` store, git portal
+  icons. Git settings in `settings/sections/GitSection.svelte`
+- `file-explorer/pane/`: Per-pane orchestration: cursor, scroll, dual-pane coordination. Owns the single `navigate.ts`
+  transaction, the persistence subscriber, and the `volume-capabilities.ts` table
+- `file-explorer/tabs/`: Tab bar and per-pane tab state
+- `file-explorer/operations/`: Pane-scoped operation hooks (delete, refresh, swap) wired into the command registry
+- `file-explorer/quick-look/`: Frontend Quick Look (Shift+Space) trigger and keyboard plumbing
+- `file-operations/`: Umbrella over `transfer/`, `delete/`, `mkdir/`, `mkfile/` dialogs (shared progress dialog) plus
+  `scan-throughput.ts`
+- `file-operations/transfer/`: Copy + move dialogs, progress dialog (reused by delete/trash), error rendering,
+  scan-phase body
+- `file-operations/delete/`: F8 / Shift+F8 delete + trash confirmation dialog and pure utilities
+- `file-operations/mkdir/`: F7 new-folder dialog with AI folder-name suggestions
+- `file-operations/mkfile/`: Shift+F4 new-file dialog
+- `file-viewer/`: Read-only file viewer (separate window, virtual scrolling)
+- `settings/`: Settings UI + registry-based architecture, reactive state
+- `shortcuts/`: Keyboard shortcut customization, scope hierarchy, conflict detection
+- `ipc/`: Auto-generated `tauri-specta` bindings (`bindings.ts`). Don't edit by hand; call through `tauri-commands/`
+- `tauri-commands/`: Typed TypeScript wrappers around `ipc/bindings.ts`. Canonical import path for backend IPC
+- `command-palette/`: Fuzzy command search (~77 palette-visible commands)
+- `commands/`: Typed command registry (`CommandId` union + `CommandArgs`), fuzzy search engine. Every entry path
+  dispatches through `handleCommandExecute`
+- `licensing/`: License validation, commercial reminders, expiration modals
+- `logging/`: Unified logging: LogTape config, batching bridge to Rust, verbose toggle
+- `error-reporter/`: Error report dialog (Flow A), auto-send toast (Flow B), shared `error-report-flow`
+- `crash-reporter/`: Frontend half of the crash pipeline: detects the persisted crash file and offers to send it
+- `ai/`: Local LLM features (folder suggestions), download flow. Runtime states only; first-launch consent owned by
+  `onboarding/`
+- `indexing/`: Drive index state, events, priority triggers, scan status overlay
+- `downloads/`: Go-to-latest action, settings-gated download notifications, global shortcut bridge
+- `low-disk-space/`: Low-disk-space warning frontend: event bridge, mode/threshold helpers, Settings deep-link
+- `notifications/`: Shared macOS notification permission flow, used by `downloads/` and `low-disk-space/`
+- `go-to-path/`: "Go to path" (⌘G) dialog + handler: thin presenter over backend `resolve_go_to_path`, recents mirror
+- `query-ui/`: Shared filter-and-act-on primitives for Search and Selection: `QueryBar`, `ModeChips`, `QueryResults`,
+  recent-items, `createQueryFilterState()`
+- `query-ui/filter-chips/`: Filter chip popover subsystem (size/modified/scope/pattern)
+- `search/`: Whole-drive file search dialog (first `query-ui` consumer): scope, AI label/pattern, snapshot store +
+  virtual `search-results` volume, "Open in pane"
+- `selection-dialog/`: "Select files…" / "Deselect files…" dialog (second `query-ui` consumer): pure glob/regex +
+  size/date matcher, cloud AI translation
+- `mtp/`: MTP (Android device) file browsing UI
+- `onboarding/`: Soft-sheet onboarding wizard: Full Disk Access, AI provider, optional settings
+- `ui/`: Shared UI primitives: ModalDialog, Button, AlertDialog, Notification, dialog registry, `SectionCard`
+- `routes/dev/components/`: Dev-only catalog of every `lib/ui/` primitive (Storybook replacement), in the Debug window
+- `tooltip/`: Lightweight tooltip primitive
+- `stores/`: App-wide reactive Svelte stores: volume list, restricted-paths state
+- `updates/`: Auto-updater UI
+- `utils/`: Filename validation, confirm dialog utilities
+- `path/`: Path manipulation helpers (normalize, segment, join/split, platform-aware comparators)
+- `font-metrics/`: Character width measurement for accurate Brief mode column sizing
 
 **Frontend text measurement uses `@chenglou/pretext`.** For string pixel widths (column shrink-wrapping,
 middle-truncation, viewer line heights), call `createPretextMeasure(font, pretext)` from `lib/utils/shorten-middle.ts`
@@ -68,60 +76,70 @@ per-character widths to Rust for backend column sizing.
 
 All under `apps/desktop/src-tauri/src/`.
 
-| Directory/file                           | Purpose                                                                                                                                        |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file_system/listing/`                   | Directory reading, streaming, caching, sorting (serves virtual scroll)                                                                         |
-| `file_system/write_operations/`          | Copy/move/delete with safety patterns (temp+rename, staging, rollback). Umbrella + shared state machine, `OperationEventSink`, Settle contract |
-| `file_system/write_operations/transfer/` | Copy + move pipelines: conflict resolution, transfer driver, platform copies (`copyfile(3)` / `copy_file_range(2)` / chunked)                  |
-| `file_system/write_operations/delete/`   | Delete walker, trash, oracle-aware delete semantics                                                                                            |
-| `file_system/volume/`                    | `Volume` trait + `VolumeManager`. Umbrella over `backends/` and `friendly_error/`. Checklist + capability matrix for new backends              |
-| `file_system/volume/backends/`           | Per-backend `Volume` impls: `LocalPosixVolume`, `MtpVolume`, `SmbVolume` (+ `SmbWatcher`), `InMemoryVolume`                                    |
-| `file_system/volume/friendly_error/`     | `FriendlyError`, `ErrorCategory`, errno mapping (~36 codes), provider detection (19 providers), the `md!` macro                                |
-| `file_system/git/`                       | Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume` hooks, FriendlyError integration                |
-| `file_viewer/`                           | Three-backend file viewer (FullLoad, ByteSeek, LineIndex)                                                                                      |
-| `network/`                               | SMB: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting, Keychain                                                     |
-| `clipboard/`                             | File clipboard (Cmd+C/X/V) with NSPasteboard interop; tracks cut state and validates at paste                                                  |
-| `secrets/`                               | Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. SMB creds + AI keys                               |
-| `mtp/`                                   | MTP device management, file ops, event-based watching                                                                                          |
-| `mcp/`                                   | MCP server (tools, YAML resources, agent-centric API)                                                                                          |
-| `ai/`                                    | llama-server lifecycle, model download, inference client                                                                                       |
-| `licensing/`                             | Ed25519 license verification, server validation                                                                                                |
-| `settings/`                              | Settings persistence (tauri-plugin-store)                                                                                                      |
-| `indexing/`                              | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes                                                                 |
-| `downloads/`                             | `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set                                        |
-| `search/`                                | In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)                                      |
-| `selection/`                             | Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher itself runs in JS                      |
-| `go_to_path/`                            | "Go to path" backend: pure path resolution + fixed-cap recent-paths store. IPC in `commands/go_to_path.rs`                                     |
-| `font_metrics/`                          | Binary font metrics cache, per-directory width calculation                                                                                     |
-| `text_size.rs`                           | macOS Accessibility text-size watcher (undocumented Apple APIs, risk notes in source). Emits `system-text-size-changed`                        |
-| `system_strings.rs`                      | Localized macOS pane labels from `.loctable` system bundles (loctable catalog + risks in source)                                               |
-| `volumes/`                               | macOS location/volume discovery + `NSWorkspace` mount/unmount watcher. Distinct from `file_system/volume/`                                     |
-| `volumes_linux/`                         | Linux equivalent: location discovery + mount/unmount via `/proc/mounts` and GVFS                                                               |
-| `space_poller.rs`                        | Live disk-space polling (per-volume-type intervals) plus the low-disk-space hysteresis warning                                                 |
-| `fda_gate.rs`                            | Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See the `tauri-apis` rule in `.claude/rules/` |
-| `stubs/`                                 | Linux compilation stubs for macOS-only modules (Docker E2E pipeline)                                                                           |
-| `menu/`                                  | Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable                                                |
-| `quick_look/`                            | macOS-only `QLPreviewPanel` integration (Shift+Space)                                                                                          |
-| `drag_image_detection.rs`                | macOS method swizzle for drag image size detection                                                                                             |
-| `drag_image_swap.rs`                     | Rich/transparent drag image swap for self-drags                                                                                                |
-| `crash_reporter/`                        | Crash capture (panic hook + signal handler), next-launch detection, report sending                                                             |
-| `error_reporter/`                        | Error reports: bundle build (manifest + redacted log tail), short-ID + R2 upload, debounced auto-dispatcher                                    |
-| `updater/`                               | macOS custom updater: syncs files into the running `.app` in place so FDA survives updates. Other platforms use stock Tauri                    |
-| `redact/`                                | Shared PII redactor (path-shape preserving). Used by both crash and error reporters                                                            |
-| `logging/`                               | Log directory resolver, `KeepSome(N)` post-rotation pruner, `list_recent_log_files`                                                            |
-| `commands/`                              | Tauri command definitions (IPC entry points)                                                                                                   |
-| `capabilities/`                          | Per-window Tauri API permissions; update when using new Tauri APIs from a window                                                               |
-| `icons/`                                 | App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See its CLAUDE.md for regeneration                                        |
+- `file_system/listing/`: Directory reading, streaming, caching, sorting (serves virtual scroll)
+- `file_system/write_operations/`: Copy/move/delete with safety patterns (temp+rename, staging, rollback). Umbrella +
+  shared state machine, `OperationEventSink`, Settle contract
+- `file_system/write_operations/transfer/`: Copy + move pipelines: conflict resolution, transfer driver, platform copies
+  (`copyfile(3)` / `copy_file_range(2)` / chunked)
+- `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics
+- `file_system/volume/`: `Volume` trait + `VolumeManager`. Umbrella over `backends/` and `friendly_error/`. Checklist +
+  capability matrix for new backends
+- `file_system/volume/backends/`: Per-backend `Volume` impls: `LocalPosixVolume`, `MtpVolume`, `SmbVolume` (+
+  `SmbWatcher`), `InMemoryVolume`
+- `file_system/volume/friendly_error/`: `FriendlyError`, `ErrorCategory`, errno mapping (~36 codes), provider detection
+  (19 providers), the `md!` macro
+- `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
+  hooks, FriendlyError integration
+- `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
+- `network/`: SMB: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting, Keychain
+- `clipboard/`: File clipboard (Cmd+C/X/V) with NSPasteboard interop; tracks cut state and validates at paste
+- `secrets/`: Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. SMB creds +
+  AI keys
+- `mtp/`: MTP device management, file ops, event-based watching
+- `mcp/`: MCP server (tools, YAML resources, agent-centric API)
+- `ai/`: llama-server lifecycle, model download, inference client
+- `licensing/`: Ed25519 license verification, server validation
+- `settings/`: Settings persistence (tauri-plugin-store)
+- `indexing/`: Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes
+- `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
+- `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
+- `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
+  itself runs in JS
+- `go_to_path/`: "Go to path" backend: pure path resolution + fixed-cap recent-paths store. IPC in
+  `commands/go_to_path.rs`
+- `font_metrics/`: Binary font metrics cache, per-directory width calculation
+- `text_size.rs`: macOS Accessibility text-size watcher (undocumented Apple APIs, risk notes in source). Emits
+  `system-text-size-changed`
+- `system_strings.rs`: Localized macOS pane labels from `.loctable` system bundles (loctable catalog + risks in source)
+- `volumes/`: macOS location/volume discovery + `NSWorkspace` mount/unmount watcher. Distinct from `file_system/volume/`
+- `volumes_linux/`: Linux equivalent: location discovery + mount/unmount via `/proc/mounts` and GVFS
+- `space_poller.rs`: Live disk-space polling (per-volume-type intervals) plus the low-disk-space hysteresis warning
+- `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See
+  the `tauri-apis` rule in `.claude/rules/`
+- `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
+- `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable
+- `quick_look/`: macOS-only `QLPreviewPanel` integration (Shift+Space)
+- `drag_image_detection.rs`: macOS method swizzle for drag image size detection
+- `drag_image_swap.rs`: Rich/transparent drag image swap for self-drags
+- `crash_reporter/`: Crash capture (panic hook + signal handler), next-launch detection, report sending
+- `error_reporter/`: Error reports: bundle build (manifest + redacted log tail), short-ID + R2 upload, debounced
+  auto-dispatcher
+- `updater/`: macOS custom updater: syncs files into the running `.app` in place so FDA survives updates. Other
+  platforms use stock Tauri
+- `redact/`: Shared PII redactor (path-shape preserving). Used by both crash and error reporters
+- `logging/`: Log directory resolver, `KeepSome(N)` post-rotation pruner, `list_recent_log_files`
+- `commands/`: Tauri command definitions (IPC entry points)
+- `capabilities/`: Per-window Tauri API permissions; update when using new Tauri APIs from a window
+- `icons/`: App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See its CLAUDE.md for regeneration
 
 ## Other apps
 
-| Directory                   | Purpose                                                                                                         |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `apps/analytics-dashboard/` | Private SvelteKit dashboard on CF Pages. Aggregates Umami, CF Analytics Engine, Paddle, PostHog, GitHub metrics |
-| `apps/api-server/`          | Cloudflare Worker + Hono. Licensing, telemetry, crash reports, downloads, admin endpoints                       |
-| `apps/website/`             | getcmdr.com marketing site (Astro + Tailwind v4)                                                                |
-| `apps/website/public/hero/` | Hero illustration assets (frame + pane cutouts, dark/light)                                                     |
-| `scripts/check/`            | Go unified check runner (~40 checks, parallel with dependency graph)                                            |
+- `apps/analytics-dashboard/`: Private SvelteKit dashboard on CF Pages. Aggregates Umami, CF Analytics Engine, Paddle,
+  PostHog, GitHub metrics
+- `apps/api-server/`: Cloudflare Worker + Hono. Licensing, telemetry, crash reports, downloads, admin endpoints
+- `apps/website/`: getcmdr.com marketing site (Astro + Tailwind v4)
+- `apps/website/public/hero/`: Hero illustration assets (frame + pane cutouts, dark/light)
+- `scripts/check/`: Go unified check runner (~40 checks, parallel with dependency graph)
 
 ## Search
 
@@ -210,14 +228,14 @@ Dev workflow docs and external service references. All in `docs/tooling/`.
 
 ### Dev workflow
 
-| Doc                                                    | Purpose                                                                        |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| [logging.md](tooling/logging.md)                       | Unified logging, `RUST_LOG` recipes for every subsystem                        |
-| [testing.md](tooling/testing.md)                       | Testing tools inventory (Rust, Vitest, Playwright, Linux E2E, Docker SMB)      |
-| [mcp.md](tooling/mcp.md)                               | MCP servers (`cmdr`, `tauri`) for agent-driven app testing                     |
-| [instance-isolation.md](tooling/instance-isolation.md) | `CMDR_INSTANCE_ID` primer: per-resource isolation for parallel dev / E2E       |
-| [css-health-checks.md](tooling/css-health-checks.md)   | Stylelint + Go-based unused CSS checker                                        |
-| [index-query.md](tooling/index-query.md)               | `index_query`: query index DB with `platform_case` collation (`sqlite3` can't) |
+- [logging.md](tooling/logging.md): Unified logging, `RUST_LOG` recipes for every subsystem
+- [testing.md](tooling/testing.md): Testing tools inventory (Rust, Vitest, Playwright, Linux E2E, Docker SMB)
+- [mcp.md](tooling/mcp.md): MCP servers (`cmdr`, `tauri`) for agent-driven app testing
+- [instance-isolation.md](tooling/instance-isolation.md): `CMDR_INSTANCE_ID` primer: per-resource isolation for parallel
+  dev / E2E
+- [css-health-checks.md](tooling/css-health-checks.md): Stylelint + Go-based unused CSS checker
+- [index-query.md](tooling/index-query.md): `index_query`: query index DB with `platform_case` collation (`sqlite3`
+  can't)
 
 The check runner and E2E testing docs live colocated with their code:
 
@@ -237,14 +255,13 @@ get immediate auto-merging PRs regardless of schedule.
 
 ### External services
 
-| Doc                                                      | Purpose                                                                            |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [hetzner-vps.md](tooling/hetzner-vps.md)                 | Production VPS: SSH access, layout, deploy commands                                |
-| [umami.md](tooling/umami.md)                             | Website analytics: API access, DB queries, troubleshooting                         |
-| [cloudflare.md](tooling/cloudflare.md)                   | Cmdr zones, workers, Pages, D1 telemetry                                           |
-| [posthog.md](tooling/posthog.md)                         | Cmdr project ID and settings                                                       |
-| [monitoring.md](tooling/monitoring.md)                   | UptimeRobot: uptime checks, alerts                                                 |
-| [analytics-dashboard.md](tooling/analytics-dashboard.md) | Private dashboard at `analdash.getcmdr.com` aggregating metrics for the maintainer |
-| [remark42.md](tooling/remark42.md)                       | Self-hosted comments engine for the website (Docker on the Hetzner VPS)            |
+- [hetzner-vps.md](tooling/hetzner-vps.md): Production VPS: SSH access, layout, deploy commands
+- [umami.md](tooling/umami.md): Website analytics: API access, DB queries, troubleshooting
+- [cloudflare.md](tooling/cloudflare.md): Cmdr zones, workers, Pages, D1 telemetry
+- [posthog.md](tooling/posthog.md): Cmdr project ID and settings
+- [monitoring.md](tooling/monitoring.md): UptimeRobot: uptime checks, alerts
+- [analytics-dashboard.md](tooling/analytics-dashboard.md): Private dashboard at `analdash.getcmdr.com` aggregating
+  metrics for the maintainer
+- [remark42.md](tooling/remark42.md): Self-hosted comments engine for the website (Docker on the Hetzner VPS)
 
 ONLY do read-only operations with these services unless specifically asked to make changes.
