@@ -74,21 +74,36 @@ Always runs (no change gate). Holds the checks whose inputs no per-app filter ca
 
 ## Build caching
 
-The Rust compile dominates CI wall time. Three caches keep it down:
+The Rust compile dominates CI time (a cold ~1000-crate Tauri tree is ~10-16 min). Three caches keep it down. Each has a
+load-bearing companion step — **don't remove these without re-checking the cache; two of the three failure modes are
+silent** (a warning, not a red job):
 
-- **`desktop-rust`** (per push): `Swatinem/rust-cache` caches `target/` + cargo registry/index/git deps, keyed on
-  Cargo.lock + rustc. Without it the full ~1000-crate Tauri tree recompiled cold every push (~16 min); with it, an
-  unchanged-deps push only recompiles the `cmdr` crate. This is the highest-value cache — it runs on every push.
+- **`desktop-rust`** (per push): `Swatinem/rust-cache` (SHA-pinned; `workflows-hardening` requires the pin) caches
+  `target/` + cargo registry/index/git deps, keyed on Cargo.lock + rustc. An unchanged-deps push recompiles only the
+  `cmdr` crate (~16 → ~7 min). **Load-bearing companion: the "Free disk space" step.** A warm restore (~1.7 GB target +
+  cargo) plus the SMB integration build plus Docker SMB images overflow the runner's ~14 GB free disk ("No space left on
+  device" linking `libcmdr_lib.a`). The step reclaims unused preinstalled SDKs (~9 GB Android alone) first. Cold runs
+  pass without it; warm runs don't — so this only shows up once the cache is populated.
 - **`desktop-e2e-linux`**: caches the Docker-side cargo + `target/` via host bind mounts (`/tmp/cmdr-docker-cache/*`),
   keyed on Cargo.lock with a restore-keys fallback. Separate from `desktop-rust` because the e2e binary builds a
-  different feature set (`playwright-e2e,virtual-mtp,smb-e2e`).
-- **`slow-checks` dependency-checks**: rust-cache for cargo-udeps's nightly `target/`. Kept alive by the 6-day cron
-  (below).
+  different feature set (`playwright-e2e,virtual-mtp,smb-e2e`). **Load-bearing companion: the "Reclaim cache dir
+  ownership" step.** The Docker build runs as root and writes the bind-mounted dirs as root; the actions/cache post-step
+  runs as the runner user, so `tar` can't read them and the **save fails as a warning** — which is exactly why this
+  cache never persisted for months (every e2e run did a cold ~10-min build). A `chown` back to the runner after the
+  Docker run fixes it (warm e2e build ~10 min vs ~16-17 cold). If e2e ever starts building cold again, check that the
+  save isn't warning "Permission denied" again.
+- **`slow-checks` dependency-checks**: rust-cache for cargo-udeps's nightly `target/`, plus the same "Free disk space"
+  step. Kept alive by the 6-day cron (below).
 
-rust-cache keys per-job, so these are three independent caches and each prunes itself. The shared risk is GitHub's **10
-GB per-repo ceiling**: three multi-GB Rust caches can cross it, triggering LRU eviction of the least-used. Protect the
-per-push `desktop-rust` cache first; if pressure shows up, the weekly nightly cache is the one to drop. Pin `rust-cache`
-to a SHA with a version comment (the `workflows-hardening` check requires it for every third-party action).
+rust-cache keys per-job, so these are independent caches and each prunes itself. The shared risk is GitHub's **10 GB
+per-repo ceiling**: today the total sits ~4-5 GB (rust-cache 1.7 GB + e2e 0.9 GB + mise/registry), comfortably under,
+but if more big caches land, LRU evicts the least-used. Protect the per-push `desktop-rust` cache first; the weekly
+nightly cache is the one to drop under pressure. Watch with `gh cache list`.
+
+**Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
+detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E (~10 min warm) is that floor.
+Don't re-add a `needs: desktop-svelte` to the e2e job — it only added ~4 min of latency for a compute-saving skip that
+isn't worth it (see the comment on the job).
 
 ## Slow checks cadence
 

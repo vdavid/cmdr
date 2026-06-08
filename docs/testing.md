@@ -152,7 +152,9 @@ narrow: CI-only, environment flake, signal preserved.
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 
 Use `commands.commandName(args)` from `apps/desktop/src/lib/ipc/`. Enforced by `cmdr/no-raw-tauri-invoke` ESLint rule
-and the `bindings-fresh` CI check.
+and the local `bindings-fresh` check (it runs in `./scripts/check.sh` on macOS, not in CI — the committed `bindings.ts`
+is the macOS command surface, which a Linux runner can't reproduce; see `docs/tooling/ci.md` § the registry ↔ CI
+contract).
 
 ### ❌ Substring-matching error messages or state labels
 
