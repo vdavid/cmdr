@@ -32,6 +32,22 @@ export {
   getSyncStatus,
   storeFontMetrics,
   hasFontMetrics,
+  onListingOpening,
+  onListingProgress,
+  onListingReadComplete,
+  onListingComplete,
+  onListingError,
+  onListingCancelled,
+} from './file-listing'
+// Streaming-listing event payload types now flow from the typed-events bindings
+// via the `file-listing.ts` re-export.
+export type {
+  ListingOpeningEvent,
+  ListingProgressEvent,
+  ListingReadCompleteEvent,
+  ListingCompleteEvent,
+  ListingErrorEvent,
+  ListingCancelledEvent,
 } from './file-listing'
 
 // File viewer (session management, search, seeking)
@@ -193,6 +209,7 @@ export {
   onWriteCancelled,
   onWriteSettled,
   onWriteConflict,
+  onWriteSourceItemDone,
   formatBytes,
   formatDuration,
   formatFilesPerSecond,
@@ -202,13 +219,11 @@ export type { Event, UnlistenFn } from './write-operations'
 // Network types
 export type { ManualConnectResult } from './networking'
 
-// Re-export types from write-operations (originally from file-explorer/types)
+export type { StreamingListingStartResult } from '../file-explorer/types'
+
+// Write + scan-preview event payload types now flow from the typed-events
+// bindings via the `write-operations.ts` re-export.
 export type {
-  ListingProgressEvent,
-  ListingCompleteEvent,
-  ListingErrorEvent,
-  ListingCancelledEvent,
-  StreamingListingStartResult,
   WriteCancelledEvent,
   WriteCompleteEvent,
   WriteConflictEvent,
@@ -229,7 +244,7 @@ export type {
   ScanPreviewCompleteEvent,
   ScanPreviewErrorEvent,
   ScanPreviewCancelledEvent,
-} from '../file-explorer/types'
+} from './write-operations'
 
 // Crash reporter
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'

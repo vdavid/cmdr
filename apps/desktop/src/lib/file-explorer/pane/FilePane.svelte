@@ -3,18 +3,13 @@
     import type {
         FileEntry,
         FriendlyError,
-        ListingCancelledEvent,
-        ListingCompleteEvent,
-        ListingErrorEvent,
-        ListingOpeningEvent,
-        ListingProgressEvent,
-        ListingReadCompleteEvent,
         ListingStats,
         NetworkHost,
         SortColumn,
         SortOrder,
         SyncStatus,
     } from '../types'
+    import type { ListingCompleteEvent } from '$lib/tauri-commands'
     import {
         cancelListing,
         findFileIndex,
@@ -28,7 +23,12 @@
         getTotalCount,
         listDirectoryEnd,
         listDirectoryStart,
-        listen,
+        onListingOpening,
+        onListingProgress,
+        onListingReadComplete,
+        onListingComplete,
+        onListingError,
+        onListingCancelled,
         onMtpDeviceDisconnected,
         onVolumeSpaceChanged,
         openFile,
@@ -1423,35 +1423,35 @@
                 unlistenError,
                 unlistenCancelled,
             ] = await Promise.all([
-                listen<ListingOpeningEvent>('listing-opening', (event) => {
-                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                onListingOpening((payload) => {
+                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
                         openingFolder = true
                     }
                 }),
-                listen<ListingProgressEvent>('listing-progress', (event) => {
-                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        loadingCount = event.payload.loadedCount
+                onListingProgress((payload) => {
+                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        loadingCount = payload.loadedCount
                     }
                 }),
-                listen<ListingReadCompleteEvent>('listing-read-complete', (event) => {
-                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        finalizingCount = event.payload.totalCount
+                onListingReadComplete((payload) => {
+                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        finalizingCount = payload.totalCount
                     }
                 }),
-                listen<ListingCompleteEvent>('listing-complete', (event) => {
-                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        void handleListingComplete(event.payload, loadPath, loadSelectName)
+                onListingComplete((payload) => {
+                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        void handleListingComplete(payload, loadPath, loadSelectName)
                     }
                 }),
-                listen<ListingErrorEvent>('listing-error', (event) => {
-                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                onListingError((payload) => {
+                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
                         // For MTP volumes, trigger fallback on error (device likely disconnected)
                         if (isMtpView) {
-                            resetLoadingState(event.payload.message)
+                            resetLoadingState(payload.message)
                             log.warn('MTP listing error, triggering fallback: {error}', {
-                                error: event.payload.message,
+                                error: payload.message,
                             })
-                            onMtpFatalError?.(event.payload.message)
+                            onMtpFatalError?.(payload.message)
                             return
                         }
 
@@ -1469,7 +1469,7 @@
                                 })
                             } else {
                                 // Path exists, or we couldn't tell: show the original listing error
-                                resetLoadingState(event.payload.message, false, event.payload.friendly)
+                                resetLoadingState(payload.message, false, payload.friendly ?? undefined)
                                 // Record the failed path in history so Cmd+[ goes back one step,
                                 // not two. The success path pushes via the `onPathChange` call in
                                 // `handleListingComplete`; without this call, an error pane would
@@ -1480,8 +1480,8 @@
                         })
                     }
                 }),
-                listen<ListingCancelledEvent>('listing-cancelled', (event) => {
-                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                onListingCancelled((payload) => {
+                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
                         // Cancellation handled by onCancelLoading callback
                         resetLoadingState(undefined, true)
                     }

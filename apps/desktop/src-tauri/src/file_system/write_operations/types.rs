@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use tauri_specta::Event;
 
 use crate::file_system::volume::{ScanConflict, SpaceInfo};
 #[cfg(test)]
@@ -83,8 +84,9 @@ pub enum ConflictResolution {
 /// `eta::EtaEstimator` from `enrich_progress_event`. They're optional because
 /// the estimator returns `None` for both rates and ETA during the warm-up
 /// window (first ~800 ms of a phase or before the second sample lands).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "write-progress")]
 pub struct WriteProgressEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
@@ -94,7 +96,7 @@ pub struct WriteProgressEvent {
     /// Absolute parent directory currently being scanned (Scanning phase only).
     /// Lets the UI show "in directory: …" alongside the filename so users
     /// get a sense of where in the tree the walker is.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub current_dir: Option<String>,
     pub files_done: usize,
     pub files_total: usize,
@@ -119,10 +121,10 @@ pub struct WriteProgressEvent {
     /// Index-derived expected file count, for rendering a progress bar during
     /// the scanning phase before the foolproof re-scan finishes. `None` when
     /// the index doesn't cover all sources, or outside the scanning phase.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub expected_files_total: Option<u64>,
     /// Pairs with `expected_files_total`. See its doc.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub expected_bytes_total: Option<u64>,
 }
 
@@ -196,8 +198,9 @@ impl WriteProgressEvent {
 /// closure-side Skip such as same-inode self-copy). For delete/trash, skipping isn't a
 /// concept and the field is always 0. The FE uses both to compose user-facing summaries
 /// like "Copy complete: 3 copied, 2 skipped" instead of the misleading "0 files".
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "write-complete")]
 pub struct WriteCompleteEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
@@ -214,13 +217,14 @@ pub struct WriteCompleteEvent {
 /// pipeline the listing-error path uses. When `friendly` is `None`, the FE falls
 /// back to variant-based messages (`transfer-error-messages.ts`). That branch
 /// stays in place for local-FS error paths that bypass `VolumeError`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "write-error")]
 pub struct WriteErrorEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
     pub error: WriteOperationError,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub friendly: Option<crate::file_system::volume::friendly_error::FriendlyError>,
 }
 
@@ -272,16 +276,18 @@ impl WriteErrorEvent {
 
 /// Emitted when all files belonging to a top-level source item have been processed.
 /// Used by the frontend for gradual deselection during operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "write-source-item-done")]
 pub struct WriteSourceItemDoneEvent {
     pub operation_id: String,
     pub source_path: String,
 }
 
 /// Cancelled event payload.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "write-cancelled")]
 pub struct WriteCancelledEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
@@ -307,20 +313,22 @@ pub struct WriteCancelledEvent {
 /// volume_id concept beyond the implicit "root"). The FE doesn't currently
 /// filter on volume_id — the per-op `operation_id` is the binding signal —
 /// but it's carried for future diagnostics and consistency.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "write-settled")]
 pub struct WriteSettledEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
     /// Source volume id when known (MTP/SMB volume ops). `None` for local-FS
     /// operations.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub volume_id: Option<String>,
 }
 
 /// Conflict event payload (emitted when Stop mode encounters a conflict).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "write-conflict")]
 pub struct WriteConflictEvent {
     pub operation_id: String,
     pub source_path: String,
@@ -358,8 +366,9 @@ pub struct WriteConflictEvent {
 }
 
 /// Progress event during scanning phase (emitted in dry-run mode).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "scan-progress")]
 pub struct ScanProgressEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
@@ -371,8 +380,9 @@ pub struct ScanProgressEvent {
 }
 
 /// Detailed information about a single conflict.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "scan-conflict")]
 pub struct ConflictInfo {
     pub source_path: String,
     pub destination_path: String,
@@ -389,8 +399,9 @@ pub struct ConflictInfo {
 }
 
 /// Result of a dry-run operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "dry-run-complete")]
 pub struct DryRunResult {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
@@ -446,7 +457,7 @@ pub struct OperationSummary {
 
 /// Errors that can occur during write operations.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum WriteOperationError {
     SourceNotFound {
         path: String,
@@ -670,8 +681,9 @@ fn default_max_conflicts_to_show() -> usize {
 // ============================================================================
 
 /// Progress event for scan preview (shown in Copy dialog).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "scan-preview-progress")]
 pub struct ScanPreviewProgressEvent {
     pub preview_id: String,
     pub files_found: usize,
@@ -681,21 +693,22 @@ pub struct ScanPreviewProgressEvent {
     pub current_path: Option<String>,
     /// Absolute parent directory currently being scanned. Lets the UI show
     /// "in directory: …" alongside the filename.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub current_dir: Option<String>,
     /// Index-derived expected file count, sampled once at scan start. Lets
     /// the FE render a real progress bar from second one of the scan.
     /// `None` when the index doesn't cover all sources.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub expected_files_total: Option<u64>,
     /// Pairs with `expected_files_total`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub expected_bytes_total: Option<u64>,
 }
 
 /// Completion event for scan preview.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "scan-preview-complete")]
 pub struct ScanPreviewCompleteEvent {
     pub preview_id: String,
     pub files_total: usize,
@@ -710,16 +723,18 @@ pub struct ScanPreviewCompleteEvent {
 }
 
 /// Error event for scan preview.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "scan-preview-error")]
 pub struct ScanPreviewErrorEvent {
     pub preview_id: String,
     pub message: String,
 }
 
 /// Cancelled event for scan preview.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "scan-preview-cancelled")]
 pub struct ScanPreviewCancelledEvent {
     pub preview_id: String,
 }
@@ -802,44 +817,34 @@ impl TauriEventSink {
 
 impl OperationEventSink for TauriEventSink {
     fn emit_progress(&self, event: WriteProgressEvent) {
-        use tauri::Emitter;
-        let _ = self.app.emit("write-progress", &event);
+        let _ = event.emit(&self.app);
     }
     fn emit_complete(&self, event: WriteCompleteEvent) {
-        use tauri::Emitter;
-        let _ = self.app.emit("write-complete", &event);
+        let _ = event.emit(&self.app);
     }
     fn emit_cancelled(&self, event: WriteCancelledEvent) {
-        use tauri::Emitter;
-        let _ = self.app.emit("write-cancelled", &event);
+        let _ = event.emit(&self.app);
     }
     fn emit_error(&self, event: WriteErrorEvent) {
-        use tauri::Emitter;
-        let _ = self.app.emit("write-error", &event);
+        let _ = event.emit(&self.app);
     }
     fn emit_conflict(&self, event: WriteConflictEvent) {
-        use tauri::Emitter;
-        let _ = self.app.emit("write-conflict", &event);
+        let _ = event.emit(&self.app);
     }
     fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent) {
-        use tauri::Emitter;
-        let _ = self.app.emit("write-source-item-done", &event);
+        let _ = event.emit(&self.app);
     }
     fn emit_scan_progress(&self, event: ScanProgressEvent) {
-        use tauri::Emitter;
-        let _ = self.app.emit("scan-progress", &event);
+        let _ = event.emit(&self.app);
     }
     fn emit_scan_conflict(&self, conflict: ConflictInfo) {
-        use tauri::Emitter;
-        let _ = self.app.emit("scan-conflict", &conflict);
+        let _ = conflict.emit(&self.app);
     }
     fn emit_dry_run_complete(&self, result: DryRunResult) {
-        use tauri::Emitter;
-        let _ = self.app.emit("dry-run-complete", &result);
+        let _ = result.emit(&self.app);
     }
     fn emit_settled(&self, event: WriteSettledEvent) {
-        use tauri::Emitter;
-        let _ = self.app.emit("write-settled", &event);
+        let _ = event.emit(&self.app);
     }
 }
 

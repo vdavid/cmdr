@@ -117,7 +117,7 @@ fn run_scan_preview(
     sort_order: SortOrder,
     state: Arc<ScanPreviewState>,
 ) {
-    use tauri::Emitter;
+    use tauri_specta::Event;
 
     let mut files: Vec<FileInfo> = Vec::new();
     let mut dirs: Vec<PathBuf> = Vec::new();
@@ -145,19 +145,17 @@ fn run_scan_preview(
             on_cancelled: &|| "Cancelled".to_string(),
             on_symlink_loop: &|path| format!("Symlink loop detected: {}", path.display()),
             on_progress: &|files_found, dirs_found, bytes_found, current_path, current_dir| {
-                let _ = app.emit(
-                    "scan-preview-progress",
-                    ScanPreviewProgressEvent {
-                        preview_id: preview_id.to_string(),
-                        files_found,
-                        dirs_found,
-                        bytes_found,
-                        current_path,
-                        current_dir,
-                        expected_files_total: expected.map(|e| e.files),
-                        expected_bytes_total: expected.map(|e| e.bytes),
-                    },
-                );
+                let _ = ScanPreviewProgressEvent {
+                    preview_id: preview_id.to_string(),
+                    files_found,
+                    dirs_found,
+                    bytes_found,
+                    current_path,
+                    current_dir,
+                    expected_files_total: expected.map(|e| e.files),
+                    expected_bytes_total: expected.map(|e| e.bytes),
+                }
+                .emit(&app);
             },
         };
         // Local FS scan preview uses the "root" volume ID. The oracle short-circuits
@@ -191,12 +189,10 @@ fn run_scan_preview(
         Ok(()) => {
             if state.cancelled.load(Ordering::Relaxed) {
                 // Cancelled
-                let _ = app.emit(
-                    "scan-preview-cancelled",
-                    ScanPreviewCancelledEvent {
-                        preview_id: preview_id.clone(),
-                    },
-                );
+                let _ = ScanPreviewCancelledEvent {
+                    preview_id: preview_id.clone(),
+                }
+                .emit(&app);
             } else {
                 // Sort files
                 sort_files(&mut files, sort_column, sort_order);
@@ -218,20 +214,18 @@ fn run_scan_preview(
                 );
 
                 // Emit completion
-                let _ = app.emit(
-                    "scan-preview-complete",
-                    ScanPreviewCompleteEvent {
-                        preview_id,
-                        files_total: file_count,
-                        dirs_total: dirs_count,
-                        bytes_total: total_bytes,
-                        dedup_bytes_total: dedup_bytes,
-                    },
-                );
+                let _ = ScanPreviewCompleteEvent {
+                    preview_id,
+                    files_total: file_count,
+                    dirs_total: dirs_count,
+                    bytes_total: total_bytes,
+                    dedup_bytes_total: dedup_bytes,
+                }
+                .emit(&app);
             }
         }
         Err(message) => {
-            let _ = app.emit("scan-preview-error", ScanPreviewErrorEvent { preview_id, message });
+            let _ = ScanPreviewErrorEvent { preview_id, message }.emit(&app);
         }
     }
 }
@@ -257,7 +251,7 @@ async fn run_volume_scan_preview(
     source_volume_id: String,
     state: Arc<ScanPreviewState>,
 ) {
-    use tauri::Emitter;
+    use tauri_specta::Event;
 
     // Throttled progress emitter: the underlying MTP listing fires the callback
     // per entry (~60/s for 1047 files at ~17 ms each). We collapse those down to
@@ -280,19 +274,17 @@ async fn run_volume_scan_preview(
         }
         *last = Instant::now();
         drop(last);
-        let _ = app_for_cb.emit(
-            "scan-preview-progress",
-            ScanPreviewProgressEvent {
-                preview_id: preview_id_for_cb.clone(),
-                files_found: p.files,
-                dirs_found: p.dirs,
-                bytes_found: p.bytes,
-                current_path: None,
-                current_dir: None,
-                expected_files_total: None,
-                expected_bytes_total: None,
-            },
-        );
+        let _ = ScanPreviewProgressEvent {
+            preview_id: preview_id_for_cb.clone(),
+            files_found: p.files,
+            dirs_found: p.dirs,
+            bytes_found: p.bytes,
+            current_path: None,
+            current_dir: None,
+            expected_files_total: None,
+            expected_bytes_total: None,
+        }
+        .emit(&app_for_cb);
     };
 
     // Cancellation predicate, captured by reference inside the async helpers.
@@ -335,12 +327,10 @@ async fn run_volume_scan_preview(
     match result {
         Ok(batch) => {
             if state.cancelled.load(Ordering::Relaxed) {
-                let _ = app.emit(
-                    "scan-preview-cancelled",
-                    ScanPreviewCancelledEvent {
-                        preview_id: preview_id.clone(),
-                    },
-                );
+                let _ = ScanPreviewCancelledEvent {
+                    preview_id: preview_id.clone(),
+                }
+                .emit(&app);
             } else {
                 // Cache results: volume scans don't produce per-file FileInfo, but
                 // the cache stores aggregate stats AND per-path scan results so
@@ -358,20 +348,18 @@ async fn run_volume_scan_preview(
                     },
                 );
 
-                let _ = app.emit(
-                    "scan-preview-complete",
-                    ScanPreviewCompleteEvent {
-                        preview_id,
-                        files_total: total_files,
-                        dirs_total: total_dirs,
-                        bytes_total: total_bytes,
-                        dedup_bytes_total: dedup_bytes,
-                    },
-                );
+                let _ = ScanPreviewCompleteEvent {
+                    preview_id,
+                    files_total: total_files,
+                    dirs_total: total_dirs,
+                    bytes_total: total_bytes,
+                    dedup_bytes_total: dedup_bytes,
+                }
+                .emit(&app);
             }
         }
         Err(message) => {
-            let _ = app.emit("scan-preview-error", ScanPreviewErrorEvent { preview_id, message });
+            let _ = ScanPreviewErrorEvent { preview_id, message }.emit(&app);
         }
     }
 }

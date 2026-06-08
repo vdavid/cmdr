@@ -1,34 +1,38 @@
 // Copy/move/delete operations + event handlers
 
 import { type Event, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { commands } from '$lib/ipc/bindings'
+import { commands, events } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 import type {
-  ConflictInfo,
   ConflictResolution,
-  DryRunResult,
-  OperationStatus,
-  OperationSummary,
-  ScanProgressEvent,
-  ScanPreviewCancelledEvent,
-  ScanPreviewCompleteEvent,
-  ScanPreviewErrorEvent,
-  ScanPreviewProgressEvent,
   ScanPreviewStartResult,
   ScanPreviewTotals,
   SortColumn,
   SortOrder,
+  WriteOperationConfig,
+  WriteOperationError,
+  WriteOperationStartResult,
+} from '../file-explorer/types'
+// Event payload types now come from the generated typed-events bindings, so the
+// Rust struct shapes (write-operations sink + scan-preview) drive the FE types.
+import type {
+  ConflictInfo,
+  DryRunResult,
+  OperationStatus,
+  OperationSummary,
+  ScanPreviewCancelledEvent,
+  ScanPreviewCompleteEvent,
+  ScanPreviewErrorEvent,
+  ScanPreviewProgressEvent,
+  ScanProgressEvent,
   WriteCancelledEvent,
   WriteCompleteEvent,
   WriteConflictEvent,
   WriteErrorEvent,
-  WriteOperationConfig,
-  WriteOperationError,
-  WriteOperationStartResult,
   WriteProgressEvent,
   WriteSettledEvent,
   WriteSourceItemDoneEvent,
-} from '../file-explorer/types'
+} from '$lib/ipc/bindings'
 
 export type { Event, UnlistenFn }
 export { listen }
@@ -87,19 +91,19 @@ export async function checkScanPreviewStatus(previewId: string): Promise<ScanPre
 }
 
 export async function onScanPreviewProgress(callback: (event: ScanPreviewProgressEvent) => void): Promise<UnlistenFn> {
-  return listen<ScanPreviewProgressEvent>('scan-preview-progress', (event) => {
+  return events.scanPreviewProgress.listen((event) => {
     callback(event.payload)
   })
 }
 
 export async function onScanPreviewComplete(callback: (event: ScanPreviewCompleteEvent) => void): Promise<UnlistenFn> {
-  return listen<ScanPreviewCompleteEvent>('scan-preview-complete', (event) => {
+  return events.scanPreviewComplete.listen((event) => {
     callback(event.payload)
   })
 }
 
 export async function onScanPreviewError(callback: (event: ScanPreviewErrorEvent) => void): Promise<UnlistenFn> {
-  return listen<ScanPreviewErrorEvent>('scan-preview-error', (event) => {
+  return events.scanPreviewError.listen((event) => {
     callback(event.payload)
   })
 }
@@ -107,7 +111,7 @@ export async function onScanPreviewError(callback: (event: ScanPreviewErrorEvent
 export async function onScanPreviewCancelled(
   callback: (event: ScanPreviewCancelledEvent) => void,
 ): Promise<UnlistenFn> {
-  return listen<ScanPreviewCancelledEvent>('scan-preview-cancelled', (event) => {
+  return events.scanPreviewCancelled.listen((event) => {
     callback(event.payload)
   })
 }
@@ -182,25 +186,25 @@ export async function resolveWriteConflict(
 // ============================================================================
 
 export async function onWriteProgress(callback: (event: WriteProgressEvent) => void): Promise<UnlistenFn> {
-  return listen<WriteProgressEvent>('write-progress', (event) => {
+  return events.writeProgress.listen((event) => {
     callback(event.payload)
   })
 }
 
 export async function onWriteComplete(callback: (event: WriteCompleteEvent) => void): Promise<UnlistenFn> {
-  return listen<WriteCompleteEvent>('write-complete', (event) => {
+  return events.writeComplete.listen((event) => {
     callback(event.payload)
   })
 }
 
 export async function onWriteError(callback: (event: WriteErrorEvent) => void): Promise<UnlistenFn> {
-  return listen<WriteErrorEvent>('write-error', (event) => {
+  return events.writeError.listen((event) => {
     callback(event.payload)
   })
 }
 
 export async function onWriteCancelled(callback: (event: WriteCancelledEvent) => void): Promise<UnlistenFn> {
-  return listen<WriteCancelledEvent>('write-cancelled', (event) => {
+  return events.writeCancelled.listen((event) => {
     callback(event.payload)
   })
 }
@@ -209,14 +213,21 @@ export async function onWriteCancelled(callback: (event: WriteCancelledEvent) =>
  *  down. See `WriteSettledEvent` for the ordering contract relative to the
  *  terminal outcome event. */
 export async function onWriteSettled(callback: (event: WriteSettledEvent) => void): Promise<UnlistenFn> {
-  return listen<WriteSettledEvent>('write-settled', (event) => {
+  return events.writeSettled.listen((event) => {
     callback(event.payload)
   })
 }
 
 /** Only emitted in Stop conflict resolution mode. */
 export async function onWriteConflict(callback: (event: WriteConflictEvent) => void): Promise<UnlistenFn> {
-  return listen<WriteConflictEvent>('write-conflict', (event) => {
+  return events.writeConflict.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/** Emitted as each top-level source item finishes, for gradual deselection. */
+export async function onWriteSourceItemDone(callback: (event: WriteSourceItemDoneEvent) => void): Promise<UnlistenFn> {
+  return events.writeSourceItemDone.listen((event) => {
     callback(event.payload)
   })
 }

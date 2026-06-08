@@ -1,9 +1,9 @@
-import { findFileIndex, findFileIndices, getTotalCount, listen } from '$lib/tauri-commands'
+import { findFileIndex, findFileIndices, getTotalCount, listen, onWriteSourceItemDone } from '$lib/tauri-commands'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { adjustSelectionIndices } from '../operations/adjust-selection-indices'
 import { buildFrontendIndices, extractFilename } from '../operations/selection-adjustment'
 import { getAppLogger } from '$lib/logging/logger'
-import type { DiffChange, DirectoryDeletedEvent, DirectoryDiff, WriteSourceItemDoneEvent } from '../types'
+import type { DiffChange, DirectoryDeletedEvent, DirectoryDiff } from '../types'
 import type { createSelectionState } from './selection-state.svelte'
 import type { createRenameState } from '../rename/rename-state.svelte'
 
@@ -193,11 +193,11 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
   // No operationId filter needed: only one write op runs at a time, and only the pane with
   // an active snapshot (operationSelectedNames) processes events.
   $effect(() => {
-    const listenerPromise = listen<WriteSourceItemDoneEvent>('write-source-item-done', (event) => {
+    const listenerPromise = onWriteSourceItemDone((payload) => {
       // Only process when we have an active operation with explicit name tracking
       if (!Array.isArray(deps.getOperationSelectedNames())) return
 
-      const filename = extractFilename(event.payload.sourcePath)
+      const filename = extractFilename(payload.sourcePath)
       void findFileIndex(deps.getListingId(), filename, deps.getIncludeHidden()).then((backendIndex) => {
         if (backendIndex === null) return
         const frontendIndex = deps.getHasParent() ? backendIndex + 1 : backendIndex

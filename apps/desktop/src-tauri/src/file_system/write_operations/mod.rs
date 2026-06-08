@@ -78,7 +78,7 @@ pub use types::{
     ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent, ScanPreviewStartResult,
     ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder, WriteCancelledEvent, WriteCompleteEvent,
     WriteConflictEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase,
-    WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
+    WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 
 // Re-export for tests (these are pub(crate) in validation.rs and state.rs)

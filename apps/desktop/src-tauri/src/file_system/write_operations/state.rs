@@ -237,8 +237,8 @@ impl Drop for WriteSettledGuard {
         };
         match inner.sink {
             EmitSink::App(app) => {
-                use tauri::Emitter;
-                let _ = app.emit("write-settled", &event);
+                use tauri_specta::Event;
+                let _ = event.emit(&app);
             }
             #[cfg(test)]
             EmitSink::Sink(sink) => {

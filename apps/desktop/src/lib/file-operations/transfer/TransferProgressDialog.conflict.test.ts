@@ -18,7 +18,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
-import type { WriteConflictEvent } from '$lib/file-explorer/types'
+import type { WriteConflictEvent } from '$lib/tauri-commands'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import TransferProgressDialog from './TransferProgressDialog.svelte'
 

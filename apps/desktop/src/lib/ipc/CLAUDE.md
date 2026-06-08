@@ -59,6 +59,27 @@ The same type-shape constraints apply (no `skip_serializing_if`, no `serde_json:
 name or a `serde_json::Value` payload (the `mcp-*` MCP-dispatch relay, `viewer:file-changed:<session-id>`) stay
 string-based; the plan doc explains why.
 
+### Migration gotchas learned converting the sink families (write/listing)
+
+- **`…Event`-suffixed payload structs keep their name and use `event_name`.** `WriteProgressEvent` kebab-cases to
+  `write-progress-event`, not `write-progress`. These structs are referenced all over the codebase, so renaming them to
+  match the wire would ripple through unrelated call sites. Add `#[tauri_specta(event_name = "write-progress")]` on the
+  struct instead, and verify each generated `makeEvent<…>('wire-name')` stays byte-identical to today's string. Same for
+  payload structs whose name doesn't kebab-case to the wire name (`ConflictInfo` → `scan-conflict`, `DryRunResult` →
+  `dry-run-complete`).
+- **Dropping `skip_serializing_if` makes the TS field optional (`T | null | undefined`), not just `T | null`.** specta
+  marks a `#[serde(default)]` field optional, so the generated type gains `?`. Consumers assigning that field into a
+  `T | null` `$state` or passing it to a `T | undefined` param now need `?? null` / `?? undefined`. This is the same
+  null-vs-undefined shape the Group-A command migration hit (see § Gotchas above) — expect a handful of coercions at
+  consumers when you type an event with previously-elided optional fields.
+- **Typing an event can surface a latent serde-rename bug in a NESTED enum.** `WriteErrorEvent.error` is a
+  `WriteOperationError` enum tagged `rename_all = "snake_case"` but with NO `rename_all_fields`, so its struct-variant
+  fields shipped as snake_case (`volume_name`, `device_name`) while the hand-mirrored FE type read `volumeName` /
+  `deviceName` — silently `undefined` at runtime for years. Generating the typed binding made the mismatch a compile
+  error and forced the fix: add `rename_all_fields = "camelCase"` to the enum (the `ipc-enum-camelcase` check only flags
+  `rename_all = "camelCase"` enums, so a `snake_case`-tagged enum slips past it). When an event payload nests an enum,
+  eyeball its multi-word variant fields before assuming the wire shape was correct.
+
 ## Call-site convention: name your arguments
 
 Specta-generated wrappers take **positional** arguments (in declaration order), not an object. That's elegant when the

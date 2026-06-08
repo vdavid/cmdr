@@ -76,6 +76,21 @@ export function useMountTarget(): { getTarget: () => HTMLDivElement } {
 export interface ListenRecorder {
   /** Drop-in for the `$lib/tauri-commands` `listen` export. */
   listen: (eventName: string, callback: (event: { payload: unknown }) => void) => Promise<() => void>
+  /**
+   * Drop-in for the typed `on<Listing>(payload => …)` wrappers (now that the
+   * streaming-listing events flow through the generated `events.*` API instead
+   * of raw `listen('listing-…', …)`). Registers under the wire event name so
+   * `fireListingEvent('listing-complete', payload)` still reaches the callback.
+   * Spread `recorder.listingWrappers` into the `$lib/tauri-commands` mock.
+   */
+  listingWrappers: {
+    onListingOpening: (cb: (payload: unknown) => void) => Promise<() => void>
+    onListingProgress: (cb: (payload: unknown) => void) => Promise<() => void>
+    onListingReadComplete: (cb: (payload: unknown) => void) => Promise<() => void>
+    onListingComplete: (cb: (payload: unknown) => void) => Promise<() => void>
+    onListingError: (cb: (payload: unknown) => void) => Promise<() => void>
+    onListingCancelled: (cb: (payload: unknown) => void) => Promise<() => void>
+  }
   /** Invoke every live listener registered for `eventName` with `{ payload }`. */
   fireListingEvent: (eventName: string, payload: unknown) => void
   /** Number of live listeners currently registered for `eventName` (for the helper's own smoke test). */
@@ -116,5 +131,22 @@ export function createListenRecorder(): ListenRecorder {
     listeners.clear()
   }
 
-  return { listen: vi.fn(listen), fireListingEvent, listenerCount, reset }
+  /** Build an `on<Listing>(payload => …)` wrapper that records under `eventName`. */
+  function makeListingWrapper(eventName: string) {
+    return (cb: (payload: unknown) => void): Promise<() => void> =>
+      listen(eventName, (event) => {
+        cb(event.payload)
+      })
+  }
+
+  const listingWrappers = {
+    onListingOpening: makeListingWrapper('listing-opening'),
+    onListingProgress: makeListingWrapper('listing-progress'),
+    onListingReadComplete: makeListingWrapper('listing-read-complete'),
+    onListingComplete: makeListingWrapper('listing-complete'),
+    onListingError: makeListingWrapper('listing-error'),
+    onListingCancelled: makeListingWrapper('listing-cancelled'),
+  }
+
+  return { listen: vi.fn(listen), listingWrappers, fireListingEvent, listenerCount, reset }
 }

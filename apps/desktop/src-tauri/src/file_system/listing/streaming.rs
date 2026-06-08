@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
+use tauri_specta::Event;
 
 use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
@@ -44,16 +45,18 @@ pub struct StreamingListingStartResult {
 }
 
 /// Progress event payload
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "listing-progress")]
 pub struct ListingProgressEvent {
     pub listing_id: String,
     pub loaded_count: usize,
 }
 
 /// Completion event payload
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "listing-complete")]
 pub struct ListingCompleteEvent {
     pub listing_id: String,
     pub total_count: usize,
@@ -62,8 +65,9 @@ pub struct ListingCompleteEvent {
 }
 
 /// Error event payload
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "listing-error")]
 pub struct ListingErrorEvent {
     pub listing_id: String,
     pub message: String,
@@ -72,23 +76,26 @@ pub struct ListingErrorEvent {
 }
 
 /// Cancelled event payload
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "listing-cancelled")]
 pub struct ListingCancelledEvent {
     pub listing_id: String,
 }
 
 /// Read-complete event payload (emitted when read_dir finishes, before sorting/caching)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "listing-read-complete")]
 pub struct ListingReadCompleteEvent {
     pub listing_id: String,
     pub total_count: usize,
 }
 
 /// Opening event payload (emitted just before read_dir starts - the slow part for network folders)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "listing-opening")]
 pub struct ListingOpeningEvent {
     pub listing_id: String,
 }
@@ -134,69 +141,51 @@ impl TauriListingEventSink {
 
 impl ListingEventSink for TauriListingEventSink {
     fn emit_opening(&self, listing_id: &str) {
-        use tauri::Emitter;
-        let _ = self.app.emit(
-            "listing-opening",
-            ListingOpeningEvent {
-                listing_id: listing_id.to_string(),
-            },
-        );
+        let _ = ListingOpeningEvent {
+            listing_id: listing_id.to_string(),
+        }
+        .emit(&self.app);
     }
 
     fn emit_progress(&self, listing_id: &str, loaded_count: usize) {
-        use tauri::Emitter;
-        let _ = self.app.emit(
-            "listing-progress",
-            ListingProgressEvent {
-                listing_id: listing_id.to_string(),
-                loaded_count,
-            },
-        );
+        let _ = ListingProgressEvent {
+            listing_id: listing_id.to_string(),
+            loaded_count,
+        }
+        .emit(&self.app);
     }
 
     fn emit_read_complete(&self, listing_id: &str, total_count: usize) {
-        use tauri::Emitter;
-        let _ = self.app.emit(
-            "listing-read-complete",
-            ListingReadCompleteEvent {
-                listing_id: listing_id.to_string(),
-                total_count,
-            },
-        );
+        let _ = ListingReadCompleteEvent {
+            listing_id: listing_id.to_string(),
+            total_count,
+        }
+        .emit(&self.app);
     }
 
     fn emit_complete(&self, listing_id: &str, total_count: usize, volume_root: String) {
-        use tauri::Emitter;
-        let _ = self.app.emit(
-            "listing-complete",
-            ListingCompleteEvent {
-                listing_id: listing_id.to_string(),
-                total_count,
-                volume_root,
-            },
-        );
+        let _ = ListingCompleteEvent {
+            listing_id: listing_id.to_string(),
+            total_count,
+            volume_root,
+        }
+        .emit(&self.app);
     }
 
     fn emit_error(&self, listing_id: &str, message: String, friendly: Option<FriendlyError>) {
-        use tauri::Emitter;
-        let _ = self.app.emit(
-            "listing-error",
-            ListingErrorEvent {
-                listing_id: listing_id.to_string(),
-                message,
-                friendly,
-            },
-        );
+        let _ = ListingErrorEvent {
+            listing_id: listing_id.to_string(),
+            message,
+            friendly,
+        }
+        .emit(&self.app);
     }
 
     fn emit_cancelled(&self, listing_id: &str) {
-        use tauri::Emitter;
-        let _ = self.app.emit(
-            "listing-cancelled",
-            ListingCancelledEvent {
-                listing_id: listing_id.to_string(),
-            },
-        );
+        let _ = ListingCancelledEvent {
+            listing_id: listing_id.to_string(),
+        }
+        .emit(&self.app);
     }
 }
 

@@ -390,9 +390,9 @@
         filesTotal = event.filesTotal
         bytesDone = event.bytesDone
         bytesTotal = event.bytesTotal
-        bytesPerSecond = event.bytesPerSecond
-        filesPerSecond = event.filesPerSecond
-        etaSecondsRaw = event.etaSeconds
+        bytesPerSecond = event.bytesPerSecond ?? null
+        filesPerSecond = event.filesPerSecond ?? null
+        etaSecondsRaw = event.etaSeconds ?? null
         updateDisplayEta(etaSecondsRaw)
 
         // Scanning-phase metadata (current dir, dirs tally, index-derived
@@ -401,7 +401,7 @@
         // foolproof re-scan.
         if (event.phase === 'scanning') {
             scanFilesFound = event.filesDone
-            scanDirsFound = event.dirsDone
+            scanDirsFound = event.dirsDone ?? 0
             scanBytesFound = event.bytesDone
             scanCurrentDir = event.currentDir ?? null
             const r = scanThroughput.push({
@@ -451,7 +451,7 @@
 
         operationSettled = true
         cleanup()
-        onError(event.error, event.friendly)
+        onError(event.error, event.friendly ?? undefined)
     }
 
     function handleCancelled(event: WriteCancelledEvent) {

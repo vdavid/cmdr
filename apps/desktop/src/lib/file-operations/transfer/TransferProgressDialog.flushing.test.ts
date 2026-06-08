@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
-import type { WriteProgressEvent } from '$lib/file-explorer/types'
+import type { WriteProgressEvent } from '$lib/tauri-commands'
 import TransferProgressDialogStatic from './TransferProgressDialog.svelte'
 
 let progressCb: ((e: WriteProgressEvent) => void) | null = null

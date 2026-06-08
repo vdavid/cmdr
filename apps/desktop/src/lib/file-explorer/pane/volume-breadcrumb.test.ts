@@ -84,6 +84,8 @@ vi.mock('$lib/tauri-commands', () => ({
   listMtpDevices: vi.fn().mockResolvedValue([]),
   onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
   onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
+  onVolumeSpaceChanged: vi.fn().mockResolvedValue(() => {}),
+  onWriteSourceItemDone: vi.fn().mockResolvedValue(() => {}),
   onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
   onMtpPermissionError: vi.fn().mockResolvedValue(() => {}),
   notifyDialogOpened: vi.fn().mockResolvedValue(undefined),

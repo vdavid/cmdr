@@ -2239,7 +2239,27 @@ export const commands = {
 
 /** Events */
 export const events = {
+  dryRunComplete: makeEvent<DryRunResult>('dry-run-complete'),
+  listingCancelled: makeEvent<ListingCancelledEvent>('listing-cancelled'),
+  listingComplete: makeEvent<ListingCompleteEvent>('listing-complete'),
+  listingError: makeEvent<ListingErrorEvent>('listing-error'),
+  listingOpening: makeEvent<ListingOpeningEvent>('listing-opening'),
+  listingProgress: makeEvent<ListingProgressEvent>('listing-progress'),
+  listingReadComplete: makeEvent<ListingReadCompleteEvent>('listing-read-complete'),
+  scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
+  scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
+  scanPreviewComplete: makeEvent<ScanPreviewCompleteEvent>('scan-preview-complete'),
+  scanPreviewError: makeEvent<ScanPreviewErrorEvent>('scan-preview-error'),
+  scanPreviewProgress: makeEvent<ScanPreviewProgressEvent>('scan-preview-progress'),
+  scanProgress: makeEvent<ScanProgressEvent>('scan-progress'),
   volumeSpaceChanged: makeEvent<VolumeSpaceChanged>('volume-space-changed'),
+  writeCancelled: makeEvent<WriteCancelledEvent>('write-cancelled'),
+  writeComplete: makeEvent<WriteCompleteEvent>('write-complete'),
+  writeConflict: makeEvent<WriteConflictEvent>('write-conflict'),
+  writeError: makeEvent<WriteErrorEvent>('write-error'),
+  writeProgress: makeEvent<WriteProgressEvent>('write-progress'),
+  writeSettled: makeEvent<WriteSettledEvent>('write-settled'),
+  writeSourceItemDone: makeEvent<WriteSourceItemDoneEvent>('write-source-item-done'),
 }
 
 /* Types */
@@ -2409,6 +2429,22 @@ export type ConflictFileInfo = {
   isDirectory: boolean
 }
 
+// Detailed information about a single conflict.
+export type ConflictInfo = {
+  sourcePath: string
+  destinationPath: string
+  // In bytes.
+  sourceSize: number
+  // In bytes.
+  destinationSize: number
+  // Unix timestamp in seconds.
+  sourceModified: number | null
+  // Unix timestamp in seconds.
+  destinationModified: number | null
+  destinationIsNewer: boolean
+  isDirectory: boolean
+}
+
 // How to handle conflicts when destination files already exist.
 export type ConflictResolution =
   // Stop operation on first conflict (default behavior)
@@ -2554,6 +2590,19 @@ export type DownloadsWatcherStatus = {
    *  the FE doesn't need a second IPC.
    */
   fdaPending: boolean
+}
+
+// Result of a dry-run operation.
+export type DryRunResult = {
+  operationId: string
+  operationType: WriteOperationType
+  filesTotal: number
+  bytesTotal: number
+  conflictsTotal: number
+  // Sampled subset (max 200 for large sets).
+  conflicts: ConflictInfo[]
+  // True if `conflicts` is a sample (`conflicts_total > conflicts.len()`).
+  conflictsSampled: boolean
 }
 
 // One row in the encoding dropdown.
@@ -3020,6 +3069,44 @@ export type LineChunk = {
   // Known only after full scan or full load.
   totalLines: number | null
   totalBytes: number
+}
+
+// Cancelled event payload
+export type ListingCancelledEvent = {
+  listingId: string
+}
+
+// Completion event payload
+export type ListingCompleteEvent = {
+  listingId: string
+  totalCount: number
+  // Root path of the volume this listing belongs to
+  volumeRoot: string
+}
+
+// Error event payload
+export type ListingErrorEvent = {
+  listingId: string
+  message: string
+  // Structured error info when available. `None` for internal errors (task panics).
+  friendly: FriendlyError | null
+}
+
+// Opening event payload (emitted just before read_dir starts - the slow part for network folders)
+export type ListingOpeningEvent = {
+  listingId: string
+}
+
+// Progress event payload
+export type ListingProgressEvent = {
+  listingId: string
+  loadedCount: number
+}
+
+// Read-complete event payload (emitted when read_dir finishes, before sorting/caching)
+export type ListingReadCompleteEvent = {
+  listingId: string
+  totalCount: number
 }
 
 // Result of starting a new directory listing.
@@ -3605,6 +3692,58 @@ export type ScanConflict = {
   destIsDirectory: boolean
 }
 
+// Cancelled event for scan preview.
+export type ScanPreviewCancelledEvent = {
+  previewId: string
+}
+
+// Completion event for scan preview.
+export type ScanPreviewCompleteEvent = {
+  previewId: string
+  filesTotal: number
+  dirsTotal: number
+  /**
+   *  Write footprint (un-dedup'd): the bytes a copy actually writes and the
+   *  headline the Copy dialog shows. See `CopyScanResult::total_bytes`.
+   */
+  bytesTotal: number
+  /**
+   *  `du`-equivalent source footprint (hardlinks counted once). Equals
+   *  `bytes_total` when there are no hardlinks; when it's smaller, the
+   *  dialog shows a "X will be written, source is Y" hint.
+   */
+  dedupBytesTotal: number
+}
+
+// Error event for scan preview.
+export type ScanPreviewErrorEvent = {
+  previewId: string
+  message: string
+}
+
+// Progress event for scan preview (shown in Copy dialog).
+export type ScanPreviewProgressEvent = {
+  previewId: string
+  filesFound: number
+  dirsFound: number
+  bytesFound: number
+  // For activity indication.
+  currentPath: string | null
+  /**
+   *  Absolute parent directory currently being scanned. Lets the UI show
+   *  "in directory: …" alongside the filename.
+   */
+  currentDir?: string | null
+  /**
+   *  Index-derived expected file count, sampled once at scan start. Lets
+   *  the FE render a real progress bar from second one of the scan.
+   *  `None` when the index doesn't cover all sources.
+   */
+  expectedFilesTotal?: number | null
+  // Pairs with `expected_files_total`.
+  expectedBytesTotal?: number | null
+}
+
 // Result of starting a scan preview.
 export type ScanPreviewStartResult = {
   previewId: string
@@ -3626,6 +3765,17 @@ export type ScanPreviewTotals = {
    *  `ScanPreviewCompleteEvent::dedup_bytes_total`.
    */
   dedupBytesTotal: number
+}
+
+// Progress event during scanning phase (emitted in dry-run mode).
+export type ScanProgressEvent = {
+  operationId: string
+  operationType: WriteOperationType
+  filesFound: number
+  bytesFound: number
+  conflictsFound: number
+  // For activity indication.
+  currentPath: string | null
 }
 
 // A search match found by a backend.
@@ -4203,6 +4353,95 @@ export type WatcherGateError =
    */
   { kind: 'watcherStartFailed'; message: string }
 
+// Cancelled event payload.
+export type WriteCancelledEvent = {
+  operationId: string
+  operationType: WriteOperationType
+  filesProcessed: number
+  // Whether partial files were rolled back (deleted).
+  rolledBack: boolean
+}
+
+/**
+ *  Completion event payload.
+ *
+ *  `files_processed` counts every source the operation considered (transferred + skipped),
+ *  matching the driver's `files_done`. `files_skipped` is the subset that was skipped via
+ *  conflict resolution (bulk pre-known-conflict skip, per-iter Skip from the resolver, or
+ *  closure-side Skip such as same-inode self-copy). For delete/trash, skipping isn't a
+ *  concept and the field is always 0. The FE uses both to compose user-facing summaries
+ *  like "Copy complete: 3 copied, 2 skipped" instead of the misleading "0 files".
+ */
+export type WriteCompleteEvent = {
+  operationId: string
+  operationType: WriteOperationType
+  filesProcessed: number
+  filesSkipped: number
+  bytesProcessed: number
+}
+
+// Conflict event payload (emitted when Stop mode encounters a conflict).
+export type WriteConflictEvent = {
+  operationId: string
+  sourcePath: string
+  destinationPath: string
+  /**
+   *  Source size in bytes. Files use `metadata.len()`; folder sources use
+   *  the recursive total from the pre-flight scan when known. `None`
+   *  ("unknown") for a folder source on a path that ran no pre-flight scan
+   *  (the same-volume move fast path), which the FE renders as `(unknown)`,
+   *  mirroring `destination_size`.
+   */
+  sourceSize: number | null
+  /**
+   *  Destination size in bytes. `Some` for files (always from
+   *  `metadata.len()`) and for folders covered by the drive index;
+   *  `None` ("unknown") for folders the index doesn't cover (network mounts,
+   *  MTP, paths outside the index scope). The FE renders `(unknown)` for
+   *  `None` and disables the "Overwrite all smaller" bulk action.
+   */
+  destinationSize: number | null
+  // Unix timestamp in seconds.
+  sourceModified: number | null
+  // Unix timestamp in seconds.
+  destinationModified: number | null
+  destinationIsNewer: boolean
+  /**
+   *  `destination_size - source_size` when both are known. `None` collapses
+   *  the difference when either `destination_size` or `source_size` is
+   *  unknown.
+   */
+  sizeDifference: number | null
+  /**
+   *  `true` when the source side is a directory. Lets the FE render the
+   *  distinct "replace a folder with a file" / "replace a file with a folder"
+   *  warning instead of the generic file-over-file dialog.
+   */
+  sourceIsDirectory?: boolean
+  /**
+   *  `true` when the destination side is a directory. See
+   *  `source_is_directory`.
+   */
+  destinationIsDirectory?: boolean
+}
+
+/**
+ *  Error event payload.
+ *
+ *  `error` is the typed variant for programmatic FE handling and tests; `friendly`
+ *  is the rendered user-facing copy (title + explanation + suggestion + category)
+ *  produced by the same `friendly_error_from_volume_error` + `enrich_with_provider`
+ *  pipeline the listing-error path uses. When `friendly` is `None`, the FE falls
+ *  back to variant-based messages (`transfer-error-messages.ts`). That branch
+ *  stays in place for local-FS error paths that bypass `VolumeError`.
+ */
+export type WriteErrorEvent = {
+  operationId: string
+  operationType: WriteOperationType
+  error: WriteOperationError
+  friendly?: FriendlyError | null
+}
+
 // Configuration for write operations.
 export type WriteOperationConfig = {
   // Progress update interval in milliseconds (default: 200)
@@ -4234,7 +4473,7 @@ export type WriteOperationError =
   // Overwrite not enabled.
   | { type: 'destination_exists'; path: string }
   | { type: 'permission_denied'; path: string; message: string }
-  | { type: 'insufficient_space'; required: number; available: number; volume_name: string | null }
+  | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
   | { type: 'same_location'; path: string }
   // Would cause infinite recursion.
   | { type: 'destination_inside_source'; source: string; destination: string }
@@ -4243,7 +4482,7 @@ export type WriteOperationError =
   // Device was disconnected during the operation (USB, MTP, etc.).
   | { type: 'device_disconnected'; path: string }
   // Target device or volume is read-only.
-  | { type: 'read_only_device'; path: string; device_name: string | null }
+  | { type: 'read_only_device'; path: string; deviceName: string | null }
   // File is locked (macOS immutable flag, "Operation not permitted" on delete).
   | { type: 'file_locked'; path: string }
   // Volume doesn't support trash (network mounts, FAT, etc.).
@@ -4296,6 +4535,94 @@ export type WriteOperationStartResult = {
 
 // Type of write operation.
 export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash'
+
+/**
+ *  Progress event payload for write operations.
+ *
+ *  `bytes_per_second`, `files_per_second`, and `eta_seconds` are populated by
+ *  `eta::EtaEstimator` from `enrich_progress_event`. They're optional because
+ *  the estimator returns `None` for both rates and ETA during the warm-up
+ *  window (first ~800 ms of a phase or before the second sample lands).
+ */
+export type WriteProgressEvent = {
+  operationId: string
+  operationType: WriteOperationType
+  phase: WriteOperationPhase
+  // Filename only, not full path.
+  currentFile: string | null
+  /**
+   *  Absolute parent directory currently being scanned (Scanning phase only).
+   *  Lets the UI show "in directory: …" alongside the filename so users
+   *  get a sense of where in the tree the walker is.
+   */
+  currentDir?: string | null
+  filesDone: number
+  filesTotal: number
+  bytesDone: number
+  bytesTotal: number
+  /**
+   *  Directories discovered so far (Scanning phase only; 0 outside scanning).
+   *  `WriteProgressEvent` already carries `files_done`; some UIs want to show
+   *  the dir count separately while the walker is mid-tree. Populated by
+   *  `with_scan_meta`.
+   */
+  dirsDone?: number
+  // Smoothed bytes/second toward the phase target. `None` during warm-up.
+  bytesPerSecond?: number | null
+  // Smoothed files/second toward the phase target. `None` during warm-up.
+  filesPerSecond?: number | null
+  /**
+   *  Seconds remaining, combining both axes via `max(ETA_bytes, ETA_files)`.
+   *  `None` during warm-up or when both rates are zero (operation stalled).
+   */
+  etaSeconds?: number | null
+  /**
+   *  Index-derived expected file count, for rendering a progress bar during
+   *  the scanning phase before the foolproof re-scan finishes. `None` when
+   *  the index doesn't cover all sources, or outside the scanning phase.
+   */
+  expectedFilesTotal?: number | null
+  // Pairs with `expected_files_total`. See its doc.
+  expectedBytesTotal?: number | null
+}
+
+/**
+ *  Settled event payload. Emitted exactly once per write operation, after the
+ *  spawned background task has fully returned (success, error, cancelled, or
+ *  panic). Pairs with the terminal outcome event (`write-complete` /
+ *  `write-cancelled` / `write-error`): the FE waits for `write-settled` before
+ *  clearing the "Cancelling…" dialog so the user isn't tempted to dispatch a
+ *  new op while the volume is still tearing down (USB session teardown on MTP,
+ *  for example).
+ *
+ *  Ordering contract: this event is emitted AFTER the terminal outcome event
+ *  for the same `operation_id`. The FE buffers any out-of-order delivery
+ *  defensively; the BE guarantees the BE-side emit order.
+ *
+ *  `volume_id` is populated when the source volume is known at the time the
+ *  guard is set up. Local-FS operations leave it `None` (they don't have a
+ *  volume_id concept beyond the implicit "root"). The FE doesn't currently
+ *  filter on volume_id — the per-op `operation_id` is the binding signal —
+ *  but it's carried for future diagnostics and consistency.
+ */
+export type WriteSettledEvent = {
+  operationId: string
+  operationType: WriteOperationType
+  /**
+   *  Source volume id when known (MTP/SMB volume ops). `None` for local-FS
+   *  operations.
+   */
+  volumeId?: string | null
+}
+
+/**
+ *  Emitted when all files belonging to a top-level source item have been processed.
+ *  Used by the frontend for gradual deselection during operations.
+ */
+export type WriteSourceItemDoneEvent = {
+  operationId: string
+  sourcePath: string
+}
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(

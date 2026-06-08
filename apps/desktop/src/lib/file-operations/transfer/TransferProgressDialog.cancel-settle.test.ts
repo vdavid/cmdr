@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
-import type { WriteCancelledEvent, WriteSettledEvent, WriteCompleteEvent } from '$lib/file-explorer/types'
+import type { WriteCancelledEvent, WriteSettledEvent, WriteCompleteEvent } from '$lib/tauri-commands'
 // Import the SUT statically so the linter sees a real source dependency.
 // The dynamic import inside `mountDialog` is kept for the per-test reset
 // pattern that vitest's module mocking expects.

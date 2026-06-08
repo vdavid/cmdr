@@ -48,6 +48,15 @@
 use specta_typescript::Typescript;
 use tauri_specta::{Builder, collect_events};
 
+use crate::file_system::listing::streaming::{
+    ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
+    ListingReadCompleteEvent,
+};
+use crate::file_system::write_operations::{
+    ConflictInfo, DryRunResult, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
+    ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
+    WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
+};
 use crate::ipc_collectors::collect_all_types;
 use crate::space_poller::VolumeSpaceChanged;
 
@@ -568,7 +577,32 @@ pub fn builder() -> Builder<tauri::Wry> {
         // its kebab-cased name is the wire event name and its TS type + a typed
         // `events.<name>.listen(...)` helper are generated into `bindings.ts`.
         // Mounted onto the app via `mount_events` in `crate::run`.
-        .events(collect_events![VolumeSpaceChanged])
+        .events(collect_events![
+            VolumeSpaceChanged,
+            // Write-operations sink (file_system/write_operations/types.rs `TauriEventSink`).
+            WriteProgressEvent,
+            WriteCompleteEvent,
+            WriteCancelledEvent,
+            WriteErrorEvent,
+            WriteConflictEvent,
+            WriteSourceItemDoneEvent,
+            ScanProgressEvent,
+            ConflictInfo, // scan-conflict
+            DryRunResult, // dry-run-complete
+            WriteSettledEvent,
+            // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).
+            ListingOpeningEvent,
+            ListingProgressEvent,
+            ListingReadCompleteEvent,
+            ListingCompleteEvent,
+            ListingErrorEvent,
+            ListingCancelledEvent,
+            // Scan-preview (file_system/write_operations/scan_preview.rs).
+            ScanPreviewProgressEvent,
+            ScanPreviewCompleteEvent,
+            ScanPreviewErrorEvent,
+            ScanPreviewCancelledEvent,
+        ])
 }
 
 #[cfg(test)]

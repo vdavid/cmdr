@@ -1,6 +1,7 @@
 // On-demand virtual scrolling API (listing-based), sync status, font metrics
 
-import { commands } from '$lib/ipc/bindings'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { commands, events } from '$lib/ipc/bindings'
 import type {
   FileEntry,
   ListingStats,
@@ -10,9 +11,28 @@ import type {
   StreamingListingStartResult,
   SyncStatus,
 } from '../file-explorer/types'
+// Streaming-listing event payload types come from the generated typed-events
+// bindings (the Rust `TauriListingEventSink` struct shapes drive these).
+import type {
+  ListingCancelledEvent,
+  ListingCompleteEvent,
+  ListingErrorEvent,
+  ListingOpeningEvent,
+  ListingProgressEvent,
+  ListingReadCompleteEvent,
+} from '$lib/ipc/bindings'
 import type { TimedOut } from './ipc-types'
 import { throwIpcError } from './ipc-types'
 import type { DirectorySortMode } from '$lib/settings'
+
+export type {
+  ListingOpeningEvent,
+  ListingProgressEvent,
+  ListingReadCompleteEvent,
+  ListingCompleteEvent,
+  ListingErrorEvent,
+  ListingCancelledEvent,
+}
 
 /**
  * Starts a new streaming directory listing.
@@ -429,4 +449,54 @@ export async function storeFontMetrics(fontId: string, widths: Record<number, nu
  */
 export async function hasFontMetrics(fontId: string): Promise<boolean> {
   return commands.hasFontMetrics(fontId)
+}
+
+// ============================================================================
+// Streaming-listing event helpers
+// ============================================================================
+//
+// Thin typed wrappers over the generated `events.*` API for the streaming
+// directory-listing lifecycle (opening → progress → read-complete → complete,
+// plus error / cancelled). Call the returned `UnlistenFn` on destroy.
+
+/** Emitted just before `read_dir` starts (the slow part for network folders). */
+export async function onListingOpening(callback: (event: ListingOpeningEvent) => void): Promise<UnlistenFn> {
+  return events.listingOpening.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/** Emitted every ~200 ms with the running loaded-entry count. */
+export async function onListingProgress(callback: (event: ListingProgressEvent) => void): Promise<UnlistenFn> {
+  return events.listingProgress.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/** Emitted when `read_dir` finishes, before sorting and caching. */
+export async function onListingReadComplete(callback: (event: ListingReadCompleteEvent) => void): Promise<UnlistenFn> {
+  return events.listingReadComplete.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/** Emitted when the listing is sorted, cached, and ready to render. */
+export async function onListingComplete(callback: (event: ListingCompleteEvent) => void): Promise<UnlistenFn> {
+  return events.listingComplete.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/** Emitted when the listing fails (carries an optional `FriendlyError`). */
+export async function onListingError(callback: (event: ListingErrorEvent) => void): Promise<UnlistenFn> {
+  return events.listingError.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/** Emitted when the listing is cancelled (ESC, navigation away). */
+export async function onListingCancelled(callback: (event: ListingCancelledEvent) => void): Promise<UnlistenFn> {
+  return events.listingCancelled.listen((event) => {
+    callback(event.payload)
+  })
 }

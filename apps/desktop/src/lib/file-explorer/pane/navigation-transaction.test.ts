@@ -90,6 +90,10 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     openFile: vi.fn().mockResolvedValue(undefined),
     getIcons: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
     listen: recorder.listen,
+    // Streaming-listing events now flow through the typed `on<Listing>` wrappers
+    // (generated `events.*`), so route them through the same recorder the test
+    // fires via `fireListingEvent`.
+    ...recorder.listingWrappers,
     showFileContextMenu: vi.fn(() => Promise.resolve()),
     updateMenuContext: vi.fn(() => Promise.resolve()),
     getRestrictedPaths: vi.fn().mockResolvedValue([]),
@@ -121,6 +125,8 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     listMtpDevices: vi.fn().mockResolvedValue([]),
     onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
+    onVolumeSpaceChanged: vi.fn().mockResolvedValue(() => {}),
+    onWriteSourceItemDone: vi.fn().mockResolvedValue(() => {}),
     onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
     onMtpPermissionError: vi.fn().mockResolvedValue(() => {}),
     updatePaneTabs: vi.fn().mockResolvedValue(undefined),
