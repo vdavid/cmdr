@@ -67,13 +67,10 @@ Prepare a release based on docs/guides/releasing.md.
    >   system keyring, distro-specific install hints, USB permission handling ([13 SHAs]).
 
 3. **Pre-warm the runner's Finder Automation permission** so `bundle_dmg.sh` doesn't hang for ~2 minutes per matrix job.
-   When `actions-runner` auto-updates, its bundled `node` binary lands at a new path
-   (`~/actions-runner/externals.<version>/node20/bin/node`) that macOS TCC has never seen. The first `osascript` call
-   from that node pops an "Allow … to control Finder" prompt; if the user isn't at the keyboard, the prompt times out
-   after ~2 minutes and TCC records auth_value=0 (denied) for that node, breaking every subsequent DMG bundle.
-
    Run the canary AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway). If a macOS
-   dialog appears asking to allow control of Finder, tell the user to click Allow.
+   dialog appears asking to allow control of Finder, tell the user to click Allow. See `docs/guides/releasing.md` §
+   "`bundle_dmg.sh` hangs ~2 minutes then fails on every matrix job" for why this is needed, the `auth_value` codes, and
+   how to recover if the entry is already stuck at denied.
 
    ```bash
    NODE=$(readlink ~/actions-runner/externals 2>/dev/null)
@@ -87,12 +84,6 @@ Prepare a release based on docs/guides/releasing.md.
      fi
    fi
    ```
-
-   - `auth_value` codes: 0=denied, 1=ask, 2=allowed. Anything other than 2 means the next bundle_dmg will hang.
-   - Don't try to fix a stuck `auth_value=0` by `UPDATE`-ing TCC.db directly. tccd re-validates each row's `csreq`
-     against the live binary's signature on use, plus there's an integrity layer on Sonoma+; a hand-edited row reads
-     back fine via `SELECT` but tccd treats it as untrusted and re-prompts. The only reliable path is to make the prompt
-     fire, which is what the canary above does.
 
 4. Suggest updates to the roadmap.
    - Read @apps/website/src/pages/roadmap.astro as well. Is there anything to tick off (with a date!) or a major
@@ -110,18 +101,11 @@ Prepare a release based on docs/guides/releasing.md.
      `cd ~/actions-runner-cmdr && ./svc.sh start` (fall back to `launchctl bootout` + `bootstrap` if `svc.sh` errors
      with "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically once
      the runner reports in. No need to re-trigger or re-tag.
-9. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build. The self-hosted runner lives on this
-   Mac; any sleep (display or system) drops the runner connection and fails every in-flight matrix job with
-   `The self-hosted runner lost communication with the server`. See `docs/guides/releasing.md` § "Keep the Mac awake
-   during the build".
-   - **First check whether `caffeinate` is already running** (`pgrep -lf 'caffeinate -dimsu'`, or the user may say so).
-     If a suitable `caffeinate` is already holding the Mac awake, skip arming a new one (don't stack duplicates), and
-     don't disarm it at the end either since you didn't start it.
-   - Otherwise run `caffeinate -dimsu` as a Bash `run_in_background` call. Capture the background task id so you can
-     stop it.
-   - Disarm it once the release workflow reports `completed` (success or failure, not just when the matrix is done) -
-     but only if you were the one who armed it.
-   - If the user requests a re-run of failed jobs and no caffeinate is running, re-arm it first.
+9. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build (a display or system sleep drops the
+   self-hosted runner connection and fails every in-flight matrix job). Follow the check/arm/disarm procedure in
+   `docs/guides/releasing.md` § "Keep the Mac awake during the build": check `pgrep -lf 'caffeinate -dimsu'` first, arm
+   a background `caffeinate -dimsu` only if none is running, disarm it once the workflow reports `completed` (and only
+   if you armed it), and re-arm before a re-run of failed jobs if none is running.
 10. **Monitor the CI build**:
 
 - Remind the user not to close their laptop for ~15 minutes while the self-hosted runner builds.

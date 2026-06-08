@@ -8,21 +8,30 @@ import (
 	"strings"
 )
 
+// jscpdVersion pins the jscpd CLI. It MUST stay pinned (repo policy:
+// checks/CLAUDE.md § "every tool install pins --version"). An unpinned `npx
+// jscpd` pulled the 5.x rewrite — whose CLI renamed/removed flags (`--ignore`,
+// `--reporters` gone) — and the arg-parse error got misreported as a
+// duplication failure, reddening CI for a no-Rust-change commit. Bump
+// deliberately and re-validate the flags below against the new major.
+const jscpdVersion = "4.2.3"
+
 // RunJscpdRust detects code duplication in Rust files.
 func RunJscpdRust(ctx *CheckContext) (CheckResult, error) {
 	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
+	jscpdSpec := "jscpd@" + jscpdVersion
 
-	// Check if jscpd is available via npx
-	cmd := exec.Command("npx", "jscpd", "--version")
+	// Check if the pinned jscpd is available via npx; install it if not.
+	cmd := exec.Command("npx", jscpdSpec, "--version")
 	if _, err := RunCommand(cmd, true); err != nil {
-		installCmd := exec.Command("npm", "install", "-g", "jscpd")
+		installCmd := exec.Command("npm", "install", "-g", jscpdSpec)
 		if _, err := RunCommand(installCmd, true); err != nil {
-			return CheckResult{}, fmt.Errorf("failed to install jscpd: %w", err)
+			return CheckResult{}, fmt.Errorf("failed to install %s: %w", jscpdSpec, err)
 		}
 	}
 
 	// Run jscpd on Rust source files
-	cmd = exec.Command("npx", "jscpd",
+	cmd = exec.Command("npx", jscpdSpec,
 		rustSrcDir,
 		"--format", "rust",
 		"--min-lines", "5",
@@ -33,7 +42,12 @@ func RunJscpdRust(ctx *CheckContext) (CheckResult, error) {
 	)
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		if strings.Contains(output, "duplicated lines") || strings.Contains(output, "threshold") {
+		// Only the specific over-threshold marker counts as a duplication
+		// failure. Matching the generic word "threshold" once misfired on the
+		// 5.x `--help` usage text (which lists `--threshold`), turning a CLI
+		// arg-parse error into a bogus "duplication exceeds threshold" report.
+		// Anything else is a real tool error and must surface verbatim.
+		if strings.Contains(output, "found too many duplicates") || strings.Contains(output, "duplicated lines") {
 			return CheckResult{}, fmt.Errorf("code duplication exceeds threshold (2%%)\n%s", indentOutput(output))
 		}
 		return CheckResult{}, fmt.Errorf("jscpd failed\n%s", indentOutput(output))
