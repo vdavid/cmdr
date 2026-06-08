@@ -65,6 +65,14 @@ vi.mock('$lib/ipc/bindings', () => ({
   commands: {
     downloadsWatcherStatus: downloadsWatcherStatusMock,
   },
+  // The bridge subscribes via the typed `onDownloadDetected` wrapper, which
+  // calls `events.downloadDetected.listen`. Route it into `listenMock` under
+  // the wire name so the existing capture closure still works.
+  events: {
+    downloadDetected: {
+      listen: (cb: DetectedListener): Promise<() => void> => listenMock('download-detected', cb) as Promise<() => void>,
+    },
+  },
 }))
 
 import { startDownloadsEventBridge } from './event-bridge.svelte'

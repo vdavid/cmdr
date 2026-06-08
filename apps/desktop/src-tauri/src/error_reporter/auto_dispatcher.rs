@@ -36,11 +36,13 @@
 use crate::error_reporter::{self, BundleKind, BundleScope, FLOW_B_BUNDLE_CAP_MB};
 use chrono::{DateTime, Utc};
 use rand::RngExt;
+use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, Wry};
+use tauri::{AppHandle, Wry};
+use tauri_specta::Event as _;
 
 /// Debounce window: first error schedules a flush this far in the future, plus jitter.
 const DEBOUNCE_BASE: Duration = Duration::from_secs(60);
@@ -60,9 +62,14 @@ const ERROR_REPORT_URL: &str = "http://localhost:8787/error-report";
 #[cfg(not(debug_assertions))]
 const ERROR_REPORT_URL: &str = "https://api.getcmdr.com/error-report";
 
-/// Tauri event emitted after a successful auto-send. Frontend listens for this and shows
-/// the confirmation toast.
-pub const AUTO_SENT_EVENT: &str = "error-report-auto-sent";
+/// `error-report-auto-sent`: emitted after a successful Flow B auto-send. The
+/// frontend listens for this and shows the confirmation toast. `id` is the
+/// server-issued `ERR-XXXXX` report id (the same one the manifest carried).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorReportAutoSent {
+    pub id: String,
+}
 
 /// Master switch driven by the `updates.errorReports` setting. Default: off (opt-in).
 ///
@@ -316,10 +323,10 @@ async fn flush(app: AppHandle<Wry>) {
                 "Auto-send: error report uploaded, id={}",
                 result.id,
             );
-            if let Err(e) = app.emit(AUTO_SENT_EVENT, &result.id) {
+            if let Err(e) = (ErrorReportAutoSent { id: result.id.clone() }).emit(&app) {
                 log::warn!(
                     target: "cmdr_lib::error_reporter",
-                    "Auto-send: succeeded but couldn't emit `{AUTO_SENT_EVENT}`: {e}",
+                    "Auto-send: succeeded but couldn't emit `error-report-auto-sent`: {e}",
                 );
             }
         }

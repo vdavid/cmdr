@@ -3,6 +3,18 @@ import { listen } from '@tauri-apps/api/event'
 
 vi.mock('$lib/tauri-commands', async () => {
   const { formatBytes, formatDuration } = await import('$lib/tauri-commands/write-operations')
+  const { listen: listenMock } = await import('@tauri-apps/api/event')
+  // The typed `onAi*` wrappers route through `@tauri-apps/api/event`'s `listen`
+  // under each event's wire name; mirror that here so the test's `listen`
+  // mock (keyed on the wire name) still captures the callback.
+  const wrap =
+    (eventName: string) =>
+    (handler: (payload: unknown) => void): Promise<() => void> =>
+      Promise.resolve(
+        listenMock(eventName, (event?: { payload: unknown }) => {
+          handler(event?.payload)
+        }) as unknown as () => void,
+      )
   return {
     formatBytes,
     formatDuration,
@@ -11,6 +23,11 @@ vi.mock('$lib/tauri-commands', async () => {
     startAiDownload: vi.fn(),
     cancelAiDownload: vi.fn(),
     isE2eMode: vi.fn().mockResolvedValue(false),
+    onAiDownloadProgress: wrap('ai-download-progress'),
+    onAiStarting: wrap('ai-starting'),
+    onAiServerReady: wrap('ai-server-ready'),
+    onAiInstalling: wrap('ai-installing'),
+    onAiInstallComplete: wrap('ai-install-complete'),
   }
 })
 

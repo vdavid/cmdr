@@ -34,6 +34,13 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutEvent, ShortcutState};
 
+/// `global-shortcut-fired`: the system-wide go-to-latest hotkey (default
+/// `⌃⌥⌘J`) fired. Payloadless for now — the FE bridge calls
+/// `goToLatestDownload(explorer)` directly. A unit struct so future per-binding
+/// metadata can be added without breaking the event registration.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct GlobalShortcutFired;
+
 /// Typed errors from a registration attempt. The FE branches on `kind`;
 /// never match on the message string.
 ///
@@ -235,7 +242,8 @@ impl<R: Registrar> GlobalShortcutManager<R> {
 /// callback"; the FE bridge doesn't care which binding triggered (there's
 /// only ever one active for now), so the routing is trivial.
 pub fn plugin_builder() -> tauri::plugin::TauriPlugin<tauri::Wry> {
-    use tauri::{Emitter as _, Manager as _};
+    use tauri::Manager as _;
+    use tauri_specta::Event as _;
     tauri_plugin_global_shortcut::Builder::new()
         .with_handler(|app: &AppHandle, _shortcut, event: ShortcutEvent| {
             // Fire on key-down only; key-up would double-trigger.
@@ -258,11 +266,10 @@ pub fn plugin_builder() -> tauri::plugin::TauriPlugin<tauri::Wry> {
                     );
                 }
             }
-            // The payload is currently empty: the FE bridge calls
-            // `goToLatestDownload(explorer)` directly. We pass an empty
-            // object so future per-binding metadata (which combo, modifiers,
-            // etc.) is additive without breaking the event shape.
-            if let Err(err) = app.emit("global-shortcut-fired", serde_json::json!({})) {
+            // Payloadless: the FE bridge calls `goToLatestDownload(explorer)`
+            // directly. The unit struct keeps room for future per-binding
+            // metadata without breaking the event registration.
+            if let Err(err) = GlobalShortcutFired.emit(app) {
                 log::warn!(
                     target: "downloads::global_shortcut",
                     "Failed to emit global-shortcut-fired: {err}",

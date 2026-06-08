@@ -1,6 +1,5 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
-    import { listen } from '@tauri-apps/api/event'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -16,6 +15,13 @@
         uninstallAi,
         formatBytes,
         getSystemMemoryInfo,
+        onAiServerReady,
+        onAiExtracting,
+        onAiDownloadProgress,
+        onAiVerifying,
+        onAiInstalling,
+        onAiInstallComplete,
+        onAiStarting,
         type AiRuntimeStatus,
         type AiDownloadProgress,
         type SystemMemoryInfo,
@@ -75,44 +81,44 @@
         unlistenFns.push(unsubCtx)
 
         // Listen for backend events
-        const unlistenReady = await listen('ai-server-ready', () => {
+        const unlistenReady = await onAiServerReady(() => {
             isRestarting = false
             activeContextSize = pendingContextSize
             void refreshStatus()
         })
         unlistenFns.push(unlistenReady)
 
-        const unlistenExtracting = await listen('ai-extracting', () => {
+        const unlistenExtracting = await onAiExtracting(() => {
             installStep = 'extracting'
         })
         unlistenFns.push(unlistenExtracting)
 
-        const unlistenProgress = await listen<AiDownloadProgress>('ai-download-progress', (event) => {
-            downloadProgress = event.payload
+        const unlistenProgress = await onAiDownloadProgress((payload) => {
+            downloadProgress = payload
             if (installStep !== 'downloading') {
                 installStep = 'downloading'
             }
         })
         unlistenFns.push(unlistenProgress)
 
-        const unlistenVerifying = await listen('ai-verifying', () => {
+        const unlistenVerifying = await onAiVerifying(() => {
             installStep = 'verifying'
         })
         unlistenFns.push(unlistenVerifying)
 
-        const unlistenInstalling = await listen('ai-installing', () => {
+        const unlistenInstalling = await onAiInstalling(() => {
             installStep = 'starting'
         })
         unlistenFns.push(unlistenInstalling)
 
-        const unlistenInstallComplete = await listen('ai-install-complete', () => {
+        const unlistenInstallComplete = await onAiInstallComplete(() => {
             installStep = null
             downloadProgress = null
             void refreshStatus()
         })
         unlistenFns.push(unlistenInstallComplete)
 
-        const unlistenStarting = await listen('ai-starting', () => {
+        const unlistenStarting = await onAiStarting(() => {
             void refreshStatus()
         })
         unlistenFns.push(unlistenStarting)

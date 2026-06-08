@@ -206,6 +206,57 @@ string-based; the plan doc explains why.
   other wrapper files in the allowlist with the same "thin typed-event listener wrapper, exercised via integration"
   reason. Same precedent as `indexing.ts`.
 
+### Migration gotchas learned converting the AI + system/misc events
+
+- **A scalar emit (`app.emit("name", &hex)` / `multiplier`) must be wrapped in a named struct, changing the wire shape
+  from a bare JSON value to `{ field: value }`.** `accent-color-changed` (bare `&String`), `system-text-size-changed`
+  (bare `f64`), and `error-report-auto-sent` (bare `&String` report id) each became `AccentColorChanged { hex }` /
+  `SystemTextSizeChanged { multiplier }` / `ErrorReportAutoSent { id }`. Every FE consumer that read `event.payload`
+  directly now reads `payload.hex` / `payload.multiplier` / `payload.id`. The text-size field stays `f32` (the source
+  `read_system_multiplier` returns `f32`); widening to `f64` would change the JSON float representation for no gain.
+- **A macOS-only module's event struct must live in an always-compiled module, because `collect_events!` can't
+  `#[cfg]`-gate inline.** `text_size.rs`, `accent_color*.rs`, `drag_image_detection.rs`, and `native_drag/promises.rs`
+  are all platform-gated, so their payload structs (`AccentColorChanged`, `SystemTextSizeChanged`, `DragImageSize`,
+  `DragModifiers`, `SessionStartedEvent`, `SessionCompleteEvent`) live in the always-compiled
+  `src-tauri/src/system_events.rs`; the gated emit sites just build + `.emit()` them. An inherent `impl` (like
+  `SessionCompleteEvent::from_summary`) can stay in the gated module even though the struct moved (same-crate inherent
+  impls don't need to be colocated). Same principle the MTP / network partitions used.
+- **`Event::emit`'s handle arg is `&H` — pass `app` when the fn already has `&AppHandle<R>`, `&app` when it owns
+  `AppHandle<R>`.** `Event::emit<R, H: Emitter<R> + Manager<R>>(&self, handle: &H)`. In a fn taking
+  `app: &AppHandle<R>`, write `payload.emit(app)`; in a fn owning `app: AppHandle<R>`, write `payload.emit(&app)`.
+  Getting this wrong yields a confusing `&AppHandle<R>: Emitter<_> not satisfied` (it inferred `H = &AppHandle<R>`).
+- **A unit-struct event with an existing `{}` (empty object) emit changes the wire to `null`, but that's safe when no
+  consumer reads the payload.** `global-shortcut-fired` emitted `json!({})`; the unit struct `GlobalShortcutFired`
+  generates `type X = null`. The FE bridge listens with `listen<unknown>` and ignores the payload, so the shape change
+  is invisible. `quick-look-closed` was already payloadless (`()` → unit struct).
+- **Nesting `FileEntry` in a typed event forces `Deserialize` on the whole chain.** `directory-diff` carries
+  `DirectoryDiff → DiffChange → FileEntry`; `FileEntry` was serialize-only (a command return type) and gained
+  `Deserialize`. It's all primitives / `Option<primitive>`, so no cascade. The generated `FileEntry` (with `| null`
+  optionals + `inode`, and without the FE-only `recursiveSizePending` / `parentPath`) DIFFERS from the hand-mirrored FE
+  `FileEntry` in `file-explorer/types.ts`, so the FE `DirectoryDiff` / `DiffChange` interfaces are KEPT (they nest the
+  FE `FileEntry`), and `onDirectoryDiff` casts the generated payload to the FE type at the wrapper boundary — the same
+  `as FileEntry[]` cast `getFileRange` already uses.
+- **`emit_to("main", json!({...}))` menu events convert via `Event::emit_to(payload, app, "main")`, same as the
+  partition-2/5 context-action events.** `view-mode-changed`, `menu-sort` (and `settings-changed` from `commands/ui.rs`
+  uses plain `emit`) became `ViewModeChanged` / `MenuSort` / `SettingsChanged` structs in `menu/mod.rs`. These ARE
+  window-targeted (`emit_to`) but are payload broadcasts, NOT window-lifecycle (open/close/focus a window) — those stay
+  for partition 7.
+- **Sink-trait events convert AT the production impl only.** `download-detected` (`AppHandleSink::emit` in
+  `downloads/watcher.rs`) became `event.emit(&self.app)`; the `EventSink` trait and the test sinks stay untyped so tests
+  don't need a Tauri app. Same shape as the partition-1 operation/listing sinks.
+- **A `const EVENT_NAME` wire string becomes the `#[tauri_specta(event_name = "…")]` override, and the const is
+  removed.** `restricted-paths-changed` (`RestrictedPathsChangedPayload`), `download-detected`
+  (`DownloadDetectedEvent`), and the drag-out pair carried `…Payload` / `…Event` suffixes that wouldn't kebab-case to
+  the wire name, so each pins it via `event_name`. `error-report-auto-sent` is the one whose struct name
+  (`ErrorReportAutoSent`) kebab-cases correctly, so it needs no override.
+- **A test that mocks `$lib/ipc/bindings` (not just `@tauri-apps/api/event`) must add the `events.<name>.listen` it now
+  reaches.** Converting a consumer to a typed `on*` wrapper routes through `events.<name>.listen`. Tests that mock the
+  whole `$lib/ipc/bindings` module (only `commands`) throw `No "events" export`; add a minimal
+  `events: { <name>: { listen } }` that routes into the existing `@tauri-apps/api/event` `listen` mock under the wire
+  name. Tests that mock `$lib/tauri-commands` must add the new `on*` wrapper to the mock (a mounted-tree test throws
+  `No "onDirectoryDiff" export` as an unhandled rejection that fails the gate even though assertions pass). Make the
+  re-wrap null-safe (`event?.payload`) so it serves both payload and payloadless (unit-struct) events.
+
 ## Call-site convention: name your arguments
 
 Specta-generated wrappers take **positional** arguments (in declaration order), not an object. That's elegant when the

@@ -37,7 +37,10 @@ use std::ptr::NonNull;
 
 use log::{debug, info, warn};
 use objc2_foundation::{NSDistributedNotificationCenter, NSNotification, NSString, NSUserDefaults};
-use tauri::{AppHandle, Emitter, Runtime};
+use tauri::{AppHandle, Runtime};
+use tauri_specta::Event as _;
+
+use crate::system_events::SystemTextSizeChanged;
 
 /// `NSGlobalDomain` key macOS writes when the user moves the
 /// Accessibility > Display > Text Size slider.
@@ -102,7 +105,7 @@ pub fn observe_system_text_size_changes<R: Runtime>(app_handle: AppHandle<R>) {
     let block = block2::RcBlock::new(move |_notification: NonNull<NSNotification>| {
         let multiplier = read_system_multiplier();
         info!("System text size changed: {multiplier:.2}x");
-        if let Err(e) = app_handle.emit("system-text-size-changed", multiplier) {
+        if let Err(e) = (SystemTextSizeChanged { multiplier }).emit(&app_handle) {
             warn!("Failed to emit system-text-size-changed event: {e}");
         }
     });

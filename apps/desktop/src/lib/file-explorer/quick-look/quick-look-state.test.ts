@@ -35,6 +35,25 @@ vi.mock('@tauri-apps/api/event', () => ({
 
 vi.mock('$lib/tauri-commands', () => ({
   quickLookClose: quickLookCloseMock,
+  // The typed `onQuickLook*` wrappers hand a bare payload; route them into the
+  // `handlers` map under their wire names, re-wrapping into the `{ payload }`
+  // shape the tests' emitter uses.
+  onQuickLookClosed: (handler: () => void) => {
+    handlers['quick-look-closed'] = () => {
+      handler()
+    }
+    const fn = vi.fn(() => {})
+    unlistenFns.push(fn)
+    return Promise.resolve(fn)
+  },
+  onQuickLookKey: (handler: (payload: unknown) => void) => {
+    handlers['quick-look-key'] = (event: { payload: unknown }) => {
+      handler(event.payload)
+    }
+    const fn = vi.fn(() => {})
+    unlistenFns.push(fn)
+    return Promise.resolve(fn)
+  },
 }))
 
 import {

@@ -1,9 +1,16 @@
-import { findFileIndex, findFileIndices, getTotalCount, listen, onWriteSourceItemDone } from '$lib/tauri-commands'
+import {
+  findFileIndex,
+  findFileIndices,
+  getTotalCount,
+  onDirectoryDeleted,
+  onDirectoryDiff,
+  onWriteSourceItemDone,
+} from '$lib/tauri-commands'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { adjustSelectionIndices } from '../operations/adjust-selection-indices'
 import { buildFrontendIndices, extractFilename } from '../operations/selection-adjustment'
 import { getAppLogger } from '$lib/logging/logger'
-import type { DiffChange, DirectoryDeletedEvent, DirectoryDiff } from '../types'
+import type { DiffChange } from '../types'
 import type { createSelectionState } from './selection-state.svelte'
 import type { createRenameState } from '../rename/rename-state.svelte'
 
@@ -101,8 +108,7 @@ export interface ListingDiffSyncDeps {
 export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
   // Listen for file watcher diff events
   $effect(() => {
-    const listenerPromise = listen<DirectoryDiff>('directory-diff', (event) => {
-      const diff = event.payload
+    const listenerPromise = onDirectoryDiff((diff) => {
       const listingId = deps.getListingId()
       // Only process diffs for our current listing
       if (diff.listingId !== listingId) return
@@ -216,11 +222,11 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
 
   // Listen for directory-deleted events (watched directory was removed externally)
   $effect(() => {
-    const listenerPromise = listen<DirectoryDeletedEvent>('directory-deleted', (event) => {
-      if (event.payload.listingId !== deps.getListingId()) return
+    const listenerPromise = onDirectoryDeleted((payload) => {
+      if (payload.listingId !== deps.getListingId()) return
 
       log.info('Directory deleted externally, navigating to nearest valid parent: {path}', {
-        path: event.payload.path,
+        path: payload.path,
       })
 
       void resolveValidPath(deps.getCurrentPath(), { volumeRoot: deps.getVolumePath() }).then((validPath) => {

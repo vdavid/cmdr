@@ -89,6 +89,18 @@ vi.mock('$lib/tauri-commands', () => ({
     listenHandlers.set(eventName, handler)
     return Promise.resolve(vi.fn())
   }),
+  onDragImageSize: vi.fn((handler: (payload: unknown) => void) => {
+    listenHandlers.set('drag-image-size', (event) => {
+      handler(event.payload)
+    })
+    return Promise.resolve(vi.fn())
+  }),
+  onDragModifiers: vi.fn((handler: (payload: unknown) => void) => {
+    listenHandlers.set('drag-modifiers', (event) => {
+      handler(event.payload)
+    })
+    return Promise.resolve(vi.fn())
+  }),
 }))
 
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))

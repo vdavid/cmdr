@@ -12,8 +12,9 @@
  * so the CSS fallback in app.css takes effect.
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
 import { commands } from '$lib/ipc/bindings'
+import { onAccentColorChanged } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { clearDirectoryIconCache } from '$lib/icon-cache'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -148,13 +149,13 @@ export async function initAccentColor(): Promise<void> {
 
   // Listen for OS-level accent color changes
   try {
-    unlisten = await listen<string>('accent-color-changed', (event) => {
-      applySystemAccentPreview(event.payload)
+    unlisten = await onAccentColorChanged((payload) => {
+      applySystemAccentPreview(payload.hex)
       applyAccentForCurrentSetting()
       // macOS renders folder icons with the accent color baked in,
       // so we need to flush cached folder bitmaps and re-fetch them.
       void clearDirectoryIconCache()
-      log.debug('System accent color changed: {hex}', { hex: event.payload })
+      log.debug('System accent color changed: {hex}', { hex: payload.hex })
     })
   } catch (error) {
     log.warn('Could not subscribe to accent color changes: {error}', { error })

@@ -2,7 +2,7 @@ import type { FilePaneAPI } from '$lib/file-explorer/pane/types'
 import type { DirectoryDiff } from '$lib/file-explorer/types'
 import { removeExtension } from './new-folder-utils'
 
-type ListenFn = (event: string, handler: (event: { payload: DirectoryDiff }) => void) => Promise<() => void>
+type OnDirectoryDiffFn = (handler: (payload: DirectoryDiff) => void) => Promise<() => void>
 type FindFileIndexFn = (listingId: string, filename: string, showHiddenFiles: boolean) => Promise<number | null>
 
 export async function getInitialFolderName(
@@ -35,7 +35,7 @@ export async function moveCursorToNewFolder(
   paneRef: FilePaneAPI | undefined,
   hasParent: boolean,
   showHiddenFiles: boolean,
-  listen: ListenFn,
+  onDirectoryDiff: OnDirectoryDiffFn,
   findFileIndex: FindFileIndexFn,
 ): Promise<void> {
   // Mark the new entry as the cursor target for the next directory-diff. When
@@ -62,8 +62,8 @@ export async function moveCursorToNewFolder(
   if (await tryMoveCursor()) return
 
   // Fallback: wait for directory-diff in case the listing hasn't updated yet
-  const unlisten = await listen('directory-diff', (event) => {
-    if (event.payload.listingId !== paneListingId) return
+  const unlisten = await onDirectoryDiff((payload) => {
+    if (payload.listingId !== paneListingId) return
     setTimeout(() => {
       void tryMoveCursor().then((found) => {
         if (found) unlisten()

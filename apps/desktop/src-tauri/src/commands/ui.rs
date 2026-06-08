@@ -1,14 +1,15 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, REOPEN_CLOSED_TAB_ID, ViewMode,
+    CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode,
     build_breadcrumb_context_menu, build_context_menu, build_network_host_context_menu, build_tab_context_menu,
     frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items, sync_view_mode_check_states,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
 use tauri::menu::ContextMenu;
-use tauri::{AppHandle, Emitter, Manager, Runtime, Window};
+use tauri::{AppHandle, Manager, Runtime, Window};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_specta::Event as _;
 
 #[tauri::command]
 #[specta::specta]
@@ -206,8 +207,11 @@ pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String
     check_item.set_checked(new_state).map_err(|e| e.to_string())?;
 
     // Emit event to frontend with the new state
-    app.emit("settings-changed", serde_json::json!({ "showHiddenFiles": new_state }))
-        .map_err(|e| e.to_string())?;
+    SettingsChanged {
+        show_hidden_files: new_state,
+    }
+    .emit(&app)
+    .map_err(|e| e.to_string())?;
 
     Ok(new_state)
 }

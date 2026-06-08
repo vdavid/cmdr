@@ -262,8 +262,26 @@
     "tauri-commands/file-viewer.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
+    "tauri-commands/ai.ts": {
+      "reason": "Thin typed-event listener wrappers over events.ai*.listen; exercised via integration (ai-state.svelte.ts, AiLocalSection.svelte)"
+    },
+    "tauri-commands/appearance.ts": {
+      "reason": "Thin typed-event listener wrappers over events.accentColorChanged / systemTextSizeChanged; exercised via integration (accent-color.ts, text-size.svelte.ts)"
+    },
+    "tauri-commands/directory-watcher.ts": {
+      "reason": "Thin typed-event listener wrappers over events.directoryDiff / directoryDeleted; exercised via integration (listing-diff-sync.svelte.ts, new-folder/file dialogs)"
+    },
     "tauri-commands/git.ts": {
       "reason": "Thin typed-event listener wrapper over events.gitStateChanged.listen; exercised via integration (git-store.svelte.ts, FullList.svelte)"
+    },
+    "tauri-commands/menu-events.ts": {
+      "reason": "Thin typed-event listener wrappers over events.viewModeChanged / menuSort; exercised via integration ((main)/+page.svelte)"
+    },
+    "tauri-commands/quick-look.ts": {
+      "reason": "Thin typed-event listener wrappers over events.quickLookKey / quickLookClosed; exercised via integration (quick-look-state.svelte.ts)"
+    },
+    "tauri-commands/restricted-paths.ts": {
+      "reason": "Thin typed-event listener wrapper over events.restrictedPathsChanged; exercised via integration (restricted-paths-store.svelte.ts)"
     },
     "tauri-commands/icons.ts": {
       "reason": "Tauri command wrappers, tested via integration"

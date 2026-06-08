@@ -51,7 +51,7 @@ vi.mock('$lib/tauri-commands', () => ({
     },
   ),
   isIpcError: vi.fn(() => false),
-  listen: vi.fn(() => Promise.resolve(() => {})),
+  onDirectoryDiff: vi.fn(() => Promise.resolve(() => {})),
   refreshListing: vi.fn(() => Promise.resolve()),
 }))
 

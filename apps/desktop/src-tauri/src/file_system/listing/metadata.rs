@@ -93,10 +93,12 @@ pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str, path: &str
 
 /// Represents a file or directory entry with extended metadata.
 ///
-/// Only serialized (Rust → frontend); never sent from the frontend, so no `Deserialize`.
+/// Carries `Deserialize` because it nests in the typed `directory-diff` event
+/// payload (`DiffChange.entry`), which must round-trip; it's otherwise a
+/// Rust → frontend return type.
 /// `None`/empty fields serialize as explicit `null` (no `skip_serializing_if`) so
 /// specta's `validate_exported_command` accepts the type in Unified mode.
-#[derive(Debug, Clone, Serialize, specta::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
     pub name: String,

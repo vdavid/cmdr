@@ -62,9 +62,10 @@ pub enum AiStatus {
     Available,
 }
 
-/// Progress info emitted during model download.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Progress info emitted during model download (`ai-download-progress`).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "ai-download-progress")]
 pub struct DownloadProgress {
     pub bytes_downloaded: u64,
     pub total_bytes: u64,
@@ -72,6 +73,29 @@ pub struct DownloadProgress {
     pub speed: u64,
     pub eta_seconds: u64,
 }
+
+/// Payloadless AI lifecycle events. Each kebab-cases to its wire name. The
+/// install flow emits them in sequence (`ai-extracting` → repeated
+/// `ai-download-progress` → `ai-verifying` → `ai-installing` →
+/// `ai-install-complete`); `ai-starting` / `ai-server-ready` bracket a server
+/// boot on a returning launch.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct AiStarting;
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct AiServerReady;
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct AiVerifying;
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct AiInstalling;
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct AiInstallComplete;
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct AiExtracting;
 
 // ============================================================================
 // Model registry

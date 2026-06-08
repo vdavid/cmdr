@@ -24,9 +24,10 @@
  * mirrors the same defensive shape `goToLatestDownload` uses.
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
 import { sendNotification } from '@tauri-apps/plugin-notification'
-import { commands } from '$lib/ipc/bindings'
+import { commands, type DownloadDetectedEvent } from '$lib/ipc/bindings'
+import { onDownloadDetected } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
@@ -37,19 +38,9 @@ import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
 const log = getAppLogger('downloads')
 
-const DOWNLOAD_DETECTED_EVENT = 'download-detected'
 const GO_TO_LATEST_COMMAND_ID = 'downloads.goToLatest'
 const TOAST_TIMEOUT_MS = 10_000
 const TOAST_GROUP = 'downloads'
-
-interface DownloadDetectedPayload {
-  path: string
-  parentDir: string
-  fileName: string
-  observedAtMs: number
-  inSubdir: boolean
-  sizeBytes: number | null
-}
 
 /**
  * Mount the listener. Returns an unsubscribe function — call it from the
@@ -60,15 +51,15 @@ interface DownloadDetectedPayload {
  * Jump. Pass `undefined` for non-main-window contexts (tests, HMR).
  */
 export async function startDownloadsEventBridge(explorer: ExplorerAPI | undefined): Promise<UnlistenFn> {
-  const unlisten = await listen<DownloadDetectedPayload>(DOWNLOAD_DETECTED_EVENT, (event) => {
-    void handleDownloadDetected(event.payload, explorer)
+  const unlisten = await onDownloadDetected((payload) => {
+    void handleDownloadDetected(payload, explorer)
   })
   log.debug('Downloads event bridge mounted')
   return unlisten
 }
 
 async function handleDownloadDetected(
-  payload: DownloadDetectedPayload,
+  payload: DownloadDetectedEvent,
   explorer: ExplorerAPI | undefined,
 ): Promise<void> {
   const mode = getDownloadsNotificationsMode()
@@ -97,7 +88,7 @@ async function handleDownloadDetected(
   }
 }
 
-function dispatchToast(payload: DownloadDetectedPayload, explorer: ExplorerAPI | undefined): void {
+function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | undefined): void {
   // Snapshot the current binding at toast creation time. The component
   // receives this as a prop and never re-reads, so a remap between events
   // doesn't mutate an already-visible toast.
@@ -116,7 +107,7 @@ function dispatchToast(payload: DownloadDetectedPayload, explorer: ExplorerAPI |
   })
 }
 
-async function dispatchMacosNotification(payload: DownloadDetectedPayload): Promise<void> {
+async function dispatchMacosNotification(payload: DownloadDetectedEvent): Promise<void> {
   const ok = await ensureMacosNotificationPermission()
   if (!ok) return
 

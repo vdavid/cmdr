@@ -110,8 +110,9 @@ removes the partial. No explicit teardown hook is needed beyond the existing run
 ### Completion toasts
 
 Finder shows nothing while a promise downloads, so Cmdr is the only feedback surface. The session storage emits two
-plain Tauri events (FE-mirrored payloads, same pattern as the downloads watcher's `download-detected` — no specta
-binding), turned into ONE toast per drag SESSION by `lib/file-explorer/drag/drag-out-event-bridge.ts`:
+typed `tauri_specta::Event`s (`SessionStartedEvent` / `SessionCompleteEvent`, defined in the always-compiled
+`crate::system_events` because this module is macOS-only), turned into ONE toast per drag SESSION by
+`lib/file-explorer/drag/drag-out-event-bridge.ts` via the typed `onDragOutSession{Started,Complete}` wrappers:
 
 - **`drag-out-session-started`** — emitted by `enter_fulfillment` the FIRST time a session's fulfillment begins (Finder
   asked). Carries `total_items`. This is the **signs-of-life affordance**: the FE raises a neutral `default`-level

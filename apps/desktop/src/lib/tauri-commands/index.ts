@@ -262,9 +262,46 @@ export type {
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'
 
-// Error reporter (Flow A: user-initiated)
-export { prepareErrorReportPreview, sendErrorReport, saveErrorReportToDisk } from './error-reporter'
+// Error reporter (Flow A: user-initiated; Flow B: auto-send event)
+export {
+  prepareErrorReportPreview,
+  sendErrorReport,
+  saveErrorReportToDisk,
+  onErrorReportAutoSent,
+} from './error-reporter'
 export type { PreviewPayload, BundleManifest, ActiveSettingsSnapshot } from './error-reporter'
+
+// AI lifecycle events
+export {
+  onAiDownloadProgress,
+  onAiStarting,
+  onAiServerReady,
+  onAiVerifying,
+  onAiInstalling,
+  onAiInstallComplete,
+  onAiExtracting,
+} from './ai'
+
+// Appearance / system events
+export { onAccentColorChanged, onSystemTextSizeChanged } from './appearance'
+
+// Native-menu events
+export { onViewModeChanged, onMenuSort } from './menu-events'
+
+// Directory-watcher events
+export { onDirectoryDiff, onDirectoryDeleted } from './directory-watcher'
+
+// Native drag events
+export { onDragImageSize, onDragModifiers, onDragOutSessionStarted, onDragOutSessionComplete } from './native-drag'
+
+// Quick Look events
+export { onQuickLookKey, onQuickLookClosed } from './quick-look'
+
+// Downloads events
+export { onDownloadDetected, onGlobalShortcutFired } from './downloads'
+
+// Restricted-paths event
+export { onRestrictedPathsChanged } from './restricted-paths'
 
 // Licensing
 export {

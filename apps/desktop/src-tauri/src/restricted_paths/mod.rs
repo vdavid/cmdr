@@ -31,10 +31,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{OnceLock, RwLock};
 use std::time::Duration;
 
-use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
+use tauri_specta::Event as _;
 
-const EVENT_NAME: &str = "restricted-paths-changed";
 const DEBOUNCE_MS: u64 = 150;
 
 static STATE: OnceLock<RwLock<HashSet<PathBuf>>> = OnceLock::new();
@@ -45,8 +45,9 @@ fn state() -> &'static RwLock<HashSet<PathBuf>> {
     STATE.get_or_init(|| RwLock::new(HashSet::new()))
 }
 
-#[derive(Clone, Serialize, specta::Type)]
+#[derive(Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "restricted-paths-changed")]
 pub struct RestrictedPathsChangedPayload {
     /// Absolute path strings, sorted alphabetically for a stable diff on
     /// the frontend.
@@ -153,7 +154,7 @@ fn schedule_emit() {
             return; // Superseded by a later schedule.
         }
         let payload = RestrictedPathsChangedPayload { paths: snapshot() };
-        let _ = app.emit(EVENT_NAME, payload);
+        let _ = payload.emit(&app);
     });
 }
 

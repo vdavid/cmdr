@@ -7,8 +7,9 @@
  * reports are surprising; the user needs time to notice and act).
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
 import { addToast } from '$lib/ui/toast'
+import { onErrorReportAutoSent } from '$lib/tauri-commands'
 
 import AutoSendToastContent, { setLastAutoSentReportId } from './AutoSendToastContent.svelte'
 import { getAppLogger } from '$lib/logging/logger'
@@ -17,9 +18,6 @@ const log = getAppLogger('errorReporter')
 
 const TOAST_ID = 'error-report-auto-sent'
 const TOAST_TIMEOUT_MS = 10_000
-
-/** Backend payload: just the server-issued report ID as a JSON string. */
-type AutoSentPayload = string
 
 let unlisten: UnlistenFn | undefined
 
@@ -33,8 +31,8 @@ export async function initAutoSendToastListener(): Promise<void> {
     log.debug('Auto-send toast listener already initialized')
     return
   }
-  unlisten = await listen<AutoSentPayload>('error-report-auto-sent', (event) => {
-    const reportId = event.payload
+  unlisten = await onErrorReportAutoSent((payload) => {
+    const reportId = payload.id
     log.info('Error report auto-sent: {id}', { id: reportId })
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastAutoSentReportId(reportId)

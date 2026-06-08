@@ -82,53 +82,21 @@ use objc2::runtime::ProtocolObject;
 use objc2::{AllocAnyThread, DefinedClass, MainThreadMarker, define_class, msg_send};
 use objc2_app_kit::{NSFilePromiseProvider, NSFilePromiseProviderDelegate};
 use objc2_foundation::{NSError, NSObject, NSObjectProtocol, NSOperationQueue, NSString, NSURL};
-use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event as _;
 
 use super::session_summary::{ItemOutcome, SessionSummary, summarize};
 use crate::ignore_poison::IgnorePoison;
+use crate::system_events::{SessionCompleteEvent, SessionStartedEvent};
 
 /// The `NSError` domain for a drag-out fulfillment failure. Finder reads
 /// `localizedDescription` and shows its own alert.
 const ERROR_DOMAIN: &str = "com.veszelovszki.cmdr.drag-out";
 
-/// Tauri event names for the FE toast bridge (see `lib/file-explorer/drag/`).
-/// Plain untyped Tauri events with FE-mirrored payloads, the same pattern the
-/// downloads watcher uses for `download-detected`.
-const SESSION_STARTED_EVENT: &str = "drag-out-session-started";
-const SESSION_COMPLETE_EVENT: &str = "drag-out-session-complete";
-
-/// Payload for `drag-out-session-started`: the FE raises a signs-of-life
-/// in-progress toast when the FIRST fulfillment begins, so a big/slow (MTP is
-/// serial USB) drag doesn't feel hung while Finder shows nothing. `total_items`
-/// is the top-level dragged-item count, so the toast can read "Copying 3 items…".
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionStartedEvent {
-    /// The drag sequence key, so the FE can key its in-progress toast and replace
-    /// it in place with the completion toast under the same id.
-    pub session_key: i64,
-    /// Top-level dragged items in this session.
-    pub total_items: usize,
-}
-
-/// Payload for `drag-out-session-complete`: the FE replaces the in-progress
-/// toast with a completion (success) or failure toast. Carries the same
-/// `session_key` so the replacement lands on the right toast, plus the folded
-/// per-item outcome counts.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionCompleteEvent {
-    /// The drag sequence key (matches the started event's key).
-    pub session_key: i64,
-    /// Top-level files that landed successfully.
-    pub files_succeeded: usize,
-    /// Top-level folders that landed successfully.
-    pub folders_succeeded: usize,
-    /// Leaf names of items that failed (empty on full success).
-    pub failures: Vec<String>,
-}
-
+/// The `drag-out-session-*` payload structs (`SessionStartedEvent` /
+/// `SessionCompleteEvent`) live in the always-compiled `crate::system_events`
+/// so `collect_events!` can reference them (this module is macOS-only). They're
+/// typed `tauri_specta::Event`s; the emit sites below build and `.emit()` them.
 impl SessionCompleteEvent {
     fn from_summary(session_key: isize, summary: SessionSummary) -> Self {
         Self {
@@ -309,8 +277,8 @@ fn emit_session_started(key: isize, total_items: usize) {
         session_key: key as i64,
         total_items,
     };
-    if let Err(e) = app.emit(SESSION_STARTED_EVENT, &payload) {
-        log::warn!(target: "drag_out", "failed to emit {SESSION_STARTED_EVENT}: {e}");
+    if let Err(e) = payload.emit(app) {
+        log::warn!(target: "drag_out", "failed to emit drag-out-session-started: {e}");
     }
 }
 
@@ -326,8 +294,8 @@ fn emit_session_complete(key: isize, outcomes: &[ItemOutcome]) {
         return;
     };
     let payload = SessionCompleteEvent::from_summary(key, summary);
-    if let Err(e) = app.emit(SESSION_COMPLETE_EVENT, &payload) {
-        log::warn!(target: "drag_out", "failed to emit {SESSION_COMPLETE_EVENT}: {e}");
+    if let Err(e) = payload.emit(app) {
+        log::warn!(target: "drag_out", "failed to emit drag-out-session-complete: {e}");
     }
 }
 

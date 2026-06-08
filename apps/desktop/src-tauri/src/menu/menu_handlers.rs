@@ -17,12 +17,12 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::menu_items::{brief_view_label, full_view_label};
 use super::{
-    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, MenuItemEntry, MenuState,
-    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, SHOW_HIDDEN_FILES_ID,
-    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
-    SORT_DESCENDING_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
-    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode,
-    menu_id_to_command,
+    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, MenuItemEntry, MenuSort,
+    MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID,
+    SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
+    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
+    TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
+    VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -345,11 +345,11 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         let guard = menu_state.show_hidden_files.lock_ignore_poison();
         if let Some(check_item) = guard.as_ref() {
             let new_state = check_item.is_checked().unwrap_or(true);
-            let _ = app.emit_to(
-                "main",
-                "settings-changed",
-                serde_json::json!({ "showHiddenFiles": new_state }),
-            );
+            use tauri_specta::Event as _;
+            let _ = SettingsChanged {
+                show_hidden_files: new_state,
+            }
+            .emit_to(app, "main");
         }
         return;
     }
@@ -381,11 +381,12 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             *menu_state.view_mode_right.lock_ignore_poison() = new_mode;
         }
         let _ = sync_view_mode_check_states(&menu_state);
-        let _ = app.emit_to(
-            "main",
-            "view-mode-changed",
-            serde_json::json!({ "mode": mode_str, "pane": pane }),
-        );
+        use tauri_specta::Event as _;
+        let _ = ViewModeChanged {
+            mode: mode_str.to_string(),
+            pane: pane.to_string(),
+        }
+        .emit_to(app, "main");
         return;
     }
 
@@ -435,20 +436,22 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             SORT_BY_MODIFIED_ID => "modified",
             _ => "created",
         };
-        let _ = app.emit_to(
-            "main",
-            "menu-sort",
-            serde_json::json!({ "action": "sortBy", "value": column }),
-        );
+        use tauri_specta::Event as _;
+        let _ = MenuSort {
+            action: "sortBy".to_string(),
+            value: column.to_string(),
+        }
+        .emit_to(app, "main");
         return;
     }
     if id == SORT_ASCENDING_ID || id == SORT_DESCENDING_ID {
         let order = if id == SORT_ASCENDING_ID { "asc" } else { "desc" };
-        let _ = app.emit_to(
-            "main",
-            "menu-sort",
-            serde_json::json!({ "action": "sortOrder", "value": order }),
-        );
+        use tauri_specta::Event as _;
+        let _ = MenuSort {
+            action: "sortOrder".to_string(),
+            value: order.to_string(),
+        }
+        .emit_to(app, "main");
         return;
     }
 

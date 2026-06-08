@@ -1,4 +1,4 @@
-import { listen, setSelfDragResolvedOperation, type UnlistenFn } from '$lib/tauri-commands'
+import { onDragImageSize, onDragModifiers, setSelfDragResolvedOperation, type UnlistenFn } from '$lib/tauri-commands'
 import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { toViewportPosition } from '../drag/drag-position'
 import {
@@ -427,25 +427,22 @@ export function createDragDropController(deps: DragDropControllerDeps) {
   async function init(): Promise<void> {
     // Listen for drag image size from native swizzle (macOS).
     // Fires before the Tauri drag enter event, so the flag is ready when handleDragEnter runs.
-    unlistenDragImageSize = await listen<{ width: number; height: number }>('drag-image-size', (event) => {
-      const { width, height } = event.payload
+    unlistenDragImageSize = await onDragImageSize((payload) => {
+      const { width, height } = payload
       externalDragHasLargeImage = width > smallDragImageThreshold || height > smallDragImageThreshold
     })
 
     // Listen for native modifier key state during drags (macOS).
     // [NSEvent modifierFlags] works even when the webview doesn't have keyboard focus.
-    unlistenDragModifiers = await listen<{ altHeld: boolean; cmdHeld: boolean; shiftHeld: boolean }>(
-      'drag-modifiers',
-      (event) => {
-        setModifiers(event.payload)
-        // Re-evaluate the resolved op (and overlay action line) on modifier change
-        // without a mouse move. Otherwise the OS "+" badge wouldn't update until
-        // the cursor moves, lagging the user's intent.
-        if (lastDragPosition !== null) {
-          handleDragOver(lastDragPosition)
-        }
-      },
-    )
+    unlistenDragModifiers = await onDragModifiers((payload) => {
+      setModifiers(payload)
+      // Re-evaluate the resolved op (and overlay action line) on modifier change
+      // without a mouse move. Otherwise the OS "+" badge wouldn't update until
+      // the cursor moves, lagging the user's intent.
+      if (lastDragPosition !== null) {
+        handleDragOver(lastDragPosition)
+      }
+    })
 
     // Register drag-and-drop target handler for external and pane-to-pane drops
     unlistenDragDrop = await getCurrentWebview().onDragDropEvent((event) => {

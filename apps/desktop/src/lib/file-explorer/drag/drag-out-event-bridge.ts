@@ -20,16 +20,15 @@
  * the layout can clean up on destroy. Mirrors the downloads event bridge shape.
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
+import { onDragOutSessionComplete, onDragOutSessionStarted } from '$lib/tauri-commands'
 import { composeDragOutCompleteToast, type DragOutSessionComplete } from './drag-out-toast'
 
 const log = getAppLogger('drag-out')
 
-const SESSION_STARTED_EVENT = 'drag-out-session-started'
-const SESSION_COMPLETE_EVENT = 'drag-out-session-complete'
 const TOAST_GROUP = 'drag-out'
 
 interface DragOutSessionStarted {
@@ -47,11 +46,11 @@ function toastIdFor(sessionKey: number): string {
  * it from the layout's `onDestroy`.
  */
 export async function startDragOutEventBridge(): Promise<UnlistenFn> {
-  const unlistenStarted = await listen<DragOutSessionStarted>(SESSION_STARTED_EVENT, (event) => {
-    handleSessionStarted(event.payload)
+  const unlistenStarted = await onDragOutSessionStarted((payload) => {
+    handleSessionStarted(payload)
   })
-  const unlistenComplete = await listen<DragOutSessionComplete>(SESSION_COMPLETE_EVENT, (event) => {
-    handleSessionComplete(event.payload)
+  const unlistenComplete = await onDragOutSessionComplete((payload) => {
+    handleSessionComplete(payload)
   })
   log.debug('Drag-out event bridge mounted')
   return () => {

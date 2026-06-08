@@ -29,7 +29,8 @@
  */
 
 import { commands } from '$lib/ipc/bindings'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { onSystemTextSizeChanged } from '$lib/tauri-commands'
 import { SvelteSet } from 'svelte/reactivity'
 import { getAppLogger } from '$lib/logging/logger'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -170,8 +171,8 @@ export async function initTextSize(): Promise<void> {
   computeAndApply(false)
 
   try {
-    unlistenSystem = await listen<number>('system-text-size-changed', (event) => {
-      systemMultiplier = event.payload
+    unlistenSystem = await onSystemTextSizeChanged((payload) => {
+      systemMultiplier = payload.multiplier
       log.info('System text size changed: {multiplier}', {
         multiplier: systemMultiplier.toFixed(3),
       })

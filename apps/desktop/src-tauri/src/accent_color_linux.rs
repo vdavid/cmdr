@@ -10,8 +10,11 @@
 use std::time::Duration;
 
 use log::{debug, info, warn};
-use tauri::{AppHandle, Emitter, Runtime};
+use tauri::{AppHandle, Runtime};
+use tauri_specta::Event as _;
 use zbus::zvariant::{OwnedValue, Value};
+
+use crate::system_events::AccentColorChanged;
 
 /// Brand fallback accent (mustard gold from getcmdr.com).
 const FALLBACK_ACCENT_HEX: &str = "#d4a006";
@@ -178,7 +181,7 @@ async fn watch_portal_signal<R: Runtime>(app_handle: AppHandle<R>) -> zbus::Resu
         {
             let hex = rgb_floats_to_hex(r, g, b);
             info!("Accent color changed: {hex}");
-            if let Err(e) = app_handle.emit("accent-color-changed", &hex) {
+            if let Err(e) = (AccentColorChanged { hex }).emit(&app_handle) {
                 warn!("Failed to emit accent-color-changed: {e}");
             }
         }

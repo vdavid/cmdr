@@ -24,7 +24,7 @@ mod controller;
 #[cfg(target_os = "macos")]
 pub use controller::QuickLookController;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
 /// Wraps the controller in a `Mutex` for `tauri::State`. On non-macOS the inner
@@ -52,8 +52,9 @@ pub fn init_state() -> QuickLookState {
 /// On Linux the struct still exists for serde-shape symmetry across platforms
 /// but no code emits it; `#[cfg_attr(...)] allow(dead_code)` silences
 /// `#[deny(unused)]` on that platform.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "quick-look-key")]
 #[cfg_attr(
     not(target_os = "macos"),
     allow(
@@ -72,3 +73,10 @@ pub struct QuickLookKeyEvent {
     pub alt_key: bool,
     pub ctrl_key: bool,
 }
+
+/// `quick-look-closed`: the preview panel left the screen (our `orderOut:`, the
+/// ✕ button, or Esc). Payloadless; the frontend flips `isOpen = false`.
+/// Emitted only on macOS but defined unconditionally so `collect_events!` and
+/// the generated bindings stay cross-platform stable.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+pub struct QuickLookClosed;

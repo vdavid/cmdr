@@ -1,5 +1,5 @@
 import { formatBytes, refreshListing } from '$lib/tauri-commands'
-import { listen, findFileIndex } from '$lib/tauri-commands'
+import { onDirectoryDiff, findFileIndex } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
 import { getAppLogger } from '$lib/logging/logger'
@@ -463,7 +463,7 @@ export function createDialogState(deps: DialogStateDeps) {
         paneRef,
         hasParent ?? false,
         deps.getShowHiddenFiles(),
-        listen,
+        onDirectoryDiff,
         findFileIndex,
       )
     },
@@ -491,7 +491,7 @@ export function createDialogState(deps: DialogStateDeps) {
           paneRef,
           hasParent ?? false,
           deps.getShowHiddenFiles(),
-          listen,
+          onDirectoryDiff,
           findFileIndex,
         )
       }

@@ -15,7 +15,8 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event as _;
 
 use crate::file_system::listing::{
     FileEntry, ModifyResult, get_listing_entries, get_listing_path, get_single_entry, has_entry, insert_entry_sorted,
@@ -45,9 +46,7 @@ pub(crate) static WATCHER_MANAGER: LazyLock<RwLock<WatcherManager>> =
     LazyLock::new(|| RwLock::new(WatcherManager::new()));
 
 /// A single directory diff change
-///
-/// Only serialized (Rust → frontend); `FileEntry` has no `Deserialize`, so neither does this.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct DiffChange {
     /// `"add"`, `"remove"`, or `"modify"`.
@@ -59,10 +58,8 @@ pub struct DiffChange {
     pub index: usize,
 }
 
-/// Diff event sent to frontend
-///
-/// Only serialized (Rust → frontend).
-#[derive(Debug, Clone, Serialize)]
+/// `directory-diff` event sent to the frontend.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
 pub struct DirectoryDiff {
     pub listing_id: String,
@@ -71,9 +68,10 @@ pub struct DirectoryDiff {
     pub changes: Vec<DiffChange>,
 }
 
-/// Event sent when the watched directory itself is deleted
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// `directory-deleted` event: the watched directory itself was deleted.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "directory-deleted")]
 pub struct DirectoryDeletedEvent {
     pub listing_id: String,
     pub path: String,
@@ -394,7 +392,7 @@ pub async fn handle_directory_change(listing_id: &str) {
                         listing_id: listing_id.to_string(),
                         path: path.to_string_lossy().to_string(),
                     };
-                    if let Err(emit_err) = app.emit("directory-deleted", &event) {
+                    if let Err(emit_err) = event.emit(app) {
                         log::warn!("Watcher: Failed to emit directory-deleted event: {}", emit_err);
                     }
                 }
@@ -418,7 +416,7 @@ pub async fn handle_directory_change(listing_id: &str) {
                         listing_id: listing_id.to_string(),
                         path: path.to_string_lossy().to_string(),
                     };
-                    if let Err(emit_err) = app.emit("directory-deleted", &event) {
+                    if let Err(emit_err) = event.emit(app) {
                         log::warn!("Watcher: Failed to emit directory-deleted event: {}", emit_err);
                     }
                 }

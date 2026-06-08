@@ -1,4 +1,3 @@
-import { listen } from '@tauri-apps/api/event'
 import {
   cancelAiDownload,
   formatBytes,
@@ -6,6 +5,11 @@ import {
   getAiModelInfo,
   getAiStatus,
   isE2eMode,
+  onAiDownloadProgress,
+  onAiInstallComplete,
+  onAiInstalling,
+  onAiServerReady,
+  onAiStarting,
   type AiDownloadProgress,
   type AiModelInfo,
   type AiStatus,
@@ -80,28 +84,28 @@ export async function initAiState(): Promise<() => void> {
   aiState.modelInfo = modelInfo
   updateNotificationFromStatus(status)
 
-  const unlistenProgress = await listen<AiDownloadProgress>('ai-download-progress', (event) => {
-    aiState.downloadProgress = event.payload
-    aiState.progressText = formatProgressText(event.payload)
+  const unlistenProgress = await onAiDownloadProgress((payload) => {
+    aiState.downloadProgress = payload
+    aiState.progressText = formatProgressText(payload)
   })
 
-  const unlistenInstalling = await listen('ai-installing', () => {
+  const unlistenInstalling = await onAiInstalling(() => {
     aiState.notificationState = 'installing'
     aiState.downloadProgress = null
   })
 
-  const unlistenComplete = await listen('ai-install-complete', () => {
+  const unlistenComplete = await onAiInstallComplete(() => {
     aiState.notificationState = 'ready'
     aiState.downloadProgress = null
   })
 
   // Listen for server starting (shown on app startup when model already downloaded)
-  const unlistenStarting = await listen('ai-starting', () => {
+  const unlistenStarting = await onAiStarting(() => {
     aiState.notificationState = 'starting'
   })
 
   // Listen for server ready (hides the "starting" notification)
-  const unlistenServerReady = await listen('ai-server-ready', () => {
+  const unlistenServerReady = await onAiServerReady(() => {
     aiState.notificationState = 'hidden'
   })
 

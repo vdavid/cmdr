@@ -30,6 +30,15 @@ vi.mock('$lib/ipc/bindings', () => ({
   commands: {
     setGlobalGoToLatestShortcut: setGlobalGoToLatestShortcutMock,
   },
+  // The typed `onGlobalShortcutFired` wrapper calls `events.globalShortcutFired.listen`,
+  // which routes through the same `@tauri-apps/api/event` `listen` under the wire name.
+  // Mirror that here so the test's `listenMock` keyed on the wire name still captures.
+  events: {
+    globalShortcutFired: {
+      listen: (cb: (event: { payload: unknown }) => void): Promise<() => void> =>
+        listenMock('global-shortcut-fired', cb) as Promise<() => void>,
+    },
+  },
 }))
 
 vi.mock('$lib/ui/toast', () => ({

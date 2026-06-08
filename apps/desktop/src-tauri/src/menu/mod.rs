@@ -48,6 +48,39 @@ pub use menu_structure::{
     build_tab_context_menu, build_viewer_menu,
 };
 
+/// `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden
+/// files") flipped a setting from the native menu. The menu click is the
+/// authoritative state change (see `menu/CLAUDE.md`), so the FE applies the new
+/// value rather than re-toggling. Also emitted from `commands/ui.rs` when the
+/// `toggle_hidden_files` IPC flips the same setting.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingsChanged {
+    pub show_hidden_files: bool,
+}
+
+/// `view-mode-changed`: a per-pane view-mode CheckMenuItem (Full / Brief)
+/// flipped from the native menu. Carries the target pane so the FE updates that
+/// pane's mode without changing focus. `mode` is `"full"` / `"brief"`, `pane`
+/// is `"left"` / `"right"`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewModeChanged {
+    pub mode: String,
+    pub pane: String,
+}
+
+/// `menu-sort`: a Sort-by menu item (column or order) clicked. `action` is
+/// `"sortBy"` (then `value` is a column name) or `"sortOrder"` (then `value` is
+/// `"asc"` / `"desc"`). The FE has a dedicated listener that maps this onto a
+/// focused-pane `sort.*` command.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MenuSort {
+    pub action: String,
+    pub value: String,
+}
+
 /// Menu item IDs for file actions.
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
 /// View mode CheckMenuItems, one pair per pane, nested under per-pane submenus

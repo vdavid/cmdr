@@ -77,6 +77,20 @@ use crate::network::{
 };
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
+// AI + system/misc (partition 6).
+use crate::ai::{
+    AiExtracting, AiInstallComplete, AiInstalling, AiServerReady, AiStarting, AiVerifying, DownloadProgress,
+};
+use crate::downloads::global_shortcut::GlobalShortcutFired;
+use crate::downloads::watcher::DownloadDetectedEvent;
+use crate::error_reporter::auto_dispatcher::ErrorReportAutoSent;
+use crate::file_system::watcher::{DirectoryDeletedEvent, DirectoryDiff};
+use crate::menu::{MenuSort, SettingsChanged, ViewModeChanged};
+use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
+use crate::restricted_paths::RestrictedPathsChangedPayload;
+use crate::system_events::{
+    AccentColorChanged, DragImageSize, DragModifiers, SessionCompleteEvent, SessionStartedEvent, SystemTextSizeChanged,
+};
 
 /// Public greeting used by the example webview surface; kept here as the
 /// foundational smoke test for the specta wiring.
@@ -665,6 +679,41 @@ pub fn builder() -> Builder<tauri::Wry> {
             NetworkHostContextAction,
             SmbConnectionChanged,
             GitStateChangedPayload, // event_name = "git-state-changed"
+            // AI + system/misc (partition 6).
+            // AI lifecycle (ai/manager.rs, ai/download.rs). The payloadless ones
+            // are unit structs (`type X = null`); `DownloadProgress` pins its
+            // wire name via `event_name` (it kebab-cases to `download-progress`).
+            DownloadProgress, // event_name = "ai-download-progress"
+            AiStarting,
+            AiServerReady,
+            AiVerifying,
+            AiInstalling,
+            AiInstallComplete,
+            AiExtracting,
+            // Appearance / system (system_events.rs, menu/menu_handlers.rs,
+            // commands/ui.rs, downloads/global_shortcut.rs). Scalar emits got
+            // wrapped in named structs; the drag structs live in the always-compiled
+            // `system_events` because their emit sites are macOS-gated.
+            AccentColorChanged,
+            SystemTextSizeChanged,
+            SettingsChanged,
+            ViewModeChanged, // emit_to("main")
+            MenuSort,        // emit_to("main")
+            GlobalShortcutFired,
+            DragImageSize,
+            DragModifiers,
+            QuickLookKeyEvent, // event_name = "quick-look-key"
+            QuickLookClosed,   // payloadless
+            // Directory watcher (file_system/watcher.rs, listing/diff_emitter.rs).
+            DirectoryDiff,
+            DirectoryDeletedEvent, // event_name = "directory-deleted"
+            // Downloads sink (downloads/watcher.rs `AppHandleSink`).
+            DownloadDetectedEvent, // event_name = "download-detected"
+            // Const-named events (the wire string used to live in a `const`).
+            RestrictedPathsChangedPayload, // event_name = "restricted-paths-changed"
+            SessionStartedEvent,           // event_name = "drag-out-session-started"
+            SessionCompleteEvent,          // event_name = "drag-out-session-complete"
+            ErrorReportAutoSent,
         ])
 }
 

@@ -1,7 +1,8 @@
-// Error reporter commands (Flow A: user-initiated)
+// Error reporter commands (Flow A: user-initiated) and the Flow B auto-send event
 
 import { invoke } from '@tauri-apps/api/core'
-import { commands } from '$lib/ipc/bindings'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { commands, events, type ErrorReportAutoSent } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 export interface ActiveSettingsSnapshot {
@@ -59,4 +60,15 @@ export async function saveErrorReportToDisk(userNote?: string): Promise<string> 
   const res = await commands.saveErrorReportToDisk(userNote ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
+}
+
+/**
+ * Flow B: subscribes to `error-report-auto-sent`, emitted after a successful
+ * opt-in auto-send. The payload's `id` is the server-issued `ERR-XXXXX` report
+ * id; the FE shows a confirmation toast.
+ */
+export function onErrorReportAutoSent(handler: (payload: ErrorReportAutoSent) => void): Promise<UnlistenFn> {
+  return events.errorReportAutoSent.listen((event) => {
+    handler(event.payload)
+  })
 }

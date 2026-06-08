@@ -18,7 +18,10 @@ use std::ptr::NonNull;
 use log::{debug, info, warn};
 use objc2_app_kit::{NSColor, NSColorSpace, NSSystemColorsDidChangeNotification};
 use objc2_foundation::{NSNotification, NSNotificationCenter};
-use tauri::{AppHandle, Emitter, Runtime};
+use tauri::{AppHandle, Runtime};
+use tauri_specta::Event as _;
+
+use crate::system_events::AccentColorChanged;
 
 /// Brand fallback accent (mustard gold from getcmdr.com).
 /// Only used if NSColor.controlAccentColor() cannot be read.
@@ -69,7 +72,7 @@ pub fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
     let block = block2::RcBlock::new(move |_notification: NonNull<NSNotification>| {
         let hex = read_accent_color();
         info!("Accent color changed: {hex}");
-        if let Err(e) = app_handle.emit("accent-color-changed", &hex) {
+        if let Err(e) = (AccentColorChanged { hex }).emit(&app_handle) {
             warn!("Failed to emit accent-color-changed event: {e}");
         }
     });

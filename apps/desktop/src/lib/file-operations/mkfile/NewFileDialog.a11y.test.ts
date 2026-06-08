@@ -18,7 +18,7 @@ vi.mock('$lib/tauri-commands', () => ({
   findFileIndex: vi.fn(() => Promise.resolve(null)),
   getFileAt: vi.fn(() => Promise.resolve(null)),
   isIpcError: vi.fn(() => false),
-  listen: vi.fn(() => Promise.resolve(() => {})),
+  onDirectoryDiff: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 describe('NewFileDialog a11y', () => {

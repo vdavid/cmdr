@@ -84,6 +84,21 @@ vi.mock('$lib/tauri-commands', () => ({
     listenHandlers.set(eventName, handler)
     return Promise.resolve(vi.fn())
   }),
+  // The controller now uses the typed `onDragImageSize` / `onDragModifiers`
+  // wrappers (bare payload). Route them into `listenHandlers` under their wire
+  // names, re-wrapping into the `{ payload }` shape the test's emitter uses.
+  onDragImageSize: vi.fn((handler: (payload: unknown) => void) => {
+    listenHandlers.set('drag-image-size', (event) => {
+      handler(event.payload)
+    })
+    return Promise.resolve(vi.fn())
+  }),
+  onDragModifiers: vi.fn((handler: (payload: unknown) => void) => {
+    listenHandlers.set('drag-modifiers', (event) => {
+      handler(event.payload)
+    })
+    return Promise.resolve(vi.fn())
+  }),
 }))
 
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))

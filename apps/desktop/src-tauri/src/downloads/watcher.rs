@@ -32,7 +32,8 @@ use notify::{
 };
 use notify_debouncer_full::{DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event as _;
 
 use super::{IgnoreSet, LatestRing, is_eligible};
 
@@ -54,15 +55,14 @@ pub(crate) const SCAN_MAX_DEPTH: usize = 6;
 /// one batched call.
 const DEBOUNCE_MS: u64 = 200;
 
-/// Payload of the `download-detected` Tauri event.
-///
-/// `specta::Type` stays derived so the type info is available if a future
-/// IPC surface needs it; the event itself crosses the wire via Tauri's
-/// untyped event channel, and the FE bridge defines a narrow
-/// `DownloadDetectedPayload` interface that mirrors the fields it actually
-/// reads.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+/// Payload of the `download-detected` Tauri event. Typed via `tauri_specta`;
+/// the struct name carries an `…Event` suffix, so it pins the wire name with
+/// `event_name`. The production `AppHandleSink` emits it through the typed
+/// `Event::emit`; the `EventSink` trait stays untyped so test sinks don't need
+/// a running Tauri app.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "download-detected")]
 pub struct DownloadDetectedEvent {
     pub path: String,
     pub parent_dir: String,
@@ -110,8 +110,8 @@ pub trait EventSink: Send + Sync + 'static {
     fn emit(&self, event: DownloadDetectedEvent);
 }
 
-/// `AppHandle`-backed sink. Forwards each event to the main window via
-/// `Emitter::emit`.
+/// `AppHandle`-backed sink. Forwards each event to the frontend via the typed
+/// `Event::emit`.
 pub struct AppHandleSink {
     app: AppHandle,
 }
@@ -124,7 +124,7 @@ impl AppHandleSink {
 
 impl EventSink for AppHandleSink {
     fn emit(&self, event: DownloadDetectedEvent) {
-        if let Err(err) = self.app.emit("download-detected", &event) {
+        if let Err(err) = event.emit(&self.app) {
             log::warn!(
                 target: "downloads::watcher",
                 "Failed to emit download-detected event: {err}",

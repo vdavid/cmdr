@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 
-use tauri::Emitter;
+use tauri_specta::Event as _;
 
 use crate::file_system::listing::increment_sequence;
 use crate::file_system::watcher::{DiffChange, DirectoryDiff, WATCHER_MANAGER};
@@ -108,7 +108,7 @@ fn flush(listing_id: &str) {
         sequence,
         changes,
     };
-    if let Err(e) = app.emit("directory-diff", &diff) {
+    if let Err(e) = diff.emit(&app) {
         log::warn!("diff_emitter: couldn't emit batched event: {}", e);
     }
 }

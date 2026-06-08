@@ -26,9 +26,9 @@
  * `src-tauri/src/quick_look/controller.rs`.
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
 
-import { quickLookClose } from '$lib/tauri-commands'
+import { onQuickLookClosed, onQuickLookKey, quickLookClose } from '$lib/tauri-commands'
 
 import type { ExplorerAPI } from '../../../routes/(main)/explorer-api'
 
@@ -110,12 +110,11 @@ export async function initQuickLookListeners(getExplorer: () => ExplorerAPI | un
   }
   attached = true
 
-  const unlistenClosed = await listen<null>('quick-look-closed', () => {
+  const unlistenClosed = await onQuickLookClosed(() => {
     quickLookState.isOpen = false
   })
 
-  const unlistenKey = await listen<QuickLookKeyEventPayload>('quick-look-key', (event) => {
-    const payload = event.payload
+  const unlistenKey = await onQuickLookKey((payload) => {
     // Shift+Space closes — the panel is key, so the AppKit menu accelerator
     // can't be relied on. We close synchronously and let the close-event
     // listener flip `isOpen` back when the panel finishes animating out.

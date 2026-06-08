@@ -18,7 +18,8 @@
  * toast hasn't been confirmed yet). Flipping early collapses the race.
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { onGlobalShortcutFired } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { getSetting } from '$lib/settings'
 import { getAppLogger } from '$lib/logging/logger'
@@ -33,6 +34,7 @@ import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
 const log = getAppLogger('downloads')
 
+/** Wire name of the typed `global-shortcut-fired` event (exported for tests). */
 export const GLOBAL_SHORTCUT_FIRED_EVENT = 'global-shortcut-fired'
 const WARN_TOAST_ID = 'downloads-global-shortcut-warn'
 
@@ -41,7 +43,7 @@ const WARN_TOAST_ID = 'downloads-global-shortcut-warn'
  * page's `onDestroy`.
  */
 export async function startGlobalShortcutBridge(explorer: ExplorerAPI | undefined): Promise<UnlistenFn> {
-  const unlisten = await listen<unknown>(GLOBAL_SHORTCUT_FIRED_EVENT, () => {
+  const unlisten = await onGlobalShortcutFired(() => {
     void handleFired(explorer)
   })
   log.debug('Global shortcut bridge mounted')

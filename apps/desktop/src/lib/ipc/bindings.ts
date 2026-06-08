@@ -2239,8 +2239,25 @@ export const commands = {
 
 /** Events */
 export const events = {
+  accentColorChanged: makeEvent<AccentColorChanged>('accent-color-changed'),
+  aiDownloadProgress: makeEvent<DownloadProgress>('ai-download-progress'),
+  aiExtracting: makeEvent<AiExtracting>('ai-extracting'),
+  aiInstallComplete: makeEvent<AiInstallComplete>('ai-install-complete'),
+  aiInstalling: makeEvent<AiInstalling>('ai-installing'),
+  aiServerReady: makeEvent<AiServerReady>('ai-server-ready'),
+  aiStarting: makeEvent<AiStarting>('ai-starting'),
+  aiVerifying: makeEvent<AiVerifying>('ai-verifying'),
+  directoryDeleted: makeEvent<DirectoryDeletedEvent>('directory-deleted'),
+  directoryDiff: makeEvent<DirectoryDiff>('directory-diff'),
+  downloadDetected: makeEvent<DownloadDetectedEvent>('download-detected'),
+  dragImageSize: makeEvent<DragImageSize>('drag-image-size'),
+  dragModifiers: makeEvent<DragModifiers>('drag-modifiers'),
+  dragOutSessionComplete: makeEvent<SessionCompleteEvent>('drag-out-session-complete'),
+  dragOutSessionStarted: makeEvent<SessionStartedEvent>('drag-out-session-started'),
   dryRunComplete: makeEvent<DryRunResult>('dry-run-complete'),
+  errorReportAutoSent: makeEvent<ErrorReportAutoSent>('error-report-auto-sent'),
   gitStateChanged: makeEvent<GitStateChangedPayload>('git-state-changed'),
+  globalShortcutFired: makeEvent<GlobalShortcutFired>('global-shortcut-fired'),
   indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
   indexAggregationProgress: makeEvent<AggregationProgressEvent>('index-aggregation-progress'),
   indexDirUpdated: makeEvent<IndexDirUpdatedEvent>('index-dir-updated'),
@@ -2258,6 +2275,7 @@ export const events = {
   listingProgress: makeEvent<ListingProgressEvent>('listing-progress'),
   listingReadComplete: makeEvent<ListingReadCompleteEvent>('listing-read-complete'),
   lowDiskSpace: makeEvent<LowDiskSpacePayload>('low-disk-space'),
+  menuSort: makeEvent<MenuSort>('menu-sort'),
   mtpDeviceConnected: makeEvent<MtpDeviceConnected>('mtp-device-connected'),
   mtpDeviceDisconnected: makeEvent<MtpDeviceDisconnected>('mtp-device-disconnected'),
   mtpExclusiveAccessError: makeEvent<MtpExclusiveAccessError>('mtp-exclusive-access-error'),
@@ -2271,6 +2289,9 @@ export const events = {
   networkHostFound: makeEvent<NetworkHostFound>('network-host-found'),
   networkHostLost: makeEvent<NetworkHostLost>('network-host-lost'),
   networkHostResolved: makeEvent<NetworkHostResolved>('network-host-resolved'),
+  quickLookClosed: makeEvent<QuickLookClosed>('quick-look-closed'),
+  quickLookKey: makeEvent<QuickLookKeyEvent>('quick-look-key'),
+  restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
   scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
   scanPreviewComplete: makeEvent<ScanPreviewCompleteEvent>('scan-preview-complete'),
@@ -2278,7 +2299,10 @@ export const events = {
   scanPreviewProgress: makeEvent<ScanPreviewProgressEvent>('scan-preview-progress'),
   scanProgress: makeEvent<ScanProgressEvent>('scan-progress'),
   searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
+  settingsChanged: makeEvent<SettingsChanged>('settings-changed'),
   smbConnectionChanged: makeEvent<SmbConnectionChanged>('smb-connection-changed'),
+  systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
+  viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
   volumeContextAction: makeEvent<VolumeContextAction>('volume-context-action'),
   volumeMounted: makeEvent<VolumeMounted>('volume-mounted'),
   volumeSpaceChanged: makeEvent<VolumeSpaceChanged>('volume-space-changed'),
@@ -2295,6 +2319,14 @@ export const events = {
 }
 
 /* Types */
+/**
+ *  `accent-color-changed`: the OS accent color (or light/dark appearance)
+ *  changed. `hex` is the new accent color as a `#rrggbb` string.
+ */
+export type AccentColorChanged = {
+  hex: string
+}
+
 // Active settings snapshot cached at startup for inclusion in crash reports.
 export type ActiveSettings = {
   indexingEnabled: boolean | null
@@ -2343,6 +2375,12 @@ export type AiConnectionCheckResult = {
   error: string | null
 }
 
+export type AiExtracting = null
+
+export type AiInstallComplete = null
+
+export type AiInstalling = null
+
 // Model info returned to frontend.
 export type AiModelInfo = {
   id: string
@@ -2372,6 +2410,17 @@ export type AiRuntimeStatus = {
   baseOverheadBytes: number
 }
 
+export type AiServerReady = null
+
+/**
+ *  Payloadless AI lifecycle events. Each kebab-cases to its wire name. The
+ *  install flow emits them in sequence (`ai-extracting` → repeated
+ *  `ai-download-progress` → `ai-verifying` → `ai-installing` →
+ *  `ai-install-complete`); `ai-starting` / `ai-server-ready` bracket a server
+ *  boot on a returning launch.
+ */
+export type AiStarting = null
+
 // Current state of the AI subsystem.
 export type AiStatus =
   | 'unavailable'
@@ -2381,6 +2430,8 @@ export type AiStatus =
   // chmod, starting server.
   | 'installing'
   | 'available'
+
+export type AiVerifying = null
 
 // Current status of the application license.
 export type AppStatus =
@@ -2577,6 +2628,18 @@ export type DfsCacheEntryDto = {
   expires_in_ms: number | null
 }
 
+// A single directory diff change
+export type DiffChange = {
+  // `"add"`, `"remove"`, or `"modify"`.
+  type: string
+  entry: FileEntry
+  /**
+   *  Position in the sorted listing: old listing for `"remove"`, new listing for
+   *  `"add"`/`"modify"`.
+   */
+  index: number
+}
+
 /**
  *  Dir stats keyed by path string. Used at the IPC boundary and by
  *  the IPC boundary (frontend expects path-keyed dir stats).
@@ -2602,6 +2665,20 @@ export type DirStats = {
   recursiveSizePending: boolean
 }
 
+// `directory-deleted` event: the watched directory itself was deleted.
+export type DirectoryDeletedEvent = {
+  listingId: string
+  path: string
+}
+
+// `directory-diff` event sent to the frontend.
+export type DirectoryDiff = {
+  listingId: string
+  // Monotonic.
+  sequence: number
+  changes: DiffChange[]
+}
+
 // How to sort directories relative to the current sort column.
 export type DirectorySortMode =
   // Directories sort by the same column as files (using recursive_size for Size column).
@@ -2615,6 +2692,40 @@ export type DiscoveryState =
   | 'searching'
   // Initial burst is complete, still listening.
   | 'active'
+
+/**
+ *  Payload of the `download-detected` Tauri event. Typed via `tauri_specta`;
+ *  the struct name carries an `…Event` suffix, so it pins the wire name with
+ *  `event_name`. The production `AppHandleSink` emits it through the typed
+ *  `Event::emit`; the `EventSink` trait stays untyped so test sinks don't need
+ *  a running Tauri app.
+ */
+export type DownloadDetectedEvent = {
+  path: string
+  parentDir: string
+  fileName: string
+  // Milliseconds since the Unix epoch.
+  observedAtMs: number
+  /**
+   *  `true` when the file sits in a subdirectory under the Downloads root,
+   *  `false` when it's a direct child.
+   */
+  inSubdir: boolean
+  /**
+   *  Best-effort file size. `None` if the stat failed (file already gone,
+   *  permission denied, etc.).
+   */
+  sizeBytes: number | null
+}
+
+// Progress info emitted during model download (`ai-download-progress`).
+export type DownloadProgress = {
+  bytesDownloaded: number
+  totalBytes: number
+  // Bytes per second.
+  speed: number
+  etaSeconds: number
+}
 
 // Status snapshot for the FE / debug surface.
 export type DownloadsWatcherStatus = {
@@ -2630,6 +2741,27 @@ export type DownloadsWatcherStatus = {
    *  the FE doesn't need a second IPC.
    */
   fdaPending: boolean
+}
+
+/**
+ *  `drag-image-size`: the OS drag image's pixel dimensions, read on drag enter
+ *  (macOS swizzle in `drag_image_detection.rs`). Used to size / suppress the
+ *  DOM drag overlay.
+ */
+export type DragImageSize = {
+  width: number
+  height: number
+}
+
+/**
+ *  `drag-modifiers`: the modifier-key state during a drag, emitted on drag
+ *  enter and whenever it changes (macOS swizzle in `drag_image_detection.rs`).
+ *  Drives copy/move intent without keyboard focus.
+ */
+export type DragModifiers = {
+  altHeld: boolean
+  cmdHeld: boolean
+  shiftHeld: boolean
 }
 
 // Result of a dry-run operation.
@@ -2718,6 +2850,15 @@ export type ErrorCategory =
   | 'serious'
 
 /**
+ *  `error-report-auto-sent`: emitted after a successful Flow B auto-send. The
+ *  frontend listens for this and shows the confirmation toast. `id` is the
+ *  server-issued `ERR-XXXXX` report id (the same one the manifest carried).
+ */
+export type ErrorReportAutoSent = {
+  id: string
+}
+
+/**
  *  User-selectable text encoding for the file viewer.
  *
  *  The variants are deliberately narrow: every entry is something a user is
@@ -2739,7 +2880,9 @@ export type FileEncoding =
 /**
  *  Represents a file or directory entry with extended metadata.
  *
- *  Only serialized (Rust → frontend); never sent from the frontend, so no `Deserialize`.
+ *  Carries `Deserialize` because it nests in the typed `directory-diff` event
+ *  payload (`DiffChange.entry`), which must round-trip; it's otherwise a
+ *  Rust → frontend return type.
  *  `None`/empty fields serialize as explicit `null` (no `skip_serializing_if`) so
  *  specta's `validate_exported_command` accepts the type in Unified mode.
  */
@@ -2870,6 +3013,14 @@ export type GlobalGoToLatestShortcutState = {
   binding: string
   enabled: boolean
 }
+
+/**
+ *  `global-shortcut-fired`: the system-wide go-to-latest hotkey (default
+ *  `⌃⌥⌘J`) fired. Payloadless for now — the FE bridge calls
+ *  `goToLatestDownload(explorer)` directly. A unit struct so future per-binding
+ *  metadata can be added without breaking the event registration.
+ */
+export type GlobalShortcutFired = null
 
 /**
  *  Typed errors returned by [`go_to_latest_download`].
@@ -3360,6 +3511,17 @@ export type ManualConnectResult = {
 
 export type Markdown = string & { readonly __markdown: unique symbol }
 
+/**
+ *  `menu-sort`: a Sort-by menu item (column or order) clicked. `action` is
+ *  `"sortBy"` (then `value` is a column name) or `"sortOrder"` (then `value` is
+ *  `"asc"` / `"desc"`). The FE has a dedicated listener that maps this onto a
+ *  focused-pane `sort.*` command.
+ */
+export type MenuSort = {
+  action: string
+  value: string
+}
+
 export type MetricsSnapshotDto = {
   requests_sent: number
   compound_requests_sent: number
@@ -3790,6 +3952,38 @@ export type PrepareResult = {
 }
 
 /**
+ *  `quick-look-closed`: the preview panel left the screen (our `orderOut:`, the
+ *  ✕ button, or Esc). Payloadless; the frontend flips `isOpen = false`.
+ *  Emitted only on macOS but defined unconditionally so `collect_events!` and
+ *  the generated bindings stay cross-platform stable.
+ */
+export type QuickLookClosed = null
+
+/**
+ *  Payload for the `quick-look-key` event emitted by the panel delegate.
+ *  Mirrors the relevant fields of a DOM `KeyboardEvent` so the frontend can
+ *  re-dispatch through the same primitives FilePane already uses.
+ *
+ *  Only constructed on macOS (the delegate that builds it is macOS-only).
+ *  On Linux the struct still exists for serde-shape symmetry across platforms
+ *  but no code emits it; `#[cfg_attr(...)] allow(dead_code)` silences
+ *  `#[deny(unused)]` on that platform.
+ */
+export type QuickLookKeyEvent = {
+  // `KeyboardEvent.key`. Matches DOM semantics (`'ArrowDown'`, `' '`, `'a'`).
+  key: string
+  /**
+   *  `KeyboardEvent.code`. Layout-independent physical-key id (`'KeyA'`,
+   *  `'Space'`). Useful when the routed handler discriminates by physical key.
+   */
+  code: string
+  shiftKey: boolean
+  metaKey: boolean
+  altKey: boolean
+  ctrlKey: boolean
+}
+
+/**
  *  One endpoint of a selection. Frontend uses `Line { line, offset }`; for the
  *  "select all" path in ByteSeek-no-index mode (where `totalLines` is unknown),
  *  it uses `Eof` so the backend can resolve the end without a fake line number.
@@ -3928,6 +4122,14 @@ export type ResortResult = {
    *  None if no selected_indices were provided.
    */
   newSelectedIndices: number[] | null
+}
+
+export type RestrictedPathsChangedPayload = {
+  /**
+   *  Absolute path strings, sorted alphabetically for a stable diff on
+   *  the frontend.
+   */
+  paths: string[]
 }
 
 /**
@@ -4225,11 +4427,47 @@ export type SendResult = {
   id: string
 }
 
+/**
+ *  `drag-out-session-complete`: the session drained (gesture ended AND no
+ *  in-flight fulfillment). The FE replaces the in-progress toast with a
+ *  completion / failure toast keyed by the same `session_key`, plus the folded
+ *  per-item outcome counts. Always-compiled for the same reason as
+ *  `SessionStartedEvent`.
+ */
+export type SessionCompleteEvent = {
+  // The drag sequence key (matches the started event's key).
+  sessionKey: number
+  // Top-level files that landed successfully.
+  filesSucceeded: number
+  // Top-level folders that landed successfully.
+  foldersSucceeded: number
+  // Leaf names of items that failed (empty on full success).
+  failures: string[]
+}
+
 export type SessionDiagnosticsDto = {
   session_id_hex: string
   should_sign: boolean
   should_encrypt: boolean
   signing_algorithm: string
+}
+
+/**
+ *  `drag-out-session-started`: the FE raises a signs-of-life in-progress toast
+ *  when the FIRST fulfillment of a drag-out-to-Finder session begins (macOS,
+ *  `native_drag/promises.rs`). `total_items` is the top-level dragged-item
+ *  count. The struct lives here (always compiled) because `native_drag` is
+ *  macOS-only and `collect_events!` can't `#[cfg]`-gate inline; the macOS emit
+ *  site builds + `.emit()`s it.
+ */
+export type SessionStartedEvent = {
+  /**
+   *  The drag sequence key, so the FE can key its in-progress toast and
+   *  replace it in place with the completion toast under the same id.
+   */
+  sessionKey: number
+  // Top-level dragged items in this session.
+  totalItems: number
 }
 
 /**
@@ -4239,6 +4477,17 @@ export type SessionDiagnosticsDto = {
  *  shape outside this set means the value can't fit in `lookup_*` helpers anyway.
  */
 export type SettingValue = boolean | number | string
+
+/**
+ *  `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden
+ *  files") flipped a setting from the native menu. The menu click is the
+ *  authoritative state change (see `menu/CLAUDE.md`), so the FE applies the new
+ *  value rather than re-toggling. Also emitted from `commands/ui.rs` when the
+ *  `toggle_hidden_files` IPC flips the same setting.
+ */
+export type SettingsChanged = {
+  showHiddenFiles: boolean
+}
 
 // Information about a discovered share.
 export type ShareInfo = {
@@ -4411,6 +4660,15 @@ export type SystemMemoryInfo = {
   freeBytes: number
 }
 
+/**
+ *  `system-text-size-changed`: the macOS Accessibility > Display > Text Size
+ *  value changed. `multiplier` is the new system text-size multiplier (1.0 =
+ *  default).
+ */
+export type SystemTextSizeChanged = {
+  multiplier: number
+}
+
 // Represents a tab in a pane (for MCP state reporting).
 export type TabInfo = {
   id: string
@@ -4563,6 +4821,17 @@ export type VerifyResult = {
   fullKey: string
   // The original short code, if the input was a short code.
   shortCode: string | null
+}
+
+/**
+ *  `view-mode-changed`: a per-pane view-mode CheckMenuItem (Full / Brief)
+ *  flipped from the native menu. Carries the target pane so the FE updates that
+ *  pane's mode without changing focus. `mode` is `"full"` / `"brief"`, `pane`
+ *  is `"left"` / `"right"`.
+ */
+export type ViewModeChanged = {
+  mode: string
+  pane: string
 }
 
 /**

@@ -5,7 +5,8 @@ use super::{DownloadProgress, ModelInfo};
 use std::fs;
 use std::io::Write;
 use std::path::Path;
-use tauri::{AppHandle, Emitter, Runtime};
+use tauri::{AppHandle, Runtime};
+use tauri_specta::Event as _;
 
 /// Downloads the AI model with progress reporting and resume support.
 ///
@@ -80,21 +81,19 @@ where
                 speed,
                 eta_seconds,
             };
-            let _ = app.emit("ai-download-progress", &progress);
+            let _ = progress.emit(app);
             last_emit = std::time::Instant::now();
         }
     }
 
     // Final progress emit
-    let _ = app.emit(
-        "ai-download-progress",
-        &DownloadProgress {
-            bytes_downloaded: downloaded,
-            total_bytes: downloaded,
-            speed: 0,
-            eta_seconds: 0,
-        },
-    );
+    let _ = DownloadProgress {
+        bytes_downloaded: downloaded,
+        total_bytes: downloaded,
+        speed: 0,
+        eta_seconds: 0,
+    }
+    .emit(app);
 
     Ok(())
 }

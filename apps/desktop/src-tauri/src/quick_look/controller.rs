@@ -40,9 +40,10 @@ use objc2_foundation::{
     NSInteger, NSNotification, NSNotificationCenter, NSNotificationName, NSObject, NSObjectProtocol, NSString, NSURL,
 };
 use objc2_quick_look_ui::{QLPreviewItem, QLPreviewPanel, QLPreviewPanelDataSource, QLPreviewPanelDelegate};
-use tauri::{AppHandle, Emitter, Manager, Wry};
+use tauri::{AppHandle, Manager, Wry};
+use tauri_specta::Event as _;
 
-use crate::quick_look::QuickLookKeyEvent;
+use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
 
 /// Cross-thread state held by the Tauri-managed `Mutex<QuickLookController>`.
 ///
@@ -307,7 +308,7 @@ define_class!(
                 return Bool::NO;
             }
 
-            if let Err(e) = self.ivars().app.emit("quick-look-key", &payload) {
+            if let Err(e) = payload.emit(&self.ivars().app) {
                 log::warn!(target: "quick_look", "failed to emit quick-look-key: {e}");
             }
             Bool::YES
@@ -325,7 +326,7 @@ define_class!(
                 && let Ok(mut ctrl) = state.lock() {
                     ctrl.mark_closed();
                 }
-            if let Err(e) = app.emit("quick-look-closed", ()) {
+            if let Err(e) = QuickLookClosed.emit(&app) {
                 log::warn!(target: "quick_look", "failed to emit quick-look-closed: {e}");
             }
             log::debug!(target: "quick_look", "panel closed");

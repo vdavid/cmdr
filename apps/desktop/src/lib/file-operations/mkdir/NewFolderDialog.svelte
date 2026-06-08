@@ -6,14 +6,13 @@
         getAiStatus,
         getFileAt,
         isIpcError,
-        listen,
+        onDirectoryDiff,
         refreshListing,
         streamFolderSuggestions,
         type FolderSuggestionsStream,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
-    import type { DirectoryDiff } from '$lib/file-explorer/types'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
 
@@ -123,8 +122,8 @@
 
         // Listen for directory changes to re-validate.
         // Small delay ensures the listing cache is fully consistent after the diff is applied.
-        unlistenDiff = await listen<DirectoryDiff>('directory-diff', (event) => {
-            if (event.payload.listingId !== listingId) return
+        unlistenDiff = await onDirectoryDiff((payload) => {
+            if (payload.listingId !== listingId) return
             scheduleValidation()
         })
     })

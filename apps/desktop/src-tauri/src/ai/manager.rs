@@ -11,7 +11,10 @@ use super::process::{
     SERVER_LOG_FILENAME, find_available_port, is_process_alive, kill_and_reap_in_background, kill_process,
     kill_stale_llama_servers, log_diagnostics, read_log_tail, spawn_llama_server,
 };
-use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, is_local_ai_supported};
+use super::{
+    AiExtracting, AiInstallComplete, AiInstalling, AiServerReady, AiStarting, AiState, AiStatus, AiVerifying,
+    ModelInfo, get_default_model, get_model_by_id, is_local_ai_supported,
+};
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 use regex::Regex;
@@ -22,7 +25,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use tauri::{AppHandle, Emitter, Runtime};
+use tauri::{AppHandle, Runtime};
+use tauri_specta::Event as _;
 use tokio_util::sync::CancellationToken;
 
 /// Global manager state, accessible from Tauri commands.
@@ -520,13 +524,13 @@ pub fn configure_ai<R: Runtime>(
 
     // Health check asynchronously (the slow part, up to 60s)
     if let Some((pid, port)) = spawn_result {
-        let _ = app.emit("ai-starting", ());
+        let _ = AiStarting.emit(&app);
         let ai_dir = get_ai_dir(&app);
         tauri::async_runtime::spawn(async move {
             match wait_for_server_health(&ai_dir, pid, port).await {
                 Ok(()) => {
                     log::info!("AI: server ready");
-                    let _ = app.emit("ai-server-ready", ());
+                    let _ = AiServerReady.emit(&app);
                 }
                 Err(e) => crate::log_error!("AI manager: server didn't start: {e}"),
             }
@@ -595,12 +599,12 @@ pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(
     }
 
     if let Some((pid, port)) = spawn_result {
-        let _ = app.emit("ai-starting", ());
+        let _ = AiStarting.emit(&app);
         tauri::async_runtime::spawn(async move {
             match wait_for_server_health(&ai_dir, pid, port).await {
                 Ok(()) => {
                     log::info!("AI: server ready");
-                    let _ = app.emit("ai-server-ready", ());
+                    let _ = AiServerReady.emit(&app);
                 }
                 Err(e) => crate::log_error!("AI manager: server didn't start: {e}"),
             }
@@ -932,7 +936,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     // Step 1: Extract llama-server from bundled archive (instant, no download needed)
     let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
     if !binary_path.exists() {
-        let _ = app.emit("ai-extracting", ());
+        let _ = AiExtracting.emit(app);
         extract_bundled_llama_server(app, &ai_dir)?;
     }
 
@@ -961,7 +965,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     download_file(app, model.url, &model_path, is_cancel_requested).await?;
 
     // Step 3: Verify download integrity by checking file size
-    let _ = app.emit("ai-verifying", ());
+    let _ = AiVerifying.emit(app);
     let actual_size = fs::metadata(&model_path)
         .map(|m| m.len())
         .map_err(|e| format!("Failed to read downloaded model file: {e}"))?;
@@ -992,7 +996,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     }
 
     // Emit installing event so UI shows "Setting up AI..." while server starts
-    let _ = app.emit("ai-installing", ());
+    let _ = AiInstalling.emit(app);
 
     // Start the server FIRST, then emit install complete.
     // Spawn synchronously so PID is tracked immediately, then health-check async.
@@ -1006,7 +1010,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     wait_for_server_health(&ai_dir, pid, port).await?;
 
     // Emit install complete only after server is healthy
-    let _ = app.emit("ai-install-complete", ());
+    let _ = AiInstallComplete.emit(app);
 
     Ok(())
 }

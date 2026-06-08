@@ -21,7 +21,7 @@ vi.mock('$lib/ui/toast', () => ({
   addToast: vi.fn(),
 }))
 
-type Handler = (event: { payload: string }) => void
+type Handler = (event: { payload: { id: string } }) => void
 
 describe('auto-send toast listener', () => {
   let registeredHandler: Handler | undefined
@@ -55,7 +55,7 @@ describe('auto-send toast listener', () => {
   it('shows a toast and stashes the ID when the event fires', async () => {
     await initAutoSendToastListener()
     expect(registeredHandler).toBeDefined()
-    registeredHandler?.({ payload: 'ERR-LSTN1' })
+    registeredHandler?.({ payload: { id: 'ERR-LSTN1' } })
     expect(addToast).toHaveBeenCalledTimes(1)
     const opts = vi.mocked(addToast).mock.calls[0][1]
     expect(opts).toMatchObject({

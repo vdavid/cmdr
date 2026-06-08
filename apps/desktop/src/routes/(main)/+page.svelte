@@ -29,6 +29,8 @@
         setMenuContext,
         getWindowTitle,
         registerKnownDialogs,
+        onViewModeChanged,
+        onMenuSort,
     } from '$lib/tauri-commands'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { loadSettings, saveSettings } from '$lib/settings-store'
@@ -241,29 +243,33 @@
         // payload is validated rather than `as`-cast: an unknown `mode` is dropped,
         // and an absent/unknown `pane` falls back to the focused pane (matching the
         // old in-component listener's `event.payload.pane ?? focusedPane`).
-        await listenTauri('view-mode-changed', (event) => {
-            const raw = (event.payload ?? {}) as { mode?: unknown; pane?: unknown }
-            const mode: ViewMode | undefined =
-                raw.mode === 'full' || raw.mode === 'brief' ? raw.mode : undefined
-            if (!mode) return
-            const pane: 'left' | 'right' =
-                raw.pane === 'left' || raw.pane === 'right' ? raw.pane : (explorerRef?.getFocusedPane() ?? 'left')
-            // `viewSetModeCommand` is a typed const (not an inline literal) so a
-            // registry rename breaks compilation and `cmdr/no-raw-command-dispatch`
-            // stays satisfied (A3). `fromMenu: true` → the handler skips
-            // `pushViewMenuState` (the menu already toggled its CheckMenuItem).
-            void handleCommandExecute(viewSetModeCommand, { pane, mode, fromMenu: true })
-        })
+        tauriUnlistenFns.push(
+            await onViewModeChanged((payload) => {
+                const mode: ViewMode | undefined =
+                    payload.mode === 'full' || payload.mode === 'brief' ? payload.mode : undefined
+                if (!mode) return
+                const pane: 'left' | 'right' =
+                    payload.pane === 'left' || payload.pane === 'right'
+                        ? payload.pane
+                        : (explorerRef?.getFocusedPane() ?? 'left')
+                // `viewSetModeCommand` is a typed const (not an inline literal) so a
+                // registry rename breaks compilation and `cmdr/no-raw-command-dispatch`
+                // stays satisfied (A3). `fromMenu: true` → the handler skips
+                // `pushViewMenuState` (the menu already toggled its CheckMenuItem).
+                void handleCommandExecute(viewSetModeCommand, { pane, mode, fromMenu: true })
+            }),
+        )
 
         // Native sort-menu clicks. Rust emits this directly (not via
         // `execute-command`) with `{ action, value }`; the dispatch maps each
         // value onto the focused-pane `sort.*` command. Validated, not `as`-cast:
         // an unknown `action`/`value` pair is dropped.
-        await listenTauri('menu-sort', (event) => {
-            const raw = (event.payload ?? {}) as { action?: unknown; value?: unknown }
-            const command = menuSortToCommand(raw.action, raw.value)
-            if (command) void handleCommandExecute(command)
-        })
+        tauriUnlistenFns.push(
+            await onMenuSort((payload) => {
+                const command = menuSortToCommand(payload.action, payload.value)
+                if (command) void handleCommandExecute(command)
+            }),
+        )
     }
 
     /** Typed id for the per-pane view command (keeps dispatch off raw literals; A3). */

@@ -32,10 +32,11 @@ use objc2::runtime::{AnyClass, AnyObject, Bool, Imp, Sel};
 use objc2::{msg_send, sel};
 use objc2_app_kit::{NSDragOperation, NSDraggingItem, NSDraggingItemEnumerationOptions};
 use objc2_foundation::{NSDictionary, NSInteger, NSRect, NSSize};
-use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
+use tauri_specta::Event as _;
 
 use crate::drag_image_swap::{self, SelfDragOp};
+use crate::system_events::{DragImageSize, DragModifiers};
 
 /// NSEventModifierFlagShift = 1 << 17
 const NS_EVENT_MODIFIER_FLAG_SHIFT: usize = 1 << 17;
@@ -43,22 +44,6 @@ const NS_EVENT_MODIFIER_FLAG_SHIFT: usize = 1 << 17;
 const NS_EVENT_MODIFIER_FLAG_OPTION: usize = 1 << 19;
 /// NSEventModifierFlagCommand = 1 << 20
 const NS_EVENT_MODIFIER_FLAG_COMMAND: usize = 1 << 20;
-
-#[derive(Clone, Serialize)]
-struct DragImageSize {
-    width: f64,
-    height: f64,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Serialize)]
-struct DragModifiers {
-    #[serde(rename = "altHeld")]
-    alt_held: bool,
-    #[serde(rename = "cmdHeld")]
-    cmd_held: bool,
-    #[serde(rename = "shiftHeld")]
-    shift_held: bool,
-}
 
 static ORIGINAL_ENTERED_IMP: OnceLock<Imp> = OnceLock::new();
 static ORIGINAL_UPDATED_IMP: OnceLock<Imp> = OnceLock::new();
@@ -226,7 +211,7 @@ fn emit_modifiers_if_changed() {
     if (mods.alt_held != prev_alt || mods.cmd_held != prev_cmd || mods.shift_held != prev_shift)
         && let Some(app_handle) = APP_HANDLE.get()
     {
-        let _ = app_handle.emit("drag-modifiers", mods);
+        let _ = mods.emit(app_handle);
     }
 }
 
@@ -237,7 +222,7 @@ fn emit_modifiers_forced() {
     LAST_CMD_HELD.store(mods.cmd_held, Ordering::Relaxed);
     LAST_SHIFT_HELD.store(mods.shift_held, Ordering::Relaxed);
     if let Some(app_handle) = APP_HANDLE.get() {
-        let _ = app_handle.emit("drag-modifiers", mods);
+        let _ = mods.emit(app_handle);
     }
 }
 
@@ -312,13 +297,11 @@ unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel
         let size = unsafe { read_drag_image_size(drag_info) };
 
         if let Some(app_handle) = APP_HANDLE.get() {
-            let _ = app_handle.emit(
-                "drag-image-size",
-                DragImageSize {
-                    width: size.0,
-                    height: size.1,
-                },
-            );
+            let _ = (DragImageSize {
+                width: size.0,
+                height: size.1,
+            })
+            .emit(app_handle);
         }
 
         // Always emit modifiers on enter (initial state for this drag session)

@@ -125,6 +125,7 @@ pub mod selection;
 mod settings;
 mod short_id;
 mod space_poller;
+mod system_events;
 mod system_memory;
 mod system_strings;
 pub mod test_mode;

@@ -123,6 +123,14 @@ vi.mock('$lib/tauri-commands', () => ({
   onNetworkHostResolved: vi.fn().mockResolvedValue(() => {}),
   onNetworkDiscoveryStateChanged: vi.fn().mockResolvedValue(() => {}),
   onIndexDirUpdated: vi.fn().mockResolvedValue(() => {}),
+  // Typed-event wrappers reached transitively by the mounted pane tree
+  // (listing-diff-sync, drag-drop-controller, restricted-paths store, git).
+  onDirectoryDiff: vi.fn().mockResolvedValue(() => {}),
+  onDirectoryDeleted: vi.fn().mockResolvedValue(() => {}),
+  onDragImageSize: vi.fn().mockResolvedValue(() => {}),
+  onDragModifiers: vi.fn().mockResolvedValue(() => {}),
+  onRestrictedPathsChanged: vi.fn().mockResolvedValue(() => {}),
+  onGitStateChanged: vi.fn().mockResolvedValue(() => {}),
   getIpcErrorMessage: (e: unknown) => String(e),
 }))
 
