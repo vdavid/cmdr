@@ -314,6 +314,17 @@ jobs:
           CARGO_VOLUME: /tmp/cmdr-docker-cache/cargo
           TARGET_VOLUME: /tmp/cmdr-docker-cache/target
 
+      # The Docker build runs as root, so it writes the bind-mounted cache dirs
+      # as root. The actions/cache post-step then runs as the runner user and
+      # `tar` can't read root-owned files — so the save failed (warning only,
+      # never fatal) on EVERY run since this cache was added, and the next run
+      # always restored nothing → a fully cold ~10-min Tauri build every time.
+      # Hand ownership back so the post-step can pack the cache. `always()` so
+      # the build cache still saves when a test fails (the build succeeded).
+      - name: Reclaim cache dir ownership for the save step
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" /tmp/cmdr-docker-cache
+
       - name: Upload E2E screenshots on failure
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
