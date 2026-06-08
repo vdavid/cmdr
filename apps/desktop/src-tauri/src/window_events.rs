@@ -1,4 +1,4 @@
-//! Window-management event payloads (Partition 7 of the typed-events migration).
+//! Window-management event payloads.
 //!
 //! These events target a specific window via `Event::emit_to(handle, target)`
 //! rather than broadcasting via `Event::emit`: the MCP `dialog` tool drives the
@@ -8,8 +8,8 @@
 //! The structs live here (always compiled) because `collect_events!` in `ipc.rs`
 //! can't `#[cfg]`-gate inline and the emit sites are spread across `mcp/`,
 //! `menu/`, and `commands/`. Each emit site just builds the struct and calls
-//! `.emit_to(app, target)`. Same always-compiled-module pattern the MTP /
-//! network / system_events partitions use.
+//! `.emit_to(app, target)`. Same always-compiled-module pattern the MTP,
+//! network, and system-events modules use.
 //!
 //! Wire-name discipline: every struct's kebab-cased name must equal the existing
 //! string event name, or it pins the name via `#[tauri_specta(event_name = "…")]`.

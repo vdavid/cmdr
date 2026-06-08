@@ -4,7 +4,7 @@
 //! `accent_color_linux.rs`, macOS-only `text_size.rs`), but `collect_events!`
 //! in `ipc.rs` can't `#[cfg]`-gate inline, so their typed payload structs live
 //! here in an always-compiled module. The emit sites just build and `.emit()`
-//! them. Same pattern the MTP / network partitions use (structs in an
+//! them. Same pattern the MTP and network modules use (structs in an
 //! always-compiled module, emits behind `#[cfg]`).
 
 use serde::{Deserialize, Serialize};

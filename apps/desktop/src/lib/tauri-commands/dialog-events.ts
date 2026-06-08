@@ -1,4 +1,4 @@
-// Window-management event listeners (partition 7). Typed `on*` wrappers over
+// Window-management event listeners. Typed `on*` wrappers over
 // the `tauri-specta` `events.*` helpers for the `emit_to`-targeted window
 // lifecycle events: the MCP `dialog` tool's open/focus/close round-trips, the
 // unified `execute-command` menu/cross-window relay, the tab context menu, the
@@ -43,10 +43,21 @@ export function emitExecuteCommand(commandId: string): Promise<void> {
   return events.executeCommand.emit({ commandId })
 }
 
-/** MCP `dialog open settings --section …`: open settings deep-linked to a section. */
-export function onOpenSettings(handler: (payload: OpenSettings) => void): Promise<UnlistenFn> {
+/**
+ * MCP `dialog open settings --section …`: open settings deep-linked to a section.
+ *
+ * The MCP path always carries a `section`, but the same `open-settings` event is
+ * also emitted bare (no payload) to open settings at its default landing section
+ * (the E2E `openSettingsWindowViaProd` helper does this). A bare emit delivers a
+ * `null` payload, which the typed `OpenSettings` (`{ section: string }`) doesn't
+ * model, so the handler receives an optional section and the caller defaults it.
+ */
+export function onOpenSettings(handler: (payload: Partial<OpenSettings>) => void): Promise<UnlistenFn> {
   return events.openSettings.listen((event) => {
-    handler(event.payload)
+    // The generated type says `event.payload` is always `OpenSettings`, but a bare
+    // `open-settings` emit (no payload) delivers `null` at runtime, so the guard is real.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- bare emit yields a null payload the type doesn't model
+    handler(event.payload ?? {})
   })
 }
 

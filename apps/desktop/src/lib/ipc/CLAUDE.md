@@ -36,23 +36,10 @@ For commands that return `Result<T, E>` on the Rust side, the TS wrapper returns
 
 ## Typed events
 
-Events are wired through the same `tauri-specta` machinery as commands. The migration is **complete**: every typeable
-event is now a Rust struct deriving `tauri_specta::Event`, with a typed `events.<name>` helper in `bindings.ts` and a
-thin `on<Event>` wrapper in `tauri-commands/`. Two families intentionally stay string-based (they can't be typed):
-
-- **The `mcp-*` MCP-dispatch relay** (`mcp/executor/mod.rs`, `mcp/resources/mod.rs`): a generic
-  `mcp_round_trip_with_timeout(app, event: &str, payload: Value, …)` emits a runtime-built name with a free-form
-  `serde_json::Value` payload — both specta blockers. (`mcp-settings-close` is the exception: it's a distinct static
-  `emit_to`, so it WAS typed.)
-- **`viewer:file-changed:<session-id>`** (`file_viewer/session.rs`): the session id is interpolated into the event name
-  at runtime, so there's no static struct to collect.
-
-See [`docs/specs/typed-events-plan.md`](../../../../../docs/specs/typed-events-plan.md) for the migration plan, the
-proven pattern, and the full event inventory.
-
-A typed event is a Rust struct deriving `tauri_specta::Event` (kebab-cased struct name = wire event name), registered
-via `collect_events![Struct]` in `ipc.rs::builder()`, and mounted with `specta_builder.mount_events(app)` in `lib.rs`'s
-`setup` (required, else `Event::emit` panics). Regen generates an `events.<name>` helper into `bindings.ts`:
+Events are wired through the same `tauri-specta` machinery as commands. Every typeable event is a Rust struct deriving
+`tauri_specta::Event` (kebab-cased struct name = wire event name), registered via `collect_events![Struct]` in
+`ipc.rs::builder()`, and mounted with `specta_builder.mount_events(app)` in `lib.rs`'s `setup` (required, else
+`Event::emit` panics). Regen generates an `events.<name>` helper into `bindings.ts`:
 
 ```ts
 events.volumeSpaceChanged.listen((event) => {
@@ -60,242 +47,112 @@ events.volumeSpaceChanged.listen((event) => {
 })
 ```
 
-As with commands, don't call `events.*` raw in components — add a thin `on<Event>(cb)` wrapper in `tauri-commands/`
+As with commands, don't call `events.*` raw in components: add a thin `on<Event>(cb)` wrapper in `tauri-commands/`
 (returns `UnlistenFn`) and import it from the barrel. The reference event is `volume-space-changed`
-(`onVolumeSpaceChanged` in `tauri-commands/storage.ts`).
+(`onVolumeSpaceChanged` in `tauri-commands/storage.ts`). For the rare event a window emits (not just listens to), add a
+matching `emit<Event>` wrapper too (`emitExecuteCommand` in `tauri-commands/dialog-events.ts` is the one example): it's
+the only place outside `lib/ipc/` that calls `events.*.emit`.
 
-The same type-shape constraints apply (no `skip_serializing_if`, no `serde_json::Value`). Events with a runtime-built
-name or a `serde_json::Value` payload (the `mcp-*` MCP-dispatch relay, `viewer:file-changed:<session-id>`) stay
-string-based; the plan doc explains why.
+### Two families stay string-based (can't be typed)
 
-### Migration gotchas learned converting the sink families (write/listing)
+- **The `mcp-*` MCP-dispatch relay** (`mcp/executor/mod.rs`, `mcp/resources/mod.rs`): a generic
+  `mcp_round_trip_with_timeout(app, event: &str, payload: Value, …)` emits a runtime-built name with a free-form
+  `serde_json::Value` payload, both specta blockers. The test is "goes through the generic relay", NOT "starts with
+  `mcp-`": `mcp-settings-close` is named `mcp-*` but is a distinct static `emit_to("settings", …)` with a unit payload,
+  so it IS a typed `Event`.
+- **`viewer:file-changed:<session-id>`** (`file_viewer/session.rs`): the session id is interpolated into the event name
+  at runtime, so there's no static struct to collect.
 
-- **`…Event`-suffixed payload structs keep their name and use `event_name`.** `WriteProgressEvent` kebab-cases to
-  `write-progress-event`, not `write-progress`. These structs are referenced all over the codebase, so renaming them to
-  match the wire would ripple through unrelated call sites. Add `#[tauri_specta(event_name = "write-progress")]` on the
-  struct instead, and verify each generated `makeEvent<…>('wire-name')` stays byte-identical to today's string. Same for
-  payload structs whose name doesn't kebab-case to the wire name (`ConflictInfo` → `scan-conflict`, `DryRunResult` →
-  `dry-run-complete`).
-- **Dropping `skip_serializing_if` makes the TS field optional (`T | null | undefined`), not just `T | null`.** specta
-  marks a `#[serde(default)]` field optional, so the generated type gains `?`. Consumers assigning that field into a
-  `T | null` `$state` or passing it to a `T | undefined` param now need `?? null` / `?? undefined`. This is the same
-  null-vs-undefined shape the Group-A command migration hit (see § Gotchas above) — expect a handful of coercions at
-  consumers when you type an event with previously-elided optional fields.
-- **Typing an event can surface a latent serde-rename bug in a NESTED enum.** `WriteErrorEvent.error` is a
-  `WriteOperationError` enum tagged `rename_all = "snake_case"` but with NO `rename_all_fields`, so its struct-variant
-  fields shipped as snake_case (`volume_name`, `device_name`) while the hand-mirrored FE type read `volumeName` /
-  `deviceName` — silently `undefined` at runtime for years. Generating the typed binding made the mismatch a compile
-  error and forced the fix: add `rename_all_fields = "camelCase"` to the enum (the `ipc-enum-camelcase` check only flags
-  `rename_all = "camelCase"` enums, so a `snake_case`-tagged enum slips past it). When an event payload nests an enum,
-  eyeball its multi-word variant fields before assuming the wire shape was correct.
+The same type-shape constraints as commands apply (no `skip_serializing_if`, no `serde_json::Value`); see § Type shape
+constraints below.
 
-### Migration gotchas learned converting volume + disk-space events
+### Wire-name discipline
 
-- **A generic payload struct can't derive `Event`; monomorphize it.** `volumes-changed` was emitted from a
-  `VolumesChangedPayload<V: Serialize>` generic over the volume type. `collect_events!` needs a concrete struct with a
-  static `NAME`, so the generic was replaced with a concrete
-  `VolumesChanged { data: Vec<LocationInfo>, timed_out: bool }` (the generic was only ever instantiated with
-  `LocationInfo`). If the only-instantiation type isn't obvious, grep the emit sites before collapsing the generic.
-- **An event payload that nests a serialize-only DTO needs `Deserialize` added to that DTO.** `Event` requires the
-  payload (and everything it contains) to round-trip, so wrapping macOS `LocationInfo` (previously `Serialize`-only,
-  "never sent from the frontend") in `VolumesChanged` forced a `Deserialize` derive on it. Check the nested type's own
-  nested types too (`LocationCategory`, `SmbConnectionState`, `UsbSpeed` already had it here).
-- **A `LocationInfo`-vs-`VolumeInfo` null/undefined gap surfaces at the FE listener boundary.** The generated
-  `LocationInfo.icon` is `string | null` (no `skip_serializing_if`), but the hand-written FE `VolumeInfo.icon` is
-  `string | undefined`, so `data: LocationInfo[]` won't assign into a `VolumeInfo[]` `$state`. The codebase already
-  bridges this for the `listVolumes` command with a `as VolumeInfo[]` cast; the typed `onVolumesChanged` wrapper applies
-  the same cast in ONE place (in `storage.ts`, re-typing its callback payload to `VolumeInfo[]`) so consumers stay
-  clean.
-- **A bare `Vec<String>` (JSON array) event payload must be wrapped in a named struct, which changes the wire shape.**
-  `volumes-busy-changed` emitted a bare `&Vec<String>` (a JSON `["id", …]`); `Event` payloads must be named types, so it
-  became `VolumesBusyChanged { volume_ids: Vec<String> }` (wire shape array → `{ volumeIds: [...] }`). The FE consumer
-  (`volume-busy-store`) and its test had to switch from reading `event.payload` to `payload.volumeIds`. When you wrap a
-  bare-collection event, update every consumer's field access, not just the listener registration.
-- **Two per-window-shared payloads (`volume-mounted` / `volume-unmounted`) need TWO structs, not one shared
-  `VolumeEventPayload`.** Both events carried the same `{ volume_path }` shape via a single `VolumeEventPayload` struct
-  duplicated in the macOS and Linux watchers, but one struct = one `NAME`, so they became distinct `VolumeMounted` /
-  `VolumeUnmounted` structs (defined once cross-platform in `volume_broadcast.rs`, imported by both watchers). A
-  window-targeted event (`volume-context-action`, emitted via `emit_to("main", …)`) converts to
-  `payload.emit_to(app, "main")` from `tauri_specta::Event`.
+Switching a raw-string emit to a typed `Event` must NEVER change the wire name (the listening windows already hold the
+matching capability permission under that name). The struct's kebab-cased name must equal the existing string event
+name, or pin it with `#[tauri_specta(event_name = "…")]`. Two cases need the override:
 
-### Migration gotchas learned converting the indexing events
+- **`…Event` / `…Payload`-suffixed structs.** `WriteProgressEvent` kebab-cases to `write-progress-event`, not
+  `write-progress`; `GitStateChangedPayload` to `git-state-changed-payload`. These names are referenced widely, so
+  pinning the wire name via `event_name` beats renaming the struct. Same for structs whose name doesn't kebab-case to
+  the wire name at all (`ConflictInfo` → `scan-conflict`, `DryRunResult` → `dry-run-complete`).
+- **`const EVENT_NAME` wire strings** become the `event_name` override and the const is removed
+  (`restricted-paths-changed`, `download-detected`, the drag-out pair).
 
-- **A hand-built `serde_json::json!({...})` payload becomes a named struct with the SAME wire shape.**
-  `index-memory-warning` and `search-index-ready` emitted ad-hoc `json!({ "entryCount": n })` objects (already camelCase
-  in the JSON literal), not free-form `Value`s, so they're cleanly typeable: replace the `json!` with a
-  `#[derive(…, Event)]` struct whose `#[serde(rename_all = "camelCase")]` reproduces the same keys. The
-  "`serde_json::Value` can't be typed" rule is about values whose shape is unknown at compile time, not about a literal
-  you hand-author at the emit site. Convert those.
-- **A payloadless `()` emit becomes a unit struct, and specta generates `type X = null`.** `index-aggregation-complete`
-  was `app.emit("index-aggregation-complete", ())`. A unit struct `pub struct IndexAggregationCompleteEvent;` with the
-  `Event` derive generates `export type IndexAggregationCompleteEvent = null` and an `events.x.listen(...)` whose
-  payload is `null` — byte-identical to the old `listen<null>(...)`. The FE wrapper takes no payload
-  (`callback: () => void`).
-- **A nested enum in an event payload needs its own `specta::Type` derive.** `IndexRescanNotificationEvent.reason` is a
-  `RescanReason` enum; it already had `Serialize + Deserialize` but `Event` additionally requires `specta::Type` on
-  every nested type. It's a `rename_all = "snake_case"` enum with only unit variants, so NO `rename_all_fields` is
-  needed (that one's only for struct variants); the generated TS is a snake_case string union, matching the FE's
-  existing `rescanReasonToMessage` keys.
-- **A `&'static str` field can't `Deserialize`; widen it to `String`.** `AggregationProgressEvent.phase` was
-  `phase: &'static str` (fine for a `Serialize`-only emit payload). `Event` requires `Deserialize`, which can't target a
-  borrowed `&'static str`, so the field became `String` and the two emit sites now `.to_string()` the
-  `phase_to_str(...)` result. The wire value is unchanged; only the Rust field type widened.
+Verify each generated `makeEvent<…>('wire-name')` stays byte-identical to the old string. `bindings-fresh` regenerates
+and the diff proves it.
 
-### Migration gotchas learned converting the MTP device events
+### Payload-shape rules
 
-- **Ad-hoc `serde_json::json!({...})` emits become named structs with the SAME camelCase keys.** Five MTP events
-  (`mtp-device-connected`, `mtp-device-disconnected`, `mtp-storage-removed`, `mtp-permission-error`,
-  `mtp-exclusive-access-error`) were emitted as hand-authored `json!({ "deviceId": …, … })` literals, already camelCase.
-  Each became a `#[derive(…, tauri_specta::Event)] #[serde(rename_all = "camelCase")]` struct that reproduces the keys
-  exactly (verify each `makeEvent<…>('wire-name')` is byte-identical). The two unit events (`mtp-ptpcamerad-suppressed`
-  / `mtp-ptpcamerad-restored`, emitted from macOS-gated `watcher.rs`) became unit structs (`type X = null`), defined
-  unconditionally in `connection/mod.rs` so `collect_events!` and the generated bindings stay cross-platform stable even
-  though the emit sites are `#[cfg(target_os = "macos")]`.
-- **A nested serialize-only DTO needs `Deserialize` added.** `MtpDeviceConnected` carries `Vec<MtpStorageInfo>`, but
-  `MtpStorageInfo` (in `mtp/types.rs`) was `Serialize`-only ("return type only"). `Event` requires the whole payload to
-  round-trip, so it gained a `Deserialize` derive. (`MtpDeviceInfo` did NOT — it never nests in an event payload, only
-  the `device_name: String` does.)
-- **Aliasing a hand-written FE interface to the generated type removes a null-vs-undefined drift.** The old
-  hand-mirrored `MtpStorageInfo` FE interface had `storageType?: string`; the generated one is
-  `storageType: string | null` (no `skip_serializing_if`). Rather than coerce at every consumer, the
-  `tauri-commands/mtp.ts` interface was aliased to the generated `MtpStorageInfo` (and `MtpTransferProgress` likewise).
-  The historical `*Event` payload type names (`MtpDeviceConnectedEvent`, …) are kept as re-export aliases of the
-  generated types so the barrel and consumers keep a stable import surface. The one remaining coercion:
-  `MtpExclusiveAccessError.blockingProcess` is `string | null`, so the `+layout.svelte` handler assigns it into a
-  `string | undefined` `$state` with `?? undefined`.
-- **`mtp-ptpcamerad-suppressed` / `mtp-ptpcamerad-restored` / `mtp-storage-removed` have no FE listener.** They're
-  emitted but currently unconsumed (the connected toast fires on `mtp-device-connected`, not on the suppressed event).
-  They were still typed (struct + `collect_events!`) so the bindings are complete and a future consumer gets a typed
-  `events.mtpPtpcameradSuppressed.listen(...)`, but no `on*` wrapper was added for them — don't add dead wrappers for
-  events nothing subscribes to.
+- **A scalar or bare-collection emit must be wrapped in a named struct, which changes the wire shape.** `Event` payloads
+  must be named types. A bare `&hex` / `f64` / `&Vec<String>` becomes `{ hex }` / `{ multiplier }` /
+  `{ volumeIds: […] }`, and every consumer that read `event.payload` directly switches to `payload.hex` (etc.). A
+  payloadless `()` (or `{}`) emit becomes a unit struct, which specta generates as `type X = null`: byte-identical to
+  the old `listen<null>(...)`, and the FE wrapper takes no payload (`callback: () => void`).
+- **A struct event that's ALSO emitted bare delivers `null` at runtime, which the generated `{ field }` type doesn't
+  model.** `open-settings` carries `{ section }` from the MCP path, but the E2E `openSettingsWindowViaProd` helper emits
+  it with no payload to open the default section. The generated `OpenSettings = { section: string }` says the payload is
+  never null, so a `payload.section` read in the listener throws on the bare emit (the window then never opens). The
+  `onOpenSettings` wrapper absorbs this: its callback takes `Partial<OpenSettings>` and coerces `event.payload ?? {}`
+  (with a scoped `no-unnecessary-condition` opt-out, since the type lies about the null). If you make a struct event
+  emittable bare, handle the null in its `on*` wrapper, not at every consumer.
+- **A hand-built `json!({...})` literal IS typeable** when its keys are known at compile time (most are already
+  camelCase). Replace it with a `#[derive(…, Event)] #[serde(rename_all = "camelCase")]` struct reproducing the keys.
+  The "`serde_json::Value` can't be typed" rule is about runtime-unknown shapes, not hand-authored literals.
+- **`Event` requires the whole payload to round-trip (`Deserialize` + `specta::Type`), so a nested serialize-only DTO
+  must gain `Deserialize`** (and `specta::Type` on nested enums). Walk the whole nesting chain. A `&'static str` field
+  can't `Deserialize`: widen it to `String` (`.to_string()` at the emit site). The wire value is unchanged.
+- **Dropping `skip_serializing_if` makes a TS field optional as `T | null | undefined`, and absent values cross as
+  `null`.** This surfaces null-vs-undefined coercions at consumers (`?? null` / `?? undefined`). When the generated DTO
+  differs from a hand-mirrored FE type (`LocationInfo` vs `VolumeInfo`, generated `FileEntry` vs FE `FileEntry`), apply
+  a single `as` cast inside the `on*` wrapper rather than coercing at every consumer.
 
-### Migration gotchas learned converting the network/SMB + git events
+### Defining structs and emit signatures
 
-- **`#[serde(flatten)]` keeps a bare-object emit byte-identical.** `network-host-found` / `network-host-resolved` were
-  `app.emit("network-host-found", &host)` where `host: NetworkHost` — the wire payload IS the bare host object, not
-  `{ host: {...} }`. A wrapper struct `pub struct NetworkHostFound { #[serde(flatten)] pub host: NetworkHost }` with the
-  `Event` derive generates `export type NetworkHostFound = NetworkHost` (specta inlines the single flattened field), so
-  the wire shape and the FE payload stay exactly the bare host. Two events with the same payload shape need two distinct
-  structs (one `Event` derive = one wire name), so both wrap `NetworkHost`. The flattened type itself (`NetworkHost`)
-  must gain `Deserialize` (it was serialize-only as a command return type).
-- **Define an event struct in an always-compiled module when its emit site is `#[cfg]`-gated.** `smb-connection-changed`
-  is emitted from `file_system/volume/backends/smb.rs`, which is
-  `#[cfg(any(target_os = "macos", target_os = "linux"))]`. `collect_events!` in `ipc.rs` can't `#[cfg]`-gate inline, so
-  the `SmbConnectionChanged` struct lives in the always-compiled `network/mod.rs` (the emit site just builds +
-  `.emit()`s it via `crate::network::SmbConnectionChanged`). Same principle the MTP partition used (structs in
-  `connection/mod.rs`, emits in macOS-gated `watcher.rs`).
-- **`tauri_specta::Event::emit` needs `Emitter + Manager`, not just `Emitter`.** Functions that took
-  `app_handle: &impl Emitter<R>` for the old `app.emit("name", payload)` must widen the bound to
-  `&(impl Emitter<R> + Manager<R>)` — `Event::emit`'s signature is `H: Emitter<R> + Manager<R>`. `AppHandle` satisfies
-  both, so callers are unaffected; only the generic signature changes.
-- **A window-scoped `emit_to` migrates the same way as `emit`, via `Event::emit_to`.** `network-host-context-action` was
-  `app.emit_to("main", "network-host-context-action", json!({...}))` from `menu/menu_handlers.rs`. It becomes
-  `payload.emit_to(app, "main")` (note the arg order flips: `Event::emit_to(self, handle, target)`), with
-  `use tauri_specta::Event as _;` in scope. Mirrors `VolumeContextAction` (partition 2).
-- **A `…Payload`-named struct needs `event_name` even when the wire name is plain.** `GitStateChangedPayload`
-  kebab-cases to `git-state-changed-payload`, so it carries `#[tauri_specta(event_name = "git-state-changed")]`. Its
-  nested `RepoInfo` already derived `specta::Type` + `Deserialize` (it's a command return type), so no extra work there
-  — and `RepoInfo` is now generated into `bindings.ts`, so the git store drops its hand-mirrored `RepoInfo` interface
-  and re-exports the generated one (consumers keep their `from './git-store.svelte'` import path).
-- **`&'static str` → `String` again.** `SmbConnectionChanged.state` was `&'static str` (fine for serialize-only emit);
-  `Event` requires `Deserialize`, so it widened to `String`. The wire values (`"direct"` / `"disconnected"` /
-  `"needs_auth"`) are unchanged, but the generated TS type is now `state: string`, not a literal union — FE consumers
-  narrow it themselves (the volume store filters out `needs_auth` before assigning to its `'direct' | 'disconnected'`
-  field; that filter also closed a latent bug where the old `listen<{ state: 'direct' | 'disconnected' }>` cast lied
-  about the runtime `needs_auth` value).
-- **Test mocks of `$lib/tauri-commands` must list every new `on*` wrapper the mounted component tree reaches.**
-  `DualPaneExplorer.test.ts` mocks the whole barrel; adding `onSmbConnectionChanged` / `onNetworkHost*` /
-  `onNetworkDiscoveryStateChanged` wrappers (reached transitively via the SMB reconnect manager + network store) means
-  the mock must export them, or vitest throws `No "onX" export is defined on the mock` as an unhandled rejection (tests
-  still "pass" but the run reports an error and fails the gate). `smb-reconnect-manager.svelte.test.ts` switched its
-  capture from mocking raw `@tauri-apps/api/event`'s `listen` to mocking `onSmbConnectionChanged` (the wrapper now hands
-  the bare payload, so the test's `emit()` no longer wraps in `{ payload }`).
-- **A new thin `tauri-commands/*.ts` listener file needs a `coverage-allowlist.json` entry.** `tauri-commands/git.ts`
-  (one `onGitStateChanged` wrapper) can't be meaningfully unit-tested (it's `events.x.listen` plumbing), so it joins the
-  other wrapper files in the allowlist with the same "thin typed-event listener wrapper, exercised via integration"
-  reason. Same precedent as `indexing.ts`.
+- **A platform-gated or generic emit site needs its struct in an always-compiled, concrete module.** `collect_events!`
+  can't `#[cfg]`-gate inline and needs a concrete struct with a static `NAME`. So `#[cfg(target_os = "…")]` emit sites
+  (MTP, SMB, text-size, accent-color, drag) keep their payload structs in always-compiled modules (`connection/mod.rs`,
+  `network/mod.rs`, `system_events.rs`, `volume_broadcast.rs`); the gated site just builds and `.emit()`s. Same for a
+  generic payload: monomorphize it to its single instantiation (`VolumesChangedPayload<V>` → concrete `VolumesChanged`).
+  One `Event` derive = one wire name, so two events sharing a payload shape need two distinct structs (`VolumeMounted` /
+  `VolumeUnmounted`, the two `NetworkHost` wrappers via `#[serde(flatten)]`).
+- **`Event::emit` needs `Emitter + Manager`, not just `Emitter`**, and the handle arg is `&H`: pass `app` in a fn taking
+  `&AppHandle<R>`, `&app` in a fn owning `AppHandle<R>`. Getting it wrong yields a confusing
+  `&AppHandle<R>: Emitter<_> not satisfied`. A window-targeted `app.emit_to("main", "name", …)` becomes
+  `payload.emit_to(app, "main")` (arg order flips: `Event::emit_to(self, handle, target)`). Broadcasts (`app.emit`)
+  whose sole listener is one window can switch to `emit_to(app, "main")`: functionally identical and more precise.
+- **A typed `emit_to` needs NO new capability.** The listening windows already carry `core:event:default` (grants
+  `listen`/`emit`), and a typed `Event` routes through the same `event:` plugin under the same wire name.
+- **Sink-trait events convert at the production impl only.** `download-detected` and the write/listing operation sinks
+  type their concrete `AppHandleSink::emit`; the `EventSink` trait and test sinks stay untyped so tests don't need a
+  Tauri app.
 
-### Migration gotchas learned converting the AI + system/misc events
+### Test-mock upkeep
 
-- **A scalar emit (`app.emit("name", &hex)` / `multiplier`) must be wrapped in a named struct, changing the wire shape
-  from a bare JSON value to `{ field: value }`.** `accent-color-changed` (bare `&String`), `system-text-size-changed`
-  (bare `f64`), and `error-report-auto-sent` (bare `&String` report id) each became `AccentColorChanged { hex }` /
-  `SystemTextSizeChanged { multiplier }` / `ErrorReportAutoSent { id }`. Every FE consumer that read `event.payload`
-  directly now reads `payload.hex` / `payload.multiplier` / `payload.id`. The text-size field stays `f32` (the source
-  `read_system_multiplier` returns `f32`); widening to `f64` would change the JSON float representation for no gain.
-- **A macOS-only module's event struct must live in an always-compiled module, because `collect_events!` can't
-  `#[cfg]`-gate inline.** `text_size.rs`, `accent_color*.rs`, `drag_image_detection.rs`, and `native_drag/promises.rs`
-  are all platform-gated, so their payload structs (`AccentColorChanged`, `SystemTextSizeChanged`, `DragImageSize`,
-  `DragModifiers`, `SessionStartedEvent`, `SessionCompleteEvent`) live in the always-compiled
-  `src-tauri/src/system_events.rs`; the gated emit sites just build + `.emit()` them. An inherent `impl` (like
-  `SessionCompleteEvent::from_summary`) can stay in the gated module even though the struct moved (same-crate inherent
-  impls don't need to be colocated). Same principle the MTP / network partitions used.
-- **`Event::emit`'s handle arg is `&H` — pass `app` when the fn already has `&AppHandle<R>`, `&app` when it owns
-  `AppHandle<R>`.** `Event::emit<R, H: Emitter<R> + Manager<R>>(&self, handle: &H)`. In a fn taking
-  `app: &AppHandle<R>`, write `payload.emit(app)`; in a fn owning `app: AppHandle<R>`, write `payload.emit(&app)`.
-  Getting this wrong yields a confusing `&AppHandle<R>: Emitter<_> not satisfied` (it inferred `H = &AppHandle<R>`).
-- **A unit-struct event with an existing `{}` (empty object) emit changes the wire to `null`, but that's safe when no
-  consumer reads the payload.** `global-shortcut-fired` emitted `json!({})`; the unit struct `GlobalShortcutFired`
-  generates `type X = null`. The FE bridge listens with `listen<unknown>` and ignores the payload, so the shape change
-  is invisible. `quick-look-closed` was already payloadless (`()` → unit struct).
-- **Nesting `FileEntry` in a typed event forces `Deserialize` on the whole chain.** `directory-diff` carries
-  `DirectoryDiff → DiffChange → FileEntry`; `FileEntry` was serialize-only (a command return type) and gained
-  `Deserialize`. It's all primitives / `Option<primitive>`, so no cascade. The generated `FileEntry` (with `| null`
-  optionals + `inode`, and without the FE-only `recursiveSizePending` / `parentPath`) DIFFERS from the hand-mirrored FE
-  `FileEntry` in `file-explorer/types.ts`, so the FE `DirectoryDiff` / `DiffChange` interfaces are KEPT (they nest the
-  FE `FileEntry`), and `onDirectoryDiff` casts the generated payload to the FE type at the wrapper boundary — the same
-  `as FileEntry[]` cast `getFileRange` already uses.
-- **`emit_to("main", json!({...}))` menu events convert via `Event::emit_to(payload, app, "main")`, same as the
-  partition-2/5 context-action events.** `view-mode-changed`, `menu-sort` (and `settings-changed` from `commands/ui.rs`
-  uses plain `emit`) became `ViewModeChanged` / `MenuSort` / `SettingsChanged` structs in `menu/mod.rs`. These ARE
-  window-targeted (`emit_to`) but are payload broadcasts, NOT window-lifecycle (open/close/focus a window) — those stay
-  for partition 7.
-- **Sink-trait events convert AT the production impl only.** `download-detected` (`AppHandleSink::emit` in
-  `downloads/watcher.rs`) became `event.emit(&self.app)`; the `EventSink` trait and the test sinks stay untyped so tests
-  don't need a Tauri app. Same shape as the partition-1 operation/listing sinks.
-- **A `const EVENT_NAME` wire string becomes the `#[tauri_specta(event_name = "…")]` override, and the const is
-  removed.** `restricted-paths-changed` (`RestrictedPathsChangedPayload`), `download-detected`
-  (`DownloadDetectedEvent`), and the drag-out pair carried `…Payload` / `…Event` suffixes that wouldn't kebab-case to
-  the wire name, so each pins it via `event_name`. `error-report-auto-sent` is the one whose struct name
-  (`ErrorReportAutoSent`) kebab-cases correctly, so it needs no override.
-- **A test that mocks `$lib/ipc/bindings` (not just `@tauri-apps/api/event`) must add the `events.<name>.listen` it now
-  reaches.** Converting a consumer to a typed `on*` wrapper routes through `events.<name>.listen`. Tests that mock the
-  whole `$lib/ipc/bindings` module (only `commands`) throw `No "events" export`; add a minimal
-  `events: { <name>: { listen } }` that routes into the existing `@tauri-apps/api/event` `listen` mock under the wire
-  name. Tests that mock `$lib/tauri-commands` must add the new `on*` wrapper to the mock (a mounted-tree test throws
-  `No "onDirectoryDiff" export` as an unhandled rejection that fails the gate even though assertions pass). Make the
-  re-wrap null-safe (`event?.payload`) so it serves both payload and payloadless (unit-struct) events.
+Converting a consumer to an `on*` wrapper routes through `events.<name>.listen`, so the mocks must follow:
 
-### Migration gotchas learned converting the window-management events (final partition)
+- A test mocking `$lib/ipc/bindings` (only `commands`) throws `No "events" export`; add a minimal
+  `events: { <name>: { listen } }` routing into the existing `@tauri-apps/api/event` `listen` mock under the wire name.
+  Make the re-wrap null-safe (`event?.payload`) so it serves both payload and unit-struct (null-payload) events.
+- A test mocking the whole `$lib/tauri-commands` barrel must export every new `on*` wrapper the mounted component tree
+  reaches, or vitest throws `No "onX" export` as an unhandled rejection that fails the gate even though assertions pass.
+- A new thin `tauri-commands/*.ts` listener file (pure `events.x.listen` plumbing) gets a `coverage-allowlist.json`
+  entry with the "thin typed-event listener wrapper, exercised via integration" reason.
 
-- **A typed `emit_to` needs NO new capability permission.** All window-management events (`open/close/focus-*`,
-  `execute-command`, `mcp-settings-close`, `viewer-word-wrap-toggled`, `tab-context-action`,
-  `persist-restricted-setting`) are `emit_to`-targeted at a specific window. The listening windows (`default`/main,
-  `settings`, `viewer`) already carry `core:event:default` (which grants `listen`/`unlisten`/`emit`), and a typed
-  `Event` still routes through the same `event:` plugin under the same wire name, so the existing permission covers it.
-  Don't add a capability when converting a string `listen` to a typed `events.x.listen`. (Verified: zero changes to
-  `capabilities/{default,settings,viewer}.json` for this partition.)
-- **An event with both a `{path}` and a `()` emit site collapses to one `Option<String>` payload.** `open-file-viewer`
-  and `focus-file-viewer` each emitted `json!({"path": …})` from one MCP branch and `()` from another. One `Event`
-  struct = one wire shape, so both became `{ path: Option<String> }` (generated `path: string | null`); the FE reads
-  `payload.path ?? undefined` where it previously read `payload?.path`. The `null`-vs-`undefined` coercion is the same
-  one the rest of the migration hit (`skip_serializing_if` is banned, so absent → `null`).
-- **`app.emit("name", …)` broadcasts converted to `Event::emit_to(app, "main")` because only the main window listens.**
-  The MCP dialog `open/close/focus-*` events were broadcast (`app.emit`), but their sole listener is the main window's
-  `+page.svelte`. Switching to `payload.emit_to(app, "main")` is functionally identical (the broadcast only ever reached
-  the main window's listener) and more precise. Don't preserve the broadcast form just because the original used it.
-- **`execute-command` is emitted from BOTH Rust and the frontend; the typed `Event` serves both via `.emit` and
-  `.listen`.** Nine Rust sites (menu dispatch + MCP) emit it; `LicenseSection.svelte` (settings window) cross-window
-  emits it too. The Rust sites use `ExecuteCommand { command_id }.emit_to(app, "main")`; the FE site uses the thin
-  `emitExecuteCommand(commandId)` wrapper (over `events.executeCommand.emit({ commandId })`, a broadcast that only the
-  main window listens for). The `rust-command-id-drift.test.ts` regex that pins the cross-window id to `COMMAND_IDS` was
-  updated from matching `emitTo('main', 'execute-command', …)` to matching `emitExecuteCommand('…')`; the FE-emit
-  wrapper is the one place outside `lib/ipc/` that calls `events.*.emit`, so adding an `emit*` wrapper alongside the
-  `on*` wrappers keeps components off raw `events.*`.
-- **`mcp-settings-close` is typeable even though it's named `mcp-*`.** Unlike the rest of the `mcp-*` family (which
-  funnel through the generic `mcp_round_trip` relay with a runtime `&str` name + `serde_json::Value` payload), this one
-  is a distinct static `emit_to("settings", "mcp-settings-close", ())`, so it became a unit-struct `Event`. The relay
-  family stays string-based; "starts with `mcp-`" is not the test — "goes through the generic relay" is.
+### Latent bugs the typing surfaced
+
+- **`WriteOperationError`** (nested in `WriteErrorEvent`) was `#[serde(tag = "type", rename_all = "snake_case")]` with
+  NO `rename_all_fields`, so its struct-variant fields shipped as `volume_name` / `device_name` while the FE read
+  `volumeName` / `deviceName`: silently `undefined` for years. The fix is `rename_all_fields = "camelCase"` on the enum
+  (the `ipc-enum-camelcase` check only flags `rename_all = "camelCase"` enums, so a `snake_case`-tagged one slipped
+  past). When an event payload nests a tagged enum, eyeball its multi-word variant fields.
+- **`smb-connection-changed`** carries `state: String` (wire values `"direct"` / `"disconnected"` / `"needs_auth"`; not
+  a literal union, since `needs_auth` is a transient FE-only signal that isn't a backend `SmbConnectionState` variant).
+  The volume store filters out anything but `direct` / `disconnected` before assigning to its narrower field. That
+  filter also closed a latent bug: the old `listen<{ state: 'direct' | 'disconnected' }>` cast lied about the runtime
+  `needs_auth` value.
+
+See [`docs/specs/typed-events-plan.md`](../../../../../docs/specs/typed-events-plan.md) for the full event inventory.
 
 ## Call-site convention: name your arguments
 

@@ -77,13 +77,13 @@ use crate::network::{
 };
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
-// Window-management events (partition 7): emit_to-targeted window lifecycle.
+// Window-management events: emit_to-targeted window lifecycle.
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
     FocusFileViewer, FocusSettings, McpSettingsClose, OpenFileViewer, OpenSettings, PersistRestrictedSetting,
     TabContextAction, ViewerWordWrapToggled,
 };
-// AI + system/misc (partition 6).
+// AI + system/misc events.
 use crate::ai::{
     AiExtracting, AiInstallComplete, AiInstalling, AiServerReady, AiStarting, AiVerifying, DownloadProgress,
 };
@@ -685,7 +685,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             NetworkHostContextAction,
             SmbConnectionChanged,
             GitStateChangedPayload, // event_name = "git-state-changed"
-            // AI + system/misc (partition 6).
+            // AI + system/misc events.
             // AI lifecycle (ai/manager.rs, ai/download.rs). The payloadless ones
             // are unit structs (`type X = null`); `DownloadProgress` pins its
             // wire name via `event_name` (it kebab-cases to `download-progress`).
@@ -720,7 +720,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             SessionStartedEvent,           // event_name = "drag-out-session-started"
             SessionCompleteEvent,          // event_name = "drag-out-session-complete"
             ErrorReportAutoSent,
-            // Window management (partition 7): `emit_to`-targeted window lifecycle
+            // Window management: `emit_to`-targeted window lifecycle
             // (mcp/executor/, menu/menu_handlers.rs, commands/settings.rs). Struct
             // names kebab-case directly to the wire names, so no `event_name`
             // overrides. `execute-command` is also FE-emitted (LicenseSection).
