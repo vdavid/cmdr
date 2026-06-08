@@ -2240,6 +2240,16 @@ export const commands = {
 /** Events */
 export const events = {
   dryRunComplete: makeEvent<DryRunResult>('dry-run-complete'),
+  indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
+  indexAggregationProgress: makeEvent<AggregationProgressEvent>('index-aggregation-progress'),
+  indexDirUpdated: makeEvent<IndexDirUpdatedEvent>('index-dir-updated'),
+  indexMemoryWarning: makeEvent<IndexMemoryWarningEvent>('index-memory-warning'),
+  indexReplayComplete: makeEvent<IndexReplayCompleteEvent>('index-replay-complete'),
+  indexReplayProgress: makeEvent<IndexReplayProgressEvent>('index-replay-progress'),
+  indexRescanNotification: makeEvent<IndexRescanNotificationEvent>('index-rescan-notification'),
+  indexScanComplete: makeEvent<IndexScanCompleteEvent>('index-scan-complete'),
+  indexScanProgress: makeEvent<IndexScanProgressEvent>('index-scan-progress'),
+  indexScanStarted: makeEvent<IndexScanStartedEvent>('index-scan-started'),
   listingCancelled: makeEvent<ListingCancelledEvent>('listing-cancelled'),
   listingComplete: makeEvent<ListingCompleteEvent>('listing-complete'),
   listingError: makeEvent<ListingErrorEvent>('listing-error'),
@@ -2253,6 +2263,7 @@ export const events = {
   scanPreviewError: makeEvent<ScanPreviewErrorEvent>('scan-preview-error'),
   scanPreviewProgress: makeEvent<ScanPreviewProgressEvent>('scan-preview-progress'),
   scanProgress: makeEvent<ScanProgressEvent>('scan-progress'),
+  searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
   volumeContextAction: makeEvent<VolumeContextAction>('volume-context-action'),
   volumeMounted: makeEvent<VolumeMounted>('volume-mounted'),
   volumeSpaceChanged: makeEvent<VolumeSpaceChanged>('volume-space-changed'),
@@ -2294,6 +2305,14 @@ export type ActivityPhase =
   | 'live'
   // Idle: indexing initialized but no active work.
   | 'idle'
+
+// Tauri event payload for aggregation progress updates.
+export type AggregationProgressEvent = {
+  // One of `phase_to_str`'s outputs: `saving_entries` | `loading` | `sorting` | `computing` | `writing`.
+  phase: string
+  current: number
+  total: number
+}
 
 // Error types surfaced over IPC for AI API key operations.
 export type AiApiKeyError =
@@ -2901,6 +2920,12 @@ export type HistoryMode = 'ai' | 'filename' | 'regex'
 export type HostSource = 'discovered' | 'manual'
 
 /**
+ *  Emitted when a full-scan aggregation pass finishes and the UI can dismiss the
+ *  progress overlay. Payloadless: it carries no data, only the signal.
+ */
+export type IndexAggregationCompleteEvent = null
+
+/**
  *  Extended debug status for the debug window. Includes live DB counts
  *  and MustScanSubDirs tracking.
  */
@@ -2942,6 +2967,75 @@ export type IndexDebugStatusResponse = {
 } &
   // Base status (same as `get_index_status`)
   IndexStatusResponse
+
+export type IndexDirUpdatedEvent = {
+  paths: string[]
+}
+
+/**
+ *  Emitted when the memory watchdog stops indexing to avoid a system crash.
+ *  Drives a user-visible toast.
+ */
+export type IndexMemoryWarningEvent = {
+  residentGb: number
+  // What the watchdog did. Currently always `"stopped_indexing"`.
+  action: string
+}
+
+export type IndexReplayCompleteEvent = {
+  volumeId: string
+  durationMs: number
+}
+
+export type IndexReplayProgressEvent = {
+  volumeId: string
+  eventsProcessed: number
+  estimatedTotal: number | null
+}
+
+export type IndexRescanNotificationEvent = {
+  volumeId: string
+  reason: RescanReason
+  // Human-readable details for logs (not shown to user directly).
+  details: string
+}
+
+export type IndexScanCompleteEvent = {
+  volumeId: string
+  totalEntries: number
+  totalDirs: number
+  durationMs: number
+}
+
+export type IndexScanProgressEvent = {
+  volumeId: string
+  entriesScanned: number
+  dirsFound: number
+  /**
+   *  Resolved post-dedup physical bytes scanned so far, the tier-2 progress
+   *  numerator (apples-to-apples with `volume_used_bytes`).
+   */
+  bytesScanned: number
+}
+
+export type IndexScanStartedEvent = {
+  volumeId: string
+  /**
+   *  The previous completed scan's final entry count, the tier-1 (calibrated)
+   *  progress denominator. `None` on a first-ever scan (no prior calibration).
+   */
+  priorTotalEntries: number | null
+  /**
+   *  The previous completed scan's wall-clock duration, used to seed the tier-1
+   *  ETA before the sliding window has samples. `None` on a first-ever scan.
+   */
+  priorScanDurationMs: number | null
+  /**
+   *  The scanned volume's used bytes at scan start, the tier-2 (rough, first-scan)
+   *  progress denominator. `None` when the space-info fetch failed.
+   */
+  volumeUsedBytes: number | null
+}
 
 export type IndexStatus = {
   schemaVersion: string | null
@@ -3644,6 +3738,29 @@ export type RepoInfo = {
   isDirty: boolean
 }
 
+/**
+ *  Why a full rescan was triggered instead of incremental replay.
+ *  Sent to the frontend as `index-rescan-notification` so the UI can show
+ *  a transparent, user-friendly toast.
+ */
+export type RescanReason =
+  // Event ID gap too large: app hasn't run for a long time.
+  | 'stale_index'
+  // FSEvents journal unavailable (gap detected during replay).
+  | 'journal_gap'
+  // Replay processed too many events (safety limit exceeded).
+  | 'replay_overflow'
+  // Too many MustScanSubDirs events during replay.
+  | 'too_many_subdir_rescans'
+  // DriveWatcher failed to start for replay.
+  | 'watcher_start_failed'
+  // Reconciler event buffer overflowed during scan.
+  | 'reconciler_buffer_overflow'
+  // Previous scan didn't complete (app crashed or was force-quit).
+  | 'incomplete_previous_scan'
+  // FSEvents channel overflowed: events were dropped.
+  | 'watcher_channel_overflow'
+
 // Result of re-sorting a directory listing.
 export type ResortResult = {
   /**
@@ -3797,6 +3914,14 @@ export type ScanProgressEvent = {
   conflictsFound: number
   // For activity indication.
   currentPath: string | null
+}
+
+/**
+ *  Emitted once the in-memory search index finishes loading, so the dialog can
+ *  flip from "loading" to ready and show the indexed entry count.
+ */
+export type SearchIndexReadyEvent = {
+  entryCount: number
 }
 
 // A search match found by a backend.

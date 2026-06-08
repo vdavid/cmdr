@@ -157,8 +157,11 @@ driven by Tauri events). Manual end-to-end testing via the Rust indexer with `pn
 
 ## Dependencies
 
-- `@tauri-apps/api/core`: `invoke`
-- `$lib/tauri-commands`: `listen`, `UnlistenFn`
+- `$lib/ipc/bindings`: `commands` (status query)
+- `$lib/tauri-commands`: typed indexing event wrappers (`onIndexScanStarted`, `onIndexScanProgress`,
+  `onIndexScanComplete`, `onIndexAggregationProgress`, `onIndexAggregationComplete`, `onIndexRescanNotification`,
+  `onIndexReplayProgress`, `onIndexReplayComplete`, `onIndexDirUpdated`) plus `UnlistenFn`. The events are
+  `tauri-specta`-typed (wire names pinned via `event_name`); the wrappers live in `tauri-commands/indexing.ts`.
 - `$lib/ui/toast`: `addToast` (rescan notification toasts)
 - `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (indicator only)
 - `$lib/tooltip/tooltip`: `tooltip` action with the `contentEl` live-content param (indicator only)

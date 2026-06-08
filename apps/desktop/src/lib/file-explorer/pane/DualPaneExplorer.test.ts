@@ -117,6 +117,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onVolumeUnmounted: vi.fn().mockResolvedValue(() => {}),
   onVolumesChanged: vi.fn().mockResolvedValue(() => {}),
   onVolumesBusyChanged: vi.fn().mockResolvedValue(() => {}),
+  onIndexDirUpdated: vi.fn().mockResolvedValue(() => {}),
   getIpcErrorMessage: (e: unknown) => String(e),
 }))
 

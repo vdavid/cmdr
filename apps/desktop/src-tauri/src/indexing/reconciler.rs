@@ -23,7 +23,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use rusqlite::Connection;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::DEBUG_STATS;
@@ -846,7 +846,8 @@ fn collect_ancestor_paths(path: &str) -> Vec<String> {
 
 /// Emit an `index-dir-updated` event to the frontend.
 pub(super) fn emit_dir_updated(app: &AppHandle, paths: Vec<String>) {
-    let _ = app.emit("index-dir-updated", crate::indexing::IndexDirUpdatedEvent { paths });
+    use tauri_specta::Event;
+    let _ = crate::indexing::IndexDirUpdatedEvent { paths }.emit(app);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────

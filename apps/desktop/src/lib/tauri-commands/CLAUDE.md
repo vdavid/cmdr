@@ -31,6 +31,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 | `settings.ts`         | Port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands                                                                                                                                                                        |
 | `tab.ts`              | Tab context menu: `showTabContextMenu`, `onTabContextAction`                                                                                                                                                                                                            |
 | `clipboard-files.ts`  | Clipboard file operations: copy/cut files to system clipboard, read/paste, clear cut state                                                                                                                                                                              |
+| `indexing.ts`         | Drive-indexing event listeners: typed `on*` wrappers over the `tauri-specta` `events.index*` helpers (scan/replay/aggregation progress + complete, rescan notification, dir-updated, memory warning)                                                                    |
 
 ## Where to put new commands
 

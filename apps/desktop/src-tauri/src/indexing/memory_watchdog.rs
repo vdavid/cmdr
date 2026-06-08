@@ -62,14 +62,12 @@ async fn run_watchdog(app: tauri::AppHandle) {
             );
 
             // Emit user-visible event
-            use tauri::Emitter;
-            let _ = app.emit(
-                "index-memory-warning",
-                serde_json::json!({
-                    "resident_gb": resident_bytes / (1024 * 1024 * 1024),
-                    "action": "stopped_indexing",
-                }),
-            );
+            use tauri_specta::Event;
+            let _ = super::IndexMemoryWarningEvent {
+                resident_gb: resident_bytes / (1024 * 1024 * 1024),
+                action: "stopped_indexing".to_string(),
+            }
+            .emit(&app);
 
             // Stop indexing
             if let Err(e) = super::stop_indexing() {

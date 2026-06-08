@@ -12,8 +12,9 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
+use tauri_specta::Event;
 use tokio::sync::oneshot;
 
 use crate::indexing::aggregator::{self, AggregationPhase, AggregationProgress};
@@ -23,12 +24,14 @@ use crate::pluralize::{pluralize, pluralize_with};
 // ── Aggregation progress events ──────────────────────────────────────
 
 /// Tauri event payload for aggregation progress updates.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+#[tauri_specta(event_name = "index-aggregation-progress")]
 #[serde(rename_all = "camelCase")]
-struct AggregationProgressEvent {
-    phase: &'static str,
-    current: u64,
-    total: u64,
+pub struct AggregationProgressEvent {
+    /// One of `phase_to_str`'s outputs: `saving_entries` | `loading` | `sorting` | `computing` | `writing`.
+    pub phase: String,
+    pub current: u64,
+    pub total: u64,
 }
 
 fn phase_to_str(phase: AggregationPhase) -> &'static str {
@@ -982,14 +985,12 @@ fn handle_insert_entries_v2(
     if expected > 0
         && let Some(app) = app_handle
     {
-        let _ = app.emit(
-            "index-aggregation-progress",
-            AggregationProgressEvent {
-                phase: phase_to_str(AggregationPhase::SavingEntries),
-                current: accumulator.entries_inserted,
-                total: expected,
-            },
-        );
+        let _ = AggregationProgressEvent {
+            phase: phase_to_str(AggregationPhase::SavingEntries).to_string(),
+            current: accumulator.entries_inserted,
+            total: expected,
+        }
+        .emit(app);
     }
 }
 
@@ -1724,14 +1725,12 @@ fn handle_wal_checkpoint(conn: &rusqlite::Connection) {
 fn build_progress_callback(app_handle: &Option<AppHandle>) -> impl FnMut(AggregationProgress) + '_ {
     move |progress: AggregationProgress| {
         if let Some(app) = app_handle {
-            let _ = app.emit(
-                "index-aggregation-progress",
-                AggregationProgressEvent {
-                    phase: phase_to_str(progress.phase),
-                    current: progress.current,
-                    total: progress.total,
-                },
-            );
+            let _ = AggregationProgressEvent {
+                phase: phase_to_str(progress.phase).to_string(),
+                current: progress.current,
+                total: progress.total,
+            }
+            .emit(app);
         }
     }
 }

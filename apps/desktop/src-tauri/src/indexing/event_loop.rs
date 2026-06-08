@@ -5,7 +5,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use rusqlite::Connection;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event;
 
 use super::DEBUG_STATS;
 use super::enrichment::get_read_pool;
@@ -744,14 +745,12 @@ pub(super) async fn run_replay_event_loop(
 
         // Emit progress every 500ms during replay
         if last_progress.elapsed() >= Duration::from_millis(500) {
-            let _ = app.emit(
-                "index-replay-progress",
-                IndexReplayProgressEvent {
-                    volume_id: volume_id.clone(),
-                    events_processed: event_count,
-                    estimated_total,
-                },
-            );
+            let _ = IndexReplayProgressEvent {
+                volume_id: volume_id.clone(),
+                events_processed: event_count,
+                estimated_total,
+            }
+            .emit(&app);
             last_progress = std::time::Instant::now();
         }
 
@@ -799,23 +798,19 @@ pub(super) async fn run_replay_event_loop(
     }
 
     // Emit final progress
-    let _ = app.emit(
-        "index-replay-progress",
-        IndexReplayProgressEvent {
-            volume_id: volume_id.clone(),
-            events_processed: event_count,
-            estimated_total,
-        },
-    );
+    let _ = IndexReplayProgressEvent {
+        volume_id: volume_id.clone(),
+        events_processed: event_count,
+        estimated_total,
+    }
+    .emit(&app);
 
     // Emit replay complete
-    let _ = app.emit(
-        "index-replay-complete",
-        IndexReplayCompleteEvent {
-            volume_id: volume_id.clone(),
-            duration_ms: replay_start.elapsed().as_millis() as u64,
-        },
-    );
+    let _ = IndexReplayCompleteEvent {
+        volume_id: volume_id.clone(),
+        duration_ms: replay_start.elapsed().as_millis() as u64,
+    }
+    .emit(&app);
 
     // Emit a single batched index-dir-updated with all collected paths.
     // If affected_paths overflowed, emit a full refresh notification with

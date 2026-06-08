@@ -5,15 +5,16 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event;
 
 use super::event_loop::{
     JOURNAL_GAP_THRESHOLD, ReplayConfig, WATCHER_CHANNEL_CAPACITY, run_live_event_loop, run_replay_event_loop,
 };
 use super::events::{
-    ActivityPhase, DEBUG_STATS, IndexDebugStatusResponse, IndexDirUpdatedEvent, IndexScanCompleteEvent,
-    IndexScanProgressEvent, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord, RescanReason,
-    emit_rescan_notification,
+    ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDebugStatusResponse, IndexDirUpdatedEvent,
+    IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
+    RescanReason, emit_rescan_notification,
 };
 use super::partial_agg;
 use super::reconciler::{self, EventReconciler};
@@ -439,15 +440,13 @@ impl IndexManager {
         // ride this event once; the 500 ms progress event carries only the moving
         // counters, so the FE never re-receives constants. The tier decision
         // (calibrated vs rough) is then a pure function of this one event.
-        let _ = self.app.emit(
-            "index-scan-started",
-            IndexScanStartedEvent {
-                volume_id: self.volume_id.clone(),
-                prior_total_entries: calibration.prior.total_entries,
-                prior_scan_duration_ms: calibration.prior.scan_duration_ms,
-                volume_used_bytes: calibration.volume_used_bytes,
-            },
-        );
+        let _ = IndexScanStartedEvent {
+            volume_id: self.volume_id.clone(),
+            prior_total_entries: calibration.prior.total_entries,
+            prior_scan_duration_ms: calibration.prior.scan_duration_ms,
+            volume_used_bytes: calibration.volume_used_bytes,
+        }
+        .emit(&self.app);
 
         DEBUG_STATS.set_phase(ActivityPhase::Scanning, scan_trigger);
 
@@ -482,15 +481,13 @@ impl IndexManager {
                     break;
                 }
                 let snap = progress.snapshot();
-                let _ = app_progress.emit(
-                    "index-scan-progress",
-                    IndexScanProgressEvent {
-                        volume_id: volume_id_progress.clone(),
-                        entries_scanned: snap.entries_scanned,
-                        dirs_found: snap.dirs_found,
-                        bytes_scanned: snap.bytes_scanned,
-                    },
-                );
+                let _ = IndexScanProgressEvent {
+                    volume_id: volume_id_progress.clone(),
+                    entries_scanned: snap.entries_scanned,
+                    dirs_found: snap.dirs_found,
+                    bytes_scanned: snap.bytes_scanned,
+                }
+                .emit(&app_progress);
 
                 // Mid-scan partial aggregation: on the interval-th tick (and only
                 // when the writer isn't backed up), ask the writer to compute and
@@ -605,15 +602,13 @@ impl IndexManager {
                     // Order matters: the frontend's scan-complete handler calls
                     // resetAggregation(), so the saving_entries event must come
                     // after to avoid being immediately cleared.
-                    let _ = app.emit(
-                        "index-scan-complete",
-                        IndexScanCompleteEvent {
-                            volume_id: volume_id.clone(),
-                            total_entries: summary.total_entries,
-                            total_dirs: summary.total_dirs,
-                            duration_ms: summary.duration_ms,
-                        },
-                    );
+                    let _ = IndexScanCompleteEvent {
+                        volume_id: volume_id.clone(),
+                        total_entries: summary.total_entries,
+                        total_dirs: summary.total_dirs,
+                        duration_ms: summary.duration_ms,
+                    }
+                    .emit(&app);
 
                     // Tell the writer how many entries the scan produced, so it
                     // can report flushing progress as it drains remaining
@@ -632,19 +627,17 @@ impl IndexManager {
                     // The flush above drains all queued writes including
                     // ComputeAllAggregates, so by this point the UI can dismiss
                     // the progress overlay.
-                    let _ = app.emit("index-aggregation-complete", ());
+                    let _ = IndexAggregationCompleteEvent.emit(&app);
 
                     DEBUG_STATS.close_phase_with_stats(vec![]);
                     DEBUG_STATS.set_phase(ActivityPhase::Reconciling, "post-scan");
 
                     // Tell the frontend to refresh all visible listings. Directory
                     // sizes are now available for the first time after a full scan.
-                    let _ = app.emit(
-                        "index-dir-updated",
-                        IndexDirUpdatedEvent {
-                            paths: vec!["/".to_string()],
-                        },
-                    );
+                    let _ = IndexDirUpdatedEvent {
+                        paths: vec!["/".to_string()],
+                    }
+                    .emit(&app);
 
                     // Store scan metadata now, before the reconciler replay which
                     // can fail (e.g. "database is locked") and cause an early return.

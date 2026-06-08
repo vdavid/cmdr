@@ -29,6 +29,15 @@ pub struct PrepareResult {
     pub entry_count: u64,
 }
 
+/// Emitted once the in-memory search index finishes loading, so the dialog can
+/// flip from "loading" to ready and show the indexed entry count.
+#[derive(Debug, Clone, serde::Deserialize, Serialize, specta::Type, tauri_specta::Event)]
+#[tauri_specta(event_name = "search-index-ready")]
+#[serde(rename_all = "camelCase")]
+pub struct SearchIndexReadyEvent {
+    pub entry_count: u64,
+}
+
 /// Called when the search dialog opens. Starts loading the index in the background.
 /// Returns immediately with `{ ready, entryCount }`.
 #[tauri::command]
@@ -113,13 +122,8 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
                     pluralize_with(entry_count, "entry", "entries")
                 );
                 // Emit event to frontend
-                use tauri::Emitter;
-                let _ = app_clone.emit(
-                    "search-index-ready",
-                    serde_json::json!({
-                        "entryCount": entry_count,
-                    }),
-                );
+                use tauri_specta::Event;
+                let _ = SearchIndexReadyEvent { entry_count }.emit(&app_clone);
             }
             Ok(Err(e)) => {
                 if e.contains("cancelled") {

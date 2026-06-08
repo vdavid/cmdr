@@ -109,6 +109,29 @@ string-based; the plan doc explains why.
   window-targeted event (`volume-context-action`, emitted via `emit_to("main", …)`) converts to
   `payload.emit_to(app, "main")` from `tauri_specta::Event`.
 
+### Migration gotchas learned converting the indexing events
+
+- **A hand-built `serde_json::json!({...})` payload becomes a named struct with the SAME wire shape.**
+  `index-memory-warning` and `search-index-ready` emitted ad-hoc `json!({ "entryCount": n })` objects (already camelCase
+  in the JSON literal), not free-form `Value`s, so they're cleanly typeable: replace the `json!` with a
+  `#[derive(…, Event)]` struct whose `#[serde(rename_all = "camelCase")]` reproduces the same keys. The
+  "`serde_json::Value` can't be typed" rule is about values whose shape is unknown at compile time, not about a literal
+  you hand-author at the emit site. Convert those.
+- **A payloadless `()` emit becomes a unit struct, and specta generates `type X = null`.** `index-aggregation-complete`
+  was `app.emit("index-aggregation-complete", ())`. A unit struct `pub struct IndexAggregationCompleteEvent;` with the
+  `Event` derive generates `export type IndexAggregationCompleteEvent = null` and an `events.x.listen(...)` whose
+  payload is `null` — byte-identical to the old `listen<null>(...)`. The FE wrapper takes no payload
+  (`callback: () => void`).
+- **A nested enum in an event payload needs its own `specta::Type` derive.** `IndexRescanNotificationEvent.reason` is a
+  `RescanReason` enum; it already had `Serialize + Deserialize` but `Event` additionally requires `specta::Type` on
+  every nested type. It's a `rename_all = "snake_case"` enum with only unit variants, so NO `rename_all_fields` is
+  needed (that one's only for struct variants); the generated TS is a snake_case string union, matching the FE's
+  existing `rescanReasonToMessage` keys.
+- **A `&'static str` field can't `Deserialize`; widen it to `String`.** `AggregationProgressEvent.phase` was
+  `phase: &'static str` (fine for a `Serialize`-only emit payload). `Event` requires `Deserialize`, which can't target a
+  borrowed `&'static str`, so the field became `String` and the two emit sites now `.to_string()` the
+  `phase_to_str(...)` result. The wire value is unchanged; only the Rust field type widened.
+
 ## Call-site convention: name your arguments
 
 Specta-generated wrappers take **positional** arguments (in declaration order), not an object. That's elegant when the

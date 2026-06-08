@@ -1,7 +1,7 @@
 // Search IPC commands: typed wrappers for the backend search engine.
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { commands } from '$lib/ipc/bindings'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { commands, events } from '$lib/ipc/bindings'
 import type { ParsedScope, PrepareResult, SearchResult } from './ipc-types'
 import { throwIpcError } from './ipc-types'
 import type { HistoryEntry, SearchQuery, TranslateResult } from '$lib/ipc/bindings'
@@ -49,7 +49,7 @@ export async function getSystemDirExcludes(): Promise<string[]> {
 
 /** Listens for the search index ready event (emitted after prepare completes loading). */
 export function onSearchIndexReady(handler: (entryCount: number) => void): Promise<UnlistenFn> {
-  return listen<{ entryCount: number }>('search-index-ready', (event) => {
+  return events.searchIndexReady.listen((event) => {
     handler(event.payload.entryCount)
   })
 }

@@ -4,7 +4,17 @@
  */
 
 import { commands } from '$lib/ipc/bindings'
-import { listen, type UnlistenFn } from '$lib/tauri-commands'
+import {
+  onIndexAggregationComplete,
+  onIndexAggregationProgress,
+  onIndexReplayComplete,
+  onIndexReplayProgress,
+  onIndexRescanNotification,
+  onIndexScanComplete,
+  onIndexScanProgress,
+  onIndexScanStarted,
+  type UnlistenFn,
+} from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 
 // Scan state
@@ -151,55 +161,36 @@ const unlistenHandles: UnlistenFn[] = []
 
 /** Set up listeners for index scan events. Call once during app init. */
 export async function initIndexState(): Promise<void> {
-  const unlistenStarted = await listen<{
-    volumeId: string
-    priorTotalEntries: number | null
-    priorScanDurationMs: number | null
-    volumeUsedBytes: number | null
-  }>('index-scan-started', (event) => {
+  const unlistenStarted = await onIndexScanStarted((payload) => {
     eventVersion++
     scanning = true
     resetCounters()
     resetAggregation()
     resetReplay()
     scanStartedAt = Date.now()
-    priorTotalEntries = event.payload.priorTotalEntries
-    priorScanDurationMs = event.payload.priorScanDurationMs
-    volumeUsedBytes = event.payload.volumeUsedBytes
+    priorTotalEntries = payload.priorTotalEntries
+    priorScanDurationMs = payload.priorScanDurationMs
+    volumeUsedBytes = payload.volumeUsedBytes
   })
   unlistenHandles.push(unlistenStarted)
 
-  const unlistenProgress = await listen<{
-    volumeId: string
-    entriesScanned: number
-    dirsFound: number
-    bytesScanned: number
-  }>('index-scan-progress', (event) => {
-    entriesScanned = event.payload.entriesScanned
-    dirsFound = event.payload.dirsFound
-    bytesScanned = event.payload.bytesScanned
+  const unlistenProgress = await onIndexScanProgress((payload) => {
+    entriesScanned = payload.entriesScanned
+    dirsFound = payload.dirsFound
+    bytesScanned = payload.bytesScanned
   })
   unlistenHandles.push(unlistenProgress)
 
-  const unlistenComplete = await listen<{
-    volumeId: string
-    totalEntries: number
-    totalDirs: number
-    durationMs: number
-  }>('index-scan-complete', (event) => {
+  const unlistenComplete = await onIndexScanComplete((payload) => {
     eventVersion++
     scanning = false
-    entriesScanned = event.payload.totalEntries
-    dirsFound = event.payload.totalDirs
+    entriesScanned = payload.totalEntries
+    dirsFound = payload.totalDirs
   })
   unlistenHandles.push(unlistenComplete)
 
-  const unlistenAggregation = await listen<{
-    phase: string
-    current: number
-    total: number
-  }>('index-aggregation-progress', (event) => {
-    const { phase, current, total } = event.payload
+  const unlistenAggregation = await onIndexAggregationProgress((payload) => {
+    const { phase, current, total } = payload
     if (!aggregating || phase !== aggregationPhase) {
       aggregationStartedAt = Date.now()
     }
@@ -212,41 +203,29 @@ export async function initIndexState(): Promise<void> {
   })
   unlistenHandles.push(unlistenAggregation)
 
-  const unlistenAggComplete = await listen<null>('index-aggregation-complete', () => {
+  const unlistenAggComplete = await onIndexAggregationComplete(() => {
     resetAggregation()
   })
   unlistenHandles.push(unlistenAggComplete)
 
-  const unlistenRescan = await listen<{
-    volumeId: string
-    reason: string
-    details: string
-  }>('index-rescan-notification', (event) => {
-    const message =
-      rescanReasonToMessage[event.payload.reason] ?? 'Running a fresh drive scan to keep the index accurate.'
+  const unlistenRescan = await onIndexRescanNotification((payload) => {
+    const message = rescanReasonToMessage[payload.reason] ?? 'Running a fresh drive scan to keep the index accurate.'
     addToast(message, { level: 'info', timeoutMs: 8000, id: 'index-rescan' })
   })
   unlistenHandles.push(unlistenRescan)
 
-  const unlistenReplayProgress = await listen<{
-    volumeId: string
-    eventsProcessed: number
-    estimatedTotal: number | null
-  }>('index-replay-progress', (event) => {
+  const unlistenReplayProgress = await onIndexReplayProgress((payload) => {
     if (!replaying) {
       replaying = true
       scanning = false
       replayStartedAt = Date.now()
     }
-    replayEventsProcessed = event.payload.eventsProcessed
-    replayEstimatedTotal = event.payload.estimatedTotal ?? 0
+    replayEventsProcessed = payload.eventsProcessed
+    replayEstimatedTotal = payload.estimatedTotal ?? 0
   })
   unlistenHandles.push(unlistenReplayProgress)
 
-  const unlistenReplayComplete = await listen<{
-    volumeId: string
-    durationMs: number
-  }>('index-replay-complete', () => {
+  const unlistenReplayComplete = await onIndexReplayComplete(() => {
     eventVersion++
     resetReplay()
     scanning = false

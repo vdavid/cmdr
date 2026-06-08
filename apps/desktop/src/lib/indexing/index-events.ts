@@ -4,7 +4,7 @@
  * this module notifies affected panes to re-fetch their visible range.
  */
 
-import { listen, type UnlistenFn } from '$lib/tauri-commands'
+import { onIndexDirUpdated, type UnlistenFn } from '$lib/tauri-commands'
 
 /**
  * Listen for `index-dir-updated` events and call `onDirUpdated` with the
@@ -14,7 +14,7 @@ import { listen, type UnlistenFn } from '$lib/tauri-commands'
  * Returns an unlisten function for cleanup.
  */
 export async function initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn> {
-  return listen<{ paths: string[] }>('index-dir-updated', (event) => {
-    onDirUpdated(event.payload.paths)
+  return onIndexDirUpdated((payload) => {
+    onDirUpdated(payload.paths)
   })
 }

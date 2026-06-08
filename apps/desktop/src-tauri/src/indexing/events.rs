@@ -4,13 +4,15 @@ use std::sync::LazyLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+use tauri_specta::Event;
 
 use super::store::IndexStatus;
 
 // ── Event payloads (Rust -> Frontend) ────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-scan-started")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexScanStartedEvent {
     pub volume_id: String,
@@ -25,7 +27,8 @@ pub struct IndexScanStartedEvent {
     pub volume_used_bytes: Option<u64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-scan-progress")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexScanProgressEvent {
     pub volume_id: String,
@@ -36,7 +39,8 @@ pub struct IndexScanProgressEvent {
     pub bytes_scanned: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-scan-complete")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexScanCompleteEvent {
     pub volume_id: String,
@@ -45,13 +49,15 @@ pub struct IndexScanCompleteEvent {
     pub duration_ms: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-dir-updated")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexDirUpdatedEvent {
     pub paths: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-replay-progress")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexReplayProgressEvent {
     pub volume_id: String,
@@ -59,7 +65,8 @@ pub struct IndexReplayProgressEvent {
     pub estimated_total: Option<u64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-replay-complete")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexReplayCompleteEvent {
     pub volume_id: String,
@@ -69,7 +76,7 @@ pub struct IndexReplayCompleteEvent {
 /// Why a full rescan was triggered instead of incremental replay.
 /// Sent to the frontend as `index-rescan-notification` so the UI can show
 /// a transparent, user-friendly toast.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum RescanReason {
     /// Event ID gap too large: app hasn't run for a long time.
@@ -90,7 +97,8 @@ pub enum RescanReason {
     WatcherChannelOverflow,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-rescan-notification")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexRescanNotificationEvent {
     pub volume_id: String,
@@ -99,17 +107,32 @@ pub struct IndexRescanNotificationEvent {
     pub details: String,
 }
 
+/// Emitted when a full-scan aggregation pass finishes and the UI can dismiss the
+/// progress overlay. Payloadless: it carries no data, only the signal.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-aggregation-complete")]
+pub struct IndexAggregationCompleteEvent;
+
+/// Emitted when the memory watchdog stops indexing to avoid a system crash.
+/// Drives a user-visible toast.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-memory-warning")]
+#[serde(rename_all = "camelCase")]
+pub struct IndexMemoryWarningEvent {
+    pub resident_gb: u64,
+    /// What the watchdog did. Currently always `"stopped_indexing"`.
+    pub action: String,
+}
+
 /// Emit an `index-rescan-notification` event and log the reason at INFO level.
 pub(super) fn emit_rescan_notification(app: &AppHandle, volume_id: &str, reason: RescanReason, details: String) {
     log::info!("Index rescan triggered ({reason:?}): {details}");
-    let _ = app.emit(
-        "index-rescan-notification",
-        IndexRescanNotificationEvent {
-            volume_id: volume_id.to_string(),
-            reason,
-            details,
-        },
-    );
+    let _ = IndexRescanNotificationEvent {
+        volume_id: volume_id.to_string(),
+        reason,
+        details,
+    }
+    .emit(app);
 }
 
 // ── Activity phase tracking ──────────────────────────────────────────

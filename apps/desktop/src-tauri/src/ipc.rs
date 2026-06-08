@@ -48,6 +48,7 @@
 use specta_typescript::Typescript;
 use tauri_specta::{Builder, collect_events};
 
+use crate::commands::search::SearchIndexReadyEvent;
 use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
     ListingReadCompleteEvent,
@@ -57,6 +58,12 @@ use crate::file_system::write_operations::{
     ConflictInfo, DryRunResult, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
     WriteErrorEvent, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
+};
+use crate::indexing::writer::AggregationProgressEvent;
+use crate::indexing::{
+    IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexMemoryWarningEvent, IndexReplayCompleteEvent,
+    IndexReplayProgressEvent, IndexRescanNotificationEvent, IndexScanCompleteEvent, IndexScanProgressEvent,
+    IndexScanStartedEvent,
 };
 use crate::ipc_collectors::collect_all_types;
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
@@ -612,6 +619,21 @@ pub fn builder() -> Builder<tauri::Wry> {
             VolumesBusyChanged,
             VolumeContextAction,
             LowDiskSpacePayload, // event_name = "low-disk-space"
+            // Indexing (indexing/, commands/search.rs). Each pins its wire name
+            // via `event_name` because the struct names carry an `…Event` suffix
+            // (or live in a differently-named module) that wouldn't kebab-case to
+            // the existing wire string.
+            IndexScanStartedEvent,         // event_name = "index-scan-started"
+            IndexScanProgressEvent,        // event_name = "index-scan-progress"
+            IndexScanCompleteEvent,        // event_name = "index-scan-complete"
+            IndexDirUpdatedEvent,          // event_name = "index-dir-updated"
+            IndexReplayProgressEvent,      // event_name = "index-replay-progress"
+            IndexReplayCompleteEvent,      // event_name = "index-replay-complete"
+            IndexRescanNotificationEvent,  // event_name = "index-rescan-notification"
+            AggregationProgressEvent,      // event_name = "index-aggregation-progress"
+            IndexAggregationCompleteEvent, // event_name = "index-aggregation-complete" (payloadless)
+            IndexMemoryWarningEvent,       // event_name = "index-memory-warning"
+            SearchIndexReadyEvent,         // event_name = "search-index-ready"
         ])
 }
 

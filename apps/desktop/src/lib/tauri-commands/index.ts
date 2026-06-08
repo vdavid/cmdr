@@ -440,3 +440,28 @@ export {
   applyRecentSelectionsMaxCount,
 } from './selection'
 export type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/bindings'
+
+// Drive-indexing event listeners
+export {
+  onIndexScanStarted,
+  onIndexScanProgress,
+  onIndexScanComplete,
+  onIndexAggregationProgress,
+  onIndexAggregationComplete,
+  onIndexRescanNotification,
+  onIndexReplayProgress,
+  onIndexReplayComplete,
+  onIndexDirUpdated,
+  onIndexMemoryWarning,
+} from './indexing'
+export type {
+  IndexScanStartedEvent,
+  IndexScanProgressEvent,
+  IndexScanCompleteEvent,
+  AggregationProgressEvent,
+  IndexRescanNotificationEvent,
+  IndexReplayProgressEvent,
+  IndexReplayCompleteEvent,
+  IndexDirUpdatedEvent,
+  IndexMemoryWarningEvent,
+} from '$lib/ipc/bindings'
