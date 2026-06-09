@@ -5,7 +5,7 @@ key generation, and activation in the desktop app.
 
 ## Prerequisites (one-time)
 
-- Paddle sandbox default payment link set to `http://localhost:4321`
+- Paddle sandbox default payment link set to `http://localhost:4829`
   ([checkout settings](https://sandbox-vendors.paddle.com/checkout-settings))
 - Paddle sandbox client-side token (starts with `test_`) in `apps/website/.env` as `PUBLIC_PADDLE_CLIENT_TOKEN`
   ([create one](https://sandbox-vendors.paddle.com/authentication-v2))
@@ -39,7 +39,7 @@ pnpm dev
 
 ## Buy a license
 
-1. Open http://localhost:4321/pricing/
+1. Open http://localhost:4829/pricing/
 2. Click a buy button (for example, "Buy commercial license")
 3. For commercial tiers, enter an organization name and email in the modal
 4. In the Paddle checkout overlay, use test card `4000 0566 5566 5556`, CVC `100`, any future expiry

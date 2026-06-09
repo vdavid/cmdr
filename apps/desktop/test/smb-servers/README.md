@@ -16,7 +16,7 @@ The Docker Compose files live in `.compose/`. They're **vendored** from smb2's c
 
 CI runs the Rust SMB integration tests automatically via the `desktop-rust-integration-tests` check, which starts the
 `core` containers, runs `cargo nextest run --run-ignored only -E 'test(smb_integration_)'`, and tears them down.
-Locally, `./scripts/check.sh --rust` includes the same check.
+Locally, `pnpm check --rust` includes the same check.
 
 See [docs/guides/testing/smb-servers.md](../../../../docs/guides/testing/smb-servers.md) for the full documentation.
 

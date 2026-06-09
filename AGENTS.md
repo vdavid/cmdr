@@ -101,23 +101,24 @@ Core structure:
 anti-patterns, per-feature checklist). The companion file [docs/tooling/testing.md](docs/tooling/testing.md) is the
 tools inventory.
 
-Always use the checker script for compilation, linting, formatting, and tests. Its output is concise and focused: no
-`2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`, `cargo fmt`, `cargo nextest run`, etc.
+Always use `pnpm check` (in repo root!) for compilation, linting, formatting, and tests. It delegates to the checker
+script and keeps output concise and focused: no `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`,
+`cargo clippy`, `cargo fmt`, `cargo nextest run`, etc.
 
-- Specific checks: `./scripts/check.sh --check <name>` (e.g. `--check clippy`, `--check rustfmt`). Use `--help` for the
-  full list, or multiple `--check` flags.
-- All Rust/Svelte checks: `./scripts/check.sh --rust` or `--svelte`
-- All checks: `./scripts/check.sh`
+- Specific checks: `pnpm check --check <name>` (e.g. `--check clippy`, `--check rustfmt`). Use `--help` for the full
+  list, or multiple `--check` flags.
+- All Rust/Svelte checks: `pnpm check --rust` or `--svelte`
+- All checks: `pnpm check`
 
 ### When to run what
 
 Three cadences. Pick the one that matches where you are in the work, not the one closest to "done."
 
-- **`./scripts/check.sh --fast` — every few file edits, on a self-imposed rhythm (~7 s).** Don't wait for "before
-  commit"; that's too late, by then a regression is buried under follow-up edits. Run after a small natural unit of
-  work: a function rewritten, a test added, a config touched. Catches roughly half the things the full suite catches,
-  for ~5% of the wall time, so use it liberally. The lane is editorially curated, not derived from timings; mutually
-  exclusive with `--include-slow` / `--only-slow`. Covers:
+- **`pnpm check --fast` — every few file edits, on a self-imposed rhythm (~7 s).** Don't wait for "before commit";
+  that's too late, by then a regression is buried under follow-up edits. Run after a small natural unit of work: a
+  function rewritten, a test added, a config touched. Catches roughly half the things the full suite catches, for ~5% of
+  the wall time, so use it liberally. The lane is editorially curated, not derived from timings; mutually exclusive with
+  `--include-slow` / `--only-slow`. Covers:
   - All formatters (`oxfmt`, `rustfmt`, `gofmt`) and most non-compiling static linters (`cfg-gate`, `log-error-macro`,
     `error-string-match`, `lock-poison`, `ipc-enum-camelcase`, `cargo-machete`, `knip`, `import-cycles`, `type-drift`,
     `stylelint`, `css-unused`, `a11y-contrast`, `btn-restyle`, `a11y-coverage`, `bare-poll`, `e2e-linux-typecheck`,
@@ -128,17 +129,17 @@ Three cadences. Pick the one that matches where you are in the work, not the one
   - Warn-only metrics: `file-length`, `claude-md-reminder`, `changelog-links`.
   - **Does NOT cover**: `clippy`, Rust tests, `cargo-audit`, `cargo-deny`, `jscpd`, `bindings-fresh`, desktop ESLint /
     `svelte-check` / Svelte tests, website ESLint / typecheck / build / e2e, `docker-build`, or any E2E suite.
-- **`./scripts/check.sh` — before every commit.** The full default suite (everything not marked `IsSlow`). Catches what
-  `--fast` skips: `clippy`, Rust tests, audit/deny, svelte-check, website build, etc. This is the contract that what
-  you're committing won't break CI.
-- **`./scripts/check.sh --include-slow` — before wrapping a milestone, declaring a feature done, or pushing a branch
-  you've been sitting on.** Adds the slow lane on top of the default suite: `desktop-e2e-linux`,
-  `desktop-e2e-playwright`, `rust-tests-linux`. Allow ~20 min; this is the gate before "I'm done."
+- **`pnpm check` — before every commit.** The full default suite (everything not marked `IsSlow`). Catches what `--fast`
+  skips: `clippy`, Rust tests, audit/deny, svelte-check, website build, etc. This is the contract that what you're
+  committing won't break CI.
+- **`pnpm check --include-slow` — before wrapping a milestone, declaring a feature done, or pushing a branch you've been
+  sitting on.** Adds the slow lane on top of the default suite: `desktop-e2e-linux`, `desktop-e2e-playwright`,
+  `rust-tests-linux`. Allow ~20 min; this is the gate before "I'm done."
 - **`oxfmt` must always run before you call a task done.** It's monorepo-wide (markdown, YAML, JSON, JS/TS across every
   app) and takes ~1 second, so there's no reason to skip it. It's registered under `AppOther`, which means `--rust` and
   `--svelte` do NOT include it. If you only ran those, CI will catch unformatted markdown / JSON / etc. that you missed.
-  Always finish with either `./scripts/check.sh` (the full suite) or at minimum `./scripts/check.sh --check oxfmt` after
-  your other checks. No exceptions.
+  Always finish with either `pnpm check` (the full suite) or at minimum `pnpm check --check oxfmt` after your other
+  checks. No exceptions.
 - Specific tests by name (the one exception where direct commands are fine):
   - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
   - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`

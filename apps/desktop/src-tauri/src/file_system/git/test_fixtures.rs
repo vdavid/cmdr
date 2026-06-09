@@ -7,7 +7,7 @@
 //! with three feature branches and 8 total commits cost ~31
 //! `fork+exec` of `git`, which is fast in isolation but borderline
 //! against the project's intentional 8 s nextest cap once
-//! `./scripts/check.sh` runs other checks in parallel. Two of those
+//! `pnpm check` runs other checks in parallel. Two of those
 //! tests (`commits_listing_cancellation_polls_atomic_flag`,
 //! `branches_listing_sorts_by_ahead_count_within_category`) were
 //! observed crossing the cap in back-to-back runs.

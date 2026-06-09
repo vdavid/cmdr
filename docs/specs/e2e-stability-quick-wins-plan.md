@@ -196,9 +196,9 @@ fail within 8 s"). Grep already shows none assert on `8000`; re-confirm.
 - `cd apps/desktop && pnpm vitest run` is irrelevant here; instead typecheck the config via the fast lane's
   `e2e-linux-typecheck` (don't run the full suite per the task constraint — this is the verification the implementer
   runs post-approval).
-- One `./scripts/check.sh --include-slow` run including `desktop-e2e-linux` + `desktop-e2e-playwright`, on the
-  historically flaky combination, green. A retried-pass shows as `flaky` in the `list` reporter — acceptable, and a
-  useful confirmation the retry path is live.
+- One `pnpm check --include-slow` run including `desktop-e2e-linux` + `desktop-e2e-playwright`, on the historically
+  flaky combination, green. A retried-pass shows as `flaky` in the `list` reporter — acceptable, and a useful
+  confirmation the retry path is live.
 
 ### DONE
 
@@ -212,8 +212,8 @@ A flake fix can't be proven in one run. DONE for this plan is:
 
 1. Config **verifiably applied**: `docker inspect` shows restart policy + memory limit + `healthy` on every non-`flaky`
    consumer (M1); the Playwright config shows the new timeout + CI-scoped retry (M2).
-2. The standard gates green: full `./scripts/check.sh`, plus `desktop-e2e-linux`.
-3. **One** `./scripts/check.sh --include-slow` run of the historically flaky combination, green.
+2. The standard gates green: full `pnpm check`, plus `desktop-e2e-linux`.
+3. **One** `pnpm check --include-slow` run of the historically flaky combination, green.
 
 **Real acceptance is a week of CI runs** with no SMB-eviction cascade and no load-induced `waitForSelector` flake — not
 a single green run. State this to David at hand-off; the single green run proves the config is wired, not that the flake

@@ -256,10 +256,10 @@ discipline within the module). The cloud pair lives in `file-handlers` for this 
 ## Milestones
 
 Three milestones. Each is atomic (PR1): a complete, green state on `main`. Gates per milestone: `--fast` continuously
-during work; full `./scripts/check.sh` + `--check desktop-e2e-linux` before the milestone commit. End of M3:
-`--include-slow` (macOS Playwright + `rust-tests-linux`), then watch CI to green before merging. Import-cycle rule: the
-new `command-handlers/` modules import `ExplorerAPI` (the interface), `$lib/commands` types, and the leaf helpers the
-arms call (e.g. `tauri-commands`, `settings`, `toast`) — exactly what `command-dispatch.ts` imports today; they must NOT
+during work; full `pnpm check` + `--check desktop-e2e-linux` before the milestone commit. End of M3: `--include-slow`
+(macOS Playwright + `rust-tests-linux`), then watch CI to green before merging. Import-cycle rule: the new
+`command-handlers/` modules import `ExplorerAPI` (the interface), `$lib/commands` types, and the leaf helpers the arms
+call (e.g. `tauri-commands`, `settings`, `toast`) — exactly what `command-dispatch.ts` imports today; they must NOT
 import `+page.svelte` or each other circularly. The dispatch core imports the handler modules; the handler modules never
 import the core. `import-cycles` (fast lane) fires if this inverts.
 

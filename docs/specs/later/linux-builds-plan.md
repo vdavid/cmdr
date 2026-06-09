@@ -284,9 +284,8 @@ The publish job populates `appImageSizes` by checking AppImage file sizes, same 
 The codebase already compiles for Linux; the CI runs Linux E2E tests via `cargo build --target x86_64-unknown-linux-gnu`
 on every PR. All platform-specific Rust code uses `#[cfg(target_os = "...")]` gates (`zbus`, `freedesktop-icons`,
 `libacl`, etc. for Linux; `objc2`, `core-foundation`, etc. for macOS). The `cfg-gate` check in CI
-(`./scripts/check.sh --check cfg-gate`) verifies that no macOS-only code leaks into Linux builds and vice versa. No
-additional Rust changes are expected for the release build; the same binary that passes E2E tests is the one that gets
-bundled.
+(`pnpm check --check cfg-gate`) verifies that no macOS-only code leaks into Linux builds and vice versa. No additional
+Rust changes are expected for the release build; the same binary that passes E2E tests is the one that gets bundled.
 
 ## Verification
 
@@ -328,7 +327,7 @@ bundled.
 - [ ] Add "Also available for Linux/macOS" cross-platform links
 - [ ] Update "Windows and Linux coming soon" text to "Windows coming soon"
 - [ ] Run website checks:
-      `./scripts/check.sh --check website-prettier,website-eslint,website-typecheck,website-build,website-e2e`
+      `pnpm check --check website-prettier,website-eslint,website-typecheck,website-build,website-e2e`
 
 ### Milestone 3: Verification
 

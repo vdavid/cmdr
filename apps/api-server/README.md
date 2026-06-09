@@ -57,7 +57,7 @@ Test the full purchase flow through Paddle's sandbox. Only works with sandbox cr
 
 ### Prerequisites
 
-1. The **default payment link** in Paddle sandbox should be `http://localhost:4321` (the local website). Live uses
+1. The **default payment link** in Paddle sandbox should be `http://localhost:4829` (the local website). Live uses
    `https://getcmdr.com`. Check at https://sandbox-vendors.paddle.com/checkout-settings.
 2. Create a **client-side token**: https://sandbox-vendors.paddle.com/authentication-v2 → "Client-side tokens" tab →
    create (starts with `test_`).
@@ -65,7 +65,7 @@ Test the full purchase flow through Paddle's sandbox. Only works with sandbox cr
 ### Run the test
 
 Start the local website (`pnpm dev` in `apps/website`) and the local API server (`pnpm dev` in `apps/api-server` \+
-ngrok). Then use the buy buttons on http://localhost:4321/pricing/.
+ngrok). Then use the buy buttons on http://localhost:4829/pricing/.
 
 Use test card `4000 0566 5566 5556` / CVC `100`. More test cards:
 https://developer.paddle.com/concepts/payment-methods/credit-debit-card#test-payment-details

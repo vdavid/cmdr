@@ -252,8 +252,8 @@ Each of these gets one short paragraph + a code link:
 
 ## Acceptance
 
-- `./scripts/check.sh` clean.
-- `./scripts/check.sh --check oxfmt` clean.
+- `pnpm check` clean.
+- `pnpm check --check oxfmt` clean.
 - Per-section a11y tests for `SectionCard` clean.
 - Manually verified in the running app: opening `⌘D` shows "Components" as a parent with children. Clicking a child
   scrolls. Scrolling updates the sidebar highlight. Every primitive renders. "Open in browser" opens the dev URL.

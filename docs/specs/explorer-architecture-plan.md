@@ -271,8 +271,8 @@ The numbered, non-negotiable list. Reviewer agents check every milestone against
 
 **Process:**
 
-- **PR1** — Every milestone ends green on `./scripts/check.sh` and `--include-slow`, with no dead code: a milestone =
-  add + migrate callers + delete old path, atomically. `knip` (dead exports) and the 70% coverage gate enforce this
+- **PR1** — Every milestone ends green on `pnpm check` and `--include-slow`, with no dead code: a milestone = add +
+  migrate callers + delete old path, atomically. `knip` (dead exports) and the 70% coverage gate enforce this
   structurally; duplication is a reviewer gate (the repo's `jscpd` check scans Rust only, so "the old copy still exists"
   must be caught by the A4 review, not tooling).
 - **PR2** — New modules land with their tests in the same milestone (TDD for new seams; characterization tests before
@@ -402,8 +402,8 @@ Re-point `navigate()` intents and the MCP mirror at Rust. Decide after phase 3 s
 
 - **TDD policy:** new seams (store, dispatch typing, `navigate()`, capabilities) are red-green TDD per the repo's TDD
   rule. Pure code motion (phase 0) gets characterization tests _before_ the move for currently-untested logic.
-- **Per milestone:** `--fast` continuously; full `./scripts/check.sh` + `--include-slow` before the milestone commit.
-  Watch CI to green after each phase merge (local-green ≠ CI-green for timing-sensitive specs).
+- **Per milestone:** `--fast` continuously; full `pnpm check` + `--include-slow` before the milestone commit. Watch CI
+  to green after each phase merge (local-green ≠ CI-green for timing-sensitive specs).
 - **Perf gates:** before phase 1 starts, capture baselines: (a) the `VITE_BENCHMARK=1` 50k-listing timeline ("Svelte
   reactivity" segment, expect O(visible) <5 ms), (b) a NEW cursor-move latency probe (Playwright spec: N ArrowDowns in a
   ≥10k dir, p95 keydown→scroll-settled vs a recorded baseline). Re-run both at the end of every phase. For post-merge,

@@ -184,7 +184,7 @@ cargo test mcp::tests
 ### Run all checks
 
 ```bash
-./scripts/check.sh --app desktop
+pnpm check --app desktop
 ```
 
 ### Manual testing with curl

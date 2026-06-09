@@ -376,7 +376,7 @@ first so the downstream milestones can use it. Can run in parallel with M2a (dif
 - Tier-3 a11y test for the new states (axe-core).
 - Existing `crash-reporter` and `error-reporter` toast tests must keep passing — they're the regression net.
 
-**Done when:** `./scripts/check.sh --fast` green, all toast tests green, component catalog renders the new examples.
+**Done when:** `pnpm check --fast` green, all toast tests green, component catalog renders the new examples.
 
 ### M2a — Pure-Rust modules: filter, ignore_set, latest_ring
 
@@ -403,8 +403,8 @@ Independently testable with unit tests. Can run in parallel with M1 (different l
   `Mutex`.
 - `latest_ring`: fill / overflow drops oldest / `latest()` returns most-recent / `clear()`.
 
-**Done when:** `./scripts/check.sh --check clippy` and `--check rust-tests-fast` (or equivalent fast lane) green for the
-new files. No `notify` or Tauri dependency yet.
+**Done when:** `pnpm check --check clippy` and `--check rust-tests-fast` (or equivalent fast lane) green for the new
+files. No `notify` or Tauri dependency yet.
 
 ### M2b — Watcher + Tauri wiring + FDA lifecycle
 
@@ -438,7 +438,7 @@ The integration layer: `notify`-driven watcher consuming the M2a primitives, IPC
 - Test: Cmdr-own move from inside Downloads to elsewhere does NOT fire (the `from` path is in the ignore set).
 - Test: FDA-gate transition (mocked) starts/stops the watcher idempotently.
 
-**Done when:** `./scripts/check.sh --rust` green, all integration tests pass, no clippy warnings, bindings regenerated.
+**Done when:** `pnpm check --rust` green, all integration tests pass, no clippy warnings, bindings regenerated.
 
 ### M3 — Hook Cmdr-own writes into the ignore set
 
@@ -463,8 +463,8 @@ Touch the write-op code paths to register their target paths.
 - One end-to-end test: in a tempdir simulating Downloads, run a copy via the real write-op driver, assert no
   `download-detected` event fires.
 
-**Done when:** `./scripts/check.sh --rust` green, write-op tests green, no missed call sites (use a grep-based check or
-an audit task to confirm every write-op entrypoint has the hook).
+**Done when:** `pnpm check --rust` green, write-op tests green, no missed call sites (use a grep-based check or an audit
+task to confirm every write-op entrypoint has the hook).
 
 ### M4 — Reveal-latest-download (in-app `⌘J` + command palette + MCP)
 
@@ -612,8 +612,7 @@ Final pass.
 - Verify and update all CLAUDE.md files listed under "Documentation updates" above.
 - `docs/architecture.md` updates (downloads on both frontend + backend tables; settings section rename).
 - `AGENTS.md` — only update if a critical-rules change is needed; otherwise leave.
-- Run `./scripts/check.sh` (full default suite). Then run `./scripts/check.sh --include-slow` once everything else is
-  green.
+- Run `pnpm check` (full default suite). Then run `pnpm check --include-slow` once everything else is green.
 - Fix any new file-length warnings by splitting modules. Don't bump the allowlist without justification.
 - Manual smoke:
   - Drop a file from Chrome → see toast → click → land on file. ✓
@@ -625,7 +624,7 @@ Final pass.
   - Bulk copy 100 files via Cmdr → no toasts (ignore-set works). ✓
   - Light mode, dark mode, OS appearance change while Cmdr is open. ✓
 
-**Done when:** `./scripts/check.sh` green, `--include-slow` green, all manual smoke items pass, every doc updated.
+**Done when:** `pnpm check` green, `--include-slow` green, all manual smoke items pass, every doc updated.
 
 ---
 
@@ -654,9 +653,9 @@ files).
 
 ## Test cadence
 
-- After each milestone: `./scripts/check.sh --fast` minimum, `./scripts/check.sh` if Rust files touched.
-- After M8: `./scripts/check.sh --include-slow` once. Don't run the slow lane on intermediate milestones unless
-  something downstream specifically requires it.
+- After each milestone: `pnpm check --fast` minimum, `pnpm check` if Rust files touched.
+- After M8: `pnpm check --include-slow` once. Don't run the slow lane on intermediate milestones unless something
+  downstream specifically requires it.
 
 ## Risks and open questions
 

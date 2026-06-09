@@ -278,7 +278,7 @@ Intent: nobody stares at a frozen Finder; the docs describe the feature instead 
 
 Intent: honest coverage given that the Finder leg cannot be automated.
 
-- Full `./scripts/check.sh` + `--include-slow` (the in-app drag E2E suites must stay green).
+- Full `pnpm check` + `--include-slow` (the in-app drag E2E suites must stay green).
 - `cargo mutants` on the new pure logic (type plan, UTI mapping, error mapping, fulfillment service's pure parts).
 - **Manual protocol** (executed with the `CMDR_VIRTUAL_MTP=1` rig + a real phone if available; record results in the
   spike note):

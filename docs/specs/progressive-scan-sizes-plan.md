@@ -283,7 +283,7 @@ Implementation:
 written) + thin `writer.rs` handler (match arm + emit + log). Reuse `compute_bottom_up` / `topological_sort_bottom_up`;
 the new code is dir-list derivation from maps, depth computation, write-set selection.
 
-Checks: `./scripts/check.sh --fast` per green; full `cargo nextest run indexing` at milestone end.
+Checks: `pnpm check --fast` per green; full `cargo nextest run indexing` at milestone end.
 
 ### M2 — `try_send`, `queue_depth()`, and the send-decision helper
 
@@ -319,7 +319,7 @@ Checks: `./scripts/check.sh --fast` per green; full `cargo nextest run indexing`
    `READ_POOL_TEST_MUTEX` — copy the existing pattern in `mod.rs::tests` (without the install, enrichment silently
    no-ops and the test asserts nothing).
 
-Checks: full `./scripts/check.sh` (clippy, Rust tests, the works).
+Checks: full `pnpm check` (clippy, Rust tests, the works).
 
 ### M4 — Real-volume verification + tuning + FE integration check
 
@@ -347,9 +347,9 @@ Not skippable; this is where the constants earn their values. On the dev instanc
    during full scan": the why — onboarding UX; the how — borrow-only, depth-limited writes, try_send, no SQL fallback;
    the don'ts — don't consume the maps, don't make the sender blocking, don't add partial passes outside the scan loop),
    and a Gotcha for the maps-borrow invariant pointing at the differential test.
-2. `./scripts/check.sh` full suite, then `--include-slow` (e2e-linux runs scans with `CMDR_E2E_START_PATH`; partial
-   passes mostly won't fire there — tiny fixture scans finish before tick 10 — but the suite proves no regression).
-   `oxfmt` runs as part of the full suite; confirm regardless.
+2. `pnpm check` full suite, then `--include-slow` (e2e-linux runs scans with `CMDR_E2E_START_PATH`; partial passes
+   mostly won't fire there — tiny fixture scans finish before tick 10 — but the suite proves no regression). `oxfmt`
+   runs as part of the full suite; confirm regardless.
 3. Commit(s) on the worktree branch per git-conventions; FF-merge to local `main` only when David says so.
 
 ## Risks and mitigations

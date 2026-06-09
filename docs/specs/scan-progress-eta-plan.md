@@ -289,8 +289,7 @@ implementation.
    `./index-state.svelte` with an explicit getter object — EVERY new getter the indicator imports must be added to that
    mock, or the pre-existing scanning test crashes on `undefined` before the new case even runs.
 4. The three static-copy sites + their pinning tests + the two CLAUDE.md mentions.
-5. `cd apps/desktop && pnpm vitest run` for the touched suites;
-   `./scripts/check.sh --check svelte-check --check eslint`.
+5. `cd apps/desktop && pnpm vitest run` for the touched suites; `pnpm check --check svelte-check --check eslint`.
 
 ### M4 — Real-volume verification + docs + checks
 
@@ -308,7 +307,7 @@ implementation.
 4. Docs: `indexing/CLAUDE.md` (meta keys table + the calibration flow in the data-flow diagram + a Key decision
    "Two-tier scan progress" capturing the apples-to-apples reasoning and the clamp intent), `lib/indexing/CLAUDE.md`
    (new state fields, eta additions, indicator scan branch, copy change).
-5. `./scripts/check.sh` full; then `--include-slow`. The usual file-length warnings stay warnings.
+5. `pnpm check` full; then `--include-slow`. The usual file-length warnings stay warnings.
 
 ## Parallelization
 

@@ -152,7 +152,7 @@ or a silent skip, never `as`-cast a payload into a typed arg. The adapter parses
 ## Milestones
 
 Each milestone is atomic (add + migrate + delete the old path; PR1). Gates per milestone: `--fast` continuously during
-work; full `./scripts/check.sh` + `--check desktop-e2e-linux` before the milestone commit. Phase-end (after M5):
+work; full `pnpm check` + `--check desktop-e2e-linux` before the milestone commit. Phase-end (after M5):
 `--include-slow` (adds macOS Playwright + `rust-tests-linux`), the manual Quick Look key-forwarding smoke, and the
 drag-drop manual checklist (master § Verification, manual gates after Phase 2); watch CI to green before merging to
 `main`. Import-cycle rule (master § Verification): the bus imports the store, never the reverse; handlers import both;

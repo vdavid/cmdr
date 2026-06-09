@@ -18,8 +18,8 @@ inventory + partition for migrating the remaining events in parallel.
 
 ## The proven pattern (copy-pasteable)
 
-Verified by a green `./scripts/check.sh --check bindings-fresh --check clippy --check svelte-check` plus the
-`space_poller` unit tests. The reference migration is `volume-space-changed`.
+Verified by a green `pnpm check --check bindings-fresh --check clippy --check svelte-check` plus the `space_poller` unit
+tests. The reference migration is `volume-space-changed`.
 
 ### 1. Rust payload struct — derive `Event`
 
@@ -300,4 +300,4 @@ Two resources are shared and must NOT be edited concurrently by workers:
 Everything else (the per-subsystem Rust emit sites, the per-subsystem FE listener wrappers in `tauri-commands/`) is
 disjoint and parallelizable. Recommended flow: workers prep their Rust derives + emit conversions + FE wrappers on
 branches, the orchestrator serializes the `collect_events!` append + `bindings:regen` at merge time, group by group, and
-runs `./scripts/check.sh --check bindings-fresh --check clippy --check svelte-check` after each.
+runs `pnpm check --check bindings-fresh --check clippy --check svelte-check` after each.

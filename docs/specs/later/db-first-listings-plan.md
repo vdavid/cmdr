@@ -312,7 +312,7 @@ concurrent writes during verification).
 - [ ] Benchmark: DB-first listing vs readdir for directories with 100, 1K, 10K, 100K files (use `benchmark::` infra)
 - [ ] Benchmark: verification overhead (time from first paint until verification completes)
 - [ ] Profile: confirm no lock contention between DB-first reads and writer thread during concurrent scan
-- [ ] Run all checks: `./scripts/check.sh`
+- [ ] Run all checks: `pnpm check`
 - [ ] Update `indexing/CLAUDE.md`: remove "verifier.rs is a placeholder" note, document DB-first flow
 - [ ] Update `listing/CLAUDE.md`: document DB-first path in data flow section
 

@@ -79,7 +79,7 @@ sed -i '' "s/## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 # manual edits + the sed/`npm pkg set` mutations above doesn't fail CI on the release commit.
 # This also reformats any unrelated files that drifted (for example, a `.claude/commands/*.md`
 # touched in the same uncommitted batch the user is releasing).
-./scripts/check.sh --check oxfmt
+pnpm check --check oxfmt
 
 # Stage the files the script itself just bumped.
 git add \
@@ -100,7 +100,7 @@ git add -u
 # Belt-and-braces: confirm the staged tree passes oxfmt in CI mode (no auto-fix). If this
 # fails, the release commit would land with formatting drift that CI rejects, so abort
 # instead of pushing.
-./scripts/check.sh --check oxfmt --ci
+pnpm check --check oxfmt --ci
 
 git commit -m "chore(release): v$VERSION"
 git tag "v$VERSION"

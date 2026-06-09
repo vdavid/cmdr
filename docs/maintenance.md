@@ -79,8 +79,8 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
   `docs/testing.md` § "Hot spots" (write_operations, indexing, file_viewer, file_system/index/store). Triage survivors.
   If mutation score drops below 80% on any of them, add tests to bring it back. The pass is slow (~10–15 min per file on
   this hardware); budget half a day. Document the run + score in the log below.
-- **Per release: E2E suite health check**. Three back-to-back `./scripts/check.sh --check desktop-e2e-playwright` runs.
-  All three must be green (no flakes). Look at the slowest 5 tests; if any have crept back to `sleep()`-based waits (the
+- **Per release: E2E suite health check**. Three back-to-back `pnpm check --check desktop-e2e-playwright` runs. All
+  three must be green (no flakes). Look at the slowest 5 tests; if any have crept back to `sleep()`-based waits (the
   lint catches new ones, but existing `eslint-disable` annotations may need re-triaging), replace with `pollUntil`.
   Document the run + flake rate + slowest tests in the log.
 - **Per release: scan for new fixed sleeps in E2E specs**. Run

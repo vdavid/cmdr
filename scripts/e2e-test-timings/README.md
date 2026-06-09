@@ -11,7 +11,7 @@ timeouts, magic sleeps, or Docker-friendly rewrites would pay off most.
 Run the E2E suites at least once so the JSON reports exist on disk:
 
 ```sh
-./scripts/check.sh --include-slow
+pnpm check --include-slow
 ```
 
 This produces, on the host:

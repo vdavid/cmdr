@@ -191,7 +191,7 @@ needed), but M2 depends on M1.
 2. Add tests to `tooltip.test.ts` (adopt, return on hide/destroy, live mutation, param swap).
 3. Update the Tooltip section in `$lib/ui/CLAUDE.md` (usage example + the fixed-width note + trusted-content note
    stays).
-4. `./scripts/check.sh --fast`, then the Svelte tests for the tooltip file.
+4. `pnpm check --fast`, then the Svelte tests for the tooltip file.
 
 ### M2: IndexingStatusIndicator
 
@@ -204,7 +204,7 @@ needed), but M2 depends on M1.
 6. Update `$lib/indexing/CLAUDE.md` (files table, replace both overlay sections with one indicator section, keep the
    listen-first-then-query decision, replace the pointer-events decision with the new hoverable-icon decision) and
    `$lib/ui/CLAUDE.md` (remove ProgressOverlay, note ProgressBar consumers change).
-7. `./scripts/check.sh --fast` + targeted tests.
+7. `pnpm check --fast` + targeted tests.
 8. **Manual verification with the running app** (MCP, not browser): trigger a rescan (debug window has indexing
    controls; or `pnpm dev` on a worktree instance does a fresh scan with its own data dir), screenshot the corner icon
    and the open tooltip via the tauri MCP bridge, check both themes if feasible.
@@ -229,10 +229,10 @@ needed), but M2 depends on M1.
 
 ### M5: Wrap-up
 
-1. Full `./scripts/check.sh` (must include `oxfmt`).
+1. Full `pnpm check` (must include `oxfmt`).
 2. Re-read the diff for style-guide compliance (sentence case, active voice in all new copy).
-3. `./scripts/check.sh --include-slow` if e2e-adjacent risk feels real (indexing.spec.ts touches this area — run at
-   least that spec locally per the "run only the affected test" rule, full slow lane before declaring done).
+3. `pnpm check --include-slow` if e2e-adjacent risk feels real (indexing.spec.ts touches this area — run at least that
+   spec locally per the "run only the affected test" rule, full slow lane before declaring done).
 4. Update this spec's status, commit (no co-author line, repo conventions for message).
 
 ## Testing summary

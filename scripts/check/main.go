@@ -383,7 +383,7 @@ func printFailure(failedChecks []string) {
 		if len(failedChecks) > 1 {
 			checkWord = "checks"
 		}
-		fmt.Printf("To rerun the failed %s: ./scripts/check.sh --check %s\n", checkWord, strings.Join(failedChecks, ","))
+		fmt.Printf("To rerun the failed %s: pnpm check --check %s\n", checkWord, strings.Join(failedChecks, ","))
 	}
 }
 
@@ -421,7 +421,7 @@ func ensurePnpmDependencies(ctx *checks.CheckContext) error {
 
 // showUsage displays the help message with dynamically generated check list.
 func showUsage() {
-	fmt.Println("Usage: go run ./scripts/check [OPTIONS]")
+	fmt.Println("Usage: pnpm check [OPTIONS]")
 	fmt.Println()
 	fmt.Println("Run code quality checks for the Cmdr project.")
 	fmt.Println()
@@ -445,12 +445,12 @@ func showUsage() {
 	fmt.Println("If no options are provided, runs all non-slow checks for all apps.")
 	fmt.Println()
 	fmt.Println("EXAMPLES:")
-	fmt.Println("    go run ./scripts/check                              # Run all checks")
-	fmt.Println("    go run ./scripts/check --app desktop                # Run only desktop app checks")
-	fmt.Println("    go run ./scripts/check --check desktop-rust-clippy  # Run specific check")
-	fmt.Println("    go run ./scripts/check --include-slow               # Include slow checks")
-	fmt.Println("    go run ./scripts/check --fast                       # Pre-commit lane (fastest)")
-	fmt.Println("    go run ./scripts/check --ci --fail-fast             # CI mode, stop on first failure")
+	fmt.Println("    pnpm check                              # Run all checks")
+	fmt.Println("    pnpm check --app desktop                # Run only desktop app checks")
+	fmt.Println("    pnpm check --check desktop-rust-clippy  # Run specific check")
+	fmt.Println("    pnpm check --include-slow               # Include slow checks")
+	fmt.Println("    pnpm check --fast                       # Pre-commit lane (fastest)")
+	fmt.Println("    pnpm check --ci --fail-fast             # CI mode, stop on first failure")
 	fmt.Println()
 	fmt.Println("Available checks:")
 	fmt.Println()

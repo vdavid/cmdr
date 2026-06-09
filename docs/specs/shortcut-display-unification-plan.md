@@ -238,8 +238,7 @@ bare STRING (`&str`), not an array — hence the `[payload.section].flat()` wrap
 ## Milestones
 
 Sequential is fine throughout (per our planning conventions, no parallel execution is needed; the milestones are ordered
-by dependency). Each milestone ends green: `./scripts/check.sh --fast` during work, full `./scripts/check.sh` before its
-commit.
+by dependency). Each milestone ends green: `pnpm check --fast` during work, full `pnpm check` before its commit.
 
 ### M1 — `ShortcutChip` component + reactive plural helper
 
@@ -350,7 +349,7 @@ dynamic + customizable-on-click) all live in M1–M4.
   customize it").
 - Sweep all touched `CLAUDE.md`s; update `docs/architecture.md` only if a new module appeared (it didn't — the chip
   lives in existing `lib/ui/`).
-- Full `./scripts/check.sh --include-slow` (E2E lanes included — M3 added a Playwright spec).
+- Full `pnpm check --include-slow` (E2E lanes included — M3 added a Playwright spec).
 - Manual verification in the running app via MCP (isolated `pnpm dev --worktree` instance + Tauri MCP bridge, same flow
   as the sort-header verification): palette shows custom binding after rebind; chip click lands on the flashed row;
   F-key bar updates live on rebind.

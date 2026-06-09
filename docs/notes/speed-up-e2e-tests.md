@@ -366,7 +366,7 @@ In `apps/desktop/test/e2e-playwright/`:
   fine.
 - The first test in each of `mtp`/`mtp-conflicts`/`smb`/`network-toggle` still does the full reset (state from the prior
   spec is unknown), which is the safety net we wanted. No new flakes across two back-to-back passes.
-- `./scripts/check.sh` (fast) is green.
+- `pnpm check` (fast) is green.
 
 ## After Step 4 (replace keyboard cursor nav with mcpCall move_cursor)
 
@@ -478,7 +478,7 @@ In `apps/desktop/test/e2e-playwright/`:
   directly (or, where they do, the failure is in `ensureAppReady` before the call). A retry passed cleanly with 122/122.
   The retry's report is the one captured in this section. A third confirmation run also passed cleanly with identical
   timings.
-- `./scripts/check.sh` (fast) is green.
+- `pnpm check` (fast) is green.
 
 ## After Step 6 (parallel sharding)
 
@@ -604,7 +604,7 @@ No fork, no symlink trick, no per-cwd hack.
   inside the cargo registry beats guessing.
 - Three Tauri windows pop up on macOS during the run. Cosmetic but very visible. Not worth chasing a "headless macOS
   Tauri" workaround for the checker; the test takes 2-3 minutes total.
-- `./scripts/check.sh` (fast) is green after the patch.
+- `pnpm check` (fast) is green after the patch.
 
 ## After Step 6a (data-app-ready signal + Go fixture-parse robustness)
 
@@ -752,7 +752,7 @@ those don't have the recreate-races-rescan problem since dedup via `already_know
 
 ### Validation
 
-Two back-to-back full-suite runs (`./scripts/check.sh --check desktop-e2e-playwright`, parallel shards, native macOS):
+Two back-to-back full-suite runs (`pnpm check --check desktop-e2e-playwright`, parallel shards, native macOS):
 
 | Run    | MTP shard           | non-mtp-1                               | non-mtp-2 | Total runtime |
 | ------ | ------------------- | --------------------------------------- | --------- | ------------- |
@@ -875,7 +875,7 @@ been deleted yet.
 
 ### Validation
 
-Two back-to-back full-suite runs (`./scripts/check.sh --check desktop-e2e-playwright`, parallel shards, native macOS):
+Two back-to-back full-suite runs (`pnpm check --check desktop-e2e-playwright`, parallel shards, native macOS):
 
 | Run    | Cancel-copy test duration | Result | Total runtime |
 | ------ | ------------------------- | ------ | ------------- |
@@ -895,7 +895,7 @@ Two back-to-back full-suite runs (`./scripts/check.sh --check desktop-e2e-playwr
   the `activeElement.closest('.dual-pane-explorer')` focus check)). Pass 2 was fully clean, confirming these are
   parallel-load variance, not a regression. Tracked in Step 6a backlog.
 
-`./scripts/check.sh` full sweep: **all 45 checks green** in 2m 33s.
+`pnpm check` full sweep: **all 45 checks green** in 2m 33s.
 
 ### Wall-clock impact
 
@@ -946,7 +946,7 @@ or comments mark it as exercising the keyboard pathway itself (e.g. `app.spec.ts
 
 ### Validation
 
-Three back-to-back `./scripts/check.sh --check desktop-e2e-playwright` runs on native macOS with parallel shards:
+Three back-to-back `pnpm check --check desktop-e2e-playwright` runs on native macOS with parallel shards:
 
 | Run    | Result | Total | Per shard            | Flakes |
 | ------ | ------ | ----- | -------------------- | ------ |
@@ -955,7 +955,7 @@ Three back-to-back `./scripts/check.sh --check desktop-e2e-playwright` runs on n
 | Pass 3 | ✓      | 3m10s | 131 passed, 0 failed | 0      |
 
 **The keystroke-dispatch flake is gone.** All three runs match the 0/0/0 target. No new flake categories surfaced.
-`./scripts/check.sh` (full sweep) is green.
+`pnpm check` (full sweep) is green.
 
 ### Files touched
 

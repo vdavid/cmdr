@@ -266,10 +266,10 @@ exact fallback behavior (incl. the history-push asymmetry – see M5).
 ## Milestones
 
 Each milestone is atomic (add + migrate + delete old path; PR1). Gates per milestone: `--fast` continuously during work;
-full `./scripts/check.sh` + `--check desktop-e2e-linux` before the milestone commit. Phase-end (after M5):
-`--include-slow` (adds macOS Playwright + `rust-tests-linux`), then watch CI to green before merging to `main`. PR3
-(byte-identical behavior) gets EXTRA scrutiny this phase – this is the riskiest braid; the M1 regression tests are the
-guard. Import-cycle rule (master § Verification): `navigate()` lives in a module the store and FilePane can import;
+full `pnpm check` + `--check desktop-e2e-linux` before the milestone commit. Phase-end (after M5): `--include-slow`
+(adds macOS Playwright + `rust-tests-linux`), then watch CI to green before merging to `main`. PR3 (byte-identical
+behavior) gets EXTRA scrutiny this phase – this is the riskiest braid; the M1 regression tests are the guard.
+Import-cycle rule (master § Verification): `navigate()` lives in a module the store and FilePane can import;
 `navigate()` imports the store + FilePane primitives via the `PaneAccess`/`FilePaneAPI` handles it's handed, never
 `routes/`. PR5: the whole phase reverts as one merge range – design M2–M5 so reverting the merge commit is clean (M1's
 tests survive a revert harmlessly).

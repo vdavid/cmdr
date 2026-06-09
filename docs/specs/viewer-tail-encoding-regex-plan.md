@@ -435,10 +435,10 @@ toggles regex. Tooltips show shortcuts (per `design-principles.md` keyboard-firs
 
 ### Step 1.9 — Checks
 
-- `./scripts/check.sh --fast` between edits.
-- `./scripts/check.sh` (full default suite) before marking the milestone done.
-- `./scripts/check.sh --include-slow` once, before the final commit on the milestone, to validate Playwright + the slow
-  Rust suite.
+- `pnpm check --fast` between edits.
+- `pnpm check` (full default suite) before marking the milestone done.
+- `pnpm check --include-slow` once, before the final commit on the milestone, to validate Playwright + the slow Rust
+  suite.
 
 ---
 
@@ -1240,7 +1240,7 @@ For each milestone, before declaring done:
 
 - Each touched `CLAUDE.md` gets a `Decision/Why` entry if the change introduces a non-obvious decision.
 - Each touched `CLAUDE.md` gets a `Gotcha/Why` entry if a non-obvious failure was hit during implementation.
-- Run `./scripts/check.sh --check claude-md-reminder` and resolve all warnings.
+- Run `pnpm check --check claude-md-reminder` and resolve all warnings.
 
 Per `.claude/rules/docs-maintenance.md`: describe **current behavior**, not history. No "we originally tried X" or
 "earlier shape stuffed Y into Z." If a constraint is load-bearing, encode the constraint, not the incident.
@@ -1285,7 +1285,7 @@ milestones:
 
 The plan is done when **all** of these hold:
 
-1. `./scripts/check.sh --include-slow` is green, including all 3 new E2E specs.
+1. `pnpm check --include-slow` is green, including all 3 new E2E specs.
 2. Opening a 5 GB UTF-8 log feels identical to current behaviour (no open-latency regression).
 3. Opening a 200 MB UTF-16 LE log produces correct line numbers and decoded text. Latency for the initial index build is
    ≤ 3× the UTF-8 build time for the same byte count (UTF-16 scan is ~3× slower than memchr).

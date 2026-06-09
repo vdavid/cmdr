@@ -21,7 +21,7 @@ This tool is tier 1 of a three-tier a11y strategy:
 go run ./scripts/check-a11y-contrast
 
 # Via check runner
-./scripts/check.sh --check a11y-contrast
+pnpm check --check a11y-contrast
 
 # Verbose (show warnings from unresolvable values)
 go run ./scripts/check-a11y-contrast -- --verbose

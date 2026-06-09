@@ -284,8 +284,8 @@ Sequential is fine (we're not in a hurry). Each milestone leaves the tree green.
      concern; if it fails, the source chain isn't reaching `pending_paths` and the rename path needs explicit handling
      after all.
 
-Run: `./scripts/check.sh --check clippy` and the new Rust tests via
-`cd apps/desktop/src-tauri && cargo nextest run pending` (and the reconciler/writer test names).
+Run: `pnpm check --check clippy` and the new Rust tests via `cd apps/desktop/src-tauri && cargo nextest run pending`
+(and the reconciler/writer test names).
 
 ### M2 — Plumb the flag through `DirStats` + FE type
 
@@ -311,8 +311,7 @@ Run: `./scripts/check.sh --check clippy` and the new Rust tests via
    - A `FullList`-level test if feasible asserting the hourglass renders for a pending entry with global indexing off
      (extend existing `FullList.a11y.test.ts` patterns, or a focused render test).
 
-Run: `cd apps/desktop && pnpm vitest run -t "dir size"` (and the new test names), plus
-`./scripts/check.sh --check oxfmt`.
+Run: `cd apps/desktop && pnpm vitest run -t "dir size"` (and the new test names), plus `pnpm check --check oxfmt`.
 
 ### M4 — End-to-end confirmation + manual pass
 
@@ -337,8 +336,8 @@ Run: `cd apps/desktop && pnpm vitest run -t "dir size"` (and the new test names)
    - `apps/desktop/src/lib/file-explorer/views/CLAUDE.md`: note the per-dir hourglass now also fires on
      `recursiveSizePending`, not just global indexing.
    - Add a Gotcha if any wrong assumption surfaced during implementation.
-2. Full suite before declaring done: `./scripts/check.sh` (and `--include-slow` if the Playwright spec landed). Finish
-   with `oxfmt`.
+2. Full suite before declaring done: `pnpm check` (and `--include-slow` if the Playwright spec landed). Finish with
+   `oxfmt`.
 
 ## Risks and mitigations
 

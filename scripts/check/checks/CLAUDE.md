@@ -59,8 +59,8 @@ CheckDefinition{
   The runner admits checks so the sum of concurrent weights stays within `NumCPU`, so two CPU-heavy checks don't
   oversubscribe the machine. `0` (unset) counts as `1` (light). Weights are Docker-VM-aware (`rust-tests-linux` /
   `e2e-linux` burn cores in the VM the host process never shows). Calibrate from the isolation sweep in
-  `docs/notes/check-cpu-contention.md`; visualize with `./scripts/check.sh --graph`. Only the measured non-fast checks
-  carry explicit weights today; fast/formatters default to 1.
+  `docs/notes/check-cpu-contention.md`; visualize with `pnpm check --graph`. Only the measured non-fast checks carry
+  explicit weights today; fast/formatters default to 1.
 - **`NotInCI`** documents WHY a check intentionally has no step in any GitHub workflow (for example, the Playwright E2E
   suite needs a macOS window server). The `ci-coverage` check enforces it both ways: a check that's neither invoked by a
   workflow nor carrying a reason fails the suite, and a check that has a reason but IS invoked also fails (stale
@@ -80,7 +80,7 @@ CheckDefinition{
 6. **Wire it into CI**: add a workflow step in `.github/workflows/ci.yml` (or `slow-checks.yml` for slow/weekly checks),
    or set a `NotInCI` reason on the definition. The `ci-coverage` check fails the suite until you do one or the other —
    there's no third option of "registered but runs nowhere".
-7. Run `./scripts/check.sh --check go-vet --check staticcheck` to verify (staticcheck is strict about idiomatic Go).
+7. Run `pnpm check --check go-vet --check staticcheck` to verify (staticcheck is strict about idiomatic Go).
 8. Update the "Apps and check counts" table below and `AGENTS.md`'s `--check` list.
 
 ### Return values

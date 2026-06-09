@@ -109,7 +109,7 @@ Update the sync_status entry to reflect that Linux now delegates to `file_system
 
 ## Verification
 
-1. `./scripts/check.sh --check rust-tests`: all Rust tests pass (including new socket mock tests)
-2. `./scripts/check.sh --check clippy`: no warnings
-3. `./scripts/check.sh --check rustfmt`: formatting
-4. `./scripts/check.sh --check cfg-gate`: macOS-only imports properly gated
+1. `pnpm check --check rust-tests`: all Rust tests pass (including new socket mock tests)
+2. `pnpm check --check clippy`: no warnings
+3. `pnpm check --check rustfmt`: formatting
+4. `pnpm check --check cfg-gate`: macOS-only imports properly gated

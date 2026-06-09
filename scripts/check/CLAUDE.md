@@ -1,7 +1,7 @@
 # Check runner
 
 Go CLI that runs all code quality checks for the Cmdr monorepo (~42 checks across 4 apps) in parallel with dependency
-ordering. Invoked via `./scripts/check.sh` at the repo root.
+ordering. Invoked via `pnpm check` at the repo root.
 
 For check authoring (how to add a new check, `CheckDefinition` shape, naming/`CLIName()` rules, common helpers, the
 allowlist), see [`checks/CLAUDE.md`](checks/CLAUDE.md).
@@ -10,34 +10,34 @@ allowlist), see [`checks/CLAUDE.md`](checks/CLAUDE.md).
 
 ```bash
 # Run all checks (excludes slow checks by default)
-go run ./scripts/check
+pnpm check
 
 # Run checks for a specific app
-go run ./scripts/check --app desktop
+pnpm check --app desktop
 
 # Run a specific check (accepts ID or nickname)
-go run ./scripts/check --check clippy
+pnpm check --check clippy
 
 # Run multiple specific checks
-go run ./scripts/check --check rustfmt --check clippy
+pnpm check --check rustfmt --check clippy
 
 # Include slow checks
-go run ./scripts/check --include-slow
+pnpm check --include-slow
 
 # Run only slow checks
-go run ./scripts/check --only-slow
+pnpm check --only-slow
 
 # Run only the curated fast pre-commit lane (~10s)
-go run ./scripts/check --fast
+pnpm check --fast
 
 # CI mode (no auto-fixing, stop on first failure)
-go run ./scripts/check --ci --fail-fast
+pnpm check --ci --fail-fast
 
 # Run compat checks on freestyle VM, incompat checks locally, in parallel
-go run ./scripts/check --prefer-freestyle
+pnpm check --prefer-freestyle
 
 # Run only freestyle-compatible checks on the VM (skip Rust, Docker)
-go run ./scripts/check --only-freestyle
+pnpm check --only-freestyle
 ```
 
 ## Command-line options
@@ -66,14 +66,14 @@ the Rust checks. It renders before the slow/fast/CI filters, so every lane shows
 shows `~<median wall-time>` from the recent (last 20) passing runs in `~/cmdr-check-log.csv`, so the graph doubles as a
 perf dashboard — pairing the CPU-weight (how heavy) with the typical duration (how long) for spotting the next
 optimization target. Missing log (CI / `--no-log` / fresh machine) just omits the times. `mermaid` output pastes into a
-Markdown ```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`./scripts/check.sh --graph --graph-format
-dot | dot -Tpng -o checks.png`).
+Markdown ```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`pnpm check --graph --graph-format dot | dot
+-Tpng -o checks.png`).
 
 ## Architecture
 
 ```
-./scripts/check.sh [flags]
-  -> go run ./scripts/check [flags]
+pnpm check [flags]
+  -> scripts/check.sh [flags]
     -> ValidateCheckNames()          # startup: catch ID/nickname collisions
     -> parseFlags()
     -> findRootDir()                 # walk up to repo root
@@ -119,8 +119,8 @@ dot | dot -Tpng -o checks.png`).
 
 **Dependency graph:** Flat `DependsOn` slice per check. Blocked checks get `StatusBlocked` on dep failure and are
 counted as failed. Dependencies not in the selected run set are treated as satisfied. Visualize it with
-`./scripts/check.sh --graph` (every check currently has ≤1 dependency, so it renders as a clean forest rooted at `oxfmt`
-/ `rustfmt` / `gofmt`).
+`pnpm check --graph` (every check currently has ≤1 dependency, so it renders as a clean forest rooted at `oxfmt` /
+`rustfmt` / `gofmt`).
 
 **CPU-weighted admission:** Instead of a count semaphore, `tryStartPending` admits a check only when
 `sum(running CpuWeight) + weight ≤ NumCPU` (`runner.go`). A check first clears its dependencies (`canStart`), then the
@@ -158,7 +158,7 @@ per shard".
 `RUST_LOG` is forwarded to the app (via inherited `os.Environ()`), so trace-level output is one shell-prefix away:
 
 ```bash
-RUST_LOG=cmdr_lib::file_system::volume::mtp=trace ./scripts/check.sh --check desktop-e2e-playwright
+RUST_LOG=cmdr_lib::file_system::volume::mtp=trace pnpm check --check desktop-e2e-playwright
 ```
 
 The chosen `RUST_LOG` value is echoed at the top of the timestamped log so it's obvious from a glance which level was
@@ -315,11 +315,11 @@ via `[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
 **`--only-slow` needs ~20 min timeout.** Slow checks (E2E tests, `rust-tests-linux`) take significantly longer than the
 default checks. When running `--only-slow` via an agent or CI, set the timeout to at least 20 minutes (1,200,000 ms).
 
-**Concurrent SMB-touching runs across worktrees now coexist.** Two `./scripts/check.sh` invocations in different
-worktrees (or a `check.sh` alongside a manual `start.sh` / `pnpm test:e2e:linux`) each take a machine-wide `smblease`
-lease and share the same `smb-consumer` stack. Whichever finishes first releases its lease but sees a non-zero refcount,
-so it does **not** down the stack — the other run keeps serving. The stack downs only when the last holder leaves. The
-old `Cannot reach smb-consumer-X` cascade (one run's teardown killing another's mid-test) is the exact failure the lease
+**Concurrent SMB-touching runs across worktrees now coexist.** Two `pnpm check` invocations in different worktrees (or a
+`check.sh` alongside a manual `start.sh` / `pnpm test:e2e:linux`) each take a machine-wide `smblease` lease and share
+the same `smb-consumer` stack. Whichever finishes first releases its lease but sees a non-zero refcount, so it does
+**not** down the stack — the other run keeps serving. The stack downs only when the last holder leaves. The old
+`Cannot reach smb-consumer-X` cascade (one run's teardown killing another's mid-test) is the exact failure the lease
 closes.
 
 A leaked or lingering stack (a forgotten manual `start.sh`, or a numeric holder whose PID got recycled) is the benign

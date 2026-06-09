@@ -335,7 +335,7 @@ Mutation score: 31 / 45 ≈ 69 %. Whole run took ~12 s.
 
 ### Tests added (5 total)
 
-All passed first clean run and again after `./scripts/check.sh`.
+All passed first clean run and again after `pnpm check`.
 
 **`scan-throughput.test.ts`** (vitest), targeting stryker survivors in `dropStale`:
 
@@ -378,8 +378,8 @@ The `> 0 ? fps : 0` mutants on `scan-throughput.ts:62, 63` (turning `>` into `>=
 
 ### Verdict on long-term CI integration
 
-**Don't wire either tool into the main `./scripts/check.sh` pipeline.** Both are too slow and too noisy for a per-commit
-gate. Concretely:
+**Don't wire either tool into the main `pnpm check` pipeline.** Both are too slow and too noisy for a per-commit gate.
+Concretely:
 
 - cargo-mutants: ~9 min for **one 600-line file** with the cmdr workspace's deps. Running the full `src-tauri/` crate
   (~150 source files) would be hours, and many modules would need per-slice test filters to dodge the CWD-sensitive
@@ -671,9 +671,9 @@ binary `Direct ⇄ Disconnected` shape).
 
 ### Final validation
 
-- `./scripts/check.sh` (fast pass): **green in 3m 13s**, 1728 Rust + 1812 Svelte tests pass.
-- `./scripts/check.sh --only-slow`: **green except the two pre-existing Linux SMB flakes**. E2E Playwright 131/131 in 4m
-  18s across 3 shards; rust-tests-linux 1699/1699; eslint-typecheck 453/453.
+- `pnpm check` (fast pass): **green in 3m 13s**, 1728 Rust + 1812 Svelte tests pass.
+- `pnpm check --only-slow`: **green except the two pre-existing Linux SMB flakes**. E2E Playwright 131/131 in 4m 18s
+  across 3 shards; rust-tests-linux 1699/1699; eslint-typecheck 453/453.
 
 ## Follow-up: multi-window migration (viewer + settings)
 

@@ -119,7 +119,7 @@ An `active_menu_kind` tracker avoids redundant swaps (viewer→viewer, main→ma
 
 1. `cargo clippy` + `cargo nextest run` in `src-tauri`
 2. `pnpm vitest run` in `apps/desktop`
-3. `./scripts/check.sh --check rustfmt --check clippy --check svelte-check --check desktop-svelte-eslint --check desktop-svelte-prettier`
+3. `pnpm check --check rustfmt --check clippy --check svelte-check --check desktop-svelte-eslint --check desktop-svelte-prettier`
 4. Manual testing with MCP:
    - Open app → verify main menu shows all items
    - Open viewer (F3) → verify viewer menu appears (File: Close, Edit: Copy/Select All, View: Word wrap)

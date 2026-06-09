@@ -152,9 +152,8 @@ narrow: CI-only, environment flake, signal preserved.
 ### ❌ Raw `tauri::invoke('command_name', …)` outside the typed bindings
 
 Use `commands.commandName(args)` from `apps/desktop/src/lib/ipc/`. Enforced by `cmdr/no-raw-tauri-invoke` ESLint rule
-and the local `bindings-fresh` check (it runs in `./scripts/check.sh` on macOS, not in CI — the committed `bindings.ts`
-is the macOS command surface, which a Linux runner can't reproduce; see `docs/tooling/ci.md` § the registry ↔ CI
-contract).
+and the local `bindings-fresh` check (it runs in `pnpm check` on macOS, not in CI — the committed `bindings.ts` is the
+macOS command surface, which a Linux runner can't reproduce; see `docs/tooling/ci.md` § the registry ↔ CI contract).
 
 ### ❌ Substring-matching error messages or state labels
 
@@ -263,8 +262,8 @@ E2E test hooks split along two axes:
 
 - After adding a substantial chunk of new code: run `cargo mutants --file <new_file>` (Rust) or `pnpm exec stryker run`
   (TS) on the file to see if the new tests actually assert anything. Triage survivors.
-- After E2E suite changes: run `./scripts/check.sh --check desktop-e2e-playwright` twice back-to-back. The first run
-  warms the cache; the second run catches regressions that only fire under quiet load. Both must be green.
+- After E2E suite changes: run `pnpm check --check desktop-e2e-playwright` twice back-to-back. The first run warms the
+  cache; the second run catches regressions that only fire under quiet load. Both must be green.
 - See [maintenance.md § Codebase health](maintenance.md#codebase-health) for the periodic mutation + flake-rate checks.
 
 ## Quick links

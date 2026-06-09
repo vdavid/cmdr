@@ -31,7 +31,7 @@ Cmd-Tab / Mission Control / Linux title bars to spot which spec is in flight or 
 startup, test execution, and cleanup:
 
 ```bash
-./scripts/check.sh --check desktop-e2e-playwright
+pnpm check --check desktop-e2e-playwright
 ```
 
 The checker runs the suite as **N parallel shards**: one dedicated MTP lane (sequential, `mtp.spec.ts` +
@@ -51,7 +51,7 @@ manual / Linux-Docker runs keep working unchanged.
 top of the log so it's visible at a glance:
 
 ```bash
-RUST_LOG=cmdr_lib::file_system::volume::mtp=trace ./scripts/check.sh --check desktop-e2e-playwright
+RUST_LOG=cmdr_lib::file_system::volume::mtp=trace pnpm check --check desktop-e2e-playwright
 ```
 
 **Manually (for debugging):**
@@ -109,8 +109,8 @@ CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright \
     --grep "cursor stays in view" ; pkill -f 'target.*Cmdr'
 ```
 
-The checker invocation (`./scripts/check.sh --check desktop-e2e-playwright`) doesn't support filtering: it always runs
-the whole suite. So during iteration, prefer the manual flow.
+The checker invocation (`pnpm check --check desktop-e2e-playwright`) doesn't support filtering: it always runs the whole
+suite. So during iteration, prefer the manual flow.
 
 ## Running on Linux (Docker)
 
@@ -361,8 +361,8 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
 
 **Gotcha**: `npx playwright test` alone will fail with `ECONNREFUSED`. **Why**: The test suite does NOT launch the Cmdr
 binary. It connects to an already-running app via `/tmp/tauri-playwright.sock`. Use
-`./scripts/check.sh --check desktop-e2e-playwright` which handles the full lifecycle (build → launch → test → cleanup),
-or start the app manually first (see "Manually" section above).
+`pnpm check --check desktop-e2e-playwright` which handles the full lifecycle (build → launch → test → cleanup), or start
+the app manually first (see "Manually" section above).
 
 **Gotcha**: Frontend `tauri-plugin-store` stores read the developer's REAL store files unless redirected. **Why**: the
 checker launches the pre-built binary directly (no `tauri-wrapper.js`), so Tauri's `app_data_dir()` keeps the prod

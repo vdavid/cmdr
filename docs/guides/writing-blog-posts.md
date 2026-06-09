@@ -8,8 +8,7 @@ images.
 For low-friction drafting, run the website dev server and use the dev-only editor:
 
 ```bash
-cd apps/website
-pnpm dev
+pnpm blog:editor
 # Open http://localhost:4829/dev/blog
 ```
 
@@ -67,8 +66,7 @@ If you omit the marker, the full post is shown on the index.
 ## Previewing locally
 
 ```bash
-cd apps/website
-pnpm dev
+pnpm dev:website
 # Open http://localhost:4829/blog
 ```
 

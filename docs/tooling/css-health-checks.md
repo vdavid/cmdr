@@ -14,7 +14,7 @@ Checks for:
 - CSS syntax errors
 - General CSS best practices
 
-Run: `pnpm stylelint:fix` or via `./scripts/check.sh`
+Run: `pnpm stylelint:fix` or via `pnpm check`
 
 ### Config
 
@@ -32,7 +32,7 @@ A Go-based tool that detects:
 - **Unused CSS classes** - Defined in `<style>` but never used in templates
 - **Undefined CSS classes** - Used in templates but no CSS definition exists
 
-Run: `go run ./scripts/check-css-unused` or via `./scripts/check.sh`
+Run: `go run ./scripts/check-css-unused` or via `pnpm check`
 
 ### How it works
 

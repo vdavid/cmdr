@@ -5,8 +5,8 @@
 
 ## Regenerating
 
-Usually you don't need to run anything manually: `./scripts/check.sh` runs `bindings-fresh`, which detects drift (via a
-hash of every input that could affect the output) and, outside `--ci`, regenerates `bindings.ts` for you and reports
+Usually you don't need to run anything manually: `pnpm check` runs `bindings-fresh`, which detects drift (via a hash of
+every input that could affect the output) and, outside `--ci`, regenerates `bindings.ts` for you and reports
 `SuccessWithChanges`. Same philosophy as `oxfmt` / `gofmt` / clippy `--fix`. Review the diff and commit it alongside the
 Rust change.
 
@@ -251,8 +251,8 @@ not worth doing for the IPC discipline alone.
 2. `cd apps/desktop && pnpm bindings:regen`.
 3. Manually inspect the `bindings.ts` diff before merging. RC bumps can shift output format (whitespace, type names,
    helper layout). If the diff is purely cosmetic, fine. If it changes API shapes the FE consumes, walk the consumers.
-4. Run the full `./scripts/check.sh --include-slow` to catch Linux-stub breakage (ask: did the new specta version change
-   which derives it requires?).
+4. Run the full `pnpm check --include-slow` to catch Linux-stub breakage (ask: did the new specta version change which
+   derives it requires?).
 5. Re-evaluate § Excluded commands: if the new RC supports `skip_serializing_if` or `serde_json::Value`, migrate the
    relevant commands and shrink the table.
 

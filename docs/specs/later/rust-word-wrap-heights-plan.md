@@ -111,7 +111,7 @@ At no point in this sequence is functionality lost.
 - Open a >1MB file with variable-length lines, toggle word wrap, scroll: accurate positions
 - Resize the viewer window while word-wrapped: instant reflow, no jitter
 - Open a file that stays in ByteSeek mode: averaged heights still work as before
-- `./scripts/check.sh` passes
+- `pnpm check` passes
 
 ## Critical files
 

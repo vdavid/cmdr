@@ -57,8 +57,8 @@ state block and accessor helpers are the migration surface; line numbers below a
 ## Milestones
 
 Each milestone is atomic (add + migrate + delete old path; PR1). Gates per milestone: `--fast` continuously during work;
-full `./scripts/check.sh` + `--check desktop-e2e-linux` before the milestone commit (macOS Playwright allowed overnight
-— rAF fix landed, host idle). Import-cycle rule: the store imports **nothing** from `routes/` or command handlers.
+full `pnpm check` + `--check desktop-e2e-linux` before the milestone commit (macOS Playwright allowed overnight — rAF
+fix landed, host idle). Import-cycle rule: the store imports **nothing** from `routes/` or command handlers.
 
 ### M1 — `createExplorerState()` factory + tests (TDD)
 

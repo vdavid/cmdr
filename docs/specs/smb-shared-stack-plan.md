@@ -375,10 +375,10 @@ net.
 
 - `--fast` after wiring (formatters, Go vet/staticcheck, lock-poison/etc.) — the helper is new Go, so it must pass the
   Go static lane.
-- Full `./scripts/check.sh` — exercises `desktop-rust-integration-tests` through the new acquire/release on a real
+- Full `pnpm check` — exercises `desktop-rust-integration-tests` through the new acquire/release on a real
   single-session run (down-at-zero must fire cleanly; the stack must be gone after).
-- `./scripts/check.sh --check desktop-e2e-linux` — the e2e lane brings the stack up and tears it down through the
-  helper; confirm no orphaned containers and no mid-run recreate.
+- `pnpm check --check desktop-e2e-linux` — the e2e lane brings the stack up and tears it down through the helper;
+  confirm no orphaned containers and no mid-run recreate.
 - Targeted manual: run the acceptance two-session contention test (see Acceptance) by hand against this milestone.
 
 ### DONE
@@ -387,8 +387,8 @@ The `smblease` lib + `smb-lease` CLI own lock+refcount with explicit holder-ids;
 `stop.sh` (holder `manual`) / `smb_orchestrator.go` (holder `check.sh` PID, imports the lib in-process) / `e2e-linux.sh`
 (holder `$$`, acquired at `start_smb_containers`, released via the consolidated `cleanup()` EXIT trap, `:316` →
 `reconcile`) all route through it; no raw `compose down` survives outside the release path; `--fast` + full
-`./scripts/check.sh` + `--check desktop-e2e-linux` green; the contention test passes by hand. Verify the Go-missing
-fallback degrades to no-lease + warning, not a hang.
+`pnpm check` + `--check desktop-e2e-linux` green; the contention test passes by hand. Verify the Go-missing fallback
+degrades to no-lease + warning, not a hang.
 
 ## M3 — Namespacing / exclusivity fixes (only what M1 flagged) + docs
 
@@ -423,7 +423,7 @@ only** + the optional exclusivity lock if any timing assertion exists. State tha
 
 ### Test plan
 
-- `--fast`, then full `./scripts/check.sh`, then `--check desktop-e2e-linux`.
+- `--fast`, then full `pnpm check`, then `--check desktop-e2e-linux`.
 - If an exclusivity lock was added: run the exclusive group twice concurrently by hand and confirm they serialize (one
   waits for the other) rather than interleave.
 
@@ -434,9 +434,9 @@ the design `Decision/Why`; gates green.
 
 ## Acceptance
 
-1. **Gates green**: full `./scripts/check.sh` plus `--check desktop-e2e-linux`, and one
-   `./scripts/check.sh --include-slow` run (exercises e2e-linux + playwright + rust-tests-linux) end-to-end, with the
-   stack adopted/started and torn down cleanly.
+1. **Gates green**: full `pnpm check` plus `--check desktop-e2e-linux`, and one `pnpm check --include-slow` run
+   (exercises e2e-linux + playwright + rust-tests-linux) end-to-end, with the stack adopted/started and torn down
+   cleanly.
 2. **The deliberate two-session contention test passes.** Script it concretely:
    - **Setup**: a dummy long-lived process holds a lease — start `sleep 600 &`, capture its PID, write
      `/tmp/cmdr-smb-leases/<dummy-pid>` (or have the helper acquire on its behalf), and bring the stack up so it's

@@ -181,8 +181,8 @@ note).
   omitted → 204; over the rate limit → 429.
 - `src/admin-endpoints.test.ts`: add `/admin/heartbeat-dau` cases (auth required; per-day distinct count; range filter).
 
-**Checks:** `./scripts/check.sh --check api-server` equivalents (`pnpm --filter @cmdr/api-server test`, `typecheck`),
-then `--check oxfmt`.
+**Checks:** `pnpm check --check api-server` equivalents (`pnpm --filter @cmdr/api-server test`, `typecheck`), then
+`--check oxfmt`.
 
 ---
 
@@ -272,8 +272,8 @@ for the renamed section. Note the new module in `docs/architecture.md` backend l
   (no network) — written alongside.
 - Frontend: a vitest that the registry exposes the new settings with correct defaults/types.
 
-**Checks:** `./scripts/check.sh --rust` and `--svelte`, then `--check oxfmt`. (New filesystem-touching command? The
-heartbeat runs in a background task, not a Tauri command, so no `blocking_with_timeout` needed.)
+**Checks:** `pnpm check --rust` and `--svelte`, then `--check oxfmt`. (New filesystem-touching command? The heartbeat
+runs in a background task, not a Tauri command, so no `blocking_with_timeout` needed.)
 
 ---
 
@@ -502,13 +502,13 @@ it); land the honest privacy-policy edits and the "no telemetry" doc corrections
 renders the per-day series.
 
 **Checks:** `--svelte`, website build (`html-validate` self-skips without `dist/`), `--check oxfmt`. Before declaring
-done: `./scripts/check.sh --include-slow`.
+done: `pnpm check --include-slow`.
 
 ---
 
 ## Cross-cutting checks and rules
 
-- Finish every milestone with `./scripts/check.sh` (full default suite) and always `--check oxfmt` (monorepo-wide).
+- Finish every milestone with `pnpm check` (full default suite) and always `--check oxfmt` (monorepo-wide).
 - `bindings-fresh` after any Rust command surface change (`pnpm bindings:regen`).
 - New Tauri commands: `await` in try/catch; filesystem-touching ones async + `blocking_with_timeout`. **No capability
   entries** for custom app commands (those are only for core/plugin APIs); `track_event`/`beta_signup` do network, not

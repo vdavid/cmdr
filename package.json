@@ -7,6 +7,7 @@
     "dev:ai-debug": "RUST_LOG=cmdr_lib::ai=debug,${RUST_LOG:-info} pnpm --filter @cmdr/desktop tauri dev",
     "build": "pnpm --filter @cmdr/desktop tauri build",
     "dev:website": "pnpm --filter @cmdr/website dev",
+    "blog:editor": "pnpm --filter @cmdr/website dev",
     "build:website": "pnpm --filter @cmdr/website build",
     "dev:dashboard": "pnpm --filter @cmdr/analytics-dashboard dev",
     "build:dashboard": "pnpm --filter @cmdr/analytics-dashboard build",

@@ -218,7 +218,7 @@ need.
 - `WriteConflictEvent.source_size: Option<u64>` (see the architecture decision for the emit-site fan-out and the
   `size_difference` None-collapse).
 - `cd apps/desktop && pnpm bindings:regen`; FE type fallout (render `(unknown)` for null source size).
-- Tests: serde round-trips, backend `scan_for_conflicts` flag population. Run `./scripts/check.sh` before commit.
+- Tests: serde round-trips, backend `scan_for_conflicts` flag population. Run `pnpm check` before commit.
 
 ### M2 — Upfront dialog UX (FE + the thin command layer)
 
@@ -394,8 +394,8 @@ Intent: leave the codebase explaining itself; this feature changes documented co
   user-facing changelog, and update the **MCP `onConflict` descriptions in `mcp/tools.rs`** to match (the value governs
   files only).
 - Sweep UI copy against `docs/style-guide.md` (sentence case, active voice).
-- Final checks: `./scripts/check.sh` then `./scripts/check.sh --include-slow` (E2E suites), plus `pnpm bindings:regen`
-  freshness and `--check oxfmt` (always).
+- Final checks: `pnpm check` then `pnpm check --include-slow` (E2E suites), plus `pnpm bindings:regen` freshness and
+  `--check oxfmt` (always).
 
 ## Testing strategy summary
 
@@ -419,7 +419,7 @@ Intent: leave the codebase explaining itself; this feature changes documented co
 
 ## Execution notes
 
-- Milestone-per-commit (or finer); run `./scripts/check.sh --fast` on the natural rhythm, full suite before each commit,
+- Milestone-per-commit (or finer); run `pnpm check --fast` on the natural rhythm, full suite before each commit,
   `--include-slow` before declaring M4/M5 done.
 - M2 (FE) and M3 (BE engine) are parallelizable after M1 with near-zero file overlap, but sequential is fine.
 - No pushes, no PRs — direct commits on `main` per repo convention, and never push without explicit approval.

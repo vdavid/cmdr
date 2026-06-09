@@ -443,7 +443,7 @@ async fn run_concurrent_write_pass(
 /// shared SmbClient stressed the lock-ordering pattern hardest.
 ///
 /// Run with `./apps/desktop/test/smb-servers/start.sh core` (CI does
-/// this) or `start.sh all`, then either `./scripts/check.sh --rust` or
+/// this) or `start.sh all`, then either `pnpm check --rust` or
 /// `cargo nextest run -p cmdr smb_integration_concurrent_streaming_writes_no_deadlock
 /// --run-ignored all`.
 ///

@@ -312,8 +312,8 @@ final names are the implementer's call as long as no "reveal" vocabulary survive
   `GlobalShortcutRow` label.
 - **Docs:** `lib/downloads/CLAUDE.md`, `mcp/CLAUDE.md`, `mcp/executor/CLAUDE.md`, `docs/architecture.md` downloads row.
 
-**Verify:** `pnpm bindings:regen` then `./scripts/check.sh` (catches stale bindings, the moved test assertions,
-lock-poison, etc.); palette shows the new name; ⌘J still reveals; ⌃⌥⌘J still works.
+**Verify:** `pnpm bindings:regen` then `pnpm check` (catches stale bindings, the moved test assertions, lock-poison,
+etc.); palette shows the new name; ⌘J still reveals; ⌃⌥⌘J still works.
 
 > **Pin the user-facing string once.** The exact label chosen here ("Go to latest download") is reused verbatim as the
 > M3 macOS menu-item **title**, and the SF-Symbol map (`macos.rs`) matches items **by exact title string**. A drift
@@ -343,7 +343,7 @@ present and enabled/disabled correctly; ⌘G/⌘J fire exactly once each from th
 ### M4 — Tests round-out + docs + full checks
 
 E2E (one Playwright spec), the new `CLAUDE.md` files, `docs/architecture.md` rows, manual smoke checklist. Run
-`./scripts/check.sh --include-slow`.
+`pnpm check --include-slow`.
 
 ## Testing
 

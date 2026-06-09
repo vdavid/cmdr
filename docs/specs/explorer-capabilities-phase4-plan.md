@@ -316,17 +316,17 @@ capability-driven descriptor (it's structural view selection, not label text).
 ## Milestones
 
 Each milestone is atomic (add + migrate + delete old branch; PR1). Gates per milestone: `--fast` continuously during
-work; full `./scripts/check.sh` + `--check desktop-e2e-linux` before the milestone commit. Phase-end (after M4 + the
-program-end sweep): `--include-slow` (adds macOS Playwright + `rust-tests-linux`), then watch CI to green before merging
-to `main`. PR3 (byte-identical behavior, esp. L10 strings) gets EXTRA scrutiny. Import-cycle rule (master §
-Verification): the PURE core – `VolumeKind`, `VolumeCapabilities`, the frozen table, `volumeKindOf`,
-`capabilitiesForKind` – is a leaf importing ONLY `types.ts` (`LocationCategory`) + `mtp-path-utils.ts` (`isMtpVolumeId`,
-already a leaf). The store-reading convenience `capabilitiesFor(volumeId)` ALSO imports `volume-store.svelte`
-(`getVolumes`) to resolve `fsType`/`category` from the `VolumeInfo` – so the module is NOT a strict `types.ts`-only leaf
-(§ Kind classifier). That's fine for cycles as long as `volume-store.svelte` doesn't import back from capabilities
-(verify with `import-cycles` in M1); the pure pair stays store-free for the FilePane site and tests. The module is
-imported by dispatch, F-bar, clipboard, file-ops, pane-commands, mcp-sync, FilePane, has-parent; it imports NOTHING from
-`routes/` or from any consumer. PR5: the phase reverts as one merge range.
+work; full `pnpm check` + `--check desktop-e2e-linux` before the milestone commit. Phase-end (after M4 + the program-end
+sweep): `--include-slow` (adds macOS Playwright + `rust-tests-linux`), then watch CI to green before merging to `main`.
+PR3 (byte-identical behavior, esp. L10 strings) gets EXTRA scrutiny. Import-cycle rule (master § Verification): the PURE
+core – `VolumeKind`, `VolumeCapabilities`, the frozen table, `volumeKindOf`, `capabilitiesForKind` – is a leaf importing
+ONLY `types.ts` (`LocationCategory`) + `mtp-path-utils.ts` (`isMtpVolumeId`, already a leaf). The store-reading
+convenience `capabilitiesFor(volumeId)` ALSO imports `volume-store.svelte` (`getVolumes`) to resolve `fsType`/`category`
+from the `VolumeInfo` – so the module is NOT a strict `types.ts`-only leaf (§ Kind classifier). That's fine for cycles
+as long as `volume-store.svelte` doesn't import back from capabilities (verify with `import-cycles` in M1); the pure
+pair stays store-free for the FilePane site and tests. The module is imported by dispatch, F-bar, clipboard, file-ops,
+pane-commands, mcp-sync, FilePane, has-parent; it imports NOTHING from `routes/` or from any consumer. PR5: the phase
+reverts as one merge range.
 
 ### M1 – Capability interface + per-kind table + classifier unify + tests (the seam)
 

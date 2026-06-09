@@ -24,8 +24,8 @@ A static landing page for [getcmdr.com](https://getcmdr.com) featuring:
 # Install dependencies
 pnpm install
 
-# Start dev server
-pnpm run dev
+# Start dev server from the repo root
+pnpm dev:website
 ```
 
 The dev server runs at `http://localhost:4829`.
@@ -33,7 +33,7 @@ The dev server runs at `http://localhost:4829`.
 The local-only blog editor is available while the dev server is running:
 
 ```bash
-open http://localhost:4829/dev/blog
+pnpm blog:editor
 ```
 
 It autosaves drafts to the gitignored `apps/website/.blog-drafts/` directory, supports pasted/dropped/file-picked

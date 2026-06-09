@@ -14,7 +14,7 @@ other and oversubscribed the machine 2-3×. This note records the per-check CPU 
 
 ## Methodology
 
-Each non-fast check run in isolation (`./scripts/check.sh --check <id>`), 16-core macOS, two metrics:
+Each non-fast check run in isolation (`pnpm check --check <id>`), 16-core macOS, two metrics:
 
 - **`proc_cores`** = `(user+sys CPU seconds) / wall seconds` from `/usr/bin/time -l` on the check process tree. Native
   host CPU the check burned.
@@ -125,6 +125,5 @@ be the `Test Files … | N skipped` count (N above the usual handful = files did
 `Worker terminated` / `reached heap limit` line. Until then: a below-threshold file that has a dedicated test means
 re-run `--check svelte-tests` standalone; don't allowlist it.
 
-Render the graph with weights + lanes + median wall-time: `./scripts/check.sh --graph` (also
-`--graph-format mermaid|dot`). The wall-time comes from recent passing runs in `~/cmdr-check-log.csv`, so the graph
-doubles as a perf dashboard.
+Render the graph with weights + lanes + median wall-time: `pnpm check --graph` (also `--graph-format mermaid|dot`). The
+wall-time comes from recent passing runs in `~/cmdr-check-log.csv`, so the graph doubles as a perf dashboard.
