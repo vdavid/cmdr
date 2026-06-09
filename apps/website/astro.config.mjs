@@ -5,6 +5,7 @@ import rehypeExternalLinks from 'rehype-external-links'
 import remarkSmartypants from 'remark-smartypants'
 import sitemap from '@astrojs/sitemap'
 import { smartQuotesIntegration } from './src/plugins/smart-quotes.mjs'
+import { blogEditorDevServer } from './src/dev/blog-editor/dev-server.mjs'
 
 // https://astro.build/config
 export default defineConfig({
@@ -12,7 +13,7 @@ export default defineConfig({
   output: 'static',
   integrations: [sitemap(), smartQuotesIntegration()],
   server: {
-    port: parseInt(process.env.PORT || '4321'),
+    port: parseInt(process.env.PORT || '4829', 10),
   },
   markdown: {
     shikiConfig: {
@@ -31,6 +32,6 @@ export default defineConfig({
       strictPort: true,
     },
     // @ts-expect-error Vite version mismatch between Astro and Tailwind - doesn't affect build
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), blogEditorDevServer()],
   },
 })

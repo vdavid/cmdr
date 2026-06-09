@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Blog editor | Cmdr dev</title>
+    <script>
+      const theme = localStorage.getItem('theme')
+      if (theme === 'light' || theme === 'dark') {
+        document.documentElement.dataset.theme = theme
+      }
+    </script>
+    <link rel="stylesheet" href="/src/styles/global.css" />
+    <link rel="stylesheet" href="/src/dev/blog-editor/styles.css" />
+  </head>
+  <body>
+    <main class="blog-editor-shell">
+      <header class="blog-editor-header">
+        <div>
+          <p class="blog-editor-kicker">Dev-only</p>
+          <h1>Blog editor</h1>
+        </div>
+        <div id="saveStatus" class="save-status" role="status" aria-live="polite">Loading...</div>
+      </header>
+
+      <section class="blog-editor-toolbar" aria-label="Draft controls">
+        <label class="field field-select">
+          <span>Open</span>
+          <select id="entrySelect"></select>
+        </label>
+        <button id="newDraftButton" type="button">New draft</button>
+        <button id="deleteDraftButton" type="button">Delete draft</button>
+        <button id="saveButton" type="button">Save now</button>
+        <button id="publishButton" type="button" class="button-primary">Publish</button>
+        <label class="overwrite-control">
+          <input id="overwriteInput" type="checkbox" />
+          <span>Allow overwrite</span>
+        </label>
+      </section>
+
+      <section id="backupBanner" class="backup-banner" hidden>
+        <div>
+          <strong>Newer browser backup available.</strong>
+          <span>Restore it if the last disk save missed your latest edits.</span>
+        </div>
+        <button id="restoreBackupButton" type="button">Restore backup</button>
+      </section>
+
+      <section class="metadata-panel" aria-label="Post metadata">
+        <label class="field">
+          <span>Title</span>
+          <input id="titleInput" type="text" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Slug</span>
+          <input id="slugInput" type="text" autocomplete="off" spellcheck="false" />
+        </label>
+        <label class="field">
+          <span>Date</span>
+          <input id="dateInput" type="date" />
+        </label>
+        <label class="field field-description">
+          <span>Description</span>
+          <textarea id="descriptionInput" rows="2"></textarea>
+        </label>
+      </section>
+
+      <section class="editor-split" aria-label="Editor and rendered preview">
+        <label class="editor-pane">
+          <span>Markdown</span>
+          <textarea id="bodyInput" spellcheck="true"></textarea>
+        </label>
+        <section class="preview-pane" aria-label="Rendered preview">
+          <header class="preview-header">
+            <time id="previewDate"></time>
+            <h2 id="previewTitle"></h2>
+            <p id="previewDescription"></p>
+          </header>
+          <article id="previewBody" class="blog-content"></article>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="/src/dev/blog-editor/entry.ts"></script>
+  </body>
+</html>

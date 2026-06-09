@@ -5,6 +5,19 @@ images.
 
 ## Creating a new post
 
+For low-friction drafting, run the website dev server and use the dev-only editor:
+
+```bash
+cd apps/website
+pnpm dev
+# Open http://localhost:4829/dev/blog
+```
+
+The editor autosaves drafts to `apps/website/.blog-drafts/` and only writes to the published blog collection when you
+click **Publish**. The draft directory is gitignored.
+
+For manual authoring:
+
 1. Create a folder: `src/content/blog/{slug}/index.md`
 2. Add frontmatter:
 
@@ -54,7 +67,7 @@ If you omit the marker, the full post is shown on the index.
 ```bash
 cd apps/website
 pnpm dev
-# Open http://localhost:4321/blog
+# Open http://localhost:4829/blog
 ```
 
 ## What happens automatically

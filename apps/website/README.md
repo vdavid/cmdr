@@ -28,7 +28,16 @@ pnpm install
 pnpm run dev
 ```
 
-The dev server runs at `http://localhost:4321`.
+The dev server runs at `http://localhost:4829`.
+
+The local-only blog editor is available while the dev server is running:
+
+```bash
+open http://localhost:4829/dev/blog
+```
+
+It autosaves drafts to the gitignored `apps/website/.blog-drafts/` directory and publishes final posts to
+`src/content/blog/{slug}/index.md`.
 
 ## Building
 

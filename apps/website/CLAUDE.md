@@ -14,10 +14,10 @@ Marketing site and blog for Cmdr. Astro + Tailwind v4, statically built, deploye
 **The website auto-deploys on push to `main`** when `apps/website/**` changes. The `deploy-website` job in
 `.github/workflows/ci.yml` (gated on `needs: website`, so it only fires after the website eslint/typecheck/build checks
 pass) sends a signed `POST https://getcmdr.com/hooks/deploy-website` (HMAC-SHA256 with `DEPLOY_WEBHOOK_SECRET`). A
-webhook listener on the Hetzner VPS verifies the signature, pulls `main`, and rebuilds the Docker image (`docker compose
-build` before `down`, per the deploy-order gotcha below). This is the ONLY deploy path: a standalone `deploy-website.yml`
-was removed because it double-deployed and ran even when checks failed. `release.yml` also hits the same webhook after a
-desktop release (to publish the refreshed `latest.json`). The manual `docker compose` steps in
+webhook listener on the Hetzner VPS verifies the signature, pulls `main`, and rebuilds the Docker image
+(`docker compose build` before `down`, per the deploy-order gotcha below). This is the ONLY deploy path: a standalone
+`deploy-website.yml` was removed because it double-deployed and ran even when checks failed. `release.yml` also hits the
+same webhook after a desktop release (to publish the refreshed `latest.json`). The manual `docker compose` steps in
 `docs/guides/deploy-website.md` are what the webhook runs server-side, and the manual fallback if the hook is down;
 `workflow_dispatch` on `main` (run_all) is the manual re-deploy lever.
 
@@ -38,6 +38,32 @@ Blog posts live in `src/content/blog/{slug}/index.md` with colocated images.
 | `src/pages/rss.xml.ts`                  | RSS feed                                                  |
 | `src/components/Remark42Comments.astro` | Comment widget (disabled in dev)                          |
 | `src/components/BlogImageClick.astro`   | Click-to-fullsize for blog images                         |
+
+### Dev blog editor
+
+The website has a local-only Markdown editor at `/dev/blog` while the Astro dev server is running. It is served by a
+Vite dev middleware, not by an Astro page, so it is unavailable in production builds.
+
+Start it with:
+
+```bash
+cd apps/website
+pnpm dev
+# Open http://localhost:4829/dev/blog
+```
+
+Drafts autosave atomically to `apps/website/.blog-drafts/{draft-id}/index.md`, which is gitignored. Each draft has a
+stable internal ID, so editing the publish slug does not create duplicate drafts. The draft frontmatter stores `slug`;
+publishing writes the final plain blog post to `src/content/blog/{slug}/index.md`.
+
+Editor files:
+
+| File                                 | Purpose                                                 |
+| ------------------------------------ | ------------------------------------------------------- |
+| `src/dev/blog-editor/dev-server.mjs` | Dev-only Vite middleware for draft/post file operations |
+| `src/dev/blog-editor/index.html`     | Editor shell                                            |
+| `src/dev/blog-editor/entry.ts`       | Autosave, preview, publish, delete, and backup behavior |
+| `src/dev/blog-editor/styles.css`     | Editor-specific CSS                                     |
 
 ### OG images
 

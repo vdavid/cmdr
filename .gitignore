@@ -23,6 +23,9 @@ _ignored/
 .env.*
 !.env.example
 
+# Local blog-editor autosaves
+.blog-drafts/
+
 # Node modules (monorepo-wide)
 node_modules/
 .pnpm-store/

@@ -143,7 +143,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `apps/analytics-dashboard/`: Private SvelteKit dashboard on CF Pages. Aggregates Umami, CF Analytics Engine, Paddle,
   PostHog, GitHub metrics
 - `apps/api-server/`: Cloudflare Worker + Hono. Licensing, telemetry, crash reports, downloads, admin endpoints
-- `apps/website/`: getcmdr.com marketing site (Astro + Tailwind v4)
+- `apps/website/`: getcmdr.com marketing site (Astro + Tailwind v4), including the dev-only `/dev/blog` Markdown editor
+  for drafting posts
 - `apps/website/public/hero/`: Hero illustration assets (frame + pane cutouts, dark/light)
 - `scripts/check/`: Go unified check runner (~40 checks, parallel with dependency graph)
 

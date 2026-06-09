@@ -49,6 +49,14 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/dev/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
     files: ['**/*.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',
