@@ -217,8 +217,8 @@ Split by kind and by level:
 ## Hard rules
 
 The project's hard rules live as focused, auto-loaded files in [`.claude/rules/`](.claude/rules/), each concise and
-pointing to its detailed colocated doc. They're always in context, so this file stays knowledge, not rules.
-Non-Claude agents should read (and add/edit when needed) the relevant files in `.claude/rules/` manually.
+pointing to its detailed colocated doc. They're always in context, so this file stays knowledge, not rules. Non-Claude
+agents should read (and add/edit when needed) the relevant files in `.claude/rules/` manually.
 
 Two project facts worth stating here directly: tool versions are mise-managed (Go, Node, etc., pinned in `.mise.toml`;
 shims on PATH; if `go` / `node` isn't found, check that `~/.local/share/mise/shims` is on `$PATH`). Icons come from

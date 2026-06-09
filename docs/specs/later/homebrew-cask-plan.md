@@ -7,28 +7,28 @@ the implementing agent can adapt details when reality pushes back, as long as th
 
 - `brew install --cask cmdr` is a real, evergreen distribution channel. A direct competitor (TheCommander, a near-exact
   contemporary) has had a working cask since launch and gets ~400 installs over a few months with zero marketing effort.
-- **The README's current brew gate is based on the wrong rule.** README says the cask "will be available as soon as
-  this repo hits 50+ forks, 50+ watchers, and 100+ stars." That is the **GitHub notability threshold**, and per
-  Homebrew's [Acceptable Casks](https://docs.brew.sh/Acceptable-Casks) doc it **only applies to casks that are homed on
-  a code repository** (i.e. whose `url`/`homepage` resolve to a GitHub/GitLab/Bitbucket repo). The real numbers are
-  **under 30 forks / 30 watchers / 75 stars** for general (third-party) submissions, or **90 / 90 / 225** for
-  self-submissions.
+- **The README's current brew gate is based on the wrong rule.** README says the cask "will be available as soon as this
+  repo hits 50+ forks, 50+ watchers, and 100+ stars." That is the **GitHub notability threshold**, and per Homebrew's
+  [Acceptable Casks](https://docs.brew.sh/Acceptable-Casks) doc it **only applies to casks that are homed on a code
+  repository** (i.e. whose `url`/`homepage` resolve to a GitHub/GitLab/Bitbucket repo). The real numbers are **under 30
+  forks / 30 watchers / 75 stars** for general (third-party) submissions, or **90 / 90 / 225** for self-submissions.
 - Cmdr today has **15 stars, 1 fork, 0 watchers** — far under the bar. But the bar is avoidable: a cask served from our
   own domain (not a code repo) is judged on website-presence criteria instead, which Cmdr already passes. TheCommander
   proves this: proprietary, no public repo, accepted at zero stars.
 
 ## The core constraint (the whole reason this is non-trivial)
 
-Homebrew's `brew audit --new --cask` follows the `url` to verify the download. **Our download URL currently 302-redirects
-to GitHub Releases**, which re-ties the cask to `vdavid/cmdr` and re-triggers the 75-star notability check we'd fail:
+Homebrew's `brew audit --new --cask` follows the `url` to verify the download. **Our download URL currently
+302-redirects to GitHub Releases**, which re-ties the cask to `vdavid/cmdr` and re-triggers the 75-star notability check
+we'd fail:
 
 ```
 https://license.getcmdr.com/download/0.24.0/aarch64
   -> 302 -> https://github.com/vdavid/cmdr/releases/download/v0.24.0/Cmdr_0.24.0_aarch64.dmg
 ```
 
-**The fix is to make the cask's `url` resolve to a file served from our own domain with no redirect to github.com.** Once
-the cask has zero GitHub footprint, the notability check never fires and we're judged on:
+**The fix is to make the cask's `url` resolve to a file served from our own domain with no redirect to github.com.**
+Once the cask has zero GitHub footprint, the notability check never fires and we're judged on:
 
 - A public presence so users can verify authenticity ✅ (getcmdr.com + press coverage)
 - An identifiable developer ✅
@@ -45,7 +45,7 @@ We pass all three. The GitHub release can remain the build artifact; the cask ju
   self-promotion; a third-party submission stays on the general track (and, with no repo footprint, the star bar is moot
   anyway). This is an external action — **do not open the PR from any agent.** Prepare everything; David's wife submits.
 - **Non-goal: changing how releases are built or where build artifacts live.** GitHub Releases can stay as the artifact
-  store. Only the *cask-facing* download path must be domain-served.
+  store. Only the _cask-facing_ download path must be domain-served.
 - **Out of scope: a `@beta` cask.** Cmdr presents as a 1.x-style app; ship a single stable cask. Revisit if we later
   want an explicit beta channel.
 
