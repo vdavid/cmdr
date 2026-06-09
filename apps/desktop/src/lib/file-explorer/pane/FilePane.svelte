@@ -265,6 +265,7 @@
     let volumeSpace: VolumeSpaceInfo | null = $state(null)
 
     import type { ListViewAPI, VolumeBreadcrumbAPI, NetworkMountViewAPI, NetworkCursorEntry } from './types'
+    import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
 
     // Component refs for keyboard navigation
     let fullListRef: ListViewAPI | undefined = $state()
@@ -712,6 +713,15 @@
      */
     export function getEffectiveTotalCount(): number {
         return effectiveTotalCount
+    }
+
+    export function autoScrollDuringDrag(
+        position: DragAutoScrollPointer,
+        elapsedMs: number,
+    ): DragAutoScrollFrameResult {
+        if (paneViewKind !== 'normal') return { active: false, scrolled: false }
+        const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+        return listRef?.autoScrollDuringDrag?.(position, elapsedMs) ?? { active: false, scrolled: false }
     }
 
     /**

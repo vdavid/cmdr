@@ -13,6 +13,7 @@
 import { vi } from 'vitest'
 import type { DropTarget } from '../drag/drop-target-hit-testing'
 import type { PaneAccess } from './pane-access'
+import type { FilePaneAPI } from './types'
 import type { VolumeInfo } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
 import type { TransferDialogPropsData } from './transfer-operations'
@@ -86,12 +87,13 @@ export interface AccessConfig {
   paths?: Partial<Record<'left' | 'right', string>>
   volumeIds?: Partial<Record<'left' | 'right', string>>
   volumes?: VolumeInfo[]
+  paneRefs?: Partial<Record<'left' | 'right', Partial<FilePaneAPI>>>
 }
 
 export function buildAccess(config: AccessConfig = {}): PaneAccess {
   const otherPane = (pane: 'left' | 'right'): 'left' | 'right' => (pane === 'left' ? 'right' : 'left')
   return {
-    getPaneRef: () => undefined,
+    getPaneRef: (pane) => config.paneRefs?.[pane] as FilePaneAPI | undefined,
     getPanePath: (pane) => config.paths?.[pane] ?? (pane === 'left' ? '/left/dir' : '/right/dir'),
     getPaneVolumeId: (pane) => config.volumeIds?.[pane] ?? 'root',
     getPaneSort: () => ({ sortBy: 'name', sortOrder: 'ascending' }),

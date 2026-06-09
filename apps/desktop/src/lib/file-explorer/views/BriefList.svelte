@@ -4,6 +4,11 @@
     import { calculateVirtualWindowVariable, getScrollToPositionVariable } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
+    import {
+        computeDragAutoScrollStep,
+        type DragAutoScrollFrameResult,
+        type DragAutoScrollPointer,
+    } from '../drag/drag-auto-scroll'
     import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
     import SortableHeader from '../selection/SortableHeader.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
@@ -562,6 +567,27 @@
             // Fetch entries for the new visible range
             void fetchVisibleRange()
         }
+    }
+
+    export function autoScrollDuringDrag(
+        position: DragAutoScrollPointer,
+        elapsedMs: number,
+    ): DragAutoScrollFrameResult {
+        if (!scrollContainer) return { active: false, scrolled: false }
+        const step = computeDragAutoScrollStep({
+            axis: 'horizontal',
+            pointer: position,
+            rect: scrollContainer.getBoundingClientRect(),
+            scrollOffset: scrollContainer.scrollLeft,
+            maxScrollOffset: Math.max(0, scrollContainer.scrollWidth - scrollContainer.clientWidth),
+            elapsedMs,
+        })
+        if (step.scrolled) {
+            scrollContainer.scrollLeft = step.nextScrollOffset
+            scrollLeft = step.nextScrollOffset
+            void fetchVisibleRange()
+        }
+        return { active: step.active, scrolled: step.scrolled }
     }
 
     /**

@@ -67,6 +67,8 @@ Key files:
 
 - `drop-target-hit-testing.ts`: Pure logic: `document.elementFromPoint()` + `data-drop-target-path` walk
 - `drop-target-validation.ts`: Pure logic: blocks drops onto the source itself or into a descendant
+- `drag-auto-scroll.ts`: Pure edge-band math for native drag auto-scroll. Full mode passes `axis: 'vertical'`; Brief
+  mode passes `axis: 'horizontal'`.
 - `DragOverlay.svelte` + `drag-overlay.svelte.ts`: Floating label near cursor
 - `../modifier-key-tracker.svelte.ts`: Alt/Cmd/Shift state (DragDropEvent doesn't include modifiers; lives in parent
   `file-explorer/` directory)
@@ -182,7 +184,15 @@ Key files:
 - **Decision**: Always show confirmation dialog on drop
   - **Why**: Drag-and-drop is imprecise. The dialog is the safety net regardless of which operation is preselected.
 - **Decision**: Same-pane pane-level drops are no-ops
-  - **Why**: Dropping onto a subfolder within the same pane is valid.
+  - **Why**: Dropping onto a subfolder within the same pane is valid. The controller still keeps drag auto-scroll alive
+    for same-pane pane-level no-ops, because scrolling is how the user reveals that valid subfolder target.
+- **Decision**: Native drag auto-scroll is controller-driven and list-executed
+  - **Why**: The controller owns drag lifecycle (`enter` / `over` / `drop` / `leave`) and can stop the
+    `requestAnimationFrame` loop on every terminal path. The list owns layout-specific scroll state. FullList scrolls
+    vertically when the pointer enters its top/bottom edge bands; BriefList scrolls horizontally when the pointer enters
+    its left/right edge bands. After any scroll frame moves content, the controller re-runs hit testing at the last drag
+    position so a stationary cursor can target newly revealed folder rows. Drop uses the final hit test's folder path,
+    not stale highlight state.
 - **Decision**: Block drops onto the source itself or into a descendant
   - **Why**: Dragging `/a/b` onto `/a/b` or into `/a/b/c` can't produce a sensible result. Invalid targets don't
     highlight and show "Can't drop here" in the overlay, matching the pre-existing same-pane no-op behavior. The check

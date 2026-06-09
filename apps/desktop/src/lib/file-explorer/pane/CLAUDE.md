@@ -42,7 +42,7 @@ list).
 | `pane-mcp-sync.svelte.ts`          | Mirrors pane state into the MCP `PaneState` store; skips network/search panes             |
 | `persistence-subscriber.svelte.ts` | The single nav-state persistence subscriber (A5): reactive `$effect`s → `app-status.json` |
 | `listing-diff-sync.svelte.ts`      | File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core)            |
-| `drag-drop-controller.svelte.ts`   | Native drag band: drop-target state, drag handlers, 3 Tauri listeners, highlight effect   |
+| `drag-drop-controller.svelte.ts`   | Native drag band: drop-target state, drag handlers, auto-scroll loop, Tauri listeners     |
 
 ### Pure utilities (`*.ts`)
 
@@ -81,6 +81,10 @@ sweeps per alt-view component). The drag-drop controller suite is split in two: 
 (handler contracts incl. the self-drag-identity scenarios) and `drag-drop-controller.listeners.svelte.test.ts` (Tauri
 listener registration + the enter→over→drop cycle), sharing volume constants and builders from
 `drag-drop-controller.test-fixtures.ts` (the `vi.mock` blocks stay duplicated per file — vitest hoists them per module).
+
+The drag-drop controller owns native drag auto-scroll lifecycle because it sees every terminal drag path (`drop`,
+`leave`, `cleanup`). `FilePane.autoScrollDuringDrag` forwards one animation-frame scroll request to the active list; the
+list owns whether that means vertical Full-mode scroll or horizontal Brief-mode scroll.
 
 ## Conventions
 

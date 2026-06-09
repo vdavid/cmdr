@@ -81,6 +81,12 @@ compact/comfortable/spacious). The virtual scroll uses an `itemSize` parameter f
 
 **Prefetch buffer**: ~500 items around current position, cached in `cachedEntries`. Reduces IPC calls during scroll.
 
+Native drag auto-scroll uses the same scroll state and fetch path as keyboard/cursor scrolling, but one animation frame
+at a time. `FullList.autoScrollDuringDrag(position, elapsedMs)` scrolls `scrollTop` vertically from top/bottom edge
+bands; `BriefList.autoScrollDuringDrag(position, elapsedMs)` scrolls `scrollLeft` horizontally from left/right edge
+bands. Both call `fetchVisibleRange()` when they move so newly revealed rows/columns can be hit-tested immediately by
+the drag controller.
+
 ## Key decisions
 
 **Decision**: `FullList`'s column header lives **inside** the scroll container as a `position: sticky; top: 0;` child,

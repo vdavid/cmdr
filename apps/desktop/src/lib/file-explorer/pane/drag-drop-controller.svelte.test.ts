@@ -183,6 +183,11 @@ describe('drag-drop-controller', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1),
+    )
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
     listenHandlers.clear()
     dragDropHandlerRef.current = null
     getModifierStateSpy.mockReturnValue({ altHeld: false, cmdHeld: false, shiftHeld: false })
@@ -198,6 +203,7 @@ describe('drag-drop-controller', () => {
   afterEach(() => {
     dispose?.()
     dispose = undefined
+    vi.unstubAllGlobals()
   })
 
   describe('extractFolderName', () => {
@@ -329,6 +335,42 @@ describe('drag-drop-controller', () => {
     })
   })
 
+  describe('drag auto-scroll', () => {
+    it('runs for a same-pane self-drag even though the pane-level drop is a no-op', () => {
+      resolveDropTargetSpy.mockReturnValue(paneTarget('left'))
+      getIsDraggingFromSelfSpy.mockReturnValue(true)
+      const autoScrollDuringDrag = vi.fn(() => ({ active: false, scrolled: false }))
+      const { controller } = create({
+        focusedPane: 'left',
+        paneRefs: { left: { autoScrollDuringDrag } },
+      })
+
+      controller.handleDragOver({ x: 5, y: 5 })
+      controller.runDragAutoScrollFrame(100)
+
+      expect(autoScrollDuringDrag).toHaveBeenCalledWith({ x: 5, y: 5 }, 16.67)
+      expect(lastOverlayArgs()[3]).toBe(false)
+    })
+
+    it('re-hit-tests after a scroll frame reveals a new target under a stationary cursor', () => {
+      resolveDropTargetSpy
+        .mockReturnValueOnce(paneTarget('right'))
+        .mockReturnValueOnce(folderTarget('/right/dir/revealed', 'right'))
+      const autoScrollDuringDrag = vi.fn(() => ({ active: false, scrolled: true }))
+      const { controller } = create({
+        paths: { right: '/right/dir' },
+        paneRefs: { right: { autoScrollDuringDrag } },
+      })
+
+      controller.handleDragOver({ x: 5, y: 5 })
+      controller.runDragAutoScrollFrame(100)
+
+      expect(resolveDropTargetSpy).toHaveBeenCalledTimes(2)
+      expect(lastOverlayArgs()[2]).toBe('revealed')
+      expect(lastOverlayArgs()[3]).toBe(true)
+    })
+  })
+
   describe('pushSelfDragOpIfChanged', () => {
     it('does nothing when not dragging from self', () => {
       getIsDraggingFromSelfSpy.mockReturnValue(false)
@@ -404,8 +446,8 @@ describe('drag-drop-controller', () => {
         volumes: [ROOT_VOLUME],
       })
 
-      // handleDragOver runs first in the real flow and sets `dropTargetFolderPath`,
-      // which handleDrop reads to address the folder row rather than the pane path.
+      // handleDrop uses the final hit test's folder path, so stationary-cursor
+      // auto-scroll cannot leave it pointing at an older highlighted row.
       controller.handleDragOver({ x: 1, y: 1 })
       controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
       await flushDrop()
@@ -414,6 +456,19 @@ describe('drag-drop-controller', () => {
       const props = showTransfer.mock.calls[0][0]
       expect(props.operationType).toBe('move')
       expect(props.destinationPath).toBe(SAME_VOL_PATH_B)
+    })
+
+    it('uses the freshly resolved folder path on drop, not stale highlight state', async () => {
+      resolveDropTargetSpy
+        .mockReturnValueOnce(folderTarget('/left/old', 'left'))
+        .mockReturnValueOnce(folderTarget('/left/fresh', 'left'))
+      const { controller, showTransfer } = create({ volumes: [ROOT_VOLUME] })
+
+      controller.handleDragOver({ x: 1, y: 1 })
+      controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      await flushDrop()
+
+      expect(showTransfer.mock.calls[0][0].destinationPath).toBe('/left/fresh')
     })
 
     it('forces copy when Alt is held even on a same-volume drop', async () => {

@@ -1,4 +1,5 @@
 import type { FileEntry, FriendlyError, NetworkHost, ShareInfo } from '../types'
+import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
 
 /** State snapshot for swapping panes without backend calls. */
 export interface SwapState {
@@ -110,6 +111,8 @@ export interface FilePaneAPI {
   injectError(friendly: FriendlyError): void
   /** Reactive: true when the pane is rendering a full-pane error (FriendlyError or `unreachable` banner). */
   isInErrorState(): boolean
+  /** Native drag auto-scroll: scrolls one animation frame when the pointer is in this pane's edge band. */
+  autoScrollDuringDrag(position: DragAutoScrollPointer, elapsedMs: number): DragAutoScrollFrameResult
 }
 
 /** Typed interface for BriefList/FullList exported methods used by FilePane. */
@@ -123,6 +126,8 @@ export interface ListViewAPI {
   refetchColumnWidths?(): void
   /** FullList only */
   getVisibleItemsCount?(): number
+  /** Native drag auto-scroll: scrolls one animation frame when the pointer is in this list's edge band. */
+  autoScrollDuringDrag?(position: DragAutoScrollPointer, elapsedMs: number): DragAutoScrollFrameResult
 }
 
 /**

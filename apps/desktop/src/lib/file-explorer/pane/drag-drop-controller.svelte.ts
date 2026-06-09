@@ -33,8 +33,10 @@ import type { PathVolumeResolution } from '$lib/tauri-commands'
 import type { TransferOperationType } from '../types'
 import type { PaneAccess } from './pane-access'
 import type { createDialogState } from './dialog-state.svelte'
+import type { DragAutoScrollFrameResult } from '../drag/drag-auto-scroll'
 
 type DialogState = ReturnType<typeof createDialogState>
+type ResolvedDropTarget = ReturnType<typeof resolveDropTarget>
 
 export interface DragDropControllerDeps {
   access: PaneAccess
@@ -89,15 +91,23 @@ export function createDragDropController(deps: DragDropControllerDeps) {
 
   // Last cursor position seen during the current drag. Used to re-run handleDragOver
   // when the modifier state changes without a mouse move (so the OS "+" badge can
-  // update via setSelfDragResolvedOperation even when the cursor is still).
+  // update via setSelfDragResolvedOperation even when the cursor is still), and
+  // after auto-scroll reveals a different row under a stationary cursor.
   let lastDragPosition: { x: number; y: number } | null = null
 
   // Last resolved op pushed to the native swizzle. Dedupe for IPC traffic.
   let lastPushedSelfDragOp: 'move' | 'copy' | null = null
 
+  let dragAutoScrollPane: 'left' | 'right' | null = null
+  let dragAutoScrollPosition: { x: number; y: number } | null = null
+  let dragAutoScrollFrame: number | null = null
+  let lastAutoScrollTimestamp: number | null = null
+
   let unlistenDragDrop: UnlistenFn | undefined
   let unlistenDragImageSize: UnlistenFn | undefined
   let unlistenDragModifiers: UnlistenFn | undefined
+
+  const inactiveAutoScrollResult: DragAutoScrollFrameResult = { active: false, scrolled: false }
 
   /**
    * Handles a file drop onto a target pane by opening the transfer confirmation
@@ -262,37 +272,103 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     return access.getPanePath(resolved.paneId)
   }
 
+  function scheduleDragAutoScroll() {
+    if (dragAutoScrollFrame !== null) return
+    if (typeof requestAnimationFrame !== 'function') return
+    dragAutoScrollFrame = requestAnimationFrame(runDragAutoScrollFrame)
+  }
+
+  function stopDragAutoScroll() {
+    if (dragAutoScrollFrame !== null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(dragAutoScrollFrame)
+    }
+    dragAutoScrollPane = null
+    dragAutoScrollPosition = null
+    dragAutoScrollFrame = null
+    lastAutoScrollTimestamp = null
+  }
+
+  function updateDragAutoScrollTarget(paneId: 'left' | 'right' | null, position: { x: number; y: number }) {
+    if (!paneId) {
+      stopDragAutoScroll()
+      return
+    }
+    if (dragAutoScrollPane !== paneId) {
+      lastAutoScrollTimestamp = null
+    }
+    dragAutoScrollPane = paneId
+    dragAutoScrollPosition = position
+    scheduleDragAutoScroll()
+  }
+
+  function runDragAutoScrollFrame(timestamp: number) {
+    dragAutoScrollFrame = null
+    const paneId = dragAutoScrollPane
+    const position = dragAutoScrollPosition
+    if (!paneId || !position) {
+      stopDragAutoScroll()
+      return
+    }
+
+    const elapsedMs =
+      lastAutoScrollTimestamp === null ? 16.67 : Math.min(50, Math.max(0, timestamp - lastAutoScrollTimestamp))
+    lastAutoScrollTimestamp = timestamp
+
+    const result = access.getPaneRef(paneId)?.autoScrollDuringDrag(position, elapsedMs) ?? inactiveAutoScrollResult
+    if (result.scrolled && lastDragPosition) {
+      handleDragOver(lastDragPosition, { updateAutoScroll: false })
+    }
+    if (result.active) {
+      scheduleDragAutoScroll()
+    } else {
+      stopDragAutoScroll()
+    }
+  }
+
+  function isSamePaneSelfDrop(resolved: ResolvedDropTarget): boolean {
+    return resolved?.type === 'pane' && getIsDraggingFromSelf() && resolved.paneId === access.getFocusedPane()
+  }
+
+  function canDropOnResolvedTarget(resolved: ResolvedDropTarget, isInvalidSelfDrop: boolean): boolean {
+    return resolved !== null && !isSamePaneSelfDrop(resolved) && !isInvalidSelfDrop
+  }
+
+  function updateDropTargetState(resolved: ResolvedDropTarget, isInvalidSelfDrop: boolean) {
+    if (isInvalidSelfDrop) {
+      clearDropTargets()
+      return
+    }
+    if (resolved?.type === 'folder') {
+      dropTargetPane = null
+      dropTargetFolderPath = resolved.path
+      dropTargetFolderEl = resolved.element
+      return
+    }
+    if (resolved?.type === 'pane') {
+      dropTargetPane = isSamePaneSelfDrop(resolved) ? null : resolved.paneId
+      dropTargetFolderPath = null
+      dropTargetFolderEl = null
+      return
+    }
+    clearDropTargets()
+  }
+
   /** Updates drop-target highlights and overlay as the cursor moves during a drag. */
-  function handleDragOver(position: { x: number; y: number }) {
+  function handleDragOver(position: { x: number; y: number }, options: { updateAutoScroll?: boolean } = {}) {
     lastDragPosition = position
     const paneWrapperEls = getPaneWrapperEls()
     const resolved = resolveDropTarget(position.x, position.y, paneWrapperEls.left, paneWrapperEls.right)
+    if (options.updateAutoScroll !== false) {
+      updateDragAutoScrollTarget(resolved?.paneId ?? null, position)
+    }
 
     // Block drops onto the source itself or into one of its descendants.
     const effectiveTarget = targetPathOf(resolved)
     const isInvalidSelfDrop =
       effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, currentDragSourcePaths)
+    updateDropTargetState(resolved, isInvalidSelfDrop)
 
-    if (isInvalidSelfDrop) {
-      clearDropTargets()
-    } else if (resolved?.type === 'folder') {
-      dropTargetPane = null
-      dropTargetFolderPath = resolved.path
-      dropTargetFolderEl = resolved.element
-    } else if (resolved?.type === 'pane') {
-      // Suppress highlight when self-drag targets the source pane (no-op)
-      const suppress = getIsDraggingFromSelf() && resolved.paneId === access.getFocusedPane()
-      dropTargetPane = suppress ? null : resolved.paneId
-      dropTargetFolderPath = null
-      dropTargetFolderEl = null
-    } else {
-      clearDropTargets()
-    }
-
-    // Determine if dropping is allowed
-    const isSelfPaneNoOp =
-      resolved?.type === 'pane' && getIsDraggingFromSelf() && resolved.paneId === access.getFocusedPane()
-    const canDrop = resolved !== null && !isSelfPaneNoOp && !isInvalidSelfDrop
+    const canDrop = canDropOnResolvedTarget(resolved, isInvalidSelfDrop)
     const targetName = resolveTargetDisplayName(resolved, dropTargetFolderPath)
     const operation = pickDropOperation({
       sourcePath: currentDragSourcePaths[0] ?? null,
@@ -322,7 +398,6 @@ export function createDragDropController(deps: DragDropControllerDeps) {
   function handleDrop(paths: string[], position: { x: number; y: number }) {
     const paneWrapperEls = getPaneWrapperEls()
     const resolved = resolveDropTarget(position.x, position.y, paneWrapperEls.left, paneWrapperEls.right)
-    const folderPath = dropTargetFolderPath
     const effectiveTarget = targetPathOf(resolved)
 
     // For our own in-flight drag, the source identity comes from app state — the
@@ -350,6 +425,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     })
 
     clearDropTargets()
+    stopDragAutoScroll()
     hideOverlay()
     stopModifierTracking()
 
@@ -367,7 +443,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     void handleFileDrop(
       paths,
       targetPane,
-      resolved.type === 'folder' ? (folderPath ?? undefined) : undefined,
+      resolved.type === 'folder' ? resolved.path : undefined,
       operation,
       recordedIdentity,
     )
@@ -482,6 +558,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       } else {
         // 'leave': cursor left the window or drag was cancelled
         clearDropTargets()
+        stopDragAutoScroll()
         hideOverlay()
         stopModifierTracking()
         resetDraggingFromSelf()
@@ -503,6 +580,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     unlistenDragImageSize?.()
     unlistenDragModifiers?.()
     unlistenDragDrop?.()
+    stopDragAutoScroll()
     stopModifierTracking()
   }
 
@@ -519,6 +597,8 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     handleDragEnter,
     targetPathOf,
     handleDragOver,
+    runDragAutoScrollFrame,
+    stopDragAutoScroll,
     pushSelfDragOpIfChanged,
     handleDrop,
     clearDropTargets,

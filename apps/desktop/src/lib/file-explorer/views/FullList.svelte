@@ -6,6 +6,11 @@
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
+    import {
+        computeDragAutoScrollStep,
+        type DragAutoScrollFrameResult,
+        type DragAutoScrollPointer,
+    } from '../drag/drag-auto-scroll'
     import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
     import SortableHeader from '../selection/SortableHeader.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
@@ -581,6 +586,27 @@
             // Fetch entries for the new visible range
             void fetchVisibleRange()
         }
+    }
+
+    export function autoScrollDuringDrag(
+        position: DragAutoScrollPointer,
+        elapsedMs: number,
+    ): DragAutoScrollFrameResult {
+        if (!scrollContainer) return { active: false, scrolled: false }
+        const step = computeDragAutoScrollStep({
+            axis: 'vertical',
+            pointer: position,
+            rect: scrollContainer.getBoundingClientRect(),
+            scrollOffset: scrollContainer.scrollTop,
+            maxScrollOffset: Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight),
+            elapsedMs,
+        })
+        if (step.scrolled) {
+            scrollContainer.scrollTop = step.nextScrollOffset
+            scrollTop = step.nextScrollOffset
+            void fetchVisibleRange()
+        }
+        return { active: step.active, scrolled: step.scrolled }
     }
 
     // Track previous values to detect actual changes
