@@ -17,7 +17,7 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
 
   // One row per crash, newest first. No grouping: the email shows every report.
   const { results } = await env.TELEMETRY_DB.prepare(
-    `SELECT id, app_version, os_version, arch, signal, top_function, created_at, build_mode, short_id
+    `SELECT id, app_version, os_version, arch, signal, top_function, created_at, build_mode, short_id, email
          FROM crash_reports
          WHERE notified_at IS NULL
          ORDER BY created_at DESC`,
@@ -31,6 +31,7 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
     created_at: string
     build_mode: string | null
     short_id: string | null
+    email: string | null
   }>()
 
   if (results.length === 0) return
@@ -42,6 +43,7 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
     site: row.top_function,
     signal: row.signal,
     version: row.app_version,
+    email: row.email,
   }))
 
   const ids = results.map((r) => r.id)

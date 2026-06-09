@@ -51,6 +51,18 @@ Both paths write to `crash-report.json` in the app data dir (same dir as `settin
   crashes from production ones in the email summary
 - `shortId` (`CRASH-XXXXX`): generated at crash-file-write time via [`crate::short_id::generate("CRASH")`]
   (shared with error reports). Shown to the user in the next-launch dialog so they can reference the report.
+- `diagId` (`diag_<uuid>`): the diagnostics id from [`crate::install_id`], so sequential reports from one install group
+  together. **Attached at report-assembly time, NEVER in the signal handler.** The panic-hook path reads the cheap
+  `OnceLock` snapshot (`install_id::diagnostics_id_snapshot()`, resolved at `install_id::init()`); the signal path is
+  async-signal-safe (no alloc, no locks) so it attaches the id at **next-launch assembly** in `process_pending_crash`
+  (full stdlib, via `install_id::diagnostics_id()`). **NEVER the `anal_` analytics id**: the two-id split (see
+  `analytics/CLAUDE.md` § "Two ids that never meet") keeps a voluntarily-attached email unjoinable to the analytics
+  stream. If the analytics id ever rode a report, an attached email could be joined to the install's usage history,
+  which is exactly the linkage we promise not to have.
+- `email` (optional): a beta tester's contact email, populated **only by the dialog at send time** when the user ticks
+  the attach-email box. It's a **send-time** field, not a crash-time one: the crash is written to disk before any email
+  is known, and the signal context has no settings access anyway. NEVER read settings or the email in the crash build
+  path or the signal handler. The dialog threads it into `send_crash_report(report)`.
 
 ## What we never send
 

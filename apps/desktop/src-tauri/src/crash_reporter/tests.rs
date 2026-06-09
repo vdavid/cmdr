@@ -29,6 +29,8 @@ fn crash_report_roundtrip() {
         possible_crash_loop: false,
         build_mode: Some("release".to_string()),
         short_id: Some("CRASH-A2345".to_string()),
+        diag_id: "diag_12345678-1234-1234-1234-1234567890ab".to_string(),
+        email: Some("tester@example.com".to_string()),
     };
 
     write_crash_report(&path, &report).unwrap();
@@ -52,6 +54,47 @@ fn crash_report_roundtrip() {
     assert!(!loaded.possible_crash_loop);
     assert_eq!(loaded.build_mode.as_deref(), Some("release"));
     assert_eq!(loaded.short_id.as_deref(), Some("CRASH-A2345"));
+    assert_eq!(loaded.diag_id, "diag_12345678-1234-1234-1234-1234567890ab");
+    assert_eq!(loaded.email.as_deref(), Some("tester@example.com"));
+}
+
+/// A crash report serializes the `diag_` id under `diagId` and the optional `email`
+/// under `email` (camelCase), and never carries an `anal_` analytics id anywhere.
+#[test]
+fn crash_report_serializes_diag_id_and_email_camelcase_never_anal() {
+    let report = make_test_report();
+    let json = serde_json::to_string(&report).unwrap();
+    assert!(json.contains("\"diagId\""), "missing diagId key: {json}");
+    assert!(json.contains("\"email\""), "missing email key: {json}");
+    assert!(report.diag_id.starts_with("diag_"), "diag id must use diag_ prefix");
+    // The unjoinability invariant: the analytics id must never appear on a crash report.
+    assert!(
+        !json.contains("anal_"),
+        "crash report must never carry an anal_ id: {json}"
+    );
+}
+
+/// Old crash files written before the diag/email columns existed still parse: `diag_id`
+/// defaults to empty and `email` to `None`.
+#[test]
+fn crash_report_without_diag_or_email_parses() {
+    let json = r#"{
+        "version": 1,
+        "timestamp": "2026-03-22T10:00:00+00:00",
+        "signal": "panic",
+        "panicMessage": null,
+        "backtraceFrames": [],
+        "threadName": null,
+        "threadCount": 0,
+        "appVersion": "0.8.2",
+        "osVersion": "macOS 15.3",
+        "arch": "aarch64",
+        "uptimeSecs": 0.0,
+        "activeSettings": {}
+    }"#;
+    let report: CrashReport = serde_json::from_str(json).unwrap();
+    assert_eq!(report.diag_id, "");
+    assert_eq!(report.email, None);
 }
 
 #[test]
@@ -311,5 +354,7 @@ fn make_test_report() -> CrashReport {
         possible_crash_loop: false,
         build_mode: Some("debug".to_string()),
         short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
+        diag_id: "diag_00000000-0000-4000-8000-000000000000".to_string(),
+        email: None,
     }
 }

@@ -25,18 +25,19 @@ describe('error-reporter wrappers', () => {
   })
 
   describe('prepareErrorReportPreview', () => {
-    it('forwards undefined when no note is provided', async () => {
+    it('forwards undefined for note and email when neither is provided', async () => {
       vi.mocked(invoke).mockResolvedValueOnce({ id: 'ERR-AB23X' })
       const result = await prepareErrorReportPreview()
-      expect(invoke).toHaveBeenCalledWith('prepare_error_report_preview', { userNote: undefined })
+      expect(invoke).toHaveBeenCalledWith('prepare_error_report_preview', { userNote: undefined, email: undefined })
       expect(result).toEqual({ id: 'ERR-AB23X' })
     })
 
-    it('forwards the user note when provided', async () => {
+    it('forwards the user note and email when provided', async () => {
       vi.mocked(invoke).mockResolvedValueOnce({ id: 'ERR-AB23X', sizeBytes: 1234 })
-      await prepareErrorReportPreview('Something broke')
+      await prepareErrorReportPreview('Something broke', 'tester@example.com')
       expect(invoke).toHaveBeenCalledWith('prepare_error_report_preview', {
         userNote: 'Something broke',
+        email: 'tester@example.com',
       })
     })
 
@@ -47,17 +48,17 @@ describe('error-reporter wrappers', () => {
   })
 
   describe('sendErrorReport', () => {
-    it('forwards the user note and returns the server-issued ID', async () => {
+    it('forwards the user note and email and returns the server-issued ID', async () => {
       vi.mocked(commands.sendErrorReport).mockResolvedValueOnce({ status: 'ok', data: { id: 'ERR-XYZ99' } })
-      const result = await sendErrorReport('a note')
-      expect(commands.sendErrorReport).toHaveBeenCalledWith('a note')
+      const result = await sendErrorReport('a note', 'tester@example.com')
+      expect(commands.sendErrorReport).toHaveBeenCalledWith('a note', 'tester@example.com')
       expect(result).toEqual({ id: 'ERR-XYZ99' })
     })
 
-    it('forwards null when no note is provided', async () => {
+    it('forwards null for both when neither is provided', async () => {
       vi.mocked(commands.sendErrorReport).mockResolvedValueOnce({ status: 'ok', data: { id: 'ERR-XYZ99' } })
       await sendErrorReport()
-      expect(commands.sendErrorReport).toHaveBeenCalledWith(null)
+      expect(commands.sendErrorReport).toHaveBeenCalledWith(null, null)
     })
   })
 
@@ -68,7 +69,7 @@ describe('error-reporter wrappers', () => {
         data: '/some/path/error-report-debug-20260423T100000Z.zip',
       })
       const result = await saveErrorReportToDisk()
-      expect(commands.saveErrorReportToDisk).toHaveBeenCalledWith(null)
+      expect(commands.saveErrorReportToDisk).toHaveBeenCalledWith(null, null)
       expect(result).toBe('/some/path/error-report-debug-20260423T100000Z.zip')
     })
   })

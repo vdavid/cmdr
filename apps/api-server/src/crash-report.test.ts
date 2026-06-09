@@ -285,4 +285,99 @@ describe('POST /crash-report', () => {
     const backtrace = bindMock.mock.calls[0][6] as string
     expect(backtrace.length).toBeLessThanOrEqual(5_000)
   })
+
+  it('stores diagId and email when supplied', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = {
+      ...validCrashReport,
+      diagId: 'diag_12345678-1234-1234-1234-1234567890ab',
+      email: 'tester@example.com',
+    }
+
+    await postCrashReport(report, bindings)
+
+    // bindArgs: [hashedIp, appVersion, osVersion, arch, signal, topFunction, backtraceTruncated, buildMode, shortId, diagId, email]
+    const bindArgs = bindMock.mock.calls[0]
+    expect(bindArgs[9]).toBe('diag_12345678-1234-1234-1234-1234567890ab')
+    expect(bindArgs[10]).toBe('tester@example.com')
+  })
+
+  it('accepts explicit nulls for diagId and email (upgrade-window compat)', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = { ...validCrashReport, diagId: null, email: null }
+
+    const res = await postCrashReport(report, bindings)
+    expect(res.status).toBe(204)
+
+    const bindArgs = bindMock.mock.calls[0]
+    expect(bindArgs[9]).toBeNull()
+    expect(bindArgs[10]).toBeNull()
+  })
+
+  it('round-trips a valid diagId and email through D1', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = {
+      ...validCrashReport,
+      diagId: 'diag_abcdef00-0000-4000-8000-abcdef000000',
+      email: 'me@getcmdr.com',
+    }
+
+    const res = await postCrashReport(report, bindings)
+    expect(res.status).toBe(204)
+
+    const bindArgs = bindMock.mock.calls[0]
+    expect(bindArgs[9]).toBe(report.diagId)
+    expect(bindArgs[10]).toBe(report.email)
+  })
+
+  it('returns 400 for a malformed diagId', async () => {
+    const bindings = createBindings()
+    const report = { ...validCrashReport, diagId: 'diag_NOT-A-UUID' }
+
+    const res = await postCrashReport(report, bindings)
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid diagId')
+  })
+
+  it('rejects an anal_-prefixed id in the diagId field (analytics id never on reports)', async () => {
+    // The unjoinability invariant: a report must never carry the analytics id. An
+    // `anal_`-prefixed value in `diagId` fails the `diag_` shape check, so a coding
+    // mistake that wired the wrong id can't silently land in D1.
+    const bindings = createBindings()
+    const report = { ...validCrashReport, diagId: 'anal_12345678-1234-1234-1234-1234567890ab' }
+
+    const res = await postCrashReport(report, bindings)
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid diagId')
+  })
+
+  it('never writes an anal_-prefixed value into any crash column', async () => {
+    // Defense in depth: even if a malformed payload slips a valid-shaped value past
+    // validation, assert no bound argument carries the analytics prefix.
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = {
+      ...validCrashReport,
+      diagId: 'diag_12345678-1234-1234-1234-1234567890ab',
+      email: 'tester@example.com',
+    }
+
+    await postCrashReport(report, bindings)
+
+    const bindArgs = bindMock.mock.calls[0] as unknown[]
+    for (const arg of bindArgs) {
+      if (typeof arg === 'string') {
+        expect(arg.startsWith('anal_')).toBe(false)
+      }
+    }
+  })
 })

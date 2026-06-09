@@ -863,6 +863,19 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
   },
 
+  {
+    id: 'updates.attachEmailToReports',
+    section: ['Advanced'],
+    label: 'Attach my email to reports by default',
+    description:
+      'When you send a crash or error report, include your beta contact email so we can reply. You can change this per report.',
+    keywords: ['email', 'report', 'crash', 'error', 'contact', 'attach', 'reply', 'beta'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    showInAdvanced: true,
+  },
+
   // ========================================================================
   // Advanced (auto-generated UI, `showInAdvanced: true`).
   //

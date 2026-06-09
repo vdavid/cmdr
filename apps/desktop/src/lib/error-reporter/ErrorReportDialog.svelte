@@ -21,6 +21,7 @@
     import ErrorReportToastContent, { setLastSentReportId } from './ErrorReportToastContent.svelte'
     import BundleSavedToastContent, { setLastSavedBundlePath } from './BundleSavedToastContent.svelte'
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
+    import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
     import { pluralize } from '$lib/utils/pluralize'
 
@@ -31,6 +32,11 @@
     const POST_SEND_TOAST_MS = 10_000
 
     let userNote = $state(errorReportFlow.initialNote)
+    // Beta contact email (if set) and the sticky attach-email choice. The checkbox shows
+    // only when an email is on file; never pre-ticked on first use (default false).
+    const contactEmail = getSetting('analytics.email').trim()
+    let attachEmail = $state(getSetting('updates.attachEmailToReports'))
+    const emailToAttach = $derived(attachEmail && contactEmail ? contactEmail : undefined)
     let detailsExpanded = $state(false)
     let preview = $state<PreviewPayload | null>(null)
     let preparingError = $state<string | null>(null)
@@ -58,7 +64,7 @@
 
     async function buildInitialPreview() {
         try {
-            const result = await prepareErrorReportPreview(undefined)
+            const result = await prepareErrorReportPreview(undefined, emailToAttach)
             preview = result
             preparingError = null
         } catch (e) {
@@ -79,6 +85,10 @@
         return {
             ...preview.manifest,
             userNote: trimmed.length > 0 ? trimmed : undefined,
+            // Overlay the live attach-email choice so toggling the checkbox updates the
+            // preview without rebuilding the multi-MB bundle. The actual send rebuilds
+            // with the final value.
+            email: emailToAttach,
         }
     })
 
@@ -91,7 +101,10 @@
         if (sending || noteOverLimit) return
         sending = true
         try {
-            const result = await sendErrorReport(userNote || undefined)
+            if (contactEmail) {
+                setSetting('updates.attachEmailToReports', attachEmail)
+            }
+            const result = await sendErrorReport(userNote || undefined, emailToAttach)
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
             setLastSentReportId(result.id)
             addToast(ErrorReportToastContent, {
@@ -111,7 +124,7 @@
 
     async function handleSaveToDisk() {
         try {
-            const path = await saveErrorReportToDisk(userNote || undefined)
+            const path = await saveErrorReportToDisk(userNote || undefined, emailToAttach)
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
             setLastSavedBundlePath(path)
             addToast(BundleSavedToastContent, {
@@ -193,6 +206,13 @@
             <p class="helper-text">
                 Note is too long. Maximum is {MAX_NOTE_CHARS.toLocaleString('en-US')} characters.
             </p>
+        {/if}
+
+        {#if contactEmail}
+            <label class="attach-email">
+                <input type="checkbox" bind:checked={attachEmail} />
+                <span>Attach my email ({contactEmail}) so we can reply</span>
+            </label>
         {/if}
 
         <button
@@ -346,6 +366,20 @@
         margin: calc(var(--spacing-md) * -1) 0 var(--spacing-md);
         font-size: var(--font-size-xs);
         color: var(--color-error);
+    }
+
+    .attach-email {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        cursor: default;
+    }
+
+    .attach-email input[type='checkbox'] {
+        accent-color: var(--color-accent);
     }
 
     .details-toggle {

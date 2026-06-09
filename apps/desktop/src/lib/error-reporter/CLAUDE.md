@@ -48,6 +48,17 @@ Bridge: `ErrorReportToastContent.svelte` exports `setLastSentReportId(id)` from 
 calls it right before `addToast(component, ...)` so the toast can render the ID without the toast system needing to
 forward props. Same pattern as `MtpConnectedToastContent`.
 
+## Attach-email checkbox
+
+Both `ErrorReportDialog.svelte` (Flow A) and `crash-reporter/CrashReportDialog.svelte` show an "Attach my email
+(`<addr>`) so we can reply" checkbox, but **only when `analytics.email` is set**. It's initialized from
+`updates.attachEmailToReports` (default false, never pre-ticked on first use) and on send writes that bool back, so the
+choice is sticky. When checked, the email is threaded into the send payload (error: `sendErrorReport(note, email)` and
+the preview/save calls; crash: `report.email` on the `CrashReport` passed to `sendCrashReport`). The same default also
+has a manual toggle in **Settings > Advanced** (`updates.attachEmailToReports`). The email rides ONLY these
+user-initiated sends; the auto-send path (Flow B) never attaches it (see `error_reporter/CLAUDE.md` §
+Flow-B-never-email).
+
 ## User note caps
 
 - Soft warning at 50 000 chars (counter appears, no other change).

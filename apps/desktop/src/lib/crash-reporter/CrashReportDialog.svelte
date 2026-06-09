@@ -3,7 +3,7 @@
     import Button from '$lib/ui/Button.svelte'
     import type { CrashReport } from '$lib/tauri-commands'
     import { sendCrashReport, dismissCrashReport } from '$lib/tauri-commands'
-    import { setSetting } from '$lib/settings'
+    import { getSetting, setSetting } from '$lib/settings'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('crashReportDialog')
@@ -20,6 +20,13 @@
     let sending = $state(false)
     let copied = $state(false)
 
+    // The beta contact email, if the user added one. Drives whether the attach-email
+    // checkbox shows at all. Trimmed so a stray-space value doesn't count as "on file."
+    const contactEmail = $derived(getSetting('analytics.email').trim())
+    // Sticky default from the last choice (Advanced toggle or a prior report). Never
+    // pre-ticked on first use: the registry default is false.
+    let attachEmail = $state(getSetting('updates.attachEmailToReports'))
+
     const reportJson = $derived(JSON.stringify(report, null, 2))
 
     async function handleCopy() {
@@ -34,7 +41,14 @@
             if (alwaysSend) {
                 setSetting('updates.crashReports', true)
             }
-            await sendCrashReport(report)
+            // Remember the attach-email choice (sticky) and include the email only when
+            // the box is checked AND an email is on file.
+            if (contactEmail) {
+                setSetting('updates.attachEmailToReports', attachEmail)
+            }
+            const reportToSend: CrashReport =
+                attachEmail && contactEmail ? { ...report, email: contactEmail } : report
+            await sendCrashReport(reportToSend)
             log.info('Crash report sent')
         } catch (e) {
             log.warn('Crash report send attempt returned an error: {error}', { error: String(e) })
@@ -105,6 +119,14 @@
             <input type="checkbox" bind:checked={alwaysSend} />
             <span>Always send crash reports</span>
         </label>
+
+        <!-- Attach-email checkbox, shown only when a beta contact email is on file -->
+        {#if contactEmail}
+            <label class="always-send">
+                <input type="checkbox" bind:checked={attachEmail} />
+                <span>Attach my email ({contactEmail}) so we can reply</span>
+            </label>
+        {/if}
 
         <!-- Actions -->
         <div class="button-row">

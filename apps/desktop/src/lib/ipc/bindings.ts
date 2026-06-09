@@ -1031,6 +1031,21 @@ export const commands = {
        *  set it.
        */
       shortId?: string | null
+      /**
+       *  The `diag_<uuid>` diagnostics id, attached at report-assembly time (panic hook reads
+       *  the `OnceLock` snapshot; the signal path attaches it at next-launch assembly). Groups
+       *  sequential reports from one install. NEVER the `anal_` analytics id: the two-id split
+       *  keeps a voluntarily-attached email unjoinable to the analytics stream. `default`
+       *  (empty string) only when read from a crash file written before this field existed.
+       */
+      diagId?: string
+      /**
+       *  Beta contact email, populated ONLY by the dialog at send time when the user ticks the
+       *  attach-email box (see `commands/crash_reporter.rs`). NEVER read in the crash build path
+       *  or the signal handler (no settings access there, and the email isn't known yet). `None`
+       *  for every report the user didn't opt to attach an email to.
+       */
+      email?: string | null
     } | null>('check_pending_crash_report'),
   // Deletes the crash report file without sending it.
   dismissCrashReport: () => __TAURI_INVOKE<void>('dismiss_crash_report'),
@@ -1043,8 +1058,8 @@ export const commands = {
    *  Re-build the bundle and upload it. Returns the server-issued ID; display *that* to
    *  the user, not any locally-generated ID from a prior `prepare` call.
    */
-  sendErrorReport: (userNote: string | null) =>
-    typedError<SendResult, string>(__TAURI_INVOKE('send_error_report', { userNote })),
+  sendErrorReport: (userNote: string | null, email: string | null) =>
+    typedError<SendResult, string>(__TAURI_INVOKE('send_error_report', { userNote, email })),
   /**
    *  Pushes the FE settings-registry default map to the backend, where it feeds
    *  [`crate::error_reporter::ResolvedSettings::from_settings`] so manifests don't
@@ -2245,8 +2260,8 @@ export const commands = {
    *  Debug-only escape hatch: build the bundle and write it to the app data dir as a `.zip`.
    *  Helpful when iterating on the redactor or the manifest format.
    */
-  saveErrorReportToDisk: (userNote: string | null) =>
-    typedError<string, string>(__TAURI_INVOKE('save_error_report_to_disk', { userNote })),
+  saveErrorReportToDisk: (userNote: string | null, email: string | null) =>
+    typedError<string, string>(__TAURI_INVOKE('save_error_report_to_disk', { userNote, email })),
   /**
    *  Debug-only command that generates a real `FriendlyError` for the debug error pane preview.
    *
@@ -2693,6 +2708,21 @@ export type CrashReport = {
    *  set it.
    */
   shortId?: string | null
+  /**
+   *  The `diag_<uuid>` diagnostics id, attached at report-assembly time (panic hook reads
+   *  the `OnceLock` snapshot; the signal path attaches it at next-launch assembly). Groups
+   *  sequential reports from one install. NEVER the `anal_` analytics id: the two-id split
+   *  keeps a voluntarily-attached email unjoinable to the analytics stream. `default`
+   *  (empty string) only when read from a crash file written before this field existed.
+   */
+  diagId?: string
+  /**
+   *  Beta contact email, populated ONLY by the dialog at send time when the user ticks the
+   *  attach-email box (see `commands/crash_reporter.rs`). NEVER read in the crash build path
+   *  or the signal handler (no settings access there, and the email isn't known yet). `None`
+   *  for every report the user didn't opt to attach an email to.
+   */
+  email?: string | null
 }
 
 export type CreditInfoDto = {

@@ -10,6 +10,7 @@ import { mount, tick } from 'svelte'
 import ErrorReportDialog from './ErrorReportDialog.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
+import { sendErrorReport } from '$lib/tauri-commands/error-reporter'
 
 const previewPayload = {
   id: 'ERR-AB23X',
@@ -44,6 +45,18 @@ vi.mock('$lib/tauri-commands/error-reporter', () => ({
   saveErrorReportToDisk: vi.fn(() => Promise.resolve('/tmp/bundle.zip')),
 }))
 
+// Settings are mocked per-test via these refs so the email-on-file and sticky-default
+// states can vary. Defaults: no email on file, attach-default off.
+let mockEmail = ''
+let mockAttachDefault = false
+const setSettingMock = vi.fn()
+vi.mock('$lib/settings', () => ({
+  getSetting: vi.fn((id: string) => (id === 'analytics.email' ? mockEmail : mockAttachDefault)),
+  setSetting: (id: string, value: unknown) => {
+    setSettingMock(id, value)
+  },
+}))
+
 vi.mock('$lib/ui/toast', () => ({
   addToast: vi.fn(),
 }))
@@ -57,6 +70,10 @@ Object.defineProperty(navigator, 'clipboard', {
 describe('ErrorReportDialog', () => {
   beforeEach(() => {
     closeErrorReportDialog()
+    mockEmail = ''
+    mockAttachDefault = false
+    setSettingMock.mockClear()
+    vi.mocked(sendErrorReport).mockClear()
   })
 
   it('default render has no a11y violations', async () => {
@@ -186,6 +203,84 @@ describe('ErrorReportDialog', () => {
       b.textContent.trim().startsWith('Send report'),
     )
     expect(sendButton?.disabled).toBe(true)
+  })
+
+  function findAttachEmailCheckbox(target: HTMLElement): HTMLInputElement | null {
+    const label = Array.from(target.querySelectorAll('label')).find((l) => l.textContent.includes('Attach my email'))
+    return label?.querySelector('input[type="checkbox"]') ?? null
+  }
+
+  async function mountSettled(): Promise<HTMLElement> {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ErrorReportDialog, { target, props: {} })
+    await tick()
+    await new Promise((r) => setTimeout(r, 300))
+    await tick()
+    return target
+  }
+
+  it('hides the attach-email checkbox when no beta email is on file', async () => {
+    mockEmail = ''
+    const target = await mountSettled()
+    expect(findAttachEmailCheckbox(target)).toBeNull()
+  })
+
+  it('shows the attach-email checkbox, unticked, when an email is on file (sticky default off)', async () => {
+    mockEmail = 'tester@example.com'
+    mockAttachDefault = false
+    const target = await mountSettled()
+    const checkbox = findAttachEmailCheckbox(target)
+    expect(checkbox).not.toBeNull()
+    expect(checkbox?.checked).toBe(false)
+    expect(target.textContent).toContain('tester@example.com')
+  })
+
+  it('pre-ticks the checkbox when the sticky default is on', async () => {
+    mockEmail = 'tester@example.com'
+    mockAttachDefault = true
+    const target = await mountSettled()
+    expect(findAttachEmailCheckbox(target)?.checked).toBe(true)
+  })
+
+  it('includes the email in the send payload only when the box is checked, and persists the choice', async () => {
+    mockEmail = 'tester@example.com'
+    mockAttachDefault = false
+    const target = await mountSettled()
+    const checkbox = findAttachEmailCheckbox(target)
+    if (!checkbox) throw new Error('checkbox missing')
+    checkbox.checked = true
+    checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await tick()
+
+    errorReportFlow.open = true
+    const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
+      b.textContent.trim().startsWith('Send report'),
+    )
+    if (!sendButton) throw new Error('Send button missing')
+    sendButton.click()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(vi.mocked(sendErrorReport)).toHaveBeenCalledWith(undefined, 'tester@example.com')
+    expect(setSettingMock).toHaveBeenCalledWith('updates.attachEmailToReports', true)
+  })
+
+  it('omits the email from the send payload when the box is unchecked', async () => {
+    mockEmail = 'tester@example.com'
+    mockAttachDefault = false
+    const target = await mountSettled()
+
+    errorReportFlow.open = true
+    const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
+      b.textContent.trim().startsWith('Send report'),
+    )
+    if (!sendButton) throw new Error('Send button missing')
+    sendButton.click()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(vi.mocked(sendErrorReport)).toHaveBeenCalledWith(undefined, undefined)
   })
 
   it('Cancel button closes the dialog via the flow store', async () => {

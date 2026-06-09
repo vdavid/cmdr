@@ -20,6 +20,10 @@ export interface BundleManifest {
   arch: string
   activeSettings: ActiveSettingsSnapshot
   userNote?: string
+  /** The `diag_<uuid>` diagnostics id. Never the `anal_` analytics id. */
+  diagId: string
+  /** Contact email, set only when the user ticks the attach-email box (Flow A). */
+  email?: string
   generatedAt: string
 }
 
@@ -36,18 +40,23 @@ export interface PreviewPayload {
 
 /**
  * Build the bundle in-memory and return preview metadata. No network.
+ *
+ * `email` is the beta contact email the user opted to attach (Flow A only). Pass it so
+ * the previewed manifest reflects exactly what'll ship.
  */
-export async function prepareErrorReportPreview(userNote?: string): Promise<PreviewPayload> {
+export async function prepareErrorReportPreview(userNote?: string, email?: string): Promise<PreviewPayload> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- BundleManifest contains Breadcrumb.ctx: Option<serde_json::Value>, which specta can't represent; excluded from typed bindings
-  return invoke<PreviewPayload>('prepare_error_report_preview', { userNote })
+  return invoke<PreviewPayload>('prepare_error_report_preview', { userNote, email })
 }
 
 /**
  * Re-build the bundle and upload it. Returns the server-issued ID.
  * Display the returned `id` to the user, not the one from `prepareErrorReportPreview`.
+ *
+ * `email` is included only when the user ticked the attach-email box.
  */
-export async function sendErrorReport(userNote?: string): Promise<{ id: string }> {
-  const res = await commands.sendErrorReport(userNote ?? null)
+export async function sendErrorReport(userNote?: string, email?: string): Promise<{ id: string }> {
+  const res = await commands.sendErrorReport(userNote ?? null, email ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -56,8 +65,8 @@ export async function sendErrorReport(userNote?: string): Promise<{ id: string }
  * Debug-only: write the bundle to the app data dir and return the path.
  * In production the command isn't registered, so calling it returns an error.
  */
-export async function saveErrorReportToDisk(userNote?: string): Promise<string> {
-  const res = await commands.saveErrorReportToDisk(userNote ?? null)
+export async function saveErrorReportToDisk(userNote?: string, email?: string): Promise<string> {
+  const res = await commands.saveErrorReportToDisk(userNote ?? null, email ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

@@ -72,6 +72,7 @@ pub fn build_bundle<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     kind: BundleKind,
     user_note: Option<String>,
+    email: Option<String>,
     scope: BundleScope,
 ) -> Result<BuiltBundle, String> {
     let id = super::generate_short_id();
@@ -94,6 +95,11 @@ pub fn build_bundle<R: tauri::Runtime>(
         log_levels: build_log_level_snapshot(),
         breadcrumbs: breadcrumbs::snapshot(),
         user_note: user_note.and_then(|n| prepare_user_note(&n, kind, &salt)),
+        // The diag id (full stdlib here, safe to mint/lock). NEVER the `anal_` analytics id.
+        diag_id: crate::install_id::diagnostics_id(),
+        // Email rides ONLY Flow A (User). `email_for_kind` strips it for Flow B (Auto) so an
+        // auto-send can never ship an address the user didn't consent to per report.
+        email: email_for_kind(kind, email),
         generated_at: now_utc.to_rfc3339(),
     };
 
@@ -134,6 +140,21 @@ pub(super) fn prepare_user_note(note: &str, kind: BundleKind, salt: &[u8]) -> Op
             .join("\n"),
         BundleKind::User => trimmed.to_string(),
     })
+}
+
+/// Returns the email that may ride on a bundle of the given kind. Flow A
+/// ([`BundleKind::User`], the dialog with the attach-email checkbox) keeps whatever the
+/// user attached; Flow B ([`BundleKind::Auto`], the auto-dispatcher) ALWAYS gets `None`.
+///
+/// This is the structural guard behind the Flow-B-never-email invariant: even if a future
+/// caller wires an email into the auto path by mistake, it's stripped here, in one place,
+/// rather than relying on every call site to pass `None`. Pure, so it's unit-testable
+/// without a Tauri handle.
+pub(super) fn email_for_kind(kind: BundleKind, email: Option<String>) -> Option<String> {
+    match kind {
+        BundleKind::User => email,
+        BundleKind::Auto => None,
+    }
 }
 
 /// Streaming Flow A pipeline. Walks log files newest-first via the tail walker, redacts

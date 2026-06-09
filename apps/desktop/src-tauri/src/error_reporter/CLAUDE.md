@@ -64,7 +64,23 @@ Manifest fields (`BundleManifest`):
   user never previews what ships, so the redactor is the only thing standing between a
   `/Users/<name>/...` path in the message and the manifest. [`BundleKind::User`] notes
   are typed by the user, previewed in the dialog, and shipped verbatim.
+- `diagId` (`diag_<uuid>`): the diagnostics id from [`crate::install_id`], attached at bundle assembly via
+  `install_id::diagnostics_id()` (full stdlib here, safe to mint/lock). Groups sequential reports from one install.
+  **NEVER the `anal_` analytics id** (see `analytics/CLAUDE.md` § "Two ids that never meet"): the two-id split keeps a
+  voluntarily-attached email unjoinable to the analytics stream. It rides both flows (that's its purpose).
+- `email` (optional): a beta tester's contact email so we can reply about the bug. Set **only by Flow A** (the dialog
+  with the attach-email checkbox), never by Flow B. See the Flow-B-never-email rule below.
 - `generatedAt`: ISO 8601 UTC timestamp.
+
+### Flow-B-never-email (load-bearing privacy rule)
+
+`BundleManifest.email` may be set **only** on Flow A ([`BundleKind::User`]: the user-initiated dialog with the
+attach-email checkbox). Flow B ([`BundleKind::Auto`], the `auto_dispatcher`, which fires on `log_error!` with no preview
+and no per-report consent) **always** ships `email: None`. A user who enabled auto-send hasn't consented to attaching
+their address to every report, and a leak there would break the decoupling promise. This is enforced **structurally**:
+`build_bundle` takes an `email` argument and runs it through `bundle_builder::email_for_kind(kind, email)`, which returns
+`None` for `Auto` regardless of what's passed. So even a future caller that wires an email into the auto path can't leak
+it. The auto-dispatcher also passes `None` explicitly at its call site. Guarded by `email_for_kind_drops_email_for_auto_flow_only`.
 
 Distinct from `crash_reporter::ActiveSettings`: that struct is the on-disk crash file
 format and stays `Option<bool>`-shaped for backward compatibility with crash files

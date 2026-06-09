@@ -77,6 +77,19 @@ pub struct CrashReport {
     /// set it.
     #[serde(default)]
     pub short_id: Option<String>,
+    /// The `diag_<uuid>` diagnostics id, attached at report-assembly time (panic hook reads
+    /// the `OnceLock` snapshot; the signal path attaches it at next-launch assembly). Groups
+    /// sequential reports from one install. NEVER the `anal_` analytics id: the two-id split
+    /// keeps a voluntarily-attached email unjoinable to the analytics stream. `default`
+    /// (empty string) only when read from a crash file written before this field existed.
+    #[serde(default)]
+    pub diag_id: String,
+    /// Beta contact email, populated ONLY by the dialog at send time when the user ticks the
+    /// attach-email box (see `commands/crash_reporter.rs`). NEVER read in the crash build path
+    /// or the signal handler (no settings access there, and the email isn't known yet). `None`
+    /// for every report the user didn't opt to attach an email to.
+    #[serde(default)]
+    pub email: Option<String>,
 }
 
 /// Initializes the crash reporter: panic hook, signal handlers, and settings cache.
@@ -161,6 +174,11 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         possible_crash_loop: false,
         build_mode: Some(current_build_mode().to_string()),
         short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
+        // The panic hook runs in normal Rust, so it can read the pre-resolved diag-id
+        // snapshot directly (cheap `OnceLock` clone, no mint/lock). `email` is a send-time
+        // field; the dialog populates it later, never the build path.
+        diag_id: crate::install_id::diagnostics_id_snapshot().unwrap_or_default(),
+        email: None,
     }
 }
 
@@ -465,6 +483,11 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
                 possible_crash_loop: false,
                 build_mode: Some(current_build_mode().to_string()),
                 short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
+                // Signal path: the async-signal-safe handler couldn't touch the diag id (no
+                // alloc/lock). We attach it HERE, at next-launch assembly, where full stdlib is
+                // available. `email` stays `None` (send-time field, set by the dialog).
+                diag_id: crate::install_id::diagnostics_id(),
+                email: None,
             };
 
             if let Err(e) = write_crash_report(crash_json_path, &report) {

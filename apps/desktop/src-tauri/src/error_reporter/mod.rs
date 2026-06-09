@@ -284,6 +284,16 @@ pub struct BundleManifest {
     /// See `breadcrumbs.rs` for the buffer semantics.
     pub breadcrumbs: Vec<breadcrumbs::Breadcrumb>,
     pub user_note: Option<String>,
+    /// The `diag_<uuid>` diagnostics id, attached at bundle assembly via
+    /// [`crate::install_id::diagnostics_id`] (full stdlib here, so it's safe to mint/lock).
+    /// Groups sequential reports from one install. NEVER the `anal_` analytics id: the
+    /// two-id split keeps a voluntarily-attached email unjoinable to the analytics stream.
+    pub diag_id: String,
+    /// Beta contact email, set ONLY by Flow A (the user dialog) when the user ticks the
+    /// attach-email box. Flow B ([`BundleKind::Auto`], the auto-dispatcher) ALWAYS leaves
+    /// this `None`: a user who enabled auto-send hasn't consented to shipping their address
+    /// on every report. Enforced structurally by [`bundle_builder::email_for_kind`].
+    pub email: Option<String>,
     pub generated_at: String,
 }
 

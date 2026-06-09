@@ -251,6 +251,31 @@ describe('buildSectionTree', () => {
   })
 })
 
+describe('updates.attachEmailToReports', () => {
+  it('registers a boolean defaulting to false (not pre-ticked) in Advanced', () => {
+    const def = getSettingDefinition('updates.attachEmailToReports')
+    expect(def).toBeDefined()
+    expect(def?.type).toBe('boolean')
+    expect(def?.component).toBe('switch')
+    expect(getDefaultValue('updates.attachEmailToReports')).toBe(false)
+    expect(def?.showInAdvanced).toBe(true)
+  })
+
+  it('surfaces in the Advanced settings list', () => {
+    const ids = getAdvancedSettings().map((s) => s.id)
+    expect(ids).toContain('updates.attachEmailToReports')
+  })
+
+  it('validates booleans only', () => {
+    expect(() => {
+      validateSettingValue('updates.attachEmailToReports', true)
+    }).not.toThrow()
+    expect(() => {
+      validateSettingValue('updates.attachEmailToReports', 'yes')
+    }).toThrow()
+  })
+})
+
 describe('analytics settings', () => {
   it('analytics.enabled is a boolean switch defaulting to on (opt-out for the beta)', () => {
     const def = getSettingDefinition('analytics.enabled')

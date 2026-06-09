@@ -76,9 +76,10 @@ pub struct SendResult {
 pub async fn prepare_error_report_preview(
     app: tauri::AppHandle,
     user_note: Option<String>,
+    email: Option<String>,
 ) -> Result<PreviewPayload, String> {
     let note = validate_user_note(user_note)?;
-    let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::flow_a_default())?;
+    let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, email, BundleScope::flow_a_default())?;
     let capped = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
     Ok(PreviewPayload {
         id: bundle.id,
@@ -94,9 +95,13 @@ pub async fn prepare_error_report_preview(
 /// the user, not any locally-generated ID from a prior `prepare` call.
 #[tauri::command]
 #[specta::specta]
-pub async fn send_error_report(app: tauri::AppHandle, user_note: Option<String>) -> Result<SendResult, String> {
+pub async fn send_error_report(
+    app: tauri::AppHandle,
+    user_note: Option<String>,
+    email: Option<String>,
+) -> Result<SendResult, String> {
     let note = validate_user_note(user_note)?;
-    let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::flow_a_default())?;
+    let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, email, BundleScope::flow_a_default())?;
     let capped = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
     let result = error_reporter::upload(capped, &bundle.manifest, ERROR_REPORT_URL).await?;
     Ok(SendResult { id: result.id })
@@ -107,9 +112,13 @@ pub async fn send_error_report(app: tauri::AppHandle, user_note: Option<String>)
 #[cfg(debug_assertions)]
 #[tauri::command]
 #[specta::specta]
-pub async fn save_error_report_to_disk(app: tauri::AppHandle, user_note: Option<String>) -> Result<String, String> {
+pub async fn save_error_report_to_disk(
+    app: tauri::AppHandle,
+    user_note: Option<String>,
+    email: Option<String>,
+) -> Result<String, String> {
     let note = validate_user_note(user_note)?;
-    let mut bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::flow_a_default())?;
+    let mut bundle = error_reporter::build_bundle(&app, BundleKind::User, note, email, BundleScope::flow_a_default())?;
     bundle.zip_bytes = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
     let path = error_reporter::save_bundle_to_disk(&app, &bundle)?;
     log::info!(

@@ -304,7 +304,10 @@ async fn flush(app: AppHandle<Wry>) {
     let scope = BundleScope::Window {
         first_error_at: state.first_error_at,
     };
-    let bundle = match error_reporter::build_bundle(&app, BundleKind::Auto, Some(note), scope) {
+    // Flow B NEVER attaches an email: the user opted into auto-send, not into shipping
+    // their address on every report. `email_for_kind` enforces this structurally too, but
+    // we pass `None` here to make the intent explicit at the call site.
+    let bundle = match error_reporter::build_bundle(&app, BundleKind::Auto, Some(note), None, scope) {
         Ok(b) => b,
         Err(e) => {
             log::warn!(

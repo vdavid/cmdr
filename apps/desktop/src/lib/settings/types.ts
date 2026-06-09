@@ -171,6 +171,8 @@ export interface SettingsValues {
   'updates.autoCheck': boolean
   'updates.crashReports': boolean
   'updates.errorReports': boolean
+  /** Sticky default for the report dialogs' attach-email checkbox; also a manual toggle in Advanced. */
+  'updates.attachEmailToReports': boolean
 
   // Analytics (beta usage stats + optional contact email)
   'analytics.enabled': boolean

@@ -1,5 +1,6 @@
 use super::bundle_builder::{
-    PreparedFile, build_bundle_streaming, build_zip, load_and_filter_log_file, prepare_user_note, zip_dt,
+    PreparedFile, build_bundle_streaming, build_zip, email_for_kind, load_and_filter_log_file, prepare_user_note,
+    zip_dt,
 };
 use super::bundle_capper::cap_bundle_to_bytes;
 use super::*;
@@ -37,6 +38,8 @@ fn sample_manifest() -> BundleManifest {
         },
         breadcrumbs: Vec::new(),
         user_note: Some("This thing failed".to_string()),
+        diag_id: "diag_00000000-0000-4000-8000-000000000000".to_string(),
+        email: None,
         generated_at: "2026-04-23T10:00:00+00:00".to_string(),
     }
 }
@@ -229,6 +232,48 @@ fn manifest_serializes_build_mode_with_camel_case_key() {
         manifest_json.contains("\"buildMode\": \"debug\""),
         "expected `\"buildMode\": \"debug\"` in manifest JSON, got: {manifest_json}",
     );
+}
+
+#[test]
+fn manifest_serializes_diag_id_and_email_camelcase_never_anal() {
+    let now = SystemTime::now();
+    let mut manifest = sample_manifest();
+    manifest.email = Some("tester@example.com".to_string());
+    let bytes = build_zip(&manifest, &BTreeMap::new(), now).unwrap();
+    let entries = read_zip_entries(&bytes);
+    let manifest_json = entries.get("manifest.json").unwrap();
+    assert!(
+        manifest_json.contains("\"diagId\""),
+        "missing diagId key: {manifest_json}"
+    );
+    assert!(
+        manifest_json.contains("\"email\""),
+        "missing email key: {manifest_json}"
+    );
+    assert!(
+        manifest.diag_id.starts_with("diag_"),
+        "diag id must use the diag_ prefix"
+    );
+    // The unjoinability invariant: a manifest must never carry the analytics id.
+    assert!(
+        !manifest_json.contains("anal_"),
+        "manifest must never carry an anal_ id: {manifest_json}"
+    );
+}
+
+#[test]
+fn email_for_kind_drops_email_for_auto_flow_only() {
+    // The whole point of Flow-B-never-email: a `BundleKind::Auto` bundle never carries an
+    // email, even if a caller mistakenly passes one. Flow A (User) keeps it.
+    let attached = Some("tester@example.com".to_string());
+    assert_eq!(email_for_kind(BundleKind::User, attached.clone()), attached);
+    assert_eq!(
+        email_for_kind(BundleKind::Auto, attached),
+        None,
+        "Flow B (Auto) must always strip the email"
+    );
+    // User flow with no email stays None.
+    assert_eq!(email_for_kind(BundleKind::User, None), None);
 }
 
 #[test]

@@ -19,6 +19,7 @@ vi.mock('$lib/tauri-commands', () => ({
 
 vi.mock('$lib/settings', () => ({
   setSetting: vi.fn(),
+  getSetting: vi.fn((id: string) => (id === 'analytics.email' ? '' : false)),
 }))
 
 const minimalReport = {

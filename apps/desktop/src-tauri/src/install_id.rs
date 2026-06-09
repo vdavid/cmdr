@@ -142,10 +142,6 @@ pub fn init() {
 
 /// The diagnostics id snapshotted at [`init`], or `None` if `init` hasn't run yet. The panic hook
 /// reads this cheap copy rather than calling [`diagnostics_id`].
-#[allow(
-    dead_code,
-    reason = "consumed by crash assembly once the diag id is wired into reports"
-)]
 pub fn diagnostics_id_snapshot() -> Option<String> {
     DIAGNOSTICS_ID_SNAPSHOT.get().cloned()
 }

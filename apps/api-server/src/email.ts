@@ -17,6 +17,8 @@ export interface CrashEmailRow {
   site: string
   signal: string
   version: string
+  /** Contact email the tester voluntarily attached at send time, or `null` if none. */
+  email: string | null
 }
 
 interface CrashNotificationParams {
@@ -40,6 +42,11 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 13px;">${escapeHtml(entry.site)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.signal)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.version)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${
+              entry.email
+                ? `<a href="mailto:${escapeHtml(entry.email)}" style="color: #2563eb;">${escapeHtml(entry.email)}</a>`
+                : '<span style="color: #9ca3af;">—</span>'
+            }</td>
         </tr>`,
     )
     .join('\n')
@@ -66,6 +73,7 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
                 <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Site</th>
                 <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Signal</th>
                 <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Version</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Reply to</th>
             </tr>
         </thead>
         <tbody>

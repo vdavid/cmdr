@@ -187,7 +187,7 @@ Subscription validation: POST /validate → Paddle API transactions + subscripti
 
 Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget) → 302 to GitHub Releases
 
-Crash report: POST /crash-report → validate payload (size + required fields) → hash IP with daily salt → write to D1 (fire-and-forget via waitUntil) → 204
+Crash report: POST /crash-report → validate payload (size + required fields + optional diagId/email shape) → hash IP with daily salt → write to D1 incl. nullable diag_id + email (fire-and-forget via waitUntil) → 204
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → validate payload (size + required fields + analId/version shape + config-size cap) → write to D1 heartbeat (fire-and-forget via waitUntil), no IP stored → 204
 
@@ -249,8 +249,9 @@ Read by `/admin/stats`. The counter starts from zero when deployed; initialize v
 needed.
 
 **D1 for telemetry:** Crash reports, downloads, update checks, and heartbeats are stored in D1 (binding: `TELEMETRY_DB`,
-database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0005_heartbeat.sql`, which adds the `heartbeat`
-table). Apply with `wrangler d1 migrations apply cmdr-telemetry` before deploying changes that add new tables. The only
+database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0006_crash_diag_email.sql`, which adds the
+nullable `diag_id` + `email` columns to `crash_reports`; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with
+`wrangler d1 migrations apply cmdr-telemetry` before deploying changes that add new tables or columns. The only
 remaining Analytics Engine dataset is `DEVICE_COUNTS` for fair-use monitoring. All other state (license codes,
 activation counter, device sets) lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever);
 subscription validity is checked live via Paddle API.
@@ -270,11 +271,17 @@ SHA-256 + daily salt for deduplication without storing PII. D1 write is fire-and
 `.catch(() => {})`. The cron handler aggregates raw data into the `daily_active_users` summary table daily.
 
 **Crash report tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `crash_reports`). Receives crash reports from the
-desktop app via `POST /crash-report`. Columns: hashed_ip, app_version, os_version, arch, signal, top_function,
-backtrace, build_mode (`'release'` / `'debug'`, nullable for legacy rows), short_id (`CRASH-XXXXX`, nullable for legacy
-rows). IP is hashed with SHA-256 + daily salt (same pattern as update checks). Validates payload size (max 64 KB),
-required fields, and the shape of optional fields before writing. D1 write is fire-and-forget via `waitUntil` +
-`.catch(() => {})`. No authentication required.
+desktop app via `POST /crash-report`. Columns: `hashed_ip`, `app_version`, `os_version`, `arch`, `signal`,
+`top_function`, `backtrace`, `build_mode` (`'release'` / `'debug'`, nullable for legacy rows), `short_id`
+(`CRASH-XXXXX`, nullable for legacy rows), `diag_id` (`diag_<uuid>`, nullable), `email` (nullable). IP is hashed with
+SHA-256 + daily salt (same pattern as update checks). Validates payload size (max 64 KB), required fields, and the shape
+of optional fields before writing. `diagId` must match `^diag_[0-9a-f-]{36}$` (a malformed value, including any
+`anal_`-prefixed value, is rejected 400); `email` is loosely shape-checked. `diag_id` and `email` are nullable and stay
+NULL for reports without an attached email. The `diag_` id is deliberately separate from the `anal_` analytics id (which
+is NEVER on a crash report), so a voluntarily-attached email can't be joined to the analytics stream (guarded by
+`crash-report.test.ts`). The email is surfaced in the crash-notification email (a "Reply to" column, see `scheduled.ts`
+/ `email.ts`) so the maintainer can reply. D1 write is fire-and-forget via `waitUntil` + `.catch(() => {})`. No
+authentication required.
 
 **Heartbeat tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `heartbeat`). The desktop app posts one beat at launch
 and hourly via `POST /heartbeat` for true daily-active tracking during the open beta. Identity is the random

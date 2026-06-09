@@ -154,6 +154,37 @@ describe('handleCrashNotifications', () => {
     expect(bindings[3]).toBe(3)
   })
 
+  it('surfaces the attached contact email so the maintainer can reply', async () => {
+    const responses = new Map<string, unknown>([
+      [
+        'SELECT id',
+        {
+          results: [
+            {
+              id: 1,
+              app_version: '1.0.0',
+              os_version: '15.3',
+              arch: 'arm64',
+              signal: 'SIGSEGV',
+              top_function: 'cmdr::sync::run',
+              created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-A2345',
+              email: 'tester@example.com',
+            },
+          ],
+        },
+      ],
+    ])
+    const { db } = createMockD1(responses)
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleCrashNotifications(env as never)
+
+    const emailCall = lastEmailCall()
+    expect(emailCall.html).toContain('tester@example.com')
+  })
+
   it('sends singular subject for one crash report', async () => {
     const responses = new Map<string, unknown>([
       [
