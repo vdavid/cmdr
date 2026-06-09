@@ -7,7 +7,19 @@ Marketing site and blog for Cmdr. Astro + Tailwind v4, statically built, deploye
 - **Astro**: static site generator with content collections
 - **Tailwind v4**: CSS-first config in `src/styles/global.css`
 - **Playwright**: E2E tests in `e2e/`
-- **Docker + Caddy**: production deployment (see `docs/guides/deploy-website.md`)
+- **Docker + Caddy**: production hosting (see `docs/guides/deploy-website.md`)
+
+## Deployment
+
+**The website auto-deploys on push to `main`** when `apps/website/**` changes. The `deploy-website` job in
+`.github/workflows/ci.yml` (gated on `needs: website`, so it only fires after the website eslint/typecheck/build checks
+pass) sends a signed `POST https://getcmdr.com/hooks/deploy-website` (HMAC-SHA256 with `DEPLOY_WEBHOOK_SECRET`). A
+webhook listener on the Hetzner VPS verifies the signature, pulls `main`, and rebuilds the Docker image (`docker compose
+build` before `down`, per the deploy-order gotcha below). This is the ONLY deploy path: a standalone `deploy-website.yml`
+was removed because it double-deployed and ran even when checks failed. `release.yml` also hits the same webhook after a
+desktop release (to publish the refreshed `latest.json`). The manual `docker compose` steps in
+`docs/guides/deploy-website.md` are what the webhook runs server-side, and the manual fallback if the hook is down;
+`workflow_dispatch` on `main` (run_all) is the manual re-deploy lever.
 
 ## Blog
 
