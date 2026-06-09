@@ -35,7 +35,7 @@ async function wizardIsOpen(tauriPage: PageLike): Promise<boolean> {
   return tauriPage.isVisible(WIZARD_SELECTOR)
 }
 
-/** Returns the active step (1, 2, or 3) read from the wizard's `aria-current="step"` dot. */
+/** Returns the active step (1-4) read from the wizard's `aria-current="step"` dot. */
 async function activeStep(tauriPage: PageLike): Promise<number | null> {
   return tauriPage.evaluate<number | null>(`(function() {
     var dots = document.querySelectorAll('${WIZARD_SELECTOR} .step-dot');
@@ -46,34 +46,38 @@ async function activeStep(tauriPage: PageLike): Promise<number | null> {
   })()`)
 }
 
-/** Closes the wizard if it's open. The wizard swallows Escape, so dismiss via Finish flow. */
-async function closeWizardIfOpen(tauriPage: PageLike): Promise<void> {
-  if (!(await wizardIsOpen(tauriPage))) return
-  // The wizard intentionally swallows Escape (per round-3 #9). Click "Next" until
-  // we reach the last step, then click "Finish". For the already-granted variant
-  // this is two clicks (step 1 Next → step 2 has a dual-button footer; pick the
-  // secondary "Start using Cmdr!" to finish).
-  const isMac = process.platform === 'darwin'
-  if (isMac) {
-    // Step 1 (already-granted): click the single Next button in the footer.
-    await tauriPage.evaluate(`(function() {
-      var btn = document.querySelector('${WIZARD_SELECTOR} .primary-slot button');
-      if (btn) btn.click();
-    })()`)
-    await expect.poll(async () => activeStep(tauriPage), { timeout: 3000 }).toBe(2)
-  }
-  // Step 2: click the secondary "Start using Cmdr!" button to finish without going to step 3.
+/** Clicks the last (forward / primary) button in the wizard footer's primary slot. */
+async function clickForwardButton(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`(function() {
     var btns = document.querySelectorAll('${WIZARD_SELECTOR} .primary-slot button');
-    for (var i = 0; i < btns.length; i++) {
-      if ((btns[i].textContent || '').indexOf('Start using Cmdr') !== -1) {
-        btns[i].click();
-        return;
-      }
-    }
-    // Fallback: click whatever's primary (Finish on step 3).
     if (btns.length > 0) btns[btns.length - 1].click();
   })()`)
+}
+
+/**
+ * Closes the wizard if it's open. The wizard swallows Escape (round-3 #9), so we walk
+ * the 4-step flow forward to the end and let the final step finish it. Each step exposes
+ * a single forward primary button in the footer: step 1 (already-granted) "Next", step 2
+ * "Go to open beta", step 3 "Next", step 4 "Start using Cmdr". Clicking the last primary
+ * button advances one step until the Optional step's button completes onboarding and the
+ * wizard unmounts. Linux opens at step 2, so the macOS-only step 1 hop is skipped.
+ */
+async function closeWizardIfOpen(tauriPage: PageLike): Promise<void> {
+  if (!(await wizardIsOpen(tauriPage))) return
+  // Advance one step at a time, re-reading the active step each iteration. The wizard has
+  // four dots; the last step finishes (closes) on click rather than advancing, so cap the
+  // loop at a small bound above the step count to avoid spinning if a click no-ops.
+  for (let i = 0; i < 6; i++) {
+    if (!(await wizardIsOpen(tauriPage))) return
+    const before = await activeStep(tauriPage)
+    await clickForwardButton(tauriPage)
+    // Either the wizard closed (final step) or the step advanced. Wait for one to happen.
+    await expect
+      .poll(async () => !(await wizardIsOpen(tauriPage)) || (await activeStep(tauriPage)) !== before, {
+        timeout: 3000,
+      })
+      .toBeTruthy()
+  }
   await expect.poll(async () => !(await wizardIsOpen(tauriPage)), { timeout: 3000 }).toBeTruthy()
 }
 
@@ -163,7 +167,8 @@ test.describe('Onboarding wizard re-entry', () => {
   // here so a future agent doesn't bolt dismissOverlay() onto the wizard.
   test.skip('dismissOverlay is intentionally NOT wired for the wizard', () => {
     // Documentation-only assertion. The wizard owns the close gesture: only Allow
-    // / Deny / Restart Cmdr / Next / Finish / "Start using Cmdr!" close it.
+    // / Deny / Restart Cmdr / Next / "Go to open beta" / "Start using Cmdr" close it
+    // (the last only from the final Optional step).
   })
 })
 
