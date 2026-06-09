@@ -82,6 +82,13 @@ SUPPORT_EMAIL = "veszelovszki@gmail.com"
 # Override with `wrangler secret put PADDLE_ENVIRONMENT` → "live" when going live.
 PADDLE_ENVIRONMENT = "sandbox"
 
+# Listmonk beta-tester signup (POST /beta-signup). Non-secret config; only the API token is a
+# secret (set via `wrangler secret put LISTMONK_API_TOKEN`). The list id MUST be a TOML integer:
+# the route requires `typeof listId === 'number'`, so a string secret would disable signups.
+LISTMONK_API_URL = "https://mail.getcmdr.com"
+LISTMONK_API_USER = "agent"
+LISTMONK_BETA_LIST_ID = 4
+
 # Secrets (set via `wrangler secret put <NAME>`):
 # - PADDLE_WEBHOOK_SECRET_LIVE     (from Paddle live dashboard)
 # - PADDLE_WEBHOOK_SECRET_SANDBOX  (from Paddle sandbox dashboard)
@@ -97,10 +104,8 @@ PADDLE_ENVIRONMENT = "sandbox"
 # - R2_ACCOUNT_ID                  (for minting presigned R2 GET URLs)
 # - R2_ACCESS_KEY_ID               (R2 S3-compatible access key; read-only suffices)
 # - R2_SECRET_ACCESS_KEY           (paired secret for R2_ACCESS_KEY_ID)
-# - LISTMONK_API_URL               (Listmonk base URL, for example https://mail.getcmdr.com)
-# - LISTMONK_API_USER              (Listmonk API user for POST /beta-signup)
 # - LISTMONK_API_TOKEN             (paired API token; sent as `token <user>:<token>`)
-# - LISTMONK_BETA_LIST_ID          (numeric id of the double-opt-in "Cmdr beta testers" list)
+#   (LISTMONK_API_URL / LISTMONK_API_USER / LISTMONK_BETA_LIST_ID are non-secret [vars] above.)
 #   For local dev, mirror these in .dev.vars (gitignored), for example:
 #     LISTMONK_API_URL="https://mail.getcmdr.com"
 #     LISTMONK_API_USER="agent"
