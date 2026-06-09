@@ -5,8 +5,11 @@ export type Bindings = {
   BLOG_LIKES: KVNamespace
   // Analytics Engine for device count tracking (fair use monitoring)
   DEVICE_COUNTS: AnalyticsEngineDataset
-  // D1 database for telemetry persistence (crash reports, downloads, update checks)
+  // D1 database for telemetry persistence (crash reports, downloads, update checks, heartbeats)
   TELEMETRY_DB: D1Database
+  // Workers rate-limit binding gating POST /heartbeat, keyed by the caller IP (never stored).
+  // Optional so tests and incomplete envs can omit it; the route skips the gate when absent.
+  HEARTBEAT_LIMITER?: RateLimit
   // Paddle webhook secrets (both optional to support gradual rollout)
   PADDLE_WEBHOOK_SECRET_LIVE?: string
   PADDLE_WEBHOOK_SECRET_SANDBOX?: string

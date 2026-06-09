@@ -7,50 +7,53 @@ app versions).
 
 ## Key files
 
-| File                                        | Purpose                                                                             |
-| ------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                    |
-| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                |
-| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`              |
-| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/crashes` |
-| `src/telemetry.ts`                          | Routes: `/crash-report`, `/update-check/:version`, `/download/:version/:arch`       |
-| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                 |
-| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                |
-| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                        |
-| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                       |
-| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)        |
-| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                             |
-| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                               |
-| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                         |
-| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                       |
-| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                            |
-| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                        |
-| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                   |
-| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                            |
-| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes`               |
-| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                             |
-| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                 |
-| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                           |
-| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                     |
-| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                |
+| File                                        | Purpose                                                                                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                                            |
+| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                                        |
+| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`                                      |
+| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/crashes`, `/admin/heartbeat-dau` |
+| `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                 |
+| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                         |
+| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                        |
+| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                |
+| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                               |
+| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                |
+| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                                                     |
+| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                                                       |
+| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                                                 |
+| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                                               |
+| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                                                    |
+| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                                                |
+| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                                           |
+| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                                                    |
+| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes`                                       |
+| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                     |
+| `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                     |
+| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                         |
+| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                   |
+| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                             |
+| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                                        |
 
 ## Routes
 
-| Method | Path                       | Auth         | Purpose                                                   |
-| ------ | -------------------------- | ------------ | --------------------------------------------------------- |
-| GET    | `/`                        | none         | Health check                                              |
-| POST   | `/webhook/paddle`          | HMAC sig     | Purchase completed → generate & email key(s)              |
-| POST   | `/activate`                | none         | Exchange short code → full cryptographic key              |
-| POST   | `/validate`                | none         | Check subscription status via Paddle API                  |
-| POST   | `/admin/generate`          | Bearer token | Manual key generation (customer service / testing)        |
-| GET    | `/admin/stats`             | Bearer token | Activation count + device count (for analytics dashboard) |
-| GET    | `/admin/downloads`         | Bearer token | Aggregated download data by day/version/arch/country      |
-| GET    | `/admin/active-users`      | Bearer token | Aggregated daily active users by version/arch             |
-| GET    | `/admin/crashes`           | Bearer token | Aggregated crash data by day/crash site/signal            |
-| GET    | `/download/:version/:arch` | none         | Log download to D1, 302 → GitHub                          |
-| POST   | `/crash-report`            | none         | Ingest crash report to D1                                 |
-| POST   | `/error-report`            | none         | Multipart upload (zip + meta) → R2, Discord notify        |
-| GET    | `/update-check/:version`   | none         | Log update check to D1 (deduped), 302 → latest.json       |
+| Method | Path                       | Auth          | Purpose                                                   |
+| ------ | -------------------------- | ------------- | --------------------------------------------------------- |
+| GET    | `/`                        | none          | Health check                                              |
+| POST   | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)              |
+| POST   | `/activate`                | none          | Exchange short code → full cryptographic key              |
+| POST   | `/validate`                | none          | Check subscription status via Paddle API                  |
+| POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)        |
+| GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard) |
+| GET    | `/admin/downloads`         | Bearer token  | Aggregated download data by day/version/arch/country      |
+| GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch             |
+| GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal            |
+| GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat` |
+| GET    | `/download/:version/:arch` | none          | Log download to D1, 302 → GitHub                          |
+| POST   | `/crash-report`            | none          | Ingest crash report to D1                                 |
+| POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1      |
+| POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify        |
+| GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json       |
 
 ## Environments
 
@@ -82,10 +85,11 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
-| Binding                | Type         | Purpose                                                                    |
-| ---------------------- | ------------ | -------------------------------------------------------------------------- |
-| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)         |
-| `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic |
+| Binding                | Type         | Purpose                                                                       |
+| ---------------------- | ------------ | ----------------------------------------------------------------------------- |
+| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)            |
+| `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic    |
+| `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`) |
 
 **Paddle dashboards**: [sandbox](https://sandbox-vendors.paddle.com) | [live](https://vendors.paddle.com)
 
@@ -177,6 +181,8 @@ Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget
 
 Crash report: POST /crash-report → validate payload (size + required fields) → hash IP with daily salt → write to D1 (fire-and-forget via waitUntil) → 204
 
+Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → validate payload (size + required fields + analId/version shape + config-size cap) → write to D1 heartbeat (fire-and-forget via waitUntil), no IP stored → 204
+
 Update check proxy: GET /update-check/:version → hash IP with daily salt → INSERT OR IGNORE into D1 (fire-and-forget) → 302 to latest.json
 
 Cron (every 12h): scheduled handler runs three jobs:
@@ -232,11 +238,12 @@ secret, separate from the Paddle webhook secrets used by `/admin/generate`.
 Read by `/admin/stats`. The counter starts from zero when deployed; initialize via the CF API if historical count is
 needed.
 
-**D1 for telemetry:** Crash reports, downloads, and update checks are stored in D1 (binding: `TELEMETRY_DB`, database:
-`cmdr-telemetry`). Migrations live in `migrations/`. Apply with `wrangler d1 migrations apply cmdr-telemetry` before
-deploying changes that add new tables. The only remaining Analytics Engine dataset is `DEVICE_COUNTS` for fair-use
-monitoring. All other state (license codes, activation counter, device sets) lives in Cloudflare KV. Short codes never
-expire (perpetual licenses last forever); subscription validity is checked live via Paddle API.
+**D1 for telemetry:** Crash reports, downloads, update checks, and heartbeats are stored in D1 (binding: `TELEMETRY_DB`,
+database: `cmdr-telemetry`). Migrations live in `migrations/` (latest: `0005_heartbeat.sql`, which adds the `heartbeat`
+table). Apply with `wrangler d1 migrations apply cmdr-telemetry` before deploying changes that add new tables. The only
+remaining Analytics Engine dataset is `DEVICE_COUNTS` for fair-use monitoring. All other state (license codes,
+activation counter, device sets) lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever);
+subscription validity is checked live via Paddle API.
 
 **Validation error granularity:** `/validate` distinguishes "Paddle says invalid" (HTTP 200 + `status: "invalid"`) from
 "Paddle is unreachable" (HTTP 502 + `{ error: "upstream_error" }`). `paddle-api.ts` throws `PaddleApiError` on
@@ -258,6 +265,24 @@ backtrace, build_mode (`'release'` / `'debug'`, nullable for legacy rows), short
 rows). IP is hashed with SHA-256 + daily salt (same pattern as update checks). Validates payload size (max 64 KB),
 required fields, and the shape of optional fields before writing. D1 write is fire-and-forget via `waitUntil` +
 `.catch(() => {})`. No authentication required.
+
+**Heartbeat tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `heartbeat`). The desktop app posts one beat at launch
+and hourly via `POST /heartbeat` for true daily-active tracking during the open beta. Identity is the random
+`anal_<uuid>` analytics id (regex `^anal_[0-9a-f-]{36}$`); the IP is used only to key the rate limiter and is never
+stored. Required fields: `analId`, `appVersion` (semver), `osVersion`, `arch`. Optional: `buildMode`
+(`'release'`/`'debug'`, nullable) and `config`, an arbitrary object stored verbatim as the `config_json` column. The
+config is a single JSON blob, not per-field columns, so new settings auto-absorb without a migration: DAU/engagement
+queries never touch it (richer config-shape filtering lives in PostHog person properties). Caps: 32 KB whole body, 16 KB
+config blob. No UNIQUE/dedup constraint: every beat is kept forever (engagement = beats/day), and DAU
+(`COUNT(DISTINCT anal_id)`) is computed at query time by `GET /admin/heartbeat-dau`. The `anal_` id is the analytics
+identity and is **never** attached to a crash or error report (those carry a separate `diag_` id), so the analytics
+stream stays unjoinable to any identity. D1 write is fire-and-forget via `waitUntil` + `.catch(() => {})`.
+
+**Heartbeat rate limiting:** `POST /heartbeat` is gated by the Workers rate-limit binding `HEARTBEAT_LIMITER`
+(`[[ratelimits]]` in `wrangler.toml`, type `RateLimit`, `.limit({ key })` → `{ success }`), keyed by `cf-connecting-ip`
+at 12 req/min/IP (`period` must be 10 or 60). Legit traffic is ~1 beat/hour/install, so the cap stops a bloat-spam loop
+without touching real users; over the limit returns 429 before any parsing or D1 write. The binding is typed optional so
+tests and incomplete envs can omit it (the gate is then a no-op).
 
 **Device tracking (fair use):** On each `/validate` call with a `deviceId`, the server tracks the device in KV
 (`devices:{seatTransactionId}`) and logs to Analytics Engine (binding: `DEVICE_COUNTS`, dataset: `cmdr_device_counts`).

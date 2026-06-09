@@ -7,6 +7,7 @@ const admin = new Hono<{ Bindings: Bindings }>()
 const validDownloadRanges = new Set(['24h', '7d', '30d', 'all'])
 const validActiveUserRanges = new Set(['7d', '30d', '90d', 'all'])
 const validCrashRanges = new Set(['7d', '30d', '90d', 'all'])
+const validHeartbeatRanges = new Set(['7d', '30d', '90d', 'all'])
 
 // Values are hardcoded, never from user input, so it's safe to interpolate into SQL.
 const rangeToSqliteInterval: Record<string, string> = {
@@ -106,6 +107,30 @@ admin.get('/admin/crashes', async (c) => {
          GROUP BY date, topFunction, signal
          ORDER BY date ASC`,
   ).all<{ date: string; topFunction: string; signal: string; count: number; versions: string }>()
+
+  return c.json(results)
+})
+
+// Admin heartbeat DAU: true daily-active counts from the raw heartbeat table.
+// dau = distinct analytics ids per day, beats = total heartbeats per day (engagement signal).
+admin.get('/admin/heartbeat-dau', async (c) => {
+  const authError = verifyAdminAuth(c)
+  if (authError) return authError
+
+  const range = c.req.query('range') ?? '7d'
+  if (!validHeartbeatRanges.has(range)) {
+    return c.json({ error: 'Invalid range. Use 7d, 30d, 90d, or all' }, 400)
+  }
+
+  const interval = rangeToSqliteInterval[range]
+  const whereClause = interval ? `WHERE created_at >= datetime('now', '${interval}')` : ''
+
+  const { results } = await c.env.TELEMETRY_DB.prepare(
+    `SELECT date(created_at) AS date, COUNT(DISTINCT anal_id) AS dau, COUNT(*) AS beats
+         FROM heartbeat ${whereClause}
+         GROUP BY date
+         ORDER BY date ASC`,
+  ).all<{ date: string; dau: number; beats: number }>()
 
   return c.json(results)
 })

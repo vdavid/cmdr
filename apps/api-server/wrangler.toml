@@ -49,6 +49,17 @@ bucket_name = "cmdr-error-reports"
 binding = "ERROR_REPORT_META"
 id = "e8b67ae9fbd640adaf78aa42d59b80e9"
 
+# Rate limit for POST /heartbeat, keyed by the caller IP (transient, never stored).
+# Legit traffic is ~1 beat/hour/install, so 12/min/IP stops a bloat-spam loop without
+# touching real users. `period` must be 10 or 60. `namespace_id` is a per-account integer id.
+[[ratelimits]]
+name = "HEARTBEAT_LIMITER"
+namespace_id = "1001"
+
+[ratelimits.simple]
+limit = 12
+period = 60
+
 [triggers]
 crons = ["0 */12 * * *"]
 

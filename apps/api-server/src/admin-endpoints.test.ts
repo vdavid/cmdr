@@ -161,3 +161,89 @@ describe('GET /admin/crashes', () => {
     }
   })
 })
+
+describe('GET /admin/heartbeat-dau', () => {
+  it('returns 401 without auth', async () => {
+    const res = await app.request('/admin/heartbeat-dau', {}, baseBindings)
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 for invalid range', async () => {
+    const res = await app.request('/admin/heartbeat-dau?range=24h', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns empty array when no data', async () => {
+    const res = await app.request('/admin/heartbeat-dau?range=7d', { headers: authHeaders }, baseBindings)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual([])
+  })
+
+  it('returns per-day dau and beats', async () => {
+    const mockData = [
+      { date: '2025-03-20', dau: 8, beats: 42 },
+      { date: '2025-03-21', dau: 10, beats: 57 },
+    ]
+    const bindings = {
+      ...baseBindings,
+      TELEMETRY_DB: createMockD1({ heartbeat: mockData }),
+    }
+
+    const res = await app.request('/admin/heartbeat-dau?range=30d', { headers: authHeaders }, bindings)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual(mockData)
+  })
+
+  it('counts distinct anal_id for dau and all rows for beats', async () => {
+    const captured: string[] = []
+    const db = {
+      prepare: vi.fn((sql: string) => {
+        captured.push(sql)
+        return {
+          bind: vi.fn().mockReturnThis(),
+          all: vi.fn(() => Promise.resolve({ results: [] })),
+          run: vi.fn(() => Promise.resolve({ success: true })),
+        }
+      }),
+    } as unknown as D1Database
+
+    await app.request('/admin/heartbeat-dau?range=7d', { headers: authHeaders }, { ...baseBindings, TELEMETRY_DB: db })
+
+    const sql = captured[0]
+    expect(sql).toContain('COUNT(DISTINCT anal_id)')
+    expect(sql).toContain('COUNT(*)')
+    expect(sql).toContain('date(created_at)')
+    expect(sql).toContain('FROM heartbeat')
+  })
+
+  it('applies the range filter to the where clause', async () => {
+    const captured: string[] = []
+    const db = {
+      prepare: vi.fn((sql: string) => {
+        captured.push(sql)
+        return {
+          bind: vi.fn().mockReturnThis(),
+          all: vi.fn(() => Promise.resolve({ results: [] })),
+          run: vi.fn(() => Promise.resolve({ success: true })),
+        }
+      }),
+    } as unknown as D1Database
+    const bindings = { ...baseBindings, TELEMETRY_DB: db }
+
+    await app.request('/admin/heartbeat-dau?range=7d', { headers: authHeaders }, bindings)
+    expect(captured[0]).toContain("datetime('now', '-7 days')")
+
+    captured.length = 0
+    await app.request('/admin/heartbeat-dau?range=all', { headers: authHeaders }, bindings)
+    expect(captured[0]).not.toContain('WHERE')
+  })
+
+  it('accepts all valid ranges', async () => {
+    for (const range of ['7d', '30d', '90d', 'all']) {
+      const res = await app.request(`/admin/heartbeat-dau?range=${range}`, { headers: authHeaders }, baseBindings)
+      expect(res.status).toBe(200)
+    }
+  })
+})
