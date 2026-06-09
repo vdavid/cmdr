@@ -1,7 +1,8 @@
 import crypto from 'node:crypto'
-import { access, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { access, copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import sharp from 'sharp'
 
 const websiteRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const draftRoot = path.join(websiteRoot, '.blog-drafts')
@@ -9,9 +10,13 @@ const postRoot = path.join(websiteRoot, 'src/content/blog')
 const editorHtmlPath = path.join(websiteRoot, 'src/dev/blog-editor/index.html')
 
 const maxBodyBytes = 2 * 1024 * 1024
+const maxAssetBodyBytes = 24 * 1024 * 1024
+const maxAssetBytes = 16 * 1024 * 1024
 const draftIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const assetFilenamePattern = /^[a-z0-9][a-z0-9.-]*\.webp$/
 const datePattern = /^\d{4}-\d{2}-\d{2}$/
+const markdownImagePattern = /!\[[^\]]*]\(\.\/([a-z0-9][a-z0-9.-]*\.webp)(?:\s+"[^"]*")?\)/g
 
 export function blogEditorDevServer() {
   return {
@@ -70,6 +75,24 @@ async function handleApi(req, res, pathname) {
       return
     }
 
+    if (
+      req.method === 'GET' &&
+      resource === 'drafts' &&
+      entryId &&
+      parts[2] === 'assets' &&
+      parts[3] &&
+      parts.length === 4
+    ) {
+      await sendDraftAsset(res, entryId, parts[3])
+      return
+    }
+
+    if (req.method === 'POST' && resource === 'drafts' && entryId && parts[2] === 'assets' && parts.length === 3) {
+      const asset = await writeDraftAsset(entryId, await readJson(req, { maxBytes: maxAssetBodyBytes }))
+      sendJson(res, 200, asset)
+      return
+    }
+
     if (req.method === 'GET' && resource === 'posts' && entryId && parts.length === 2) {
       sendJson(res, 200, await readEntry(postRoot, entryId, 'post'))
       return
@@ -105,7 +128,7 @@ async function handleApi(req, res, pathname) {
         return
       }
 
-      const filePath = await writePost(payload)
+      const filePath = await writePost(entryId, payload)
       sendJson(res, 200, {
         ok: true,
         id: entryId,
@@ -194,13 +217,105 @@ async function writeDraft(draftId, payload) {
   return filePath
 }
 
-async function writePost(payload) {
+async function writePost(draftId, payload) {
+  validateDraftId(draftId)
   validateSlug(payload.slug)
   const directory = entryDirectory(postRoot, payload.slug)
   const filePath = path.join(directory, 'index.md')
   await mkdir(directory, { recursive: true })
+  await copyReferencedDraftAssets(draftId, payload.body, directory)
   await writeFileAtomic(filePath, serializeMarkdownFile(payload, { includeSlug: false }))
   return filePath
+}
+
+async function writeDraftAsset(draftId, value) {
+  validateDraftId(draftId)
+  if (!value || typeof value !== 'object') {
+    throw new BlogEditorError(400, 'Expected an image upload JSON object.')
+  }
+
+  const originalName = normalizeString(value.name, 'name').trim()
+  const mimeType = normalizeString(value.mimeType, 'mimeType').trim()
+  const dataBase64 = normalizeString(value.dataBase64, 'dataBase64')
+  validateOriginalFilename(originalName)
+  if (!mimeType.startsWith('image/')) {
+    throw new BlogEditorError(400, 'Only image uploads are supported.')
+  }
+
+  let input
+  try {
+    input = Buffer.from(dataBase64, 'base64')
+  } catch {
+    throw new BlogEditorError(400, 'Image data must be base64 encoded.')
+  }
+
+  if (input.length === 0 || input.length > maxAssetBytes) {
+    throw new BlogEditorError(413, 'Image must be between 1 byte and 16 MB.')
+  }
+
+  let output
+  try {
+    output = await sharp(input, { failOn: 'warning' })
+      .rotate()
+      .resize({ width: 1500, height: 1500, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer()
+  } catch {
+    throw new BlogEditorError(400, 'Image could not be processed. Try a PNG, JPEG, WebP, AVIF, or TIFF file.')
+  }
+
+  const directory = assetDirectory(draftId)
+  await mkdir(directory, { recursive: true })
+  const filename = await uniqueAssetFilename(directory, originalName)
+  const filePath = path.join(directory, filename)
+  await writeFileAtomic(filePath, output)
+
+  return {
+    filename,
+    markdownPath: `./${filename}`,
+    url: draftAssetUrl(draftId, filename),
+    path: relativeToWebsite(filePath),
+  }
+}
+
+async function sendDraftAsset(res, draftId, filename) {
+  validateDraftId(draftId)
+  validateAssetFilename(filename)
+  const filePath = path.join(assetDirectory(draftId), filename)
+  try {
+    const image = await readFile(filePath)
+    res.statusCode = 200
+    res.setHeader('content-type', 'image/webp')
+    res.setHeader('cache-control', 'no-store')
+    res.end(image)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      sendJson(res, 404, { error: 'Draft image not found.' })
+      return
+    }
+    throw error
+  }
+}
+
+async function copyReferencedDraftAssets(draftId, body, postDirectory) {
+  const filenames = referencedAssetFilenames(body)
+  if (filenames.length === 0) {
+    return
+  }
+
+  const sourceDirectory = assetDirectory(draftId)
+  await mkdir(postDirectory, { recursive: true })
+  for (const filename of filenames) {
+    validateAssetFilename(filename)
+    try {
+      await copyFile(path.join(sourceDirectory, filename), path.join(postDirectory, filename))
+    } catch (error) {
+      if (error?.code === 'ENOENT') {
+        throw new BlogEditorError(400, `Draft image ${filename} is missing.`)
+      }
+      throw error
+    }
+  }
 }
 
 async function writeFileAtomic(filePath, contents) {
@@ -210,6 +325,19 @@ async function writeFileAtomic(filePath, contents) {
   )
   await writeFile(temporaryPath, contents, 'utf8')
   await rename(temporaryPath, filePath)
+}
+
+async function uniqueAssetFilename(directory, originalName) {
+  const base = slugifyFilename(path.basename(originalName, path.extname(originalName))) || 'image'
+  for (let index = 0; index < 1000; index += 1) {
+    const suffix = index === 0 ? '' : `-${index + 1}`
+    const candidate = `${base}${suffix}.webp`
+    if (!(await exists(path.join(directory, candidate)))) {
+      return candidate
+    }
+  }
+
+  return `${base}-${crypto.randomUUID().slice(0, 8)}.webp`
 }
 
 function normalizePayload(value) {
@@ -328,14 +456,14 @@ function quoteYamlString(value) {
   return JSON.stringify(value)
 }
 
-async function readJson(req) {
+async function readJson(req, options = { maxBytes: maxBodyBytes }) {
   const chunks = []
   let size = 0
 
   for await (const chunk of req) {
     size += chunk.length
-    if (size > maxBodyBytes) {
-      throw new BlogEditorError(413, 'Draft is larger than 2 MB.')
+    if (size > options.maxBytes) {
+      throw new BlogEditorError(413, 'Request body is too large.')
     }
     chunks.push(chunk)
   }
@@ -359,6 +487,17 @@ function entryFilePath(root, slug) {
   return path.join(entryDirectory(root, slug), 'index.md')
 }
 
+function assetDirectory(draftId) {
+  validateDraftId(draftId)
+  return path.join(entryDirectory(draftRoot, draftId), 'assets')
+}
+
+function referencedAssetFilenames(body) {
+  return Array.from(body.matchAll(markdownImagePattern), (match) => match[1]).filter((filename, index, filenames) => {
+    return filenames.indexOf(filename) === index
+  })
+}
+
 function validateSlug(slug) {
   if (!slugPattern.test(slug)) {
     throw new BlogEditorError(400, 'Slug must use lowercase letters, numbers, and single hyphens.')
@@ -369,6 +508,32 @@ function validateDraftId(draftId) {
   if (!draftIdPattern.test(draftId)) {
     throw new BlogEditorError(400, 'Draft ID is invalid.')
   }
+}
+
+function validateAssetFilename(filename) {
+  if (!assetFilenamePattern.test(filename)) {
+    throw new BlogEditorError(400, 'Image filename is invalid.')
+  }
+}
+
+function validateOriginalFilename(filename) {
+  if (!filename || /[/\\\0]/.test(filename) || filename === '.' || filename === '..') {
+    throw new BlogEditorError(400, 'Image filename is invalid.')
+  }
+}
+
+function slugifyFilename(value) {
+  return value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-')
+}
+
+function draftAssetUrl(draftId, filename) {
+  return `/dev/blog/api/drafts/${encodeURIComponent(draftId)}/assets/${encodeURIComponent(filename)}`
 }
 
 async function exists(filePath) {

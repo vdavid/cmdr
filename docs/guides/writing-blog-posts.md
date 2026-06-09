@@ -14,7 +14,9 @@ pnpm dev
 ```
 
 The editor autosaves drafts to `apps/website/.blog-drafts/` and only writes to the published blog collection when you
-click **Publish**. The draft directory is gitignored.
+click **Publish**. The draft directory is gitignored. Use **Add image**, paste, or drag/drop in the Markdown editor to
+add images; the editor stores draft images separately, inserts relative Markdown paths, and copies referenced images
+next to the post when publishing.
 
 For manual authoring:
 
@@ -56,9 +58,9 @@ If you omit the marker, the full post is shown on the index.
 
 ## Images
 
-- Colocate images next to `index.md` in the post folder
+- Colocate images next to `index.md` in the post folder. The dev editor does this automatically when publishing.
 - Store source images at ~1500px wide (for 2x retina at the 720px content width)
-- Reference them with relative paths: `![Alt text](./my-image.png)`
+- Reference them with relative paths: `![Alt text](./my-image.webp)`
 - Images are click-to-open-fullsize automatically
 - CSS handles responsive sizing (`max-width: 100%`)
 

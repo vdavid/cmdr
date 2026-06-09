@@ -28,6 +28,9 @@ export default defineConfig({
     rehypePlugins: [[rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]],
   },
   vite: {
+    optimizeDeps: {
+      exclude: ['marked'],
+    },
     server: {
       strictPort: true,
     },

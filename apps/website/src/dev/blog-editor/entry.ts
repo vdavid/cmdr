@@ -43,6 +43,8 @@ const entrySelect = element<HTMLSelectElement>('entrySelect')
 const saveStatus = element<HTMLElement>('saveStatus')
 const newDraftButton = element<HTMLButtonElement>('newDraftButton')
 const deleteDraftButton = element<HTMLButtonElement>('deleteDraftButton')
+const imageInput = element<HTMLInputElement>('imageInput')
+const addImageButton = element<HTMLButtonElement>('addImageButton')
 const saveButton = element<HTMLButtonElement>('saveButton')
 const publishButton = element<HTMLButtonElement>('publishButton')
 const overwriteInput = element<HTMLInputElement>('overwriteInput')
@@ -98,6 +100,16 @@ function attachListeners() {
     void deleteCurrentDraft()
   })
 
+  addImageButton.addEventListener('click', () => {
+    imageInput.click()
+  })
+
+  imageInput.addEventListener('change', () => {
+    const files = Array.from(imageInput.files ?? [])
+    imageInput.value = ''
+    void uploadAndInsertImages(files)
+  })
+
   saveButton.addEventListener('click', () => {
     void saveDraftNow()
   })
@@ -146,6 +158,38 @@ function attachListeners() {
   bodyInput.addEventListener('input', () => {
     entry.body = bodyInput.value
     markChanged()
+  })
+
+  bodyInput.addEventListener('paste', (event) => {
+    const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith('image/'))
+    if (files.length === 0) {
+      return
+    }
+
+    event.preventDefault()
+    void uploadAndInsertImages(files)
+  })
+
+  bodyInput.addEventListener('dragover', (event) => {
+    if (event.dataTransfer?.types.includes('Files')) {
+      event.preventDefault()
+      bodyInput.classList.add('is-dragging')
+    }
+  })
+
+  bodyInput.addEventListener('dragleave', () => {
+    bodyInput.classList.remove('is-dragging')
+  })
+
+  bodyInput.addEventListener('drop', (event) => {
+    const files = Array.from(event.dataTransfer?.files ?? []).filter((file) => file.type.startsWith('image/'))
+    if (files.length === 0) {
+      return
+    }
+
+    event.preventDefault()
+    bodyInput.classList.remove('is-dragging')
+    void uploadAndInsertImages(files)
   })
 
   window.addEventListener('keydown', (event) => {
@@ -361,6 +405,59 @@ async function publish() {
   }
 }
 
+async function uploadAndInsertImages(files: File[]) {
+  if (files.length === 0) {
+    return
+  }
+
+  setStatus(files.length === 1 ? 'Processing image...' : `Processing ${files.length} images...`)
+
+  try {
+    const snippets: string[] = []
+    for (const file of files) {
+      const uploaded = await uploadImage(file)
+      snippets.push(`![${altTextFromFilename(file.name)}](${uploaded.markdownPath})`)
+    }
+
+    insertAtCursor(snippets.join('\n\n'))
+    markChanged({ immediate: true })
+    setStatus(files.length === 1 ? 'Image inserted and saving draft...' : 'Images inserted and saving draft...')
+  } catch (error) {
+    setStatus(`Image upload failed: ${errorMessage(error)}`, 'error')
+  }
+}
+
+async function uploadImage(file: File) {
+  if (!file.type.startsWith('image/')) {
+    throw new Error(`${file.name} is not an image.`)
+  }
+
+  const dataBase64 = arrayBufferToBase64(await file.arrayBuffer())
+  return fetchJson<{ filename: string; markdownPath: string; url: string; path: string }>(
+    `/dev/blog/api/drafts/${entry.id}/assets`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: file.name, mimeType: file.type, dataBase64 }),
+    },
+  )
+}
+
+function insertAtCursor(markdown: string) {
+  const start = bodyInput.selectionStart
+  const end = bodyInput.selectionEnd
+  const before = bodyInput.value.slice(0, start)
+  const after = bodyInput.value.slice(end)
+  const prefix = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : ''
+  const suffix = after && !after.startsWith('\n\n') ? (after.startsWith('\n') ? '\n' : '\n\n') : ''
+  const insertion = `${prefix}${markdown}${suffix}`
+  bodyInput.value = `${before}${insertion}${after}`
+  const cursor = before.length + insertion.length
+  bodyInput.setSelectionRange(cursor, cursor)
+  bodyInput.focus()
+  entry.body = bodyInput.value
+}
+
 async function deleteCurrentDraft() {
   if (entry.kind !== 'draft') {
     setStatus('Only saved drafts can be deleted.', 'warning')
@@ -395,8 +492,20 @@ async function renderPreview() {
   previewDescription.textContent = entry.description
   const html = await Promise.resolve(marked.parse(entry.body || ''))
   if (revision === previewRevision) {
-    previewBody.innerHTML = html
+    previewBody.innerHTML = rewriteDraftImageSources(html)
   }
+}
+
+function rewriteDraftImageSources(html: string) {
+  const container = document.createElement('div')
+  container.innerHTML = html
+  for (const image of Array.from(container.querySelectorAll('img'))) {
+    const source = image.getAttribute('src') ?? ''
+    if (/^\.\/[a-z0-9][a-z0-9.-]*\.webp$/.test(source)) {
+      image.src = draftAssetUrl(source.slice(2))
+    }
+  }
+  return container.innerHTML
 }
 
 function checkBackup() {
@@ -504,6 +613,28 @@ function createDraftId() {
 
 function updateDeleteButton() {
   deleteDraftButton.disabled = entry.kind !== 'draft'
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer)
+  const chunkSize = 0x8000
+  let binary = ''
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize))
+  }
+  return btoa(binary)
+}
+
+function altTextFromFilename(filename: string) {
+  return filename
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function draftAssetUrl(filename: string) {
+  return `/dev/blog/api/drafts/${encodeURIComponent(entry.id)}/assets/${encodeURIComponent(filename)}`
 }
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {

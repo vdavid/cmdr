@@ -56,14 +56,20 @@ Drafts autosave atomically to `apps/website/.blog-drafts/{draft-id}/index.md`, w
 stable internal ID, so editing the publish slug does not create duplicate drafts. The draft frontmatter stores `slug`;
 publishing writes the final plain blog post to `src/content/blog/{slug}/index.md`.
 
+Images can be added with the **Add image** button, pasted into the Markdown textarea, or dropped onto it. Uploaded
+images are processed through `sharp`, resized to fit within 1500x1500 without enlargement, converted to WebP, and stored
+under `apps/website/.blog-drafts/{draft-id}/assets/`. The editor inserts final-form Markdown like
+`![Alt text](./image.webp)` and rewrites those relative image URLs only for draft preview. Publishing copies referenced
+draft images to `src/content/blog/{slug}/`, matching the production colocated-image model.
+
 Editor files:
 
-| File                                 | Purpose                                                 |
-| ------------------------------------ | ------------------------------------------------------- |
-| `src/dev/blog-editor/dev-server.mjs` | Dev-only Vite middleware for draft/post file operations |
-| `src/dev/blog-editor/index.html`     | Editor shell                                            |
-| `src/dev/blog-editor/entry.ts`       | Autosave, preview, publish, delete, and backup behavior |
-| `src/dev/blog-editor/styles.css`     | Editor-specific CSS                                     |
+| File                                 | Purpose                                                               |
+| ------------------------------------ | --------------------------------------------------------------------- |
+| `src/dev/blog-editor/dev-server.mjs` | Dev-only Vite middleware for draft/post file operations               |
+| `src/dev/blog-editor/index.html`     | Editor shell                                                          |
+| `src/dev/blog-editor/entry.ts`       | Autosave, image upload, preview, publish, delete, and backup behavior |
+| `src/dev/blog-editor/styles.css`     | Editor-specific CSS                                                   |
 
 ### OG images
 

@@ -36,8 +36,8 @@ The local-only blog editor is available while the dev server is running:
 open http://localhost:4829/dev/blog
 ```
 
-It autosaves drafts to the gitignored `apps/website/.blog-drafts/` directory and publishes final posts to
-`src/content/blog/{slug}/index.md`.
+It autosaves drafts to the gitignored `apps/website/.blog-drafts/` directory, supports pasted/dropped/file-picked
+images, and publishes final posts plus referenced images to `src/content/blog/{slug}/`.
 
 ## Building
 
