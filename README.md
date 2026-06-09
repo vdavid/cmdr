@@ -2,9 +2,11 @@
 
 ![License](https://img.shields.io/badge/license-BSL--1.1-blue)
 
-An extremely fast AI-native file manager written in Rust, free forever for personal use on macOS.
+An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free forever for
+personal use. With fully optional, privacy-first AI features.
 
-Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026.
+Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026. Like Total
+Commander, but on macOS.
 
 Give it a try: [Download for macOS](https://getcmdr.com) on the website.
 
@@ -12,15 +14,21 @@ Give it a try: [Download for macOS](https://getcmdr.com) on the website.
 
 ## Overview
 
-Cmdr is the first AI-native file manager, written by modern standards with built-in AI to support natural language
-search, smart renaming, and auto-organization. Built on the spiritual foundations of `mc` and Total Commander.
+I (David, the dev) loved Total Commander on Windows, used it for 20+ years. Then I switched to macOS, and my biggest
+pain point about the OS was a fast, rock-solid, and pleasant file manager. Cmdr intends to fix this.
+
+Then there is AI. With LLMs, some really cool features became possible that never were. I'm experimenting with adding
+these features gradually. But the intention is that AI features remain fully **optional**. With AI features off, you've
+got a Total Commander-like experience. With it, you get natural-language search and smart selection, with smart renaming
+and (human-approved!) auto-organization coming soon. AI features are local-by-default, so no files or other data leave
+your Mac.
 
 Core features:
 
-- **Two-pane layout**: see two dirs side by side.
+- **Two-pane layout**: see two folders side by side.
 - **Keyboard-first**: do anything without touching your mouse, using your familiar shortcuts.
-- **Blazing fast file operations**: copy, move, rename, and delete with a few keystrokes
-- **AI native**: search, rename, organize like you're in 2026.
+- **Blazing fast file operations**: copy, move, rename, and delete with a few keystrokes.
+- **Optional, privacy-first AI**: search and select with natural language, all on your Mac.
 
 ## Installation
 
