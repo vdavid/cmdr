@@ -33,6 +33,7 @@
         getSystemDirExcludes,
         onSearchIndexReady,
         showFileContextMenu,
+        trackEvent,
         getRecentSearches as fetchRecentSearches,
         removeRecentSearch as removeRecentSearchIpc,
         addRecentSearch as addRecentSearchIpc,
@@ -214,6 +215,8 @@
                 query.excludeDirNames = parsed.excludePatterns
         }
         const result = await searchFiles(query)
+        // PII-free analytics: a search ran. Only the mode enum crosses; never the query/pattern.
+        void trackEvent('search_used', { mode: getMode() })
         return { entries: result.entries, totalCount: result.totalCount }
     }
 

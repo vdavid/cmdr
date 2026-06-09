@@ -57,6 +57,7 @@ vi.mock('$lib/tauri-commands', () => ({
   applyRecentSearchesMaxCount: vi.fn(() => Promise.resolve()),
   showFileContextMenu: vi.fn(() => Promise.resolve()),
   showInFinder: vi.fn(() => Promise.resolve()),
+  trackEvent: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('$lib/settings', () => ({

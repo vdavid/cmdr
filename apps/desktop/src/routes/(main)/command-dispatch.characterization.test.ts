@@ -152,6 +152,7 @@ vi.mock('$lib/tauri-commands', () => ({
   readClipboardText: () => m.readClipboardText(),
   cloudMakeAvailableOffline: (...a: unknown[]) => m.cloudMakeAvailableOffline(...a),
   cloudRemoveDownload: (...a: unknown[]) => m.cloudRemoveDownload(...a),
+  trackEvent: () => Promise.resolve(),
 }))
 
 // QuickLook dispatch guard + the `$state` singleton (reconfigurable per branch).

@@ -601,6 +601,8 @@ pub fn run() {
             // and suppressed in dev/CI; see `analytics/CLAUDE.md`.
             analytics::init(app.handle());
             analytics::start();
+            // One PostHog `app_launched` event per startup, through the same consent gate.
+            analytics::posthog::capture("app_launched", serde_json::json!({}));
 
             // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking).
             // No `firstTriggerDone` gate here: the function is a no-op when there are no SMB

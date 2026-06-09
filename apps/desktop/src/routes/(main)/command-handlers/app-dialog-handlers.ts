@@ -6,7 +6,7 @@
  * The selection-dialog openers (`selection.selectFiles` / `selection.deselectFiles`)
  * live in `selection-handlers`, not here.
  */
-import { openExternalUrl } from '$lib/tauri-commands'
+import { openExternalUrl, trackEvent } from '$lib/tauri-commands'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
@@ -27,6 +27,8 @@ export const appDialogHandlers = {
 
   'app.settings': () => {
     void openSettingsWindow()
+    // PII-free analytics: the settings window opened. No props.
+    void trackEvent('settings_opened')
   },
 
   'app.about': ({ ctx }) => {

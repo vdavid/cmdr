@@ -35,6 +35,7 @@
         refreshListingIndexSizes,
         resolvePathVolume,
         showFileContextMenu,
+        trackEvent,
         type UnlistenFn,
         updateMenuContext,
     } from '$lib/tauri-commands'
@@ -1547,6 +1548,9 @@
 
         // NOW push to history (only on successful completion)
         onPathChange?.(loadPath)
+
+        // PII-free analytics: a navigation landed. Only the volume KIND enum crosses; never the path.
+        void trackEvent('pane_navigated', { volume_kind: caps.kind })
 
         // Fetch entry under the cursor for SelectionInfo
         void fetchEntryUnderCursor()

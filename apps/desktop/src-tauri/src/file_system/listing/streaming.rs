@@ -173,6 +173,16 @@ impl ListingEventSink for TauriListingEventSink {
     }
 
     fn emit_error(&self, listing_id: &str, message: String, friendly: Option<FriendlyError>) {
+        // PII-free analytics: a listing failed with a categorized friendly error. Only the
+        // category enum crosses; never the path, message, or any provider detail.
+        if let Some(f) = &friendly {
+            let category = serde_json::to_value(f.category)
+                .ok()
+                .and_then(|v| v.as_str().map(str::to_string));
+            if let Some(category) = category {
+                crate::analytics::posthog::capture("error_encountered", serde_json::json!({ "category": category }));
+            }
+        }
         let _ = ListingErrorEvent {
             listing_id: listing_id.to_string(),
             message,

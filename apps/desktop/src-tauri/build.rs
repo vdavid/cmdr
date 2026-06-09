@@ -2,6 +2,9 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=resources/ai/.version");
     println!("cargo:rerun-if-changed=../scripts/download-llama-server.go");
+    // `analytics::posthog` reads this via `option_env!`, which is baked at compile time. Without
+    // this line, changing the env var between builds wouldn't trigger a recompile of that consumer.
+    println!("cargo:rerun-if-env-changed=CMDR_POSTHOG_KEY");
 
     // Ensure resources/ai/ is populated before tauri_build::build() validates the
     // resource glob in tauri.conf.json. The Go script is idempotent (skips when

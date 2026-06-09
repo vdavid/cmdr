@@ -112,6 +112,9 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
+          # Public PostHog ingest key (phc_...), baked into the build via option_env! for desktop
+          # feature events. Absent locally (events no-op in dev); set as a GitHub secret for releases.
+          CMDR_POSTHOG_KEY: ${{ secrets.CMDR_POSTHOG_KEY }}
         with:
           projectPath: ./apps/desktop
           args: --target ${{ matrix.target }}

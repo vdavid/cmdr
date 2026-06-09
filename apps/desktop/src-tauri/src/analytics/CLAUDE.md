@@ -103,13 +103,82 @@ Fire-and-forget POST mirroring the crash/error reporters (10 s timeout, errors l
 next hourly tick retries). Endpoint: `http://localhost:8787/heartbeat` (debug) /
 `https://api.getcmdr.com/heartbeat` (release).
 
+## PostHog feature events
+
+Curated product events ride the SAME consent gate, dev/CI suppression, and `anal_` install id as
+the heartbeat. `posthog::capture(event, props)` builds the `/capture/` body and fire-and-forget
+POSTs to `https://eu.i.posthog.com/capture/` (EU cloud, project `136072`). Shape:
+
+```json
+{ "api_key": "phc_...", "event": "<name>", "distinct_id": "anal_<uuid>",
+  "properties": { "source": "desktop", ...props }, "$set": <config-shape> }
+```
+
+- **`$set` is the config-shape, verbatim.** Person properties reuse `config_shape::build_config_shape`
+  (the same allowlisted object the heartbeat ships): one source of truth, no second PII surface.
+- **`source: "desktop"`** is injected first and can't be shadowed by a caller `source` prop (so the
+  dashboard always splits desktop events from the website's).
+- **The key is `option_env!("CMDR_POSTHOG_KEY")`**, baked at build time (a GitHub secret on the
+  `tauri-action` step in `release.yml`; `build.rs` has a `rerun-if-env-changed` for it). `None`
+  locally → `capture` is a no-op (logged once at debug). The key is public by design (PostHog ingest
+  keys are safe in client code).
+- **Backend events call `posthog::capture` directly; frontend events call the `track_event` IPC**
+  (`commands/analytics.rs`), which is a thin pass-through to `capture`. ONE backend path, ONE consent
+  gate. The IPC takes `props_json: String` (the frontend's typed `trackEvent` wrapper does the
+  `JSON.stringify`) because the prop set is open and `serde_json::Value` can't cross specta. No
+  capability entry needed (custom app commands aren't ACL-gated).
+
+### The open event API + how to add an event
+
+Events are an OPEN set: `capture(name, props)` / `track_event(name, props)` take an arbitrary name
+and an arbitrary PII-free prop map. Adding one is a one-liner, no enum, no schema:
+
+- **Backend event**: at the success chokepoint, `crate::analytics::posthog::capture("my_event", serde_json::json!({ "kind": some_enum }))`.
+- **Frontend event**: `import { trackEvent } from '$lib/tauri-commands'`, then `void trackEvent('my_event', { kind: someEnum })`.
+- **Name internals after the UI** (project rule): the event name uses the feature's user-facing
+  vocabulary (`pane_navigated`, `search_used`), and props are categorical (`volume_kind`, `mode`).
+
+### PII-free convention + the `sanitize_props` net
+
+Every prop value MUST be a categorical enum, a count (or coarse bucket), or a bool. NEVER a path,
+file name, search query, AI prompt, or hostname. This is enforced by review, NOT by redaction.
+`posthog::sanitize_props` is a **debug-build backstop**: it scans string prop values and logs a
+scoped `warn!` if one looks PII-shaped (contains `/`, `\`, `@`, or a `~/` prefix). It only warns
+(never strips), so production behavior is identical with the guard compiled out, and a leak surfaces
+loudly in dev before shipping. It's a safety net, not a license to pass free-form strings.
+
+### The starter event set (where each fires)
+
+PII-free; this set grows over time. Backend events fire at success chokepoints; frontend events ride
+`track_event`.
+
+- `app_launched` (backend, `lib.rs` setup) — no props.
+- `pane_navigated` (frontend, `FilePane.svelte` `handleListingComplete`) — `volume_kind` enum
+  (`local`/`smb`/`mtp`/`network`/`search-results`); never the path.
+- `search_used` (frontend, `SearchDialog.svelte` `runSearch`) — `mode` enum; never the query.
+- `select_files_used` (frontend, `SelectionDialog.svelte` `commitMatches`) — `mode` (match mode) +
+  `action` (add/remove); never the pattern.
+- `file_transfer_completed` (backend, `write_operations/types.rs` `TauriEventSink::emit_complete`) —
+  `op` (copy/move), `item_count` bucket, `had_conflicts` bool (proxied from `files_skipped > 0`, since
+  skips happen only via conflict resolution); never names/paths.
+- `delete_used` (backend, same sink) — `trashed` bool, `item_count` bucket.
+- `smb_connected` (backend, `backends/smb.rs` `connect_smb_volume`) — no host/share/credential props.
+- `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`) — no device/product props.
+- `settings_opened` (frontend, `command-handlers/app-dialog-handlers.ts` `app.settings`) — no props.
+- `error_encountered` (backend, `listing/streaming.rs` `TauriListingEventSink::emit_error`) —
+  `category` enum (from the FriendlyError); never the path/message/provider.
+
 ## Files
 
 - `mod.rs`: the heartbeat loop (launch beat + hourly), the consent gate, the payload struct, the
-  fire-and-forget send. `init(app)` + `start()` mirror `space_poller`'s spawn pattern, wired from
-  `lib.rs` setup.
+  fire-and-forget send, and the shared helpers (`suppressed`, `read_raw_settings`, `APP_HANDLE`,
+  `analytics_consent_granted`) that `posthog` reuses. `init(app)` + `start()` mirror `space_poller`'s
+  spawn pattern, wired from `lib.rs` setup.
+- `posthog.rs`: the PostHog `capture(event, props)` path, the pure `build_capture_body`, the
+  debug-build `sanitize_props` PII net, and the `option_env!` key mechanism.
 - `config_shape.rs`: the pure, unit-tested config-shape builder and the `CATEGORICAL_STRING_KEYS`
-  allowlist. The only place the PII-free rule lives.
+  allowlist. The only place the PII-free rule lives. Mirrored as both the heartbeat `config` and the
+  PostHog `$set` person properties.
 
 ## Wiring
 

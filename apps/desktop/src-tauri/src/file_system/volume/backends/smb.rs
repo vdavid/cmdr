@@ -2222,6 +2222,9 @@ pub async fn connect_smb_volume(
     let (client, tree) = build_session(&params).await?;
     let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree);
     vol.spawn_watcher(&params);
+    // PII-free analytics: a direct SMB connection succeeded. No host / share / credential
+    // identifiers ever cross.
+    crate::analytics::posthog::capture("smb_connected", serde_json::json!({}));
     Ok(vol)
 }
 

@@ -30,6 +30,7 @@
         addRecentSelection as addRecentSelectionIpc,
         removeRecentSelection as removeRecentSelectionIpc,
         getRecentSelections as fetchRecentSelections,
+        trackEvent,
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
@@ -347,6 +348,9 @@
         // Persist to recent selections. Selection's "add" gate is the commit, mirroring
         // Search's "Open in pane" gate (recents are signal-rich, not keystroke-noisy).
         void persistRecent(indices.length)
+        // PII-free analytics: the dialog committed. Only the match-mode enum and the add/remove
+        // action cross; never the pattern.
+        void trackEvent('select_files_used', { mode: selectionQueryState.getMode(), action: mode })
         onCommit(indices, mode)
         onClose()
     }

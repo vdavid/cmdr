@@ -444,6 +444,10 @@ impl MtpConnectionManager {
             .emit(app);
         }
 
+        // PII-free analytics: an MTP device connected. No device / product / storage identifiers
+        // ever cross.
+        crate::analytics::posthog::capture("mtp_connected", serde_json::json!({}));
+
         // Broadcast updated volume list (includes new MTP volumes)
         crate::volume_broadcast::emit_volumes_changed();
 

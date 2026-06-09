@@ -258,6 +258,9 @@ export type {
   ScanPreviewCancelledEvent,
 } from './write-operations'
 
+// Analytics (PostHog feature events through the single backend path)
+export { trackEvent } from './analytics'
+
 // Crash reporter
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'

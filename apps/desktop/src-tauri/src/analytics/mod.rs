@@ -6,6 +6,7 @@
 //! suppressed in dev/CI builds unless explicitly forced for integration tests.
 
 mod config_shape;
+pub mod posthog;
 
 use serde::Serialize;
 use std::path::PathBuf;
