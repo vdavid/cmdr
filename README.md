@@ -65,7 +65,7 @@ restrictions.
 For work projects, you'll need a license:
 
 - **$59/year**: subscription, auto-renews
-- **$149 one-time**: perpetual license
+- **$199 one-time**: perpetual license
 
 Purchase at [getcmdr.com/pricing](https://getcmdr.com/pricing).
 
