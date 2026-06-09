@@ -5,14 +5,16 @@ into a frame + two pane cutouts so they can animate independently in `Hero.astro
 
 ## Files
 
-| File                                    | Purpose                                                                             |
-| --------------------------------------- | ----------------------------------------------------------------------------------- |
-| `cmdr-hero-frame-{dark,light}.png`      | Window chrome (title bar, toolbar, borders, status bar) with transparent pane areas |
-| `cmdr-hero-left-pane-{dark,light}.png`  | Left pane screenshot content on transparent canvas                                  |
-| `cmdr-hero-right-pane-{dark,light}.png` | Right pane screenshot content on transparent canvas                                 |
+| File                                    | Purpose                                                                                |
+| --------------------------------------- | -------------------------------------------------------------------------------------- |
+| `cmdr-hero-frame-{dark,light}.png`      | 2x window chrome (title bar, toolbar, borders, status bar) with transparent pane areas |
+| `cmdr-hero-left-pane-{dark,light}.png`  | 2x left pane screenshot content on transparent canvas                                  |
+| `cmdr-hero-right-pane-{dark,light}.png` | 2x right pane screenshot content on transparent canvas                                 |
+| `cmdr-hero-*-{dark,light}-1x.png`       | 1x derivatives for responsive delivery experiments and future `srcset` wiring          |
 
-All six files share the same canvas size: **2508 x 1634 px** (2x retina). `Hero.astro` switches between dark and light
-variants using CSS selectors on `data-theme` / `prefers-color-scheme`.
+The six primary files share the same canvas size: **2508 x 1634 px** (2x retina). The 1x derivatives are **1254 x 817
+px** and are generated from the 2x files. `Hero.astro` switches between dark and light variants using CSS selectors on
+`data-theme` / `prefers-color-scheme`.
 
 ## How to reshoot
 
@@ -105,13 +107,21 @@ for variant in dark light; do
     cmdr-hero-frame-${variant}.png
 done
 
+for variant in dark light; do
+  for layer in frame left-pane right-pane; do
+    magick cmdr-hero-${layer}-${variant}.png -resize 50% \
+      cmdr-hero-${layer}-${variant}-1x.png
+  done
+done
+
 rm -f /tmp/hero-mask.png /tmp/src-alpha.png /tmp/new-alpha.png
 ```
 
 ### 6. Verify
 
-Check that all six PNGs are 2508 x 1634 and file sizes are roughly: ~650 KB frame, ~340 KB left pane, ~140 KB right
-pane. To verify the frame transparency, composite on a red background:
+Check that the six primary PNGs are 2508 x 1634, the six 1x derivatives are 1254 x 817, and the 2x file sizes are
+roughly: ~650 KB frame, ~340 KB left pane, ~140 KB right pane. To verify the frame transparency, composite on a red
+background:
 
 ```bash
 magick -size 2508x1634 xc:red \
