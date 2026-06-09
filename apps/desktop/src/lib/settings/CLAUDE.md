@@ -136,7 +136,8 @@ Top-level sidebar order (declared in `SettingsSidebar.svelte`'s `TOP_LEVEL_ORDER
 5. **Viewer** (no subsections)
 6. **Keyboard shortcuts** (special, non-registry)
 7. **Developer** — `MCP server`, `Logging`
-8. **Updates** (no subsections)
+8. **Updates & privacy** (no subsections): app-update checks, the crash/error report opt-ins, and the beta
+   `analytics.enabled` opt-out + `analytics.email` contact field
 9. **License** (special, non-registry)
 10. **Advanced** (special, auto-generated from `showInAdvanced: true` entries)
 

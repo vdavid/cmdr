@@ -163,8 +163,8 @@
             </section>
         {/if}
 
-        <!-- Updates (top-level, no subsections) -->
-        {#if shouldShowTopLevel(['Updates'])}
+        <!-- Updates & privacy (top-level, no subsections) -->
+        {#if shouldShowTopLevel(['Updates & privacy'])}
             <section data-section-id="updates">
                 <UpdatesSection {searchQuery} />
             </section>

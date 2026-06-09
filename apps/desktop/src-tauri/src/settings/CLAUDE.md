@@ -36,6 +36,8 @@ Settings {
     error_reports_enabled: Option<bool>,           // from "updates.errorReports" (Flow B opt-in, default off)
     network_enabled: Option<bool>,                 // from "network.enabled" (default on; off renders picker as "Network (disabled)")
     network_first_trigger_done: Option<bool>,      // from "network.firstTriggerDone" (hidden internal flag; true if we've ever triggered the macOS Local Network prompt)
+    analytics_enabled: Option<bool>,               // from "analytics.enabled"; tri-state consent (None/Some(true) → analytics on, Some(false) → opted out). See `analytics/CLAUDE.md`
+    analytics_email: Option<String>,               // from "analytics.email"; beta contact email, frontend-owned, never sent through analytics
 }
 ```
 

@@ -35,7 +35,7 @@
         'Viewer',
         'Keyboard shortcuts',
         'Developer',
-        'Updates',
+        'Updates & privacy',
         'License',
         'Advanced',
     ] as const

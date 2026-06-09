@@ -167,10 +167,14 @@ export interface SettingsValues {
   'fileOperations.progressUpdateInterval': number
   'fileOperations.maxConflictsToShow': number
 
-  // Updates
+  // Updates & privacy
   'updates.autoCheck': boolean
   'updates.crashReports': boolean
   'updates.errorReports': boolean
+
+  // Analytics (beta usage stats + optional contact email)
+  'analytics.enabled': boolean
+  'analytics.email': string
 
   // Network
   'network.enabled': boolean

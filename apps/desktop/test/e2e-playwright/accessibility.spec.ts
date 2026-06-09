@@ -366,7 +366,7 @@ for (const mode of ['light', 'dark'] as const) {
             sectionId: 'developer-mcp-server',
           },
           { name: 'Developer > Logging', path: ['Developer', 'Logging'], sectionId: 'developer-logging' },
-          { name: 'Updates', path: ['Updates'], sectionId: 'updates' },
+          { name: 'Updates & privacy', path: ['Updates & privacy'], sectionId: 'updates' },
           { name: 'License', path: ['License'], sectionId: 'license' },
           { name: 'Advanced', path: ['Advanced'], sectionId: 'advanced' },
         ]

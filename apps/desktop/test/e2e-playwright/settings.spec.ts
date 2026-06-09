@@ -69,7 +69,7 @@ test.describe('Settings page', () => {
       'Developer',
       'MCP server',
       'Logging',
-      'Updates',
+      'Updates & privacy',
       'License',
       'Advanced',
     ]

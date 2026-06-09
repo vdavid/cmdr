@@ -154,7 +154,7 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         thread_name,
         thread_count: current_thread_count(),
         app_version: env!("CARGO_PKG_VERSION").to_string(),
-        os_version: get_os_version(),
+        os_version: crate::platform::os_version(),
         arch: std::env::consts::ARCH.to_string(),
         uptime_secs: uptime_secs(),
         active_settings: CACHED_SETTINGS.get().cloned().unwrap_or_default(),
@@ -458,7 +458,7 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
                 thread_name: None,
                 thread_count: 0,
                 app_version: crash_app_version,
-                os_version: get_os_version(),
+                os_version: crate::platform::os_version(),
                 arch: std::env::consts::ARCH.to_string(),
                 uptime_secs: 0.0, // Unknown for signal crashes from previous session
                 active_settings: CACHED_SETTINGS.get().cloned().unwrap_or_default(),
@@ -545,35 +545,6 @@ fn current_thread_count() -> usize {
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {
         0
-    }
-}
-
-fn get_os_version() -> String {
-    #[cfg(target_os = "macos")]
-    {
-        // Use sw_vers for macOS version
-        if let Ok(output) = std::process::Command::new("sw_vers").arg("-productVersion").output() {
-            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !version.is_empty() {
-                return format!("macOS {version}");
-            }
-        }
-        "macOS (unknown version)".to_string()
-    }
-    #[cfg(target_os = "linux")]
-    {
-        if let Ok(release) = std::fs::read_to_string("/etc/os-release") {
-            for line in release.lines() {
-                if let Some(name) = line.strip_prefix("PRETTY_NAME=") {
-                    return name.trim_matches('"').to_string();
-                }
-            }
-        }
-        "Linux (unknown distro)".to_string()
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        std::env::consts::OS.to_string()
     }
 }
 

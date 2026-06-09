@@ -565,31 +565,3 @@ pub mod settings_defaults {
         }
     }
 }
-
-pub(crate) fn get_os_version() -> String {
-    #[cfg(target_os = "macos")]
-    {
-        if let Ok(output) = std::process::Command::new("sw_vers").arg("-productVersion").output() {
-            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !version.is_empty() {
-                return format!("macOS {version}");
-            }
-        }
-        "macOS (unknown version)".to_string()
-    }
-    #[cfg(target_os = "linux")]
-    {
-        if let Ok(release) = std::fs::read_to_string("/etc/os-release") {
-            for line in release.lines() {
-                if let Some(name) = line.strip_prefix("PRETTY_NAME=") {
-                    return name.trim_matches('"').to_string();
-                }
-            }
-        }
-        "Linux (unknown distro)".to_string()
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        std::env::consts::OS.to_string()
-    }
-}

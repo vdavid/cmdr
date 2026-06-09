@@ -13,7 +13,7 @@
 use super::tail_walker;
 use super::{
     BuildMode, BuiltBundle, BundleKind, BundleManifest, BundleScope, FLOW_A_BUNDLE_CAP_MB, breadcrumbs,
-    build_log_level_snapshot, cached_active_settings, get_os_version,
+    build_log_level_snapshot, cached_active_settings,
 };
 use crate::logging;
 use crate::redact;
@@ -88,7 +88,7 @@ pub fn build_bundle<R: tauri::Runtime>(
         kind,
         build_mode: BuildMode::current(),
         app_version: env!("CARGO_PKG_VERSION").to_string(),
-        os_version: get_os_version(),
+        os_version: crate::platform::os_version(),
         arch: std::env::consts::ARCH.to_string(),
         active_settings: cached_active_settings(app).clone(),
         log_levels: build_log_level_snapshot(),

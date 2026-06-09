@@ -76,6 +76,7 @@ mod accent_color;
 #[cfg(target_os = "linux")]
 mod accent_color_linux;
 mod ai;
+mod analytics;
 pub mod benchmark;
 mod child_window_state;
 mod clipboard;
@@ -95,6 +96,7 @@ mod font_metrics;
 mod go_to_path;
 pub mod icons;
 pub mod indexing;
+mod install_id;
 pub mod licensing;
 #[cfg(target_os = "linux")]
 pub(crate) mod linux_distro;
@@ -115,6 +117,7 @@ mod network;
 mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
+mod platform;
 mod pluralize;
 mod quick_look;
 mod redact;
@@ -369,6 +372,11 @@ pub fn run() {
                 ),
             }
 
+            // Snapshot the diagnostics id into a cheap static before anything that might crash,
+            // so the panic hook can read it without allocating or locking. Mints both install
+            // ids on first launch.
+            install_id::init();
+
             // Initialize crash reporter early, before anything that might crash
             crash_reporter::init(app.handle());
 
@@ -588,6 +596,11 @@ pub fn run() {
                 saved_settings.low_disk_space_threshold_percent.unwrap_or(5),
             );
             space_poller::start();
+
+            // Start the anonymous beta-analytics heartbeat (launch beat + hourly). Consent-gated
+            // and suppressed in dev/CI; see `analytics/CLAUDE.md`.
+            analytics::init(app.handle());
+            analytics::start();
 
             // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking).
             // No `firstTriggerDone` gate here: the function is a no-op when there are no SMB

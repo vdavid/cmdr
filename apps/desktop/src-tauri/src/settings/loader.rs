@@ -76,6 +76,16 @@ pub struct Settings {
     pub network_enabled: Option<bool>,
     #[serde(alias = "network.firstTriggerDone", default)]
     pub network_first_trigger_done: Option<bool>,
+    /// The analytics opt-out (tri-state). `None`/`Some(true)` → analytics on, `Some(false)` →
+    /// opted out. The frontend store only persists non-default values, so an opted-in install has
+    /// no key. See `analytics_consent_granted` and `analytics/CLAUDE.md` § "Consent is tri-state".
+    #[serde(alias = "analytics.enabled", default)]
+    pub analytics_enabled: Option<bool>,
+    /// The beta contact email. Frontend-owned, never sent through the analytics pipeline. Read here
+    /// only so the backend can mirror it (the beta-signup network call lands in a later milestone).
+    #[serde(alias = "analytics.email", default)]
+    #[allow(dead_code, reason = "consumed by the beta-signup network call once it's wired")]
+    pub analytics_email: Option<String>,
 }
 
 fn default_show_hidden() -> bool {
@@ -113,6 +123,8 @@ impl Default for Settings {
             show_virtual_git_portal: None,
             network_enabled: None,
             network_first_trigger_done: None,
+            analytics_enabled: None,
+            analytics_email: None,
         }
     }
 }
@@ -181,6 +193,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .and_then(|v| v.as_bool());
     let network_enabled = json.get("network.enabled").and_then(|v| v.as_bool());
     let network_first_trigger_done = json.get("network.firstTriggerDone").and_then(|v| v.as_bool());
+    let analytics_enabled = json.get("analytics.enabled").and_then(|v| v.as_bool());
+    let analytics_email = json.get("analytics.email").and_then(|v| v.as_str()).map(String::from);
 
     Ok(Settings {
         show_hidden_files,
@@ -203,6 +217,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         show_virtual_git_portal,
         network_enabled,
         network_first_trigger_done,
+        analytics_enabled,
+        analytics_email,
     })
 }
 

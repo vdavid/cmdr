@@ -250,3 +250,26 @@ describe('buildSectionTree', () => {
     }
   })
 })
+
+describe('analytics settings', () => {
+  it('analytics.enabled is a boolean switch defaulting to on (opt-out for the beta)', () => {
+    const def = getSettingDefinition('analytics.enabled')
+    expect(def?.type).toBe('boolean')
+    expect(def?.component).toBe('switch')
+    expect(getDefaultValue('analytics.enabled')).toBe(true)
+  })
+
+  it('analytics.email is a string text input defaulting to empty', () => {
+    const def = getSettingDefinition('analytics.email')
+    expect(def?.type).toBe('string')
+    expect(def?.component).toBe('text-input')
+    expect(getDefaultValue('analytics.email')).toBe('')
+  })
+
+  it('both analytics settings live under the renamed "Updates & privacy" section', () => {
+    expect(getSettingDefinition('analytics.enabled')?.section).toEqual(['Updates & privacy'])
+    expect(getSettingDefinition('analytics.email')?.section).toEqual(['Updates & privacy'])
+    // The pre-existing Updates settings moved into the renamed section too.
+    expect(getSettingDefinition('updates.autoCheck')?.section).toEqual(['Updates & privacy'])
+  })
+})

@@ -807,11 +807,11 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   // ========================================================================
-  // Updates
+  // Updates & privacy
   // ========================================================================
   {
     id: 'updates.autoCheck',
-    section: ['Updates'],
+    section: ['Updates & privacy'],
     label: 'Automatically check for updates',
     description: 'Periodically check for new versions in the background.',
     keywords: ['update', 'auto', 'check', 'version', 'background'],
@@ -820,8 +820,29 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
   },
   {
+    id: 'analytics.enabled',
+    section: ['Updates & privacy'],
+    label: 'Send anonymous usage stats',
+    description:
+      'Helps us see which features matter during the open beta. Never includes file names, paths, search terms, or prompts. Turn it off and Cmdr stops sending anything.',
+    keywords: ['analytics', 'usage', 'stats', 'privacy', 'telemetry', 'beta', 'tracking', 'opt-out'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'analytics.email',
+    section: ['Updates & privacy'],
+    label: 'Beta contact email',
+    description: 'Example: you@example.com',
+    keywords: ['email', 'beta', 'contact', 'newsletter', 'updates', 'survey'],
+    type: 'string',
+    default: '',
+    component: 'text-input',
+  },
+  {
     id: 'updates.crashReports',
-    section: ['Updates'],
+    section: ['Updates & privacy'],
     label: 'Send crash reports',
     description:
       'Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location. Never file names or personal data.',
@@ -832,7 +853,7 @@ export const settingsRegistry: SettingDefinition[] = [
   },
   {
     id: 'updates.errorReports',
-    section: ['Updates'],
+    section: ['Updates & privacy'],
     label: 'Send error reports automatically',
     description:
       'Send a small log snippet to the developer when an error occurs. Helps fix bugs faster. Off by default. You can always send a manual report from the Help menu.',

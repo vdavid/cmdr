@@ -98,6 +98,11 @@ All under `apps/desktop/src-tauri/src/`.
 - `mtp/`: MTP device management, file ops, event-based watching
 - `mcp/`: MCP server (tools, YAML resources, agent-centric API)
 - `ai/`: llama-server lifecycle, model download, inference client
+- `analytics/`: Anonymous beta usage analytics: hourly `/heartbeat` sender (true DAU + a PII-free config-shape snapshot
+  built by allowlist), tri-state consent gate, dev/CI suppression. PostHog feature events ride the same gate
+- `install_id.rs`: Two Rust-owned per-install random ids (`anal_` for analytics, `diag_` for diagnostics) that never
+  meet by construction. AppHandle-free accessors, one `install-ids.json`
+- `platform.rs`: Shared platform-identity helpers (`os_version()`), used by crash + error reports and the heartbeat
 - `licensing/`: Ed25519 license verification, server validation
 - `settings/`: Settings persistence (tauri-plugin-store)
 - `indexing/`: Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes
