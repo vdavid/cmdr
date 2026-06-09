@@ -15,9 +15,11 @@
         nextStep,
         previousStep,
         openWizard,
+        type OnboardingStep,
     } from './onboarding-state.svelte'
     import StepFda from './StepFda.svelte'
     import StepAi from './StepAi.svelte'
+    import StepBeta from './StepBeta.svelte'
     import StepOptional from './StepOptional.svelte'
 
     const log = getAppLogger('onboarding')
@@ -106,11 +108,10 @@
     }
 
     /**
-     * Step bodies (currently step 2's "Start using Cmdr!" button) can ask the wizard
-     * to finish early, skipping any remaining steps. They bump `finishRequestTick`
-     * via `requestWizardComplete()` and we react here. Using a tick counter (not a
-     * boolean) means repeated requests in the same session still each fire exactly
-     * once.
+     * Step bodies (the final Optional step's "Start using Cmdr" button) can ask the
+     * wizard to finish. They bump `finishRequestTick` via `requestWizardComplete()`
+     * and we react here. Using a tick counter (not a boolean) means repeated requests
+     * in the same session still each fire exactly once.
      */
     let lastSeenFinishTick = 0
     $effect(() => {
@@ -123,10 +124,10 @@
     /**
      * Buttons to render in the footer's right slot. By default the wizard computes a
      * single per-step primary button (`Next`, `Finish`, `Restart Cmdr`, or nothing for
-     * step 1's decide mode where the body owns Allow/Deny). Steps that need a custom
-     * layout (step 2's dual-button "Start using Cmdr!" / "One more optional setup step")
-     * register their own array via `setFooterOverride()` in onboarding-state and we
-     * render those instead. Rendering `[]` for primary just leaves the right slot empty.
+     * step 1's decide mode where the body owns Allow/Deny). Steps that own their footer
+     * (the AI step's "Go to open beta", the Beta step's "Next", the Optional step's
+     * "Start using Cmdr") register their own array via `setFooterOverride()` in
+     * onboarding-state and we render those instead. Rendering `[]` leaves the slot empty.
      */
     type FooterButton = {
         label: string
@@ -167,12 +168,12 @@
     }
 
     /**
-     * Step-dot indicator. Step 3 (optional) is rendered with a muted/open style
-     * so users see "two mandatory plus one optional," not an endless wizard
-     * (round-3 #4).
+     * Step-dot indicator. The last step (Optional) is rendered with a muted/open style
+     * so users see "mandatory steps plus one optional," not an endless wizard. The Beta
+     * page (step 3) is a normal mandatory dot.
      */
     const stepDots = Array.from({ length: ONBOARDING_STEP_COUNT }, (_, i) => ({
-        index: (i + 1) as 1 | 2 | 3,
+        index: (i + 1) as OnboardingStep,
         isOptional: i === ONBOARDING_STEP_COUNT - 1,
     }))
 </script>
@@ -212,6 +213,8 @@
             {:else if onboardingState.currentStep === 2}
                 <StepAi />
             {:else if onboardingState.currentStep === 3}
+                <StepBeta />
+            {:else if onboardingState.currentStep === 4}
                 <StepOptional />
             {/if}
         </div>

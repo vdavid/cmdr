@@ -12,9 +12,9 @@
  * - Intel-Mac gate: when `getAiRuntimeStatus().localAiSupported === false`, the local
  *   radio is disabled, doesn't fire `startAiDownload`, and `setSetting('ai.provider',
  *   'local')` does not run.
- * - The dual-button footer registers via `setFooterOverride`. Clicking "Start using
- *   Cmdr!" persists + calls `pushConfigToBackend` + bumps the wizard's
- *   `finishRequestTick`. Clicking "One more optional setup step" persists + advances.
+ * - The single forward footer button ("Go to open beta") registers via
+ *   `setFooterOverride`. Clicking it persists + calls `pushConfigToBackend` + advances to
+ *   the Beta page (step 3). It never completes onboarding: the Beta page is non-skippable.
  * - No-API-key-blocks-advance rule: cloud + empty key still advances; `pushConfigToBackend`
  *   still fires.
  *
@@ -298,17 +298,16 @@ describe('StepAi', () => {
     expect(settingsMap['ai.provider']).toBe('off')
   })
 
-  it('registers two footer buttons via setFooterOverride', async () => {
+  it('registers a single "Go to open beta" forward button via setFooterOverride', async () => {
     mounted = mountStep()
     await waitForAsync()
     const buttons = getOnboardingState().footerOverride
     expect(buttons).not.toBeNull()
-    expect(buttons?.map((b) => b.label)).toEqual(['Start using Cmdr!', 'One more optional setup step'])
-    expect(buttons?.[0].variant).toBe('secondary')
-    expect(buttons?.[1].variant).toBe('primary')
+    expect(buttons?.map((b) => b.label)).toEqual(['Go to open beta'])
+    expect(buttons?.[0].variant).toBe('primary')
   })
 
-  it('Start using Cmdr! persists the choice, pushes config to backend, and requests wizard finish', async () => {
+  it('Go to open beta persists the choice, pushes config to backend, and advances to the Beta page (step 3) without finishing', async () => {
     mounted = mountStep()
     await waitForAsync()
     radioByValue(mounted.target, 'cloud')?.dispatchEvent(new Event('change', { bubbles: true }))
@@ -318,19 +317,9 @@ describe('StepAi', () => {
     await waitForAsync()
     expect(settingsMap['ai.provider']).toBe('cloud')
     expect(pushConfigToBackend).toHaveBeenCalled()
-    expect(getOnboardingState().finishRequestTick).toBe(initialTick + 1)
-  })
-
-  it('One more optional setup step persists and advances to step 3', async () => {
-    mounted = mountStep()
-    await waitForAsync()
-    radioByValue(mounted.target, 'off')?.dispatchEvent(new Event('change', { bubbles: true }))
-    await waitForAsync()
-    getOnboardingState().footerOverride?.[1].onclick()
-    await waitForAsync()
-    expect(settingsMap['ai.provider']).toBe('off')
-    expect(pushConfigToBackend).toHaveBeenCalled()
+    // Beta is non-skippable: this advances to step 3, it does NOT request wizard finish.
     expect(getOnboardingState().currentStep).toBe(3)
+    expect(getOnboardingState().finishRequestTick).toBe(initialTick)
   })
 
   it('No-key-blocks-advance: cloud with empty key still calls pushConfigToBackend', async () => {

@@ -6,13 +6,7 @@
     import IconShieldCheck from '~icons/lucide/shield-check'
     import IconShieldOff from '~icons/lucide/shield-off'
     import IconTriangleAlert from '~icons/lucide/triangle-alert'
-    import {
-        getOnboardingState,
-        setFooterOverride,
-        setStepTwoBanner,
-        nextStep,
-        requestWizardComplete,
-    } from './onboarding-state.svelte'
+    import { getOnboardingState, setFooterOverride, setStepTwoBanner, nextStep } from './onboarding-state.svelte'
     import {
         checkFullDiskAccess,
         getAiRuntimeStatus,
@@ -42,12 +36,12 @@
      *     ○ Yes, local (Apple Silicon only; tooltip when disabled)
      *     ○ Thanks but no thanks
      *
-     * Footer: dual buttons registered via `setFooterOverride` so the wizard renders
-     * them in its right slot (secondary "Start using Cmdr!" + primary "One more
-     * optional setup step"). Per David's spec the primary one nudges users into step 3
-     * without forcing them.
+     * Footer: a single forward button ("Go to open beta") registered via
+     * `setFooterOverride` so the wizard renders it in its right slot. The Beta page
+     * (step 3) is non-skippable, so this step never completes onboarding; it always
+     * advances to Beta.
      *
-     * Persistence on either footer button:
+     * Persistence on the footer button:
      *   - `ai.provider` (always)
      *   - `ai.cloudProvider` + `ai.cloudProviderConfigs` (when cloud is picked; the API
      *     key is already persisted live by `CloudProviderSetup`)
@@ -61,7 +55,7 @@
      * surfaced progress.
      *
      * **No-key-blocks-advance rule**: if the user picks cloud but the connection check
-     * hasn't gone green, both footer buttons stay enabled. The auto-check status is
+     * hasn't gone green, the forward button stays enabled. The auto-check status is
      * right there as feedback; forcing key entry as a precondition would fight users
      * who want to come back later.
      */
@@ -179,52 +173,33 @@
         }
         // Belt-and-braces: the applier listener fires on each setSetting above, but we
         // await this explicitly so the backend is reconfigured before the user lands in
-        // the app. Both footer buttons commit on click.
+        // the app. The forward button commits on click.
         await pushConfigToBackend()
     }
 
     /**
-     * Footer buttons exposed to the wizard via `setFooterOverride`. The closures need
-     * access to the step's `onComplete` callback, which lives in the wizard. We
-     * re-register on every relevant state change so the closures always see fresh
-     * values (Svelte 5 closures capture by reference, but `choice` / `cloudProviderId`
-     * are `$state` and would be stale through `untrack`).
+     * Forward footer button exposed to the wizard via `setFooterOverride`. We re-register
+     * on every relevant state change so the closure always sees fresh `$state` values
+     * (Svelte 5 closures capture by reference, but `choice` / `cloudProviderId` would be
+     * stale through `untrack`). It persists the AI choice, then advances to the Beta page
+     * (step 3). The Beta page is non-skippable, so there's no "skip to end" path here.
      */
     $effect(() => {
-        // Track the reactive bits the closures read so the effect re-runs.
+        // Track the reactive bits the closure reads so the effect re-runs.
         void choice
         void cloudProviderId
         void advanceBusy
-        const buttons = [
+        setFooterOverride([
             {
-                label: 'Start using Cmdr!',
-                variant: 'secondary' as const,
-                disabled: advanceBusy,
-                onclick: () => void handleStart(),
-            },
-            {
-                label: 'One more optional setup step',
+                label: 'Go to open beta',
                 variant: 'primary' as const,
                 disabled: advanceBusy,
-                onclick: () => void handleContinue(),
+                onclick: () => void handleGoToBeta(),
             },
-        ]
-        setFooterOverride(buttons)
+        ])
     })
 
-    async function handleStart(): Promise<void> {
-        if (advanceBusy) return
-        advanceBusy = true
-        try {
-            await persist()
-        } finally {
-            advanceBusy = false
-        }
-        // Skip step 3. The wizard observes `finishRequestTick` and calls `onComplete()`.
-        requestWizardComplete()
-    }
-
-    async function handleContinue(): Promise<void> {
+    async function handleGoToBeta(): Promise<void> {
         if (advanceBusy) return
         advanceBusy = true
         try {
@@ -297,7 +272,7 @@
         <h2 class="step-title">Welcome to Cmdr!</h2>
         <p class="step-subtitle">Let's set up AI.</p>
     {:else}
-        <h2 class="step-title">Now, the last necessary step: AI stuff</h2>
+        <h2 class="step-title">Now, let's talk AI</h2>
     {/if}
 
     <p>

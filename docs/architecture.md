@@ -57,7 +57,8 @@ All under `apps/desktop/src/lib/`.
 - `selection-dialog/`: "Select files…" / "Deselect files…" dialog (second `query-ui` consumer): pure glob/regex +
   size/date matcher, cloud AI translation
 - `mtp/`: MTP (Android device) file browsing UI
-- `onboarding/`: Soft-sheet onboarding wizard: Full Disk Access, AI provider, optional settings
+- `onboarding/`: Soft-sheet onboarding wizard: Full Disk Access, AI provider, open-beta analytics disclosure, optional
+  settings
 - `ui/`: Shared UI primitives: ModalDialog, Button, AlertDialog, Notification, dialog registry, `SectionCard`
 - `routes/dev/components/`: Dev-only catalog of every `lib/ui/` primitive (Storybook replacement), in the Debug window
 - `tooltip/`: Lightweight tooltip primitive

@@ -5,7 +5,9 @@
  * - Escape is a no-op (the wizard intentionally swallows it).
  * - The step-1 footer button reflects state: hidden in `decide` mode, `Restart Cmdr` in
  *   `restart` mode, `Next` for the `already-granted` variant.
- * - Forward navigation from `already-granted` → step 2 → step 3 → Finish fires `onComplete`.
+ * - Forward navigation walks step 1 → 2 (AI) → 3 (Beta) → 4 (Optional) → Finish fires
+ *   `onComplete`. The AI step's "Go to open beta" routes to the non-skippable Beta page,
+ *   never straight to completion.
  * - Back from step 2 returns to step 1 and resets the footer to `decide` mode.
  * - The hand-rolled focus trap wraps Tab and Shift+Tab through the panel's focusables.
  *
@@ -34,6 +36,9 @@ vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: vi.fn(() => Promise.resolve()),
   startIndexingAfterFdaDecision: vi.fn(() => Promise.resolve()),
   openExternalUrl: vi.fn(() => Promise.resolve()),
+  // StepBeta calls `betaSignup` on email commit; the wizard test never commits an email,
+  // but the import must resolve.
+  betaSignup: vi.fn(() => Promise.resolve({ kind: 'subscribed' })),
   // StepAi pulls in the AI pipeline. None of these need real behaviour here;
   // the wizard test only cares about navigation + footer plumbing.
   startAiDownload: vi.fn(() => Promise.resolve()),
@@ -98,15 +103,6 @@ function primaryFooterButton(target: HTMLElement): HTMLButtonElement | null {
   return slot.querySelector<HTMLButtonElement>('button')
 }
 
-/** Returns the LAST button in the primary slot. On step 2 the wizard renders two */
-/** footer buttons; the "advance" one ("One more optional setup step") is the last. */
-function lastPrimaryFooterButton(target: HTMLElement): HTMLButtonElement | null {
-  const slot = target.querySelector<HTMLElement>('.primary-slot')
-  if (!slot) return null
-  const buttons = slot.querySelectorAll<HTMLButtonElement>('button')
-  return buttons[buttons.length - 1] ?? null
-}
-
 function backButton(target: HTMLElement): HTMLButtonElement | null {
   return target.querySelector<HTMLButtonElement>('.back-button')
 }
@@ -165,7 +161,7 @@ describe('OnboardingWizard', () => {
     expect(relaunch).toHaveBeenCalledOnce()
   })
 
-  it('Finish on the last step fires onComplete', async () => {
+  it('Finish on the last step fires onComplete after walking 1 → 2 → 3 → 4', async () => {
     const onComplete = vi.fn()
     openWizard('menu')
     setStep1Variant('already-granted')
@@ -175,23 +171,29 @@ describe('OnboardingWizard', () => {
     primaryFooterButton(mounted.target)?.click()
     flushSync()
     await tick()
-    // Step 2 owns its footer override: [Start (secondary), One more (primary)]. Click
-    // the LAST button to advance to step 3 without skipping. Allow microtasks for the
-    // step-2 persist + nextStep() chain to settle.
-    lastPrimaryFooterButton(mounted.target)?.click()
+    // Step 2 (AI) owns a single "Go to open beta" forward button. Click it to land on
+    // the Beta page (step 3). Allow microtasks for the persist + nextStep() chain to settle.
+    expect(primaryFooterButton(mounted.target)?.textContent.trim()).toBe('Go to open beta')
+    primaryFooterButton(mounted.target)?.click()
     for (let i = 0; i < 10; i++) await Promise.resolve()
     flushSync()
     await tick()
     expect(getOnboardingState().currentStep).toBe(3)
-    // Step 3 registers its own footer override ("Start using Cmdr") via setFooterOverride().
-    // The wizard's built-in "Finish" label only renders for steps that don't override.
+    // Step 3 (Beta) owns a single "Next" forward button. Click it to land on Optional (step 4).
+    expect(primaryFooterButton(mounted.target)?.textContent.trim()).toBe('Next')
+    primaryFooterButton(mounted.target)?.click()
+    flushSync()
+    await tick()
+    expect(getOnboardingState().currentStep).toBe(4)
+    // Step 4 (Optional) registers its own footer override ("Start using Cmdr"). The
+    // wizard's built-in "Finish" label only renders for steps that don't override.
     expect(primaryFooterButton(mounted.target)?.textContent.trim()).toBe('Start using Cmdr')
     primaryFooterButton(mounted.target)?.click()
     flushSync()
     expect(onComplete).toHaveBeenCalledOnce()
   })
 
-  it('step 2 "Start using Cmdr!" requests wizard finish (skips step 3)', async () => {
+  it('the AI step\'s "Go to open beta" routes to the non-skippable Beta page (step 3), never straight to completion', async () => {
     const onComplete = vi.fn()
     openWizard('menu')
     setStep1Variant('already-granted')
@@ -200,14 +202,14 @@ describe('OnboardingWizard', () => {
     primaryFooterButton(mounted.target)?.click()
     flushSync()
     await tick()
-    // Step 2 footer's FIRST button is "Start using Cmdr!" (secondary).
+    // Click the AI step's single forward button.
     primaryFooterButton(mounted.target)?.click()
     for (let i = 0; i < 10; i++) await Promise.resolve()
     flushSync()
     await tick()
-    expect(onComplete).toHaveBeenCalledOnce()
-    // Should NOT have advanced to step 3: the finish request short-circuits.
-    expect(getOnboardingState().currentStep).toBe(2)
+    // Lands on Beta (step 3); onComplete must NOT have fired.
+    expect(getOnboardingState().currentStep).toBe(3)
+    expect(onComplete).not.toHaveBeenCalled()
   })
 
   it('Back from step 2 resets the footer mode to `decide` (Allow/Deny live again)', async () => {
@@ -236,10 +238,10 @@ describe('OnboardingWizard', () => {
   })
 
   // Focus trap wrap-around. We assert structurally (first ↔ last focusable) rather than
-  // pinning specific elements (Back vs Finish vs a switch input) because step content
-  // changes the focusable set as steps evolve (step 3 now includes <SettingSwitch>
-  // checkbox inputs that sort last in DOM order). The wizard's job is to wrap; whether
-  // the bookend happens to be a button or an input is incidental.
+  // pinning specific elements (Back vs Next vs a switch input) because step content
+  // changes the focusable set as steps evolve (the Beta page includes a <SettingSwitch>
+  // checkbox plus an email input). The wizard's job is to wrap; whether the bookend
+  // happens to be a button or an input is incidental.
   const FOCUSABLE_SELECTOR =
     'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -247,13 +249,13 @@ describe('OnboardingWizard', () => {
     return Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
   }
 
-  async function advanceToStep3(target: HTMLElement): Promise<void> {
-    // Step 1 → step 2.
+  async function advanceToBeta(target: HTMLElement): Promise<void> {
+    // Step 1 → step 2 (AI).
     primaryFooterButton(target)?.click()
     flushSync()
     await tick()
-    // Step 2 → step 3 (use LAST footer button to advance, not Start-using-Cmdr).
-    lastPrimaryFooterButton(target)?.click()
+    // Step 2 → step 3 (Beta) via the single "Go to open beta" forward button.
+    primaryFooterButton(target)?.click()
     for (let i = 0; i < 10; i++) await Promise.resolve()
     flushSync()
     await tick()
@@ -261,13 +263,13 @@ describe('OnboardingWizard', () => {
 
   it('wraps Tab from the last focusable back to the first', async () => {
     // Force `already-granted` so step 1 has a single Next footer button, then advance
-    // to step 3 to exercise the full focusable set (Back + body controls + footer
-    // primary).
+    // to the Beta page to exercise the full focusable set (Back + switch + email input +
+    // footer primary).
     openWizard('menu')
     setStep1Variant('already-granted')
     mounted = mountWizard()
     await tick()
-    await advanceToStep3(mounted.target)
+    await advanceToBeta(mounted.target)
     const panel = getPanel(mounted.target)
     const items = focusables(panel)
     expect(items.length).toBeGreaterThanOrEqual(2)
@@ -287,7 +289,7 @@ describe('OnboardingWizard', () => {
     setStep1Variant('already-granted')
     mounted = mountWizard()
     await tick()
-    await advanceToStep3(mounted.target)
+    await advanceToBeta(mounted.target)
     const panel = getPanel(mounted.target)
     const items = focusables(panel)
     expect(items.length).toBeGreaterThanOrEqual(2)

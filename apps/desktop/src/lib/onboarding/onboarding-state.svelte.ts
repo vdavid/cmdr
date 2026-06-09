@@ -25,10 +25,10 @@ import type { FullDiskAccessChoice } from '$lib/settings-store'
 export type OnboardingSource = 'force' | 'first-launch' | 'menu' | 'palette'
 
 /** Step index (1-based to match the visible dot indicator). */
-export type OnboardingStep = 1 | 2 | 3
+export type OnboardingStep = 1 | 2 | 3 | 4
 
 /** Number of steps. Kept as a constant so the dot indicator and bounds checks agree. */
-export const ONBOARDING_STEP_COUNT = 3 as const
+export const ONBOARDING_STEP_COUNT = 4 as const
 
 /**
  * Step 1 variant.
@@ -71,9 +71,9 @@ export type StepTwoFdaBanner = 'granted' | 'denied' | 'stuck' | 'linux'
 /**
  * A button to render in the wizard's footer (right slot). Steps register an array of
  * these when they want to override the wizard's default single-primary-button layout.
- * Step 2 uses this to render the dual-button footer ("Start using Cmdr!" secondary +
- * "One more optional setup step" primary). When `null`, the wizard falls back to its
- * built-in per-step button (`Next`, `Finish`, `Restart Cmdr`, or nothing).
+ * The AI step uses this for its "Go to open beta" forward button; the final Optional
+ * step for its "Start using Cmdr" finish button. When `null`, the wizard falls back to
+ * its built-in per-step button (`Next`, `Finish`, `Restart Cmdr`, or nothing).
  */
 export interface WizardFooterButton {
   label: string
@@ -97,19 +97,19 @@ interface OnboardingStateData {
   stepTwoBanner: StepTwoFdaBanner
   /**
    * If set, the wizard renders these buttons in the footer's right slot instead of
-   * its default single primary button. Step 2 registers `[Start, Continue]` here so
-   * the dual-button layout lives next to the rest of the wizard chrome. Reset to
-   * `null` on `closeWizard()` / `previousStep()` / step transitions so stale handlers
-   * never linger.
+   * its default single primary button. The AI step registers its "Go to open beta"
+   * forward button here, the Optional step its "Start using Cmdr" finish button. Reset
+   * to `null` on `closeWizard()` / `previousStep()` / step transitions so stale
+   * handlers never linger.
    */
   footerOverride: WizardFooterButton[] | null
   /**
    * Monotonic tick. A step bumps this via `requestWizardComplete()` to ask the wizard
    * shell to fire `onComplete` and close the wizard. The wizard's `$effect` watches
    * this value (not a boolean, so repeated requests within the same session still
-   * fire) and reads it once per increment. Used by step 2's "Start using Cmdr!"
-   * button to skip past step 3 without the step body needing to import the wizard's
-   * callback.
+   * fire) and reads it once per increment. The final Optional step's "Start using
+   * Cmdr" button uses it to finish without the step body needing to import the
+   * wizard's callback.
    */
   finishRequestTick: number
 }
@@ -308,8 +308,8 @@ export function setStepTwoBanner(banner: StepTwoFdaBanner): void {
 /**
  * Step-controlled footer override. Pass an array of buttons to render in the wizard's
  * footer right slot in place of the default per-step button; pass `null` to fall back
- * to the default. Step 2 uses this for its dual-button layout. Always reset to `null`
- * on tear-down so a stale closure doesn't leak across remounts.
+ * to the default. The AI and Optional steps use this. Always reset to `null` on
+ * tear-down so a stale closure doesn't leak across remounts.
  */
 export function setFooterOverride(buttons: WizardFooterButton[] | null): void {
   state.footerOverride = buttons
@@ -317,9 +317,8 @@ export function setFooterOverride(buttons: WizardFooterButton[] | null): void {
 
 /**
  * Ask the wizard to fire its `onComplete` callback (close + persist `isOnboarded`).
- * Used by step 2's "Start using Cmdr!" button to finish without stepping through
- * step 3. The wizard observes `finishRequestTick` and calls `onComplete()` once per
- * increment.
+ * The final Optional step's "Start using Cmdr" button calls this. The wizard observes
+ * `finishRequestTick` and calls `onComplete()` once per increment.
  */
 export function requestWizardComplete(): void {
   state.finishRequestTick++

@@ -1,7 +1,12 @@
 # Onboarding module
 
-Owns first-launch consent: Full Disk Access (macOS only), AI provider, and a small optional-settings step. Renders the
-`OnboardingWizard` (a soft-sheet that covers ~90% of the viewport over the running app) as the single first-launch path.
+Owns first-launch consent: Full Disk Access (macOS only), AI provider, the open-beta analytics disclosure, and a small
+optional-settings step. Renders the `OnboardingWizard` (a soft-sheet that covers ~90% of the viewport over the running
+app) as the single first-launch path.
+
+Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). The Beta page is **non-skippable** (see § "Step 3 (Open beta)"
+and the Decision below): the AI step's forward button always lands the user there, and only the final Optional step
+finishes onboarding.
 
 ## Key files
 
@@ -10,18 +15,19 @@ Owns first-launch consent: Full Disk Access (macOS only), AI provider, and a sma
 | `OnboardingWizard.svelte`    | Soft-sheet wizard shell: backdrop, step-dot indicator, Back button, primary footer button, Escape-swallow. Tab containment via the shared `use:trapFocus` (no `onEscape` — dismissal requires committing to a step). |
 | `OnboardingStepShell.svelte` | Per-step inner frame (padding, scroll container). Steps render their body inside.                                                                                                                                    |
 | `StepFda.svelte`             | Step 1 (macOS only): Full Disk Access. Three variants: first-ask, revoked, already-granted.                                                                                                                          |
-| `StepAi.svelte`              | Step 2: AI provider picker. Three FDA-outcome banners, three radio choices, dual-button footer (Start vs Continue).                                                                                                  |
+| `StepAi.svelte`              | Step 2: AI provider picker. Three FDA-outcome banners, three radio choices, single "Go to open beta" forward button.                                                                                                 |
 | `CloudProviderPicker.svelte` | Step 2 left column: scrollable listbox of all 15 cloud providers. Arrow / Home / End / type-to-jump keyboard nav.                                                                                                    |
 | `CloudProviderSetup.svelte`  | Step 2 right column: per-provider numbered tutorial with API-key persist + auto-check + model combobox.                                                                                                              |
-| `StepOptional.svelte`        | Step 3 (optional): networking, indexing, updates, MTP toggles bound to existing registry settings.                                                                                                                   |
+| `StepBeta.svelte`            | Step 3 (Open beta, non-skippable): anonymous-analytics disclosure + `analytics.enabled` opt-out switch + optional `analytics.email` contact field. Reuses the Settings `UpdatesSection` email/`betaSignup` wiring.   |
+| `StepOptional.svelte`        | Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry settings.                                                                                                                   |
 | `onboarding-state.svelte.ts` | Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner mode, `openWizard()` / `resumeStepFor()` etc.                                                                                   |
 
 ## Status
 
-All three steps are real. The wizard is re-openable from the macOS app menu and the command palette (both platforms),
-and the legacy `FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single first-launch path on macOS.
-Existing users on upgrade see a one-time `info` toast pointing at the menu item. `CMDR_FORCE_ONBOARDING=1` forces the
-wizard regardless of persisted state for dev / E2E iteration.
+All four steps are real. The wizard is re-openable from the macOS app menu and the command palette (both platforms), and
+the legacy `FullDiskAccessPrompt.svelte` modal is gone — the wizard is the single first-launch path on macOS. Existing
+users on upgrade see a one-time `info` toast pointing at the menu item. `CMDR_FORCE_ONBOARDING=1` forces the wizard
+regardless of persisted state for dev / E2E iteration.
 
 ## Re-entry points
 
@@ -125,17 +131,14 @@ Three pieces stacked top to bottom:
    cancels (HTTP-Range resume picks up on switch-back). Intel Macs see the local radio disabled with a tooltip ("Local
    LLM requires Apple Silicon. Cloud works on Intel.") driven by `getAiRuntimeStatus().localAiSupported`.
 
-### Dual-button footer
+### Forward footer (single "Go to open beta" button)
 
-Step 2 owns its own footer via `setFooterOverride([...])` (the wizard's right slot supports an array of buttons):
+Step 2 owns its own footer via `setFooterOverride([...])` with a single primary **Go to open beta** button: it persists
+the AI choice + `pushConfigToBackend()`, then `nextStep()` to the Beta page (step 3). The AI step never completes
+onboarding, because the Beta page is non-skippable (see the Decision below): every path through AI lands on Beta.
 
-- **Start using Cmdr!** (secondary): persists + `pushConfigToBackend()`, then bumps the wizard's `finishRequestTick` so
-  the wizard fires `onComplete()` (skipping step 3 entirely).
-- **One more optional setup step** (primary, accent-colored): persists + `pushConfigToBackend()`, then `nextStep()` to
-  step 3. The primary color is intentional, to nudge users toward the optional setup without forcing them.
-
-Both buttons stay enabled regardless of API-key validity per the **no-key-blocks-advance** rule: the auto-check status
-in the right column is feedback enough; forcing valid key entry as a precondition would fight users who want to grab the
+The button stays enabled regardless of API-key validity per the **no-key-blocks-advance** rule: the auto-check status in
+the right column is feedback enough; forcing valid key entry as a precondition would fight users who want to grab the
 key later. The user can re-enter via `Cmdr > Onboarding…` or fix it in Settings; first AI use surfaces the standard
 `NotConfigured` error path.
 
@@ -154,7 +157,24 @@ there: the listener fires per-setting-change, so if the user flips three setting
 invocations racing the wizard's `onComplete()`. The explicit `await pushConfigToBackend()` in `StepAi.persist()` orders
 the backend reconfigure before the user lands in the app deterministically.
 
-## Step 3 (optional setup)
+## Step 3 (Open beta)
+
+`StepBeta.svelte`: the open-beta analytics disclosure plus an optional contact channel. Two blocks:
+
+1. **Anonymous-analytics opt-out**: the registry-backed `<SettingSwitch id="analytics.enabled">` (default on). Flipping
+   it writes the setting immediately, exactly like the same switch in Settings.
+2. **Optional contact email**: an email field bound to `analytics.email`. It persists locally on every keystroke and, on
+   commit (blur / Enter) of a valid address, calls the typed `betaSignup` wrapper (which POSTs only the email, never an
+   install id) and renders a gentle inline result.
+
+Both reuse `settings/sections/UpdatesSection.svelte`'s exact wiring (the same `betaSignup` call, the same
+email-pattern + `lastSubmittedEmail` resend guard, the same success/failure copy), so the onboarding page and Settings
+behave identically. All copy is verbatim from the plan's Appendix A.
+
+The footer is a single primary **Next** button that `nextStep()`s to the Optional step. There is no skip-to-finish here:
+the page is non-skippable so every first-launch user sees the analytics disclosure once.
+
+## Step 4 (optional setup)
 
 Four toggle blocks, each bound to an existing registry setting via `<SettingSwitch>`. Defaults stay ON; the step is
 about letting the user turn things OFF with full context, not about asking for opt-in.
@@ -255,6 +275,13 @@ it at runtime races background threads that resolve icons / scan paths into the 
 5–10 stacked popups once already; the restart costs the user one click and keeps the gate's invariant intact. See plan §
 "FDA gate clear-on-Allow".
 
+**Decision**: The Open beta page (step 3) is non-skippable; the AI step has no skip-to-finish. **Why**: Every
+first-launch user must see the anonymous-analytics disclosure once (the opt-out default only reads as fair consent if it
+was actually shown). So the AI step's only forward button ("Go to open beta") always `nextStep()`s to Beta, and only the
+final Optional step finishes onboarding. Don't re-add a skip-to-finish button on the AI step (it would bypass the
+disclosure). The Beta page itself advances with a normal Next; the user can still opt out and skip the email on it, they
+just can't skip seeing it.
+
 **Decision**: Step 1 footer button hidden in `decide` mode (body owns Allow / Deny). **Why**: The Allow / Deny choice is
 the meat of step 1; placing the buttons inside the body groups them with the explanatory copy they belong to. The
 wizard's footer remains consistent for the other steps (Back + Next / Finish / Restart Cmdr).
@@ -281,7 +308,8 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 ## Dependencies
 
 - `$lib/tauri-commands`: `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`,
-  `startIndexingAfterFdaDecision`, `openExternalUrl`, `notifyDialogOpened`, `notifyDialogClosed`, `isForceOnboarding`
+  `startIndexingAfterFdaDecision`, `openExternalUrl`, `notifyDialogOpened`, `notifyDialogClosed`, `isForceOnboarding`,
+  `betaSignup` (Step 3's email signup)
 - `$lib/settings-store`: `saveSettings`, `loadSettings`
 - `$lib/shortcuts/key-capture`: `isMacOS`
 - `$lib/system-strings.svelte`: localized system pane names

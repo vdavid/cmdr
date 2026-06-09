@@ -23,10 +23,13 @@ import {
   resetForTesting,
   openWizard,
   setStep1Restart,
+  setCurrentStep,
   nextStep,
   previousStep,
+  isAtLastStep,
   requestWizardComplete,
   getOnboardingState,
+  ONBOARDING_STEP_COUNT,
   type ResumeContext,
 } from './onboarding-state.svelte'
 
@@ -130,6 +133,50 @@ describe('navigation state', () => {
     previousStep()
     expect(getOnboardingState().currentStep).toBe(1)
     expect(getOnboardingState().step1FooterMode).toBe('decide')
+  })
+})
+
+describe('four-step flow (FDA → AI → Beta → Optional)', () => {
+  beforeEach(() => {
+    resetForTesting()
+  })
+
+  it('has a step count of 4 (the Beta page was inserted at step 3)', () => {
+    expect(ONBOARDING_STEP_COUNT).toBe(4)
+  })
+
+  it('forward navigation walks 1 → 2 → 3 → 4 and stops at the last step', () => {
+    openWizard('first-launch', ctxMac({})) // notAskedYet → step 1
+    expect(getOnboardingState().currentStep).toBe(1)
+    nextStep()
+    expect(getOnboardingState().currentStep).toBe(2)
+    nextStep()
+    expect(getOnboardingState().currentStep).toBe(3)
+    nextStep()
+    expect(getOnboardingState().currentStep).toBe(4)
+    // No step past the last: nextStep is a no-op on step 4.
+    nextStep()
+    expect(getOnboardingState().currentStep).toBe(4)
+  })
+
+  it('isAtLastStep is true only on step 4', () => {
+    openWizard('first-launch', ctxMac({}))
+    for (const step of [1, 2, 3] as const) {
+      setCurrentStep(step)
+      expect(isAtLastStep()).toBe(false)
+    }
+    setCurrentStep(4)
+    expect(isAtLastStep()).toBe(true)
+  })
+
+  it('resume rule is unaffected by the Beta insertion (FDA/AI resume cases still resolve)', () => {
+    // The resume rule only ever lands the user on step 1 or 2; inserting Beta at step 3
+    // must not change those outcomes.
+    expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'notAskedYet' }))).toBe(1)
+    expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'allow', isOnboarded: true, hasFda: false }))).toBe(1)
+    expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'allow', hasFda: true }))).toBe(2)
+    expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'deny' }))).toBe(2)
+    expect(resumeStepFor({ ...ctxMac({}), isMac: false })).toBe(2)
   })
 })
 
