@@ -74,7 +74,7 @@ describe('POST /beta-signup', () => {
     expect(res.status).toBe(204)
   })
 
-  it('subscribes to the configured list as unconfirmed with NO preconfirm (double opt-in)', async () => {
+  it('subscribes to the configured list with status enabled and NO preconfirm (double opt-in)', async () => {
     await postBetaSignup({ email: 'tester@example.com' }, createBindings())
 
     expect(fetchMock).toHaveBeenCalledOnce()
@@ -88,8 +88,11 @@ describe('POST /beta-signup', () => {
     const sentBody = JSON.parse(init.body as string) as Record<string, unknown>
     expect(sentBody.email).toBe('tester@example.com')
     expect(sentBody.lists).toEqual([7])
-    expect(sentBody.status).toBe('unconfirmed')
-    // Double opt-in: Listmonk sends its own confirmation. We must never preconfirm.
+    // Subscriber status must be a valid Listmonk enum (enabled/disabled/blocklisted); "unconfirmed"
+    // is the per-list subscription status and Postgres rejects it as a subscriber status.
+    expect(sentBody.status).toBe('enabled')
+    // Double opt-in: Listmonk sends its own confirmation, leaving the per-list subscription
+    // unconfirmed. We must never preconfirm.
     expect(sentBody.preconfirm_subscriptions).toBeUndefined()
   })
 

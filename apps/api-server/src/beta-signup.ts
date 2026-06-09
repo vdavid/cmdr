@@ -94,9 +94,11 @@ betaSignup.post('/beta-signup', async (c) => {
     return c.json({ error: 'Beta signup is not configured' }, 500)
   }
 
-  // Subscribe to the double-opt-in list as `unconfirmed`. We deliberately omit
-  // `preconfirm_subscriptions`: Listmonk then sends its own confirmation email, which is what makes
-  // the signup double-opt-in and blocks prank signups for someone else's address.
+  // Subscribe with subscriber `status: "enabled"` (Listmonk's subscriber-status enum only accepts
+  // enabled/disabled/blocklisted; "unconfirmed" is the per-LIST subscription status, not a subscriber
+  // status, and Postgres rejects it). On a double-opt-in list, omitting `preconfirm_subscriptions`
+  // leaves the per-list subscription `unconfirmed` and makes Listmonk send its own confirmation email,
+  // which is what blocks prank signups for someone else's address.
   let listmonkResponse: Response
   try {
     listmonkResponse = await fetch(`${listmonk.url}/api/subscribers`, {
@@ -105,7 +107,7 @@ betaSignup.post('/beta-signup', async (c) => {
         'Content-Type': 'application/json',
         Authorization: `token ${listmonk.user}:${listmonk.token}`,
       },
-      body: JSON.stringify({ email, lists: [listmonk.listId], status: 'unconfirmed' }),
+      body: JSON.stringify({ email, lists: [listmonk.listId], status: 'enabled' }),
     })
   } catch (e) {
     console.error('Beta signup: Listmonk fetch failed:', e)
