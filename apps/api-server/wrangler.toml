@@ -60,6 +60,17 @@ namespace_id = "1001"
 limit = 12
 period = 60
 
+# Rate limit for POST /beta-signup, keyed by the caller IP (transient, never stored). Signups are
+# rare, so this is tighter than the heartbeat: 5/min/IP blocks a signup/confirmation-mail spam loop
+# without touching real users. `period` must be 10 or 60. `namespace_id` is a per-account integer id.
+[[ratelimits]]
+name = "BETA_SIGNUP_LIMITER"
+namespace_id = "1002"
+
+[ratelimits.simple]
+limit = 5
+period = 60
+
 [triggers]
 crons = ["0 */12 * * *"]
 
@@ -86,3 +97,12 @@ PADDLE_ENVIRONMENT = "sandbox"
 # - R2_ACCOUNT_ID                  (for minting presigned R2 GET URLs)
 # - R2_ACCESS_KEY_ID               (R2 S3-compatible access key; read-only suffices)
 # - R2_SECRET_ACCESS_KEY           (paired secret for R2_ACCESS_KEY_ID)
+# - LISTMONK_API_URL               (Listmonk base URL, for example https://mail.getcmdr.com)
+# - LISTMONK_API_USER              (Listmonk API user for POST /beta-signup)
+# - LISTMONK_API_TOKEN             (paired API token; sent as `token <user>:<token>`)
+# - LISTMONK_BETA_LIST_ID          (numeric id of the double-opt-in "Cmdr beta testers" list)
+#   For local dev, mirror these in .dev.vars (gitignored), for example:
+#     LISTMONK_API_URL="https://mail.getcmdr.com"
+#     LISTMONK_API_USER="agent"
+#     LISTMONK_API_TOKEN="<token>"
+#     LISTMONK_BETA_LIST_ID="7"

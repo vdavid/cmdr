@@ -1,6 +1,7 @@
 //! Tauri commands module.
 
 pub mod analytics;
+pub mod beta_signup;
 pub mod child_window_state;
 pub mod clipboard;
 pub mod crash_reporter;

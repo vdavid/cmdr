@@ -16,6 +16,7 @@ app versions).
 | `src/telemetry.ts`                          | Routes: `/crash-report`, `/heartbeat`, `/update-check/:version`, `/download/:version/:arch`                 |
 | `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                                         |
 | `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                                        |
+| `src/beta-signup.ts`                        | Route: `POST /beta-signup` (email-only Listmonk double-opt-in subscribe; NO install id)                     |
 | `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                                                |
 | `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                                               |
 | `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)                                |
@@ -30,6 +31,7 @@ app versions).
 | `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes`                                       |
 | `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                                                     |
 | `src/heartbeat.test.ts`                     | Tests for `POST /heartbeat` (validation, config round-trip, rate limit)                                     |
+| `src/beta-signup.test.ts`                   | Tests for `POST /beta-signup` (Listmonk call, no-install-id invariant, soft failure, rate limit)            |
 | `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                                         |
 | `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                                                   |
 | `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                                             |
@@ -37,23 +39,24 @@ app versions).
 
 ## Routes
 
-| Method | Path                       | Auth          | Purpose                                                   |
-| ------ | -------------------------- | ------------- | --------------------------------------------------------- |
-| GET    | `/`                        | none          | Health check                                              |
-| POST   | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)              |
-| POST   | `/activate`                | none          | Exchange short code → full cryptographic key              |
-| POST   | `/validate`                | none          | Check subscription status via Paddle API                  |
-| POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)        |
-| GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard) |
-| GET    | `/admin/downloads`         | Bearer token  | Aggregated download data by day/version/arch/country      |
-| GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch             |
-| GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal            |
-| GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat` |
-| GET    | `/download/:version/:arch` | none          | Log download to D1, 302 → GitHub                          |
-| POST   | `/crash-report`            | none          | Ingest crash report to D1                                 |
-| POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1      |
-| POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify        |
-| GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json       |
+| Method | Path                       | Auth          | Purpose                                                             |
+| ------ | -------------------------- | ------------- | ------------------------------------------------------------------- |
+| GET    | `/`                        | none          | Health check                                                        |
+| POST   | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                        |
+| POST   | `/activate`                | none          | Exchange short code → full cryptographic key                        |
+| POST   | `/validate`                | none          | Check subscription status via Paddle API                            |
+| POST   | `/admin/generate`          | Bearer token  | Manual key generation (customer service / testing)                  |
+| GET    | `/admin/stats`             | Bearer token  | Activation count + device count (for analytics dashboard)           |
+| GET    | `/admin/downloads`         | Bearer token  | Aggregated download data by day/version/arch/country                |
+| GET    | `/admin/active-users`      | Bearer token  | Aggregated daily active users by version/arch                       |
+| GET    | `/admin/crashes`           | Bearer token  | Aggregated crash data by day/crash site/signal                      |
+| GET    | `/admin/heartbeat-dau`     | Bearer token  | Per-day DAU (distinct `anal_id`) + beats from `heartbeat`           |
+| GET    | `/download/:version/:arch` | none          | Log download to D1, 302 → GitHub                                    |
+| POST   | `/crash-report`            | none          | Ingest crash report to D1                                           |
+| POST   | `/heartbeat`               | IP rate-limit | Ingest a usage heartbeat (anonymous `anal_id`) to D1                |
+| POST   | `/error-report`            | none          | Multipart upload (zip + meta) → R2, Discord notify                  |
+| POST   | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id) |
+| GET    | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                 |
 
 ## Environments
 
@@ -82,14 +85,19 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs     |
 | `R2_ACCESS_KEY_ID`                 | Same access key                  | R2 S3-compat access key (read OK) |
 | `R2_SECRET_ACCESS_KEY`             | Same secret                      | Paired secret for R2 access key   |
+| `LISTMONK_API_URL`                 | `https://mail.getcmdr.com`       | Same base URL                     |
+| `LISTMONK_API_USER`                | Listmonk API user                | Same (least-privilege at deploy)  |
+| `LISTMONK_API_TOKEN`               | Listmonk API token               | Same (least-privilege at deploy)  |
+| `LISTMONK_BETA_LIST_ID`            | Beta-list numeric id             | Same id                           |
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
-| Binding                | Type         | Purpose                                                                       |
-| ---------------------- | ------------ | ----------------------------------------------------------------------------- |
-| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)            |
-| `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic    |
-| `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`) |
+| Binding                | Type         | Purpose                                                                              |
+| ---------------------- | ------------ | ------------------------------------------------------------------------------------ |
+| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                   |
+| `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic           |
+| `HEARTBEAT_LIMITER`    | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)        |
+| `BETA_SIGNUP_LIMITER`  | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat) |
 
 **Paddle dashboards**: [sandbox](https://sandbox-vendors.paddle.com) | [live](https://vendors.paddle.com)
 
@@ -182,6 +190,8 @@ Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget
 Crash report: POST /crash-report → validate payload (size + required fields) → hash IP with daily salt → write to D1 (fire-and-forget via waitUntil) → 204
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → validate payload (size + required fields + analId/version shape + config-size cap) → write to D1 heartbeat (fire-and-forget via waitUntil), no IP stored → 204
+
+Beta signup: POST /beta-signup → rate-limit by IP (BETA_SIGNUP_LIMITER, 429 if over) → read ONLY the email (no install id) → validate shape → Listmonk POST /api/subscribers (list = LISTMONK_BETA_LIST_ID, status "unconfirmed", NO preconfirm = double opt-in) → 204 on 2xx or 409 (existing; no enumeration), soft 502 on Listmonk error
 
 Update check proxy: GET /update-check/:version → hash IP with daily salt → INSERT OR IGNORE into D1 (fire-and-forget) → 302 to latest.json
 
@@ -283,6 +293,18 @@ stream stays unjoinable to any identity. D1 write is fire-and-forget via `waitUn
 at 12 req/min/IP (`period` must be 10 or 60). Legit traffic is ~1 beat/hour/install, so the cap stops a bloat-spam loop
 without touching real users; over the limit returns 429 before any parsing or D1 write. The binding is typed optional so
 tests and incomplete envs can omit it (the gate is then a no-op).
+
+**Beta signup (decoupled, contact-only):** `POST /beta-signup` is the contact channel for early testers. It reads ONLY
+the `email` from the body and subscribes it to the double-opt-in Listmonk list `LISTMONK_BETA_LIST_ID`
+(`POST https://mail.getcmdr.com/api/subscribers`, `Authorization: token <LISTMONK_API_USER>:<LISTMONK_API_TOKEN>`,
+`status: "unconfirmed"`, and deliberately NO `preconfirm_subscriptions` so Listmonk sends its own confirmation email,
+which blocks prank signups for someone else's address). The privacy invariant is the whole point: the request carries NO
+install id of any kind (no `anal_`, no `diag_`), so the email and the analytics ids never co-occur on our servers and
+the analytics stream stays unjoinable to any identity (guarded by `beta-signup.test.ts`). Returns 204 for both new and
+already-subscribed addresses (a 409 from Listmonk maps to the identical empty 204, so the response never reveals whether
+the address existed: no enumeration). On a Listmonk network/5xx failure it returns a soft 502 the desktop app surfaces
+as a gentle "try again" (NOT fire-and-forget: we want the user to know it didn't land). Missing Listmonk config
+returns 500. The list id is set as a wrangler secret at deploy time; see `docs/tooling/listmonk.md`.
 
 **Device tracking (fair use):** On each `/validate` call with a `deviceId`, the server tracks the device in KV
 (`devices:{seatTransactionId}`) and logs to Analytics Engine (binding: `DEVICE_COUNTS`, dataset: `cmdr_device_counts`).

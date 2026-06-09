@@ -123,6 +123,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::space_poller::set_disk_space_threshold,
         crate::space_poller::set_low_disk_space_config,
         crate::commands::analytics::track_event,
+        crate::commands::beta_signup::beta_signup,
         crate::commands::crash_reporter::check_pending_crash_report,
         crate::commands::crash_reporter::dismiss_crash_report,
         crate::commands::crash_reporter::send_crash_report,

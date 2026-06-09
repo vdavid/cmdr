@@ -268,5 +268,7 @@ get immediate auto-merging PRs regardless of schedule.
 - [analytics-dashboard.md](tooling/analytics-dashboard.md): Private dashboard at `analdash.getcmdr.com` aggregating
   metrics for the maintainer
 - [remark42.md](tooling/remark42.md): Self-hosted comments engine for the website (Docker on the Hetzner VPS)
+- [listmonk.md](tooling/listmonk.md): Mailing-list manager: the Cmdr beta-tester double-opt-in list and the
+  `/beta-signup` wiring
 
 ONLY do read-only operations with these services unless specifically asked to make changes.

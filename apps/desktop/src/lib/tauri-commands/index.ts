@@ -261,6 +261,10 @@ export type {
 // Analytics (PostHog feature events through the single backend path)
 export { trackEvent } from './analytics'
 
+// Beta-tester signup (subscribes the contact email; sends NO install id)
+export { betaSignup } from './beta-signup'
+export type { BetaSignupResult } from './beta-signup'
+
 // Crash reporter
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'

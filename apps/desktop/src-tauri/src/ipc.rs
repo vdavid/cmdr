@@ -481,6 +481,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::permissions::open_system_settings_url,
         crate::commands::analytics::track_event,
+        crate::commands::beta_signup::beta_signup,
         crate::commands::crash_reporter::check_pending_crash_report,
         crate::commands::crash_reporter::dismiss_crash_report,
         crate::commands::crash_reporter::send_crash_report,

@@ -9,6 +9,7 @@
     import { updateState, checkForUpdates } from '$lib/updates/updater.svelte'
     import { formatUpdateStatus } from '$lib/updates/update-status-text'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
+    import { betaSignup } from '$lib/tauri-commands'
 
     interface Props {
         searchQuery: string
@@ -27,17 +28,60 @@
     const statusText = $derived(formatUpdateStatus(updateState))
     const buttonDisabled = $derived(updateState.status !== 'idle')
 
-    // The beta contact email persists to settings here. The beta-signup network call (subscribing
-    // the address to the mailing list) lands in a later milestone.
+    // The beta contact email persists to settings on every keystroke (local only). On commit (blur
+    // or Enter) with a valid address, we subscribe it to the beta mailing list via `betaSignup`,
+    // which sends ONLY the email (never an install id), so usage stats can't be tied back to it.
     let email = $state(getSetting('analytics.email'))
     onSpecificSettingChange('analytics.email', (value) => {
         email = value
     })
 
+    // The inline result under the field. A typed kind, not a parsed message.
+    type SignupFeedback = { kind: 'success' | 'failure' } | null
+    let signupFeedback = $state<SignupFeedback>(null)
+    // The last address we successfully submitted, so re-blurring an unchanged field doesn't resend.
+    let lastSubmittedEmail = $state('')
+    let signupInFlight = $state(false)
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
     function handleEmailInput(event: Event) {
-        const target = event.currentTarget as HTMLInputElement
+        const target = event.target as HTMLInputElement
         email = target.value
         setSetting('analytics.email', target.value)
+        // Clearing the field only clears the local copy. Unsubscribing from the list happens via
+        // Listmonk's own link, per the field note.
+        if (target.value.trim() === '') {
+            signupFeedback = null
+            lastSubmittedEmail = ''
+        }
+    }
+
+    async function handleEmailCommit() {
+        const trimmed = email.trim()
+        if (trimmed === '' || trimmed === lastSubmittedEmail || !emailPattern.test(trimmed)) {
+            return
+        }
+
+        signupInFlight = true
+        try {
+            const result = await betaSignup(trimmed)
+            if (result.kind === 'subscribed') {
+                signupFeedback = { kind: 'success' }
+                lastSubmittedEmail = trimmed
+            } else {
+                // `invalidEmail` or `softFailure`: a gentle try-again either way.
+                signupFeedback = { kind: 'failure' }
+            }
+        } finally {
+            signupInFlight = false
+        }
+    }
+
+    function handleEmailKeydown(event: KeyboardEvent) {
+        if (event.key === 'Enter') {
+            void handleEmailCommit()
+        }
     }
 
     function handleCheckForUpdates() {
@@ -91,12 +135,25 @@
                 placeholder="you@example.com"
                 value={email}
                 oninput={handleEmailInput}
+                onblur={handleEmailCommit}
+                onkeydown={handleEmailKeydown}
+                disabled={signupInFlight}
                 aria-label={emailDef.label}
             />
         </SettingRow>
+        {#if signupFeedback?.kind === 'success'}
+            <p class="signup-feedback success" role="status">
+                Check your inbox to confirm your email. Thanks for helping out!
+            </p>
+        {:else if signupFeedback?.kind === 'failure'}
+            <p class="signup-feedback failure" role="status">
+                Sorry, we couldn't sign you up right now. Try again?
+            </p>
+        {/if}
         <p class="email-note">
             Stored only on your Mac. We never send it together with your anonymous usage data, so your stats can't be
-            tied back to you. Used only to reach out and to optionally attach to a report you send.
+            tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting
+            emails, use the unsubscribe link in any message we send.
         </p>
     {/if}
     {#if shouldShow('updates.crashReports')}
@@ -176,6 +233,24 @@
         outline: none;
         border-color: var(--color-accent);
         box-shadow: var(--shadow-focus);
+    }
+
+    .email-input:disabled {
+        opacity: 0.6;
+    }
+
+    .signup-feedback {
+        margin: var(--spacing-xs) 0 0;
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
+    }
+
+    .signup-feedback.success {
+        color: var(--color-toast-success-stripe);
+    }
+
+    .signup-feedback.failure {
+        color: var(--color-text-primary);
     }
 
     .email-note {

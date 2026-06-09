@@ -7,15 +7,25 @@
 
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
+import type { BetaSignupResult } from '$lib/tauri-commands'
 
-const { openErrorReportDialogMock, checkForUpdatesMock } = vi.hoisted(() => ({
+const { openErrorReportDialogMock, checkForUpdatesMock, betaSignupMock } = vi.hoisted(() => ({
   openErrorReportDialogMock: vi.fn(),
-  checkForUpdatesMock: vi.fn(async () => {}),
+  checkForUpdatesMock: vi.fn(() => Promise.resolve()),
+  betaSignupMock: vi.fn((): Promise<BetaSignupResult> => Promise.resolve({ kind: 'subscribed' })),
 }))
 
 vi.mock('$lib/error-reporter/error-report-flow.svelte', () => ({
   openErrorReportDialog: openErrorReportDialogMock,
 }))
+
+// Spread the real barrel and override only `betaSignup`, so other `$lib/tauri-commands` exports the
+// mounted tree might reach stay intact (a barrel mock that drops them silently corrupts the Svelte
+// 5 reactive graph; see `lib/ipc/CLAUDE.md` § Test-mock upkeep).
+vi.mock('$lib/tauri-commands', async () => {
+  const real = await vi.importActual<typeof import('$lib/tauri-commands')>('$lib/tauri-commands')
+  return { ...real, betaSignup: betaSignupMock }
+})
 
 // Stubs the updater module so this test isolates the section's UI logic. We use the real
 // updater's reactive `updateState` so the section's `$derived`s react correctly to mutations.
@@ -30,7 +40,8 @@ vi.mock('$lib/updates/updater.svelte', async () => {
 })
 
 vi.mock('$lib/settings/settings-store', () => ({
-  getSetting: vi.fn(() => true),
+  // The email field reads a string; everything else in this section reads booleans.
+  getSetting: vi.fn((id: string) => (id === 'analytics.email' ? '' : true)),
   setSetting: vi.fn(() => Promise.resolve()),
   resetSetting: vi.fn(),
   isModified: vi.fn(() => false),
@@ -73,6 +84,8 @@ describe('UpdatesSection', () => {
     _resetUpdaterStateForTest()
     openErrorReportDialogMock.mockClear()
     checkForUpdatesMock.mockClear()
+    betaSignupMock.mockClear()
+    betaSignupMock.mockResolvedValue({ kind: 'subscribed' })
   })
 
   afterEach(() => {
@@ -125,5 +138,66 @@ describe('UpdatesSection', () => {
     expect(link).toBeTruthy()
     link?.click()
     expect(openErrorReportDialogMock).toHaveBeenCalledWith('Update check failed: something exploded')
+  })
+
+  function getEmailInput(target: HTMLElement): HTMLInputElement {
+    const input = target.querySelector<HTMLInputElement>('input.email-input')
+    if (!input) throw new Error('Email input missing')
+    return input
+  }
+
+  it('calls betaSignup on commit of a valid email and shows the success note', async () => {
+    const target = render()
+    await tick()
+    const input = getEmailInput(target)
+    input.value = 'tester@example.com'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    await tick()
+    await tick()
+
+    expect(betaSignupMock).toHaveBeenCalledWith('tester@example.com')
+    expect(target.textContent).toContain('Check your inbox to confirm your email')
+  })
+
+  it('does not call betaSignup for an invalid email', async () => {
+    const target = render()
+    await tick()
+    const input = getEmailInput(target)
+    input.value = 'not-an-email'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    await tick()
+
+    expect(betaSignupMock).not.toHaveBeenCalled()
+  })
+
+  it('shows a gentle try-again on a soft failure', async () => {
+    betaSignupMock.mockResolvedValueOnce({ kind: 'softFailure' })
+    const target = render()
+    await tick()
+    const input = getEmailInput(target)
+    input.value = 'tester@example.com'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    await tick()
+    await tick()
+
+    expect(target.textContent).toContain("Sorry, we couldn't sign you up right now")
+  })
+
+  it('does not resend when the same address is committed again', async () => {
+    const target = render()
+    await tick()
+    const input = getEmailInput(target)
+    input.value = 'tester@example.com'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    await tick()
+    await tick()
+    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    await tick()
+
+    expect(betaSignupMock).toHaveBeenCalledTimes(1)
   })
 })

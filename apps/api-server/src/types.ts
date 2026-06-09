@@ -10,6 +10,9 @@ export type Bindings = {
   // Workers rate-limit binding gating POST /heartbeat, keyed by the caller IP (never stored).
   // Optional so tests and incomplete envs can omit it; the route skips the gate when absent.
   HEARTBEAT_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /beta-signup, keyed by the caller IP (never stored).
+  // Tighter than the heartbeat (signups are rare). Optional; the route skips the gate when absent.
+  BETA_SIGNUP_LIMITER?: RateLimit
   // Paddle webhook secrets (both optional to support gradual rollout)
   PADDLE_WEBHOOK_SECRET_LIVE?: string
   PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -45,6 +48,15 @@ export type Bindings = {
   R2_SECRET_ACCESS_KEY?: string
   // R2 bucket name (used in presigned URL host/path). Defaults to "cmdr-error-reports".
   R2_ERROR_REPORTS_BUCKET_NAME?: string
+  // Listmonk (the beta-tester mailing list). The base URL (for example https://mail.getcmdr.com),
+  // the API user and token (sent as `Authorization: token <user>:<token>`), and the numeric id of
+  // the double-opt-in "Cmdr beta testers" list. All optional so tests and incomplete envs omit
+  // them; POST /beta-signup returns a soft failure when they're absent. The email NEVER co-occurs
+  // with any analytics/diagnostics install id, by construction (see /beta-signup).
+  LISTMONK_API_URL?: string
+  LISTMONK_API_USER?: string
+  LISTMONK_API_TOKEN?: string
+  LISTMONK_BETA_LIST_ID?: number
 }
 
 export interface PaddleWebhookPayload {

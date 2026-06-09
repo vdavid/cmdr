@@ -988,6 +988,14 @@ export const commands = {
    */
   trackEvent: (name: string, propsJson: string) => __TAURI_INVOKE<void>('track_event', { name, propsJson }),
   /**
+   *  Subscribes a beta contact email to the mailing list. Sends ONLY the email to the api-server,
+   *  which forwards it to Listmonk for double opt-in. Returns a typed result the UI branches on.
+   *
+   *  Network-touching but NOT filesystem-touching, so no `blocking_with_timeout` is needed (that's for
+   *  syscalls that hang on dead mounts). The `reqwest` client carries its own 10 s timeout.
+   */
+  betaSignup: (email: string) => __TAURI_INVOKE<BetaSignupResult>('beta_signup', { email }),
+  /**
    *  Checks for a pending crash report from a previous session.
    *  Returns the report, or `null` if none exists.
    */
@@ -2493,6 +2501,26 @@ export type BackendCapabilities = {
 
 // Which backend strategy is active for a session.
 export type BackendType = 'fullLoad' | 'byteSeek' | 'lineIndex'
+
+/**
+ *  The signup outcome, returned across IPC so the frontend reacts on a typed `kind` discriminant
+ *  rather than parsing a message (see the `no-string-matching` rule). Serializes as
+ *  `{"kind":"subscribed"}` / `{"kind":"invalidEmail"}` / `{"kind":"softFailure"}`.
+ */
+export type BetaSignupResult =
+  /**
+   *  The address was accepted. Listmonk sends its own double-opt-in confirmation email; the UI
+   *  tells the user to check their inbox. Identical for new and already-subscribed addresses (the
+   *  server never reveals which, to avoid enumeration).
+   */
+  | { kind: 'subscribed' }
+  // The address didn't pass the server's email-shape check.
+  | { kind: 'invalidEmail' }
+  /**
+   *  Something went wrong reaching or talking to the signup service. The UI shows a gentle
+   *  try-again. Covers a network failure, a non-2xx server response, or a missing-config 500.
+   */
+  | { kind: 'softFailure' }
 
 /**
  *  Logical-pixel rectangle. `f64` mirrors what Tauri's `LogicalPosition` /
