@@ -9,14 +9,16 @@ export interface DownloadRow {
   downloads: number
 }
 
-export interface UpdateCheckRow {
-  version: string
-  checks: number
+/** One day of true daily-active data from the heartbeat: distinct installs (`dau`) and total beats. */
+export interface HeartbeatDauRow {
+  date: string
+  dau: number
+  beats: number
 }
 
 export interface CloudflareData {
   downloads: DownloadRow[]
-  updateChecks: UpdateCheckRow[]
+  heartbeatDau: HeartbeatDauRow[]
 }
 
 interface CloudflareEnv {
@@ -30,7 +32,8 @@ const downloadRangeMap: Record<TimeRange, string> = {
   '30d': '30d',
 }
 
-const activeUserRangeMap: Record<TimeRange, string> = {
+/** The heartbeat-DAU endpoint takes 7d/30d/90d/all; the dashboard's shortest range (24h) maps up to 7d. */
+const heartbeatDauRangeMap: Record<TimeRange, string> = {
   '24h': '7d',
   '7d': '7d',
   '30d': '30d',
@@ -57,13 +60,6 @@ interface WorkerDownloadRow {
   count: number
 }
 
-interface WorkerActiveUserRow {
-  date: string
-  version: string
-  arch: string
-  uniqueUsers: number
-}
-
 export function parseDownloadRows(raw: WorkerDownloadRow[]): DownloadRow[] {
   return raw.map((row) => ({
     version: row.version,
@@ -74,13 +70,11 @@ export function parseDownloadRows(raw: WorkerDownloadRow[]): DownloadRow[] {
   }))
 }
 
-/** Aggregates per-arch active user rows into per-version totals. */
-export function parseUpdateCheckRows(raw: WorkerActiveUserRow[]): UpdateCheckRow[] {
-  const byVersion = new Map<string, number>()
-  for (const row of raw) {
-    byVersion.set(row.version, (byVersion.get(row.version) ?? 0) + row.uniqueUsers)
-  }
-  return [...byVersion.entries()].map(([version, checks]) => ({ version, checks })).sort((a, b) => b.checks - a.checks)
+/** Passes through the worker's per-day DAU rows (already `{ date, dau, beats }`), sorted oldest-first. */
+export function parseHeartbeatDauRows(raw: HeartbeatDauRow[]): HeartbeatDauRow[] {
+  return [...raw]
+    .map((row) => ({ date: row.date, dau: row.dau, beats: row.beats }))
+    .sort((a, b) => a.date.localeCompare(b.date))
 }
 
 export async function fetchCloudflareData(env: CloudflareEnv, range: TimeRange): Promise<SourceResult<CloudflareData>> {
@@ -88,14 +82,14 @@ export async function fetchCloudflareData(env: CloudflareEnv, range: TimeRange):
   if (cached) return { ok: true, data: cached }
 
   try {
-    const [downloadsRaw, activeUsersRaw] = await Promise.all([
+    const [downloadsRaw, heartbeatDauRaw] = await Promise.all([
       fetchWorkerEndpoint<WorkerDownloadRow[]>(env, `/admin/downloads?range=${downloadRangeMap[range]}`),
-      fetchWorkerEndpoint<WorkerActiveUserRow[]>(env, `/admin/active-users?range=${activeUserRangeMap[range]}`),
+      fetchWorkerEndpoint<HeartbeatDauRow[]>(env, `/admin/heartbeat-dau?range=${heartbeatDauRangeMap[range]}`),
     ])
 
     const data: CloudflareData = {
       downloads: parseDownloadRows(downloadsRaw),
-      updateChecks: parseUpdateCheckRows(activeUsersRaw),
+      heartbeatDau: parseHeartbeatDauRows(heartbeatDauRaw),
     }
     await cacheSet('cloudflare', range, data)
     return { ok: true, data }

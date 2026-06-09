@@ -38,14 +38,14 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 
 Each source gets its own module under `src/lib/server/sources/`:
 
-| Module          | Auth                                            | Data                                                                                                                             |
-| --------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                   |
-| `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country, fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
-| `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                  |
-| `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination      |
-| `posthog.ts`    | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                     |
-| `license.ts`    | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                            |
+| Module          | Auth                                            | Data                                                                                                                                                                  |
+| --------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                                                        |
+| `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts (by version/arch/country) and true per-day DAU + beats from the heartbeat, fetched from worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`) |
+| `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                                                       |
+| `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination                                           |
+| `posthog.ts`    | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                                                          |
+| `license.ts`    | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                                                                 |
 
 Each module exports a typed fetch function returning `SourceResult<T>` (ok + data, or error string). Results are cached
 via `cache.ts` (5 min TTL for 24h/7d, 1 hour for 30d). The page server calls all sources in parallel.
@@ -107,6 +107,13 @@ These colors are used in metric dots, chart strokes, and chart fills. Keep them 
 **Decision**: Local dev reads env vars via SvelteKit's `$env/dynamic/private` when `platform?.env` is undefined.
 **Why**: CF Pages `platform.env` only exists in deployed environments. SvelteKit's env module properly loads `.env`
 files with escaping support. Copy `.env.example` to `.env` and fill in real values.
+
+**Decision**: The "Active use" section's daily-active count comes from the heartbeat (`/admin/heartbeat-dau`,
+`COUNT(DISTINCT anal_id)` per day), not from update checks. **Why**: the old "Update checks (approximate active users)"
+metric summed per-day active counts across the whole window, multiplying a ~10/day figure into a wildly inflated total
+(~217). The heartbeat gives a true per-day distinct-install count, charted gold over the range, with `beats/day` as an
+engagement signal. The `/admin/active-users` endpoint and its cron still run (other tooling may use them); the dashboard
+just no longer displays the inflated number. The chart starts empty at release and fills as beta testers update.
 
 **Decision**: PostHog uses the HogQL query API (`/api/projects/{id}/query/`), not the legacy Trends API
 (`/insights/trend/`). **Why**: The Trends API returns "Legacy insight endpoints are not available" for newer accounts.

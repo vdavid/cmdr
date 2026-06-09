@@ -26,7 +26,9 @@ Both paths write to `crash-report.json` in the app data dir (same dir as `settin
 
 ## Key design decisions
 
-- **Opt-in only** (`updates.crashReports` defaults to `false`). Consistent with the "no telemetry" stance.
+- **Opt-in only** (`updates.crashReports` defaults to `false`). Crash reports carry a debug backtrace, so they stay
+  opt-in even though the anonymous beta usage analytics (heartbeat + PostHog events) default on. The two are deliberately
+  separate consent gates.
 - **No PII, ever.** Panic messages are sanitized via the shared
   [`crate::redact`](../redact/CLAUDE.md) module to strip file paths, hostnames, IPs, emails,
   and URL userinfo before writing. The `sanitize_panic_message` function in `mod.rs` is a

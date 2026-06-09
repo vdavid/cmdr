@@ -288,15 +288,26 @@ function formatReport(data: DashboardData): string {
     line(`Couldn't load: ${data.cloudflare.error}`)
   } else {
     const cf = data.cloudflare.data
-    const totalChecks = cf.updateChecks.reduce((s, r) => s + r.checks, 0)
-    line(`- Update checks (approximate active users): ${num(totalChecks)}`)
+    const dau = cf.heartbeatDau
 
-    if (cf.updateChecks.length > 0) {
+    if (dau.length > 0) {
+      const latestDau = dau[dau.length - 1].dau
+      const peakDau = dau.reduce((max, r) => Math.max(max, r.dau), 0)
+      const totalBeats = dau.reduce((s, r) => s + r.beats, 0)
+      const totalDau = dau.reduce((s, r) => s + r.dau, 0)
+      const beatsPerActive = totalDau > 0 ? (totalBeats / totalDau).toFixed(1) : '0'
+
+      line(`- Daily active installs (latest day): ${num(latestDau)}`)
+      line(`- Peak daily active: ${num(peakDau)}`)
+      line(`- Beats per active install: ${beatsPerActive}`)
+
       blank()
-      line('By version:')
-      for (const uc of cf.updateChecks.slice(0, 15)) {
-        line(`  ${uc.version}: ${num(uc.checks)} (${pct(uc.checks, totalChecks)})`)
+      line('Daily active installs (by day):')
+      for (const row of [...dau].sort((a, b) => b.date.localeCompare(a.date))) {
+        line(`  ${row.date}: ${num(row.dau)} active, ${num(row.beats)} beats`)
       }
+    } else {
+      line('- Daily active installs: none yet (heartbeat fills as beta testers update and run the new build)')
     }
 
     if (data.license.ok) {

@@ -77,14 +77,18 @@ without JS (falls back to system preference) while supporting explicit overrides
 
 ## Analytics
 
-The website uses three analytics layers. The desktop app has **no telemetry**.
+The website uses three analytics layers. The desktop app also sends anonymous beta usage analytics: an `anal_`-keyed
+hourly heartbeat (true DAU) plus curated, PII-free PostHog feature events, all behind a tri-state opt-out and stripped
+of file names, paths, queries, and prompts by allowlist. See `apps/desktop/src-tauri/src/analytics/CLAUDE.md`.
 
 - **Umami** (`Layout.astro`): Cookieless page analytics (pageviews, referrers, geo, UTM). Self-hosted. Script served at
   `/u/mami` (proxied through Caddy to avoid adblockers).
 - **PostHog** (`public/scripts/posthog-init.js`): Session replay, heatmaps, click tracking. Configured with
   `persistence: 'memory'` (no cookies, no localStorage) and `person_profiles: 'identified_only'` (no anonymous person
-  profiles). This keeps PostHog fully cookieless.
-- **D1** (API server): Download redirect endpoint logs version, arch, and country.
+  profiles). This keeps PostHog fully cookieless. The same EU project also receives the desktop app's
+  `source: "desktop"` feature events.
+- **D1** (API server): Download redirect endpoint logs version, arch, and country. The `heartbeat` table holds the
+  desktop DAU beats.
 
 **Decision/Why**: We avoid cookies to not need a cookie consent banner. All three analytics tools are configured to work
 without cookies. If you add or change analytics tooling, preserve this property: no cookies unless absolutely

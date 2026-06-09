@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchCloudflareData, parseDownloadRows, parseUpdateCheckRows } from './cloudflare.js'
+import { fetchCloudflareData, parseDownloadRows, parseHeartbeatDauRows } from './cloudflare.js'
 import { clearMemoryCache } from '../cache.js'
 
 const mockEnv = {
@@ -12,10 +12,9 @@ const sampleDownloadsResponse = [
   { date: '2025-03-21', version: '1.1.0', arch: 'aarch64', country: 'GB', count: 45 },
 ]
 
-const sampleActiveUsersResponse = [
-  { date: '2025-03-20', version: '1.2.0', arch: 'aarch64', uniqueUsers: 300 },
-  { date: '2025-03-20', version: '1.2.0', arch: 'x86_64', uniqueUsers: 200 },
-  { date: '2025-03-20', version: '1.1.0', arch: 'aarch64', uniqueUsers: 100 },
+const sampleHeartbeatDauResponse = [
+  { date: '2025-03-20', dau: 8, beats: 42 },
+  { date: '2025-03-21', dau: 10, beats: 57 },
 ]
 
 describe('parseDownloadRows', () => {
@@ -31,27 +30,32 @@ describe('parseDownloadRows', () => {
   })
 })
 
-describe('parseUpdateCheckRows', () => {
-  it('aggregates active users across architectures by version', () => {
-    const rows = parseUpdateCheckRows(sampleActiveUsersResponse)
-    expect(rows).toHaveLength(2)
-    // 1.2.0: 300 + 200 = 500
-    expect(rows[0]).toEqual({ version: '1.2.0', checks: 500 })
-    // 1.1.0: 100
-    expect(rows[1]).toEqual({ version: '1.1.0', checks: 100 })
+describe('parseHeartbeatDauRows', () => {
+  it('passes through per-day dau and beats unchanged', () => {
+    const rows = parseHeartbeatDauRows(sampleHeartbeatDauResponse)
+    expect(rows).toEqual([
+      { date: '2025-03-20', dau: 8, beats: 42 },
+      { date: '2025-03-21', dau: 10, beats: 57 },
+    ])
   })
 
-  it('sorts by checks descending', () => {
-    const rows = parseUpdateCheckRows([
-      { date: '2025-03-20', version: '0.1.0', arch: 'aarch64', uniqueUsers: 10 },
-      { date: '2025-03-20', version: '0.2.0', arch: 'aarch64', uniqueUsers: 50 },
+  it('sorts by date oldest-first', () => {
+    const rows = parseHeartbeatDauRows([
+      { date: '2025-03-21', dau: 10, beats: 57 },
+      { date: '2025-03-19', dau: 4, beats: 20 },
+      { date: '2025-03-20', dau: 8, beats: 42 },
     ])
-    expect(rows[0].version).toBe('0.2.0')
-    expect(rows[1].version).toBe('0.1.0')
+    expect(rows.map((r) => r.date)).toEqual(['2025-03-19', '2025-03-20', '2025-03-21'])
+  })
+
+  it('keeps dau distinct from beats (engagement signal)', () => {
+    const rows = parseHeartbeatDauRows([{ date: '2025-03-20', dau: 8, beats: 42 }])
+    expect(rows[0].dau).toBe(8)
+    expect(rows[0].beats).toBe(42)
   })
 
   it('handles empty data', () => {
-    expect(parseUpdateCheckRows([])).toEqual([])
+    expect(parseHeartbeatDauRows([])).toEqual([])
   })
 })
 
@@ -67,8 +71,8 @@ describe('fetchCloudflareData', () => {
       if (String(url).includes('/admin/downloads')) {
         return Promise.resolve({ ok: true, json: async () => sampleDownloadsResponse })
       }
-      if (String(url).includes('/admin/active-users')) {
-        return Promise.resolve({ ok: true, json: async () => sampleActiveUsersResponse })
+      if (String(url).includes('/admin/heartbeat-dau')) {
+        return Promise.resolve({ ok: true, json: async () => sampleHeartbeatDauResponse })
       }
       return Promise.resolve({ ok: false, status: 404, text: async () => 'Not found' })
     })
@@ -79,7 +83,7 @@ describe('fetchCloudflareData', () => {
     if (!result.ok) return
 
     expect(result.data.downloads).toHaveLength(3)
-    expect(result.data.updateChecks).toHaveLength(2)
+    expect(result.data.heartbeatDau).toEqual(sampleHeartbeatDauResponse)
 
     // Verify auth header is sent
     expect(fetchMock.mock.calls[0][1]?.headers).toEqual({
@@ -93,14 +97,16 @@ describe('fetchCloudflareData', () => {
 
     await fetchCloudflareData(mockEnv, '24h')
     const downloadUrl = fetchMock.mock.calls[0][0] as string
-    const activeUserUrl = fetchMock.mock.calls[1][0] as string
+    const heartbeatUrl = fetchMock.mock.calls[1][0] as string
     expect(downloadUrl).toContain('range=24h')
-    expect(activeUserUrl).toContain('range=7d') // 24h maps to 7d for active users
+    expect(heartbeatUrl).toContain('range=7d') // 24h maps up to 7d for heartbeat DAU
 
     fetchMock.mockClear()
     await fetchCloudflareData(mockEnv, '30d')
     const downloadUrl30 = fetchMock.mock.calls[0][0] as string
+    const heartbeatUrl30 = fetchMock.mock.calls[1][0] as string
     expect(downloadUrl30).toContain('range=30d')
+    expect(heartbeatUrl30).toContain('range=30d')
   })
 
   it('returns error when API fails', async () => {

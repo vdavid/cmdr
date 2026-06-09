@@ -483,23 +483,31 @@
                 {@render errorState(data.cloudflare.error)}
             {:else}
                 {@const cf = data.cloudflare.data}
-                {@const totalChecks = cf.updateChecks.reduce((sum, r) => sum + r.checks, 0)}
+                {@const dau = cf.heartbeatDau}
+                {@const latestDau = dau.length > 0 ? dau[dau.length - 1].dau : 0}
+                {@const peakDau = dau.reduce((max, r) => Math.max(max, r.dau), 0)}
+                {@const totalBeats = dau.reduce((sum, r) => sum + r.beats, 0)}
+                {@const totalDau = dau.reduce((sum, r) => sum + r.dau, 0)}
+                {@const beatsPerActive = totalDau > 0 ? totalBeats / totalDau : 0}
 
-                {@render metricRow([
-                    { label: 'Update checks (approximate active users)', value: formatNumber(totalChecks) },
-                ])}
+                {#if dau.length > 0}
+                    {@render metricRow([
+                        { label: 'Daily active installs (latest day)', value: formatNumber(latestDau), color: COLOR_GOLD },
+                        { label: 'Peak daily active', value: formatNumber(peakDau) },
+                        { label: 'Beats per active install', value: beatsPerActive.toFixed(1) },
+                    ])}
 
-                {#if cf.updateChecks.length > 0}
                     <div class="mt-4">
-                        <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
-                        {@render metricTable(
-                            cf.updateChecks.slice(0, 10).map((r) => ({ x: r.version, y: r.checks })),
-                            'Version',
-                            'Checks'
-                        )}
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">Daily active installs</h3>
+                        <Chart
+                            data={[dau.map((r) => new Date(r.date).getTime() / 1000), dau.map((r) => r.dau)]}
+                            labels={['Active installs']}
+                            colors={[COLOR_GOLD]}
+                            height={180}
+                        />
                     </div>
                 {:else}
-                    {@render emptyState()}
+                    {@render betaEmptyState()}
                 {/if}
 
                 {#if data.license.ok}
@@ -635,6 +643,15 @@
 {#snippet emptyState()}
     <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">
         <p class="text-sm text-text-secondary">No data yet for this period</p>
+    </div>
+{/snippet}
+
+{#snippet betaEmptyState()}
+    <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">
+        <p class="text-sm text-text-secondary">Daily active installs will appear here as beta testers update</p>
+        <p class="mt-1 text-xs text-text-tertiary">
+            The heartbeat starts empty at release and fills as testers run the new build.
+        </p>
     </div>
 {/snippet}
 
