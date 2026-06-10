@@ -274,6 +274,44 @@ describe('KeyboardShortcutsSection conflict banner', () => {
   })
 })
 
+describe('KeyboardShortcutsSection fixed-key rows', () => {
+  it('renders a fixed-key row read-only: a Fixed badge, no editable pill, no +/×/reset', () => {
+    render()
+    const upRow = row('nav.up')
+
+    // The combo shows as a plain, non-interactive element: no <button> pill.
+    expect(upRow.querySelectorAll('button.shortcut-pill')).toHaveLength(0)
+    expect(upRow.querySelectorAll('.shortcut-pill.static').length).toBeGreaterThan(0)
+    // No add slot, no remove, no reset controls on a fixed row.
+    expect(upRow.querySelector('.add-shortcut')).toBeNull()
+    expect(upRow.querySelector('.remove-shortcut')).toBeNull()
+    expect(upRow.querySelector('.reset-shortcut')).toBeNull()
+    // The "Fixed" badge is present and explains why.
+    const badge = upRow.querySelector('.readonly-badge')
+    expect(badge).not.toBeNull()
+    expect(badge?.textContent.trim()).toBe('Fixed')
+  })
+
+  it('capturing a fixed combo (↑) on another command shows the fixed-key banner with only Cancel', async () => {
+    render()
+    // ↑ is nav.up's fixed key in the File-list scope; file.copy lives in the same
+    // scope chain, so capturing it conflicts with the fixed command.
+    clickAddShortcut(COPY)
+    pressKey({ key: 'ArrowUp' })
+    await flushSave()
+
+    const banner = target.querySelector('.conflict-warning')
+    expect(banner).not.toBeNull()
+    const text = banner?.textContent ?? ''
+    expect(text).toContain('fixed key in Cmdr')
+    expect(text).toContain('Select previous file')
+
+    // Only Cancel: the fixed binding can't be removed and would keep firing.
+    const buttonLabels = [...(banner?.querySelectorAll('button') ?? [])].map((b) => b.textContent.trim())
+    expect(buttonLabels).toEqual(['Cancel'])
+  })
+})
+
 describe('KeyboardShortcutsSection native macOS rows', () => {
   it('renders a native row read-only: a macOS badge, no editable pill, no +/×/reset', () => {
     render()
@@ -288,7 +326,7 @@ describe('KeyboardShortcutsSection native macOS rows', () => {
     expect(hideRow.querySelector('.remove-shortcut')).toBeNull()
     expect(hideRow.querySelector('.reset-shortcut')).toBeNull()
     // The "macOS" badge is present and explains why.
-    const badge = hideRow.querySelector('.macos-badge')
+    const badge = hideRow.querySelector('.readonly-badge')
     expect(badge).not.toBeNull()
     expect(badge?.textContent.trim()).toBe('macOS')
   })
@@ -299,7 +337,7 @@ describe('KeyboardShortcutsSection native macOS rows', () => {
     // file.copy keeps an interactive pill and the + add affordance.
     expect(copyRow.querySelectorAll('.shortcut-pill').length).toBeGreaterThan(0)
     expect(copyRow.querySelector('.add-shortcut')).not.toBeNull()
-    expect(copyRow.querySelector('.macos-badge')).toBeNull()
+    expect(copyRow.querySelector('.readonly-badge')).toBeNull()
   })
 
   it('capturing a native combo (⌘H) on another command shows the reserved-by-macOS banner with only Cancel', async () => {

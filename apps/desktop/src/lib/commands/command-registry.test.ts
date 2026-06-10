@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { commands, getPaletteCommands, updateLicenseCommandName, NATIVE_SHORTCUT_COMMAND_IDS } from './command-registry'
+import {
+  commands,
+  getPaletteCommands,
+  updateLicenseCommandName,
+  NATIVE_SHORTCUT_COMMAND_IDS,
+  FIXED_KEY_COMMAND_IDS,
+} from './command-registry'
 import { COMMAND_IDS, isCommandId, type CommandId } from './command-ids'
 import type { CommandArgs, CommandDispatchArgs } from './types'
 import { DISPATCH_EXEMPT_IDS } from '../../routes/(main)/command-handlers/types'
@@ -267,5 +273,43 @@ describe('updateLicenseCommandName', () => {
 
     updateLicenseCommandName(true)
     expect(commands.find((c) => c.id === 'app.licenseKey')?.name).toBe('See license details')
+  })
+})
+
+describe('fixedKey flag', () => {
+  it('marks exactly the commands in FIXED_KEY_COMMAND_IDS', () => {
+    // The `fixedKey` registry flag and `FIXED_KEY_COMMAND_IDS` are two views of
+    // the same set: the key is hardcoded in the owning component's keydown
+    // handler, so the editor must render these read-only and the store must
+    // refuse to rebind them. Keying the flag off the list keeps the sites from
+    // drifting.
+    const flagged = new Set(commands.filter((c) => c.fixedKey).map((c) => c.id))
+    const expected = new Set<string>(FIXED_KEY_COMMAND_IDS)
+    expect(flagged).toEqual(expected)
+  })
+
+  it('every fixed-key command is also dispatch-exempt (Families 2/3)', () => {
+    // Fixed-key commands are handler-less by design (their component runs them).
+    // The dispatch-exempt list sources Families 2/3 from the same registry list,
+    // so this proves the single-source wiring round-trips.
+    const exempt = new Set<string>(DISPATCH_EXEMPT_IDS)
+    for (const id of FIXED_KEY_COMMAND_IDS) {
+      expect(exempt.has(id), `${id} must be dispatch-exempt`).toBe(true)
+    }
+  })
+
+  it('never overlaps the native set (a command is OS-owned or component-owned, not both)', () => {
+    const native = new Set<string>(NATIVE_SHORTCUT_COMMAND_IDS)
+    for (const id of FIXED_KEY_COMMAND_IDS) {
+      expect(native.has(id), `${id} must not also be native`).toBe(false)
+    }
+  })
+
+  it('only ever uses `true` for the flag (never `false`/`undefined` noise)', () => {
+    for (const cmd of commands) {
+      if (cmd.fixedKey !== undefined) {
+        expect(cmd.fixedKey).toBe(true)
+      }
+    }
   })
 })

@@ -23,6 +23,13 @@ export interface NativeConflict {
   command: Command
 }
 
+/** A fixed-key conflict: the combo is hardcoded in a component and always fires. */
+export interface FixedConflict {
+  kind: 'fixed'
+  /** The fixed-key command that owns the combo (drives the banner copy). */
+  command: Command
+}
+
 /** A normal, resolvable conflict between two in-app commands. */
 export interface NormalConflict {
   kind: 'normal'
@@ -30,7 +37,7 @@ export interface NormalConflict {
   command: Command
 }
 
-export type ConflictKind = NativeConflict | NormalConflict
+export type ConflictKind = NativeConflict | FixedConflict | NormalConflict
 
 /**
  * Classify a non-empty conflict set. A native command anywhere in the set makes
@@ -41,6 +48,11 @@ export function classifyConflict(conflicts: Command[]): ConflictKind | null {
   if (conflicts.length === 0) return null
   const native = conflicts.find((c) => c.nativeShortcut)
   if (native) return { kind: 'native', command: native }
+  // A fixed-key command's binding can't be removed ("Remove from other" would be
+  // refused by the store) and always keeps firing ("Keep both" would race it), so
+  // it makes the combo non-resolvable, second only to a native conflict.
+  const fixed = conflicts.find((c) => c.fixedKey)
+  if (fixed) return { kind: 'fixed', command: fixed }
   return { kind: 'normal', command: conflicts[0] }
 }
 
@@ -51,4 +63,12 @@ export function classifyConflict(conflicts: Command[]): ConflictKind | null {
  */
 export function reservedByMacOsMessage(combo: string, nativeCommand: Command): string {
   return `${combo} is reserved by macOS (${nativeCommand.name}) and won't reach Cmdr. Pick a different combo.`
+}
+
+/**
+ * The honest banner copy for a fixed-key conflict, like
+ * `↑ is a fixed key in Cmdr (Select previous file). Pick a different combo.`
+ */
+export function fixedKeyMessage(combo: string, fixedCommand: Command): string {
+  return `${combo} is a fixed key in Cmdr (${fixedCommand.name}) and can't be reassigned. Pick a different combo.`
 }

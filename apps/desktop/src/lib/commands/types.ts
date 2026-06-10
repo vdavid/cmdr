@@ -141,6 +141,15 @@ export interface Command {
    * Set only on the four `NATIVE_SHORTCUT_COMMAND_IDS` (Family 1 dispatch-exempt).
    */
   nativeShortcut?: true
+  /**
+   * The command's key is hardcoded in its owning component's keydown handler
+   * (FilePane arrows, palette navigation, modal Enter/Escape) and never consults
+   * the shortcuts store, so a customization would be a no-op illusion. The
+   * shortcuts editor renders it read-only ("Fixed" badge) and the store refuses
+   * to customize it. Set only on the `FIXED_KEY_COMMAND_IDS` (the Family 2/3
+   * dispatch-exempt ids).
+   */
+  fixedKey?: true
   /** Optional description for long-form help */
   description?: string
   /**

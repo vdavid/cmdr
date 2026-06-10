@@ -57,6 +57,17 @@ a void). The store enforces this at its boundary, the real seam for MCP events a
 - MCP shortcut edits route through these same mutators (`mcp-shortcuts-listener.ts`), so they inherit the guard for
   free.
 
+### Fixed-key commands are not customizable either
+
+The Family-2/3 dispatch-exempt commands (exported as `FIXED_KEY_COMMAND_IDS` from `$lib/commands/command-registry`,
+flagged `fixedKey: true` in the registry) have their keys hardcoded in the owning component's keydown handler (FilePane
+arrows, palette navigation, modal Enter/Escape) — they never consult this store, so a customization would be a no-op
+illusion: the new key wouldn't fire and the built-in key wouldn't release. Same boundary rules as the native commands:
+load drops persisted entries, the mutators no-op with a `log.warn`, `resetShortcut` stays permissive, and
+`isFixedKeyCommand(commandId)` is the exported predicate the editor uses to render these rows read-only ("Fixed" badge).
+If a fixed command's handler is ever rewired to read effective shortcuts, remove it from `FIXED_KEY_COMMAND_IDS` and it
+becomes rebindable everywhere at once.
+
 ### Cross-window propagation (`shortcuts:changed`)
 
 The store is per-webview module state, so a rebind in the Settings window must reach the main window's `customShortcuts`

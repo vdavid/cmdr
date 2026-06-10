@@ -22,6 +22,38 @@ import { isMacOS } from '$lib/shortcuts/key-capture'
  */
 export const NATIVE_SHORTCUT_COMMAND_IDS = ['app.quit', 'app.hide', 'app.hideOthers', 'app.showAll'] as const
 
+/**
+ * The fixed-key commands: their keys are hardcoded in the owning component's
+ * keydown handler (FilePane arrows, palette navigation, modal Enter/Escape) and
+ * never consult the shortcuts store, so a customization would be a no-op
+ * illusion — the new key wouldn't fire and the built-in key wouldn't release.
+ * The shortcuts editor renders them read-only ("Fixed" badge) and the store
+ * refuses to customize them. Single source of truth: the registry entries carry
+ * `fixedKey: true` for exactly these ids (pinned by `command-registry.test.ts`),
+ * and `command-handlers/types.ts` sources its Family-2/3 dispatch-exempt lists
+ * from here.
+ */
+export const FIXED_KEY_COMMAND_IDS = [
+  // Family 2 — per-keystroke file-list navigation (FilePane keydown).
+  'nav.up',
+  'nav.down',
+  'nav.left',
+  'nav.right',
+  'nav.firstInFull',
+  'nav.lastInFull',
+  // Family 3 — component-scoped modal / sub-view keys.
+  'palette.up',
+  'palette.down',
+  'palette.execute',
+  'palette.close',
+  'volume.select',
+  'volume.close',
+  'network.selectHost',
+  'share.back',
+  'share.selectShare',
+  'file.contextMenu',
+] as const
+
 // `Command.id` is the `CommandId` union derived from `COMMAND_IDS` in
 // `command-ids.ts`. Adding an entry here whose id isn't in that tuple is a
 // compile error; a tuple id with no entry here is caught by the set-equality
@@ -266,6 +298,7 @@ export const commands: Command[] = [
     scope: 'Main window/File list',
     showInPalette: false, // Too basic for palette
     shortcuts: ['↑'],
+    fixedKey: true,
   },
   {
     id: 'nav.down',
@@ -273,6 +306,7 @@ export const commands: Command[] = [
     scope: 'Main window/File list',
     showInPalette: false,
     shortcuts: ['↓'],
+    fixedKey: true,
   },
   {
     id: 'nav.open',
@@ -328,6 +362,7 @@ export const commands: Command[] = [
     scope: 'Main window/Brief mode',
     showInPalette: false,
     shortcuts: ['←'],
+    fixedKey: true,
   },
   {
     id: 'nav.right',
@@ -335,6 +370,7 @@ export const commands: Command[] = [
     scope: 'Main window/Brief mode',
     showInPalette: false,
     shortcuts: ['→'],
+    fixedKey: true,
   },
 
   // ============================================================================
@@ -346,6 +382,7 @@ export const commands: Command[] = [
     scope: 'Main window/Full mode',
     showInPalette: false,
     shortcuts: ['←'],
+    fixedKey: true,
   },
   {
     id: 'nav.lastInFull',
@@ -353,6 +390,7 @@ export const commands: Command[] = [
     scope: 'Main window/Full mode',
     showInPalette: false,
     shortcuts: ['→'],
+    fixedKey: true,
   },
 
   // ============================================================================
@@ -490,6 +528,7 @@ export const commands: Command[] = [
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: [],
+    fixedKey: true,
     description: 'Opens the context menu for the file under the cursor',
   },
   {
@@ -567,6 +606,7 @@ export const commands: Command[] = [
     scope: 'Main window/Network',
     showInPalette: false,
     shortcuts: ['Enter'],
+    fixedKey: true,
   },
   {
     id: 'network.refresh',
@@ -585,6 +625,7 @@ export const commands: Command[] = [
     scope: 'Main window/Share browser',
     showInPalette: true,
     shortcuts: ['Backspace', 'Escape'],
+    fixedKey: true,
   },
   {
     id: 'share.selectShare',
@@ -592,6 +633,7 @@ export const commands: Command[] = [
     scope: 'Main window/Share browser',
     showInPalette: true,
     shortcuts: ['Enter'],
+    fixedKey: true,
   },
 
   // ============================================================================
@@ -603,6 +645,7 @@ export const commands: Command[] = [
     scope: 'Main window/Volume chooser',
     showInPalette: false,
     shortcuts: ['Enter'],
+    fixedKey: true,
   },
   {
     id: 'volume.close',
@@ -610,6 +653,7 @@ export const commands: Command[] = [
     scope: 'Main window/Volume chooser',
     showInPalette: false,
     shortcuts: ['Escape'],
+    fixedKey: true,
   },
 
   // ============================================================================
@@ -686,6 +730,7 @@ export const commands: Command[] = [
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['↑'],
+    fixedKey: true,
   },
   {
     id: 'palette.down',
@@ -693,6 +738,7 @@ export const commands: Command[] = [
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['↓'],
+    fixedKey: true,
   },
   {
     id: 'palette.execute',
@@ -700,6 +746,7 @@ export const commands: Command[] = [
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['Enter'],
+    fixedKey: true,
   },
   {
     id: 'palette.close',
@@ -707,6 +754,7 @@ export const commands: Command[] = [
     scope: 'Command palette',
     showInPalette: false,
     shortcuts: ['Escape'],
+    fixedKey: true,
   },
 ]
 

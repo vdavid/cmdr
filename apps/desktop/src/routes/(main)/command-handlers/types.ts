@@ -10,7 +10,7 @@
  * neither, so the graph stays acyclic for the `import-cycles` check.
  */
 import type { CommandId, CommandArgs } from '$lib/commands'
-import { NATIVE_SHORTCUT_COMMAND_IDS } from '$lib/commands/command-registry'
+import { FIXED_KEY_COMMAND_IDS, NATIVE_SHORTCUT_COMMAND_IDS } from '$lib/commands/command-registry'
 import type { CommandDispatchContext } from '../command-dispatch-context'
 import type { ExplorerAPI } from '../explorer-api'
 
@@ -67,24 +67,12 @@ export const DISPATCH_EXEMPT_IDS = [
   // `NATIVE_SHORTCUT_COMMAND_IDS` (the same list the `nativeShortcut` flag is
   // keyed to), so the "AppKit owns this" fact lives in exactly one place.
   ...NATIVE_SHORTCUT_COMMAND_IDS,
-  // Family 2 — Per-keystroke, P2-protected. ❌ DO NOT add handlers.
-  'nav.up',
-  'nav.down',
-  'nav.left',
-  'nav.right',
-  'nav.firstInFull',
-  'nav.lastInFull',
-  // Family 3 — Component-scoped.
-  'palette.up',
-  'palette.down',
-  'palette.execute',
-  'palette.close',
-  'volume.select',
-  'volume.close',
-  'network.selectHost',
-  'share.back',
-  'share.selectShare',
-  'file.contextMenu',
+  // Families 2 + 3 — fixed-key commands. Sourced from the registry's
+  // `FIXED_KEY_COMMAND_IDS` (the same list the `fixedKey` flag is keyed to), so
+  // the "this key is hardcoded in its component" fact lives in exactly one place.
+  // ❌ DO NOT add handlers for the per-keystroke nav ids — that is a P2
+  // violation, not a completion.
+  ...FIXED_KEY_COMMAND_IDS,
 ] as const satisfies readonly DispatchExemptId[]
 
 /** The id set a handler record must cover: every `CommandId` minus the exempt families. */

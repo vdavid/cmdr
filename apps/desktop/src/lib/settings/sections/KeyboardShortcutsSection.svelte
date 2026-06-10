@@ -15,6 +15,7 @@
         resetAllShortcuts,
         onShortcutChange,
         isNativeShortcutCommand,
+        isFixedKeyCommand,
     } from '$lib/shortcuts'
     import {
         formatKeyCombo,
@@ -27,7 +28,7 @@
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import GlobalShortcutRow from '$lib/downloads/GlobalShortcutRow.svelte'
     import { groupCommandsByScope } from './keyboard-shortcuts-grouping'
-    import { classifyConflict, reservedByMacOsMessage, type ConflictKind } from './keyboard-shortcuts-banner'
+    import { classifyConflict, fixedKeyMessage, reservedByMacOsMessage, type ConflictKind } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '$lib/settings/settings-window'
     import {
         getPendingShortcutHighlight,
@@ -502,6 +503,15 @@
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
                 </div>
+            {:else if conflictWarning.conflict.kind === 'fixed'}
+                <!-- The combo is hardcoded in a component: it can't be removed there and
+                     would keep firing, so we don't offer "Remove from other" or "Keep both". -->
+                <span class="warning-text">
+                    {fixedKeyMessage(conflictWarning.shortcut, conflictWarning.conflict.command)}
+                </span>
+                <div class="warning-actions">
+                    <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
+                </div>
             {:else}
                 <span class="warning-text">
                     <strong>{conflictWarning.shortcut}</strong> is already bound to "{conflictWarning.conflict.command
@@ -525,6 +535,7 @@
                     {@const isModified = isShortcutModified(command.id)}
                     {@const hasConflicts = conflictingIds.has(command.id)}
                     {@const isNative = isNativeShortcutCommand(command.id)}
+                    {@const isFixed = isFixedKeyCommand(command.id)}
                     {@const isAddingHere =
                         editingShortcut !== null &&
                         editingShortcut.commandId === command.id &&
@@ -545,10 +556,13 @@
                             <span class="command-name">{command.name}</span>
                         </div>
                         <div class="command-shortcuts">
-                            {#if isNative}
-                                <!-- macOS owns both the behavior and the accelerator (PredefinedMenuItem).
-                                     Cmdr can neither rebind nor intercept it, so the row is read-only: plain
-                                     pills, a "macOS" badge, no +/×/reset and no add slot. -->
+                            {#if isNative || isFixed}
+                                <!-- Read-only rows. Native: macOS owns both the behavior and the
+                                     accelerator (PredefinedMenuItem), so Cmdr can neither rebind nor
+                                     intercept it. Fixed: the key is hardcoded in the owning component's
+                                     keydown handler and never consults the store, so a customization
+                                     would be a no-op illusion. Both render plain pills and a badge, with
+                                     no +/×/reset and no add slot. -->
                                 {#if shortcuts.length > 0}
                                     {#each shortcuts as shortcut (shortcut)}
                                         <span class="shortcut-pill static">{shortcut}</span>
@@ -556,10 +570,17 @@
                                 {:else}
                                     <span class="no-shortcut">(none)</span>
                                 {/if}
-                                <span
-                                    class="macos-badge"
-                                    use:tooltip={"macOS handles this shortcut. Cmdr can't change it."}>macOS</span
-                                >
+                                {#if isNative}
+                                    <span
+                                        class="readonly-badge"
+                                        use:tooltip={"macOS handles this shortcut. Cmdr can't change it."}>macOS</span
+                                    >
+                                {:else}
+                                    <span
+                                        class="readonly-badge"
+                                        use:tooltip={"This key is built into Cmdr and can't be changed."}>Fixed</span
+                                    >
+                                {/if}
                             {:else}
                                 {#if shortcuts.length > 0}
                                 {#each shortcuts as shortcut, i (i)}
@@ -962,9 +983,10 @@
         color: var(--color-text-secondary);
     }
 
-    /* "macOS" badge marking a row the OS owns. Tinted with the muted/secondary
-       surface tokens so it reads as an informational tag, not an action. */
-    .macos-badge {
+    /* "macOS" / "Fixed" badge marking a read-only row (OS-owned or hardcoded in
+       its component). Tinted with the muted/secondary surface tokens so it reads
+       as an informational tag, not an action. */
+    .readonly-badge {
         display: inline-flex;
         align-items: center;
         padding: var(--spacing-xxs) var(--spacing-xs);

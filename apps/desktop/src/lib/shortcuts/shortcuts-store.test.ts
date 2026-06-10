@@ -487,3 +487,57 @@ describe('shortcuts-store refuses to customize macOS-native commands', () => {
     expect(changedEmits()).toHaveLength(0)
   })
 })
+
+describe('shortcuts-store refuses to customize fixed-key commands', () => {
+  // The Family-2/3 fixed-key commands (nav arrows, palette navigation, modal
+  // Enter/Escape) are hardcoded in their owning component's keydown handler and
+  // never consult this store. A customization would be a no-op illusion: the new
+  // key wouldn't fire and the built-in key wouldn't release. Same boundary rules
+  // as the macOS-native commands: load heals, mutators refuse.
+
+  it('drops a persisted fixed-key customization on load', async () => {
+    disk.set('shortcut:nav.up', ['F9'])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    expect(store.isShortcutModified('nav.up')).toBe(false)
+    expect(store.getEffectiveShortcuts('nav.up')).toEqual(getDefaultShortcuts('nav.up'))
+  })
+
+  it('setShortcut is a no-op for a fixed-key command (no write, no emit)', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.setShortcut('nav.up', 0, 'F9')
+    await flushSave()
+
+    expect(store.isShortcutModified('nav.up')).toBe(false)
+    expect(disk.has('shortcut:nav.up')).toBe(false)
+    expect(changedEmits()).toHaveLength(0)
+  })
+
+  it('addShortcut is a no-op for a fixed-key command (no write, no emit)', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.addShortcut('palette.close', 'F9')
+    await flushSave()
+
+    expect(store.isShortcutModified('palette.close')).toBe(false)
+    expect(disk.has('shortcut:palette.close')).toBe(false)
+    expect(changedEmits()).toHaveLength(0)
+  })
+
+  it('removeShortcut is a no-op for a fixed-key command (no write, no emit)', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.removeShortcut('nav.up', 0)
+    await flushSave()
+
+    expect(store.isShortcutModified('nav.up')).toBe(false)
+    expect(store.getEffectiveShortcuts('nav.up')).toEqual(getDefaultShortcuts('nav.up'))
+    expect(disk.has('shortcut:nav.up')).toBe(false)
+    expect(changedEmits()).toHaveLength(0)
+  })
+})

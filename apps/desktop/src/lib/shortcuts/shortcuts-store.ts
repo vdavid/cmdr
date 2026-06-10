@@ -5,7 +5,7 @@
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { commands as ipcCommands } from '$lib/ipc/bindings'
-import { commands, NATIVE_SHORTCUT_COMMAND_IDS } from '$lib/commands/command-registry'
+import { commands, FIXED_KEY_COMMAND_IDS, NATIVE_SHORTCUT_COMMAND_IDS } from '$lib/commands/command-registry'
 import { resolveStorePath } from '$lib/settings/store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
@@ -168,7 +168,7 @@ export async function initializeShortcuts(): Promise<void> {
     // shortcuts.json carries `app.hide: []` from testing). Not loading it leaves
     // the map without an entry, so the registry default applies and the next
     // save reconciles the stale disk key away.
-    if (isNativeShortcutCommand(commandId)) continue
+    if (isNativeShortcutCommand(commandId) || isFixedKeyCommand(commandId)) continue
 
     const shortcuts = await store.get<string[]>(key)
     if (!Array.isArray(shortcuts)) continue // skip non-array garbage
@@ -321,6 +321,20 @@ async function migrateShortcuts(store: Store, fromVersion: number): Promise<void
 // illusion: it can't disable the OS accelerator and can't dispatch anything.
 const nativeShortcutIds = new Set<string>(NATIVE_SHORTCUT_COMMAND_IDS)
 
+// Fast-lookup set for the fixed-key commands. Their keys are hardcoded in the
+// owning component's keydown handler and never consult this store, so a
+// customization would be a no-op illusion (new key dead, built-in key still live).
+const fixedKeyIds = new Set<string>(FIXED_KEY_COMMAND_IDS)
+
+/**
+ * Whether this command's key is hardcoded in its component (Family-2/3 fixed-key
+ * command). The editor renders these read-only; the mutators below refuse to
+ * write them.
+ */
+export function isFixedKeyCommand(commandId: string): boolean {
+  return fixedKeyIds.has(commandId)
+}
+
 /**
  * Whether macOS owns this command's shortcut outright (Family-1 native command).
  * The editor renders these read-only; the mutators below refuse to write them.
@@ -382,8 +396,11 @@ function cleanupIfMatchesDefaults(commandId: string): void {
  * Set a specific shortcut for a command at an index.
  */
 export function setShortcut(commandId: string, index: number, shortcut: string): void {
-  if (isNativeShortcutCommand(commandId)) {
-    log.warn('Refusing to set shortcut for macOS-native command {commandId}: AppKit owns it', { commandId })
+  if (isNativeShortcutCommand(commandId) || isFixedKeyCommand(commandId)) {
+    log.warn(
+      'Refusing to set shortcut for non-rebindable command {commandId}: the key is owned by macOS or hardcoded in its component',
+      { commandId },
+    )
     return
   }
   log.debug('setShortcut({commandId}, {index}, {shortcut})', { commandId, index, shortcut })
@@ -409,8 +426,11 @@ export function setShortcut(commandId: string, index: number, shortcut: string):
  * Add a new shortcut to a command.
  */
 export function addShortcut(commandId: string, shortcut: string): void {
-  if (isNativeShortcutCommand(commandId)) {
-    log.warn('Refusing to add shortcut for macOS-native command {commandId}: AppKit owns it', { commandId })
+  if (isNativeShortcutCommand(commandId) || isFixedKeyCommand(commandId)) {
+    log.warn(
+      'Refusing to add shortcut for non-rebindable command {commandId}: the key is owned by macOS or hardcoded in its component',
+      { commandId },
+    )
     return
   }
   const current = getEffectiveShortcuts(commandId)
@@ -427,8 +447,11 @@ export function addShortcut(commandId: string, shortcut: string): void {
  * Remove a shortcut from a command at an index.
  */
 export function removeShortcut(commandId: string, index: number): void {
-  if (isNativeShortcutCommand(commandId)) {
-    log.warn('Refusing to remove shortcut for macOS-native command {commandId}: AppKit owns it', { commandId })
+  if (isNativeShortcutCommand(commandId) || isFixedKeyCommand(commandId)) {
+    log.warn(
+      'Refusing to remove shortcut for non-rebindable command {commandId}: the key is owned by macOS or hardcoded in its component',
+      { commandId },
+    )
     return
   }
   const current = getEffectiveShortcuts(commandId)

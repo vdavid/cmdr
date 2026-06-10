@@ -33,6 +33,7 @@ export {
   onShortcutChange,
   flushPendingSave,
   isNativeShortcutCommand,
+  isFixedKeyCommand,
 } from './shortcuts-store'
 
 // Conflict detection
