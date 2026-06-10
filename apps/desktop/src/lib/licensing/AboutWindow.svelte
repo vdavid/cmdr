@@ -3,6 +3,8 @@
     import { getCachedStatus } from './licensing-store.svelte'
     import { openExternalUrl } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import LinkButton from '$lib/ui/LinkButton.svelte'
+    import { GITHUB_ISSUES_URL } from '$lib/beta-links'
 
     interface Props {
         onClose: () => void
@@ -97,7 +99,16 @@
             <p class="app-tagline">Keyboard-driven file manager</p>
 
             <div class="version-info">
-                <span class="version">Version {version}</span>
+                <span class="version">Version {version} (open beta)</span>
+                <p class="beta-note">
+                    Found something rough? Tell me on
+                    <LinkButton
+                        href={GITHUB_ISSUES_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onclick={handleLinkClick(GITHUB_ISSUES_URL)}>GitHub</LinkButton
+                    >. I read every report!
+                </p>
             </div>
 
             <div class="license-info">
@@ -185,6 +196,12 @@
     .version {
         color: var(--color-text-secondary);
         font-size: var(--font-size-md);
+    }
+
+    .beta-note {
+        margin: var(--spacing-xs) 0 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
     }
 
     .license-info {

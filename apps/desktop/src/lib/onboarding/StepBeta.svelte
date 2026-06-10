@@ -2,21 +2,27 @@
     import { onMount, onDestroy } from 'svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
     import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
+    import LinkButton from '$lib/ui/LinkButton.svelte'
     import { setFooterOverride, nextStep } from './onboarding-state.svelte'
     import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { onSpecificSettingChange } from '$lib/settings/settings-store'
-    import { betaSignup } from '$lib/tauri-commands'
+    import { betaSignup, openExternalUrl } from '$lib/tauri-commands'
+    import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL } from '$lib/beta-links'
+    import { getAppLogger } from '$lib/logging/logger'
 
     /**
      * Step 3: Open beta disclosure.
      *
-     * Two parts:
+     * Three parts:
      *
+     *   [Personal open-beta intro: David's first-person welcome + the three feedback
+     *    channels (Help > Send feedback…, GitHub issues, book-a-call), linked through
+     *    the shared `$lib/beta-links` constants]
      *   [Anonymous-analytics disclosure + an opt-out switch bound to `analytics.enabled`]
      *   [Optional contact email]
      *
-     * Both reuse the exact wiring `settings/sections/UpdatesSection.svelte` uses, so the
-     * Settings page and this onboarding page behave identically:
+     * The analytics + email parts reuse the exact wiring `settings/sections/UpdatesSection.svelte`
+     * uses, so the Settings page and this onboarding page behave identically:
      *   - the opt-out switch is the registry-backed `<SettingSwitch id="analytics.enabled">`
      *     (default on; flipping it writes the setting immediately, like everywhere else),
      *   - the email field persists to `analytics.email` on every keystroke (local only) and,
@@ -29,7 +35,20 @@
      * `lib/onboarding/CLAUDE.md` § "Step 3 (Open beta)".
      */
 
+    const log = getAppLogger('onboarding-beta')
+
     const analyticsDef = getSettingDefinition('analytics.enabled') ?? { label: '', description: '' }
+
+    /** Click handler factory for the feedback links: intercepts the decorative href and routes
+     * through `openExternalUrl` (Tauri blocks raw `<a>` navigation), logging on failure. */
+    function openLink(url: string) {
+        return (event: MouseEvent) => {
+            event.preventDefault()
+            void openExternalUrl(url).catch((error: unknown) => {
+                log.warn('openExternalUrl({url}) failed: {error}', { url, error })
+            })
+        }
+    }
 
     onMount(() => {
         // The "Next" button has no reactive deps (its handler closes over a module-level
@@ -112,9 +131,35 @@
 <OnboardingStepShell>
     <h2 class="step-title">Help shape the open beta</h2>
     <p class="lede">
-        You're one of the first to use Cmdr. To learn what's working and what isn't, Cmdr sends anonymous usage stats
-        during the open beta: which features get used and how often, never anything from your files. It's on now, and
-        you can turn it off anytime.
+        Hi, I'm David! I'm building Cmdr solo, and you're one of the very first people using it. It's in open beta:
+        most of the app is solid, but some parts are still rough (Search and Select especially). Your feedback decides
+        what I build next:
+    </p>
+    <ul class="feedback-list">
+        <li>Found a bug or have an idea? <strong>Help &gt; Send feedback…</strong> sends it straight to me.</li>
+        <li>
+            Want to shape the roadmap? Vote on features on
+            <LinkButton
+                href={GITHUB_ISSUES_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick={openLink(GITHUB_ISSUES_URL)}>GitHub</LinkButton
+            >.
+        </li>
+        <li>
+            Up for a chat?
+            <LinkButton
+                href={BOOK_A_CALL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick={openLink(BOOK_A_CALL_URL)}>Book a call</LinkButton
+            >. I'd honestly love to hear how you use Cmdr.
+        </li>
+    </ul>
+
+    <p class="lede analytics-lede">
+        To learn what's working and what isn't, Cmdr sends anonymous usage stats during the open beta: which features
+        get used and how often, never anything from your files. It's on now, and you can turn it off anytime.
     </p>
 
     <section class="toggle-block" aria-labelledby="toggle-analytics-title">
@@ -168,9 +213,28 @@
     }
 
     .lede {
-        margin: 0 0 var(--spacing-lg);
+        margin: 0 0 var(--spacing-md);
         line-height: 1.5;
         color: var(--color-text-primary);
+    }
+
+    .analytics-lede {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .feedback-list {
+        margin: 0 0 var(--spacing-lg);
+        padding-left: var(--spacing-lg);
+        line-height: 1.5;
+        color: var(--color-text-primary);
+    }
+
+    .feedback-list li {
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .feedback-list li:last-child {
+        margin-bottom: 0;
     }
 
     .toggle-block {
