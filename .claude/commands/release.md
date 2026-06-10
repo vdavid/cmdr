@@ -167,7 +167,14 @@ Prepare a release based on docs/guides/releasing.md.
 - Report when all jobs complete (success or failure). If a job fails, show the failure details, and advise how to fix.
 - Suggest the user to also track the build at https://github.com/vdavid/cmdr/actions.
 
-11. **In parallel, watch the standalone CI run** (the non-release `CI` workflow that fires on the same push):
+11. **Make the standalone CI run happen, then watch it** (the non-release `CI` workflow):
+    - **First, check whether CI is disabled.** David sometimes disables it to save GHA minutes; `gh workflow list --all`
+      then shows `CI` as `disabled_manually` (a `push` to main won't fire it). CI matters for a release: its
+      `deploy-website` job is what publishes the roadmap, feature-status, and landing-page changes (the release workflow
+      only refreshes `latest.json`), and the full check suite gives a quality signal on the release commit. If it's
+      disabled, re-enable and trigger it on the release commit: `gh workflow enable CI` then
+      `gh workflow run CI --ref main` (`run_all` defaults to true). Tell the user you re-enabled it, and ask whether
+      they want it left enabled or disabled again after the run.
     - It's not a blocker for the release. If it goes red, fix it in the background while the release builds. Small
       things like lint regressions are common.
     - Surface the failure to the user when convenient; don't interrupt release-build progress reporting for it.
