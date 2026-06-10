@@ -689,10 +689,19 @@ func (c *CheckDefinition) CLIName() string {
 
 // ValidateCheckNames checks for duplicate IDs/nicknames and returns an error if any are found.
 // This should be called at startup to catch configuration mistakes early.
-func ValidateCheckNames() error {
+// reservedNames are CLI selector keywords (app names, tech groups) that no check
+// ID or nickname may shadow, because positional args resolve check names first.
+func ValidateCheckNames(reservedNames ...string) error {
 	seen := make(map[string]string) // maps name -> check ID that owns it
+	reserved := make(map[string]bool, len(reservedNames))
+	for _, name := range reservedNames {
+		reserved[name] = true
+	}
 
 	for _, check := range AllChecks {
+		if reserved[check.ID] || reserved[check.Nickname] {
+			return fmt.Errorf("check '%s' uses a reserved selector keyword (app or group name) as its ID or nickname", check.ID)
+		}
 		// Check the ID
 		if ownerID, exists := seen[check.ID]; exists {
 			return fmt.Errorf("duplicate check name '%s': used by both '%s' and '%s'", check.ID, ownerID, check.ID)

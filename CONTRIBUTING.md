@@ -35,8 +35,8 @@ To avoid this, create a local "Cmdr Dev" code signing certificate:
    ```
 5. Verify: `security find-identity -v -p codesigning` should list "Cmdr Dev".
 
-Once the certificate exists, the E2E check script (`pnpm check --check desktop-e2e-playwright`) auto-signs the binary
-before launching. For manual E2E runs, sign after building:
+Once the certificate exists, the E2E check script (`pnpm check desktop-e2e-playwright`) auto-signs the binary before
+launching. For manual E2E runs, sign after building:
 
 ```bash
 codesign --force -s "Cmdr Dev" ./target/$(rustc -vV | grep host | cut -d' ' -f2)/release/Cmdr
@@ -113,8 +113,8 @@ Run all checks before committing with `pnpm check` (in repo root). And here is a
 pnpm check                # to run all checks before committing - USE THIS BY DEFAULT
 pnpm check --rust         # to run Rust checks
 pnpm check --svelte       # to run Svelte checks
-pnpm check --check clippy # to run specific checks
-pnpm check --help        # for more options.
+pnpm check clippy         # to run specific checks
+pnpm check --help         # for more options
 # Alternatively, some specific checks (run from apps/desktop/), but these are rarely needed:
 cd apps/desktop/src-tauri
 cargo fmt                         # to format Rust code

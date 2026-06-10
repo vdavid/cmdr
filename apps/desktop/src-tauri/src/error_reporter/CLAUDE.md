@@ -9,7 +9,7 @@ prod) ships it to `POST /error-report` on the api server. Used by both the user-
 **Use `log_error!` at all error-level sites in the desktop crate.** If a failure is
 recoverable, expected, or not user-impacting, downgrade to `log::warn!`. Don't reach
 for `log::error!` to dodge the dispatcher. The error-level threshold IS the auto-report
-threshold. The `pnpm check --check log-error-macro` check enforces this and will fail
+threshold. The `pnpm check log-error-macro` check enforces this and will fail
 on any new raw `log::error!` site outside the macro definition itself.
 
 ## What we send

@@ -11,7 +11,7 @@ X?".
 ### `cargo nextest` (test runner)
 
 Standard. Faster than `cargo test`. Run a single test by name: `cd apps/desktop/src-tauri && cargo nextest run <name>`.
-Run all: through the checker: `pnpm check --check rust-tests`. Don't run raw `cargo test` (see AGENTS.md).
+Run all: through the checker: `pnpm check rust-tests`. Don't run raw `cargo test` (see AGENTS.md).
 
 ### `proptest` (property-based testing)
 
@@ -34,7 +34,7 @@ chases equivalent mutants and isn't worth it.
 
 ### `vitest` (test runner)
 
-For TS, Svelte, and IPC contract tests. Run all: `pnpm check --check svelte-tests`. Run by name:
+For TS, Svelte, and IPC contract tests. Run all: `pnpm check svelte-tests`. Run by name:
 `cd apps/desktop && pnpm vitest run -t "<name>"`. Existing patterns: component tests in `*.test.ts` next to the source,
 tier-3 a11y tests in `*.a11y.test.ts`.
 
@@ -59,7 +59,7 @@ numeric / pure-TS modules only; **don't** attempt on `.svelte` files. Pattern to
 ### Playwright (E2E suite)
 
 `apps/desktop/test/e2e-playwright/`. Runs against the real Tauri binary built with the `playwright-e2e` feature. Three
-sharded workers on macOS (one MTP-only + two non-MTP). Run: `pnpm check --check desktop-e2e-playwright`. See
+sharded workers on macOS (one MTP-only + two non-MTP). Run: `pnpm check desktop-e2e-playwright`. See
 `apps/desktop/test/e2e-playwright/CLAUDE.md` for the full docs.
 
 ### `pollUntil`: condition-based wait
@@ -163,6 +163,6 @@ race).
 
 The single entry point for all linters, formatters, type checkers, and test runners. It delegates to `scripts/check.sh`;
 use `pnpm check --help` for the full option list. Always use it instead of raw `cargo`, `pnpm vitest`, `eslint`, etc.
-Its output is concise and CI-aligned. Per-check: `--check <name>`. By language: `--rust` / `--svelte`. Fast pre-commit
-lane (~7 s, curated): `--fast`. Slow checks (E2E, Docker): `--only-slow`. See AGENTS.md "Testing and checking" for the
-three-cadence guidance.
+Its output is concise and CI-aligned. Per-check: `pnpm check <name>`. By group: `pnpm check rust` / `svelte`. Fast
+pre-commit lane (~7 s, curated): `--fast`. Slow checks (E2E, Docker): `--only-slow`. See AGENTS.md "Testing and
+checking" for the three-cadence guidance.

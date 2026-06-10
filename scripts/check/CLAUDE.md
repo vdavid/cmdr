@@ -12,14 +12,15 @@ allowlist), see [`checks/CLAUDE.md`](checks/CLAUDE.md).
 # Run all checks (excludes slow checks by default)
 pnpm check
 
-# Run checks for a specific app
-pnpm check --app desktop
-
 # Run a specific check (accepts ID or nickname)
-pnpm check --check clippy
+pnpm check clippy
 
-# Run multiple specific checks
-pnpm check --check rustfmt --check clippy
+# Run multiple specific checks (commas work too: oxfmt,clippy)
+pnpm check rustfmt clippy
+
+# Run a tech group (rust, svelte, go) or an app (desktop, website, api-server, scripts)
+pnpm check rust
+pnpm check website
 
 # Include slow checks
 pnpm check --include-slow
@@ -42,12 +43,18 @@ pnpm check --only-freestyle
 
 ## Command-line options
 
+Positional args select what to run: check IDs/nicknames, app names (`desktop`, `website`, `api-server`, `scripts`), and
+tech groups (`rust`, `svelte`, `go`), in any mix, space- or comma-separated, with flags anywhere in between
+(`parseInterspersed` re-parses around positionals since Go's stdlib `flag` stops at the first one). Named checks run
+even if slow or CI-only; app/group selectors keep the default lanes. `ValidateCheckNames` rejects any check ID or
+nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main.go`).
+
 | Option                      | Description                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------- |
-| `--app NAME`                | Run checks for a specific app                                                   |
+| `--app NAME`                | Run checks for specific apps (repeatable or comma-separated)                    |
 | `--rust`, `--rust-only`     | Run only Rust checks (desktop)                                                  |
 | `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                                                |
-| `--check ID`                | Run specific checks by ID or nickname (repeatable)                              |
+| `--check ID`                | Run specific checks by ID or nickname (same as naming them positionally)        |
 | `--ci`                      | Disable auto-fixing (for CI)                                                    |
 | `--verbose`                 | Show detailed output                                                            |
 | `--include-slow`            | Include slow checks (excluded by default)                                       |
@@ -61,21 +68,21 @@ pnpm check --only-freestyle
 | `--graph-format`            | Graph output: `tree` (default, colored terminal), `mermaid`, `dot`              |
 | `-h`, `--help`              | Show help message                                                               |
 
-`--graph` honors the same selection flags (`--rust`, `--svelte`, `--app`, `--check`), so `--graph --rust` graphs only
-the Rust checks. It renders before the slow/fast/CI filters, so every lane shows with its size badge. Each node also
-shows `~<median wall-time>` from the recent (last 20) passing runs in `~/cmdr-check-log.csv`, so the graph doubles as a
-perf dashboard — pairing the CPU-weight (how heavy) with the typical duration (how long) for spotting the next
-optimization target. Missing log (CI / `--no-log` / fresh machine) just omits the times. `mermaid` output pastes into a
-Markdown ```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`pnpm check --graph --graph-format dot | dot
--Tpng -o checks.png`).
+`--graph` honors the same selectors (positional or flag form), so `pnpm check rust --graph` graphs only the Rust checks.
+It renders before the slow/fast/CI filters, so every lane shows with its size badge. Each node also shows
+`~<median wall-time>` from the recent (last 20) passing runs in `~/cmdr-check-log.csv`, so the graph doubles as a perf
+dashboard — pairing the CPU-weight (how heavy) with the typical duration (how long) for spotting the next optimization
+target. Missing log (CI / `--no-log` / fresh machine) just omits the times. `mermaid` output pastes into a Markdown
+```mermaid block or https://mermaid.live; `dot` pipes to Graphviz (`pnpm check --graph --graph-format dot | dot -Tpng -o
+checks.png`).
 
 ## Architecture
 
 ```
 pnpm check [flags]
   -> scripts/check.sh [flags]
-    -> ValidateCheckNames()          # startup: catch ID/nickname collisions
-    -> parseFlags()
+    -> ValidateCheckNames()          # startup: catch ID/nickname collisions + reserved-keyword shadows
+    -> parseFlags()                  # flags + positional selectors (checks, apps, groups), interspersed
     -> findRootDir()                 # walk up to repo root
     -> handleFreestyleFlags():
         --prefer-freestyle:          # parallel: VM (compat) + local (incompat)
@@ -85,9 +92,9 @@ pnpm check [flags]
         --only-freestyle:            # VM only, skip incompat
           freestyleRun()
     -> selectChecks()                # filter AllChecks by flags
-    -> FilterSlowChecks()            # drop IsSlow=true unless --include-slow or --check used
-    -> FilterCIOnlyChecks()          # drop CIOnly=true unless --ci or --check named it
-    -> FilterFastChecks()            # if --fast: keep IsFast=true (or named via --check)
+    -> FilterSlowChecks()            # drop IsSlow=true unless --include-slow or a check was named
+    -> FilterCIOnlyChecks()          # drop CIOnly=true unless --ci or a check was named
+    -> FilterFastChecks()            # if --fast: keep IsFast=true (or named checks)
     -> ensurePnpmDependencies()      # pnpm install once at root (skipped for Rust-only runs)
     -> Runner.Run():
         goroutine pool (NumCPU semaphore)
@@ -131,18 +138,18 @@ checks (e.g. `svelte-tests` w11 + `clippy`-cold w8) from piling up and oversubsc
 `docs/notes/check-cpu-contention.md`.
 
 **Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`,
-`desktop-e2e-playwright`). Named `--check` invocations implicitly include slow checks
-(`includeSlow = len(checkNames) > 0`).
+`desktop-e2e-playwright`). Naming a check (positionally or via `--check`) implicitly includes slow checks
+(`includeSlow = len(checkNames) > 0`); group/app selectors don't.
 
 **Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: ~28 checks that finish in roughly 10s
 on a warm cache, intended to run before every commit. It's an editorial pick, not a timing-derived list (see Key
-decisions below). Named `--check` invocations bypass the filter so `--fast --check svelte-check` still runs
-svelte-check. Mutually exclusive with `--include-slow` / `--only-slow` — combining them errors out, since the lanes are
-intentionally separate.
+decisions below). Named check invocations bypass the filter so `pnpm check --fast svelte-check` still runs svelte-check.
+Mutually exclusive with `--include-slow` / `--only-slow` — combining them errors out, since the lanes are intentionally
+separate.
 
 **CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently: `cargo-udeps`). They're
 silently dropped from local runs (no SKIPPED line) and are not pulled in by `--include-slow` or `--only-slow`. Escape
-hatch: an explicit `--check cargo-udeps` always runs, so you can verify locally before pushing.
+hatch: an explicit `pnpm check cargo-udeps` always runs, so you can verify locally before pushing.
 
 **Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build binary once, create per-shard
 fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). Each shard runs in its own isolated
@@ -158,7 +165,7 @@ per shard".
 `RUST_LOG` is forwarded to the app (via inherited `os.Environ()`), so trace-level output is one shell-prefix away:
 
 ```bash
-RUST_LOG=cmdr_lib::file_system::volume::mtp=trace pnpm check --check desktop-e2e-playwright
+RUST_LOG=cmdr_lib::file_system::volume::mtp=trace pnpm check desktop-e2e-playwright
 ```
 
 The chosen `RUST_LOG` value is echoed at the top of the timestamped log so it's obvious from a glance which level was
@@ -203,6 +210,19 @@ by an isolation sweep (`docs/notes/check-cpu-contention.md`); unmeasured/fast ch
 the sweep: the longest checks (`e2e-linux`, `rust-tests-linux`) are NOT the heaviest — they idle ~1 core or run entirely
 in the Docker VM, so they make ideal backbone fillers for the CPU-heavy short checks. (The sweep's original long pole,
 `eslint-typecheck` at ~15 min, turned out to be a projectService batching cliff and was split into two ~15 s passes.)
+
+**Decision**: positional selectors are the primary way to name checks; `--check` stays as an alias. **Why**: Task
+runners idiomatically take targets as positional args (`make lint test`, `just fmt`, `turbo run lint build`);
+`pnpm check oxfmt clippy` reads naturally where `--check oxfmt --check clippy` is ceremony. Resolution order per token:
+check ID/nickname first, then app name, then tech group — and `ValidateCheckNames(reservedSelectorNames...)` fails
+startup if a future check ID/nickname would shadow a group/app keyword, so the order can't silently change meaning.
+Named checks keep `--check`'s escape-hatch semantics (implicitly include slow/CI-only); group and app selectors keep the
+default lanes, matching their flag forms. `--check` survives because CI workflows, docs in the wild, and agent muscle
+memory use it; the `ci-coverage` contract greps workflows for `--check <name>`, so workflows keep that form.
+
+**Decision**: `check.sh` runs `go run .`, not `go run *.go`. **Why**: the `*.go` glob matches `_test.go` files, and
+`go run` refuses test files, so the old form broke the moment the main package gained a test. `go run .` builds the
+package and excludes tests by definition.
 
 **Decision**: Go instead of Bash for the check script. **Why**: Cross-platform support (especially Windows), type-safe,
 better error handling, and ability to build complex logic (parallel checks, dependency graph, colored output). Go is
@@ -259,12 +279,12 @@ should finish in ~10s so it actually gets used. The list is editorially curated,
 average is what matters, but cold-cache outliers (`cargo-audit` spiking to ~3 min on advisory DB refresh) would silently
 make the lane unreliable on the first run of the day. Mirrors the `IsSlow` / `CIOnly` field pattern (negative-sense
 boolean default, same colocated style). Mutually exclusive with `--include-slow` / `--only-slow` to keep the semantics
-unambiguous: "give me the fast lane" and "give me the slow lane" can't both be true. Named `--check` invocations bypass
-the filter (same escape hatch as `IsSlow` and `CIOnly`).
+unambiguous: "give me the fast lane" and "give me the slow lane" can't both be true. Named check invocations bypass the
+filter (same escape hatch as `IsSlow` and `CIOnly`).
 
 **Decision**: `CIOnly` field on `CheckDefinition` (mirrors `IsSlow` and `FreestyleIncompat`). **Why**: Keeps "this check
 runs only in CI" colocated with the check definition rather than as a hardcoded list elsewhere. `FilterCIOnlyChecks` in
-`registry.go` drops them outside `--ci`, with a `--check <name>` escape hatch so devs can verify locally before pushing.
+`registry.go` drops them outside `--ci`, with a named-check escape hatch so devs can verify locally before pushing.
 Orthogonal to `IsSlow`: `--include-slow` and `--only-slow` do NOT pull in CI-only checks (you'd otherwise lose the
 ability to run "all slow checks locally without the CI-only ones"). Negative-sense default (`false` = runs locally)
 matches the other gating fields.

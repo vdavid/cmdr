@@ -43,6 +43,25 @@ func TestValidateCheckNames_DetectsDuplicateNicknames(t *testing.T) {
 	}
 }
 
+func TestValidateCheckNames_RejectsReservedSelectorNames(t *testing.T) {
+	original := AllChecks
+	defer func() { AllChecks = original }()
+
+	AllChecks = []CheckDefinition{
+		{ID: "rust", DisplayName: "A", App: AppDesktop, Tech: "Test"},
+	}
+	if err := ValidateCheckNames("rust", "svelte"); err == nil {
+		t.Error("ValidateCheckNames() should reject a check ID that shadows a reserved selector keyword")
+	}
+
+	AllChecks = []CheckDefinition{
+		{ID: "check-a", Nickname: "svelte", DisplayName: "A", App: AppDesktop, Tech: "Test"},
+	}
+	if err := ValidateCheckNames("rust", "svelte"); err == nil {
+		t.Error("ValidateCheckNames() should reject a nickname that shadows a reserved selector keyword")
+	}
+}
+
 func TestCLIName(t *testing.T) {
 	tests := []struct {
 		name     string

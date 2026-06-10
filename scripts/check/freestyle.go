@@ -159,7 +159,8 @@ func filterFreestyleArgs(args []string) []string {
 // printSkippedChecksIfUnfiltered prints a skip message when no specific check filter is active.
 func printSkippedChecksIfUnfiltered(args []string) {
 	for _, a := range args {
-		if a == "--rust" || a == "--svelte" || a == "--go" || a == "--check" ||
+		if !strings.HasPrefix(a, "-") || // positional selector (check name, app, or tech group)
+			a == "--rust" || a == "--svelte" || a == "--go" || a == "--check" ||
 			a == "--rust-only" || a == "--svelte-only" || a == "--go-only" ||
 			strings.HasPrefix(a, "--app") {
 			return

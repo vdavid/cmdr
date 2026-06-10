@@ -106,9 +106,9 @@ shards: one MTP shard (serialized) plus two non-MTP shards split by `--shard X/2
 - `CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` (created with hardlinks from the shared cache).
 - `CMDR_E2E_MODE=1`, `CMDR_MOCK_FDA=granted`.
 
-Two concurrent `pnpm check --check desktop-e2e-playwright` runs from two worktrees never collide on data dir, ports,
-sockets, fixture roots, Keychain, or processes (the Dock label `Cmdr (E2E <kind>)` lets `pgrep -f 'Cmdr (E2E '` target
-only the right ones).
+Two concurrent `pnpm check desktop-e2e-playwright` runs from two worktrees never collide on data dir, ports, sockets,
+fixture roots, Keychain, or processes (the Dock label `Cmdr (E2E <kind>)` lets `pgrep -f 'Cmdr (E2E '` target only the
+right ones).
 
 The MTP shard always runs alone because the virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures/`) is shared by every
 Tauri instance (the virtual device is wired into the same path globally). Running MTP specs from two shards at once
@@ -212,7 +212,7 @@ of the per-resource derivation paths. Future regressions are caught by re-runnin
 ### Test 2: two parallel E2E runs from two worktrees
 
 1. Open two shells, each in a different worktree.
-2. In each shell: `pnpm check --check desktop-e2e-playwright`.
+2. In each shell: `pnpm check desktop-e2e-playwright`.
 3. Mid-run, in a third shell:
    - `ls /tmp/cmdr-e2e-fixtures-*` shows distinct `<instance>-<ts>` dirs for each shard from each run, plus one shared
      `/tmp/cmdr-e2e-fixtures-cache/`.

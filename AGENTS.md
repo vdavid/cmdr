@@ -105,9 +105,10 @@ Always use `pnpm check` (in repo root!) for compilation, linting, formatting, an
 script and keeps output concise and focused: no `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`,
 `cargo clippy`, `cargo fmt`, `cargo nextest run`, etc.
 
-- Specific checks: `pnpm check --check <name>` (e.g. `--check clippy`, `--check rustfmt`). Use `--help` for the full
-  list, or multiple `--check` flags.
-- All Rust/Svelte checks: `pnpm check --rust` or `--svelte`
+- Specific checks: name them positionally, space- or comma-separated (e.g. `pnpm check clippy rustfmt`, accepts IDs and
+  nicknames). Use `--help` for the full list. `--check <name>` still works as an alias.
+- Check groups, also positional: `pnpm check rust` / `svelte` / `go` (tech groups), `pnpm check desktop` / `website` /
+  `api-server` / `scripts` (apps). Flag forms (`--rust`, `--app website`) work too.
 - All checks: `pnpm check`
 
 ### When to run what
@@ -138,8 +139,8 @@ Three cadences. Pick the one that matches where you are in the work, not the one
 - **`oxfmt` must always run before you call a task done.** It's monorepo-wide (markdown, YAML, JSON, JS/TS across every
   app) and takes ~1 second, so there's no reason to skip it. It's registered under `AppOther`, which means `--rust` and
   `--svelte` do NOT include it. If you only ran those, CI will catch unformatted markdown / JSON / etc. that you missed.
-  Always finish with either `pnpm check` (the full suite) or at minimum `pnpm check --check oxfmt` after your other
-  checks. No exceptions.
+  Always finish with either `pnpm check` (the full suite) or at minimum `pnpm check oxfmt` after your other checks. No
+  exceptions.
 - Specific tests by name (the one exception where direct commands are fine):
   - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
   - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`

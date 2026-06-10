@@ -2,7 +2,7 @@ Rules for `scripts/check/checks/file-length-allowlist.json`:
 
 ✅ **Automated (no action needed)**: the check shrink-wraps the `files` section on local runs — it removes entries for
 files that no longer exist or shrank under the threshold, and ratchets entries down when the file has more than 10%
-slack. Don't do these edits by hand; just run `pnpm check --check file-length` and commit the rewrite.
+slack. Don't do these edits by hand; just run `pnpm check file-length` and commit the rewrite.
 
 ❌ **Never without explicit user consent**: adding a new entry (to `files` or `exempt`), raising an existing entry's
 number, or any other change that loosens the contract. The allowlist exists to track current file sizes; bumping it as a

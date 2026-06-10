@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"sort"
@@ -37,7 +39,7 @@ type cliFlags struct {
 	rustOnly        bool
 	svelteOnly      bool
 	goOnly          bool
-	appName         string
+	appNames        []string
 	checkNames      []string
 	ciMode          bool
 	verbose         bool
@@ -74,14 +76,23 @@ func main() {
 	}()
 
 	// Validate check configuration at startup to catch nickname collisions early
-	if err := checks.ValidateCheckNames(); err != nil {
+	if err := checks.ValidateCheckNames(reservedSelectorNames...); err != nil {
 		printError("Bad check configuration: %v", err)
 		os.Exit(1)
 	}
 
-	flags := parseFlags()
-	if flags == nil {
-		return // Help was shown
+	var cliArgs []string
+	if len(os.Args) > 1 {
+		cliArgs = os.Args[1:]
+	}
+	flags, err := parseFlags(cliArgs)
+	if errors.Is(err, flag.ErrHelp) {
+		showUsage()
+		return
+	}
+	if err != nil {
+		printError("%v", err)
+		os.Exit(1)
 	}
 
 	rootDir, err := findRootDir()
@@ -219,54 +230,64 @@ func handleFreestyleFlags(rootDir string, flags *cliFlags) bool {
 	return true
 }
 
-// parseFlags parses command-line flags and returns nil if help was shown.
-func parseFlags() *cliFlags {
+// reservedSelectorNames are the app and tech-group keywords accepted as
+// positional selectors (and by --app / the group flags). ValidateCheckNames
+// rejects any check ID/nickname that would shadow one, because positional
+// resolution tries check names first.
+var reservedSelectorNames = []string{"desktop", "website", "api-server", "scripts", "rust", "svelte", "go"}
+
+// parseFlags parses command-line flags and positional selectors (check
+// names, app names, and tech groups, in any order and mix; commas work too).
+// Returns flag.ErrHelp when help was requested.
+func parseFlags(args []string) (*cliFlags, error) {
+	fs := flag.NewFlagSet("pnpm check", flag.ContinueOnError)
+	fs.SetOutput(io.Discard) // Errors are returned, not printed; main owns the output
 	var (
-		rustOnly        = flag.Bool("rust", false, "Run only Rust checks")
-		rustOnly2       = flag.Bool("rust-only", false, "Run only Rust checks")
-		svelteOnly      = flag.Bool("svelte", false, "Run only Svelte/desktop checks")
-		svelteOnly2     = flag.Bool("svelte-only", false, "Run only Svelte/desktop checks")
-		goOnly          = flag.Bool("go", false, "Run only Go checks (scripts)")
-		goOnly2         = flag.Bool("go-only", false, "Run only Go checks (scripts)")
-		appName         = flag.String("app", "", "Run checks for a specific app (desktop, website, api-server, scripts)")
+		rustOnly        = fs.Bool("rust", false, "Run only Rust checks")
+		rustOnly2       = fs.Bool("rust-only", false, "Run only Rust checks")
+		svelteOnly      = fs.Bool("svelte", false, "Run only Svelte/desktop checks")
+		svelteOnly2     = fs.Bool("svelte-only", false, "Run only Svelte/desktop checks")
+		goOnly          = fs.Bool("go", false, "Run only Go checks (scripts)")
+		goOnly2         = fs.Bool("go-only", false, "Run only Go checks (scripts)")
+		appNames        stringSlice
 		checkNames      stringSlice
-		ciMode          = flag.Bool("ci", false, "Disable auto-fixing (for CI)")
-		verbose         = flag.Bool("verbose", false, "Show detailed output")
-		includeSlow     = flag.Bool("include-slow", false, "Include slow checks (excluded by default)")
-		onlySlow        = flag.Bool("only-slow", false, "Run only slow checks")
-		fast            = flag.Bool("fast", false, "Run only the curated fast pre-commit check set")
-		failFast        = flag.Bool("fail-fast", false, "Stop on first failure")
-		noLog           = flag.Bool("no-log", false, "Disable CSV stats logging")
-		onlyFreestyle   = flag.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
-		preferFreestyle = flag.Bool("prefer-freestyle", false, "Run freestyle-compatible checks on VM + the rest locally in parallel")
-		freestyleRemote = flag.Bool("freestyle-remote", false, "Filter to freestyle-compatible checks only (used internally on the VM)")
-		graph           = flag.Bool("graph", false, "Render the check dependency graph (with CPU weights + size lanes) and exit")
-		graphFormat     = flag.String("graph-format", "tree", "Graph output format: tree | mermaid | dot")
-		help            = flag.Bool("help", false, "Show help message")
-		h               = flag.Bool("h", false, "Show help message")
+		ciMode          = fs.Bool("ci", false, "Disable auto-fixing (for CI)")
+		verbose         = fs.Bool("verbose", false, "Show detailed output")
+		includeSlow     = fs.Bool("include-slow", false, "Include slow checks (excluded by default)")
+		onlySlow        = fs.Bool("only-slow", false, "Run only slow checks")
+		fast            = fs.Bool("fast", false, "Run only the curated fast pre-commit check set")
+		failFast        = fs.Bool("fail-fast", false, "Stop on first failure")
+		noLog           = fs.Bool("no-log", false, "Disable CSV stats logging")
+		onlyFreestyle   = fs.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
+		preferFreestyle = fs.Bool("prefer-freestyle", false, "Run freestyle-compatible checks on VM + the rest locally in parallel")
+		freestyleRemote = fs.Bool("freestyle-remote", false, "Filter to freestyle-compatible checks only (used internally on the VM)")
+		graph           = fs.Bool("graph", false, "Render the check dependency graph (with CPU weights + size lanes) and exit")
+		graphFormat     = fs.String("graph-format", "tree", "Graph output format: tree | mermaid | dot")
+		help            = fs.Bool("help", false, "Show help message")
+		h               = fs.Bool("h", false, "Show help message")
 	)
-	flag.Var(&checkNames, "check", "Run specific checks by ID (can be repeated or comma-separated)")
-	flag.Parse()
+	fs.Var(&appNames, "app", "Run checks for specific apps (repeatable or comma-separated)")
+	fs.Var(&checkNames, "check", "Run specific checks by ID (same as naming them positionally)")
 
+	positionals, err := parseInterspersed(fs, args)
+	if err != nil {
+		return nil, err
+	}
 	if *help || *h {
-		showUsage()
-		return nil
+		return nil, flag.ErrHelp
 	}
-
 	if *fast && (*includeSlow || *onlySlow) {
-		printError("--fast is mutually exclusive with --include-slow / --only-slow")
-		os.Exit(1)
+		return nil, errors.New("--fast is mutually exclusive with --include-slow / --only-slow")
 	}
 
-	return &cliFlags{
+	flags := &cliFlags{
 		rustOnly:        *rustOnly || *rustOnly2,
 		svelteOnly:      *svelteOnly || *svelteOnly2,
 		goOnly:          *goOnly || *goOnly2,
-		appName:         *appName,
+		appNames:        appNames,
 		checkNames:      checkNames,
 		ciMode:          *ciMode,
 		verbose:         *verbose,
-		includeSlow:     *includeSlow || *onlySlow || len(checkNames) > 0,
 		onlySlow:        *onlySlow,
 		fast:            *fast,
 		failFast:        *failFast,
@@ -277,12 +298,93 @@ func parseFlags() *cliFlags {
 		graph:           *graph,
 		graphFormat:     *graphFormat,
 	}
+
+	if err := applyPositionalSelectors(flags, positionals); err != nil {
+		return nil, err
+	}
+
+	// Named checks (positional or --check) run even when slow, same escape
+	// hatch as before; group/app selectors keep the default lanes.
+	flags.includeSlow = *includeSlow || *onlySlow || len(flags.checkNames) > 0
+
+	return flags, nil
+}
+
+// applyPositionalSelectors classifies each positional token (splitting on
+// commas) into the matching cliFlags fields.
+func applyPositionalSelectors(flags *cliFlags, positionals []string) error {
+	for _, token := range positionals {
+		for part := range strings.SplitSeq(token, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			if err := applySelector(flags, part); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// parseInterspersed parses flags and positional args in any order. Go's
+// stdlib flag stops at the first positional arg, so this re-parses the
+// remainder until everything is consumed.
+func parseInterspersed(fs *flag.FlagSet, args []string) ([]string, error) {
+	var positionals []string
+	for {
+		if err := fs.Parse(args); err != nil {
+			return nil, err
+		}
+		rest := fs.Args()
+		if len(rest) == 0 {
+			return positionals, nil
+		}
+		n := 0
+		for n < len(rest) && !strings.HasPrefix(rest[n], "-") {
+			n++
+		}
+		if n == 0 {
+			// Only reachable after a literal `--`: treat the rest as positional.
+			return append(positionals, rest...), nil
+		}
+		positionals = append(positionals, rest[:n]...)
+		if n == len(rest) {
+			return positionals, nil
+		}
+		args = rest[n:]
+	}
+}
+
+// applySelector classifies one positional selector. Check IDs/nicknames
+// behave like --check (named checks run even if slow or CI-only); app names
+// and tech-group keywords behave like --app / --rust / --svelte / --go
+// (default lanes apply). Keep the keywords here in sync with
+// reservedSelectorNames; a test guards the pairing.
+func applySelector(flags *cliFlags, name string) error {
+	if checks.GetCheckByID(name) != nil {
+		flags.checkNames = append(flags.checkNames, name)
+		return nil
+	}
+	switch strings.ToLower(name) {
+	case "desktop", "website", "api-server", "scripts":
+		flags.appNames = append(flags.appNames, strings.ToLower(name))
+	case "rust":
+		flags.rustOnly = true
+	case "svelte":
+		flags.svelteOnly = true
+	case "go":
+		flags.goOnly = true
+	default:
+		return fmt.Errorf("unknown check or group: %s\nRun 'pnpm check --help' to see available checks and groups", name)
+	}
+	return nil
 }
 
 // selectChecks determines which checks to run based on flags.
-// Flags are additive: --check clippy --svelte runs clippy plus all Svelte checks.
+// Selectors are additive: `pnpm check clippy svelte` runs clippy plus all Svelte checks.
 func selectChecks(flags *cliFlags) ([]checks.CheckDefinition, error) {
-	hasFilter := len(flags.checkNames) > 0 || flags.appName != "" || flags.rustOnly || flags.svelteOnly || flags.goOnly
+	hasFilter := len(flags.checkNames) > 0 || len(flags.appNames) > 0 || flags.rustOnly || flags.svelteOnly || flags.goOnly
 	if !hasFilter {
 		return checks.AllChecks, nil
 	}
@@ -305,8 +407,8 @@ func selectChecks(flags *cliFlags) ([]checks.CheckDefinition, error) {
 		}
 		addUnique(named)
 	}
-	if flags.appName != "" {
-		byApp, err := selectChecksByApp(flags.appName)
+	for _, appName := range flags.appNames {
+		byApp, err := selectChecksByApp(appName)
 		if err != nil {
 			return nil, err
 		}
@@ -383,7 +485,7 @@ func printFailure(failedChecks []string) {
 		if len(failedChecks) > 1 {
 			checkWord = "checks"
 		}
-		fmt.Printf("To rerun the failed %s: pnpm check --check %s\n", checkWord, strings.Join(failedChecks, ","))
+		fmt.Printf("To rerun the failed %s: pnpm check %s\n", checkWord, strings.Join(failedChecks, " "))
 	}
 }
 
@@ -421,16 +523,22 @@ func ensurePnpmDependencies(ctx *checks.CheckContext) error {
 
 // showUsage displays the help message with dynamically generated check list.
 func showUsage() {
-	fmt.Println("Usage: pnpm check [OPTIONS]")
+	fmt.Println("Usage: pnpm check [OPTIONS] [CHECK|GROUP ...]")
 	fmt.Println()
 	fmt.Println("Run code quality checks for the Cmdr project.")
 	fmt.Println()
+	fmt.Println("Name what to run as positional args, in any mix (flags can go anywhere):")
+	fmt.Println("    - Check IDs or nicknames (run even if slow/CI-only): oxfmt, clippy, website-build, ...")
+	fmt.Println("    - App names: desktop, website, api-server, scripts")
+	fmt.Println("    - Tech groups: rust, svelte, go")
+	fmt.Println("Comma-separated works too: pnpm check oxfmt,clippy")
+	fmt.Println()
 	fmt.Println("OPTIONS:")
-	fmt.Println("    --app NAME               Run checks for a specific app (desktop, website, api-server, scripts)")
+	fmt.Println("    --app NAME               Run checks for specific apps (repeatable or comma-separated)")
 	fmt.Println("    --rust, --rust-only      Run only Rust checks (desktop)")
 	fmt.Println("    --svelte, --svelte-only  Run only Svelte checks (desktop)")
 	fmt.Println("    --go, --go-only          Run only Go checks (scripts)")
-	fmt.Println("    --check ID               Run specific checks by ID (can be repeated or comma-separated)")
+	fmt.Println("    --check ID               Run specific checks by ID (same as naming them positionally)")
 	fmt.Println("    --ci                     Disable auto-fixing (for CI)")
 	fmt.Println("    --verbose                Show detailed output")
 	fmt.Println("    --include-slow           Include slow checks (excluded by default)")
@@ -440,17 +548,21 @@ func showUsage() {
 	fmt.Println("    --prefer-freestyle       Run compat checks on VM + the rest locally in parallel")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")
+	fmt.Println("    --graph                  Render the check dependency graph (weights + lanes) and exit")
+	fmt.Println("    --graph-format FORMAT    Graph output format: tree (default) | mermaid | dot")
 	fmt.Println("    -h, --help               Show this help message")
 	fmt.Println()
-	fmt.Println("If no options are provided, runs all non-slow checks for all apps.")
+	fmt.Println("If nothing is named, runs all non-slow checks for all apps.")
 	fmt.Println()
 	fmt.Println("EXAMPLES:")
-	fmt.Println("    pnpm check                              # Run all checks")
-	fmt.Println("    pnpm check --app desktop                # Run only desktop app checks")
-	fmt.Println("    pnpm check --check desktop-rust-clippy  # Run specific check")
-	fmt.Println("    pnpm check --include-slow               # Include slow checks")
-	fmt.Println("    pnpm check --fast                       # Pre-commit lane (fastest)")
-	fmt.Println("    pnpm check --ci --fail-fast             # CI mode, stop on first failure")
+	fmt.Println("    pnpm check                       # Run all checks")
+	fmt.Println("    pnpm check oxfmt                 # Run one check")
+	fmt.Println("    pnpm check clippy rustfmt        # Run several checks")
+	fmt.Println("    pnpm check rust                  # Run the Rust group")
+	fmt.Println("    pnpm check website --verbose     # Run website checks with detailed output")
+	fmt.Println("    pnpm check --include-slow        # Include slow checks")
+	fmt.Println("    pnpm check --fast                # Pre-commit lane (fastest)")
+	fmt.Println("    pnpm check --ci --fail-fast      # CI mode, stop on first failure")
 	fmt.Println()
 	fmt.Println("Available checks:")
 	fmt.Println()

@@ -262,8 +262,8 @@ E2E test hooks split along two axes:
 
 - After adding a substantial chunk of new code: run `cargo mutants --file <new_file>` (Rust) or `pnpm exec stryker run`
   (TS) on the file to see if the new tests actually assert anything. Triage survivors.
-- After E2E suite changes: run `pnpm check --check desktop-e2e-playwright` twice back-to-back. The first run warms the
-  cache; the second run catches regressions that only fire under quiet load. Both must be green.
+- After E2E suite changes: run `pnpm check desktop-e2e-playwright` twice back-to-back. The first run warms the cache;
+  the second run catches regressions that only fire under quiet load. Both must be green.
 - See [maintenance.md § Codebase health](maintenance.md#codebase-health) for the periodic mutation + flake-rate checks.
 
 ## Quick links

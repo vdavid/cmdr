@@ -24,14 +24,14 @@ CLI flags, freestyle.sh remote execution), see [`../CLAUDE.md`](../CLAUDE.md).
 
 ```go
 CheckDefinition{
-    ID:                "desktop-svelte-eslint", // unique, always accepted by --check
-    Nickname:          "",                      // short alias, also accepted by --check (optional)
+    ID:                "desktop-svelte-eslint", // unique, always accepted as a CLI selector
+    Nickname:          "",                      // short alias, also accepted as a selector (optional)
     DisplayName:       "eslint",                // shown in output
     App:               AppDesktop,
     Tech:              "🎨 Svelte",
     IsSlow:            false,
     IsFast:            false, // true = included in --fast (curated pre-commit lane)
-    CIOnly:            false, // true = run only in --ci mode (or explicit --check)
+    CIOnly:            false, // true = run only in --ci mode (or when named explicitly)
     FreestyleIncompat: true,  // can NOT run on freestyle.sh VMs (Rust, Docker)
     CpuWeight:         2,      // avg cores busy; 0/unset = 1. Governs concurrent admission.
     DependsOn:         []string{"desktop-svelte-prettier"},
@@ -41,15 +41,16 @@ CheckDefinition{
 
 ### Field semantics
 
-- **`ID`** is the canonical name (`--check <id>` always works).
-- **`Nickname`** is an optional short alias also accepted by `--check`. `CLIName()` returns nickname if set, else ID.
-  `ValidateCheckNames()` runs at startup and fatals on any ID/nickname collision.
-- **`IsSlow: true`** excludes the check from the default run; included by `--include-slow`/`--only-slow` or a named
-  `--check`. Use for E2E suites, full eslint with type-aware rules, etc.
+- **`ID`** is the canonical name (`pnpm check <id>` always works; `--check <id>` is an alias).
+- **`Nickname`** is an optional short alias, accepted everywhere the ID is. `CLIName()` returns nickname if set, else
+  ID. `ValidateCheckNames()` runs at startup and fatals on any ID/nickname collision, including collisions with the
+  reserved positional group/app keywords (`desktop`, `website`, `api-server`, `scripts`, `rust`, `svelte`, `go`).
+- **`IsSlow: true`** excludes the check from the default run; included by `--include-slow`/`--only-slow` or by naming
+  the check. Use for E2E suites, full eslint with type-aware rules, etc.
 - **`IsFast: true`** opts the check into the curated `--fast` pre-commit lane. The lane is editorially picked, not
   derived from timings — only check this if the check is genuinely cheap on a warm cache _and_ unlikely to spike on a
   cold one.
-- **`CIOnly: true`** runs the check only under `--ci` (or an explicit `--check`). Useful for the slow-but-authoritative
+- **`CIOnly: true`** runs the check only under `--ci` (or when named explicitly). Useful for the slow-but-authoritative
   variant of a check whose fast local variant lives elsewhere (e.g. `cargo-udeps` paired with `cargo-machete`).
 - **`FreestyleIncompat: true`** opts out of freestyle.sh remote VM runs. Set for any Rust-compiling check or anything
   that needs Docker. Negative-sense default (`false` = compatible) keeps the field absent in the common case.
@@ -80,8 +81,8 @@ CheckDefinition{
 6. **Wire it into CI**: add a workflow step in `.github/workflows/ci.yml` (or `slow-checks.yml` for slow/weekly checks),
    or set a `NotInCI` reason on the definition. The `ci-coverage` check fails the suite until you do one or the other —
    there's no third option of "registered but runs nowhere".
-7. Run `pnpm check --check go-vet --check staticcheck` to verify (staticcheck is strict about idiomatic Go).
-8. Update the "Apps and check counts" table below and `AGENTS.md`'s `--check` list.
+7. Run `pnpm check go-vet staticcheck` to verify (staticcheck is strict about idiomatic Go).
+8. Update the "Apps and check counts" table below and `AGENTS.md`'s fast-lane coverage list (if the check is `IsFast`).
 
 ### Return values
 

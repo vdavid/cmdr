@@ -52,7 +52,7 @@ later).
 go run ./scripts/check-btn-restyle
 
 # Via check runner
-pnpm check --check btn-restyle
+pnpm check btn-restyle
 
 # Verbose (list allowlisted rules)
 go run ./scripts/check-btn-restyle -- --verbose
