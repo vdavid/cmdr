@@ -264,9 +264,9 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         PIN_TAB_MENU_ID => Some(("tab.togglePin", CommandScope::FileScoped)),
         CLOSE_OTHER_TABS_ID => Some(("tab.closeOthers", CommandScope::FileScoped)),
 
-        // Clipboard operations: cut/copy/paste are handled specially in on_menu_event
-        // (native responder chain for non-main windows, execute-command for main window).
-        // They're still listed here for command_id_to_menu_id reverse lookups.
+        // Edit actions: cut/copy/paste (and select_all_files below) are handled specially in
+        // on_menu_event (native responder chain for non-main windows, execute-command for the
+        // main window). They're still listed here for command_id_to_menu_id reverse lookups.
         EDIT_CUT_ID => Some(("edit.cut", CommandScope::App)),
         EDIT_COPY_ID => Some(("edit.copy", CommandScope::App)),
         EDIT_PASTE_ID => Some(("edit.paste", CommandScope::App)),
@@ -288,6 +288,8 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         COPY_FILENAME_ID => Some(("file.copyFilename", CommandScope::FileScoped)),
         GET_INFO_ID => Some(("file.getInfo", CommandScope::FileScoped)),
         QUICK_LOOK_ID => Some(("file.quickLook", CommandScope::FileScoped)),
+        // Intercepted by on_menu_event before this lookup (like cut/copy/paste): main window →
+        // execute-command, non-main → native selectAll: so ⌘A still works in text fields there.
         SELECT_ALL_ID => Some(("selection.selectAll", CommandScope::FileScoped)),
         DESELECT_ALL_ID => Some(("selection.deselectAll", CommandScope::FileScoped)),
         SELECT_FILES_ID => Some(("selection.selectFiles", CommandScope::FileScoped)),

@@ -224,21 +224,26 @@ distinction is the load-bearing reason.
   defaults that added unwanted items.
 - **Tab as accelerator**: Switch pane uses Tab, which could conflict with menu bar accessibility
   navigation. If issues arise, omit the accelerator and rely on JS dispatch.
-- **Custom MenuItems for Cut/Copy/Paste**: The Edit menu uses custom MenuItems (not
-  PredefinedMenuItems) for Cut, Copy, Paste, and Move here. In `handle_menu_event`, these are handled
-  specially: if the main window is focused, they route through `execute-command` so the frontend can
-  decide between file clipboard and text clipboard (via `document.activeElement` check). If a
-  non-main window is focused (viewer, settings), `send_native_clipboard_action()` in `menu_handlers.rs` sends
-  the native `copy:`/`cut:`/`paste:` selector through the responder chain via
+- **Custom MenuItems for Cut/Copy/Paste/Select all**: The Edit menu uses custom MenuItems (not
+  PredefinedMenuItems) for Cut, Copy, Paste, and Move here; the Select menu does the same for
+  Select all. In `handle_menu_event`, these are handled specially: if the main window is focused,
+  they route through `execute-command` so the frontend can decide between file and text semantics
+  (via `document.activeElement` check). If a non-main window is focused (viewer, settings),
+  `send_native_edit_action()` in `menu_handlers.rs` sends the native
+  `copy:`/`cut:`/`paste:`/`selectAll:` selector through the responder chain via
   `NSApplication.sendAction:to:from:`, replicating what PredefinedMenuItems do internally. This
-  ensures text clipboard works natively in all windows. Undo and Redo remain PredefinedMenuItems
-  since they only apply to text fields.
+  ensures text clipboard and text select-all work natively in all windows. Undo and Redo remain
+  PredefinedMenuItems since they only apply to text fields.
 - **⌘A dual routing**: "Select all" uses ⌘A as a native menu accelerator (so it's visible in the
   Select menu — see § "Decision: Select all and Deselect all live in the new Select top-level menu"
-  above). Since macOS intercepts it before the webview,
-  the frontend's `handleCommandExecute` checks `document.activeElement`: if it's an input/textarea, it calls `.select()`
-  for text selection; otherwise it selects files. This avoids PredefinedMenuItem::select_all which would conflict with
-  the custom MenuItem.
+  above). Since macOS intercepts it before the webview, the keystroke must be re-routed per focus:
+  main window → `execute-command`, where the frontend's `handleCommandExecute` checks
+  `document.activeElement` (input/textarea → `.select()` for text, otherwise select files);
+  non-main window → native `selectAll:` via `send_native_edit_action()` (without this branch ⌘A is
+  dead in settings text fields — the `FileScoped` focus guard would silently drop it). This avoids
+  PredefinedMenuItem::select_all which would conflict with the custom MenuItem. Deselect all (⌘⇧A)
+  stays on the plain `FileScoped` path: AppKit has no standard "deselect all" responder action for
+  text fields, so there's nothing native to forward to.
 - **Pin tab label**: `pin_tab` in MenuState is updated dynamically by the frontend to show
   "Pin tab" or "Unpin tab" based on the active tab's state.
 - **Reopen closed tab item**: The Tab submenu includes "Reopen closed tab" (⌘⇧T on macOS) between

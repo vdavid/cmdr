@@ -19,10 +19,10 @@ use super::menu_items::{brief_view_label, full_view_label};
 use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, MenuItemEntry, MenuSort,
     MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID,
-    SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
-    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
-    TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
-    VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
+    SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
+    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID,
+    TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID,
+    VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -297,13 +297,13 @@ pub fn update_menu_item_accelerator<R: Runtime>(
     Ok(())
 }
 
-/// Sends a native clipboard action (copy:/cut:/paste:) through the responder chain.
+/// Sends a native edit action (copy:/cut:/paste:/selectAll:) through the responder chain.
 ///
-/// Used when a non-main window is focused: the custom Edit menu items can't use the native
-/// responder chain like PredefinedMenuItems do, so we replicate it manually via
+/// Used when a non-main window is focused: the custom Edit/Select menu items can't use the
+/// native responder chain like PredefinedMenuItems do, so we replicate it manually via
 /// `NSApplication.sendAction:to:from:` with nil target (routes to the first responder).
 #[cfg(target_os = "macos")]
-fn send_native_clipboard_action(menu_id: &str) {
+fn send_native_edit_action(menu_id: &str) {
     use objc2::sel;
     use objc2_app_kit::NSApplication;
 
@@ -311,10 +311,11 @@ fn send_native_clipboard_action(menu_id: &str) {
         EDIT_CUT_ID => sel!(cut:),
         EDIT_COPY_ID => sel!(copy:),
         EDIT_PASTE_ID => sel!(paste:),
+        SELECT_ALL_ID => sel!(selectAll:),
         _ => return,
     };
 
-    let mtm = objc2::MainThreadMarker::new().expect("send_native_clipboard_action must be called from the main thread");
+    let mtm = objc2::MainThreadMarker::new().expect("send_native_edit_action must be called from the main thread");
     let ns_app = NSApplication::sharedApplication(mtm);
 
     // sendAction:to:from: with nil `to` sends to the first responder, exactly like
@@ -503,12 +504,14 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
-    // === Clipboard exception: file clipboard in main window, native text clipboard elsewhere ===
-    // Custom MenuItems for Cut/Copy/Paste route through execute-command in the main window
-    // so the frontend can decide between file and text clipboard. In non-main windows
-    // (viewer, settings), we send the native action through the responder chain so
-    // WKWebView handles text clipboard natively, just like PredefinedMenuItems would.
-    if id == EDIT_CUT_ID || id == EDIT_COPY_ID || id == EDIT_PASTE_ID {
+    // === Edit-action exception: file semantics in main window, native text semantics elsewhere ===
+    // Custom MenuItems for Cut/Copy/Paste/Select all route through execute-command in the main
+    // window so the frontend can decide between file and text semantics. In non-main windows
+    // (viewer, settings), we send the native action through the responder chain so WKWebView
+    // handles text clipboard / text select-all natively, just like PredefinedMenuItems would.
+    // Without the Select-all branch, ⌘A is dead in settings text fields: the accelerator fires
+    // before the webview ever sees the key, and the FileScoped focus guard would drop it.
+    if id == EDIT_CUT_ID || id == EDIT_COPY_ID || id == EDIT_PASTE_ID || id == SELECT_ALL_ID {
         let main_focused = app
             .get_webview_window("main")
             .is_some_and(|w| w.is_focused().unwrap_or(false));
@@ -516,7 +519,8 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             let command_id = match id {
                 EDIT_CUT_ID => "edit.cut",
                 EDIT_COPY_ID => "edit.copy",
-                _ => "edit.paste",
+                EDIT_PASTE_ID => "edit.paste",
+                _ => "selection.selectAll",
             };
             use tauri_specta::Event as _;
             let _ = crate::window_events::ExecuteCommand {
@@ -524,9 +528,9 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             }
             .emit_to(app, "main");
         } else {
-            // Send native clipboard action to the first responder chain
+            // Send the native action to the first responder chain
             #[cfg(target_os = "macos")]
-            send_native_clipboard_action(id);
+            send_native_edit_action(id);
         }
         return;
     }
