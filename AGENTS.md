@@ -15,7 +15,7 @@ Downloadable at [the website](https://getcmdr.com).
 
 These are general principles for the whole project. These are not just empty sentences on our wall, we live these:
 
-### Top 5:
+### Top 6:
 
 1. **Deliver delightful UX.** We always go the extra mile to make it absolutely delightful to use our software. Not just
    functional, but noticeably pleasant. Thoughtful phrasing. Accessible focus indicators. Putting real effort in
@@ -31,6 +31,9 @@ These are general principles for the whole project. These are not just empty sen
 4. **Protect the user's data.** Use safe overwrite patterns like temp+rename. Offer rollback for destructive operations.
    Use atomic ops where possible. Design for the crash mid-operation. Test the shit out of the parts that write data.
 5. **Be respectful to the user's resources.** Minimize CPU use, memory use, don't thrash the disks.
+6. **Humans to humans.** It's okay to use AI to build the _internals_ of the app, which is the code. But everything that
+   meets human eyes (any UI component, layout, articles, copy, microcopy, images, anims, human-targeted docs) should be
+   made or closely reviewed and edited by a human.
 
 ### Technicals:
 

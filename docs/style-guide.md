@@ -64,6 +64,13 @@ Writing, code, and design styles.
   - **Give examples in placeholder text**: Use "Example: 2025-01-01" or "name@example.com" rather than an instruction
     like "Enter your email".
   - **Never write "something(s)"**: Always pluralize dynamically: "1 user" instead of "1 user(s)".
+- Voice
+  - **The website speaks product-first: no "I", no "we"**: On getcmdr.com, write "Cmdr indexes your drive" and "your
+    feedback shapes what's next", never "we built" or "I'm improving". "We" overstates a one-person project; "I"
+    overemphasizes that it's one person. Exceptions: FAQ questions and testimonials speak as the user ("Can I use
+    it…?"), blog posts are signed personal writing, and legal pages keep the conventional "we".
+  - **The app may speak as David where it's deliberately personal**: the onboarding beta step and the About window sign
+    their copy ("Hi, I'm David!"). That's intentional warmth, not a violation of the website rule.
 - Specific terms
   - **Folder vs directory**: We know these mean the same. We allow both. Use whichever feels better in each situation.
     Like, on the backend, listing "folders" with `readdir` feels wrong, but also, "folder" comes more natural on the
