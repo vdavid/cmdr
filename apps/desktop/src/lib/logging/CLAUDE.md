@@ -60,7 +60,8 @@ getAppLogger('feature')
   `RUST_LOG=FE:viewer=debug,info` works. See `docs/tooling/logging.md` for the full cheat sheet.
 - **Dedup suffix**: Consecutive identical messages get ` (xN, deduplicated)` appended.
 - **Throttle warning**: When >200 FE logs/s, excess is dropped and a warning is emitted: "Excessive frontend logging
-  detected". This protects against infinite loops flooding the IPC.
+  detected", including the top three dropped-from categories (for example `top: fileExplorer ×30, search ×10`) so the
+  offending feature is identifiable from the log alone. This protects against infinite loops flooding the IPC.
 - **`beforeunload` flush**: The bridge flushes remaining logs on page unload, but this is best-effort (async).
 - **`debugCategories` only affects the console sink**: The tauriBridge sink always sends debug+ to Rust in dev mode, so
   `RUST_LOG=FE:fileExplorer=debug,info` works without touching `debugCategories`. `debugCategories` controls which

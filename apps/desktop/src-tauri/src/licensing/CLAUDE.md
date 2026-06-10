@@ -101,6 +101,16 @@ Legacy `activate_license`/`activate_license_async` wrappers still exist for back
 **Decision**: `VerifyResult` is a separate struct from `LicenseInfo`.
 **Why**: `VerifyResult` carries `full_key` (needed to call `commit_license` later) and `short_code`. These fields shouldn't leak to the frontend via `get_license_info`; they're only meaningful during the activation flow. Keeping them separate means `LicenseInfo` stays clean for its primary use case (displaying license details).
 
+**Decision**: `validate_license_async` is single-flight with a failure cooldown.
+**Why**: Concurrent validation triggers (multiple windows or repeated frontend calls at startup) used to stampede the
+server with identical requests and spam the log with one network-error warn per call. A static `tokio::sync::Mutex`
+serializes validations; after acquiring it, a periodic revalidation (`transaction_id == None`) short-circuits when
+another caller just validated successfully (`!needs_validation`) or when the last attempt failed less than 60 seconds
+ago (`LAST_FAILED_VALIDATION_AT`). Explicit activation (`transaction_id == Some`) always goes through: the user is
+actively waiting, and the cooldown must not block a retry after a transient failure. The network-error log lives in
+`validation_client.rs` only (info in debug builds where `localhost:8787` is usually down, warn in release);
+`validate_license_async` doesn't log it a second time.
+
 **Decision**: `validate_license_async` accepts an optional `transaction_id` parameter.
 **Why**: During activation, the key isn't stored yet, so the function can't read the transaction ID from the store. The frontend passes it explicitly. For periodic re-validation (7-day cycle), the parameter is `None` and the function falls back to reading from the stored license. This avoids storing the key just to read the transaction ID back.
 

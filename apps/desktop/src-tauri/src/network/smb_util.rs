@@ -16,6 +16,19 @@ pub fn is_auth_error(err: &smb2::Error) -> bool {
 /// Classifies an smb2 error into a ShareListError.
 pub fn classify_error(err: &smb2::Error) -> ShareListError {
     let message = err.to_string();
+    // A refused/unreachable TCP connect means the server is offline, not that its RPC is
+    // incompatible: classify as HostUnreachable so callers don't fall back to
+    // smbutil/smbclient against the same dead port. Other Io kinds (a transport hiccup
+    // mid-session) keep falling through to ProtocolError below.
+    if let smb2::Error::Io(io_err) = err
+        && matches!(
+            io_err.kind(),
+            std::io::ErrorKind::ConnectionRefused
+                | std::io::ErrorKind::HostUnreachable
+                | std::io::ErrorKind::NetworkUnreachable
+        ) {
+            return ShareListError::HostUnreachable { message };
+        }
     match err.kind() {
         ErrorKind::AuthRequired => ShareListError::AuthRequired { message },
         ErrorKind::AccessDenied => ShareListError::AuthFailed { message },
@@ -100,6 +113,30 @@ mod tests {
         match classify_authenticated_error(&smb2::Error::Timeout) {
             ShareListError::Timeout { .. } => {}
             e => panic!("Expected Timeout, got {:?}", e),
+        }
+    }
+
+    /// A refused/unreachable TCP connect means the server is offline, not that its RPC is
+    /// incompatible. Pre-fix this classified as ProtocolError, which (a) triggered a
+    /// smbutil/smbclient fallback against the same dead port and (b) logged a warn for the
+    /// routine case of a known server being offline.
+    #[test]
+    fn test_classify_error_connection_refused_is_host_unreachable() {
+        for io_kind in [
+            std::io::ErrorKind::ConnectionRefused,
+            std::io::ErrorKind::HostUnreachable,
+            std::io::ErrorKind::NetworkUnreachable,
+        ] {
+            match classify_error(&smb2::Error::Io(std::io::Error::from(io_kind))) {
+                ShareListError::HostUnreachable { .. } => {}
+                e => panic!("Expected HostUnreachable for {io_kind:?}, got {:?}", e),
+            }
+        }
+
+        // Other Io errors stay ProtocolError (transport hiccup mid-session, not an offline host).
+        match classify_error(&smb2::Error::Io(std::io::Error::from(std::io::ErrorKind::BrokenPipe))) {
+            ShareListError::ProtocolError { .. } => {}
+            e => panic!("Expected ProtocolError for BrokenPipe, got {:?}", e),
         }
     }
 

@@ -162,7 +162,13 @@ pub async fn validate_with_server(transaction_id: &str) -> ValidationOutcome {
     {
         Ok(r) => r,
         Err(e) => {
-            log::warn!("License validation network error: {}", e);
+            // In debug builds the server is localhost:8787, which usually isn't running, so an
+            // unreachable server is the normal dev state: info there, warn in release.
+            if cfg!(debug_assertions) {
+                log::info!("License validation network error: {}", e);
+            } else {
+                log::warn!("License validation network error: {}", e);
+            }
             return ValidationOutcome::NetworkError;
         }
     };

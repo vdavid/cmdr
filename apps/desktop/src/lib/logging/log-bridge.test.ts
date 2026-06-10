@@ -110,6 +110,32 @@ describe('log-bridge', () => {
     expect(warningEntry?.message).toContain('entries dropped in the last second')
   })
 
+  it('throttle warning names the categories that dominated the dropped entries', async () => {
+    const sink = getTauriBridgeSink()
+
+    // Fill the per-second budget with one category, then overflow with two others.
+    for (let i = 0; i < 200; i++) {
+      sink(makeRecord({ category: ['app', 'filler'], message: [`msg ${String(i)}`] }))
+    }
+    for (let i = 0; i < 30; i++) {
+      sink(makeRecord({ category: ['app', 'fileExplorer'], message: [`dropped a ${String(i)}`] }))
+    }
+    for (let i = 0; i < 10; i++) {
+      sink(makeRecord({ category: ['app', 'search'], message: [`dropped b ${String(i)}`] }))
+    }
+
+    await vi.advanceTimersByTimeAsync(100)
+
+    const callArgs = vi.mocked(invoke).mock.calls[0] as [
+      string,
+      { entries: { level: string; category: string; message: string }[] },
+    ]
+    const warningEntry = callArgs[1].entries.find((e) => e.category === 'log-bridge')
+    expect(warningEntry?.message).toContain('40 entries dropped')
+    expect(warningEntry?.message).toContain('fileExplorer ×30')
+    expect(warningEntry?.message).toContain('search ×10')
+  })
+
   it('sends nothing when buffer is empty', async () => {
     await vi.advanceTimersByTimeAsync(200)
     expect(invoke).not.toHaveBeenCalled()

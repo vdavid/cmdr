@@ -9,11 +9,22 @@
 use crate::licensing::redact_email;
 use crate::licensing::verification::{LicenseInfo, get_license_info};
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri_plugin_store::StoreExt;
 
 /// How often to re-validate license (7 days in seconds).
 const VALIDATION_INTERVAL_SECS: u64 = 7 * 24 * 60 * 60;
+
+/// Don't re-attempt a failed periodic revalidation more often than this (seconds).
+const FAILED_VALIDATION_RETRY_COOLDOWN_SECS: u64 = 60;
+
+/// Serializes server validations so a burst of concurrent triggers coalesces into one request
+/// instead of a stampede of identical ones.
+static VALIDATION_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+/// Unix timestamp of the last failed validation attempt (0 = never failed).
+static LAST_FAILED_VALIDATION_AT: AtomicU64 = AtomicU64::new(0);
 
 /// Grace period for offline use (30 days in seconds).
 const OFFLINE_GRACE_PERIOD_SECS: u64 = 30 * 24 * 60 * 60;
@@ -158,11 +169,31 @@ pub async fn validate_license_async(app: &tauri::AppHandle, transaction_id: Opti
         },
     };
 
+    // Single-flight: hold the lock across the server call so concurrent triggers (multiple
+    // windows firing validation at startup) coalesce instead of stampeding the server.
+    let _guard = VALIDATION_LOCK.lock().await;
+
+    // Periodic revalidation (no explicit transaction ID) can short-circuit; explicit activation
+    // always goes through.
+    if transaction_id.is_none() {
+        if !needs_validation(app) {
+            // Another caller validated successfully while we waited for the lock.
+            return Ok(get_app_status(app));
+        }
+        if failed_validation_recently(LAST_FAILED_VALIDATION_AT.load(Ordering::Relaxed), current_timestamp()) {
+            log::debug!(
+                "Skipping license revalidation: last attempt failed under {FAILED_VALIDATION_RETRY_COOLDOWN_SECS}s ago"
+            );
+            return Err("Couldn't reach the license server".to_string());
+        }
+    }
+
     // Call the license server
     let outcome = crate::licensing::validation_client::validate_with_server(&resolved_transaction_id).await;
 
     match outcome {
         ValidationOutcome::Success(resp) => {
+            LAST_FAILED_VALIDATION_AT.store(0, Ordering::Relaxed);
             // Convert response to LicenseType
             let license_type = resp.license_type.as_deref().and_then(string_to_license_type);
 
@@ -179,14 +210,21 @@ pub async fn validate_license_async(app: &tauri::AppHandle, transaction_id: Opti
             Ok(response_to_app_status(app, &resp))
         }
         ValidationOutcome::UpstreamError => {
+            LAST_FAILED_VALIDATION_AT.store(current_timestamp(), Ordering::Relaxed);
             log::warn!("License server couldn't reach Paddle");
             Err("License server couldn't reach payment provider".to_string())
         }
         ValidationOutcome::NetworkError => {
-            log::warn!("License validation network error");
+            // validation_client already logged the error with detail; don't log it twice.
+            LAST_FAILED_VALIDATION_AT.store(current_timestamp(), Ordering::Relaxed);
             Err("Couldn't reach the license server".to_string())
         }
     }
+}
+
+/// True when a validation attempt failed less than the cooldown ago.
+fn failed_validation_recently(last_failed_at: u64, now: u64) -> bool {
+    last_failed_at != 0 && now.saturating_sub(last_failed_at) < FAILED_VALIDATION_RETRY_COOLDOWN_SECS
 }
 
 /// Convert validation response to AppStatus.
@@ -608,6 +646,24 @@ mod tests {
         assert_eq!(deserialized.organization_name, Some("Test Inc".to_string()));
         assert_eq!(deserialized.expires_at, Some("2027-06-15".to_string()));
         assert_eq!(deserialized.cached_at, 1704067200);
+    }
+
+    #[test]
+    fn test_failed_validation_recently() {
+        // Never failed
+        assert!(!failed_validation_recently(0, 1_000_000));
+        // Failed just now
+        assert!(failed_validation_recently(1_000_000, 1_000_000));
+        // Failed inside the cooldown window
+        assert!(failed_validation_recently(
+            1_000_000,
+            1_000_000 + FAILED_VALIDATION_RETRY_COOLDOWN_SECS - 1
+        ));
+        // Failed exactly at the cooldown boundary: retry allowed
+        assert!(!failed_validation_recently(
+            1_000_000,
+            1_000_000 + FAILED_VALIDATION_RETRY_COOLDOWN_SECS
+        ));
     }
 
     #[test]

@@ -26,6 +26,7 @@ let entriesThisSecond = 0
 let throttleResetTimer: ReturnType<typeof setInterval> | null = null
 let throttleWarningEmitted = false
 let droppedCount = 0
+const droppedCategoryToCountMap = new Map<string, number>()
 
 function formatMessage(record: LogRecord): string {
   // LogTape message is an array of interleaved template parts and values,
@@ -50,6 +51,7 @@ function addEntry(level: FrontendLogEntry['level'], category: string, message: s
   // Check throttle
   if (entriesThisSecond >= MAX_ENTRIES_PER_SECOND) {
     droppedCount++
+    droppedCategoryToCountMap.set(category, (droppedCategoryToCountMap.get(category) ?? 0) + 1)
     if (!throttleWarningEmitted) {
       throttleWarningEmitted = true
       // Schedule the warning to be sent at the next flush
@@ -90,14 +92,21 @@ async function flush(): Promise<void> {
   const entries = pendingEntries
   pendingEntries = []
 
-  // Update the throttle warning with the actual dropped count
+  // Update the throttle warning with the actual dropped count and the categories that
+  // dominated, so the offending feature is identifiable without reproducing the burst.
   if (droppedCount > 0) {
     const warningIdx = entries.findIndex((e) => e.category === 'log-bridge' && e.level === 'warn')
     if (warningIdx >= 0) {
+      const topCategories = [...droppedCategoryToCountMap.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([category, count]) => `${category} ×${String(count)}`)
+        .join(', ')
       entries[warningIdx].message =
-        `Excessive frontend logging detected: ${String(droppedCount)} entries dropped in the last second. This may indicate a bug (infinite loop, runaway effect).`
+        `Excessive frontend logging detected: ${String(droppedCount)} entries dropped in the last second (top: ${topCategories}). This may indicate a bug (infinite loop, runaway effect).`
     }
     droppedCount = 0
+    droppedCategoryToCountMap.clear()
     throttleWarningEmitted = false
   }
 
@@ -151,5 +160,6 @@ export function stopBridge(): void {
   pendingEntries = []
   entriesThisSecond = 0
   droppedCount = 0
+  droppedCategoryToCountMap.clear()
   throttleWarningEmitted = false
 }

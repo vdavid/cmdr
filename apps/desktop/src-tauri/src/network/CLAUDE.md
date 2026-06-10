@@ -132,7 +132,7 @@ available. If IP unavailable, use derived hostname with `.local` stripped.
 
 ### smbutil / smbclient fallback
 
-`smb2` crate may fail on older Samba servers with RPC incompatibility. Classify error as `ProtocolError`, then try a platform-specific CLI fallback:
+`smb2` crate may fail on older Samba servers with RPC incompatibility. Classify error as `ProtocolError`, then try a platform-specific CLI fallback. A refused/unreachable TCP connect is NOT a protocol error: `classify_error` (in `smb_util.rs`) maps `smb2::Error::Io` with `ConnectionRefused` / `HostUnreachable` / `NetworkUnreachable` io kinds to `ShareListError::HostUnreachable`, so an offline server skips the fallback (the same dead port refuses any client) and doesn't log the fallback warn. The fallback paths:
 - **macOS:** `smbutil view -G -N` (guest) or `smbutil view -N` (Keychain-backed; smbutil reads the system Keychain itself). **No authenticated smbutil fallback** — see the credential-channel note below.
 - **Linux:** `smbclient -L` (from `samba-client` package), guest or authenticated. If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
 - **Other platforms:** stubs return `ProtocolError`.
