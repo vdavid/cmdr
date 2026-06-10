@@ -7,6 +7,9 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+Cmdr is now an open beta: stability badges, a Send feedback channel, and anonymous usage stats you can opt out of. SMB
+sign-in got smoother, and keyboard shortcut customization got a deep round of fixes.
+
 ### Added
 
 - Mark Cmdr as an open beta in onboarding and the About window, with a personal intro from David
@@ -120,6 +123,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [0.24.0] - 2026-06-06
 
+Go to path (⌘G) lands, folders merge on copy and move, and same-volume moves are instant.
+
 ### Added
 
 - Go to path (⌘G): jump anywhere by typing or pasting a path, with `~` expansion, recent paths on digit keys, clipboard
@@ -194,6 +199,9 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   ([293853b0](https://github.com/vdavid/cmdr/commit/293853b0))
 
 ## [0.23.0] - 2026-06-01
+
+A guided onboarding wizard, a Downloads watcher with a jump-to-latest shortcut, and AI-powered file selection. Under the
+hood, copy and move became durable and crash-safe.
 
 ### Added
 
@@ -314,28 +322,33 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ## [0.22.0] - 2026-05-23
 
+The Search dialog got a full redesign, and the file viewer learned text selection and copy.
+
 ### Added
 
-- Redesign Search dialog: re-thought UX, better filters, recent-searches history, persistent state across close+reopen,
-  "Show all in main window", per-row context menu, clickable path pills, source-side copy/move/delete from snapshots
+- Redesign Search around one unified bar with mode chips for AI, filename, and regex, each remembering its own typed
+  query, and keep the dialog's state when you close and reopen it
   ([62aef440](https://github.com/vdavid/cmdr/commit/62aef440),
   [ac4c6340](https://github.com/vdavid/cmdr/commit/ac4c6340),
   [b9ca1e6f](https://github.com/vdavid/cmdr/commit/b9ca1e6f),
-  [2c10bba7](https://github.com/vdavid/cmdr/commit/2c10bba7),
-  [807e456e](https://github.com/vdavid/cmdr/commit/807e456e),
-  [1f03ff49](https://github.com/vdavid/cmdr/commit/1f03ff49),
-  [f4eea79d](https://github.com/vdavid/cmdr/commit/f4eea79d),
-  [e52c6dec](https://github.com/vdavid/cmdr/commit/e52c6dec),
+  [3ea1b45e](https://github.com/vdavid/cmdr/commit/3ea1b45e),
+  [5c35d9ea](https://github.com/vdavid/cmdr/commit/5c35d9ea),
+  [9b8f9dd7](https://github.com/vdavid/cmdr/commit/9b8f9dd7),
+  [71c9485b](https://github.com/vdavid/cmdr/commit/71c9485b))
+- Filter searches with size and modified-date chips that open quick popovers, and see the AI's interpreted prompt and
+  caveats right in the dialog ([2c10bba7](https://github.com/vdavid/cmdr/commit/2c10bba7),
+  [807e456e](https://github.com/vdavid/cmdr/commit/807e456e))
+- Replay past searches from a recent-searches history with quick-pick chips, and auto-apply filename and regex queries
+  as you type ([1f03ff49](https://github.com/vdavid/cmdr/commit/1f03ff49),
+  [f4eea79d](https://github.com/vdavid/cmdr/commit/f4eea79d))
+- Act on search results in place: clickable path pills, per-row menus, "Show all in main window", and copy, move, or
+  delete files straight from the results ([e52c6dec](https://github.com/vdavid/cmdr/commit/e52c6dec),
   [d94187bd](https://github.com/vdavid/cmdr/commit/d94187bd),
   [c79c1112](https://github.com/vdavid/cmdr/commit/c79c1112),
   [4770a93f](https://github.com/vdavid/cmdr/commit/4770a93f),
   [e7afc8b3](https://github.com/vdavid/cmdr/commit/e7afc8b3),
   [1b1fc5ab](https://github.com/vdavid/cmdr/commit/1b1fc5ab),
-  [71c9485b](https://github.com/vdavid/cmdr/commit/71c9485b),
-  [f3f45084](https://github.com/vdavid/cmdr/commit/f3f45084),
-  [3ea1b45e](https://github.com/vdavid/cmdr/commit/3ea1b45e),
-  [5c35d9ea](https://github.com/vdavid/cmdr/commit/5c35d9ea),
-  [9b8f9dd7](https://github.com/vdavid/cmdr/commit/9b8f9dd7))
+  [f3f45084](https://github.com/vdavid/cmdr/commit/f3f45084))
 - Select and copy text in the file viewer (files up to 100 MB): double/triple-click for word/line, right-click menu
   ([6f717829](https://github.com/vdavid/cmdr/commit/6f717829),
   [1e061820](https://github.com/vdavid/cmdr/commit/1e061820),
@@ -397,6 +410,8 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ## [0.21.0] - 2026-05-21
 
+Quick Look (⇧Space) arrives, and Settings plus the main window now look properly macOS-native.
+
 ### Added
 
 - Add Quick Look (⇧Space) ([6778494b](https://github.com/vdavid/cmdr/commit/6778494b))
@@ -429,6 +444,9 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ## [0.20.0] - 2026-05-20
 
+Snappier and safer transfers: MTP cancels land instantly, SMB writes pipeline over one session, and selection switched
+to a high-contrast red. Cmdr now runs on macOS 12 Monterey, too.
+
 ### Added
 
 - Cmd+click toggles selection ([c6adee74](https://github.com/vdavid/cmdr/commit/c6adee74))
@@ -452,11 +470,6 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
   [640c3330](https://github.com/vdavid/cmdr/commit/640c3330))
 - SMB volumes auto-upgrade from OS-mount to direct smb2 sessions
   ([640c3330](https://github.com/vdavid/cmdr/commit/640c3330))
-- Propagate MTP cancel all the way to the USB layer; dialog stays at "Cancelling…" until the device settles. No more
-  30-second wedges! ([0de4c6b7](https://github.com/vdavid/cmdr/commit/0de4c6b7),
-  [1696355d](https://github.com/vdavid/cmdr/commit/1696355d),
-  [f894e60e](https://github.com/vdavid/cmdr/commit/f894e60e),
-  [b4018891](https://github.com/vdavid/cmdr/commit/b4018891))
 - Copy/move/delete pre-flight scans reuse watcher-backed listings. Skip a 17s MTP re-list when the folder is already
   open in another pane! ([9d434638](https://github.com/vdavid/cmdr/commit/9d434638),
   [ba20ca3e](https://github.com/vdavid/cmdr/commit/ba20ca3e),
@@ -471,23 +484,28 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
   ([432d13ff](https://github.com/vdavid/cmdr/commit/432d13ff))
 - Localize macOS pane names in onboarding and error dialogs (points at what System Settings actually shows)
   ([bad5d926](https://github.com/vdavid/cmdr/commit/bad5d926))
-- No more empty-pane flicker on bulk ops (coalesced refresh events)
-  ([54674854](https://github.com/vdavid/cmdr/commit/54674854),
-  [13b486a8](https://github.com/vdavid/cmdr/commit/13b486a8))
 - Honest transfer-complete toasts: report copied vs skipped separately
   ([5cdf989e](https://github.com/vdavid/cmdr/commit/5cdf989e))
-- Friendly message for SMB `STATUS_DELETE_PENDING` (was misleading "disk needs attention")
-  ([a560243b](https://github.com/vdavid/cmdr/commit/a560243b))
 - Polish the license nudge: clearer copy and layout ([95007952](https://github.com/vdavid/cmdr/commit/95007952))
 - Add fallback UI colors on macOS Monterey, achieving macOS 12.x compat!
   ([5792b10e](https://github.com/vdavid/cmdr/commit/5792b10e))
 - Improve accent-fg to match WCAG AA+ against all colors, and add cursor outline
   ([d00ba5b4](https://github.com/vdavid/cmdr/commit/d00ba5b4))
-- Properly pluralize all words ("1 file"/"10 files") everywhere
-  ([eb360370](https://github.com/vdavid/cmdr/commit/eb360370))
 
 ### Fixed
 
+- Propagate MTP cancel all the way to the USB layer; no more 30-second "Cancelling…" wedges
+  ([0de4c6b7](https://github.com/vdavid/cmdr/commit/0de4c6b7),
+  [1696355d](https://github.com/vdavid/cmdr/commit/1696355d),
+  [f894e60e](https://github.com/vdavid/cmdr/commit/f894e60e),
+  [b4018891](https://github.com/vdavid/cmdr/commit/b4018891))
+- No more empty-pane flicker on bulk ops (coalesced refresh events)
+  ([54674854](https://github.com/vdavid/cmdr/commit/54674854),
+  [13b486a8](https://github.com/vdavid/cmdr/commit/13b486a8))
+- Friendly message for SMB `STATUS_DELETE_PENDING` (was misleading "disk needs attention")
+  ([a560243b](https://github.com/vdavid/cmdr/commit/a560243b))
+- Properly pluralize all words ("1 file"/"10 files") everywhere
+  ([eb360370](https://github.com/vdavid/cmdr/commit/eb360370))
 - Fix MTP destination pane staying stale after cross-volume writes
   ([873f1102](https://github.com/vdavid/cmdr/commit/873f1102))
 - Fix SMB/MTP listing cache going stale when the watcher misses an event
@@ -575,6 +593,9 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 - Switch `mtp-rs` to crates.io 0.15.0 (off the path dep) ([f98313f0](https://github.com/vdavid/cmdr/commit/f98313f0))
 
 ## [0.19.0] - 2026-05-16
+
+Settings got reorganized into clear sections, the command palette remembers your recent commands, and you can type to
+jump to a file.
 
 ### Added
 
@@ -705,6 +726,9 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ## [0.18.0] - 2026-05-12
 
+First launch stopped stacking permission popups, copy and delete dialogs show real scan progress, and cloud AI grew to
+cover many more providers. Dates and sizes are now color-coded across the app.
+
 ### Added
 
 - Suppress the 5–10 macOS permission popups that stacked behind the Full Disk Access prompt, and deep-link straight to
@@ -794,6 +818,8 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ## [0.17.0] - 2026-05-06
 
+Dynamic text size lands, along with "Open with", system Services, and Finder-matching drag and drop.
+
 ### Added
 
 - Add dynamic text size slider in Settings (75–150%, ⌘+/⌘-/⌘0 shortcuts)
@@ -856,6 +882,8 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 
 ## [0.16.0] - 2026-05-01
 
+Network shares now reconnect on their own, and you can check for updates from inside the app.
+
 ### Added
 
 - Add SMB live reconnect, 5-attempt backoff right in the pane, no re-auth
@@ -883,6 +911,9 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 - Fix SMB reconnect double-triggering loadDirectory ([3f6b1b0d](https://github.com/vdavid/cmdr/commit/3f6b1b0d))
 
 ## [0.15.0] - 2026-04-29
+
+The git browser lands: browse branches, commits, stashes, and worktrees like folders, and copy a file out of any
+version.
 
 ### Added
 
@@ -1037,14 +1068,13 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 - Network pane no longer sticks on old host after mount ([41c1860](https://github.com/vdavid/cmdr/commit/41c1860))
 - Fix llama-server startup on Linux with locked keyring (encrypted-file fallback)
   ([55ccde3](https://github.com/vdavid/cmdr/commit/55ccde3))
-
-### Improved
-
-- Async Volume trait end-to-end, no more nested-runtime panics on MTP/SMB
+- Fix nested-runtime panics on MTP/SMB (async Volume trait end-to-end, runtime-safe MTP reads)
   ([531bb9b](https://github.com/vdavid/cmdr/commit/531bb9b), [9d4982a](https://github.com/vdavid/cmdr/commit/9d4982a),
-  [694ddc1](https://github.com/vdavid/cmdr/commit/694ddc1))
-- MTP read stream now safe from any runtime context ([1598f8c](https://github.com/vdavid/cmdr/commit/1598f8c))
-- Cancelled SMB uploads skip server FLUSH (~100 ms to 1 s saved per cancel)
+  [694ddc1](https://github.com/vdavid/cmdr/commit/694ddc1), [1598f8c](https://github.com/vdavid/cmdr/commit/1598f8c))
+
+### Changed
+
+- Cancelled SMB uploads skip the server flush (~100 ms to 1 s saved per cancel)
   ([6fa0780](https://github.com/vdavid/cmdr/commit/6fa0780))
 
 ### Non-app
@@ -1172,16 +1202,16 @@ A big push on dev tooling: the check suite is roughly twice as fast overall, wit
 - Harden unsafe Rust (main-thread markers, scoped Send impls, SAFETY comments)
   ([541804](https://github.com/vdavid/cmdr/commit/541804))
 
-### Improved
+### Changed
 
 - Typed write-op errors (9 variants) replace string parsing ([c10e06](https://github.com/vdavid/cmdr/commit/c10e06))
 - Typed MTP volume errors ([8f2296](https://github.com/vdavid/cmdr/commit/8f2296))
-- Backend owns MTP move strategy, frontend no longer orchestrates
-  ([547a41](https://github.com/vdavid/cmdr/commit/547a41))
-- Demote noisy per-file copy/move/MTP logs from INFO to DEBUG ([357fef](https://github.com/vdavid/cmdr/commit/357fef))
 
 ### Non-app
 
+- Backend owns MTP move strategy, frontend no longer orchestrates
+  ([547a41](https://github.com/vdavid/cmdr/commit/547a41))
+- Demote noisy per-file copy/move/MTP logs from INFO to DEBUG ([357fef](https://github.com/vdavid/cmdr/commit/357fef))
 - Fix all WCAG violations found by axe-core ([d29a7c](https://github.com/vdavid/cmdr/commit/d29a7c),
   [438046](https://github.com/vdavid/cmdr/commit/438046), [6e6230](https://github.com/vdavid/cmdr/commit/6e6230))
 - Port E2E tests from WebDriverIO to Playwright; add 80+ tests (MTP, SMB, conflicts, a11y, indexing)
@@ -1835,20 +1865,26 @@ Initial public release. Free forever for personal use (BSL license).
 <details>
 <summary>Click to expand full development history</summary>
 
-#### 2026-01-10 - Initial public release
+#### 2026-01-10
+
+Initial public release.
 
 - Add licensing features to app (validation, about screen, expiry modal)
   ([dc68eeb](https://github.com/vdavid/cmdr/commit/dc68eeb))
 - Add command palette with fuzzy search ([7b0ea13](https://github.com/vdavid/cmdr/commit/7b0ea13))
 - Switch to BSL license (free for individuals) ([06c49cb](https://github.com/vdavid/cmdr/commit/06c49cb))
 
-#### 2026-01-09 - License server improvements
+#### 2026-01-09
+
+License server improvements.
 
 - Add checkout tester tool for license server ([38774fe](https://github.com/vdavid/cmdr/commit/38774fe))
 - Add sandbox/live environment duality for license tests ([15b3957](https://github.com/vdavid/cmdr/commit/15b3957))
 - Unify trial period to 14 days ([7e68c27](https://github.com/vdavid/cmdr/commit/7e68c27))
 
-#### 2026-01-08 - Cmdr, website, licensing
+#### 2026-01-08
+
+Cmdr, website, licensing.
 
 - Rename to Cmdr ([016a3e3](https://github.com/vdavid/cmdr/commit/016a3e3))
 - Restructure as monorepo with desktop app in apps/desktop ([c0e764a](https://github.com/vdavid/cmdr/commit/c0e764a))
@@ -1859,13 +1895,17 @@ Initial public release. Free forever for personal use (BSL license).
   ([4f32a29](https://github.com/vdavid/cmdr/commit/4f32a29))
 - Streamline CI (website-only PRs: 22 min → 2 min) ([4894003](https://github.com/vdavid/cmdr/commit/4894003))
 
-#### 2026-01-07 - Network fixes
+#### 2026-01-07
+
+Network fixes.
 
 - Fix network share unnecessary login prompts ([dbeebaf](https://github.com/vdavid/cmdr/commit/dbeebaf))
 - Fix Back/Forward navigation across network screens ([bf462e9](https://github.com/vdavid/cmdr/commit/bf462e9))
 - Sort network hosts and shares alphabetically ([9de5f2b](https://github.com/vdavid/cmdr/commit/9de5f2b))
 
-#### 2026-01-05-06 - Network drives (SMB)
+#### 2026-01-05-06
+
+Network drives (SMB).
 
 - Add network host discovery via Bonjour ([54ee04f](https://github.com/vdavid/cmdr/commit/54ee04f))
 - Add SMB share listing ([693e926](https://github.com/vdavid/cmdr/commit/693e926))
@@ -1873,13 +1913,17 @@ Initial public release. Free forever for personal use (BSL license).
 - Add network share mounting ([308d55c](https://github.com/vdavid/cmdr/commit/308d55c))
 - Add volume mount/unmount watching ([76bbf22](https://github.com/vdavid/cmdr/commit/76bbf22))
 
-#### 2026-01-04 - Sorting
+#### 2026-01-04
+
+Sorting.
 
 - Add sorting feature (name, size, date, extension) with alphanumeric sort
   ([e7b7206](https://github.com/vdavid/cmdr/commit/e7b7206))
 - Add Stylelint for CSS quality ([a778dcc](https://github.com/vdavid/cmdr/commit/a778dcc))
 
-#### 2026-01-02-03 - Navigation and permissions
+#### 2026-01-02-03
+
+Navigation and permissions.
 
 - Add ⌘↑ shortcut to go up a folder ([848e2f1](https://github.com/vdavid/cmdr/commit/848e2f1))
 - Add full disk access permission handling ([9f433d8](https://github.com/vdavid/cmdr/commit/9f433d8))
@@ -1889,34 +1933,44 @@ Initial public release. Free forever for personal use (BSL license).
 - Set minimum window size ([237c5a9](https://github.com/vdavid/cmdr/commit/237c5a9))
 - Fix opening files ([714dc5a](https://github.com/vdavid/cmdr/commit/714dc5a))
 
-#### 2026-01-01 - Drag and drop, volumes
+#### 2026-01-01
+
+Drag and drop, volumes.
 
 - Add drag and drop FROM the app ([8e1d53b](https://github.com/vdavid/cmdr/commit/8e1d53b))
 - Add volume switching feature ([ba3e770](https://github.com/vdavid/cmdr/commit/ba3e770))
 - Remove Tailwind (was slowing down app startup) ([5354a48](https://github.com/vdavid/cmdr/commit/5354a48))
 
-#### 2025-12-31 - Polish
+#### 2025-12-31
+
+Polish.
 
 - Add font width measuring for precise Brief mode layout ([848f68f](https://github.com/vdavid/cmdr/commit/848f68f))
 - Abstract file system access for better testing ([eb9dd72](https://github.com/vdavid/cmdr/commit/eb9dd72))
 - Fix Dropbox sync icon false positives ([64007f0](https://github.com/vdavid/cmdr/commit/64007f0))
 - Fix file watching reliability ([aefe3e7](https://github.com/vdavid/cmdr/commit/aefe3e7))
 
-#### 2025-12-30 - Speed optimizations
+#### 2025-12-30
+
+Speed optimizations.
 
 - Add keyboard shortcuts: ⌥↑/↓ for home/end, Fn arrows for page up/down
   ([6298990](https://github.com/vdavid/cmdr/commit/6298990))
 - Move file cache to backend for major speed improvements ([a42eda5](https://github.com/vdavid/cmdr/commit/a42eda5))
 - Optimize directory loading (phase 1 and 2) ([7efd61a](https://github.com/vdavid/cmdr/commit/7efd61a))
 
-#### 2025-12-29 - View modes and cloud sync
+#### 2025-12-29
+
+View modes and cloud sync.
 
 - Add Full mode (vertical scroll with size/date columns) and Brief mode (horizontal multi-column)
   ([c779a6d](https://github.com/vdavid/cmdr/commit/c779a6d))
 - Add Dropbox and iCloud sync status icons ([46f1770](https://github.com/vdavid/cmdr/commit/46f1770))
 - Add loading screen animation ([234f0a7](https://github.com/vdavid/cmdr/commit/234f0a7))
 
-#### 2025-12-28 - Performance and file operations
+#### 2025-12-28
+
+Performance and file operations.
 
 - Add chunked directory loading (50k files: 350 ms to first files)
   ([869cdfb](https://github.com/vdavid/cmdr/commit/869cdfb))
@@ -1929,7 +1983,9 @@ Initial public release. Free forever for personal use (BSL license).
 - Add Backspace shortcut to go up a folder ([fc899d4](https://github.com/vdavid/cmdr/commit/fc899d4))
 - Scroll to last folder when navigating up ([8ccd8bd](https://github.com/vdavid/cmdr/commit/8ccd8bd))
 
-#### 2025-12-27 - File metadata and icons
+#### 2025-12-27
+
+File metadata and icons.
 
 - Add file metadata display (owner, size, dates) ([d9994bc](https://github.com/vdavid/cmdr/commit/d9994bc))
 - Add file icons from OS with caching ([b8c588e](https://github.com/vdavid/cmdr/commit/b8c588e))
@@ -1937,7 +1993,9 @@ Initial public release. Free forever for personal use (BSL license).
 - Add Tauri MCP server for AI tooling integration ([0a64eb3](https://github.com/vdavid/cmdr/commit/0a64eb3))
 - Fix symlinked directory handling ([5a134ac](https://github.com/vdavid/cmdr/commit/5a134ac))
 
-#### 2025-12-26 - Dual-pane explorer
+#### 2025-12-26
+
+Dual-pane explorer.
 
 - Add dual-pane file explorer with home directory listing ([c945f18](https://github.com/vdavid/cmdr/commit/c945f18))
 - Add window state persistence (position and size remembered) ([b8d93c5](https://github.com/vdavid/cmdr/commit/b8d93c5))
@@ -1945,7 +2003,9 @@ Initial public release. Free forever for personal use (BSL license).
 - Add "Show hidden files" menu item ([4af855d](https://github.com/vdavid/cmdr/commit/4af855d))
 - Add dark mode support ([7deb986](https://github.com/vdavid/cmdr/commit/7deb986))
 
-#### 2025-12-25 - Project init
+#### 2025-12-25
+
+Project init.
 
 - Initialize Rust + Tauri 2 + Svelte 5 project ([b410bd9](https://github.com/vdavid/cmdr/commit/b410bd9))
 - Add GitHub Actions workflow ([6dbf265](https://github.com/vdavid/cmdr/commit/6dbf265))
