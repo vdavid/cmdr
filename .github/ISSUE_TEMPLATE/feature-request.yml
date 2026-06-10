@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before you write: check the [most-wanted list](https://github.com/vdavid/cmdr/issues?q=is%3Aopen+label%3Aenhancement+sort%3Areactions-%2B1-desc). If your idea is already there, a 👍 on it counts as a vote and saves you the typing. Also see the [feature status page](https://getcmdr.com/feature-status) for what's planned.
+        Before you write: check the [most-wanted list](https://github.com/vdavid/cmdr/issues?q=is%3Aopen+label%3Aenhancement+sort%3Areactions-%2B1-desc). If your idea is already there, a 👍 on it counts as a vote and saves you the typing. Also see the [feature status page](https://getcmdr.com/features) for what's planned.
   - type: textarea
     id: problem
     attributes:

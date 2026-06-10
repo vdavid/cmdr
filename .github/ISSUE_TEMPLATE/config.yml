@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Quick feedback, no GitHub formality
-    url: https://getcmdr.com/feature-status
+    url: https://getcmdr.com/features
     about: Inside Cmdr, use Help > Send feedback… — it goes straight to David, no account needed.
   - name: Book a call with David
     url: https://cal.eu/veszelovszki/30min

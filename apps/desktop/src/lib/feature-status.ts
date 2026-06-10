@@ -24,6 +24,12 @@ interface Feature {
 
 const features: Feature[] = featureStatusData.features as Feature[]
 
+/**
+ * Canonical user-facing explanation per status (badge tooltips here and pill tooltips
+ * on the website). Single-sourced from the JSON so the two surfaces can't drift.
+ */
+export const statusDefinitions: Record<FeatureStatus, string> = featureStatusData.statusDefinitions
+
 const idToStatusMap = new Map<string, FeatureStatus>(features.map((feature) => [feature.id, feature.status]))
 
 /** The feature's status, or undefined for an unknown id. */

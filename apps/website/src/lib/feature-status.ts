@@ -19,23 +19,25 @@ export interface Feature {
 
 export const features: Feature[] = featureStatusData.features as Feature[]
 
-/** Card-badge labels for the feature cards (Features component + features page). */
-export const statusToBadgeLabelMap: Record<FeatureStatus, string | null> = {
-  alpha: 'Works but early stage',
+/** Pill labels: the capitalized status name. Every status gets a pill on the website. */
+export const statusToBadgeLabelMap: Record<FeatureStatus, string> = {
+  alpha: 'Alpha',
   beta: 'Beta',
-  stable: null, // Stable features carry no badge, anywhere.
-  planned: 'Coming soon',
+  stable: 'Stable',
+  planned: 'Planned',
 }
 
-/** Section headings + intros for the feature status page, in display order. */
-export const statusOrder: FeatureStatus[] = ['alpha', 'beta', 'stable', 'planned']
+/** Canonical user-facing explanations, shared with the app's badge tooltips via the JSON. */
+export const statusToDefinitionMap: Record<FeatureStatus, string> = featureStatusData.statusDefinitions as Record<
+  FeatureStatus,
+  string
+>
 
 export function getFeature(id: string): Feature | undefined {
   return features.find((feature) => feature.id === id)
 }
 
-/** The badge label for a feature, or null when it shouldn't carry one (stable, unknown id). */
-export function getBadgeLabel(id: string): string | null {
-  const feature = getFeature(id)
-  return feature ? statusToBadgeLabelMap[feature.status] : null
+/** The pill tooltip: "Alpha: Fresh feature. Should work. Might be broken." */
+export function getStatusTooltip(status: FeatureStatus): string {
+  return `${statusToBadgeLabelMap[status]}: ${statusToDefinitionMap[status]}`
 }

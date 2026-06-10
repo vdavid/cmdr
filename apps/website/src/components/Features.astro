@@ -1,5 +1,6 @@
 ---
-import { getBadgeLabel } from '../lib/feature-status'
+import StatusPill from './StatusPill.astro'
+import { getFeature } from '../lib/feature-status'
 
 const shipped = [
     {
@@ -10,21 +11,21 @@ const shipped = [
             'Indexes <em>your entire drive</em> in 4 minutes. Once. Then stays current forever, even across restarts.',
     },
     {
-        slug: 'private-llm',
+        slug: 'local-ai',
         icon: '/icons/sparkles.svg',
         title: 'Private LLM included',
         description:
             'Comes with an on-device model for local, private use. Bring your own OpenAI/Anthropic/etc. API key for smarter results.',
     },
     {
-        slug: 'speed',
+        slug: 'file-explorer',
         icon: '/icons/rocket.svg',
         title: 'Really, really fast',
         description:
             'Built in Rust. Opens a 100k-file folder in 4 seconds with icons, sizes, and dates, cold. In 1 second when warm.',
     },
     {
-        slug: 'keyboard-first',
+        slug: 'keyboard-shortcuts',
         icon: '/icons/keyboard.svg',
         title: 'Keyboard-first',
         description:
@@ -34,18 +35,18 @@ const shipped = [
 
 const upcoming = [
     {
-        slug: 'smart-search',
+        slug: 'search',
         icon: '/icons/search.svg',
         title: 'Smart search',
         description: 'Find files by saying: "that PDF contract from last month" or "all my node_modules folders"',
-        badge: getBadgeLabel('search'),
+        status: getFeature('search')?.status,
     },
     {
         slug: 'ai-rename',
         icon: '/icons/brain.svg',
         title: 'Natural language rename',
         description: 'Commands like "make these files lowercase and add date prefix". No regex, no scripts.',
-        badge: getBadgeLabel('ai-rename'),
+        status: getFeature('ai-rename')?.status,
     },
     {
         slug: 'ai-batch',
@@ -53,7 +54,7 @@ const upcoming = [
         title: 'AI file organization',
         description:
             'Say "Clean up my Downloads folder" to get a list of move/delete suggestions you can approve/reject.',
-        badge: getBadgeLabel('ai-batch'),
+        status: getFeature('ai-batch')?.status,
     },
 ]
 ---
@@ -88,7 +89,7 @@ const upcoming = [
 
         <!-- AI features separator -->
         <p class="my-10 text-center text-sm font-medium tracking-wide text-[var(--color-text-tertiary)] uppercase">
-            Coming next
+            Fresh and upcoming
         </p>
 
         <!-- Upcoming AI features -->
@@ -99,9 +100,9 @@ const upcoming = [
                         href={`/features#${feature.slug}`}
                         class="group relative block rounded-2xl border border-[var(--color-accent)]/30 bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-accent)]/5 p-8 no-underline transition-all duration-300 hover:border-[var(--color-accent)]/50"
                     >
-                        {feature.badge && (
-                            <span class="absolute top-4 right-4 rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)]">
-                                {feature.badge}
+                        {feature.status && (
+                            <span class="absolute top-4 right-4">
+                                <StatusPill status={feature.status} link={false} />
                             </span>
                         )}
                         <img src={feature.icon} alt="" class="mb-4 size-10" />

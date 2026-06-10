@@ -7,6 +7,9 @@ desktop app both read it, so a status change in one place updates every surface.
 
 ```json
 {
+  "statusDefinitions": {
+    "alpha": "Fresh feature. Should work. Might be broken."
+  },
   "features": [
     {
       "id": "search",
@@ -25,15 +28,19 @@ desktop app both read it, so a status change in one place updates every surface.
 - `status`: one of the four values below.
 - `note`: one honest line, written for users. David reviews every note.
 - `issueUrl` (optional): a GitHub issue tracking the feature's rough edges or plan.
+- `statusDefinitions`: the canonical user-facing explanation per status. Rendered as the badge tooltip in the app and
+  the pill tooltip on the website, so the two surfaces can't drift. Per the website voice rule (style guide § Voice),
+  keep them free of "I"/"we".
 
 ## Status semantics
 
-- `alpha`: works, but expect bugs and rough edges. Gets an uppercase ALPHA badge in the app (dialog titles, command
-  palette) and on the website.
-- `beta`: solid for common cases; unusual setups can still surprise. Badge on the website; in-app badges only where a
-  feature surface warrants it.
-- `stable`: we stand behind it. **Never** gets a badge, anywhere. Listed on the website's feature status page only.
-- `planned`: not built yet. Website only ("Coming soon"); the app never references planned features.
+The user-facing definitions live in the JSON's `statusDefinitions` (alpha: fresh, might be broken; beta: works, smaller
+bugs; stable: well-tested, mature; planned: not built yet). Surface rules:
+
+- `alpha` / `beta`: uppercase badge in the app (dialog titles, command palette rows) and a pill on the website.
+- `stable`: **no badge in the app** (`getBadgeStatus` returns nothing). The website DOES show a quiet "Stable" pill on
+  feature cards and in the `/features#status` list.
+- `planned`: website only; the app never references planned features.
 
 The whole app is in open beta; these statuses are relative to that baseline. "Stable" means stable within the open beta,
 not "1.0 frozen".
@@ -41,10 +48,11 @@ not "1.0 frozen".
 ## Consumers
 
 - **Website** (`apps/website/`):
-  - `src/lib/feature-status.ts`: typed loader + the status → human label map.
-  - `src/pages/feature-status.astro`: the full per-feature status page, grouped by status.
-  - `src/components/Features.astro` and `src/pages/features.astro`: badge labels on feature cards come from the JSON (no
-    hardcoded "Coming soon" strings).
+  - `src/lib/feature-status.ts`: typed loader + pill labels + `getStatusTooltip`.
+  - `src/components/StatusPill.astro`: the shared pill (label + definition tooltip), used on the homepage feature cards
+    and the features page.
+  - `src/pages/features.astro`: rich feature sections with pills, plus the compact full list at `#status`. The old
+    `/feature-status` page merged into it; `astro.config.mjs` redirects the old URL.
 - **Desktop app** (`apps/desktop/`):
   - `src/lib/feature-status.ts`: `getFeatureStatus(id)` + `getBadgeStatus(id)` (alpha/beta only; stable and planned
     return no badge).

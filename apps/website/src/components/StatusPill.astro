@@ -1,0 +1,39 @@
+---
+/**
+ * Feature stability pill ("Alpha" / "Beta" / "Stable" / "Planned") with the canonical
+ * definition as its tooltip. Statuses come from the repo-root `feature-status.json`.
+ * Links to the full status list on the features page unless `link={false}`.
+ */
+import { statusToBadgeLabelMap, getStatusTooltip, type FeatureStatus } from '../lib/feature-status'
+
+interface Props {
+    status: FeatureStatus
+    link?: boolean
+}
+
+const { status, link = true } = Astro.props
+const label = statusToBadgeLabelMap[status]
+const tooltip = getStatusTooltip(status)
+const classes = [
+    'rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap',
+    // Light-mode contrast: accent text passes 4.5:1 on accent/10 but not /20, and tertiary
+    // text fails on the elevated surface, so alpha gets a border (not a darker bg) for
+    // emphasis and stable/planned both use secondary text.
+    status === 'alpha' && 'border border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10 text-[var(--color-accent-text)]',
+    status === 'beta' && 'bg-[var(--color-accent)]/10 text-[var(--color-accent-text)]',
+    status === 'stable' && 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]',
+    status === 'planned' && 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]',
+]
+---
+
+{
+    link ? (
+        <a href="/features" class:list={[classes, 'transition-opacity hover:opacity-80']} title={tooltip}>
+            {label}
+        </a>
+    ) : (
+        <span class:list={classes} title={tooltip}>
+            {label}
+        </span>
+    )
+}

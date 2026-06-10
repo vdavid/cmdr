@@ -1,113 +1,20 @@
 ---
-import Layout from '../layouts/Layout.astro'
-import Header from '../components/Header.astro'
-import Footer from '../components/Footer.astro'
-import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
-import { features, statusOrder, type FeatureStatus } from '../lib/feature-status'
-
-const sectionMeta: Record<FeatureStatus, { heading: string; intro: string }> = {
-    alpha: {
-        heading: 'Alpha',
-        intro: "These work, but expect rough edges and the occasional bug. We're actively improving them.",
-    },
-    beta: {
-        heading: 'Beta',
-        intro: 'Solid for everyday use. Unusual setups can still surprise us.',
-    },
-    stable: {
-        heading: 'Stable',
-        intro: 'The core of Cmdr. We stand behind these.',
-    },
-    planned: {
-        heading: 'Planned',
-        intro: "Not built yet. See the roadmap for what's coming when.",
-    },
-}
-
-const groups = statusOrder.map((status) => ({
-    status,
-    ...sectionMeta[status],
-    features: features.filter((feature) => feature.status === status),
-}))
+// The feature-status page merged into /features (the #status section). This stub
+// replaces Astro's `redirects` config entry because the generated redirect page
+// emits a lowercase doctype, which html-validate rejects.
+const target = '/features'
 ---
 
-<Layout
-    title="Feature status - Cmdr"
-    description="An honest, per-feature look at what's rock solid in Cmdr, what's still rough, and what's planned."
->
-    <Header />
-    <main class="mx-auto max-w-4xl px-6 pt-32 pb-24">
-        <header class="mb-10">
-            <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl">
-                Feature status
-            </h1>
-            <p class="text-[var(--color-text-secondary)]">
-                Cmdr is in open beta. Here's an honest, per-feature look at what's rock solid, what's still rough, and
-                what's planned. For the full timeline, see the <a
-                    href="/roadmap"
-                    class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                    >roadmap</a
-                >.
-            </p>
-        </header>
-
-        <div class="space-y-12">
-            {
-                groups.map((group) => (
-                    <section id={group.status} class="scroll-mt-24">
-                        <div class="mb-1 flex items-center gap-3">
-                            <h2 class="text-2xl font-semibold text-[var(--color-text-primary)]">{group.heading}</h2>
-                            <span
-                                class:list={[
-                                    'rounded-full px-2.5 py-1 text-xs font-medium',
-                                    group.status === 'alpha' && 'bg-[var(--color-accent)]/20 text-[var(--color-accent-text)]',
-                                    group.status === 'beta' && 'bg-[var(--color-accent)]/10 text-[var(--color-accent-text)]',
-                                    group.status === 'stable' &&
-                                        'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]',
-                                    group.status === 'planned' &&
-                                        'bg-[var(--color-surface-elevated)] text-[var(--color-text-tertiary)]',
-                                ]}
-                            >
-                                {group.features.length} {group.features.length === 1 ? 'feature' : 'features'}
-                            </span>
-                        </div>
-                        <p class="mb-6 text-sm text-[var(--color-text-tertiary)]">{group.intro}</p>
-                        <ul class="space-y-3">
-                            {group.features.map((feature) => (
-                                <li class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-                                    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                        <h3 class="font-semibold text-[var(--color-text-primary)]">{feature.name}</h3>
-                                        {feature.issueUrl && (
-                                            <a
-                                                href={feature.issueUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                class="text-xs text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                                            >
-                                                Track on GitHub
-                                            </a>
-                                        )}
-                                    </div>
-                                    <p class="mt-1 text-sm text-[var(--color-text-secondary)]">{feature.note}</p>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                ))
-            }
-        </div>
-
-        <p class="mt-12 text-sm text-[var(--color-text-tertiary)]">
-            Found something rough we didn't list? <a
-                href="https://github.com/vdavid/cmdr/issues"
-                class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                >Report an issue</a
-            > and help us fix it faster.
-        </p>
-
-        <div class="mt-16">
-            <NewsletterInlineWrapper label="Want updates as features graduate?" />
-        </div>
-    </main>
-    <Footer />
-</Layout>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="refresh" content={`0;url=${target}`} />
+        <meta name="robots" content="noindex" />
+        <link rel="canonical" href="https://getcmdr.com/features" />
+        <title>Moved to /features</title>
+    </head>
+    <body>
+        <p>This page moved to <a href={target}>the features page</a>.</p>
+    </body>
+</html>

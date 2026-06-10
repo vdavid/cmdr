@@ -7,21 +7,16 @@
 -->
 <script lang="ts">
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { BadgeStatus } from '$lib/feature-status'
+    import { statusDefinitions, type BadgeStatus } from '$lib/feature-status'
 
     interface Props {
         status: BadgeStatus
     }
 
     const { status }: Props = $props()
-
-    const statusToTooltipMap: Record<BadgeStatus, string> = {
-        alpha: 'Early-stage feature: works, but expect rough edges',
-        beta: 'Mostly solid: unusual setups can still surprise',
-    }
 </script>
 
-<span class="feature-status-badge" use:tooltip={statusToTooltipMap[status]}>{status}</span>
+<span class="feature-status-badge" use:tooltip={statusDefinitions[status]}>{status}</span>
 
 <style>
     .feature-status-badge {

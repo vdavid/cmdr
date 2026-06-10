@@ -1,11 +1,17 @@
 {
-  "$comment": "Single source of truth for per-feature stability. Schema and consumers: docs/feature-status.md. Statuses: alpha (works, rough edges, expect bugs), beta (solid for common cases, edge cases may surprise), stable (no badge anywhere, we stand behind it), planned (not built yet). All notes are reviewed by David; keep them honest and one line.",
+  "$comment": "Single source of truth for per-feature stability. Schema and consumers: docs/feature-status.md. statusDefinitions are the canonical user-facing explanations (pill tooltips in the app and on the website). All notes are reviewed by David; keep them honest, one line, and free of \"I\"/\"we\" (website voice).",
+  "statusDefinitions": {
+    "alpha": "Fresh feature. Should work. Might be broken.",
+    "beta": "Works, but expect rough edges and smaller bugs.",
+    "stable": "Well-tested, mature in the context of the whole app.",
+    "planned": "Not built yet. See the roadmap for timing."
+  },
   "features": [
     {
       "id": "search",
       "name": "Search",
       "status": "alpha",
-      "note": "Finds files fast, but the AI query translation still misreads some prompts and a few filters are rough. We're tuning accuracy."
+      "note": "Finds files fast, but the AI query translation still misreads some prompts and a few filters are rough."
     },
     {
       "id": "select-files",
@@ -17,7 +23,7 @@
       "id": "network-drives",
       "name": "Network drives (SMB)",
       "status": "beta",
-      "note": "Browsing and fast direct transfers work on common NAS setups; unusual server configs can still surprise us."
+      "note": "Browsing and fast direct transfers work on common NAS setups; unusual server configs can still cause surprises."
     },
     {
       "id": "android-devices",
@@ -59,7 +65,7 @@
       "id": "file-operations",
       "name": "File operations",
       "status": "stable",
-      "note": "Copy, move, delete, rename, and new folders with progress, conflict handling, and rollback. Our most-tested code."
+      "note": "Copy, move, delete, rename, and new folders with progress, conflict handling, and rollback. The most-tested code in the app."
     },
     {
       "id": "file-viewer",

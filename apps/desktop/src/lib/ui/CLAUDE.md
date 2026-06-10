@@ -449,8 +449,9 @@ that helper, so a graduated feature loses its pill with a one-line JSON edit.
 
 Visual: same token recipe as `ToggleGroup.svelte`'s `.tg-badge` (the "AI" chip): `--font-size-xs` mono, weight 600,
 `--color-accent-subtle` background, `--radius-xs`, uppercase via CSS. The class is `feature-status-badge` (NOT
-`status-badge`: the Debug window has a `:global(.status-badge)` for the drive-index panel that would leak onto it). A
-built-in tooltip explains what the status means.
+`status-badge`: the Debug window has a `:global(.status-badge)` for the drive-index panel that would leak onto it). The
+tooltip text is the canonical definition from the JSON's `statusDefinitions` (exported by `$lib/feature-status`), shared
+with the website's pills so the two surfaces can't drift.
 
 Consumers: `QueryDialog`'s title strip (via `QueryDialogConfig.badge`, set by the Search + Selection wrappers) and the
 command palette's result rows (via the optional `Command.status` field).
