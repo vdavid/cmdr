@@ -165,10 +165,11 @@ the backend reconfigure before the user lands in the app deterministically.
 `StepBeta.svelte`: David's personal open-beta intro, the analytics disclosure, and an optional contact channel. Three
 blocks:
 
-1. **Personal intro**: first-person welcome (solo dev, rough parts, feedback shapes the roadmap) plus the three feedback
-   channels: the `Help > Send feedback…` menu item, GitHub issues, and a book-a-call link. The two URLs come from the
-   shared `$lib/beta-links.ts` constants (also used by `AboutWindow.svelte`); the links render as `LinkButton`s routed
-   through `openExternalUrl`.
+1. **Personal intro**: first-person welcome (solo dev, rough parts, feedback shapes the roadmap) plus the feedback
+   channels: the `Help > Send feedback…` menu item, GitHub issues, a book-a-call link, and a star/watch/fork CTA (helps
+   Cmdr reach Homebrew's notability bar for a tap-free `brew install`). The URLs come from the shared
+   `$lib/beta-links.ts` constants (also used by `AboutWindow.svelte`); the links render as `LinkButton`s routed through
+   `openExternalUrl`.
 2. **Anonymous-analytics opt-out**: the registry-backed `<SettingSwitch id="analytics.enabled">` (default on). Flipping
    it writes the setting immediately, exactly like the same switch in Settings.
 3. **Optional contact email**: an email field bound to `analytics.email`. It persists locally on every keystroke and, on
@@ -322,5 +323,6 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 - `$lib/shortcuts/key-capture`: `isMacOS`
 - `$lib/system-strings.svelte`: localized system pane names
 - `$lib/ui`: `Button`, `LinkButton`
-- `$lib/beta-links`: `GITHUB_ISSUES_URL`, `BOOK_A_CALL_URL` (Step 3's feedback links; shared with `AboutWindow.svelte`)
+- `$lib/beta-links`: `GITHUB_REPO_URL`, `GITHUB_ISSUES_URL`, `BOOK_A_CALL_URL`, `ABOUT_DAVID_URL` (Step 3's feedback +
+  star-CTA links; shared with `AboutWindow.svelte`)
 - `@tauri-apps/plugin-process`: `relaunch` (Allow-path footer button)

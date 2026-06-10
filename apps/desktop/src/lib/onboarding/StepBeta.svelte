@@ -7,7 +7,7 @@
     import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { onSpecificSettingChange } from '$lib/settings/settings-store'
     import { betaSignup, openExternalUrl } from '$lib/tauri-commands'
-    import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL, ABOUT_DAVID_URL } from '$lib/beta-links'
+    import { GITHUB_REPO_URL, GITHUB_ISSUES_URL, BOOK_A_CALL_URL, ABOUT_DAVID_URL } from '$lib/beta-links'
     import { getAppLogger } from '$lib/logging/logger'
 
     /**
@@ -160,6 +160,15 @@
                 onclick={openLink(BOOK_A_CALL_URL)}>Schedule a call with me</LinkButton
             >. I'd love to chat about all the nasty stuff you do with your files! And/or hear how you use Cmdr. (I obviously won't be doing this for very long, but while Cmdr is an Open beta, I don't expect many people booking calls.)
         </li>
+        <li>
+            Want <code>brew install cmdr</code> to work without a tap? Homebrew needs 225 stars first. Three clicks help:
+            <LinkButton
+                href={GITHUB_REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick={openLink(GITHUB_REPO_URL)}>star, watch, and fork the repo</LinkButton
+            >.
+        </li>
     </ul>
 
     <p class="lede analytics-lede">
@@ -240,6 +249,15 @@
 
     .feedback-list li:last-child {
         margin-bottom: 0;
+    }
+
+    .feedback-list code {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        background: var(--color-bg-tertiary);
+        padding: var(--spacing-xxs) var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        color: var(--color-text-primary);
     }
 
     .toggle-block {

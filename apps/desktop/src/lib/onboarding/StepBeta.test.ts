@@ -165,6 +165,14 @@ describe('StepBeta', () => {
     expect(mounted.target.textContent).toContain('Check your inbox to confirm your email')
   })
 
+  it('renders the GitHub-stars CTA linking the repo (helps Cmdr reach Homebrew)', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    const link = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')
+    expect(link).not.toBeNull()
+    expect(link?.textContent).toContain('star, watch, and fork the repo')
+  })
+
   it('does not call betaSignup for an invalid email', async () => {
     mounted = mountStep()
     await waitForAsync()
