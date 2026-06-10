@@ -21,6 +21,7 @@ import type { ExplorerAPI } from './explorer-api'
 import { commandHandlers } from './command-handlers'
 import type { CommandHandler } from './command-handlers'
 import type { CommandDispatchContext } from './command-dispatch-context'
+import { shouldDropCrossSourceDuplicate } from './dispatch-dedup'
 
 // Re-exported so existing importers (`+page.svelte`, the dispatch tests) keep
 // resolving these from `./command-dispatch` after the move to the context leaf.
@@ -132,6 +133,16 @@ export async function handleCommandExecute<K extends CommandId>(
   // from `dispatchArgs` by the matched handler.
   const id: CommandId = commandId
   const dispatchArgs: CommandArgs[CommandId] | undefined = args[0]
+
+  // Swallow the spurious second half of a macOS keyboard+menu double-fire
+  // before anything else runs (no double log, no double breadcrumb, no toggle
+  // flip-back). Same-source repeats and untagged dispatches always pass; see
+  // dispatch-dedup.ts for the source-pair rationale.
+  if (shouldDropCrossSourceDuplicate(id)) {
+    log.debug('Dropped cross-source duplicate dispatch of {id}', { id })
+    return
+  }
+
   const explorerRef = ctx.getExplorer()
 
   // Bail before logging if the user's intent is text manipulation in a selectable

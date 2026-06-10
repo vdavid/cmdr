@@ -20,6 +20,7 @@
     import { initPathLimits } from '$lib/utils/filename-validation'
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
+    import { markDispatchSource } from './dispatch-dedup'
     import { formatKeyCombo, isMacOS } from '$lib/shortcuts/key-capture'
     import {
         showMainWindow,
@@ -244,6 +245,9 @@
                 // at the edge so a stale Rust id is dropped here rather than no-oping in the switch
                 // `default`. The Rust↔registry drift test pins the two id sets together.
                 if (isCommandId(commandId)) {
+                    // Tag the source so the dispatch core can swallow the spurious
+                    // second half of a macOS keyboard+menu double-fire (dispatch-dedup.ts).
+                    markDispatchSource('menu')
                     void handleCommandExecute(commandId)
                 }
             })
@@ -508,6 +512,9 @@
             if (commandId) {
                 e.preventDefault()
                 e.stopPropagation()
+                // Tag the source so the dispatch core can swallow the spurious
+                // second half of a macOS keyboard+menu double-fire (dispatch-dedup.ts).
+                markDispatchSource('keyboard')
                 void handleCommandExecute(commandId)
                 return
             }

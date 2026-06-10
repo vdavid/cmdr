@@ -239,12 +239,15 @@ has fired. So `on_menu_event` emits `execute-command file.quickLook` AND `handle
 sees the keydown and calls `handleCommandExecute('file.quickLook')`. **Both paths run, both reach the dispatcher.**
 
 The race is not theoretical — observed empirically as `FE:user-action file.quickLook (×2, deduplicated)` log lines in
-the Quick Look feature. Most other commands aren't toggles, so the double-fire is invisible (palette-open is idempotent,
-etc.). For toggles, the dispatcher needs an arm-on-entry race-guard that swallows the second fire inside a short window
-(~200 ms). See `file-explorer/quick-look/quick-look-state.svelte.ts` (`quickLookDispatchGuardJustFired` /
-`armQuickLookDispatchGuard`) for the pattern.
+the Quick Look feature.
 
-If you add a new toggle command with both a menu accelerator and a registry shortcut, plan to add a similar guard.
+The dispatch core now swallows this class centrally: both double-fire callers tag their dispatches
+(`markDispatchSource('keyboard')` in the centralized keydown path, `'menu'` in the `execute-command` listener), and
+`routes/(main)/dispatch-dedup.ts` drops the same command arriving from the OTHER source within 300ms. Keying on the
+source pair (instead of a bare time window) means real rapid input — double-presses, key auto-repeat — is same-source
+and always passes. New toggle commands need NO per-command guard. Quick Look's older local guard
+(`quickLookDispatchGuardJustFired` in `file-explorer/quick-look/quick-look-state.svelte.ts`) predates the central one
+and remains as a harmless second line of defense.
 
 ### Scope hierarchy is hardcoded
 
