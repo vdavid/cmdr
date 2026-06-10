@@ -34,6 +34,7 @@ Blog posts live in `src/content/blog/{slug}/index.md` with colocated images.
 | `src/styles/blog-prose.css`             | Shared prose styles for blog content                      |
 | `src/pages/blog/index.astro`            | Blog index: excerpts with "Read more" links, newest first |
 | `src/pages/blog/[slug].astro`           | Individual post page with comments                        |
+| `src/pages/blog/[slug]/index.md.ts`     | Markdown mirror of each post for AI agents                |
 | `src/pages/og/[slug].png.ts`            | OG image generation (Satori + resvg)                      |
 | `src/pages/rss.xml.ts`                  | RSS feed                                                  |
 | `src/components/Remark42Comments.astro` | Comment widget (disabled in dev)                          |
@@ -90,6 +91,10 @@ See `docs/guides/writing-blog-posts.md`.
 - **CSS variables**: defined in `src/styles/global.css` under `@theme`. Use them everywhere.
 - **External links**: `rehype-external-links` auto-adds `target="_blank" rel="noopener noreferrer"`
 - **RSS autodiscovery**: `<link>` tag in `Layout.astro`
+- **Agent-facing endpoints**: `src/pages/llms.txt.ts` (concise) and `llms-full.txt.ts` (detailed) describe Cmdr for AI
+  agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. Keep the llms files in sync when product
+  facts (pricing, features, system requirements) change. nginx serves `.md` as `text/markdown` via a dedicated location
+  block in `nginx.conf`.
 
 ## Color scheme (light/dark mode)
 

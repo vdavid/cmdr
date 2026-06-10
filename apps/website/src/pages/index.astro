@@ -7,20 +7,42 @@ import Features from '../components/Features.astro'
 import Testimonials from '../components/Testimonials.astro'
 import Download from '../components/Download.astro'
 import Footer from '../components/Footer.astro'
-import { version } from '../lib/release'
+import { version, dmgUrls } from '../lib/release'
 
 const softwareApplicationSchema = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Cmdr',
+    description:
+        'The fastest two-pane file manager for macOS. Indexes your whole drive in minutes, shows folder sizes everywhere, instant search, keyboard-driven everything. Built in Rust, free for personal use.',
     applicationCategory: 'UtilitiesApplication',
     operatingSystem: 'macOS',
-    offers: {
-        '@type': 'Offer',
-        price: '0',
-        priceCurrency: 'USD',
-    },
+    offers: [
+        {
+            '@type': 'Offer',
+            name: 'Personal',
+            price: '0',
+            priceCurrency: 'USD',
+            description: 'Free forever for personal use',
+        },
+        {
+            '@type': 'Offer',
+            name: 'Commercial',
+            price: '59',
+            priceCurrency: 'USD',
+            description: 'Per user per year, commercial use allowed',
+        },
+        {
+            '@type': 'Offer',
+            name: 'Perpetual',
+            price: '199',
+            priceCurrency: 'USD',
+            description: 'One-time purchase, commercial use, three years of updates',
+        },
+    ],
     softwareVersion: version,
+    downloadUrl: dmgUrls.universal,
+    screenshot: 'https://getcmdr.com/hero/cmdr-hero-frame-dark.png',
     url: 'https://getcmdr.com',
 }
 

@@ -56,6 +56,8 @@ BSL 1.1 (source-available). Converts to AGPL-3.0 after three years.
 
 ## Blog posts
 
+Each post is also available as raw Markdown: append \`index.md\` to its URL.
+
 ${blogLines}
 `
 

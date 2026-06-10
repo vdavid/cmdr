@@ -144,6 +144,8 @@ ${releaseNotes}
 
 ## Blog posts
 
+Each post is also available as raw Markdown: append \`index.md\` to its URL.
+
 ${blogLines}
 `
 
