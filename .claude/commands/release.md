@@ -13,10 +13,31 @@ Prepare a release based on docs/guides/releasing.md.
      entries under it. The release script replaces this heading with the versioned one. The committed changelog has no
      `[Unreleased]` section between releases. You're creating it fresh each time.
 
+   ### Audience: who reads this
+
+   One file, two audiences:
+   - **Primary: Cmdr users.** The prose lead and the Added / Changed / Fixed / Security sections become the GitHub
+     release notes and the in-app "What's new" popup, rendered with commit links stripped and Non-app dropped. Write
+     them so every entry works standalone, in plain English, with zero internals.
+   - **Secondary: David and agents tracing changes.** Served by the commit links and the Non-app section; Non-app is the
+     only place internals (tooling, refactors, infra, website) belong.
+
    ### Style: plain-sentence, dense, impact-focused
+   - **Write a 1–2 sentence plain-prose lead** directly under the `## [Unreleased]` heading, before `### Added`: what
+     this release means for users, naming the one to three highlights. No links, no bullets. It opens the release notes
+     and the What's new popup; see the recent releases for examples.
+   - **File each entry where a user would look for it.** A fix is Fixed even if it shipped alongside a feature; perf and
+     behavior tweaks are Changed; pure internals go to Non-app. Only Added / Changed / Fixed / Security / Non-app; never
+     invent sections like "Improved".
    - **Each entry is one sentence.** No `**Bold title:** Body.`; the headline IS the entry. Most entries land under 20
      words; many under 10. Big aggregated entries for tentpole features (think Linux alpha, Git browser launch) can run
      several lines if they bundle many real commits.
+   - **One sentence means one sentence.** No multi-sentence narration ("X now does Y. A thing landing on a thing now
+     blends into it instead of… Your choice applies…"). If you wrote a period and kept going, merge with a colon or cut
+     the rest.
+   - **No trailing benefit clauses.** Delete ", so you always know…", ", so David can follow up", ", so the app never
+     points you at a dead key". If the entry is written well, the benefit is implicit. Pattern to ban: ", so [reader
+     benefit]" at the end of an entry.
    - **No em-dashes** (`—`). They are AI hallmarks. Use parens, commas, colons, or rephrase. En-dashes in ranges are OK.
      Vary the connector, don't default to `;`. Use `:` to explain or qualify, `,` for a tight list, parens for am aside,
      new sentence when two ideas don't compress. `;` is OK for other cases.
@@ -27,7 +48,9 @@ Prepare a release based on docs/guides/releasing.md.
    - **Omit low-impact entries.** Tooling-only commits like "release script now stages oxfmt fixes" or "cleared 3 eslint
      warnings, CI is green again" don't earn a changelog line. If a non-app item has no interesting story for a reader,
      drop it.
-   - **Read the bottom 160 lines of the file** to calibrate the style. These are hand-written and exemplary.
+   - **Calibrate on the two most recent release sections plus the bottom 160 lines.** Both are curated. Don't
+     pattern-match on anything else, and never treat your own draft as calibration; verbosity compounds release over
+     release that way.
 
    #### Before / after examples
 
@@ -59,12 +82,42 @@ Prepare a release based on docs/guides/releasing.md.
 
    > - Add friendly errors for git browser ([19d5b075](...), [af64689f](...)).
 
+   **Don't** (multi-sentence narration; a real past draft):
+
+   > - Folders always merge on copy and move. A folder landing on a same-named folder now blends into it instead of
+   >   asking you to overwrite, skip, or rename the whole folder. Your conflict choice (skip, overwrite, or rename)
+   >   applies to the clashing files inside, so dest-only files always survive the merge ([2 SHAs]).
+
+   **Do**:
+
+   > - Folders always merge on copy and move: your conflict choice (skip, overwrite, or rename) applies to the clashing
+   >   files inside, and dest-only files survive ([2 SHAs]).
+
+   **Don't** (trailing benefit clause; a real past draft):
+
+   > - Add per-feature stability badges (ALPHA, BETA) in the app and a Feature status page on the website, so you always
+   >   know how solid each feature is ([219549db](...)).
+
+   **Do**:
+
+   > - Add stability badges (ALPHA, BETA) in the app and a feature status page on the website ([219549db](...)).
+
    **Keep long when warranted** (true tentpole launches like Linux alpha, with many real commits and a big story):
 
    > - Add Linux support (alpha): volumes via /proc/mounts, file ops with reflink support, trash via FreeDesktop spec,
    >   inotify file watching, MTP ungated, SMB via mDNS + smbclient fallback, GVFS-mounted shares as volumes, native
    >   file icons via freedesktop-icons, accent color via XDG Desktop Portal, encrypted credential fallback when no
    >   system keyring, distro-specific install hints, USB permission handling ([13 SHAs]).
+
+   #### Self-edit pass (mandatory)
+
+   After drafting and before presenting the draft, re-read every entry and:
+   - Cut any entry over ~20 words unless it's a genuine tentpole.
+   - Merge or delete any second sentence.
+   - Delete any trailing ", so [benefit]" clause.
+   - Check that no two entries share commit SHAs or describe the same change from two angles; merge them. (A real past
+     draft had a Fixed entry whose SHAs were a strict subset of an Added entry's.)
+   - Strip internal symbol names, file paths, and enum variants that survived the first pass.
 
 3. **Pre-warm the runner's Finder Automation permission** so `bundle_dmg.sh` doesn't hang for ~2 minutes per matrix job.
    Run the canary AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway). If a macOS
