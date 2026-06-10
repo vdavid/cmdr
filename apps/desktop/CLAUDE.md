@@ -3,7 +3,8 @@
 The Cmdr desktop app. Rust + Tauri 2 backend (`src-tauri/`), Svelte 5 + TypeScript frontend (`src/`).
 
 See [`/AGENTS.md`](../../AGENTS.md) for repo-wide rules and [`/docs/architecture.md`](../../docs/architecture.md) for
-the full subsystem map. Feature-level docs live in colocated `CLAUDE.md` files next to the code.
+the full subsystem map. Feature-level docs live in colocated `CLAUDE.md` (must-knows, auto-injected) + `DETAILS.md`
+(depth, read on demand) files next to the code; see `AGENTS.md` § File structure for the split contract.
 
 ## Running
 

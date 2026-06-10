@@ -161,7 +161,7 @@ always runs fresh. See the input-fingerprint cache section in `scripts/check/CLA
 - Specific tests by name (the one exception where direct commands are fine):
   - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
   - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
-  - Playwright: see `apps/desktop/test/e2e-playwright/CLAUDE.md` § "Running a single spec"
+  - Playwright: see `apps/desktop/test/e2e-playwright/DETAILS.md` § "Running a single spec"
 - **When iterating on one test, run only that test.** The full suite is for confirming CI-green before declaring done,
   not for each tweak. Running the whole Playwright suite for one new spec wastes ~10 minutes per cycle and produces
   noisy "cascade" failures when the broken test takes the app down with it (subsequent specs fail with connection

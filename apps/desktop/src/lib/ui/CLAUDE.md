@@ -46,10 +46,9 @@ the toast-level guide, and decisions are in [DETAILS.md](DETAILS.md).
 - **A full toast stack of all-persistent toasts silently drops new toasts.** Intentional: persistent toasts hold
   important state and shouldn't be evicted by transient feedback.
 - **Toast action buttons use `Button` mini in a right-aligned `.actions` row** (default action far right, macOS
-  convention). Don't hand-roll bespoke `<button>`s; `DownloadToastContent` is the reference. Filled
-  `variant="primary"` is reserved for the one genuinely affirmative action; dismiss/cancel alternatives and lone soft
-  opt-outs stay `secondary` (a filled opt-out reads as a loud "do this!"). Full variant guide in DETAILS.md § Toast
-  system.
+  convention). Don't hand-roll bespoke `<button>`s; `DownloadToastContent` is the reference. Filled `variant="primary"`
+  is reserved for the one genuinely affirmative action; dismiss/cancel alternatives and lone soft opt-outs stay
+  `secondary` (a filled opt-out reads as a loud "do this!"). Full variant guide in DETAILS.md § Toast system.
 - **`StatusBadge` class is `feature-status-badge`, NOT `status-badge`** (the Debug window has a `:global(.status-badge)`
   that would leak onto it). Derive the status via `getBadgeStatus(featureId)`, never hardcode it.
 - **`containerStyle` exists because stylelint blocks non-token CSS custom properties.** Use it for one-off layout sizing
