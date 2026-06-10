@@ -97,8 +97,8 @@
 
     .ai-actions {
         display: flex;
-        gap: var(--spacing-xs);
         justify-content: flex-end;
-        margin-top: var(--spacing-xs);
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

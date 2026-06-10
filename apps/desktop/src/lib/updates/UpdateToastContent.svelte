@@ -14,8 +14,8 @@
 
 <span class="update-text">New version available. Restart to update.</span>
 <div class="update-actions">
-    <Button variant="primary" size="mini" onclick={handleRestart}>Restart</Button>
     <Button variant="secondary" size="mini" onclick={handleDismiss}>Later</Button>
+    <Button variant="primary" size="mini" onclick={handleRestart}>Restart</Button>
 </div>
 
 <style>
@@ -26,7 +26,8 @@
 
     .update-actions {
         display: flex;
-        gap: var(--spacing-xs);
-        margin-top: var(--spacing-xs);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

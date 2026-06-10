@@ -285,6 +285,11 @@ but nothing changed" outcomes (those are `info`); don't pick `info` for in-progr
 don't pick `warn` when an op actually failed (that's `error`); don't pick `error` for soft refusals like "tab limit
 reached" (that's `warn`).
 
+Toast action buttons use `Button` mini primitives in a right-aligned `.actions` row (`justify-content: flex-end`,
+`gap: var(--spacing-sm)`, `margin-top: var(--spacing-md)`), with the primary/default action at the far right (macOS
+default-button-bottom-right convention) and secondary/dismiss actions to its left. Don't hand-roll bespoke `<button>`s
+in toast content components. `DownloadToastContent` is the reference.
+
 Dismissal: `transient` (4s timeout + nav-dismiss, default) or `persistent`.
 
 Call `dismissTransientToasts()` on pane navigation to clear stale feedback.

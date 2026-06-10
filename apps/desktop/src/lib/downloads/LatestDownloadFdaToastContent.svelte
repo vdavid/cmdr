@@ -1,5 +1,6 @@
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
     import { openPrivacySettings } from '$lib/tauri-commands'
     import { LATEST_DOWNLOAD_FDA_TOAST_ID } from './go-to-latest-ids'
 
@@ -16,8 +17,8 @@
 <div class="content">
     <span class="message">Cmdr needs Full Disk Access to watch your Downloads folder.</span>
     <div class="actions">
-        <button class="link-button" onclick={handleOpenSystemSettings}>Open System Settings</button>
-        <button class="link-button" onclick={handleDismiss}>Dismiss</button>
+        <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
+        <Button size="mini" variant="primary" onclick={handleOpenSystemSettings}>Open System Settings</Button>
     </div>
 </div>
 
@@ -36,18 +37,8 @@
 
     .actions {
         display: flex;
-        gap: var(--spacing-md);
-    }
-
-    .link-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-    }
-
-    .link-button:hover {
-        color: var(--color-text-secondary);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

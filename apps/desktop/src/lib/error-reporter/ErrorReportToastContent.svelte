@@ -18,6 +18,7 @@
 
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
 
     const toastId = 'error-report-sent'
     let copied = $state(false)
@@ -39,10 +40,10 @@
         <span class="id-badge">{lastSentReportId}</span>
     </span>
     <div class="actions">
-        <button class="link-button" onclick={() => void handleCopy()}>
+        <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
+        <Button size="mini" variant="primary" onclick={() => void handleCopy()}>
             {copied ? 'Copied' : 'Copy ID'}
-        </button>
-        <button class="link-button" onclick={handleDismiss}>Dismiss</button>
+        </Button>
     </div>
 </div>
 
@@ -71,19 +72,8 @@
 
     .actions {
         display: flex;
-        gap: var(--spacing-md);
-    }
-
-    .link-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        cursor: default;
-    }
-
-    .link-button:hover {
-        color: var(--color-text-secondary);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

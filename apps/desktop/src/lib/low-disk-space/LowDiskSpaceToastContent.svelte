@@ -13,6 +13,7 @@
      * re-enable it.
      */
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
     import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
     import { setLowDiskSpaceNotificationsMode, openSettingsToLowDiskSpace } from './notifications-mode'
@@ -46,7 +47,7 @@
         Your startup disk is running low on space: {freeText} free ({percentText}%).
     </span>
     <div class="actions">
-        <button class="link" type="button" onclick={() => void handleDisable()}>Disable these notifications</button>
+        <Button size="mini" variant="secondary" onclick={() => void handleDisable()}>Disable these notifications</Button>
     </div>
 </div>
 
@@ -65,19 +66,8 @@
 
     .actions {
         display: flex;
-        gap: var(--spacing-md);
-        align-items: center;
-    }
-
-    .link {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-    }
-
-    .link:hover {
-        color: var(--color-text-secondary);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

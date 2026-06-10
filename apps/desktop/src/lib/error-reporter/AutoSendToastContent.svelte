@@ -18,6 +18,7 @@
 
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { openErrorReportDialog } from './error-report-flow.svelte'
 
@@ -44,8 +45,8 @@
         <span class="id-badge">{lastAutoSentReportId}</span>
     </div>
     <div class="actions">
-        <button class="link-button" onclick={handleView}>View</button>
-        <button class="link-button" onclick={handleChangeSettings}>Change settings</button>
+        <Button size="mini" variant="secondary" onclick={handleChangeSettings}>Change settings</Button>
+        <Button size="mini" variant="primary" onclick={handleView}>View</Button>
     </div>
 </div>
 
@@ -79,19 +80,8 @@
 
     .actions {
         display: flex;
-        gap: var(--spacing-md);
-    }
-
-    .link-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        cursor: default;
-    }
-
-    .link-button:hover {
-        color: var(--color-text-secondary);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

@@ -4,6 +4,7 @@
     import { HOVER_LEAVE_GRACE_MS } from './toast-store.svelte'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         id: string
@@ -159,9 +160,11 @@
         {#if typeof content === 'string'}
             <span class="toast-message">{content}</span>
             {#if showSendErrorReport}
-                <button class="toast-action" onclick={handleSendErrorReport}>
-                    Send error report&hellip;
-                </button>
+                <div class="toast-actions">
+                    <Button size="mini" variant="secondary" onclick={handleSendErrorReport}>
+                        Send error report&hellip;
+                    </Button>
+                </div>
             {/if}
         {:else}
             {@const ContentComponent = content}
@@ -238,19 +241,11 @@
         line-height: 1.4;
     }
 
-    .toast-action {
-        background: none;
-        border: none;
-        padding: 0;
-        margin-top: var(--spacing-xs);
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        cursor: default;
-        display: block;
-    }
-
-    .toast-action:hover {
-        color: var(--color-text-secondary);
+    .toast-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 
     .toast-content {

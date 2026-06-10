@@ -14,6 +14,7 @@
      */
 
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { setSetting } from '$lib/settings'
@@ -63,7 +64,7 @@
         <LinkButton onclick={handleOpenSettings}>Settings &gt; Keyboard shortcuts</LinkButton>.
     </p>
     <div class="actions">
-        <button class="dont-show-again-button" type="button" onclick={handleDontShowAgain}>Don't show again</button>
+        <Button size="mini" variant="secondary" onclick={handleDontShowAgain}>Don't show again</Button>
     </div>
 </div>
 
@@ -91,23 +92,7 @@
     .actions {
         display: flex;
         justify-content: flex-end;
-        margin-top: var(--spacing-xs);
-    }
-
-    /* Muted text-link style — matches the MTP toast's "Disable MTP..." link.
-       Intentionally not using the LinkButton accent style: "Don't show again"
-       is a soft opt-out, not a primary action competing with the inline
-       Settings link above. */
-    .dont-show-again-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-family: inherit;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-    }
-
-    .dont-show-again-button:hover {
-        color: var(--color-text-secondary);
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

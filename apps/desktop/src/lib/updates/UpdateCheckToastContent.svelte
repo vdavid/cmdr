@@ -1,6 +1,7 @@
 <script lang="ts">
     import { updateState } from './update-state.svelte'
     import { formatUpdateStatus } from './update-status-text'
+    import Button from '$lib/ui/Button.svelte'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 
     const statusText = $derived(formatUpdateStatus(updateState))
@@ -13,7 +14,9 @@
 <div class="content">
     {#if updateState.error !== null}
         <span class="message">Error: {updateState.error}</span>
-        <button class="link-button" onclick={handleSendErrorReport}>Send error report</button>
+        <div class="actions">
+            <Button size="mini" variant="secondary" onclick={handleSendErrorReport}>Send error report</Button>
+        </div>
     {:else}
         <span class="message">{statusText}</span>
     {/if}
@@ -32,17 +35,10 @@
         line-height: 1.4;
     }
 
-    .link-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        cursor: default;
-        text-align: left;
-    }
-
-    .link-button:hover {
-        color: var(--color-text-secondary);
+    .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

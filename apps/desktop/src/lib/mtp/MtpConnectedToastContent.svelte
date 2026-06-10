@@ -9,6 +9,7 @@
 
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
     import { setSetting } from '$lib/settings'
     import { isMacOS } from '$lib/shortcuts/key-capture'
 
@@ -46,8 +47,8 @@
         Don't show again
     </label>
     <div class="actions">
-        <button class="ok-button" onclick={handleOk}>OK</button>
-        <button class="disable-link" onclick={handleDisableMtp}>Disable MTP...</button>
+        <Button size="mini" variant="secondary" onclick={handleDisableMtp}>Disable MTP...</Button>
+        <Button size="mini" variant="primary" onclick={handleOk}>OK</Button>
     </div>
 </div>
 
@@ -89,38 +90,8 @@
 
     .actions {
         display: flex;
-        align-items: center;
+        justify-content: flex-end;
         gap: var(--spacing-sm);
-        margin-top: var(--spacing-xs);
-    }
-
-    .ok-button {
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
-        border: none;
-        border-radius: var(--radius-sm);
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-xs);
-        font-weight: 500;
-        cursor: default;
-        transition: background var(--transition-fast);
-    }
-
-    .ok-button:hover {
-        background: var(--color-accent-hover);
-    }
-
-    .disable-link {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        cursor: default;
-        transition: color var(--transition-fast);
-    }
-
-    .disable-link:hover {
-        color: var(--color-text-secondary);
+        margin-top: var(--spacing-md);
     }
 </style>

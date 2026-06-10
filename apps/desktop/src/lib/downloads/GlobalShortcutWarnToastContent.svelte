@@ -14,6 +14,7 @@
      * THIS one combo the user just pressed.
      */
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
     import { commands } from '$lib/ipc/bindings'
     import { setGlobalGoToLatestEnabled } from './global-shortcut-setting'
     import { getAppLogger } from '$lib/logging/logger'
@@ -54,8 +55,8 @@
 <div class="content">
     <span class="message">The {binding} shortcut jumps to your latest download from anywhere. Keep it on?</span>
     <div class="actions">
-        <button class="primary" type="button" onclick={handleKeepOn}>Keep it on</button>
-        <button class="link" type="button" onclick={handleTurnOff}>Turn it off</button>
+        <Button size="mini" variant="secondary" onclick={handleTurnOff}>Turn it off</Button>
+        <Button size="mini" variant="primary" onclick={handleKeepOn}>Keep it on</Button>
     </div>
 </div>
 
@@ -74,32 +75,8 @@
 
     .actions {
         display: flex;
-        gap: var(--spacing-md);
-        align-items: center;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
-        border: 1px solid transparent;
-        border-radius: var(--radius-sm);
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        font-size: var(--font-size-xs);
-    }
-
-    .primary:hover {
-        background: var(--color-accent-hover);
-    }
-
-    .link {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-    }
-
-    .link:hover {
-        color: var(--color-text-secondary);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

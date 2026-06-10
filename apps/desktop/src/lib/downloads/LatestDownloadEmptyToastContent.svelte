@@ -6,6 +6,7 @@
      * never re-read. Same shape as `DownloadToastContent`.
      */
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         /** Dedup id of this toast; lets the component self-dismiss on action. */
@@ -34,8 +35,8 @@
 <div class="content">
     <span class="message">Your Downloads folder is empty. Go there anyway?</span>
     <div class="actions">
-        <button class="link-button" onclick={handleGoToDownloads}>Go to Downloads</button>
-        <button class="link-button" onclick={handleDismiss}>Dismiss</button>
+        <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
+        <Button size="mini" variant="primary" onclick={handleGoToDownloads}>Go to Downloads</Button>
     </div>
 </div>
 
@@ -54,18 +55,8 @@
 
     .actions {
         display: flex;
-        gap: var(--spacing-md);
-    }
-
-    .link-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-    }
-
-    .link-button:hover {
-        color: var(--color-text-secondary);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>

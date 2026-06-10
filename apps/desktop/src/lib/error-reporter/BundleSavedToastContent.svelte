@@ -13,6 +13,7 @@
 
 <script lang="ts">
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
     import { showInFinder } from '$lib/tauri-commands'
 
     const toastId = 'error-report-bundle-saved'
@@ -32,8 +33,8 @@
     <span class="message">Saved bundle to disk</span>
     <span class="path" title={lastSavedBundlePath}>{lastSavedBundlePath}</span>
     <div class="actions">
-        <button class="link-button" onclick={handleReveal}>Reveal in Finder</button>
-        <button class="link-button" onclick={handleDismiss}>Dismiss</button>
+        <Button size="mini" variant="secondary" onclick={handleDismiss}>Dismiss</Button>
+        <Button size="mini" variant="primary" onclick={handleReveal}>Reveal in Finder</Button>
     </div>
 </div>
 
@@ -62,19 +63,8 @@
 
     .actions {
         display: flex;
-        gap: var(--spacing-md);
-    }
-
-    .link-button {
-        background: none;
-        border: none;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        cursor: default;
-    }
-
-    .link-button:hover {
-        color: var(--color-text-secondary);
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
     }
 </style>
