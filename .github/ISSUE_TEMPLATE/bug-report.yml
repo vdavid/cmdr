@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in Cmdr isn't working right? Tell me about it.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time! Cmdr is in open beta, and reports like yours are what make it better.
+
+        Tip: if the app misbehaved in a way that's hard to describe, use **Help > Send error report…** inside Cmdr first. It sends me a redacted log bundle and gives you a short reference ID (like `ERR-12345`) you can paste below, which makes the bug much easier to track down.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe what went wrong. Screenshots welcome.
+      placeholder: 'Example: I pressed F5 to copy a folder to my NAS and the progress bar froze at 80%.'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: If you can make it happen again, list the steps.
+      placeholder: |
+        1. Open a folder with ~1,000 files
+        2. Press ⌘F and search for "report"
+        3. …
+    validations:
+      required: false
+  - type: input
+    id: cmdr-version
+    attributes:
+      label: Cmdr version
+      description: Find it in **Cmdr > About cmdr**.
+      placeholder: 'Example: 0.24.0'
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: 'Example: macOS 26.1 (Tahoe)'
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description:
+        Error report reference ID (`ERR-XXXXX`), unusual setup (network drives, cloud storage, MTP devices), or anything
+        you think helps.
+    validations:
+      required: false

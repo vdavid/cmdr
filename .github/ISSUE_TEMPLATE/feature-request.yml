@@ -1,0 +1,29 @@
+name: Feature request
+description: Want Cmdr to do something it doesn't do yet? I'm listening.
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you write: check the [most-wanted list](https://github.com/vdavid/cmdr/issues?q=is%3Aopen+label%3Aenhancement+sort%3Areactions-%2B1-desc). If your idea is already there, a 👍 on it counts as a vote and saves you the typing. Also see the [feature status page](https://getcmdr.com/feature-status) for what's planned.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like Cmdr to do?
+      description: Describe the feature, and ideally the situation where you'd use it.
+      placeholder: "Example: I'd love to compare two folders side by side and see which files differ."
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you handle this today?
+      description: Another app, a script, a workaround, or you don't?
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+    validations:
+      required: false

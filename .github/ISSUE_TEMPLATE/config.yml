@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Quick feedback, no GitHub formality
+    url: https://getcmdr.com/feature-status
+    about: Inside Cmdr, use Help > Send feedback… — it goes straight to David, no account needed.
+  - name: Book a call with David
+    url: https://cal.eu/veszelovszki/30min
+    about: I'd honestly love to hear how you use Cmdr. Grab a slot and let's talk.
