@@ -263,7 +263,10 @@ separate `update_view_mode_accelerator()` path to preserve checked state.
 ### Conflict warnings are not errors
 
 Users can keep conflicting shortcuts. The UI shows a warning and offers to resolve, but "Keep both" is a valid choice.
-At runtime, the first match (most specific scope) wins.
+At runtime the dispatch map keeps one winner per combo: the most specific scope (longest `getActiveScopes` chain) wins,
+with registry declaration order as the stable tiebreaker for equal specificity. Pinned by the scope-winner tests in
+`shortcut-dispatch.test.ts`; without the scope rule, an unrelated registry reorder could silently flip a kept conflict's
+winner.
 
 ### Modifier-only combos are rejected
 

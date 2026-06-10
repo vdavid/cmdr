@@ -101,6 +101,23 @@ describe('shortcut-dispatch', () => {
       expect(lookupCommand('F12')).toBeUndefined()
     })
 
+    it('a more specific scope wins a shared combo regardless of registry order', () => {
+      // app.quit (scope App) sits EARLIER in the registry than file.copy
+      // (Main window/File list). With both claiming F5, the deeper scope must
+      // win — not whichever happens to be declared first.
+      customOverrides.set('app.quit', ['F5'])
+      initShortcutDispatch()
+      expect(lookupCommand('F5')).toBe('file.copy')
+    })
+
+    it('equal specificity falls back to registry order (stable, pinned)', () => {
+      // file.rename and file.copy share the Main window/File list scope;
+      // rename is declared first, so it keeps the combo.
+      customOverrides.set('file.rename', ['F5'])
+      initShortcutDispatch()
+      expect(lookupCommand('F5')).toBe('file.rename')
+    })
+
     it('returns undefined for Tier 2 (non-palette) command shortcuts', () => {
       initShortcutDispatch()
       // nav.up (↑) and nav.down (↓) have showInPalette: false

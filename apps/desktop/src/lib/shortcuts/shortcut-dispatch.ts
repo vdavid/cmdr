@@ -8,6 +8,7 @@
 import { commands } from '$lib/commands/command-registry'
 import type { CommandId } from '$lib/commands'
 import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
+import { getActiveScopes } from './scope-hierarchy'
 
 // Command IDs that have showInPalette: false but still need central dispatch
 const ALWAYS_DISPATCH_IDS = new Set<CommandId>(['app.commandPalette'])
@@ -23,20 +24,35 @@ function isTier1(command: { id: CommandId; showInPalette: boolean }): boolean {
   return command.showInPalette || ALWAYS_DISPATCH_IDS.has(command.id)
 }
 
-/** Build the reverse lookup map from scratch. */
+/**
+ * Build the reverse lookup map from scratch.
+ *
+ * When two Tier 1 commands claim the same combo (a kept "Keep both" conflict),
+ * the MORE SPECIFIC scope wins — its ancestry chain via `getActiveScopes` is
+ * longer — with registry order as the stable tiebreaker for equal specificity.
+ * Without the scope rule the winner would be whichever command happens to be
+ * declared first in the registry, so an unrelated registry reorder could
+ * silently flip a user's binding.
+ */
 function buildShortcutMap(): Map<string, CommandId> {
-  const map = new Map<string, CommandId>()
+  // All claims per combo first, then one deterministic winner per combo.
+  const claims = new Map<string, { id: CommandId; depth: number; registryIndex: number }[]>()
 
-  for (const command of commands) {
-    if (!isTier1(command)) continue
+  commands.forEach((command, registryIndex) => {
+    if (!isTier1(command)) return
 
-    const shortcuts = getEffectiveShortcuts(command.id)
-    for (const shortcut of shortcuts) {
-      // First match wins; skip if shortcut already claimed
-      if (!map.has(shortcut)) {
-        map.set(shortcut, command.id)
-      }
+    const depth = getActiveScopes(command.scope).length
+    for (const shortcut of getEffectiveShortcuts(command.id)) {
+      const list = claims.get(shortcut) ?? []
+      list.push({ id: command.id, depth, registryIndex })
+      claims.set(shortcut, list)
     }
+  })
+
+  const map = new Map<string, CommandId>()
+  for (const [shortcut, list] of claims) {
+    list.sort((a, b) => b.depth - a.depth || a.registryIndex - b.registryIndex)
+    map.set(shortcut, list[0].id)
   }
 
   return map
