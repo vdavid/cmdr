@@ -19,7 +19,7 @@
     import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
     import SectionSummary from './SectionSummary.svelte'
     import { getMatchingSettingIdsInSection } from '$lib/settings/settings-search'
-    import { searchCommands } from '$lib/commands/fuzzy-search'
+    import { searchAllCommands } from '$lib/commands/fuzzy-search'
 
     interface Props {
         searchQuery: string
@@ -47,7 +47,9 @@
 
     function keyboardShortcutsHasMatches(): boolean {
         if (!searchQuery.trim()) return false
-        const results = searchCommands(searchQuery)
+        // Full-registry search: the shortcuts section renders every command, so the gate
+        // must match the same set (palette-only search hid "Open command palette" here).
+        const results = searchAllCommands(searchQuery)
         return results.length > 0
     }
 

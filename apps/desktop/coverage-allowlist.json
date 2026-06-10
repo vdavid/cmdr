@@ -199,9 +199,6 @@
     "settings/reactive-settings.svelte.ts": {
       "reason": "Svelte reactive state, depends on settings store"
     },
-    "settings/sections/AdvancedSection.svelte": {
-      "reason": "UI section, depends on Tauri APIs"
-    },
     "settings/sections/AiCloudSection.svelte": {
       "reason": "UI section, depends on Tauri commands and event listeners"
     },
