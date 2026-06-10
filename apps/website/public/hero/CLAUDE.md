@@ -5,16 +5,22 @@ into a frame + two pane cutouts so they can animate independently in `Hero.astro
 
 ## Files
 
-| File                                    | Purpose                                                                                |
-| --------------------------------------- | -------------------------------------------------------------------------------------- |
-| `cmdr-hero-frame-{dark,light}.png`      | 2x window chrome (title bar, toolbar, borders, status bar) with transparent pane areas |
-| `cmdr-hero-left-pane-{dark,light}.png`  | 2x left pane screenshot content on transparent canvas                                  |
-| `cmdr-hero-right-pane-{dark,light}.png` | 2x right pane screenshot content on transparent canvas                                 |
-| `cmdr-hero-*-{dark,light}-1x.png`       | 1x derivatives for responsive delivery experiments and future `srcset` wiring          |
+| File                                    | Purpose                                                                                        |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `cmdr-hero-frame-{dark,light}.png`      | Master: 2x window chrome (title bar, toolbar, borders, status bar) with transparent pane areas |
+| `cmdr-hero-left-pane-{dark,light}.png`  | Master: 2x left pane screenshot content on transparent canvas                                  |
+| `cmdr-hero-right-pane-{dark,light}.png` | Master: 2x right pane screenshot content on transparent canvas                                 |
+| `cmdr-hero-*-{dark,light}.webp`         | Shipped: 2x lossless WebP, generated from the master PNGs                                      |
+| `cmdr-hero-*-{dark,light}-1x.webp`      | Shipped: 1x lossless WebP for 1x-DPR displays                                                  |
 
-The six primary files share the same canvas size: **2508 x 1634 px** (2x retina). The 1x derivatives are **1254 x 817
-px** and are generated from the 2x files. `Hero.astro` switches between dark and light variants using CSS selectors on
-`data-theme` / `prefers-color-scheme`.
+The six master PNGs share the same canvas size: **2508 x 1634 px** (2x retina). The 1x WebPs are **1254 x 817 px**.
+**Only the WebPs are referenced by the site**; the PNGs stay as regeneration masters. Lossless WebP beats lossy q90 here
+(flat UI chrome compresses better losslessly) and is pixel-perfect, so don't switch to lossy without measuring.
+
+`Hero.astro` loads the layers as CSS `background-image` with `image-set()` (1x/2x by device pixel ratio), and switches
+dark/light variants via CSS selectors on `data-theme` / `prefers-color-scheme`. Don't convert the layers back to `<img>`
+tags: the browser's preload scanner downloads every `<img>` even inside a `display: none` subtree, so `<img>` would
+fetch both theme variants on every visit. Background images only load for rendered elements.
 
 ## How to reshoot
 
@@ -72,7 +78,7 @@ So, the process:
 - Press ⌘D, switch to light mode
 - Light mode: take screenshot, save as `~/Downloads/cmdr-scrshot-light.png`
 
-### 5. Generate the 6 hero PNGs
+### 5. Generate the 6 master PNGs and 12 shipped WebPs
 
 From the repo root:
 
@@ -107,10 +113,12 @@ for variant in dark light; do
     cmdr-hero-frame-${variant}.png
 done
 
+# Shipped WebPs: lossless 2x + 1x from each master PNG
 for variant in dark light; do
   for layer in frame left-pane right-pane; do
-    magick cmdr-hero-${layer}-${variant}.png -resize 50% \
-      cmdr-hero-${layer}-${variant}-1x.png
+    base=cmdr-hero-${layer}-${variant}
+    magick $base.png -define webp:lossless=true -define webp:method=6 $base.webp
+    magick $base.png -resize 50% -define webp:lossless=true -define webp:method=6 $base-1x.webp
   done
 done
 
@@ -119,9 +127,8 @@ rm -f /tmp/hero-mask.png /tmp/src-alpha.png /tmp/new-alpha.png
 
 ### 6. Verify
 
-Check that the six primary PNGs are 2508 x 1634, the six 1x derivatives are 1254 x 817, and the 2x file sizes are
-roughly: ~650 KB frame, ~340 KB left pane, ~140 KB right pane. To verify the frame transparency, composite on a red
-background:
+Check that the six master PNGs are 2508 x 1634, the 1x WebPs are 1254 x 817, and the 2x WebP file sizes are roughly: ~85
+KB frame, ~50 KB left pane, ~20 KB right pane. To verify the frame transparency, composite on a red background:
 
 ```bash
 magick -size 2508x1634 xc:red \

@@ -47,17 +47,21 @@ const currentYear = new Date().getFullYear()
     <div class="hero-illustration" aria-hidden="true">
         <div class="hero-perspective">
             <div class="hero-base">
+                <!-- Layers are CSS background images (not <img>): the preload scanner downloads every
+                     <img> even inside display:none, so <img> would fetch both theme variants (~2x the
+                     bytes). Background images only load for rendered elements, and image-set() picks
+                     the 1x/2x file by device pixel ratio. -->
                 <!-- Dark variant -->
                 <div class="hero-variant hero-variant--dark">
-                    <img src="/hero/cmdr-hero-frame-dark.png" alt="" class="hero-layer hero-frame" />
-                    <img src="/hero/cmdr-hero-right-pane-dark.png" alt="" class="hero-layer hero-right-pane" />
-                    <img src="/hero/cmdr-hero-left-pane-dark.png" alt="" class="hero-layer hero-left-pane" />
+                    <div class="hero-layer hero-frame"></div>
+                    <div class="hero-layer hero-right-pane"></div>
+                    <div class="hero-layer hero-left-pane"></div>
                 </div>
                 <!-- Light variant -->
                 <div class="hero-variant hero-variant--light">
-                    <img src="/hero/cmdr-hero-frame-light.png" alt="" class="hero-layer hero-frame" />
-                    <img src="/hero/cmdr-hero-right-pane-light.png" alt="" class="hero-layer hero-right-pane" />
-                    <img src="/hero/cmdr-hero-left-pane-light.png" alt="" class="hero-layer hero-left-pane" />
+                    <div class="hero-layer hero-frame"></div>
+                    <div class="hero-layer hero-right-pane"></div>
+                    <div class="hero-layer hero-left-pane"></div>
                 </div>
             </div>
         </div>
@@ -209,11 +213,77 @@ const currentYear = new Date().getFullYear()
 
     .hero-layer {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+        inset: 0;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+    }
+
+    /* The -webkit-image-set() fallbacks cover Safari < 17, which only knows the prefixed form. */
+    .hero-variant--dark .hero-frame {
+        background-image: -webkit-image-set(
+            url('/hero/cmdr-hero-frame-dark-1x.webp') 1x,
+            url('/hero/cmdr-hero-frame-dark.webp') 2x
+        );
+        background-image: image-set(
+            url('/hero/cmdr-hero-frame-dark-1x.webp') 1x,
+            url('/hero/cmdr-hero-frame-dark.webp') 2x
+        );
+    }
+
+    .hero-variant--dark .hero-left-pane {
+        background-image: -webkit-image-set(
+            url('/hero/cmdr-hero-left-pane-dark-1x.webp') 1x,
+            url('/hero/cmdr-hero-left-pane-dark.webp') 2x
+        );
+        background-image: image-set(
+            url('/hero/cmdr-hero-left-pane-dark-1x.webp') 1x,
+            url('/hero/cmdr-hero-left-pane-dark.webp') 2x
+        );
+    }
+
+    .hero-variant--dark .hero-right-pane {
+        background-image: -webkit-image-set(
+            url('/hero/cmdr-hero-right-pane-dark-1x.webp') 1x,
+            url('/hero/cmdr-hero-right-pane-dark.webp') 2x
+        );
+        background-image: image-set(
+            url('/hero/cmdr-hero-right-pane-dark-1x.webp') 1x,
+            url('/hero/cmdr-hero-right-pane-dark.webp') 2x
+        );
+    }
+
+    .hero-variant--light .hero-frame {
+        background-image: -webkit-image-set(
+            url('/hero/cmdr-hero-frame-light-1x.webp') 1x,
+            url('/hero/cmdr-hero-frame-light.webp') 2x
+        );
+        background-image: image-set(
+            url('/hero/cmdr-hero-frame-light-1x.webp') 1x,
+            url('/hero/cmdr-hero-frame-light.webp') 2x
+        );
+    }
+
+    .hero-variant--light .hero-left-pane {
+        background-image: -webkit-image-set(
+            url('/hero/cmdr-hero-left-pane-light-1x.webp') 1x,
+            url('/hero/cmdr-hero-left-pane-light.webp') 2x
+        );
+        background-image: image-set(
+            url('/hero/cmdr-hero-left-pane-light-1x.webp') 1x,
+            url('/hero/cmdr-hero-left-pane-light.webp') 2x
+        );
+    }
+
+    .hero-variant--light .hero-right-pane {
+        background-image: -webkit-image-set(
+            url('/hero/cmdr-hero-right-pane-light-1x.webp') 1x,
+            url('/hero/cmdr-hero-right-pane-light.webp') 2x
+        );
+        background-image: image-set(
+            url('/hero/cmdr-hero-right-pane-light-1x.webp') 1x,
+            url('/hero/cmdr-hero-right-pane-light.webp') 2x
+        );
     }
 
     /* Gradient fade on right edge. Stops include a `+ 10vw` term so wider viewports

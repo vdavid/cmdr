@@ -11,6 +11,12 @@ import { blogEditorDevServer } from './src/dev/blog-editor/dev-server.mjs'
 export default defineConfig({
   site: 'https://getcmdr.com',
   output: 'static',
+  build: {
+    // Inline all CSS into the HTML: removes the render-blocking stylesheet request, which directly
+    // helps LCP. The site's CSS is small (~12 KB), so losing cross-page caching costs less than the
+    // extra round trip on first paint.
+    inlineStylesheets: 'always',
+  },
   integrations: [sitemap(), smartQuotesIntegration()],
   server: {
     port: parseInt(process.env.PORT || '4829', 10),
