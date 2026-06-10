@@ -74,8 +74,8 @@ Always runs (no change gate). Holds the checks whose inputs no per-app filter ca
 
 ## Build caching
 
-The Rust compile dominates CI time (a cold ~1000-crate Tauri tree is ~10-16 min). Three caches keep it down. Each has a
-load-bearing companion step — **don't remove these without re-checking the cache; two of the three failure modes are
+The Rust compile dominates CI time (a cold ~1000-crate Tauri tree is ~10-16 min). Four caches keep it down. Each has a
+load-bearing companion step — **don't remove these without re-checking the cache; several of the failure modes are
 silent** (a warning, not a red job):
 
 - **`desktop-rust`** (per push): `Swatinem/rust-cache` (SHA-pinned; `workflows-hardening` requires the pin) caches
@@ -92,13 +92,23 @@ silent** (a warning, not a red job):
   cache never persisted for months (every e2e run did a cold ~10-min build). A `chown` back to the runner after the
   Docker run fixes it (warm e2e build ~10 min vs ~16-17 cold). If e2e ever starts building cold again, check that the
   save isn't warning "Permission denied" again.
+- **`desktop-e2e-linux` base image**: the E2E Docker base image (apt packages + Node + Rust; see
+  `apps/desktop/test/e2e-linux/CLAUDE.md` § Build caching) cached as a `docker save` tar, keyed on
+  `hashFiles(Dockerfile.base)` with **no restore-keys** (a stale tar's image carries a different content-hash tag, so
+  `e2e-linux.sh` would rebuild anyway). Saves the cold ~4-min image build per run. **Load-bearing companions: the "Free
+  disk space" step and the "Export E2E base image" step.** The job briefly holds the loaded image (~3.5 GB) plus, on a
+  cache miss, its tar — without the SDK reclaim that can overflow the runner's ~14 GB free disk. The export step is what
+  puts the tar on disk for the cache post-step; without it the cache saves an empty dir and every run builds cold
+  (silently — the cache "hits" but contains nothing, which is why the load step would fail loudly on a missing tar
+  rather than soft-skip).
 - **`slow-checks` dependency-checks**: rust-cache for cargo-udeps's nightly `target/`, plus the same "Free disk space"
   step. Kept alive by the 6-day cron (below).
 
 rust-cache keys per-job, so these are independent caches and each prunes itself. The shared risk is GitHub's **10 GB
-per-repo ceiling**: today the total sits ~4-5 GB (rust-cache 1.7 GB + e2e 0.9 GB + mise/registry), comfortably under,
-but if more big caches land, LRU evicts the least-used. Protect the per-push `desktop-rust` cache first; the weekly
-nightly cache is the one to drop under pressure. Watch with `gh cache list`.
+per-repo ceiling**: rust-cache 1.7 GB + e2e cargo/target 0.9 GB + the e2e base-image tar (~0.9 GB zstd-compressed; ~3.5
+GB raw) + mise/registry lands the total around ~5.5 GB, still under, but if more big caches land, LRU evicts the
+least-used. Protect the per-push `desktop-rust` cache first; the weekly nightly cache is the one to drop under pressure.
+Watch with `gh cache list`.
 
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E (~10 min warm) is that floor.

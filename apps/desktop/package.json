@@ -23,7 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e:linux": "./scripts/e2e-linux.sh",
-    "test:e2e:linux:build": "docker build -t cmdr-e2e -f test/e2e-linux/docker/Dockerfile test/e2e-linux/docker",
+    "test:e2e:linux:build": "./scripts/e2e-linux.sh --build --build-only",
     "test:e2e:linux:shell": "./scripts/e2e-linux.sh --shell",
     "test:e2e:linux:vnc": "./scripts/e2e-linux.sh --vnc",
     "test:e2e:playwright": "npx playwright test --config test/e2e-playwright/playwright.config.ts --project tauri",

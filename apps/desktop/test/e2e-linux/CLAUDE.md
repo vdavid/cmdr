@@ -29,13 +29,42 @@ e2e-linux.sh
 cd apps/desktop
 
 pnpm test:e2e:linux                    # Full run: build (if needed) + test in Docker
-pnpm test:e2e:linux:build              # Force rebuild Docker image (Dockerfile changes only)
+pnpm test:e2e:linux:build              # Force-rebuild Docker images (base with --no-cache), no tests
 pnpm test:e2e:linux:shell              # Interactive shell in container
 pnpm test:e2e:linux:vnc                # VNC mode with hot reload (pnpm dev)
 ./scripts/e2e-linux.sh --grep "SMB"    # Run only tests matching a pattern
 ```
 
 ## Build caching
+
+### Docker images: content-addressed base + thin final layer
+
+The image is split in two so per-run builds never re-install the slow system layer:
+
+- **Base image** (`docker/Dockerfile.base`): apt packages (Tauri prereqs, GVFS, Playwright chromium libs, patchelf),
+  Node, pnpm, and Rust. `e2e-linux.sh` tags it `cmdr-e2e-base:<first 12 hex of sha256(Dockerfile.base)>` (plus
+  `latest`), so **invalidation is automatic**: editing `Dockerfile.base` changes the hash, the tag is missing, and the
+  next run rebuilds. An unchanged file reuses the existing image with zero build work. After building a new base, the
+  script prunes older `cmdr-e2e-base` tags (each holds ~3.5 GB).
+- **Final image** (`docker/Dockerfile`): `FROM <base>` + `entrypoint.sh`. Rebuilt **every** run (~1 s with layer cache),
+  so `entrypoint.sh` and `Dockerfile` edits propagate automatically — no `--build` needed.
+
+**Force-rebuilding the base**: `pnpm test:e2e:linux:build` (or `./scripts/e2e-linux.sh --build`) rebuilds the base with
+`--no-cache`. You only need it to refresh content baked into cached layers (stale apt package lists, a newer rustup or
+Node point release); file edits invalidate on their own. `--build-only` builds the images and exits without running
+tests.
+
+The dev packages the build step needs (`libwebkit2gtk-4.1-dev`, `patchelf`, and friends) are baked into the base — the
+per-run containers run **no apt-get at all**. Don't add apt installs to the `docker run` blocks in `e2e-linux.sh`; put
+new packages in `Dockerfile.base` instead.
+
+**In CI** (`ci.yml` `desktop-e2e-linux` job), runners start fresh, so the base image is persisted as a `docker save` tar
+via `actions/cache`, keyed on `hashFiles(Dockerfile.base)` — the same invalidation signal as the local tag, just
+computed by GitHub. Cache hit → `docker load` (then the tar is deleted to reclaim ~3.5 GB of runner disk; a hit is
+always exact since there are no `restore-keys`). Cache miss → the script builds the base, and an `Export E2E base image`
+step re-creates the tar for the cache post-step to upload. No registry involved.
+
+### Volumes (cargo, target, node_modules)
 
 | Volume                            | Contents                       | Remove to force...                        |
 | --------------------------------- | ------------------------------ | ----------------------------------------- |
@@ -52,10 +81,11 @@ All four volume names are overridable via `CARGO_VOLUME`, `TARGET_VOLUME`, `ROOT
 
 ## Files
 
-| File                   | Purpose                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `docker/Dockerfile`    | Ubuntu 26.04 image with Tauri prereqs, Xvfb, Rust, Node, and Playwright chromium libs |
-| `docker/entrypoint.sh` | Xvfb/dbus/GVFS/VNC setup for headless GUI, plus the Playwright host-platform override |
+| File                     | Purpose                                                                                        |
+| ------------------------ | ---------------------------------------------------------------------------------------------- |
+| `docker/Dockerfile.base` | Ubuntu 26.04 system layer: Tauri prereqs, Xvfb, Rust, Node, Playwright chromium libs, patchelf |
+| `docker/Dockerfile`      | Thin final layer: `FROM cmdr-e2e-base:<hash>` + entrypoint                                     |
+| `docker/entrypoint.sh`   | Xvfb/dbus/GVFS/VNC setup for headless GUI, plus the Playwright host-platform override          |
 
 ## SMB E2E networking
 
@@ -142,12 +172,13 @@ when you bump Playwright:
    CI red until the amd64 branch was corrected to `-x64`. A local arm64 run uses `-arm64` and passes, which masks an
    amd64-only break: **reproduce override changes under `docker run --platform linux/amd64` before trusting them.**
 
-2. **Chromium runtime libs (`Dockerfile`).** We run `playwright install chromium` (binary only), NOT `--with-deps`. The
-   `--with-deps` apt step re-derives the distro from `/etc/os-release` (sees 26.04, has no dep list, fails) regardless
-   of the override. So the chromium runtime libs that `--with-deps` would install (`libnss3`, `libnspr4`, `libgbm1`,
-   `libdrm2`, `libcups2t64`, `libxkbcommon0`, `libatspi2.0-0`, `libatk-bridge2.0-0`, `libasound2t64`, `libxcb1`) are
-   apt-installed explicitly in the Dockerfile instead, where plain apt on 26.04 has no Playwright version gate. Keep
-   that list in sync with Playwright's `registry/nativeDeps.js` (`ubuntu24.04-x64` chromium deps) on a version bump.
+2. **Chromium runtime libs (`Dockerfile.base`).** We run `playwright install chromium` (binary only), NOT `--with-deps`.
+   The `--with-deps` apt step re-derives the distro from `/etc/os-release` (sees 26.04, has no dep list, fails)
+   regardless of the override. So the chromium runtime libs that `--with-deps` would install (`libnss3`, `libnspr4`,
+   `libgbm1`, `libdrm2`, `libcups2t64`, `libxkbcommon0`, `libatspi2.0-0`, `libatk-bridge2.0-0`, `libasound2t64`,
+   `libxcb1`) are apt-installed explicitly in `Dockerfile.base` instead, where plain apt on 26.04 has no Playwright
+   version gate. Keep that list in sync with Playwright's `registry/nativeDeps.js` (`ubuntu24.04-x64` chromium deps) on
+   a version bump.
 
 **Why a browser at all — the tests never drive one.** Every spec runs the single `tauri` project (socket bridge to the
 real Tauri webview); none opens chromium, and trace/screenshot are off. But `@playwright/test` still launches a headless
@@ -156,9 +187,9 @@ tests fail at setup with `browserType.launch: Executable doesn't exist`. Don't "
 it's load-bearing for the runner even though no test uses it.
 
 **On a Playwright bump:** first check whether the new version's registry natively lists `ubuntu26.04`. If it does,
-delete both workarounds (the `entrypoint.sh` override block and the chromium-libs stanza in the Dockerfile) and switch
-back to plain `playwright install --with-deps chromium`. If it doesn't, just re-confirm the override arch tags still
-match a registry key and re-sync the Dockerfile lib list against the new `nativeDeps.js`.
+delete both workarounds (the `entrypoint.sh` override block and the chromium-libs stanza in `Dockerfile.base`) and
+switch back to plain `playwright install --with-deps chromium`. If it doesn't, just re-confirm the override arch tags
+still match a registry key and re-sync the `Dockerfile.base` lib list against the new `nativeDeps.js`.
 
 ## CI integration
 

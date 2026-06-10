@@ -42,8 +42,9 @@ genuinely broken.
 which inject JS directly into the Tauri webview via `webview.eval()` and receive results via Tauri IPC. Same tests work
 on both macOS and Linux. Gated behind the `playwright-e2e` Cargo feature.
 
-**Linux Docker infrastructure** lives in `e2e-linux/docker/` (Dockerfile + entrypoint). The `e2e-linux.sh` script builds
-the Tauri binary with `--features playwright-e2e,virtual-mtp` inside Docker, launches it, and runs the Playwright tests.
+**Linux Docker infrastructure** lives in `e2e-linux/docker/` (content-hash-cached `Dockerfile.base` system layer + thin
+`Dockerfile` + entrypoint). The `e2e-linux.sh` script builds the Tauri binary with
+`--features playwright-e2e,virtual-mtp` inside Docker, launches it, and runs the Playwright tests.
 
 ## Shared fixture system
 

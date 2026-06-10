@@ -293,8 +293,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
+      # The runner ships ~14 GB free; this job holds the ~3.5 GB E2E base image
+      # AND (on a base-cache miss) its docker-save tar at the same time, on top
+      # of the cargo/target bind-mount caches and the SMB container images.
+      # Reclaim unused preinstalled SDKs up front, same as desktop-rust.
+      # Best-effort (`|| true`): dir names drift across runner images.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/share/swift /opt/hostedtoolcache/CodeQL || true
+          df -h /
+
       - name: Prepare Docker cache dirs
-        run: mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target
+        run: mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target /tmp/cmdr-docker-base-image
 
       - name: Cache Cargo + target (via host bind mounts into Docker)
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
@@ -306,6 +316,27 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-e2e-
 
+      # The E2E base image (apt packages, Node, Rust — see Dockerfile.base) as
+      # a docker-save tar, so each run skips the cold ~4-min image build.
+      # Keyed on the Dockerfile.base content, matching e2e-linux.sh's own
+      # content-hash tag. Deliberately NO restore-keys: a stale tar's image
+      # carries a different content-hash tag, so the script would rebuild
+      # anyway — restoring multi-GB of unusable tar only wastes disk and time.
+      - name: Cache E2E Docker base image
+        id: base-image-cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: /tmp/cmdr-docker-base-image
+          key: ${{ runner.os }}-e2e-base-image-${{ hashFiles('apps/desktop/test/e2e-linux/docker/Dockerfile.base') }}
+
+      - name: Load E2E base image from cache
+        if: steps.base-image-cache.outputs.cache-hit == 'true'
+        run: |
+          docker load -i /tmp/cmdr-docker-base-image/base.tar
+          # Reclaim ~3.5 GB right away: with no restore-keys, a hit is always
+          # exact, so the cache post-step won't save and the tar is dead weight.
+          rm /tmp/cmdr-docker-base-image/base.tar
+
       - name: Run E2E tests in Docker
         run: ./scripts/e2e-linux.sh
         working-directory: ./apps/desktop
@@ -313,6 +344,19 @@ jobs:
           # Point Docker volumes at host paths so actions/cache can persist them
           CARGO_VOLUME: /tmp/cmdr-docker-cache/cargo
           TARGET_VOLUME: /tmp/cmdr-docker-cache/target
+
+      # On a base-cache miss, export the freshly built base image so the
+      # actions/cache post-step (which runs even when tests fail) can save it.
+      # `docker save cmdr-e2e-base` packs every tag of the repo (the content
+      # hash + latest), so the next run's `docker load` restores the exact tag
+      # e2e-linux.sh looks for. Guarded on the image existing in case the run
+      # died before the base build.
+      - name: Export E2E base image for the cache save
+        if: always() && steps.base-image-cache.outputs.cache-hit != 'true'
+        run: |
+          if [ -n "$(docker image ls -q cmdr-e2e-base)" ]; then
+            docker save cmdr-e2e-base -o /tmp/cmdr-docker-base-image/base.tar
+          fi
 
       # The Docker build runs as root, so it writes the bind-mounted cache dirs
       # as root. The actions/cache post-step then runs as the runner user and

@@ -5,18 +5,21 @@
 # inside the container with the Tauri app mounted.
 #
 # Usage:
-#   ./scripts/e2e-linux.sh           # Run tests
-#   ./scripts/e2e-linux.sh --build   # Force rebuild Docker image
-#   ./scripts/e2e-linux.sh --shell   # Start interactive shell in container
-#   ./scripts/e2e-linux.sh --vnc     # Interactive VNC mode with hot reload
-#   ./scripts/e2e-linux.sh --clean   # Clean Linux build cache
+#   ./scripts/e2e-linux.sh               # Run tests
+#   ./scripts/e2e-linux.sh --build       # Force rebuild Docker images (base with --no-cache)
+#   ./scripts/e2e-linux.sh --build-only  # Build Docker images, then exit (no tests)
+#   ./scripts/e2e-linux.sh --shell       # Start interactive shell in container
+#   ./scripts/e2e-linux.sh --vnc         # Interactive VNC mode with hot reload
+#   ./scripts/e2e-linux.sh --clean       # Clean Linux build cache
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DESKTOP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$DESKTOP_DIR/../.." && pwd)"
+DOCKER_DIR="$DESKTOP_DIR/test/e2e-linux/docker"
 IMAGE_NAME="cmdr-e2e"
+BASE_IMAGE_REPO="cmdr-e2e-base"
 
 # ── Consolidated host-side cleanup (installed ONCE, before any branch) ────────
 # This script has several conditional concerns that each need teardown:
@@ -77,6 +80,7 @@ log_error() {
 
 # Parse arguments
 FORCE_BUILD=false
+BUILD_ONLY=false
 INTERACTIVE=false
 VNC_MODE=false
 CLEAN=false
@@ -86,6 +90,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --build)
             FORCE_BUILD=true
+            shift
+            ;;
+        --build-only)
+            BUILD_ONLY=true
             shift
             ;;
         --shell)
@@ -108,7 +116,9 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --build           Force rebuild of Docker image"
+            echo "  --build           Force rebuild of Docker images (base with --no-cache; rarely"
+            echo "                    needed — the base auto-rebuilds when Dockerfile.base changes)"
+            echo "  --build-only      Build Docker images, then exit without running tests"
             echo "  --shell           Start interactive shell in container"
             echo "  --vnc             Interactive VNC mode with hot reload (pnpm dev)"
             echo "  --clean           Clean Linux build cache (forces rebuild)"
@@ -139,10 +149,56 @@ if $CLEAN; then
     exit 0
 fi
 
-# Build Docker image if needed
-if $FORCE_BUILD || ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
-    log_info "Building Docker image: $IMAGE_NAME"
-    docker build -t "$IMAGE_NAME" -f "$DESKTOP_DIR/test/e2e-linux/docker/Dockerfile" "$DESKTOP_DIR/test/e2e-linux/docker"
+# ── Docker images: content-addressed base + thin final layer ────────────────
+# Two-stage build so the slow system layer is never re-installed cold per run:
+#   - Base image (Dockerfile.base): apt packages, Node, pnpm, Rust. Slow
+#     (minutes cold), so it's content-addressed: tagged
+#     cmdr-e2e-base:<sha256[0..12] of Dockerfile.base> and only rebuilt when
+#     that file changes (or with --build, which forces a --no-cache rebuild for
+#     refreshing stale apt content). CI persists it as a docker-save tar via
+#     actions/cache, keyed on the same file's hash, so a cache hit skips the
+#     build entirely.
+#   - Final image (Dockerfile): FROM base + entrypoint.sh. Cheap (~1 s), so
+#     it's rebuilt every run — entrypoint.sh edits propagate without --build.
+
+# Portable SHA-256 (macOS ships shasum, Linux sha256sum)
+file_sha256() {
+    if command -v sha256sum &> /dev/null; then
+        sha256sum "$1" | awk '{print $1}'
+    else
+        shasum -a 256 "$1" | awk '{print $1}'
+    fi
+}
+
+BASE_HASH=$(file_sha256 "$DOCKER_DIR/Dockerfile.base" | cut -c1-12)
+BASE_IMAGE="$BASE_IMAGE_REPO:$BASE_HASH"
+
+if $FORCE_BUILD || ! docker image inspect "$BASE_IMAGE" &> /dev/null; then
+    log_info "Building E2E base image: $BASE_IMAGE"
+    NO_CACHE_ARG=""
+    if $FORCE_BUILD; then
+        NO_CACHE_ARG="--no-cache"
+    fi
+    docker build $NO_CACHE_ARG -t "$BASE_IMAGE" -t "$BASE_IMAGE_REPO:latest" \
+        -f "$DOCKER_DIR/Dockerfile.base" "$DOCKER_DIR"
+    # Prune older base tags (each holds ~3.5 GB of layers). Best-effort: a tag
+    # backed by a running container just stays until the next prune.
+    STALE_BASE_TAGS=$(docker images "$BASE_IMAGE_REPO" --format '{{.Tag}}' | grep -v -e "^$BASE_HASH\$" -e '^latest$' || true)
+    if [ -n "$STALE_BASE_TAGS" ]; then
+        while read -r tag; do
+            docker rmi "$BASE_IMAGE_REPO:$tag" > /dev/null 2>&1 || true
+        done <<< "$STALE_BASE_TAGS"
+    fi
+else
+    log_info "Reusing E2E base image: $BASE_IMAGE"
+fi
+
+docker build -t "$IMAGE_NAME" --build-arg BASE_IMAGE="$BASE_IMAGE" \
+    -f "$DOCKER_DIR/Dockerfile" "$DOCKER_DIR"
+
+if $BUILD_ONLY; then
+    log_info "Images built (--build-only); skipping tests."
+    exit 0
 fi
 
 # VNC mode: runs pnpm dev inside Docker with VNC for interactive debugging.
@@ -177,15 +233,6 @@ if $VNC_MODE; then
         "$IMAGE_NAME" \
         bash -c '
             set -e
-
-            # Install dev packages needed for Tauri build
-            apt-get update > /dev/null && apt-get install -y \
-                libwebkit2gtk-4.1-dev \
-                libayatana-appindicator3-dev \
-                librsvg2-dev \
-                libacl1-dev \
-                patchelf \
-                > /dev/null
 
             # Install dependencies if needed (node_modules is a Docker volume)
             # Compare lockfile hash to detect changes since last install
@@ -233,13 +280,8 @@ docker run --rm \
         fi
         echo "Detected architecture: $ARCH -> $LINUX_TARGET"
 
-        # Install Tauri build dependencies (dev packages)
-        apt-get update && apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libacl1-dev \
-            patchelf
+        # Tauri build dependencies (dev packages + patchelf) are baked into the
+        # base image (Dockerfile.base) -- no per-run apt-get here.
 
         # Temporarily clear .cargo/config.toml if present -- it is a gitignored dev
         # override that patches mtp-rs to a local path which does not exist in Docker.
