@@ -385,11 +385,89 @@ async fn rename_merge_errored_child_preserves_source_spine() {
 // Cancel mid-merge
 // ============================================================================
 
+/// A `LocalPosixVolume` wrapper that fires `cancel_write_operation` the instant
+/// the FIRST child rename lands, so the cancel is deterministically wired to the
+/// operation's own progress instead of a wall clock. The first child still moves
+/// (we cancel AFTER its rename returns `Ok`), and `rename_merge_directory`'s
+/// per-child `is_cancelled` recheck at the top of the next loop iteration then
+/// bails with `Cancelled` while the remaining 39 children are still at the
+/// source. This kills the old 1 ms-sleep flake (a fast run finished the whole
+/// merge before the sleep elapsed, so the op returned `Ok` and the test failed).
+struct CancelOnFirstRenameVolume {
+    inner: Arc<LocalPosixVolume>,
+    operation_id: String,
+    renames: AtomicUsize,
+}
+
+impl Volume for CancelOnFirstRenameVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.inner.list_directory(path, on_progress)
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        self.inner.is_directory(path)
+    }
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.delete(path)
+    }
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let result = self.inner.rename(from, to, force).await;
+            // The instant the first child rename lands, cancel the op. The next
+            // loop iteration's `is_cancelled` recheck bails with `Cancelled`
+            // while children remain — no wall clock, no race.
+            if result.is_ok() && self.renames.fetch_add(1, Ordering::SeqCst) == 0 {
+                cancel_write_operation(&self.operation_id, false);
+            }
+            result
+        })
+    }
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::volume::CopyScanResult, VolumeError>> + Send + 'a>>
+    {
+        self.inner.scan_for_copy(path)
+    }
+}
+
 /// Cancel mid-merge keeps already-renamed children at the destination and does
-/// NOT delete a source dir that still holds unmoved children.
+/// NOT delete a source dir that still holds unmoved children. The cancel is
+/// deterministically tied to the first child rename (see
+/// `CancelOnFirstRenameVolume`), so exactly one child moves and the rest stay at
+/// the source — robust regardless of how fast the merge runs.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
-    let (volume, dir) = local_volume();
+    let dir = TempDir::new().unwrap();
     let root = dir.path();
 
     // Many fresh children so the walk is mid-flight when cancel fires.
@@ -397,6 +475,12 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
         write_file(root, &format!("src/album/f{:02}.txt", i), b"SRC");
     }
     mkdir(root, "dst/album");
+
+    let volume: Arc<dyn Volume> = Arc::new(CancelOnFirstRenameVolume {
+        inner: Arc::new(LocalPosixVolume::new("V", root.to_path_buf())),
+        operation_id: "op-merge-cancel".to_string(),
+        renames: AtomicUsize::new(0),
+    });
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
@@ -410,14 +494,6 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
         ..VolumeCopyConfig::default()
     };
 
-    // Cancel shortly after start, mid-walk.
-    let state_for_cancel = Arc::clone(&state);
-    let canceller = tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(1)).await;
-        let _ = &state_for_cancel;
-        cancel_write_operation("op-merge-cancel", false);
-    });
-
     let result = move_within_same_volume_with_progress(
         events.clone(),
         "op-merge-cancel",
@@ -428,7 +504,6 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
         &config,
     )
     .await;
-    let _ = canceller.await;
     WRITE_OPERATION_STATE.write().unwrap().remove("op-merge-cancel");
 
     assert!(
@@ -437,9 +512,10 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
         result
     );
 
-    // Children that already moved are at the dest; children not yet reached stay
-    // at the source. The source dir survives because it still holds unmoved
-    // children (never deleted while content remains).
+    // The cancel fires right after the first child rename lands, so exactly one
+    // child moved and the other 39 stay at the source. The source dir survives
+    // because it still holds unmoved children (never deleted while content
+    // remains).
     let moved = (0..40)
         .filter(|i| exists(root, &format!("dst/album/f{:02}.txt", i)))
         .count();
@@ -447,7 +523,8 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
         .filter(|i| exists(root, &format!("src/album/f{:02}.txt", i)))
         .count();
     assert_eq!(moved + remaining, 40, "no child is lost on cancel");
-    assert!(remaining > 0, "cancel should leave some children unmoved");
+    assert_eq!(moved, 1, "exactly the first child moved before the cancel landed");
+    assert_eq!(remaining, 39, "the cancel stops the walk while children remain");
     assert!(
         exists(root, "src/album"),
         "source dir holding unmoved children is never deleted on cancel"
