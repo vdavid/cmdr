@@ -380,15 +380,16 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
         .with_top_p(0.9);
 
     let t0 = std::time::Instant::now();
-    let response = crate::ai::client::chat_completion(&backend, &system_prompt, &natural_query, &options)
-        .await
-        .map_err(|e| {
-            log::warn!(
-                "AI search: chat_completion failed after {:.1}s for query={natural_query:?}: {e}",
-                t0.elapsed().as_secs_f64()
-            );
-            AiTranslateError::from(e)
-        })?;
+    let response =
+        crate::ai::client::chat_completion_with_empty_retry(&backend, &system_prompt, &natural_query, &options)
+            .await
+            .map_err(|e| {
+                log::warn!(
+                    "AI search: chat_completion failed after {:.1}s for query={natural_query:?}: {e}",
+                    t0.elapsed().as_secs_f64()
+                );
+                AiTranslateError::from(e)
+            })?;
 
     log::info!(
         "AI search: chat_completion returned {} chars in {:.1}s",

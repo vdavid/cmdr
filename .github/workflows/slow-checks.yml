@@ -78,6 +78,15 @@ jobs:
       - name: Run govulncheck
         run: ./scripts/check/check --check scripts-go-govulncheck --ci
 
+      # Real-API smoke against Groq (OpenAI-compatible, free tier). Self-skips when the
+      # GROQ_API_KEY secret is absent, so this never fails the workflow before the secret
+      # is added in repo settings. Catches adapter-routing / auth / parse regressions that
+      # the wiremock tests can't (e.g. the genai Ollama-fallback bug for `llama-*` models).
+      - name: Run Groq smoke (real API)
+        run: ./scripts/check/check --check desktop-rust-groq-smoke --ci
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
   # ===========================================
   # Type-aware ESLint (too slow for per-push CI)
   # ===========================================

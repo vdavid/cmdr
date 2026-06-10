@@ -5,9 +5,11 @@
 //!
 //! Two backend constructors:
 //! - [`AiBackend::local`]: forces the OpenAI adapter at `http://127.0.0.1:<port>/v1/`.
-//! - [`AiBackend::remote`]: BYOK. The model name picks the adapter (e.g. `claude-*` → Anthropic
-//!   native, `gemini-*` → Gemini native, `gpt-5*`/`*-pro`/`*-codex` → OpenAI Responses), and
-//!   `base_url` overrides the endpoint.
+//! - [`AiBackend::remote`]: BYOK. `base_url` overrides the endpoint; the adapter comes from the
+//!   model name via [`remote_model_iden`] — `claude-*`/`gemini-*` keep their native protocols,
+//!   `gpt-*`/`o*`/`chatgpt-*` use OpenAI (incl. the Responses-API auto-routing), and every other
+//!   OpenAI-compatible provider (Groq, OpenRouter, DeepSeek, …) is forced onto OpenAI
+//!   chat-completions so `genai` doesn't mis-route it to Ollama.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -46,8 +48,10 @@ impl AiBackend {
         }
     }
 
-    /// Remote / cloud provider. Adapter is chosen from the model name prefix
-    /// (e.g. `claude-3-5-sonnet-latest` → Anthropic, `gemini-2.0-flash` → Gemini).
+    /// Remote / cloud provider. The adapter is chosen from the model name: `claude-*` and
+    /// `gemini-*` use their native protocols, `gpt-*` / `o*` / `chatgpt-*` use OpenAI (with
+    /// `genai`'s gpt-5*/codex/pro → Responses-API auto-routing), and EVERYTHING ELSE is forced
+    /// onto the OpenAI chat-completions adapter (see [`remote_model_iden`]).
     pub fn remote(api_key: String, base_url: String, model: String) -> Self {
         // Without a trailing `/` the `Url::join` quirk above silently drops `/v1`.
         let endpoint = if base_url.ends_with('/') {
@@ -57,7 +61,37 @@ impl AiBackend {
         };
         let resolver = make_resolver(endpoint, AuthData::from_single(api_key), ForceAdapter::None);
         let client = Client::builder().with_service_target_resolver(resolver).build();
-        Self { client, model }
+        // The resolver only overrides endpoint + auth; adapter dispatch happens from the model
+        // name BEFORE the resolver runs (same reason `local` uses the `openai::` namespace).
+        Self {
+            client,
+            model: remote_model_iden(&model),
+        }
+    }
+}
+
+/// Maps a BYOK model name to the `genai` model identifier whose namespace picks the right adapter.
+///
+/// `genai` infers the adapter from the model name and falls back to **Ollama** for anything it
+/// doesn't recognize — so a bare `llama-3.1-8b-instant` (Groq), `deepseek-chat`, or
+/// `google/gemma-…:free` (OpenRouter) would POST to Ollama's `/api/chat` against an OpenAI endpoint
+/// and 404. Every cloud provider we support except Anthropic and Gemini speaks the OpenAI
+/// chat-completions wire format, so we force the `openai::` namespace for all of them. Anthropic
+/// (`claude-*`) and Gemini (`gemini-*`) keep their native adapters; real OpenAI model families
+/// (`gpt-*` / `o1*` / `o3*` / `o4*` / `chatgpt-*`) are left alone so `genai` can auto-route the
+/// `gpt-5*` / `*-codex` / `*-pro` Responses-API models.
+fn remote_model_iden(model: &str) -> String {
+    let native_or_openai = model.starts_with("claude-")
+        || model.starts_with("gemini-")
+        || model.starts_with("gpt-")
+        || model.starts_with("o1")
+        || model.starts_with("o3")
+        || model.starts_with("o4")
+        || model.starts_with("chatgpt-");
+    if native_or_openai {
+        model.to_string()
+    } else {
+        format!("openai::{model}")
     }
 }
 
@@ -141,6 +175,55 @@ pub async fn chat_completion(
 
     log::trace!("AI chat_completion: extracted content: {text}");
     Ok(text)
+}
+
+/// Hard ceiling for the empty-response retry's token budget, so a pathological model can't make
+/// us request an unbounded (and expensive) completion.
+const EMPTY_RETRY_TOKEN_CEILING: u32 = 2000;
+/// Multiplier applied to `max_tokens` on the empty-response retry.
+const EMPTY_RETRY_TOKEN_FACTOR: u32 = 4;
+
+/// Returns a clone of `options` with `max_tokens` multiplied by `factor` (capped at `ceiling`).
+/// Pure, so the budget math is unit-tested. A missing `max_tokens` defaults to the ceiling on
+/// retry — if the caller didn't cap it, the first attempt already had room, so go straight to the
+/// ceiling rather than guessing a base.
+fn with_bumped_max_tokens(options: &ChatOptions, factor: u32, ceiling: u32) -> ChatOptions {
+    let mut opts = options.clone();
+    let bumped = match opts.max_tokens {
+        Some(current) => current.saturating_mul(factor).min(ceiling),
+        None => ceiling,
+    };
+    opts.max_tokens = Some(bumped);
+    opts
+}
+
+/// Like [`chat_completion`], but retries ONCE with a larger token budget when the model returns
+/// no visible text ([`AiError::EmptyResponse`]).
+///
+/// This is the provider-agnostic guard against reasoning models (`gpt-5*`, `o*`, DeepSeek
+/// `*-reasoner`, Qwen `qwq`, …) spending the whole budget on hidden reasoning before emitting an
+/// answer. Rather than maintain a model-name list that's never complete, we react to the symptom:
+/// an empty answer means "retry with room to think AND answer". One retry only — if it's still
+/// empty, the budget isn't the problem and we surface `EmptyResponse` so the UI can suggest a
+/// faster model. Every other error (and a success) passes straight through with no extra call.
+pub async fn chat_completion_with_empty_retry(
+    backend: &AiBackend,
+    system_prompt: &str,
+    user_prompt: &str,
+    options: &ChatOptions,
+) -> Result<String, AiError> {
+    match chat_completion(backend, system_prompt, user_prompt, options).await {
+        Err(AiError::EmptyResponse) => {
+            let bumped = with_bumped_max_tokens(options, EMPTY_RETRY_TOKEN_FACTOR, EMPTY_RETRY_TOKEN_CEILING);
+            log::info!(
+                "AI chat_completion: empty response, retrying once with max_tokens={:?} (was {:?})",
+                bumped.max_tokens,
+                options.max_tokens
+            );
+            chat_completion(backend, system_prompt, user_prompt, &bumped).await
+        }
+        other => other,
+    }
 }
 
 /// Streams a chat completion. Returns a boxed stream of content chunks.
@@ -356,6 +439,51 @@ mod tests {
         assert_eq!(
             AiError::ParseError(String::from("oops")).to_string(),
             "AI response parse error: oops"
+        );
+    }
+
+    #[test]
+    fn remote_model_iden_forces_openai_for_compatible_providers() {
+        // Native protocols + real OpenAI families: left untouched.
+        for m in [
+            "claude-sonnet-4-5",
+            "gemini-2.5-flash",
+            "gpt-4.1-mini",
+            "gpt-5.5",
+            "o3-mini",
+            "chatgpt-4o-latest",
+        ] {
+            assert_eq!(remote_model_iden(m), m, "{m} should keep its inferred adapter");
+        }
+        // OpenAI-compatible BYOK models genai would mis-route to Ollama: forced to OpenAI.
+        assert_eq!(
+            remote_model_iden("llama-3.1-8b-instant"),
+            "openai::llama-3.1-8b-instant"
+        );
+        assert_eq!(remote_model_iden("deepseek-chat"), "openai::deepseek-chat");
+        assert_eq!(
+            remote_model_iden("google/gemma-4-31b-it:free"),
+            "openai::google/gemma-4-31b-it:free"
+        );
+        assert_eq!(
+            remote_model_iden("mistral-small-latest"),
+            "openai::mistral-small-latest"
+        );
+    }
+
+    #[test]
+    fn with_bumped_max_tokens_multiplies_and_caps() {
+        let base = ChatOptions::default().with_max_tokens(300);
+        assert_eq!(with_bumped_max_tokens(&base, 4, 2000).max_tokens, Some(1200));
+        // Caps at the ceiling.
+        assert_eq!(with_bumped_max_tokens(&base, 100, 2000).max_tokens, Some(2000));
+        // Saturating multiply can't overflow into a tiny value.
+        let huge = ChatOptions::default().with_max_tokens(u32::MAX);
+        assert_eq!(with_bumped_max_tokens(&huge, 4, 2000).max_tokens, Some(2000));
+        // No prior cap → jump straight to the ceiling on retry.
+        assert_eq!(
+            with_bumped_max_tokens(&ChatOptions::default(), 4, 2000).max_tokens,
+            Some(2000)
         );
     }
 

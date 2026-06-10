@@ -73,7 +73,7 @@ pub async fn translate_selection_query(
         .with_top_p(0.9);
 
     let t0 = std::time::Instant::now();
-    let response = crate::ai::client::chat_completion(&backend, &system_prompt, &prompt, &options)
+    let response = crate::ai::client::chat_completion_with_empty_retry(&backend, &system_prompt, &prompt, &options)
         .await
         .map_err(|e| {
             log::warn!(

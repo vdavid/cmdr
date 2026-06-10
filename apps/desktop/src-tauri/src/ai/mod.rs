@@ -25,6 +25,8 @@ mod client_local_llama_test;
 #[cfg(test)]
 mod client_real_anthropic_test;
 #[cfg(test)]
+mod client_real_groq_test;
+#[cfg(test)]
 mod client_real_openai_test;
 #[cfg(test)]
 mod client_streaming_test;
