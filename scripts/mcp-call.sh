@@ -3,11 +3,16 @@ set -euo pipefail
 
 # Call a tool on Cmdr's MCP server (JSON-RPC over HTTP).
 #
+# This is the CLI fallback for when the wired-up MCP tools (mcp__cmdr-dev__*) aren't
+# connected in an agent session: it talks to the same server, connects independently,
+# and discovers the port + bearer token from the running instance's data dir itself.
+#
 # Usage:
 #   ./scripts/mcp-call.sh <tool_name> [json_args]
 #   ./scripts/mcp-call.sh --list-tools
 #   ./scripts/mcp-call.sh --read-resource <uri>
 #   ./scripts/mcp-call.sh --raw <json-rpc-body>
+#   ./scripts/mcp-call.sh --help
 #
 # Examples:
 #   ./scripts/mcp-call.sh search '{"pattern":"*.pdf","limit":5}'
@@ -18,14 +23,14 @@ set -euo pipefail
 
 # Port discovery precedence (P2/P3 ephemeral-port design):
 #   1. CMDR_MCP_PORT env: explicit pin wins.
-#   2. CMDR_INSTANCE_ID set: read <data_dir>/mcp.port (the server writes it atomically
-#      after bind). Data dir is derived per OS to mirror tauri-wrapper.js + instance-id.js.
-#   3. Fall back to 19225 (dev default port) so a bare `./scripts/mcp-call.sh` against a
-#      stock dev session still works.
-#
-# Don't silently fall back to the legacy default when an instance is configured: a missing
-# port file means the server hasn't bound yet (or crashed), and we want a clear error
-# rather than connecting to whatever's listening on 19225.
+#   2. Read <data_dir>/mcp.port (the server writes it atomically after bind). The data
+#      dir comes from CMDR_DATA_DIR, else is derived from CMDR_INSTANCE_ID (per OS,
+#      mirroring tauri-wrapper.js + instance-id.js), else defaults to the "dev"
+#      instance so a bare `./scripts/mcp-call.sh` against a stock `pnpm dev` works.
+#   3. Fail loud. No legacy hardcoded-port fallback: the dev default is an EPHEMERAL
+#      port (developer.mcpPort = 0), so a missing port file means the server hasn't
+#      bound yet (or crashed) — we want a clear error, not a connection to whatever
+#      happens to be listening on an old default.
 HOST="127.0.0.1"
 TIMEOUT=30
 
@@ -47,7 +52,9 @@ read_port_file() {
     local data_dir="$1"
     local port_file="${data_dir}/mcp.port"
     if [[ ! -f "$port_file" ]]; then
-        echo "Error: port file not found at ${port_file}. Is Cmdr running with CMDR_INSTANCE_ID=${CMDR_INSTANCE_ID}?" >&2
+        echo "Error: port file not found at ${port_file}." >&2
+        echo "Is Cmdr running (pnpm dev) and the MCP server enabled? The server writes the file after it binds." >&2
+        echo "For a worktree session, set CMDR_INSTANCE_ID=dev-<slug>; to skip discovery, pin CMDR_MCP_PORT." >&2
         exit 1
     fi
     # File format: ASCII decimal port + newline (see port_file.rs).
@@ -85,22 +92,29 @@ read_token_file() {
 # Print help without needing a running server (no port/token resolution).
 case "${1:-}" in
     -h|--help|"")
+        echo "Call a tool on Cmdr's MCP server (JSON-RPC over HTTP)."
+        echo ""
+        echo "This is the CLI fallback when the wired-up MCP tools (mcp__cmdr-dev__* /"
+        echo "mcp__tauri__*) aren't connected in your session: it talks to the same server"
+        echo "and discovers the port + bearer token from the running instance by itself."
+        echo ""
         echo "Usage:"
         echo "  ./scripts/mcp-call.sh <tool_name> [json_args]"
-        echo "  ./scripts/mcp-call.sh --list-tools"
-        echo "  ./scripts/mcp-call.sh --read-resource <uri>"
-        echo "  ./scripts/mcp-call.sh --raw <json-rpc-body>"
+        echo "  ./scripts/mcp-call.sh --list-tools             List every tool + its parameter schema"
+        echo "  ./scripts/mcp-call.sh --read-resource <uri>    Read a resource (cmdr://state, cmdr://logs, ...)"
+        echo "  ./scripts/mcp-call.sh --raw <json-rpc-body>    Send a raw JSON-RPC request"
         echo ""
-        echo "Environment:"
-        echo "  CMDR_MCP_PORT     Pin a specific port; wins over the file."
+        echo "Environment (all optional; a stock 'pnpm dev' session needs none of these):"
+        echo "  CMDR_MCP_PORT     Pin a specific port; wins over the port file."
         echo "  CMDR_MCP_TOKEN    Pin the bearer token; wins over <data_dir>/mcp.token."
-        echo "  CMDR_INSTANCE_ID  Reads <data_dir>/mcp.port + mcp.token for discovery."
-        echo "  CMDR_DATA_DIR     Overrides the data-dir derivation when set with the instance."
-        echo "  (Falls back to port 19225 (dev default) and the dev data dir when unset.)"
+        echo "  CMDR_INSTANCE_ID  Which instance's <data_dir> to discover from (default: dev)."
+        echo "                    Worktree sessions ('pnpm dev --worktree foo') use dev-foo."
+        echo "  CMDR_DATA_DIR     Overrides the data-dir derivation entirely."
         echo ""
         echo "Examples:"
         echo "  ./scripts/mcp-call.sh search '{\"pattern\":\"*.pdf\",\"limit\":5}'"
         echo "  ./scripts/mcp-call.sh ai_search '{\"query\":\"recent invoices\"}'"
+        echo "  ./scripts/mcp-call.sh nav_to_path '{\"pane\":\"left\",\"path\":\"/Users\"}'"
         echo "  ./scripts/mcp-call.sh --list-tools"
         echo "  ./scripts/mcp-call.sh --read-resource 'cmdr://state'"
         exit 0
@@ -119,12 +133,13 @@ else
     DATA_DIR="$(resolve_data_dir "dev")"
 fi
 
+# Port: an explicit pin wins; otherwise read the port file the server wrote. No
+# hardcoded fallback — the dev default is an ephemeral port, so a fixed number
+# would connect to the wrong thing or nothing (see the precedence note above).
 if [[ -n "${CMDR_MCP_PORT:-}" ]]; then
     PORT="$CMDR_MCP_PORT"
-elif [[ -n "${CMDR_INSTANCE_ID:-}" ]]; then
-    PORT="$(read_port_file "$DATA_DIR")"
 else
-    PORT=19225
+    PORT="$(read_port_file "$DATA_DIR")"
 fi
 
 # The token is mandatory. CMDR_MCP_TOKEN env wins (handy when you pinned a port/dir);

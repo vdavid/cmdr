@@ -209,6 +209,11 @@ helpers) read the actual port from `<CMDR_DATA_DIR>/mcp.port` (Cmdr server) or `
 the per-resource breakdown and [docs/tooling/mcp.md](docs/tooling/mcp.md) for usage patterns, connection resilience, and
 common pitfalls.
 
+**If the `mcp__cmdr-dev__*` / `mcp__tauri__*` tools are unavailable or erroring in your session** (spawned agents often
+start without them connected), use `./scripts/mcp-call.sh` — it talks to the same Cmdr MCP server over HTTP and
+discovers the port and bearer token by itself. Run it with `--help` for usage and `--list-tools` for every tool + its
+parameter schema.
+
 ## Where to put instructions
 
 Split by kind and by level:

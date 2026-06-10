@@ -127,8 +127,8 @@ cat ~/Library/Application\ Support/com.veszelovszki.cmdr-dev/mcp.port
 For a worktree session, swap `cmdr-dev` for `cmdr-dev-<your-slug>`. For an E2E shard, the path is under
 `/tmp/cmdr-e2e-data-<instance>/`.
 
-The `scripts/mcp-call.sh` helper auto-discovers: when `CMDR_INSTANCE_ID` is set, it resolves the data dir and reads the
-port file. `CMDR_MCP_PORT` still pins.
+The `scripts/mcp-call.sh` helper auto-discovers: it resolves the data dir (from `CMDR_DATA_DIR`, else
+`CMDR_INSTANCE_ID`, else the `dev` instance) and reads the port file. `CMDR_MCP_PORT` still pins.
 
 ```sh
 CMDR_INSTANCE_ID=dev-a ./scripts/mcp-call.sh --list-tools
