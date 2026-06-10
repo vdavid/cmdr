@@ -4,17 +4,17 @@ Centralized command registry and fuzzy search engine for the command palette.
 
 ## Files
 
-| File                            | Purpose                                                                                                                    |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `command-ids.ts`                | `COMMAND_IDS` (the `as const` id tuple), the derived `CommandId` union, and the `isCommandId()` boundary guard             |
-| `types.ts`                      | `Command`, `CommandMatch`, `CommandScope`, plus `CommandArgs` / `CommandDispatchArgs` (the dispatch arg-tuple shape)       |
-| `command-registry.ts`           | The `commands` array (single source of truth). `getPaletteCommands()` filter. `updateLicenseCommandName()` in-place write. |
-| `fuzzy-search.ts`               | `searchCommands(query, recentCommandIds?)` using `@leeoniya/ufuzzy`                                                        |
-| `index.ts`                      | Barrel re-export                                                                                                           |
-| `fuzzy-search.test.ts`          | Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering                                   |
-| `command-registry.test.ts`      | Set-equality guard (tuple ↔ registry), `isCommandId`, `updateLicenseCommandName`, palette-visible-set pin                  |
-| `command-types.test.ts`         | Compile-time `@ts-expect-error` guards for the `CommandId` union and arg-tuple shapes                                      |
-| `rust-command-id-drift.test.ts` | Parses `menu/mod.rs` + `LicenseSection.svelte`; asserts every Rust-emitted command id ∈ `COMMAND_IDS`                      |
+| File                            | Purpose                                                                                                                       |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `command-ids.ts`                | `COMMAND_IDS` (the `as const` id tuple), the derived `CommandId` union, and the `isCommandId()` boundary guard                |
+| `types.ts`                      | `Command`, `CommandMatch`, `CommandScope`, plus `CommandArgs` / `CommandDispatchArgs` (the dispatch arg-tuple shape)          |
+| `command-registry.ts`           | The `commands` array (single source of truth). `getPaletteCommands()` filter. `updateLicenseCommandName()` in-place write.    |
+| `fuzzy-search.ts`               | `searchCommands(query, recentCommandIds?)` (palette set) + `searchAllCommands(query)` (full registry), via `@leeoniya/ufuzzy` |
+| `index.ts`                      | Barrel re-export                                                                                                              |
+| `fuzzy-search.test.ts`          | Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering                                      |
+| `command-registry.test.ts`      | Set-equality guard (tuple ↔ registry), `isCommandId`, `updateLicenseCommandName`, palette-visible-set pin                     |
+| `command-types.test.ts`         | Compile-time `@ts-expect-error` guards for the `CommandId` union and arg-tuple shapes                                         |
+| `rust-command-id-drift.test.ts` | Parses `menu/mod.rs` + `LicenseSection.svelte`; asserts every Rust-emitted command id ∈ `COMMAND_IDS`                         |
 
 ## Types
 
@@ -138,6 +138,12 @@ uFuzzy configuration:
 individual character indices for `matchedIndices`.
 
 The uFuzzy instance is a module-level singleton (created once at import time).
+
+`searchAllCommands(query)` runs the same matcher over the FULL registry (`commands`), including `showInPalette: false`
+entries, with no recents handling (empty query → everything in registry order). It exists for surfaces whose result set
+is the whole registry: the shortcuts editor renders and rebinds every command, so its name search (and the
+`getMatchingSections` sidebar highlight in settings-search) must cover the same set — palette-only search made
+non-palette commands like "Open command palette" unfindable there. The command palette itself stays on `searchCommands`.
 
 ## Unified dispatch
 

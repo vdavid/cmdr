@@ -4,7 +4,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { commands } from '$lib/commands/command-registry'
-    import { searchCommands } from '$lib/commands/fuzzy-search'
+    import { searchAllCommands } from '$lib/commands/fuzzy-search'
     import {
         getEffectiveShortcuts,
         isShortcutModified,
@@ -128,9 +128,11 @@
 
         let cmds = [...commands]
 
-        // Filter by name search
+        // Filter by name search. `searchAllCommands`, not `searchCommands`: this section
+        // renders the full registry, so the search must cover the same set (palette-only
+        // search made non-palette commands like "Open command palette" unfindable here).
         if (nameSearchQuery.trim()) {
-            const results = searchCommands(nameSearchQuery)
+            const results = searchAllCommands(nameSearchQuery)
             const matchedIds = new Set(results.map((r) => r.command.id))
             cmds = cmds.filter((c) => matchedIds.has(c.id))
         }

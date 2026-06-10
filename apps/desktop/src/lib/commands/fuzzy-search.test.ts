@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { searchCommands } from './fuzzy-search'
+import { searchAllCommands, searchCommands } from './fuzzy-search'
+import { commands } from './command-registry'
 
 describe('searchCommands', () => {
   describe('empty query', () => {
@@ -157,6 +158,11 @@ describe('searchCommands', () => {
   })
 
   describe('command filtering', () => {
+    it('excludes non-palette commands even when they match (shortcuts editor must use searchAllCommands)', () => {
+      const results = searchCommands('palette')
+      expect(results.some((r) => r.command.id === 'app.commandPalette')).toBe(false)
+    })
+
     it('excludes commands with showInPalette: false', () => {
       const results = searchCommands('')
       // nav.up and nav.down have showInPalette: false
@@ -169,5 +175,34 @@ describe('searchCommands', () => {
       // app.about has showInPalette: true
       expect(results.some((r) => r.command.id === 'app.about')).toBe(true)
     })
+  })
+})
+
+describe('searchAllCommands', () => {
+  it('finds non-palette commands the shortcuts editor renders ("palette" → Open command palette)', () => {
+    const results = searchAllCommands('palette')
+    expect(results.some((r) => r.command.id === 'app.commandPalette')).toBe(true)
+  })
+
+  it('still finds palette-visible commands', () => {
+    const results = searchAllCommands('about')
+    expect(results.some((r) => r.command.id === 'app.about')).toBe(true)
+  })
+
+  it('covers the full registry on an empty query (the set the shortcuts editor renders)', () => {
+    const results = searchAllCommands('')
+    expect(results.map((r) => r.command.id).sort()).toEqual(commands.map((c) => c.id).sort())
+  })
+
+  it('keeps matched indices within the visible name on keyword-only matches', () => {
+    for (const match of searchAllCommands('jump')) {
+      for (const index of match.matchedIndices) {
+        expect(index).toBeLessThan(match.command.name.length)
+      }
+    }
+  })
+
+  it('returns empty array for no matches', () => {
+    expect(searchAllCommands('xyzzynonexistent')).toEqual([])
   })
 })

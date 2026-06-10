@@ -6,8 +6,8 @@
  */
 
 import uFuzzy from '@leeoniya/ufuzzy'
-import type { CommandMatch } from './types'
-import { getPaletteCommands } from './command-registry'
+import type { Command, CommandMatch } from './types'
+import { commands, getPaletteCommands } from './command-registry'
 
 // Configure uFuzzy for command palette behavior
 const fuzzy = new uFuzzy({
@@ -17,6 +17,10 @@ const fuzzy = new uFuzzy({
 
 /**
  * Search commands with fuzzy matching.
+ *
+ * Searches palette-visible commands only — this is the command palette's engine. Surfaces that
+ * render the full registry (the shortcuts editor) must use `searchAllCommands` instead, or
+ * non-palette commands like "Open command palette" become unfindable.
  *
  * @param query - Search query string
  * @param recentCommandIds - Optional list of recently executed command IDs, most-recent first.
@@ -42,10 +46,29 @@ export function searchCommands(query: string, recentCommandIds: string[] = []): 
     return [...recents, ...rest]
   }
 
+  return fuzzyMatchCommands(paletteCommands, query)
+}
+
+/**
+ * Search the FULL command registry, including `showInPalette: false` entries.
+ *
+ * For surfaces whose result set is the whole registry: the shortcuts editor renders (and lets you
+ * rebind) every command, so its search must cover the same set. An empty query returns everything
+ * in registry order.
+ */
+export function searchAllCommands(query: string): CommandMatch[] {
+  if (!query.trim()) {
+    return commands.map((command) => ({ command, matchedIndices: [] }))
+  }
+  return fuzzyMatchCommands(commands, query)
+}
+
+/** Runs uFuzzy over the given commands and maps hits back to `CommandMatch`es. */
+function fuzzyMatchCommands(commandList: Command[], query: string): CommandMatch[] {
   // Build haystack from command names plus any extra keywords. A keyword match still ranks and
   // returns the command, but its indices land past `name.length` and get clamped out below so the
   // visible label never shows a bogus highlight.
-  const haystack = paletteCommands.map((c) => (c.keywords?.length ? `${c.name} ${c.keywords.join(' ')}` : c.name))
+  const haystack = commandList.map((c) => (c.keywords?.length ? `${c.name} ${c.keywords.join(' ')}` : c.name))
 
   // Perform fuzzy search
   const [idxs, info, order] = fuzzy.search(haystack, query)
@@ -58,7 +81,7 @@ export function searchCommands(query: string, recentCommandIds: string[] = []): 
   // Map results back to commands with match info
   return order.map((orderIdx) => {
     const haystackIdx = idxs[orderIdx]
-    const command = paletteCommands[haystackIdx]
+    const command = commandList[haystackIdx]
 
     // Get matched character indices for highlighting
     const matchedIndices: number[] = []

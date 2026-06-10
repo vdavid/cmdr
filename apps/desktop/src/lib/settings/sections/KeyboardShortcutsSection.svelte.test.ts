@@ -134,6 +134,19 @@ function render(): void {
   flushSync()
 }
 
+describe('KeyboardShortcutsSection name search', () => {
+  it('finds non-palette commands the section renders ("palette" → Open command palette)', () => {
+    render()
+    const searchInput = target.querySelector<HTMLInputElement>('.search-input')
+    if (!searchInput) throw new Error('name search input not found')
+    searchInput.value = 'palette'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    flushSync()
+
+    expect(row('app.commandPalette')).toBeDefined()
+  })
+})
+
 describe('KeyboardShortcutsSection add flow', () => {
   it('clicking + then clicking away leaves no entry in the store and no framed (none) pill', async () => {
     render()

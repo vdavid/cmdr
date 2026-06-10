@@ -6,7 +6,7 @@
 import uFuzzy from '@leeoniya/ufuzzy'
 import type { SettingDefinition, SettingSearchResult } from './types'
 import { settingsRegistry } from './settings-registry'
-import { searchCommands } from '$lib/commands/fuzzy-search'
+import { searchAllCommands } from '$lib/commands/fuzzy-search'
 
 // ============================================================================
 // Search Configuration (same as command palette)
@@ -192,9 +192,11 @@ export function getMatchingSections(query: string): Set<string> {
     }
   }
 
-  // Also check if any commands match for Keyboard shortcuts section
+  // Also check if any commands match for Keyboard shortcuts section. The full-registry
+  // search, because that section renders (and rebinds) every command, not just
+  // palette-visible ones.
   if (query.trim()) {
-    const commandMatches = searchCommands(query)
+    const commandMatches = searchAllCommands(query)
     if (commandMatches.length > 0) {
       sections.add('Keyboard shortcuts')
     }
