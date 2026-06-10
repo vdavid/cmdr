@@ -9,43 +9,114 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Drag files and folders from your phone or NAS straight to Finder or the Desktop. Cmdr downloads them on drop, under
-  the name Finder picks, the same gesture Photos and Mail already use. Multi-select and whole folders work, and a toast
-  keeps you posted while the download runs ([c97a032f](https://github.com/vdavid/cmdr/commit/c97a032f),
+- Mark Cmdr as an open beta in onboarding and the About window, with a personal intro from David
+  ([7ce2c5e4](https://github.com/vdavid/cmdr/commit/7ce2c5e4),
+  [b2b27d8f](https://github.com/vdavid/cmdr/commit/b2b27d8f))
+- Add a Send feedback dialog (Help menu, command palette); notes go straight to David
+  ([79c4a6c9](https://github.com/vdavid/cmdr/commit/79c4a6c9),
+  [6bdb188a](https://github.com/vdavid/cmdr/commit/6bdb188a))
+- Add stability badges (ALPHA, BETA) in the app and a feature status page on the website
+  ([219549db](https://github.com/vdavid/cmdr/commit/219549db))
+- Add anonymous beta usage analytics (daily-active count, PII-free feature events), disclosed during onboarding, opt-out
+  under Settings > Updates & privacy ([d1c481f0](https://github.com/vdavid/cmdr/commit/d1c481f0),
+  [c328bb13](https://github.com/vdavid/cmdr/commit/c328bb13),
+  [b2b27d8f](https://github.com/vdavid/cmdr/commit/b2b27d8f))
+- Group crash and error reports per install, with an optional reply-to email so David can follow up
+  ([71da738c](https://github.com/vdavid/cmdr/commit/71da738c))
+- Add a progress bar, percent, and ETA to drive indexing, now a calm hourglass with details on hover
+  ([bc824f18](https://github.com/vdavid/cmdr/commit/bc824f18),
+  [6defbf74](https://github.com/vdavid/cmdr/commit/6defbf74),
+  [b03387e2](https://github.com/vdavid/cmdr/commit/b03387e2),
+  [f8694ce8](https://github.com/vdavid/cmdr/commit/f8694ce8))
+- Add a low-disk-space warning (in-app toast or macOS notification), configurable under Settings > Behavior
+  ([15ad9cf9](https://github.com/vdavid/cmdr/commit/15ad9cf9))
+- Drag files from your phone or NAS straight to Finder or the Desktop, with a toast tracking the download
+  ([c97a032f](https://github.com/vdavid/cmdr/commit/c97a032f),
   [9e54719d](https://github.com/vdavid/cmdr/commit/9e54719d))
-- Shortcuts shown across the app now reflect your custom bindings, live. Rebind a key in Settings and every hint that
-  shows it updates right away, so the app never points you at a key that no longer works
+- Teach the go-to-latest shortcuts (⌘J in-app, ⌃⌥⌘J from anywhere) in the downloads toast, now collapsible
+  ([1da0b835](https://github.com/vdavid/cmdr/commit/1da0b835),
+  [9ab2cf4f](https://github.com/vdavid/cmdr/commit/9ab2cf4f),
+  [15fc9395](https://github.com/vdavid/cmdr/commit/15fc9395))
+- Shortcut hints across the app (F-key bar, toasts, onboarding) now follow your custom bindings live
   ([123e76b7](https://github.com/vdavid/cmdr/commit/123e76b7),
   [e756a379](https://github.com/vdavid/cmdr/commit/e756a379),
   [18acf50f](https://github.com/vdavid/cmdr/commit/18acf50f))
-- Click a shortcut anywhere in the app to jump straight to its row in Settings > Keyboard shortcuts and customize it.
-  The row scrolls into view and flashes so you can't miss it
-  ([b38f6cf8](https://github.com/vdavid/cmdr/commit/b38f6cf8))
+- Click any shortcut hint to jump to its row in Settings ([b38f6cf8](https://github.com/vdavid/cmdr/commit/b38f6cf8))
+- Offer Finder's saved SMB password on "Connect directly", so a Finder-known share connects without retyping
+  ([2ccb45de](https://github.com/vdavid/cmdr/commit/2ccb45de),
+  [3b07b0f2](https://github.com/vdavid/cmdr/commit/3b07b0f2))
+- Prompt for a fresh sign-in when a NAS password changes, instead of a misleading "unreachable" banner
+  ([7c654e70](https://github.com/vdavid/cmdr/commit/7c654e70))
+- Add drag auto-scroll near a pane's top or bottom edge ([6d1ca01b](https://github.com/vdavid/cmdr/commit/6d1ca01b))
+- Prepare `brew install --cask cmdr` for installing Cmdr via Homebrew
+  ([9348f888](https://github.com/vdavid/cmdr/commit/9348f888))
+
+### Changed
+
+- Reuse a saved SMB password instead of re-prompting on every connect
+  ([d12f8d3d](https://github.com/vdavid/cmdr/commit/d12f8d3d),
+  [7c654e70](https://github.com/vdavid/cmdr/commit/7c654e70))
 
 ### Fixed
 
-- Connecting to a password-protected NAS no longer dead-ends. When a share needs a sign-in, or a saved password stops
-  working, Cmdr now shows its own login form right where you are instead of letting macOS pop an error dialog and then
-  failing with a cryptic "error code -6600". Your entered password mounts the share and lands in the Keychain when you
-  ask it to ([0e1bc77d](https://github.com/vdavid/cmdr/commit/0e1bc77d))
-- Picking a share that's already mounted now takes you straight there. Cmdr recognizes the server even when it shows up
-  under a different name (Bonjour name vs IP address), instead of mounting a doomed second copy
+- Fix connecting to a password-protected NAS dead-ending in macOS's cryptic "error code -6600"; Cmdr now shows its own
+  login form right where you are ([0e1bc77d](https://github.com/vdavid/cmdr/commit/0e1bc77d))
+- Picking an already-mounted share now goes straight there, even under a different name (Bonjour vs IP)
   ([0e1bc77d](https://github.com/vdavid/cmdr/commit/0e1bc77d))
-- Dragging a file from a phone or network pane out to Finder, the Desktop, or a terminal no longer drops a junk
-  `.textClipping` file or pastes a meaningless path. Finder and the Desktop now download the real file (see Added);
-  terminals and apps that can't take the download get a clean no-op instead of garbage
+- Fix the wrong-password message and a stale connection dot after an SMB sign-in fails
+  ([5846d351](https://github.com/vdavid/cmdr/commit/5846d351))
+- Fix cloud AI for Groq, OpenRouter, DeepSeek, and Mistral (they were routed to the wrong API)
+  ([08aa31e1](https://github.com/vdavid/cmdr/commit/08aa31e1))
+- AI search applies its translation again and reports failures (out of quota, bad key, timeout) instead of silently
+  doing nothing ([11f59ea1](https://github.com/vdavid/cmdr/commit/11f59ea1))
+- Move a stranded plaintext AI key from `settings.json` into the OS secret store
+  ([c9d45e09](https://github.com/vdavid/cmdr/commit/c9d45e09))
+- Fix copying or moving an empty folder silently doing nothing, and across drives deleting the source
+  ([5053ea0b](https://github.com/vdavid/cmdr/commit/5053ea0b))
+- Fix the file viewer cutting off the file after about 60 lines with word wrap on
+  ([0655dc0b](https://github.com/vdavid/cmdr/commit/0655dc0b))
+- Fix dialogs leaking focus into the background and locking out the keyboard after two Tabs
+  ([f2e04973](https://github.com/vdavid/cmdr/commit/f2e04973))
+- Closing Search or Select files with Esc no longer kills pane keyboard navigation
+  ([040d424e](https://github.com/vdavid/cmdr/commit/040d424e))
+- Fix ⌘A doing nothing in the Settings and viewer windows ([d99fafc1](https://github.com/vdavid/cmdr/commit/d99fafc1))
+- Fix drag-out from a phone or network pane dropping a junk `.textClipping` file or pasting a meaningless path
   ([6e8ac5ae](https://github.com/vdavid/cmdr/commit/6e8ac5ae))
-- The command palette now shows your real shortcuts (up to three per command) instead of the built-in defaults, so a
-  rebound command no longer displays a key combo that doesn't work
-  ([87df2ed9](https://github.com/vdavid/cmdr/commit/87df2ed9))
-- The Keyboard shortcuts editor now lists every command. A handful (like Quick Look and the F-key actions) were missing
-  from the list and couldn't be rebound ([73766c9e](https://github.com/vdavid/cmdr/commit/73766c9e))
-- The F-key bar, toasts, and onboarding now show the key you actually bound rather than a hardcoded one. The AI
-  onboarding step also stops claiming the Select files dialog opens on ⌘+ when it really opens on a bare +
-  ([123e76b7](https://github.com/vdavid/cmdr/commit/123e76b7),
-  [18acf50f](https://github.com/vdavid/cmdr/commit/18acf50f))
+- Fix index rename failing when the destination name is already taken
+  ([dea07427](https://github.com/vdavid/cmdr/commit/dea07427))
+- Harden shortcut capture: bare keys don't fire mid-typing, and macOS-owned combos (⌘Space, ⌃↑) warn instead of saving
+  silently ([a412e599](https://github.com/vdavid/cmdr/commit/a412e599),
+  [92c5ad4b](https://github.com/vdavid/cmdr/commit/92c5ad4b),
+  [2b7abf3f](https://github.com/vdavid/cmdr/commit/2b7abf3f))
+- Fix custom shortcut rebinds and removals not sticking, not reaching other windows, or missing conflict detection
+  ([6c21fd1b](https://github.com/vdavid/cmdr/commit/6c21fd1b),
+  [da570566](https://github.com/vdavid/cmdr/commit/da570566),
+  [2247dac1](https://github.com/vdavid/cmdr/commit/2247dac1),
+  [a1dae889](https://github.com/vdavid/cmdr/commit/a1dae889),
+  [add4db81](https://github.com/vdavid/cmdr/commit/add4db81))
+- The command palette and the Keyboard shortcuts editor now show your real bindings and list every command
+  ([87df2ed9](https://github.com/vdavid/cmdr/commit/87df2ed9),
+  [73766c9e](https://github.com/vdavid/cmdr/commit/73766c9e),
+  [762b3951](https://github.com/vdavid/cmdr/commit/762b3951),
+  [396097ff](https://github.com/vdavid/cmdr/commit/396097ff))
+- Focus the textarea when the feedback or error report dialog opens
+  ([6f295fc6](https://github.com/vdavid/cmdr/commit/6f295fc6))
 - Show "/" instead of a raw storage id (like "65537") in the tab title at a phone or camera storage root
   ([582cfbaf](https://github.com/vdavid/cmdr/commit/582cfbaf))
+
+### Non-app
+
+- Rewrite the website around one honest feature list (a bento grid by capability), in a product-first voice
+  ([272d177e](https://github.com/vdavid/cmdr/commit/272d177e),
+  [e975bd0c](https://github.com/vdavid/cmdr/commit/e975bd0c),
+  [6ccb8aeb](https://github.com/vdavid/cmdr/commit/6ccb8aeb))
+- Cut the landing page from ~2.3 MB to ~0.4 MB and remove render-blocking CSS
+  ([5fc6729a](https://github.com/vdavid/cmdr/commit/5fc6729a),
+  [fbacb4e9](https://github.com/vdavid/cmdr/commit/fbacb4e9))
+- Replace stringly-typed backend event emits with a typed event bus across volumes, write ops, indexing, MTP, network,
+  git, and AI ([f2d3febf](https://github.com/vdavid/cmdr/commit/f2d3febf),
+  [57e9c87d](https://github.com/vdavid/cmdr/commit/57e9c87d),
+  [5f510bd2](https://github.com/vdavid/cmdr/commit/5f510bd2))
 
 ## [0.24.0] - 2026-06-06
 
