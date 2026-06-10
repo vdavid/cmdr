@@ -45,6 +45,7 @@ function makeProps(overrides: Partial<DownloadToastProps> = {}): DownloadToastPr
       sizeBytes: 1024,
     },
     shortcutHint: '⌘J',
+    globalBinding: '⌃⌥⌘J',
     ...overrides,
   }
 }
@@ -68,6 +69,54 @@ describe('DownloadToastContent', () => {
     // Snapshotted shortcut hint: the prop value, not whatever the live binding is now.
     expect(target.textContent).toContain('⌘J')
     expect(target.textContent).toContain('jump')
+  })
+
+  it('teaches both shortcuts: the in-app chip and the global from-any-app chip plus animation', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps() })
+    await tick()
+
+    // In-app chip and the global from-any-app chip both render.
+    expect(target.textContent).toContain('⌘J')
+    expect(target.textContent).toContain('⌃⌥⌘J')
+    expect(target.textContent.toLowerCase()).toContain('from any app')
+    // The default global binding gets the keyboard animation.
+    expect(target.querySelector('.shortcut-animation svg')).not.toBeNull()
+  })
+
+  it('omits the global hint entirely when globalBinding is empty (hotkey off or unbound)', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ globalBinding: '' }) })
+    await tick()
+
+    // In-app chip still shows; nothing about "any app" and no animation.
+    expect(target.textContent).toContain('⌘J')
+    expect(target.textContent.toLowerCase()).not.toContain('from any app')
+    expect(target.querySelector('.shortcut-animation')).toBeNull()
+  })
+
+  it('keeps the global chip but drops the animation when the global binding is remapped', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ globalBinding: '⌃⌥⌘K' }) })
+    await tick()
+
+    // The remapped combo is taught via the text chip...
+    expect(target.textContent).toContain('⌃⌥⌘K')
+    // ...but the animation (which lights up the literal default keys) is gone.
+    expect(target.querySelector('.shortcut-animation')).toBeNull()
+  })
+
+  it('omits the in-app hint when its shortcut is unbound, still teaching the global one', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ shortcutHint: '' }) })
+    await tick()
+
+    expect(target.textContent.toLowerCase()).not.toContain('to jump here')
+    expect(target.textContent).toContain('⌃⌥⌘J')
   })
 
   it('renders the relative-subdir hint when inSubdir is true', async () => {

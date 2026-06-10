@@ -35,6 +35,7 @@ describe('DownloadToastContent a11y', () => {
           sizeBytes: 1024,
         },
         shortcutHint: '⌘J',
+        globalBinding: '⌃⌥⌘J',
       },
     })
     await tick()

@@ -8,21 +8,22 @@ Backend counterpart: [`src-tauri/src/downloads/CLAUDE.md`](../../../src-tauri/sr
 
 ## Architecture
 
-| File                                     | Purpose                                                                                                                                                                                                          |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `go-to-latest.ts`                        | `goToLatestDownload(explorer)` consults ring + scan fallback. `goToDownload(explorer, dir, name)` jumps to a specific file.                                                                                      |
-| `LatestDownloadEmptyToastContent.svelte` | INFO toast: "Your Downloads folder is empty…" with a "Go to Downloads" action.                                                                                                                                   |
-| `LatestDownloadFdaToastContent.svelte`   | INFO toast: "Cmdr needs Full Disk Access…" with an "Open System Settings" action.                                                                                                                                |
-| `go-to-latest-ids.ts`                    | Dedup ids for the go-to-latest INFO toasts.                                                                                                                                                                      |
-| `event-bridge.svelte.ts`                 | Listener bridge: one `download-detected` subscription, dispatches per the settings enum.                                                                                                                         |
-| `DownloadToastContent.svelte`            | In-app toast: title with filename + size, optional subdir line, snapshotted shortcut hint (literal `ShortcutChip`), Jump + Stop-showing actions.                                                                 |
-| `notifications-mode.ts`                  | Reader, writer, and deep-link helper for `behavior.fileSystemWatching.downloadsNotifications`.                                                                                                                   |
-| `global-shortcut-bridge.svelte.ts`       | One `global-shortcut-fired` Tauri event subscription. Calls `goToLatestDownload` plus, on first un-acknowledged trigger, the warn toast.                                                                         |
-| `GlobalShortcutWarnToastContent.svelte`  | First-trigger persistent warn toast for ⌃⌥⌘J. "Keep it on" / "Turn it off" buttons. Snapshotted binding prop.                                                                                                    |
-| `global-shortcut-binding.ts`             | Translates the macOS-symbol binding (`'⌃⌥⌘J'`) into the accelerator string the plugin understands (`'Control+Alt+Super+J'`). ⌘ maps to `Super` (global-hotkey rejects `Meta`).                                   |
-| `global-shortcut-setting.ts`             | Narrow getters/setters for `behavior.fileSystemWatching.globalGoToLatestShortcut.*`. **`setGlobalGoToLatestBinding` resets `acknowledged` to `false`** — the new combo deserves the first-trigger warning again. |
-| `global-shortcut-description.ts`         | Pure builder for the on/off toggle's helper text. Given the live binding, returns "Press ⌃⌥⌘J from any app to jump to your most recent download." so the description tracks rebinds.                             |
-| `GlobalShortcutRow.svelte`               | The go-to-latest hotkey as a shortcut row in `Keyboard shortcuts`, marked `(global)`. Recorder pill + reset. Writes via `setGlobalGoToLatestBinding`, then `set_global_go_to_latest_shortcut` for live-apply.    |
+| File                                     | Purpose                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `go-to-latest.ts`                        | `goToLatestDownload(explorer)` consults ring + scan fallback. `goToDownload(explorer, dir, name)` jumps to a specific file.                                                                                                                                                             |
+| `LatestDownloadEmptyToastContent.svelte` | INFO toast: "Your Downloads folder is empty…" with a "Go to Downloads" action.                                                                                                                                                                                                          |
+| `LatestDownloadFdaToastContent.svelte`   | INFO toast: "Cmdr needs Full Disk Access…" with an "Open System Settings" action.                                                                                                                                                                                                       |
+| `go-to-latest-ids.ts`                    | Dedup ids for the go-to-latest INFO toasts.                                                                                                                                                                                                                                             |
+| `event-bridge.svelte.ts`                 | Listener bridge: one `download-detected` subscription, dispatches per the settings enum.                                                                                                                                                                                                |
+| `DownloadToastContent.svelte`            | In-app toast: title with filename + size, optional subdir line, two snapshotted shortcut hints (in-app `⌘J` and global `⌃⌥⌘J`, each a literal `ShortcutChip`), `GlobalShortcutAnimation` for the default global combo, Jump + Stop-showing actions.                                     |
+| `GlobalShortcutAnimation.svelte`         | Decorative looping keyboard SVG that shows ⌃⌥⌘J being pressed. Tokenized colors (reads on light + dark info toasts), accent-lit press, `aria-hidden`. Hard-coded to ⌃⌥⌘J: the toast renders it ONLY for the default global binding. Honors `prefers-reduced-motion` (static lit frame). |
+| `notifications-mode.ts`                  | Reader, writer, and deep-link helper for `behavior.fileSystemWatching.downloadsNotifications`.                                                                                                                                                                                          |
+| `global-shortcut-bridge.svelte.ts`       | One `global-shortcut-fired` Tauri event subscription. Calls `goToLatestDownload` plus, on first un-acknowledged trigger, the warn toast.                                                                                                                                                |
+| `GlobalShortcutWarnToastContent.svelte`  | First-trigger persistent warn toast for ⌃⌥⌘J. "Keep it on" / "Turn it off" buttons. Snapshotted binding prop.                                                                                                                                                                           |
+| `global-shortcut-binding.ts`             | Translates the macOS-symbol binding (`'⌃⌥⌘J'`) into the accelerator string the plugin understands (`'Control+Alt+Super+J'`). ⌘ maps to `Super` (global-hotkey rejects `Meta`).                                                                                                          |
+| `global-shortcut-setting.ts`             | Narrow getters/setters for `behavior.fileSystemWatching.globalGoToLatestShortcut.*`. **`setGlobalGoToLatestBinding` resets `acknowledged` to `false`** — the new combo deserves the first-trigger warning again.                                                                        |
+| `global-shortcut-description.ts`         | Pure builder for the on/off toggle's helper text. Given the live binding, returns "Press ⌃⌥⌘J from any app to jump to your most recent download." so the description tracks rebinds.                                                                                                    |
+| `GlobalShortcutRow.svelte`               | The go-to-latest hotkey as a shortcut row in `Keyboard shortcuts`, marked `(global)`. Recorder pill + reset. Writes via `setGlobalGoToLatestBinding`, then `set_global_go_to_latest_shortcut` for live-apply.                                                                           |
 
 ## Settings-gated dispatch
 
@@ -38,19 +39,35 @@ helper (also used by `lib/low-disk-space/`): session-cached answer, a single INF
 denial, no retries, and we DON'T flip the user's setting. The user can re-enable in System Settings whenever; their
 preference stays put.
 
+## Two shortcut hints on the toast
+
+The toast teaches BOTH go-to-latest shortcuts, each as a literal-mode `ShortcutChip` (non-clickable), so neither chip
+re-renders live (see the snapshot rule below):
+
+- **In-app `⌘J`** (`shortcutHint` prop): `getEffectiveShortcuts('downloads.goToLatest')[0]` at creation time. Hidden
+  (`''`) only when the command is unbound.
+- **Global `⌃⌥⌘J`** (`globalBinding` prop): the from-any-app hotkey. The bridge passes the binding only when the hotkey
+  is BOTH enabled and bound; otherwise `''`, which hides the whole global line. When `globalBinding` still equals
+  `DEFAULT_GLOBAL_GO_TO_LATEST_BINDING`, the toast also renders `GlobalShortcutAnimation`; a remapped combo keeps the
+  text chip but drops the animation (the SVG lights up the literal default keys, so it would teach the wrong ones).
+
+**Skip-the-whole-toast edge case.** When NEITHER shortcut is teachable (in-app unbound AND global off/unbound),
+`dispatchToast` skips the in-app toast outright, even if downloads notifications aren't set to `'neither'` — the toast's
+reason to exist is teaching these shortcuts. A `'both'`-mode macOS notification still fires (separate surface, never
+carried a hint).
+
 ## Snapshot-at-creation rule
 
-The shortcut hint shown on each in-app toast is the value of `getEffectiveShortcuts('downloads.goToLatest')[0]` at
-toast-creation time, passed as the `shortcutHint` prop and rendered as a literal-mode `ShortcutChip`
-(`key={shortcutHint}`, non-clickable). A remap that happens between this toast appearing and the user clicking does NOT
-change what's displayed — that would be confusing, because the hint would no longer match what the user actually pressed
-when the toast first showed up. The next toast picks up the new binding naturally. (The chip is literal, not `commandId`
-mode, precisely to preserve this snapshot semantic; a `commandId` chip would re-render live.)
+Both shortcut values are snapshotted at toast-creation time and passed as props. A remap that happens between this toast
+appearing and the user clicking does NOT change what's displayed — that would be confusing, because a hint would no
+longer match what the user actually pressed when the toast first showed up. The next toast picks up the new binding
+naturally. (The chips are literal, not `commandId` mode, precisely to preserve this snapshot semantic; a `commandId`
+chip would re-render live.)
 
-Pure-prop-driven: the toast component reads `event`, `shortcutHint`, `explorer`, and `toastId` once on mount. No live
-subscriptions, no module state. The `ToastItem` host extends the toast store with a `props` field (see `lib/ui/toast/`)
-which is forwarded only to component-content toasts that opt in; existing toasts that don't pass `props` keep their
-zero-prop shape.
+Pure-prop-driven: the toast component reads `event`, `shortcutHint`, `globalBinding`, `explorer`, and `toastId` once on
+mount. No live subscriptions, no module state. The `ToastItem` host extends the toast store with a `props` field (see
+`lib/ui/toast/`) which is forwarded only to component-content toasts that opt in; existing toasts that don't pass
+`props` keep their zero-prop shape.
 
 ## Go-to-by-path vs go-to-latest
 

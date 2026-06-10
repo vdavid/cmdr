@@ -20,6 +20,8 @@
         setDownloadsNotificationsMode,
         openSettingsToDownloadsNotifications,
     } from './notifications-mode'
+    import { DEFAULT_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
+    import GlobalShortcutAnimation from './GlobalShortcutAnimation.svelte'
     import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
     /**
@@ -47,14 +49,32 @@
         /** The `download-detected` Tauri payload that produced this toast. */
         event: DownloadDetectedPayload
         /**
-         * Display string for the in-app go-to-latest shortcut, snapshotted at
-         * toast-add time. NOT reactive: a remap mid-toast does not change
-         * what's shown. Pass `''` to omit the hint line.
+         * Display string for the in-app go-to-latest shortcut (default `⌘J`),
+         * snapshotted at toast-add time. NOT reactive: a remap mid-toast does
+         * not change what's shown. Pass `''` to omit the in-app hint line (the
+         * command is unbound).
          */
         shortcutHint: string
+        /**
+         * Display string for the GLOBAL go-to-latest hotkey (default `⌃⌥⌘J`),
+         * the one that jumps from any app, snapshotted at toast-add time. Pass
+         * `''` to omit the whole global hint line — the bridge does that when
+         * the hotkey is turned off or unbound, since there's nothing to teach.
+         * When the value still equals the default binding we also play the
+         * keyboard animation; a remapped combo keeps the chip but drops the
+         * animation (its keys would no longer match).
+         */
+        globalBinding: string
     }
 
-    const { toastId, explorer, event, shortcutHint }: Props = $props()
+    const { toastId, explorer, event, shortcutHint, globalBinding }: Props = $props()
+
+    /**
+     * Only show the keyboard animation for the default combo. The SVG lights up
+     * the literal ⌃⌥⌘J keys, so a remapped binding would teach the wrong keys —
+     * we keep the text chip (it tracks the snapshot) but drop the animation.
+     */
+    const showShortcutAnimation = $derived(globalBinding === DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
 
     /**
      * Relative-subdir label rendered when the file is below the Downloads
@@ -117,7 +137,15 @@
         <span class="subdir">in {subdirLabel}</span>
     {/if}
     {#if shortcutHint}
-        <span class="hint">Press <ShortcutChip key={shortcutHint} /> to jump</span>
+        <span class="hint">Press <ShortcutChip key={shortcutHint} /> to jump here</span>
+    {/if}
+    {#if globalBinding}
+        <span class="hint">From any app, press <ShortcutChip key={globalBinding} /></span>
+        {#if showShortcutAnimation}
+            <div class="shortcut-animation">
+                <GlobalShortcutAnimation />
+            </div>
+        {/if}
     {/if}
     <div class="actions">
         <button type="button" class="jump-button" onclick={handleJumpButton}>
@@ -166,6 +194,14 @@
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xxs);
+    }
+
+    /* The keyboard SVG is wide (≈3:1); cap it well under the toast width so it
+       reads as a compact hint, not a banner, and nudge it in from the hint
+       text above it. */
+    .shortcut-animation {
+        max-width: 200px;
+        margin-top: var(--spacing-xxs);
     }
 
     .actions {

@@ -25,6 +25,8 @@ const {
   sendNotificationMock,
   addToastMock,
   getEffectiveShortcutsMock,
+  getGlobalGoToLatestEnabledMock,
+  getGlobalGoToLatestBindingMock,
   downloadsWatcherStatusMock,
 } = vi.hoisted(() => ({
   listenMock: vi.fn(),
@@ -34,6 +36,8 @@ const {
   sendNotificationMock: vi.fn(),
   addToastMock: vi.fn(() => 'toast-id'),
   getEffectiveShortcutsMock: vi.fn<(id: string) => string[]>(),
+  getGlobalGoToLatestEnabledMock: vi.fn<() => boolean>(),
+  getGlobalGoToLatestBindingMock: vi.fn<() => string>(),
   downloadsWatcherStatusMock: vi.fn(),
 }))
 
@@ -59,6 +63,11 @@ vi.mock('$lib/ui/toast', () => ({
 
 vi.mock('$lib/shortcuts', () => ({
   getEffectiveShortcuts: getEffectiveShortcutsMock,
+}))
+
+vi.mock('./global-shortcut-setting', () => ({
+  getGlobalGoToLatestEnabled: getGlobalGoToLatestEnabledMock,
+  getGlobalGoToLatestBinding: getGlobalGoToLatestBindingMock,
 }))
 
 vi.mock('$lib/ipc/bindings', () => ({
@@ -126,6 +135,8 @@ describe('startDownloadsEventBridge', () => {
     sendNotificationMock.mockReset()
     addToastMock.mockReset().mockReturnValue('toast-id')
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
+    getGlobalGoToLatestEnabledMock.mockReset().mockReturnValue(true)
+    getGlobalGoToLatestBindingMock.mockReset().mockReturnValue('⌃⌥⌘J')
     downloadsWatcherStatusMock.mockReset().mockResolvedValue({
       status: 'ok',
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
@@ -215,6 +226,55 @@ describe('startDownloadsEventBridge', () => {
     expect(firstCall[1].props.shortcutHint).toBe('⌘J')
   })
 
+  it('passes the global hotkey binding when it is enabled and bound', async () => {
+    getGlobalGoToLatestEnabledMock.mockReturnValue(true)
+    getGlobalGoToLatestBindingMock.mockReturnValue('⌃⌥⌘J')
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload() })
+    await flushAsync()
+
+    const [, options] = addToastMock.mock.calls[0] as unknown as [unknown, { props: { globalBinding: string } }]
+    expect(options.props.globalBinding).toBe('⌃⌥⌘J')
+  })
+
+  it('passes an empty global binding when the hotkey is disabled (no global hint to teach)', async () => {
+    getGlobalGoToLatestEnabledMock.mockReturnValue(false)
+    getGlobalGoToLatestBindingMock.mockReturnValue('⌃⌥⌘J')
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload() })
+    await flushAsync()
+
+    const [, options] = addToastMock.mock.calls[0] as unknown as [unknown, { props: { globalBinding: string } }]
+    expect(options.props.globalBinding).toBe('')
+  })
+
+  it('skips the toast entirely when neither go-to-latest shortcut is set', async () => {
+    // In-app unbound AND global off: the toast has nothing to teach, so it
+    // doesn't appear even though the mode is 'in-app' (not 'neither').
+    getDownloadsNotificationsModeMock.mockReturnValue('in-app')
+    getEffectiveShortcutsMock.mockReturnValue([])
+    getGlobalGoToLatestEnabledMock.mockReturnValue(false)
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload() })
+    await flushAsync()
+
+    expect(addToastMock).not.toHaveBeenCalled()
+  })
+
+  it('in "both" mode with no shortcuts set, still fires the macOS notification but no toast', async () => {
+    // The skip only drops the in-app toast (the shortcut teacher); the native
+    // notification is a separate surface and never carried a hint.
+    getDownloadsNotificationsModeMock.mockReturnValue('both')
+    getEffectiveShortcutsMock.mockReturnValue([])
+    getGlobalGoToLatestEnabledMock.mockReturnValue(false)
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload() })
+    await flushAsync()
+
+    expect(addToastMock).not.toHaveBeenCalled()
+    expect(sendNotificationMock).toHaveBeenCalledTimes(1)
+  })
+
   it('skips notification dispatch entirely while the FDA gate is pending', async () => {
     // Defense in depth: the watcher won't fire under a closed gate, but if a
     // stale event leaks through we must not surface a toast or a macOS popup
@@ -242,6 +302,8 @@ describe('startDownloadsEventBridge — permission flow', () => {
     sendNotificationMock.mockReset()
     addToastMock.mockReset().mockReturnValue('toast-id')
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
+    getGlobalGoToLatestEnabledMock.mockReset().mockReturnValue(true)
+    getGlobalGoToLatestBindingMock.mockReset().mockReturnValue('⌃⌥⌘J')
     downloadsWatcherStatusMock.mockReset().mockResolvedValue({
       status: 'ok',
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },

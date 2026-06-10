@@ -11,10 +11,12 @@
  *
  * ## Snapshot-at-creation rule
  *
- * The shortcut hint shown on each in-app toast is captured at event-arrival
- * time and passed as a prop. A remap of the in-app go-to-latest binding between
- * one toast appearing and another arriving DOES update the next toast's
- * hint — that's correct — but never the toast already on screen.
+ * Both go-to-latest bindings shown on a toast (the in-app `⌘J` and the global
+ * `⌃⌥⌘J`) are captured at event-arrival time and passed as props. A remap
+ * between one toast appearing and another arriving DOES update the next toast's
+ * hints — that's correct — but never the toast already on screen. When neither
+ * binding is teachable (in-app unbound, global off or unbound), `dispatchToast`
+ * skips the toast outright.
  *
  * ## FDA defense-in-depth
  *
@@ -33,6 +35,7 @@ import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
 import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
 import { getDownloadsNotificationsMode, type DownloadsNotificationsMode } from './notifications-mode'
+import { getGlobalGoToLatestEnabled, getGlobalGoToLatestBinding } from './global-shortcut-setting'
 import DownloadToastContent from './DownloadToastContent.svelte'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
@@ -89,11 +92,26 @@ async function handleDownloadDetected(
 }
 
 function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | undefined): void {
-  // Snapshot the current binding at toast creation time. The component
-  // receives this as a prop and never re-reads, so a remap between events
+  // Snapshot both go-to-latest bindings at toast creation time. The component
+  // receives these as props and never re-reads, so a remap between events
   // doesn't mutate an already-visible toast.
-  const shortcuts = getEffectiveShortcuts(GO_TO_LATEST_COMMAND_ID)
-  const shortcutHint = shortcuts[0] ?? ''
+  //
+  // In-app ⌘J: shown whenever the command is bound; `''` when it's unbound.
+  const shortcutHint = getEffectiveShortcuts(GO_TO_LATEST_COMMAND_ID)[0] ?? ''
+
+  // Global ⌃⌥⌘J (jump from any app): only teachable when the hotkey is turned
+  // on AND has a binding. A disabled or unbound hotkey contributes no hint, so
+  // collapse both cases to `''` for the component.
+  const globalBinding = getGlobalGoToLatestEnabled() ? getGlobalGoToLatestBinding() : ''
+
+  // The toast's reason to exist is teaching these shortcuts. With neither one
+  // teachable, skip it entirely — even though downloads notifications aren't
+  // turned off. (A 'both'-mode macOS notification still fires from the caller;
+  // it never carried a shortcut hint anyway.)
+  if (shortcutHint === '' && globalBinding === '') {
+    log.debug('Skipping downloads toast: neither go-to-latest shortcut is set')
+    return
+  }
 
   addToast(DownloadToastContent, {
     level: 'info',
@@ -103,6 +121,7 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
       explorer,
       event: payload,
       shortcutHint,
+      globalBinding,
     },
   })
 }
