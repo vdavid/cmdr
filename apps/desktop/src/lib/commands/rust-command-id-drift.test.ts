@@ -117,6 +117,7 @@ describe('menuCommands ↔ command_id_to_menu_id drift', () => {
     'app.about': 'cmdr app-menu item, never registered in MenuState.items; no default shortcut to sync',
     'app.licenseKey': 'cmdr app-menu item, never registered in MenuState.items; no default shortcut to sync',
     'help.sendErrorReport': 'Help-menu item, never registered in MenuState.items; no default shortcut to sync',
+    'feedback.send': 'Help-menu item, never registered in MenuState.items; no default shortcut to sync',
     'tab.togglePin':
       'MenuState.pin_tab holds a dedicated item reference for live label swaps (Pin/Unpin); the remove-recreate accelerator update would orphan it. Register + rework the label path before syncing.',
     'selection.toggle':
