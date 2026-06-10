@@ -37,8 +37,8 @@ the toast-level guide, and decisions are in [DETAILS.md](DETAILS.md).
   handler only. Exactly one of `commandId` / `key` must be set (dev-time error otherwise); a `commandId` chip renders
   NOTHING when the command has no binding, so conditionalize the surrounding prose.
 - **Tooltip detached-trigger gotcha (corner tooltip):** a virtual-scroll row recycled while hovered is removed without
-  firing `mouseleave`, so the 400ms show timer can fire against a detached node (all-zero rect → tooltip in the
-  top-left corner). Two guards must both stay: the action's `destroy()` cancels its pending timer, and
+  firing `mouseleave`, so the 400ms show timer can fire against a detached node (all-zero rect → tooltip in the top-left
+  corner). Two guards must both stay: the action's `destroy()` cancels its pending timer, and
   `showTooltip`/`positionTooltip` bail on `isTriggerDetached(el)` (`!el.isConnected`). Don't swap the `isConnected`
   check for a zero-rect heuristic (happy-dom reports zero rects for every connected element).
 - **Toast `default` level is rare on purpose; pick the lowest-intensity fitting level.** Five levels carry meaning by

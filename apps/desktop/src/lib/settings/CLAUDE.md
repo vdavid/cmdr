@@ -29,8 +29,8 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
 - **Reactive settings must live in `reactive-settings.svelte.ts`** (`.svelte.ts`, not `.ts`): `$state()` needs the
   extension.
 - **Date display has one source of truth:** `formatDateForDisplay()` (pure) → `formattedDate()` (reactive) →
-  `<DateLabel>` (render). Per-component coloring lives only in `age-tier-utils.ts`. Add new date consumers through these,
-  not a fresh formatter. Text-size compounding lives only in `text-size.ts`'s `computeAndApply()`.
+  `<DateLabel>` (render). Per-component coloring lives only in `age-tier-utils.ts`. Add new date consumers through
+  these, not a fresh formatter. Text-size compounding lives only in `text-size.ts`'s `computeAndApply()`.
 - **AI hot-apply is wired in `settings-applier.ts`**, which routes `ai.provider` / `ai.cloudProvider` /
   `ai.cloudProviderConfigs` to `ai-config.ts::pushConfigToBackend()`. That helper re-reads every setting fresh, so
   callers MUST NOT pass cached values. Sections and the wizard just call `setSetting(...)`.

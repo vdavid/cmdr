@@ -8,9 +8,8 @@ lifecycle, drag handling, volume tinting, and navigation primitives. Up: [`../CL
 - `DualPaneExplorer.svelte`: root, owns both panes, unified key/command dispatch, the dialog manager, the MCP surface.
 - `FilePane.svelte`: one pane, owns its listing, cursor, selection, view mode, type-to-jump buffer, rename flow,
   breadcrumb, and the alt-view `{#if}` chain (MTP / network / SMB-reconnect / search-results / error / list).
-- State factories (`*.svelte.ts`): `explorer-state` (the store), `selection-state`, `rename-flow`,
-  `type-to-jump-state`, `volume-tint`, `pane-mcp-sync`, `persistence-subscriber`, `listing-diff-sync`,
-  `drag-drop-controller`, `dialog-state`.
+- State factories (`*.svelte.ts`): `explorer-state` (the store), `selection-state`, `rename-flow`, `type-to-jump-state`,
+  `volume-tint`, `pane-mcp-sync`, `persistence-subscriber`, `listing-diff-sync`, `drag-drop-controller`, `dialog-state`.
 - Pure utilities (`*.ts`): `navigate`, `volume-capabilities`, `has-parent`, `snapshot-pane-navigation`, `pane-access`,
   `focused-pane-reads`, the command-body factories, `function-key-commands`, `selection-dialog-keys`, `transfer-entry`.
 
@@ -34,14 +33,15 @@ Full file table, conventions, and decision rationale: [DETAILS.md](DETAILS.md).
 - **`capabilitiesFor` / `volumeKindOf` must stay TOTAL** (never return `undefined`): unknown real ids fall to the
   `local` default; the two virtual ids short-circuit first. The tint classifier `volumeKindFor` keeps its own body and
   output so tint stays byte-stable; never feed the `local` default back into tinting.
-- **Snapshot pane (`volumeId === 'search-results'`) couples two integration points**: `computeHasParent` returns
-  `false` (no `..` row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery.
-  Skipping either breaks selection (off-by-one) or poisons the pane with a `search-results` volumeId + a real path.
+- **Snapshot pane (`volumeId === 'search-results'`) couples two integration points**: `computeHasParent` returns `false`
+  (no `..` row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery. Skipping
+  either breaks selection (off-by-one) or poisons the pane with a `search-results` volumeId + a real path.
 - **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network +
   search-results also lack a system clipboard; an MTP-worded toast on a network paste would be wrong).
 - **Functions that WRITE component navigation state stay in the component** (`switchPane`, `swapPanes`,
   `toggleHiddenFiles`, `setViewMode`, `navigate`, `setSort*`, `moveCursor`, `selectVolumeBy*`, `copyPathBetweenPanes`,
-  the `mirror*`/`restoreFocus` helpers). Only read-only / delegating bodies move into the `PaneAccess`-reading factories.
+  the `mirror*`/`restoreFocus` helpers). Only read-only / delegating bodies move into the `PaneAccess`-reading
+  factories.
 - **The focus guard must exempt dialog content.** `DualPaneExplorer.handleFocusGuard` must keep its
   `[role="dialog"], [role="alertdialog"]` exemption: rename dialogs mount inside FilePane, and without it the guard and
   `use:trapFocus` ping-pong focus in an endless microtask loop that freezes the webview. Pinned by the "rename to

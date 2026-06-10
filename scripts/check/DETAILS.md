@@ -126,7 +126,7 @@ pnpm check [flags]
 | `colors.go`             | ANSI color constants                                                                                                               |
 | `utils.go`              | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                                                      |
 | `smb_orchestrator.go`   | Runner-level SMB Docker lifecycle: acquires a machine-wide lease (via `smblease`) at init, releases at exit                        |
-| `smblease/`             | Library: the machine-wide flock + holder-id refcount that makes the shared `smb-consumer` stack safe across worktrees             |
+| `smblease/`             | Library: the machine-wide flock + holder-id refcount that makes the shared `smb-consumer` stack safe across worktrees              |
 | `smb-lease/`            | Thin `package main` CLI onto `smblease` (`acquire`/`release`/`reconcile`/`status`) that the bash scripts shell out to              |
 | `freestyle.go`          | All freestyle.sh remote-VM execution logic, including `preferFreestyleRun`                                                         |
 | `checks/`               | One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)                               |

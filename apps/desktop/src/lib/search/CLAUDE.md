@@ -1,9 +1,9 @@
 # Search (frontend)
 
-Whole-drive file search dialog. Searches the in-memory index by filename (glob/regex), size, date, and scope
-(folder include/exclude). Optional AI mode translates natural-language queries into structured filters. First consumer
-of the shared Query UI primitives in [`lib/query-ui/`](../query-ui/CLAUDE.md); Selection (`lib/selection-dialog/`) is
-the second. Backend: `src-tauri/src/search/` + `src-tauri/src/commands/search.rs`.
+Whole-drive file search dialog. Searches the in-memory index by filename (glob/regex), size, date, and scope (folder
+include/exclude). Optional AI mode translates natural-language queries into structured filters. First consumer of the
+shared Query UI primitives in [`lib/query-ui/`](../query-ui/CLAUDE.md); Selection (`lib/selection-dialog/`) is the
+second. Backend: `src-tauri/src/search/` + `src-tauri/src/commands/search.rs`.
 
 ## Module map
 

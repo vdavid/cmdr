@@ -7,8 +7,8 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
 
 ## Module map
 
-- `OnboardingWizard.svelte` (shell), `OnboardingStepShell.svelte` (per-step frame), `StepFda` / `StepAi` /
-  `StepBeta` / `StepOptional`, plus `CloudProviderPicker` / `CloudProviderSetup` for the AI step.
+- `OnboardingWizard.svelte` (shell), `OnboardingStepShell.svelte` (per-step frame), `StepFda` / `StepAi` / `StepBeta` /
+  `StepOptional`, plus `CloudProviderPicker` / `CloudProviderSetup` for the AI step.
 - `onboarding-state.svelte.ts`: the state machine (step cursor, variants, banner mode, `resumeStepFor()`).
 
 ## Must-knows
@@ -24,16 +24,18 @@ Flow: FDA (1) → AI (2) → Open beta (3) → Optional (4). Linux skips step 1 
 - **No Escape handler on the wizard.** Dismissing without choosing leaves no recorded preference; the user must commit
   to Allow / Deny / Next on each step. (Closing requires committing to a step; MCP close/focus aren't wired.)
 - **The AI step's forward button stays enabled regardless of API-key validity** (no-key-blocks-advance). Don't gate
-  advance on connection status; the auto-check is informational. First AI use surfaces the standard `NotConfigured` path.
+  advance on connection status; the auto-check is informational. First AI use surfaces the standard `NotConfigured`
+  path.
 - **FDA stays a three-state setting** (`notAskedYet` / `allow` / `deny`), never a boolean: the app must tell "never
   asked" from "granted-then-revoked" from "explicitly declined".
 - **Two things stay gated on the FDA decision at boot:** the drive indexer and the path-based icon fetches in
-  `volumes::list_locations`, both via `crate::fda_gate::is_fda_pending(...)`. On Deny,
-  `startIndexingAfterFdaDecision()` clears the runtime gate and starts the indexer/MTP watcher (one TCC popup per
-  protected folder). On Allow, the relaunch opens the gate at boot. See `src-tauri/src/fda_gate.rs`.
+  `volumes::list_locations`, both via `crate::fda_gate::is_fda_pending(...)`. On Deny, `startIndexingAfterFdaDecision()`
+  clears the runtime gate and starts the indexer/MTP watcher (one TCC popup per protected folder). On Allow, the
+  relaunch opens the gate at boot. See `src-tauri/src/fda_gate.rs`.
 - **`StepBeta` and `StepOptional` reuse existing Settings wiring** (`UpdatesSection`'s `betaSignup`/email path,
-  `<SettingSwitch>` writing via `setSetting()`). The email path POSTs only the email, never an install id. Don't fork it.
-- **`CMDR_FORCE_ONBOARDING=1`** forces the wizard regardless of persisted state; `CMDR_MOCK_FDA=granted|denied|notgranted`
-  overrides the TCC probe for testing all banner branches.
+  `<SettingSwitch>` writing via `setSetting()`). The email path POSTs only the email, never an install id. Don't fork
+  it.
+- **`CMDR_FORCE_ONBOARDING=1`** forces the wizard regardless of persisted state;
+  `CMDR_MOCK_FDA=granted|denied|notgranted` overrides the TCC probe for testing all banner branches.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

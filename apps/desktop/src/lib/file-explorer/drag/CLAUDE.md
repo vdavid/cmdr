@@ -8,21 +8,21 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
 - `drag-drop.ts`: mouse tracking, threshold detection, drag initiation; records self-drag identity at drag start.
 - `drop-target-hit-testing.ts` / `drop-target-validation.ts` / `drop-operation.ts`: pure drop-target resolution,
   source/descendant blocking, and move-vs-copy resolution.
-- `drag-auto-scroll.ts`, `DragOverlay.svelte` + `drag-overlay.svelte.ts`, `drag-image-renderer.ts`: scroll bands,
-  cursor label, canvas drag preview.
+- `drag-auto-scroll.ts`, `DragOverlay.svelte` + `drag-overlay.svelte.ts`, `drag-image-renderer.ts`: scroll bands, cursor
+  label, canvas drag preview.
 - Backend: `native_drag.rs` (+ `native_drag/type_plan.rs`), `commands/file_system/drag.rs`, `drag_image_detection.rs`,
   `drag_image_swap.rs`. Self-drag consumption lives in `pane/drag-drop-controller.svelte.ts`.
 
 ## Must-knows
 
-- **Pasteboard layout is decided ONCE per drag session by the source volume's locality, never per item.** Local
-  sessions publish the legacy layout (file-url + shell-escaped text + `NSFilenamesPboardType`); virtual sessions (MTP,
-  direct SMB, search-results) advertise NOTHING external apps can materialize except an `NSFilePromiseProvider`. Don't
-  mix per-item; the policy is pure in `native_drag/type_plan.rs::plan_pasteboard_items`.
+- **Pasteboard layout is decided ONCE per drag session by the source volume's locality, never per item.** Local sessions
+  publish the legacy layout (file-url + shell-escaped text + `NSFilenamesPboardType`); virtual sessions (MTP, direct
+  SMB, search-results) advertise NOTHING external apps can materialize except an `NSFilePromiseProvider`. Don't mix
+  per-item; the policy is pure in `native_drag/type_plan.rs::plan_pasteboard_items`.
 - **In-app drops never trust the pasteboard round-trip.** Virtual-volume paths are volume-relative
   (`/photos/sunset.jpg`) and round-trip through wry looking like local absolute paths, so the resolver mis-resolves to
-  local and the dialog reads 0 bytes. `drag-drop.ts::recordSelfDragIdentity` stamps the true `{ sourceVolumeId,
-  sourcePaths }` at drag start; `drag-drop-controller.svelte.ts::handleDrop` consumes it via
+  local and the dialog reads 0 bytes. `drag-drop.ts::recordSelfDragIdentity` stamps the true
+  `{ sourceVolumeId, sourcePaths }` at drag start; `drag-drop-controller.svelte.ts::handleDrop` consumes it via
   `consumableSelfDragIdentity()` ONLY when `getIsDraggingFromSelf()` is true AND the recorded `sourceVolumeId` is a
   REGISTERED backend-real volume. The registry-membership gate (not a virtual-id string compare) is what makes a
   search-results self-drag fall through to the resolver. `FullList`/`BriefList` need the `sourceVolumeId` prop for the
@@ -40,11 +40,11 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
 - **`public.file-url` must be set with `setString:` (the URL's `absoluteString`), not `setPropertyList:`.** The
   property-list path produces a value AppKit can't parse ("An invalid URL was found on the pasteboard") and breaks
   downstream `NSFilenamesPboardType` derivation.
-- **Drop runs the shared destination guard (`pane/transfer-entry.ts::checkTransferDestinationGuard`) FIRST**, before
-  any stat / volume resolution, so F5/F6, paste, and drop reject read-only/search-results destinations identically.
-- **`resolveSourceVolumeId` NEVER ships a knowingly-wrong id**: when sources span volumes or resolution fails it
-  returns `root` (honest unknown). Don't reintroduce the `sourceVolumeId = destVolumeId` placeholder; it stat'd the
-  wrong shape and reported 0 bytes / 0 files.
+- **Drop runs the shared destination guard (`pane/transfer-entry.ts::checkTransferDestinationGuard`) FIRST**, before any
+  stat / volume resolution, so F5/F6, paste, and drop reject read-only/search-results destinations identically.
+- **`resolveSourceVolumeId` NEVER ships a knowingly-wrong id**: when sources span volumes or resolution fails it returns
+  `root` (honest unknown). Don't reintroduce the `sourceVolumeId = destVolumeId` placeholder; it stat'd the wrong shape
+  and reported 0 bytes / 0 files.
 - **Self-drag op override**: the swizzle returns our resolved `NSDragOperation` only while `SELF_DRAG_ACTIVE`; without
   it macOS always draws the green "+" copy badge inside our window even on a Move.
 - **Swizzle calls are wrapped in `catch_unwind` + `warn_once`**: a panic across the FFI boundary mid-drag would crash

@@ -23,8 +23,8 @@ sibling `../commands/command-registry.ts`; only customizations persist to `short
   these same mutators, so they inherit the guard. `isNativeShortcutCommand` / `isFixedKeyCommand` are the predicates.
 - **Every mutation emits `shortcuts:changed` after saving; the per-window `SENDER_ID` is the loop guard** (the listener
   drops events with its own id). The listener updates the local map and calls `notifyListeners` but does NOT save or
-  re-emit. The viewer never subscribes (capability-restricted; importing the store at eval only runs `randomUUID()`,
-  no `listen()`). Without cross-window propagation a rebind stays stale in other windows until restart.
+  re-emit. The viewer never subscribes (capability-restricted; importing the store at eval only runs `randomUUID()`, no
+  `listen()`). Without cross-window propagation a rebind stays stale in other windows until restart.
 - **`initializeShortcuts` heals leaked `''` entries on load:** `[]` kept; `['']`/`['','']` dropped entirely (registry
   default applies, do NOT collapse to `[]`, that would suppress a default-bound command); `['⌘X','']` → `['⌘X']`. An
   empty string is never a real shortcut.

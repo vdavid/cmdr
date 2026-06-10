@@ -13,8 +13,8 @@ For the architecture diagram, the full per-spec file table, run recipes, multi-w
   fixture-tree lifecycle.
 - `helpers.ts` re-exports `helpers/` (`core.ts`, `app-lifecycle.ts`, `cursor.ts`, `overlays-and-dialogs.ts`,
   `windows.ts`, `navigation.ts`); specs import `from './helpers.js'`.
-- `*.spec.ts`: the suites (app, file-operations, conflict-*, file-watching, focus-trap, viewer-*, settings, mtp-*, smb,
-  drag-drop-*).
+- `*.spec.ts`: the suites (app, file-operations, conflict-_, file-watching, focus-trap, viewer-_, settings, mtp-_, smb,
+  drag-drop-_).
 
 ## Must-knows
 
@@ -28,16 +28,17 @@ For the architecture diagram, the full per-spec file table, run recipes, multi-w
   runs even on failure): nothing else kills the main process, so leaks pile up fast.
 - **Never `tauriPage.keyboard.press('Escape')` to close a dialog/popover/dropdown/palette.** Under Linux Xvfb, X11 focus
   delivery is unreliable and the keystroke can vanish, failing with an opaque timeout that looks like a flake. Use
-  `dismissOverlay(tauriPage)` (synthetic Escape on the topmost overlay) and `expectAndDismissToast(tauriPage, substring)`
-  (asserts the toast, then dismisses: the wording IS the contract). `fixtures.ts`'s global `afterEach` fails any test
-  that leaks an overlay/toast and auto-cleans, so no defensive double-Escape cleanups in `beforeEach`.
+  `dismissOverlay(tauriPage)` (synthetic Escape on the topmost overlay) and
+  `expectAndDismissToast(tauriPage, substring)` (asserts the toast, then dismisses: the wording IS the contract).
+  `fixtures.ts`'s global `afterEach` fails any test that leaks an overlay/toast and auto-cleans, so no defensive
+  double-Escape cleanups in `beforeEach`.
 - **Bare `await pollUntil(...)` is silent on timeout** (returns `false`, doesn't throw), so the test passes green even
   when the condition never holds. Use `await expect.poll(() => cond(), { timeout }).toBeTruthy()` (preferred) or
   `expect(await pollUntil(...)).toBe(true)`. Same trap for every `Promise<boolean>` helper (`pollFs`, `pollUntilValue`,
   `pollActiveMode`, `pollOverlayGone`, `pollFocusedPane`). The `bare-poll` fast-lane check flags these; opt out only for
   genuine best-effort cleanups with `// allowed-bare-poll: <reason>`.
-- **Exercise viewer + settings through the production multi-window flow**, not by routing the main window to `/viewer` or
-  `/settings` (that skips label uniqueness, restricted capabilities, the cross-window focus/close lifecycle). Use
+- **Exercise viewer + settings through the production multi-window flow**, not by routing the main window to `/viewer`
+  or `/settings` (that skips label uniqueness, restricted capabilities, the cross-window focus/close lifecycle). Use
   `openViewerWindow` / `openSettingsWindowViaProd` / `closeScopedWindow` and interact via the scoped page. When a scoped
   page can't call a Tauri command, that's a REAL bug (production hits the same restricted-capability wall): fix the
   capability file or use a permitted command, don't route around it.

@@ -31,22 +31,22 @@ popover, and the `createQueryFilterState()` factory. Filter-chip internals live 
   and are written separately. Don't fold them into the core method.
 - **`stopPropagation()` on every dialog `keydown`** (shields the file explorer behind it; without it, keys trigger
   quick-search/nav). All `use:trapFocus` listeners run in the capture phase so this can't starve the trap.
-- **Don't wipe state from `onDestroy` / any lifecycle hook.** The dialog mounts on open and unmounts on close;
-  state survives unmount by design. The ONLY sanctioned reset is `⌘N` (the consumer's clear hook). Wiping on unmount
-  turns every close+reopen into lost work.
+- **Don't wipe state from `onDestroy` / any lifecycle hook.** The dialog mounts on open and unmounts on close; state
+  survives unmount by design. The ONLY sanctioned reset is `⌘N` (the consumer's clear hook). Wiping on unmount turns
+  every close+reopen into lost work.
 - **⌘⏎ and ⇧⏎ are explicit no-ops** (swallowed with `preventDefault`); bare Enter is the only key that runs a search or
   opens the cursor row, dispatched via `enterAction`. `⌘N` is captured before the dialog's `stopPropagation` so it
   doesn't reach the route-level new-tab handler.
 - **Path pills are mouse-only, `tabindex="-1"`** (keyboard equivalents `⌥←` / `⌥→`); making them tabbable breaks the
   row's arrow-down flow in the virtualized list. The `nested-interactive` axe rule is deliberately disabled on the
   populated-results a11y test with a comment pointing at the rationale; don't "fix" it by retabbing.
-- **Status bar stays empty whenever the content area shows a state message** (Searching / No files match / Loading). When
-  you add a content-area state in `QueryResults`, make `getStatusText()` return `''` for it, or it reads as broken.
+- **Status bar stays empty whenever the content area shows a state message** (Searching / No files match / Loading).
+  When you add a content-area state in `QueryResults`, make `getStatusText()` return `''` for it, or it reads as broken.
 - **Content chip is visible-disabled with NO shortcut** (`⌘4` reserved): wiring a shortcut to a disabled control is
   hostile UX. When Content ships it claims `⌘3` and Regex moves to `⌘4`.
 - **AI mode never auto-applies** (cost); filename/regex auto-apply behind `search.autoApply` (default on, 1,000 ms
   debounce), gated also by IME composition. The split lives in `scheduleSearch()`'s early-return chain.
-- **The AI translation overwrites `query` + `mode`.** The original prompt lives in `lastAiPrompt`; use `getLastAiPrompt()`,
-  don't assume `query` still holds natural-language input after an AI run.
+- **The AI translation overwrites `query` + `mode`.** The original prompt lives in `lastAiPrompt`; use
+  `getLastAiPrompt()`, don't assume `query` still holds natural-language input after an AI run.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it in whole before structural changes here.

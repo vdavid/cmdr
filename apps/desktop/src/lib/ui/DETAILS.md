@@ -16,10 +16,10 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 | `LoadingIcon.svelte`  | Animated spinner with progressive status text                                                  |
 | `AlertDialog.svelte`  | Single-action confirmation dialog built on `ModalDialog`                                       |
 | `ProgressBar.svelte`  | Reusable progress bar (just the bar, no labels or layout)                                      |
-| `Size.svelte`         | Canonical inline byte-count renderer: human-friendly + rainbow tier color                       |
+| `Size.svelte`         | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
 | `SectionCard.svelte`  | macOS-style grouped card with optional label above; used for Debug/Settings groupings          |
 | `ToggleGroup.svelte`  | Generic segmented-control primitive: tabs ARIA shape or Ark toggle-group ARIA shape            |
-| `DateLabel.svelte`    | Canonical inline modified-date renderer: format + per-component age-tier coloring               |
+| `DateLabel.svelte`    | Canonical inline modified-date renderer: format + per-component age-tier coloring              |
 | `ShortcutChip.svelte` | Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key` mode  |
 | `StatusBadge.svelte`  | Uppercase stability pill (ALPHA / BETA) for early-stage features; fed by `feature-status.json` |
 | `toast/`              | Centralized toast notification system: store, container, item                                  |

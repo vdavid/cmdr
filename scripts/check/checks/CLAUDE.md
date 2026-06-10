@@ -7,8 +7,9 @@ see [`../CLAUDE.md`](../CLAUDE.md).
 
 ## Key files
 
-- `common.go`: core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`) and shared utils (`RunCommand`,
-  `EnsureGoTool`, `CommandExists`, `runPrettierCheck`, `runESLintCheck`, `indentOutput`, `trimBuildNoise`).
+- `common.go`: core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`) and shared utils
+  (`RunCommand`, `EnsureGoTool`, `CommandExists`, `runPrettierCheck`, `runESLintCheck`, `indentOutput`,
+  `trimBuildNoise`).
 - `registry.go`: `AllChecks`, the canonical ordered list, plus lookup/filter functions (`FilterSlowChecks`,
   `FilterCIOnlyChecks`, `FilterFastChecks`, `ValidateCheckNames`).
 - `{app}-{name}.go`: one file per check (`desktop-rust-*`, `desktop-svelte-*`, `website-*`, `api-server-*`,

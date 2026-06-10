@@ -7,7 +7,8 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - `selection/`, `navigation/`, `rename/`, `operations/`, `views/`, `tabs/`, `git/`, `network/`, `quick-look/`: the
   feature subdirectories (each has its own colocated docs).
 - `pane/`: `DualPaneExplorer` + `FilePane` + dialog manager + per-pane state. Owns type-to-jump, live disk space, the
-  `navigate()` transaction, volume capabilities, and the error-display pipeline (see [`pane/CLAUDE.md`](pane/CLAUDE.md)).
+  `navigate()` transaction, volume capabilities, and the error-display pipeline (see
+  [`pane/CLAUDE.md`](pane/CLAUDE.md)).
 - Sorting and the command palette have no own directory; their detail is in [DETAILS.md](DETAILS.md).
 
 ## Must-knows

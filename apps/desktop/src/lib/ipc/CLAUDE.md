@@ -1,7 +1,7 @@
 # IPC bindings
 
-Auto-generated `tauri-specta` bindings (`bindings.ts`) plus the typed-events plumbing that crosses the Rust↔TS
-boundary. The Rust side lives in `apps/desktop/src-tauri/src/ipc.rs`.
+Auto-generated `tauri-specta` bindings (`bindings.ts`) plus the typed-events plumbing that crosses the Rust↔TS boundary.
+The Rust side lives in `apps/desktop/src-tauri/src/ipc.rs`.
 
 ## Module map
 
@@ -24,12 +24,13 @@ boundary. The Rust side lives in `apps/desktop/src-tauri/src/ipc.rs`.
   the tag `rename_all` does NOT cascade into variant fields, so multi-word fields silently ship snake_case and read
   `undefined` on the FE. Guarded by `ipc-enum-camelcase`.
 - **Switching a raw-string emit to a typed `Event` must NOT change the wire name** (listening windows hold the
-  capability permission under that name). Match the struct's kebab-cased name, or pin `#[tauri_specta(event_name = "…")]`.
-- **On the JS side, compare IPC optionals with `!= null`, not `!== undefined`.** Because `skip_serializing_if` is banned,
-  `Option::None` crosses as JSON `null`. A `=== undefined`-only check accepts `null` as a real value (renders literal
-  `"null"`), and inside a `$effect`/`$derived` a throw on `null` silently corrupts the reactive graph for sibling
-  effects (a `$state` write lands but a dependent effect never re-runs). Suspect every site passing an optional field to
-  a typed function (`Intl.*`, `(n: number) => …`).
+  capability permission under that name). Match the struct's kebab-cased name, or pin
+  `#[tauri_specta(event_name = "…")]`.
+- **On the JS side, compare IPC optionals with `!= null`, not `!== undefined`.** Because `skip_serializing_if` is
+  banned, `Option::None` crosses as JSON `null`. A `=== undefined`-only check accepts `null` as a real value (renders
+  literal `"null"`), and inside a `$effect`/`$derived` a throw on `null` silently corrupts the reactive graph for
+  sibling effects (a `$state` write lands but a dependent effect never re-runs). Suspect every site passing an optional
+  field to a typed function (`Intl.*`, `(n: number) => …`).
 - **Two event families stay string-based** (can't be typed): the generic `mcp-*` dispatch relay (runtime-built name +
   free-form `Value`) and `viewer:file-changed:<session-id>` (session id interpolated at runtime).
 

@@ -22,8 +22,8 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `push()` (or that wrapper) to release refs for dropped entries. `pushPath` discards `droppedEntries`. When the new
   entry equals the current one, `push()` returns the **same `history` reference** with empty `droppedEntries`, so `===`
   dedup still works.
-- **`MAX_HISTORY_PER_TAB = 100` applies to every volume uniformly.** Don't tighten it (hurts deep-navigating power
-  users who rely on `⌘[`); don't bump it (each entry is three string fields, headroom is fine).
+- **`MAX_HISTORY_PER_TAB = 100` applies to every volume uniformly.** Don't tighten it (hurts deep-navigating power users
+  who rely on `⌘[`); don't bump it (each entry is three string fields, headroom is fine).
 - **`path-resolution.ts` is its own module to break a cycle**: `app-status-store.ts` imports `resolveValidPath`, and
   `path-navigation.ts` imports `getLastUsedPathForVolume` from `app-status-store.ts`. Keep `resolveValidPath` here.
 - **Two-layer timeout on every `pathExists`**: Rust `blocking_with_timeout` (2 s) plus frontend `withTimeout` (500 ms

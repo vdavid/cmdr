@@ -1,8 +1,8 @@
 # API server
 
-Cloudflare Worker (Hono) backend for Cmdr: licensing (Paddle webhooks, Ed25519 keys, activation codes in KV),
-telemetry (crash reports, downloads, update checks, heartbeats in D1), admin endpoints, and cron notifications.
-Deployed at `api.getcmdr.com` (`license.getcmdr.com` is a permanent alias for existing app versions).
+Cloudflare Worker (Hono) backend for Cmdr: licensing (Paddle webhooks, Ed25519 keys, activation codes in KV), telemetry
+(crash reports, downloads, update checks, heartbeats in D1), admin endpoints, and cron notifications. Deployed at
+`api.getcmdr.com` (`license.getcmdr.com` is a permanent alias for existing app versions).
 
 ## Module map
 
@@ -25,9 +25,9 @@ The full route table, env-var/binding tables, data flows, runbooks, and decision
   `anal_`; crash/error reports carry `diag_`; `/beta-signup` and `/feedback` carry NO install id of any kind. This keeps
   the analytics stream unjoinable to any identity. Guarded by `crash-report.test.ts` and `beta-signup.test.ts`. Don't
   add an install id to beta-signup or feedback, and reject any `anal_`-shaped `diagId` (400).
-- **`/beta-signup` must stay double-opt-in:** never send `preconfirm_subscriptions` to Listmonk, and the 409
-  add-to-list path MUST call `POST /api/subscribers/{id}/optin` (the list-add endpoint does not send the confirmation
-  mail on its own). Every outcome returns an identical empty 204, so the response can't be used for email enumeration.
+- **`/beta-signup` must stay double-opt-in:** never send `preconfirm_subscriptions` to Listmonk, and the 409 add-to-list
+  path MUST call `POST /api/subscribers/{id}/optin` (the list-add endpoint does not send the confirmation mail on its
+  own). Every outcome returns an identical empty 204, so the response can't be used for email enumeration.
 - **Validators for optional fields from the Rust client must tolerate both `null` and `undefined`** (serde
   `Option::None` serializes as JSON `null`, and `skip_serializing_if` is banned on the IPC surface). Pattern:
   `value !== undefined && value !== null && <shape check>`. A `!== undefined`-only check drops upgrade-window reports.

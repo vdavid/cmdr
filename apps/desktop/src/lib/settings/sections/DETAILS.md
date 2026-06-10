@@ -132,8 +132,8 @@ a synthetic editing pill at that slot. Nothing reaches `shortcuts-store` until a
 
 Why it MUST stay UI-only: every store mutator saves to disk AND broadcasts cross-window (see `lib/shortcuts/CLAUDE.md`).
 Calling `addShortcut(id, '')` the instant `+` is clicked means any exit that isn't Escape/Backspace (clicking another
-pill, clicking `+` on another row, clicking away) leaks a real `['']` entry to disk and to other windows — the user
-sees framed `(none)` pills accumulate (one per leak). With the add slot UI-only, every cancel/exit path just resets
+pill, clicking `+` on another row, clicking away) leaks a real `['']` entry to disk and to other windows — the user sees
+framed `(none)` pills accumulate (one per leak). With the add slot UI-only, every cancel/exit path just resets
 `editingShortcut`; there's nothing in the store to clean up. `isAddingNewShortcut` derives from
 `index === getEffectiveShortcuts(id).length` (no `''` sentinel). The duplicate-on-same-action path simply cancels.
 

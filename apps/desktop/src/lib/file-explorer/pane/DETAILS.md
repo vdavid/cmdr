@@ -59,19 +59,19 @@ list).
 | `pane-commands.ts`            | MCP/palette read-only + delegating command bodies (selection, key-route, MTP val)              |
 | `type-to-jump-keys.ts`        | Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts                |
 | `initialization.ts`           | Load persisted tabs + status + settings; resolve volumes; apply E2E overrides                  |
-| `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`                         |
+| `tab-operations.ts`           | Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`                        |
 | `transfer-operations.ts`      | Build `TransferDialogPropsData` (and snapshot/dropped variants) from a focused pane            |
 | `transfer-entry.ts`           | Shared transfer entry seam: `checkTransferDestinationGuard` + `resolveSourceVolumeId`          |
-| `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)                       |
-| `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution                       |
-| `navigate.ts`                 | `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry               |
-| `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch                  |
-| `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`                   |
+| `sorting-handlers.ts`         | `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)                      |
+| `index-events.ts`             | Throttled `index-dir-updated` handler with `/private/` symlink resolution                      |
+| `navigate.ts`                 | `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry              |
+| `snapshot-pane-navigation.ts` | `isCrossVolumeNavigation` — snapshot-volume → real-path triggers volume switch                 |
+| `has-parent.ts`               | `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`                  |
 | `volume-capabilities.ts`      | `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` / `capabilitiesFor` |
 | `search-results-keys.ts`      | Pure key→action dispatch for the flat snapshot pane                                            |
 | `selection-dialog-keys.ts`    | Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)                 |
 | `function-key-commands.ts`    | `fnKeyToCommand`: the F-key bar's 9 button → command-id map (typed; unit-tested)               |
-| `error-pane-utils.ts`         | Tiny helper for `ErrorPane`'s technical-details rendering                                       |
+| `error-pane-utils.ts`         | Tiny helper for `ErrorPane`'s technical-details rendering                                      |
 | `integration-test-utils.ts`   | Shared test scaffolding for pane integration tests                                             |
 
 ### Tests
@@ -225,7 +225,7 @@ The **writers** (A2 — exactly one mutator per field, all inside the store modu
 | `showHiddenFiles`      | `setShowHiddenFiles`, `toggleHiddenFiles` |
 | `leftPaneWidthPercent` | `setLeftPaneWidthPercent`                 |
 | `leftTabMgr`           | `setTabMgr('left', …)`                    |
-| `rightTabMgr`          | `setTabMgr('right', …)`                    |
+| `rightTabMgr`          | `setTabMgr('right', …)`                   |
 
 **Enforced by lint (`cmdr/no-explorer-state-writes`).** Assigning to any property of the store object outside
 `explorer-state.svelte.ts` is a lint error (`explorerState.x = …`, compound assignment, `++`, and monkey-patching a
